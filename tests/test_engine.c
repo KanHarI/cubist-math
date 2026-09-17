@@ -135,6 +135,93 @@ static void limits(void) {
     CHECK(e->nn == 2);
     tt_free(e);
 }
+/* Dependent Nat induction must advance the motive in the successor case.
+ * Run outside the frozen upstream trace, whose old rule has this defect. */
+static void dependent_nat(void) {
+    tt_engine *e = tt_new(NULL);
+    CHECK(e);
+    tt_id nat = ZERO(NatForm), zero = ZERO(NatIntroZ), one = ONE(NatIntroS, zero);
+    tt_id zc = A(CtxExt, nat, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id z = A(Vble, 0, 0, 0, 0, 0, zc, 0, 0, 0, 0);
+    tt_id nc = A(CtxExt, nat, 0, 0, 0, 0, 0, zc, 0, 0, 0);
+    tt_id n = A(Vble, 0, 0, 0, 0, 0, nc, 0, 0, 0, 0);
+    tt_id motive = A(EqForm, nat, z, z, 0, 0, 0, 0, 0, 0, 0);
+    tt_id base = ONE(EqIntro, zero), correct = ONE(EqIntro, ONE(NatIntroS, n));
+    tt_id wrong = ONE(EqIntro, n), fs[] = {zc, nc, 0}, out = 0;
+    tt_id ih_type = A(EqForm, nat, n, n, 0, 0, 0, 0, 0, 0, 0);
+    tt_id ih = A(CtxExt, ih_type, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id sn = ONE(NatIntroS, n);
+    tt_id bad_ih_type = A(EqForm, nat, sn, sn, 0, 0, 0, 0, 0, 0, 0);
+    tt_id bad_ih = A(CtxExt, bad_ih_type, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_opcode ops[] = {TT_NatElim, TT_NatCompZ, TT_NatCompS};
+    for (unsigned i = 0; i < 3; i++) {
+        const tt_opcode_info *m = tt_opcode_metadata(ops[i]);
+        tt_id js[] = {motive, base, wrong, one};
+        CHECK(tt_apply(e, ops[i], js, m->judgements, 0, fs, 3, &out) == TT_INVALID);
+        js[2] = correct;
+        CHECK(tt_apply(e, ops[i], js, m->judgements, 0, fs, 3, &out) == TT_OK);
+        fs[2] = bad_ih;
+        CHECK(tt_apply(e, ops[i], js, m->judgements, 0, fs, 3, &out) == TT_INVALID);
+        fs[2] = ih;
+        CHECK(tt_apply(e, ops[i], js, m->judgements, 0, fs, 3, &out) == TT_OK);
+        fs[2] = 0;
+    }
+    tt_id result = A(NatElim, motive, base, correct, one, 0, 0, zc, nc, 0, 0);
+    tt_id expected = ONE(EqIntro, one);
+    for (unsigned i = 0; i < 4; i++)
+        result = ONE(BetaReduceGrossKnuth, result);
+    CHECK(e->judgements[result].expr == e->judgements[expected].expr);
+    CHECK(e->judgements[result].type == e->judgements[expected].type);
+    tt_free(e);
+}
+/* Normalize both sides independently; beta must commute with closing an
+ * external context. Closed numeral tests alone miss escaping de Bruijn indices. */
+static void same_normal_form(tt_engine *e, tt_id a, tt_id b) {
+    for (unsigned i = 0; i < 12; i++) {
+        a = ONE(BetaReduceGrossKnuth, a);
+        b = ONE(BetaReduceGrossKnuth, b);
+    }
+    CHECK(e->judgements[a].expr == e->judgements[b].expr);
+    CHECK(e->judgements[a].type == e->judgements[b].type);
+}
+static void recursive_binding(void) {
+    tt_engine *e = tt_new(NULL);
+    CHECK(e);
+    tt_id nat = ZERO(NatForm), zero = ZERO(NatIntroZ);
+    tt_id nc = A(CtxExt, nat, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id n = A(Vble, 0, 0, 0, 0, 0, nc, 0, 0, 0, 0);
+    tt_id ic = A(CtxExt, nat, 0, 0, 0, 0, 0, nc, 0, 0, 0);
+    tt_id ih = A(Vble, 0, 0, 0, 0, 0, ic, 0, 0, 0, 0);
+    tt_id step = ONE(NatIntroS, ih), sn = ONE(NatIntroS, n);
+    tt_id recursive = A(NatElim, nat, zero, step, sn, 0, 0, 0, 0, ic, 0);
+    tt_id reduced = ONE(BetaReduceGrossKnuth, recursive);
+    same_normal_form(e, A(PiIntro, nat, recursive, 0, 0, 0, 0, nc, 0, 0, 0),
+                     A(PiIntro, nat, reduced, 0, 0, 0, 0, nc, 0, 0, 0));
+    tt_id at_zero = A(NatElim, nat, n, ih, zero, 0, 0, 0, 0, ic, 0);
+    same_normal_form(e, A(PiIntro, nat, at_zero, 0, 0, 0, 0, nc, 0, 0, 0),
+                     A(PiIntro, nat, n, 0, 0, 0, 0, nc, 0, 0, 0));
+
+    tt_id unit = ZERO(UnitForm), star = ZERO(UnitIntro);
+    tt_id w = A(WForm, unit, unit, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id child_type = A(PiForm, unit, w, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id cc = A(CtxExt, child_type, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id children = A(Vble, 0, 0, 0, 0, 0, cc, 0, 0, 0, 0);
+    tt_id rec_type = A(PiForm, unit, nat, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id rc = A(CtxExt, rec_type, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id rec = A(Vble, 0, 0, 0, 0, 0, rc, 0, 0, 0, 0);
+    tt_id branch_body = ONE(NatIntroS, A(PiElim, rec, star, 0, 0, 0, 0, 0, 0, 0, 0));
+    tt_id branch = A(PiIntro, rec_type, branch_body, 0, 0, 0, 0, rc, 0, 0, 0);
+    tt_id tree = A(WIntro, star, unit, children, 0, 0, 0, 0, 0, 0, 0);
+    tt_id folded = A(WElim, nat, branch, tree, 0, 0, 0, 0, 0, 0, 0);
+    tt_id child = A(PiElim, children, star, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id expected = ONE(NatIntroS, A(WElim, nat, branch, child, 0, 0, 0, 0, 0, 0, 0));
+    tt_id closed_fold = A(PiIntro, child_type, folded, 0, 0, 0, 0, cc, 0, 0, 0);
+    same_normal_form(e, closed_fold, A(PiIntro, child_type, expected, 0, 0, 0, 0, cc, 0, 0, 0));
+    tt_id comp = A(WComp, nat, branch, star, children, 0, 0, 0, 0, 0, 0);
+    same_normal_form(e, closed_fold,
+                     A(PiIntro, child_type, ONE(DefEqExtR, comp), 0, 0, 0, 0, cc, 0, 0, 0));
+    tt_free(e);
+}
 int main(void) {
     setvbuf(stdout, NULL, _IONBF, 0);
     tt_config c = tt_default_config();
@@ -165,6 +252,8 @@ int main(void) {
         CHECK(fclose(trace) == 0);
     tt_set_trace(e, NULL);
     tt_free(e);
+    dependent_nat();
+    recursive_binding();
     limits();
     puts("invalid inputs, dependency discharge, limits, rollback, deterministic cache equivalence: "
          "PASS");

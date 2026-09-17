@@ -185,7 +185,8 @@ bool infer_eliminator(tt_engine *e, tt_opcode op, const judgement *j, const tt_i
     case TT_NatCompZ:
     case TT_NatCompS: {
         /* C(n), zero branch, successor branch, [n]; f = [n, predecessor, ih].
-         * The successor motive check deliberately preserves the upstream rule. */
+         * The induction hypothesis has type C(predecessor), while the branch
+         * must prove C(succ(predecessor)). These are distinct checks. */
         tt_id nat_type = 0, zero = 0, input = 0, body = 0, expected = 0;
         nat_type = leaf(e, N_Nat, 0);
         zero = leaf(e, N_ZN, 0);
@@ -196,7 +197,7 @@ bool infer_eliminator(tt_engine *e, tt_opcode op, const judgement *j, const tt_i
         expected = replace_ctx(e, EXPR(0), f[0], q0);
         if (f[2])
             REQUIRE(replace_ctx(e, e->contexts[f[2]].type, f[1], q0) == expected);
-        /* Preserve the upstream Nat rule's exact syntactic motive check. */
+        expected = replace_ctx(e, EXPR(0), f[0], make1(e, N_SN, q0));
         REQUIRE(substitute_two_contexts(e, TYPE(2), f[1], f[2], q0, q1) == expected);
         body = bind_two_contexts(e, EXPR(2), f[1], f[2]);
         input = op == TT_NatCompZ ? zero : op == TT_NatCompS ? make1(e, N_SN, EXPR(3)) : EXPR(3);
@@ -253,7 +254,7 @@ bool infer_eliminator(tt_engine *e, tt_opcode op, const judgement *j, const tt_i
             tt_id shift = 1;
             tt_id shifted_f = transform(e, EXPR(3), MAP_SHIFT, NULL, &shift, 1, 0);
             tt_id shifted_body = transform(e, body, MAP_SHIFT, NULL, &shift, 1, 2);
-            tt_id child = make2(e, N_Ap, shifted_f, leaf(e, N_VRef, 0));
+            tt_id child = make2(e, N_Ap, shifted_f, leaf(e, N_VRef, 2));
             tt_id recursive = make1(e, N_Lambda, make2(e, N_IndW, shifted_body, child));
             r->expr = make2(e, N_DefEq, r->expr, make2(e, N_Ap, specialized_branch, recursive));
         }

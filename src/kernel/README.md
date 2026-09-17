@@ -96,8 +96,12 @@ visited root once. It does not normalize repeatedly until a fixed point. Type
 matching uses structural identity; conversion requires explicit rewriting or
 reduction inferences.
 
-The Nat motive check retains upstream semantics. EqComp, WComp, and W beta
-contain previously documented corrections to upstream computation behavior.
+Nat checks distinguish the induction hypothesis `C(n)` from the successor
+branch `C(succ(n))`, correcting an inherited upstream defect. Nat beta preserves
+the recursive call's virtual binder levels while lowering the predecessor and
+zero branch; W beta and WComp place the recursive child variable under the
+new W eliminator's two virtual levels. Tests compare reduction before and after
+closing an external context. EqComp also corrects upstream computation behavior.
 See [compatibility.md](../../docs/compatibility.md) for details and Rust-oracle
 exceptions. This layout and the tests support review; they are not a formal
 soundness proof for the research calculus.

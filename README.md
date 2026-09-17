@@ -41,7 +41,8 @@ The CLI uses the same interpreter and supports both named/numeric paths and
 selection by adding parentheses around a displayed subexpression. Both start
 with all 50 prelude library exports, including `LEM` and `AOC`. The browser proof
 selector and CLI `proofs` / `open ID` expose every original proof construction
-and the identity example as 26 checked, editable replay programs.
+and the identity example as 27 checked, editable replay programs, including `open wnat_equiv` for
+a verified WNat-to-Nat `isEquiv` proof.
 
 ```sh
 make wasm       # Requires Emscripten; detects .tools/emsdk automatically

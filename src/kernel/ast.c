@@ -174,11 +174,14 @@ static tt_id beta(tt_engine *e, tt_id a, bool defs) {
     }
     case N_IndNat: {
         node input = e->nodes[n.ch[2]];
+        /* IndNat contributes two virtual levels to every child. The recursive
+         * call retains those levels; the predecessor and zero branch do not. */
+        tt_id lower = (uint32_t)-2;
         if (input.kind == N_ZN)
-            return n.ch[0];
+            return transform(e, n.ch[0], MAP_SHIFT, NULL, &lower, 1, 0);
         vals[0] = make3(e, N_IndNat, n.ch[0], n.ch[1], input.ch[0]);
-        vals[1] = input.ch[0];
-        return transform(e, n.ch[1], MAP_BETA_SUBST, bias, vals, 2, 0);
+        vals[1] = transform(e, input.ch[0], MAP_SHIFT, NULL, &lower, 1, 0);
+        return transform(e, n.ch[1], MAP_BETA_SUBST, NULL, vals, 2, 0);
     }
     case N_IndSum: {
         node input = e->nodes[n.ch[2]];
@@ -194,13 +197,16 @@ static tt_id beta(tt_engine *e, tt_id a, bool defs) {
         return transform(e, n.ch[0], MAP_BETA_SUBST, NULL, vals, 1, 0);
     case N_IndW: {
         node input = e->nodes[n.ch[1]];
-        vals[0] = input.ch[1];
-        vals[1] = input.ch[0];
+        tt_id lower = (uint32_t)-2;
+        vals[0] = transform(e, input.ch[1], MAP_SHIFT, NULL, &lower, 1, 0);
+        vals[1] = transform(e, input.ch[0], MAP_SHIFT, NULL, &lower, 1, 0);
         tt_id d = transform(e, n.ch[0], MAP_BETA_SUBST, NULL, vals, 2, 0);
         tt_id shift = 1;
         tt_id f = transform(e, input.ch[1], MAP_SHIFT, NULL, &shift, 1, 0);
         tt_id branch = transform(e, n.ch[0], MAP_SHIFT, NULL, &shift, 1, 2);
-        tt_id child = make2(e, N_Ap, f, leaf(e, N_VRef, 0));
+        /* The recursive argument lies under the new IndW's two virtual
+         * levels as well as its surrounding lambda. */
+        tt_id child = make2(e, N_Ap, f, leaf(e, N_VRef, 2));
         tt_id recursive = make1(e, N_Lambda, make2(e, N_IndW, branch, child));
         return make2(e, N_Ap, d, recursive);
     }

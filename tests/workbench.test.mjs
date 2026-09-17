@@ -311,11 +311,13 @@ test("every ported proof opens, verifies its exports, and round trips as JSON an
       "utf8",
     ),
   );
-  assert.equal(catalogue.length, 26);
+  assert.equal(catalogue.length, 27);
   assert.deepEqual(
     new Set(
       catalogue
-        .filter((p) => !["prelude_library", "identity"].includes(p.id))
+        .filter(
+          (p) => !["prelude_library", "identity", "wnat_equiv"].includes(p.id),
+        )
         .map((p) => p.source),
     ),
     new Set(Object.keys(sources)),
@@ -412,5 +414,44 @@ test("CLI opens every bundled program and exposes LEM and AOC at startup", async
     (result.stdout.match(/Opened /g) || []).length,
     catalogue.length,
   );
-  assert.equal((result.stdout.match(/\nVERIFIED\n/g) || []).length, 3);
+  assert.equal((result.stdout.match(/\nVERIFIED\n/g) || []).length, 4);
+});
+
+test("WNat equivalence has the full coherence field and cannot replay without funext", async () => {
+  const document = JSON.parse(
+    await readFile(
+      new URL("../web/proofs/wnat_equiv.thth.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  assert.equal(document.steps.filter((s) => s.op === "Axiom").length, 1);
+  const s = fresh();
+  try {
+    s.import(document, true);
+    assert.equal(s.verify("WNatToNat_isEquiv", "wnat_to_nat_isEquiv"), true);
+    const type = s.inspect("WNatToNat_isEquiv").expression;
+    assert.equal(type.kind, "Sigma");
+    assert.equal(type.children[0].kind, "Pi");
+    assert.equal(type.children[0].children[0].kind, "Nat");
+    assert.equal(type.children[0].children[1].kind, "W");
+    const eta = type.children[1],
+      epsilon = eta.children[1],
+      tau = epsilon.children[1];
+    assert.equal(eta.kind, "Sigma");
+    assert.equal(epsilon.kind, "Sigma");
+    assert.equal(tau.kind, "Pi");
+    assert.equal(tau.children[1].kind, "Eq");
+    assert.equal(tau.children[1].children[0].kind, "Eq");
+    const before = s.export();
+    const forbidden = structuredClone(document);
+    forbidden.policy.allowAxioms = false;
+    assert.throws(() => s.import(forbidden, true), /Axiom rejected/);
+    assert.deepEqual(s.export(), before);
+    const broken = structuredClone(document);
+    broken.steps = broken.steps.filter((step) => step.op !== "Axiom");
+    assert.throws(() => s.import(broken, true), /judgement/);
+    assert.deepEqual(s.export(), before);
+  } finally {
+    s.dispose();
+  }
 });

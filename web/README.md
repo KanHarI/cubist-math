@@ -39,12 +39,20 @@ user programs. Explicit axiom instructions are labelled **AXIOM** in the browser
 this label does not claim that other objects are independent of axioms.
 
 The browser's **Existing proofs & library** selector opens all **24 original
-proof-construction routines**, the complete prelude library, and the existing
-polymorphic identity example: **26 programs**. This includes composition, product
+proof-construction routines**, the complete prelude library, the existing
+polymorphic identity example, and the WNat-to-Nat equivalence: **27 programs**. This includes composition, product
 commutativity, both projection implementations, equality operations, homotopy,
 truncation, choice, excluded middle, uniqueness results, and every basic type.
 The original projection helper is instantiated with U0, as in its caller.
 The theorem examples are automatically verified when opened.
+
+`open wnat_equiv` opens the new checked equivalence `WNat ≃ Nat`. Its
+`wnat_to_nat_isEquiv` proof inhabits `WNatToNat_isEquiv`, the existing
+half-adjoint `isEquiv` definition applied to the conversion function. The
+1,910-step replay uses only the existing function-extensionality axiom; it
+introduces no choice, excluded-middle, or equivalence axiom. Both maps, both
+round trips, and the coherence proof are named inspection targets. See
+[the construction notes](../docs/wnat_equivalence.md) for the argument and kernel fixes.
 
 ```text
 proofs
@@ -75,7 +83,8 @@ objects exactly as they do on newly constructed objects.
 Portable [JSON replay files and .math source](proofs/) live in `web/proofs/`.
 They contain instructions and named operands, not trusted prechecked results.
 `make proof-export` regenerates them from the checked C proof programs using
-the native inference trace (C compiler, Python 3, and Node.js required). CI checks
+the native inference trace, then constructs the new equivalence through WASM
+(C compiler, Python 3, Node.js, and Emscripten required). CI checks
 regeneration and replays every JSON and source file through WASM. Coverage is
 checked against `docs/proof_sources.json`, and the exporter rejects missing routines.
 
@@ -224,7 +233,7 @@ A failed replay never changes the accepted proof or policy.
   reference notation for unsupported cases. It is an inspector, not an elaborator
   or independently type-checked pretty-printer.
 
-The kernel bridge limits expressions to 4096 tree nodes, AST storage to 500,000
+The kernel bridge limits expressions to 65,536 tree nodes, AST storage to 500,000
 nodes, judgements to 100,000, context counters to 256, and depth to 256. Sessions
 allow 4096 instructions and 256 accepted history actions. WASM memory is capped
 at 256 MiB. The browser terminates its worker after a 30-second request timeout;

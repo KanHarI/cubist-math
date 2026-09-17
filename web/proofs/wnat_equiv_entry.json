@@ -1,0 +1,26 @@
+{
+  "id": "wnat_equiv",
+  "title": "WNat ≃ Nat (isEquiv)",
+  "file": "wnat_equiv.thth.json",
+  "source": "tools/proofs/wnat_equiv.mjs",
+  "steps": 1910,
+  "allowAxioms": true,
+  "exports": [
+    "wnat_to_nat",
+    "nat_to_wnat",
+    "wnat_roundtrip",
+    "nat_roundtrip",
+    "nat_roundtrip_coherent",
+    "wnat_nat_coherence",
+    "lib_UNat",
+    "WNatToNat_isEquiv",
+    "wnat_to_nat_isEquiv"
+  ],
+  "verify": [
+    "WNatToNat_isEquiv",
+    "wnat_to_nat_isEquiv"
+  ],
+  "axioms": [
+    "function extensionality"
+  ]
+}

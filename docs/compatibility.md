@@ -62,7 +62,7 @@ For Apple's system Python, the executable may additionally need
 
 ## Computation-rule defects corrected during the port
 
-The additional opcode tests revealed two upstream rules whose implementation
+The additional opcode tests revealed upstream rules whose implementation
 does not construct the judgement described by its own inference-rule comment:
 
 1. **`EqComp`:** Rust substitutes into the motive's `_type` (its universe), using
@@ -82,10 +82,29 @@ steps whose outputs have no pre-existing reference mapping. Those cases are
 covered by direct C computation tests. They are not claimed to match the faulty
 Rust output. None of the original ported proof programs needs either defect.
 
-The AST traversal retains upstream's node-wide binder-depth convention and its
-legacy index adjustments where the existing proofs depend on them. The Nat
-eliminator retains the upstream syntactic motive check. This is compatibility
-with a research proof engine, not a claim of a new foundational soundness proof.
+The WNat-to-Nat equivalence additionally exposed:
+
+3. **Dependent Nat induction:** `NatElim`, `NatCompZ`, and `NatCompS` now require
+   the successor branch to have type `C(succ(n))`, while its induction hypothesis
+   has type `C(n)`. Upstream incorrectly checks both against `C(n)`. Positive and
+   negative native tests exercise all three rules, including wrong IH types.
+4. **Nat beta under binders:** a recursive call retains the Nat node's two
+   virtual binder levels; its predecessor and zero branch leave those levels.
+   Applying one negative shift to both predecessor and recursive hypothesis
+   captured outer variables. Tests compare normalization before/after abstraction.
+5. **W recursive argument:** the child variable is index 2 inside the newly
+   constructed `IndW`, under the retained node-wide depth convention. Index 0
+   failed to substitute the recursive lambda's argument. W beta also lowers
+   constructor arguments when they leave the original eliminator. The native
+   regression uses an arbitrary child function, not just constant children.
+
+The four changed W computation/reduction fingerprints in the reference fixture
+were already excluded from Rust parity; `tests/reference_verification.json`
+records their line numbers. All other 3,648 trace records remain unchanged.
+New Nat regressions run separately from that frozen compatibility trace.
+
+The AST traversal retains upstream's node-wide binder-depth convention. These
+fixes and regression tests do not constitute a foundational soundness proof.
 
 ## Concurrency and lifetime
 

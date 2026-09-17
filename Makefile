@@ -56,5 +56,6 @@ browser-test: wasm
 	npm run test:browser
 
 .PHONY: proof-export
-proof-export:
+proof-export: wasm
 	python3 tools/export_workbench.py
+	node tools/proofs/wnat_equiv.mjs

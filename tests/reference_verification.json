@@ -4,7 +4,17 @@
   "matched_steps": 3641,
   "skipped_known_EqComp_WComp_W_beta_or_limits": 11,
   "trace_records": 3652,
-  "trace_sha256": "4587e02d280304a836cf020b8f8c59e53f4d15fca63896699b553b129e1abbf3",
+  "trace_sha256": "edbeb65ee381117afb832074ede7dc08685fc5ea8d71dba5a362d8776f4b2e6c",
   "rust_version": "1.98.1",
-  "notes": "Independent Rust replay of C legality and normalized expression/type/context fingerprints. Skipped corrected computation steps and their unmapped descendants are tested directly in C."
+  "notes": "Independent Rust replay of C legality and normalized expression/type/context fingerprints. Skipped corrected computation steps and their unmapped descendants are tested directly in C.",
+  "corrected_w_binder_fingerprints": {
+    "records_1_based": [
+      2628,
+      2630,
+      2632,
+      2633
+    ],
+    "reason": "Corrected recursive W binder index; these W computation/reduction records were already excluded from Rust parity. Native higher-order regression tests cover the corrected behavior."
+  },
+  "upstream_verified_trace_sha256": "4587e02d280304a836cf020b8f8c59e53f4d15fca63896699b553b129e1abbf3"
 }
