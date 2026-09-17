@@ -37,7 +37,7 @@ construction propositional_truncation {
   export lib_trunc_is_trunc = postulate(s0032_PiForm);
   private s0034_CtxExt = assume(s0015_UVble, s0016_CtxExt);
   private s0035_Vble = variable(s0034_CtxExt);
-  private s0036_PiForm = function_type(s0015_UVble, s0035_Vble, s0016_CtxExt);
+  private s0036_PiForm = function_type(s0017_Vble, s0035_Vble, none);
   private s0037_PiElim = apply(s0028_DefEqExtL, s0015_UVble);
   private s0038_PiElim = apply(s0037_PiElim, s0035_Vble);
   private s0039_SigmaForm = pair_type(s0036_PiForm, s0038_PiElim, none);

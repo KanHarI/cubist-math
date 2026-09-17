@@ -45,7 +45,7 @@ construction lem {
   private s0041_Axiom = postulate(s0040_PiForm);
   private s0042_CtxExt = assume(s0023_UVble, s0024_CtxExt);
   private s0043_Vble = variable(s0042_CtxExt);
-  private s0044_PiForm = function_type(s0023_UVble, s0043_Vble, s0024_CtxExt);
+  private s0044_PiForm = function_type(s0025_Vble, s0043_Vble, none);
   private s0045_PiElim = apply(s0036_DefEqExtL, s0023_UVble);
   private s0046_PiElim = apply(s0045_PiElim, s0043_Vble);
   private s0047_SigmaForm = pair_type(s0044_PiForm, s0046_PiElim, none);

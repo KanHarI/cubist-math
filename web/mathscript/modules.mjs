@@ -1,6 +1,17 @@
 // Bundled mathematical source modules; no checked proof snapshots.
 export const sourceModules = [
   "primes",
+  "equivalences",
+  "finite",
+  "function_counting",
+  "binomial",
+  "finite_cancellation",
+  "bijection_equality",
+  "permutations",
+  "truncation",
+  "binomial_types",
+  "binomial_pascal",
+  "binomial_counting",
   "paths",
   "sets",
   "groups",

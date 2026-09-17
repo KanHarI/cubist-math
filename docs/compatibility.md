@@ -2,7 +2,10 @@
 
 Source: `KanHarI/thth`, commit
 `79060d57eacdf42cd2b4762b2b4bfa3a530f0861` (2025-02-13).
-File hashes are in [proof_sources.json](proof_sources.json).
+File hashes are in [proof_sources.json](proof_sources.json). The current generated
+builtin library additionally includes Rust commit `45cceb9`, correcting the
+truncation eliminator. Rust commit `2bae35d` backports the computation and induction
+fixes described below into the original repository.
 
 ## Ported material
 
@@ -62,7 +65,7 @@ For Apple's system Python, the executable may additionally need
 
 ## Computation-rule defects corrected during the port
 
-The additional opcode tests revealed upstream rules whose implementation
+The additional opcode tests revealed rules in the original Rust revision whose implementation
 does not construct the judgement described by its own inference-rule comment:
 
 1. **`EqComp`:** Rust substitutes into the motive's `_type` (its universe), using
@@ -98,10 +101,22 @@ The WNat-to-Nat equivalence additionally exposed:
    constructor arguments when they leave the original eliminator. The native
    regression uses an arbitrary child function, not just constant children.
 
-The four changed W computation/reduction fingerprints in the reference fixture
-were already excluded from Rust parity; `tests/reference_verification.json`
-records their line numbers. All other 3,648 trace records remain unchanged.
-New Nat regressions run separately from that frozen compatibility trace.
+The historical oracle skipped the defective computation rules. The current
+fixture has been regenerated after correcting the truncation axiom's function
+premise from `U -> P` to `A -> P`, and independently replayed against Rust.
+`tests/reference_verification.json` preserves the historical verification and
+records the new trace hash and corrected-kernel verification.
+
+With the backported Rust fixes (`2bae35d`), replay checks all 3,652 records with
+zero skips. An additional replay checks all 1,910 instructions in the complete
+WNat-to-Nat equivalence, also with zero skips. To enable these previously skipped
+checks, pass `--corrected-kernel` to the oracle built from the corrected Rust
+checkout. Separate Rust and C regressions check dependent Nat motives and binder
+behavior; the generator excludes C-only suspension opcodes from the Rust oracle.
+
+All bundled truncation constructions now contain the corrected prelude axiom.
+The high-level `mere_eliminate` definition wraps `lib_trunc_elim` and introduces
+no additional axiom.
 
 The AST traversal retains upstream's node-wide binder-depth convention. These
 fixes and regression tests do not constitute a foundational soundness proof.

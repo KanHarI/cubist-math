@@ -7,6 +7,7 @@ export class Kernel {
     this.bindings = new Map();
     this.declarations = new Map();
     this.steps = [];
+    this.axiomDependencies = new Map();
     this.metadata = catalogue(module);
   }
   dispose() {
@@ -88,8 +89,20 @@ export class Kernel {
       if (!previous || this.bindings.get(previous).hidden)
         this.declarations.set(reference, target);
     }
+    // Track the axioms in this recorded derivation, including premise types
+    // and contexts. Merely loading an unrelated axiom creates no dependency.
+    const axioms = new Set();
+    for (const premise of [...step.args, step.context, ...step.free])
+      for (const axiom of this.axiomDependencies.get(premise) ?? [])
+        axioms.add(axiom);
+    if (step.op === "Axiom") axioms.add(step.name);
+    this.axiomDependencies.set(step.name, [...axioms]);
     this.steps.push(step);
     return step;
+  }
+  axiomsFor(name) {
+    if (!this.bindings.has(name)) throw new Error(`Unknown binding: ${name}`);
+    return [...this.axiomDependencies.get(name)];
   }
   node(id) {
     const m = this.module,
@@ -119,7 +132,7 @@ export class Kernel {
   }
   list(id, path = false) {
     const result = [];
-    for (let n = id; n && result.length < 1024; ) {
+    for (let n = id; n && result.length < 1024;) {
       const item = this.node(n);
       result.push(item.parameter);
       n = item.children[0];
@@ -168,6 +181,7 @@ export class Kernel {
       name,
       ...b,
       propositions,
+      axioms: this.axiomsFor(name),
       inference: step
         ? {
             op: step.op,

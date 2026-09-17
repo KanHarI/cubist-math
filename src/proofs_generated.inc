@@ -1624,7 +1624,7 @@ proof_tuple p_define_propositional_truncation(tt_engine *e) {
     tt_id trunc_is_trunc_axiom = proof_step(e, TT_Axiom, (tt_id[]){pi_Ux_UUOmega_pi_AUx_is_trunc_trunc_Ux_A_U0__UUKappa_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id B_Ux_context = proof_step(e, TT_CtxExt, (tt_id[]){Ux_UUOmega_judgement}, 1, 0, (tt_id[]){A_Ux_context}, 1, __FILE__, __LINE__);
     tt_id B_Ux_judgement = proof_step(e, TT_Vble, (tt_id[]){0}, 0, B_Ux_context, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id A_arrow_B_Ux_judgement = proof_step(e, TT_PiForm, (tt_id[]){Ux_UUOmega_judgement, B_Ux_judgement}, 2, 0, (tt_id[]){A_Ux_context}, 1, __FILE__, __LINE__);
+    tt_id A_arrow_B_Ux_judgement = proof_step(e, TT_PiForm, (tt_id[]){A_Ux_judgement, B_Ux_judgement}, 2, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
     tt_id is_trunc_Ux_judgement = proof_step(e, TT_PiElim, (tt_id[]){is_trunc, Ux_UUOmega_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id is_trunc_Ux_B_Ux_judgement = proof_step(e, TT_PiElim, (tt_id[]){is_trunc_Ux_judgement, B_Ux_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id A_arrow_B_X_is_trunc_Ux_B_Ux_judgement = proof_step(e, TT_SigmaForm, (tt_id[]){A_arrow_B_Ux_judgement, is_trunc_Ux_B_Ux_judgement}, 2, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);

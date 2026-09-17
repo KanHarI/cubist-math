@@ -289,8 +289,7 @@ try {
     () => document.querySelector("#active-name").textContent === "lib_inv_refl",
   );
   const definitionLink = page
-    .locator("#expression .reference")
-    .filter({ hasText: /^def702$/ });
+    .locator('#expression .reference[data-declaration="s2368_PiIntro"]');
   const definitionTarget =
     await definitionLink.getAttribute("data-declaration");
   assert.equal(definitionTarget, "s2368_PiIntro");
@@ -364,7 +363,7 @@ try {
     await route.fulfill({
       response,
       body: (await response.text()).replace(
-        "MAX_STEPS = 65536",
+        "MAX_STEPS = 1048576",
         "MAX_STEPS = 8192",
       ),
     });
@@ -466,6 +465,7 @@ try {
     await page.locator("#diagnostic").textContent(),
     /Expected Void/,
   );
+  assert.equal(await page.locator("#check-loader").isVisible(), false);
   assert.match(await page.locator("#result").textContent(), /copy_of_two/);
   await page.locator("#editor").fill(checkedSource);
   await page.locator("#check").click();
@@ -494,6 +494,28 @@ try {
     await page.locator("#result").textContent(),
     /3 explicit axioms/,
   );
+  const finalResult = page
+    .locator("#result > div")
+    .filter({
+      has: page.getByRole("button", {
+        name: "fundamental_group_of_circle",
+        exact: true,
+      }),
+    });
+  assert.deepEqual(
+    (
+      await finalResult
+        .locator("[data-axiom]")
+        .evaluateAll((nodes) => nodes.map((n) => n.dataset.axiom))
+    ).sort(),
+    ["lib_funext", "lib_ua_elim", "lib_univalence"],
+  );
+  await finalResult.locator('[data-axiom="lib_funext"]').click();
+  assert.equal(await page.locator("#inspect-name").textContent(), "lib_funext");
+  assert.match(
+    await page.locator("#view-source").getAttribute("href"),
+    /prelude_library_construction&name=lib_funext/,
+  );
   await page
     .locator('#read-source [data-name="FundamentalGroupS1IsZ"]')
     .last()
@@ -521,6 +543,45 @@ try {
     path: fileURLToPath(new URL("../.tools/circle-proof.png", import.meta.url)),
     fullPage: true,
   });
+  for (const [proof, result, expected] of [
+    ["function_counting", "finite_function_equivalence", ["lib_funext"]],
+    ["permutations", "finite_permutation_equivalence", ["lib_funext"]],
+    ["binomial_counting", "finite_binomial_equivalence", ["lib_funext", "lib_Trunc", "lib_trunc_intro", "lib_trunc_is_trunc", "lib_trunc_elim"]],
+  ]) {
+    // Hold worker startup so the initial loader can be inspected reliably.
+    let releaseWorker;
+    const workerGate = new Promise(resolve => { releaseWorker = resolve; });
+    await page.route("**/mathscript/worker.mjs*", async route => {
+      await workerGate;
+      await route.continue();
+    }, { times: 1 });
+    await page.locator("#proof-picker").selectOption(proof);
+    await page.locator("#check-loader:not([hidden])").waitFor();
+    assert.equal(await page.locator("#source-panel").getAttribute("aria-busy"), "true");
+    assert.equal(await page.locator("#check-progress").getAttribute("value"), null);
+    releaseWorker();
+    await page.locator("#check-progress[value]").waitFor({ state: "attached" });
+    await page.locator("#result:not([hidden])").waitFor();
+    await page.locator("#check-loader").waitFor({ state: "hidden" });
+    assert.equal(await page.locator("#source-panel").getAttribute("aria-busy"), "false");
+    const row = page.locator("#result > div").filter({has: page.getByRole("button", {name: result, exact: true})});
+    assert.deepEqual((await row.locator("[data-axiom]").evaluateAll(nodes => nodes.map(n => n.dataset.axiom))).sort(), [...expected].sort());
+    await row.getByRole("button", {name: result, exact: true}).click();
+    assert.equal(await page.locator("#inspect-name").textContent(), result);
+    await page.locator("#view-source").click();
+    assert.match(await page.locator("#read-source .active").textContent(), new RegExp("theorem " + result));
+  }
+  await page.locator('#inspect-axioms [data-axiom="lib_trunc_elim"]').click();
+  assert.equal(await page.locator("#inspect-name").textContent(), "lib_trunc_elim");
+  assert.match(await page.locator("#view-source").getAttribute("href"), /proof=prelude_library_construction&name=lib_trunc_elim/);
+  await page.locator("#view-source").click();
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(await page.locator("#read-source .active").textContent(), /lib_trunc_elim = postulate/);
+  await page.locator("#proof-picker").selectOption("truncation");
+  await page.locator("#result:not([hidden])").waitFor();
+  await page.locator('#read-source [data-name="truncation_elim"]').click();
+  assert.equal(await page.locator("#inspect-name").textContent(), "truncation_elim");
+  assert.match(await page.locator("#view-source").getAttribute("href"), /prelude_library_construction&name=lib_trunc_elim/);
   assert.ok(limitRequests.length > 0);
   assert.ok(limitRequests.every((url) => url.includes("?version=")));
   assert.deepEqual(errors, []);

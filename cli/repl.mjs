@@ -90,6 +90,7 @@ function show(name = active) {
         ? selectedText(v.type, selection.path, v.contextNames)
         : layout(v.type, v.contextNames).text),
   );
+  say("  axioms used: " + (v.axioms.join(", ") || "None"));
   say(
     "  assumptions: " +
       (v.assumptions.map((c) => c.names.join("/") || `c${c.id}`).join(", ") ||

@@ -1,0 +1,144 @@
+import truncation;
+import finite_cancellation;
+import bijection_equality;
+
+// A decidable predicate is represented by a Boolean-valued function.
+def Bool = Unit or Unit;
+def yes = typed(Bool, left(tt));
+def no = typed(Bool, right(tt));
+def Truth(b : Bool) = match b return Type { left u => Unit; right u => Void; };
+def Selected(A : Type, p : A -> Bool) = exists a : A, Truth(p(a));
+
+// Rijke's binomial type: decidable subtypes merely equivalent to B.
+def Binomial(A : Type, B : Type) = exists p : A -> Bool, Mere(Equiv(B, Selected(A, p)));
+// An internal presentation convenient for finite sets; the bridge below checks
+// that using full equivalences or bijections gives equivalent binomial types.
+def FiniteBinomial(n : Nat, k : Nat) = exists p : Fin(n) -> Bool, Mere(Bijection(Fin(k), Selected(Fin(n), p)));
+
+def truth_prop(b : Bool) = match b as c return Proposition(Truth(c)) {
+  left u => fun (x : Unit) => fun (y : Unit) => trans(sym(unit_equal(x)), unit_equal(y));
+  right u => fun (x : Void) => fun (y : Void) => typed((x = y), absurd(x));
+};
+def void_prop(x : Void, y : Void) = typed((x = y), absurd(x));
+
+theorem selected_decidable(A : Type, decide : (forall x : A, forall y : A, Decidable(x = y)), p : A -> Bool,
+  u : Selected(A, p), v : Selected(A, p)) : Decidable(u = v) {
+  let P = fun (x : A) => Truth(p(x));
+  let x = sigma_first(A, P, u);
+  let y = sigma_first(A, P, v);
+  cases decide(x, y) {
+    left h => { exact left(subtype_ext(A, P, (fun (a : A) => truth_prop(p(a))), u, v, h)); }
+    right different => { exact right(fun (h : u = v) => different(cong(sigma_first(A, P), h))); }
+  }
+}
+theorem selected_is_set(A : Type, decide : (forall x : A, forall y : A, Decidable(x = y)), p : A -> Bool) : IsSet(Selected(A, p)) {
+  exact hedberg(Selected(A, p), selected_decidable(A, decide, p));
+}
+
+def subtype_map(A : Type, P : A -> Type, Q : A -> Type, f : (forall x : A, P(x) -> Q(x)), u : (exists x : A, P(x))) =
+  typed((exists x : A, Q(x)), (sigma_first(A, P, u), f(sigma_first(A, P, u), sigma_second(A, P, u))));
+theorem subtype_bijection(A : Type, P : A -> Type, Q : A -> Type,
+  propP : (forall x : A, Proposition(P(x))), propQ : (forall x : A, Proposition(Q(x))),
+  f : (forall x : A, P(x) -> Q(x)), g : (forall x : A, Q(x) -> P(x))) :
+  Bijection((exists x : A, P(x)), (exists x : A, Q(x))) {
+  exact (subtype_map(A, P, Q, f), (subtype_map(A, Q, P, g),
+    ((fun (u : (exists x : A, P(x))) => subtype_ext(A, P, propP, subtype_map(A, Q, P, g, subtype_map(A, P, Q, f, u)), u, refl(sigma_first(A, P, u)))),
+     (fun (v : (exists x : A, Q(x))) => subtype_ext(A, Q, propQ, subtype_map(A, P, Q, f, subtype_map(A, Q, P, g, v)), v, refl(sigma_first(A, Q, v)))))));
+}
+
+theorem finite_binomial_presentation(n : Nat, k : Nat) : Bijection(Binomial(Fin(n), Fin(k)), FiniteBinomial(n, k)) {
+  exact subtype_bijection(Fin(n) -> Bool,
+    (fun (p : Fin(n) -> Bool) => Mere(Equiv(Fin(k), Selected(Fin(n), p)))),
+    (fun (p : Fin(n) -> Bool) => Mere(Bijection(Fin(k), Selected(Fin(n), p)))),
+    (fun (p : Fin(n) -> Bool) => mere_is_prop(Equiv(Fin(k), Selected(Fin(n), p)))),
+    (fun (p : Fin(n) -> Bool) => mere_is_prop(Bijection(Fin(k), Selected(Fin(n), p)))),
+    (fun (p : Fin(n) -> Bool) => mere_map(Equiv(Fin(k), Selected(Fin(n), p)), Bijection(Fin(k), Selected(Fin(n), p)), equiv_bijection(Fin(k), Selected(Fin(n), p)))),
+    (fun (p : Fin(n) -> Bool) => mere_map(Bijection(Fin(k), Selected(Fin(n), p)), Equiv(Fin(k), Selected(Fin(n), p)),
+      bijection_equiv(Fin(k), Selected(Fin(n), p), selected_is_set(Fin(n), fin_decidable(n), p)))));
+}
+
+def predicate_join(A : Type, b : Bool, p : A -> Bool) = function_join(A, Bool, typed(Bool and (A -> Bool), (b, p)));
+def predicate_tail(A : Type, p : (Unit or A) -> Bool, a : A) = p(tail(A, a));
+def predicate_normal(A : Type, p : (Unit or A) -> Bool) = predicate_join(A, p(head(A)), predicate_tail(A, p));
+theorem predicate_eta(A : Type, p : (Unit or A) -> Bool) : predicate_normal(A, p) = p {
+  exact funext(Unit or A, (fun (x : Unit or A) => Bool), predicate_normal(A, p), p, function_join_split_point(A, Bool, p));
+}
+def type_path_bijection(A : Type, B : Type, path : A = B) =
+  path_induction(Type, (fun (X : Type) => fun (Y : Type) => fun (q : X = Y) => Bijection(X, Y)),
+    (fun (X : Type) => identity_bijection(X)), A, B, path);
+
+def selected_normalize(A : Type, p : (Unit or A) -> Bool) =
+  type_path_bijection(Selected(Unit or A, p), Selected(Unit or A, predicate_normal(A, p)),
+    sym(cong(Selected(Unit or A), predicate_eta(A, p))));
+def cardinal_compose(A : Type, B : Type, C : Type, h : Mere(Bijection(A, B)), e : Bijection(B, C)) =
+  mere_map(Bijection(A, B), Bijection(A, C), (fun (d : Bijection(A, B)) => compose_bijection(A, B, C, d, e)), h);
+
+theorem cancel_unit_bijection(A : Type, B : Type, decide : (forall x : B, forall y : B, Decidable(x = y)),
+  e : Bijection(Unit or A, Unit or B)) : Bijection(A, B) {
+  let image = forward(Unit or A, Unit or B, e, head(A));
+  let adjusted = compose_bijection(Unit or A, Unit or B, Unit or B, e, swap_bijection(B, decide, image));
+  exact restrict_bijection(A, B, adjusted, swap_chosen(B, decide, image));
+}
+
+// Selecting the new first alternative adds Unit to the selected subtype;
+// omitting it leaves exactly the old selected subtype.
+def selected_index(A : Type, p : A -> Bool, s : Selected(A, p)) = sigma_first(A, (fun (a : A) => Truth(p(a))), s);
+def selected_witness(A : Type, p : A -> Bool, s : Selected(A, p)) = sigma_second(A, (fun (a : A) => Truth(p(a))), s);
+def selected_true_out_at(A : Type, p : A -> Bool, x : Unit or A) =
+  match x as z return (Truth(predicate_join(A, yes, p, z)) -> (Unit or Selected(A, p))) {
+    left u => fun (h : Unit) => typed(Unit or Selected(A, p), left(u));
+    right a => fun (h : Truth(p(a))) => typed(Unit or Selected(A, p), right(typed(Selected(A, p), (a, h))));
+  };
+def selected_true_out(A : Type, p : A -> Bool, s : Selected(Unit or A, predicate_join(A, yes, p))) =
+  selected_true_out_at(A, p, selected_index(Unit or A, predicate_join(A, yes, p), s), selected_witness(Unit or A, predicate_join(A, yes, p), s));
+def selected_true_in(A : Type, p : A -> Bool, x : Unit or Selected(A, p)) =
+  match x return Selected(Unit or A, predicate_join(A, yes, p)) {
+    left u => (typed(Unit or A, left(u)), tt);
+    right s => (tail(A, selected_index(A, p, s)), selected_witness(A, p, s));
+  };
+def selected_true_index_path(A : Type, p : A -> Bool, x : Unit or A) =
+  match x as z return (forall h : Truth(predicate_join(A, yes, p, z)),
+    selected_index(Unit or A, predicate_join(A, yes, p), selected_true_in(A, p, selected_true_out_at(A, p, z, h))) = z) {
+    left u => fun (h : Unit) => refl(typed(Unit or A, left(u)));
+    right a => fun (h : Truth(p(a))) => refl(tail(A, a));
+  };
+theorem selected_true_left(A : Type, p : A -> Bool, s : Selected(Unit or A, predicate_join(A, yes, p))) :
+  selected_true_in(A, p, selected_true_out(A, p, s)) = s {
+  exact subtype_ext(Unit or A, (fun (x : Unit or A) => Truth(predicate_join(A, yes, p, x))),
+    (fun (x : Unit or A) => truth_prop(predicate_join(A, yes, p, x))), selected_true_in(A, p, selected_true_out(A, p, s)), s,
+    selected_true_index_path(A, p, selected_index(Unit or A, predicate_join(A, yes, p), s), selected_witness(Unit or A, predicate_join(A, yes, p), s)));
+}
+def selected_true_right(A : Type, p : A -> Bool, x : Unit or Selected(A, p)) =
+  match x as z return (selected_true_out(A, p, selected_true_in(A, p, z)) = z) {
+    left u => refl(typed(Unit or Selected(A, p), left(u)));
+    right s => cong((fun (v : Selected(A, p)) => typed(Unit or Selected(A, p), right(v))), sigma_eta(A, (fun (a : A) => Truth(p(a))), s));
+  };
+theorem selected_true(A : Type, p : A -> Bool) : Bijection(Selected(Unit or A, predicate_join(A, yes, p)), Unit or Selected(A, p)) {
+  exact (selected_true_out(A, p), (selected_true_in(A, p), (selected_true_left(A, p), selected_true_right(A, p))));
+}
+
+def selected_false_out_at(A : Type, p : A -> Bool, x : Unit or A) =
+  match x as z return (Truth(predicate_join(A, no, p, z)) -> Selected(A, p)) {
+    left u => fun (h : Void) => typed(Selected(A, p), absurd(h));
+    right a => fun (h : Truth(p(a))) => typed(Selected(A, p), (a, h));
+  };
+def selected_false_out(A : Type, p : A -> Bool, s : Selected(Unit or A, predicate_join(A, no, p))) =
+  selected_false_out_at(A, p, selected_index(Unit or A, predicate_join(A, no, p), s), selected_witness(Unit or A, predicate_join(A, no, p), s));
+def selected_false_in(A : Type, p : A -> Bool, s : Selected(A, p)) =
+  typed(Selected(Unit or A, predicate_join(A, no, p)), (tail(A, selected_index(A, p, s)), selected_witness(A, p, s)));
+def selected_false_index_path(A : Type, p : A -> Bool, x : Unit or A) =
+  match x as z return (forall h : Truth(predicate_join(A, no, p, z)),
+    selected_index(Unit or A, predicate_join(A, no, p), selected_false_in(A, p, selected_false_out_at(A, p, z, h))) = z) {
+    left u => fun (h : Void) => typed((selected_index(Unit or A, predicate_join(A, no, p), selected_false_in(A, p, selected_false_out_at(A, p, typed(Unit or A, left(u)), h))) = typed(Unit or A, left(u))), absurd(h));
+    right a => fun (h : Truth(p(a))) => refl(tail(A, a));
+  };
+theorem selected_false_left(A : Type, p : A -> Bool, s : Selected(Unit or A, predicate_join(A, no, p))) :
+  selected_false_in(A, p, selected_false_out(A, p, s)) = s {
+  exact subtype_ext(Unit or A, (fun (x : Unit or A) => Truth(predicate_join(A, no, p, x))),
+    (fun (x : Unit or A) => truth_prop(predicate_join(A, no, p, x))), selected_false_in(A, p, selected_false_out(A, p, s)), s,
+    selected_false_index_path(A, p, selected_index(Unit or A, predicate_join(A, no, p), s), selected_witness(Unit or A, predicate_join(A, no, p), s)));
+}
+def selected_false_right(A : Type, p : A -> Bool, s : Selected(A, p)) = sigma_eta(A, (fun (a : A) => Truth(p(a))), s);
+theorem selected_false(A : Type, p : A -> Bool) : Bijection(Selected(Unit or A, predicate_join(A, no, p)), Selected(A, p)) {
+  exact (selected_false_out(A, p), (selected_false_in(A, p), (selected_false_left(A, p), selected_false_right(A, p))));
+}

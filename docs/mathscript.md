@@ -8,6 +8,10 @@ elaborator are untrusted: they produce ordinary checked kernel instructions.
 
 Run `make serve`, then open http://127.0.0.1:8088/proof.html. Use **Read** to follow
 names and **Edit** to change the source. Check with the button or Ctrl/Cmd+Enter.
+While checking, the source panel shows a progress bar with completed definitions
+(including imports), the current definition, and the number of kernel steps.
+Audit sources report completed construction statements. The bar measures work
+completed, not estimated time; it clears on success or failure.
 A rejected edit leaves the last checked proof available. Source files can be
 opened and saved; per-proof drafts survive navigation within the browser session.
 
@@ -42,6 +46,30 @@ be written as `fun (x : A) => body`. Application `f(a, b)` is curried.
 `theorem` uses an opaque checked proof definition; `def` remains transparent for
 computation. Both are checked for closure.
 
+Use `opaque def` to keep a checked concept named during ordinary reduction:
+
+```text
+opaque def Permutations(n : Nat) = Bijection(Fin(n), Fin(n));
+opaque def successor(n : Nat) = succ(n);
+def folded = successor(1);
+def opened = unfold(folded); // 2
+```
+
+Opacity controls **definition unfolding (delta reduction)**, not beta reduction:
+`(fun (x : Nat) => succ(x))(1)` still computes. Type conversion can unfold checked
+opaque definitions when necessary to compare types; the resulting judgement is
+restored to the requested named type. `unfold(expression)` explicitly unfolds
+its definitions and normalizes it. This is not a secrecy boundary, and an opaque
+definition is not an axiom. Theorem bodies remain boxed during ordinary checking.
+
+An explicit assumption uses `axiom name(params) : T;`. It has no proof body;
+the kernel checks its type and records an `Axiom` instruction. Every result and
+the inspector list the names of the axioms used by its recorded derivation,
+including dependencies in types and contexts. Click an axiom to inspect it and
+view its source. An imported but unused axiom does not appear in that result's
+list. The module-wide count is displayed separately. The CLI's `show` command
+also lists dependencies.
+
 Types include `forall x : A, B`, `exists x : A, B`, `A -> B`, `A and B`, and
 `A or B`. A pair is `(a, b)`. Its expected type supplies the dependent family;
 `typed(T, expression)` provides an annotation where inference needs one.
@@ -74,6 +102,10 @@ unpack pair as (x, y) return C {
 }
 ```
 
+`pair_induction(C, branch, pair)` performs dependent pair elimination, where
+`C` is a motive on the entire pair and `branch(a, b)` proves `C((a, b))`. Its
+formation, substitution, and assumption discharge use the existing kernel rules.
+
 Equality induction is available as
 `path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
 function of two endpoints and their equality proof. The foundational symmetry,
@@ -99,10 +131,13 @@ claimed mathematical translations of the older catalogue.
 The CLI command `prove FILE.proof` checks the source and opens the result in the
 existing selection/reduction workbench. JSON remains an optional checked replay
 export. Source is limited to 1 MB, nesting to 128, numerals to 256, and compiled
-programs to 131,072 instructions; the kernel's memory and expression bounds still
-apply. The worker is terminated on a 30-second timeout.
+programs to 1,048,576 instructions. The WASM kernel allows 16,777,216 nodes
+per expanded expression, 2,000,000 shared AST nodes, and 500,000 judgements,
+with a 512 MiB memory ceiling and expression depth limited to 256. The worker is terminated on a 30-second timeout.
 
-The mathematical layer currently covers Euclid's entire development. Ports of the
+The mathematical layer covers Euclid, the circle fundamental group, and
+[finite counting](finite_counting.md), including functions, permutations, and
+Rijke binomial types. Ports of the
 older universe-polymorphic and W-type library are still in progress. Dedicated
 calculation blocks, implicit arguments, and editor completion are future work.
 

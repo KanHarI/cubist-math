@@ -520,7 +520,7 @@ test("Euclid is a closed unbounded-primes theorem with no axiom dependencies", a
     assert.throws(() => s.import(broken), /rejected/);
     assert.deepEqual(s.export(), before);
     const oversized = structuredClone(document);
-    oversized.steps = Array(131073).fill(document.steps[0]);
+    oversized.steps = Array(1048577).fill(document.steps[0]);
     assert.throws(() => s.import(oversized), /Unsupported proof/);
   } finally {
     s.dispose();

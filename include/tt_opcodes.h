@@ -66,7 +66,10 @@ typedef enum {
     TT_WIntro = 131,
     TT_WElim = 132,
     TT_WComp = 133,
-    /* Native higher-inductive suspension extension (not upstream opcodes). */
+    TT_BetaReducePointed = 200,
+    TT_BetaReduceGrossKnuth = 201,
+    TT_DefReducePointed = 202,
+    TT_DefBetaReduceGrossKnuth = 203,
     TT_SuspForm = 140,
     TT_SuspNorth = 141,
     TT_SuspSouth = 142,
@@ -75,9 +78,5 @@ typedef enum {
     TT_SuspMeridComp = 145,
     TT_Transport = 146,
     TT_Apd = 147,
-    TT_BetaReducePointed = 200,
-    TT_BetaReduceGrossKnuth = 201,
-    TT_DefReducePointed = 202,
-    TT_DefBetaReduceGrossKnuth = 203,
 } tt_opcode;
 #endif

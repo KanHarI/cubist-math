@@ -86,7 +86,7 @@ construction aoc {
   private s0082_Axiom = postulate(s0081_PiForm);
   private s0083_CtxExt = assume(s0064_UVble, s0065_CtxExt);
   private s0084_Vble = variable(s0083_CtxExt);
-  private s0085_PiForm = function_type(s0064_UVble, s0084_Vble, s0065_CtxExt);
+  private s0085_PiForm = function_type(s0066_Vble, s0084_Vble, none);
   private s0086_PiElim = apply(s0077_DefEqExtL, s0064_UVble);
   private s0087_PiElim = apply(s0086_PiElim, s0084_Vble);
   private s0088_SigmaForm = pair_type(s0085_PiForm, s0087_PiElim, none);

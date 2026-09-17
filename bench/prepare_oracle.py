@@ -7,7 +7,7 @@ from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('baseline',type=Path);a=p.parse_args()
 root=Path(__file__).resolve().parents[1]
 labels=re.findall(r'TT_(\w+) = (\d+)',(root/'include/tt_opcodes.h').read_text())
-arms='\n'.join(f'        {v} => {name}{{}}.into(),' for name,v in labels if name not in ('None','Nop'))
+arms='\n'.join(f'        {v} => {name}{{}}.into(),' for name,v in labels if name not in ('None', 'Nop', 'SuspForm', 'SuspNorth', 'SuspSouth', 'SuspMerid', 'SuspElim', 'SuspMeridComp', 'Transport', 'Apd'))
 source=re.sub(r'//[^\n]*','',(a.baseline/'src/ast/exp.rs').read_text())
 variants=[]
 for m in re.finditer(r'^    (\w+)(?:\s*\{(.*?)\})?\s*,',source,re.M|re.S):

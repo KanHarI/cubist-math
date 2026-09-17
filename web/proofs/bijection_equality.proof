@@ -1,0 +1,117 @@
+import finite;
+
+// Equality of dependent pairs is built from equality of the first components
+// and a path between the transported second components.
+def dependent_pair_path(A : Type, P : A -> Type, x : A, y : A, p : x = y,
+  u : P(x), v : P(y), q : transport(P, x, y, p, u) = v) =
+  path_induction(A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) =>
+      forall h : P(a), forall k : P(b), (transport(P, a, b, r, h) = k) ->
+        (typed((exists z : A, P(z)), (a, h)) = typed((exists z : A, P(z)), (b, k)))),
+    (fun (a : A) => fun (h : P(a)) => fun (k : P(a)) => fun (r : h = k) =>
+      cong((fun (w : P(a)) => typed((exists z : A, P(z)), (a, w))), r)), x, y, p)(u, v, q);
+def sigma_eta(A : Type, P : A -> Type, u : (exists x : A, P(x))) =
+  pair_induction((fun (v : (exists x : A, P(x))) =>
+    typed((exists x : A, P(x)), (sigma_first(A, P, v), sigma_second(A, P, v))) = v),
+    (fun (x : A) => fun (h : P(x)) => refl(typed((exists z : A, P(z)), (x, h)))), u);
+def subtype_pair_path(A : Type, P : A -> Type,
+  prop : (forall x : A, forall h : P(x), forall k : P(x), h = k),
+  x : A, y : A, p : x = y, u : P(x), v : P(y)) =
+  dependent_pair_path(A, P, x, y, p, u, v, prop(y, transport(P, x, y, p, u), v));
+theorem subtype_ext(A : Type, P : A -> Type,
+  prop : (forall x : A, forall h : P(x), forall k : P(x), h = k),
+  u : (exists x : A, P(x)), v : (exists x : A, P(x)), p : sigma_first(A, P, u) = sigma_first(A, P, v)) : u = v {
+  exact trans(sym(sigma_eta(A, P, u)),
+    trans(subtype_pair_path(A, P, prop, sigma_first(A, P, u), sigma_first(A, P, v), p, sigma_second(A, P, u), sigma_second(A, P, v)), sigma_eta(A, P, v)));
+}
+
+def InverseLaws(A : Type, B : Type, f : A -> B, g : B -> A) =
+  (forall x : A, g(f(x)) = x) and (forall y : B, f(g(y)) = y);
+def InverseData(A : Type, B : Type, f : A -> B) = exists g : B -> A, InverseLaws(A, B, f, g);
+
+theorem inverse_laws_prop(A : Type, B : Type, setA : IsSet(A), setB : IsSet(B),
+  f : A -> B, g : B -> A, p : InverseLaws(A, B, f, g), q : InverseLaws(A, B, f, g)) : p = q {
+  let L = forall x : A, g(f(x)) = x;
+  let R = forall y : B, f(g(y)) = y;
+  have left_path : fst(L, R, p) = fst(L, R, q) {
+    exact funext(A, (fun (x : A) => g(f(x)) = x), fst(L, R, p), fst(L, R, q),
+      (fun (x : A) => setA(g(f(x)), x, typed(L, fst(L, R, p))(x), typed(L, fst(L, R, q))(x))));
+  }
+  have right_path : snd(L, R, p) = snd(L, R, q) {
+    exact funext(B, (fun (y : B) => f(g(y)) = y), snd(L, R, p), snd(L, R, q),
+      (fun (y : B) => setB(f(g(y)), y, typed(R, snd(L, R, p))(y), typed(R, snd(L, R, q))(y))));
+  }
+  exact trans(sym(sigma_eta(L, (fun (eta : L) => R), p)),
+    trans(product_path(L, R, fst(L, R, p), fst(L, R, q), left_path, snd(L, R, p), snd(L, R, q), right_path), sigma_eta(L, (fun (eta : L) => R), q)));
+}
+
+theorem inverse_data_prop(A : Type, B : Type, setA : IsSet(A), setB : IsSet(B),
+  f : A -> B, p : InverseData(A, B, f), q : InverseData(A, B, f)) : p = q {
+  let e = typed(Bijection(A, B), (f, p));
+  let d = typed(Bijection(A, B), (f, q));
+  let g = backward(A, B, e);
+  let h = backward(A, B, d);
+  have inverse_path : g = h {
+    exact funext(B, (fun (y : B) => A), g, h,
+      (fun (y : B) => trans(sym(cong(g, right_inverse(A, B, d, y))), left_inverse(A, B, e, h(y)))));
+  }
+  exact subtype_ext(B -> A, InverseLaws(A, B, f), inverse_laws_prop(A, B, setA, setB, f), p, q, inverse_path);
+}
+
+theorem bijection_ext(A : Type, B : Type, setA : IsSet(A), setB : IsSet(B),
+  e : Bijection(A, B), d : Bijection(A, B), same : forward(A, B, e) = forward(A, B, d)) : e = d {
+  exact subtype_ext(A -> B, InverseData(A, B), inverse_data_prop(A, B, setA, setB), e, d, same);
+}
+
+// These proposition lemmas use only function extensionality and path induction.
+def Proposition(A : Type) = forall x : A, forall y : A, x = y;
+theorem proposition_is_set(A : Type, prop : Proposition(A)) : IsSet(A) {
+  exact hedberg(A, (fun (x : A) => fun (y : A) => typed(Decidable(x = y), left(prop(x, y)))));
+}
+def forall_prop(A : Type, P : A -> Type, prop : (forall x : A, Proposition(P(x))), f : (forall x : A, P(x)), g : (forall x : A, P(x))) =
+  funext(A, P, f, g, (fun (x : A) => prop(x, f(x), g(x))));
+theorem sigma_prop(A : Type, P : A -> Type, propA : Proposition(A), propP : (forall x : A, Proposition(P(x))),
+  u : (exists x : A, P(x)), v : (exists x : A, P(x))) : u = v {
+  exact subtype_ext(A, P, propP, u, v, propA(sigma_first(A, P, u), sigma_first(A, P, v)));
+}
+
+theorem coherence_prop(A : Type, B : Type, setB : IsSet(B), f : A -> B, g : B -> A,
+  eta : LeftLaw(A, B, f, g), eps : RightLaw(A, B, f, g)) : Proposition(Coherence(A, B, f, g, eta, eps)) {
+  exact forall_prop(A, (fun (x : A) => typed((f(g(f(x))) = f(x)), ap(A, B, f, g(f(x)), x, eta(x))) = eps(f(x))),
+    (fun (x : A) => proposition_is_set((f(g(f(x))) = f(x)), setB(f(g(f(x))), f(x)),
+      ap(A, B, f, g(f(x)), x, eta(x)), eps(f(x)))));
+}
+
+theorem half_adjoint_laws_prop(A : Type, B : Type, setA : IsSet(A), setB : IsSet(B),
+  f : A -> B, g : B -> A) : Proposition(HalfAdjointLaws(A, B, f, g)) {
+  let L = LeftLaw(A, B, f, g);
+  let R = RightLaw(A, B, f, g);
+  exact sigma_prop(L, (fun (eta : L) => exists eps : R, Coherence(A, B, f, g, eta, eps)),
+    forall_prop(A, (fun (x : A) => g(f(x)) = x), (fun (x : A) => setA(g(f(x)), x))),
+    (fun (eta : L) => sigma_prop(R, Coherence(A, B, f, g, eta),
+      forall_prop(B, (fun (y : B) => f(g(y)) = y), (fun (y : B) => setB(f(g(y)), y))), coherence_prop(A, B, setB, f, g, eta))));
+}
+
+theorem is_equiv_prop(A : Type, B : Type, setA : IsSet(A), setB : IsSet(B),
+  f : A -> B, p : IsEquiv(A, B, f), q : IsEquiv(A, B, f)) : p = q {
+  let e = equiv_bijection(A, B, typed(Equiv(A, B), (f, p)));
+  let d = equiv_bijection(A, B, typed(Equiv(A, B), (f, q)));
+  let g = backward(A, B, e);
+  let h = backward(A, B, d);
+  have inverse_path : g = h {
+    exact funext(B, (fun (y : B) => A), g, h,
+      (fun (y : B) => trans(sym(cong(g, right_inverse(A, B, d, y))), left_inverse(A, B, e, h(y)))));
+  }
+  exact subtype_ext(B -> A, HalfAdjointLaws(A, B, f), half_adjoint_laws_prop(A, B, setA, setB, f), p, q, inverse_path);
+}
+
+theorem equivalence_ext(A : Type, B : Type, setA : IsSet(A), setB : IsSet(B),
+  e : Equiv(A, B), d : Equiv(A, B), same : equivalence_function(A, B, e) = equivalence_function(A, B, d)) : e = d {
+  exact subtype_ext(A -> B, IsEquiv(A, B), is_equiv_prop(A, B, setA, setB), e, d, same);
+}
+
+theorem equivalences_are_bijections(A : Type, B : Type, setA : IsSet(A), setB : IsSet(B)) : Bijection(Equiv(A, B), Bijection(A, B)) {
+  exact (equiv_bijection(A, B), (bijection_equiv(A, B, setB),
+    ((fun (e : Equiv(A, B)) => equivalence_ext(A, B, setA, setB, bijection_equiv(A, B, setB, equiv_bijection(A, B, e)), e, refl(equivalence_function(A, B, e)))),
+     (fun (d : Bijection(A, B)) => bijection_ext(A, B, setA, setB, equiv_bijection(A, B, bijection_equiv(A, B, setB, d)), d, refl(forward(A, B, d)))))));
+}

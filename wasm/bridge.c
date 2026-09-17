@@ -26,10 +26,10 @@ uint32_t wb_new(unsigned axioms) {
             config.allow_axioms = axioms != 0;
             /* Higher path equalities repeat their endpoint types in the tree view.
              * Arena, depth, judgement, and WASM memory bounds still apply. */
-            config.max_expression_nodes = 65536;
-            config.max_ast_nodes = 500000;
-            config.max_judgements = 100000;
-            config.max_counter = 4096;
+            config.max_expression_nodes = 16777216;
+            config.max_ast_nodes = 2000000;
+            config.max_judgements = 500000;
+            config.max_counter = 16384;
             tt_engine *engine = tt_new(&config);
             if (!engine)
                 return 0;

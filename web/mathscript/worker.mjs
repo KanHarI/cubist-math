@@ -21,7 +21,9 @@ self.onmessage = ({ data: { id, command, args } }) => {
   try {
     let result;
     if (command === "check") {
-      const next = compile(module, args.source, library);
+      const next = compile(module, args.source, library, {
+        onProgress: progress => self.postMessage({ id, progress }),
+      });
       checked?.kernel.dispose();
       checked = next;
       const { kernel, ...metadata } = next;

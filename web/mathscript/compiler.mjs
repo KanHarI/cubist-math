@@ -8,9 +8,9 @@ import { MAX_STEPS } from "../language.mjs";
 // Bidirectional elaboration into the existing checked instruction language.
 // Type descriptors carry checked judgements and closures for dependent binders;
 // they never manufacture kernel nodes or bypass conversion/type checking.
-export function compile(module, source, library) {
+export function compile(module, source, library, { onProgress } = {}) {
   if (/^\s*(?:\/\/[^\n]*\n\s*)*construction\b/.test(source))
-    return compileConstruction(module, source);
+    return compileConstruction(module, source, { onProgress });
   const program = parse(source);
   const sources =
     typeof library === "string" ? { primes: library } : (library ?? {});
@@ -48,9 +48,12 @@ export function compile(module, source, library) {
     visited.add(name);
   }
   for (const name of program.imports) visit(name);
+  const sourceDeclarations = [...importedDeclarations, ...program.declarations];
+  const usesDeclaredAxioms = sourceDeclarations.some(d => d.kind === "axiom");
+  const usesTruncation = sourceDeclarations.some(d => /"name":"truncation(?:_intro|_prop|_elim)?"/.test(JSON.stringify(d)));
   const b = new Builder(module, {
     loadLibrary: false,
-    allowAxioms: usesPrelude,
+    allowAxioms: usesPrelude || usesDeclaredAxioms,
   });
   const links = [],
     steps = [],
@@ -78,6 +81,8 @@ export function compile(module, source, library) {
       ["lib_univalence", "lib_ua_elim", "lib_funext", "lib_isEquiv"].forEach(
         need,
       );
+      if (usesTruncation)
+        ["lib_Trunc", "lib_trunc_intro", "lib_trunc_is_trunc", "lib_trunc_elim"].forEach(need);
       for (const step of preludeLibrary.steps)
         if (needed.has(step.name)) b.k.apply(step);
     }
@@ -256,6 +261,20 @@ export function compile(module, source, library) {
       try {
         return { ...value, binding: b.coerce(value.binding, T.j), type: T };
       } catch (error) {
+        // Definitions remain boxed during ordinary normalization. Conversion
+        // may unfold their checked bodies when needed, and restores the named
+        // target type with an explicit definitional-equality witness.
+        if (b.opaque && error.message === "Conversion types differ") {
+          try {
+            return {
+              ...value,
+              binding: b.coerceDefinitions(value.binding, T.j),
+              type: T,
+            };
+          } catch (expandedError) {
+            error = expandedError;
+          }
+        }
         throw new Error(
           `Expected ${T.pretty}; got ${value.type.pretty}. ${error.message}`,
         );
@@ -484,6 +503,10 @@ export function compile(module, source, library) {
               "lib_ua_elim",
               "Transport along univalence equals the equivalence function",
             ],
+            truncation: ["lib_Trunc", "Type -> Type"],
+            truncation_intro: ["lib_trunc_intro", "A -> Mere(A)"],
+            truncation_prop: ["lib_trunc_is_trunc", "IsProp(Mere(A))"],
+            truncation_elim: ["lib_trunc_elim", "IsProp(P) -> (A -> P) -> Mere(A) -> P"],
             funext: [
               "lib_funext",
               "Pointwise equality implies function equality",
@@ -860,6 +883,20 @@ export function compile(module, source, library) {
         b.opaque = previous;
       }
     }
+    // Open only the library signature. User arguments may contain opaque
+    // proof definitions and must retain their names when the axiom is applied.
+    function preludeAxiom(name) {
+      return withPrelude(() => {
+        let current = op("HighType", [name]);
+        for (let i = 0; i < 100; i++) {
+          const next = op("DefBetaReduceGrossKnuth", [current]);
+          if (b.view(current, 1) === b.view(next, 1))
+            return op("UnHigh", [next]);
+          current = next;
+        }
+        throw new Error(`Prelude signature did not normalize: ${name}`);
+      });
+    }
     function nativeEquivalence(A, B, value) {
       const arrow = b.arrow(A.j, B.j),
         f = b.fresh(arrow),
@@ -992,21 +1029,106 @@ export function compile(module, source, library) {
             ),
           ),
           h = check(args[4], e, H);
-        return withPrelude(() =>
-          val(
-            b.app(
-              "lib_funext",
-              op("UCumulOmega", [U]),
-              A.j,
-              B.binding,
-              f.binding,
-              g.binding,
-              h.binding,
-            ),
-            atom(b.eq(F.j, f.binding, g.binding), "function equality"),
-            "function extensionality",
+        // Unfold the library signature before specializing it. Unfolding the
+        // whole application would also expand opaque user definitions inside
+        // its arguments and change the endpoints of the resulting equality.
+        const axiom = preludeAxiom("lib_funext");
+        return val(
+          b.app(
+            axiom,
+            op("UCumulOmega", [U]),
+            A.j,
+            B.binding,
+            f.binding,
+            g.binding,
+            h.binding,
           ),
+          atom(b.eq(F.j, f.binding, g.binding), "function equality"),
+          "function extensionality",
         );
+      },
+      // Dependent elimination of a pair. All formation, branch substitution,
+      // and discharge checks are performed by the existing Sigma rules.
+      pair_induction(args, e) {
+        arity(args, 3, "pair_induction");
+        const C = infer(args[0], e),
+          p = infer(args[2], e),
+          T = p.type;
+        if (T.kind !== "sigma")
+          throw new Error("pair_induction requires a dependent pair.");
+        const z = b.fresh(T.j),
+          x = b.fresh(T.domain.j),
+          vx = val(x.v, T.domain, "first"),
+          B = T.body(vx),
+          y = b.fresh(B.j),
+          vy = val(y.v, B, "second"),
+          a = b.fresh(T.domain.j),
+          family = T.body(val(a.v, T.domain, "index")),
+          pair = val(
+            op(
+              "SigmaIntro",
+              [x.v, family.j, b.coerce(y.v, b.subst(family.j, a, x.v))],
+              [a.c],
+            ),
+            T,
+            "pair",
+          ),
+          motive = represented(apply(C, [val(z.v, T, "pair")])),
+          branch = apply(infer(args[1], e), [vx, vy]);
+        return val(
+          norm(
+            op(
+              "SigmaElim",
+              [
+                motive.j,
+                b.coerce(branch.binding, b.subst(motive.j, z, pair.binding)),
+                p.binding,
+              ],
+              [z.c, x.c, y.c],
+            ),
+          ),
+          represented(apply(C, [p])),
+          "pair induction",
+        );
+      },
+      truncation(args, e) {
+        arity(args, 1, "truncation");
+        const A = asType(args[0], e);
+        return withPrelude(() => {
+          const j = b.app("lib_Trunc", op("UCumulOmega", [U]), A.j);
+          return val(j, type, `Mere(${A.pretty})`, {representedType: atom(j, `Mere(${A.pretty})`)});
+        });
+      },
+      truncation_intro(args, e) {
+        arity(args, 2, "truncation_intro");
+        const A = asType(args[0], e), a = check(args[1], e, A);
+        return withPrelude(() => {
+          const T = b.app("lib_Trunc", op("UCumulOmega", [U]), A.j);
+          return val(b.app("lib_trunc_intro", op("UCumulOmega", [U]), A.j, a.binding), atom(T, `Mere(${A.pretty})`), "truncation introduction");
+        });
+      },
+      truncation_prop(args, e) {
+        arity(args, 1, "truncation_prop");
+        const A = asType(args[0], e);
+        return withPrelude(() => {
+          const j = b.app("lib_Trunc", op("UCumulOmega", [U]), A.j), T = atom(j, `Mere(${A.pretty})`),
+            P = pi(T, x => pi(T, y => equalityType(T, x, y)));
+          return val(b.coerce(b.app("lib_trunc_is_trunc", op("UCumulOmega", [U]), A.j), P.j), P, "truncation is a proposition");
+        });
+      },
+      truncation_elim(args, e) {
+        arity(args, 4, "truncation_elim");
+        const A = asType(args[0], e),
+          P = asType(args[1], e),
+          isProp = pi(P, x => pi(P, y => equalityType(P, x, y))),
+          proposition = check(args[2], e, isProp),
+          f = check(args[3], e, pi(A, () => P)),
+          axiom = preludeAxiom("lib_trunc_elim"),
+          // The prelude packages the map and proposition evidence as a pair.
+          premise = op("SigmaIntro", [f.binding, isProp.j, proposition.binding], [null]),
+          result = b.app(axiom, op("UCumulOmega", [U]), A.j, P.j, premise),
+          mereA = atom(b.app("lib_Trunc", op("UCumulOmega", [U]), A.j), `Mere(${A.pretty})`);
+        return val(result, pi(mereA, () => P), "truncation elimination");
       },
       unit_induction(args, e) {
         arity(args, 3, "unit_induction");
@@ -1198,6 +1320,22 @@ export function compile(module, source, library) {
           ),
           "suspension meridian computation",
         );
+      },
+      unfold(args, e) {
+        arity(args, 1, "unfold");
+        const value = infer(args[0], e),
+          previous = b.opaque;
+        b.opaque = false;
+        try {
+          return val(
+            norm(value.binding),
+            mapType(value.type, norm),
+            value.display,
+            mapMeta(value, norm),
+          );
+        } finally {
+          b.opaque = previous;
+        }
       },
       typed(args, e) {
         arity(args, 2, "typed");
@@ -1436,6 +1574,16 @@ export function compile(module, source, library) {
       ...(importedProgram?.declarations ?? []),
       ...program.declarations,
     ];
+    let completedDeclarations = 0;
+    const reportProgress = () => onProgress?.({
+      unit: "definitions",
+      completed: completedDeclarations,
+      total: allDeclarations.length,
+      current: allDeclarations[completedDeclarations]?.name.text ?? "",
+      instructions: b.k.steps.length,
+    });
+    b.progress = reportProgress;
+    reportProgress();
     for (const decl of allDeclarations) {
       recording = !decl.library;
       if (!decl.library && !libraryCount) {
@@ -1482,13 +1630,14 @@ export function compile(module, source, library) {
         const value = infer(decl.value, env),
           T = value.type;
         let result = convert(value, T).binding;
-        if (decl.kind === "theorem")
+        if (decl.kind === "theorem" || decl.opaque)
           result = op("DefEqExtL", [op("Def", [result])]);
         const binding = b.named(result, decl.name.text),
           proposition = b.named(T.j, decl.name.text + "_type");
         if (!b.k.verify(proposition, binding))
           throw new Error(`The kernel did not verify ${decl.name.text}.`);
         const named = { ...value, binding, display: decl.name.text };
+        if (decl.opaque) b.boxedDefinitions.add(b.view(binding, 0));
         env.set(decl.name.text, named);
         record(decl.name, named, decl.kind);
         (decl.library ? importedOutputs : outputs).push({
@@ -1504,6 +1653,8 @@ export function compile(module, source, library) {
           sourceModule: decl.library || undefined,
           instructions: b.k.steps.length - start,
         });
+        completedDeclarations++;
+        reportProgress();
         continue;
       }
       const T = declaredType(decl.params, env);
@@ -1521,16 +1672,19 @@ export function compile(module, source, library) {
           decl.name.text,
         );
       }
-      const v = convert(prove(decl.params, env), T),
+      const v = decl.kind === "axiom"
+          ? val(op("Axiom", [T.j], [], null, decl.name.text), T, decl.name.text)
+          : convert(prove(decl.params, env), T),
         proof =
-          decl.kind === "theorem"
+          (decl.kind === "theorem" || decl.opaque)
             ? op("DefEqExtL", [op("Def", [v.binding])])
             : v.binding,
-        binding = b.named(proof, decl.name.text),
+        binding = decl.kind === "axiom" ? v.binding : b.named(proof, decl.name.text),
         proposition = b.named(T.j, decl.name.text + "_type");
       if (!b.k.verify(proposition, binding))
         throw new Error(`The kernel did not verify ${decl.name.text}.`);
       const named = val(binding, T, decl.name.text);
+      if (decl.opaque) b.boxedDefinitions.add(b.view(binding, 0));
       env.set(decl.name.text, named);
       record(decl.name, named, decl.kind);
       (decl.library ? importedOutputs : outputs).push({
@@ -1545,6 +1699,8 @@ export function compile(module, source, library) {
         end: decl.end,
         instructions: b.k.steps.length - start,
       });
+      completedDeclarations++;
+      reportProgress();
     }
     if (!outputs.length) throw new Error("Write at least one def or theorem.");
     if (b.k.steps.length > MAX_STEPS)
@@ -1558,9 +1714,11 @@ export function compile(module, source, library) {
       step.hidden = !visible.has(step.name);
       b.k.bindings.get(step.name).hidden = step.hidden;
     }
+    for (const output of [...outputs, ...importedOutputs])
+      output.axioms = b.k.axiomsFor(output.binding);
     return {
       kernel: b.k,
-      allowAxioms: usesPrelude,
+      allowAxioms: usesPrelude || usesDeclaredAxioms,
       axiomCount: b.k.steps.filter((s) => s.op === "Axiom").length,
       mode: "mathematical",
       source,

@@ -85,7 +85,7 @@ export const constructors = {
   DefBetaReduceGrossKnuth: "unfold_pass",
 };
 
-export function compileConstruction(module, source) {
+export function compileConstruction(module, source, { onProgress } = {}) {
   const ts = tokenize(source);
   let i = 0,
     kernel;
@@ -123,7 +123,16 @@ export function compileConstruction(module, source) {
       kernel.metadata.map((m) => [constructors[m.name], m]),
     );
     const byName = new Map();
+    const totalStatements = ts.slice(i).filter(t => t.text === ";").length;
+    const reportProgress = () => onProgress?.({
+      unit: "steps",
+      completed: kernel.steps.length + checks.length,
+      total: totalStatements,
+      current: "",
+      instructions: kernel.steps.length,
+    });
     while (ts[i].text !== "}") {
+      if ((kernel.steps.length + checks.length) % 64 === 0) reportProgress();
       if (steps.length >= MAX_STEPS + 100)
         throw new Error("Too many construction statements.");
       const t = take();
@@ -232,6 +241,7 @@ export function compileConstruction(module, source) {
           instructions: 1,
         });
     }
+    reportProgress();
     take("}");
     take("EOF");
     if (!outputs.length)
@@ -247,6 +257,7 @@ export function compileConstruction(module, source) {
         b.kind === "context" ? 0 : 1,
       );
       output.type = layout(kernel.tree(id, { left: 80, maxDepth: 12 })).text;
+      output.axioms = kernel.axiomsFor(output.binding);
       output.verified = checks.some((c) => c.proof === output.binding);
     }
     return {

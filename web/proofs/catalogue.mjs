@@ -384,7 +384,7 @@ export default [
   },
   {
     "id": "wnat_equiv",
-    "title": "WNat ≃ Nat (isEquiv)",
+    "title": "WNat \u2243 Nat (isEquiv)",
     "file": "wnat_equiv.thth.json",
     "source": "tools/proofs/wnat_equiv.mjs",
     "steps": 1910,

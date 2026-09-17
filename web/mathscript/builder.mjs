@@ -9,6 +9,7 @@ export class Builder {
     if (loadLibrary) for (const s of library.steps) this.k.apply(s);
     this.serial = 0;
     this.normal = new Map();
+    this.boxedDefinitions = new Set();
   }
   emit(op, args = [], free = [], context = null, name = null) {
     if (this.maxSteps && this.k.steps.length >= this.maxSteps)
@@ -30,6 +31,7 @@ export class Builder {
       );
       throw new Error(e.message);
     }
+    if (this.progress && (this.k.steps.length & 1023) === 0) this.progress();
     return name;
   }
   view(name, field) {
@@ -118,6 +120,54 @@ export class Builder {
     witness = this.emit("DefEqSwp", [witness]);
     return this.emit("UnHigh", [
       this.emit("HighSubs", [this.emit("HighType", [term]), witness]),
+    ]);
+  }
+  // Definition-aware conversion reduces the TYPE of the proof, never the
+  // proof body itself. A highlighted equality witness restores the original
+  // named target type after comparison, preserving boxed theorem terms.
+  coerceDefinitions(term, T) {
+    if (!this.boxedDefinitions.size) throw new Error("Conversion types differ");
+    const findDefinition = (id, seen = new Set()) => {
+      if (this.boxedDefinitions.has(id)) return [];
+      if (seen.has(id)) return null;
+      seen.add(id);
+      const node = this.k.node(id);
+      for (let i = 0; i < node.children.length; i++) {
+        const path = findDefinition(node.children[i], seen);
+        if (path) return [i, ...path];
+      }
+      return null;
+    };
+    const reduceAt = (binding, side, path = []) => {
+      let current = binding;
+      for (let i = 0; i < 4096; i++) {
+        current = this.emit(side ? "HighType" : "HighExp", [current]);
+        for (const child of path) current = this.emit(`High${child}`, [current]);
+        const beta = this.emit("BetaReduceGrossKnuth", [current]);
+        if (this.view(beta, side) !== this.view(current, side)) {
+          current = beta;
+          continue;
+        }
+        current = beta;
+        let root = this.view(current, side);
+        for (const child of path) root = this.k.node(root).children[child];
+        const next = findDefinition(root);
+        if (!next) return this.emit("UnHigh", [current]);
+        for (const child of next) current = this.emit(`High${child}`, [current]);
+        current = this.emit("DefReducePointed", [current]);
+      }
+      throw new Error("Definition conversion did not converge");
+    };
+    const converted = reduceAt(term, 1),
+      target = reduceAt(T, 0);
+    if (this.view(converted, 1) !== this.view(target, 0))
+      throw new Error("Conversion types differ");
+    const witness = reduceAt(this.emit("DefEqRefl", [T]), 0, [1]);
+    return this.emit("UnHigh", [
+      this.emit("HighSubs", [
+        this.emit("HighType", [converted]),
+        this.emit("DefEqSwp", [witness]),
+      ]),
     ]);
   }
   subst(body, x, value) {

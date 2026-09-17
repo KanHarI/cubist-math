@@ -26,6 +26,9 @@ fn contains_ind_w(ast:&ExpAst)->bool {match ast {
 }}
 fn main(){
     let file=std::env::args().nth(1).expect("trace path");
+    // Backported Rust kernels can check the computation steps that the original
+    // 2025 source could not. Default mode retains historical compatibility.
+    let corrected=std::env::args().any(|arg|arg=="--corrected-kernel");
     let lines=BufReader::new(std::fs::File::open(file).unwrap()).lines();
     let mut store=SimpleGraphStore::new();
     let mut js:HashMap<u32,JudgementHash>=HashMap::new();
@@ -49,7 +52,7 @@ fn main(){
             js.get(id).and_then(|hash|store.lookup_judgement(hash))
                 .map(|j|contains_ind_w(&j.expression)||contains_ind_w(&j._type)).unwrap_or(false)
         });
-        if op==133||op==113||corrected_w_beta||ji.iter().any(|x|skipped_ids.contains(x)){
+        if (!corrected&&(op==133||op==113||corrected_w_beta))||ji.iter().any(|x|skipped_ids.contains(x)){
             if result!=0&&!js.contains_key(&result){skipped_ids.insert(result);}skipped+=1;continue;
         }
         if status==2{skipped+=1;continue;}

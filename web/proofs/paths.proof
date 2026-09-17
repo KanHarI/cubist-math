@@ -23,7 +23,7 @@ def IsEquiv(A : Type, B : Type, f : A -> B) =
   exists eta : (forall x : A, g(f(x)) = x),
   exists epsilon : (forall y : B, f(g(y)) = y),
   forall x : A,
-    ap(A, B, f, g(f(x)), x, eta(x)) = epsilon(f(x));
+    typed((f(g(f(x))) = f(x)), ap(A, B, f, g(f(x)), x, eta(x))) = epsilon(f(x));
 
 def Equiv(A : Type, B : Type) = exists f : A -> B, IsEquiv(A, B, f);
 

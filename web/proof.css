@@ -467,3 +467,41 @@ select {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+.axiom-dependencies {
+  display: block;
+  margin: 0.45rem 0 0.8rem;
+  font-size: 0.85rem;
+  color: var(--muted, #607368);
+}
+
+.check-loader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 120px;
+  padding: 24px;
+  margin: 16px 0;
+  border: 1px solid #d7e3d7;
+  border-radius: 8px;
+  background: #f1f6ee;
+}
+.check-loader[hidden] { display: none; }
+.check-loader p { margin: 4px 0 0; color: #607368; }
+.check-spinner {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border: 3px solid #d0dfce;
+  border-top-color: #426c47;
+  border-radius: 50%;
+  animation: checking-spin 0.9s linear infinite;
+}
+@keyframes checking-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .check-spinner { animation: none; }
+}
+
+.check-loader > div { flex: 1; min-width: 0; }
+#check-detail { overflow-wrap: anywhere; }
+#check-progress { display: block; width: 100%; height: 10px; margin-top: 12px; accent-color: #426c47; }

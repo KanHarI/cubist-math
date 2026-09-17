@@ -66,6 +66,12 @@ The [circle development](docs/circle_fundamental_group.md) constructs
 integer addition. Its proof and supporting lemmas are high-level source; the C
 extension implements general suspension rules only.
 
+The [finite counting development](docs/finite_counting.md) constructs `Fin(n)`
+from sums of Unit and proves the binomial, permutation (`k!`), and function
+(`m^n`, including `k^k`) counts. Open `?proof=binomial_counting`,
+`?proof=permutations`, or `?proof=function_counting` in the source explorer.
+Each result lists its own axiom dependencies, with links to their declarations.
+
 The [Euclid argument](web/proofs/euclid.proof) imports its
 [arithmetic and prime-number foundations](web/proofs/primes.proof), all checked
 from mathematical source without axioms. [Basic examples](web/proofs/basics.proof)

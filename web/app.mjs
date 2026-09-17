@@ -341,6 +341,15 @@ function renderInspector() {
   $("object-kind").textContent = view.axiom ? "explicit axiom" : view.kind;
   renderTree($("expression"), view.expression, "expression");
   renderTree($("type"), view.type, "type");
+  $("used-axioms").replaceChildren();
+  if (!view.axioms.length) $("used-axioms").textContent = "None";
+  for (const [index, name] of view.axioms.entries()) {
+    if (index) $("used-axioms").append(document.createTextNode(", "));
+    const button = document.createElement("button");
+    button.textContent = name;
+    button.onclick = () => navigate(name).catch(error);
+    $("used-axioms").append(button);
+  }
   $("assumptions").textContent =
     view.assumptions.map((c) => c.names.join(" / ") || `c${c.id}`).join(", ") ||
     "None — closed";

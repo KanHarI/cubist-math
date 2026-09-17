@@ -341,19 +341,22 @@ export function parse(source, typeOnly = false) {
     take(";");
   }
   while (peek() !== "EOF") {
-    const t = take();
-    if (!["theorem", "def"].includes(t.text))
-      throw Object.assign(new Error("Expected theorem or def."), {
+    let t = take();
+    const opaque = t.text === "opaque";
+    if (opaque) t = take("def");
+    if (!["theorem", "def", "axiom"].includes(t.text))
+      throw Object.assign(new Error("Expected theorem, def, or axiom."), {
         offset: t.start,
       });
     const n = name(),
       params = [];
-    if (peek() === "=") {
+    if (peek() === "=" && t.text !== "axiom") {
       take("=");
       const value = expr();
       const end = take(";").end;
       declarations.push({
         kind: t.text,
+        opaque,
         name: n,
         value,
         params,
@@ -375,7 +378,7 @@ export function parse(source, typeOnly = false) {
       }
       take(")");
     }
-    if (peek() === "=") {
+    if (peek() === "=" && t.text !== "axiom") {
       take("=");
       let value = expr();
       const end = take(";").end;
@@ -390,6 +393,7 @@ export function parse(source, typeOnly = false) {
         };
       declarations.push({
         kind: t.text,
+        opaque,
         name: n,
         value,
         params: [],
@@ -399,10 +403,11 @@ export function parse(source, typeOnly = false) {
       continue;
     }
     take(":");
-    const type = expr(),
-      body = block();
+    const type = expr();
+    const body = t.text === "axiom" ? (take(";"), null) : block();
     declarations.push({
       kind: t.text,
+      opaque,
       name: n,
       params,
       type,

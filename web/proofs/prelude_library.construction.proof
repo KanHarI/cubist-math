@@ -94,7 +94,7 @@ construction prelude_library {
   private s0090_Axiom = postulate(s0089_PiForm);
   private s0091_CtxExt = assume(s0072_UVble, s0073_CtxExt);
   private s0092_Vble = variable(s0091_CtxExt);
-  private s0093_PiForm = function_type(s0072_UVble, s0092_Vble, s0073_CtxExt);
+  private s0093_PiForm = function_type(s0074_Vble, s0092_Vble, none);
   private s0094_PiElim = apply(s0085_DefEqExtL, s0072_UVble);
   private s0095_PiElim = apply(s0094_PiElim, s0092_Vble);
   private s0096_SigmaForm = pair_type(s0093_PiForm, s0095_PiElim, none);
@@ -151,7 +151,7 @@ construction prelude_library {
   private s0147_Axiom = postulate(s0146_PiForm);
   private s0148_CtxExt = assume(s0129_UVble, s0130_CtxExt);
   private s0149_Vble = variable(s0148_CtxExt);
-  private s0150_PiForm = function_type(s0129_UVble, s0149_Vble, s0130_CtxExt);
+  private s0150_PiForm = function_type(s0131_Vble, s0149_Vble, none);
   private s0151_PiElim = apply(s0142_DefEqExtL, s0129_UVble);
   private s0152_PiElim = apply(s0151_PiElim, s0149_Vble);
   private s0153_SigmaForm = pair_type(s0150_PiForm, s0152_PiElim, none);
@@ -255,7 +255,7 @@ construction prelude_library {
   export lib_trunc_is_trunc = postulate(s0250_PiForm);
   private s0252_CtxExt = assume(s0233_UVble, s0234_CtxExt);
   private s0253_Vble = variable(s0252_CtxExt);
-  private s0254_PiForm = function_type(s0233_UVble, s0253_Vble, s0234_CtxExt);
+  private s0254_PiForm = function_type(s0235_Vble, s0253_Vble, none);
   private s0255_PiElim = apply(lib_IsTrunc, s0233_UVble);
   private s0256_PiElim = apply(s0255_PiElim, s0253_Vble);
   private s0257_SigmaForm = pair_type(s0254_PiForm, s0256_PiElim, none);

@@ -1,5 +1,16 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "binomial_counting", title: "Binomial types · finite cardinality" },
+  { id: "permutations", title: "Permutations · factorials" },
+  { id: "binomial_types", title: "Binomial types · Rijke construction" },
+  { id: "binomial_pascal", title: "Binomial types · Pascal bijection" },
+  { id: "truncation", title: "Propositional truncation · explicit principles" },
+  { id: "finite_cancellation", title: "Finite types · cancellation and cardinality" },
+  { id: "bijection_equality", title: "Bijections · equality and coherence" },
+  { id: "function_counting", title: "Finite functions · powers" },
+  { id: "binomial", title: "Subsets · Pascal counting" },
+  { id: "finite", title: "Finite types · sums of Unit" },
+  { id: "equivalences", title: "Bijections · reusable constructions" },
   { id: "groups", title: "Groups · structures and isomorphisms" },
   { id: "sets", title: "Sets · decidable equality" },
   { id: "circle", title: "Circle · fundamental group is Z" },
@@ -105,7 +116,28 @@ $("proof-picker").onchange = () => {
 };
 addEventListener("pagehide", rememberDraft);
 
+function showChecking(active, message = "Checking proof…") {
+  $("check-loader").hidden = !active;
+  $("source-panel").setAttribute("aria-busy", String(active));
+  $("check-message").textContent = message;
+  if (active) {
+    $("check-progress").removeAttribute("value");
+    $("check-detail").textContent = "Loading definitions and checking the proof.";
+  }
+}
+function checkingProgress(progress) {
+  const { completed, total, current, unit, instructions } = progress;
+  $("check-progress").max = Math.max(1, total);
+  $("check-progress").value = completed;
+  $("check-message").textContent = total && completed === total
+    ? "Preparing checked results…"
+    : "Checking proof…";
+  $("check-detail").textContent =
+    `${completed} of ${total} ${unit} checked${current ? ` · ${current}` : ""}` +
+    (instructions ? ` · ${instructions.toLocaleString()} kernel steps` : "");
+}
 function diagnostic(e) {
+  showChecking(false);
   $("diagnostic").hidden = false;
   $("diagnostic").textContent = e.message || String(e);
 }
@@ -149,6 +181,7 @@ function request(command, args = {}) {
   });
 }
 async function check() {
+  showChecking(true);
   if (await refreshCompiler()) return;
   $("diagnostic").hidden = true;
   const source = $("editor").value;
@@ -176,6 +209,8 @@ async function check() {
       $("editor").focus();
       $("editor").setSelectionRange(e.offset, e.offset + 1);
     }
+  } finally {
+    showChecking(false);
   }
   refreshStatus();
 }
@@ -269,6 +304,49 @@ function renderLibrary() {
     $("definitions").append(button);
   }
 }
+const axiomLabels = {
+  lib_univalence: "Univalence",
+  lib_ua_elim: "Univalence transport computation",
+  lib_funext: "Function extensionality",
+  lib_funext_compute: "Function extensionality computation",
+  lib_LEM: "Excluded middle",
+  lib_AOC: "Axiom of choice",
+  lib_Trunc: "Propositional truncation",
+  lib_trunc_intro: "Truncation introduction",
+  lib_trunc_elim: "Truncation elimination",
+  lib_trunc_is_trunc: "Truncation is a proposition",
+};
+function renderAxioms(target, axioms) {
+  target.replaceChildren(document.createTextNode("Axioms used: "));
+  if (!axioms.length) {
+    target.append("None");
+    return;
+  }
+  for (const [index, binding] of axioms.entries()) {
+    if (index) target.append(document.createTextNode(", "));
+    const button = document.createElement("button");
+    button.className = "reference";
+    button.dataset.axiom = binding;
+    button.textContent = axiomLabels[binding] ?? binding;
+    button.title = `Inspect ${binding} and its declared type`;
+    button.onclick = () =>
+      inspect(
+        decorate({
+          binding,
+          name: binding,
+          role: "explicit axiom",
+          ...[...last.outputs, ...last.imports].find(o => o.binding === binding),
+          ...(binding.startsWith("lib_") && last.mode !== "construction"
+            ? {
+                sourceModule: "prelude_library_construction",
+                sourceName: binding,
+              }
+            : {}),
+        }),
+      );
+    target.append(button);
+  }
+}
 function renderResult() {
   $("result").hidden = !last;
   $("result").replaceChildren();
@@ -276,7 +354,7 @@ function renderResult() {
   for (const output of last.outputs) {
     const line = document.createElement("div");
     line.append(
-      last.mode !== "construction" || output.verified
+      output.kind === "axiom" ? "Axiom " : last.mode !== "construction" || output.verified
         ? "Verified "
         : "Checked ",
     );
@@ -285,6 +363,10 @@ function renderResult() {
     button.onclick = () =>
       inspect({ ...output, kind: "value", role: output.kind });
     line.append(button, document.createTextNode(" : " + output.type));
+    const dependencies = document.createElement("small");
+    dependencies.className = "axiom-dependencies";
+    renderAxioms(dependencies, output.axioms ?? []);
+    line.append(dependencies);
     $("result").append(line);
   }
   const detail = document.createElement("small");
@@ -312,6 +394,8 @@ const keywords = new Set([
   "export",
   "verify",
   "with",
+  "axiom",
+  "opaque",
   "axioms",
   "allow",
   "none",
@@ -441,6 +525,7 @@ async function inspect(info, remember = true) {
   renderType(info.kind === "goal" ? info.step.goal : (info.type ?? ""));
   $("inspect-description").textContent = info.description ?? "";
   sourceLink(info);
+  $("inspect-axioms").replaceChildren();
   $("locals").replaceChildren();
   $("kernel-details").hidden = info.kind === "goal";
   $("kernel-details").open = false;
@@ -518,6 +603,7 @@ function renderType(text) {
   }
 }
 function renderKernel(view) {
+  renderAxioms($("inspect-axioms"), view.axioms ?? []);
   $("kernel-expression").textContent = view.expression
     ? layout(view.expression, view.contextNames).text
     : "Context assumption";
@@ -632,6 +718,7 @@ async function refreshCompiler() {
   const version = await serverVersion();
   if (!version || version === workerVersion) return false;
   ready = false;
+  showChecking(true, "Updating proof checker…");
   worker.terminate();
   last = null;
   $("result").hidden = true;
@@ -648,7 +735,7 @@ async function startWorker(version = undefined) {
   worker = new Worker(url, { type: "module" });
   worker.onmessage = ({ data }) => {
     if (data.ready) {
-      if (data.maxSteps < 131072) {
+      if (data.maxSteps < 1048576) {
         diagnostic(
           new Error(
             "An outdated compiler was loaded. Reload this page to update the worker.",
@@ -665,6 +752,10 @@ async function startWorker(version = undefined) {
     }
     const p = pending.get(data.id);
     if (!p) return;
+    if (data.progress) {
+      checkingProgress(data.progress);
+      return;
+    }
     pending.delete(data.id);
     clearTimeout(p.timer);
     if (data.error)

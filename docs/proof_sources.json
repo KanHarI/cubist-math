@@ -11,7 +11,7 @@
   "src/builtins/not.rs": "38ea5814de7352305875a3c7cda62e7ef3c4276757e0d2f1d40945a54281c06a",
   "src/builtins/pi_void_unique.rs": "a6c35de83928a0518ea0350e11e5dbe54c48669424cb913cb364c5fc30729351",
   "src/builtins/pr.rs": "139a211fdab0b3d6ea84b02a34abe362b8c1fc0309a5a2b68568f6dd258178bb",
-  "src/builtins/propositional_truncation.rs": "815450c0fd2ae334f615d491c75bb24a8210c19d24cd30b0cb5f7e1294d752ee",
+  "src/builtins/propositional_truncation.rs": "1b038e364b90db42acf70b97064a32fee9fcc64c688d0e26a6ede389a5e2cecb",
   "src/builtins/singleton.rs": "aa874c7c1f20f39f6da76439165ec115bf189a063f898c2a2845b343b2963fce",
   "src/builtins/two.rs": "3ae902692940ce340cbcb88b9c0df6dbc058006c1988f28a4030576999c50e50",
   "src/builtins/u0.rs": "d6805cb2d0d60b058a30938a00b3f5956c12e29a583b41020568d501d724cae5",

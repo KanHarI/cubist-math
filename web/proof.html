@@ -67,7 +67,7 @@
             against their declared types.
           </p>
         </aside>
-        <section class="source panel">
+        <section id="source-panel" class="source panel" aria-busy="true">
           <div class="panel-head">
             <h2>Proof source</h2>
             <div role="group" aria-label="Source mode">
@@ -79,6 +79,14 @@
             Click a name to inspect it. Click a line number to see its goal and
             assumptions.
           </p>
+          <div id="check-loader" class="check-loader" role="status" aria-live="polite">
+            <span class="check-spinner" aria-hidden="true"></span>
+            <div>
+              <strong id="check-message">Preparing proof checker…</strong>
+              <p id="check-detail">Loading definitions and checking the proof.</p>
+              <progress id="check-progress" max="1" aria-label="Proof checking progress"></progress>
+            </div>
+          </div>
           <textarea
             id="editor"
             aria-label="MathScript source"
@@ -106,6 +114,7 @@
           <pre id="inspect-type"></pre>
           <p id="inspect-description" class="description"></p>
           <a id="view-source" class="source-link" hidden>View source →</a>
+          <div id="inspect-axioms" class="axiom-dependencies"></div>
           <div id="locals"></div>
           <details id="kernel-details">
             <summary>Checked kernel details</summary>

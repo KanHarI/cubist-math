@@ -233,14 +233,14 @@ A failed replay never changes the accepted proof or policy.
   reference notation for unsupported cases. It is an inspector, not an elaborator
   or independently type-checked pretty-printer.
 
-The kernel bridge limits expressions to 65,536 tree nodes, AST storage to 500,000
-nodes, judgements to 100,000, context counters to 4096, and depth to 256. Sessions
-allow 131072 instructions and 256 accepted history actions. WASM memory is capped
-at 256 MiB. The browser terminates its worker after a 30-second request timeout;
+The kernel bridge limits expressions to 16,777,216 tree nodes, AST storage to 2,000,000
+nodes, judgements to 500,000, context counters to 16,384, and depth to 256. Sessions
+allow 1,048,576 instructions and 256 accepted history actions. WASM memory is capped
+at 512 MiB. The browser terminates its worker after a 30-second request timeout;
 Reset example starts a new worker. Save useful work before large explorations.
 
 This first version supports forward proof construction and replay. Goal-directed
-search, structured kernel predicate diagnostics, transitive axiom highlighting,
+search, structured kernel predicate diagnostics,
 lazy deep-tree expansion, and separately compiled proof-program WASM artifacts
 are follow-up work. The current WASM artifact contains the C kernel; the shared
 interpreter dispatches the named instruction program to it.

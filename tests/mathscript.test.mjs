@@ -315,3 +315,156 @@ test("CLI opens the complete high-level fundamental-group proof", () => {
   assert.doesNotMatch(run.stdout, /ERROR:/);
   assert.match(run.stdout, /VERIFIED/);
 });
+
+test("axioms are tracked per result rather than per imported module", () => {
+  const c = compile(
+    module,
+    "import prelude; import paths; def plain = 0; theorem reflexive : 0 = 0 { exact refl(0); } theorem extensional : (fun (x : Nat) => x) = (fun (x : Nat) => x) { exact funext(Nat, (fun (x : Nat) => Nat), (fun (x : Nat) => x), (fun (x : Nat) => x), (fun (x : Nat) => refl(x))); }",
+    sources,
+  );
+  try {
+    assert.equal(c.axiomCount, 3);
+    assert.deepEqual(c.outputs.find((o) => o.name === "plain").axioms, []);
+    assert.deepEqual(c.outputs.find((o) => o.name === "reflexive").axioms, []);
+    assert.deepEqual(c.outputs.find((o) => o.name === "extensional").axioms, [
+      "lib_funext",
+    ]);
+    assert.deepEqual(c.kernel.inspect("extensional").axioms, ["lib_funext"]);
+  } finally {
+    c.kernel.dispose();
+  }
+});
+
+test("finite types, structural subsets, and all finite functions have checked counts", () => {
+  for (const name of ["finite", "binomial", "function_counting"]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      for (const o of c.outputs)
+        assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
+      if (name === "binomial")
+        assert.ok(
+          c.kernel.verify(
+            "five_choose_two_bijection_type",
+            "five_choose_two_bijection",
+          ),
+        );
+      if (name === "function_counting") {
+        assert.deepEqual(
+          c.outputs.find((o) => o.name === "endofunction_count").axioms,
+          ["lib_funext"],
+        );
+        assert.ok(c.kernel.verify("three_to_three_type", "three_to_three"));
+        assert.ok(c.kernel.verify("empty_to_empty_type", "empty_to_empty"));
+      }
+    } finally {
+      c.kernel.dispose();
+    }
+  }
+  assert.throws(
+    () =>
+      compile(
+        module,
+        sources.function_counting.replace("Fin(27)", "Fin(26)"),
+        sources,
+      ),
+    /Expected/,
+  );
+});
+
+
+test("opaque concepts preserve names, support conversion, and explicitly unfold", () => {
+  const c = compile(module, `
+    opaque def Box = Nat;
+    opaque def successor(n : Nat) = succ(n);
+    def boxed : Box { exact 2; }
+    def folded = successor(1);
+    def opened = unfold(folded);
+    def beta = (fun (x : Nat) => succ(x))(1);
+    theorem converted : successor(1) = 2 { exact refl(2); }
+  `);
+  try {
+    for (const o of c.outputs) assert.ok(c.kernel.verify(o.proposition, o.binding));
+    assert.equal(c.kernel.node(expression(c.kernel, "Box")).kind, "DRef");
+    assert.equal(c.kernel.node(expression(c.kernel, "folded")).kind, "Ap");
+    assert.equal(expression(c.kernel, "opened"), expression(c.kernel, "beta"));
+    assert.equal(c.axiomCount, 0);
+  } finally { c.kernel.dispose(); }
+  assert.throws(() => compile(module, "opaque def wrong : Nat { exact tt; }"), /Expected/);
+});
+
+test("declared axioms keep their names and only affect dependent results", () => {
+  const c = compile(module, "axiom chosen : Nat; def witness = chosen; def plain = 0;");
+  try {
+    assert.equal(c.axiomCount, 1);
+    assert.equal(c.outputs.find(o => o.name === "chosen").kind, "axiom");
+    assert.deepEqual(c.kernel.axiomsFor("witness"), ["chosen"]);
+    assert.deepEqual(c.kernel.axiomsFor("plain"), []);
+  } finally { c.kernel.dispose(); }
+  assert.throws(() => compile(module, "axiom invalid : 0;"), /type/i);
+});
+
+test("Rijke binomial types and full permutation equivalences have checked counts", () => {
+  for (const name of ["permutations", "binomial_counting"]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      for (const o of c.outputs) assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
+      // These real developments exceed the former 131,072 instruction limit.
+      assert.ok(c.instructionCount > 131072);
+      if (name === "permutations") {
+        assert.deepEqual(c.kernel.axiomsFor("finite_permutation_equivalence"), ["lib_funext"]);
+      } else {
+        const assumptions = ["lib_funext", "lib_Trunc", "lib_trunc_intro", "lib_trunc_is_trunc", "lib_trunc_elim"].sort();
+        assert.deepEqual(c.kernel.axiomsFor("finite_binomial_equivalence").sort(), assumptions);
+        assert.deepEqual(c.kernel.axiomsFor("choose_units_five_two").sort(), [...assumptions, "lib_univalence"].sort());
+      }
+    } finally { c.kernel.dispose(); }
+  }
+  for (const [name, from, to] of [["permutations", "Fin(6)", "Fin(7)"], ["binomial_counting", "Fin(10)", "Fin(9)"]]) {
+    assert.throws(() => compile(module, sources[name].replace(from, to), sources), /Expected/);
+  }
+});
+
+
+test("truncation elimination uses the prelude axiom and checks both premises", () => {
+  const c = compile(module, `import truncation;
+    def map_identity(A : Type) = mere_map(A, A, (fun (a : A) => a));`, sources);
+  try {
+    assert.deepEqual(c.kernel.axiomsFor("map_identity").sort(),
+      ["lib_Trunc", "lib_trunc_intro", "lib_trunc_is_trunc", "lib_trunc_elim"].sort());
+    assert.ok(!c.kernel.steps.some(s => s.op === "Axiom" && s.name === "mere_eliminate"));
+    assert.ok(c.kernel.steps.some(s => s.op === "Axiom" && s.name === "lib_trunc_elim"));
+  } finally { c.kernel.dispose(); }
+  assert.throws(() => compile(module, `import truncation;
+    def bad(A : Type, P : Type, prop : IsProp(P), f : Type -> P) =
+      mere_eliminate(A, P, prop, f);`, sources), /Expected/);
+  assert.throws(() => compile(module, `import truncation;
+    def bad(A : Type, P : Type, f : A -> P) = mere_eliminate(A, P, tt, f);`, sources), /Expected/);
+});
+
+
+test("compiler reports completed definitions including imports and stops on errors", () => {
+  const updates = [];
+  const c = compile(module, "import helper; theorem two : second = 2 { exact refl(2); }",
+    {helper: "def first = 1; def second = succ(first);"}, {onProgress: p => updates.push(p)});
+  try {
+    assert.equal(updates[0].completed, 0);
+    assert.equal(updates[0].total, 3);
+    assert.equal(updates[0].current, "first");
+    assert.equal(updates.at(-1).completed, 3);
+    assert.ok(updates.every((p, i) => !i || p.completed >= updates[i - 1].completed));
+  } finally { c.kernel.dispose(); }
+  const failed = [];
+  assert.throws(() => compile(module, "def first = 1; theorem bad : Void { exact 0; }", {},
+    {onProgress: p => failed.push(p)}), /Expected/);
+  assert.equal(failed.at(-1).completed, 1);
+  assert.equal(failed.at(-1).current, "bad");
+  const audit = [];
+  const a = compile(module, "construction tiny { export N = natural_type(); }", {},
+    {onProgress: p => audit.push(p)});
+  try {
+    assert.equal(audit[0].completed, 0);
+    assert.equal(audit.at(-1).completed, 1);
+    assert.equal(audit.at(-1).total, 1);
+    assert.equal(audit.at(-1).unit, "steps");
+  } finally { a.kernel.dispose(); }
+});

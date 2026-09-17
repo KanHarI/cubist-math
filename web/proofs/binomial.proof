@@ -1,0 +1,45 @@
+import finite;
+
+// Pascal's recurrence, computed entirely in Nat.
+def choose(n : Nat) = induction n as row return (Nat -> Nat) {
+  zero => fun (k : Nat) => induction k as column return Nat {
+    zero => 1;
+    succ previous => 0;
+  };
+  succ previous_row => fun (k : Nat) => induction k as column return Nat {
+    zero => 1;
+    succ previous => add_count(previous_row(column), previous_row(succ(column)));
+  };
+};
+
+// A structural representation of k-element subsets of n alternatives.
+// The successor branches respectively select or omit the first alternative.
+def Selections(n : Nat) = induction n as row return (Nat -> Type) {
+  zero => fun (k : Nat) => induction k as column return Type {
+    zero => Unit;
+    succ previous => Void;
+  };
+  succ previous_row => fun (k : Nat) => induction k as column return Type {
+    zero => Unit;
+    succ previous => previous_row(column) or previous_row(succ(column));
+  };
+};
+
+// Every branch is a bijection with explicit inverse laws, for arbitrary n,k.
+theorem selections_count(n : Nat) = induction n as row return (forall k : Nat, Bijection(Selections(row, k), Fin(choose(row, k)))) {
+  zero => fun (k : Nat) => induction k as column return Bijection(Selections(0, column), Fin(choose(0, column))) {
+    zero => unit_to_fin_one;
+    succ previous => identity_bijection(Void);
+  };
+  succ previous_row => fun (k : Nat) => induction k as column return Bijection(Selections(succ(row), column), Fin(choose(succ(row), column))) {
+    zero => unit_to_fin_one;
+    succ previous => compose_bijection(Selections(row, column) or Selections(row, succ(column)),
+      Fin(choose(row, column)) or Fin(choose(row, succ(column))),
+      Fin(add_count(choose(row, column), choose(row, succ(column)))),
+      sum_bijection(Selections(row, column), Selections(row, succ(column)), Fin(choose(row, column)), Fin(choose(row, succ(column))), previous_row(column), previous_row(succ(column))),
+      fin_sum(choose(row, column), choose(row, succ(column))));
+  };
+};
+
+theorem five_choose_two : choose(5, 2) = 10 { exact refl(10); }
+theorem five_choose_two_bijection : Bijection(Selections(5, 2), Fin(10)) { exact selections_count(5, 2); }
