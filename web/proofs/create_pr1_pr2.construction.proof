@@ -1,0 +1,52 @@
+// Create pr1 pr2
+// Complete checked construction. All intermediate steps are included.
+construction create_pr1_pr2 {
+  private s0001_UIntro0 = universe_zero();
+  private s0002_CtxExt = assume(s0001_UIntro0, none);
+  private s0003_CtxExt = assume(s0001_UIntro0, s0002_CtxExt);
+  private s0004_Vble = variable(s0002_CtxExt);
+  private s0005_Vble = variable(s0003_CtxExt);
+  private s0006_PiForm = function_type(s0004_Vble, s0001_UIntro0, none);
+  private s0007_CtxExt = assume(s0006_PiForm, none);
+  private s0008_Vble = variable(s0007_CtxExt);
+  private s0009_CtxExt = assume(s0004_Vble, none);
+  private s0010_Vble = variable(s0009_CtxExt);
+  private s0011_PiElim = apply(s0008_Vble, s0010_Vble);
+  private s0012_SigmaForm = pair_type(s0004_Vble, s0011_PiElim, s0009_CtxExt);
+  private s0013_CtxExt = assume(s0011_PiElim, none);
+  private s0014_Vble = variable(s0013_CtxExt);
+  private s0015_CtxExt = assume(s0012_SigmaForm, none);
+  private s0016_Vble = variable(s0015_CtxExt);
+  private s0017_SigmaElim = pair_eliminate(s0004_Vble, s0010_Vble, s0016_Vble, none, s0009_CtxExt, s0013_CtxExt);
+  private s0018_PiIntro = function_intro(s0012_SigmaForm, s0017_SigmaElim, s0015_CtxExt);
+  private s0019_PiIntro = function_intro(s0006_PiForm, s0018_PiIntro, s0007_CtxExt);
+  private s0020_PiIntro = function_intro(s0001_UIntro0, s0019_PiIntro, s0002_CtxExt);
+  private s0021_SigmaIntro = pair_intro(s0010_Vble, s0011_PiElim, s0014_Vble, s0009_CtxExt);
+  private s0022_PiComp = function_compute(s0017_SigmaElim, s0021_SigmaIntro, s0015_CtxExt);
+  private s0023_SigmaComp = pair_compute(s0004_Vble, s0010_Vble, s0010_Vble, s0014_Vble, none, s0009_CtxExt, none);
+  private s0024_DefEqSwp = definition_symmetry(s0023_SigmaComp);
+  private s0025_Subs = substitute(s0014_Vble, s0024_DefEqSwp);
+  private s0026_PiElim = apply(s0008_Vble, s0017_SigmaElim);
+  private s0027_SigmaElim = pair_eliminate(s0026_PiElim, s0025_Subs, s0016_Vble, s0015_CtxExt, s0009_CtxExt, s0013_CtxExt);
+  private s0028_PiIntro = function_intro(s0012_SigmaForm, s0027_SigmaElim, s0015_CtxExt);
+  private s0029_PiIntro = function_intro(s0006_PiForm, s0028_PiIntro, s0007_CtxExt);
+  private s0030_PiIntro = function_intro(s0001_UIntro0, s0029_PiIntro, s0002_CtxExt);
+  private s0031_Def = define(s0020_PiIntro);
+  export pr1 = definition_left(s0031_Def);
+  private s0033_Def = define(s0030_PiIntro);
+  export pr2 = definition_left(s0033_Def);
+  private s0035_PiIntro = function_intro(s0004_Vble, s0005_Vble, none);
+  private s0036_PiElim = apply(s0019_PiIntro, s0035_PiIntro);
+  private s0037_BetaReduceGrossKnuth = reduce_pass(s0036_PiElim);
+  private s0038_PiIntro = function_intro(s0001_UIntro0, s0037_BetaReduceGrossKnuth, s0003_CtxExt);
+  private s0039_PiIntro = function_intro(s0001_UIntro0, s0038_PiIntro, s0002_CtxExt);
+  private s0040_Def = define(s0039_PiIntro);
+  export pr1_nd = definition_left(s0040_Def);
+  private s0042_PiElim = apply(s0029_PiIntro, s0035_PiIntro);
+  private s0043_BetaReduceGrossKnuth = reduce_pass(s0042_PiElim);
+  private s0044_BetaReduceGrossKnuth = reduce_pass(s0043_BetaReduceGrossKnuth);
+  private s0045_PiIntro = function_intro(s0001_UIntro0, s0044_BetaReduceGrossKnuth, s0003_CtxExt);
+  private s0046_PiIntro = function_intro(s0001_UIntro0, s0045_PiIntro, s0002_CtxExt);
+  private s0047_Def = define(s0046_PiIntro);
+  export pr2_nd = definition_left(s0047_Def);
+}

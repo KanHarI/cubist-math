@@ -235,7 +235,7 @@ A failed replay never changes the accepted proof or policy.
 
 The kernel bridge limits expressions to 65,536 tree nodes, AST storage to 500,000
 nodes, judgements to 100,000, context counters to 4096, and depth to 256. Sessions
-allow 8192 instructions and 256 accepted history actions. WASM memory is capped
+allow 131072 instructions and 256 accepted history actions. WASM memory is capped
 at 256 MiB. The browser terminates its worker after a 30-second request timeout;
 Reset example starts a new worker. Save useful work before large explorations.
 

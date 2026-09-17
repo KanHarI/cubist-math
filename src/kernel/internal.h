@@ -47,7 +47,14 @@ typedef enum {
     N_IndW,
     N_Temp,
     N_Set,
-    N_Path
+    N_Path,
+    N_Susp,
+    N_North,
+    N_South,
+    N_Merid,
+    N_IndSusp,
+    N_SuspBeta,
+    N_KIND_COUNT
 } node_kind;
 typedef struct {
     uint32_t kind, param;
@@ -124,6 +131,7 @@ bool check_contexts(tt_engine *, const tt_opcode_info *, const judgement *, cons
 tt_id output_context(tt_engine *, const tt_opcode_info *, const judgement *, tt_id, const tt_id *);
 bool infer_rule(tt_engine *, tt_opcode, const tt_id *, const judgement *, tt_id, const tt_id *,
                 judgement *);
+bool infer_suspension(tt_engine *, tt_opcode, const judgement *, judgement *);
 bool infer_eliminator(tt_engine *, tt_opcode, const judgement *, const tt_id *, judgement *);
 tt_id intern(tt_engine *, node);
 void rollback_nodes(tt_engine *, uint32_t);

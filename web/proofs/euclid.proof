@@ -1,0 +1,29 @@
+import primes;
+
+def InfinitelyManyPrimes =
+  forall n : Nat, exists p : Nat, Prime(p) and n < p;
+
+// Every bound has a larger prime. No axioms are required.
+theorem euclid : InfinitelyManyPrimes {
+  intro n;
+  let m = succ(factorial(n));
+  obtain (i, (hp, hd)) =
+    prime_divisor_exists(m, factorial_positive(n));
+  let p = 2 + i;
+
+  have bigger : n < p {
+    cases nat_le_total(p, n) {
+      left bounded => {
+        let divides_factorial =
+          bounded_divisor_of_factorial(i, n, bounded);
+        exact absurd(nontrivial_divisor_not_consecutive(
+          i, factorial(n), divides_factorial, hd));
+      }
+      right greater => {
+        exact greater;
+      }
+    }
+  }
+
+  exact (p, (hp, bigger));
+}

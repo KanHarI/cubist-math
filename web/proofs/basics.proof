@@ -1,0 +1,14 @@
+// Functions and proofs share ordinary typed parameters.
+def identity(A : Type, x : A) = x;
+
+theorem duplicate(A : Type, x : A) = typed(A and A, (x, x));
+
+// k is the predecessor, and previous is the recursive result at k.
+def copy(n : Nat) = induction n as k return Nat {
+  zero => 0;
+  succ previous => succ(previous);
+};
+
+theorem copy_of_two : copy(2) = 2 {
+  exact refl(2);
+}

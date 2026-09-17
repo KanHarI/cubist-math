@@ -413,7 +413,7 @@ export default [
     "title": "Infinitely many primes (Euclid)",
     "file": "primes.thth.json",
     "source": "tools/proofs/primes.mjs",
-    "steps": 4327,
+    "steps": 4329,
     "allowAxioms": false,
     "exports": [
       "nat_add",
@@ -422,6 +422,7 @@ export default [
       "nat_factorial",
       "Divides",
       "Prime",
+      "nat_le_total",
       "bounded_least_search",
       "nontrivial_divisibility_decidable",
       "divides_transitive",

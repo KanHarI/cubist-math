@@ -11,6 +11,7 @@ structures and helper contracts are in `internal.h`.
 | `contexts.c` | Reject escaping context dependencies and compute the conclusion's assumptions |
 | `rules.c` | Universes, variables, formation/introduction, functions, definitional equality, rewriting, highlights |
 | `eliminators.c` | Dependent elimination and computation for Void, Unit, Sigma, Sum, equality, Nat, and W |
+| `suspension.c` | Higher-inductive suspension, dependent elimination, meridian computation; derived transport and dependent application |
 | `ast.c` | Binding, substitution, reduction, universe helpers, and highlight paths |
 | `store.c` | Immutable interning, exact equality, arenas, dependency sets, cache invalidation, inspection |
 | `metadata.inc` | Generated opcode arities and permitted context-discharge masks |
@@ -110,7 +111,7 @@ soundness proof for the research calculus.
 
 ```sh
 make lint                         # Every C translation unit, including tests
-make test collision-test          # Original proofs, all 67 opcodes, negative cases
+make test collision-test          # Original proofs, all 75 opcodes, negative cases
 python3 tools/check_reference.py   # Exact match to the frozen verified trace
 make CC=clang sanitize            # AddressSanitizer + UBSan (Linux)
 ```
@@ -120,3 +121,20 @@ their translation units, as well as public/private headers. It checks both norma
 and forced-collision preprocessor configurations. Existing tests also compare
 cached and uncached walks across several seeds. The independent Rust oracle and
 its explicit exclusions are described in `docs/compatibility.md`.
+
+## Higher-inductive suspension extension
+
+The native opcodes 140–147 extend the upstream calculus. `SuspForm(A)` stays
+in A's universe; north and south have type Susp(A), and merid(A,a) connects them.
+`SuspElim(C,n,s,h,x)` requires C : Susp(A) -> U, n : C(north), s : C(south), and
+h : Pi a:A. Eq(C(south), transport(C,merid(a),n),s). Its result has type C(x).
+The point rules reduce to n and s. `SuspMeridComp` has the same checked data,
+but takes a:A and proves that dependent application of the section to merid(a)
+is h(a). This path computation is propositional; no equality reflection or
+uniqueness of identity proofs is added.
+
+`Transport` and `Apd` are derived rules producing the existing EqElim encoding.
+They add no AST constructors or axioms. Suspension has its own term constructors,
+appended to preserve the old fingerprint assignments. Native tests check every
+new opcode and reject mismatched endpoints, fibers and coherence data; WASM
+source tests exercise reduction under abstraction and dependent path computation.

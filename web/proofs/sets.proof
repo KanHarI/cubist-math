@@ -1,0 +1,39 @@
+import paths;
+
+def Decidable(P : Type) = P or (P -> Void);
+def IsSet(A : Type) = forall x : A, forall y : A, forall p : x = y, forall q : x = y, p = q;
+
+// A decision provides a weakly constant map on each path space.
+def choose_path(A : Type, x : A, y : A, decision : Decidable(x = y), p : x = y) =
+  match decision return (x = y) {
+    left chosen => chosen;
+    right impossible => typed((x = y), absurd(impossible(p)));
+  };
+def choose_path_constant(A : Type, x : A, y : A, decision : Decidable(x = y), p : x = y, q : x = y) =
+  match decision as d return (choose_path(A, x, y, d, p) = choose_path(A, x, y, d, q)) {
+    left chosen => refl(chosen);
+    right impossible => typed((choose_path(A, x, y, typed(Decidable(x = y), right(impossible)), p) = choose_path(A, x, y, typed(Decidable(x = y), right(impossible)), q)), absurd(impossible(p)));
+  };
+
+theorem path_correction(A : Type, decide : (forall x : A, forall y : A, Decidable(x = y)), x : A, y : A, p : x = y) :
+  concatenate(A, x, x, y, inverse(A, x, x, choose_path(A, x, x, decide(x, x), refl(x))),
+    choose_path(A, x, y, decide(x, y), p)) = p
+{
+  exact based_induction(A, x,
+    (fun (point : A) => fun (path : x = point) =>
+      concatenate(A, x, x, point, inverse(A, x, x, choose_path(A, x, x, decide(x, x), refl(x))),
+        choose_path(A, x, point, decide(x, point), path)) = path),
+    inverse_left(A, x, x, choose_path(A, x, x, decide(x, x), refl(x))), y, p);
+}
+
+// Hedberg's theorem: decidable equality implies that the type is a set.
+theorem hedberg(A : Type, decide : (forall x : A, forall y : A, Decidable(x = y))) : IsSet(A) {
+  intro x;
+  intro y;
+  intro p;
+  intro q;
+  let first = inverse(A, x, x, choose_path(A, x, x, decide(x, x), refl(x)));
+  let prepend = fun (r : x = y) => concatenate(A, x, x, y, first, r);
+  exact trans(sym(path_correction(A, decide, x, y, p)),
+    trans(cong(prepend, choose_path_constant(A, x, y, decide(x, y), p, q)), path_correction(A, decide, x, y, q)));
+}

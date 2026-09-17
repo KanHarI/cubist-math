@@ -532,8 +532,8 @@ $("file").onchange = async () => {
   try {
     const file = $("file").files[0];
     if (!file) return;
-    if (file.size > 2000000)
-      throw new Error("Proof files must be at most 2 MB.");
+    if (file.size > 32000000)
+      throw new Error("Proof files must be at most 32 MB.");
     await move("import", { document: JSON.parse(await file.text()) });
   } catch (e) {
     error(e);

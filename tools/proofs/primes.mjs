@@ -17,6 +17,7 @@ const exports = [
   "nat_factorial",
   "Divides",
   "Prime",
+  "nat_le_total",
   "bounded_least_search",
   "nontrivial_divisibility_decidable",
   "divides_transitive",

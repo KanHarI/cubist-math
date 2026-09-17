@@ -43,8 +43,16 @@ def close(s, start, left='{', right='}'):
         i += 1
     return i
 
+# Native extension is kept when refreshing the upstream-generated tables.
+NATIVE_OPCODES = [
+    ("SuspForm", 140, 1), ("SuspNorth", 141, 1), ("SuspSouth", 142, 1),
+    ("SuspMerid", 143, 2), ("SuspElim", 144, 5), ("SuspMeridComp", 145, 5),
+    ("Transport", 146, 5), ("Apd", 147, 4),
+]
+
 def metadata(up):
     labels = re.findall(r'^\s*(\w+)\s*=\s*(\d+),', clean((up/'src/opcodes/opcode_labels.rs').read_text()), re.M)
+    labels += [(name, str(code)) for name, code, _ in NATIVE_OPCODES]
     enum = '\n'.join(f'    TT_{name} = {num},' for name,num in labels)
     (ROOT/'include/tt_opcodes.h').write_text('/* Generated from upstream opcode_labels.rs. */\n#ifndef TT_OPCODES_H\n#define TT_OPCODES_H\ntypedef enum {\n'+enum+'\n} tt_opcode;\n#endif\n')
     entries=[]
@@ -63,6 +71,7 @@ def metadata(up):
                 pair.append(sum(1<<int(x) for x in re.findall(r'\d+',m[1])) if m else 0)
             masks.append(pair)
         entries.append(dict(name=name,nj=nj,nc=int(nc),out=int(output),masks=masks))
+    entries += [dict(name=name, nj=nj, nc=0, out=0, masks=[]) for name, _, nj in NATIVE_OPCODES]
     lines=[]
     for e in entries:
         j=','.join(str(x[0]) for x in e['masks']) or '0'

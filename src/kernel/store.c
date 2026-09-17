@@ -326,7 +326,8 @@ static const char *names[] = {
     "UUKappa", "Void",    "Unit",  "Singleton", "Nat",    "ZN",       "SN",     "Lambda",
     "Ap",      "Pi",      "Sigma", "Tuple",     "Sum",    "Eq",       "Inl",    "Inr",
     "Refl",    "DefEq",   "W",     "WSup",      "IndNat", "IndSigma", "IndSum", "IndEq",
-    "IndVoid", "IndUnit", "IndW",  "Temp",      "Set",    "Path"};
+    "IndVoid", "IndUnit", "IndW",  "Temp",      "Set",    "Path", "Susp", "North", "South", "Merid", "IndSusp", "SuspBeta"};
+_Static_assert(sizeof(names) / sizeof(names[0]) == N_KIND_COUNT, "node names cover every kind");
 bool tt_ast(const tt_engine *e, tt_id id, tt_ast_view *v) {
     if (!e || !id || id > e->nn || !v)
         return false;

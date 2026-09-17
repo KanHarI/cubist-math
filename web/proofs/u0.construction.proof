@@ -1,0 +1,5 @@
+// U0
+// Complete checked construction. All intermediate steps are included.
+construction u0 {
+  export lib_U0 = universe_zero();
+}

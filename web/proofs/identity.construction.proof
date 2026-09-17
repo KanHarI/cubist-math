@@ -1,0 +1,14 @@
+// Polymorphic identity
+// Complete checked construction. All intermediate steps are included.
+construction identity {
+  private U = universe_zero();
+  private a = assume_fresh(U);
+  private A = variable(a);
+  private x = assume_fresh(A);
+  private value = variable(x);
+  private identity_A = function_intro(A, value, x);
+  export identity = function_intro(U, identity_A, a);
+  private A_to_A = function_type(A, A, none);
+  export Identity = function_type(U, A_to_A, a);
+  verify Identity with identity;
+}

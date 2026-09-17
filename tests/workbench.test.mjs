@@ -123,7 +123,7 @@ test("source/export round trip, explicit axioms, and structured validation", () 
       /Repeated/,
     );
     assert.throws(() => s.previewSource("v = apply(identity)"), /requires 2/);
-    assert.equal(s.metadata.length, 67);
+    assert.equal(s.metadata.length, 75);
     for (const m of s.metadata) {
       const step = {
         name: "value",
@@ -489,7 +489,7 @@ test("Euclid is a closed unbounded-primes theorem with no axiom dependencies", a
       "utf8",
     ),
   );
-  assert.equal(document.steps.length, 4327);
+  assert.equal(document.steps.length, 4329);
   assert.equal(document.policy.allowAxioms, false);
   assert.equal(
     document.steps.some((step) => step.op === "Axiom"),
@@ -520,7 +520,7 @@ test("Euclid is a closed unbounded-primes theorem with no axiom dependencies", a
     assert.throws(() => s.import(broken), /rejected/);
     assert.deepEqual(s.export(), before);
     const oversized = structuredClone(document);
-    oversized.steps = Array(8193).fill(document.steps[0]);
+    oversized.steps = Array(131073).fill(document.steps[0]);
     assert.throws(() => s.import(oversized), /Unsupported proof/);
   } finally {
     s.dispose();

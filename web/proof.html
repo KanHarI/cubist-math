@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>MathScript · Proof workspace</title>
+    <link rel="stylesheet" href="proof.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="proof.html"
+        >⊢ MathScript <span>Proof workspace</span></a
+      >
+      <nav>
+        <a href="index.html">Kernel workbench</a
+        ><a href="../docs/mathscript.md" id="guide-link">Language guide</a>
+      </nav>
+    </header>
+    <main>
+      <section class="introduction">
+        <div>
+          <p class="eyebrow">READ THE ARGUMENT. INSPECT THE EVIDENCE.</p>
+          <h1 id="proof-title">Infinitely many primes</h1>
+          <p>
+            Write mathematics, follow definitions, and check every inference
+            with the C kernel.
+          </p>
+        </div>
+        <span id="status" role="status">Loading kernel…</span>
+      </section>
+      <div class="toolbar">
+        <label for="proof-picker">Proof</label
+        ><select id="proof-picker"></select>
+        <a id="source-file" href="proofs/euclid.proof">Source file</a>
+        <button id="check" class="primary" disabled>Check proof</button
+        ><button id="example">Euclid example</button
+        ><button id="open">Open source</button
+        ><a id="repository-source" href="#">Load repository source</a>
+        <button id="previous-draft" hidden>Download previous source</button>
+        <button id="save">Save source</button
+        ><button id="export" disabled>Export checked proof</button
+        ><input id="file" type="file" accept=".proof,.txt" hidden /><span
+          id="dirty"
+          role="status"
+        ></span>
+      </div>
+      <p id="source-notice" class="hint" role="status" hidden></p>
+      <div id="diagnostic" role="alert" hidden></div>
+      <section
+        id="result"
+        class="result"
+        aria-label="Checked theorems"
+        hidden
+      ></section>
+      <div class="workspace">
+        <aside class="library panel">
+          <h2>Definitions & lemmas</h2>
+          <label for="search">Find a name</label
+          ><input
+            id="search"
+            type="search"
+            placeholder="Prime, factorial, divides…"
+          />
+          <div id="definitions"></div>
+          <p class="hint">
+            Names in the source are clickable. Imported lemmas are checked
+            against their declared types.
+          </p>
+        </aside>
+        <section class="source panel">
+          <div class="panel-head">
+            <h2>Proof source</h2>
+            <div role="group" aria-label="Source mode">
+              <button id="read-mode" aria-pressed="true">Read</button
+              ><button id="edit-mode" aria-pressed="false">Edit</button>
+            </div>
+          </div>
+          <p id="source-hint" class="hint">
+            Click a name to inspect it. Click a line number to see its goal and
+            assumptions.
+          </p>
+          <textarea
+            id="editor"
+            aria-label="MathScript source"
+            spellcheck="false"
+            hidden
+          ></textarea>
+          <div class="source-options">
+            <label id="intermediate-label" hidden
+              ><input id="show-intermediate" type="checkbox" /> Show
+              intermediate construction steps</label
+            >
+            <p id="source-count" class="hint"></p>
+          </div>
+          <div id="read-source" aria-label="Checked proof source"></div>
+        </section>
+        <aside
+          class="inspector panel"
+          aria-label="Definition and goal inspector"
+        >
+          <div class="panel-head">
+            <h2 id="inspect-name" tabindex="-1">Select a name or step</h2>
+            <button id="back" hidden>← Back</button>
+          </div>
+          <p id="inspect-kind" class="eyebrow"></p>
+          <pre id="inspect-type"></pre>
+          <p id="inspect-description" class="description"></p>
+          <a id="view-source" class="source-link" hidden>View source →</a>
+          <div id="locals"></div>
+          <details id="kernel-details">
+            <summary>Checked kernel details</summary>
+            <p id="kernel-inference" class="hint"></p>
+            <div id="kernel-premises"></div>
+            <strong>Expression</strong>
+            <pre id="kernel-expression"></pre>
+            <strong>Type</strong>
+            <pre id="kernel-type"></pre>
+            <button id="expand-kernel" hidden>Show full term</button>
+          </details>
+          <p class="hint">
+            Inspection never changes the proof. Definitions and local
+            assumptions keep their checked types.
+          </p>
+        </aside>
+      </div>
+      <details id="language-guide" class="help panel">
+        <summary>Language quick reference</summary>
+        <p>
+          <code>def</code> defines a typed function. <code>theorem</code> proves
+          a type. Both take named parameters and a checked block.
+        </p>
+        <p>
+          <code>let</code> names a term · <code>obtain</code> unpacks an
+          existential or pair · <code>have</code> proves a local claim ·
+          <code>cases</code> splits an <code>or</code> ·
+          <code>exact</code> supplies the result ·
+          <code>absurd</code> eliminates a contradiction.
+        </p>
+        <p>
+          Types use <code>forall x : A, B</code>, <code>exists x : A, B</code>,
+          <code>and</code>, <code>or</code>, and <code>-></code>. Natural-number
+          expressions use <code>+</code>, <code>*</code>, <code>=</code>,
+          <code>&lt;</code>, and <code>&lt;=</code>.
+        </p>
+        <p>
+          <code>import primes;</code> checks the mathematical source of the
+          arithmetic library.
+          <code
+            >induction n as k return C { zero => base; succ ih => step; }</code
+          >
+          handles natural-number induction. <code>match</code> and
+          <code>unpack</code>
+          handle case analysis and pairs. Click notation or a numeral to inspect
+          its meaning. The kernel audit entries retain the complete original
+          instruction histories.
+        </p>
+      </details>
+    </main>
+    <script type="module" src="proof.mjs?version=mathscript-source-3"></script>
+  </body>
+</html>

@@ -1,0 +1,56 @@
+import createKernel from "../dist/kernel.mjs";
+import { compile } from "./compiler.mjs";
+import { sourceModules } from "./modules.mjs";
+import { MAX_STEPS } from "../language.mjs";
+const module = await createKernel();
+const library = Object.fromEntries(
+  await Promise.all(
+    sourceModules.map(async (name) => {
+      const response = await fetch(
+        new URL(`../proofs/${name}.proof`, import.meta.url),
+        { cache: "no-store" },
+      );
+      if (!response.ok) throw new Error(`Unable to load ${name}.proof.`);
+      return [name, await response.text()];
+    }),
+  ),
+);
+let checked = null;
+self.postMessage({ ready: true, maxSteps: MAX_STEPS });
+self.onmessage = ({ data: { id, command, args } }) => {
+  try {
+    let result;
+    if (command === "check") {
+      const next = compile(module, args.source, library);
+      checked?.kernel.dispose();
+      checked = next;
+      const { kernel, ...metadata } = next;
+      result = { ...metadata, stats: kernel.stats() };
+    } else {
+      if (!checked) throw new Error("Check a proof first.");
+      if (command === "inspect")
+        result = checked.kernel.inspect(args.binding, {
+          expand: args.expand ?? [],
+        });
+      else if (command === "export")
+        result = {
+          format: "thth-workbench",
+          version: 1,
+          policy: { allowAxioms: checked.allowAxioms },
+          steps: checked.kernel.steps,
+        };
+      else throw new Error("Unknown command.");
+    }
+    self.postMessage({ id, result });
+  } catch (e) {
+    self.postMessage({
+      id,
+      error: {
+        message: e.message,
+        line: e.line,
+        column: e.column,
+        offset: e.offset,
+      },
+    });
+  }
+};

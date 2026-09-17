@@ -1,0 +1,34 @@
+// Function composition
+// Complete checked construction. All intermediate steps are included.
+construction comp {
+  private s0001_UIntro0 = universe_zero();
+  private s0002_CtxExt = assume(s0001_UIntro0, none);
+  private s0003_CtxExt = assume(s0001_UIntro0, s0002_CtxExt);
+  private s0004_CtxExt = assume(s0001_UIntro0, s0003_CtxExt);
+  private s0005_Vble = variable(s0002_CtxExt);
+  private s0006_Vble = variable(s0003_CtxExt);
+  private s0007_Vble = variable(s0004_CtxExt);
+  private s0008_PiForm = function_type(s0005_Vble, s0006_Vble, none);
+  private s0009_PiForm = function_type(s0006_Vble, s0007_Vble, none);
+  private s0010_PiForm = function_type(s0005_Vble, s0007_Vble, none);
+  private s0011_PiForm = function_type(s0009_PiForm, s0010_PiForm, none);
+  private s0012_PiForm = function_type(s0008_PiForm, s0011_PiForm, none);
+  private s0013_PiForm = function_type(s0001_UIntro0, s0012_PiForm, s0004_CtxExt);
+  private s0014_PiForm = function_type(s0001_UIntro0, s0013_PiForm, s0003_CtxExt);
+  export Composition = function_type(s0001_UIntro0, s0014_PiForm, s0002_CtxExt);
+  private s0016_CtxExt = assume(s0005_Vble, none);
+  private s0017_Vble = variable(s0016_CtxExt);
+  private s0018_CtxExt = assume(s0008_PiForm, none);
+  private s0019_Vble = variable(s0018_CtxExt);
+  private s0020_PiElim = apply(s0019_Vble, s0017_Vble);
+  private s0021_CtxExt = assume(s0009_PiForm, none);
+  private s0022_Vble = variable(s0021_CtxExt);
+  private s0023_PiElim = apply(s0022_Vble, s0020_PiElim);
+  private s0024_PiIntro = function_intro(s0005_Vble, s0023_PiElim, s0016_CtxExt);
+  private s0025_PiIntro = function_intro(s0009_PiForm, s0024_PiIntro, s0021_CtxExt);
+  private s0026_PiIntro = function_intro(s0008_PiForm, s0025_PiIntro, s0018_CtxExt);
+  private s0027_PiIntro = function_intro(s0001_UIntro0, s0026_PiIntro, s0004_CtxExt);
+  private s0028_PiIntro = function_intro(s0001_UIntro0, s0027_PiIntro, s0003_CtxExt);
+  export composition = function_intro(s0001_UIntro0, s0028_PiIntro, s0002_CtxExt);
+  verify Composition with composition;
+}

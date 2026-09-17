@@ -1,0 +1,5 @@
+// Singleton
+// Complete checked construction. All intermediate steps are included.
+construction singleton {
+  export lib_singleton = unit_value();
+}

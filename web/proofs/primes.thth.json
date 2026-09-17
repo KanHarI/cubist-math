@@ -11154,6 +11154,26 @@
       "hidden": true
     },
     {
+      "name": "p1642_DefEqRefl",
+      "op": "DefEqRefl",
+      "args": [
+        "p1641_DefEqExtL"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": true
+    },
+    {
+      "name": "nat_le_total",
+      "op": "DefEqExtR",
+      "args": [
+        "p1642_DefEqRefl"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
       "name": "p1643_context",
       "op": "CtxExt",
       "args": [

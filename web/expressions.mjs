@@ -36,6 +36,12 @@ const operators = {
   IndVoid: "void.elim",
   IndUnit: "unit.elim",
   IndW: "w.elim",
+  Susp: "Suspension",
+  North: "north",
+  South: "south",
+  Merid: "meridian",
+  IndSusp: "suspension.elim",
+  SuspBeta: "suspension.meridian_beta",
 };
 export function layout(tree, contextNames = {}) {
   let text = "";

@@ -150,6 +150,11 @@ bool reducible(const tt_engine *e, tt_id a, bool defs) {
         return e->nodes[n.ch[1]].kind == N_Singleton;
     case N_IndW:
         return e->nodes[n.ch[1]].kind == N_WSup;
+    case N_IndSusp: {
+        node data = e->nodes[n.ch[3]];
+        unsigned kind = e->nodes[data.ch[1]].kind;
+        return kind == N_North || kind == N_South;
+    }
     default:
         return false;
     }
@@ -192,6 +197,10 @@ static tt_id beta(tt_engine *e, tt_id a, bool defs) {
         bias[0] = (uint32_t)-1;
         vals[0] = e->nodes[n.ch[3]].ch[0];
         return transform(e, n.ch[0], MAP_BETA_SUBST, bias, vals, 1, 0);
+    case N_IndSusp: {
+        node data = e->nodes[n.ch[3]];
+        return n.ch[e->nodes[data.ch[1]].kind == N_North ? 1 : 2];
+    }
     case N_IndUnit:
         vals[0] = leaf(e, N_Singleton, 0);
         return transform(e, n.ch[0], MAP_BETA_SUBST, NULL, vals, 1, 0);

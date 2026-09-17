@@ -1,7 +1,9 @@
 #!/usr/bin/env node
+import { sourceModules } from "../web/mathscript/modules.mjs";
 import { createInterface } from "node:readline";
 import { readFile, writeFile, stat } from "node:fs/promises";
 import createKernel from "../web/dist/kernel.mjs";
+import { compile } from "../web/mathscript/compiler.mjs";
 import { Session } from "../web/session.mjs";
 import library from "../web/proofs/library.mjs";
 import proofs from "../web/proofs/catalogue.mjs";
@@ -28,6 +30,7 @@ const input = createInterface({
     const choices = [
       "help",
       "proofs",
+      "prove",
       "open",
       ...proofs.map((p) => p.id),
       "demo",
@@ -125,6 +128,7 @@ undo / history / goto ID     Replay an earlier revision; branches are retained
 check PROPOSITION PROOF      Check the closed theorem against its proof
 source / stats / ops          Show instructions, metrics, or all 67 operations
 save FILE / load FILE        Save or replay the active proof branch as JSON
+prove FILE.proof            Compile mathematical source and open its checked proof
 run FILE.math               Preview a source program before accepting it
 axioms on / axioms off       Explicitly change the axiom policy
 help / quit`;
@@ -230,6 +234,45 @@ async function command(line) {
       show();
       break;
     }
+    case "prove": {
+      if ((await stat(rest)).size > 1000000)
+        throw new Error("Source exceeds 1 MB.");
+      const source = await readFile(rest, "utf8"),
+        foundation = Object.fromEntries(
+          await Promise.all(
+            sourceModules.map(async (name) => [
+              name,
+              await readFile(
+                new URL(`../web/proofs/${name}.proof`, import.meta.url),
+                "utf8",
+              ),
+            ]),
+          ),
+        );
+      const compiled = compile(module, source, foundation);
+      try {
+        session.import(
+          {
+            format: "thth-workbench",
+            version: 1,
+            policy: { allowAxioms: compiled.allowAxioms },
+            steps: compiled.kernel.steps,
+          },
+          true,
+        );
+        for (const output of compiled.outputs)
+          say(`CHECKED ${output.name} : ${output.type}`);
+        active = compiled.outputs.at(-1).binding;
+        selection = null;
+        token = null;
+        say(
+          `${compiled.instructionCount} instructions; ${compiled.axiomCount} explicit axioms.`,
+        );
+      } finally {
+        compiled.kernel.dispose();
+      }
+      break;
+    }
     case "run": {
       if ((await stat(rest)).size > 1000000)
         throw new Error("Source exceeds 1 MB.");
@@ -331,8 +374,8 @@ async function command(line) {
       say("Saved " + rest);
       break;
     case "load": {
-      if ((await stat(rest)).size > 2000000)
-        throw new Error("File exceeds 2 MB.");
+      if ((await stat(rest)).size > 32000000)
+        throw new Error("File exceeds 32 MB.");
       const data = await readFile(rest, "utf8");
       session.import(JSON.parse(data));
       active = null;

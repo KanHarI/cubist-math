@@ -1,0 +1,45 @@
+// Based path induction
+// Complete checked construction. All intermediate steps are included.
+construction based_path_induction {
+  private s0001_UIntroOmega = universe_omega();
+  private s0002_CtxExt = assume(s0001_UIntroOmega, none);
+  private s0003_UVble = universe_variable(s0002_CtxExt);
+  private s0004_CtxExt = assume(s0003_UVble, none);
+  private s0005_Vble = variable(s0004_CtxExt);
+  private s0006_CtxExt = assume(s0005_Vble, none);
+  private s0007_Vble = variable(s0006_CtxExt);
+  private s0008_CtxExt = assume(s0005_Vble, s0006_CtxExt);
+  private s0009_Vble = variable(s0008_CtxExt);
+  private s0010_EqForm = equality_type(s0005_Vble, s0007_Vble, s0009_Vble);
+  private s0011_PiForm = function_type(s0010_EqForm, s0003_UVble, none);
+  private s0012_PiForm = function_type(s0005_Vble, s0011_PiForm, s0008_CtxExt);
+  private s0013_CtxExt = assume(s0012_PiForm, none);
+  private s0014_Vble = variable(s0013_CtxExt);
+  private s0015_EqIntro = reflexivity(s0007_Vble);
+  private s0016_PiElim = apply(s0014_Vble, s0007_Vble);
+  private s0017_PiElim = apply(s0016_PiElim, s0015_EqIntro);
+  private s0018_CtxExt = assume(s0005_Vble, s0008_CtxExt);
+  private s0019_Vble = variable(s0018_CtxExt);
+  private s0020_PiElim = apply(s0014_Vble, s0019_Vble);
+  private s0021_EqForm = equality_type(s0005_Vble, s0007_Vble, s0019_Vble);
+  private s0022_CtxExt = assume(s0021_EqForm, none);
+  private s0023_Vble = variable(s0022_CtxExt);
+  private s0024_PiElim = apply(s0020_PiElim, s0023_Vble);
+  private s0025_PiForm = function_type(s0017_PiElim, s0024_PiElim, none);
+  private s0026_PiForm = function_type(s0012_PiForm, s0025_PiForm, s0013_CtxExt);
+  private s0027_PiIntro = function_intro(s0021_EqForm, s0026_PiForm, s0022_CtxExt);
+  private s0028_CtxExt = assume(s0017_PiElim, none);
+  private s0029_Vble = variable(s0028_CtxExt);
+  private s0030_PiIntro = function_intro(s0017_PiElim, s0029_Vble, s0028_CtxExt);
+  private s0031_PiIntro = function_intro(s0012_PiForm, s0030_PiIntro, s0013_CtxExt);
+  private s0032_EqElim = equality_eliminate(s0026_PiForm, s0031_PiIntro, s0007_Vble, s0019_Vble, s0023_Vble, s0006_CtxExt, s0018_CtxExt, s0022_CtxExt, s0006_CtxExt);
+  private s0033_PiElim = apply(s0032_EqElim, s0014_Vble);
+  private s0034_PiIntro = function_intro(s0021_EqForm, s0033_PiElim, s0022_CtxExt);
+  private s0035_PiIntro = function_intro(s0005_Vble, s0034_PiIntro, s0018_CtxExt);
+  private s0036_PiIntro = function_intro(s0012_PiForm, s0035_PiIntro, s0013_CtxExt);
+  private s0037_PiIntro = function_intro(s0005_Vble, s0036_PiIntro, s0006_CtxExt);
+  private s0038_PiIntro = function_intro(s0003_UVble, s0037_PiIntro, s0004_CtxExt);
+  private s0039_PiIntro = function_intro(s0001_UIntroOmega, s0038_PiIntro, s0002_CtxExt);
+  private s0040_Def = define(s0039_PiIntro);
+  export lib_basedPathInduction = definition_left(s0040_Def);
+}

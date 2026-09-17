@@ -1,0 +1,15 @@
+// Not
+// Complete checked construction. All intermediate steps are included.
+construction not {
+  private s0001_VoidForm = empty_type();
+  private s0002_UIntroOmega = universe_omega();
+  private s0003_CtxExt = assume(s0002_UIntroOmega, none);
+  private s0004_UVble = universe_variable(s0003_CtxExt);
+  private s0005_CtxExt = assume(s0004_UVble, none);
+  private s0006_Vble = variable(s0005_CtxExt);
+  private s0007_PiForm = function_type(s0006_Vble, s0001_VoidForm, none);
+  private s0008_PiIntro = function_intro(s0004_UVble, s0007_PiForm, s0005_CtxExt);
+  private s0009_PiIntro = function_intro(s0002_UIntroOmega, s0008_PiIntro, s0003_CtxExt);
+  private s0010_Def = define(s0009_PiIntro);
+  export lib_Not = definition_left(s0010_Def);
+}

@@ -13,7 +13,7 @@ The kernel checks the closed, constructive theorem
 ∀ n : Nat, Σ p : Nat, Prime(p) × (n < p).
 ```
 
-The saved proof has **4,327 instructions and no axioms**. It runs with axioms
+The saved proof has **4,329 instructions and no axioms**. It runs with axioms
 disabled. In particular, it assumes neither excluded middle, choice, function
 extensionality, prime-factor existence, nor arithmetic laws.
 
@@ -75,6 +75,6 @@ The proof-producing sources are:
 Run `make proof-export` to regenerate. The generator replays the optimized proof
 in a fresh axiom-disabled engine before saving it. JSON and `.math` source both
 replay through the same kernel. The arithmetic library requires larger workbench
-resource bounds: 8,192 instructions and context counters up to 4,096; expression,
+resource bounds: 131,072 instructions and context counters up to 4,096; expression,
 depth, arena, judgement, and memory limits are unchanged. No inference rule was
 added or weakened for this theorem.

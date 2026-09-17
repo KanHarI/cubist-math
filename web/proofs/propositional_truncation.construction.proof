@@ -1,0 +1,54 @@
+// Propositional truncation
+// Complete checked construction. All intermediate steps are included.
+construction propositional_truncation {
+  axioms allow; // Explicit policy inherited from the original proof.
+  private s0001_UIntroOmega = universe_omega();
+  private s0002_CtxExt = assume(s0001_UIntroOmega, none);
+  private s0003_UVble = universe_variable(s0002_CtxExt);
+  private s0004_UIntro0 = universe_zero();
+  private s0005_PiForm = function_type(s0003_UVble, s0004_UIntro0, none);
+  private s0006_PiForm = function_type(s0001_UIntroOmega, s0005_PiForm, s0002_CtxExt);
+  export lib_Trunc = postulate(s0006_PiForm);
+  private s0008_PiElim = apply(lib_Trunc, s0003_UVble);
+  private s0009_CtxExt = assume(s0003_UVble, none);
+  private s0010_Vble = variable(s0009_CtxExt);
+  private s0011_PiElim = apply(s0008_PiElim, s0010_Vble);
+  private s0012_UCumulOmega = universe_lift_omega(s0004_UIntro0);
+  private s0013_UIntroOmega = universe_omega();
+  private s0014_CtxExt = assume(s0013_UIntroOmega, none);
+  private s0015_UVble = universe_variable(s0014_CtxExt);
+  private s0016_CtxExt = assume(s0015_UVble, none);
+  private s0017_Vble = variable(s0016_CtxExt);
+  private s0018_CtxExt = assume(s0017_Vble, none);
+  private s0019_CtxExt = assume(s0017_Vble, s0018_CtxExt);
+  private s0020_Vble = variable(s0018_CtxExt);
+  private s0021_Vble = variable(s0019_CtxExt);
+  private s0022_EqForm = equality_type(s0017_Vble, s0020_Vble, s0021_Vble);
+  private s0023_PiForm = function_type(s0017_Vble, s0022_EqForm, s0019_CtxExt);
+  private s0024_PiForm = function_type(s0017_Vble, s0023_PiForm, s0018_CtxExt);
+  private s0025_PiIntro = function_intro(s0015_UVble, s0024_PiForm, s0016_CtxExt);
+  private s0026_PiIntro = function_intro(s0013_UIntroOmega, s0025_PiIntro, s0014_CtxExt);
+  private s0027_Def = define(s0026_PiIntro);
+  private s0028_DefEqExtL = definition_left(s0027_Def);
+  private s0029_PiElim = apply(s0028_DefEqExtL, s0012_UCumulOmega);
+  private s0030_PiElim = apply(s0029_PiElim, s0011_PiElim);
+  private s0031_PiForm = function_type(s0015_UVble, s0030_PiElim, s0016_CtxExt);
+  private s0032_PiForm = function_type(s0013_UIntroOmega, s0031_PiForm, s0014_CtxExt);
+  export lib_trunc_is_trunc = postulate(s0032_PiForm);
+  private s0034_CtxExt = assume(s0015_UVble, s0016_CtxExt);
+  private s0035_Vble = variable(s0034_CtxExt);
+  private s0036_PiForm = function_type(s0015_UVble, s0035_Vble, s0016_CtxExt);
+  private s0037_PiElim = apply(s0028_DefEqExtL, s0015_UVble);
+  private s0038_PiElim = apply(s0037_PiElim, s0035_Vble);
+  private s0039_SigmaForm = pair_type(s0036_PiForm, s0038_PiElim, none);
+  private s0040_PiForm = function_type(s0011_PiElim, s0035_Vble, none);
+  private s0041_PiForm = function_type(s0039_SigmaForm, s0040_PiForm, none);
+  private s0042_PiForm = function_type(s0015_UVble, s0041_PiForm, s0034_CtxExt);
+  private s0043_PiForm = function_type(s0015_UVble, s0042_PiForm, s0016_CtxExt);
+  private s0044_PiForm = function_type(s0013_UIntroOmega, s0043_PiForm, s0014_CtxExt);
+  export lib_trunc_elim = postulate(s0044_PiForm);
+  private s0046_PiForm = function_type(s0017_Vble, s0011_PiElim, none);
+  private s0047_PiForm = function_type(s0015_UVble, s0046_PiForm, s0016_CtxExt);
+  private s0048_PiForm = function_type(s0013_UIntroOmega, s0047_PiForm, s0014_CtxExt);
+  export lib_trunc_intro = postulate(s0048_PiForm);
+}

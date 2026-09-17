@@ -66,3 +66,13 @@
     [TT_WElim] = {"WElim", 3, 0, 3, 0, {1,2,2}, {0,0,2}},
     [TT_WForm] = {"WForm", 2, 0, 1, 0, {2}, {0}},
     [TT_WIntro] = {"WIntro", 3, 0, 1, 0, {2}, {0}},
+
+/* Native extension; preserve when regenerating upstream metadata. */
+    [TT_SuspForm] = {"SuspForm", 1, 0, 0, 0, {0}, {0}},
+    [TT_SuspNorth] = {"SuspNorth", 1, 0, 0, 0, {0}, {0}},
+    [TT_SuspSouth] = {"SuspSouth", 1, 0, 0, 0, {0}, {0}},
+    [TT_SuspMerid] = {"SuspMerid", 2, 0, 0, 0, {0}, {0}},
+    [TT_SuspElim] = {"SuspElim", 5, 0, 0, 0, {0}, {0}},
+    [TT_SuspMeridComp] = {"SuspMeridComp", 5, 0, 0, 0, {0}, {0}},
+    [TT_Transport] = {"Transport", 5, 0, 0, 0, {0}, {0}},
+    [TT_Apd] = {"Apd", 4, 0, 0, 0, {0}, {0}},

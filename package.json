@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/workbench.test.mjs",
+    "test": "node --test tests/workbench.test.mjs tests/mathscript.test.mjs",
     "test:browser": "node tests/browser.test.mjs"
   },
   "devDependencies": {

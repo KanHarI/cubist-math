@@ -306,6 +306,15 @@ bool infer_rule(tt_engine *e, tt_opcode op, const tt_id *ids, const judgement *j
         }
         break;
     }
+    case TT_SuspForm:
+    case TT_SuspNorth:
+    case TT_SuspSouth:
+    case TT_SuspMerid:
+    case TT_SuspElim:
+    case TT_SuspMeridComp:
+    case TT_Transport:
+    case TT_Apd:
+        return infer_suspension(e, op, j, r);
     default:
         return infer_eliminator(e, op, j, f, r);
     }

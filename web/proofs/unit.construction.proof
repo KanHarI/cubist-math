@@ -1,0 +1,5 @@
+// Unit
+// Complete checked construction. All intermediate steps are included.
+construction unit {
+  export lib_Unit = unit_type();
+}

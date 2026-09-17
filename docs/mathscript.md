@@ -1,0 +1,120 @@
+# MathScript
+
+MathScript is a mathematical source language checked by the existing C kernel,
+compiled to WebAssembly. Authoring uses `.proof` text, not JSON. The parser and
+elaborator are untrusted: they produce ordinary checked kernel instructions.
+
+## Read and write
+
+Run `make serve`, then open http://127.0.0.1:8088/proof.html. Use **Read** to follow
+names and **Edit** to change the source. Check with the button or Ctrl/Cmd+Enter.
+A rejected edit leaves the last checked proof available. Source files can be
+opened and saved; per-proof drafts survive navigation within the browser session.
+
+Click a lemma, then **View source**, to open its definition. Clicking the module
+name in `import primes` opens the foundation source. Click a line number in a
+structured proof block to inspect its goal and local assumptions. The inspector's
+Back button retraces inspections; browser Back retraces source navigation.
+
+Clicking `<` explains `isLt(a, b)`, equivalently `(isLt(a))(b)`, and links to its
+source. The definition is `le(succ(a), b)`. Other arithmetic operators also expose
+their named functions. A numeral such as `2` denotes `succ(succ(0))` of type `Nat`.
+The source explorer makes both notation and numeral meanings inspectable.
+
+## Mathematical syntax
+
+```text
+def identity(A : Type, x : A) = x;
+
+def copy(n : Nat) = induction n as k return Nat {
+  zero => 0;
+  succ previous => succ(previous);
+};
+
+theorem copy_of_two : copy(2) = 2 {
+  exact refl(2);
+}
+```
+
+A definition may have an explicit result type and a block, or an expression
+whose type is inferred. All parameters have explicit types. Functions can also
+be written as `fun (x : A) => body`. Application `f(a, b)` is curried.
+`theorem` uses an opaque checked proof definition; `def` remains transparent for
+computation. Both are checked for closure.
+
+Types include `forall x : A, B`, `exists x : A, B`, `A -> B`, `A and B`, and
+`A or B`. A pair is `(a, b)`. Its expected type supplies the dependent family;
+`typed(T, expression)` provides an annotation where inference needs one.
+`left(value)` and `right(value)` introduce a disjunction. `refl(x)` proves
+`x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
+
+Blocks support `intro`, `let`, `obtain`, `have`, `cases`, and `exact`. See
+[Euclid](../web/proofs/euclid.proof) for the complete short argument. Induction
+expressions carry an explicit motive:
+
+```text
+induction n as k return C(k) {
+  zero => base;
+  succ ih => step;
+}
+```
+
+The base has type `C(0)`. In the successor branch, `k : Nat` and `ih : C(k)` are
+available, and the result must have type `C(succ(k))`. The kernel checks this
+substitution, including dependencies. Expression forms of case analysis are:
+
+```text
+match either return C {
+  left x => left_result;
+  right y => right_result;
+}
+
+unpack pair as (x, y) return C {
+  result;
+}
+```
+
+Equality induction is available as
+`path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
+function of two endpoints and their equality proof. The foundational symmetry,
+transitivity, and congruence proofs in [primes.proof](../web/proofs/primes.proof)
+show its use. The lower-level `induct`, `cases`, and `unpack` function forms remain
+available for proof-producing source tools.
+
+## Modules and validation
+
+`import primes;` parses and checks the entire mathematical foundation source.
+It does not trust a saved proof snapshot. Human-readable interface signatures are
+also checked against the resulting definitions before use. All 42 declarations
+in that module are axiom-free. `euclid.proof` owns both the proposition
+`InfinitelyManyPrimes` and its proof `euclid`; neither is imported from `primes`. A regression test checks that the high-level Euclid
+proposition matches the independently saved original proposition after reduction.
+
+The mathematical source backend in `tools/proofs/readable_backend.mjs` migrated
+proof-producing combinators into mathematical syntax. Its output is independently
+checked and can be edited as ordinary source. Kernel instruction histories are
+retained separately as `*.construction.proof`; these are audit artifacts, not
+claimed mathematical translations of the older catalogue.
+
+The CLI command `prove FILE.proof` checks the source and opens the result in the
+existing selection/reduction workbench. JSON remains an optional checked replay
+export. Source is limited to 1 MB, nesting to 128, numerals to 256, and compiled
+programs to 131,072 instructions; the kernel's memory and expression bounds still
+apply. The worker is terminated on a 30-second timeout.
+
+The mathematical layer currently covers Euclid's entire development. Ports of the
+older universe-polymorphic and W-type library are still in progress. Dedicated
+calculation blocks, implicit arguments, and editor completion are future work.
+
+A named proposition can be used directly as a theorem type:
+
+```text
+def InfinitelyManyPrimes = forall n : Nat, exists p : Nat, Prime(p) and n < p;
+
+theorem euclid : InfinitelyManyPrimes {
+  intro n;
+  // Construct a prime above n, then finish with exact.
+}
+```
+
+`intro n;` opens the outer `forall` (or implication) of the checked goal, including through a definition name. It records the new local assumption and remaining goal for source inspection. The kernel checks the resulting function against the named proposition.

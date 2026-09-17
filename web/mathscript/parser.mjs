@@ -1,0 +1,415 @@
+// A small mathematical proof language. Parsing never evaluates JavaScript.
+export function tokenize(source) {
+  if (typeof source !== "string" || source.length > 1000000)
+    throw new Error("Source exceeds 1 MB.");
+  const tokens = [];
+  const re =
+    /\s+|\/\/[^\n]*|(?:<=|=>|->)|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[(){}:,;+*<=>]|./gy;
+  for (const match of source.matchAll(re)) {
+    const text = match[0];
+    if (/^\s|^\/\//.test(text)) continue;
+    if (
+      !/^(?:[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|[(){}:,;+*<=>])$/.test(text)
+    )
+      throw Object.assign(new Error(`Unexpected character ${text}`), {
+        offset: match.index,
+      });
+    tokens.push({ text, start: match.index, end: match.index + text.length });
+    if (tokens.length > 160000) throw new Error("Source has too many tokens.");
+  }
+  tokens.push({ text: "EOF", start: source.length, end: source.length });
+  return tokens;
+}
+export function parse(source, typeOnly = false) {
+  const ts = tokenize(source);
+  let i = 0,
+    depth = 0;
+  const peek = () => ts[i].text;
+  function take(text) {
+    const t = ts[i];
+    if (text && text !== t.text)
+      throw Object.assign(new Error(`Expected '${text}', found '${t.text}'.`), {
+        offset: t.start,
+      });
+    if (t.text !== "EOF") i++;
+    return t;
+  }
+  function name() {
+    const t = take();
+    if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
+      throw Object.assign(new Error("Expected a name."), { offset: t.start });
+    return t;
+  }
+  const prec = {
+    "->": 1,
+    or: 2,
+    and: 3,
+    "=": 4,
+    "<": 4,
+    "<=": 4,
+    "+": 5,
+    "*": 6,
+  };
+  function expr(min = 0) {
+    if (++depth > 128)
+      throw Object.assign(new Error("Expression nesting exceeds 128."), {
+        offset: ts[i].start,
+      });
+    let a;
+    const t = take();
+    if (t.text === "induction") {
+      const value = expr();
+      take("as");
+      const index = name();
+      take("return");
+      const type = expr();
+      take("{");
+      take("zero");
+      take("=>");
+      const base = expr();
+      take(";");
+      take("succ");
+      const hypothesis = name();
+      take("=>");
+      const step = expr();
+      take(";");
+      const end = take("}").end;
+      a = {
+        kind: "induction",
+        value,
+        index,
+        type,
+        base,
+        hypothesis,
+        step,
+        start: t.start,
+        end,
+      };
+    } else if (t.text === "match") {
+      const value = expr();
+      let motiveName = null;
+      if (peek() === "as") {
+        take("as");
+        motiveName = name();
+      }
+      take("return");
+      const type = expr();
+      take("{");
+      take("left");
+      const left = name();
+      take("=>");
+      const leftBody = expr();
+      take(";");
+      take("right");
+      const right = name();
+      take("=>");
+      const rightBody = expr();
+      take(";");
+      const end = take("}").end;
+      a = {
+        kind: "match",
+        motiveName,
+        value,
+        type,
+        left,
+        leftBody,
+        right,
+        rightBody,
+        start: t.start,
+        end,
+      };
+    } else if (t.text === "unpack" && peek() !== "(") {
+      const value = expr();
+      take("as");
+      take("(");
+      const left = name();
+      take(",");
+      const right = name();
+      take(")");
+      take("return");
+      const type = expr();
+      take("{");
+      const body = expr();
+      take(";");
+      const end = take("}").end;
+      a = {
+        kind: "unpack",
+        value,
+        type,
+        left,
+        right,
+        body,
+        start: t.start,
+        end,
+      };
+    } else if (t.text === "fun") {
+      take("(");
+      const n = name();
+      take(":");
+      const domain = expr();
+      take(")");
+      take("=>");
+      const body = expr();
+      a = {
+        kind: "lambda",
+        name: n,
+        domain,
+        body,
+        start: t.start,
+        end: body.end,
+      };
+    } else if (t.text === "forall" || t.text === "exists") {
+      const n = name();
+      take(":");
+      const domain = expr();
+      take(",");
+      const body = expr();
+      a = {
+        kind: t.text,
+        name: n,
+        domain,
+        body,
+        start: t.start,
+        end: body.end,
+      };
+    } else if (t.text === "(") {
+      a = expr();
+      if (peek() === ",") {
+        take(",");
+        const right = expr();
+        a = { kind: "pair", left: a, right, start: t.start };
+      }
+      const end = take(")");
+      a = { ...a, start: t.start, end: end.end };
+    } else if (/^[0-9]+$/.test(t.text)) {
+      if (Number(t.text) > 256)
+        throw Object.assign(
+          new Error("Numerals are limited to 256 in this version."),
+          { offset: t.start },
+        );
+      a = { kind: "number", value: Number(t.text), start: t.start, end: t.end };
+    } else if (/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text) && t.text !== "EOF")
+      a = { kind: "name", name: t.text, start: t.start, end: t.end };
+    else
+      throw Object.assign(
+        new Error(`Expected an expression, found '${t.text}'.`),
+        { offset: t.start },
+      );
+    while (true) {
+      if (peek() === "(") {
+        take("(");
+        const args = [];
+        if (peek() !== ")") {
+          args.push(expr());
+          while (peek() === ",") {
+            take(",");
+            args.push(expr());
+          }
+        }
+        const end = take(")");
+        a = { kind: "call", fn: a, args, start: a.start, end: end.end };
+        continue;
+      }
+      const p = prec[peek()];
+      if (p === undefined || p < min) break;
+      const operatorToken = take(),
+        operator = operatorToken.text,
+        right = expr(p + (["->", "and", "or"].includes(operator) ? 0 : 1));
+      a = {
+        kind: "binary",
+        operator,
+        operatorStart: operatorToken.start,
+        operatorEnd: operatorToken.end,
+        left: a,
+        right,
+        start: a.start,
+        end: right.end,
+      };
+    }
+    depth--;
+    return a;
+  }
+  function pattern() {
+    if (++depth > 128)
+      throw Object.assign(new Error("Pattern nesting exceeds 128."), {
+        offset: ts[i].start,
+      });
+    let p;
+    if (peek() === "(") {
+      const t = take("("),
+        left = pattern();
+      take(",");
+      const right = pattern(),
+        e = take(")");
+      p = { kind: "pair", left, right, start: t.start, end: e.end };
+    } else {
+      const t = name();
+      p = { kind: "name", name: t.text, start: t.start, end: t.end };
+    }
+    depth--;
+    return p;
+  }
+  function block() {
+    if (++depth > 128)
+      throw Object.assign(new Error("Block nesting exceeds 128."), {
+        offset: ts[i].start,
+      });
+    take("{");
+    const statements = [];
+    while (peek() !== "}") {
+      const t = take();
+      let s;
+      if (t.text === "intro") {
+        const n = name(),
+          end = take(";");
+        s = { kind: "intro", name: n, start: t.start, end: end.end };
+      } else if (t.text === "let" || t.text === "obtain") {
+        const target = pattern();
+        if (t.text === "let" && target.kind !== "name")
+          throw Object.assign(new Error("Use obtain to unpack a pair."), {
+            offset: target.start,
+          });
+        take("=");
+        const value = expr();
+        const e = take(";");
+        s = { kind: t.text, target, value, start: t.start, end: e.end };
+      } else if (t.text === "have") {
+        const n = name();
+        take(":");
+        const type = expr(),
+          body = block();
+        s = {
+          kind: "have",
+          name: n,
+          type,
+          body,
+          start: t.start,
+          end: ts[i - 1].end,
+        };
+      } else if (t.text === "exact") {
+        const value = expr(),
+          e = take(";");
+        s = { kind: "exact", value, start: t.start, end: e.end };
+      } else if (t.text === "cases") {
+        const value = expr();
+        take("{");
+        take("left");
+        const left = name();
+        take("=>");
+        const leftBody = block();
+        take("right");
+        const right = name();
+        take("=>");
+        const rightBody = block();
+        const e = take("}");
+        s = {
+          kind: "cases",
+          value,
+          left,
+          leftBody,
+          right,
+          rightBody,
+          start: t.start,
+          end: e.end,
+        };
+      } else
+        throw Object.assign(
+          new Error(
+            `Expected intro, let, obtain, have, cases, or exact; found '${t.text}'.`,
+          ),
+          { offset: t.start },
+        );
+      statements.push(s);
+    }
+    take("}");
+    depth--;
+    return statements;
+  }
+  if (typeOnly) {
+    const result = expr();
+    take("EOF");
+    return result;
+  }
+  const declarations = [];
+  let module = null;
+  const imports = [];
+  while (peek() === "import") {
+    take("import");
+    const imported = name().text;
+    module ??= imported;
+    imports.push(imported);
+    take(";");
+  }
+  while (peek() !== "EOF") {
+    const t = take();
+    if (!["theorem", "def"].includes(t.text))
+      throw Object.assign(new Error("Expected theorem or def."), {
+        offset: t.start,
+      });
+    const n = name(),
+      params = [];
+    if (peek() === "=") {
+      take("=");
+      const value = expr();
+      const end = take(";").end;
+      declarations.push({
+        kind: t.text,
+        name: n,
+        value,
+        params,
+        start: t.start,
+        end,
+      });
+      continue;
+    }
+    if (peek() === "(") {
+      take("(");
+      if (peek() !== ")") {
+        while (true) {
+          const p = name();
+          take(":");
+          params.push({ name: p, type: expr() });
+          if (peek() !== ",") break;
+          take(",");
+        }
+      }
+      take(")");
+    }
+    if (peek() === "=") {
+      take("=");
+      let value = expr();
+      const end = take(";").end;
+      for (const p of [...params].reverse())
+        value = {
+          kind: "lambda",
+          name: p.name,
+          domain: p.type,
+          body: value,
+          start: p.name.start,
+          end: value.end,
+        };
+      declarations.push({
+        kind: t.text,
+        name: n,
+        value,
+        params: [],
+        start: t.start,
+        end,
+      });
+      continue;
+    }
+    take(":");
+    const type = expr(),
+      body = block();
+    declarations.push({
+      kind: t.text,
+      name: n,
+      params,
+      type,
+      body,
+      start: t.start,
+      end: ts[i - 1].end,
+    });
+  }
+  return { module, imports, declarations };
+}

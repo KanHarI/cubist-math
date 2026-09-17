@@ -17,7 +17,7 @@ build/thth proofs
 ```
 
 Use a C11 compiler and Make. On Linux, `make CC=clang sanitize` runs AddressSanitizer
-and UndefinedBehaviorSanitizer. Tests cover successful uses of all 67 opcodes,
+and UndefinedBehaviorSanitizer. Tests cover successful uses of all 75 opcodes (67 upstream and eight suspension/transport rules),
 invalid handles and premises, context discharge, resource limits, rejected-node
 rollback, and deterministic equivalence with inference caching enabled/disabled.
 The collision test forces all interning hashes to zero and checks distinct keys,
@@ -47,11 +47,31 @@ a verified WNat-to-Nat `isEquiv` proof.
 ```sh
 make wasm       # Requires Emscripten; detects .tools/emsdk automatically
 make cli        # Requires Node.js 24+
-make serve      # Browser: http://127.0.0.1:8080
+make serve      # Browser: http://127.0.0.1:8088
 ```
 
 See the [workbench and CLI guide](web/README.md) for SDK setup, examples,
 source syntax, resource bounds, and current limitations.
+
+## Mathematical proof sources
+
+The [high-level language](docs/mathscript.md) supports named definitions, dependent
+functions, induction, pattern matching, and explicit proof blocks. Read and inspect
+sources at `http://127.0.0.1:8088/proof.html?proof=euclid` or `?proof=circle` after
+`make serve`. Sources live in [`web/proofs/`](web/proofs/); `.proof` files contain
+mathematical programs, while `.construction.proof` files preserve kernel audit steps.
+
+The [circle development](docs/circle_fundamental_group.md) constructs
+`S1 = Suspension(Unit or Unit)` and checks its fundamental group is isomorphic to
+integer addition. Its proof and supporting lemmas are high-level source; the C
+extension implements general suspension rules only.
+
+The [Euclid argument](web/proofs/euclid.proof) imports its
+[arithmetic and prime-number foundations](web/proofs/primes.proof), all checked
+from mathematical source without axioms. [Basic examples](web/proofs/basics.proof)
+introduce functions, pairs, and induction. In the CLI, use
+`prove web/proofs/euclid.proof`, then the usual `use`, `select`, `children`,
+`reduce`, and `check` commands. Override the local port with `make serve PORT=8090`.
 
 ## Performance design
 

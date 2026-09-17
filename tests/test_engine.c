@@ -222,6 +222,44 @@ static void recursive_binding(void) {
                      A(PiIntro, child_type, ONE(DefEqExtR, comp), 0, 0, 0, 0, cc, 0, 0, 0));
     tt_free(e);
 }
+/* Native suspension rules are tested after the frozen upstream trace. Closed
+ * test postulates supply arbitrary fibers and sections; wrong boundaries must
+ * still be rejected, regardless of whether those postulates are inhabited. */
+static void cover_suspension(tt_engine *e) {
+    tt_id unit = ZERO(UnitForm), star = ZERO(UnitIntro), u = ZERO(UIntro0);
+    tt_id S = ONE(SuspForm, unit), n = ONE(SuspNorth, unit), s = ONE(SuspSouth, unit);
+    tt_id meridian = A(SuspMerid, unit, star, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id family_type = A(PiForm, S, u, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id family = ONE(Axiom, family_type);
+    tt_id Cn = A(PiElim, family, n, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id Cs = A(PiElim, family, s, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id cn = ONE(Axiom, Cn), cs = ONE(Axiom, Cs);
+    tt_id ctx = ONE(CtxExt, unit), a = A(Vble, 0, 0, 0, 0, 0, ctx, 0, 0, 0, 0);
+    tt_id path = A(SuspMerid, unit, a, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id moved = A(Transport, family, n, s, path, cn, 0, 0, 0, 0, 0);
+    tt_id equality = A(EqForm, Cs, moved, cs, 0, 0, 0, 0, 0, 0, 0);
+    tt_id H = A(PiForm, unit, equality, 0, 0, 0, 0, ctx, 0, 0, 0);
+    tt_id h = ONE(Axiom, H);
+    tt_id at_n = A(SuspElim, family, cn, cs, h, n, 0, 0, 0, 0, 0);
+    tt_id at_s = A(SuspElim, family, cn, cs, h, s, 0, 0, 0, 0, 0);
+    tt_id rn = ONE(BetaReduceGrossKnuth, at_n), rs = ONE(BetaReduceGrossKnuth, at_s);
+    CHECK(e->judgements[rn].expr == e->judgements[cn].expr);
+    CHECK(e->judgements[rs].expr == e->judgements[cs].expr);
+    tt_id xctx = ONE(CtxExt, S), x = A(Vble, 0, 0, 0, 0, 0, xctx, 0, 0, 0, 0);
+    tt_id body = A(SuspElim, family, cn, cs, h, x, 0, 0, 0, 0, 0);
+    tt_id section = A(PiIntro, S, body, 0, 0, 0, 0, xctx, 0, 0, 0);
+    A(Apd, section, n, s, meridian, 0, 0, 0, 0, 0, 0);
+    A(SuspMeridComp, family, cn, cs, h, star, 0, 0, 0, 0, 0);
+    tt_id out = 0, bad[] = {family, cs, cn, h, n};
+    CHECK(tt_apply(e, TT_SuspElim, bad, 5, 0, NULL, 0, &out) == TT_INVALID && out == 0);
+    tt_id wrong_boundary[] = {family, n, n, meridian, cn};
+    CHECK(tt_apply(e, TT_Transport, wrong_boundary, 5, 0, NULL, 0, &out) == TT_INVALID);
+    tt_id wrong_coherence[] = {family, cn, cs, section, n};
+    CHECK(tt_apply(e, TT_SuspElim, wrong_coherence, 5, 0, NULL, 0, &out) == TT_INVALID);
+    tt_id wrong_parameter[] = {unit, ZERO(NatIntroZ)};
+    CHECK(tt_apply(e, TT_SuspMerid, wrong_parameter, 2, 0, NULL, 0, &out) == TT_INVALID);
+}
+
 int main(void) {
     setvbuf(stdout, NULL, _IONBF, 0);
     tt_config c = tt_default_config();
@@ -239,6 +277,10 @@ int main(void) {
     CHECK(tt_run_proof_suite(e, stdout));
     cover_rules(e);
     invalid_inputs(e);
+    if (trace)
+        CHECK(fclose(trace) == 0);
+    tt_set_trace(e, NULL);
+    cover_suspension(e);
     unsigned coverage = 0;
     for (unsigned i = 0; i < 204; i++)
         if (tt_opcode_metadata((tt_opcode)i)) {
@@ -247,10 +289,7 @@ int main(void) {
             CHECK(e->accepted_opcodes[i]);
             coverage++;
         }
-    printf("positive opcode coverage: %u/67\n", coverage);
-    if (trace)
-        CHECK(fclose(trace) == 0);
-    tt_set_trace(e, NULL);
+    printf("positive opcode coverage: %u/75\n", coverage);
     tt_free(e);
     dependent_nat();
     recursive_binding();

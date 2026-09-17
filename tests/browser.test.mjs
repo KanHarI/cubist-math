@@ -1,43 +1,41 @@
 import assert from "node:assert/strict";
-import { createServer } from "node:http";
+import { spawn } from "node:child_process";
 import { readFile, mkdir } from "node:fs/promises";
-import { resolve, extname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import proofs from "../web/proofs/catalogue.mjs";
-const root = fileURLToPath(new URL("../web", import.meta.url));
-const types = {
-  ".html": "text/html",
-  ".mjs": "text/javascript",
-  ".css": "text/css",
-  ".wasm": "application/wasm",
-  ".md": "text/plain",
-};
-const server = createServer(async (req, res) => {
-  try {
-    const pathname = decodeURIComponent(
-      new URL(req.url, "http://localhost").pathname,
-    );
-    const path = resolve(
-      root,
-      "." + (pathname === "/" ? "/index.html" : pathname),
-    );
-    if (!path.startsWith(root + sep)) {
-      res.writeHead(403);
-      res.end();
-      return;
+const child = spawn(
+  "python3",
+  [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
+  { stdio: ["ignore", "pipe", "ignore"] },
+);
+const port = await new Promise((resolve, reject) => {
+  let output = "";
+  const timer = setTimeout(
+    () => reject(new Error("Browser test server did not start")),
+    10000,
+  );
+  child.on("error", reject);
+  child.stdout.on("data", (data) => {
+    output += data.toString();
+    const match = output.match(/127\.0\.0\.1:(\d+)\//);
+    if (match) {
+      clearTimeout(timer);
+      resolve(Number(match[1]));
     }
-    const data = await readFile(path);
-    res.writeHead(200, {
-      "Content-Type": types[extname(path)] || "application/octet-stream",
-    });
-    res.end(data);
-  } catch {
-    res.writeHead(404);
-    res.end();
-  }
+  });
+  child.once("exit", (code) => {
+    clearTimeout(timer);
+    reject(new Error("Browser test server exited: " + code));
+  });
 });
-await new Promise((r) => server.listen(0, "127.0.0.1", r));
+const server = {
+  address: () => ({ port }),
+  close: (callback) => {
+    child.once("exit", callback);
+    child.kill();
+  },
+};
 let browser;
 try {
   browser = await chromium.launch({ headless: true });
@@ -52,7 +50,7 @@ try {
       document.querySelector("#status").textContent === "WASM ready" &&
       document.querySelector("#active-name").textContent === "nested",
   );
-  assert.equal(await page.locator("#opcode option").count(), 67);
+  assert.equal(await page.locator("#opcode option").count(), 75);
   assert.equal(await page.locator('.object[data-name="LEM"]').count(), 1);
   assert.equal(await page.locator('.object[data-name="AOC"]').count(), 1);
   assert.equal(await page.locator("#axioms").isChecked(), true);
@@ -354,6 +352,177 @@ try {
     await page.locator("#selection-label").textContent(),
     "expression.0",
   );
+  // Deliberately stale canonical module responses must not enter the new
+  // worker's versioned module graph (the live-browser regression).
+  const limitRequests = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/language.mjs"))
+      limitRequests.push(request.url());
+  });
+  await page.route("**/language.mjs", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({
+      response,
+      body: (await response.text()).replace(
+        "MAX_STEPS = 65536",
+        "MAX_STEPS = 8192",
+      ),
+    });
+  });
+  // Mathematical authoring, definition navigation, notation, and edit isolation.
+  await page.evaluate(() =>
+    sessionStorage.setItem(
+      "mathscript:primes",
+      "// Old saved editor state\nconstruction primes { export old = natural_type(); }",
+    ),
+  );
+  await page.goto(
+    `http://127.0.0.1:${server.address().port}/proof.html?proof=primes`,
+  );
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(
+    await page.locator("#editor").inputValue(),
+    /theorem factorial_positive/,
+  );
+  assert.doesNotMatch(
+    await page.locator("#editor").inputValue(),
+    /construction primes/,
+  );
+  assert.equal(await page.locator("#previous-draft").isVisible(), true);
+  assert.match(await page.locator("#source-notice").textContent(), /preserved/);
+  await page.goto(`http://127.0.0.1:${server.address().port}/proof.html`);
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(await page.locator("#result").textContent(), /Verified euclid/);
+  await page.locator('#read-source [data-name="factorial_positive"]').click();
+  assert.match(
+    await page.locator("#view-source").getAttribute("href"),
+    /proof=primes&name=factorial_positive/,
+  );
+  await page.locator("#view-source").click();
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(
+    await page.locator("#read-source .active").textContent(),
+    /theorem factorial_positive/,
+  );
+  assert.match(await page.locator("#editor").inputValue(), /induction/);
+  assert.doesNotMatch(
+    await page.locator("#editor").inputValue(),
+    /construction primes/,
+  );
+  await page.goBack();
+  await page.locator("#result:not([hidden])").waitFor();
+  await page
+    .locator('#read-source [data-name="InfinitelyManyPrimes"]')
+    .last()
+    .click();
+  await page.locator("#view-source").click();
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(
+    await page.locator("#read-source .active").textContent(),
+    /def InfinitelyManyPrimes/,
+  );
+  assert.match(
+    await page.locator("#editor").inputValue(),
+    /forall n : Nat, exists p : Nat, Prime\(p\) and n < p/,
+  );
+  assert.match(
+    await page.locator("#editor").inputValue(),
+    /theorem euclid : InfinitelyManyPrimes/,
+  );
+  await page.locator('#read-source [data-name="2"]').click();
+  assert.match(
+    await page.locator("#inspect-description").textContent(),
+    /succ\(succ\(0\)\)/,
+  );
+  await page.locator('#read-source [data-name="<"]').first().click();
+  assert.match(
+    await page.locator("#inspect-description").textContent(),
+    /isLt/,
+  );
+  await page.locator("#view-source").click();
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(
+    await page.locator("#read-source .active").textContent(),
+    /def isLt/,
+  );
+  await page.goBack();
+  await page.locator("#result:not([hidden])").waitFor();
+  await page.locator('#read-source a[data-name="primes"]').click();
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(
+    await page.locator("#proof-title").textContent(),
+    /mathematical foundations/,
+  );
+  await page.locator("#proof-picker").selectOption("basics");
+  await page.waitForFunction(() =>
+    document.querySelector("#result").textContent.includes("copy_of_two"),
+  );
+  const checkedSource = await page.locator("#editor").inputValue();
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill("theorem wrong : Void { exact 0; }");
+  await page.locator("#check").click();
+  await page.locator("#diagnostic:not([hidden])").waitFor();
+  assert.match(
+    await page.locator("#diagnostic").textContent(),
+    /Expected Void/,
+  );
+  assert.match(await page.locator("#result").textContent(), /copy_of_two/);
+  await page.locator("#editor").fill(checkedSource);
+  await page.locator("#check").click();
+  await page.locator("#read-source:not([hidden])").waitFor();
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth,
+    ),
+    false,
+  );
+  await page.screenshot({
+    path: fileURLToPath(
+      new URL("../.tools/mathscript-mobile.png", import.meta.url),
+    ),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator("#proof-picker").selectOption("circle");
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(
+    await page.locator("#result").textContent(),
+    /Verified fundamental_group_of_circle/,
+  );
+  assert.match(
+    await page.locator("#result").textContent(),
+    /3 explicit axioms/,
+  );
+  await page
+    .locator('#read-source [data-name="FundamentalGroupS1IsZ"]')
+    .last()
+    .click();
+  await page.locator("#view-source").click();
+  assert.match(
+    await page.locator("#read-source .active").textContent(),
+    /def FundamentalGroupS1IsZ/,
+  );
+  await page.locator('#read-source [data-name="IsSet"]').first().click();
+  await page.locator("#view-source").click();
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(
+    await page.locator("#read-source .active").textContent(),
+    /def IsSet/,
+  );
+  await page.goBack();
+  await page.locator("#result:not([hidden])").waitFor();
+  await page.locator('#read-source [data-name="univalence"]').first().click();
+  assert.match(
+    await page.locator("#view-source").getAttribute("href"),
+    /prelude_library_construction&name=lib_univalence/,
+  );
+  await page.screenshot({
+    path: fileURLToPath(new URL("../.tools/circle-proof.png", import.meta.url)),
+    fullPage: true,
+  });
+  assert.ok(limitRequests.length > 0);
+  assert.ok(limitRequests.every((url) => url.includes("?version=")));
   assert.deepEqual(errors, []);
   console.log(
     "Browser: axiom navigation, selection, reduction, rewrite, preview isolation, undo, save/import, and WASM worker passed",

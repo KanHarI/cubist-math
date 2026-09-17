@@ -45,9 +45,11 @@ web/dist/kernel.mjs: $(KERNEL_SRC) src/kernel/internal.h src/kernel/metadata.inc
 	mkdir -p web/dist
 	$(EMCC) -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Isrc $(KERNEL_SRC) wasm/bridge.c --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=268435456 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(WASM_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]' -o $@
 wasm-test: wasm
-	node --test tests/workbench.test.mjs
+	node --test tests/workbench.test.mjs tests/mathscript.test.mjs
+PORT ?= 8088
 serve: wasm
-	python3 -m http.server 8080 --bind 127.0.0.1 --directory web
+	@echo "MathScript: http://127.0.0.1:$(PORT)/proof.html"
+	python3 tools/serve.py --port $(PORT)
 
 .PHONY: cli browser-test
 cli: wasm
@@ -60,3 +62,4 @@ proof-export: wasm
 	python3 tools/export_workbench.py
 	node tools/proofs/wnat_equiv.mjs
 	node tools/proofs/primes.mjs
+	node tools/export_mathscript.mjs

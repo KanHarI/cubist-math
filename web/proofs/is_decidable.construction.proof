@@ -1,0 +1,27 @@
+// Is decidable
+// Complete checked construction. All intermediate steps are included.
+construction is_decidable {
+  private s0001_VoidForm = empty_type();
+  private s0002_UIntroOmega = universe_omega();
+  private s0003_CtxExt = assume(s0002_UIntroOmega, none);
+  private s0004_UVble = universe_variable(s0003_CtxExt);
+  private s0005_CtxExt = assume(s0004_UVble, none);
+  private s0006_Vble = variable(s0005_CtxExt);
+  private s0007_PiForm = function_type(s0006_Vble, s0001_VoidForm, none);
+  private s0008_PiIntro = function_intro(s0004_UVble, s0007_PiForm, s0005_CtxExt);
+  private s0009_PiIntro = function_intro(s0002_UIntroOmega, s0008_PiIntro, s0003_CtxExt);
+  private s0010_Def = define(s0009_PiIntro);
+  private s0011_DefEqExtL = definition_left(s0010_Def);
+  private s0012_UIntroOmega = universe_omega();
+  private s0013_CtxExt = assume(s0012_UIntroOmega, none);
+  private s0014_UVble = universe_variable(s0013_CtxExt);
+  private s0015_CtxExt = assume(s0014_UVble, none);
+  private s0016_Vble = variable(s0015_CtxExt);
+  private s0017_PiElim = apply(s0011_DefEqExtL, s0014_UVble);
+  private s0018_PiElim = apply(s0017_PiElim, s0016_Vble);
+  private s0019_SumForm = either_type(s0016_Vble, s0018_PiElim);
+  private s0020_PiIntro = function_intro(s0014_UVble, s0019_SumForm, s0015_CtxExt);
+  private s0021_PiIntro = function_intro(s0012_UIntroOmega, s0020_PiIntro, s0013_CtxExt);
+  private s0022_Def = define(s0021_PiIntro);
+  export lib_IsDecidable = definition_left(s0022_Def);
+}

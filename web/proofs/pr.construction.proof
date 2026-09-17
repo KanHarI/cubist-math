@@ -1,0 +1,48 @@
+// Pr
+// Complete checked construction. All intermediate steps are included.
+construction pr {
+  private s0001_UIntroOmega = universe_omega();
+  private s0002_CtxExt = assume(s0001_UIntroOmega, none);
+  private s0003_UVble = universe_variable(s0002_CtxExt);
+  private s0004_CtxExt = assume(s0003_UVble, none);
+  private s0005_Vble = variable(s0004_CtxExt);
+  private s0006_PiForm = function_type(s0005_Vble, s0003_UVble, none);
+  private s0007_CtxExt = assume(s0006_PiForm, none);
+  private s0008_Vble = variable(s0007_CtxExt);
+  private s0009_CtxExt = assume(s0005_Vble, none);
+  private s0010_Vble = variable(s0009_CtxExt);
+  private s0011_PiElim = apply(s0008_Vble, s0010_Vble);
+  private s0012_SigmaForm = pair_type(s0005_Vble, s0011_PiElim, s0009_CtxExt);
+  private s0013_CtxExt = assume(s0012_SigmaForm, none);
+  private s0014_Vble = variable(s0013_CtxExt);
+  private s0015_CtxExt = assume(s0011_PiElim, none);
+  private s0016_Vble = variable(s0015_CtxExt);
+  private s0017_SigmaElim = pair_eliminate(s0005_Vble, s0010_Vble, s0014_Vble, none, s0009_CtxExt, s0015_CtxExt);
+  private s0018_PiIntro = function_intro(s0012_SigmaForm, s0017_SigmaElim, s0013_CtxExt);
+  private s0019_PiIntro = function_intro(s0006_PiForm, s0018_PiIntro, s0007_CtxExt);
+  private s0020_PiIntro = function_intro(s0003_UVble, s0019_PiIntro, s0004_CtxExt);
+  private s0021_PiIntro = function_intro(s0001_UIntroOmega, s0020_PiIntro, s0002_CtxExt);
+  private s0022_Def = define(s0021_PiIntro);
+  export lib_pr1 = definition_left(s0022_Def);
+  private s0024_SigmaIntro = pair_intro(s0010_Vble, s0011_PiElim, s0016_Vble, s0009_CtxExt);
+  private s0025_PiElim = apply(s0018_PiIntro, s0024_SigmaIntro);
+  private s0026_PiElim = apply(s0018_PiIntro, s0014_Vble);
+  private s0027_PiElim = apply(s0008_Vble, s0026_PiElim);
+  private s0028_DefEqRefl = definition_refl(s0025_PiElim);
+  private s0029_HighExp = select_expression(s0028_DefEqRefl);
+  private s0030_High0 = select_first(s0029_HighExp);
+  private s0031_BetaReduceGrossKnuth = reduce_pass(s0030_High0);
+  private s0032_BetaReduceGrossKnuth = reduce_pass(s0031_BetaReduceGrossKnuth);
+  private s0033_Subs = substitute(s0016_Vble, s0032_BetaReduceGrossKnuth);
+  private s0034_SigmaElim = pair_eliminate(s0027_PiElim, s0033_Subs, s0024_SigmaIntro, s0013_CtxExt, s0009_CtxExt, s0015_CtxExt);
+  private s0035_PiElim = apply(s0008_Vble, s0026_PiElim);
+  private s0036_SigmaElim = pair_eliminate(s0035_PiElim, s0034_SigmaElim, s0014_Vble, s0013_CtxExt, s0009_CtxExt, s0015_CtxExt);
+  private s0037_PiIntro = function_intro(s0012_SigmaForm, s0036_SigmaElim, s0013_CtxExt);
+  private s0038_PiIntro = function_intro(s0006_PiForm, s0037_PiIntro, s0007_CtxExt);
+  private s0039_PiIntro = function_intro(s0003_UVble, s0038_PiIntro, s0004_CtxExt);
+  private s0040_PiIntro = function_intro(s0001_UIntroOmega, s0039_PiIntro, s0002_CtxExt);
+  private s0041_BetaReduceGrossKnuth = reduce_pass(s0040_PiIntro);
+  private s0042_BetaReduceGrossKnuth = reduce_pass(s0041_BetaReduceGrossKnuth);
+  private s0043_Def = define(s0042_BetaReduceGrossKnuth);
+  export lib_pr2 = definition_left(s0043_Def);
+}
