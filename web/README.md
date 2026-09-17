@@ -40,7 +40,7 @@ this label does not claim that other objects are independent of axioms.
 
 The browser's **Existing proofs & library** selector opens all **24 original
 proof-construction routines**, the complete prelude library, the existing
-polymorphic identity example, and the WNat-to-Nat equivalence: **27 programs**. This includes composition, product
+polymorphic identity example, the WNat-to-Nat equivalence, and Euclid’s infinitude of primes: **28 programs**. This includes composition, product
 commutativity, both projection implementations, equality operations, homotopy,
 truncation, choice, excluded middle, uniqueness results, and every basic type.
 The original projection helper is instantiated with U0, as in its caller.
@@ -234,8 +234,8 @@ A failed replay never changes the accepted proof or policy.
   or independently type-checked pretty-printer.
 
 The kernel bridge limits expressions to 65,536 tree nodes, AST storage to 500,000
-nodes, judgements to 100,000, context counters to 256, and depth to 256. Sessions
-allow 4096 instructions and 256 accepted history actions. WASM memory is capped
+nodes, judgements to 100,000, context counters to 4096, and depth to 256. Sessions
+allow 8192 instructions and 256 accepted history actions. WASM memory is capped
 at 256 MiB. The browser terminates its worker after a 30-second request timeout;
 Reset example starts a new worker. Save useful work before large explorations.
 
@@ -289,3 +289,7 @@ inspect the input. The instruction log also records every pass. For WNat's
 `isEquiv` type, `p3006_PiElim` is followed by `p3007_BetaReduceGrossKnuth` and
 `p3008_BetaReduceGrossKnuth`. To run a new pass, select a subtree and choose
 **Reduction pass in selection**; inspect the preview before accepting it.
+
+`open primes` loads the constructive infinitude-of-primes theorem with axioms
+disabled. Check it with `check InfinitelyManyPrimes infinitely_many_primes`.
+See [the proof and definitions](../docs/infinitely_many_primes.md).

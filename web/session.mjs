@@ -1,5 +1,5 @@
 import { Kernel, catalogue } from "./kernel.mjs";
-import { parse, formatStep, demo } from "./language.mjs";
+import { parse, formatStep, demo, MAX_STEPS } from "./language.mjs";
 
 // Accepted actions form a revision tree. Preview uses a separate replayed engine.
 // No kernel cloning, unchecked publication, or accepted-node rollback is assumed.
@@ -59,8 +59,8 @@ export class Session {
     if (!Array.isArray(steps) || !steps.length)
       throw new Error("Enter at least one instruction.");
     const accepted = this.program();
-    if (accepted.length + steps.length > 4096)
-      throw new Error("Session limit: 4096 instructions.");
+    if (accepted.length + steps.length > MAX_STEPS)
+      throw new Error(`Session limit: ${MAX_STEPS} instructions.`);
     const start = performance.now(),
       engine = this.replay(accepted),
       normalized = [];
@@ -238,7 +238,7 @@ export class Session {
       typeof document.policy?.allowAxioms !== "boolean" ||
       (!adoptPolicy && document.policy.allowAxioms !== this.allowAxioms) ||
       !Array.isArray(document.steps) ||
-      document.steps.length > 4096
+      document.steps.length > MAX_STEPS
     )
       throw new Error(
         "Unsupported proof file or axiom policy. Enable axioms explicitly before importing a proof that uses them.",

@@ -1,3 +1,4 @@
+export const MAX_STEPS = 8192;
 // One binding per line and one checked instruction per binding. No eval.
 export const aliases = {
   "universe.zero": "UIntro0",
@@ -125,8 +126,8 @@ export function parse(source, metadata) {
       throw new Error(`Line ${index + 1}: ${e.message}`);
     }
   }
-  if (steps.length > 4096)
-    throw new Error("A program may contain at most 4096 instructions.");
+  if (steps.length > MAX_STEPS)
+    throw new Error(`A program may contain at most ${MAX_STEPS} instructions.`);
   return steps;
 }
 export function formatStep(s) {

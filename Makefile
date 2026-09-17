@@ -59,3 +59,4 @@ browser-test: wasm
 proof-export: wasm
 	python3 tools/export_workbench.py
 	node tools/proofs/wnat_equiv.mjs
+	node tools/proofs/primes.mjs

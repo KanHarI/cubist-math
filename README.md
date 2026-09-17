@@ -41,7 +41,7 @@ The CLI uses the same interpreter and supports both named/numeric paths and
 selection by adding parentheses around a displayed subexpression. Both start
 with all 50 prelude library exports, including `LEM` and `AOC`. The browser proof
 selector and CLI `proofs` / `open ID` expose every original proof construction
-and the identity example as 27 checked, editable replay programs, including `open wnat_equiv` for
+and the identity example as 28 checked, editable replay programs, including `open wnat_equiv` for
 a verified WNat-to-Nat `isEquiv` proof.
 
 ```sh
@@ -140,3 +140,7 @@ in [compatibility.md](docs/compatibility.md).
 | `src/kernel/` | Checked rules, context discharge, binding, interning, and review guide |
 | `src/proofs.c`, `src/proofs_generated.inc` | Original proof programs and builtins |
 | `tests/` | Kernel, proof, regression, and determinism tests |
+
+The axiom-free Euclid proof is available with `open primes`, followed by
+`check InfinitelyManyPrimes infinitely_many_primes`. See
+[the construction and definitions](docs/infinitely_many_primes.md).

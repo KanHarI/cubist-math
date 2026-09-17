@@ -29,7 +29,7 @@ uint32_t wb_new(unsigned axioms) {
             config.max_expression_nodes = 65536;
             config.max_ast_nodes = 500000;
             config.max_judgements = 100000;
-            config.max_counter = 256;
+            config.max_counter = 4096;
             tt_engine *engine = tt_new(&config);
             if (!engine)
                 return 0;

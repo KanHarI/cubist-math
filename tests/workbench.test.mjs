@@ -311,12 +311,15 @@ test("every ported proof opens, verifies its exports, and round trips as JSON an
       "utf8",
     ),
   );
-  assert.equal(catalogue.length, 27);
+  assert.equal(catalogue.length, 28);
   assert.deepEqual(
     new Set(
       catalogue
         .filter(
-          (p) => !["prelude_library", "identity", "wnat_equiv"].includes(p.id),
+          (p) =>
+            !["prelude_library", "identity", "wnat_equiv", "primes"].includes(
+              p.id,
+            ),
         )
         .map((p) => p.source),
     ),
@@ -414,7 +417,7 @@ test("CLI opens every bundled program and exposes LEM and AOC at startup", async
     (result.stdout.match(/Opened /g) || []).length,
     catalogue.length,
   );
-  assert.equal((result.stdout.match(/\nVERIFIED\n/g) || []).length, 4);
+  assert.equal((result.stdout.match(/\nVERIFIED\n/g) || []).length, 5);
 });
 
 test("WNat equivalence has the full coherence field and cannot replay without funext", async () => {
@@ -474,6 +477,51 @@ test("WNat equivalence has the full coherence field and cannot replay without fu
     broken.steps = broken.steps.filter((step) => step.op !== "Axiom");
     assert.throws(() => s.import(broken, true), /judgement/);
     assert.deepEqual(s.export(), before);
+  } finally {
+    s.dispose();
+  }
+});
+
+test("Euclid is a closed unbounded-primes theorem with no axiom dependencies", async () => {
+  const document = JSON.parse(
+    await readFile(
+      new URL("../web/proofs/primes.thth.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  assert.equal(document.steps.length, 4327);
+  assert.equal(document.policy.allowAxioms, false);
+  assert.equal(
+    document.steps.some((step) => step.op === "Axiom"),
+    false,
+  );
+  const s = fresh();
+  try {
+    s.import(document);
+    assert.equal(
+      s.verify("InfinitelyManyPrimes", "infinitely_many_primes"),
+      true,
+    );
+    const proposition = s.inspect("InfinitelyManyPrimes").expression;
+    assert.equal(proposition.kind, "Pi");
+    assert.equal(proposition.children[0].kind, "Nat");
+    const witness = proposition.children[1];
+    assert.equal(witness.kind, "Sigma");
+    assert.equal(witness.children[0].kind, "Nat");
+    assert.equal(witness.children[1].kind, "Sigma");
+    assert.equal(witness.children[1].children[0].kind, "Sigma");
+    assert.equal(s.inspect("infinitely_many_primes").assumptions.length, 0);
+    assert.deepEqual(s.inspect("infinitely_many_primes").propositions, [
+      "InfinitelyManyPrimes",
+    ]);
+    const before = s.export();
+    const broken = structuredClone(document);
+    broken.steps.at(-1).args = ["InfinitelyManyPrimes"];
+    assert.throws(() => s.import(broken), /rejected/);
+    assert.deepEqual(s.export(), before);
+    const oversized = structuredClone(document);
+    oversized.steps = Array(8193).fill(document.steps[0]);
+    assert.throws(() => s.import(oversized), /Unsupported proof/);
   } finally {
     s.dispose();
   }

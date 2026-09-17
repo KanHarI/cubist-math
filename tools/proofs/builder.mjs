@@ -4,9 +4,9 @@ import library from "../../web/proofs/library.mjs";
 // A proof-producing metaprogram: every construction and conversion is a public
 // checked instruction. JavaScript only chooses premises and fresh names.
 export class Builder {
-  constructor(module) {
-    this.k = new Kernel(module, true);
-    for (const s of library.steps) this.k.apply(s);
+  constructor(module, { loadLibrary = true } = {}) {
+    this.k = new Kernel(module, loadLibrary);
+    if (loadLibrary) for (const s of library.steps) this.k.apply(s);
     this.serial = 0;
     this.normal = new Map();
   }

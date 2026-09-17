@@ -1,0 +1,30 @@
+{
+  "id": "primes",
+  "title": "Infinitely many primes (Euclid)",
+  "file": "primes.thth.json",
+  "source": "tools/proofs/primes.mjs",
+  "steps": 4327,
+  "allowAxioms": false,
+  "exports": [
+    "nat_add",
+    "nat_mul",
+    "nat_le",
+    "nat_factorial",
+    "Divides",
+    "Prime",
+    "bounded_least_search",
+    "nontrivial_divisibility_decidable",
+    "divides_transitive",
+    "nontrivial_divisor_not_consecutive",
+    "factorial_positive",
+    "bounded_divisor_of_factorial",
+    "prime_divisor_exists",
+    "InfinitelyManyPrimes",
+    "infinitely_many_primes"
+  ],
+  "verify": [
+    "InfinitelyManyPrimes",
+    "infinitely_many_primes"
+  ],
+  "axioms": []
+}
