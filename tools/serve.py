@@ -23,7 +23,7 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path.split("?")[0] == "/mathscript-version":
             paths = sorted((ROOT / "mathscript").glob("*.mjs"))
             paths += sorted((ROOT / "proofs").glob("*.proof"))
-            paths += [ROOT / "language.mjs", ROOT / "dist/kernel.mjs", ROOT / "dist/kernel.wasm", Path(__file__)]
+            paths += [ROOT / "language.mjs", ROOT / "kernel.mjs", ROOT / "dist/kernel.mjs", ROOT / "dist/kernel.wasm", Path(__file__)]
             digest = hashlib.sha256()
             for path in paths:
                 digest.update(path.read_bytes())

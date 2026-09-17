@@ -484,6 +484,30 @@ try {
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator("#proof-picker").selectOption("surjections");
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(await page.locator("#result").textContent(), /Verified every_surjection_has_right_inverse/);
+  const surjectionResult = page.locator("#result > div").filter({
+    has: page.getByRole("button", { name: "every_surjection_has_right_inverse", exact: true }),
+  });
+  await surjectionResult.locator('[data-axiom="AOC"]').click();
+  assert.match(await page.locator("#view-source").getAttribute("href"), /proof=prelude_library_construction&name=AOC/);
+  await page.locator('#read-source [data-name="set_choice"]').click();
+  assert.match(await page.locator("#view-source").getAttribute("href"), /name=AOC/);
+  await page.locator('#read-source [data-name="setA"]').first().click();
+  assert.match(await page.locator("#inspect-type").textContent(), /IsSet\(A\)/);
+  assert.match(await page.locator("#language-guide").textContent(), /intro name;/);
+  await page.locator("#proof-picker").selectOption("schroeder_bernstein");
+  await page.locator("#result:not([hidden])").waitFor();
+  assert.match(await page.locator("#result").textContent(), /Verified cantor_schroeder_bernstein/);
+  const csbResult = page.locator("#result > div").filter({
+    has: page.getByRole("button", { name: "cantor_schroeder_bernstein", exact: true }),
+  });
+  assert.equal(await csbResult.locator('[data-axiom="AOC"]').count(), 0);
+  assert.equal(await csbResult.locator('[data-axiom="s0121_Axiom"]').count(), 0);
+  assert.equal(await csbResult.locator('[data-axiom="lib_Trunc"]').count(), 1);
+  await csbResult.locator('[data-axiom="LEM"]').click();
+  assert.match(await page.locator("#view-source").getAttribute("href"), /proof=prelude_library_construction&name=LEM/);
   await page.locator("#proof-picker").selectOption("circle");
   await page.locator("#result:not([hidden])").waitFor();
   assert.match(

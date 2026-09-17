@@ -8,6 +8,9 @@ export class Kernel {
     this.declarations = new Map();
     this.steps = [];
     this.axiomDependencies = new Map();
+    // Generated library replays may name the same checked axiom more than
+    // once. Keep a public name for each identity without changing the trace.
+    this.axiomNames = new Map();
     this.metadata = catalogue(module);
   }
   dispose() {
@@ -95,14 +98,21 @@ export class Kernel {
     for (const premise of [...step.args, step.context, ...step.free])
       for (const axiom of this.axiomDependencies.get(premise) ?? [])
         axioms.add(axiom);
-    if (step.op === "Axiom") axioms.add(step.name);
+    if (step.op === "Axiom") {
+      axioms.add(step.name);
+      const id = this.bindings.get(step.name).id;
+      const previous = this.axiomNames.get(id);
+      if (!previous || (this.bindings.get(previous).hidden && !step.hidden))
+        this.axiomNames.set(id, step.name);
+    }
     this.axiomDependencies.set(step.name, [...axioms]);
     this.steps.push(step);
     return step;
   }
   axiomsFor(name) {
     if (!this.bindings.has(name)) throw new Error(`Unknown binding: ${name}`);
-    return [...this.axiomDependencies.get(name)];
+    return [...new Set(this.axiomDependencies.get(name).map(axiom =>
+      this.axiomNames.get(this.bindings.get(axiom).id) ?? axiom))];
   }
   node(id) {
     const m = this.module,

@@ -139,6 +139,25 @@
           a type. Both take named parameters and a checked block.
         </p>
         <p>
+          <code>intro name;</code> introduces the next input or assumption from
+          the current goal. For <code>forall x : A, B</code>, it names an input
+          of type <code>A</code>; for <code>P -> Q</code>, it names evidence of
+          <code>P</code> and leaves <code>Q</code> to prove. The type comes from
+          the goal, including when the goal is a named definition.
+        </p>
+        <pre>import sets;
+theorem use_assumption : forall A : Type, IsSet(A) -> IsSet(A) {
+  intro A;       // A : Type
+  intro setA;    // setA : IsSet(A)
+  exact setA;
+}</pre>
+        <p>
+          Here <code>IsSet</code> is defined in the <code>sets</code> module:
+          equality proofs between the same two elements agree. Click an
+          introduced name to see its type, or a line number to inspect the goal
+          and local assumptions.
+        </p>
+        <p>
           <code>let</code> names a term · <code>obtain</code> unpacks an
           existential or pair · <code>have</code> proves a local claim ·
           <code>cases</code> splits an <code>or</code> ·

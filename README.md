@@ -72,6 +72,14 @@ from sums of Unit and proves the binomial, permutation (`k!`), and function
 `?proof=permutations`, or `?proof=function_counting` in the source explorer.
 Each result lists its own axiom dependencies, with links to their declarations.
 
+The [surjection development](docs/surjections.md) proves that every surjection
+between sets has a right inverse, using the existing axiom of choice. Open
+`?proof=surjections` to inspect the proof and its explicit axiom dependencies.
+
+The [Cantor–Schröder–Bernstein proof](docs/schroeder_bernstein.md) constructs a
+full equivalence from injections each way between sets, using excluded middle
+and no choice. Open `?proof=schroeder_bernstein` in the source explorer.
+
 The [Euclid argument](web/proofs/euclid.proof) imports its
 [arithmetic and prime-number foundations](web/proofs/primes.proof), all checked
 from mathematical source without axioms. [Basic examples](web/proofs/basics.proof)

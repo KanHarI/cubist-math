@@ -1,0 +1,31 @@
+import bijection_equality;
+import truncation;
+
+// The existing LEM axiom returns Mere(P), not an arbitrary witness of P.
+// Elimination into P is allowed here precisely because P is a proposition.
+theorem double_negation(P : Type, prop : Proposition(P), nn : (P -> Void) -> Void) : P {
+  exact mere_eliminate(P, P, prop, (fun (p : P) => p), classical_truncation(P, nn));
+}
+
+def negation_is_prop(P : Type, f : P -> Void, g : P -> Void) =
+  funext(P, (fun (p : P) => Void), f, g,
+    (fun (p : P) => typed((f(p) = g(p)), absurd(f(p)))));
+
+theorem decision_is_prop(P : Type, prop : Proposition(P), u : Decidable(P), v : Decidable(P)) : u = v {
+  exact match u as a return (a = v) {
+    left p => match v as b return (typed(Decidable(P), left(p)) = b) {
+      left q => cong((fun (r : P) => typed(Decidable(P), left(r))), prop(p, q));
+      right no => absurd(no(p));
+    };
+    right no => match v as b return (typed(Decidable(P), right(no)) = b) {
+      left p => absurd(no(p));
+      right other => cong((fun (r : P -> Void) => typed(Decidable(P), right(r))), typed((no = other), negation_is_prop(P, no, other)));
+    };
+  };
+}
+
+theorem excluded_middle(P : Type, prop : Proposition(P)) : Decidable(P) {
+  exact double_negation(Decidable(P), decision_is_prop(P, prop),
+    (fun (no : Decidable(P) -> Void) =>
+      no(typed(Decidable(P), right(fun (p : P) => no(typed(Decidable(P), left(p))))))));
+}

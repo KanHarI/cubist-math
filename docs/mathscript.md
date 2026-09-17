@@ -135,7 +135,8 @@ programs to 1,048,576 instructions. The WASM kernel allows 16,777,216 nodes
 per expanded expression, 2,000,000 shared AST nodes, and 500,000 judgements,
 with a 512 MiB memory ceiling and expression depth limited to 256. The worker is terminated on a 30-second timeout.
 
-The mathematical layer covers Euclid, the circle fundamental group, and
+The mathematical layer covers Euclid, the circle fundamental group,
+[right inverses of surjections using choice](surjections.md), and
 [finite counting](finite_counting.md), including functions, permutations, and
 Rijke binomial types. Ports of the
 older universe-polymorphic and W-type library are still in progress. Dedicated
@@ -153,3 +154,10 @@ theorem euclid : InfinitelyManyPrimes {
 ```
 
 `intro n;` opens the outer `forall` (or implication) of the checked goal, including through a definition name. It records the new local assumption and remaining goal for source inspection. The kernel checks the resulting function against the named proposition.
+
+For a goal `forall A : Type, IsSet(A) -> IsSet(A)`, `intro A;` introduces
+`A : Type`, then `intro setA;` introduces `setA : IsSet(A)`. The remaining goal
+is `IsSet(A)`, proved by `exact setA;`. The identifier `setA` is a name you
+choose; its type is inferred from the next input of the goal. `IsSet` comes
+from `import sets;` and asserts that any two equality proofs with the same
+endpoints are equal. Click an introduced name to see its inferred type.

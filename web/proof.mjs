@@ -1,5 +1,9 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "surjections", title: "Surjections · right inverses and choice" },
+  { id: "maps", title: "Maps · injections, embeddings and fibers" },
+  { id: "classical", title: "Classical logic · excluded middle" },
+  { id: "schroeder_bernstein", title: "Cantor–Schröder–Bernstein · mutual injections" },
   { id: "binomial_counting", title: "Binomial types · finite cardinality" },
   { id: "permutations", title: "Permutations · factorials" },
   { id: "binomial_types", title: "Binomial types · Rijke construction" },
@@ -311,6 +315,8 @@ const axiomLabels = {
   lib_funext_compute: "Function extensionality computation",
   lib_LEM: "Excluded middle",
   lib_AOC: "Axiom of choice",
+  LEM: "Excluded middle",
+  AOC: "Axiom of choice",
   lib_Trunc: "Propositional truncation",
   lib_trunc_intro: "Truncation introduction",
   lib_trunc_elim: "Truncation elimination",
@@ -336,7 +342,7 @@ function renderAxioms(target, axioms) {
           name: binding,
           role: "explicit axiom",
           ...[...last.outputs, ...last.imports].find(o => o.binding === binding),
-          ...(binding.startsWith("lib_") && last.mode !== "construction"
+          ...(last.preludeAxioms?.includes(binding)
             ? {
                 sourceModule: "prelude_library_construction",
                 sourceName: binding,

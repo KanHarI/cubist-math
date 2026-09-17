@@ -1,0 +1,21 @@
+import bijection_equality;
+
+def Fiber(A : Type, B : Type, f : A -> B, y : B) = exists x : A, f(x) = y;
+def Injective(A : Type, B : Type, f : A -> B) =
+  forall x : A, forall y : A, (f(x) = f(y)) -> (x = y);
+// For arbitrary types, an embedding has proposition-valued fibers.
+def Embedding(A : Type, B : Type, f : A -> B) = forall y : B, Proposition(Fiber(A, B, f, y));
+
+theorem injection_is_embedding(A : Type, B : Type, setB : IsSet(B), f : A -> B,
+  injective : Injective(A, B, f)) : Embedding(A, B, f) {
+  intro y;
+  intro u;
+  intro v;
+  let P = fun (x : A) => f(x) = y;
+  let x = sigma_first(A, P, u);
+  let z = sigma_first(A, P, v);
+  let px = typed((f(x) = y), sigma_second(A, P, u));
+  let pz = typed((f(z) = y), sigma_second(A, P, v));
+  exact subtype_ext(A, P, (fun (a : A) => setB(f(a), y)), u, v,
+    injective(x, z, trans(px, sym(pz))));
+}

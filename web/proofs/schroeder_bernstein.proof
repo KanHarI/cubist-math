@@ -1,0 +1,182 @@
+import maps;
+import classical;
+
+// Iterate g after f. A g-point has a g-preimage at every possible ancestor.
+def iterate(A : Type, step : A -> A, x : A, n : Nat) = induction n as k return A {
+  zero => x;
+  succ previous => step(previous);
+};
+def GPoint(A : Type, B : Type, f : A -> B, g : B -> A, x : A) =
+  forall origin : A, forall n : Nat,
+    (iterate(A, (fun (a : A) => g(f(a))), origin, n) = x) -> Fiber(B, A, g, origin);
+
+def gpoint_is_prop(A : Type, B : Type, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : A) =
+  forall_prop(A, (fun (origin : A) => forall n : Nat,
+    (iterate(A, (fun (a : A) => g(f(a))), origin, n) = x) -> Fiber(B, A, g, origin)),
+    (fun (origin : A) => forall_prop(Nat,
+      (fun (n : Nat) => (iterate(A, (fun (a : A) => g(f(a))), origin, n) = x) -> Fiber(B, A, g, origin)),
+      (fun (n : Nat) => forall_prop((iterate(A, (fun (a : A) => g(f(a))), origin, n) = x),
+        (fun (p : iterate(A, (fun (a : A) => g(f(a))), origin, n) = x) => Fiber(B, A, g, origin)),
+        (fun (p : iterate(A, (fun (a : A) => g(f(a))), origin, n) = x) => embedG(origin)))))));
+
+def decide_gpoint(A : Type, B : Type, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : A) =
+  excluded_middle(GPoint(A, B, f, g, x), gpoint_is_prop(A, B, f, g, embedG, x));
+def g_preimage(A : Type, B : Type, f : A -> B, g : B -> A, x : A, good : GPoint(A, B, f, g, x)) =
+  sigma_first(B, (fun (y : B) => g(y) = x), good(x, 0, refl(x)));
+def g_preimage_law(A : Type, B : Type, f : A -> B, g : B -> A, x : A, good : GPoint(A, B, f, g, x)) =
+  typed((g(g_preimage(A, B, f, g, x, good)) = x),
+    sigma_second(B, (fun (y : B) => g(y) = x), good(x, 0, refl(x))));
+
+theorem gpoint_backward(A : Type, B : Type, f : A -> B, g : B -> A, x : A,
+  good : GPoint(A, B, f, g, g(f(x)))) : GPoint(A, B, f, g, x) {
+  intro origin;
+  intro n;
+  intro p;
+  exact good(origin, succ(n), cong((fun (a : A) => g(f(a))), p));
+}
+
+theorem gpoint_forward(A : Type, B : Type, f : A -> B, g : B -> A,
+  injF : Injective(A, B, f), injG : Injective(B, A, g), x : A,
+  good : GPoint(A, B, f, g, x)) : GPoint(A, B, f, g, g(f(x))) {
+  intro origin;
+  intro n;
+  exact induction n as k return ((iterate(A, (fun (a : A) => g(f(a))), origin, k) = g(f(x))) -> Fiber(B, A, g, origin)) {
+    zero => fun (p : origin = g(f(x))) => typed(Fiber(B, A, g, origin), (f(x), sym(p)));
+    succ ih => fun (p : g(f(iterate(A, (fun (a : A) => g(f(a))), origin, k))) = g(f(x))) =>
+      good(origin, k, injF(iterate(A, (fun (a : A) => g(f(a))), origin, k), x,
+        injG(f(iterate(A, (fun (a : A) => g(f(a))), origin, k)), f(x), p)));
+  };
+}
+
+// If g(y) is not a g-point, the proposition-valued f-fiber of y is inhabited.
+// With no f-preimage, a positive-length ancestor is impossible; at length zero
+// y itself supplies the g-preimage. That would make g(y) a g-point.
+theorem f_preimage(A : Type, B : Type, f : A -> B, g : B -> A,
+  embedF : Embedding(A, B, f), injG : Injective(B, A, g), y : B,
+  bad : GPoint(A, B, f, g, g(y)) -> Void) : Fiber(A, B, f, y) {
+  exact double_negation(Fiber(A, B, f, y), embedF(y),
+    (fun (empty : Fiber(A, B, f, y) -> Void) => bad(
+      fun (origin : A) => fun (n : Nat) =>
+        induction n as k return ((iterate(A, (fun (a : A) => g(f(a))), origin, k) = g(y)) -> Fiber(B, A, g, origin)) {
+          zero => fun (p : origin = g(y)) => typed(Fiber(B, A, g, origin), (y, sym(p)));
+          succ ih => fun (p : g(f(iterate(A, (fun (a : A) => g(f(a))), origin, k))) = g(y)) =>
+            typed(Fiber(B, A, g, origin), absurd(empty(typed(Fiber(A, B, f, y),
+              (iterate(A, (fun (a : A) => g(f(a))), origin, k),
+                injG(f(iterate(A, (fun (a : A) => g(f(a))), origin, k)), y, p))))));
+        })));
+}
+
+def csb_map_at(A : Type, B : Type, f : A -> B, g : B -> A, x : A, decision : Decidable(GPoint(A, B, f, g, x))) =
+  match decision return B {
+    left good => g_preimage(A, B, f, g, x, good);
+    right bad => f(x);
+  };
+def csb_map(A : Type, B : Type, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : A) =
+  csb_map_at(A, B, f, g, x, decide_gpoint(A, B, f, g, embedG, x));
+
+theorem csb_good_at(A : Type, B : Type, f : A -> B, g : B -> A, x : A,
+  good : GPoint(A, B, f, g, x), decision : Decidable(GPoint(A, B, f, g, x))) :
+  g(csb_map_at(A, B, f, g, x, decision)) = x {
+  exact match decision as d return (g(csb_map_at(A, B, f, g, x, d)) = x) {
+    left yes => g_preimage_law(A, B, f, g, x, yes);
+    right no => absurd(no(good));
+  };
+}
+def csb_good(A : Type, B : Type, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : A,
+  good : GPoint(A, B, f, g, x)) = csb_good_at(A, B, f, g, x, good, decide_gpoint(A, B, f, g, embedG, x));
+
+theorem csb_bad_at(A : Type, B : Type, f : A -> B, g : B -> A, x : A,
+  bad : GPoint(A, B, f, g, x) -> Void, decision : Decidable(GPoint(A, B, f, g, x))) :
+  csb_map_at(A, B, f, g, x, decision) = f(x) {
+  exact match decision as d return (csb_map_at(A, B, f, g, x, d) = f(x)) {
+    left yes => absurd(bad(yes));
+    right no => refl(f(x));
+  };
+}
+def csb_bad(A : Type, B : Type, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : A,
+  bad : GPoint(A, B, f, g, x) -> Void) = csb_bad_at(A, B, f, g, x, bad, decide_gpoint(A, B, f, g, embedG, x));
+
+// The two branches have disjoint images.
+theorem csb_disjoint(A : Type, B : Type, f : A -> B, g : B -> A, embedG : Embedding(B, A, g),
+  x : A, z : A, good : GPoint(A, B, f, g, x), bad : GPoint(A, B, f, g, z) -> Void,
+  same : csb_map(A, B, f, g, embedG, x) = csb_map(A, B, f, g, embedG, z)) : Void {
+  let path = trans(sym(csb_good(A, B, f, g, embedG, x, good)),
+    cong(g, trans(same, csb_bad(A, B, f, g, embedG, z, bad))));
+  exact bad(gpoint_backward(A, B, f, g, z, transport(GPoint(A, B, f, g), x, g(f(z)), path, good)));
+}
+
+theorem csb_injective(A : Type, B : Type, f : A -> B, g : B -> A,
+  injF : Injective(A, B, f), embedG : Embedding(B, A, g)) : Injective(A, B, csb_map(A, B, f, g, embedG)) {
+  intro x;
+  intro z;
+  intro same;
+  cases decide_gpoint(A, B, f, g, embedG, x) {
+    left goodX => {
+      cases decide_gpoint(A, B, f, g, embedG, z) {
+        left goodZ => {
+          exact trans(sym(csb_good(A, B, f, g, embedG, x, goodX)),
+            trans(cong(g, same), csb_good(A, B, f, g, embedG, z, goodZ)));
+        }
+        right badZ => { exact absurd(csb_disjoint(A, B, f, g, embedG, x, z, goodX, badZ, same)); }
+      }
+    }
+    right badX => {
+      cases decide_gpoint(A, B, f, g, embedG, z) {
+        left goodZ => { exact absurd(csb_disjoint(A, B, f, g, embedG, z, x, goodZ, badX, sym(same))); }
+        right badZ => {
+          exact injF(x, z, trans(sym(csb_bad(A, B, f, g, embedG, x, badX)),
+            trans(same, csb_bad(A, B, f, g, embedG, z, badZ))));
+        }
+      }
+    }
+  }
+}
+
+theorem csb_preimages(A : Type, B : Type, f : A -> B, g : B -> A,
+  injF : Injective(A, B, f), injG : Injective(B, A, g),
+  embedF : Embedding(A, B, f), embedG : Embedding(B, A, g), y : B) :
+  Fiber(A, B, csb_map(A, B, f, g, embedG), y) {
+  cases decide_gpoint(A, B, f, g, embedG, g(y)) {
+    left good => {
+      exact (g(y), injG(csb_map(A, B, f, g, embedG, g(y)), y, csb_good(A, B, f, g, embedG, g(y), good)));
+    }
+    right bad => {
+      let preimage = f_preimage(A, B, f, g, embedF, injG, y, bad);
+      let x = sigma_first(A, (fun (x : A) => f(x) = y), preimage);
+      let p = typed((f(x) = y), sigma_second(A, (fun (x : A) => f(x) = y), preimage));
+      have badX : GPoint(A, B, f, g, x) -> Void {
+        intro goodX;
+        exact bad(transport(GPoint(A, B, f, g), g(f(x)), g(y), cong(g, p), gpoint_forward(A, B, f, g, injF, injG, x, goodX)));
+      }
+      exact (x, trans(csb_bad(A, B, f, g, embedG, x, badX), p));
+    }
+  }
+}
+
+// A split surjection that is injective is a bijection, by cancellation.
+theorem injective_split_bijection(A : Type, B : Type, h : A -> B, injective : Injective(A, B, h),
+  preimages : (forall y : B, Fiber(A, B, h, y))) : Bijection(A, B) {
+  let k = fun (y : B) => sigma_first(A, (fun (x : A) => h(x) = y), preimages(y));
+  let law = fun (y : B) => typed((h(k(y)) = y), sigma_second(A, (fun (x : A) => h(x) = y), preimages(y)));
+  exact (h, (k, ((fun (x : A) => injective(k(h(x)), x, law(h(x)))), law)));
+}
+
+def CantorSchroederBernstein =
+  forall A : Type, forall B : Type, IsSet(A) -> IsSet(B) ->
+    forall f : A -> B, forall g : B -> A, Injective(A, B, f) -> Injective(B, A, g) -> Equiv(A, B);
+
+theorem cantor_schroeder_bernstein : CantorSchroederBernstein {
+  intro A;
+  intro B;
+  intro setA;
+  intro setB;
+  intro f;
+  intro g;
+  intro injF;
+  intro injG;
+  let embedF = injection_is_embedding(A, B, setB, f, injF);
+  let embedG = injection_is_embedding(B, A, setA, g, injG);
+  exact bijection_equiv(A, B, setB,
+    injective_split_bijection(A, B, csb_map(A, B, f, g, embedG), csb_injective(A, B, f, g, injF, embedG),
+      csb_preimages(A, B, f, g, injF, injG, embedF, embedG)));
+}

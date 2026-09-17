@@ -10,6 +10,24 @@ import { layout, pathFromMarked, pathFromNames } from "../web/expressions.mjs";
 const module = await createKernel();
 const fresh = () => new Session(module);
 
+test("axiom dependencies use public aliases by checked identity without changing replay history", () => {
+  const k = new Kernel(module, true);
+  try {
+    k.apply({ name: "N", op: "NatForm", args: [] });
+    k.apply({ name: "internal", op: "Axiom", args: ["N"], hidden: true });
+    k.apply({ name: "proof", op: "EqIntro", args: ["internal"] });
+    assert.deepEqual(k.axiomsFor("proof"), ["internal"]);
+    k.apply({ name: "public", op: "Axiom", args: ["N"] });
+    assert.equal(k.bindings.get("internal").id, k.bindings.get("public").id);
+    assert.deepEqual(k.axiomsFor("proof"), ["public"]);
+    assert.equal(k.steps.find(s => s.name === "proof").args[0], "internal");
+    k.apply({ name: "U", op: "UnitForm", args: [] });
+    k.apply({ name: "different", op: "Axiom", args: ["U"] });
+    assert.deepEqual(k.axiomsFor("different"), ["different"]);
+    assert.deepEqual(k.axiomsFor("N"), []);
+  } finally { k.dispose(); }
+});
+
 test("preview is isolated; accept, undo, branches, and replay preserve results", () => {
   const s = fresh();
   try {

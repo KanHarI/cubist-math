@@ -18,4 +18,8 @@ export const sourceModules = [
   "integers",
   "suspension",
   "circle",
+  "surjections",
+  "maps",
+  "classical",
+  "schroeder_bernstein",
 ];

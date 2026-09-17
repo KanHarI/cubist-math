@@ -442,6 +442,75 @@ test("truncation elimination uses the prelude axiom and checks both premises", (
 });
 
 
+test("every surjection between sets has a right inverse using the existing choice axiom", () => {
+  const c = compile(module, sources.surjections, sources);
+  try {
+    for (const o of c.outputs)
+      assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
+    assert.ok(c.kernel.verify("EverySurjectionHasRightInverse", "every_surjection_has_right_inverse"));
+    assert.deepEqual(c.kernel.axiomsFor("every_surjection_has_right_inverse").sort(),
+      ["AOC", "lib_Trunc", "lib_trunc_elim", "lib_trunc_intro", "lib_trunc_is_trunc"].sort());
+    for (const name of ["right_inverse_from_preimages", "subtype_is_set", "fiber_is_set"])
+      assert.deepEqual(c.kernel.axiomsFor(name), [], name);
+    assert.ok(c.links.some(link => link.name === "set_choice" && link.binding === "AOC" &&
+      link.sourceModule === "prelude_library_construction"));
+  } finally { c.kernel.dispose(); }
+  // Choice gives mere existence, not a distinguished inverse function.
+  assert.throws(() => compile(module, sources.surjections.replace(
+    "-> Mere(RightInverse(A, B, f));", "-> RightInverse(A, B, f);"), sources), /Expected/);
+});
+
+test("set choice checks its family, setness conditions, and inhabitation evidence", () => {
+  const program = `import sets; import truncation;
+    def choose(A : Type, B : A -> Type, base : IsSet(A),
+      fibers : (forall x : A, IsSet(B(x))), inhabited : (forall x : A, Mere(B(x)))) =
+      set_choice(A, B, base, fibers, inhabited);`;
+  const c = compile(module, program, sources);
+  try {
+    assert.ok(c.kernel.verify("choose_type", "choose"));
+    assert.deepEqual(c.kernel.axiomsFor("choose").sort(), ["AOC", "lib_Trunc"]);
+  } finally { c.kernel.dispose(); }
+  for (const args of [
+    "A, (fun (x : A) => tt), base, fibers, inhabited",
+    "A, B, tt, fibers, inhabited",
+    "A, B, base, tt, inhabited",
+    "A, B, base, fibers, tt",
+  ]) {
+    assert.throws(() => compile(module, program.replace(
+      "set_choice(A, B, base, fibers, inhabited)", `set_choice(${args})`), sources), /Expected/);
+  }
+});
+
+test("Cantor-Schroeder-Bernstein constructs a full equivalence without choice", () => {
+  const c = compile(module, sources.schroeder_bernstein, sources);
+  try {
+    for (const o of c.outputs)
+      assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
+    assert.ok(c.kernel.verify("CantorSchroederBernstein", "cantor_schroeder_bernstein"));
+    const expected = [...new Set([
+      ...c.kernel.axiomsFor("LEM"), "lib_Trunc", "lib_trunc_elim", "lib_funext",
+    ])].sort();
+    assert.deepEqual(c.kernel.axiomsFor("cantor_schroeder_bernstein").sort(), expected);
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    assert.equal(c.kernel.bindings.get("s0121_Axiom").id, c.kernel.bindings.get("lib_Trunc").id);
+    assert.ok(!c.kernel.axiomsFor("cantor_schroeder_bernstein").includes("s0121_Axiom"));
+    assert.ok(c.preludeAxioms.includes("LEM"));
+    assert.deepEqual(c.kernel.axiomsFor("injective_split_bijection"), []);
+  } finally { c.kernel.dispose(); }
+  // The supplied injection f is not generally surjective; it cannot replace
+  // the constructed piecewise bijection while retaining its inverse proofs.
+  assert.throws(() => compile(module, sources.schroeder_bernstein.replace(
+    "injective_split_bijection(A, B, csb_map(A, B, f, g, embedG), csb_injective",
+    "injective_split_bijection(A, B, f, csb_injective"), sources), /Expected/);
+});
+
+test("classical logic checks double-negation evidence and restricts elimination to propositions", () => {
+  const valid = `import classical;
+    def eliminate(P : Type, prop : Proposition(P), nn : (P -> Void) -> Void) = double_negation(P, prop, nn);`;
+  for (const call of ["double_negation(P, tt, nn)", "double_negation(P, prop, tt)"])
+    assert.throws(() => compile(module, valid.replace("double_negation(P, prop, nn)", call), sources), /Expected/);
+});
+
 test("compiler reports completed definitions including imports and stops on errors", () => {
   const updates = [];
   const c = compile(module, "import helper; theorem two : second = 2 { exact refl(2); }",

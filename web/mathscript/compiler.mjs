@@ -51,6 +51,8 @@ export function compile(module, source, library, { onProgress } = {}) {
   const sourceDeclarations = [...importedDeclarations, ...program.declarations];
   const usesDeclaredAxioms = sourceDeclarations.some(d => d.kind === "axiom");
   const usesTruncation = sourceDeclarations.some(d => /"name":"truncation(?:_intro|_prop|_elim)?"/.test(JSON.stringify(d)));
+  const usesChoice = sourceDeclarations.some(d => /"name":"set_choice"/.test(JSON.stringify(d)));
+  const usesClassical = sourceDeclarations.some(d => /"name":"classical_truncation"/.test(JSON.stringify(d)));
   const b = new Builder(module, {
     loadLibrary: false,
     allowAxioms: usesPrelude || usesDeclaredAxioms,
@@ -83,6 +85,9 @@ export function compile(module, source, library, { onProgress } = {}) {
       );
       if (usesTruncation)
         ["lib_Trunc", "lib_trunc_intro", "lib_trunc_is_trunc", "lib_trunc_elim"].forEach(need);
+      if (usesChoice) need("AOC");
+      if (usesClassical) need("LEM");
+      if (usesChoice || usesClassical) need("lib_Trunc");
       for (const step of preludeLibrary.steps)
         if (needed.has(step.name)) b.k.apply(step);
     }
@@ -507,6 +512,8 @@ export function compile(module, source, library, { onProgress } = {}) {
             truncation_intro: ["lib_trunc_intro", "A -> Mere(A)"],
             truncation_prop: ["lib_trunc_is_trunc", "IsProp(Mere(A))"],
             truncation_elim: ["lib_trunc_elim", "IsProp(P) -> (A -> P) -> Mere(A) -> P"],
+            set_choice: ["AOC", "Choice for a family of inhabited sets indexed by a set"],
+            classical_truncation: ["LEM", "Double negation implies mere inhabitation"],
             funext: [
               "lib_funext",
               "Pointwise equality implies function equality",
@@ -873,7 +880,7 @@ export function compile(module, source, library, { onProgress } = {}) {
     function withPrelude(action) {
       if (!usesPrelude)
         throw new Error(
-          "Import prelude to use the existing univalence/function-extensionality principles.",
+          "Import prelude to use the existing classical, choice, truncation, or univalence/function-extensionality principles.",
         );
       const previous = b.opaque;
       b.opaque = false;
@@ -1090,6 +1097,35 @@ export function compile(module, source, library, { onProgress } = {}) {
           represented(apply(C, [p])),
           "pair induction",
         );
+      },
+      classical_truncation(args, e) {
+        arity(args, 2, "classical_truncation");
+        const A = asType(args[0], e),
+          notA = pi(A, () => voidType),
+          nn = check(args[1], e, pi(notA, () => voidType)),
+          axiom = preludeAxiom("LEM"),
+          result = b.app(axiom, op("UCumulOmega", [U]), A.j, nn.binding),
+          T = b.app("lib_Trunc", op("UCumulOmega", [U]), A.j);
+        return val(result, atom(T, `Mere(${A.pretty})`), "classical mere inhabitation");
+      },
+      set_choice(args, e) {
+        arity(args, 5, "set_choice");
+        const A = asType(args[0], e),
+          B = check(args[1], e, pi(A, () => type)),
+          isSet = T => pi(T, x => pi(T, y => {
+            const paths = equalityType(T, x, y);
+            return pi(paths, p => pi(paths, q => equalityType(paths, p, q)));
+          })),
+          setA = check(args[2], e, isSet(A)),
+          setFibers = pi(A, x => isSet(represented(apply(B, [x])))),
+          sets = check(args[3], e, setFibers),
+          axiom = preludeAxiom("AOC"),
+          mere = T => atom(b.app("lib_Trunc", op("UCumulOmega", [U]), T.j), `Mere(${T.pretty})`),
+          inhabited = check(args[4], e, pi(A, x => mere(represented(apply(B, [x]))))),
+          sections = pi(A, x => represented(apply(B, [x]))),
+          conditions = op("SigmaIntro", [setA.binding, setFibers.j, sets.binding], [null]),
+          result = b.app(axiom, op("UCumulOmega", [U]), A.j, B.binding, conditions, inhabited.binding);
+        return val(result, mere(sections), "axiom of choice");
       },
       truncation(args, e) {
         arity(args, 1, "truncation");
@@ -1721,6 +1757,9 @@ export function compile(module, source, library, { onProgress } = {}) {
       allowAxioms: usesPrelude || usesDeclaredAxioms,
       axiomCount: b.k.steps.filter((s) => s.op === "Axiom").length,
       mode: "mathematical",
+      preludeAxioms: usesPrelude ? preludeLibrary.steps
+        .filter(s => s.op === "Axiom" && b.k.bindings.has(s.name))
+        .map(s => s.name) : [],
       source,
       links,
       steps,
