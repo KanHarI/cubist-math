@@ -110,6 +110,7 @@ tt_id p_define_based_path_induction(tt_engine *e) {
             pi_C_x_Refl_x__C_y_p__Ux_judgement,
         }, 2, 0, (tt_id[]){C_pi_zA__pi__eq_A_x_z__Ux_context}, 1, __FILE__, __LINE__);
     tt_id _x_y_D__pi_eq_A_x_y_Ux_judgement = proof_step(e, TT_PiIntro, (tt_id[]){eq_A_x_y_Ux_judgement, x_y_p_D_Ux_judgement}, 2, 0, (tt_id[]){p_eq_A_x_y_context}, 1, __FILE__, __LINE__);
+    (void)_x_y_D__pi_eq_A_x_y_Ux_judgement;
     tt_id q__C_x_Refl_x_context = proof_step(e, TT_CtxExt, (tt_id[]){C_x_Refl_x__Ux_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
     tt_id q__C_x_Refl_x_judgement = proof_step(e, TT_Vble, (tt_id[]){0}, 0, q__C_x_Refl_x_context, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id lam_q_q__pi_C_x_Refl_x__C_x_Refl_x_judgement = proof_step(e, TT_PiIntro, (tt_id[]){C_x_Refl_x__Ux_judgement, q__C_x_Refl_x_judgement}, 2, 0, (tt_id[]){q__C_x_Refl_x_context}, 1, __FILE__, __LINE__);
@@ -151,6 +152,7 @@ tt_id p_define_based_path_induction(tt_engine *e) {
 
 proof_tuple p_define_eq_ops(tt_engine *e) {
     tt_id _U0_U1_judgement = p_define_u0(e);
+    (void)_U0_U1_judgement;
     tt_id UUOmega_UUKappa_judgement = p_define_uuomega(e);
     tt_id based_path_induction_judgement = p_define_based_path_induction(e);
     tt_id Ux_UUOmega_context = proof_step(e, TT_CtxExt, (tt_id[]){UUOmega_UUKappa_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
@@ -246,10 +248,12 @@ proof_tuple p_define_eq_ops(tt_engine *e) {
     tt_id cateq_Ux_A_x_y_z_judgement = proof_step(e, TT_PiElim, (tt_id[]){cateq_Ux_A_x_y_judgement, z_A_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id cateq_Ux_A_x_y_z_p_judgement = proof_step(e, TT_PiElim, (tt_id[]){cateq_Ux_A_x_y_z_judgement, p_eq_A_x_y_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id _cateq_Ux_A_x_y_z_p_q_judgement = proof_step(e, TT_PiElim, (tt_id[]){cateq_Ux_A_x_y_z_p_judgement, q_eq_A_y_z_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
+    (void)_cateq_Ux_A_x_y_z_p_q_judgement;
     tt_id eqinv_Ux_judgement = proof_step(e, TT_PiElim, (tt_id[]){inv_eq_def, Ux_UUOmega_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id eqinv_Ux_A_judgement = proof_step(e, TT_PiElim, (tt_id[]){eqinv_Ux_judgement, A_Ux_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id eqinv_Ux_A_x_judgement = proof_step(e, TT_PiElim, (tt_id[]){eqinv_Ux_A_judgement, x_A_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id _eqinv_Ux_A_x_z_judgement = proof_step(e, TT_PiElim, (tt_id[]){eqinv_Ux_A_x_judgement, z_A_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
+    (void)_eqinv_Ux_A_x_z_judgement;
     tt_id cateq_Ux_A_x_x_judgement = proof_step(e, TT_PiElim, (tt_id[]){cateq_Ux_A_x_judgement, x_A_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id cateq_Ux_A_x_x_x_judgement = proof_step(e, TT_PiElim, (tt_id[]){cateq_Ux_A_x_x_judgement, x_A_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id cateq_Ux_A_x_x_x_refl_judgement = proof_step(e, TT_PiElim, (tt_id[]){
@@ -352,6 +356,7 @@ proof_tuple p_define_homotopy(tt_engine *e) {
     proof_tuple tuple_1 = p_define_pr(e);
     tt_id def_pr1 = tuple_1.v[0];
     tt_id _def_pr2 = tuple_1.v[1];
+    (void)_def_pr2;
     tt_id UUOmega_UUKappa_judgement = p_define_uuomega(e);
     tt_id Ux_UUOmega_context = proof_step(e, TT_CtxExt, (tt_id[]){UUOmega_UUKappa_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
     tt_id Ux_UUOmega_judgement = proof_step(e, TT_UVble, (tt_id[]){0}, 0, Ux_UUOmega_context, (tt_id[]){0}, 0, __FILE__, __LINE__);
@@ -1396,18 +1401,30 @@ tt_id p_define_pi_void_unique(tt_engine *e) {
     proof_tuple tuple_1 = p_define_homotopy(e);
     tt_id def_homotopy = tuple_1.v[0];
     tt_id _def_happly = tuple_1.v[1];
+    (void)_def_happly;
     tt_id _def_ap = tuple_1.v[2];
+    (void)_def_ap;
     tt_id _def_id = tuple_1.v[3];
+    (void)_def_id;
     tt_id _def_isequiv = tuple_1.v[4];
+    (void)_def_isequiv;
     tt_id funext_axiom = tuple_1.v[5];
     tt_id _funext_compute_axiom = tuple_1.v[6];
+    (void)_funext_compute_axiom;
     tt_id _funext_unique_axiom = tuple_1.v[7];
+    (void)_funext_unique_axiom;
     tt_id _def_id_isequiv = tuple_1.v[8];
+    (void)_def_id_isequiv;
     tt_id _def_ueqequiv = tuple_1.v[9];
+    (void)_def_ueqequiv;
     tt_id _univalence_axiom = tuple_1.v[10];
+    (void)_univalence_axiom;
     tt_id _def_transport = tuple_1.v[11];
+    (void)_def_transport;
     tt_id _ua_elim_axiom = tuple_1.v[12];
+    (void)_ua_elim_axiom;
     tt_id _ua_unique_axiom = tuple_1.v[13];
+    (void)_ua_unique_axiom;
     tt_id Ux_UUOmega_context = proof_step(e, TT_CtxExt, (tt_id[]){UUOmega_UUKappa_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
     tt_id Ux_UUOmega_judgement = proof_step(e, TT_UVble, (tt_id[]){0}, 0, Ux_UUOmega_context, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id A_Ux_context = proof_step(e, TT_CtxExt, (tt_id[]){Ux_UUOmega_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
@@ -1848,19 +1865,33 @@ proof_tuple p_define_wnat(tt_engine *e) {
     tt_id comp2_1_judgement = tuple_1.v[5];
     proof_tuple tuple_2 = p_define_homotopy(e);
     tt_id _def_homotopy = tuple_2.v[0];
+    (void)_def_homotopy;
     tt_id _def_happly = tuple_2.v[1];
+    (void)_def_happly;
     tt_id _def_ap = tuple_2.v[2];
+    (void)_def_ap;
     tt_id _def_id = tuple_2.v[3];
+    (void)_def_id;
     tt_id _def_isequiv = tuple_2.v[4];
+    (void)_def_isequiv;
     tt_id _funext_axiom = tuple_2.v[5];
+    (void)_funext_axiom;
     tt_id _funext_compute_axiom = tuple_2.v[6];
+    (void)_funext_compute_axiom;
     tt_id _funext_unique_axiom = tuple_2.v[7];
+    (void)_funext_unique_axiom;
     tt_id _def_id_isequiv = tuple_2.v[8];
+    (void)_def_id_isequiv;
     tt_id _def_ueqequiv = tuple_2.v[9];
+    (void)_def_ueqequiv;
     tt_id _univalence_axiom = tuple_2.v[10];
+    (void)_univalence_axiom;
     tt_id _def_transport = tuple_2.v[11];
+    (void)_def_transport;
     tt_id _ua_elim_axiom = tuple_2.v[12];
+    (void)_ua_elim_axiom;
     tt_id _ua_unique_axiom = tuple_2.v[13];
+    (void)_ua_unique_axiom;
     tt_id Void_U0_judgement = p_define_void(e);
     tt_id Unit_U0_judgement = p_define_unit(e);
     tt_id singleton_Unit_judgement = p_define_singleton(e);
@@ -1916,6 +1947,7 @@ proof_tuple p_define_wnat(tt_engine *e) {
     tt_id n_UNat_context = proof_step(e, TT_CtxExt, (tt_id[]){def_UNat}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
     tt_id n_UNat_judgement = proof_step(e, TT_Vble, (tt_id[]){0}, 0, n_UNat_context, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id _x_Unit_context = proof_step(e, TT_CtxExt, (tt_id[]){Unit_U0_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
+    (void)_x_Unit_context;
     tt_id comp2_one_U1_judgement = proof_step(e, TT_PiElim, (tt_id[]){comp2_1_judgement, U1_UUOmega_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id comp2_one_U1_lam_U0_judgement = proof_step(e, TT_PiElim, (tt_id[]){comp2_one_U1_judgement, type_for_arity_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     comp2_one_U1_lam_U0_judgement = proof_step(e, TT_BetaReduceGrossKnuth, (tt_id[]){comp2_one_U1_lam_U0_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
@@ -1991,6 +2023,7 @@ proof_tuple p_create_pr1_pr2(tt_engine *e, tt_id U0_judgement) {
             b_Ba_judgement,
         }, 3, 0, (tt_id[]){a_A_context}, 1, __FILE__, __LINE__);
     tt_id _pr1_a_b_defeq__A = proof_step(e, TT_PiComp, (tt_id[]){pr1_A_judgement, a_b__sigma_xABx}, 2, 0, (tt_id[]){p_sigma_xABx_context}, 1, __FILE__, __LINE__);
+    (void)_pr1_a_b_defeq__A;
     tt_id pr1_a_b_defeq_a__A = proof_step(e, TT_SigmaComp, (tt_id[]){
             A_U0_judgement,
             a_A_judgement,

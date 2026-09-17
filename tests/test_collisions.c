@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "kernel/internal.h"
 
 #ifndef TT_TEST_CONSTANT_HASH
 #error This test requires the constant-hash build of the entire library

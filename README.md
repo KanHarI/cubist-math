@@ -12,6 +12,7 @@ judgements, including the same explicitly declared axioms as upstream.
 make -j4
 make test
 make collision-test
+make lint
 build/thth proofs
 ```
 
@@ -21,6 +22,16 @@ invalid handles and premises, context discharge, resource limits, rejected-node
 rollback, and deterministic equivalence with inference caching enabled/disabled.
 The collision test forces all interning hashes to zero and checks distinct keys,
 deduplication, table growth, rollback, and inference validation.
+
+Install [Cppcheck](https://cppcheck.sourceforge.io/) with `brew install cppcheck`
+on macOS or `sudo apt-get install cppcheck` on Debian/Ubuntu. `make lint` checks
+every C source file, including tests, included headers, and generated proof code.
+Warnings, style, performance, and portability findings fail the target; CI runs
+the same check. `CPPCHECK=/path/to/cppcheck make lint` selects another installation.
+
+The type-checking kernel is isolated in [`src/kernel/`](src/kernel/). Its
+[review guide](src/kernel/README.md) explains the validation path, rule notation,
+context discharge, storage invariants, substitution, and compatibility limits.
 
 ## Performance design
 
@@ -106,8 +117,6 @@ in [compatibility.md](docs/compatibility.md).
 | Path | Purpose |
 |---|---|
 | `include/` | Public C API and opcode numbers |
-| `src/store.c` | Arenas, interning, context sets, inspection |
-| `src/ast.c` | Binding, substitution, reduction, highlights |
-| `src/kernel.c`, `src/eliminators.c` | Checked inference rules |
+| `src/kernel/` | Checked rules, context discharge, binding, interning, and review guide |
 | `src/proofs.c`, `src/proofs_generated.inc` | Original proof programs and builtins |
 | `tests/` | Kernel, proof, regression, and determinism tests |

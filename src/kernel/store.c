@@ -74,6 +74,9 @@ static size_t lookup_start(tt_engine *e, table *t, uint64_t hash) {
         return SIZE_MAX;
     return hash & (t->cap - 1);
 }
+/* Canonical structural interning. The key includes every constructor field;
+ * hash matches still require full-key equality. Derived metadata is recomputed
+ * only for new nodes. Accepted nodes are immutable for the engine lifetime. */
 tt_id intern(tt_engine *e, node n) {
     if (e->error)
         return 0;
@@ -83,7 +86,7 @@ tt_id intern(tt_engine *e, node n) {
         return 0;
     while (e->nt.slots[pos].id) {
         slot s = e->nt.slots[pos];
-        if (s.hash == hash && !memcmp(&e->nodes[s.id], &n, 24))
+        if (s.hash == hash && !memcmp(&e->nodes[s.id], &n, offsetof(node, size)))
             return s.id;
         pos = (pos + 1) & (e->nt.cap - 1);
     }
@@ -123,6 +126,9 @@ tt_id intern(tt_engine *e, node n) {
     e->nt.used++;
     return id;
 }
+/* Remove a suffix of unpublished nodes. Backward-shift deletion preserves
+ * the probe chain even when every key has the same hash (collision test).
+ * Accepted judgements/contexts must never reference this suffix. */
 void rollback_nodes(tt_engine *e, uint32_t mark) {
     if (mark == e->nn)
         return;
@@ -204,7 +210,7 @@ tt_id save_judgement(tt_engine *e, judgement j) {
         return 0;
     while (e->jt.slots[p].id) {
         slot s = e->jt.slots[p];
-        if (s.hash == h && !memcmp(&j, &e->judgements[s.id], 20))
+        if (s.hash == h && !memcmp(&j, &e->judgements[s.id], offsetof(judgement, op)))
             return s.id;
         p = (p + 1) & (e->jt.cap - 1);
     }
@@ -230,7 +236,7 @@ tt_id save_context(tt_engine *e, context c) {
         return 0;
     while (e->ct.slots[p].id) {
         slot s = e->ct.slots[p];
-        if (s.hash == h && !memcmp(&c, &e->contexts[s.id], 12))
+        if (s.hash == h && !memcmp(&c, &e->contexts[s.id], offsetof(context, source)))
             return s.id;
         p = (p + 1) & (e->ct.cap - 1);
     }
@@ -314,12 +320,6 @@ bool tt_judgement(const tt_engine *e, tt_id id, tt_judgement_view *v) {
     *v =
         (tt_judgement_view){j.expr, j.type, set_count(e, j.set), (tt_opcode)j.op, j.highlight != 0};
     return true;
-}
-bool tt_verify(const tt_engine *e, tt_id proposition, tt_id proof) {
-    if (!e || !proposition || !proof || proposition > e->nj || proof > e->nj)
-        return false;
-    judgement p = e->judgements[proposition], q = e->judgements[proof];
-    return !p.set && !q.set && universe(e, p.type) && p.expr == q.type;
 }
 static const char *names[] = {
     "?",       "Axiom",   "CRef",  "UCRef",     "VRef",   "DRef",     "U",      "UUOmega",

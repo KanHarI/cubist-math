@@ -1,5 +1,8 @@
 #include "internal.h"
 
+/* Compatibility-critical: upstream adds this depth to ALL children of a
+ * constructor, including the domain of Pi/Sigma/W. This is not the usual
+ * child-specific de Bruijn convention. See README.md and compatibility.md. */
 unsigned binders(unsigned k) {
     switch (k) {
     case N_Lambda:
@@ -40,6 +43,10 @@ tt_id max_universe(tt_engine *e, tt_id a, tt_id b) {
     return leaf(e, N_UUOmega, 0);
 }
 
+/* Simultaneous immutable substitution. Source nodes are copied before any
+ * allocation; unchanged subtrees reuse their IDs. The key includes mode,
+ * substitutions, binder depth, and rollback generation. See internal.h for the
+ * distinct context, binding, instantiation, shift, and beta-substitution modes. */
 tt_id transform(tt_engine *e, tt_id ast, unsigned mode, const tt_id *ctx, const tt_id *values,
                 unsigned count, unsigned depth) {
     if (e->error || !ast)
@@ -151,6 +158,9 @@ static tt_id beta(tt_engine *e, tt_id a, bool defs) {
     node n = e->nodes[a];
     if (defs && n.kind == N_DRef)
         return e->judgements[n.param].expr;
+    /* These negative shifts preserve the upstream eliminator representation.
+     * They compensate for its node-wide binder depth; do not replace them with
+     * ordinary lambda substitution without revisiting all dependent proofs. */
     tt_id vals[2] = {0}, bias[2] = {(uint32_t)-2, 0};
     switch (n.kind) {
     case N_Ap:
@@ -198,6 +208,9 @@ static tt_id beta(tt_engine *e, tt_id a, bool defs) {
         return a;
     }
 }
+/* One bottom-up reduction pass, not an unbounded normalization loop.
+ * recursive visits original children before reducing the root once; newly
+ * produced redexes may require another explicit reduction inference. */
 tt_id reduce(tt_engine *e, tt_id a, bool defs, bool recursive) {
     if (!a || e->error)
         return 0;

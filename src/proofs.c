@@ -1,10 +1,10 @@
-#include "internal.h"
+#include "kernel/internal.h"
 
 typedef struct {
     tt_id v[16];
 } proof_tuple;
-tt_id proof_step(tt_engine *e, tt_opcode op, const tt_id *j, size_t nj, tt_id c, const tt_id *f,
-                 size_t nf, const char *file, int line) {
+static tt_id proof_step(tt_engine *e, tt_opcode op, const tt_id *j, size_t nj, tt_id c,
+                        const tt_id *f, size_t nf, const char *file, int line) {
     if (e->proof_failed)
         return 0;
     tt_id out = 0;
@@ -36,14 +36,7 @@ static proof_tuple proof_variables(tt_engine *e, proof_tuple contexts) {
         out.v[i] = proof_variable(e, contexts.v[i]);
     return out;
 }
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
 #include "proofs_generated.inc"
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
 
 bool tt_prove_composition(tt_engine *e, tt_id *proposition, tt_id *proof) {
     if (!e || !proposition || !proof)

@@ -6,6 +6,10 @@
 #include <limits.h>
 #include <assert.h>
 
+/* Private trusted representation. Public clients see only opaque tt_engine and
+ * checked handles in thth.h. See README.md beside this file before changing the
+ * representation, binding conventions, or publication path. */
+
 typedef enum {
     N_Axiom = 1,
     N_CRef,
@@ -52,6 +56,9 @@ typedef struct {
     uint16_t depth;
     uint8_t arity, flags;
 } node;
+/* Only kind, param and children form the interning key. Size/depth/flags are
+ * derived at allocation; arity is fixed by the constructor's kind. */
+_Static_assert(offsetof(node, size) == 6 * sizeof(uint32_t), "node key layout");
 enum { HAS_CONTEXT = 1, HAS_VARIABLE = 2, HAS_DEF = 4 };
 typedef struct {
     tt_id expr, type, set, path;
@@ -59,11 +66,14 @@ typedef struct {
     uint16_t op, pad;
     tt_id inputs[5], free_ctx[4], ctx;
 } judgement;
+/* Semantic key ends at highlight. Derivation fields retain the first proof. */
+_Static_assert(offsetof(judgement, op) == 5 * sizeof(uint32_t), "judgement key layout");
 typedef struct {
     tt_id type, set;
     uint32_t counter;
     tt_id source;
 } context;
+_Static_assert(offsetof(context, source) == 3 * sizeof(uint32_t), "context key layout");
 typedef struct {
     uint64_t hash;
     tt_id id;
@@ -107,6 +117,14 @@ struct tt_engine {
 };
 
 uint64_t tt_mix(uint64_t x);
+/* Internal rule functions accept already validated handles and copied premises.
+ * They may allocate tentative AST nodes but must not publish judgements. */
+bool context_matches(tt_engine *, tt_id context_id, tt_id type);
+bool check_contexts(tt_engine *, const tt_opcode_info *, const judgement *, const tt_id *);
+tt_id output_context(tt_engine *, const tt_opcode_info *, const judgement *, tt_id, const tt_id *);
+bool infer_rule(tt_engine *, tt_opcode, const tt_id *, const judgement *, tt_id, const tt_id *,
+                judgement *);
+bool infer_eliminator(tt_engine *, tt_opcode, const judgement *, const tt_id *, judgement *);
 tt_id intern(tt_engine *, node);
 void rollback_nodes(tt_engine *, uint32_t);
 uint64_t fingerprint(const tt_engine *, tt_id);
@@ -123,7 +141,14 @@ tt_id save_context(tt_engine *, context);
 unsigned binders(unsigned kind);
 bool universe(const tt_engine *, tt_id);
 tt_id max_universe(tt_engine *, tt_id, tt_id);
-/* Map modes retain upstream's node-wide binder-depth convention. */
+/* Map modes retain upstream's node-wide binder-depth convention.
+ * CONTEXT: replace named context references simultaneously; zero slots are absent.
+ * BIND: replace contexts by VRef(depth + offset), closing an abstraction.
+ * INSTANTIATE: replace the selected VRef in a dependent family (legacy behavior).
+ * REPLACE: rewrite a structurally equal subtree by a DefEq witness.
+ * SHIFT: shift free de Bruijn indices, checking signed overflow.
+ * BETA_SUBST: remove binders and substitute, including legacy eliminator shifts.
+ * W_MOTIVE: specialize C(z) at children(y), with y bound at the current depth. */
 enum {
     MAP_CONTEXT,
     MAP_BIND,
@@ -143,6 +168,4 @@ tt_id pointed(const tt_engine *, tt_id, tt_id);
 tt_id at_path(tt_engine *, tt_id, tt_id, tt_id);
 tt_id path_append(tt_engine *, tt_id, unsigned);
 tt_id path_pop(tt_engine *, tt_id);
-tt_id proof_step(tt_engine *, tt_opcode, const tt_id *, size_t, tt_id, const tt_id *, size_t,
-                 const char *, int);
 #endif

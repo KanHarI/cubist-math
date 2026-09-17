@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "kernel/internal.h"
 #include <stdlib.h>
 
 #define CHECK(x)                                                                                   \

@@ -3,6 +3,12 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y cppcheck
+      - run: make lint
   test:
     strategy:
       matrix:

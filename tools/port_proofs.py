@@ -68,7 +68,7 @@ def metadata(up):
         j=','.join(str(x[0]) for x in e['masks']) or '0'
         f=','.join(str(x[1]) for x in e['masks']) or '0'
         lines.append(f'    [TT_{e["name"]}] = {{"{e["name"]}", {e["nj"]}, {e["nc"]}, {len(e["masks"])}, {e["out"]}, {{{j}}}, {{{f}}}}},')
-    (ROOT/'src/metadata.inc').write_text('/* Generated; see tools/port_proofs.py. */\n'+ '\n'.join(lines)+'\n')
+    (ROOT/'src/kernel/metadata.inc').write_text('/* Generated; see tools/port_proofs.py. */\n'+ '\n'.join(lines)+'\n')
     return entries
 
 class Translator:
@@ -160,7 +160,16 @@ class Translator:
                     out.append('return (proof_tuple){{'+', '.join(self.value(x) for x in split(stmt[1:-1]))+'}};')
                 else: out.append('return '+self.expression(stmt)+';')
             else: raise ValueError('Unsupported proof statement: '+stmt[:300])
-        return '\n'.join('    '+line for line in out)
+        # Rust underscore-prefixed bindings deliberately retain proof steps
+        # whose outputs are unused. Mark the C values consumed without removing
+        # those checked calls or suppressing diagnostics for generated code.
+        marked=[]
+        for line in out:
+            marked.append(line)
+            unused=re.match(r'tt_id (_\w+)\s*=',line)
+            if unused:
+                marked.append(f'(void){unused[1]};')
+        return '\n'.join('    '+line for line in marked)
 
 def proofs(up):
     functions={}
