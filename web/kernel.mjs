@@ -5,6 +5,7 @@ export class Kernel {
     this.handle = module._wb_new(Number(allowAxioms));
     if (!this.handle) throw new Error("Unable to allocate a proof engine.");
     this.bindings = new Map();
+    this.declarations = new Map();
     this.steps = [];
     this.metadata = catalogue(module);
   }
@@ -75,6 +76,18 @@ export class Kernel {
       hidden: step.hidden,
       axiom: step.op === "Axiom",
     });
+    if (step.op === "Axiom" || step.op === "Def") {
+      // Resolve by the actual AST node, never by the displayed numeric suffix.
+      // Axiom links show the postulate's type; definition links show its body.
+      const binding = this.bindings.get(step.name);
+      const expression = this.module._wb_view(this.handle, 0, binding.id, 0);
+      const reference =
+        step.op === "Def" ? this.node(expression).children[0] : expression;
+      const target = step.op === "Def" ? step.args[0] : step.name;
+      const previous = this.declarations.get(reference);
+      if (!previous || this.bindings.get(previous).hidden)
+        this.declarations.set(reference, target);
+    }
     this.steps.push(step);
     return step;
   }
@@ -128,6 +141,8 @@ export class Kernel {
     return {
       name,
       ...b,
+      // Navigation labels are presentation metadata, separate from the AST.
+      declarations: Object.fromEntries(this.declarations),
       contextNames: Object.fromEntries(
         [...this.bindings]
           .filter(([, value]) => value.kind === "context")

@@ -54,6 +54,7 @@
           ><input id="show-intermediate" type="checkbox" /> Show intermediate
           steps</label
         >
+        <p id="loaded-steps" class="hint" aria-live="polite"></p>
         <label class="search-label"
           >Find a named object<input
             id="filter"
@@ -65,12 +66,14 @@
       <section class="workspace">
         <div class="panel inspector">
           <div class="section-head">
-            <h2 id="active-name">Choose an object</h2>
+            <button id="back-reference" hidden>← Back</button>
+            <h2 id="active-name" tabindex="-1">Choose an object</h2>
             <span id="object-kind" class="badge"></span>
           </div>
           <div class="expression-block">
             <div class="label">
-              EXPRESSION <span>click any subexpression</span>
+              EXPRESSION
+              <span>click to select · reference links open declarations</span>
             </div>
             <div id="expression" class="math" aria-label="Expression"></div>
           </div>
@@ -81,6 +84,7 @@
           <div class="assumptions">
             <strong>Open assumptions</strong><span id="assumptions"></span>
           </div>
+          <p class="hint">Shift-click a reference link to select it.</p>
           <div class="selection-bar">
             <span id="selection-label">No selection</span
             ><button id="parent">Select parent</button

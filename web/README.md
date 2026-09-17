@@ -262,3 +262,10 @@ WASM also replays the native reference trace, checking successful expression,
 type, and context fingerprints (resource-policy failures, if present, are excluded).
 Browser tests exercise clicking/marking, reduction, rewriting, undo, failed
 previews, and save/import against the real worker and WASM module.
+
+Click an underlined axiom reference to open its declaration and type, or a
+`def` reference to open its defining expression and type. This also works for
+hidden intermediate declarations. **Back** returns to the previous expression
+and selection. Use **Shift-click** to select the reference instead; keyboard
+Enter/Space follows the link, and Shift-Enter/Space selects it. Path and
+parentheses selection also remain available.

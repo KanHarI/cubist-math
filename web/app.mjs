@@ -16,6 +16,7 @@ let worker,
   selection = null,
   draft = null;
 const pending = new Map();
+const navigation = [];
 function error(e) {
   $("error").hidden = false;
   $("error").textContent = e.message || String(e);
@@ -112,14 +113,20 @@ function fillBindings(select, kind, optional = false) {
 function renderState() {
   $("axioms").checked = state.allowAxioms;
   const visible = state.bindings.filter(
-    (b) => !b.hidden || $("show-intermediate").checked,
+    (b) => !b.hidden || b.name === active || $("show-intermediate").checked,
   );
-  $("object-count").textContent = visible.length;
   const filter = $("filter").value.toLowerCase();
+  const listed = visible.filter(
+    (b) => b.name === active || b.name.toLowerCase().includes(filter),
+  );
+  $("object-count").textContent =
+    `${listed.length.toLocaleString()} / ${state.bindings.length.toLocaleString()}`;
+  $("object-count").title = "Displayed objects / all loaded proof steps";
+  const hidden = state.bindings.length - visible.length;
+  $("loaded-steps").textContent =
+    `All ${state.bindings.length.toLocaleString()} steps loaded.${hidden ? ` ${hidden.toLocaleString()} intermediate steps hidden.` : ""}`;
   $("objects").replaceChildren();
-  for (const b of visible.filter((b) =>
-    b.name.toLowerCase().includes(filter),
-  )) {
+  for (const b of listed) {
     const button = document.createElement("button");
     button.className = "object" + (b.name === active ? " active" : "");
     button.dataset.name = b.name;
@@ -168,11 +175,13 @@ function renderState() {
   $("undo").disabled = state.revision === 0;
   updateBusy();
 }
-async function choose(name) {
+async function choose(name, navigating = false) {
+  if (!navigating) navigation.length = 0;
   active = name;
   selection = null;
-  view = await request("inspect", { name });
+  const inspected = await request("inspect", { name });
   if (active !== name) return;
+  view = inspected;
   renderState();
   renderInspector();
 }
@@ -194,6 +203,14 @@ function renderTree(container, tree, side) {
     el.dataset.side = side;
     el.dataset.path = path.join(".");
     el.title = `${n.kind} · ${side}${path.map((i) => "." + i).join("")}`;
+    const declaration = view.declarations[n.id];
+    const target = declaration !== active ? declaration : null;
+    if (target) {
+      el.classList.add("reference");
+      el.dataset.declaration = target;
+      el.setAttribute("role", "link");
+      el.title = `Open ${n.kind === "Axiom" ? "axiom declaration" : "definition"}: ${target}. Shift-click to select.`;
+    }
     el.setAttribute("aria-label", el.title);
     if (
       selection?.side === side &&
@@ -222,11 +239,22 @@ function renderTree(container, tree, side) {
       renderInspector();
       document.querySelector(".term.selected")?.focus({ preventScroll: true });
     };
-    el.onclick = select;
+    const activate = (e) => {
+      if (target && !e.shiftKey) {
+        e.stopPropagation();
+        navigation.push({ name: active, selection });
+        choose(target, true)
+          .then(() => {
+            $("active-name").focus();
+          })
+          .catch(error);
+      } else select(e);
+    };
+    el.onclick = activate;
     el.onkeydown = (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        select(e);
+        activate(e);
       }
     };
     return el;
@@ -234,6 +262,7 @@ function renderTree(container, tree, side) {
   container.append(build([]));
 }
 function renderInspector() {
+  $("back-reference").hidden = navigation.length === 0;
   if (!view) {
     $("active-name").textContent = "Choose an object";
     $("expression").replaceChildren();
@@ -316,6 +345,7 @@ async function focused(operation) {
 }
 async function move(command, args = {}) {
   state = await request(command, args);
+  navigation.length = 0;
   $("verification").textContent = "";
   draft = null;
   $("preview").hidden = true;
@@ -332,6 +362,14 @@ async function move(command, args = {}) {
 function bind(id, fn) {
   $(id).onclick = () => Promise.resolve().then(fn).catch(error);
 }
+bind("back-reference", async () => {
+  const previous = navigation.pop();
+  if (!previous) return;
+  await choose(previous.name, true);
+  selection = previous.selection;
+  renderInspector();
+  $("active-name").focus();
+});
 bind("reduce", () => focused("BetaReducePointed"));
 bind("pass", () => focused("BetaReduceGrossKnuth"));
 bind("unfold", () => focused("DefReducePointed"));
@@ -434,6 +472,7 @@ $("file").onchange = async () => {
   }
 };
 bind("reset", () => {
+  navigation.length = 0;
   worker.terminate();
   for (const p of pending.values()) {
     clearTimeout(p.timer);

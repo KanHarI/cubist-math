@@ -152,6 +152,23 @@ try {
     );
     assert.equal(await page.locator("#axioms").isChecked(), entry.allowAxioms);
     assert.equal(await page.locator("#error").isVisible(), false, entry.id);
+    if (entry.id === "wnat_equiv") {
+      assert.equal(
+        await page.locator("#object-count").textContent(),
+        "9 / 1,910",
+      );
+      assert.equal(
+        await page.locator("#loaded-steps").textContent(),
+        "All 1,910 steps loaded. 1,901 intermediate steps hidden.",
+      );
+      await page.locator("#show-intermediate").check();
+      assert.equal(await page.locator(".object").count(), 1910);
+      assert.equal(
+        await page.locator("#object-count").textContent(),
+        "1,910 / 1,910",
+      );
+      await page.locator("#show-intermediate").uncheck();
+    }
     if (entry.verify)
       assert.equal(
         await page.locator("#verification").textContent(),
@@ -168,9 +185,114 @@ try {
   );
   await page.locator('#type .term[data-path=""]').click();
   assert.equal(await page.locator("#selection-label").textContent(), "type");
+  const axiomLink = page.locator('#type [data-declaration="lib_Trunc"]');
+  assert.equal(await axiomLink.textContent(), "axiom28");
+  const historyCount = await page.locator(".history-item").count();
+  await axiomLink.click({ modifiers: ["Shift"] });
+  assert.equal(await page.locator("#active-name").textContent(), "LEM");
+  const selectedAxiom = await page.locator("#selection-label").textContent();
+  assert.equal(selectedAxiom, "type.1.1.1.0.0");
+  await axiomLink.click();
+  await page.waitForFunction(
+    () => document.querySelector("#active-name").textContent === "lib_Trunc",
+  );
+  assert.equal(await page.locator("#expression").textContent(), "axiom28");
+  assert.equal(
+    await page.locator("#object-kind").textContent(),
+    "explicit axiom",
+  );
+  assert.equal(
+    await page.locator(".object.active").textContent(),
+    "lib_TruncAXIOM",
+  );
+  assert.equal(await page.locator("#filter").inputValue(), "LEM");
+  await page.locator("#back-reference").click();
+  await page.waitForFunction(
+    () => document.querySelector("#active-name").textContent === "LEM",
+  );
+  assert.equal(
+    await page.locator("#selection-label").textContent(),
+    selectedAxiom,
+  );
+  assert.equal(await page.locator(".history-item").count(), historyCount);
+  await axiomLink.focus();
+  await axiomLink.press("Enter");
+  await page.waitForFunction(
+    () => document.querySelector("#active-name").textContent === "lib_Trunc",
+  );
+
+  await page.locator("#filter").fill("lib_inv_refl");
+  await page.locator('.object[data-name="lib_inv_refl"]').click();
+  await page.waitForFunction(
+    () => document.querySelector("#active-name").textContent === "lib_inv_refl",
+  );
+  const definitionLink = page
+    .locator("#expression .reference")
+    .filter({ hasText: /^def702$/ });
+  const definitionTarget =
+    await definitionLink.getAttribute("data-declaration");
+  assert.equal(definitionTarget, "s2368_PiIntro");
+  await definitionLink.click();
+  await page.waitForFunction(
+    (name) => document.querySelector("#active-name").textContent === name,
+    definitionTarget,
+  );
+  assert.match(await page.locator("#expression").textContent(), /^\(λ/);
+  assert.equal(await page.locator("#show-intermediate").isChecked(), false);
+  await page.locator("#back-reference").click();
+  await page.waitForFunction(
+    () => document.querySelector("#active-name").textContent === "lib_inv_refl",
+  );
+
+  // A declaration is navigable even when it is hidden and filtered out.
+  await page.locator("#file").setInputFiles({
+    name: "hidden-axiom.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(
+      JSON.stringify({
+        format: "thth-workbench",
+        version: 1,
+        policy: { allowAxioms: true },
+        steps: [
+          { name: "U", op: "UnitForm", args: [] },
+          { name: "secret", op: "Axiom", args: ["U"], hidden: true },
+          { name: "result", op: "EqIntro", args: ["secret"] },
+        ],
+      }),
+    ),
+  });
+  await page.waitForFunction(
+    () => document.querySelector("#active-name").textContent === "result",
+  );
+  assert.equal(await page.locator("#back-reference").isVisible(), false);
+  const hiddenLink = page.locator('#expression [data-declaration="secret"]');
+  await hiddenLink.press("Shift+Enter");
+  assert.equal(await page.locator("#active-name").textContent(), "result");
+  assert.equal(
+    await page.locator("#selection-label").textContent(),
+    "expression.0",
+  );
+  await hiddenLink.press("Space");
+  await page.waitForFunction(
+    () => document.querySelector("#active-name").textContent === "secret",
+  );
+  assert.equal(await page.locator("#type").textContent(), "Unit");
+  assert.equal(await page.locator("#show-intermediate").isChecked(), false);
+  assert.equal(
+    await page.locator(".object.active").textContent(),
+    "secretAXIOM",
+  );
+  await page.locator("#back-reference").click();
+  await page.waitForFunction(
+    () => document.querySelector("#active-name").textContent === "result",
+  );
+  assert.equal(
+    await page.locator("#selection-label").textContent(),
+    "expression.0",
+  );
   assert.deepEqual(errors, []);
   console.log(
-    "Browser: selection, reduction, rewrite, preview isolation, undo, save/import, and WASM worker passed",
+    "Browser: axiom navigation, selection, reduction, rewrite, preview isolation, undo, save/import, and WASM worker passed",
   );
 } finally {
   if (browser) await browser.close();

@@ -220,6 +220,12 @@ main {
   background: #e9f0e3;
   box-shadow: 0 0 0 1px #b5cab4;
 }
+.term.reference {
+  color: #286541;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 4px;
+}
 .term.selected {
   background: #d8ebc7;
   box-shadow: 0 0 0 2px #6c985a;
