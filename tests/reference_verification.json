@@ -1,0 +1,10 @@
+{
+  "source_repository": "https://github.com/KanHarI/thth",
+  "source_commit": "79060d57eacdf42cd2b4762b2b4bfa3a530f0861",
+  "matched_steps": 3641,
+  "skipped_known_EqComp_WComp_W_beta_or_limits": 11,
+  "trace_records": 3652,
+  "trace_sha256": "4587e02d280304a836cf020b8f8c59e53f4d15fca63896699b553b129e1abbf3",
+  "rust_version": "1.98.1",
+  "notes": "Independent Rust replay of C legality and normalized expression/type/context fingerprints. Skipped corrected computation steps and their unmapped descendants are tested directly in C."
+}

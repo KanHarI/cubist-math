@@ -1,0 +1,29 @@
+name: C engine
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        compiler: [clang, gcc]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: make -j2 CC=${{ matrix.compiler }} CFLAGS='-O3 -std=c11 -Wall -Wextra -Wpedantic -Werror' all test
+      - run: build/thth walk 100000 42 2 full 50000
+      - run: make CC=${{ matrix.compiler }} collision-test
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make CC=clang sanitize
+  reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make test
+      # Private upstream source is intentionally not fetched with extra credentials.
+      # A frozen upstream-verified trace is replayed by the C fixture checker.
+      - run: python3 tools/check_reference.py

@@ -1,0 +1,7 @@
+build*/
+__pycache__/
+*.trace
+*.profraw
+*.profdata
+core
+.DS_Store
