@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>THTH · Math workbench</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <span class="mark">⊢</span><strong>THTH</strong
+        ><span class="muted">Math workbench</span>
+      </div>
+      <div class="toolbar">
+        <span id="status" role="status">Loading WASM…</span
+        ><button id="save">Save proof</button
+        ><button id="load">Open proof</button
+        ><input id="file" type="file" accept=".json" hidden /><button
+          id="reset"
+        >
+          Reset example
+        </button>
+      </div>
+    </header>
+    <div class="intro">
+      <div>
+        <span class="eyebrow">EXPRESSION WORKSPACE</span>
+        <h1>Explore a proof, one checked step at a time.</h1>
+        <p>
+          Choose an object, select a subexpression, then preview an operation.
+          Your proof changes only when you accept.
+        </p>
+      </div>
+      <label class="badge"
+        ><input type="checkbox" id="axioms" /> Allow explicit axioms</label
+      >
+    </div>
+    <div id="error" role="alert" hidden></div>
+    <main>
+      <aside class="objects panel">
+        <div class="section-head">
+          <h2>Objects</h2>
+          <span id="object-count" class="muted"></span>
+        </div>
+        <label class="search-label"
+          >Find a named object<input
+            id="filter"
+            type="search"
+            placeholder="Filter names…"
+        /></label>
+        <div id="objects"></div>
+      </aside>
+      <section class="workspace">
+        <div class="panel inspector">
+          <div class="section-head">
+            <h2 id="active-name">Choose an object</h2>
+            <span id="object-kind" class="badge"></span>
+          </div>
+          <div class="expression-block">
+            <div class="label">
+              EXPRESSION <span>click any subexpression</span>
+            </div>
+            <div id="expression" class="math" aria-label="Expression"></div>
+          </div>
+          <div class="expression-block">
+            <div class="label">TYPE</div>
+            <div id="type" class="math" aria-label="Type"></div>
+          </div>
+          <div class="assumptions">
+            <strong>Open assumptions</strong><span id="assumptions"></span>
+          </div>
+          <div class="selection-bar">
+            <span id="selection-label">No selection</span
+            ><button id="parent">Select parent</button
+            ><button id="clear">Clear selection</button>
+          </div>
+          <details>
+            <summary>Select by path or parentheses</summary>
+            <p class="hint">
+              Use <code>expr.argument</code> or <code>type.1</code>.
+              Alternatively copy the displayed expression and wrap a subtree in
+              one extra pair of parentheses or <code>[[ ]]</code>.
+            </p>
+            <div class="row">
+              <input
+                id="path"
+                placeholder="expr.argument"
+                aria-label="Selection path"
+              /><button id="select-path">Select path</button>
+            </div>
+            <div class="row">
+              <select id="mark-side" aria-label="Side to mark">
+                <option value="expression">Expression</option>
+                <option value="type">Type</option></select
+              ><button id="copy-mark">Copy into editor</button>
+            </div>
+            <textarea
+              id="marked"
+              rows="3"
+              aria-label="Expression with selection parentheses"
+            ></textarea
+            ><button id="select-mark">Select marked subtree</button>
+          </details>
+        </div>
+        <div id="preview" class="panel preview" hidden>
+          <div class="section-head">
+            <h2>Preview</h2>
+            <span class="badge">Proof unchanged</span>
+          </div>
+          <div id="preview-result" class="math"></div>
+          <div id="preview-type" class="muted"></div>
+          <pre id="preview-code"></pre>
+          <div class="row">
+            <button class="primary" id="accept">Accept step</button
+            ><button id="reject">Discard</button
+            ><span id="preview-time" class="muted"></span>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="section-head">
+            <h2>History</h2>
+            <button id="undo">Undo</button>
+          </div>
+          <p class="hint">
+            Returning to an earlier revision keeps later branches available.
+          </p>
+          <div id="history"></div>
+        </div>
+        <div class="panel">
+          <details>
+            <summary>Instruction log &amp; source input</summary>
+            <p class="hint">
+              Each binding is exactly one kernel instruction. Selection actions
+              show every generated focus step.
+            </p>
+            <pre id="source"></pre>
+            <label for="code">Preview additional instructions</label
+            ><textarea
+              id="code"
+              rows="4"
+              placeholder="next = apply(identity, one)"
+            ></textarea
+            ><button id="preview-code-button">Preview source</button>
+          </details>
+        </div>
+      </section>
+      <aside class="operations">
+        <div class="panel">
+          <h2>Selected expression</h2>
+          <p id="selected-kind" class="hint">
+            Select part of an expression or its type.
+          </p>
+          <label for="result-name">Result name</label
+          ><input id="result-name" value="reduced" placeholder="reduced" />
+          <button id="reduce" class="action primary">Reduce here</button
+          ><button id="pass" class="action">Reduction pass in selection</button
+          ><button id="unfold" class="action">Unfold / reduce here</button>
+          <label for="witness">Definitional equality witness</label
+          ><select id="witness">
+            <option value="">Choose a judgement…</option></select
+          ><button id="rewrite" class="action">Rewrite within selection</button>
+          <p class="hint">
+            A rewrite replaces matching occurrences inside the selected region.
+          </p>
+        </div>
+        <div class="panel">
+          <details>
+            <summary>All kernel operations</summary>
+            <p class="hint">
+              All 67 rules are available. Choose named premises; the kernel
+              checks legality in an isolated preview.
+            </p>
+            <label for="opcode">Operation</label
+            ><select id="opcode"></select>
+            <div id="operands"></div>
+            <button id="preview-op" class="action">Preview operation</button>
+          </details>
+        </div>
+        <div class="panel metrics">
+          <h2>Live engine</h2>
+          <dl id="stats"></dl>
+          <p class="hint">Preview allocations belong to a separate engine.</p>
+        </div>
+        <div class="panel">
+          <details>
+            <summary>Check a theorem</summary>
+            <label for="proposition">Proposition (a type judgement)</label
+            ><select id="proposition"></select
+            ><label for="proof">Proof</label
+            ><select id="proof"></select
+            ><button id="verify" class="action">Verify closed proof</button>
+            <p id="verification" role="status"></p>
+          </details>
+        </div>
+      </aside>
+    </main>
+    <footer>
+      Checked C kernel → WebAssembly · Selection never edits terms ·
+      <a href="README.md">Workbench &amp; CLI guide</a>
+    </footer>
+    <script type="module" src="app.mjs"></script>
+  </body>
+</html>

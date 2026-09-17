@@ -7,7 +7,7 @@ BUILD ?= build
 CPPCHECK ?= cppcheck
 KERNEL_SRC = $(wildcard src/kernel/*.c)
 SRC = $(KERNEL_SRC) src/proofs.c
-C_FILES = $(sort $(wildcard src/*.c src/kernel/*.c tests/*.c))
+C_FILES = $(sort $(wildcard src/*.c src/kernel/*.c tests/*.c wasm/*.c))
 OBJ = $(SRC:src/%.c=$(BUILD)/%.o)
 .PHONY: all test collision-test sanitize clean bench lint
 all: $(BUILD)/libthth.a
@@ -36,3 +36,21 @@ lint:
 	$(CPPCHECK) --enable=warning,style,performance,portability --std=c11 --language=c --library=posix --error-exitcode=1 --force -Iinclude -Isrc $(C_FILES)
 clean:
 	rm -rf build build-sanitize
+
+EMCC ?= $(if $(wildcard .tools/emsdk/upstream/emscripten/emcc),.tools/emsdk/upstream/emscripten/emcc,emcc)
+WASM_EXPORTS = '["_wb_new","_wb_free","_wb_apply","_wb_result","_wb_name","_wb_meta","_wb_view","_wb_node","_wb_node_name","_wb_stats","_wb_verify"]'
+.PHONY: wasm wasm-test serve
+wasm: web/dist/kernel.mjs
+web/dist/kernel.mjs: $(KERNEL_SRC) src/kernel/internal.h src/kernel/metadata.inc include/thth.h wasm/bridge.c
+	mkdir -p web/dist
+	$(EMCC) -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Isrc $(KERNEL_SRC) wasm/bridge.c --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=268435456 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(WASM_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]' -o $@
+wasm-test: wasm
+	node --test tests/workbench.test.mjs
+serve: wasm
+	python3 -m http.server 8080 --bind 127.0.0.1 --directory web
+
+.PHONY: cli browser-test
+cli: wasm
+	node cli/repl.mjs
+browser-test: wasm
+	npm run test:browser

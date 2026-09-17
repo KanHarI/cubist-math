@@ -33,6 +33,22 @@ The type-checking kernel is isolated in [`src/kernel/`](src/kernel/). Its
 [review guide](src/kernel/README.md) explains the validation path, rule notation,
 context discharge, storage invariants, substitution, and compatibility limits.
 
+## Interactive workbench and CLI
+
+The proof workbench runs the C kernel as WebAssembly, with clickable expressions,
+isolated previews, explicit acceptance, branching history, and save/replay.
+The CLI uses the same interpreter and supports both named/numeric paths and
+selection by adding parentheses around a displayed subexpression.
+
+```sh
+make wasm       # Requires Emscripten; detects .tools/emsdk automatically
+make cli        # Requires Node.js 24+
+make serve      # Browser: http://127.0.0.1:8080
+```
+
+See the [workbench and CLI guide](web/README.md) for SDK setup, examples,
+source syntax, resource bounds, and current limitations.
+
 ## Performance design
 
 * Immutable, hash-consed expression DAGs with 32-bit engine-local IDs. Structural

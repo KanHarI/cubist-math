@@ -3,6 +3,19 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
+  workbench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: git clone --depth 1 https://github.com/emscripten-core/emsdk.git .tools/emsdk
+      - run: .tools/emsdk/emsdk install 6.0.9 && .tools/emsdk/emsdk activate 6.0.9
+      - run: make EMCC=.tools/emsdk/upstream/emscripten/emcc wasm-test
+      - run: npm ci && npx playwright install --with-deps chromium
+      - run: npm run test:browser
   lint:
     runs-on: ubuntu-latest
     steps:

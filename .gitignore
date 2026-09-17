@@ -5,3 +5,8 @@ __pycache__/
 *.profdata
 core
 .DS_Store
+
+.tools/
+web/dist/
+node_modules/
+playwright-report/
