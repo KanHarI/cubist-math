@@ -302,3 +302,115 @@ test("included polymorphic identity verifies in the WASM kernel", async () => {
     s.dispose();
   }
 });
+
+test("every ported proof opens, verifies its exports, and round trips as JSON and math", async () => {
+  const { default: catalogue } = await import("../web/proofs/catalogue.mjs");
+  const sources = JSON.parse(
+    await readFile(
+      new URL("../docs/proof_sources.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  assert.equal(catalogue.length, 26);
+  assert.deepEqual(
+    new Set(
+      catalogue
+        .filter((p) => !["prelude_library", "identity"].includes(p.id))
+        .map((p) => p.source),
+    ),
+    new Set(Object.keys(sources)),
+  );
+  for (const entry of catalogue) {
+    const document = JSON.parse(
+      await readFile(
+        new URL(`../web/proofs/${entry.file}`, import.meta.url),
+        "utf8",
+      ),
+    );
+    const source = await readFile(
+      new URL(`../web/proofs/${entry.id}.math`, import.meta.url),
+      "utf8",
+    );
+    const s = fresh(),
+      other = new Session(module, entry.allowAxioms);
+    try {
+      s.import(document, true);
+      assert.equal(s.program().length, entry.steps, entry.id);
+      assert.equal(s.allowAxioms, entry.allowAxioms);
+      for (const name of entry.exports) {
+        assert.equal(s.inspect(name).kind, "judgement", name);
+        assert.equal(s.inspect(name).assumptions.length, 0, name);
+      }
+      if (entry.verify) assert.equal(s.verify(...entry.verify), true, entry.id);
+      other.import(s.export());
+      for (const name of entry.exports)
+        assert.deepEqual(other.inspect(name), s.inspect(name));
+      other.checkout(0);
+      const preview = other.previewSource(source);
+      other.accept(preview.token);
+      for (const name of entry.exports) {
+        assert.deepEqual(
+          other.inspect(name).expression,
+          s.inspect(name).expression,
+          name,
+        );
+        assert.deepEqual(other.inspect(name).type, s.inspect(name).type, name);
+      }
+      if (entry.id === "prelude_library") {
+        assert.equal(s.snapshot().bindings.filter((b) => !b.hidden).length, 50);
+        assert.equal(s.inspect("LEM").expression.kind, "Axiom");
+        assert.equal(s.inspect("AOC").expression.kind, "Axiom");
+        const p = s.previewSource("lem_reflexive = kernel.DefEqRefl(LEM)");
+        s.accept(p.token);
+        assert.throws(() => s.setPolicy(false), /rejected/);
+      }
+    } finally {
+      s.dispose();
+      other.dispose();
+    }
+  }
+});
+
+test("opening a bundled proof adopts policy only after successful replay", async () => {
+  const { default: library } = await import("../web/proofs/library.mjs");
+  const s = fresh();
+  try {
+    s.loadDemo();
+    const before = s.export();
+    const bad = structuredClone(library);
+    bad.steps.at(-1).args = ["missing"];
+    assert.throws(() => s.import(bad, true));
+    assert.deepEqual(s.export(), before);
+    assert.throws(() => s.import(library), /axiom policy/);
+    s.import(library, true);
+    assert.equal(s.allowAxioms, true);
+    s.import(before, true);
+    assert.equal(s.allowAxioms, false);
+    assert.equal(s.inspect("nested").expression.kind, "Ap");
+  } finally {
+    s.dispose();
+  }
+});
+
+test("CLI opens every bundled program and exposes LEM and AOC at startup", async () => {
+  const { default: catalogue } = await import("../web/proofs/catalogue.mjs");
+  const commands =
+    "show LEM\nshow AOC\nproofs\n" +
+    catalogue.map((p) => `open ${p.id}\n`).join("") +
+    "quit\n";
+  const result = spawnSync(process.execPath, ["cli/repl.mjs"], {
+    input: commands,
+    encoding: "utf8",
+    cwd: new URL("..", import.meta.url),
+    timeout: 20000,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /ERROR:/);
+  assert.match(result.stdout, /LEM \[judgement\]/);
+  assert.match(result.stdout, /AOC \[judgement\]/);
+  assert.equal(
+    (result.stdout.match(/Opened /g) || []).length,
+    catalogue.length,
+  );
+  assert.equal((result.stdout.match(/\nVERIFIED\n/g) || []).length, 3);
+});

@@ -30,6 +30,55 @@ make wasm
 `.tools/`, the generated `web/dist/` files, and browser test artifacts are ignored.
 The native engine still builds with `make` without Node, Python, or Emscripten.
 
+## Existing proofs and the prelude library
+
+Both interfaces start with the prelude's full **50 exported judgements**, including
+`LEM` and `AOC`. Other library names use `lib_`, for example `lib_Unit`,
+`lib_pr1`, `lib_funext`, and `lib_univalence`, to leave ordinary names free for
+user programs. Explicit axiom instructions are labelled **AXIOM** in the browser;
+this label does not claim that other objects are independent of axioms.
+
+The browser's **Existing proofs & library** selector opens all **24 original
+proof-construction routines**, the complete prelude library, and the existing
+polymorphic identity example: **26 programs**. This includes composition, product
+commutativity, both projection implementations, equality operations, homotopy,
+truncation, choice, excluded middle, uniqueness results, and every basic type.
+The original projection helper is instantiated with U0, as in its caller.
+The theorem examples are automatically verified when opened.
+
+```text
+proofs
+open comp
+check Composition composition
+open product_commutes
+check ProductCommutes product_commutes
+open prelude_library
+show LEM
+show AOC
+preview lem_equality = kernel.DefEqRefl(LEM)
+accept
+save with_choice.thth.json
+```
+
+Opening a bundled program replaces the current proof and adopts its displayed
+axiom policy. Save current work first if needed. The complete library begins
+with axioms enabled; constructive programs open with axioms disabled. `open unit`
+provides a small constructive starting point; `goto 0` then clears its program.
+
+Every original construction step is preserved, including repeated instructions
+whose results share an interned ID. Individual proof files show intermediate
+objects by default. The combined library initially shows only its 50 exports;
+use **Show intermediate steps**, or CLI `list all` and `show NAME`, to inspect
+its derivation. Selection, reduction, and additional inference work on those
+objects exactly as they do on newly constructed objects.
+
+Portable [JSON replay files and .math source](proofs/) live in `web/proofs/`.
+They contain instructions and named operands, not trusted prechecked results.
+`make proof-export` regenerates them from the checked C proof programs using
+the native inference trace (C compiler, Python 3, and Node.js required). CI checks
+regeneration and replays every JSON and source file through WASM. Coverage is
+checked against `docs/proof_sources.json`, and the exporter rejects missing routines.
+
 ## CLI: direct selection
 
 ```text
@@ -147,10 +196,13 @@ and Save use the identical JSON format. Exports are replay programs, not trusted
 serialized conclusions or raw engine IDs. Branch alternatives are retained in
 memory; only the active branch is exported in this version.
 
-Axioms are disabled initially. `axioms on` or the browser checkbox explicitly
-enables `Axiom`. An import cannot silently enable axioms; its policy must match
-the current session. Turning axioms off replays the current branch and fails
-atomically if an axiom instruction is present.
+The full prelude library starts with axioms enabled. `axioms on/off` or the
+browser checkbox changes the policy by replaying the active proof. Turning axioms
+off fails atomically if that proof uses an axiom; open a constructive bundled
+program to start without them. Ordinary file imports require a matching policy.
+To load a saved constructive file from the initial library session, first open
+`unit`; for a file using axioms, enable the checkbox or run `axioms on` first.
+A failed replay never changes the accepted proof or policy.
 
 ## Execution and observability
 

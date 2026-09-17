@@ -1,0 +1,5 @@
+# Nat
+# Upstream: src/builtins/nat.rs
+# Axioms: false
+lib_Nat = kernel.NatForm()
+lib_zero = kernel.NatIntroZ()

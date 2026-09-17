@@ -1,0 +1,4 @@
+# Void
+# Upstream: src/builtins/void.rs
+# Axioms: false
+lib_Void = kernel.VoidForm()

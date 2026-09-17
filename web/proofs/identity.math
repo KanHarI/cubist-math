@@ -1,0 +1,10 @@
+# Polymorphic identity. Every binding is exactly one checked instruction.
+U = universe.zero()
+a = assume(U)
+A = var(a)
+x = assume(A)
+value = var(x)
+identity_A = lambda(A, value; bind: x)
+identity = lambda(U, identity_A; bind: a)
+A_to_A = pi(A, A)
+Identity = pi(U, A_to_A; bind: a)

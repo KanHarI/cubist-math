@@ -1,0 +1,17 @@
+{
+  "format": "thth-workbench",
+  "version": 1,
+  "policy": {
+    "allowAxioms": false
+  },
+  "steps": [
+    {
+      "name": "lib_Void",
+      "op": "VoidForm",
+      "args": [],
+      "context": null,
+      "free": [],
+      "hidden": false
+    }
+  ]
+}

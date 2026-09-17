@@ -38,7 +38,10 @@ context discharge, storage invariants, substitution, and compatibility limits.
 The proof workbench runs the C kernel as WebAssembly, with clickable expressions,
 isolated previews, explicit acceptance, branching history, and save/replay.
 The CLI uses the same interpreter and supports both named/numeric paths and
-selection by adding parentheses around a displayed subexpression.
+selection by adding parentheses around a displayed subexpression. Both start
+with all 50 prelude library exports, including `LEM` and `AOC`. The browser proof
+selector and CLI `proofs` / `open ID` expose every original proof construction
+and the identity example as 26 checked, editable replay programs.
 
 ```sh
 make wasm       # Requires Emscripten; detects .tools/emsdk automatically

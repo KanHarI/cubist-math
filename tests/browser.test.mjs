@@ -4,6 +4,7 @@ import { readFile, mkdir } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import proofs from "../web/proofs/catalogue.mjs";
 const root = fileURLToPath(new URL("../web", import.meta.url));
 const types = {
   ".html": "text/html",
@@ -52,6 +53,9 @@ try {
       document.querySelector("#active-name").textContent === "nested",
   );
   assert.equal(await page.locator("#opcode option").count(), 67);
+  assert.equal(await page.locator('.object[data-name="LEM"]').count(), 1);
+  assert.equal(await page.locator('.object[data-name="AOC"]').count(), 1);
+  assert.equal(await page.locator("#axioms").isChecked(), true);
   await page.locator('#type .term[data-path=""]').click();
   assert.equal(await page.locator("#selection-label").textContent(), "type");
   await page
@@ -120,13 +124,11 @@ try {
   const document = JSON.parse(await readFile(await download.path(), "utf8"));
   assert.equal(document.format, "thth-workbench");
   assert.equal(document.steps.at(-1).name, "rewritten");
-  await page
-    .locator("#file")
-    .setInputFiles({
-      name: "proof.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(document)),
-    });
+  await page.locator("#file").setInputFiles({
+    name: "proof.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(document)),
+  });
   await page.waitForFunction(() =>
     document.querySelector("#history").textContent.includes("Imported proof"),
   );
@@ -141,6 +143,31 @@ try {
     path: fileURLToPath(new URL("../.tools/workbench.png", import.meta.url)),
     fullPage: true,
   });
+  for (const entry of proofs) {
+    await page.locator("#bundled-proof").selectOption(entry.id);
+    await page.locator("#open-bundled").click();
+    await page.waitForFunction(
+      (name) => document.querySelector("#active-name").textContent === name,
+      entry.exports.at(-1),
+    );
+    assert.equal(await page.locator("#axioms").isChecked(), entry.allowAxioms);
+    assert.equal(await page.locator("#error").isVisible(), false, entry.id);
+    if (entry.verify)
+      assert.equal(
+        await page.locator("#verification").textContent(),
+        "Verified closed proof.",
+      );
+  }
+  await page.locator("#bundled-proof").selectOption("prelude_library");
+  await page.locator("#open-bundled").click();
+  await page.locator('.object[data-name="LEM"]').waitFor();
+  await page.locator("#filter").fill("LEM");
+  await page.locator('.object[data-name="LEM"]').click();
+  await page.waitForFunction(
+    () => document.querySelector("#active-name").textContent === "LEM",
+  );
+  await page.locator('#type .term[data-path=""]').click();
+  assert.equal(await page.locator("#selection-label").textContent(), "type");
   assert.deepEqual(errors, []);
   console.log(
     "Browser: selection, reduction, rewrite, preview isolation, undo, save/import, and WASM worker passed",

@@ -54,3 +54,7 @@ cli: wasm
 	node cli/repl.mjs
 browser-test: wasm
 	npm run test:browser
+
+.PHONY: proof-export
+proof-export:
+	python3 tools/export_workbench.py

@@ -3,6 +3,8 @@ import { createInterface } from "node:readline";
 import { readFile, writeFile, stat } from "node:fs/promises";
 import createKernel from "../web/dist/kernel.mjs";
 import { Session } from "../web/session.mjs";
+import library from "../web/proofs/library.mjs";
+import proofs from "../web/proofs/catalogue.mjs";
 import {
   layout,
   selectedText,
@@ -12,7 +14,8 @@ import {
   roles,
 } from "../web/expressions.mjs";
 const module = await createKernel();
-const session = new Session(module);
+const session = new Session(module, true);
+session.import(library);
 let active = null,
   selection = null,
   token = null;
@@ -24,6 +27,9 @@ const input = createInterface({
     const word = line.split(/\s+/).at(-1);
     const choices = [
       "help",
+      "proofs",
+      "open",
+      ...proofs.map((p) => p.id),
       "demo",
       "list",
       "use",
@@ -98,7 +104,10 @@ function preview(p) {
   say("  type: " + layout(p.result.type, p.result.contextNames).text);
   say("accept / reject");
 }
-const help = `demo                         Load the identity example into an empty session
+const help = `proofs                       List all bundled proofs, definitions, and axioms
+open ID                      Open a bundled proof and its recorded axiom policy
+demo                         Add the identity example
+list all                     Include intermediate library construction steps
 list                         List mathematical objects
 use NAME / show [NAME]        Inspect an object
 select expr.argument         Select by mathematical role or numeric path
@@ -129,15 +138,45 @@ async function command(line) {
       say(help);
       break;
     case "demo":
-      if (session.program().length)
-        throw new Error("Demo requires an empty session (goto 0).");
+      if (session.engine.bindings.has("nested"))
+        throw new Error("The demo is already loaded.");
       session.loadDemo();
       active = "nested";
       selection = { name: active, side: "expression", path: [1] };
       show();
       break;
+    case "proofs":
+      for (const p of proofs)
+        say(
+          `${p.id.padEnd(25)} ${p.title} (${p.steps} steps; axioms ${p.allowAxioms ? "on" : "off"})`,
+        );
+      break;
+    case "open": {
+      const entry = proofs.find((p) => p.id === rest);
+      if (!entry)
+        throw new Error("Unknown bundled proof. Use proofs to list IDs.");
+      const document = JSON.parse(
+        await readFile(
+          new URL(`../web/proofs/${entry.file}`, import.meta.url),
+          "utf8",
+        ),
+      );
+      session.import(document, true);
+      active = entry.exports.at(-1);
+      selection = null;
+      token = null;
+      say(
+        `Opened ${entry.title}; axioms ${session.allowAxioms ? "on" : "off"}.`,
+      );
+      if (entry.verify)
+        say(session.verify(...entry.verify) ? "VERIFIED" : "NOT VERIFIED");
+      show();
+      break;
+    }
     case "list":
-      for (const b of session.snapshot().bindings.filter((b) => !b.hidden))
+      for (const b of session
+        .snapshot()
+        .bindings.filter((b) => rest === "all" || !b.hidden))
         say(`${b.name.padEnd(20)} ${b.kind}`);
       break;
     case "use":
@@ -311,7 +350,9 @@ async function command(line) {
       else throw new Error("Unknown command. Type help.");
   }
 }
-say("THTH Math • checked WASM kernel • type help or demo");
+say(
+  "THTH Math • checked WASM kernel • prelude library loaded (axioms on) • type proofs, help or demo",
+);
 if (process.stdin.isTTY) (input.setPrompt("math> "), input.prompt());
 for await (const line of input) {
   try {

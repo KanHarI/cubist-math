@@ -1,7 +1,9 @@
 import createKernel from "./dist/kernel.mjs";
 import { Session } from "./session.mjs";
+import library from "./proofs/library.mjs";
 const module = await createKernel();
-let session = new Session(module);
+let session = new Session(module, true);
+session.import(library);
 session.loadDemo();
 self.postMessage({
   ready: true,
@@ -13,7 +15,8 @@ self.onmessage = ({ data: { id, command, args } }) => {
     let result;
     if (command === "reset") {
       session.dispose();
-      session = new Session(module);
+      session = new Session(module, true);
+      session.import(library);
       session.loadDemo();
       result = session.snapshot();
     } else if (command === "previewSource")
@@ -27,7 +30,8 @@ self.onmessage = ({ data: { id, command, args } }) => {
     else if (command === "undo") result = session.undo();
     else if (command === "checkout") result = session.checkout(args.revision);
     else if (command === "export") result = session.export();
-    else if (command === "import") result = session.import(args.document);
+    else if (command === "import")
+      result = session.import(args.document, args.adoptPolicy === true);
     else if (command === "policy") result = session.setPolicy(args.allowAxioms);
     else if (command === "verify")
       result = session.verify(args.proposition, args.proof);

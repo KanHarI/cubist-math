@@ -13,6 +13,7 @@ jobs:
           cache: npm
       - run: git clone --depth 1 https://github.com/emscripten-core/emsdk.git .tools/emsdk
       - run: .tools/emsdk/emsdk install 6.0.9 && .tools/emsdk/emsdk activate 6.0.9
+      - run: make proof-export && git diff --exit-code -- web/proofs
       - run: make EMCC=.tools/emsdk/upstream/emscripten/emcc wasm-test
       - run: npm ci && npx playwright install --with-deps chromium
       - run: npm run test:browser

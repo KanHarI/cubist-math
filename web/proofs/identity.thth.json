@@ -1,0 +1,118 @@
+{
+  "format": "thth-workbench",
+  "version": 1,
+  "policy": {
+    "allowAxioms": false
+  },
+  "steps": [
+    {
+      "name": "U",
+      "op": "UIntro0",
+      "args": [],
+      "context": null,
+      "free": [],
+      "fresh": false,
+      "line": 2
+    },
+    {
+      "name": "a",
+      "op": "CtxExt",
+      "args": [
+        "U"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "fresh": true,
+      "line": 3
+    },
+    {
+      "name": "A",
+      "op": "Vble",
+      "args": [],
+      "context": "a",
+      "free": [],
+      "fresh": false,
+      "line": 4
+    },
+    {
+      "name": "x",
+      "op": "CtxExt",
+      "args": [
+        "A"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "fresh": true,
+      "line": 5
+    },
+    {
+      "name": "value",
+      "op": "Vble",
+      "args": [],
+      "context": "x",
+      "free": [],
+      "fresh": false,
+      "line": 6
+    },
+    {
+      "name": "identity_A",
+      "op": "PiIntro",
+      "args": [
+        "A",
+        "value"
+      ],
+      "context": null,
+      "free": [
+        "x"
+      ],
+      "fresh": false,
+      "line": 7
+    },
+    {
+      "name": "identity",
+      "op": "PiIntro",
+      "args": [
+        "U",
+        "identity_A"
+      ],
+      "context": null,
+      "free": [
+        "a"
+      ],
+      "fresh": false,
+      "line": 8
+    },
+    {
+      "name": "A_to_A",
+      "op": "PiForm",
+      "args": [
+        "A",
+        "A"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "fresh": false,
+      "line": 9
+    },
+    {
+      "name": "Identity",
+      "op": "PiForm",
+      "args": [
+        "U",
+        "A_to_A"
+      ],
+      "context": null,
+      "free": [
+        "a"
+      ],
+      "fresh": false,
+      "line": 10
+    }
+  ]
+}

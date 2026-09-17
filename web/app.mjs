@@ -1,3 +1,4 @@
+import proofs from "./proofs/catalogue.mjs";
 import {
   layout,
   roles,
@@ -102,13 +103,17 @@ function fillBindings(select, kind, optional = false) {
   const old = select.value;
   select.replaceChildren();
   if (optional) option(select, "_", "— none —");
-  for (const b of state.bindings.filter((b) => b.kind === kind && !b.hidden))
+  for (const b of state.bindings.filter(
+    (b) => b.kind === kind && (!b.hidden || $("show-intermediate").checked),
+  ))
     option(select, b.name, b.name);
   if ([...select.options].some((o) => o.value === old)) select.value = old;
 }
 function renderState() {
   $("axioms").checked = state.allowAxioms;
-  const visible = state.bindings.filter((b) => !b.hidden);
+  const visible = state.bindings.filter(
+    (b) => !b.hidden || $("show-intermediate").checked,
+  );
   $("object-count").textContent = visible.length;
   const filter = $("filter").value.toLowerCase();
   $("objects").replaceChildren();
@@ -120,7 +125,11 @@ function renderState() {
     button.dataset.name = b.name;
     button.append(document.createTextNode(b.name));
     const small = document.createElement("small");
-    small.textContent = b.kind === "context" ? "ASSUMPTION" : "JUDGEMENT";
+    small.textContent = b.axiom
+      ? "AXIOM"
+      : b.kind === "context"
+        ? "ASSUMPTION"
+        : "JUDGEMENT";
     button.append(small);
     button.onclick = () => choose(b.name).catch(error);
     $("objects").append(button);
@@ -232,7 +241,7 @@ function renderInspector() {
     return;
   }
   $("active-name").textContent = active;
-  $("object-kind").textContent = view.kind;
+  $("object-kind").textContent = view.axiom ? "explicit axiom" : view.kind;
   renderTree($("expression"), view.expression, "expression");
   renderTree($("type"), view.type, "type");
   $("assumptions").textContent =
@@ -307,6 +316,7 @@ async function focused(operation) {
 }
 async function move(command, args = {}) {
   state = await request(command, args);
+  $("verification").textContent = "";
   draft = null;
   $("preview").hidden = true;
   renderState();
@@ -447,4 +457,32 @@ $("axioms").onchange = async () => {
 };
 $("opcode").onchange = renderOperands;
 $("filter").oninput = () => state && renderState();
+$("show-intermediate").onchange = () => state && renderState();
+for (const p of proofs)
+  option(
+    $("bundled-proof"),
+    p.id,
+    `${p.title} · axioms ${p.allowAxioms ? "on" : "off"}`,
+  );
+$("bundled-proof").value = "prelude_library";
+bind("open-bundled", async () => {
+  const entry = proofs.find((p) => p.id === $("bundled-proof").value);
+  const response = await fetch(
+    new URL(`./proofs/${entry.file}`, import.meta.url),
+  );
+  if (!response.ok) throw new Error("Unable to load bundled proof.");
+  $("filter").value = "";
+  await move("import", { document: await response.json(), adoptPolicy: true });
+  await choose(entry.exports.at(-1));
+  if (entry.verify) {
+    $("proposition").value = entry.verify[0];
+    $("proof").value = entry.verify[1];
+    $("verification").textContent = (await request("verify", {
+      proposition: entry.verify[0],
+      proof: entry.verify[1],
+    }))
+      ? "Verified closed proof."
+      : "Not verified.";
+  } else $("verification").textContent = "";
+});
 start();

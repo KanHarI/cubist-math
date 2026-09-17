@@ -35,8 +35,8 @@ export class Session {
     }
     return chain.reverse().flat();
   }
-  replay(steps) {
-    const engine = new Kernel(this.module, this.allowAxioms);
+  replay(steps, allowAxioms = this.allowAxioms) {
+    const engine = new Kernel(this.module, allowAxioms);
     try {
       for (const step of steps) engine.apply(step);
       return engine;
@@ -228,12 +228,15 @@ export class Session {
       steps: this.program(),
     };
   }
-  import(document) {
+  // Bundled Open actions may adopt the displayed policy. Ordinary imports
+  // require a matching policy; neither path publishes before replay succeeds.
+  import(document, adoptPolicy = false) {
     if (
       !document ||
       document.format !== "thth-workbench" ||
       document.version !== 1 ||
-      document.policy?.allowAxioms !== this.allowAxioms ||
+      typeof document.policy?.allowAxioms !== "boolean" ||
+      (!adoptPolicy && document.policy.allowAxioms !== this.allowAxioms) ||
       !Array.isArray(document.steps) ||
       document.steps.length > 4096
     )
@@ -241,10 +244,11 @@ export class Session {
         "Unsupported proof file or axiom policy. Enable axioms explicitly before importing a proof that uses them.",
       );
     // Validate fully before replacing the live proof, including failed imports.
-    const engine = this.replay(document.steps);
+    const engine = this.replay(document.steps, document.policy.allowAxioms);
     this.discard();
     this.engine.dispose();
     this.engine = engine;
+    this.allowAxioms = document.policy.allowAxioms;
     this.revision = ++this.serial;
     this.revisions = new Map([
       [0, { id: 0, parent: null, title: "Empty proof", steps: [] }],

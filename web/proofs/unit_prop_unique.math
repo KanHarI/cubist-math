@@ -1,0 +1,13 @@
+# Unit prop unique
+# Upstream: src/builtins/unit_prop_unique.rs
+# Axioms: false
+s0001_UnitForm = kernel.UnitForm()
+s0002_UnitIntro = kernel.UnitIntro()
+s0003_CtxExt = kernel.CtxExt(s0001_UnitForm; free: [_])
+s0004_Vble = kernel.Vble(; context: s0003_CtxExt)
+s0005_EqForm = kernel.EqForm(s0001_UnitForm, s0004_Vble, s0002_UnitIntro)
+s0006_EqIntro = kernel.EqIntro(s0002_UnitIntro)
+s0007_UnitElim = kernel.UnitElim(s0005_EqForm, s0006_EqIntro, s0004_Vble; free: [s0003_CtxExt])
+s0008_PiIntro = kernel.PiIntro(s0001_UnitForm, s0007_UnitElim; free: [s0003_CtxExt])
+s0009_Def = kernel.Def(s0008_PiIntro)
+lib_unit_unique = kernel.DefEqExtL(s0009_Def)

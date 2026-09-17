@@ -1,0 +1,6533 @@
+{
+  "format": "thth-workbench",
+  "version": 1,
+  "policy": {
+    "allowAxioms": true
+  },
+  "steps": [
+    {
+      "name": "s0001_VoidForm",
+      "op": "VoidForm",
+      "args": [],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0002_UIntroOmega",
+      "op": "UIntroOmega",
+      "args": [],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0003_UIntroOmega",
+      "op": "UIntroOmega",
+      "args": [],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0004_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0003_UIntroOmega"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0005_UVble",
+      "op": "UVble",
+      "args": [],
+      "context": "s0004_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0006_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0005_UVble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0007_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0006_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0008_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0007_Vble",
+        "s0005_UVble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0009_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0008_PiForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0010_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0009_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0011_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0007_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0012_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0011_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0013_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0010_Vble",
+        "s0012_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0014_SigmaForm",
+      "op": "SigmaForm",
+      "args": [
+        "s0007_Vble",
+        "s0013_PiElim"
+      ],
+      "context": null,
+      "free": [
+        "s0011_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0015_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0014_SigmaForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0016_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0015_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0017_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0013_PiElim"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0018_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0017_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0019_SigmaElim",
+      "op": "SigmaElim",
+      "args": [
+        "s0007_Vble",
+        "s0012_Vble",
+        "s0016_Vble"
+      ],
+      "context": null,
+      "free": [
+        null,
+        "s0011_CtxExt",
+        "s0017_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0020_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0014_SigmaForm",
+        "s0019_SigmaElim"
+      ],
+      "context": null,
+      "free": [
+        "s0015_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0021_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0008_PiForm",
+        "s0020_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0009_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0022_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0005_UVble",
+        "s0021_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0006_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0023_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0003_UIntroOmega",
+        "s0022_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0004_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0024_Def",
+      "op": "Def",
+      "args": [
+        "s0023_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0025_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0024_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0026_SigmaIntro",
+      "op": "SigmaIntro",
+      "args": [
+        "s0012_Vble",
+        "s0013_PiElim",
+        "s0018_Vble"
+      ],
+      "context": null,
+      "free": [
+        "s0011_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0027_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0020_PiIntro",
+        "s0026_SigmaIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0028_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0020_PiIntro",
+        "s0016_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0029_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0010_Vble",
+        "s0028_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0030_DefEqRefl",
+      "op": "DefEqRefl",
+      "args": [
+        "s0027_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0031_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0030_DefEqRefl"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0032_High0",
+      "op": "High0",
+      "args": [
+        "s0031_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0033_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0032_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0034_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0033_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0035_Subs",
+      "op": "Subs",
+      "args": [
+        "s0018_Vble",
+        "s0034_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0036_SigmaElim",
+      "op": "SigmaElim",
+      "args": [
+        "s0029_PiElim",
+        "s0035_Subs",
+        "s0026_SigmaIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0015_CtxExt",
+        "s0011_CtxExt",
+        "s0017_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0037_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0010_Vble",
+        "s0028_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0038_SigmaElim",
+      "op": "SigmaElim",
+      "args": [
+        "s0037_PiElim",
+        "s0036_SigmaElim",
+        "s0016_Vble"
+      ],
+      "context": null,
+      "free": [
+        "s0015_CtxExt",
+        "s0011_CtxExt",
+        "s0017_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0039_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0014_SigmaForm",
+        "s0038_SigmaElim"
+      ],
+      "context": null,
+      "free": [
+        "s0015_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0040_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0008_PiForm",
+        "s0039_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0009_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0041_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0005_UVble",
+        "s0040_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0006_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0042_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0003_UIntroOmega",
+        "s0041_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0004_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0043_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0042_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0044_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0043_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0045_Def",
+      "op": "Def",
+      "args": [
+        "s0044_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0046_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0045_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0047_UIntroOmega",
+      "op": "UIntroOmega",
+      "args": [],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0048_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0047_UIntroOmega"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0049_UVble",
+      "op": "UVble",
+      "args": [],
+      "context": "s0048_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0050_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0051_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0050_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0052_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0051_Vble",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0053_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0052_PiForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0054_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0053_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0055_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0056_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0055_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0057_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0054_Vble",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0058_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0051_Vble",
+        "s0057_PiElim"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0059_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0058_PiForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0060_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0059_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0061_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0058_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0059_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0062_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0061_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0063_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0060_Vble",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0064_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0062_Vble",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0065_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0057_PiElim",
+        "s0063_PiElim",
+        "s0064_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0066_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0051_Vble",
+        "s0065_EqForm"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0067_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0058_PiForm",
+        "s0066_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0061_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0068_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0058_PiForm",
+        "s0067_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0059_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0069_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0052_PiForm",
+        "s0068_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0053_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0070_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0069_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0071_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0070_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0072_Def",
+      "op": "Def",
+      "args": [
+        "s0071_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0073_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0072_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0074_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0058_PiForm",
+        "s0060_Vble",
+        "s0062_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0075_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0074_EqForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0076_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0075_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0077_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0060_Vble",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0078_EqIntro",
+      "op": "EqIntro",
+      "args": [
+        "s0077_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0079_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0051_Vble",
+        "s0078_EqIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0080_EqElim",
+      "op": "EqElim",
+      "args": [
+        "s0066_PiForm",
+        "s0079_PiIntro",
+        "s0060_Vble",
+        "s0062_Vble",
+        "s0076_Vble"
+      ],
+      "context": null,
+      "free": [
+        "s0059_CtxExt",
+        "s0061_CtxExt",
+        null,
+        "s0059_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0081_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0073_DefEqExtL",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0082_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0081_PiElim",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0083_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0082_PiElim",
+        "s0054_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0084_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0083_PiElim",
+        "s0060_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0085_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0084_PiElim",
+        "s0062_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0086_DefEqRefl",
+      "op": "DefEqRefl",
+      "args": [
+        "s0085_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0087_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0086_DefEqRefl"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0088_High0",
+      "op": "High0",
+      "args": [
+        "s0087_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0089_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0088_High0",
+        "s0072_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0090_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0089_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0091_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0090_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0092_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0091_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0093_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0092_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0094_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0093_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0095_Subs",
+      "op": "Subs",
+      "args": [
+        "s0080_EqElim",
+        "s0094_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0096_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0074_EqForm",
+        "s0095_Subs"
+      ],
+      "context": null,
+      "free": [
+        "s0075_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0097_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0058_PiForm",
+        "s0096_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0061_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0098_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0058_PiForm",
+        "s0097_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0059_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0099_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0052_PiForm",
+        "s0098_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0053_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0100_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0099_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0101_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0100_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0102_Def",
+      "op": "Def",
+      "args": [
+        "s0101_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0103_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0102_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0104_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0105_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0104_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0106_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0051_Vble",
+        "s0105_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0107_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0108_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0107_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0109_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0051_Vble",
+        "s0056_Vble",
+        "s0108_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0110_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0109_EqForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0111_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0110_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0112_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0106_PiForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0113_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0112_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0114_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0113_Vble",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0115_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0113_Vble",
+        "s0108_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0116_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0105_Vble",
+        "s0114_PiElim",
+        "s0115_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0117_EqIntro",
+      "op": "EqIntro",
+      "args": [
+        "s0114_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0118_EqElim",
+      "op": "EqElim",
+      "args": [
+        "s0116_EqForm",
+        "s0117_EqIntro",
+        "s0056_Vble",
+        "s0108_Vble",
+        "s0111_Vble"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt",
+        "s0107_CtxExt",
+        null,
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0119_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0109_EqForm",
+        "s0118_EqElim"
+      ],
+      "context": null,
+      "free": [
+        "s0110_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0120_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0051_Vble",
+        "s0119_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0107_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0121_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0051_Vble",
+        "s0120_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0122_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0106_PiForm",
+        "s0121_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0112_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0123_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0122_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0104_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0124_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0123_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0125_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0124_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0126_Def",
+      "op": "Def",
+      "args": [
+        "s0125_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0127_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0126_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0128_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0051_Vble",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0129_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0128_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0130_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0129_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0131_Def",
+      "op": "Def",
+      "args": [
+        "s0130_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0132_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0133_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0105_Vble",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0134_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0133_PiForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0135_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0134_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0136_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0105_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0137_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0136_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0138_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0135_Vble",
+        "s0137_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0139_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0113_Vble",
+        "s0138_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0140_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0105_Vble",
+        "s0139_PiElim"
+      ],
+      "context": null,
+      "free": [
+        "s0136_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0141_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0081_PiElim",
+        "s0105_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0142_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0105_Vble",
+        "s0105_Vble"
+      ],
+      "context": null,
+      "free": [
+        "s0136_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0143_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0141_PiElim",
+        "s0142_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0144_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0143_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0145_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0144_BetaReduceGrossKnuth",
+        "s0140_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0146_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0132_DefEqExtL",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0147_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0146_PiElim",
+        "s0105_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0148_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0145_PiElim",
+        "s0147_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0149_DefEqRefl",
+      "op": "DefEqRefl",
+      "args": [
+        "s0148_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0150_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0149_DefEqRefl"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0151_High1",
+      "op": "High1",
+      "args": [
+        "s0150_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0152_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0151_High1",
+        "s0072_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0153_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0152_HighSubs",
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0154_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0153_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0155_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0154_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0156_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0155_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0157_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0156_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0158_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0157_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0159_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0148_PiElim"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0160_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0159_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0161_Subs",
+      "op": "Subs",
+      "args": [
+        "s0160_Vble",
+        "s0158_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0162_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0161_Subs",
+        "s0114_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0163_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0081_PiElim",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0164_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0051_Vble",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0165_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0163_PiElim",
+        "s0164_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0166_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0165_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0167_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0113_Vble",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0168_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0135_Vble",
+        "s0167_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0169_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0051_Vble",
+        "s0168_PiElim"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0170_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0146_PiElim",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0171_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0166_BetaReduceGrossKnuth",
+        "s0169_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0172_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0171_PiElim",
+        "s0170_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0173_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0172_PiElim"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0174_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0173_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0175_Subs",
+      "op": "Subs",
+      "args": [
+        "s0174_Vble",
+        "s0072_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0176_Subs",
+      "op": "Subs",
+      "args": [
+        "s0175_Subs",
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0177_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0176_Subs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0178_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0177_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0179_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0178_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0180_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0127_DefEqExtL",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0181_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0180_PiElim",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0182_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0181_PiElim",
+        "s0105_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0183_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0182_PiElim",
+        "s0113_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0184_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0183_PiElim",
+        "s0168_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0185_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0184_PiElim",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0186_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0179_BetaReduceGrossKnuth",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0187_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0185_PiElim",
+        "s0186_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0188_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0113_Vble",
+        "s0168_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0189_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0105_Vble",
+        "s0188_PiElim",
+        "s0167_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0190_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0189_EqForm",
+        "s0187_PiElim",
+        "s0162_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0191_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0051_Vble",
+        "s0190_EqForm"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0192_SigmaForm",
+      "op": "SigmaForm",
+      "args": [
+        "s0148_PiElim",
+        "s0191_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0159_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0193_SigmaForm",
+      "op": "SigmaForm",
+      "args": [
+        "s0172_PiElim",
+        "s0192_SigmaForm"
+      ],
+      "context": null,
+      "free": [
+        "s0173_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0194_SigmaForm",
+      "op": "SigmaForm",
+      "args": [
+        "s0133_PiForm",
+        "s0193_SigmaForm"
+      ],
+      "context": null,
+      "free": [
+        "s0134_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0195_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0106_PiForm",
+        "s0194_SigmaForm"
+      ],
+      "context": null,
+      "free": [
+        "s0112_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0196_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0195_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0104_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0197_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0196_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0198_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0197_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0199_Def",
+      "op": "Def",
+      "args": [
+        "s0198_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0200_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0199_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0201_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0085_PiElim",
+        "s0074_EqForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0202_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0058_PiForm",
+        "s0201_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0061_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0203_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0058_PiForm",
+        "s0202_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0059_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0204_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0052_PiForm",
+        "s0203_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0053_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0205_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0049_UVble",
+        "s0204_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0206_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0205_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0207_Axiom",
+      "op": "Axiom",
+      "args": [
+        "s0206_PiForm"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0208_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0085_PiElim"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0209_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0208_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0210_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0207_Axiom",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0211_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0210_PiElim",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0212_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0211_PiElim",
+        "s0054_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0213_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0212_PiElim",
+        "s0060_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0214_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0213_PiElim",
+        "s0062_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0215_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0214_PiElim",
+        "s0209_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0216_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0103_DefEqExtL",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0217_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0216_PiElim",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0218_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0217_PiElim",
+        "s0054_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0219_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0218_PiElim",
+        "s0060_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0220_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0219_PiElim",
+        "s0062_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0221_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0220_PiElim",
+        "s0215_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0222_Subs",
+      "op": "Subs",
+      "args": [
+        "s0221_PiElim",
+        "s0072_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0223_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0222_Subs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0224_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0223_BetaReduceGrossKnuth",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0225_Subs",
+      "op": "Subs",
+      "args": [
+        "s0209_Vble",
+        "s0072_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0226_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0225_Subs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0227_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0226_BetaReduceGrossKnuth",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0228_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0057_PiElim",
+        "s0077_PiElim",
+        "s0064_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0229_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0228_EqForm",
+        "s0224_PiElim",
+        "s0227_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0230_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0051_Vble",
+        "s0229_EqForm"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0231_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0085_PiElim",
+        "s0230_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0208_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0232_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0058_PiForm",
+        "s0231_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0061_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0233_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0058_PiForm",
+        "s0232_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0059_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0234_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0052_PiForm",
+        "s0233_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0053_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0235_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0049_UVble",
+        "s0234_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0236_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0235_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0237_Axiom",
+      "op": "Axiom",
+      "args": [
+        "s0236_PiForm"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0238_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0074_EqForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0239_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0238_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0240_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0220_PiElim",
+        "s0239_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0241_Subs",
+      "op": "Subs",
+      "args": [
+        "s0240_PiElim",
+        "s0072_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0242_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0241_Subs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0243_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0242_BetaReduceGrossKnuth",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0244_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0051_Vble",
+        "s0243_PiElim"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0245_Subs",
+      "op": "Subs",
+      "args": [
+        "s0244_PiIntro",
+        "s0094_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0246_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0214_PiElim",
+        "s0245_Subs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0247_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0074_EqForm",
+        "s0239_Vble",
+        "s0246_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0248_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0074_EqForm",
+        "s0247_EqForm"
+      ],
+      "context": null,
+      "free": [
+        "s0238_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0249_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0058_PiForm",
+        "s0248_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0061_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0250_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0058_PiForm",
+        "s0249_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0059_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0251_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0052_PiForm",
+        "s0250_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0053_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0252_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0049_UVble",
+        "s0251_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0253_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0252_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0254_Axiom",
+      "op": "Axiom",
+      "args": [
+        "s0253_PiForm"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0255_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0200_DefEqExtL",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0256_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0255_PiElim",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0257_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0256_PiElim",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0258_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0257_PiElim",
+        "s0170_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0259_DefEqRefl",
+      "op": "DefEqRefl",
+      "args": [
+        "s0258_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0260_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0259_DefEqRefl"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0261_High0",
+      "op": "High0",
+      "args": [
+        "s0260_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0262_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0261_High0",
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0263_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0262_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0264_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0263_BetaReduceGrossKnuth",
+        "s0199_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0265_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0264_HighSubs",
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0266_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0265_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0267_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0266_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0268_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0267_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0269_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0268_BetaReduceGrossKnuth",
+        "s0072_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0270_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0269_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0271_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0270_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0272_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0271_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0273_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0272_BetaReduceGrossKnuth",
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0274_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0273_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0275_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0274_BetaReduceGrossKnuth",
+        "s0126_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0276_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0275_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0277_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0276_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0278_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0277_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0279_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0278_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0280_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0279_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0281_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0051_Vble",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0282_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0281_PiForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0283_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0282_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0284_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0283_Vble",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0285_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0051_Vble",
+        "s0284_PiElim",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0286_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0051_Vble",
+        "s0285_EqForm"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0287_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0286_PiForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0288_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0287_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0289_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0286_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0287_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0290_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0289_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0291_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0181_PiElim",
+        "s0051_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0292_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0291_PiElim",
+        "s0170_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0293_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0292_PiElim",
+        "s0284_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0294_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0293_PiElim",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0295_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0288_Vble",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0296_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0294_PiElim",
+        "s0295_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0297_Subs",
+      "op": "Subs",
+      "args": [
+        "s0296_PiElim",
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0298_Subs",
+      "op": "Subs",
+      "args": [
+        "s0297_Subs",
+        "s0126_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0299_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0298_Subs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0300_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0299_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0301_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0290_Vble",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0302_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0285_EqForm",
+        "s0300_BetaReduceGrossKnuth",
+        "s0301_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0303_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0051_Vble",
+        "s0302_EqForm"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0304_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0286_PiForm",
+        "s0303_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0289_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0305_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0286_PiForm",
+        "s0304_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0287_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0306_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0281_PiForm",
+        "s0305_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0282_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0307_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0306_PiIntro",
+        "s0170_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0308_EqIntro",
+      "op": "EqIntro",
+      "args": [
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0309_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0170_PiElim",
+        "s0056_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0310_DefEqRefl",
+      "op": "DefEqRefl",
+      "args": [
+        "s0309_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0311_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0310_DefEqRefl"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0312_High0",
+      "op": "High0",
+      "args": [
+        "s0311_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0313_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0312_High0",
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0314_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0313_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0315_HighType",
+      "op": "HighType",
+      "args": [
+        "s0308_EqIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0316_High1",
+      "op": "High1",
+      "args": [
+        "s0315_HighType"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0317_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0316_High1",
+        "s0314_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0318_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0051_Vble",
+        "s0317_HighSubs"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0319_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0307_PiElim",
+        "s0318_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0320_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0281_PiForm",
+        "s0286_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0282_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0321_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0320_PiIntro",
+        "s0170_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0322_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0321_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0323_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0322_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0324_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0323_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0325_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0324_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0326_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0323_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [
+        "s0324_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0327_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0326_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0328_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0319_PiElim",
+        "s0318_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0329_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0328_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0330_High0",
+      "op": "High0",
+      "args": [
+        "s0329_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0331_High0",
+      "op": "High0",
+      "args": [
+        "s0330_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0332_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0331_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0333_HighUp",
+      "op": "HighUp",
+      "args": [
+        "s0332_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0334_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0333_HighUp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0335_HighUp",
+      "op": "HighUp",
+      "args": [
+        "s0334_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0336_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0335_HighUp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0337_DefEqRefl",
+      "op": "DefEqRefl",
+      "args": [
+        "s0336_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0338_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0337_DefEqRefl"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0339_High0",
+      "op": "High0",
+      "args": [
+        "s0338_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0340_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0339_High0",
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0341_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0340_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0342_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0341_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0343_EqIntro",
+      "op": "EqIntro",
+      "args": [
+        "s0308_EqIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0344_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0051_Vble",
+        "s0343_EqIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0345_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0319_PiElim",
+        "s0318_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0346_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0345_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0347_High0",
+      "op": "High0",
+      "args": [
+        "s0346_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0348_High0",
+      "op": "High0",
+      "args": [
+        "s0347_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0349_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0348_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0350_HighUp",
+      "op": "HighUp",
+      "args": [
+        "s0349_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0351_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0350_HighUp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0352_HighUp",
+      "op": "HighUp",
+      "args": [
+        "s0351_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0353_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0352_HighUp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0354_DefEqRefl",
+      "op": "DefEqRefl",
+      "args": [
+        "s0353_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0355_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0354_DefEqRefl"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0356_High0",
+      "op": "High0",
+      "args": [
+        "s0355_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0357_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0356_High0",
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0358_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0357_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0359_Subs",
+      "op": "Subs",
+      "args": [
+        "s0344_PiIntro",
+        "s0358_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0360_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0319_PiElim",
+        "s0327_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0361_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0360_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0362_High0",
+      "op": "High0",
+      "args": [
+        "s0361_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0363_High0",
+      "op": "High0",
+      "args": [
+        "s0362_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0364_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0363_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0365_HighUp",
+      "op": "HighUp",
+      "args": [
+        "s0364_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0366_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0365_HighUp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0367_HighUp",
+      "op": "HighUp",
+      "args": [
+        "s0366_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0368_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0367_HighUp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0369_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0319_PiElim",
+        "s0327_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0370_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0369_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0371_High0",
+      "op": "High0",
+      "args": [
+        "s0370_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0372_High0",
+      "op": "High0",
+      "args": [
+        "s0371_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0373_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0372_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0374_HighUp",
+      "op": "HighUp",
+      "args": [
+        "s0373_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0375_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0374_HighUp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0376_HighUp",
+      "op": "HighUp",
+      "args": [
+        "s0375_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0377_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0376_HighUp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0378_SigmaIntro",
+      "op": "SigmaIntro",
+      "args": [
+        "s0318_PiIntro",
+        "s0377_BetaReducePointed",
+        "s0359_Subs"
+      ],
+      "context": null,
+      "free": [
+        "s0326_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0379_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0307_PiElim",
+        "s0325_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0380_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0379_PiElim",
+        "s0327_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0381_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0380_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0382_High0",
+      "op": "High0",
+      "args": [
+        "s0381_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0383_High0",
+      "op": "High0",
+      "args": [
+        "s0382_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0384_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0383_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0385_HighUp",
+      "op": "HighUp",
+      "args": [
+        "s0384_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0386_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0385_HighUp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0387_HighUp",
+      "op": "HighUp",
+      "args": [
+        "s0386_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0388_BetaReducePointed",
+      "op": "BetaReducePointed",
+      "args": [
+        "s0387_HighUp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0389_SigmaForm",
+      "op": "SigmaForm",
+      "args": [
+        "s0323_BetaReducePointed",
+        "s0388_BetaReducePointed"
+      ],
+      "context": null,
+      "free": [
+        "s0326_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0390_SigmaIntro",
+      "op": "SigmaIntro",
+      "args": [
+        "s0318_PiIntro",
+        "s0389_SigmaForm",
+        "s0378_SigmaIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0324_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0391_SigmaForm",
+      "op": "SigmaForm",
+      "args": [
+        "s0286_PiForm",
+        "s0303_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0289_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0392_SigmaForm",
+      "op": "SigmaForm",
+      "args": [
+        "s0286_PiForm",
+        "s0391_SigmaForm"
+      ],
+      "context": null,
+      "free": [
+        "s0287_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0393_SigmaIntro",
+      "op": "SigmaIntro",
+      "args": [
+        "s0170_PiElim",
+        "s0392_SigmaForm",
+        "s0390_SigmaIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0282_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0394_Subs",
+      "op": "Subs",
+      "args": [
+        "s0393_SigmaIntro",
+        "s0280_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0395_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0394_Subs"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0396_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0395_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0397_Def",
+      "op": "Def",
+      "args": [
+        "s0396_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0398_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0397_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0399_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0256_PiElim",
+        "s0105_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0400_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0399_PiElim",
+        "s0113_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0401_SigmaForm",
+      "op": "SigmaForm",
+      "args": [
+        "s0106_PiForm",
+        "s0400_PiElim"
+      ],
+      "context": null,
+      "free": [
+        "s0112_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0402_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0401_SigmaForm"
+      ],
+      "context": null,
+      "free": [
+        "s0104_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0403_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0402_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0050_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0404_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0403_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0405_Def",
+      "op": "Def",
+      "args": [
+        "s0404_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0406_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0405_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0407_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0408_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0407_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0409_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [
+        "s0407_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0410_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0409_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0411_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0049_UVble",
+        "s0408_Vble",
+        "s0410_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0412_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0411_EqForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0413_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0412_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0414_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0406_DefEqExtL",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0415_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0414_PiElim",
+        "s0408_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0416_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0415_PiElim",
+        "s0410_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0417_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0415_PiElim",
+        "s0408_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0418_DefEqRefl",
+      "op": "DefEqRefl",
+      "args": [
+        "s0417_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0419_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0418_DefEqRefl"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0420_High0",
+      "op": "High0",
+      "args": [
+        "s0419_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0421_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0420_High0",
+        "s0405_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0422_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0421_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0423_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0422_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0424_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0423_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0425_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0132_DefEqExtL",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0426_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0425_PiElim",
+        "s0408_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0427_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0398_DefEqExtL",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0428_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0427_PiElim",
+        "s0408_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0429_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0408_Vble",
+        "s0408_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0430_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0429_PiForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0431_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0430_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0432_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0200_DefEqExtL",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0433_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0432_PiElim",
+        "s0408_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0434_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0433_PiElim",
+        "s0408_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0435_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0434_PiElim",
+        "s0431_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0436_SigmaIntro",
+      "op": "SigmaIntro",
+      "args": [
+        "s0426_PiElim",
+        "s0435_PiElim",
+        "s0428_PiElim"
+      ],
+      "context": null,
+      "free": [
+        "s0430_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0437_Subs",
+      "op": "Subs",
+      "args": [
+        "s0436_SigmaIntro",
+        "s0424_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0438_EqElim",
+      "op": "EqElim",
+      "args": [
+        "s0416_PiElim",
+        "s0437_Subs",
+        "s0408_Vble",
+        "s0410_Vble",
+        "s0413_Vble"
+      ],
+      "context": null,
+      "free": [
+        "s0407_CtxExt",
+        "s0409_CtxExt",
+        null,
+        "s0407_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0439_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0411_EqForm",
+        "s0438_EqElim"
+      ],
+      "context": null,
+      "free": [
+        "s0412_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0440_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0439_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0409_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0441_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0440_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0407_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0442_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0441_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0443_Def",
+      "op": "Def",
+      "args": [
+        "s0442_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0444_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0443_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0445_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0416_PiElim",
+        "s0411_EqForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0446_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0049_UVble",
+        "s0445_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0409_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0447_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0049_UVble",
+        "s0446_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0407_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0448_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0447_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0449_Axiom",
+      "op": "Axiom",
+      "args": [
+        "s0448_PiForm"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0450_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0054_Vble",
+        "s0108_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0451_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0057_PiElim",
+        "s0450_PiElim"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0452_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0425_PiElim",
+        "s0057_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0453_EqElim",
+      "op": "EqElim",
+      "args": [
+        "s0451_PiForm",
+        "s0452_PiElim",
+        "s0056_Vble",
+        "s0108_Vble",
+        "s0111_Vble"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt",
+        "s0107_CtxExt",
+        null,
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0454_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0109_EqForm",
+        "s0453_EqElim"
+      ],
+      "context": null,
+      "free": [
+        "s0110_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0455_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0408_Vble",
+        "s0454_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0107_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0456_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0408_Vble",
+        "s0455_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0055_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0457_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0052_PiForm",
+        "s0456_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0053_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0458_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0049_UVble",
+        "s0457_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0407_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0459_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0458_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0460_Def",
+      "op": "Def",
+      "args": [
+        "s0459_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0461_DefEqExtL",
+      "op": "DefEqExtL",
+      "args": [
+        "s0460_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0462_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0463_UVble",
+      "op": "UVble",
+      "args": [],
+      "context": "s0462_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0464_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0425_PiElim",
+        "s0463_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0465_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0461_DefEqExtL",
+        "s0049_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0466_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0465_PiElim",
+        "s0463_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0467_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0463_UVble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0468_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0467_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0469_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0464_PiElim",
+        "s0468_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0470_UCumulContext",
+      "op": "UCumulContext",
+      "args": [
+        "s0469_PiElim",
+        "s0463_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0471_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0463_UVble",
+        "s0470_UCumulContext"
+      ],
+      "context": null,
+      "free": [
+        "s0467_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0472_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0466_PiElim",
+        "s0471_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0473_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0463_UVble"
+      ],
+      "context": null,
+      "free": [
+        "s0467_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0474_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0473_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0475_UCumulOmega",
+      "op": "UCumulOmega",
+      "args": [
+        "s0463_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0476_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0406_DefEqExtL",
+        "s0475_UCumulOmega"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0477_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0476_PiElim",
+        "s0468_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0478_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0477_PiElim",
+        "s0474_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0479_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0478_PiElim"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0480_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0479_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0481_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0449_Axiom",
+        "s0475_UCumulOmega"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0482_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0481_PiElim",
+        "s0468_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0483_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0482_PiElim",
+        "s0474_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0484_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0483_PiElim",
+        "s0480_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0485_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0472_PiElim",
+        "s0468_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0486_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0485_PiElim",
+        "s0474_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0487_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0486_PiElim",
+        "s0484_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0488_Subs",
+      "op": "Subs",
+      "args": [
+        "s0487_PiElim",
+        "s0460_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0489_Subs",
+      "op": "Subs",
+      "args": [
+        "s0488_Subs",
+        "s0131_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0490_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0489_Subs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0491_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0490_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0492_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0491_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0493_Subs",
+      "op": "Subs",
+      "args": [
+        "s0480_Vble",
+        "s0405_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0494_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0493_Subs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0495_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0494_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0496_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0495_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0497_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0025_DefEqExtL",
+        "s0475_UCumulOmega"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0498_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0468_Vble",
+        "s0474_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0499_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0497_PiElim",
+        "s0498_PiForm"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0500_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0200_DefEqExtL",
+        "s0475_UCumulOmega"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0501_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0500_PiElim",
+        "s0468_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0502_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0501_PiElim",
+        "s0474_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0503_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0499_PiElim",
+        "s0502_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0504_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0503_PiElim",
+        "s0496_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0505_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0504_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0506_High0",
+      "op": "High0",
+      "args": [
+        "s0505_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0507_High0",
+      "op": "High0",
+      "args": [
+        "s0506_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0508_High0",
+      "op": "High0",
+      "args": [
+        "s0507_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0509_High0",
+      "op": "High0",
+      "args": [
+        "s0508_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0510_DefLookup",
+      "op": "DefLookup",
+      "args": [
+        "s0509_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0511_UnHigh",
+      "op": "UnHigh",
+      "args": [
+        "s0509_High0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0512_Subs",
+      "op": "Subs",
+      "args": [
+        "s0511_UnHigh",
+        "s0510_DefLookup"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0513_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0512_Subs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0514_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0513_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0515_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0514_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0516_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0468_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0517_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0516_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0518_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0492_BetaReduceGrossKnuth",
+        "s0517_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0519_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0515_BetaReduceGrossKnuth",
+        "s0517_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0520_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0474_Vble",
+        "s0518_PiElim",
+        "s0519_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0521_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0468_Vble",
+        "s0520_EqForm"
+      ],
+      "context": null,
+      "free": [
+        "s0516_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0522_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0478_PiElim",
+        "s0521_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0479_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0523_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0463_UVble",
+        "s0522_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0473_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0524_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0463_UVble",
+        "s0523_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0467_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0525_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0049_UVble",
+        "s0524_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0462_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0526_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0525_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0527_Axiom",
+      "op": "Axiom",
+      "args": [
+        "s0526_PiForm"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0528_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0463_UVble",
+        "s0468_Vble",
+        "s0474_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0529_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0528_EqForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0530_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0529_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0531_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0444_DefEqExtL",
+        "s0475_UCumulOmega"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0532_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0531_PiElim",
+        "s0468_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0533_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0532_PiElim",
+        "s0474_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0534_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0533_PiElim",
+        "s0530_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0535_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0483_PiElim",
+        "s0534_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0536_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0528_EqForm",
+        "s0530_Vble",
+        "s0535_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0537_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0528_EqForm",
+        "s0536_EqForm"
+      ],
+      "context": null,
+      "free": [
+        "s0529_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0538_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0463_UVble",
+        "s0537_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0473_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0539_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0463_UVble",
+        "s0538_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0467_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0540_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0049_UVble",
+        "s0539_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0462_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0541_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0540_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0048_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0542_Axiom",
+      "op": "Axiom",
+      "args": [
+        "s0541_PiForm"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0543_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0047_UIntroOmega"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0544_UVble",
+      "op": "UVble",
+      "args": [],
+      "context": "s0543_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0545_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0544_UVble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0546_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0545_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0547_PiForm",
+      "op": "PiForm",
+      "args": [
+        "s0001_VoidForm",
+        "s0546_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0548_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0547_PiForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0549_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0548_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0550_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0547_PiForm"
+      ],
+      "context": null,
+      "free": [
+        "s0548_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0551_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0550_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0552_CtxExt",
+      "op": "CtxExt",
+      "args": [
+        "s0001_VoidForm"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0553_Vble",
+      "op": "Vble",
+      "args": [],
+      "context": "s0552_CtxExt",
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0554_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0549_Vble",
+        "s0553_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0555_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0551_Vble",
+        "s0553_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0556_EqForm",
+      "op": "EqForm",
+      "args": [
+        "s0546_Vble",
+        "s0554_PiElim",
+        "s0555_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0557_VoidElim",
+      "op": "VoidElim",
+      "args": [
+        "s0556_EqForm",
+        "s0553_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0558_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0001_VoidForm",
+        "s0557_VoidElim"
+      ],
+      "context": null,
+      "free": [
+        "s0552_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0559_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0073_DefEqExtL",
+        "s0544_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0560_UCumul0",
+      "op": "UCumul0",
+      "args": [
+        "s0001_VoidForm",
+        "s0544_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0561_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0559_PiElim",
+        "s0560_UCumul0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0562_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0001_VoidForm",
+        "s0546_Vble"
+      ],
+      "context": null,
+      "free": [
+        null
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0563_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0561_PiElim",
+        "s0562_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0564_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0563_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0565_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0564_BetaReduceGrossKnuth",
+        "s0549_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0566_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0565_PiElim",
+        "s0551_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0567_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0073_DefEqExtL"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0568_DefLookup",
+      "op": "DefLookup",
+      "args": [
+        "s0567_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0569_DefEqRefl",
+      "op": "DefEqRefl",
+      "args": [
+        "s0566_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0570_HighExp",
+      "op": "HighExp",
+      "args": [
+        "s0569_DefEqRefl"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0571_High0",
+      "op": "High0",
+      "args": [
+        "s0570_HighExp"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0572_HighSubs",
+      "op": "HighSubs",
+      "args": [
+        "s0571_High0",
+        "s0568_DefLookup"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0573_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0572_HighSubs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0574_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0573_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0575_Subs",
+      "op": "Subs",
+      "args": [
+        "s0558_PiIntro",
+        "s0574_BetaReduceGrossKnuth"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0576_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0207_Axiom",
+        "s0544_UVble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0577_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0576_PiElim",
+        "s0560_UCumul0"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0578_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0577_PiElim",
+        "s0562_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0579_BetaReduceGrossKnuth",
+      "op": "BetaReduceGrossKnuth",
+      "args": [
+        "s0578_PiElim"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0580_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0579_BetaReduceGrossKnuth",
+        "s0549_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0581_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0580_PiElim",
+        "s0551_Vble"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0582_PiElim",
+      "op": "PiElim",
+      "args": [
+        "s0581_PiElim",
+        "s0575_Subs"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "s0583_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0547_PiForm",
+        "s0582_PiElim"
+      ],
+      "context": null,
+      "free": [
+        "s0550_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0584_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0547_PiForm",
+        "s0583_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0548_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0585_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0544_UVble",
+        "s0584_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0545_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0586_PiIntro",
+      "op": "PiIntro",
+      "args": [
+        "s0047_UIntroOmega",
+        "s0585_PiIntro"
+      ],
+      "context": null,
+      "free": [
+        "s0543_CtxExt"
+      ],
+      "hidden": false
+    },
+    {
+      "name": "s0587_Def",
+      "op": "Def",
+      "args": [
+        "s0586_PiIntro"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    },
+    {
+      "name": "lib_pi_void_unique",
+      "op": "DefEqExtL",
+      "args": [
+        "s0587_Def"
+      ],
+      "context": null,
+      "free": [],
+      "hidden": false
+    }
+  ]
+}

@@ -416,7 +416,8 @@ a {
   }
 }
 
-#axioms {
+#axioms,
+#show-intermediate {
   width: auto;
   margin-right: 6px;
 }

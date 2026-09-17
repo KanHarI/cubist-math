@@ -1,0 +1,4 @@
+# U0
+# Upstream: src/builtins/u0.rs
+# Axioms: false
+lib_U0 = kernel.UIntro0()

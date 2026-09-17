@@ -43,6 +43,17 @@
           <h2>Objects</h2>
           <span id="object-count" class="muted"></span>
         </div>
+        <label for="bundled-proof">Existing proofs &amp; library</label>
+        <select id="bundled-proof" aria-label="Bundled proof"></select>
+        <button id="open-bundled">Open selected proof</button>
+        <p class="hint">
+          Opens a checked program with its displayed axiom policy. Replaces the
+          current proof.
+        </p>
+        <label
+          ><input id="show-intermediate" type="checkbox" /> Show intermediate
+          steps</label
+        >
         <label class="search-label"
           >Find a named object<input
             id="filter"

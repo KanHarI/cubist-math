@@ -73,6 +73,7 @@ export class Kernel {
       id: this.module._wb_result(this.handle),
       kind: meta.returnsContext ? "context" : "judgement",
       hidden: step.hidden,
+      axiom: step.op === "Axiom",
     });
     this.steps.push(step);
     return step;
