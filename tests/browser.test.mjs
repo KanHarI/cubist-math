@@ -168,6 +168,70 @@ try {
         "1,910 / 1,910",
       );
       await page.locator("#show-intermediate").uncheck();
+      assert.match(
+        await page.locator("#checked-judgement").textContent(),
+        /Verified closed judgement: wnat_to_nat_isEquiv : WNatToNat_isEquiv/,
+      );
+      assert.match(
+        await page.locator("#inference").textContent(),
+        /Inferred by DefEqExtR from/,
+      );
+      assert.match(
+        await page.locator("#expression-limit").textContent(),
+        /7,335 nodes/,
+      );
+      const beforeExpandHistory = await page.locator(".history-item").count();
+      await page.locator("#active-name").scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path: fileURLToPath(
+          new URL("../.tools/wnat-judgement.png", import.meta.url),
+        ),
+      });
+      await page.locator("#expression .truncated").first().click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector("#expand-expression").textContent ===
+          "Collapse expression",
+      );
+      assert.equal(await page.locator("#expression .truncated").count(), 0);
+      assert.equal(await page.locator("#expression .term").count(), 7335);
+      await page.locator("#checked-judgement button").click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector("#active-name").textContent ===
+          "WNatToNat_isEquiv",
+      );
+      assert.match(await page.locator("#expression").textContent(), /^\(Σ/);
+      await page.locator("#back-reference").click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector("#active-name").textContent ===
+          "wnat_to_nat_isEquiv",
+      );
+      assert.equal(await page.locator("#expression .term").count(), 7335);
+      await page.locator("#expand-expression").click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector("#expand-expression").textContent ===
+          "Show full expression",
+      );
+      assert.ok((await page.locator("#expression .truncated").count()) > 0);
+      await page.locator("#inference button").first().click();
+      await page.waitForFunction(() =>
+        document
+          .querySelector("#inference")
+          .textContent.startsWith("Inferred by DefEqRefl"),
+      );
+      await page.locator("#back-reference").click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector("#active-name").textContent ===
+          "wnat_to_nat_isEquiv",
+      );
+      assert.equal(
+        await page.locator(".history-item").count(),
+        beforeExpandHistory,
+      );
     }
     if (entry.verify)
       assert.equal(

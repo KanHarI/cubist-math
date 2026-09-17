@@ -214,8 +214,8 @@ export class Session {
       events: [...this.events],
     };
   }
-  inspect(name) {
-    return this.engine.inspect(name);
+  inspect(name, options) {
+    return this.engine.inspect(name, options);
   }
   verify(proposition, proof) {
     return this.engine.verify(proposition, proof);

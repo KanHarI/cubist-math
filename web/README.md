@@ -269,3 +269,23 @@ hidden intermediate declarations. **Back** returns to the previous expression
 and selection. Use **Shift-click** to select the reference instead; keyboard
 Enter/Space follows the link, and Shift-Enter/Space selects it. Path and
 parentheses selection also remain available.
+
+Large expression views initially show at most 350 nodes and 40 levels. An
+ellipsis is a display abbreviation, not a proof hole. Click it or **Show full
+expression/type** to render the complete tree (within the kernel's 65,536-node,
+256-level bounds). Collapse returns to the abbreviated view. These controls do
+not alter the checked term or proof history.
+
+The inspector shows **Verified closed judgement** when the kernel verifies the
+current object against a named proposition. Click the proposition to inspect its
+type expression. **Inferred by** shows the actual instruction and clickable
+premises, including hidden steps. For WNat ≃ Nat, `wnat_to_nat_isEquiv` inhabits
+`WNatToNat_isEquiv`, the unfolded specialization of the library's `isEquiv`:
+an inverse, two round trips, and the coherence condition.
+
+To inspect recorded Gross–Knuth passes, enable **Show intermediate steps** and
+filter for `GrossKnuth`. Open a result, then use its **Inferred by** premise to
+inspect the input. The instruction log also records every pass. For WNat's
+`isEquiv` type, `p3006_PiElim` is followed by `p3007_BetaReduceGrossKnuth` and
+`p3008_BetaReduceGrossKnuth`. To run a new pass, select a subtree and choose
+**Reduction pass in selection**; inspect the preview before accepting it.

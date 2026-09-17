@@ -26,7 +26,8 @@ self.onmessage = ({ data: { id, command, args } }) => {
     else if (command === "discard") {
       session.discard();
       result = session.snapshot();
-    } else if (command === "inspect") result = session.inspect(args.name);
+    } else if (command === "inspect")
+      result = session.inspect(args.name, { expand: args.expand });
     else if (command === "undo") result = session.undo();
     else if (command === "checkout") result = session.checkout(args.revision);
     else if (command === "export") result = session.export();

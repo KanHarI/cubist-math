@@ -429,6 +429,29 @@ test("WNat equivalence has the full coherence field and cannot replay without fu
   try {
     s.import(document, true);
     assert.equal(s.verify("WNatToNat_isEquiv", "wnat_to_nat_isEquiv"), true);
+    const stats = s.engine.stats();
+    const abbreviated = s.inspect("wnat_to_nat_isEquiv");
+    assert.deepEqual(abbreviated.propositions, ["WNatToNat_isEquiv"]);
+    assert.equal(abbreviated.inference.op, "DefEqExtR");
+    const containsOmission = (n) =>
+      n.truncated || n.children.some(containsOmission);
+    assert.equal(containsOmission(abbreviated.expression), true);
+    const full = s.inspect("wnat_to_nat_isEquiv", {
+      expand: ["expression", "type"],
+    });
+    const occurrences = (n) =>
+      1 + n.children.reduce((count, child) => count + occurrences(child), 0);
+    assert.equal(containsOmission(full.expression), false);
+    assert.equal(occurrences(full.expression), 7335);
+    assert.equal(occurrences(full.expression), full.expression.size);
+    assert.equal(containsOmission(full.type), false);
+    assert.equal(full.expression.id, abbreviated.expression.id);
+    assert.equal(full.type.id, abbreviated.type.id);
+    assert.deepEqual(s.engine.stats(), stats);
+    assert.throws(
+      () => s.inspect("wnat_to_nat_isEquiv", { expand: ["invalid"] }),
+      /Unknown expression view/,
+    );
     const type = s.inspect("WNatToNat_isEquiv").expression;
     assert.equal(type.kind, "Sigma");
     assert.equal(type.children[0].kind, "Pi");

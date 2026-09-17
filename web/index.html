@@ -70,15 +70,26 @@
             <h2 id="active-name" tabindex="-1">Choose an object</h2>
             <span id="object-kind" class="badge"></span>
           </div>
+          <div
+            id="checked-judgement"
+            class="checked-judgement"
+            role="status"
+            hidden
+          ></div>
+          <div id="inference" class="hint inference"></div>
           <div class="expression-block">
             <div class="label">
               EXPRESSION
               <span>click to select · reference links open declarations</span>
             </div>
+            <p id="expression-limit" class="hint"></p>
+            <button id="expand-expression" hidden>Show full expression</button>
             <div id="expression" class="math" aria-label="Expression"></div>
           </div>
           <div class="expression-block">
             <div class="label">TYPE</div>
+            <p id="type-limit" class="hint"></p>
+            <button id="expand-type" hidden>Show full type</button>
             <div id="type" class="math" aria-label="Type"></div>
           </div>
           <div class="assumptions">

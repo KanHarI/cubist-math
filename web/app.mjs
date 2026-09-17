@@ -15,6 +15,7 @@ let worker,
   view = null,
   selection = null,
   draft = null;
+let expandedSides = [];
 const pending = new Map();
 const navigation = [];
 function error(e) {
@@ -175,15 +176,67 @@ function renderState() {
   $("undo").disabled = state.revision === 0;
   updateBusy();
 }
-async function choose(name, navigating = false) {
+async function choose(name, navigating = false, expand = []) {
   if (!navigating) navigation.length = 0;
   active = name;
   selection = null;
-  const inspected = await request("inspect", { name });
+  const inspected = await request("inspect", { name, expand });
   if (active !== name) return;
   view = inspected;
+  expandedSides = [...expand];
   renderState();
   renderInspector();
+}
+async function expandView(side, expand = true) {
+  const name = active;
+  const sides = expandedSides.filter((s) => s !== side);
+  if (expand) sides.push(side);
+  const inspected = await request("inspect", { name, expand: sides });
+  if (active !== name) return;
+  view = inspected;
+  expandedSides = sides;
+  // Collapsing may hide the previously selected occurrence.
+  if (!expand && selection?.side === side) selection = null;
+  renderInspector();
+}
+function navigate(name) {
+  navigation.push({
+    name: active,
+    selection,
+    expandedSides: [...expandedSides],
+  });
+  return choose(name, true).then(() => $("active-name").focus());
+}
+function objectLink(name) {
+  const button = document.createElement("button");
+  button.textContent = name;
+  button.onclick = () => navigate(name).catch(error);
+  return button;
+}
+function renderDerivation() {
+  $("checked-judgement").replaceChildren();
+  $("checked-judgement").hidden = !view?.propositions.length;
+  for (const proposition of view?.propositions || []) {
+    const line = document.createElement("div");
+    line.append(
+      "Verified closed judgement: ",
+      document.createTextNode(`${active} : `),
+      objectLink(proposition),
+    );
+    $("checked-judgement").append(line);
+  }
+  $("inference").replaceChildren();
+  const step = view?.inference;
+  if (!step) return;
+  $("inference").append(document.createTextNode(`Inferred by ${step.op}`));
+  const inputs = [...step.args, step.context, ...step.free].filter(Boolean);
+  if (inputs.length) {
+    $("inference").append(document.createTextNode(" from "));
+    inputs.forEach((name, i) => {
+      if (i) $("inference").append(document.createTextNode(", "));
+      $("inference").append(objectLink(name));
+    });
+  }
 }
 function renderTree(container, tree, side) {
   container.replaceChildren();
@@ -210,6 +263,10 @@ function renderTree(container, tree, side) {
       el.dataset.declaration = target;
       el.setAttribute("role", "link");
       el.title = `Open ${n.kind === "Axiom" ? "axiom declaration" : "definition"}: ${target}. Shift-click to select.`;
+    }
+    if (n.truncated) {
+      el.classList.add("truncated");
+      el.title = `Show full ${side}; omitted here for readability, fully checked by the kernel.`;
     }
     el.setAttribute("aria-label", el.title);
     if (
@@ -240,14 +297,12 @@ function renderTree(container, tree, side) {
       document.querySelector(".term.selected")?.focus({ preventScroll: true });
     };
     const activate = (e) => {
-      if (target && !e.shiftKey) {
+      if (n.truncated) {
         e.stopPropagation();
-        navigation.push({ name: active, selection });
-        choose(target, true)
-          .then(() => {
-            $("active-name").focus();
-          })
-          .catch(error);
+        expandView(side).catch(error);
+      } else if (target && !e.shiftKey) {
+        e.stopPropagation();
+        navigate(target).catch(error);
       } else select(e);
     };
     el.onclick = activate;
@@ -263,6 +318,19 @@ function renderTree(container, tree, side) {
 }
 function renderInspector() {
   $("back-reference").hidden = navigation.length === 0;
+  renderDerivation();
+  for (const side of ["expression", "type"]) {
+    const tree = view?.[side];
+    const truncated = (n) => n && (n.truncated || n.children.some(truncated));
+    const omitted = truncated(tree);
+    $(side + "-limit").textContent = omitted
+      ? `Abbreviated view of ${tree.size.toLocaleString()} nodes. … hides display content, not unchecked proof steps.`
+      : "";
+    $("expand-" + side).hidden = !omitted && !expandedSides.includes(side);
+    $("expand-" + side).textContent = expandedSides.includes(side)
+      ? `Collapse ${side}`
+      : `Show full ${side}`;
+  }
   if (!view) {
     $("active-name").textContent = "Choose an object";
     $("expression").replaceChildren();
@@ -365,11 +433,13 @@ function bind(id, fn) {
 bind("back-reference", async () => {
   const previous = navigation.pop();
   if (!previous) return;
-  await choose(previous.name, true);
+  await choose(previous.name, true, previous.expandedSides);
   selection = previous.selection;
   renderInspector();
   $("active-name").focus();
 });
+for (const side of ["expression", "type"])
+  bind("expand-" + side, () => expandView(side, !expandedSides.includes(side)));
 bind("reduce", () => focused("BetaReducePointed"));
 bind("pass", () => focused("BetaReduceGrossKnuth"));
 bind("unfold", () => focused("DefReducePointed"));

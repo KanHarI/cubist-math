@@ -431,3 +431,22 @@ a {
   display: flex;
   align-items: center;
 }
+
+.checked-judgement {
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #edf5e9;
+  border: 1px solid #c6dccb;
+  border-radius: 7px;
+  overflow-wrap: anywhere;
+}
+.inference button,
+.checked-judgement button {
+  padding: 1px 4px;
+  font-size: inherit;
+  text-decoration: underline;
+}
+.term.truncated {
+  color: #286541;
+  border-bottom: 1px dotted;
+}

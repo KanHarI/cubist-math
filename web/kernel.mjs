@@ -109,7 +109,7 @@ export class Kernel {
   }
   tree(id, budget = { left: 350 }, depth = 0) {
     if (!id) return null;
-    if (--budget.left < 0 || depth > 40)
+    if (--budget.left < 0 || depth > (budget.maxDepth ?? 40))
       return { id, kind: "…", children: [], truncated: true };
     const n = this.node(id);
     return {
@@ -133,14 +133,49 @@ export class Kernel {
           return { id: c, names };
         });
   }
-  inspect(name) {
+  inspect(name, { expand = [] } = {}) {
+    if (
+      !Array.isArray(expand) ||
+      expand.some((side) => !["expression", "type"].includes(side))
+    )
+      throw new Error("Unknown expression view to expand.");
     const b = this.bindings.get(name);
     if (!b) throw new Error(`Unknown binding: ${name}`);
     const context = b.kind === "context",
       get = (f) => this.module._wb_view(this.handle, Number(context), b.id, f);
+    const tree = (id, side) =>
+      this.tree(
+        id,
+        expand.includes(side)
+          ? { left: 65536, maxDepth: 256 }
+          : { left: 350, maxDepth: 40 },
+      );
+    // Matching names are useful only if the kernel verifies the closed judgement.
+    const propositions = context
+      ? []
+      : [...this.bindings]
+          .filter(
+            ([label, value]) =>
+              label !== name &&
+              !value.hidden &&
+              value.kind === "judgement" &&
+              this.module._wb_view(this.handle, 0, value.id, 0) === get(1) &&
+              this.module._wb_verify(this.handle, value.id, b.id),
+          )
+          .map(([label]) => label);
+    const step = this.steps.find((step) => step.name === name);
     return {
       name,
       ...b,
+      propositions,
+      inference: step
+        ? {
+            op: step.op,
+            args: [...step.args],
+            context: step.context,
+            free: [...step.free],
+          }
+        : null,
       // Navigation labels are presentation metadata, separate from the AST.
       declarations: Object.fromEntries(this.declarations),
       contextNames: Object.fromEntries(
@@ -148,8 +183,8 @@ export class Kernel {
           .filter(([, value]) => value.kind === "context")
           .map(([label, value]) => [value.id, label]),
       ),
-      expression: context ? null : this.tree(get(0)),
-      type: this.tree(get(context ? 0 : 1)),
+      expression: context ? null : tree(get(0), "expression"),
+      type: tree(get(context ? 0 : 1), "type"),
       assumptions: this.list(get(context ? 1 : 2)),
       counter: context ? get(2) : null,
       focus: context
