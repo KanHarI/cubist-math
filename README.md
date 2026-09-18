@@ -142,7 +142,10 @@ including their complex specialization. Scalar tag errors are bounded by
 the uniform sampled error times the sum of edge-magnitude bounds; they tend
 to zero when those bounds do. The complex coordinate version now proves
 that changing tags preserves an existing limit when sampled errors tend
-to zero and coordinate variation is bounded. Proving convergence of the contour sums and
+to zero and coordinate variation is bounded. [Geometric interval curves](docs/complex_curves.md)
+now include uniformly continuous straight segments and their endpoints, with
+zero avoidance under the squared-norm domination condition.
+Proving convergence of the contour sums and
 the required homotopy estimates, and relating geometric curves to homotopy
 paths, remain open.
 

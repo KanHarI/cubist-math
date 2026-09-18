@@ -1,5 +1,9 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "complex_curves", title: "Complex curves · continuous straight segments and endpoints", complexDevelopment: true },
+  { id: "complex_affine", title: "Complex curves · constructive uniform continuity", complexDevelopment: true },
+  { id: "field_interval", title: "Curve parameters · the closed unit interval", complexDevelopment: true },
+  { id: "field_affine", title: "Affine estimates · parameter differences control increments", complexDevelopment: true },
   { id: "complex_contour_tag_limits", title: "Complex contours · tag-independent limits", complexDevelopment: true },
   { id: "complex_contour_bounds", title: "Complex contours · coordinate variation estimates", complexDevelopment: true },
   { id: "field_scale_limits", title: "Limits · fixed factors preserve vanishing errors", complexDevelopment: true },

@@ -23,6 +23,12 @@ hypotheses, without sign decisions or square roots. Admissible
 sampling schemes on geometric curves, convergence, and the homotopy estimates
 remain to be built.
 
+[Geometric interval curves](complex_curves.md) now include straight segments
+with checked endpoints and constructive uniform continuity. The existing
+domination estimate proves that the corresponding interval deformation
+avoids zero. Joint continuity for a family of loops and the comparison with
+homotopy-type paths remain open.
+
 | Module | Result |
 | --- | --- |
 | [field_products.proof](../web/proofs/field_products.proof) | Equality of pairs is determined by coordinate equalities; a product of sets is a set. |

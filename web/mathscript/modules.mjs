@@ -91,4 +91,8 @@ export const sourceModules = [
   "complex_contour_samples",
   "complex_contour_bounds",
   "complex_contour_tag_limits",
+  "field_affine",
+  "field_interval",
+  "complex_affine",
+  "complex_curves",
 ];

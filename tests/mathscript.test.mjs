@@ -1065,3 +1065,39 @@ test("contour estimates retain the zero-length margin and imaginary variation", 
   assert.notEqual(noImaginaryVariation, sources.complex_contour_bounds);
   assert.throws(() => compile(module, noImaginaryVariation, sources), /Expected|Conversion types differ/);
 });
+
+test("straight complex interval curves have constructive continuity, endpoints and zero avoidance", t => {
+  const c = compile(module, sources.complex_curves, sources);
+  try {
+    const allowed = new Set(["lib_Trunc", "lib_trunc_intro"]);
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => allowed.has(a)), output.name);
+    }
+    for (const name of ["complex_straight_curve_uniform", "complex_straight_curve_endpoints",
+      "complex_interval_deformation_uniform", "complex_interval_deformation_avoids_zero"]) {
+      assert.ok(c.outputs.some(o => o.name === name), name);
+    }
+    const uniform = c.outputs.find(o => o.name === "complex_straight_curve_uniform");
+    assert.match(uniform.type, /FieldInverses/);
+    assert.match(uniform.type, /FieldLattice/);
+    assert.doesNotMatch(uniform.type, /uniform :|bounded :/);
+    const avoidance = c.outputs.find(o => o.name === "complex_interval_deformation_avoids_zero");
+    assert.match(avoidance.type, /dominates : lt/);
+    assert.match(avoidance.type, /forall t : FieldUnitInterval/);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; ${c.kernel.stats().judgements.toLocaleString()} judgments`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("affine curves require the oriented parameter increment and both coordinate bounds", () => {
+  const backwards = sources.field_affine.replaceAll("addF(negF(t), s)", "addF(negF(s), t)");
+  assert.notEqual(backwards, sources.field_affine);
+  assert.throws(() => compile(module, backwards, sources), /Expected|Conversion types differ/);
+  const missingImaginaryBound = sources.complex_affine.replace(
+    "maxF(maxF(complex_real(F, z), negF(complex_real(F, z))), maxF(complex_imag(F, z), negF(complex_imag(F, z))))",
+    "maxF(complex_real(F, z), negF(complex_real(F, z)))");
+  assert.notEqual(missingImaginaryBound, sources.complex_affine);
+  assert.throws(() => compile(module, missingImaginaryBound, sources), /Expected|Conversion types differ/);
+});

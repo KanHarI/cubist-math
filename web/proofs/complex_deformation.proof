@@ -2,7 +2,8 @@ import complex_algebra;
 import ordered_squares;
 
 // The straight-line family used in the leading-term homotopy. This file
-// proves its endpoints and avoidance of zero; continuity is a separate task.
+// proves its endpoints and avoidance of zero; complex_affine proves uniform
+// continuity in t, and complex_curves restricts it to the unit interval.
 def complex_scale(F : Type1, mulF : F -> F -> F, t : F, z : Complex(F)) : Complex(F) {
   exact (mulF(t, complex_real(F, z)), mulF(t, complex_imag(F, z)));
 }

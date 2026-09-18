@@ -1,0 +1,51 @@
+import field_affine;
+import complex_magnitude;
+import complex_convergence;
+import complex_deformation;
+
+def complex_box_radius(F : Type1, negF : F -> F, maxF : F -> F -> F, z : Complex(F)) =
+  maxF(maxF(complex_real(F, z), negF(complex_real(F, z))), maxF(complex_imag(F, z), negF(complex_imag(F, z))));
+
+theorem complex_lattice_box_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F)) :
+  ComplexBoxBound(F, negF, lt, z, complex_box_radius(F, negF, maxF, z)) {
+  obtain (minLeft, (minRight, (minGreatest, (maxLeft, (maxRight, maxLeast))))) = lattice;
+  let x = complex_real(F, z);
+  let y = complex_imag(F, z);
+  let r = maxF(x, negF(x));
+  let s = maxF(y, negF(y));
+  exact (field_magnitude_enlarge(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, r, maxF(r, s),
+    field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, x), maxLeft(r, s)),
+    field_magnitude_enlarge(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, s, maxF(r, s),
+      field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, y), maxRight(r, s)));
+}
+
+// Uniform continuity on the whole scalar line; restriction to the interval
+// is in complex_curves. The radius is actual data, not mere existence.
+def ComplexUniformLine(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type, curve : F -> Complex(F)) =
+  forall epsilon : F, lt(zero, epsilon) -> exists delta : F, lt(zero, delta) and
+    (forall s : F, forall t : F, FieldClose(F, addF, lt, s, t, delta) -> ComplexClose(F, addF, lt, curve(s), curve(t), epsilon));
+
+theorem complex_linear_deformation_uniform(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
+  minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F)) :
+  ComplexUniformLine(F, zero, addF, lt, (fun (t : F) => complex_linear_deformation(F, addF, mulF, t, z, error))) {
+  intro epsilon;
+  intro positive;
+  let length = complex_box_radius(F, negF, maxF, error);
+  obtain (boundReal, boundImag) = complex_lattice_box_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, error);
+  let nonnegativeLength = field_magnitude_radius_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), length, boundReal);
+  obtain (delta, (positiveDelta, small)) = field_small_scaled_radius(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length, nonnegativeLength, epsilon, positive);
+  have close : forall s : F, forall t : F, FieldClose(F, addF, lt, s, t, delta) ->
+    ComplexClose(F, addF, lt, complex_linear_deformation(F, addF, mulF, s, z, error), complex_linear_deformation(F, addF, mulF, t, z, error), epsilon) {
+    intro s;
+    intro t;
+    intro nearby;
+    exact (field_affine_close(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z), complex_real(F, error), length, boundReal, s, t, delta, epsilon, nearby, small),
+      field_affine_close(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z), complex_imag(F, error), length, boundImag, s, t, delta, epsilon, nearby, small));
+  }
+  exact (delta, (positiveDelta, close));
+}

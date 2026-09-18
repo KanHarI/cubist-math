@@ -1,0 +1,23 @@
+import ordered_bounds;
+
+// Geometric parameters. Equality here is equality of field coordinates;
+// this subtype is not the homotopy type of a topological interval.
+def FieldUnitInterval(F : Type1, zero : F, one : F, lt : F -> F -> Type) =
+  exists t : F, FieldLe(F, lt, zero, t) and FieldLe(F, lt, t, one);
+def field_interval_coordinate(F : Type1, zero : F, one : F, lt : F -> F -> Type,
+  t : FieldUnitInterval(F, zero, one, lt)) =
+  field_first(F, (fun (x : F) => typed(Type1, FieldLe(F, lt, zero, x) and FieldLe(F, lt, x, one))), t);
+def field_interval_bounds(F : Type1, zero : F, one : F, lt : F -> F -> Type,
+  t : FieldUnitInterval(F, zero, one, lt)) :
+  FieldLe(F, lt, zero, field_interval_coordinate(F, zero, one, lt, t)) and
+  FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, t), one) {
+  exact field_second(F, (fun (x : F) => typed(Type1, FieldLe(F, lt, zero, x) and FieldLe(F, lt, x, one))), t);
+}
+def field_interval_zero(F : Type1, zero : F, one : F, lt : F -> F -> Type,
+  order : StrictOrder(F, lt), zeroBelowOne : FieldLe(F, lt, zero, one)) : FieldUnitInterval(F, zero, one, lt) {
+  exact (zero, (order_le_refl(F, lt, order, zero), zeroBelowOne));
+}
+def field_interval_one(F : Type1, zero : F, one : F, lt : F -> F -> Type,
+  order : StrictOrder(F, lt), zeroBelowOne : FieldLe(F, lt, zero, one)) : FieldUnitInterval(F, zero, one, lt) {
+  exact (one, (zeroBelowOne, order_le_refl(F, lt, order, one)));
+}
