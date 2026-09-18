@@ -129,7 +129,7 @@ remain available for inspecting the compiled proof.
 
 ## Bounds and definitions
 
-Large developments are allowed up to 1,048,576 compiled instructions. WASM allows
+Large developments are allowed up to 4,194,304 compiled instructions. WASM allows
 16,777,216 nodes per expanded expression, 2,000,000 shared AST nodes, 500,000
 judgements, and 512 MiB memory. Depth and browser request-time limits still apply.
 These bounds do not remove the need to control expansion: theorem bodies are

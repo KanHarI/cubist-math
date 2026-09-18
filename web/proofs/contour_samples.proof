@@ -1,0 +1,30 @@
+import sample_chains;
+import ring_laws;
+
+// Riemann-type contour sums: f(tag) times the oriented coordinate increment.
+// Tag admissibility, mesh size and geometric curves are separate data.
+def coordinate_difference(F : Type1, addF : F -> F -> F, negF : F -> F, a : F, b : F) = addF(b, negF(a));
+def contour_edge(F : Type1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  f : F -> F, a : F, b : F, tag : F) = mulF(f(tag), coordinate_difference(F, addF, negF, a, b));
+def contour_sum(F : Type1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  f : F -> F, n : Nat) = sample_sum(F, F, zero, addF, contour_edge(F, addF, mulF, negF, f), n);
+
+theorem difference_add_back(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F) :
+  addF(a, coordinate_difference(F, addF, negF, a, b)) = b {
+  exact trans(ring_add_swap(F, zero, one, addF, mulF, negF, ring, a, b, negF(a)),
+    trans(cong(addF(b), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, a)),
+      ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, b)));
+}
+
+theorem difference_compose(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F) :
+  addF(coordinate_difference(F, addF, negF, a, b), coordinate_difference(F, addF, negF, b, c)) =
+    coordinate_difference(F, addF, negF, a, c) {
+  exact trans(cong((fun (v : F) => addF(v, addF(c, negF(b)))), ring_add_comm(F, zero, one, addF, mulF, negF, ring, b, negF(a))),
+    trans(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, negF(a), b, addF(c, negF(b))),
+      trans(cong(addF(negF(a)), difference_add_back(F, zero, one, addF, mulF, negF, ring, b, c)),
+        ring_add_comm(F, zero, one, addF, mulF, negF, ring, negF(a), c))));
+}

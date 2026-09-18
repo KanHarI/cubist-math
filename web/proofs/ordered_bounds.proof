@@ -43,8 +43,8 @@ theorem order_le_add_nonnegative(F : Type1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  x : F, y : F, nonnegative : FieldLe(F, lt, zero, y)) : FieldLe(F, lt, x, addF(x, y)) {
-  let shifted = order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, y, x, nonnegative);
+  x : F, y : F, aboveZeroWeak : FieldLe(F, lt, zero, y)) : FieldLe(F, lt, x, addF(x, y)) {
+  let shifted = order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, y, x, aboveZeroWeak);
   let first = transport((fun (a : F) => FieldLe(F, lt, a, addF(y, x))), addF(zero, x), x,
     ring_add_zero(F, zero, one, addF, mulF, negF, ring, x), shifted);
   exact transport(FieldLe(F, lt, x), addF(y, x), addF(x, y),

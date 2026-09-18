@@ -37,6 +37,7 @@ coordinates itself cannot encode the topology of the punctured plane.
 | --- | --- |
 | [sample_chains](../web/proofs/sample_chains.proof) | Vertices, tags, finite edge sums, and concatenation with endpoint laws. |
 | [sample_sum_laws](../web/proofs/sample_sum_laws.proof) | Additivity under matched concatenation, pointwise congruence, addition and additive maps, and telescoping. |
+| [contour_samples](../web/proofs/contour_samples.proof) | Contour-sum definitions and oriented-increment identities, available without importing the later sum theorems. |
 | [contour_sums](../web/proofs/contour_sums.proof) | Ring-valued contour sums, linearity in the integrand, and the constant-integrand formula `c * (last - first)`. Potential differences telescope; this is an algebraic identity, not a fundamental theorem of calculus. |
 | [contour_refinement](../web/proofs/contour_refinement.proof) | Exact changes under replacement of tags and splitting an edge; accumulated tag-error identity. |
 | [contour_examples](../web/proofs/contour_examples.proof) | Backtracking cancels with equal tags, and its error is explicit with different tags. A nonzero coarse sum on a closed chain is calculated. |
@@ -60,6 +61,58 @@ sum: `FieldClose(0, 0, 0)` would require the false strict inequality `0 < 0`.
 The result applies separately to real and imaginary coordinates when their
 edge bounds are supplied.
 
+## Quantitative variation estimates
+
+`FieldMagnitudeBound(x, r)` means `x <= r` and `-x <= r`. It does not
+decide a sign or require an absolute-value operation. The
+[field_magnitude](../web/proofs/field_magnitude.proof) proofs show that these
+bounds imply `0 <= r`, are preserved by negation, add under addition, and
+multiply under multiplication. The product proof is constructive: to refute
+a putative violation, a negative factor can first be ruled out, yielding
+the weak nonnegativity needed for ordered multiplication. No sign case
+split is assumed.
+
+[sample_magnitude_bounds](../web/proofs/sample_magnitude_bounds.proof) proves
+that finite magnitude bounds add, including for the empty sum. If sampled
+errors have magnitude at most `delta`, the increments have bounds `w_j`,
+`delta >= 0`, and `sum w_j <= L`, the weighted error satisfies
+
+\[
+ \left|\sum_j e_j d_j\right|\leq\delta L.
+\]
+
+The notation here abbreviates the two weak inequalities, not a newly
+postulated absolute-value function. Bounds are required only at sampled
+edges, using [SampleMagnitudeBounds](../web/proofs/sample_magnitude.proof).
+
+[contour_error_bounds](../web/proofs/contour_error_bounds.proof) applies this
+kind of estimate directly to changes of scalar contour tags. Its hypotheses
+bound `f(newTag_j)-f(oldTag_j)` by `delta` and each displacement by `w_j`.
+It proves that the exact accumulated tag error has magnitude at most
+`delta * sum w_j`, and hence at most `delta * L` under the variation bound.
+
+[field_magnitude_close](../web/proofs/field_magnitude_close.proof) connects
+weak magnitude bounds to the existing strict `FieldClose` relation when
+the radius is strictly smaller than the requested tolerance. It also proves
+a squeeze theorem: errors bounded by radii converging to zero themselves
+converge to zero, with the same supplied tail indices.
+
+[contour_tag_limits](../web/proofs/contour_tag_limits.proof) proves closeness
+of the actual old and new scalar sums whenever `delta * L < epsilon`.
+For a sequence of sampling data, it proves convergence of the tag errors
+to zero **given convergence of `delta_n * L` to zero** and the corresponding
+sample bounds. The theorem does not yet construct a sampling scheme,
+deduce its rate from uniform continuity, or prove convergence of the sums
+themselves. Those analytic obligations remain explicit.
+
+[complex_magnitude](../web/proofs/complex_magnitude.proof) supplies the
+coordinate estimate needed for the complex version: if both coordinates
+of `z` have magnitude at most `delta`, and the coordinates of `w` have
+bounds `r, s`, both coordinates of `z*w` have bounds `delta*(r+s)`.
+Thus coordinate variation can be used without square roots. This product
+estimate is checked; the assembled complex tag-error convergence theorem
+still needs to be derived.
+
 ## Why the homotopy step comes after the limit
 
 For `f(z)=z`, vertices `0 -> 1 -> 0`, and left-endpoint tags `0, 1`, the
@@ -77,12 +130,13 @@ refinement errors vanish, take limits, and descend the resulting values.
 
 ## Dependencies and remaining work
 
-The algebraic results use no axioms. The scalar error-bound result depends
-only on the existing `lib_Trunc` among the kernel's axiom bindings; its order
-and arithmetic laws are explicit hypotheses. No excluded middle, choice,
+The algebraic results use no axioms. The ordered magnitude, scalar error-bound,
+and tag-error convergence results depend only on the existing `lib_Trunc`
+among the kernel's axiom bindings; their order and arithmetic laws are
+explicit hypotheses. No excluded middle, choice,
 new kernel rule, or new theorem-specific axiom is used.
 
-Still needed are geometric curves and admissible refinements, quantitative
-Cauchy and homotopy estimates for the integrands in question, comparison with
+Still needed are geometric curves and admissible refinements, Cauchy and
+homotopy estimates for the integrands in question, comparison with
 the puncture homotopy type, and the local generator integral `2*pi*i*residue`.
 The full residue theorem, algebraic closure, and Great Picard remain open.

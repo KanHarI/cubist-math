@@ -15,7 +15,9 @@ complete scalars, and construction of additive periods from Cauchy
 approximations with vanishing errors. The general construction takes limits
 on representatives before descending to homotopy paths.
 [Finite contour sums](contour_sums.md) now supply explicit approximation data,
-composition and telescoping laws, and exact refinement errors. Admissible
+composition and telescoping laws, exact refinement errors, and scalar
+tag-error estimates in terms of sampled variation. Complex coordinate
+product bounds are also checked without sign decisions or square roots. Admissible
 sampling schemes on geometric curves, convergence, and the homotopy estimates
 remain to be built.
 

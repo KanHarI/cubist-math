@@ -1,4 +1,4 @@
-import contour_sums;
+import contour_samples;
 
 // Exact error terms from tag changes and splitting an oriented edge.
 def contour_tag_error(F : Type1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,

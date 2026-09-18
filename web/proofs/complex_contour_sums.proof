@@ -1,5 +1,6 @@
 import complex_algebra;
 import contour_examples;
+import contour_sums;
 
 // Specialization of the finite quadrature laws to complex coordinates.
 // These are finite sums; existence of a contour integral is not asserted.

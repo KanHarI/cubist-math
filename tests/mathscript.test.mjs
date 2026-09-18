@@ -7,6 +7,7 @@ import { compile } from "../web/mathscript/compiler.mjs";
 import { Kernel } from "../web/kernel.mjs";
 import { sourceModules } from "../web/mathscript/modules.mjs";
 import catalogue from "../web/proofs/catalogue.mjs";
+import { MAX_STEPS } from "../web/language.mjs";
 const module = await createKernel();
 const source = async (name) =>
   readFile(new URL("../web/proofs/" + name, import.meta.url), "utf8");
@@ -964,4 +965,62 @@ test("finite error bounds retain positive slack for the empty sum", () => {
     "$1");
   assert.notEqual(noSlack, sources.sample_error_bounds);
   assert.throws(() => compile(module, noSlack, sources), /Expected|Conversion types differ/);
+});
+
+test("constructive magnitude and variation estimates control contour tag errors", () => {
+  for (const [name, theorem] of [
+    ["sample_magnitude_bounds", "sample_weighted_sum_bound"],
+    ["complex_magnitude", "complex_box_mul_rectangle"],
+    ["contour_tag_limits", "contour_tag_errors_converge"],
+  ]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      assert.ok(c.outputs.some(o => o.name === theorem));
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        assert.ok(c.kernel.axiomsFor(o.binding).every(a => a === "lib_Trunc"), o.name);
+      }
+      assert.ok(!c.kernel.bindings.has("LEM"));
+      assert.ok(!c.kernel.bindings.has("AOC"));
+      if (name === "contour_tag_limits") {
+        const type = c.outputs.find(o => o.name === theorem).type;
+        assert.match(type, /vanishes : FieldConverges/);
+        assert.match(type, /variation/);
+        assert.match(type, /ContourTagBounds/);
+        assert.match(c.outputs.find(o => o.name === "contour_tag_change_close").type, /small : lt/);
+      }
+    } finally { c.kernel.dispose(); }
+  }
+});
+
+test("magnitude estimates reject one-sided bounds and loss of the variation factor", () => {
+  // An upper bound alone cannot control magnitude (large negative values).
+  const oneSided = sources.field_magnitude.replace(
+    "FieldLe(F, lt, negF(x), radius);", "FieldLe(F, lt, x, radius);");
+  assert.notEqual(oneSided, sources.field_magnitude);
+  assert.throws(() => compile(module, oneSided, sources), /Expected|Conversion types differ/);
+  const missingLength = sources.sample_magnitude_bounds.replace(
+    "other(a, b, t))), n, vertices, tags), mulF(delta, length)) {",
+    "other(a, b, t))), n, vertices, tags), delta) {");
+  assert.notEqual(missingLength, sources.sample_magnitude_bounds);
+  assert.throws(() => compile(module, missingLength, sources), /Expected|Conversion types differ/);
+});
+
+test("magnitude closeness needs a strict radius margin", () => {
+  const closedMargin = sources.field_magnitude_close.replaceAll(
+    "small : lt(radius, epsilon)", "small : FieldLe(F, lt, radius, epsilon)");
+  assert.notEqual(closedMargin, sources.field_magnitude_close);
+  assert.throws(() => compile(module, closedMargin, sources), /Expected|Conversion types differ/);
+});
+
+test("larger contour proofs check beyond the former million-instruction limit", () => {
+  // Real mathematical imports exercise the raised limit without bypassing
+  // kernel verification or allocating millions of artificial instructions.
+  const source = "import contour_sums;\nimport sample_magnitude_bounds;\n" + sources.contour_tag_limits;
+  const c = compile(module, source, sources);
+  try {
+    assert.ok(c.instructionCount > 1048576, c.instructionCount);
+    assert.ok(c.instructionCount <= MAX_STEPS);
+    for (const o of c.outputs) assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
+  } finally { c.kernel.dispose(); }
 });

@@ -351,6 +351,18 @@ try {
     await page.locator("#selection-label").textContent(),
     "expression.0",
   );
+  // A cached worker advertising the previous instruction cap must be rejected.
+  const staleWorker = /\/mathscript\/worker\.mjs(?:\?.*)?$/;
+  await page.route(staleWorker, route => route.fulfill({
+    contentType: "text/javascript",
+    body: "self.postMessage({ ready: true, maxSteps: 1048576 });",
+  }));
+  await page.goto(`http://127.0.0.1:${server.address().port}/proof.html?proof=primes`);
+  await page.locator("#diagnostic:not([hidden])").waitFor();
+  assert.match(await page.locator("#diagnostic").textContent(), /outdated compiler/);
+  assert.equal(await page.locator("#result").isVisible(), false);
+  await page.unroute(staleWorker);
+
   // Deliberately stale canonical module responses must not enter the new
   // worker's versioned module graph (the live-browser regression).
   const limitRequests = [];
@@ -363,7 +375,7 @@ try {
     await route.fulfill({
       response,
       body: (await response.text()).replace(
-        "MAX_STEPS = 1048576",
+        /MAX_STEPS = \d+/,
         "MAX_STEPS = 8192",
       ),
     });
@@ -535,6 +547,9 @@ try {
   assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_univalence/);
   for (const [proof, theorem] of [
     ["complex_contour_sums", "complex_identity_backtrack_nonzero"],
+    ["contour_tag_limits", "contour_tag_errors_converge"],
+    ["complex_magnitude", "complex_box_mul_rectangle"],
+    ["sample_magnitude_bounds", "sample_weighted_sum_bound"],
     ["contour_refinement", "contour_sum_change_tags"],
     ["sample_error_bounds", "sample_sum_error_bound"],
     ["complex_limits", "complex_cauchy_complete"],

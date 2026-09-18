@@ -1,4 +1,4 @@
-export const MAX_STEPS = 1048576;
+export const MAX_STEPS = 4194304;
 // One binding per line and one checked instruction per binding. No eval.
 export const aliases = {
   "universe.zero": "UIntro0",

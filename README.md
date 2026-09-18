@@ -138,8 +138,11 @@ homotopy periods from Cauchy approximations on representatives, provided the
 homotopy and concatenation errors tend to zero. Mere coverage suffices; no
 representatives are chosen. [Finite contour sums](docs/contour_sums.md) now
 have checked composition, linearity, telescoping, and refinement-error laws,
-including their complex specialization. Proving convergence and the required
-analytic estimates, and relating geometric curves to homotopy paths, remain open.
+including their complex specialization. Scalar tag errors are bounded by
+the uniform sampled error times the sum of edge-magnitude bounds; they tend
+to zero when those bounds do. Proving convergence of the contour sums and
+the required homotopy estimates, and relating geometric curves to homotopy
+paths, remain open.
 
 The [Euclid argument](web/proofs/euclid.proof) imports its
 [arithmetic and prime-number foundations](web/proofs/primes.proof), all checked

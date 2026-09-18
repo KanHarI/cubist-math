@@ -87,7 +87,10 @@ and truncation dependencies. No new theorem-specific axiom was declared.
 
 [Finite contour sums](contour_sums.md) now have checked composition,
 telescoping, refinement-error identities, and accumulation of scalar error
-bounds. Their Cauchy and deformation estimates still need to be proved,
+bounds. The scalar tag-error estimate is `delta * L` for uniform sampled
+error `delta` and a bound `L` on the sum of edge magnitudes. Convergence of
+these bounds to zero implies convergence of the tag errors to zero.
+Their Cauchy and deformation estimates still need to be proved,
 alongside a justified geometric presentation of the homotopy paths.
 Local generator integrals and the normalization `2*pi*i`
 still need to be constructed and calculated. These obligations remain part

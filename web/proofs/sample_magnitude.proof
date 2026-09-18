@@ -1,0 +1,11 @@
+import sample_chains;
+import field_magnitude;
+
+// Magnitude bounds need hold only at the finitely sampled edges.
+def SampleMagnitudeBounds(C : Type1, F : Type1, negF : F -> F, lt : F -> F -> Type,
+  edge : C -> C -> C -> F, radius : C -> C -> C -> F, n : Nat) =
+  induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> Type) {
+    zero => fun (vertices : C) => fun (tags : Unit) => Unit;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) =>
+      FieldMagnitudeBound(F, negF, lt, edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), radius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))) and previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags));
+  };

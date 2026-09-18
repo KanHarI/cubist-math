@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import createKernel from "../web/dist/kernel.mjs";
 import { Kernel } from "../web/kernel.mjs";
 import { Session } from "../web/session.mjs";
-import { parse, formatStep } from "../web/language.mjs";
+import { parse, formatStep, MAX_STEPS } from "../web/language.mjs";
 import { layout, pathFromMarked, pathFromNames } from "../web/expressions.mjs";
 const module = await createKernel();
 const fresh = () => new Session(module);
@@ -538,7 +538,7 @@ test("Euclid is a closed unbounded-primes theorem with no axiom dependencies", a
     assert.throws(() => s.import(broken), /rejected/);
     assert.deepEqual(s.export(), before);
     const oversized = structuredClone(document);
-    oversized.steps = Array(1048577).fill(document.steps[0]);
+    oversized.steps = Array(MAX_STEPS + 1).fill(document.steps[0]);
     assert.throws(() => s.import(oversized), /Unsupported proof/);
   } finally {
     s.dispose();

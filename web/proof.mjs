@@ -1,8 +1,16 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "contour_tag_limits", title: "Contour estimates · vanishing tag errors", complexDevelopment: true },
+  { id: "contour_error_bounds", title: "Contour estimates · error times variation", complexDevelopment: true },
+  { id: "complex_magnitude", title: "Complex estimates · coordinate bounds without square roots", complexDevelopment: true },
+  { id: "field_magnitude_close", title: "Error bounds · closeness and convergence to zero", complexDevelopment: true },
+  { id: "sample_magnitude_bounds", title: "Finite estimates · weighted sums and variation", complexDevelopment: true },
+  { id: "sample_magnitude", title: "Finite estimates · bounds at sampled edges", complexDevelopment: true },
+  { id: "field_magnitude", title: "Ordered estimates · constructive magnitude bounds", complexDevelopment: true },
   { id: "complex_contour_sums", title: "Contour sums · complex composition and backtracking", complexDevelopment: true },
   { id: "contour_examples", title: "Contour sums · finite backtracking errors", complexDevelopment: true },
   { id: "contour_refinement", title: "Contour sums · refinement and tag errors", complexDevelopment: true },
+  { id: "contour_samples", title: "Contour sums · samples and oriented increments", complexDevelopment: true },
   { id: "contour_sums", title: "Contour sums · linearity and telescoping", complexDevelopment: true },
   { id: "sample_error_bounds", title: "Finite sums · accumulated error bounds", complexDevelopment: true },
   { id: "sample_sum_laws", title: "Finite sums · composition and telescoping", complexDevelopment: true },
@@ -801,7 +809,7 @@ async function startWorker(version = undefined) {
   worker = new Worker(url, { type: "module" });
   worker.onmessage = ({ data }) => {
     if (data.ready) {
-      if (data.maxSteps < 1048576) {
+      if (data.maxSteps < 4194304) {
         diagnostic(
           new Error(
             "An outdated compiler was loaded. Reload this page to update the worker.",
