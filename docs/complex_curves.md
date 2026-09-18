@@ -41,6 +41,33 @@ results. The only axiom dependencies are existing propositional truncation
 and its introduction rule. There is no excluded middle, choice, or new
 kernel operation.
 
+## Ordered sampling and variation
+
+The checked [variation proof](../web/proofs/complex_curve_variation.proof)
+now constructs weights for `gamma(t) = z + t*e` on every finite ordered
+sampling of the unit interval. Let `r = max(re(e), -re(e))` and
+`s = max(im(e), -im(e))`. For consecutive parameters `u <= v`, the real
+and imaginary increments have magnitude bounds `(v-u)*r` and `(v-u)*s`.
+Their combined total is at most `r+s`, independently of the number of
+samples. Repeated parameters and an empty edge list are included.
+
+[interval_weights](../web/proofs/interval_weights.proof) proves the exact
+telescoping identity `sum((v-u)*L) = (last-first)*L` and the upper bound
+by a nonnegative `L`. [affine_variation](../web/proofs/affine_variation.proof)
+supplies the individual magnitude estimates under `IntervalOrderedSamples`.
+This ordering condition is essential: telescoping alone does not make
+signed increments into magnitude bounds. The complex theorem constructs
+the coordinate bounds from the lattice laws; it assumes neither a variation
+certificate nor an inverse operation. Its only axiom dependency is the
+existing truncation in the scalar interface.
+
+The sample domain here is the parameter interval, retaining the association
+between each sample and its parameter. Tags do not affect these weights.
+This does not yet impose that each integrand tag lies between its adjacent
+vertices, or construct a sequence of partitions with mesh tending to zero.
+The contour estimates still need to be connected to this parameter sampling,
+including the bounds on changes in integrand values.
+
 ## Relationship to homotopy paths
 
 `Complex(F)` is a set of coordinates. Its identity types alone do not give
@@ -57,6 +84,6 @@ asserting such a comparison.
 
 Uniform continuity here varies `t` with `z` and `e` fixed. A homotopy of
 entire loops needs continuity also in the loop parameter, which remains to
-be proved. We also still need admissible sampling, variation and convergence
-estimates for the chosen curves and integrands, and the local integral
+be proved. We also still need admissible refinements, convergence
+estimates for the chosen integrands, and the local integral
 calculation in the residue theorem.

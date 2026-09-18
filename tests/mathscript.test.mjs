@@ -1101,3 +1101,36 @@ test("affine curves require the oriented parameter increment and both coordinate
   assert.notEqual(missingImaginaryBound, sources.complex_affine);
   assert.throws(() => compile(module, missingImaginaryBound, sources), /Expected|Conversion types differ/);
 });
+
+test("ordered samples of complex affine curves have uniformly bounded coordinate variation", t => {
+  const c = compile(module, sources.complex_curve_variation, sources);
+  try {
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => a === "lib_Trunc"), output.name);
+    }
+    const result = c.outputs.find(o => o.name === "complex_interval_deformation_variation");
+    assert.ok(result);
+    assert.match(result.type, /ComplexCurveVariation/);
+    assert.match(result.type, /FieldLattice/);
+    assert.doesNotMatch(result.type, /FieldInverses|variation :|bounded :/);
+    assert.ok(c.kernel.bindings.has("interval_weight_sum_bound"));
+    assert.ok(c.kernel.bindings.has("interval_affine_increment_bounds"));
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; ${c.kernel.stats().judgements.toLocaleString()} judgments`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("curve variation needs forward ordered parameters and includes imaginary variation", () => {
+  const backwards = sources.affine_variation.replace(
+    "FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, s), field_interval_coordinate(F, zero, one, lt, t))",
+    "FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, t), field_interval_coordinate(F, zero, one, lt, s))");
+  assert.notEqual(backwards, sources.affine_variation);
+  assert.throws(() => compile(module, backwards, sources), /Expected|Conversion types differ/);
+  const noImaginaryLength = sources.complex_curve_variation.replace(
+    "addF(maxF(complex_real(F, error), negF(complex_real(F, error))), maxF(complex_imag(F, error), negF(complex_imag(F, error))))",
+    "maxF(complex_real(F, error), negF(complex_real(F, error)))");
+  assert.notEqual(noImaginaryLength, sources.complex_curve_variation);
+  assert.throws(() => compile(module, noImaginaryLength, sources), /Expected|Conversion types differ/);
+});

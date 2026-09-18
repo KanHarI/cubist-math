@@ -28,6 +28,9 @@ with checked endpoints and constructive uniform continuity. The existing
 domination estimate proves that the corresponding interval deformation
 avoids zero. Joint continuity for a family of loops and the comparison with
 homotopy-type paths remain open.
+Ordered finite samples of these curves now have checked coordinate variation
+bounds, independent of the sample count. The parameter sampling still needs
+to be connected to contour approximation and integrand error bounds.
 
 | Module | Result |
 | --- | --- |

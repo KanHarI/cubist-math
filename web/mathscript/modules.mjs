@@ -95,4 +95,8 @@ export const sourceModules = [
   "field_interval",
   "complex_affine",
   "complex_curves",
+  "interval_weights",
+  "sample_relations",
+  "affine_variation",
+  "complex_curve_variation",
 ];

@@ -188,8 +188,9 @@ laws are explicit hypotheses. No excluded middle, choice,
 new kernel rule, or new theorem-specific axiom is used.
 
 [Geometric curves](complex_curves.md) now include uniformly continuous
-straight segments with checked endpoints. Still needed are admissible
-refinements, variation estimates for those curves, Cauchy and
+straight segments with checked endpoints and coordinate variation bounds
+for ordered interval sampling. Still needed are the connection to these
+parameter samples, admissible refinements, Cauchy and
 homotopy estimates for the integrands in question, comparison with
 the puncture homotopy type, and the local generator integral `2*pi*i*residue`.
 The full residue theorem, algebraic closure, and Great Picard remain open.

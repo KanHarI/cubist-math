@@ -145,6 +145,8 @@ that changing tags preserves an existing limit when sampled errors tend
 to zero and coordinate variation is bounded. [Geometric interval curves](docs/complex_curves.md)
 now include uniformly continuous straight segments and their endpoints, with
 zero avoidance under the squared-norm domination condition.
+Their ordered interval samples have checked coordinate variation bounds
+independent of the number of sample points.
 Proving convergence of the contour sums and
 the required homotopy estimates, and relating geometric curves to homotopy
 paths, remain open.

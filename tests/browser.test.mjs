@@ -548,6 +548,7 @@ try {
   for (const [proof, theorem] of [
     ["complex_contour_sums", "complex_identity_backtrack_nonzero"],
     ["complex_curves", "complex_straight_curve_endpoints"],
+    ["complex_curve_variation", "complex_interval_deformation_variation"],
     ["complex_affine", "complex_linear_deformation_uniform"],
     ["complex_contour_tag_limits", "complex_contour_tag_independent_limit"],
     ["field_scale_limits", "field_nonnegative_scale_zero_converges"],

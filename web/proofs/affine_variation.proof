@@ -1,0 +1,53 @@
+import field_affine;
+import interval_weights;
+import sample_relations;
+
+theorem field_affine_difference(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, d : F, s : F, t : F) :
+  coordinate_difference(F, addF, negF, addF(a, mulF(s, d)), addF(a, mulF(t, d))) = mulF(coordinate_difference(F, addF, negF, s, t), d) {
+  let x = addF(a, mulF(s, d));
+  let error = mulF(addF(negF(s), t), d);
+  have cancel : addF(addF(x, error), negF(x)) = error {
+    exact trans(ring_add_comm(F, zero, one, addF, mulF, negF, ring, addF(x, error), negF(x)),
+      trans(sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, negF(x), x, error)),
+        trans(cong((fun (v : F) => addF(v, error)), ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x)),
+          ring_add_zero(F, zero, one, addF, mulF, negF, ring, error))));
+  }
+  exact trans(cong((fun (v : F) => addF(v, negF(x))), field_affine_increment(F, zero, one, addF, mulF, negF, ring, a, d, t, s)),
+    trans(cancel, cong((fun (v : F) => mulF(v, d)), ring_add_comm(F, zero, one, addF, mulF, negF, ring, negF(s), t))));
+}
+
+theorem field_affine_increment_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a : F, d : F, length : F,
+  bounded : FieldMagnitudeBound(F, negF, lt, d, length), s : F, t : F, ordered : FieldLe(F, lt, s, t)) :
+  FieldMagnitudeBound(F, negF, lt, coordinate_difference(F, addF, negF, addF(a, mulF(s, d)), addF(a, mulF(t, d))), mulF(coordinate_difference(F, addF, negF, s, t), length)) {
+  let delta = coordinate_difference(F, addF, negF, s, t);
+  let nonnegativeDelta = field_difference_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, s, t, ordered);
+  let deltaBound = field_nonnegative_magnitude(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, delta, nonnegativeDelta);
+  let productBound = field_magnitude_mul(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, delta, d, delta, length, deltaBound, bounded);
+  exact transport((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, mulF(delta, length))), mulF(delta, d),
+    coordinate_difference(F, addF, negF, addF(a, mulF(s, d)), addF(a, mulF(t, d))),
+    sym(field_affine_difference(F, zero, one, addF, mulF, negF, ring, a, d, s, t)), productBound);
+}
+
+def IntervalOrderedSamples(F : Type1, zero : F, one : F, lt : F -> F -> Type, n : Nat) =
+  SampleAdjacent(FieldUnitInterval(F, zero, one, lt),
+    (fun (s : FieldUnitInterval(F, zero, one, lt)) => fun (t : FieldUnitInterval(F, zero, one, lt)) =>
+      FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, s), field_interval_coordinate(F, zero, one, lt, t))), n);
+def interval_affine_increment(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, a : F, d : F, s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)) =
+  coordinate_difference(F, addF, negF, addF(a, mulF(field_interval_coordinate(F, zero, one, lt, s), d)), addF(a, mulF(field_interval_coordinate(F, zero, one, lt, t), d)));
+
+theorem interval_affine_increment_bounds(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a : F, d : F, length : F,
+  bounded : FieldMagnitudeBound(F, negF, lt, d, length), n : Nat,
+  vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n), ordered : IntervalOrderedSamples(F, zero, one, lt, n, vertices)) :
+  SampleMagnitudeBounds(FieldUnitInterval(F, zero, one, lt), F, negF, lt, interval_affine_increment(F, zero, one, addF, mulF, negF, lt, a, d), interval_weight(F, zero, one, addF, mulF, negF, lt, length), n, vertices, tags) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let coordinate = field_interval_coordinate(F, zero, one, lt);
+  exact sample_adjacent_magnitude(I, F, negF, lt, (fun (s : I) => fun (t : I) => FieldLe(F, lt, coordinate(s), coordinate(t))),
+    interval_affine_increment(F, zero, one, addF, mulF, negF, lt, a, d), interval_weight(F, zero, one, addF, mulF, negF, lt, length),
+    (fun (s : I) => fun (t : I) => fun (tag : I) => field_affine_increment_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, a, d, length, bounded, coordinate(s), coordinate(t))), n, vertices, tags, ordered);
+}

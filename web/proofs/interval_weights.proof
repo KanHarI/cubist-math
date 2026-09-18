@@ -1,0 +1,76 @@
+import field_interval;
+import contour_samples;
+import sample_sum_laws;
+
+def interval_difference(F : Type1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt)) =
+  coordinate_difference(F, addF, negF, field_interval_coordinate(F, zero, one, lt, s), field_interval_coordinate(F, zero, one, lt, t));
+def interval_weight(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  length : F, s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)) =
+  mulF(interval_difference(F, zero, one, addF, negF, lt, s, t), length);
+
+theorem field_difference_nonnegative(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s : F, t : F, ordered : FieldLe(F, lt, s, t)) :
+  FieldLe(F, lt, zero, coordinate_difference(F, addF, negF, s, t)) {
+  exact transport((fun (v : F) => FieldLe(F, lt, v, coordinate_difference(F, addF, negF, s, t))), addF(s, negF(s)), zero,
+    ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, s),
+    order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, s, t, negF(s), ordered));
+}
+
+theorem interval_difference_le_one(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt)) :
+  FieldLe(F, lt, interval_difference(F, zero, one, addF, negF, lt, s, t), one) {
+  let x = field_interval_coordinate(F, zero, one, lt, s);
+  let y = field_interval_coordinate(F, zero, one, lt, t);
+  obtain (lowerS, upperS) = field_interval_bounds(F, zero, one, lt, s);
+  obtain (lowerT, upperT) = field_interval_bounds(F, zero, one, lt, t);
+  let shifted = order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, x, negF(x), lowerS);
+  let removeZero = transport((fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x)))), addF(zero, negF(x)), negF(x),
+    ring_add_zero(F, zero, one, addF, mulF, negF, ring, negF(x)), shifted);
+  let negativeBelowZero = transport(FieldLe(F, lt, negF(x)), addF(x, negF(x)), zero,
+    ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x), removeZero);
+  exact transport(FieldLe(F, lt, addF(y, negF(x))), addF(one, zero), one,
+    ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, one),
+    order_le_add(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, y, one, negF(x), zero, upperT, negativeBelowZero));
+}
+
+// Telescoping is valid even without ordered samples. Nonnegative weights
+// and their use as magnitude bounds require ordered adjacent parameters.
+theorem interval_weight_sum(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), length : F, n : Nat,
+  vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)) :
+  sample_sum(FieldUnitInterval(F, zero, one, lt), F, zero, addF, interval_weight(F, zero, one, addF, mulF, negF, lt, length), n, vertices, tags) =
+    mulF(interval_difference(F, zero, one, addF, negF, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices), sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)), length) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let coordinate = field_interval_coordinate(F, zero, one, lt);
+  let delta = interval_difference(F, zero, one, addF, negF, lt);
+  let edge = (fun (s : I) => fun (t : I) => fun (tag : I) => delta(s, t));
+  let telescope = sample_sum_telescopes(I, F, zero, addF, delta,
+    (fun (s : I) => ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, coordinate(s))),
+    (fun (s : I) => fun (t : I) => fun (u : I) => difference_compose(F, zero, one, addF, mulF, negF, ring, coordinate(s), coordinate(t), coordinate(u))), n, vertices, tags);
+  let mapping = (fun (v : F) => mulF(v, length));
+  exact trans(sym(sample_sum_map(I, F, zero, addF, F, zero, addF, mapping,
+    ring_zero_mul(F, zero, one, addF, mulF, negF, ring, length),
+    (fun (x : F) => fun (y : F) => ring_distribute_left(F, zero, one, addF, mulF, negF, ring, x, y, length)), edge, n, vertices, tags)), cong(mapping, telescope));
+}
+
+theorem interval_weight_sum_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), length : F, nonnegativeLength : FieldLe(F, lt, zero, length), n : Nat,
+  vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)) :
+  FieldLe(F, lt, sample_sum(FieldUnitInterval(F, zero, one, lt), F, zero, addF, interval_weight(F, zero, one, addF, mulF, negF, lt, length), n, vertices, tags), length) {
+  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let first = sample_first(I, n, vertices);
+  let last = sample_last(I, n, vertices);
+  let delta = interval_difference(F, zero, one, addF, negF, lt, first, last);
+  let bounded = weakScale(delta, one, length, interval_difference_le_one(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, first, last), nonnegativeLength);
+  let removeOne = transport(FieldLe(F, lt, mulF(delta, length)), mulF(one, length), length,
+    ring_mul_one(F, zero, one, addF, mulF, negF, ring, length), bounded);
+  exact transport((fun (v : F) => FieldLe(F, lt, v, length)), mulF(delta, length),
+    sample_sum(I, F, zero, addF, interval_weight(F, zero, one, addF, mulF, negF, lt, length), n, vertices, tags),
+    sym(interval_weight_sum(F, zero, one, addF, mulF, negF, lt, ring, length, n, vertices, tags)), removeOne);
+}

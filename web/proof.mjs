@@ -1,5 +1,9 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "complex_curve_variation", title: "Complex curves · bounded coordinate variation", complexDevelopment: true },
+  { id: "affine_variation", title: "Curve sampling · ordered affine increment bounds", complexDevelopment: true },
+  { id: "interval_weights", title: "Curve sampling · telescoping interval weights", complexDevelopment: true },
+  { id: "sample_relations", title: "Curve sampling · conditions on adjacent vertices", complexDevelopment: true },
   { id: "complex_curves", title: "Complex curves · continuous straight segments and endpoints", complexDevelopment: true },
   { id: "complex_affine", title: "Complex curves · constructive uniform continuity", complexDevelopment: true },
   { id: "field_interval", title: "Curve parameters · the closed unit interval", complexDevelopment: true },
