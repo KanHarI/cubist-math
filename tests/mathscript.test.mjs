@@ -728,3 +728,30 @@ test("complex multiplication signs and exact-root truncation cannot be changed s
   assert.notEqual(wrongDifference, sources.polynomial_difference);
   assert.throws(() => compile(module, wrongDifference, sources), /Expected|Conversion types differ/);
 });
+
+test("complex inverses preserve constructive apartness and isolate excluded middle", () => {
+  const truncation = ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim"];
+  for (const name of ["ordered_squares", "complex_norm_coordinates", "complex_inverses", "classical_complex_inverses"]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        const dependencies = c.kernel.axiomsFor(o.binding);
+        if (name === "classical_complex_inverses") {
+          assert.ok(dependencies.includes("LEM"), o.name);
+          assert.ok(dependencies.every(a => [...truncation, "lib_trunc_is_trunc", "LEM"].includes(a)), o.name);
+        } else {
+          assert.ok(dependencies.every(a => truncation.includes(a)), `${name}.${o.name}`);
+        }
+      }
+      assert.ok(!c.kernel.bindings.has("AOC"), name);
+      if (name !== "classical_complex_inverses") assert.ok(!c.kernel.bindings.has("LEM"), name);
+      if (name === "complex_inverses") {
+        assert.deepEqual(c.kernel.axiomsFor("complex_norm_multiplicative"), []);
+        assert.deepEqual(c.kernel.axiomsFor("complex_apart_inverse").sort(), ["lib_Trunc", "lib_trunc_intro"]);
+        assert.match(c.outputs.find(o => o.name === "complex_apart_inverse").type, /ComplexUnit/);
+        assert.doesNotMatch(c.outputs.find(o => o.name === "complex_apart_inverse").type, /FieldExists/);
+      }
+    } finally { c.kernel.dispose(); }
+  }
+});

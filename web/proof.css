@@ -477,6 +477,8 @@ select {
 
 .check-loader {
   display: flex;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
   align-items: center;
   gap: 16px;
   min-height: 120px;

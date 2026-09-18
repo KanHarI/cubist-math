@@ -1,5 +1,9 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "complex_inverses", title: "Complex numbers · constructive inverses and apartness", complexDevelopment: true },
+  { id: "classical_complex_inverses", title: "Complex numbers · nonzero inverses using excluded middle", complexDevelopment: true },
+  { id: "ordered_squares", title: "Ordered fields · constructive square positivity", complexDevelopment: true },
+  { id: "complex_norm_coordinates", title: "Complex numbers · multiplicative norm", complexDevelopment: true },
   { id: "complex_algebra", title: "Complex numbers · ring, conjugation and inverses", complexDevelopment: true },
   { id: "complex_polynomials", title: "Polynomials · roots and algebraic closure target", complexDevelopment: true },
   { id: "polynomial_difference", title: "Polynomials · difference and factor identities", complexDevelopment: true },
@@ -152,7 +156,7 @@ function showChecking(active, message = "Checking proof…") {
   $("check-message").textContent = message;
   if (active) {
     $("check-progress").removeAttribute("value");
-    $("check-detail").textContent = "Loading definitions and checking the proof.";
+    $("check-detail").textContent = "0 kernel steps · 0 definitions checked · Loading proof…";
   }
 }
 function checkingProgress(progress) {
@@ -163,8 +167,9 @@ function checkingProgress(progress) {
     ? "Preparing checked results…"
     : "Checking proof…";
   $("check-detail").textContent =
-    `${completed} of ${total} ${unit} checked${current ? ` · ${current}` : ""}` +
-    (instructions ? ` · ${instructions.toLocaleString()} kernel steps` : "");
+    `${(instructions ?? 0).toLocaleString()} kernel steps · ` +
+    `${completed.toLocaleString()} of ${total.toLocaleString()} ${unit} checked` +
+    (current ? ` · ${current}` : "");
 }
 function diagnostic(e) {
   showChecking(false);
@@ -204,7 +209,7 @@ function request(command, args = {}) {
       }
       pending.clear();
       refreshStatus();
-    }, 30000);
+    }, command === "check" ? 120000 : 30000);
     pending.set(id, { resolve, reject, timer });
     refreshStatus();
     worker.postMessage({ id, command, args });

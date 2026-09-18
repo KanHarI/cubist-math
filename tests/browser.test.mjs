@@ -529,16 +529,24 @@ try {
   assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_univalence/);
   for (const [proof, theorem] of [
     ["complex_algebra", "complex_commutative_ring"],
+    ["complex_inverses", "complex_ordered_field_inverses"],
+    ["classical_complex_inverses", "classical_complex_nonzero_inverse"],
+    ["ordered_squares", "ordered_square_nonnegative"],
+    ["complex_norm_coordinates", "complex_coordinate_norm_product"],
     ["complex_polynomials", "monic_linear_root_unique"],
     ["polynomial_difference", "monic_factor_at_root"],
   ]) {
     await page.locator("#proof-picker").selectOption(proof);
-    await page.locator("#result:not([hidden])").waitFor();
+    await page.locator("#result:not([hidden])").waitFor({ timeout: 120000 });
     assert.match(await page.locator("#result").textContent(), new RegExp(`Verified ${theorem}`));
     assert.equal(await page.locator("#complex-note").isVisible(), true);
     assert.match(await page.locator("#complex-note").textContent(), /Great Picard remain to be proved/);
     assert.equal(await page.locator("#puncture-note").isVisible(), false);
-    assert.equal(await page.locator('#result [data-axiom="LEM"]').count(), 0);
+    if (proof === "classical_complex_inverses") {
+      assert.ok(await page.locator('#result [data-axiom="LEM"]').count() > 0);
+    } else {
+      assert.equal(await page.locator('#result [data-axiom="LEM"]').count(), 0);
+    }
     assert.equal(await page.locator('#result [data-axiom="AOC"]').count(), 0);
   }
   for (const [proof, theorem] of [
@@ -639,10 +647,13 @@ try {
     await page.locator("#check-loader:not([hidden])").waitFor();
     assert.equal(await page.locator("#source-panel").getAttribute("aria-busy"), "true");
     assert.equal(await page.locator("#check-progress").getAttribute("value"), null);
+    assert.match(await page.locator("#check-detail").textContent(), /^0 kernel steps · 0 definitions checked ·/);
+    assert.match(await page.locator("#check-detail").evaluate(node => getComputedStyle(node).fontFamily), /monospace/);
     releaseWorker();
     await page.locator("#check-progress[value]").waitFor({ state: "attached" });
     await page.locator("#result:not([hidden])").waitFor();
     await page.locator("#check-loader").waitFor({ state: "hidden" });
+    assert.match(await page.locator("#check-detail").textContent(), /^[\d,]+ kernel steps · [\d,]+ of [\d,]+ definitions checked(?: ·.*)?$/);
     assert.equal(await page.locator("#source-panel").getAttribute("aria-busy"), "false");
     const row = page.locator("#result > div").filter({has: page.getByRole("button", {name: result, exact: true})});
     assert.deepEqual((await row.locator("[data-axiom]").evaluateAll(nodes => nodes.map(n => n.dataset.axiom))).sort(), [...expected].sort());

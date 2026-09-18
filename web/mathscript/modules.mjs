@@ -47,4 +47,6 @@ export const sourceModules = [
   "polynomial_difference",
   "ordered_squares",
   "complex_norm_coordinates",
+  "complex_inverses",
+  "classical_complex_inverses",
 ];

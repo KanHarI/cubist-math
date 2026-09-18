@@ -15,20 +15,39 @@ constructions do. No kernel operations or axioms were added.
 | [ring_laws.proof](../web/proofs/ring_laws.proof) | Derived ring identities, including multiplication by zero and negatives, distribution and cancellation. |
 | [complex_coordinates.proof](../web/proofs/complex_coordinates.proof) | Explicit proofs of the coordinate identities for complex multiplication. |
 | [complex_algebra.proof](../web/proofs/complex_algebra.proof) | `Complex(F) = F and F`, its commutative-ring certificate, injective real embedding, `i² = -1`, conjugation, norm square, and the inverse formula given a reciprocal of the norm square. |
+| [ordered_squares.proof](../web/proofs/ordered_squares.proof) | Nonnegative squares and strictly positive squares of apart-from-zero scalars, without deciding signs. |
+| [complex_norm_coordinates.proof](../web/proofs/complex_norm_coordinates.proof) | The polynomial identity proving multiplicativity of the squared norm. |
+| [complex_inverses.proof](../web/proofs/complex_inverses.proof) | Positive squared norm if and only if an inverse exists; failure of positive apartness implies zero. These results are constructive over a supplied ordered field. |
+| [classical_complex_inverses.proof](../web/proofs/classical_complex_inverses.proof) | An inverse from ordinary negated equality with zero, using the existing excluded-middle axiom explicitly. |
 | [complex_polynomials.proof](../web/proofs/complex_polynomials.proof) | Monic coefficient vectors and Horner evaluation; actual linear roots and uniqueness; a precise algebraic-closure property and its exact-square-root consequence. |
 | [polynomial_difference.proof](../web/proofs/polynomial_difference.proof) | A recursive polynomial expression `q` with `p(x) = p(r) + (x-r)q(x)`; hence the factor identity when `p(r) = 0`. |
 
 The ring assumptions are ordinary parameters to these theorems. For example,
 `complex_commutative_ring` takes a `CommutativeRing(F, ...)` certificate and
 constructs one for pairs; it does not postulate real or complex arithmetic.
-All algebraic identities above have empty axiom dependency lists. The
+The pure ring identities have empty axiom dependency lists. Order and
+constructive inverse results depend only on existing truncation principles;
+their scalar order interfaces themselves contain truncated disjunctions. The
+two explicitly classical corollaries also depend on excluded middle. No
+result added here uses choice. The
 algebraic-closure **property** uses propositional truncation, and its
 square-root consequence uses only the existing truncation principles.
 
-The inverse result supplies `(a*d, -b*d)` when `(a*a+b*b)*d = 1`. We have not
-yet proved the ordered-field argument that an apart-from-zero complex number
-has an invertible norm square. Thus the certified structure is currently a
-commutative ring, not a complete complex field.
+The inverse formula supplies `(a*d, -b*d)` when `(a*a+b*b)*d = 1`.
+Thus `(a+bi)^(-1) = (a-bi)/(a*a+b*b)`; the denominator is the squared
+norm, not its square root. With positive squared norm as input, constructing
+the inverse needs neither excluded middle nor choice.
+`complex_ordered_field_inverses` now discharges that premise from a supplied
+ordered-field certificate and positive squared norm. Conversely, an inverse
+forces positive squared norm, using norm multiplicativity and the scalar
+inverse laws. Failure of positive norm forces both coordinates to vanish.
+`classical_complex_nonzero_inverse` separately uses excluded middle to pass
+from `z != 0` to positive apartness. Negated equality alone supplies no positive
+lower bound constructively. This records the corollary's proof dependency;
+it is not a claim that full excluded middle is necessary for every possible
+real-number model or inverse theorem. This does not finish a concrete complete
+complex field: construction of the underlying complete real field remains
+open.
 
 ## Exact algebraic closure
 
