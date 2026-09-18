@@ -1,5 +1,13 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "complete_fields", title: "Real numbers · shared completeness interface", realDevelopment: true },
+  { id: "dedekind_cuts", title: "Real numbers · constructive Dedekind cuts", realDevelopment: true },
+  { id: "boolean_cuts", title: "Real numbers · classical Boolean cuts", realDevelopment: true },
+  { id: "cauchy_quotient", title: "Real numbers · ordinary Cauchy quotient", realDevelopment: true },
+  { id: "ordered_fields", title: "Ordered fields · laws and algebraic lemmas", realDevelopment: true },
+  { id: "set_quotients", title: "Equivalence classes · representatives and choice", realDevelopment: true },
+  { id: "field_logic", title: "Field foundations · logic in Type1", realDevelopment: true },
+  { id: "field_extensionality", title: "Field foundations · predicate equality", realDevelopment: true },
   { id: "surjections", title: "Surjections · right inverses and choice" },
   { id: "maps", title: "Maps · injections, embeddings and fibers" },
   { id: "classical", title: "Classical logic · excluded middle" },
@@ -90,6 +98,7 @@ const pending = new Map(),
   history = [];
 $("editor").value = example;
 $("proof-title").textContent = choices.find((p) => p.id === proofId).title;
+$("development-note").hidden = !choices.find((p) => p.id === proofId).realDevelopment;
 $("source-file").href = sourceURL;
 $("source-file").textContent = `web/${sourceURL}`;
 $("repository-source").href =

@@ -50,7 +50,7 @@ export function compile(module, source, library, { onProgress } = {}) {
   for (const name of program.imports) visit(name);
   const sourceDeclarations = [...importedDeclarations, ...program.declarations];
   const usesDeclaredAxioms = sourceDeclarations.some(d => d.kind === "axiom");
-  const usesTruncation = sourceDeclarations.some(d => /"name":"truncation(?:_intro|_prop|_elim)?"/.test(JSON.stringify(d)));
+  const usesTruncation = sourceDeclarations.some(d => /"name":"truncation(?:_intro|_prop|_elim)?(?:_at)?"/.test(JSON.stringify(d)));
   const usesChoice = sourceDeclarations.some(d => /"name":"set_choice"/.test(JSON.stringify(d)));
   const usesClassical = sourceDeclarations.some(d => /"name":"classical_truncation"/.test(JSON.stringify(d)));
   const b = new Builder(module, {
@@ -512,6 +512,11 @@ export function compile(module, source, library, { onProgress } = {}) {
             truncation_intro: ["lib_trunc_intro", "A -> Mere(A)"],
             truncation_prop: ["lib_trunc_is_trunc", "IsProp(Mere(A))"],
             truncation_elim: ["lib_trunc_elim", "IsProp(P) -> (A -> P) -> Mere(A) -> P"],
+            truncation_at: ["lib_Trunc", "Universe-indexed propositional truncation"],
+            truncation_intro_at: ["lib_trunc_intro", "Universe-indexed truncation introduction"],
+            truncation_prop_at: ["lib_trunc_is_trunc", "Universe-indexed truncation is a proposition"],
+            truncation_elim_at: ["lib_trunc_elim", "Universe-indexed truncation elimination into propositions"],
+            funext_at: ["lib_funext", "Universe-indexed function extensionality"],
             set_choice: ["AOC", "Choice for a family of inhabited sets indexed by a set"],
             classical_truncation: ["LEM", "Double negation implies mere inhabitation"],
             funext: [
@@ -928,6 +933,16 @@ export function compile(module, source, library, { onProgress } = {}) {
     function asValue(A) {
       return val(A.j, sortType(A.j), A.pretty, { representedType: A });
     }
+    function explicitUniverse(n, e) {
+      const universe = asType(n, e);
+      if (b.k.node(b.view(universe.j, 0)).kind !== "U")
+        throw new Error("Expected a universe such as Type, Type1, or Type2.");
+      return universe;
+    }
+    function typeInUniverse(n, e, universe) {
+      const T = asType(n, e);
+      return { ...T, j: convert(asValue(T), atom(universe.j, universe.pretty)).binding };
+    }
     function pathFunction(e, name) {
       if (!e.has(name)) throw new Error(`Import paths to use ${name}.`);
       return e.get(name);
@@ -1097,6 +1112,64 @@ export function compile(module, source, library, { onProgress } = {}) {
           represented(apply(C, [p])),
           "pair induction",
         );
+      },
+      truncation_at(args, e) {
+        arity(args, 2, "truncation_at");
+        const universe = explicitUniverse(args[0], e),
+          A = typeInUniverse(args[1], e, universe),
+          axiom = preludeAxiom("lib_Trunc"),
+          j = b.app(axiom, op("UCumulOmega", [universe.j]), A.j);
+        return val(j, type, `Mere[${universe.pretty}](${A.pretty})`, {
+          representedType: atom(j, `Mere[${universe.pretty}](${A.pretty})`),
+        });
+      },
+      truncation_intro_at(args, e) {
+        arity(args, 3, "truncation_intro_at");
+        const universe = explicitUniverse(args[0], e),
+          A = typeInUniverse(args[1], e, universe),
+          a = check(args[2], e, A),
+          axiom = preludeAxiom("lib_trunc_intro"),
+          u = op("UCumulOmega", [universe.j]),
+          T = atom(b.app("lib_Trunc", u, A.j), `Mere[${universe.pretty}](${A.pretty})`);
+        return val(b.app(axiom, u, A.j, a.binding), T, "truncation introduction");
+      },
+      truncation_prop_at(args, e) {
+        arity(args, 2, "truncation_prop_at");
+        const universe = explicitUniverse(args[0], e),
+          A = typeInUniverse(args[1], e, universe),
+          axiom = preludeAxiom("lib_trunc_is_trunc"),
+          u = op("UCumulOmega", [universe.j]),
+          T = atom(b.app("lib_Trunc", u, A.j), `Mere[${universe.pretty}](${A.pretty})`),
+          P = pi(T, x => pi(T, y => equalityType(T, x, y)));
+        return val(b.coerce(b.app(axiom, u, A.j), P.j), P, "truncation is a proposition");
+      },
+      truncation_elim_at(args, e) {
+        arity(args, 5, "truncation_elim_at");
+        const universe = explicitUniverse(args[0], e),
+          A = typeInUniverse(args[1], e, universe),
+          P = typeInUniverse(args[2], e, universe),
+          isProp = pi(P, x => pi(P, y => equalityType(P, x, y))),
+          proposition = check(args[3], e, isProp),
+          f = check(args[4], e, pi(A, () => P)),
+          axiom = preludeAxiom("lib_trunc_elim"),
+          u = op("UCumulOmega", [universe.j]),
+          premise = op("SigmaIntro", [f.binding, isProp.j, proposition.binding], [null]),
+          T = atom(b.app("lib_Trunc", u, A.j), `Mere[${universe.pretty}](${A.pretty})`);
+        return val(b.app(axiom, u, A.j, P.j, premise), pi(T, () => P), "truncation elimination");
+      },
+      funext_at(args, e) {
+        arity(args, 6, "funext_at");
+        const universe = explicitUniverse(args[0], e),
+          A = typeInUniverse(args[1], e, universe),
+          B = check(args[2], e, pi(A, () => atom(universe.j, universe.pretty))),
+          F = pi(A, x => represented(apply(B, [x]))),
+          f = check(args[3], e, F),
+          g = check(args[4], e, F),
+          H = pi(A, x => equalityType(F.body(x), apply(f, [x]), apply(g, [x]))),
+          h = check(args[5], e, H),
+          axiom = preludeAxiom("lib_funext"),
+          result = b.app(axiom, op("UCumulOmega", [universe.j]), A.j, B.binding, f.binding, g.binding, h.binding);
+        return val(result, equalityType(F, f, g), "function extensionality");
       },
       classical_truncation(args, e) {
         arity(args, 2, "classical_truncation");

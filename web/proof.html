@@ -45,6 +45,11 @@
         ></span>
       </div>
       <p id="source-notice" class="hint" role="status" hidden></p>
+      <p id="development-note" class="hint" hidden>
+        Real-number development in progress: the shared interface and preliminary
+        construction lemmas are checked. The three complete ordered field
+        instances are not yet proved. <a href="../docs/reals.md">Scope and assumptions</a>.
+      </p>
       <div id="diagnostic" role="alert" hidden></div>
       <section
         id="result"
@@ -137,6 +142,13 @@
         <p>
           <code>def</code> defines a typed function. <code>theorem</code> proves
           a type. Both take named parameters and a checked block.
+        </p>
+        <p>
+          <code>Type</code> is U0; <code>Type1</code>, <code>Type2</code>, and
+          <code>Type3</code> name larger universes. Library definitions may fix
+          a universe. <code>truncation_at(Type1, A)</code> and
+          <code>funext_at(Type1, A, B, f, g, h)</code> explicitly specialize the
+          existing universe-generic axioms; they do not introduce new axioms.
         </p>
         <p>
           <code>intro name;</code> introduces the next input or assumption from

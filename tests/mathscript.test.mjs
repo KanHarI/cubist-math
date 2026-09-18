@@ -537,3 +537,87 @@ test("compiler reports completed definitions including imports and stops on erro
     assert.equal(audit.at(-1).unit, "steps");
   } finally { a.kernel.dispose(); }
 });
+
+test("explicit universe primitives support large types and reject invalid specialization", () => {
+  const c = compile(module, `import prelude;
+    def large = truncation_at(Type1, Type);
+    def larger = truncation_at(Type2, Type1);
+    def large_intro = truncation_intro_at(Type1, Type, Unit);
+    def large_prop = truncation_prop_at(Type1, Type);
+    theorem high_funext(A : Type2, B : A -> Type2, f : (forall a : A, B(a))) : f = f {
+      exact funext_at(Type2, A, B, f, f, (fun (a : A) => refl(f(a))));
+    }
+    def high_elim(A : Type2, P : Type2, prop : (forall x : P, forall y : P, x = y), f : A -> P) =
+      truncation_elim_at(Type2, A, P, prop, f);`, sources);
+  try {
+    for (const o of c.outputs) assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
+    assert.deepEqual(c.kernel.axiomsFor("high_funext"), ["lib_funext"]);
+    assert.deepEqual(c.kernel.axiomsFor("high_elim").sort(), ["lib_Trunc", "lib_trunc_elim"]);
+    assert.deepEqual(c.kernel.axiomsFor("large"), ["lib_Trunc"]);
+    assert.ok(c.links.some(link => link.name === "funext_at" && link.binding === "lib_funext"));
+    assert.ok(c.links.some(link => link.name === "truncation_at" && link.binding === "lib_Trunc"));
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+  } finally { c.kernel.dispose(); }
+  for (const expression of [
+    "truncation_at(Type, Type)",
+    "truncation_at(Unit, Unit)",
+    "truncation_intro_at(Type1, Unit, 0)",
+    "truncation_elim_at(Type1, Unit, Nat, (fun (a : Nat) => fun (b : Nat) => refl(a)), (fun (x : Unit) => 0))",
+    "truncation_elim_at(Type1, Unit, Type1, tt, tt)",
+  ]) {
+    assert.throws(() => compile(module, `import prelude; def bad = ${expression};`, sources), /Expected/);
+  }
+});
+
+test("real-field foundations and constructive constructions do not acquire classical or choice axioms", () => {
+  const allowed = new Set(["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim", "lib_trunc_is_trunc", "lib_funext", "lib_univalence"]);
+  for (const name of ["field_logic", "field_extensionality", "ordered_fields", "complete_fields", "dedekind_cuts", "set_quotients", "cauchy_quotient"]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        assert.ok(c.kernel.axiomsFor(o.binding).every(a => allowed.has(a)), `${name}.${o.name} axiom dependencies`);
+      }
+      assert.ok(!c.kernel.bindings.has("LEM"), name);
+      assert.ok(!c.kernel.bindings.has("AOC"), name);
+      if (name === "complete_fields") {
+        assert.deepEqual(c.kernel.axiomsFor("FieldCauchy"), []);
+        assert.deepEqual(c.kernel.axiomsFor("field_constant_converges"), []);
+      }
+      if (name === "ordered_fields") {
+        assert.deepEqual(c.kernel.axiomsFor("field_inverse_unique"), []);
+        assert.deepEqual(c.kernel.axiomsFor("field_add_cancel"), []);
+      }
+      if (name === "cauchy_quotient") assert.deepEqual(c.kernel.axiomsFor("close_tails_compose"), []);
+    } finally { c.kernel.dispose(); }
+  }
+});
+
+test("Boolean cut encoding is classical while decoding preserves constructive assumptions", () => {
+  const c = compile(module, sources.boolean_cuts, sources);
+  try {
+    for (const o of c.outputs) assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
+    assert.deepEqual(c.kernel.axiomsFor("boolean_to_dedekind"), ["lib_Trunc"]);
+    assert.deepEqual(c.kernel.axiomsFor("decision_truth"), []);
+    assert.ok(c.kernel.axiomsFor("dedekind_to_boolean").includes("LEM"));
+    assert.ok(c.kernel.axiomsFor("classical_lower_membership").includes("LEM"));
+    assert.ok(c.kernel.axiomsFor("classical_upper_membership").includes("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+  } finally { c.kernel.dispose(); }
+});
+
+test("quotient representatives and their choice-dependent sequences remain merely inhabited", () => {
+  // Neither the class map's surjectivity proof nor a truncated choice conclusion
+  // can supply a distinguished representative (or sequence of representatives).
+  const single = sources.set_quotients.replace(
+    "FieldExists(exists a : A, quotient_class(A, relation, a) = q) {",
+    "(exists a : A, quotient_class(A, relation, a) = q) {");
+  assert.notEqual(single, sources.set_quotients);
+  assert.throws(() => compile(module, single, sources), /Expected/);
+  const sequence = sources.cauchy_quotient.replace(
+    "FieldExists(forall n : Nat, exists s : CauchySequence(Q, zero, addQ, ltQ),",
+    "(forall n : Nat, exists s : CauchySequence(Q, zero, addQ, ltQ),");
+  assert.notEqual(sequence, sources.cauchy_quotient);
+  assert.throws(() => compile(module, sequence, sources), /Expected/);
+});

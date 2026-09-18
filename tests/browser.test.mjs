@@ -508,8 +508,29 @@ try {
   assert.equal(await csbResult.locator('[data-axiom="lib_Trunc"]').count(), 1);
   await csbResult.locator('[data-axiom="LEM"]').click();
   assert.match(await page.locator("#view-source").getAttribute("href"), /proof=prelude_library_construction&name=LEM/);
+  for (const [proof, theorem] of [
+    ["complete_fields", "field_constant_converges"],
+    ["dedekind_cuts", "principal_cut_injective"],
+    ["boolean_cuts", "classical_upper_membership"],
+    ["cauchy_quotient", "cauchy_sequence_representatives"],
+  ]) {
+    await page.locator("#proof-picker").selectOption(proof);
+    await page.locator("#result:not([hidden])").waitFor();
+    assert.match(await page.locator("#result").textContent(), new RegExp(`Verified ${theorem}`));
+    assert.equal(await page.locator("#development-note").isVisible(), true);
+    assert.match(await page.locator("#development-note").textContent(), /instances are not yet proved/);
+    assert.equal(await page.locator('#result [data-axiom="AOC"]').count(), 0);
+    if (proof !== "boolean_cuts") assert.equal(await page.locator('#result [data-axiom="LEM"]').count(), 0);
+    else assert.ok(await page.locator('#result [data-axiom="LEM"]').count() > 0);
+  }
+  await page.locator("#proof-picker").selectOption("field_logic");
+  await page.locator("#result:not([hidden])").waitFor();
+  await page.locator('#read-source [data-name="truncation_at"]').first().click();
+  assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_Trunc/);
+  assert.match(await page.locator("#language-guide").textContent(), /Type1/);
   await page.locator("#proof-picker").selectOption("circle");
   await page.locator("#result:not([hidden])").waitFor();
+  assert.equal(await page.locator("#development-note").isVisible(), false);
   assert.match(
     await page.locator("#result").textContent(),
     /Verified fundamental_group_of_circle/,

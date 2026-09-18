@@ -80,6 +80,12 @@ The [Cantor–Schröder–Bernstein proof](docs/schroeder_bernstein.md) construc
 full equivalence from injections each way between sets, using excluded middle
 and no choice. Open `?proof=schroeder_bernstein` in the source explorer.
 
+The [real-number development](docs/reals.md) adds a constructive shared
+ordered-field and Cauchy-completeness interface, with Dedekind completeness
+separate. Dedekind cuts, classical Boolean conversion, and the ordinary Cauchy
+quotient have checked preliminary lemmas; their complete field instances remain
+under development. Open `?proof=complete_fields` in the source explorer.
+
 The [Euclid argument](web/proofs/euclid.proof) imports its
 [arithmetic and prime-number foundations](web/proofs/primes.proof), all checked
 from mathematical source without axioms. [Basic examples](web/proofs/basics.proof)

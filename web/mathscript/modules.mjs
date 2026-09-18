@@ -22,4 +22,12 @@ export const sourceModules = [
   "maps",
   "classical",
   "schroeder_bernstein",
+  "field_logic",
+  "ordered_fields",
+  "complete_fields",
+  "dedekind_cuts",
+  "field_extensionality",
+  "boolean_cuts",
+  "set_quotients",
+  "cauchy_quotient",
 ];

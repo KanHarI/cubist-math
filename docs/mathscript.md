@@ -115,6 +115,35 @@ available for proof-producing source tools.
 
 ## Modules and validation
 
+### Explicit universe specialization
+
+`Type` denotes U0; `Type1`, `Type2`, and `Type3` denote the next universes.
+Definitions with an `A : Type` parameter still require a small type. The
+following primitives apply the original prelude axioms at an explicitly named
+universe; they introduce no new axioms:
+
+```text
+truncation_at(U, A)
+truncation_intro_at(U, A, a)
+truncation_prop_at(U, A)
+truncation_elim_at(U, A, P, proposition_proof, map)
+funext_at(U, A, B, f, g, pointwise_equality)
+```
+
+`A` and the elimination target `P` must belong to `U`; `B` is a family
+`A -> U`. Smaller types can be lifted, but larger types cannot be lowered.
+For example, `truncation_at(Type1, Type)` is valid and
+`truncation_at(Type, Type)` is rejected. A family may need an explicit lift,
+such as `fun (a : A) => typed(Type1, Unit)`.
+
+The existing prelude truncation constructor returns U0 even when its input is
+large. These wrappers preserve that signature; they do not promise
+universe-preserving truncation. Elimination still requires evidence that its
+target is a proposition. See the [real-number foundation notes](reals.md) for
+the implications and current development status.
+
+### Source checking
+
 `import primes;` parses and checks the entire mathematical foundation source.
 It does not trust a saved proof snapshot. Human-readable interface signatures are
 also checked against the resulting definitions before use. All 42 declarations
