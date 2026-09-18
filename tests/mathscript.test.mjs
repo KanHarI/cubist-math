@@ -621,3 +621,110 @@ test("quotient representatives and their choice-dependent sequences remain merel
   assert.notEqual(sequence, sources.cauchy_quotient);
   assert.throws(() => compile(module, sequence, sources), /Expected/);
 });
+
+test("puncture graph constructions and all-loop generation check without classical logic or choice", () => {
+  const foundational = ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim", "lib_trunc_is_trunc", "lib_funext", "lib_univalence", "lib_ua_elim"].sort();
+  for (const name of ["path_actions", "loop_words", "puncture_graph", "bouquet_cover", "bouquet_generation", "bouquet_invariants", "bouquet_actions", "puncture_winding", "puncture_noncommutative"]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        assert.ok(c.kernel.axiomsFor(o.binding).every(a => foundational.includes(a)), `${name}.${o.name} axioms`);
+      }
+      assert.ok(!c.kernel.bindings.has("LEM"), name);
+      assert.ok(!c.kernel.bindings.has("AOC"), name);
+      assert.ok(!c.outputs.some(o => o.kind === "axiom"), name);
+      if (["path_actions", "puncture_graph"].includes(name)) {
+        for (const o of c.outputs) assert.deepEqual(c.kernel.axiomsFor(o.binding), [], o.name);
+      }
+      if (name === "loop_words") assert.deepEqual(c.kernel.axiomsFor("word_backtrack_cancels"), []);
+      if (name === "bouquet_generation") {
+        assert.deepEqual(c.kernel.axiomsFor("every_puncture_loop_generated").sort(), foundational);
+        assert.match(c.outputs.find(o => o.name === "every_puncture_loop_generated").type, /Mere\(exists word/);
+      }
+      if (name === "bouquet_invariants") {
+        assert.deepEqual(c.kernel.axiomsFor("bouquet_maps_determined_by_generators").sort(), foundational);
+        assert.match(c.outputs.find(o => o.name === "bouquet_maps_determined_by_generators").type, /Type1/);
+      }
+      if (name === "puncture_noncommutative") {
+        assert.deepEqual(c.kernel.axiomsFor("puncture_commutator_nontrivial").sort(), ["lib_ua_elim", "lib_univalence"]);
+        assert.deepEqual(c.kernel.axiomsFor("winding_vector_does_not_classify_loops").sort(), ["lib_funext", "lib_ua_elim", "lib_univalence"]);
+      }
+    } finally { c.kernel.dispose(); }
+  }
+});
+
+test("the generation proof cannot replace mere word existence with a selected word", () => {
+  const untruncated = sources.bouquet_generation.replace(
+    "Mere(exists word : Word(Fin(n)),", "(exists word : Word(Fin(n)),");
+  assert.notEqual(untruncated, sources.bouquet_generation);
+  assert.throws(() => compile(module, untruncated, sources), /Expected/);
+  assert.throws(() => compile(module, `import bouquet_generation;
+    theorem empty_word_for_every_loop(A : Type, p : BouquetLoops(A)) : BouquetGenerated(A, p) {
+      exact generated_identity(A, Bouquet(A), bouquet_base(A), bouquet_generator(A));
+    }`, sources), /Expected/);
+});
+
+test("signed cancellation and noncommutativity reject incorrect generator actions", () => {
+  const wrongSigns = sources.loop_words.replace(
+    "left a => right(a);\n  right a => left(a);",
+    "left a => left(a);\n  right a => right(a);");
+  assert.notEqual(wrongSigns, sources.loop_words);
+  assert.throws(() => compile(module, wrongSigns, sources), /Expected/);
+  // If both generators act by the same transposition, the claimed action of
+  // the commutator is false. The kernel must reject the purported witness.
+  const collapsedAction = sources.puncture_noncommutative.replace(
+    "left u => second_permutation;", "left u => first_permutation;");
+  assert.notEqual(collapsedAction, sources.puncture_noncommutative);
+  assert.throws(() => compile(module, collapsedAction, sources), /Expected/);
+});
+
+test("large-proposition elimination still checks proposition evidence", () => {
+  assert.throws(() => compile(module, `import field_logic;
+    def invalid(A : Type, h : truncation(A)) : A {
+      exact small_mere_eliminate(A, A, (fun (x : A) => fun (y : A) => refl(x)), (fun (x : A) => x), h);
+    }`, sources), /Expected/);
+});
+
+test("complex ring and polynomial identities check at Type1 with only stated assumptions", () => {
+  const truncation = ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim", "lib_trunc_is_trunc"].sort();
+  for (const name of ["field_products", "ring_laws", "complex_coordinates", "complex_algebra", "complex_polynomials", "polynomial_difference"]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        const expected = o.name === "algebraic_closure_implies_square_roots" ? truncation :
+          o.name === "MonicAlgebraicClosure" ? ["lib_Trunc"] : [];
+        assert.deepEqual(c.kernel.axiomsFor(o.binding).sort(), expected, `${name}.${o.name} axioms`);
+      }
+      assert.ok(!c.kernel.bindings.has("LEM"), name);
+      assert.ok(!c.kernel.bindings.has("AOC"), name);
+      if (name === "complex_algebra") {
+        assert.match(c.outputs.find(o => o.name === "complex_commutative_ring").type, /CommutativeRing/);
+        assert.match(c.outputs.find(o => o.name === "complex_inverse_from_norm").type, /normLaw/);
+        assert.match(c.outputs.find(o => o.name === "Complex").type, /Type1/);
+      }
+      if (name === "complex_polynomials") {
+        assert.match(c.outputs.find(o => o.name === "algebraic_closure_implies_square_roots").type, /closed : MonicAlgebraicClosure/);
+      }
+    } finally { c.kernel.dispose(); }
+  }
+});
+
+test("complex multiplication signs and exact-root truncation cannot be changed silently", () => {
+  const wrongSign = sources.complex_algebra.replace(
+    "negF(mulF(complex_imag(F, z), complex_imag(F, w)))",
+    "mulF(complex_imag(F, z), complex_imag(F, w))");
+  assert.notEqual(wrongSign, sources.complex_algebra);
+  assert.throws(() => compile(module, wrongSign, sources), /Expected/);
+  const chosenRoot = sources.complex_polynomials.replace(
+    "FieldExists(exists z : F, mulF(z, z) = a) {",
+    "(exists z : F, mulF(z, z) = a) {");
+  assert.notEqual(chosenRoot, sources.complex_polynomials);
+  assert.throws(() => compile(module, chosenRoot, sources), /Expected/);
+  const wrongDifference = sources.polynomial_difference.replace(
+    "addF(monic_eval(F, one, addF, mulF, k, tail, r), mulF(x, previous(tail)))",
+    "addF(monic_eval(F, one, addF, mulF, k, tail, r), mulF(r, previous(tail)))");
+  assert.notEqual(wrongDifference, sources.polynomial_difference);
+  assert.throws(() => compile(module, wrongDifference, sources), /Expected|Conversion types differ/);
+});

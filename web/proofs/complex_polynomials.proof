@@ -1,0 +1,89 @@
+import ring_laws;
+
+// Lower coefficients of a monic polynomial, constant coefficient first.
+// The implicit leading coefficient is one, so its formal degree is n.
+def MonicCoefficients(F : Type1, n : Nat) = induction n as k return Type1 {
+  zero => Unit;
+  succ previous => F and previous;
+};
+def monic_eval(F : Type1, one : F, addF : F -> F -> F, mulF : F -> F -> F, n : Nat) =
+  induction n as k return (MonicCoefficients(F, k) -> F -> F) {
+    zero => fun (u : Unit) => fun (z : F) => one;
+    succ previous => fun (coefficients : MonicCoefficients(F, succ(k))) => fun (z : F) =>
+      unpack typed(F and MonicCoefficients(F, k), coefficients) as (constant, tail) return F {
+        addF(constant, mulF(z, previous(tail, z)));
+      };
+  };
+def MonicRoot(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F,
+  n : Nat, coefficients : MonicCoefficients(F, n)) =
+  exists z : F, monic_eval(F, one, addF, mulF, n, coefficients, z) = zero;
+
+// This is a target PROPERTY, not an axiom or a proof of algebraic closure.
+// Mere existence per polynomial does not choose roots simultaneously.
+// Over a field, an invertible leading coefficient permits monic normalization.
+def MonicAlgebraicClosure(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F) =
+  forall n : Nat, forall coefficients : MonicCoefficients(F, succ(n)),
+    FieldExists(MonicRoot(F, zero, one, addF, mulF, succ(n), coefficients));
+
+def linear_coefficients(F : Type1, a : F) : MonicCoefficients(F, 1) {
+  exact typed(F and Unit, (a, tt));
+}
+def square_root_coefficients(F : Type1, zero : F, negF : F -> F, a : F) : MonicCoefficients(F, 2) {
+  exact typed(F and (F and Unit), (negF(a), (zero, tt)));
+}
+
+theorem monic_linear_eval(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F) :
+  monic_eval(F, one, addF, mulF, 1, linear_coefficients(F, a), z) = addF(a, z) {
+  exact cong(addF(a), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, z));
+}
+theorem monic_linear_root(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F) :
+  MonicRoot(F, zero, one, addF, mulF, 1, linear_coefficients(F, a)) {
+  exact (negF(a), trans(monic_linear_eval(F, zero, one, addF, mulF, negF, ring, a, negF(a)),
+    ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, a)));
+}
+theorem monic_linear_root_unique(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F,
+  root : monic_eval(F, one, addF, mulF, 1, linear_coefficients(F, a), z) = zero) : z = negF(a) {
+  exact ring_neg_unique(F, zero, one, addF, mulF, negF, ring, a, z,
+    trans(sym(monic_linear_eval(F, zero, one, addF, mulF, negF, ring, a, z)), root));
+}
+
+theorem monic_square_eval(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F) :
+  monic_eval(F, one, addF, mulF, 2, square_root_coefficients(F, zero, negF, a), z) = addF(negF(a), mulF(z, z)) {
+  exact cong((fun (v : F) => addF(negF(a), mulF(z, v))),
+    trans(cong(addF(zero), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, z)),
+      ring_add_zero(F, zero, one, addF, mulF, negF, ring, z)));
+}
+theorem monic_square_root_equation(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F,
+  root : monic_eval(F, one, addF, mulF, 2, square_root_coefficients(F, zero, negF, a), z) = zero) :
+  mulF(z, z) = a {
+  obtain (setF, (additive, multiplicative)) = ring;
+  exact field_add_cancel(F, zero, addF, negF, additive, negF(a), mulF(z, z), a,
+    trans(sym(monic_square_eval(F, zero, one, addF, mulF, negF, ring, a, z)),
+      trans(root, sym(ring_add_inverse(F, zero, one, addF, mulF, negF, ring, a)))));
+}
+
+// Even the degree-two consequence demands exact roots. This implication does
+// not assert that its algebraic-closure hypothesis is available for any model.
+theorem algebraic_closure_implies_square_roots(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  closed : MonicAlgebraicClosure(F, zero, one, addF, mulF), a : F) :
+  FieldExists(exists z : F, mulF(z, z) = a) {
+  let coefficients = square_root_coefficients(F, zero, negF, a);
+  exact field_exists_map(MonicRoot(F, zero, one, addF, mulF, 2, coefficients),
+    (exists z : F, mulF(z, z) = a),
+    (fun (witness : MonicRoot(F, zero, one, addF, mulF, 2, coefficients)) =>
+      unpack witness as (z, root) return (exists z : F, mulF(z, z) = a) {
+        (z, monic_square_root_equation(F, zero, one, addF, mulF, negF, ring, a, z, root));
+      }), closed(1, coefficients));
+}

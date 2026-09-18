@@ -509,6 +509,39 @@ try {
   await csbResult.locator('[data-axiom="LEM"]').click();
   assert.match(await page.locator("#view-source").getAttribute("href"), /proof=prelude_library_construction&name=LEM/);
   for (const [proof, theorem] of [
+    ["bouquet_generation", "every_puncture_loop_generated"],
+    ["bouquet_invariants", "bouquet_maps_determined_by_generators"],
+    ["puncture_winding", "puncture_generators_distinct"],
+    ["puncture_noncommutative", "winding_vector_does_not_classify_loops"],
+  ]) {
+    await page.locator("#proof-picker").selectOption(proof);
+    await page.locator("#result:not([hidden])").waitFor();
+    assert.match(await page.locator("#result").textContent(), new RegExp(`Verified ${theorem}`));
+    assert.equal(await page.locator("#puncture-note").isVisible(), true);
+    assert.match(await page.locator("#puncture-note").textContent(), /comparison with continuous paths/);
+    assert.equal(await page.locator('#result [data-axiom="LEM"]').count(), 0);
+    assert.equal(await page.locator('#result [data-axiom="AOC"]').count(), 0);
+  }
+  const commutatorResult = page.locator("#result > div").filter({
+    has: page.getByRole("button", { name: "puncture_commutator_nontrivial", exact: true }),
+  });
+  await commutatorResult.locator('[data-axiom="lib_univalence"]').click();
+  assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_univalence/);
+  for (const [proof, theorem] of [
+    ["complex_algebra", "complex_commutative_ring"],
+    ["complex_polynomials", "monic_linear_root_unique"],
+    ["polynomial_difference", "monic_factor_at_root"],
+  ]) {
+    await page.locator("#proof-picker").selectOption(proof);
+    await page.locator("#result:not([hidden])").waitFor();
+    assert.match(await page.locator("#result").textContent(), new RegExp(`Verified ${theorem}`));
+    assert.equal(await page.locator("#complex-note").isVisible(), true);
+    assert.match(await page.locator("#complex-note").textContent(), /Great Picard remain to be proved/);
+    assert.equal(await page.locator("#puncture-note").isVisible(), false);
+    assert.equal(await page.locator('#result [data-axiom="LEM"]').count(), 0);
+    assert.equal(await page.locator('#result [data-axiom="AOC"]').count(), 0);
+  }
+  for (const [proof, theorem] of [
     ["complete_fields", "field_constant_converges"],
     ["dedekind_cuts", "principal_cut_injective"],
     ["boolean_cuts", "classical_upper_membership"],
@@ -531,6 +564,8 @@ try {
   await page.locator("#proof-picker").selectOption("circle");
   await page.locator("#result:not([hidden])").waitFor();
   assert.equal(await page.locator("#development-note").isVisible(), false);
+  assert.equal(await page.locator("#puncture-note").isVisible(), false);
+  assert.equal(await page.locator("#complex-note").isVisible(), false);
   assert.match(
     await page.locator("#result").textContent(),
     /Verified fundamental_group_of_circle/,

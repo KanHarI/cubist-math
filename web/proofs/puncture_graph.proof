@@ -1,0 +1,40 @@
+import finite;
+import suspension;
+import path_actions;
+
+// A common spoke and one additional spoke per label give a bouquet of loops.
+// This constructs a homotopy type, not yet a comparison with a metric domain.
+def Bouquet(A : Type) = Suspension(Unit or A);
+def bouquet_base(A : Type) = north(Unit or A);
+def bouquet_tip(A : Type) = south(Unit or A);
+def bouquet_spoke(A : Type) = meridian(Unit or A, typed(Unit or A, left(tt)));
+def bouquet_edge(A : Type, a : A) = meridian(Unit or A, typed(Unit or A, right(a)));
+def bouquet_generator(A : Type, a : A) =
+  concatenate(Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_base(A),
+    bouquet_edge(A, a), inverse(Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)));
+def BouquetLoops(A : Type) = bouquet_base(A) = bouquet_base(A);
+def PunctureGraph(n : Nat) = Bouquet(Fin(n));
+def puncture_loop(n : Nat, i : Fin(n)) = bouquet_generator(Fin(n), i);
+
+theorem bouquet_generator_spoke(A : Type, a : A) :
+  concatenate(Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_tip(A), bouquet_generator(A, a), bouquet_spoke(A)) = bouquet_edge(A, a) {
+  exact append_inverse_cancel(Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_base(A), bouquet_edge(A, a), bouquet_spoke(A));
+}
+def bouquet_map_edges(A : Type, X : Type, point : X, loops : A -> (point = point), label : Unit or A) =
+  match label return (point = point) { left u => refl(point); right a => loops(a); };
+def bouquet_map(A : Type, X : Type, point : X, loops : A -> (point = point)) =
+  suspension_rec(Unit or A, X, point, point, bouquet_map_edges(A, X, point, loops));
+theorem bouquet_map_generator(A : Type, X : Type, point : X, loops : A -> (point = point), a : A) :
+  ap(Bouquet(A), X, bouquet_map(A, X, point, loops), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a)) = loops(a) {
+  let map = bouquet_map(A, X, point, loops);
+  let first = ap(Bouquet(A), X, map, bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a));
+  let back = ap(Bouquet(A), X, map, bouquet_tip(A), bouquet_base(A), inverse(Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)));
+  let edgeLaw = suspension_rec_beta(Unit or A, X, point, point, bouquet_map_edges(A, X, point, loops), typed(Unit or A, right(a)));
+  let spokeLaw = suspension_rec_beta(Unit or A, X, point, point, bouquet_map_edges(A, X, point, loops), typed(Unit or A, left(tt)));
+  let backLaw = trans(map_inverse(Bouquet(A), X, map, bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)),
+    cong((fun (p : point = point) => inverse(X, point, point, p)), spokeLaw));
+  exact trans(map_concat(Bouquet(A), X, map, bouquet_base(A), bouquet_tip(A), bouquet_base(A),
+    bouquet_edge(A, a), inverse(Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A))),
+    trans(cong((fun (p : point = point) => concatenate(X, point, point, point, p, back)), edgeLaw),
+      trans(cong((fun (p : point = point) => concatenate(X, point, point, point, loops(a), p)), backLaw), right_unit(X, point, point, loops(a)))));
+}

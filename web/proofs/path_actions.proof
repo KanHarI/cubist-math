@@ -1,0 +1,82 @@
+import paths;
+import equivalences;
+
+// Concatenation eliminating the second path. Its right unit computes directly.
+def append_path(A : Type, x : A, y : A, z : A, p : x = y, q : y = z) =
+  path_induction(A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) => forall v : x = a, x = b),
+    (fun (a : A) => fun (v : x = a) => v), y, z, q)(p);
+def append_path_agrees(A : Type, x : A, y : A, z : A, p : x = y, q : y = z) =
+  path_induction(A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) => forall v : x = a,
+      append_path(A, x, a, b, v, r) = concatenate(A, x, a, b, v, r)),
+    (fun (a : A) => fun (v : x = a) => sym(right_unit(A, x, a, v))), y, z, q)(p);
+def append_path_left_inverse(A : Type, x : A, y : A, z : A, q : y = z) =
+  path_induction(A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) => forall p : x = a,
+      append_path(A, x, b, a, append_path(A, x, a, b, p, r), inverse(A, a, b, r)) = p),
+    (fun (a : A) => fun (p : x = a) => refl(p)), y, z, q);
+def append_path_right_inverse(A : Type, x : A, y : A, z : A, q : y = z) =
+  path_induction(A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) => forall p : x = b,
+      append_path(A, x, a, b, append_path(A, x, b, a, p, inverse(A, a, b, r)), r) = p),
+    (fun (a : A) => fun (p : x = a) => refl(p)), y, z, q);
+def append_path_triangle(A : Type, x : A, y : A, z : A, q : y = z) =
+  path_induction(A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) => forall p : x = a,
+      ap((x = a), (x = b), (fun (v : x = a) => append_path(A, x, a, b, v, r)),
+        append_path(A, x, b, a, append_path(A, x, a, b, p, r), inverse(A, a, b, r)), p,
+        append_path_left_inverse(A, x, a, b, r, p)) =
+      append_path_right_inverse(A, x, a, b, r, append_path(A, x, a, b, p, r))),
+    (fun (a : A) => fun (p : x = a) => refl(refl(p))), y, z, q);
+def append_path_equivalence(A : Type, x : A, y : A, z : A, q : y = z) =
+  typed(Equiv((x = y), (x = z)),
+    ((fun (p : x = y) => append_path(A, x, y, z, p, q)),
+    ((fun (p : x = z) => append_path(A, x, z, y, p, inverse(A, y, z, q))),
+    (append_path_left_inverse(A, x, y, z, q),
+    (append_path_right_inverse(A, x, y, z, q), append_path_triangle(A, x, y, z, q))))));
+
+def map_concat(A : Type, B : Type, f : A -> B, x : A, y : A, z : A, p : x = y, q : y = z) =
+  path_induction(A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) => forall c : A, forall s : b = c,
+      ap(A, B, f, a, c, concatenate(A, a, b, c, r, s)) =
+      concatenate(B, f(a), f(b), f(c), ap(A, B, f, a, b, r), ap(A, B, f, b, c, s))),
+    (fun (a : A) => fun (c : A) => fun (s : a = c) => refl(ap(A, B, f, a, c, s))), x, y, p)(z, q);
+def map_inverse(A : Type, B : Type, f : A -> B, x : A, y : A, p : x = y) =
+  path_induction(A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) =>
+      ap(A, B, f, b, a, inverse(A, a, b, r)) = inverse(B, f(a), f(b), ap(A, B, f, a, b, r))),
+    (fun (a : A) => refl(refl(f(a)))), x, y, p);
+def inverse_twice(A : Type, x : A, y : A, p : x = y) =
+  path_induction(A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) => inverse(A, b, a, inverse(A, a, b, r)) = r),
+    (fun (a : A) => refl(refl(a))), x, y, p);
+
+// Moving a predicate on a varying fiber precomposes it with inverse transport.
+def transport_predicate(A : Type, C : A -> Type, x : A, y : A, p : x = y, P : C(x) -> Type, v : C(y)) =
+  path_induction(A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) => forall predicate : C(a) -> Type, forall w : C(b),
+      transport((fun (point : A) => C(point) -> Type), a, b, r, predicate)(w) =
+      predicate(transport(C, b, a, inverse(A, a, b, r), w))),
+    (fun (a : A) => fun (predicate : C(a) -> Type) => fun (w : C(a)) => refl(predicate(w))), x, y, p)(P, v);
+
+def close_path(X : Type, origin : X, x : X, y : X, leftConnector : origin = x, rightConnector : origin = y, p : x = y) : origin = origin {
+  exact concatenate(X, origin, y, origin, concatenate(X, origin, x, y, leftConnector, p), inverse(X, origin, y, rightConnector));
+}
+def reopen_path(X : Type, origin : X, x : X, y : X, leftConnector : origin = x, rightConnector : origin = y, p : origin = origin) : x = y {
+  exact concatenate(X, x, origin, y, inverse(X, origin, x, leftConnector), concatenate(X, origin, origin, y, p, rightConnector));
+}
+theorem reopen_closed_path(X : Type, origin : X, x : X, y : X, leftConnector : origin = x, rightConnector : origin = y, p : x = y) :
+  reopen_path(X, origin, x, y, leftConnector, rightConnector, close_path(X, origin, x, y, leftConnector, rightConnector, p)) = p {
+  have moved : forall b : X, forall s : origin = b, forall q : x = b,
+    reopen_path(X, origin, x, b, leftConnector, s, close_path(X, origin, x, b, leftConnector, s, q)) = q {
+    exact based_induction(X, origin,
+    (fun (a : X) => fun (r : origin = a) => forall b : X, forall s : origin = b, forall q : a = b,
+      reopen_path(X, origin, a, b, r, s, close_path(X, origin, a, b, r, s, q)) = q),
+    (fun (b : X) => fun (s : origin = b) => based_induction(X, origin,
+      (fun (c : X) => fun (t : origin = c) => forall q : origin = c,
+        reopen_path(X, origin, origin, c, refl(origin), t, close_path(X, origin, origin, c, refl(origin), t, q)) = q),
+      (fun (q : origin = origin) => trans(right_unit(X, origin, origin, concatenate(X, origin, origin, origin, q, refl(origin))), right_unit(X, origin, origin, q))), b, s)), x, leftConnector);
+  }
+  exact moved(y, rightConnector, p);
+}

@@ -1,5 +1,20 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "complex_algebra", title: "Complex numbers · ring, conjugation and inverses", complexDevelopment: true },
+  { id: "complex_polynomials", title: "Polynomials · roots and algebraic closure target", complexDevelopment: true },
+  { id: "polynomial_difference", title: "Polynomials · difference and factor identities", complexDevelopment: true },
+  { id: "complex_coordinates", title: "Complex numbers · coordinate identities", complexDevelopment: true },
+  { id: "ring_laws", title: "Ring algebra · derived identities", complexDevelopment: true },
+  { id: "field_products", title: "Field foundations · products are sets", complexDevelopment: true },
+  { id: "bouquet_generation", title: "Punctures · every loop is a word", punctureDevelopment: true },
+  { id: "puncture_noncommutative", title: "Punctures · zero winding, nontrivial loop", punctureDevelopment: true },
+  { id: "bouquet_invariants", title: "Loop invariants · determined by generators", punctureDevelopment: true },
+  { id: "puncture_winding", title: "Punctures · winding around each generator", punctureDevelopment: true },
+  { id: "puncture_graph", title: "Punctures · graph and generating loops", punctureDevelopment: true },
+  { id: "loop_words", title: "Loop words · evaluation and cancellation", punctureDevelopment: true },
+  { id: "bouquet_actions", title: "Loop actions · transport in local systems", punctureDevelopment: true },
+  { id: "bouquet_cover", title: "Loop generation · auxiliary family", punctureDevelopment: true },
+  { id: "path_actions", title: "Paths · append, map and reconnect", punctureDevelopment: true },
   { id: "complete_fields", title: "Real numbers · shared completeness interface", realDevelopment: true },
   { id: "dedekind_cuts", title: "Real numbers · constructive Dedekind cuts", realDevelopment: true },
   { id: "boolean_cuts", title: "Real numbers · classical Boolean cuts", realDevelopment: true },
@@ -99,6 +114,8 @@ const pending = new Map(),
 $("editor").value = example;
 $("proof-title").textContent = choices.find((p) => p.id === proofId).title;
 $("development-note").hidden = !choices.find((p) => p.id === proofId).realDevelopment;
+$("puncture-note").hidden = !choices.find((p) => p.id === proofId).punctureDevelopment;
+$("complex-note").hidden = !choices.find((p) => p.id === proofId).complexDevelopment;
 $("source-file").href = sourceURL;
 $("source-file").textContent = `web/${sourceURL}`;
 $("repository-source").href =

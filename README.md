@@ -86,6 +86,19 @@ separate. Dedekind cuts, classical Boolean conversion, and the ordinary Cauchy
 quotient have checked preliminary lemmas; their complete field instances remain
 under development. Open `?proof=complete_fields` in the source explorer.
 
+The [puncture homotopy development](docs/puncture_homotopy.md) proves that every
+loop in a finite puncture graph merely has a signed-word representation, and
+that cancellative loop invariants are determined by generator values. A checked
+nontrivial commutator has zero winding around both punctures. Open
+`?proof=bouquet_generation` or `?proof=puncture_noncommutative`; the comparison
+with continuous complex contours remains to be proved.
+
+The [complex algebra development](docs/complex_analysis.md) constructs the
+complex commutative ring over a supplied real ring, proves the conjugate and
+inverse formulas, and checks polynomial difference and factor identities.
+Open `?proof=complex_algebra` or `?proof=polynomial_difference`. Algebraic closure
+and Great Picard are development targets, not established theorems.
+
 The [Euclid argument](web/proofs/euclid.proof) imports its
 [arithmetic and prime-number foundations](web/proofs/primes.proof), all checked
 from mathematical source without axioms. [Basic examples](web/proofs/basics.proof)

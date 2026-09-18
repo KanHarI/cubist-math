@@ -1,0 +1,141 @@
+import complex_coordinates;
+import field_products;
+
+// Complexification of an arbitrary commutative ring. Real-number models can
+// instantiate this once their own ring laws have been proved.
+def Complex(F : Type1) = F and F;
+def complex_real(F : Type1, z : Complex(F)) = field_fst(F, F, z);
+def complex_imag(F : Type1, z : Complex(F)) = field_snd(F, F, z);
+def complex_zero(F : Type1, zero : F) : Complex(F) { exact (zero, zero); }
+def complex_one(F : Type1, zero : F, one : F) : Complex(F) { exact (one, zero); }
+def complex_i(F : Type1, zero : F, one : F) : Complex(F) { exact (zero, one); }
+def complex_embed(F : Type1, zero : F, x : F) : Complex(F) { exact (x, zero); }
+def complex_add(F : Type1, addF : F -> F -> F, z : Complex(F), w : Complex(F)) : Complex(F) { exact (addF(complex_real(F, z), complex_real(F, w)), addF(complex_imag(F, z), complex_imag(F, w))); }
+def complex_neg(F : Type1, negF : F -> F, z : Complex(F)) : Complex(F) { exact (negF(complex_real(F, z)), negF(complex_imag(F, z))); }
+def complex_mul(F : Type1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  z : Complex(F), w : Complex(F)) : Complex(F) { exact (addF(mulF(complex_real(F, z), complex_real(F, w)), negF(mulF(complex_imag(F, z), complex_imag(F, w)))),
+   addF(mulF(complex_real(F, z), complex_imag(F, w)), mulF(complex_imag(F, z), complex_real(F, w)))); }
+def complex_conjugate(F : Type1, negF : F -> F, z : Complex(F)) : Complex(F) { exact (complex_real(F, z), negF(complex_imag(F, z))); }
+def complex_norm_squared(F : Type1, addF : F -> F -> F, mulF : F -> F -> F, z : Complex(F)) =
+  addF(mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)));
+
+theorem complex_add_assoc(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F), v : Complex(F)) :
+  complex_add(F, addF, complex_add(F, addF, z, w), v) = complex_add(F, addF, z, complex_add(F, addF, w, v)) {
+  exact field_pair_path(F, F, complex_add(F, addF, complex_add(F, addF, z, w), v), complex_add(F, addF, z, complex_add(F, addF, w, v)),
+    ring_add_assoc(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_real(F, w), complex_real(F, v)),
+    ring_add_assoc(F, zero, one, addF, mulF, negF, ring, complex_imag(F, z), complex_imag(F, w), complex_imag(F, v)));
+}
+
+theorem complex_add_comm(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F)) :
+  complex_add(F, addF, z, w) = complex_add(F, addF, w, z) {
+  exact field_pair_path(F, F, complex_add(F, addF, z, w), complex_add(F, addF, w, z),
+    ring_add_comm(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_real(F, w)),
+    ring_add_comm(F, zero, one, addF, mulF, negF, ring, complex_imag(F, z), complex_imag(F, w)));
+}
+
+theorem complex_add_zero(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F)) :
+  complex_add(F, addF, complex_zero(F, zero), z) = z {
+  exact field_pair_path(F, F, complex_add(F, addF, complex_zero(F, zero), z), z,
+    ring_add_zero(F, zero, one, addF, mulF, negF, ring, complex_real(F, z)),
+    ring_add_zero(F, zero, one, addF, mulF, negF, ring, complex_imag(F, z)));
+}
+
+theorem complex_add_inverse(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F)) :
+  complex_add(F, addF, complex_neg(F, negF, z), z) = complex_zero(F, zero) {
+  exact field_pair_path(F, F, complex_add(F, addF, complex_neg(F, negF, z), z), complex_zero(F, zero),
+    ring_add_inverse(F, zero, one, addF, mulF, negF, ring, complex_real(F, z)),
+    ring_add_inverse(F, zero, one, addF, mulF, negF, ring, complex_imag(F, z)));
+}
+
+theorem complex_mul_assoc(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F), v : Complex(F)) :
+  complex_mul(F, addF, mulF, negF, complex_mul(F, addF, mulF, negF, z, w), v) = complex_mul(F, addF, mulF, negF, z, complex_mul(F, addF, mulF, negF, w, v)) {
+  exact field_pair_path(F, F, complex_mul(F, addF, mulF, negF, complex_mul(F, addF, mulF, negF, z, w), v), complex_mul(F, addF, mulF, negF, z, complex_mul(F, addF, mulF, negF, w, v)),
+    complex_coordinate_assoc_real(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z), complex_real(F, w), complex_imag(F, w), complex_real(F, v), complex_imag(F, v)),
+    complex_coordinate_assoc_imag(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z), complex_real(F, w), complex_imag(F, w), complex_real(F, v), complex_imag(F, v)));
+}
+
+theorem complex_mul_comm(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F)) :
+  complex_mul(F, addF, mulF, negF, z, w) = complex_mul(F, addF, mulF, negF, w, z) {
+  exact field_pair_path(F, F, complex_mul(F, addF, mulF, negF, z, w), complex_mul(F, addF, mulF, negF, w, z),
+    complex_coordinate_comm_real(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z), complex_real(F, w), complex_imag(F, w)),
+    complex_coordinate_comm_imag(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z), complex_real(F, w), complex_imag(F, w)));
+}
+
+theorem complex_mul_one(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F)) :
+  complex_mul(F, addF, mulF, negF, complex_one(F, zero, one), z) = z {
+  exact field_pair_path(F, F, complex_mul(F, addF, mulF, negF, complex_one(F, zero, one), z), z,
+    complex_coordinate_one_real(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z)),
+    complex_coordinate_one_imag(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z)));
+}
+
+theorem complex_distribute(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F), v : Complex(F)) :
+  complex_mul(F, addF, mulF, negF, z, complex_add(F, addF, w, v)) = complex_add(F, addF, complex_mul(F, addF, mulF, negF, z, w), complex_mul(F, addF, mulF, negF, z, v)) {
+  exact field_pair_path(F, F, complex_mul(F, addF, mulF, negF, z, complex_add(F, addF, w, v)), complex_add(F, addF, complex_mul(F, addF, mulF, negF, z, w), complex_mul(F, addF, mulF, negF, z, v)),
+    complex_coordinate_distribute_real(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z), complex_real(F, w), complex_imag(F, w), complex_real(F, v), complex_imag(F, v)),
+    complex_coordinate_distribute_imag(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z), complex_real(F, w), complex_imag(F, w), complex_real(F, v), complex_imag(F, v)));
+}
+
+theorem complex_commutative_ring(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF)) :
+  CommutativeRing(Complex(F), complex_zero(F, zero), complex_one(F, zero, one),
+    complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF)) {
+  obtain (setF, (additive, multiplicative)) = ring;
+  exact (field_product_is_set(F, F, setF, setF),
+    ((complex_add_assoc(F, zero, one, addF, mulF, negF, ring), (complex_add_comm(F, zero, one, addF, mulF, negF, ring), (complex_add_zero(F, zero, one, addF, mulF, negF, ring), complex_add_inverse(F, zero, one, addF, mulF, negF, ring)))),
+     (complex_mul_assoc(F, zero, one, addF, mulF, negF, ring), (complex_mul_comm(F, zero, one, addF, mulF, negF, ring), (complex_mul_one(F, zero, one, addF, mulF, negF, ring), complex_distribute(F, zero, one, addF, mulF, negF, ring))))));
+}
+
+theorem complex_i_squared(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF)) :
+  complex_mul(F, addF, mulF, negF, complex_i(F, zero, one), complex_i(F, zero, one)) = complex_embed(F, zero, negF(one)) {
+  exact field_pair_path(F, F, complex_mul(F, addF, mulF, negF, complex_i(F, zero, one), complex_i(F, zero, one)), complex_embed(F, zero, negF(one)),
+    complex_coordinate_i_square_real(F, zero, one, addF, mulF, negF, ring),
+    complex_coordinate_i_square_imag(F, zero, one, addF, mulF, negF, ring));
+}
+
+theorem complex_conjugate_involution(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F)) :
+  complex_conjugate(F, negF, complex_conjugate(F, negF, z)) = z {
+  exact field_pair_path(F, F, complex_conjugate(F, negF, complex_conjugate(F, negF, z)), z,
+    refl(complex_real(F, z)),
+    ring_neg_neg(F, zero, one, addF, mulF, negF, ring, complex_imag(F, z)));
+}
+
+theorem complex_mul_conjugate(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F)) :
+  complex_mul(F, addF, mulF, negF, z, complex_conjugate(F, negF, z)) = complex_embed(F, zero, complex_norm_squared(F, addF, mulF, z)) {
+  exact field_pair_path(F, F, complex_mul(F, addF, mulF, negF, z, complex_conjugate(F, negF, z)), complex_embed(F, zero, complex_norm_squared(F, addF, mulF, z)),
+    complex_coordinate_norm_real(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z)),
+    complex_coordinate_norm_imag(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z)));
+}
+
+theorem complex_embedding_injective(F : Type1, zero : F, x : F, y : F,
+  same : complex_embed(F, zero, x) = complex_embed(F, zero, y)) : x = y {
+  exact cong(complex_real(F), same);
+}
+theorem complex_zero_not_one(F : Type1, zero : F, one : F, distinct : (zero = one) -> Void) :
+  (complex_zero(F, zero) = complex_one(F, zero, one)) -> Void {
+  intro same;
+  exact distinct(complex_embedding_injective(F, zero, zero, one, same));
+}
+
+// A reciprocal of a^2+b^2 gives an actual complex inverse. Establishing that
+// the norm is invertible for apart-from-zero z belongs to the ordered layer.
+theorem complex_inverse_from_norm(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), reciprocal : F,
+  normLaw : mulF(complex_norm_squared(F, addF, mulF, z), reciprocal) = one) :
+  exists w : Complex(F), complex_mul(F, addF, mulF, negF, z, w) = complex_one(F, zero, one) {
+  let w = typed(Complex(F), (mulF(complex_real(F, z), reciprocal), negF(mulF(complex_imag(F, z), reciprocal))));
+  exact (w, field_pair_path(F, F, complex_mul(F, addF, mulF, negF, z, w), complex_one(F, zero, one),
+    trans(complex_coordinate_inverse_real(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z), reciprocal), normLaw),
+    complex_coordinate_inverse_imag(F, zero, one, addF, mulF, negF, ring, complex_real(F, z), complex_imag(F, z), reciprocal)));
+}

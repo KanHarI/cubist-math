@@ -1,0 +1,53 @@
+import bouquet_generation;
+
+// A set-valued invariant preserving the constant loop and concatenation is
+// determined by the values of the signed generators. No loop-setness or
+// reduced-word uniqueness is assumed.
+theorem bouquet_maps_determined_by_letters(A : Type, G : Type1, setG : FieldSet(G), unit : G, multiply : G -> G -> G,
+  h : BouquetLoops(A) -> G, k : BouquetLoops(A) -> G,
+  lawsH : LoopMapLaws(Bouquet(A), bouquet_base(A), G, unit, multiply, h),
+  lawsK : LoopMapLaws(Bouquet(A), bouquet_base(A), G, unit, multiply, k),
+  same : (forall letter : Signed(A), h(letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter)) =
+    k(letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter))), p : BouquetLoops(A)) : h(p) = k(p) {
+  let valuesH = fun (letter : Signed(A)) => h(letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter));
+  let valuesK = fun (letter : Signed(A)) => k(letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter));
+  have valuesEqual : valuesH = valuesK {
+    exact funext_at(Type1, Signed(A), (fun (letter : Signed(A)) => G), valuesH, valuesK, same);
+  }
+  let wordEqual = fun (word : Word(A)) =>
+    trans(loop_map_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), G, unit, multiply, h, lawsH, word),
+      trans(cong((fun (values : Signed(A) -> G) => fold_word(A, G, unit, multiply, values, word)), valuesEqual),
+        sym(loop_map_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), G, unit, multiply, k, lawsK, word))));
+  exact small_mere_eliminate((exists word : Word(A), eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word) = p),
+    (h(p) = k(p)), setG(h(p), k(p)),
+    (fun (represented : (exists word : Word(A), eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word) = p)) =>
+      unpack represented as (word, equality) return (h(p) = k(p)) {
+        transport((fun (q : BouquetLoops(A)) => h(q) = k(q)), eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word), p, equality, wordEqual(word));
+      }), every_bouquet_loop_generated(A, p));
+}
+
+def RightCancellation(G : Type1, multiply : G -> G -> G) =
+  forall a : G, forall b : G, forall c : G, (multiply(a, c) = multiply(b, c)) -> a = b;
+theorem loop_map_inverse_right(X : Type, point : X, G : Type1, unit : G, multiply : G -> G -> G,
+  h : (point = point) -> G, laws : LoopMapLaws(X, point, G, unit, multiply, h), p : point = point) :
+  multiply(h(inverse(X, point, point, p)), h(p)) = unit {
+  obtain (unitLaw, multiplyLaw) = laws;
+  exact trans(sym(multiplyLaw(inverse(X, point, point, p), p)),
+    trans(cong(h, trans(append_path_agrees(X, point, point, point, inverse(X, point, point, p), p), inverse_left(X, point, point, p))), unitLaw));
+}
+theorem bouquet_maps_determined_by_generators(A : Type, G : Type1, setG : FieldSet(G), unit : G, multiply : G -> G -> G,
+  cancel : RightCancellation(G, multiply), h : BouquetLoops(A) -> G, k : BouquetLoops(A) -> G,
+  lawsH : LoopMapLaws(Bouquet(A), bouquet_base(A), G, unit, multiply, h),
+  lawsK : LoopMapLaws(Bouquet(A), bouquet_base(A), G, unit, multiply, k),
+  same : (forall a : A, h(bouquet_generator(A, a)) = k(bouquet_generator(A, a))), p : BouquetLoops(A)) : h(p) = k(p) {
+  exact bouquet_maps_determined_by_letters(A, G, setG, unit, multiply, h, k, lawsH, lawsK,
+    (fun (letter : Signed(A)) => match letter as s return
+      (h(letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), s)) = k(letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), s))) {
+      left a => same(a);
+      right a => cancel(h(inverse(Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a))),
+        k(inverse(Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a))), h(bouquet_generator(A, a)),
+        trans(loop_map_inverse_right(Bouquet(A), bouquet_base(A), G, unit, multiply, h, lawsH, bouquet_generator(A, a)),
+          trans(sym(loop_map_inverse_right(Bouquet(A), bouquet_base(A), G, unit, multiply, k, lawsK, bouquet_generator(A, a))),
+            cong((fun (v : G) => multiply(k(inverse(Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a))), v)), sym(same(a))))));
+    }), p);
+}
