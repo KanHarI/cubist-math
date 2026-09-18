@@ -50,6 +50,26 @@ make cli        # Requires Node.js 24+
 make serve      # Browser: http://127.0.0.1:8088
 ```
 
+During development, select the relevant proofs or regression tests:
+
+```sh
+npm test -- complex_inverses
+npm test -- --module ordered_squares
+npm test -- web/proofs/complex_polynomials.proof
+npm test -- --changed
+npm test -- tests/workbench.test.mjs
+npm test -- --test-name-pattern="complex inverses"
+npm test -- --help
+```
+
+Module names and `.proof` paths check only those proofs and their transitive
+imports, reporting kernel steps and axiom dependencies. `--changed` selects
+added or modified proof sources, including staged and untracked files; it does
+not select JavaScript, browser or C tests. Use a test file or name filter for
+the relevant mutation and implementation regressions. Plain `npm test` runs
+the complete regression suite for the final check; `npm run test:browser` runs
+the browser checks separately.
+
 See the [workbench and CLI guide](web/README.md) for SDK setup, examples,
 source syntax, resource bounds, and current limitations.
 
