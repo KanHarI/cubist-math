@@ -1,5 +1,8 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "circle_degree", title: "Circle degree · obstruction to contraction", complexDevelopment: true },
+  { id: "complex_deformation", title: "Complex deformations · dominant term avoids zero", complexDevelopment: true },
+  { id: "homotopy_paths", title: "Homotopies · moving basepoints and contractions", complexDevelopment: true },
   { id: "complex_inverses", title: "Complex numbers · constructive inverses and apartness", complexDevelopment: true },
   { id: "classical_complex_inverses", title: "Complex numbers · nonzero inverses using excluded middle", complexDevelopment: true },
   { id: "ordered_squares", title: "Ordered fields · constructive square positivity", complexDevelopment: true },

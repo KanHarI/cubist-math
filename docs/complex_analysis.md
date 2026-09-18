@@ -21,11 +21,14 @@ constructions do. No kernel operations or axioms were added.
 | [classical_complex_inverses.proof](../web/proofs/classical_complex_inverses.proof) | An inverse from ordinary negated equality with zero, using the existing excluded-middle axiom explicitly. |
 | [complex_polynomials.proof](../web/proofs/complex_polynomials.proof) | Monic coefficient vectors and Horner evaluation; actual linear roots and uniqueness; a precise algebraic-closure property and its exact-square-root consequence. |
 | [polynomial_difference.proof](../web/proofs/polynomial_difference.proof) | A recursive polynomial expression `q` with `p(x) = p(r) + (x-r)q(x)`; hence the factor identity when `p(r) = 0`. |
+| [homotopy_paths.proof](../web/proofs/homotopy_paths.proof) | Naturality with moving basepoints; a null homotopy kills loops; loops in a contractible type are null. All axiom-free. |
+| [circle_degree.proof](../web/proofs/circle_degree.proof) | Circle power maps have their stated degree, positive degree obstructs contraction and extension through a contractible homotopy type, and the circle cannot retract from a contractible type. Uses only the existing univalence principles. |
+| [complex_deformation.proof](../web/proofs/complex_deformation.proof) | A dominating squared norm guarantees `z + t*q != 0` for `0 <= t <= 1`, with the correct endpoints. Uses only the truncation present in the ordered-field interface. |
 
 The ring assumptions are ordinary parameters to these theorems. For example,
 `complex_commutative_ring` takes a `CommutativeRing(F, ...)` certificate and
 constructs one for pairs; it does not postulate real or complex arithmetic.
-The pure ring identities have empty axiom dependency lists. Order and
+The ring and coordinate modules have empty axiom dependency lists. Order and
 constructive inverse results depend only on existing truncation principles;
 their scalar order interfaces themselves contain truncated disjunctions. The
 two explicitly classical corollaries also depend on excluded middle. No
@@ -98,7 +101,20 @@ leading coefficient, first normalize the polynomial to be monic. Repeated
 factorization after root existence gives complete splitting.
 
 The existing `winding_positive` theorem checks the winding of the abstract
-`n`-fold loop. The missing bridge is continuous planar topology: the disk's
+`n`-fold loop. `circle_power_degree` now lifts this to circle maps, and
+`positive_degree_no_contractible_extension` proves the abstract contradiction
+used in step 3. The homotopies need not fix the basepoint; naturality tracks
+its motion explicitly. This result concerns a contractible **homotopy type**,
+not the raw set of disk coordinates, whose identity paths are equalities.
+
+`complex_linear_deformation_nonzero` supplies the zero-avoidance argument for
+step 2: if `normSquared(q) < normSquared(z)`, then `z + t*q` cannot be zero on
+the real unit interval. The proof uses `normSquared(t*q) = t*t*normSquared(q)`
+and `t*t <= 1`; cancellation would contradict strict dominance. It requires
+neither square roots nor excluded middle. Continuity of this family is not
+yet formalized, and it is not yet specialized to polynomial coefficients.
+
+The missing bridge is continuous planar topology: the disk's
 contraction, the topological unit circle and its comparison with our homotopy
 `S1`, and the leading-term estimate. The image loop represents `n` times the
 generator; a degree-`n` circle map is not in general an equivalence.

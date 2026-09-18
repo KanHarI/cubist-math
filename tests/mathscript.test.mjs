@@ -755,3 +755,46 @@ test("complex inverses preserve constructive apartness and isolate excluded midd
     } finally { c.kernel.dispose(); }
   }
 });
+
+test("circle degree obstructs contraction without classical logic or choice", () => {
+  for (const name of ["homotopy_paths", "circle_degree"]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        const axioms = c.kernel.axiomsFor(o.binding);
+        assert.ok(axioms.every(a => ["lib_univalence", "lib_ua_elim"].includes(a)), o.name);
+        if (name === "homotopy_paths") assert.deepEqual(axioms, [], o.name);
+      }
+      assert.ok(!c.kernel.bindings.has("LEM"));
+      assert.ok(!c.kernel.bindings.has("AOC"));
+      if (name === "circle_degree") {
+        assert.deepEqual(c.kernel.axiomsFor("positive_degree_no_contractible_extension").sort(), ["lib_ua_elim", "lib_univalence"]);
+        assert.match(c.outputs.find(o => o.name === "positive_degree_no_contractible_extension").type, /X : Type1/);
+      }
+    } finally { c.kernel.dispose(); }
+  }
+  const zeroDegree = sources.circle_degree.replace(
+    "circle_map_from_loop(S1, base, positive_loops(n), x)",
+    "circle_map_from_loop(S1, base, positive_loops(0), x)");
+  assert.notEqual(zeroDegree, sources.circle_degree);
+  assert.throws(() => compile(module, zeroDegree, sources), /Expected|Conversion types differ/);
+});
+
+test("dominant-term deformation avoids zero constructively and needs strict dominance", () => {
+  const c = compile(module, sources.complex_deformation, sources);
+  try {
+    for (const o of c.outputs) {
+      assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
+      assert.ok(c.kernel.axiomsFor(o.binding).every(a => a === "lib_Trunc"), o.name);
+    }
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    assert.deepEqual(c.kernel.axiomsFor("complex_linear_deformation_nonzero"), ["lib_Trunc"]);
+  } finally { c.kernel.dispose(); }
+  const nonStrict = sources.complex_deformation.replace(
+    "dominates : lt(complex_norm_squared(F, addF, mulF, error), complex_norm_squared(F, addF, mulF, z))",
+    "dominates : FieldLe(F, lt, complex_norm_squared(F, addF, mulF, error), complex_norm_squared(F, addF, mulF, z))");
+  assert.notEqual(nonStrict, sources.complex_deformation);
+  assert.throws(() => compile(module, nonStrict, sources), /Expected|Conversion types differ/);
+});

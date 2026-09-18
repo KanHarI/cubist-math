@@ -119,6 +119,13 @@ inverse formulas, and checks polynomial difference and factor identities.
 Open `?proof=complex_algebra` or `?proof=polynomial_difference`. Algebraic closure
 and Great Picard are development targets, not established theorems.
 
+The winding route now has checked [circle-degree obstructions](web/proofs/circle_degree.proof)
+and [zero-avoiding linear deformations](web/proofs/complex_deformation.proof).
+A positive-degree circle map cannot extend through a contractible homotopy
+type; a dominating complex term remains nonzero as the smaller term is
+introduced. Geometric comparison, continuity, and polynomial radius bounds
+remain to be proved.
+
 The [Euclid argument](web/proofs/euclid.proof) imports its
 [arithmetic and prime-number foundations](web/proofs/primes.proof), all checked
 from mathematical source without axioms. [Basic examples](web/proofs/basics.proof)

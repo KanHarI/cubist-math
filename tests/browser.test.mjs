@@ -529,6 +529,9 @@ try {
   assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_univalence/);
   for (const [proof, theorem] of [
     ["complex_algebra", "complex_commutative_ring"],
+    ["circle_degree", "positive_degree_no_contractible_extension"],
+    ["complex_deformation", "complex_linear_deformation_nonzero"],
+    ["homotopy_paths", "null_homotopy_kills_loops"],
     ["complex_inverses", "complex_ordered_field_inverses"],
     ["classical_complex_inverses", "classical_complex_nonzero_inverse"],
     ["ordered_squares", "ordered_square_nonnegative"],

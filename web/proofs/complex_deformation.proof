@@ -1,0 +1,125 @@
+import complex_algebra;
+import ordered_squares;
+
+// The straight-line family used in the leading-term homotopy. This file
+// proves its endpoints and avoidance of zero; continuity is a separate task.
+def complex_scale(F : Type1, mulF : F -> F -> F, t : F, z : Complex(F)) : Complex(F) {
+  exact (mulF(t, complex_real(F, z)), mulF(t, complex_imag(F, z)));
+}
+def complex_linear_deformation(F : Type1, addF : F -> F -> F, mulF : F -> F -> F,
+  t : F, z : Complex(F), error : Complex(F)) =
+  complex_add(F, addF, z, complex_scale(F, mulF, t, error));
+
+theorem ordered_le_transitive(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, z : F, xy : FieldLe(F, lt, x, y), yz : FieldLe(F, lt, y, z)) :
+  FieldLe(F, lt, x, z) {
+  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  intro zx;
+  exact yz(ltLe(z, x, y, zx, xy));
+}
+
+theorem ordered_unit_interval_square(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), t : F, lower : FieldLe(F, lt, zero, t), upper : FieldLe(F, lt, t, one)) :
+  FieldLe(F, lt, mulF(t, t), one) {
+  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  let step = transport((fun (v : F) => FieldLe(F, lt, mulF(t, t), v)), mulF(one, t), t,
+    ring_mul_one(F, zero, one, addF, mulF, negF, ring, t), weakScale(t, one, t, upper, lower));
+  exact ordered_le_transitive(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(t, t), t, one, step, upper);
+}
+
+theorem ring_scaled_square(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), t : F, x : F) :
+  mulF(mulF(t, x), mulF(t, x)) = mulF(mulF(t, t), mulF(x, x)) {
+  exact trans(ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, t, x, mulF(t, x)),
+    trans(cong(mulF(t), ring_mul_swap(F, zero, one, addF, mulF, negF, ring, x, t, x)), sym(ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, t, t, mulF(x, x)))));
+}
+
+theorem complex_scaled_norm(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), t : F, z : Complex(F)) :
+  complex_norm_squared(F, addF, mulF, complex_scale(F, mulF, t, z)) = mulF(mulF(t, t), complex_norm_squared(F, addF, mulF, z)) {
+  exact trans(cong((fun (v : F) => addF(v, mulF(mulF(t, complex_imag(F, z)), mulF(t, complex_imag(F, z))))),
+    ring_scaled_square(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, complex_real(F, z))),
+    trans(cong(addF(mulF(mulF(t, t), mulF(complex_real(F, z), complex_real(F, z)))), ring_scaled_square(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, complex_imag(F, z))),
+      sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, mulF(t, t), mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z))))));
+}
+
+theorem complex_negative_norm(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F)) :
+  complex_norm_squared(F, addF, mulF, complex_neg(F, negF, z)) = complex_norm_squared(F, addF, mulF, z) {
+  exact trans(cong((fun (v : F) => addF(v, mulF(negF(complex_imag(F, z)), negF(complex_imag(F, z))))),
+    ordered_negative_square(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z))),
+    cong(addF(mulF(complex_real(F, z), complex_real(F, z))), ordered_negative_square(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z))));
+}
+
+theorem complex_scale_norm_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), t : F, z : Complex(F), lower : FieldLe(F, lt, zero, t), upper : FieldLe(F, lt, t, one)) :
+  FieldLe(F, lt, complex_norm_squared(F, addF, mulF, complex_scale(F, mulF, t, z)), complex_norm_squared(F, addF, mulF, z)) {
+  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  let n = complex_norm_squared(F, addF, mulF, z);
+  let nonnegative = ordered_sum_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)), ordered_square_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)), ordered_square_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z)));
+  let upperSquare = ordered_unit_interval_square(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, lower, upper);
+  let step = transport((fun (v : F) => FieldLe(F, lt, mulF(mulF(t, t), n), v)), mulF(one, n), n,
+    ring_mul_one(F, zero, one, addF, mulF, negF, ring, n), weakScale(mulF(t, t), one, n, upperSquare, nonnegative));
+  exact transport((fun (v : F) => FieldLe(F, lt, v, n)), mulF(mulF(t, t), n), complex_norm_squared(F, addF, mulF, complex_scale(F, mulF, t, z)),
+    sym(complex_scaled_norm(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, z)), step);
+}
+
+theorem complex_linear_deformation_nonzero(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), t : F, z : Complex(F), error : Complex(F),
+  lower : FieldLe(F, lt, zero, t), upper : FieldLe(F, lt, t, one),
+  dominates : lt(complex_norm_squared(F, addF, mulF, error), complex_norm_squared(F, addF, mulF, z))) :
+  (complex_linear_deformation(F, addF, mulF, t, z, error) = complex_zero(F, zero)) -> Void {
+  intro vanishes;
+  let scaled = complex_scale(F, mulF, t, error);
+  let addC = complex_add(F, addF);
+  let mulC = complex_mul(F, addF, mulF, negF);
+  let negC = complex_neg(F, negF);
+  let zeroC = complex_zero(F, zero);
+  let oneC = complex_one(F, zero, one);
+  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let opposite = ring_neg_unique(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, scaled, z,
+    trans(complex_add_comm(F, zero, one, addF, mulF, negF, ring, scaled, z), vanishes));
+  have sameNorm : complex_norm_squared(F, addF, mulF, z) = complex_norm_squared(F, addF, mulF, scaled) {
+    exact trans(cong(complex_norm_squared(F, addF, mulF), opposite), complex_negative_norm(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, scaled));
+  }
+  let impossible = transport(lt(complex_norm_squared(F, addF, mulF, error)), complex_norm_squared(F, addF, mulF, z), complex_norm_squared(F, addF, mulF, scaled), sameNorm, dominates);
+  exact complex_scale_norm_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, error, lower, upper, impossible);
+}
+
+theorem complex_scale_zero(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F)) :
+  complex_scale(F, mulF, zero, z) = complex_zero(F, zero) {
+  exact field_pair_path(F, F, complex_scale(F, mulF, zero, z), complex_zero(F, zero),
+    ring_zero_mul(F, zero, one, addF, mulF, negF, ring, complex_real(F, z)), ring_zero_mul(F, zero, one, addF, mulF, negF, ring, complex_imag(F, z)));
+}
+
+theorem complex_scale_one(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F)) :
+  complex_scale(F, mulF, one, z) = z {
+  exact field_pair_path(F, F, complex_scale(F, mulF, one, z), z,
+    ring_mul_one(F, zero, one, addF, mulF, negF, ring, complex_real(F, z)), ring_mul_one(F, zero, one, addF, mulF, negF, ring, complex_imag(F, z)));
+}
+
+theorem complex_deformation_at_zero(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), error : Complex(F)) :
+  complex_linear_deformation(F, addF, mulF, zero, z, error) = z {
+  exact trans(cong(complex_add(F, addF, z), complex_scale_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error)),
+    trans(complex_add_comm(F, zero, one, addF, mulF, negF, ring, z, complex_zero(F, zero)), complex_add_zero(F, zero, one, addF, mulF, negF, ring, z)));
+}
+
+theorem complex_deformation_at_one(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), error : Complex(F)) :
+  complex_linear_deformation(F, addF, mulF, one, z, error) = complex_add(F, addF, z, error) {
+  exact cong(complex_add(F, addF, z), complex_scale_one(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error));
+}

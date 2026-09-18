@@ -49,4 +49,7 @@ export const sourceModules = [
   "complex_norm_coordinates",
   "complex_inverses",
   "classical_complex_inverses",
+  "homotopy_paths",
+  "circle_degree",
+  "complex_deformation",
 ];
