@@ -24,11 +24,16 @@ constructions do. No kernel operations or axioms were added.
 | [homotopy_paths.proof](../web/proofs/homotopy_paths.proof) | Naturality with moving basepoints; a null homotopy kills loops; loops in a contractible type are null. All axiom-free. |
 | [circle_degree.proof](../web/proofs/circle_degree.proof) | Circle power maps have their stated degree, positive degree obstructs contraction and extension through a contractible homotopy type, and the circle cannot retract from a contractible type. Uses only the existing univalence principles. |
 | [complex_deformation.proof](../web/proofs/complex_deformation.proof) | A dominating squared norm guarantees `z + t*q != 0` for `0 <= t <= 1`, with the correct endpoints. Uses only the truncation present in the ordered-field interface. |
+| [quadratic_identities.proof](../web/proofs/quadratic_identities.proof) | The scalar parallelogram identity by explicit ring rewrites, without axioms. |
+| [ordered_bounds.proof](../web/proofs/ordered_bounds.proof) | Constructive weak-order addition and multiplication bounds, as prerequisites for the polynomial radius estimate. |
+| [complex_periods.proof](../web/proofs/complex_periods.proof) | Every additive complex-valued period on the puncture homotopy type is the winding-weighted sum of its supplied local contributions. This does not construct contour integration or prove the local residue calculation. |
 
 The ring assumptions are ordinary parameters to these theorems. For example,
 `complex_commutative_ring` takes a `CommutativeRing(F, ...)` certificate and
 constructs one for pairs; it does not postulate real or complex arithmetic.
-The ring and coordinate modules have empty axiom dependency lists. Order and
+The ring and coordinate modules have empty axiom dependency lists. The period
+formula uses existing univalence, function extensionality, and truncation,
+through the homotopy generation proof. Order and
 constructive inverse results depend only on existing truncation principles;
 their scalar order interfaces themselves contain truncated disjunctions. The
 two explicitly classical corollaries also depend on excluded middle. No
@@ -154,7 +159,10 @@ is no checked Picard theorem yet.
 ## Relation to puncture homotopy
 
 The [puncture graph results](puncture_homotopy.md) prove loop generation and
-winding facts for an abstract homotopy type. They do not construct continuous
+winding facts for an abstract homotopy type. They now also prove the full
+additive period formula on that type and specialize it to complex addition.
+Homotopy types and their paths are the intended representation of deformation
+information throughout this development. These results do not construct continuous
 complex contours, prove a comparison with a punctured plane, define a contour
 integral, or establish analytic bounds. Those are separate prerequisites.
 In particular, a twice-punctured plane's noncommutative loop structure alone

@@ -1,0 +1,72 @@
+import integer_multiples;
+import finite;
+
+// Finite sums and the single-supported-term identity.
+
+def finite_sum(G : Type1, zero : G, addG : G -> G -> G, n : Nat) =
+  induction n as k return ((Fin(k) -> G) -> G) {
+    zero => fun (values : Fin(0) -> G) => zero;
+    succ previous => fun (values : Fin(succ(k)) -> G) =>
+      addG(values(typed(Unit or Fin(k), left(tt))), previous((fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i))))));
+  };
+
+theorem finite_sum_zero(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
+  forall values : Fin(n) -> G, (forall i : Fin(n), values(i) = zero) -> finite_sum(G, zero, addG, n, values) = zero {
+  obtain (assoc, (comm, (unit, inverseLaw))) = laws;
+  exact induction n as k return (forall values : Fin(k) -> G, (forall i : Fin(k), values(i) = zero) -> finite_sum(G, zero, addG, k, values) = zero) {
+    zero => fun (values : Fin(0) -> G) => fun (allZero : (forall i : Fin(0), values(i) = zero)) => refl(zero);
+    succ previous => fun (values : Fin(succ(k)) -> G) => fun (allZero : (forall i : Fin(succ(k)), values(i) = zero)) =>
+      trans(cong((fun (v : G) => addG(v, finite_sum(G, zero, addG, k, (fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i))))))), allZero(typed(Unit or Fin(k), left(tt)))),
+        trans(cong(addG(zero), previous((fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i)))), (fun (i : Fin(k)) => allZero(typed(Unit or Fin(k), right(i)))))), unit(zero)));
+  };
+}
+
+theorem finite_sum_add(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
+  forall values : Fin(n) -> G, forall other : Fin(n) -> G, finite_sum(G, zero, addG, n, (fun (i : Fin(n)) => addG(values(i), other(i)))) = addG(finite_sum(G, zero, addG, n, values), finite_sum(G, zero, addG, n, other)) {
+  obtain (assoc, (comm, (unit, inverseLaw))) = laws;
+  exact induction n as k return (forall values : Fin(k) -> G, forall other : Fin(k) -> G, finite_sum(G, zero, addG, k, (fun (i : Fin(k)) => addG(values(i), other(i)))) = addG(finite_sum(G, zero, addG, k, values), finite_sum(G, zero, addG, k, other))) {
+    zero => fun (values : Fin(0) -> G) => fun (other : Fin(0) -> G) => sym(unit(zero));
+    succ previous => fun (values : Fin(succ(k)) -> G) => fun (other : Fin(succ(k)) -> G) =>
+      trans(cong(addG(addG(values(typed(Unit or Fin(k), left(tt))), other(typed(Unit or Fin(k), left(tt))))),
+        previous((fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i)))), (fun (i : Fin(k)) => other(typed(Unit or Fin(k), right(i)))))),
+        additive_shuffle(G, zero, addG, negG, laws, values(typed(Unit or Fin(k), left(tt))), other(typed(Unit or Fin(k), left(tt))),
+          finite_sum(G, zero, addG, k, (fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i))))), finite_sum(G, zero, addG, k, (fun (i : Fin(k)) => other(typed(Unit or Fin(k), right(i)))))));
+  };
+}
+
+theorem finite_sum_cong(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
+  forall values : Fin(n) -> G, forall other : Fin(n) -> G, (forall i : Fin(n), values(i) = other(i)) -> finite_sum(G, zero, addG, n, values) = finite_sum(G, zero, addG, n, other) {
+  exact induction n as k return (forall values : Fin(k) -> G, forall other : Fin(k) -> G, (forall i : Fin(k), values(i) = other(i)) -> finite_sum(G, zero, addG, k, values) = finite_sum(G, zero, addG, k, other)) {
+    zero => fun (values : Fin(0) -> G) => fun (other : Fin(0) -> G) => fun (same : (forall i : Fin(0), values(i) = other(i))) => refl(zero);
+    succ previous => fun (values : Fin(succ(k)) -> G) => fun (other : Fin(succ(k)) -> G) => fun (same : (forall i : Fin(succ(k)), values(i) = other(i))) =>
+      trans(cong((fun (v : G) => addG(v, finite_sum(G, zero, addG, k, (fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i))))))), same(typed(Unit or Fin(k), left(tt)))),
+        cong(addG(other(typed(Unit or Fin(k), left(tt)))), previous((fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i)))), (fun (i : Fin(k)) => other(typed(Unit or Fin(k), right(i)))),
+          (fun (i : Fin(k)) => same(typed(Unit or Fin(k), right(i)))))));
+  };
+}
+
+theorem finite_sum_single(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
+  forall values : Fin(n) -> G, forall selected : Fin(n), forall v : G, (values(selected) = v) -> (forall i : Fin(n), ((selected = i) -> Void) -> values(i) = zero) -> finite_sum(G, zero, addG, n, values) = v {
+  obtain (assoc, (comm, (unit, inverseLaw))) = laws;
+  exact induction n as k return (forall values : Fin(k) -> G, forall selected : Fin(k), forall v : G, (values(selected) = v) -> (forall i : Fin(k), ((selected = i) -> Void) -> values(i) = zero) -> finite_sum(G, zero, addG, k, values) = v) {
+    zero => fun (values : Fin(0) -> G) => fun (selected : Fin(0)) => fun (v : G) => fun (same : values(selected) = v) =>
+      fun (other : (forall i : Fin(0), ((selected = i) -> Void) -> values(i) = zero)) => typed((zero = v), absurd(selected));
+    succ previous => fun (values : Fin(succ(k)) -> G) => fun (selected : Fin(succ(k))) =>
+      match typed(Unit or Fin(k), selected) as label return (forall v : G, (values(label) = v) -> (forall i : Fin(succ(k)), ((label = i) -> Void) -> values(i) = zero) -> finite_sum(G, zero, addG, succ(k), values) = v) {
+        left u => fun (v : G) => fun (same : values(typed(Unit or Fin(k), left(u))) = v) =>
+          fun (other : (forall i : Fin(succ(k)), ((typed(Unit or Fin(k), left(u)) = i) -> Void) -> values(i) = zero)) =>
+            trans(cong((fun (w : G) => addG(w, finite_sum(G, zero, addG, k, (fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i))))))),
+              trans(cong((fun (t : Unit) => values(typed(Unit or Fin(k), left(t)))), unit_equal(u)), same)),
+              trans(cong(addG(v), finite_sum_zero(G, zero, addG, negG, laws, k, (fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i)))),
+                (fun (i : Fin(k)) => other(typed(Unit or Fin(k), right(i)), (fun (equal : typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), right(i))) => sum_disjoint(Fin(k), u, i, equal)))))),
+                additive_right_zero(G, zero, addG, negG, laws, v)));
+        right selectedTail => fun (v : G) => fun (same : values(typed(Unit or Fin(k), right(selectedTail))) = v) =>
+          fun (other : (forall i : Fin(succ(k)), ((typed(Unit or Fin(k), right(selectedTail)) = i) -> Void) -> values(i) = zero)) =>
+            trans(cong((fun (w : G) => addG(w, finite_sum(G, zero, addG, k, (fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i))))))),
+              other(typed(Unit or Fin(k), left(tt)), (fun (equal : typed(Unit or Fin(k), right(selectedTail)) = typed(Unit or Fin(k), left(tt))) => sum_disjoint(Fin(k), tt, selectedTail, sym(equal))))),
+              trans(cong(addG(zero), previous((fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i)))), selectedTail, v, same,
+                (fun (i : Fin(k)) => fun (different : (selectedTail = i) -> Void) =>
+                  other(typed(Unit or Fin(k), right(i)), (fun (equal : typed(Unit or Fin(k), right(selectedTail)) = typed(Unit or Fin(k), right(i))) => different(tail_injective(Fin(k), selectedTail, i, equal))))))), unit(v)));
+      };
+  };
+}

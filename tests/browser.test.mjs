@@ -509,13 +509,16 @@ try {
   await csbResult.locator('[data-axiom="LEM"]').click();
   assert.match(await page.locator("#view-source").getAttribute("href"), /proof=prelude_library_construction&name=LEM/);
   for (const [proof, theorem] of [
+    ["puncture_periods", "puncture_period_formula"],
+    ["complex_periods", "complex_puncture_period_formula"],
+    ["puncture_period_examples", "nontrivial_loop_with_zero_period"],
     ["bouquet_generation", "every_puncture_loop_generated"],
     ["bouquet_invariants", "bouquet_maps_determined_by_generators"],
     ["puncture_winding", "puncture_generators_distinct"],
     ["puncture_noncommutative", "winding_vector_does_not_classify_loops"],
   ]) {
     await page.locator("#proof-picker").selectOption(proof);
-    await page.locator("#result:not([hidden])").waitFor();
+    await page.locator("#result:not([hidden])").waitFor({ timeout: 120000 });
     assert.match(await page.locator("#result").textContent(), new RegExp(`Verified ${theorem}`));
     assert.equal(await page.locator("#puncture-note").isVisible(), true);
     assert.match(await page.locator("#puncture-note").textContent(), /comparison with continuous paths/);

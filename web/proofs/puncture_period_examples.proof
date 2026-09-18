@@ -1,0 +1,28 @@
+import puncture_periods;
+import puncture_noncommutative;
+
+// The noncontractible commutator is invisible to every additive period.
+// This does NOT identify paths having the same winding vector.
+theorem nontrivial_loop_with_zero_period(G : Type1, zero : G, addG : G -> G -> G,
+  negG : G -> G, setG : FieldSet(G), laws : AddLaws(G, zero, addG, negG),
+  period : BouquetLoops(Fin(2)) -> G,
+  periodLaws : LoopMapLaws(PunctureGraph(2), bouquet_base(Fin(2)), G, zero, addG, period)) :
+  (period(puncture_commutator) = zero) and
+  ((puncture_commutator = refl(bouquet_base(Fin(2)))) -> Void) {
+  exact (puncture_period_zero_windings(2, G, zero, addG, negG, setG, laws, period, periodLaws,
+    puncture_commutator, commutator_all_windings_zero), puncture_commutator_nontrivial);
+}
+
+// Reversing a generator negates its local contribution.
+theorem puncture_period_reversed_generator(n : Nat, G : Type1, zero : G, addG : G -> G -> G,
+  negG : G -> G, laws : AddLaws(G, zero, addG, negG),
+  period : BouquetLoops(Fin(n)) -> G,
+  periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period), i : Fin(n)) :
+  period(inverse(PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), puncture_loop(n, i))) = negG(period(puncture_loop(n, i))) {
+  obtain (assoc, (comm, (unit, inverseLaw))) = laws;
+  let positive = period(puncture_loop(n, i));
+  let reversed = period(inverse(PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), puncture_loop(n, i)));
+  exact additive_right_cancellation(G, zero, addG, negG, laws, reversed, negG(positive), positive,
+    trans(loop_map_inverse_right(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period, periodLaws, puncture_loop(n, i)),
+      sym(inverseLaw(positive))));
+}

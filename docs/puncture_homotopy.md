@@ -3,6 +3,7 @@
 The kernel now checks the statement that **every based loop in the finite
 puncture graph merely has a finite signed-word representation**. It also checks
 that loop invariants preserving concatenation are determined by generator
+values, that every additive period is the winding-weighted sum of its local
 values, and that winding numbers do not classify all loops.
 
 These are theorems about a constructed **homotopy type**. The comparison with
@@ -94,11 +95,38 @@ our intended proposition-valued Dedekind reals. The supporting
 `small_mere_eliminate` lemma uses the existing universe-lowering truncation
 signature, as explained in [the real-number foundation notes](reals.md).
 
-This is an algebraic reduction for a future residue theorem. Applying it to
-integration still requires constructing the integral, proving its homotopy
-invariance and concatenation laws, relating analytic contours to the graph,
-and calculating the generator integrals. No integral or residue is defined by
-the modules in this development.
+[puncture_periods.proof](../web/proofs/puncture_periods.proof) now proves the
+explicit formula for every based loop `p`:
+
+```text
+period(p) = sum over i : Fin(n) of
+  integer_multiple(values(i), puncture_winding(n, i, p))
+```
+
+Here `G` is any set in `Type1` with abelian-group addition, `period` preserves
+the constant loop and concatenation, and `values(i)` is its value on generator
+`i`. Signed integer multiples and finite sums are constructed by recursion;
+their additivity and the single-supported-term sum are proved without axioms.
+The winding sum is then proved additive and equal to `values(i)` on generator
+`i`. The existing generation theorem extends that equality to all paths. No
+representative word is selected, and no uniqueness of words is needed.
+
+[complex_periods.proof](../web/proofs/complex_periods.proof) specializes this
+result to complex addition, with local values `normalization * residues(i)`.
+The normalization is a parameter: its eventual value `2*pi*i` has not been
+constructed. This is the homotopy reduction of the residue formula, not yet
+the analytic residue theorem. Applying it to integration still requires
+constructing the integral, proving that it descends to these homotopy paths
+and respects concatenation, relating analytic contours to the graph, and
+calculating the local generator integrals. These facts are not axioms.
+
+The development uses homotopy types and their identity paths wherever they
+describe the relevant deformation information. In particular, the period
+domain here is the actual based loop space of the puncture homotopy type,
+rather than a replacement definition of loops as words or winding vectors.
+Geometric and analytic constructions must supply and justify the comparison
+with this type. The same approach guides the circle obstruction for algebraic
+closure and the puncture topology needed later for Picard.
 
 ## Winding and a checked counterexample
 
@@ -122,6 +150,13 @@ around the commutator sends state 0 to state 2. The constant loop fixes state 0,
 and the two states are provably distinct. This uses explicit finite permutations,
 not a postulated free-group classification.
 
+[puncture_period_examples.proof](../web/proofs/puncture_period_examples.proof)
+now also proves that every additive period vanishes on this noncontractible
+commutator. More generally, equal winding vectors imply equal additive
+periods, and zero winding implies zero period. These statements do not assert
+equality of paths: an additive measurement retains less information than the
+full homotopy type. Reversing a generator negates its period.
+
 ## Assumptions and modules
 
 No kernel rules or new axiom declarations were added. The generation proof uses
@@ -142,8 +177,13 @@ proof additionally uses function extensionality.
 | `bouquet_actions` | Local systems from families of equivalences |
 | `puncture_winding` | Integer winding around each label |
 | `puncture_noncommutative` | Nontrivial commutator with zero winding vector |
+| `integer_multiples` | Axiom-free signed multiples in abelian groups |
+| `finite_sums` | Axiom-free finite sum laws and single-supported-term sums |
+| `puncture_periods` | Every additive period is its winding-weighted local sum |
+| `complex_periods` | Specialization to complex-valued periods and local contributions |
+| `puncture_period_examples` | Zero period of a noncontractible loop; reversal changes sign |
 
-Open `proof.html?proof=bouquet_generation` or
+Open `proof.html?proof=puncture_periods`, `proof.html?proof=complex_periods`, or
 `proof.html?proof=puncture_noncommutative` in the web source explorer. Each proof
 is checked from source, and its axiom dependencies can be inspected individually.
 

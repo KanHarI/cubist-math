@@ -126,6 +126,13 @@ type; a dominating complex term remains nonzero as the smaller term is
 introduced. Geometric comparison, continuity, and polynomial radius bounds
 remain to be proved.
 
+The [puncture period formula](web/proofs/puncture_periods.proof) now proves
+that every additive invariant of a loop in the puncture homotopy type is the
+sum of its winding numbers times its generator values. It is also
+[specialized to complex addition](web/proofs/complex_periods.proof). This is
+the homotopy part of the residue argument; contour integration and the local
+residue calculation remain to be constructed and proved.
+
 The [Euclid argument](web/proofs/euclid.proof) imports its
 [arithmetic and prime-number foundations](web/proofs/primes.proof), all checked
 from mathematical source without axioms. [Basic examples](web/proofs/basics.proof)

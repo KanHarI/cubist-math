@@ -798,3 +798,58 @@ test("dominant-term deformation avoids zero constructively and needs strict domi
   assert.notEqual(nonStrict, sources.complex_deformation);
   assert.throws(() => compile(module, nonStrict, sources), /Expected|Conversion types differ/);
 });
+
+test("signed multiples and finite sums keep their constructive algebraic laws", () => {
+  for (const name of ["integer_multiples", "finite_sums", "quadratic_identities", "ordered_bounds"]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        const axioms = c.kernel.axiomsFor(o.binding);
+        if (name === "ordered_bounds") assert.ok(axioms.every(a => a === "lib_Trunc"), o.name);
+        else assert.deepEqual(axioms, [], `${name}.${o.name}`);
+      }
+    } finally { c.kernel.dispose(); }
+  }
+  // Our negative(n) represents -(n+1), not -n. Losing this offset must fail.
+  const wrongNegative = sources.integer_multiples.replace(
+    "right n => natural_multiple(G, zero, addG, negG, negG(x), succ(n));",
+    "right n => natural_multiple(G, zero, addG, negG, negG(x), n);");
+  assert.notEqual(wrongNegative, sources.integer_multiples);
+  assert.throws(() => compile(module, wrongNegative, sources), /Expected|Conversion types differ/);
+});
+
+test("homotopy periods satisfy the winding sum without collapsing nontrivial loops", () => {
+  const allowed = new Set([
+    "lib_Trunc", "lib_funext", "lib_trunc_elim", "lib_trunc_intro",
+    "lib_trunc_is_trunc", "lib_ua_elim", "lib_univalence",
+  ]);
+  for (const [name, theorem] of [
+    ["puncture_periods", "puncture_period_formula"],
+    ["complex_periods", "complex_puncture_period_formula"],
+    ["puncture_period_examples", "nontrivial_loop_with_zero_period"],
+  ]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      assert.ok(c.outputs.some(o => o.name === theorem));
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        assert.ok(c.kernel.axiomsFor(o.binding).every(a => allowed.has(a)), o.name);
+      }
+      assert.ok(!c.kernel.bindings.has("LEM"));
+      assert.ok(!c.kernel.bindings.has("AOC"));
+      // The analytic work is an explicit input, not a hidden integral axiom.
+      if (name === "complex_periods") {
+        const type = c.outputs.find(o => o.name === theorem).type;
+        assert.match(type, /periodLaws/);
+        assert.match(type, /localValues/);
+        assert.match(type, /normalization/);
+      }
+    } finally { c.kernel.dispose(); }
+  }
+  // Ignoring winding makes the generator calculation false.
+  const ignoredWinding = sources.puncture_periods.replace(
+    "values(i), puncture_winding(n, i, p)", "values(i), zeroZ");
+  assert.notEqual(ignoredWinding, sources.puncture_periods);
+  assert.throws(() => compile(module, ignoredWinding, sources), /Expected|Conversion types differ/);
+});

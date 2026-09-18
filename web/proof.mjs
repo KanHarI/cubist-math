@@ -1,5 +1,12 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "puncture_periods", title: "Puncture periods · the winding sum formula", punctureDevelopment: true },
+  { id: "complex_periods", title: "Complex periods · local contributions and winding", punctureDevelopment: true },
+  { id: "puncture_period_examples", title: "Periods · noncontractible loop with zero period", punctureDevelopment: true },
+  { id: "integer_multiples", title: "Additive groups · signed integer multiples" },
+  { id: "finite_sums", title: "Finite sums · additivity and single terms" },
+  { id: "ordered_bounds", title: "Ordered fields · constructive inequality bounds", complexDevelopment: true },
+  { id: "quadratic_identities", title: "Quadratic algebra · parallelogram identity", complexDevelopment: true },
   { id: "circle_degree", title: "Circle degree · obstruction to contraction", complexDevelopment: true },
   { id: "complex_deformation", title: "Complex deformations · dominant term avoids zero", complexDevelopment: true },
   { id: "homotopy_paths", title: "Homotopies · moving basepoints and contractions", complexDevelopment: true },

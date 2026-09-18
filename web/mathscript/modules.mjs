@@ -52,4 +52,11 @@ export const sourceModules = [
   "homotopy_paths",
   "circle_degree",
   "complex_deformation",
+  "integer_multiples",
+  "finite_sums",
+  "puncture_periods",
+  "puncture_period_examples",
+  "complex_periods",
+  "ordered_bounds",
+  "quadratic_identities",
 ];
