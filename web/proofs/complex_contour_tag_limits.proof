@@ -1,0 +1,79 @@
+import complex_contour_bounds;
+import field_scale_limits;
+import complex_algebra;
+import complex_limits;
+
+// Actual complex finite sums become close under the coordinate variation bound.
+theorem complex_contour_tag_change_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),
+  realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F,
+  delta : F, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,
+  vertices : SampleVertices(Complex(F), n), oldTags : SampleTags(Complex(F), n), newTags : SampleTags(Complex(F), n),
+  errors : ComplexContourTagBounds(F, addF, negF, lt, f, delta, n, vertices, oldTags, newTags), increments : ComplexContourIncrementBounds(F, addF, negF, lt, realWeight, imagWeight, n, vertices, oldTags),
+  variation : FieldLe(F, lt, sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n, vertices, oldTags), length), epsilon : F, small : lt(mulF(delta, length), epsilon)) :
+  ComplexClose(F, addF, lt, complex_contour_sum(F, zero, addF, mulF, negF, f, n, vertices, newTags), complex_contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags), epsilon) {
+  let bound = complex_contour_tag_error_length_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, realWeight, imagWeight, delta, length, nonnegativeDelta, n, vertices, oldTags, newTags, errors, increments, variation);
+  obtain (realBound, imagBound) = bound;
+  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let computes = contour_sum_change_tags(Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, f, n, vertices, oldTags, newTags);
+  let oldSum = complex_contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags);
+  let newSum = complex_contour_sum(F, zero, addF, mulF, negF, f, n, vertices, newTags);
+  let error = complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags);
+  exact (field_magnitude_perturbation_close(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, oldSum), complex_real(F, newSum), complex_real(F, error), mulF(delta, length), epsilon,
+    cong(complex_real(F), computes), realBound, small),
+    field_magnitude_perturbation_close(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, oldSum), complex_imag(F, newSum), complex_imag(F, error), mulF(delta, length), epsilon,
+      cong(complex_imag(F), computes), imagBound, small));
+}
+
+// Only delta_n -> 0 is required: fixed-length scaling is proved above.
+theorem complex_contour_tag_errors_converge(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), f : Complex(F) -> Complex(F),
+  realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F,
+  count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(Complex(F), count(n))),
+  oldTags : (forall n : Nat, SampleTags(Complex(F), count(n))), newTags : (forall n : Nat, SampleTags(Complex(F), count(n))),
+  delta : Nat -> F, length : F, nonnegativeLength : FieldLe(F, lt, zero, length),
+  nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
+  errors : (forall n : Nat, ComplexContourTagBounds(F, addF, negF, lt, f, delta(n), count(n), vertices(n), oldTags(n), newTags(n))),
+  increments : (forall n : Nat, ComplexContourIncrementBounds(F, addF, negF, lt, realWeight, imagWeight, count(n), vertices(n), oldTags(n))),
+  variation : (forall n : Nat, FieldLe(F, lt, sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), count(n), vertices(n), oldTags(n)), length)),
+  vanishes : FieldConverges(F, zero, addF, lt, delta, zero)) :
+  ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n))), complex_zero(F, zero)) {
+  let scaledVanishes = field_nonnegative_scale_zero_converges(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length, nonnegativeLength, delta, vanishes);
+  exact complex_box_squeeze(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, (fun (n : Nat) => complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n))), (fun (n : Nat) => mulF(delta(n), length)),
+    (fun (n : Nat) => complex_contour_tag_error_length_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, realWeight, imagWeight, delta(n), length, nonnegativeDelta(n), count(n), vertices(n), oldTags(n), newTags(n), errors(n), increments(n), variation(n))), scaledVanishes);
+}
+
+// Given convergence for one choice of tags, any choice satisfying the
+// vanishing sampled-error condition converges to that same complex value.
+theorem complex_contour_tag_independent_limit(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), f : Complex(F) -> Complex(F),
+  realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F,
+  count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(Complex(F), count(n))),
+  oldTags : (forall n : Nat, SampleTags(Complex(F), count(n))), newTags : (forall n : Nat, SampleTags(Complex(F), count(n))),
+  delta : Nat -> F, length : F, nonnegativeLength : FieldLe(F, lt, zero, length),
+  nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
+  errors : (forall n : Nat, ComplexContourTagBounds(F, addF, negF, lt, f, delta(n), count(n), vertices(n), oldTags(n), newTags(n))),
+  increments : (forall n : Nat, ComplexContourIncrementBounds(F, addF, negF, lt, realWeight, imagWeight, count(n), vertices(n), oldTags(n))),
+  variation : (forall n : Nat, FieldLe(F, lt, sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), count(n), vertices(n), oldTags(n)), length)),
+  vanishes : FieldConverges(F, zero, addF, lt, delta, zero), value : Complex(F),
+  oldConverges : ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => complex_contour_sum(F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n))), value)) :
+  ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => complex_contour_sum(F, zero, addF, mulF, negF, f, count(n), vertices(n), newTags(n))), value) {
+  let oldSums = (fun (n : Nat) => complex_contour_sum(F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n)));
+  let newSums = (fun (n : Nat) => complex_contour_sum(F, zero, addF, mulF, negF, f, count(n), vertices(n), newTags(n)));
+  let errorSums = (fun (n : Nat) => complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n)));
+  let halving = ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
+  let errorConverges = complex_contour_tag_errors_converge(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, f, realWeight, imagWeight, count, vertices, oldTags, newTags, delta, length, nonnegativeLength, nonnegativeDelta, errors, increments, variation, vanishes);
+  let added = complex_converges_add(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, oldSums, errorSums, value, complex_zero(F, zero), oldConverges, errorConverges);
+  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let unit = ring_add_zero_right(Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, value);
+  let total = fun (n : Nat) => complex_add(F, addF, oldSums(n), errorSums(n));
+  let sameLimit = transport(ComplexConverges(F, zero, addF, lt, total), complex_add(F, addF, value, complex_zero(F, zero)), value, unit, added);
+  have pointwise : forall n : Nat, total(n) = newSums(n) {
+    intro n;
+    exact sym(contour_sum_change_tags(Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, f, count(n), vertices(n), oldTags(n), newTags(n)));
+  }
+  exact complex_converges_pointwise(F, zero, addF, lt, total, newSums, pointwise, value, sameLimit);
+}

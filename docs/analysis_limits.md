@@ -90,6 +90,10 @@ telescoping, refinement-error identities, and accumulation of scalar error
 bounds. The scalar tag-error estimate is `delta * L` for uniform sampled
 error `delta` and a bound `L` on the sum of edge magnitudes. Convergence of
 these bounds to zero implies convergence of the tag errors to zero.
+Fixed-factor scaling now derives this from `delta_n -> 0` when `L >= 0`.
+The complex coordinate version proves the same bound and preserves the
+limit when changing tags under those estimates; convergence for the
+original tags is still an input.
 Their Cauchy and deformation estimates still need to be proved,
 alongside a justified geometric presentation of the homotopy paths.
 Local generator integrals and the normalization `2*pi*i`

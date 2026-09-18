@@ -1,12 +1,10 @@
 import complex_algebra;
+import complex_contour_samples;
 import contour_examples;
 import contour_sums;
 
 // Specialization of the finite quadrature laws to complex coordinates.
 // These are finite sums; existence of a contour integral is not asserted.
-
-def complex_contour_sum(F : Type1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  f : Complex(F) -> Complex(F), n : Nat) = contour_sum(Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), f, n);
 
 theorem complex_constant_contour_closed(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : Complex(F), n : Nat,

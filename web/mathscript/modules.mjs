@@ -86,4 +86,9 @@ export const sourceModules = [
   "field_magnitude_close",
   "complex_magnitude",
   "contour_tag_limits",
+  "field_scale_limits",
+  "complex_convergence",
+  "complex_contour_samples",
+  "complex_contour_bounds",
+  "complex_contour_tag_limits",
 ];

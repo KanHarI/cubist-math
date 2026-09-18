@@ -1,5 +1,10 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "complex_contour_tag_limits", title: "Complex contours · tag-independent limits", complexDevelopment: true },
+  { id: "complex_contour_bounds", title: "Complex contours · coordinate variation estimates", complexDevelopment: true },
+  { id: "field_scale_limits", title: "Limits · fixed factors preserve vanishing errors", complexDevelopment: true },
+  { id: "complex_convergence", title: "Complex limits · convergence and Cauchy definitions", complexDevelopment: true },
+  { id: "complex_contour_samples", title: "Complex contours · finite sums", complexDevelopment: true },
   { id: "contour_tag_limits", title: "Contour estimates · vanishing tag errors", complexDevelopment: true },
   { id: "contour_error_bounds", title: "Contour estimates · error times variation", complexDevelopment: true },
   { id: "complex_magnitude", title: "Complex estimates · coordinate bounds without square roots", complexDevelopment: true },
@@ -246,7 +251,7 @@ function request(command, args = {}) {
       }
       pending.clear();
       refreshStatus();
-    }, command === "check" ? 120000 : 30000);
+    }, command === "check" ? 300000 : 30000);
     pending.set(id, { resolve, reject, timer });
     refreshStatus();
     worker.postMessage({ id, command, args });

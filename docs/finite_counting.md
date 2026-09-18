@@ -130,8 +130,10 @@ remain available for inspecting the compiled proof.
 ## Bounds and definitions
 
 Large developments are allowed up to 4,194,304 compiled instructions. WASM allows
-16,777,216 nodes per expanded expression, 2,000,000 shared AST nodes, 500,000
-judgements, and 512 MiB memory. Depth and browser request-time limits still apply.
+16,777,216 nodes per expanded expression. Shared AST and judgment storage
+grows by doubling as allocation permits, without fixed count caps. The heap
+starts at 16 MiB and can grow up to 4 GiB in wasm32. Depth and browser
+request-time limits still apply.
 These bounds do not remove the need to control expansion: theorem bodies are
 boxed, and `opaque def Permutations` keeps the concept named during ordinary
 normalization. Checked type conversion can open its body when needed. Explicit

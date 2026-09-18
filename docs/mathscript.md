@@ -161,9 +161,12 @@ The CLI command `prove FILE.proof` checks the source and opens the result in the
 existing selection/reduction workbench. JSON remains an optional checked replay
 export. Source is limited to 1 MB, nesting to 128, numerals to 256, and compiled
 programs to 4,194,304 instructions. The WASM kernel allows 16,777,216 nodes
-per expanded expression, 2,000,000 shared AST nodes, and 500,000 judgements,
-with a 512 MiB memory ceiling and expression depth limited to 256. Mathematical
-checking has a 120-second timeout; other worker requests have a 30-second timeout.
+per expanded expression and limits expression depth to 256. Shared AST and
+judgment storage grows by doubling as needed, without fixed count caps.
+The WASM heap starts at 16 MiB and may grow up to the wasm32 address-space
+ceiling of 4 GiB, subject to successful allocation; it does not reserve
+that whole amount as physical memory at startup. Mathematical
+checking has a 300-second timeout; other worker requests have a 30-second timeout.
 
 The mathematical layer covers Euclid, the circle fundamental group,
 [right inverses of surjections using choice](surjections.md), and

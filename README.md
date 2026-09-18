@@ -140,7 +140,9 @@ representatives are chosen. [Finite contour sums](docs/contour_sums.md) now
 have checked composition, linearity, telescoping, and refinement-error laws,
 including their complex specialization. Scalar tag errors are bounded by
 the uniform sampled error times the sum of edge-magnitude bounds; they tend
-to zero when those bounds do. Proving convergence of the contour sums and
+to zero when those bounds do. The complex coordinate version now proves
+that changing tags preserves an existing limit when sampled errors tend
+to zero and coordinate variation is bounded. Proving convergence of the contour sums and
 the required homotopy estimates, and relating geometric curves to homotopy
 paths, remain open.
 

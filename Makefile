@@ -41,9 +41,9 @@ EMCC ?= $(if $(wildcard .tools/emsdk/upstream/emscripten/emcc),.tools/emsdk/upst
 WASM_EXPORTS = '["_wb_new","_wb_free","_wb_apply","_wb_result","_wb_name","_wb_meta","_wb_view","_wb_node","_wb_node_name","_wb_stats","_wb_verify"]'
 .PHONY: wasm wasm-test serve
 wasm: web/dist/kernel.mjs
-web/dist/kernel.mjs: $(KERNEL_SRC) src/kernel/internal.h src/kernel/metadata.inc include/thth.h wasm/bridge.c
+web/dist/kernel.mjs: $(KERNEL_SRC) src/kernel/internal.h src/kernel/metadata.inc include/thth.h wasm/bridge.c Makefile
 	mkdir -p web/dist
-	$(EMCC) -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Isrc $(KERNEL_SRC) wasm/bridge.c --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=536870912 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(WASM_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]' -o $@
+	$(EMCC) -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Isrc $(KERNEL_SRC) wasm/bridge.c --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(WASM_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]' -o $@
 wasm-test: wasm
 	npm test
 PORT ?= 8088

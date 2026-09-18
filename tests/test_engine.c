@@ -135,6 +135,31 @@ static void limits(void) {
     CHECK(e->nn == 2);
     tt_free(e);
 }
+static void storage_growth(void) {
+    tt_config cfg = tt_default_config();
+    cfg.max_counter = 8192;
+    CHECK(cfg.max_ast_nodes == 0 && cfg.max_judgements == 0);
+    tt_engine *e = tt_new(&cfg);
+    CHECK(e);
+    tt_id unit = ZERO(UnitForm), one = ZERO(UnitIntro), previous = 0, first = 0;
+    for (unsigned i = 0; i < 4096; i++) {
+        tt_id ctx = A(CtxExt, unit, 0, 0, 0, 0, 0, previous, 0, 0, 0);
+        tt_id value = A(Vble, 0, 0, 0, 0, 0, ctx, 0, 0, 0, 0);
+        if (!first)
+            first = value;
+        CHECK(value != first || i == 0);
+        previous = ctx;
+    }
+    /* Surpass the initial pools and preserve old checked handles after growth. */
+    tt_stats stats;
+    tt_get_stats(e, &stats);
+    CHECK(stats.judgements > 4096 && stats.ast_nodes > 4096);
+    CHECK(tt_verify(e, unit, one));
+    tt_judgement_view view;
+    CHECK(tt_judgement(e, first, &view));
+    CHECK(view.type == e->judgements[unit].expr);
+    tt_free(e);
+}
 /* Dependent Nat induction must advance the motive in the successor case.
  * Run outside the frozen upstream trace, whose old rule has this defect. */
 static void dependent_nat(void) {
@@ -294,6 +319,7 @@ int main(void) {
     dependent_nat();
     recursive_binding();
     limits();
+    storage_growth();
     puts("invalid inputs, dependency discharge, limits, rollback, deterministic cache equivalence: "
          "PASS");
     return 0;

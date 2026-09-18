@@ -1024,3 +1024,44 @@ test("larger contour proofs check beyond the former million-instruction limit", 
     for (const o of c.outputs) assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
   } finally { c.kernel.dispose(); }
 });
+
+test("vanishing sampled errors preserve the limit of complex contour sums", t => {
+  const allowed = new Set(["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim"]);
+  for (const [name, theorem] of [
+    ["complex_contour_tag_limits", "complex_contour_tag_independent_limit"],
+    ["contour_tag_limits", "contour_tag_errors_from_vanishing_values"],
+  ]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      assert.ok(c.outputs.some(o => o.name === theorem));
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        assert.ok(c.kernel.axiomsFor(o.binding).every(a => allowed.has(a)), o.name);
+      }
+      assert.ok(!c.kernel.bindings.has("LEM"));
+      assert.ok(!c.kernel.bindings.has("AOC"));
+      const type = c.outputs.find(o => o.name === theorem).type;
+      assert.match(type, /vanishes : FieldConverges\(F, zero, addF, lt, delta, zero\)/);
+      assert.match(type, /nonnegativeLength/);
+      assert.match(type, /variation/);
+      if (name === "complex_contour_tag_limits") {
+        assert.ok(c.kernel.stats().judgements > 500000, "exercises the raised judgment budget");
+        assert.match(type, /oldConverges : ComplexConverges/);
+        assert.ok(c.kernel.bindings.has("field_small_scaled_radius"));
+        assert.ok(c.kernel.bindings.has("complex_contour_tag_error_variation_bound"));
+      }
+      t.diagnostic(`${name}: ${c.instructionCount.toLocaleString()} instructions; ${c.kernel.stats().judgements.toLocaleString()} judgments`);
+    } finally { c.kernel.dispose(); }
+  }
+});
+
+test("contour estimates retain the zero-length margin and imaginary variation", () => {
+  const noMargin = sources.field_scale_limits.replace(
+    "let denominator = addF(one, length);", "let denominator = length;");
+  assert.notEqual(noMargin, sources.field_scale_limits);
+  assert.throws(() => compile(module, noMargin, sources), /Expected|Conversion types differ/);
+  const noImaginaryVariation = sources.complex_contour_bounds.replaceAll(
+    "addF(realWeight(a, b, t), imagWeight(a, b, t))", "realWeight(a, b, t)");
+  assert.notEqual(noImaginaryVariation, sources.complex_contour_bounds);
+  assert.throws(() => compile(module, noImaginaryVariation, sources), /Expected|Conversion types differ/);
+});

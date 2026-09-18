@@ -101,17 +101,66 @@ converge to zero, with the same supplied tail indices.
 of the actual old and new scalar sums whenever `delta * L < epsilon`.
 For a sequence of sampling data, it proves convergence of the tag errors
 to zero **given convergence of `delta_n * L` to zero** and the corresponding
-sample bounds. The theorem does not yet construct a sampling scheme,
-deduce its rate from uniform continuity, or prove convergence of the sums
-themselves. Those analytic obligations remain explicit.
+sample bounds. Over ordered fields, `contour_tag_errors_from_vanishing_values`
+now derives this from `delta_n -> 0` and `L >= 0`.
+
+[field_scale_limits](../web/proofs/field_scale_limits.proof) supplies that
+scaling result constructively. For each positive tolerance `epsilon`, it
+uses the reciprocal of `1+L` to construct a positive `delta` with
+`delta*L < epsilon`. This also works at `L=0`. The supplied ordered-field
+inverse interface gives the reciprocal from its positive apartness; no
+choice of a witness from mere existence is made. Multiplication by any
+fixed scalar with a supplied magnitude bound then preserves convergence
+to zero.
+
+These results do not yet construct a sampling scheme, deduce its rate from
+uniform continuity, or prove convergence of the sums themselves. Those
+analytic obligations remain explicit.
 
 [complex_magnitude](../web/proofs/complex_magnitude.proof) supplies the
 coordinate estimate needed for the complex version: if both coordinates
 of `z` have magnitude at most `delta`, and the coordinates of `w` have
 bounds `r, s`, both coordinates of `z*w` have bounds `delta*(r+s)`.
 Thus coordinate variation can be used without square roots. This product
-estimate is checked; the assembled complex tag-error convergence theorem
-still needs to be derived.
+estimate feeds the assembled complex results below.
+
+## Complex tag-independent limits
+
+[complex_contour_bounds](../web/proofs/complex_contour_bounds.proof) proves
+that both coordinates of the complex tag-error sum are bounded by
+
+\[
+ \delta\sum_j(r_j+s_j),
+\]
+
+where `r_j, s_j` bound the real and imaginary displacements of the sampled
+edge. The condition is checked only at the visited samples. A bound `L`
+on this total coordinate variation gives the common radius `delta*L`.
+
+[complex_contour_tag_limits](../web/proofs/complex_contour_tag_limits.proof)
+proves closeness of the actual complex sums under that radius bound, and
+convergence of the complex tag errors to zero when `delta_n -> 0`.
+`complex_contour_tag_independent_limit` then proves that a new choice of
+tags converges to the same complex value as the old choice, provided:
+
+- both choices use the same sequence of sampled vertices;
+- coordinate variation has a fixed nonnegative bound `L`;
+- the sampled changes of the integrand are bounded by nonnegative
+  `delta_n` tending to zero;
+- the old sums already converge to the stated value.
+
+It proves independence under these estimates, not existence of an integral
+or independence between arbitrary partitions. The field and convergence
+data remain explicit parameters. The next geometric work must produce
+admissible partitions, relate different refinements, and derive the error
+moduli from continuity.
+
+The complex convergence definitions live in
+[complex_convergence](../web/proofs/complex_convergence.proof), and the finite
+complex sum definition lives in
+[complex_contour_samples](../web/proofs/complex_contour_samples.proof).
+This allows estimates to import their definitions without the later
+completeness and example proofs.
 
 ## Why the homotopy step comes after the limit
 
@@ -130,10 +179,12 @@ refinement errors vanish, take limits, and descend the resulting values.
 
 ## Dependencies and remaining work
 
-The algebraic results use no axioms. The ordered magnitude, scalar error-bound,
-and tag-error convergence results depend only on the existing `lib_Trunc`
-among the kernel's axiom bindings; their order and arithmetic laws are
-explicit hypotheses. No excluded middle, choice,
+The algebraic results use no axioms. The ordered magnitude and finite error-bound
+results depend only on the existing `lib_Trunc` among the kernel's axiom
+bindings. Fixed-factor scaling also uses truncation introduction to supply
+positive apartness. The complex limit-independence proof inherits truncation
+elimination from constructive halving. Their order, inverse, and arithmetic
+laws are explicit hypotheses. No excluded middle, choice,
 new kernel rule, or new theorem-specific axiom is used.
 
 Still needed are geometric curves and admissible refinements, Cauchy and

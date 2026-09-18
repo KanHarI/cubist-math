@@ -547,6 +547,8 @@ try {
   assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_univalence/);
   for (const [proof, theorem] of [
     ["complex_contour_sums", "complex_identity_backtrack_nonzero"],
+    ["complex_contour_tag_limits", "complex_contour_tag_independent_limit"],
+    ["field_scale_limits", "field_nonnegative_scale_zero_converges"],
     ["contour_tag_limits", "contour_tag_errors_converge"],
     ["complex_magnitude", "complex_box_mul_rectangle"],
     ["sample_magnitude_bounds", "sample_weighted_sum_bound"],
@@ -565,7 +567,7 @@ try {
     ["polynomial_difference", "monic_factor_at_root"],
   ]) {
     await page.locator("#proof-picker").selectOption(proof);
-    await page.locator("#result:not([hidden])").waitFor({ timeout: 120000 });
+    await page.locator("#result:not([hidden])").waitFor({ timeout: 300000 });
     assert.match(await page.locator("#result").textContent(), new RegExp(`Verified ${theorem}`));
     assert.equal(await page.locator("#complex-note").isVisible(), true);
     assert.match(await page.locator("#complex-note").textContent(), /Great Picard remain to be proved/);
