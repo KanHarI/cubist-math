@@ -133,6 +133,12 @@ sum of its winding numbers times its generator values. It is also
 the homotopy part of the residue argument; contour integration and the local
 residue calculation remain to be constructed and proved.
 
+[Limit and descent proofs](docs/analysis_limits.md) now construct additive
+homotopy periods from Cauchy approximations on representatives, provided the
+homotopy and concatenation errors tend to zero. Mere coverage suffices; no
+representatives are chosen. Constructing the contour sums and proving those
+analytic estimates remain open.
+
 The [Euclid argument](web/proofs/euclid.proof) imports its
 [arithmetic and prime-number foundations](web/proofs/primes.proof), all checked
 from mathematical source without axioms. [Basic examples](web/proofs/basics.proof)

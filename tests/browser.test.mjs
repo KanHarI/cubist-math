@@ -509,6 +509,9 @@ try {
   await csbResult.locator('[data-axiom="LEM"]').click();
   assert.match(await page.locator("#view-source").getAttribute("href"), /proof=prelude_library_construction&name=LEM/);
   for (const [proof, theorem] of [
+    ["homotopy_limits", "homotopy_limit_period"],
+    ["complex_limit_periods", "complex_cauchy_approximation_period_laws"],
+    ["limit_periods", "cauchy_approximation_period_laws"],
     ["puncture_periods", "puncture_period_formula"],
     ["complex_periods", "complex_puncture_period_formula"],
     ["puncture_period_examples", "nontrivial_loop_with_zero_period"],
@@ -531,6 +534,7 @@ try {
   await commutatorResult.locator('[data-axiom="lib_univalence"]').click();
   assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_univalence/);
   for (const [proof, theorem] of [
+    ["complex_limits", "complex_cauchy_complete"],
     ["complex_algebra", "complex_commutative_ring"],
     ["circle_degree", "positive_degree_no_contractible_extension"],
     ["complex_deformation", "complex_linear_deformation_nonzero"],

@@ -1,0 +1,20 @@
+import field_products;
+
+// Complexification of an arbitrary commutative ring. Real-number models can
+// instantiate this once their own ring laws have been proved.
+def Complex(F : Type1) = F and F;
+def complex_real(F : Type1, z : Complex(F)) = field_fst(F, F, z);
+def complex_imag(F : Type1, z : Complex(F)) = field_snd(F, F, z);
+def complex_zero(F : Type1, zero : F) : Complex(F) { exact (zero, zero); }
+def complex_one(F : Type1, zero : F, one : F) : Complex(F) { exact (one, zero); }
+def complex_i(F : Type1, zero : F, one : F) : Complex(F) { exact (zero, one); }
+def complex_embed(F : Type1, zero : F, x : F) : Complex(F) { exact (x, zero); }
+def complex_add(F : Type1, addF : F -> F -> F, z : Complex(F), w : Complex(F)) : Complex(F) { exact (addF(complex_real(F, z), complex_real(F, w)), addF(complex_imag(F, z), complex_imag(F, w))); }
+def complex_neg(F : Type1, negF : F -> F, z : Complex(F)) : Complex(F) { exact (negF(complex_real(F, z)), negF(complex_imag(F, z))); }
+def complex_mul(F : Type1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  z : Complex(F), w : Complex(F)) : Complex(F) { exact (addF(mulF(complex_real(F, z), complex_real(F, w)), negF(mulF(complex_imag(F, z), complex_imag(F, w)))),
+   addF(mulF(complex_real(F, z), complex_imag(F, w)), mulF(complex_imag(F, z), complex_real(F, w)))); }
+def complex_conjugate(F : Type1, negF : F -> F, z : Complex(F)) : Complex(F) { exact (complex_real(F, z), negF(complex_imag(F, z))); }
+def complex_norm_squared(F : Type1, addF : F -> F -> F, mulF : F -> F -> F, z : Complex(F)) =
+  addF(mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)));
+

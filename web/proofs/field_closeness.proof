@@ -1,0 +1,120 @@
+import complete_fields;
+import ordered_halves;
+
+// Two-sided order balls: triangle, addition, and separation laws.
+
+theorem order_lt_add_left(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, z : F, less : lt(x, y)) :
+  lt(addF(z, x), addF(z, y)) {
+  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  obtain (forward, backward) = translate(x, y, z);
+  let first = transport((fun (v : F) => lt(v, addF(y, z))), addF(x, z), addF(z, x),
+    ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, z), forward(less));
+  exact transport(lt(addF(z, x)), addF(y, z), addF(z, y), ring_add_comm(F, zero, one, addF, mulF, negF, ring, y, z), first);
+}
+
+theorem order_lt_add_pair(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, u : F, v : F, xy : lt(x, y), uv : lt(u, v)) :
+  lt(addF(x, u), addF(y, v)) {
+  obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
+  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  obtain (forward, backward) = translate(x, y, u);
+  exact transitive(addF(x, u), addF(y, u), addF(y, v), forward(xy), order_lt_add_left(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, u, v, y, uv));
+}
+
+theorem order_difference_positive(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, less : lt(x, y)) :
+  lt(zero, addF(y, negF(x))) {
+  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  obtain (forward, backward) = translate(x, y, negF(x));
+  exact transport((fun (v : F) => lt(v, addF(y, negF(x)))), addF(x, negF(x)), zero,
+    ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x), forward(less));
+}
+
+theorem field_close_self(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, epsilon : F, positive : lt(zero, epsilon)) :
+  FieldClose(F, addF, lt, x, x, epsilon) {
+
+  let shifted = order_lt_add_left(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, x, positive);
+  let bound = transport((fun (v : F) => lt(v, addF(x, epsilon))), addF(x, zero), x,
+    ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x), shifted);
+  exact (bound, bound);
+}
+
+def field_close_symmetry(F : Type1, addF : F -> F -> F, lt : F -> F -> Type,
+  x : F, y : F, epsilon : F, close : FieldClose(F, addF, lt, x, y, epsilon)) : FieldClose(F, addF, lt, y, x, epsilon) {
+  obtain (forward, backward) = close;
+  exact (backward, forward);
+}
+
+theorem field_close_triangle(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, z : F, epsilon : F, delta : F, xy : FieldClose(F, addF, lt, x, y, epsilon), yz : FieldClose(F, addF, lt, y, z, delta)) :
+  FieldClose(F, addF, lt, x, z, addF(epsilon, delta)) {
+  obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
+  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  obtain (xyUpper, xyLower) = xy;
+  obtain (yzUpper, yzLower) = yz;
+  obtain (shiftUpper, undoUpper) = translate(y, addF(z, delta), epsilon);
+  obtain (shiftLower, undoLower) = translate(y, addF(x, epsilon), delta);
+  let upper = transitive(x, addF(y, epsilon), addF(addF(z, delta), epsilon), xyUpper, shiftUpper(yzUpper));
+  let lower = transitive(z, addF(y, delta), addF(addF(x, epsilon), delta), yzLower, shiftLower(xyLower));
+  exact (transport(lt(x), addF(addF(z, delta), epsilon), addF(z, addF(epsilon, delta)),
+    trans(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, z, delta, epsilon), cong(addF(z), ring_add_comm(F, zero, one, addF, mulF, negF, ring, delta, epsilon))), upper),
+    transport(lt(z), addF(addF(x, epsilon), delta), addF(x, addF(epsilon, delta)),
+      ring_add_assoc(F, zero, one, addF, mulF, negF, ring, x, epsilon, delta), lower));
+}
+
+theorem field_close_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, u : F, v : F, epsilon : F, delta : F, xy : FieldClose(F, addF, lt, x, y, epsilon), uv : FieldClose(F, addF, lt, u, v, delta)) :
+  FieldClose(F, addF, lt, addF(x, u), addF(y, v), addF(epsilon, delta)) {
+
+  obtain (xyUpper, xyLower) = xy;
+  obtain (uvUpper, uvLower) = uv;
+  exact (transport(lt(addF(x, u)), addF(addF(y, epsilon), addF(v, delta)), addF(addF(y, v), addF(epsilon, delta)),
+    ring_add_shuffle(F, zero, one, addF, mulF, negF, ring, y, epsilon, v, delta),
+    order_lt_add_pair(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, addF(y, epsilon), u, addF(v, delta), xyUpper, uvUpper)),
+    transport(lt(addF(y, v)), addF(addF(x, epsilon), addF(u, delta)), addF(addF(x, u), addF(epsilon, delta)),
+      ring_add_shuffle(F, zero, one, addF, mulF, negF, ring, x, epsilon, u, delta),
+      order_lt_add_pair(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, addF(x, epsilon), v, addF(u, delta), xyLower, uvLower)));
+}
+
+theorem field_close_all_le(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, close : (forall epsilon : F, lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon))) :
+  FieldLe(F, lt, x, y) {
+  obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
+  intro reversed;
+  let gap = addF(x, negF(y));
+  let positive = order_difference_positive(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, x, reversed);
+  obtain (upper, lower) = close(gap, positive);
+  have recovers : addF(y, gap) = x {
+    exact trans(ring_add_swap(F, zero, one, addF, mulF, negF, ring, y, x, negF(y)),
+      trans(cong(addF(x), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, y)), ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x)));
+  }
+  exact irreflexive(x, transport(lt(x), addF(y, gap), x, recovers, upper));
+}
+
+theorem field_close_separated(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, close : (forall epsilon : F, lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon))) :
+  x = y {
+  obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
+  exact antisymmetric(x, y, field_close_all_le(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, close),
+    field_close_all_le(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, x, (fun (epsilon : F) => fun (positive : lt(zero, epsilon)) =>
+      field_close_symmetry(F, addF, lt, x, y, epsilon, close(epsilon, positive)))));
+}
+
+theorem field_close_halved_triangle(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall epsilon : F, addF(half(epsilon), half(epsilon)) = epsilon), x : F, y : F, z : F, epsilon : F, xy : FieldClose(F, addF, lt, x, y, half(epsilon)), yz : FieldClose(F, addF, lt, y, z, half(epsilon))) :
+  FieldClose(F, addF, lt, x, z, epsilon) {
+
+  exact transport((fun (radius : F) => FieldClose(F, addF, lt, x, z, radius)), addF(half(epsilon), half(epsilon)), epsilon, halfSum(epsilon),
+    field_close_triangle(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, z, half(epsilon), half(epsilon), xy, yz));
+}

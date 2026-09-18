@@ -688,7 +688,7 @@ test("large-proposition elimination still checks proposition evidence", () => {
 
 test("complex ring and polynomial identities check at Type1 with only stated assumptions", () => {
   const truncation = ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim", "lib_trunc_is_trunc"].sort();
-  for (const name of ["field_products", "ring_laws", "complex_coordinates", "complex_algebra", "complex_polynomials", "polynomial_difference"]) {
+  for (const name of ["field_products", "ring_laws", "complex_coordinates", "complex_numbers", "complex_algebra", "complex_polynomials", "polynomial_difference"]) {
     const c = compile(module, sources[name], sources);
     try {
       for (const o of c.outputs) {
@@ -702,6 +702,8 @@ test("complex ring and polynomial identities check at Type1 with only stated ass
       if (name === "complex_algebra") {
         assert.match(c.outputs.find(o => o.name === "complex_commutative_ring").type, /CommutativeRing/);
         assert.match(c.outputs.find(o => o.name === "complex_inverse_from_norm").type, /normLaw/);
+      }
+      if (name === "complex_numbers") {
         assert.match(c.outputs.find(o => o.name === "Complex").type, /Type1/);
       }
       if (name === "complex_polynomials") {
@@ -712,11 +714,11 @@ test("complex ring and polynomial identities check at Type1 with only stated ass
 });
 
 test("complex multiplication signs and exact-root truncation cannot be changed silently", () => {
-  const wrongSign = sources.complex_algebra.replace(
+  const wrongSign = sources.complex_numbers.replace(
     "negF(mulF(complex_imag(F, z), complex_imag(F, w)))",
     "mulF(complex_imag(F, z), complex_imag(F, w))");
-  assert.notEqual(wrongSign, sources.complex_algebra);
-  assert.throws(() => compile(module, wrongSign, sources), /Expected/);
+  assert.notEqual(wrongSign, sources.complex_numbers);
+  assert.throws(() => compile(module, sources.complex_algebra, { ...sources, complex_numbers: wrongSign }), /Expected/);
   const chosenRoot = sources.complex_polynomials.replace(
     "FieldExists(exists z : F, mulF(z, z) = a) {",
     "(exists z : F, mulF(z, z) = a) {");
@@ -852,4 +854,67 @@ test("homotopy periods satisfy the winding sum without collapsing nontrivial loo
     "values(i), puncture_winding(n, i, p)", "values(i), zeroZ");
   assert.notEqual(ignoredWinding, sources.puncture_periods);
   assert.throws(() => compile(module, ignoredWinding, sources), /Expected|Conversion types differ/);
+});
+
+test("Cauchy limits and homotopy periods keep their constructive assumptions", () => {
+  const allowed = new Set(["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim"]);
+  for (const name of ["complex_limits", "complex_limit_periods", "cauchy_ordered"]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        const dependencies = c.kernel.axiomsFor(o.binding);
+        assert.ok(dependencies.every(a => allowed.has(a) ||
+          (name === "cauchy_ordered" && ["lib_funext", "lib_trunc_is_trunc"].includes(a))), o.name);
+      }
+      assert.ok(!c.kernel.bindings.has("LEM"), name);
+      assert.ok(!c.kernel.bindings.has("AOC"), name);
+      if (name === "complex_limits") {
+        assert.deepEqual(c.kernel.axiomsFor("complex_cauchy_complete"), []);
+        assert.match(c.outputs.find(o => o.name === "complex_cauchy_complete").type, /complete : CauchyComplete/);
+      }
+      if (name === "complex_limit_periods") {
+        const type = c.outputs.find(o => o.name === "complex_cauchy_approximation_period_laws").type;
+        assert.match(type, /realEstimates : PeriodApproximationLaws/);
+        assert.match(type, /imagEstimates : PeriodApproximationLaws/);
+        assert.match(type, /LoopMapLaws/);
+        assert.deepEqual(c.kernel.axiomsFor("half_sum_from_inverse_two"), []);
+      }
+    } finally { c.kernel.dispose(); }
+  }
+});
+
+test("limit proofs reject an unhalved radius and a wrong limiting sum", () => {
+  const unhalved = sources.ordered_halves.replace(
+    "let half = fun (epsilon : F) => mulF(epsilon, reciprocal);",
+    "let half = fun (epsilon : F) => epsilon;");
+  assert.notEqual(unhalved, sources.ordered_halves);
+  assert.throws(() => compile(module, unhalved, sources), /Expected|Conversion types differ/);
+  const wrongSum = sources.limit_periods.replace(
+    "period(append_path(X, point, point, point, p, q)) = addF(period(p), period(q))",
+    "period(append_path(X, point, point, point, p, q)) = addF(period(p), period(p))");
+  assert.notEqual(wrongSum, sources.limit_periods);
+  assert.throws(() => compile(module, wrongSum, sources), /Expected|Conversion types differ/);
+});
+
+test("limits descend from representatives without choosing curves or finite-stage invariance", () => {
+  const c = compile(module, sources.homotopy_limits, sources);
+  try {
+    for (const o of c.outputs) assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
+    assert.deepEqual(c.kernel.axiomsFor("homotopy_limit_period").sort(),
+      ["lib_Trunc", "lib_funext", "lib_trunc_elim", "lib_trunc_intro"]);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    const type = c.outputs.find(o => o.name === "homotopy_limit_period").type;
+    assert.match(type, /C : Type1/);
+    assert.match(type, /covered/);
+    assert.match(type, /homotopyError/);
+    assert.match(type, /FieldAsymptotic/);
+    assert.match(type, /LoopMapLaws/);
+  } finally { c.kernel.dispose(); }
+  // Constancy on presentation fibers is essential to extracting a unique value.
+  const inconsistent = sources.surjective_descent.replace(
+    "consistent(a2, a, trans(same, sym(represents)))", "refl(value(a))");
+  assert.notEqual(inconsistent, sources.surjective_descent);
+  assert.throws(() => compile(module, inconsistent, sources), /Expected|Conversion types differ/);
 });

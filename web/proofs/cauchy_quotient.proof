@@ -56,7 +56,8 @@ theorem sequence_same_symmetric(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q 
       }), same(epsilon, positive));
 }
 // The small-radius form of the triangle inequality needed for transitivity.
-// It is an explicit base-space hypothesis until rational arithmetic is built.
+// cauchy_ordered derives it from supplied ordered-field laws. Constructing
+// the concrete rational arithmetic remains a separate obligation.
 def CloseComposition(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type) =
   forall epsilon : Q, ltQ(zero, epsilon) -> exists delta : Q, ltQ(zero, delta) and
     (forall x : Q, forall y : Q, forall z : Q,

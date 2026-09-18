@@ -1,0 +1,57 @@
+import limit_periods;
+import complex_numbers;
+
+// Pair two scalar limiting periods. The estimates are stated coordinatewise;
+// complex_limits proves equivalence with common-bound complex Cauchy data.
+def paired_complex_period(F : Type1, X : Type, point : X,
+  realPeriod : (point = point) -> F, imagPeriod : (point = point) -> F, p : point = point) : Complex(F) {
+  exact (realPeriod(p), imagPeriod(p));
+}
+
+theorem paired_complex_period_laws(F : Type1, zero : F, addF : F -> F -> F,
+  X : Type, point : X, realPeriod : (point = point) -> F, imagPeriod : (point = point) -> F,
+  realLaws : LoopMapLaws(X, point, F, zero, addF, realPeriod),
+  imagLaws : LoopMapLaws(X, point, F, zero, addF, imagPeriod)) :
+  LoopMapLaws(X, point, Complex(F), complex_zero(F, zero), complex_add(F, addF),
+    paired_complex_period(F, X, point, realPeriod, imagPeriod)) {
+  obtain (realZero, realAppend) = realLaws;
+  obtain (imagZero, imagAppend) = imagLaws;
+  let period = paired_complex_period(F, X, point, realPeriod, imagPeriod);
+  exact (field_pair_path(F, F, period(refl(point)), complex_zero(F, zero), realZero, imagZero),
+    (fun (p : point = point) => fun (q : point = point) =>
+      field_pair_path(F, F, period(append_path(X, point, point, point, p, q)), complex_add(F, addF, period(p), period(q)),
+        realAppend(p, q), imagAppend(p, q))));
+}
+
+// These are properties of proposed scalar approximations, not new axioms.
+def PeriodApproximationLaws(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type,
+  X : Type, point : X, approximations : (point = point) -> Nat -> F) =
+  FieldAsymptotic(F, zero, addF, lt, approximations(refl(point)), (fun (n : Nat) => zero)) and
+  (forall p : point = point, forall q : point = point,
+    FieldAsymptotic(F, zero, addF, lt, approximations(append_path(X, point, point, point, p, q)),
+      (fun (n : Nat) => addF(approximations(p, n), approximations(q, n)))));
+
+theorem complex_cauchy_approximation_period_laws(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
+  X : Type, point : X, realApproximations : (point = point) -> Nat -> F, imagApproximations : (point = point) -> Nat -> F,
+  realCauchy : (forall p : point = point, FieldCauchy(F, zero, addF, lt, realApproximations(p))),
+  imagCauchy : (forall p : point = point, FieldCauchy(F, zero, addF, lt, imagApproximations(p))),
+  realEstimates : PeriodApproximationLaws(F, zero, addF, lt, X, point, realApproximations),
+  imagEstimates : PeriodApproximationLaws(F, zero, addF, lt, X, point, imagApproximations)) :
+  LoopMapLaws(X, point, Complex(F), complex_zero(F, zero), complex_add(F, addF),
+    paired_complex_period(F, X, point,
+      limit_period(F, zero, addF, lt, complete, X, point, realApproximations, realCauchy),
+      limit_period(F, zero, addF, lt, complete, X, point, imagApproximations, imagCauchy))) {
+  obtain (realConstant, realAppend) = realEstimates;
+  obtain (imagConstant, imagAppend) = imagEstimates;
+  exact paired_complex_period_laws(F, zero, addF, X, point,
+    limit_period(F, zero, addF, lt, complete, X, point, realApproximations, realCauchy),
+    limit_period(F, zero, addF, lt, complete, X, point, imagApproximations, imagCauchy),
+    cauchy_approximation_period_laws(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, complete,
+      X, point, realApproximations, realCauchy, realConstant, realAppend),
+    cauchy_approximation_period_laws(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, complete,
+      X, point, imagApproximations, imagCauchy, imagConstant, imagAppend));
+}

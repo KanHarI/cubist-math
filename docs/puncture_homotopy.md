@@ -128,6 +128,15 @@ Geometric and analytic constructions must supply and justify the comparison
 with this type. The same approach guides the circle obstruction for algebraic
 closure and the puncture topology needed later for Picard.
 
+The [limit and descent development](analysis_limits.md) now proves a way to
+construct the required period. `homotopy_limit_period` starts with Cauchy
+approximations on representatives, not functions already invariant under
+homotopy at every finite stage. It descends their limits to actual identity
+loops and proves the period laws from vanishing homotopy, constant-loop, and
+concatenation errors. Geometric coverage and these analytic estimates are
+still explicit proof obligations; no representative is selected from mere
+existence.
+
 ## Winding and a checked counterexample
 
 [puncture_winding.proof](../web/proofs/puncture_winding.proof) maps the selected

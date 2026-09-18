@@ -9,9 +9,17 @@ field instances described in [reals.md](reals.md) are still incomplete.
 All carriers below may live in `Type1`, as our proposition-valued Dedekind
 constructions do. No kernel operations or axioms were added.
 
+The new [limit and homotopy-descent results](analysis_limits.md) prove scalar
+and complex limit laws, Cauchy completeness of complex pairs over supplied
+complete scalars, and construction of additive periods from Cauchy
+approximations with vanishing errors. The general construction takes limits
+on representatives before descending to homotopy paths. Concrete contour
+approximations and their analytic estimates remain to be built.
+
 | Module | Result |
 | --- | --- |
 | [field_products.proof](../web/proofs/field_products.proof) | Equality of pairs is determined by coordinate equalities; a product of sets is a set. |
+| [complex_numbers.proof](../web/proofs/complex_numbers.proof) | Coordinate carrier and operations, separated from the ring proofs so limit arguments can import them directly. |
 | [ring_laws.proof](../web/proofs/ring_laws.proof) | Derived ring identities, including multiplication by zero and negatives, distribution and cancellation. |
 | [complex_coordinates.proof](../web/proofs/complex_coordinates.proof) | Explicit proofs of the coordinate identities for complex multiplication. |
 | [complex_algebra.proof](../web/proofs/complex_algebra.proof) | `Complex(F) = F and F`, its commutative-ring certificate, injective real embedding, `i² = -1`, conjugation, norm square, and the inverse formula given a reciprocal of the norm square. |

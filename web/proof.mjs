@@ -1,5 +1,17 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "homotopy_limits", title: "Homotopy periods · limits descend from curves", punctureDevelopment: true },
+  { id: "surjective_descent", title: "Descent · unique values without chosen representatives" },
+  { id: "descent_loop_laws", title: "Homotopy periods · composition through representatives", punctureDevelopment: true },
+  { id: "complex_limit_periods", title: "Complex periods · constructed from Cauchy approximations", punctureDevelopment: true },
+  { id: "limit_periods", title: "Homotopy periods · limits of approximate laws", punctureDevelopment: true },
+  { id: "complex_limits", title: "Complex analysis · completeness and limit laws", complexDevelopment: true },
+  { id: "field_asymptotics", title: "Limits · vanishing errors preserve the limit", complexDevelopment: true },
+  { id: "field_limits", title: "Limits · uniqueness, addition and Cauchy sequences", complexDevelopment: true },
+  { id: "field_closeness", title: "Error bounds · triangle, addition and separation", complexDevelopment: true },
+  { id: "ordered_halves", title: "Ordered fields · constructive halving", complexDevelopment: true },
+  { id: "cauchy_ordered", title: "Cauchy quotient · closeness assumptions proved", realDevelopment: true },
+  { id: "complex_numbers", title: "Complex numbers · coordinates and operations", complexDevelopment: true },
   { id: "puncture_periods", title: "Puncture periods · the winding sum formula", punctureDevelopment: true },
   { id: "complex_periods", title: "Complex periods · local contributions and winding", punctureDevelopment: true },
   { id: "puncture_period_examples", title: "Periods · noncontractible loop with zero period", punctureDevelopment: true },

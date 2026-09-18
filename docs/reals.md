@@ -66,6 +66,13 @@ not been implemented here. The book discusses the role of countable choice in
 the ordinary construction and compares Cauchy and Dedekind reals in the
 [same chapter](https://github.com/HoTT/book/blob/master/reals.tex).
 
+The [ordered Cauchy lemmas](../web/proofs/cauchy_ordered.proof) now discharge
+the self-closeness and radius-composition hypotheses from a supplied ordered
+field. They use constructive halving and the proved triangle inequality.
+[Limit laws](analysis_limits.md) also establish uniqueness, addition, and
+complex completeness over complete scalars. These do not yet construct the
+rational field or finish the quotient's field and completeness certificates.
+
 ## Universes and foundational assumptions
 
 `Q : Type` is small. Predicates `Q -> Type`, and hence proposition-valued cuts,
