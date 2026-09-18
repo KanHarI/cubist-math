@@ -534,6 +534,9 @@ try {
   await commutatorResult.locator('[data-axiom="lib_univalence"]').click();
   assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_univalence/);
   for (const [proof, theorem] of [
+    ["complex_contour_sums", "complex_identity_backtrack_nonzero"],
+    ["contour_refinement", "contour_sum_change_tags"],
+    ["sample_error_bounds", "sample_sum_error_bound"],
     ["complex_limits", "complex_cauchy_complete"],
     ["complex_algebra", "complex_commutative_ring"],
     ["circle_degree", "positive_degree_no_contractible_extension"],

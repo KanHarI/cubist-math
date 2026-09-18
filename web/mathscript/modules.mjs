@@ -71,4 +71,11 @@ export const sourceModules = [
   "surjective_descent",
   "descent_loop_laws",
   "homotopy_limits",
+  "sample_chains",
+  "sample_sum_laws",
+  "contour_sums",
+  "contour_refinement",
+  "contour_examples",
+  "sample_error_bounds",
+  "complex_contour_sums",
 ];

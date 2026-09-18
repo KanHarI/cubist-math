@@ -13,8 +13,11 @@ The new [limit and homotopy-descent results](analysis_limits.md) prove scalar
 and complex limit laws, Cauchy completeness of complex pairs over supplied
 complete scalars, and construction of additive periods from Cauchy
 approximations with vanishing errors. The general construction takes limits
-on representatives before descending to homotopy paths. Concrete contour
-approximations and their analytic estimates remain to be built.
+on representatives before descending to homotopy paths.
+[Finite contour sums](contour_sums.md) now supply explicit approximation data,
+composition and telescoping laws, and exact refinement errors. Admissible
+sampling schemes on geometric curves, convergence, and the homotopy estimates
+remain to be built.
 
 | Module | Result |
 | --- | --- |

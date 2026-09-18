@@ -1,0 +1,70 @@
+import sample_chains;
+import integer_multiples;
+
+// Finite-sum laws, independent of any continuity or integration axiom.
+
+theorem sample_sum_join(C : Type1, G : Type1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
+  assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
+  edge : C -> C -> C -> G, n : Nat) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall m : Nat, forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m), (sample_last(C, n, vertices) = sample_first(C, m, rightVertices)) -> sample_sum(C, G, zero, addG, edge, n + m, join_vertices(C, n, vertices, m, rightVertices), join_tags(C, n, tags, m, rightTags)) = addG(sample_sum(C, G, zero, addG, edge, n, vertices, tags), sample_sum(C, G, zero, addG, edge, m, rightVertices, rightTags)) {
+  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), forall m : Nat, forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m), (sample_last(C, k, vertices) = sample_first(C, m, rightVertices)) -> sample_sum(C, G, zero, addG, edge, k + m, join_vertices(C, k, vertices, m, rightVertices), join_tags(C, k, tags, m, rightTags)) = addG(sample_sum(C, G, zero, addG, edge, k, vertices, tags), sample_sum(C, G, zero, addG, edge, m, rightVertices, rightTags))) {
+    zero => fun (vertices : SampleVertices(C, 0)) => fun (tags : SampleTags(C, 0)) => fun (m : Nat) => fun (rightVertices : SampleVertices(C, m)) => fun (rightTags : SampleTags(C, m)) =>
+      fun (same : vertices = sample_first(C, m, rightVertices)) => sym(unitLaw(sample_sum(C, G, zero, addG, edge, m, rightVertices, rightTags)));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) => fun (m : Nat) => fun (rightVertices : SampleVertices(C, m)) => fun (rightTags : SampleTags(C, m)) =>
+      fun (same : sample_last(C, succ(k), vertices) = sample_first(C, m, rightVertices)) =>
+      trans(cong((fun (b : C) => addG(edge(field_fst(C, SampleVertices(C, k), vertices), b, field_fst(C, SampleTags(C, k), tags)), sample_sum(C, G, zero, addG, edge, k + m, join_vertices(C, k, field_snd(C, SampleVertices(C, k), vertices), m, rightVertices), join_tags(C, k, field_snd(C, SampleTags(C, k), tags), m, rightTags)))),
+        join_vertices_first(C, k, field_snd(C, SampleVertices(C, k), vertices), m, rightVertices, same)),
+        trans(cong(addG(edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags), m, rightVertices, rightTags, same)),
+          sym(assoc(edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), sample_sum(C, G, zero, addG, edge, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), sample_sum(C, G, zero, addG, edge, m, rightVertices, rightTags)))));
+  };
+}
+
+theorem sample_sum_cong(C : Type1, G : Type1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, other : C -> C -> C -> G,
+  same : (forall a : C, forall b : C, forall tag : C, edge(a, b, tag) = other(a, b, tag)), n : Nat) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), sample_sum(C, G, zero, addG, edge, n, vertices, tags) = sample_sum(C, G, zero, addG, other, n, vertices, tags) {
+  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), sample_sum(C, G, zero, addG, edge, k, vertices, tags) = sample_sum(C, G, zero, addG, other, k, vertices, tags)) {
+    zero => fun (vertices : SampleVertices(C, 0)) => fun (tags : SampleTags(C, 0)) => refl(zero);
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) =>
+      trans(cong((fun (x : G) => addG(x, sample_sum(C, G, zero, addG, edge, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)))),
+        same(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))),
+        cong(addG(other(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags))));
+  };
+}
+
+theorem sample_sum_add(C : Type1, G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
+  edge : C -> C -> C -> G, other : C -> C -> C -> G, n : Nat) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), sample_sum(C, G, zero, addG, (fun (a : C) => fun (b : C) => fun (tag : C) => addG(edge(a, b, tag), other(a, b, tag))), n, vertices, tags) = addG(sample_sum(C, G, zero, addG, edge, n, vertices, tags), sample_sum(C, G, zero, addG, other, n, vertices, tags)) {
+  obtain (assoc, (comm, (unitLaw, inverseLaw))) = laws;
+  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), sample_sum(C, G, zero, addG, (fun (a : C) => fun (b : C) => fun (tag : C) => addG(edge(a, b, tag), other(a, b, tag))), k, vertices, tags) = addG(sample_sum(C, G, zero, addG, edge, k, vertices, tags), sample_sum(C, G, zero, addG, other, k, vertices, tags))) {
+    zero => fun (vertices : SampleVertices(C, 0)) => fun (tags : SampleTags(C, 0)) => sym(unitLaw(zero));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) =>
+      trans(cong(addG(addG(edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), other(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)))), previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags))),
+        additive_shuffle(G, zero, addG, negG, laws, edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), other(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)),
+          sample_sum(C, G, zero, addG, edge, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), sample_sum(C, G, zero, addG, other, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags))));
+  };
+}
+
+theorem sample_sum_map(C : Type1, G : Type1, zero : G, addG : G -> G -> G, H : Type1, zeroH : H, addH : H -> H -> H, mapping : G -> H,
+  mapsZero : mapping(zero) = zeroH,
+  mapsAdd : (forall x : G, forall y : G, mapping(addG(x, y)) = addH(mapping(x), mapping(y))),
+  edge : C -> C -> C -> G, n : Nat) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), mapping(sample_sum(C, G, zero, addG, edge, n, vertices, tags)) = sample_sum(C, H, zeroH, addH, (fun (a : C) => fun (b : C) => fun (tag : C) => mapping(edge(a, b, tag))), n, vertices, tags) {
+  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), mapping(sample_sum(C, G, zero, addG, edge, k, vertices, tags)) = sample_sum(C, H, zeroH, addH, (fun (a : C) => fun (b : C) => fun (tag : C) => mapping(edge(a, b, tag))), k, vertices, tags)) {
+    zero => fun (vertices : SampleVertices(C, 0)) => fun (tags : SampleTags(C, 0)) => mapsZero;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) =>
+      trans(mapsAdd(edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), sample_sum(C, G, zero, addG, edge, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags))),
+        cong(addH(mapping(edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)))), previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags))));
+  };
+}
+
+theorem sample_sum_telescopes(C : Type1, G : Type1, zero : G, addG : G -> G -> G, delta : C -> C -> G,
+  diagonal : (forall a : C, delta(a, a) = zero),
+  composeDelta : (forall a : C, forall b : C, forall c : C, addG(delta(a, b), delta(b, c)) = delta(a, c)), n : Nat) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), sample_sum(C, G, zero, addG, (fun (a : C) => fun (b : C) => fun (tag : C) => delta(a, b)), n, vertices, tags) = delta(sample_first(C, n, vertices), sample_last(C, n, vertices)) {
+  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), sample_sum(C, G, zero, addG, (fun (a : C) => fun (b : C) => fun (tag : C) => delta(a, b)), k, vertices, tags) = delta(sample_first(C, k, vertices), sample_last(C, k, vertices))) {
+    zero => fun (vertices : SampleVertices(C, 0)) => fun (tags : SampleTags(C, 0)) => sym(diagonal(vertices));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) =>
+      trans(cong(addG(delta(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)))), previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags))),
+        composeDelta(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), sample_last(C, k, field_snd(C, SampleVertices(C, k), vertices))));
+  };
+}

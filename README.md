@@ -136,8 +136,10 @@ residue calculation remain to be constructed and proved.
 [Limit and descent proofs](docs/analysis_limits.md) now construct additive
 homotopy periods from Cauchy approximations on representatives, provided the
 homotopy and concatenation errors tend to zero. Mere coverage suffices; no
-representatives are chosen. Constructing the contour sums and proving those
-analytic estimates remain open.
+representatives are chosen. [Finite contour sums](docs/contour_sums.md) now
+have checked composition, linearity, telescoping, and refinement-error laws,
+including their complex specialization. Proving convergence and the required
+analytic estimates, and relating geometric curves to homotopy paths, remain open.
 
 The [Euclid argument](web/proofs/euclid.proof) imports its
 [arithmetic and prime-number foundations](web/proofs/primes.proof), all checked

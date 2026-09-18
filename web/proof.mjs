@@ -1,5 +1,12 @@
 import catalogue from "./proofs/catalogue.mjs";
 const choices = [
+  { id: "complex_contour_sums", title: "Contour sums · complex composition and backtracking", complexDevelopment: true },
+  { id: "contour_examples", title: "Contour sums · finite backtracking errors", complexDevelopment: true },
+  { id: "contour_refinement", title: "Contour sums · refinement and tag errors", complexDevelopment: true },
+  { id: "contour_sums", title: "Contour sums · linearity and telescoping", complexDevelopment: true },
+  { id: "sample_error_bounds", title: "Finite sums · accumulated error bounds", complexDevelopment: true },
+  { id: "sample_sum_laws", title: "Finite sums · composition and telescoping", complexDevelopment: true },
+  { id: "sample_chains", title: "Sampling data · vertices, tags and concatenation", complexDevelopment: true },
   { id: "homotopy_limits", title: "Homotopy periods · limits descend from curves", punctureDevelopment: true },
   { id: "surjective_descent", title: "Descent · unique values without chosen representatives" },
   { id: "descent_loop_laws", title: "Homotopy periods · composition through representatives", punctureDevelopment: true },

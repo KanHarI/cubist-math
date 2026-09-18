@@ -1,0 +1,99 @@
+import sample_sum_laws;
+import ring_laws;
+
+// Riemann-type contour sums: f(tag) times the oriented coordinate increment.
+// Tag admissibility, mesh size and geometric curves are separate data.
+def coordinate_difference(F : Type1, addF : F -> F -> F, negF : F -> F, a : F, b : F) = addF(b, negF(a));
+def contour_edge(F : Type1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  f : F -> F, a : F, b : F, tag : F) = mulF(f(tag), coordinate_difference(F, addF, negF, a, b));
+def contour_sum(F : Type1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  f : F -> F, n : Nat) = sample_sum(F, F, zero, addF, contour_edge(F, addF, mulF, negF, f), n);
+
+theorem difference_add_back(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F) :
+  addF(a, coordinate_difference(F, addF, negF, a, b)) = b {
+  exact trans(ring_add_swap(F, zero, one, addF, mulF, negF, ring, a, b, negF(a)),
+    trans(cong(addF(b), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, a)),
+      ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, b)));
+}
+
+theorem difference_compose(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F) :
+  addF(coordinate_difference(F, addF, negF, a, b), coordinate_difference(F, addF, negF, b, c)) =
+    coordinate_difference(F, addF, negF, a, c) {
+  exact trans(cong((fun (v : F) => addF(v, addF(c, negF(b)))), ring_add_comm(F, zero, one, addF, mulF, negF, ring, b, negF(a))),
+    trans(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, negF(a), b, addF(c, negF(b))),
+      trans(cong(addF(negF(a)), difference_add_back(F, zero, one, addF, mulF, negF, ring, b, c)),
+        ring_add_comm(F, zero, one, addF, mulF, negF, ring, negF(a), c))));
+}
+
+theorem contour_sum_join(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, n : Nat,
+  vertices : SampleVertices(F, n), tags : SampleTags(F, n), m : Nat,
+  rightVertices : SampleVertices(F, m), rightTags : SampleTags(F, m),
+  meets : sample_last(F, n, vertices) = sample_first(F, m, rightVertices)) :
+  contour_sum(F, zero, addF, mulF, negF, f, n + m, join_vertices(F, n, vertices, m, rightVertices), join_tags(F, n, tags, m, rightTags)) =
+    addF(contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags), contour_sum(F, zero, addF, mulF, negF, f, m, rightVertices, rightTags)) {
+  exact sample_sum_join(F, F, zero, addF, ring_add_zero(F, zero, one, addF, mulF, negF, ring),
+    ring_add_assoc(F, zero, one, addF, mulF, negF, ring), contour_edge(F, addF, mulF, negF, f), n, vertices, tags, m, rightVertices, rightTags, meets);
+}
+
+theorem contour_sum_add(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, g : F -> F,
+  n : Nat, vertices : SampleVertices(F, n), tags : SampleTags(F, n)) :
+  contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => addF(f(x), g(x))), n, vertices, tags) =
+    addF(contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags), contour_sum(F, zero, addF, mulF, negF, g, n, vertices, tags)) {
+  obtain (setF, (additive, multiplicative)) = ring;
+  let edgeF = contour_edge(F, addF, mulF, negF, f);
+  let edgeG = contour_edge(F, addF, mulF, negF, g);
+  let sumEdge = fun (a : F) => fun (b : F) => fun (tag : F) => addF(edgeF(a, b, tag), edgeG(a, b, tag));
+  exact trans(sample_sum_cong(F, F, zero, addF, contour_edge(F, addF, mulF, negF, (fun (x : F) => addF(f(x), g(x)))), sumEdge,
+    (fun (a : F) => fun (b : F) => fun (tag : F) => ring_distribute_left(F, zero, one, addF, mulF, negF, ring, f(tag), g(tag), coordinate_difference(F, addF, negF, a, b))),
+    n, vertices, tags), sample_sum_add(F, F, zero, addF, negF, additive, edgeF, edgeG, n, vertices, tags));
+}
+
+// Telescoping exact increments are useful for comparing contour sums with
+// candidate primitives; no derivative or fundamental theorem is assumed.
+theorem potential_sample_sum(C : Type1, F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), potential : C -> F,
+  n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)) :
+  sample_sum(C, F, zero, addF,
+    (fun (a : C) => fun (b : C) => fun (tag : C) => coordinate_difference(F, addF, negF, potential(a), potential(b))), n, vertices, tags) =
+    coordinate_difference(F, addF, negF, potential(sample_first(C, n, vertices)), potential(sample_last(C, n, vertices))) {
+  exact sample_sum_telescopes(C, F, zero, addF,
+    (fun (a : C) => fun (b : C) => coordinate_difference(F, addF, negF, potential(a), potential(b))),
+    (fun (a : C) => ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, potential(a))),
+    (fun (a : C) => fun (b : C) => fun (c : C) => difference_compose(F, zero, one, addF, mulF, negF, ring, potential(a), potential(b), potential(c))),
+    n, vertices, tags);
+}
+
+theorem contour_sum_constant(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : F,
+  n : Nat, vertices : SampleVertices(F, n), tags : SampleTags(F, n)) :
+  contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => coefficient), n, vertices, tags) =
+    mulF(coefficient, coordinate_difference(F, addF, negF, sample_first(F, n, vertices), sample_last(F, n, vertices))) {
+  let deltaEdge = fun (a : F) => fun (b : F) => fun (tag : F) => coordinate_difference(F, addF, negF, a, b);
+  exact trans(sym(sample_sum_map(F, F, zero, addF, F, zero, addF, mulF(coefficient),
+    ring_mul_zero(F, zero, one, addF, mulF, negF, ring, coefficient),
+    ring_distribute(F, zero, one, addF, mulF, negF, ring, coefficient), deltaEdge, n, vertices, tags)),
+    cong(mulF(coefficient), potential_sample_sum(F, F, zero, one, addF, mulF, negF, ring, (fun (x : F) => x), n, vertices, tags)));
+}
+
+theorem contour_sum_constant_closed(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : F,
+  n : Nat, vertices : SampleVertices(F, n), tags : SampleTags(F, n),
+  closed : sample_last(F, n, vertices) = sample_first(F, n, vertices)) :
+  contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => coefficient), n, vertices, tags) = zero {
+  let first = sample_first(F, n, vertices);
+  exact trans(contour_sum_constant(F, zero, one, addF, mulF, negF, ring, coefficient, n, vertices, tags),
+    trans(cong((fun (v : F) => mulF(coefficient, coordinate_difference(F, addF, negF, first, v))), closed),
+      trans(cong(mulF(coefficient), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, first)),
+        ring_mul_zero(F, zero, one, addF, mulF, negF, ring, coefficient))));
+}

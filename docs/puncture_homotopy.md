@@ -137,6 +137,12 @@ concatenation errors. Geometric coverage and these analytic estimates are
 still explicit proof obligations; no representative is selected from mere
 existence.
 
+[Finite contour sums](contour_sums.md) provide the next analytic ingredient:
+checked composition, telescoping, and exact refinement-error identities.
+They remain sampling data on representatives. In particular, a checked
+nonzero coarse backtracking sum illustrates why homotopy invariance must be
+proved for the limit before applying the period formula.
+
 ## Winding and a checked counterexample
 
 [puncture_winding.proof](../web/proofs/puncture_winding.proof) maps the selected

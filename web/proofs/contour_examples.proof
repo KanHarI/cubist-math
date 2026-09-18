@@ -1,0 +1,74 @@
+import contour_refinement;
+
+// Explicit two-edge sampling data, not a replacement for homotopy paths.
+def backtrack_vertices(F : Type1, a : F, b : F) : SampleVertices(F, 2) {
+  exact typed((F and (F and F)), (a, (b, a)));
+}
+def backtrack_tags(F : Type1, forwardTag : F, reverseTag : F) : SampleTags(F, 2) {
+  exact typed((F and (F and Unit)), (forwardTag, (reverseTag, tt)));
+}
+
+theorem contour_two_edge_sum(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F,
+  a : F, b : F, forwardTag : F, reverseTag : F) :
+  contour_sum(F, zero, addF, mulF, negF, f, 2, backtrack_vertices(F, a, b), backtrack_tags(F, forwardTag, reverseTag)) =
+    addF(contour_edge(F, addF, mulF, negF, f, a, b, forwardTag), contour_edge(F, addF, mulF, negF, f, b, a, reverseTag)) {
+  exact cong(addF(contour_edge(F, addF, mulF, negF, f, a, b, forwardTag)),
+    ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, contour_edge(F, addF, mulF, negF, f, b, a, reverseTag)));
+}
+theorem contour_edge_self_zero(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a : F, tag : F) :
+  contour_edge(F, addF, mulF, negF, f, a, a, tag) = zero {
+  exact trans(cong(mulF(f(tag)), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, a)),
+    ring_mul_zero(F, zero, one, addF, mulF, negF, ring, f(tag)));
+}
+theorem contour_backtrack_same_tag(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a : F, b : F, tag : F) :
+  contour_sum(F, zero, addF, mulF, negF, f, 2, backtrack_vertices(F, a, b), backtrack_tags(F, tag, tag)) = zero {
+  exact trans(contour_two_edge_sum(F, zero, one, addF, mulF, negF, ring, f, a, b, tag, tag),
+    trans(contour_edge_subdivide(F, zero, one, addF, mulF, negF, ring, f, a, b, a, tag),
+      contour_edge_self_zero(F, zero, one, addF, mulF, negF, ring, f, a, tag)));
+}
+theorem contour_backtrack_error(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a : F, b : F, forwardTag : F, reverseTag : F) :
+  contour_sum(F, zero, addF, mulF, negF, f, 2, backtrack_vertices(F, a, b), backtrack_tags(F, forwardTag, reverseTag)) =
+    contour_tag_error(F, addF, mulF, negF, f, b, a, forwardTag, reverseTag) {
+  let forward = contour_edge(F, addF, mulF, negF, f, a, b, forwardTag);
+  let reverse = contour_edge(F, addF, mulF, negF, f, b, a, forwardTag);
+  let error = contour_tag_error(F, addF, mulF, negF, f, b, a, forwardTag, reverseTag);
+  exact trans(contour_two_edge_sum(F, zero, one, addF, mulF, negF, ring, f, a, b, forwardTag, reverseTag),
+    trans(cong(addF(forward), contour_edge_change_tag(F, zero, one, addF, mulF, negF, ring, f, b, a, forwardTag, reverseTag)),
+      trans(sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, forward, reverse, error)),
+        trans(cong((fun (v : F) => addF(v, error)), contour_edge_subdivide(F, zero, one, addF, mulF, negF, ring, f, a, b, a, forwardTag)),
+          trans(cong((fun (v : F) => addF(v, error)), contour_edge_self_zero(F, zero, one, addF, mulF, negF, ring, f, a, forwardTag)),
+            ring_add_zero(F, zero, one, addF, mulF, negF, ring, error))))));
+}
+
+// Left-endpoint tags for f(z)=z on 0 -> 1 -> 0 give -1, although matched
+// tags give zero. This is a finite sum, not the value of a contour integral.
+theorem identity_backtrack_sum(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF)) :
+  contour_sum(F, zero, addF, mulF, negF, (fun (z : F) => z), 2,
+    backtrack_vertices(F, zero, one), backtrack_tags(F, zero, one)) = negF(one) {
+  let reverse = mulF(one, addF(zero, negF(one)));
+  exact trans(cong((fun (v : F) => addF(v, addF(reverse, zero))), ring_zero_mul(F, zero, one, addF, mulF, negF, ring, addF(one, negF(zero)))),
+    trans(ring_add_zero(F, zero, one, addF, mulF, negF, ring, addF(reverse, zero)),
+      trans(cong((fun (v : F) => addF(v, zero)), ring_mul_one(F, zero, one, addF, mulF, negF, ring, addF(zero, negF(one)))),
+        trans(ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, addF(zero, negF(one))),
+          ring_add_zero(F, zero, one, addF, mulF, negF, ring, negF(one))))));
+}
+theorem identity_backtrack_sum_nonzero(F : Type1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), nontrivial : (zero = one) -> Void) :
+  (contour_sum(F, zero, addF, mulF, negF, (fun (z : F) => z), 2,
+    backtrack_vertices(F, zero, one), backtrack_tags(F, zero, one)) = zero) -> Void {
+  intro vanishes;
+  have minusOneZero : negF(one) = zero { exact trans(sym(identity_backtrack_sum(F, zero, one, addF, mulF, negF, ring)), vanishes); }
+  exact nontrivial(trans(sym(ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, one)),
+    trans(cong(addF(one), minusOneZero), ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, one))));
+}

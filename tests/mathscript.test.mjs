@@ -918,3 +918,50 @@ test("limits descend from representatives without choosing curves or finite-stag
   assert.notEqual(inconsistent, sources.surjective_descent);
   assert.throws(() => compile(module, inconsistent, sources), /Expected|Conversion types differ/);
 });
+
+test("finite contour sums compose and account for refinement errors constructively", () => {
+  for (const name of ["complex_contour_sums", "sample_error_bounds"]) {
+    const c = compile(module, sources[name], sources);
+    try {
+      for (const o of c.outputs) {
+        assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
+        const allowed = name === "sample_error_bounds" ? ["lib_Trunc"] : [];
+        assert.ok(c.kernel.axiomsFor(o.binding).every(a => allowed.includes(a)), o.name);
+      }
+      assert.ok(!c.kernel.bindings.has("LEM"));
+      assert.ok(!c.kernel.bindings.has("AOC"));
+      if (name === "complex_contour_sums") {
+        assert.ok(c.outputs.some(o => o.name === "complex_identity_backtrack_nonzero"));
+        assert.match(c.outputs.find(o => o.name === "complex_contour_composes").type, /meets/);
+        for (const theorem of ["sample_sum_telescopes", "contour_sum_add",
+          "contour_edge_refinement", "contour_sum_change_tags", "identity_backtrack_sum"]) {
+          assert.ok(c.kernel.bindings.has(theorem), theorem);
+          assert.deepEqual(c.kernel.axiomsFor(theorem), []);
+        }
+      } else {
+        assert.ok(c.outputs.some(o => o.name === "sample_sum_error_bound"));
+      }
+    } finally { c.kernel.dispose(); }
+  }
+});
+
+test("finite contour sums reject false cancellation and reversed tag errors", () => {
+  const cancelled = sources.contour_examples.replace(
+    "backtrack_vertices(F, zero, one), backtrack_tags(F, zero, one)) = negF(one)",
+    "backtrack_vertices(F, zero, one), backtrack_tags(F, zero, one)) = zero");
+  assert.notEqual(cancelled, sources.contour_examples);
+  assert.throws(() => compile(module, cancelled, sources), /Expected|Conversion types differ/);
+  const reversed = sources.contour_refinement.replace(
+    "coordinate_difference(F, addF, negF, f(oldTag), f(newTag))",
+    "coordinate_difference(F, addF, negF, f(newTag), f(oldTag))");
+  assert.notEqual(reversed, sources.contour_refinement);
+  assert.throws(() => compile(module, reversed, sources), /Expected|Conversion types differ/);
+});
+
+test("finite error bounds retain positive slack for the empty sum", () => {
+  const noSlack = sources.sample_error_bounds.replaceAll(
+    /addF\((sample_sum\(C, F, zero, addF, radius, [nk], vertices, tags\)), epsilon\)/g,
+    "$1");
+  assert.notEqual(noSlack, sources.sample_error_bounds);
+  assert.throws(() => compile(module, noSlack, sources), /Expected|Conversion types differ/);
+});

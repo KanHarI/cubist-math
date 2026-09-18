@@ -85,9 +85,11 @@ value-certification predicate is a proposition. The Cauchy equivalence
 wrapper inherits the earlier quotient development's function-extensionality
 and truncation dependencies. No new theorem-specific axiom was declared.
 
-The next analytic work is to construct finite contour sums and their Cauchy
-and deformation estimates, alongside a justified geometric presentation of
-the homotopy paths. Local generator integrals and the normalization `2*pi*i`
+[Finite contour sums](contour_sums.md) now have checked composition,
+telescoping, refinement-error identities, and accumulation of scalar error
+bounds. Their Cauchy and deformation estimates still need to be proved,
+alongside a justified geometric presentation of the homotopy paths.
+Local generator integrals and the normalization `2*pi*i`
 still need to be constructed and calculated. These obligations remain part
 of the full residue-theorem goal; the real models and the separate algebraic
 closure and Great Picard obligations also remain open.
