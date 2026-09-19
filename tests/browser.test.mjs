@@ -45,7 +45,7 @@ try {
   });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(`http://127.0.0.1:${server.address().port}`);
+  await page.goto(`http://127.0.0.1:${server.address().port}/workbench.html`);
   await page.waitForFunction(
     () =>
       document.querySelector("#status").textContent === "WASM ready" &&

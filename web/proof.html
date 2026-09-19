@@ -8,12 +8,13 @@
   </head>
   <body>
     <header>
-      <a class="brand" href="proof.html"
+      <a class="brand" href="index.html"
         >⊢ MathScript <span>Proof workspace</span></a
       >
       <nav>
-        <a href="index.html">Kernel workbench</a
-        ><a href="../docs/mathscript.md" id="guide-link">Language guide</a>
+        <a href="index.html">Proof highlights</a>
+        <a href="workbench.html">Kernel workbench</a
+        ><a href="#language-guide" id="guide-link">Language quick reference</a>
       </nav>
     </header>
     <main>
@@ -38,7 +39,6 @@
         </div>
         <a id="source-file" href="proofs/euclid.proof">Source file</a>
         <button id="check" class="primary" disabled>Check proof</button
-        ><button id="example">Euclid example</button
         ><button id="open">Open source</button
         ><a id="repository-source" href="#">Load repository source</a>
         <button id="previous-draft" hidden>Download previous source</button>
@@ -189,8 +189,15 @@
       <details id="language-guide" class="help panel">
         <summary>Language quick reference</summary>
         <p>
-          <code>def</code> defines a typed function. <code>theorem</code> proves
-          a type. Both take named parameters and a checked block.
+          <a href="language.html"><strong>Full language reference →</strong></a>
+          — syntax, worked examples, paths, universes, and axiom signatures.
+        </p>
+        <p>
+          <code>def name(params) = term;</code> defines a term with an inferred
+          type. <code>theorem name(params) : T { … }</code> checks a proof of
+          <code>T</code>. Parameters have explicit types. A definition can also
+          use a typed block. Imports come first: <code>import paths;</code>.
+          Comments start with <code>//</code>.
         </p>
         <p>
           <code>Type</code> is U0; <code>Type1</code>, <code>Type2</code>, and
@@ -232,6 +239,28 @@ theorem use_assumption : forall A : Type, IsSet(A) -> IsSet(A) {
           <code>&lt;</code>, and <code>&lt;=</code>.
         </p>
         <p>
+          <code>forall</code> is a dependent function (Π); <code>exists</code>
+          is a dependent pair (Σ) with an actual witness. <code>A and B</code>
+          is a product; <code>A or B</code> is a disjoint sum, displayed as
+          <code>A + B</code> in kernel notation. Mere existence requires
+          truncation; <code>exists</code> does not truncate automatically.
+        </p>
+        <pre>def identity(A : Type, x : A) = x;
+def pair = typed(Nat and Nat, (0, 1));
+def either = typed(Unit or Nat, left(tt));
+theorem pair_first : Nat {
+  obtain (a, b) = pair;
+  have result : Nat { exact a; }
+  exact result;
+}</pre>
+        <p>
+          <code>fun (x : A) => body</code> constructs a function;
+          <code>f(a, b)</code> means <code>f(a)(b)</code>.
+          <code>typed(T, term)</code> supplies an expected type for pairs and
+          injections. <code>exact</code> and <code>cases</code> finish a block;
+          no further statements follow them in that block.
+        </p>
+        <p>
           <code>import primes;</code> checks the mathematical source of the
           arithmetic library.
           <code
@@ -242,6 +271,30 @@ theorem use_assumption : forall A : Type, IsSet(A) -> IsSet(A) {
           handle case analysis and pairs. Click notation or a numeral to inspect
           its meaning. The kernel audit entries retain the complete original
           instruction histories.
+        </p>
+        <p>
+          In <code>induction n as k return C(k)</code>, the zero branch proves
+          <code>C(0)</code>. The successor branch has predecessor
+          <code>k : Nat</code> and hypothesis <code>ih : C(k)</code>, and proves
+          <code>C(succ(k))</code>. For a result depending on a whole pair, use
+          <code>pair_induction(motive, branch, pair)</code>.
+        </p>
+        <p>
+          <code>refl(x)</code> proves <code>x = x</code>.
+          With <code>import paths;</code>, <code>sym(p)</code> reverses a path,
+          <code>trans(p, q)</code> composes paths, and <code>cong(f, p)</code>
+          maps a path through a function. <code>transport(C, x, y, p, value)</code>
+          moves <code>value : C(x)</code> along <code>p : x = y</code> into
+          <code>C(y)</code>.
+        </p>
+        <p>
+          <code>def</code> is transparent; <code>theorem</code> and
+          <code>opaque def</code> keep checked bodies named in ordinary
+          computation. <code>unfold(term)</code> explicitly unfolds them.
+          <code>axiom name : T;</code> declares an assumption, displayed in
+          dependencies. Truncation, function extensionality, univalence, choice,
+          and classical principles have explicit library dependencies; see
+          <a href="language.html#axioms">their signatures and restrictions</a>.
         </p>
       </details>
     </main>

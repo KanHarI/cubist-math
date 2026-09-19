@@ -4,6 +4,11 @@ MathScript is a mathematical source language checked by the existing C kernel,
 compiled to WebAssembly. Authoring uses `.proof` text, not JSON. The parser and
 elaborator are untrusted: they produce ordinary checked kernel instructions.
 
+The [full language reference](../web/language.html) documents the current syntax,
+proof statements, eliminators, universe restrictions, and axiom wrappers, with
+examples. The proof workspace also includes a shorter quick reference linking
+to that page. This document describes the workflow and implementation.
+
 ## Read and write
 
 Run `make serve`, then open http://127.0.0.1:8088/proof.html. Choose a **Topic**,

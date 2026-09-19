@@ -722,7 +722,7 @@ for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = as
   try {
     const payload = await request("export-inspection", { binding, side, folded });
     const key = await saveWorkbenchTransfer(payload);
-    tab.location.href = new URL(`index.html?transfer=${encodeURIComponent(key)}`, location.href).href;
+    tab.location.href = new URL(`workbench.html?transfer=${encodeURIComponent(key)}`, location.href).href;
   } catch (error) { tab.close(); diagnostic(error); }
 };
 $("export-folding").onclick = async () => {
@@ -761,10 +761,6 @@ $("editor").onkeydown = (e) => {
     e.preventDefault();
     if (ready && !pending.size) check();
   }
-};
-$("example").onclick = () => {
-  rememberDraft();
-  location.href = "proof.html?proof=euclid";
 };
 $("search").oninput = renderLibrary;
 $("back").onclick = () => {

@@ -69,5 +69,5 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8088)
     args = parser.parse_args()
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"MathScript: http://127.0.0.1:{server.server_address[1]}/proof.html", flush=True)
+    print(f"MathScript: http://127.0.0.1:{server.server_address[1]}/", flush=True)
     server.serve_forever()

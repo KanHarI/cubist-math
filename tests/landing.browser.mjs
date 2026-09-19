@@ -1,0 +1,91 @@
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { chromium, webkit } from "playwright";
+import { proofChoices } from "../web/proof-library.mjs";
+
+const server = spawn("python3", [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
+  { stdio: ["ignore", "pipe", "pipe"] });
+// Drain request logs: a full stderr pipe can block the local HTTP server.
+server.stderr.resume();
+const groupOnly = process.argv.includes("--group-only");
+let browser;
+try {
+  const port = await new Promise((resolve, reject) => {
+    let output = "";
+    const timer = setTimeout(() => reject(new Error("Test server did not start")), 10000);
+    server.once("error", reject);
+    server.once("exit", code => { clearTimeout(timer); reject(new Error(`Test server exited: ${code}`)); });
+    server.stdout.on("data", data => {
+      output += data;
+      const match = output.match(/127\.0\.0\.1:(\d+)\//);
+      if (match) { clearTimeout(timer); resolve(match[1]); }
+    });
+  });
+  browser = await (process.env.THTH_BROWSER === "webkit" ? webkit : chromium).launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  const idle = () => page.waitForFunction(() => !document.querySelector("#check").disabled && document.querySelector("#check-loader").hidden);
+  const base = `http://127.0.0.1:${port}`;
+  const response = await page.goto(`${base}/`);
+  assert.equal(response.status(), 200);
+  assert.match(await page.title(), /Proof highlights/);
+  assert.equal(await page.locator("h1").count(), 1);
+  const links = await page.locator(".proof-card").evaluateAll(cards => cards.map(card => card.href));
+  assert.equal(links.length, 7);
+  // Every card points to a registered source and to a real theorem in that source.
+  for (const link of links) {
+    const query = new URL(link).searchParams;
+    assert.ok(proofChoices.some(p => p.id === query.get("proof")));
+    const source = await page.request.get(`${base}/proofs/${query.get("proof")}.proof`);
+    assert.equal(source.status(), 200);
+    assert.ok((await source.text()).includes(`theorem ${query.get("name")}`));
+  }
+  assert.equal(await page.evaluate(() => performance.getEntriesByType("resource").some(r => /kernel|wasm/.test(r.name))), false);
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    assert.equal(await page.locator(".proof-card").first().isVisible(), true);
+  }
+  await page.screenshot({ path: "/private/tmp/thth-highlights-mobile.png", fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: "/private/tmp/thth-highlights-desktop.png", fullPage: true });
+  // Check representative destinations, including the named final result.
+  for (const proof of groupOnly ? ["group_univalence"] : ["euclid", "circle", "group_univalence"]) {
+    await page.locator(`.proof-card[href*="proof=${proof}&"]`).click();
+    await idle();
+    assert.equal(await page.locator("#proof-picker").inputValue(), proof);
+    assert.equal(await page.locator("#inspect-name").textContent(), new URL(page.url()).searchParams.get("name"));
+    assert.equal(await page.locator("#example").count(), 0);
+    assert.equal(await page.getByRole("button", { name: "Euclid example" }).count(), 0);
+    assert.equal(await page.locator("#diagnostic").isVisible(), false);
+    assert.match(await page.locator("#result").textContent(), proof === "euclid" ? /Verified euclid/ : proof === "circle" ? /fundamental_group_of_circle/ : /group_structure_identity/);
+    await page.getByRole("link", { name: "Proof highlights", exact: true }).click();
+    assert.match(await page.title(), /Proof highlights/);
+  }
+  if (!groupOnly) {
+    await page.getByRole("link", { name: "Kernel workbench", exact: true }).click();
+    await page.waitForFunction(() => document.querySelector("#status").textContent === "WASM ready");
+    assert.ok(page.url().endsWith("/workbench.html"));
+    assert.equal(await page.locator("#active-name").textContent(), "nested");
+    await page.getByRole("link", { name: "Proof highlights", exact: true }).click();
+    await page.locator('.proof-card[href*="proof=euclid&"]').click();
+    await idle();
+    await page.locator('#definitions [data-name="InfinitelyManyPrimes"]').first().click();
+    await page.waitForFunction(() => !document.querySelector("#open-kernel-type").disabled);
+    const popupPromise = page.waitForEvent("popup");
+    await page.locator("#open-kernel-type").click();
+    const popup = await popupPromise;
+    await popup.waitForURL("**/workbench.html?transfer=*");
+    await popup.waitForFunction(() => document.querySelector("#status").textContent === "WASM ready");
+    assert.equal(await popup.locator("#error").isVisible(), false);
+    assert.notEqual(await popup.locator("#active-name").textContent(), "nested");
+    await popup.close();
+  }
+  assert.deepEqual(errors, []);
+  console.log(`PASS proof landing: root, seven highlights, destinations, ${groupOnly ? "group identity" : "workbench transfer"}, mobile (${process.env.THTH_BROWSER ?? "chromium"})`);
+} finally {
+  await browser?.close();
+  server.kill();
+}

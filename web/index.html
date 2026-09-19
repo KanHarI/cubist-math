@@ -3,232 +3,93 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>THTH · Math workbench</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta name="description" content="Explore familiar mathematical proofs, from infinitely many primes to the fundamental group of the circle, checked by a small HoTT kernel." />
+    <title>MathScript · Proof highlights</title>
+    <link rel="stylesheet" href="home.css" />
   </head>
   <body>
+    <a class="skip-link" href="#highlights">Skip to proofs</a>
     <header>
-      <div>
-        <span class="mark">⊢</span><strong>THTH</strong
-        ><span class="muted">Math workbench</span>
-      </div>
-      <div class="toolbar">
-        <a href="proof.html">MathScript editor</a>
-        <span id="status" role="status">Loading WASM…</span
-        ><button id="save">Save proof</button
-        ><button id="load">Open proof</button
-        ><input id="file" type="file" accept=".json" hidden /><button
-          id="reset"
-        >
-          Reset example
-        </button>
-      </div>
+      <a class="brand" href="index.html"><span aria-hidden="true">⊢</span> MathScript</a>
+      <nav aria-label="Main navigation">
+        <a href="proof.html">Browse all proofs</a>
+        <a href="workbench.html">Kernel workbench</a>
+      </nav>
     </header>
-    <div class="intro">
-      <div>
-        <span class="eyebrow">EXPRESSION WORKSPACE</span>
-        <h1>Explore a proof, one checked step at a time.</h1>
-        <p>
-          Choose an object, select a subexpression, then preview an operation.
-          Your proof changes only when you accept.
-        </p>
-      </div>
-      <label class="badge"
-        ><input type="checkbox" id="axioms" /> Allow explicit axioms</label
-      >
-    </div>
-    <div id="error" role="alert" hidden></div>
     <main>
-      <aside class="objects panel">
-        <div class="section-head">
-          <h2>Objects</h2>
-          <span id="object-count" class="muted"></span>
+      <section class="introduction" aria-labelledby="page-title">
+        <p class="eyebrow">READ THE ARGUMENT. INSPECT THE EVIDENCE.</p>
+        <h1 id="page-title">Familiar mathematics.<br />Every step checked.</h1>
+        <p class="lead">Explore proofs in homotopy type theory. Follow the mathematical argument, open a definition, and inspect the kernel terms behind it.</p>
+        <a class="browse-link" href="proof.html">Explore the proof library <span aria-hidden="true">→</span></a>
+      </section>
+      <section id="highlights" aria-labelledby="highlights-title">
+        <div class="section-heading">
+          <h2 id="highlights-title">Start with a highlight</h2>
+          <p>Seven entry points into the library.</p>
         </div>
-        <label for="bundled-proof">Existing proofs &amp; library</label>
-        <select id="bundled-proof" aria-label="Bundled proof"></select>
-        <button id="open-bundled">Open selected proof</button>
-        <p class="hint">
-          Opens a checked program with its displayed axiom policy. Replaces the
-          current proof.
-        </p>
-        <label
-          ><input id="show-intermediate" type="checkbox" /> Show intermediate
-          steps</label
-        >
-        <p id="loaded-steps" class="hint" aria-live="polite"></p>
-        <label class="search-label"
-          >Find a named object<input
-            id="filter"
-            type="search"
-            placeholder="Filter names…"
-        /></label>
-        <div id="objects"></div>
-      </aside>
-      <section class="workspace">
-        <div class="panel inspector">
-          <div class="section-head">
-            <button id="back-reference" hidden>← Back</button>
-            <h2 id="active-name" tabindex="-1">Choose an object</h2>
-            <span id="object-kind" class="badge"></span>
-          </div>
-          <div
-            id="checked-judgement"
-            class="checked-judgement"
-            role="status"
-            hidden
-          ></div>
-          <div id="inference" class="hint inference"></div>
-          <div class="expression-block">
-            <div class="label">
-              EXPRESSION
-              <span>click to select · reference links open declarations</span>
-            </div>
-            <p id="expression-limit" class="hint"></p>
-            <button id="expand-expression" hidden>Show full expression</button>
-            <div id="expression" class="math" aria-label="Expression"></div>
-          </div>
-          <div class="expression-block">
-            <div class="label">TYPE</div>
-            <p id="type-limit" class="hint"></p>
-            <button id="expand-type" hidden>Show full type</button>
-            <div id="type" class="math" aria-label="Type"></div>
-          </div>
-          <div class="assumptions">
-            <strong>Axioms used</strong><span id="used-axioms"></span>
-          </div>
-          <div class="assumptions">
-            <strong>Open assumptions</strong><span id="assumptions"></span>
-          </div>
-          <p class="hint">Shift-click a reference link to select it.</p>
-          <div class="selection-bar">
-            <span id="selection-label">No selection</span
-            ><button id="parent">Select parent</button
-            ><button id="clear">Clear selection</button>
-          </div>
-          <details>
-            <summary>Select by path or parentheses</summary>
-            <p class="hint">
-              Use <code>expr.argument</code> or <code>type.1</code>.
-              Alternatively copy the displayed expression and wrap a subtree in
-              one extra pair of parentheses or <code>[[ ]]</code>.
-            </p>
-            <div class="row">
-              <input
-                id="path"
-                placeholder="expr.argument"
-                aria-label="Selection path"
-              /><button id="select-path">Select path</button>
-            </div>
-            <div class="row">
-              <select id="mark-side" aria-label="Side to mark">
-                <option value="expression">Expression</option>
-                <option value="type">Type</option></select
-              ><button id="copy-mark">Copy into editor</button>
-            </div>
-            <textarea
-              id="marked"
-              rows="3"
-              aria-label="Expression with selection parentheses"
-            ></textarea
-            ><button id="select-mark">Select marked subtree</button>
-          </details>
-        </div>
-        <div id="preview" class="panel preview" hidden>
-          <div class="section-head">
-            <h2>Preview</h2>
-            <span class="badge">Proof unchanged</span>
-          </div>
-          <div id="preview-result" class="math"></div>
-          <div id="preview-type" class="muted"></div>
-          <pre id="preview-code"></pre>
-          <div class="row">
-            <button class="primary" id="accept">Accept step</button
-            ><button id="reject">Discard</button
-            ><span id="preview-time" class="muted"></span>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="section-head">
-            <h2>History</h2>
-            <button id="undo">Undo</button>
-          </div>
-          <p class="hint">
-            Returning to an earlier revision keeps later branches available.
-          </p>
-          <div id="history"></div>
-        </div>
-        <div class="panel">
-          <details>
-            <summary>Instruction log &amp; source input</summary>
-            <p class="hint">
-              Each binding is exactly one kernel instruction. Selection actions
-              show every generated focus step.
-            </p>
-            <pre id="source"></pre>
-            <label for="code">Preview additional instructions</label
-            ><textarea
-              id="code"
-              rows="4"
-              placeholder="next = apply(identity, one)"
-            ></textarea
-            ><button id="preview-code-button">Preview source</button>
-          </details>
+        <div class="proof-grid">
+          <a class="proof-card featured" href="proof.html?proof=euclid&amp;name=euclid">
+            <span class="eyebrow">NUMBER THEORY · A GOOD FIRST PROOF</span>
+            <div class="formula" aria-hidden="true">2, 3, 5, 7, 11, …</div>
+            <h3>Infinitely many primes</h3>
+            <p>Euclid’s argument: take a prime divisor of n! + 1 and show that it is larger than n. A short proof with definitions you can follow.</p>
+            <span class="assumptions">No axioms required.</span>
+            <span class="open-proof">Read Euclid’s proof <span aria-hidden="true">→</span></span>
+          </a>
+          <a class="proof-card featured" href="proof.html?proof=circle&amp;name=fundamental_group_of_circle">
+            <span class="eyebrow">HOMOTOPY TYPE THEORY</span>
+            <div class="formula" aria-hidden="true">π₁(S¹) ≅ ℤ</div>
+            <h3>The circle’s fundamental group</h3>
+            <p>A loop is measured by its integer winding number. The encode–decode argument connects paths in the circle type with integers, respecting loop composition.</p>
+            <span class="assumptions">Uses univalence and the suspension construction of S¹.</span>
+            <span class="open-proof">Explore loops and integers <span aria-hidden="true">→</span></span>
+          </a>
+          <a class="proof-card" href="proof.html?proof=group_univalence&amp;name=group_structure_identity">
+            <span class="eyebrow">ALGEBRA &amp; UNIVALENCE</span>
+            <h3>Isomorphic groups are equal</h3>
+            <p>Univalence turns a group isomorphism into equality of the full group structures: their carriers, operations, and law proofs. Equality and isomorphism form equivalent types.</p>
+            <span class="assumptions">Uses univalence and function extensionality.</span>
+            <span class="open-proof">Explore equality of structures <span aria-hidden="true">→</span></span>
+          </a>
+          <a class="proof-card" href="proof.html?proof=schroeder_bernstein&amp;name=cantor_schroeder_bernstein">
+            <span class="eyebrow">SETS &amp; MAPS</span>
+            <h3>Cantor–Schröder–Bernstein</h3>
+            <p>If each of two sets injects into the other, they are equivalent. Follow the construction of a bijection from the two injections.</p>
+            <span class="assumptions">For sets; uses excluded middle.</span>
+            <span class="open-proof">Read the proof <span aria-hidden="true">→</span></span>
+          </a>
+          <a class="proof-card" href="proof.html?proof=binomial_pascal&amp;name=binomial_pascal">
+            <span class="eyebrow">FINITE TYPES &amp; COUNTING</span>
+            <h3>Pascal’s identity, as a bijection</h3>
+            <p>Split subsets into those that contain a chosen element and those that do not. Pascal’s rule becomes an explicit bijection between finite types.</p>
+            <span class="assumptions">Inspect the maps and both inverse laws.</span>
+            <span class="open-proof">Explore the bijection <span aria-hidden="true">→</span></span>
+          </a>
+          <a class="proof-card" href="proof.html?proof=permutations&amp;name=finite_permutation_count">
+            <span class="eyebrow">FINITE TYPES &amp; COUNTING</span>
+            <h3>Why there are n! permutations</h3>
+            <p>Choose the image of one element, then permute the rest. A recursive bijection counts permutations of an n-element type.</p>
+            <span class="assumptions">Counts permutations themselves, including their inverse data.</span>
+            <span class="open-proof">Follow the counting argument <span aria-hidden="true">→</span></span>
+          </a>
+          <a class="proof-card" href="proof.html?proof=surjections&amp;name=every_surjection_has_right_inverse">
+            <span class="eyebrow">SETS &amp; CHOICE</span>
+            <h3>Every surjection has a right inverse</h3>
+            <p>Apply choice to the fibers of a surjection between sets. The conclusion records mere existence of a right inverse.</p>
+            <span class="assumptions">Uses the set-level axiom of choice.</span>
+            <span class="open-proof">Inspect the role of choice <span aria-hidden="true">→</span></span>
+          </a>
         </div>
       </section>
-      <aside class="operations">
-        <div class="panel">
-          <h2>Selected expression</h2>
-          <p id="selected-kind" class="hint">
-            Select part of an expression or its type.
-          </p>
-          <label for="result-name">Result name</label
-          ><input id="result-name" value="reduced" placeholder="reduced" />
-          <button id="reduce" class="action primary">Reduce here</button
-          ><button id="pass" class="action">Reduction pass in selection</button
-          ><button id="unfold" class="action">Unfold / reduce here</button>
-          <label for="witness">Definitional equality witness</label
-          ><select id="witness">
-            <option value="">Choose a judgement…</option></select
-          ><button id="rewrite" class="action">Rewrite within selection</button>
-          <p class="hint">
-            A rewrite replaces matching occurrences inside the selected region.
-          </p>
+      <section class="next-steps" aria-labelledby="next-title">
+        <div>
+          <h2 id="next-title">Go deeper</h2>
+          <p>Browse by topic in the proof workspace. Click a name to see its source, checked kernel term, and exact axiom dependencies. Send an expression to the workbench to explore its reductions.</p>
         </div>
-        <div class="panel">
-          <details>
-            <summary>All kernel operations</summary>
-            <p class="hint">
-              All 67 rules are available. Choose named premises; the kernel
-              checks legality in an isolated preview.
-            </p>
-            <label for="opcode">Operation</label
-            ><select id="opcode"></select>
-            <div id="operands"></div>
-            <button id="preview-op" class="action">Preview operation</button>
-          </details>
-        </div>
-        <div class="panel metrics">
-          <h2>Live engine</h2>
-          <dl id="stats"></dl>
-          <p class="hint">Preview allocations belong to a separate engine.</p>
-        </div>
-        <div class="panel">
-          <details>
-            <summary>Check a theorem</summary>
-            <label for="proposition">Proposition (a type judgement)</label
-            ><select id="proposition"></select
-            ><label for="proof">Proof</label
-            ><select id="proof"></select
-            ><button id="verify" class="action">Verify closed proof</button>
-            <p id="verification" role="status"></p>
-          </details>
-        </div>
-      </aside>
+        <a class="browse-link" href="workbench.html">Open the kernel workbench <span aria-hidden="true">→</span></a>
+      </section>
     </main>
-    <footer>
-      Checked C kernel → WebAssembly · Selection never edits terms ·
-      <a href="README.md">Workbench &amp; CLI guide</a>
-    </footer>
-    <script type="module" src="app.mjs"></script>
+    <footer>MathScript · Homotopy type theory · C kernel compiled to WebAssembly</footer>
   </body>
 </html>

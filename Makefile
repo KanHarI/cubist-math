@@ -48,7 +48,7 @@ wasm-test: wasm
 	npm test
 PORT ?= 8088
 serve: wasm
-	@echo "MathScript: http://127.0.0.1:$(PORT)/proof.html"
+	@echo "MathScript: http://127.0.0.1:$(PORT)/"
 	python3 tools/serve.py --port $(PORT)
 
 .PHONY: cli browser-test

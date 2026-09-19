@@ -16,7 +16,8 @@ make cli
 make serve
 ```
 
-Open http://127.0.0.1:8080 for the browser. The page runs proofs locally in a Web
+Open http://127.0.0.1:8088/ for proof highlights, then browse the MathScript
+proofs or open `/workbench.html` for the kernel workbench. Proofs run locally in a Web
 Worker; the server only serves static files. A repository-local SDK is also
 supported and automatically detected by Make:
 

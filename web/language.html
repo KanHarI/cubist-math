@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="MathScript language reference: types, proof blocks, induction, identity paths, universes, and explicit axioms." />
+    <title>MathScript · Language reference</title>
+    <link rel="stylesheet" href="language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to reference</a>
+    <header>
+      <a class="brand" href="index.html"><span aria-hidden="true">⊢</span> MathScript</a>
+      <nav aria-label="Main navigation">
+        <a href="proof.html">Proof workspace</a>
+        <a href="workbench.html">Kernel workbench</a>
+        <a href="proof.html#language-guide">Quick reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">SYNTAX, MEANING, AND CHECKED EVIDENCE</p>
+        <h1>Language reference</h1>
+        <p class="lead">Write terms and proofs in dependent type theory. MathScript elaborates each declaration into instructions checked by the C kernel.</p>
+        <p>This page describes the mathematical <code>.proof</code> language. The <a href="workbench.html">kernel workbench</a> has a separate, lower-level instruction language.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="On this page">
+          <h2>On this page</h2>
+          <ol>
+            <li><a href="#first-proof">A first proof</a></li>
+            <li><a href="#files">Files and names</a></li>
+            <li><a href="#declarations">Declarations</a></li>
+            <li><a href="#types">Types and universes</a></li>
+            <li><a href="#expressions">Terms and notation</a></li>
+            <li><a href="#blocks">Proof blocks</a></li>
+            <li><a href="#induction">Induction and cases</a></li>
+            <li><a href="#paths">Equality and paths</a></li>
+            <li><a href="#suspensions">Suspensions</a></li>
+            <li><a href="#axioms">Axioms and truncation</a></li>
+            <li><a href="#conversion">Conversion and opacity</a></li>
+            <li><a href="#inspection">Checking and inspection</a></li>
+            <li><a href="#errors">Common errors</a></li>
+            <li><a href="#examples">Library examples</a></li>
+          </ol>
+        </aside>
+        <article id="reference">
+          <section id="first-proof">
+            <h2>A first proof</h2>
+            <pre><code data-check="core">theorem identity : forall A : Type, A -&gt; A {
+  intro A;       // A : Type
+  intro value;   // value : A
+  exact value;
+}</code></pre>
+            <p>A theorem proves its stated type by constructing a term of that type. Here the term is a function: given a type <code>A</code> and an element of it, return that element. No axioms or imports are needed.</p>
+            <p><code>intro</code> gets a variable’s type from the next input of the goal. After <code>intro A;</code>, the goal is <code>A -&gt; A</code>. After <code>intro value;</code>, it is <code>A</code>. <code>exact value;</code> finishes the proof.</p>
+          </section>
+          <section id="files">
+            <h2>Files and names</h2>
+            <pre><code>import paths;
+import sets;
+
+// Declarations follow the imports.</code></pre>
+            <p>Imports come first and use module names without quotes or a file extension. Imported mathematical source and its dependencies are checked. The special <code>prelude</code> import makes the existing axiom library available; an import alone does not make every theorem depend on all its axioms.</p>
+            <p>Names are case-sensitive: a letter or underscore, followed by letters, digits, or underscores. Write comments with <code>//</code> through the end of the line. Block comments, quoted strings, and Unicode operators are not source syntax. Use <code>-&gt;</code>, <code>forall</code>, and <code>exists</code>; the inspector can display mathematical symbols.</p>
+            <p>Declarations become available in source order. There are no implicit arguments or forward declarations. Each parameter has its own explicit type: <code>(A : Type, x : A, y : A)</code>. Choose fresh local names to avoid collisions with names already in scope.</p>
+          </section>
+          <section id="declarations">
+            <h2>Declarations</h2>
+            <pre><code data-check="core">def identity_term(A : Type, x : A) = x;
+
+def same(A : Type, x : A) : A {
+  exact x;
+}
+
+theorem self_equal(A : Type, x : A) : x = x {
+  exact refl(x);
+}
+
+opaque def next(n : Nat) = succ(n);</code></pre>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>def name(params) = term;</code></td><td>Infer the result type from a term. Parameters are optional.</td></tr>
+                <tr><td><code>def name(params) : T { … }</code></td><td>Check a block against the explicit result type <code>T</code>.</td></tr>
+                <tr><td><code>theorem name(params) : T { … }</code></td><td>Check a proof and keep its definition opaque during ordinary computation. Expression form <code>theorem name = term;</code> is also accepted.</td></tr>
+                <tr><td><code>opaque def name …</code></td><td>A checked definition that remains named during ordinary unfolding.</td></tr>
+                <tr><td><code>axiom name(params) : T;</code></td><td>An explicit assumption with no proof body. Recorded in axiom dependencies.</td></tr>
+              </tbody>
+            </table></div>
+            <p>Expression declarations end with <code>;</code>. Block declarations end with <code>}</code>. For an explicit result type, use a block; <code>def name : T = term;</code> is not a supported form. There is no special recursive declaration: use an eliminator such as natural-number induction.</p>
+          </section>
+          <section id="types">
+            <h2>Types and universes</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Source</th><th>Kernel meaning</th><th>How to construct an element</th></tr></thead>
+              <tbody>
+                <tr><td><code>forall x : A, B(x)</code></td><td>Dependent function, <span class="math">Π<sub>x:A</sub> B(x)</span></td><td><code>fun (x : A) =&gt; term</code>, or <code>intro x;</code></td></tr>
+                <tr><td><code>A -&gt; B</code></td><td>Function with constant result type</td><td>A function taking an <code>A</code> to a <code>B</code></td></tr>
+                <tr><td><code>exists x : A, B(x)</code></td><td>Dependent pair, <span class="math">Σ<sub>x:A</sub> B(x)</span></td><td><code>(a, evidence)</code></td></tr>
+                <tr><td><code>A and B</code></td><td>Product, <span class="math">A × B</span></td><td><code>(a, b)</code></td></tr>
+                <tr><td><code>A or B</code></td><td>Disjoint sum, <span class="math">A + B</span></td><td><code>left(a)</code> or <code>right(b)</code></td></tr>
+                <tr><td><code>x = y</code> or <code>Eq(A, x, y)</code></td><td>Identity type (paths from <code>x</code> to <code>y</code>)</td><td><code>refl(x)</code> when endpoints agree by conversion</td></tr>
+                <tr><td><code>Nat</code></td><td>Natural numbers</td><td><code>0</code> and <code>succ(n)</code></td></tr>
+                <tr><td><code>Unit</code></td><td>Unit type</td><td><code>tt</code></td></tr>
+                <tr><td><code>Void</code></td><td>Empty type</td><td>No constructor; eliminate a contradiction with <code>absurd</code></td></tr>
+              </tbody>
+            </table></div>
+            <p class="note"><code>exists</code> is an actual dependent pair with a witness. It is not automatically truncated. Likewise, <code>or</code> retains its choice of summand. Use <a href="#axioms">propositional truncation</a> when you mean mere existence.</p>
+            <p><code>Type</code> denotes U₀; <code>Type1</code>, <code>Type2</code>, and <code>Type3</code> denote U₁, U₂, and U₃. In particular <code>Type : Type1</code>. Smaller types can be lifted to larger universes; a larger type cannot be silently lowered.</p>
+            <pre><code data-check="core">def large_identity(A : Type1, x : A) = x;
+def lifted_unit = typed(Type1, Unit);</code></pre>
+            <p>A declaration with <code>A : Type</code> remains restricted to small types. MathScript has no user-defined universe-level variables or automatic universe polymorphism. Write an appropriate universe explicitly, or use the universe-indexed axiom wrappers below. A family may need an explicit lift, such as <code>fun (a : A) =&gt; typed(Type1, Unit)</code>.</p>
+            <p><code>IsProp(A)</code>, <code>IsSet(A)</code>, and <code>Equiv(A, B)</code> are library definitions, not new sorts or language keywords. In particular, <code>IsSet(A)</code> says that any two identity proofs between the same elements agree.</p>
+          </section>
+          <section id="expressions">
+            <h2>Terms and notation</h2>
+            <p>Application is curried: <code>f(a, b)</code> means <code>f(a)(b)</code>. A lambda binds one parameter; nest lambdas for more. Parentheses group expressions. Pairs are binary; write <code>(a, (b, c))</code> for a nested pair.</p>
+            <pre><code data-check="core">def constant(A : Type, B : Type) =
+  fun (a : A) =&gt; fun (b : B) =&gt; a;
+
+def two_units = typed(Unit and Unit, (tt, tt));
+def choose_left = typed(Unit or Nat, left(tt));</code></pre>
+            <p><code>typed(T, term)</code> checks <code>term</code> against <code>T</code>. Pairs and sum injections need an expected type. A typed theorem, a <code>have</code> block, or <code>typed</code> supplies it. <code>left</code>, <code>right</code>, and <code>absurd</code> are introductions/elimination checked against that expected type.</p>
+            <p>Arithmetic operators <code>+</code>, <code>*</code>, <code>&lt;</code>, and <code>&lt;=</code> are for <code>Nat</code> and use the arithmetic library (normally <code>import primes;</code>). They are not overloaded field operations. They denote <code>add</code>, <code>mul</code>, <code>isLt</code>, and <code>le</code>; <code>n &lt; m</code> is <code>le(succ(n), m)</code>. The inspector’s <span class="math">+</span> for disjoint sum is display notation; write <code>or</code> in source.</p>
+            <h3>Precedence</h3>
+            <p>From tightest to loosest: application, <code>*</code>, <code>+</code>, <code>= &lt; &lt;=</code>, <code>and</code>, <code>or</code>, <code>-&gt;</code>. Arrow, <code>and</code>, and <code>or</code> associate to the right; the other infix operators associate to the left. The body of <code>fun</code>, <code>forall</code>, or <code>exists</code> extends through the following expression.</p>
+            <p>Thus <code>A -&gt; B -&gt; C</code> means <code>A -&gt; (B -&gt; C)</code>. Do not chain comparisons: write <code>(a &lt; b) and (b &lt; c)</code>. Numerals expand to repeated <code>succ</code>, not machine integers.</p>
+          </section>
+          <section id="blocks">
+            <h2>Proof blocks</h2>
+            <p>A block starts with an expected goal type. Each statement extends the local context or proves that goal. <code>exact</code> and <code>cases</code> finish a block; no statements may follow them in the same block.</p>
+            <dl>
+              <dt><code>intro name;</code></dt>
+              <dd>Introduce the next argument of a <code>forall</code> or <code>-&gt;</code> goal. Its type comes from the goal, including a named definition of that goal. One statement introduces one input.</dd>
+              <dt><code>let name = term;</code></dt>
+              <dd>Name an inferred term in the remainder of the block. For an annotation, use <code>let name = typed(T, term);</code>.</dd>
+              <dt><code>obtain (x, evidence) = pair;</code></dt>
+              <dd>Eliminate a dependent pair or product into the remaining goal. Nested pair patterns are supported. This does not eliminate propositional truncation.</dd>
+              <dt><code>have name : T { … }</code></dt>
+              <dd>Prove a local claim in a nested block; then use it as <code>name : T</code>. The nested block can use the surrounding context.</dd>
+              <dt><code>exact term;</code></dt>
+              <dd>Check the term against the current goal, using definitional equality where needed, and close the block.</dd>
+              <dt><code>cases term { left x =&gt; { … } right y =&gt; { … } }</code></dt>
+              <dd>Prove the current goal in each branch of a disjoint sum. Each branch has its corresponding witness available.</dd>
+            </dl>
+            <pre><code data-check="core">theorem swap_product(A : Type, B : Type) :
+    (A and B) -&gt; (B and A) {
+  intro pair;
+  obtain (a, b) = pair;
+  let saved = a;
+  have result : B and A {
+    exact (b, saved);
+  }
+  exact result;
+}
+
+theorem swap_sum(A : Type, B : Type, value : A or B) : B or A {
+  cases value {
+    left a =&gt; { exact right(a); }
+    right b =&gt; { exact left(b); }
+  }
+}</code></pre>
+            <h3>Where does <code>setA : IsSet(A)</code> come from?</h3>
+            <pre><code data-check="sets">import sets;
+
+def SetAssumption = forall A : Type, IsSet(A) -&gt; IsSet(A);
+
+theorem use_set_assumption : SetAssumption {
+  intro A;       // A : Type, from the forall
+  intro setA;    // setA : IsSet(A), from the implication
+  exact setA;
+}</code></pre>
+            <p>The identifier <code>setA</code> is a name chosen by the author; its spelling does not determine its type. The checked goal does. Inspect the named proposition and then the introduced name to follow that dependency.</p>
+          </section>
+          <section id="induction">
+            <h2>Induction and case expressions</h2>
+            <h3>Natural numbers</h3>
+            <pre><code data-check="core">def copy(n : Nat) = induction n as k return Nat {
+  zero =&gt; 0;
+  succ previous =&gt; succ(previous);
+};
+
+theorem copy_two : copy(2) = 2 {
+  exact refl(2);
+}</code></pre>
+            <p>In <code>induction n as k return C(k)</code>, the zero branch must have type <code>C(0)</code>. In the successor branch, <code>k : Nat</code> is the predecessor and <code>previous : C(k)</code> is the induction hypothesis. The branch must produce <code>C(succ(k))</code>. Each branch is an expression, not a proof block; put a longer argument in a separate helper theorem.</p>
+            <p>The function form is <code>induct(n, motive, base, step)</code>, with <code>motive = fun (k : Nat) =&gt; C(k)</code> and <code>step</code> taking the predecessor and induction hypothesis.</p>
+            <h3>Disjoint sums</h3>
+            <pre><code data-check="core">def sum_to_nat(value : Unit or Nat) = match value return Nat {
+  left unit =&gt; 0;
+  right n =&gt; n;
+};</code></pre>
+            <p>For a result depending on the entire sum element, write <code>match value as z return C(z) { left x =&gt; …; right y =&gt; …; }</code>. The branch goals substitute <code>left(x)</code> and <code>right(y)</code> for <code>z</code>. The nondependent function form is <code>cases(value, resultType, leftBranch, rightBranch)</code>.</p>
+            <h3>Pairs</h3>
+            <pre><code data-check="core">def first_nat(pair : Nat and Nat) =
+  unpack pair as (a, b) return Nat { a; };</code></pre>
+            <p><code>unpack</code> has a result type formed outside the new pair variables. Its function form is <code>unpack(pair, resultType, branch)</code>, where <code>branch</code> takes both components. <code>obtain</code> provides the corresponding block form.</p>
+            <p>For a result depending on the original pair, use <code>pair_induction(motive, branch, pair)</code>. If <code>pair : exists x : A, B(x)</code>, the branch takes <code>x : A</code>, <code>y : B(x)</code> and proves <code>motive((x, y))</code>. Its result is <code>motive(pair)</code>. Ordinary <code>obtain</code> does not rewrite occurrences of the original pair in a dependent goal.</p>
+            <h3>Unit and empty types</h3>
+            <p><code>unit_induction(motive, base, value)</code> proves <code>motive(value)</code> from <code>base : motive(tt)</code>. <code>absurd(impossible)</code> eliminates <code>impossible : Void</code> into the expected type. Negation is written <code>A -&gt; Void</code>; there is no <code>not</code> keyword.</p>
+          </section>
+          <section id="paths">
+            <h2>Equality and paths</h2>
+            <p><code>x = y</code> is the identity type, not an instruction to rewrite source text. Its elements are paths. Equality of paths can itself be stated using another identity type. Equality by computation is handled separately by <a href="#conversion">conversion</a>.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Operation</th><th>Required data and result</th></tr></thead>
+              <tbody>
+                <tr><td><code>Eq(A, x, y)</code></td><td>The identity type with its carrier explicit.</td></tr>
+                <tr><td><code>refl(x)</code></td><td>A path <code>x = x</code>.</td></tr>
+                <tr><td><code>sym(p)</code></td><td>From <code>p : x = y</code>, obtain <code>y = x</code>. Requires the <code>paths</code> library.</td></tr>
+                <tr><td><code>trans(p, q)</code></td><td>Compose <code>p : x = y</code> and <code>q : y = z</code>. Requires <code>paths</code>.</td></tr>
+                <tr><td><code>cong(f, p)</code></td><td>For a function with constant codomain, map a path to <code>f(x) = f(y)</code>. Requires <code>paths</code>.</td></tr>
+                <tr><td><code>transport(C, x, y, p, value)</code></td><td>Move <code>value : C(x)</code> along <code>p : x = y</code> to obtain <code>C(y)</code>.</td></tr>
+                <tr><td><code>apd(f, x, y, p)</code></td><td>For a dependent function <code>f : forall x : A, C(x)</code>, prove <code>transport(C, x, y, p, f(x)) = f(y)</code>.</td></tr>
+                <tr><td><code>path_induction(A, motive, base, x, y, p)</code></td><td>Identity elimination, described below. Does not require a classical axiom.</td></tr>
+              </tbody>
+            </table></div>
+            <p>The path-induction motive takes <code>x : A</code>, <code>y : A</code>, and <code>p : x = y</code>, and returns a type. The reflexive case <code>base</code> takes <code>a : A</code> and proves <code>motive(a, a, refl(a))</code>. The eliminator returns <code>motive(x, y, p)</code>.</p>
+            <pre><code data-check="paths">import paths;
+
+theorem reverse_path(A : Type, x : A, y : A, p : x = y) : y = x {
+  exact sym(p);
+}</code></pre>
+            <p>Some inferred pair projections do not retain enough equality information for <code>sym</code>, <code>trans</code>, or <code>cong</code>. Introduce an explicitly typed claim with <code>have p : x = y { exact term; }</code> in that case.</p>
+          </section>
+          <section id="suspensions">
+            <h2>Suspensions</h2>
+            <p>The kernel supports the suspension higher inductive type. <code>Suspension(A)</code> has points <code>north(A)</code> and <code>south(A)</code>, and, for every <code>a : A</code>, a path <code>meridian(A, a) : north(A) = south(A)</code>. The circle and puncture models build on these operations.</p>
+            <p><code>suspension_induction(C, atNorth, atSouth, coherence, point)</code> eliminates into a family <code>C</code> on the suspension. The coherence argument takes <code>a : A</code> and proves</p>
+            <pre><code>transport(C, north(A), south(A), meridian(A, a), atNorth)
+  = atSouth</code></pre>
+            <p>The result has type <code>C(point)</code>. <code>suspension_meridian_beta(C, atNorth, atSouth, coherence, a)</code> gives the propositional computation law on the meridian: dependent application of the constructed section to that path equals <code>coherence(a)</code>. See the <a href="proof.html?proof=suspension">suspension examples</a> and <a href="proof.html?proof=circle">circle proof</a>.</p>
+          </section>
+          <section id="axioms">
+            <h2>Axioms and propositional truncation</h2>
+            <p>The operations in this section use principles from <code>import prelude;</code> (possibly through another imported module). They are explicit dependencies, not consequences of the basic introduction and elimination rules. A user-written <code>axiom</code> declaration is likewise an assumption; its name and dependencies remain inspectable.</p>
+            <h3>Truncation</h3>
+            <p><code>truncation(A)</code>, often named <code>Mere(A)</code> by the library, expresses mere inhabitation. It discards access to a chosen witness. The inspector can render it as <span class="math">‖A‖</span>; that is display notation, not source syntax.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Small-universe operation</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>truncation(A)</code></td><td>The propositional truncation of <code>A : Type</code>.</td></tr>
+                <tr><td><code>truncation_intro(A, a)</code></td><td>Send <code>a : A</code> into its truncation.</td></tr>
+                <tr><td><code>truncation_prop(A)</code></td><td>Evidence that any two elements of the truncation are equal.</td></tr>
+                <tr><td><code>truncation_elim(A, P, proposition, map)</code></td><td>Given <code>proposition : forall x : P, forall y : P, x = y</code> and <code>map : A -&gt; P</code>, return <code>truncation(A) -&gt; P</code>.</td></tr>
+              </tbody>
+            </table></div>
+            <p>For a named universe, use <code>truncation_at(U, A)</code>, <code>truncation_intro_at(U, A, a)</code>, <code>truncation_prop_at(U, A)</code>, or <code>truncation_elim_at(U, A, P, proposition, map)</code>. Here <code>U</code> must be a universe such as <code>Type1</code>, and both <code>A</code> and the elimination target <code>P</code> must belong to it.</p>
+            <p class="note">The current prelude truncation constructor returns a type in U₀ even for larger inputs. These wrappers preserve that signature; they do not assert universe-preserving truncation. In particular, <code>truncation_at(Type1, Type)</code> is valid, while <code>truncation_at(Type, Type)</code> is not.</p>
+            <h3>Function extensionality and univalence</h3>
+            <dl>
+              <dt><code>funext(A, B, f, g, pointwise)</code></dt>
+              <dd>For a family <code>B : A -&gt; Type</code> and dependent functions <code>f</code>, <code>g</code>, turn <code>forall x : A, f(x) = g(x)</code> into <code>f = g</code>.</dd>
+              <dt><code>funext_at(U, A, B, f, g, pointwise)</code></dt>
+              <dd>The explicit-universe form, with <code>A : U</code> and <code>B : A -&gt; U</code>.</dd>
+              <dt><code>univalence(A, B, equivalence)</code></dt>
+              <dd>For small types and equivalence evidence in the library’s native equivalence representation, produce <code>A = B</code>. A pair of arbitrary forward and backward maps is not enough.</dd>
+              <dt><code>univalence_beta(A, B, equivalence, x)</code></dt>
+              <dd>Prove that transport of <code>x : A</code> along the univalence path equals the image of <code>x</code> under the equivalence’s forward function.</dd>
+            </dl>
+            <h3>Classical principles and choice</h3>
+            <dl>
+              <dt><code>classical_truncation(A, doubleNegation)</code></dt>
+              <dd>Uses excluded middle to turn <code>doubleNegation : (A -&gt; Void) -&gt; Void</code> into <code>truncation(A)</code>, for <code>A : Type</code>.</dd>
+              <dt><code>set_choice(A, B, setA, setFibers, inhabited)</code></dt>
+              <dd>For a small set <code>A</code>, a small family <code>B</code> of sets, and <code>inhabited : forall a : A, truncation(B(a))</code>, obtain <code>truncation(forall a : A, B(a))</code>. <code>setA</code> proves <code>IsSet(A)</code>; <code>setFibers</code> proves it for every fiber. This wrapper specializes the existing choice axiom to U₀. It does not return a selected function outside truncation.</dd>
+            </dl>
+            <p>These are separate dependencies: using truncation or function extensionality does not by itself request excluded middle or choice. Inspect the axiom list on the particular theorem for the dependencies of its checked derivation, including its type and context.</p>
+          </section>
+          <section id="conversion">
+            <h2>Conversion and opacity</h2>
+            <p>The checker accepts a term when its type is definitionally equal to the requested type. Function application computes by beta reduction; eliminators compute on constructors. For example, <code>(fun (n : Nat) =&gt; succ(n))(0)</code> computes to <code>1</code>.</p>
+            <p><code>def</code> is transparent for computation. <code>opaque def</code> and <code>theorem</code> keep checked bodies named during ordinary reduction. Conversion can unfold those bodies when necessary to establish equality of types. Opacity does not introduce an axiom or prevent inspection.</p>
+            <pre><code data-check="core">opaque def boxed_successor(n : Nat) = succ(n);
+def explicitly_opened = unfold(boxed_successor(1));
+
+theorem opened_is_two : explicitly_opened = 2 {
+  exact refl(2);
+}</code></pre>
+            <p><code>unfold(term)</code> explicitly unfolds definitions and normalizes the term and its type. It can expand a large expression substantially. A proof such as commutativity is still a propositional equality; the checker does not use arbitrary theorems as automatic rewrite rules.</p>
+          </section>
+          <section id="inspection">
+            <h2>Checking and inspection</h2>
+            <p>Open the <a href="proof.html">proof workspace</a>, choose a topic and proof, then use <strong>Edit</strong> and <strong>Check proof</strong> (Ctrl/Cmd+Enter). Click a name in <strong>Read</strong> mode to inspect its type and source. Click a proof-step line number for its goal and local assumptions. A rejected edit leaves the last checked proof available.</p>
+            <p>The checked kernel details show the expression, its type, and its open context. Folded kernel notation retains names only where their relationship to the stored term is checked. Use the representation selector for MathScript or raw kernel terms; send either term to the workbench to explore reduction and dependencies. Binder grouping and truncation notation change only presentation.</p>
+            <p>The <a href="https://github.com/KanHarI/thth-c/blob/main/docs/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules, explaining contexts, binding, and what must be trusted when verifying a proof.</p>
+            <p>The compiler’s <strong>Reuse normal forms</strong> and <strong>Reuse checked instructions</strong> switches default on. They control reuse during compilation, not the source language or its mathematical assumptions.</p>
+            <p>For local development, <code>make serve</code> serves the workspace. In the CLI, <code>prove FILE.proof</code> checks a source file. A focused project test can be run as <code>npm test -- web/proofs/FILE.proof</code>; this checks the selected mathematical source and its imports.</p>
+            <p>Current parser limits are 1,000,000 source characters, 160,000 tokens, nesting depth 128, and numeral literals up to 256. Larger naturals can be built by expressions. These are implementation limits, not mathematical axioms. See the <a href="https://github.com/KanHarI/thth-c/blob/main/docs/mathscript.md">implementation notes</a> for runtime limits and the source-checking pipeline.</p>
+          </section>
+          <section id="errors">
+            <h2>Common errors</h2>
+            <dl>
+              <dt>“intro requires a forall or implication goal”</dt>
+              <dd>The next goal is not a function type. Inspect it; a pair needs witnesses, and an equality needs a path.</dd>
+              <dt>“A pair needs an expected exists/and type”</dt>
+              <dd>Supply a type with <code>typed(T, (a, b))</code>, a theorem signature, or a <code>have</code> block.</dd>
+              <dt>“No statements may follow exact or cases”</dt>
+              <dd>Move further reasoning into the appropriate branch, or prove a local claim with <code>have</code> before finishing the outer block.</dd>
+              <dt>“This path needs an explicit equality type annotation”</dt>
+              <dd>Use <code>have p : x = y { exact expression; }</code> to expose its endpoints to the elaborator.</dd>
+              <dt>“Conversion types differ”</dt>
+              <dd>The supplied term does not have the expected type by computation. Check argument order, universes, and dependent endpoints. A propositional equality may require explicit <code>transport</code>.</dd>
+              <dt>An attempted witness extraction from <code>Mere(A)</code> fails</dt>
+              <dd>Truncation elimination needs a proposition as its target. Proving mere existence does not in general supply a chosen witness.</dd>
+            </dl>
+            <p>There are currently no <code>rewrite</code>, <code>apply</code>, <code>simp</code>, <code>calc</code>, <code>sorry</code>, or implicit-argument tactics. Construct the term explicitly with the supported proof statements and library lemmas.</p>
+          </section>
+          <section id="examples">
+            <h2>Library examples</h2>
+            <ul>
+              <li><a href="proof.html?proof=euclid">Euclid</a>: introductions, local claims, pair witnesses, and sum cases.</li>
+              <li><a href="proof.html?proof=paths">Paths</a>: identity induction, symmetry, composition, and congruence.</li>
+              <li><a href="proof.html?proof=surjections">Right inverses of surjections</a>: set assumptions, choice, and mere existence.</li>
+              <li><a href="proof.html?proof=circle">The circle’s fundamental group</a>: suspension paths, equivalences, and univalence.</li>
+              <li><a href="proof.html?proof=complete_fields">Complete ordered field interface</a>: explicit universes and constructive hypotheses.</li>
+            </ul>
+            <p>For the exact accepted grammar and elaboration, see <a href="mathscript/parser.mjs">parser.mjs</a> and <a href="mathscript/compiler.mjs">compiler.mjs</a>. Library definitions are ordinary checked source; their signatures remain the authority for their particular arguments and universes.</p>
+          </section>
+        </article>
+      </div>
+    </main>
+    <footer>MathScript · Language reference · <a href="proof.html">Return to the proof workspace</a></footer>
+  </body>
+</html>
