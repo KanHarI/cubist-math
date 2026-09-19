@@ -7,7 +7,8 @@ import { Kernel } from "../web/kernel.mjs";
 
 const module = await createKernel();
 const configurations = [
-  {}, { normalForms: true }, { instructions: true },
+  { normalForms: false, instructions: false },
+  { normalForms: true, instructions: false }, { normalForms: false, instructions: true },
   { normalForms: true, instructions: true },
 ];
 const source = `
@@ -78,9 +79,34 @@ test("all optimization combinations reject invalid dependent proofs and opaque c
   }
 });
 
-test("optimization options reject unknown keys, non-Boolean values, and construction mode", () => {
+test("optimization options reject unknown keys and non-Boolean values", () => {
   for (const optimizations of [null, [], { normalForms: "false" }, { unknown: true }])
     assert.throws(() => compile(module, source, {}, { optimizations }), /Boolean/);
-  assert.throws(() => compile(module, "construction example {}", {},
-    { optimizations: { instructions: true } }), /recorded construction/);
+
+});
+
+
+test("mathematical compilation defaults to both optimizations with independent opt-outs", () => {
+  for (const [options, expected] of [
+    [undefined, { normalForms: true, instructions: true }],
+    [{ optimizations: { normalForms: false } }, { normalForms: false, instructions: true }],
+    [{ optimizations: { instructions: false } }, { normalForms: true, instructions: false }],
+  ]) {
+    const c = compile(module, source, {}, options);
+    try { assert.deepEqual(c.optimizations, expected); }
+    finally { c.kernel.dispose(); }
+  }
+});
+
+test("construction instructions remain unchanged with default and explicit optimization settings", () => {
+  let baseline;
+  for (const options of [undefined, { optimizations: { normalForms: true, instructions: true } },
+    { optimizations: { normalForms: false, instructions: false } }]) {
+    const c = compile(module, "construction example { export unit = unit_value(); }", {}, options);
+    try {
+      assert.deepEqual(c.optimizations, { normalForms: false, instructions: false });
+      if (baseline) assert.deepEqual(c.kernel.steps, baseline);
+      else baseline = c.kernel.steps;
+    } finally { c.kernel.dispose(); }
+  }
 });

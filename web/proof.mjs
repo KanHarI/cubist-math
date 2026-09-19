@@ -182,7 +182,8 @@ const pending = new Map(),
   history = [];
 $("editor").value = example;
 for (const id of ["reuse-normal-forms", "memoize-instructions"]) {
-  try { $(id).checked = localStorage.getItem("mathscript:" + id) === "true"; } catch {}
+  $(id).checked = true;
+  try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
 $("proof-title").textContent = choices.find((p) => p.id === proofId).title;
 $("development-note").hidden = !choices.find((p) => p.id === proofId).realDevelopment;

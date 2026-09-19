@@ -44,6 +44,11 @@
           role="status"
         ></span>
       </div>
+      <div class="compiler-options" role="group" aria-label="Compiler optimizations">
+        <span>Compiler optimizations</span>
+        <label><input id="reuse-normal-forms" type="checkbox" checked /> Reuse normal forms</label>
+        <label><input id="memoize-instructions" type="checkbox" checked /> Reuse checked instructions</label>
+      </div>
       <p id="source-notice" class="hint" role="status" hidden></p>
       <p id="development-note" class="hint" hidden>
         Real-number development in progress: the shared interface and preliminary
@@ -111,8 +116,6 @@
             hidden
           ></textarea>
           <div class="source-options">
-            <label><input id="reuse-normal-forms" type="checkbox" /> Reuse normal forms</label>
-            <label><input id="memoize-instructions" type="checkbox" /> Reuse checked instructions</label>
             <label id="intermediate-label" hidden
               ><input id="show-intermediate" type="checkbox" /> Show
               intermediate construction steps</label

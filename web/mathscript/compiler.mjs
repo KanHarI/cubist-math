@@ -13,12 +13,12 @@ export function compile(module, source, library, { onProgress, optimizations = {
       Object.entries(optimizations).some(([key, value]) =>
         !["normalForms", "instructions"].includes(key) || typeof value !== "boolean"))
     throw new Error("Compiler optimizations must contain only Boolean normalForms and instructions options.");
-  optimizations = { normalForms: optimizations.normalForms ?? false, instructions: optimizations.instructions ?? false };
   if (/^\s*(?:\/\/[^\n]*\n\s*)*construction\b/.test(source)) {
-    if (Object.values(optimizations).some(Boolean))
-      throw new Error("Compiler optimizations apply to mathematical source, not recorded construction instructions.");
-    return { ...compileConstruction(module, source, { onProgress }), optimizations };
+    // Recorded construction instructions are replayed exactly in every mode.
+    return { ...compileConstruction(module, source, { onProgress }),
+      optimizations: { normalForms: false, instructions: false } };
   }
+  optimizations = { normalForms: optimizations.normalForms ?? true, instructions: optimizations.instructions ?? true };
   const program = parse(source);
   const sources =
     typeof library === "string" ? { primes: library } : (library ?? {});
