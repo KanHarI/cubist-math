@@ -1692,6 +1692,22 @@ export function compile(module, source, library, { onProgress, optimizations = {
       ...(importedProgram?.declarations ?? []),
       ...program.declarations,
     ];
+    function mathscriptView(decl, T) {
+      const text = sources[decl.library] ?? source;
+      let expression = decl.name.text, expressionKind = "reference";
+      if (decl.kind === "def") {
+        if (decl.value) {
+          expression = text.slice(decl.valueStart, decl.valueEnd);
+          for (const parameter of [...decl.valueParameters].reverse())
+            expression = `fun (${parameter.name.text} : ${text.slice(parameter.type.start, parameter.type.end)}) => ${expression}`;
+          expressionKind = "expression";
+        } else {
+          expression = text.slice(decl.start, decl.end);
+          expressionKind = "declaration";
+        }
+      }
+      return { expression, expressionKind, type: T.pretty };
+    }
     let completedDeclarations = 0;
     const reportProgress = () => onProgress?.({
       unit: "definitions",
@@ -1769,6 +1785,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
           end: decl.end,
           definitionStart: decl.start,
           sourceModule: decl.library || undefined,
+          mathscript: mathscriptView(decl, T),
           instructions: b.k.steps.length - start,
         });
         completedDeclarations++;
@@ -1809,6 +1826,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
         name: decl.name.text,
         definitionStart: decl.start,
         sourceModule: decl.library || undefined,
+        mathscript: mathscriptView(decl, T),
         binding,
         proposition,
         type: T.pretty,

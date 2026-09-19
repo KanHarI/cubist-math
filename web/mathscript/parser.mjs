@@ -359,6 +359,9 @@ export function parse(source, typeOnly = false) {
         opaque,
         name: n,
         value,
+        valueStart: value.start,
+        valueEnd: value.end,
+        valueParameters: [],
         params,
         start: t.start,
         end,
@@ -381,6 +384,7 @@ export function parse(source, typeOnly = false) {
     if (peek() === "=" && t.text !== "axiom") {
       take("=");
       let value = expr();
+      const valueStart = value.start, valueEnd = value.end;
       const end = take(";").end;
       for (const p of [...params].reverse())
         value = {
@@ -396,6 +400,9 @@ export function parse(source, typeOnly = false) {
         opaque,
         name: n,
         value,
+        valueStart,
+        valueEnd,
+        valueParameters: params,
         params: [],
         start: t.start,
         end,

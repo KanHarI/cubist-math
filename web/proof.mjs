@@ -644,6 +644,11 @@ async function inspect(info, remember = true) {
   $("kernel-expression").textContent = "";
   $("kernel-type").textContent = "";
   $("kernel-inference").textContent = "";
+  checkedKernelView = null;
+  $("kernel-view").value = "mathscript";
+  $("kernel-view").disabled = true;
+  $("kernel-view-note").textContent = "";
+  $("expand-kernel").hidden = true;
   for (const line of document.querySelectorAll(".source-line.active"))
     line.classList.remove("active");
   if (info.line)
@@ -714,12 +719,24 @@ function renderType(text) {
     } else $("inspect-type").append(document.createTextNode(word));
   }
 }
+let checkedKernelView = null;
 function renderKernel(view) {
+  checkedKernelView = view;
+  const declaration = [...last.outputs, ...last.imports].find(item => item.binding === view.name);
+  const mathscript = declaration?.mathscript;
+  $("kernel-view").disabled = false;
+  $("kernel-view").querySelector('[value="mathscript"]').disabled = !mathscript;
+  if (!mathscript) $("kernel-view").value = "raw";
+  const folded = $("kernel-view").value === "mathscript" && mathscript;
+  $("kernel-view-note").textContent = folded
+    ? "MathScript from the last successful check, preserving definition names and notation."
+    : "Raw checked kernel representation.";
+  $("kernel-expression-label").textContent = folded?.expressionKind === "declaration" ? "Declaration" : "Expression";
   renderAxioms($("inspect-axioms"), view.axioms ?? []);
-  $("kernel-expression").textContent = view.expression
+  $("kernel-expression").textContent = folded ? mathscript.expression : view.expression
     ? layout(view.expression, view.contextNames).text
     : "Context assumption";
-  $("kernel-type").textContent = layout(view.type, view.contextNames).text;
+  $("kernel-type").textContent = folded ? mathscript.type : layout(view.type, view.contextNames).text;
   $("kernel-inference").textContent =
     `${view.inference?.op ?? view.kind}. ${view.assumptions.length ? view.assumptions.length + " open assumptions." : "Closed judgement."}`;
   $("kernel-premises").replaceChildren();
@@ -737,8 +754,9 @@ function renderKernel(view) {
   }
   const truncated = (n) => n && (n.truncated || n.children.some(truncated));
   $("expand-kernel").hidden =
-    !truncated(view.expression) && !truncated(view.type);
+    !!folded || (!truncated(view.expression) && !truncated(view.type));
 }
+$("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 function download(text, name, type) {
   const url = URL.createObjectURL(new Blob([text], { type })),
     a = document.createElement("a");

@@ -143,7 +143,13 @@
             <summary>Checked kernel details</summary>
             <p id="kernel-inference" class="hint"></p>
             <div id="kernel-premises"></div>
-            <strong>Expression</strong>
+            <label for="kernel-view">Representation</label>
+            <select id="kernel-view">
+              <option value="mathscript">MathScript (folded)</option>
+              <option value="raw">Raw kernel term</option>
+            </select>
+            <p id="kernel-view-note" class="hint"></p>
+            <strong id="kernel-expression-label">Expression</strong>
             <pre id="kernel-expression"></pre>
             <strong>Type</strong>
             <pre id="kernel-type"></pre>
