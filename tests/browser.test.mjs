@@ -553,6 +553,12 @@ try {
     ["curve_tag_stability", "affine_contour_endpoint_sums_close"],
     ["affine_refinement", "affine_refinement_uniform_estimate"],
     ["sample_subdivisions", "sample_subdivisions_flatten"],
+    ["sample_subdivision_conditions", "subdivision_tagged_map"],
+    ["complex_perturbations", "complex_perturbation_add"],
+    ["complex_subdivision_estimates", "complex_subdivision_flat_estimate"],
+    ["interval_subdivisions", "interval_refinement_radius_sum"],
+    ["affine_partition_refinement", "affine_partition_uniform_estimate"],
+
     ["complex_affine", "complex_linear_deformation_uniform"],
     ["complex_contour_tag_limits", "complex_contour_tag_independent_limit"],
     ["field_scale_limits", "field_nonnegative_scale_zero_converges"],

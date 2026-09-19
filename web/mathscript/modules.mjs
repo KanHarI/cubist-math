@@ -118,4 +118,9 @@ export const sourceModules = [
   "parameter_refinement",
   "interval_refinement",
   "affine_refinement",
+  "sample_subdivision_conditions",
+  "complex_perturbations",
+  "complex_subdivision_estimates",
+  "interval_subdivisions",
+  "affine_partition_refinement",
 ];

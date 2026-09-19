@@ -1303,3 +1303,46 @@ test("subdivision concatenation handles an empty tail and requires matching endp
   assert.notEqual(unmatched, sources.sample_subdivisions);
   assert.throws(() => compile(module, unmatched, sources), /Expected|Conversion types differ/);
 });
+
+test("uniform affine partition refinements control actual flattened contour sums without a sample-count factor", t => {
+  const c = compile(module, sources.affine_partition_refinement, sources);
+  try {
+    const names = ["subdivision_tagged_map", "complex_perturbation_add", "complex_subdivision_total_estimate",
+      "complex_subdivision_flat_estimate", "interval_refinement_radius_sum", "affine_partition_uniform_estimate"];
+    for (const name of names) {
+      const output = [...c.outputs, ...c.imports].find(o => o.name === name);
+      assert.ok(output, name);
+      assert.ok(c.kernel.verify(output.proposition, output.binding), name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => a === "lib_Trunc"), name);
+    }
+    const estimate = c.outputs.find(o => o.name === "affine_partition_uniform_estimate");
+    assert.match(estimate.type, /uniform : ComplexUniformCurve/);
+    assert.match(estimate.type, /exists mesh : F, lt\(zero, mesh\)/);
+    assert.match(estimate.type, /forall pieces : SampleSubdivisions/);
+    assert.match(estimate.type, /IntervalSubdivisionFine/);
+    assert.match(estimate.type, /CurvePartitionEstimate/);
+    const result = c.outputs.find(o => o.name === "CurvePartitionEstimate");
+    assert.match(result.mathscript.expression, /exists flat : SampleSubdivision/);
+    assert.match(result.mathscript.expression, /curve_subdivision_samples.* = subdivision_total/);
+    assert.match(result.mathscript.expression, /ComplexPerturbation/);
+    assert.match(c.outputs.find(o => o.name === "curve_subdivision_samples").mathscript.expression, /curve_contour_samples/);
+    assert.match(estimate.type, /mulF\(delta, mulF\(sample_interval_width/);
+    assert.doesNotMatch(estimate.type, /errors :|localEstimates :|variation :|converges :|LEM|AOC/);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; only existing truncation in the order interface`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("partition refinement bounds cannot discard the tail radius or coarse-tag containment", () => {
+  const missingTail = sources.complex_perturbations.replace(
+    "complex_add(F, addF, freshLeft, freshRight), addF(r, s))",
+    "complex_add(F, addF, freshLeft, freshRight), r)");
+  assert.notEqual(missingTail, sources.complex_perturbations);
+  assert.throws(() => compile(module, missingTail, sources), /Expected|Conversion types differ/);
+  const outside = sources.interval_subdivisions.replace(
+    "IntervalTagWithin(F, zero, one, lt, a, b, tag) and", "Unit and");
+  assert.notEqual(outside, sources.interval_subdivisions);
+  assert.throws(() => compile(module, sources.affine_partition_refinement,
+    { ...sources, interval_subdivisions: outside }), /Expected|Conversion types differ/);
+});

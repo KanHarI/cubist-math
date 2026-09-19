@@ -161,8 +161,10 @@ controlling all admissible tag changes, including the constructed left- and
 right-endpoint sums.
 Arbitrary finite subdivisions of a coarse affine interval now have a
 width-scaled contour-error bound. Subdivisions across a whole partition can
-be flattened to one sample list with a checked identity for its sum; the
-global refinement bound remains to be assembled from these results.
+be flattened to one sample list with a checked identity for its sum. The
+global affine refinement bound is now checked: the total error is bounded by
+the tolerance times outer width times coordinate length, independent of the
+number of coarse edges or refined samples.
 Proving convergence of the contour sums and
 the required homotopy estimates, and relating geometric curves to homotopy
 paths, remain open.

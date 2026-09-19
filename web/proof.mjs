@@ -3,6 +3,11 @@ import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 import { renderMathNotation, kernelMathTree } from "./math-notation.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 const choices = [
+  { id: "affine_partition_refinement", title: "Curve contours · uniform refinement across an entire partition", complexDevelopment: true },
+  { id: "interval_subdivisions", title: "Curve sampling · subdivision admissibility and total error radius", complexDevelopment: true },
+  { id: "complex_subdivision_estimates", title: "Curve contours · sum subdivision errors across a partition", complexDevelopment: true },
+  { id: "complex_perturbations", title: "Complex estimates · explicit additive error certificates", complexDevelopment: true },
+  { id: "sample_subdivision_conditions", title: "Curve sampling · conditions on each tagged subdivision", complexDevelopment: true },
   { id: "sample_subdivisions", title: "Curve sampling · flatten subdivisions across a partition", complexDevelopment: true },
   { id: "affine_refinement", title: "Curve contours · width-scaled finite refinement errors", complexDevelopment: true },
   { id: "interval_refinement", title: "Curve sampling · refinement tags in a common interval", complexDevelopment: true },

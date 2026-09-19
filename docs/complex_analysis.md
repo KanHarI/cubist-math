@@ -36,9 +36,11 @@ continuity along the curve, and a sufficiently fine mesh now imply the
 finite error bounds. An arbitrary finite subdivision of one coarse interval
 now has a checked error bounded by its width times the value-error tolerance
 and the affine coordinate length. Per-edge subdivisions can also be flattened
-to one sample list with exactly the sum of their contributions. Combining
-these into a global refinement estimate and constructing an initial integral
-limit remain open.
+to one sample list with exactly the sum of their contributions. The global
+affine refinement estimate now controls the error of this actual flattened
+sum by `delta * outer width * coordinate length`, without a sample-count
+factor. Compatible sampling schemes with vanishing mesh and construction of
+an initial integral limit remain open.
 
 | Module | Result |
 | --- | --- |

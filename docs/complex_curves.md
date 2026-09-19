@@ -187,10 +187,35 @@ sum equal to the sum of the per-edge contributions. Adjacent pieces carry
 equality witnesses for their shared endpoint; zero-edge pieces are allowed
 only with equal endpoints. This theorem is axiom-free.
 
-The width-scaled local error estimate and this flattening theorem still need
-to be combined into a global partition estimate. Common refinements or an
-explicit nested sampling scheme, their mesh control, and Cauchy convergence
-remain to be proved. No integral limit is constructed by these finite results.
+[affine_partition_refinement](../web/proofs/affine_partition_refinement.proof)
+now combines these results across an entire partition. Given uniform continuity
+along the affine curve and `delta > 0`, it constructs one positive mesh threshold.
+For any coarse partition below that mesh, with a coarse tag in each interval
+and admissible tags in each supplied subdivision, it constructs an actual
+flattened subdivision and proves
+
+```text
+flattened contour sum = sum of the supplied per-edge contributions
+flattened contour sum = coarse contour sum + error
+ComplexBoxBound(error, delta * (outer width * L)).
+```
+
+The conclusion concerns the original mapped complex contour sums, and keeps
+the equality to the supplied subdivisions. There is no factor for the number
+of coarse edges or refined samples. The zero-edge case is included.
+[interval_subdivisions](../web/proofs/interval_subdivisions.proof) states the
+geometric admissibility conditions and telescopes the local radii.
+[complex_subdivision_estimates](../web/proofs/complex_subdivision_estimates.proof)
+constructs and adds the error witnesses using
+[complex_perturbations](../web/proofs/complex_perturbations.proof).
+[sample_subdivision_conditions](../web/proofs/sample_subdivision_conditions.proof)
+maps finite families of conditions, without choice or truncating their witnesses.
+The global affine estimate depends only on the existing `lib_Trunc` in the
+order interface.
+
+Common refinements or an explicit nested sampling scheme, their mesh control,
+and Cauchy convergence remain to be proved. No integral limit is constructed
+by these finite results.
 
 ## Relationship to homotopy paths
 
@@ -208,6 +233,6 @@ asserting such a comparison.
 
 Uniform continuity here varies `t` with `z` and `e` fixed. A homotopy of
 entire loops needs continuity also in the loop parameter, which remains to
-be proved. We also still need global refinement and convergence
+be proved. We also still need convergence and homotopy
 estimates for the chosen integrands, and the local integral
 calculation in the residue theorem.
