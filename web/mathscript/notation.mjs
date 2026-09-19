@@ -46,7 +46,7 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
   throw new Error(`No folded notation for ${node.kind}`);
 }
 
-function inferredType(T, globals, bound = new Set()) {
+export function inferredType(T, globals, bound = new Set()) {
   // The full type's spelling includes substitutions performed by induction
   // and application. Nested descriptor templates can still contain the old
   // motive variables (e.g. a2 instead of a in nat_le_total).

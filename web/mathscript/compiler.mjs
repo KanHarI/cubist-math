@@ -1,7 +1,7 @@
 import { compileConstruction } from "./construction.mjs";
 import { Builder } from "./builder.mjs";
 import { parse } from "./parser.mjs";
-import { declarationNotation } from "./notation.mjs";
+import { declarationNotation, inferredType } from "./notation.mjs";
 import { declarations } from "./library.mjs";
 import preludeLibrary from "../proofs/library.mjs";
 import { MAX_STEPS } from "../language.mjs";
@@ -69,7 +69,8 @@ export function compile(module, source, library, { onProgress, optimizations = {
   });
   const links = [],
     steps = [],
-    outputs = [];
+    outputs = [],
+    localViews = new Map();
   let recording = false,
     current = null;
   try {
@@ -236,6 +237,12 @@ export function compile(module, source, library, { onProgress, optimizations = {
         );
       const next = new Map(e);
       next.set(name, { ...value, display: name });
+      if (recording && !localViews.has(value.binding)) {
+        let type = null;
+        try { type = inferredType(value.type, next); } catch {}
+        localViews.set(value.binding, { name, binding: value.binding, proposition: value.type.j,
+          mathscript: { foldingPlan: { expression: { kind: "Name", name, binding: value.binding }, type } } });
+      }
       return next;
     }
     function describe(n, e) {
@@ -1864,6 +1871,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
         .map(s => s.name) : [],
       source,
       links,
+      localViews: [...localViews.values()],
       steps,
       outputs,
       libraryCount,

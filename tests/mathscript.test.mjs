@@ -1346,3 +1346,65 @@ test("partition refinement bounds cannot discard the tail radius or coarse-tag c
   assert.throws(() => compile(module, sources.affine_partition_refinement,
     { ...sources, interval_subdivisions: outside }), /Expected|Conversion types differ/);
 });
+
+test("ordered interval bisection constructs equal-width admissible samples without choice", t => {
+  const c = compile(module, sources.interval_bisection, sources);
+  try {
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim"].includes(a)), output.name);
+    }
+    const result = c.outputs.find(o => o.name === "ordered_interval_bisection");
+    assert.match(result.type, /inverses : FieldInverses/);
+    assert.match(result.type, /exists midpoint : FieldUnitInterval/);
+    assert.match(result.type, /IntervalTagWithin/);
+    assert.match(result.type, /IntervalAdmissibleTags.*2,/);
+    assert.doesNotMatch(result.type, /half :|halfSum :|LEM|AOC/);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions`);
+  } finally { c.kernel.dispose(); }
+  const example = compile(module, `import interval_bisection;
+    theorem bisection_has_two_edges : subdivision_count(Nat, 0, 2, two_edge_subdivision(Nat, 0, 1, 2)) = 2 { exact refl(2); }
+    theorem bisection_left_tags : subdivision_sum(Nat, Nat, 0, (fun (a : Nat) => fun (b : Nat) => a + b),
+      (fun (a : Nat) => fun (b : Nat) => fun (tag : Nat) => tag), 0, 2, two_edge_subdivision(Nat, 0, 1, 2)) = 1 { exact refl(1); }
+  `, sources);
+  try {
+    for (const output of example.outputs) {
+      assert.ok(example.kernel.verify(output.proposition, output.binding), output.name);
+      assert.deepEqual(example.kernel.axiomsFor(output.binding), []);
+    }
+  } finally { example.kernel.dispose(); }
+});
+
+test("midpoint construction certifies half the width rather than the full width", () => {
+  const incorrect = sources.interval_bisection.replace(
+    "(a, midpoint) = half(interval_difference(F, zero, one, addF, negF, lt)(a, b)))",
+    "(a, midpoint) = interval_difference(F, zero, one, addF, negF, lt)(a, b))");
+  assert.notEqual(incorrect, sources.interval_bisection);
+  assert.throws(() => compile(module, incorrect, sources), /Expected|Conversion types differ/);
+});
+
+test("concatenation preserves subdivision tag conditions including an empty suffix", () => {
+  const example = `import sample_join_conditions;
+    def leftTag = fun (a : Nat) => fun (b : Nat) => fun (tag : Nat) => tag = a;
+    def firstPiece : SampleSubdivision(Nat, 0, 1) {
+      exact (1, (typed((Nat and Nat), (0, 1)), (typed((Nat and Unit), (0, tt)), (refl(0), refl(1)))));
+    }
+    theorem firstValid : SubdivisionTaggedValid(Nat, leftTag, 0, 1, firstPiece) { exact typed(((0 = 0) and Unit), (refl(0), tt)); }
+    theorem emptyValid : SubdivisionTaggedValid(Nat, leftTag, 1, 1, empty_subdivision(Nat, 1)) { exact tt; }
+    theorem joinedValid : SubdivisionTaggedValid(Nat, leftTag, 0, 1, join_subdivisions(Nat, 0, 1, 1, firstPiece, empty_subdivision(Nat, 1))) {
+      exact subdivision_tagged_valid_join(Nat, leftTag, 0, 1, 1, firstPiece, empty_subdivision(Nat, 1), firstValid, emptyValid);
+    }
+  `;
+  const c = compile(module, example, sources);
+  try {
+    for (const output of [...c.outputs, ...c.imports.filter(o => ["sample_tagged_join", "subdivision_tagged_valid_join"].includes(o.name))]) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.deepEqual(c.kernel.axiomsFor(output.binding), [], output.name);
+    }
+  } finally { c.kernel.dispose(); }
+  const wrongTag = example.replace("(typed((Nat and Unit), (0, tt))", "(typed((Nat and Unit), (1, tt))");
+  assert.notEqual(wrongTag, example);
+  assert.throws(() => compile(module, wrongTag, sources), /Expected|Conversion types differ/);
+});

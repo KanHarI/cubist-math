@@ -557,6 +557,8 @@ try {
     ["complex_perturbations", "complex_perturbation_add"],
     ["complex_subdivision_estimates", "complex_subdivision_flat_estimate"],
     ["interval_subdivisions", "interval_refinement_radius_sum"],
+    ["interval_bisection", "ordered_interval_bisection"],
+    ["sample_join_conditions", "subdivision_tagged_valid_join"],
     ["affine_partition_refinement", "affine_partition_uniform_estimate"],
 
     ["complex_affine", "complex_linear_deformation_uniform"],

@@ -111,7 +111,7 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
     if (node.kind === "Pair") return row(operator("⟨"), visit(node.left), operator(","), visit(node.right), operator("⟩"));
     if (node.kind === "Identity") return row(element("msub", element("mi", "Id"), visit(node.carrier)),
       fenced(row(visit(node.left), operator(","), visit(node.right))));
-    const symbols = { Product: "×", Sum: "⊎", Arrow: "→", Equality: "=", DefEq: "≡" };
+    const symbols = { Product: "×", Sum: "+", Arrow: "→", Equality: "=", DefEq: "≡" };
     const precedence = { Pi: 0, Sigma: 0, Lambda: 0, Arrow: 1, Sum: 2, Product: 3, Equality: 4, DefEq: 4 };
     if (symbols[node.kind]) {
       const operand = (child, left) => {

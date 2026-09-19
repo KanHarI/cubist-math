@@ -123,4 +123,6 @@ export const sourceModules = [
   "complex_subdivision_estimates",
   "interval_subdivisions",
   "affine_partition_refinement",
+  "interval_bisection",
+  "sample_join_conditions",
 ];

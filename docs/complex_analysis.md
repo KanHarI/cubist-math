@@ -39,8 +39,9 @@ and the affine coordinate length. Per-edge subdivisions can also be flattened
 to one sample list with exactly the sum of their contributions. The global
 affine refinement estimate now controls the error of this actual flattened
 sum by `delta * outer width * coordinate length`, without a sample-count
-factor. Compatible sampling schemes with vanishing mesh and construction of
-an initial integral limit remain open.
+factor. Constructive midpoints and their admissible two-edge subdivisions
+are now checked as well. Iteration into compatible sampling schemes with
+vanishing mesh and construction of an initial integral limit remain open.
 
 | Module | Result |
 | --- | --- |

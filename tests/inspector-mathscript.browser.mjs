@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
-import { chromium } from "playwright";
+import { chromium, webkit } from "playwright";
 
 const server = spawn("python3", [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
   { stdio: ["ignore", "pipe", "pipe"] });
@@ -19,7 +19,7 @@ try {
       if (match) { clearTimeout(timer); resolve(match[1]); }
     });
   });
-  browser = await chromium.launch({ headless: true });
+  browser = await (process.env.THTH_BROWSER === "webkit" ? webkit : chromium).launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1050 } });
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -32,13 +32,36 @@ try {
   };
   await page.goto(`http://127.0.0.1:${port}/proof.html?proof=euclid`);
   await idle();
+  await page.locator('.source-line[data-line="16"] [data-name="bounded"]').click();
+  await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+  await page.locator("#kernel-type").scrollIntoViewIfNeeded();
+  assert.equal(await page.locator("#kernel-expression").textContent(), "bounded");
+  assert.equal(await page.locator("#kernel-type").textContent(), "le(succ(succ(i)),n)");
+  assert.equal(await page.locator('#kernel-type [data-name="le"]').count(), 1);
+  assert.match(await page.locator("#kernel-inference").textContent(), /3 open assumptions/);
+  assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
+  const checkMathBounds = async selector => {
+    const bounds = await page.locator(selector).evaluate(el => {
+      const math = el.querySelector("math"), box = el.getBoundingClientRect(), rect = math.getBoundingClientRect();
+      const ends = [...math.querySelectorAll("mi, mn, mo, mtext")].map(n => n.getBoundingClientRect());
+      return { startsInside: rect.left >= box.left, glyphsInside:
+        ends.every(n => n.left >= rect.left - 1 && n.right <= rect.right + 1),
+        scrollReachesEnd: el.scrollWidth >= rect.right - box.left };
+    });
+    assert.deepEqual(bounds, { startsInside: true, glyphsInside: true, scrollReachesEnd: true });
+  };
+  await checkMathBounds("#kernel-type");
+  await page.screenshot({path:"/private/tmp/thth-bounded-folded.png",fullPage:true});
   for (const name of ["nat_le_total", "prime_divisor_exists", "factorial"]) {
     await inspect(name);
     assert.equal(await page.locator("#kernel-type math").count(), 1, name);
     assert.equal(await page.locator("#kernel-expression math").count(), 1, name);
     assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /could not|unavailable/);
     assert.doesNotMatch(await page.locator("#kernel-type").textContent(), /#[0-9]|…/);
-    if (name === "nat_le_total") assert.equal(await page.locator('#kernel-type [data-name="le"]').count(), 2);
+    if (name === "nat_le_total") {
+      assert.equal(await page.locator('#kernel-type [data-name="le"]').count(), 2);
+      assert.match(await page.locator("#kernel-type").textContent(), /le\(a,c\)\+le\(succ\(c\),a\)/);
+    }
     if (name === "prime_divisor_exists") assert.equal(await page.locator('#kernel-type [data-name="Divides"]').count(), 1);
     if (name === "factorial") {
       assert.match(await page.locator("#kernel-expression").textContent(), /λn\.nat\.elim\[k,h\]\(1,mul\(succ\(k\),h\),n\)/);
@@ -50,6 +73,10 @@ try {
       // mul uses an unsupported primitive call in its source folding plan;
       // its actual checked kernel AST must still receive mathematical notation.
       assert.equal(await page.locator("#kernel-expression math").count(), 1);
+      await checkMathBounds("#kernel-expression");
+      await page.setViewportSize({ width: 1100, height: 900 });
+      await checkMathBounds("#kernel-expression");
+      await page.setViewportSize({ width: 1440, height: 1050 });
     }
   }
   await inspect("InfinitelyManyPrimes");

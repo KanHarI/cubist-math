@@ -213,9 +213,22 @@ maps finite families of conditions, without choice or truncating their witnesses
 The global affine estimate depends only on the existing `lib_Trunc` in the
 order interface.
 
-Common refinements or an explicit nested sampling scheme, their mesh control,
-and Cauchy convergence remain to be proved. No integral limit is constructed
-by these finite results.
+[interval_bisection](../web/proofs/interval_bisection.proof) now constructs a
+midpoint between any weakly ordered interval endpoints. Both new widths are
+proved equal to half the original width, including degenerate intervals.
+It builds the actual two-edge subdivision and verifies its left endpoint
+tags. The ordered-field theorem supplies halving from the inverse of two;
+there is no supplied midpoint oracle or choice assumption. Its additional
+truncation introduction/elimination dependencies come from that existing
+halving construction.
+[sample_join_conditions](../web/proofs/sample_join_conditions.proof) proves
+that concatenating subdivisions with matching endpoints preserves their tag
+conditions, including empty prefixes and suffixes. This axiom-free result
+will keep the samples admissible when the bisections are iterated.
+
+Iterating these bisections into a compatible nested sampling scheme, proving
+its mesh tends to zero, and deriving Cauchy convergence remain to be proved.
+No integral limit is constructed by these finite results.
 
 ## Relationship to homotopy paths
 

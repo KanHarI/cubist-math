@@ -2,7 +2,7 @@ import createKernel from "../dist/kernel.mjs";
 import { compile } from "./compiler.mjs";
 import { sourceModules } from "./modules.mjs";
 import { MAX_STEPS } from "../language.mjs";
-import { checkedFoldedView, exportInspection } from "./kernel-folding.mjs";
+import { checkedFoldedView, exportInspection, inspectionContextNames } from "./kernel-folding.mjs";
 const module = await createKernel();
 const library = Object.fromEntries(
   await Promise.all(
@@ -36,6 +36,7 @@ self.onmessage = ({ data: { id, command, args } }) => {
         result = checked.kernel.inspect(args.binding, {
           expand: args.expand ?? [],
         });
+        Object.assign(result.contextNames, inspectionContextNames(checked));
         result.folded = checkedFoldedView(checked, args.binding, { expand: args.expand ?? [] });
       }
       else if (command === "export-folding")

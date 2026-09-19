@@ -222,3 +222,67 @@ test("inferred induction types use substituted parameters and factorial has a ce
     assert.match(rejected.failures.expression, /not definitionally equal/);
   } finally { c.kernel.dispose(); }
 });
+
+test("local folding preserves checked assumptions and uses source labels for context references", async () => {
+  const { source, sources } = await loadProof(new URL("../web/proofs/euclid.proof", import.meta.url).pathname);
+  const c = compile(module, source, sources);
+  const replay = new Kernel(module, false);
+  try {
+    const before = c.kernel.steps.length;
+    const local = c.localViews.find(local => local.name === "bounded");
+    const folded = checkedFoldedView(c, local.binding, { certificate: true });
+    assert.deepEqual(folded.failures, {});
+    assert.deepEqual(kernelMathTree(folded.expression, folded.references, folded.contextNames),
+      { kind: "Name", name: "bounded", local: true });
+    const type = kernelMathTree(folded.type, folded.references, folded.contextNames);
+    assert.equal(type.fn.name, "le");
+    assert.equal(type.args[0].args[0].args[0].name, "i");
+    assert.equal(type.args[1].name, "n");
+    for (const step of folded.certificate.steps) replay.apply(step);
+    for (const side of ["expression", "type"]) {
+      const evidence = folded.verified[side];
+      const witness = replay.inspect(evidence.witness);
+      const original = replay.inspect(evidence.original);
+      if (side === "type") assert.equal(original.expression.id, replay.inspect(local.binding).type.id);
+      assert.equal(witness.expression.kind, "DefEq");
+      assert.deepEqual(witness.assumptions.map(a => a.id), original.assumptions.map(a => a.id));
+      assert.deepEqual(evidence.assumptions, original.assumptions.map(a => a.id));
+    }
+    assert.equal(folded.verified.expression.assumptions.length, 3);
+    assert.equal(folded.verified.type.assumptions.length, 2);
+    assert.equal(c.kernel.steps.length, before);
+    for (const side of ["expression", "type"]) {
+      const exported = exportInspection(c, local.binding, side);
+      const session = new Session(module, false);
+      try {
+        session.import(exported.document, true);
+        const view = session.inspect(exported.selection.name);
+        assert.equal(view.assumptions.length, side === "expression" ? 3 : 2);
+        assert.equal(view.expression.kind, side === "expression" ? "CRef" : "Ap");
+        assert.equal(session.allowAxioms, false);
+      } finally { session.dispose(); }
+    }
+    const original = structuredClone(local.mathscript.foldingPlan.type);
+    local.mathscript.foldingPlan.type.args.reverse();
+    const wrong = checkedFoldedView(c, local.binding);
+    assert.equal(wrong.type, null);
+    assert.match(wrong.failures.type, /not definitionally equal/);
+    local.mathscript.foldingPlan.type = original;
+
+    // A beta-equivalent proposal must still not acquire an extra assumption.
+    const n = c.localViews.find(local => local.name === "n");
+    const i = c.localViews.find(local => local.name === "i");
+    const typeTarget = local.proposition;
+    local.proposition = n.proposition;
+    const wrongTarget = checkedFoldedView(c, local.binding);
+    assert.equal(wrongTarget.type, null);
+    assert.match(wrongTarget.failures.type, /not the inspected judgement's stored type/);
+    local.proposition = typeTarget;
+    n.mathscript.foldingPlan.expression = { kind: "Call", fn: { kind: "Lambda", name: "extra",
+      domain: { kind: "Name", name: "Nat" }, body: { kind: "Name", name: "n", binding: n.binding } },
+      args: [{ kind: "Name", name: "i", binding: i.binding }] };
+    const extra = checkedFoldedView(c, n.binding);
+    assert.equal(extra.expression, null);
+    assert.match(extra.failures.expression, /changes the original assumptions/);
+  } finally { replay.dispose(); c.kernel.dispose(); }
+});

@@ -373,7 +373,14 @@ summary {
   max-height: min(65vh, 640px);
 }
 .kernel-term math {
+  /* Give the formula its intrinsic width. Constraining a MathML block to the
+     narrow inspector can squeeze nested rows differently across browsers.
+     Overflow belongs to the enclosing scroll box, including the first glyph. */
+  width: max-content;
+  min-width: 100%;
+  margin: 0;
   text-align: left;
+  white-space: nowrap;
 }
 .math-reference {
   color: #356747;

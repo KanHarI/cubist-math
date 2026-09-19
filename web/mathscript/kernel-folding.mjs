@@ -40,15 +40,28 @@ export function exportInspection(checked, binding, side, folded = true) {
   return { document, selection: { name, side: "expression" } };
 }
 
+// Labels only annotate actual context-reference nodes. They do not replace
+// expressions, and duplicate labels remain distinguished by kernel context IDs.
+export function inspectionContextNames(checked, kernel = checked.kernel) {
+  const result = {};
+  for (const local of checked.localViews ?? []) {
+    const binding = kernel.bindings.get(local.binding);
+    if (binding?.kind !== "judgement") continue;
+    const tree = kernel.node(kernel.module._wb_view(kernel.handle, 0, binding.id, 0));
+    if (["CRef", "UCRef"].includes(tree.kind) && !(tree.parameter in result)) result[tree.parameter] = local.name;
+  }
+  return result;
+}
+
 // Source syntax only proposes a folded term. A separate kernel checks every
 // constructor, definition alias, and a DefEq witness connecting the proposal
 // to the original term. The display reads this kernel's AST, never the plan.
 // The original proof engine and exported proof trace remain untouched.
 export function checkedFoldedView(checked, binding, { certificate = false, expand = [] } = {}) {
-  const output = [...checked.outputs, ...checked.imports].find(o => o.binding === binding);
+  const output = [...checked.outputs, ...checked.imports, ...(checked.localViews ?? [])].find(o => o.binding === binding);
   if (!output?.mathscript?.foldingPlan) return null;
   const plan = output.mathscript.foldingPlan;
-  const names = new Map([...(checked.symbols ?? []), ...checked.imports, ...checked.outputs].map(o => [o.binding, o.name]));
+  const names = new Map([...(checked.symbols ?? []), ...checked.imports, ...checked.outputs, ...(checked.localViews ?? [])].map(o => [o.binding, o.name]));
   const b = new Builder(checked.kernel.module, { loadLibrary: false, allowAxioms: checked.allowAxioms,
     optimizations: { normalForms: true, instructions: true } });
   b.serial = 1000000000;
@@ -112,6 +125,9 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
         if (node.name === "Void") return b.emit("VoidForm");
         if (node.name === "tt") return b.emit("UnitIntro");
         if (!node.binding) throw new Error(`No checked definition for ${node.name}`);
+        // Open local terms cannot be boxed as closed definitions. Reuse their
+        // checked term, preserving its context, and certify the containing type.
+        if (b.view(node.binding, 2)) return node.binding;
         if (!aliases.has(node.binding)) {
           const witness = b.emit("Def", [node.binding]);
           const alias = b.emit("DefEqExtL", [witness]);
@@ -226,11 +242,17 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
       }
       return tree;
     }
-    const result = { references, verified: {}, expression: null, type: null, failures: {} };
+    const result = { references, contextNames: inspectionContextNames(checked, b.k), verified: {}, expression: null, type: null, failures: {} };
     for (const [side, original] of [["expression", output.binding], ["type", output.proposition]]) {
       try {
+        if (side === "type" && b.view(original, 0) !== b.view(output.binding, 1))
+          throw new Error("Folding target is not the inspected judgement's stored type");
         const evidence = comparison(synth(plan[side]), original);
-        if (b.view(evidence.witness, 2)) throw new Error("Folding certificate has open assumptions");
+        const originalScope = b.k.list(b.view(original, 2)).map(item => item.id);
+        const witnessScope = b.k.list(b.view(evidence.witness, 2)).map(item => item.id);
+        if (originalScope.length !== witnessScope.length || witnessScope.some(id => !originalScope.includes(id)))
+          throw new Error("Folding certificate changes the original assumptions");
+        evidence.assumptions = originalScope;
         result.verified[side] = evidence;
         result[side] = annotate(b.k.tree(b.view(evidence.candidate, 0),
           expand.includes(side) ? { left: 65536, maxDepth: 256 } : { left: 350, maxDepth: 40 }), plan[side]);

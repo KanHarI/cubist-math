@@ -3,6 +3,8 @@ import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 import { renderMathNotation, kernelMathTree } from "./math-notation.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 const choices = [
+  { id: "sample_join_conditions", title: "Curve sampling · concatenation preserves admissible tags", complexDevelopment: true },
+  { id: "interval_bisection", title: "Curve sampling · constructive midpoint subdivisions", complexDevelopment: true },
   { id: "affine_partition_refinement", title: "Curve contours · uniform refinement across an entire partition", complexDevelopment: true },
   { id: "interval_subdivisions", title: "Curve sampling · subdivision admissibility and total error radius", complexDevelopment: true },
   { id: "complex_subdivision_estimates", title: "Curve contours · sum subdivision errors across a partition", complexDevelopment: true },
@@ -763,7 +765,7 @@ function renderKernel(view) {
     const container = $("kernel-" + side);
     const tree = typeset && (typeset[side] ?? view[side]);
     container.classList.toggle("typeset", !!tree);
-    if (tree) renderMathNotation(container, kernelMathTree(tree, typeset[side] ? typeset.references : {}, view.contextNames), {
+    if (tree) renderMathNotation(container, kernelMathTree(tree, typeset[side] ? typeset.references : {}, typeset[side] ? typeset.contextNames ?? view.contextNames : view.contextNames), {
       resolve: binding => symbols.get(binding),
       inspect: info => inspect(decorate(info)),
     });
