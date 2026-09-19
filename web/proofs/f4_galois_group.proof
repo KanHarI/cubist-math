@@ -1,0 +1,81 @@
+import f4_galois;
+
+// Every automorphism is determined by the image of alpha. The only possible
+// images are alpha and alpha+1, so the Galois group has exactly two elements.
+def F4Automorphism = Galois(F2, F4OverF2);
+def f4_auto_apply(e : F4Automorphism) : F4Carrier -> F4Carrier {
+  exact extension_iso_forward(F2, F4OverF2, F4OverF2, e);
+}
+def f4_auto_field_map(e : F4Automorphism) : FieldOpsPreserved(F4Carrier, F4Carrier, f4_auto_apply(e), f4_ops, f4_ops) {
+  exact fst(FieldOpsPreserved(F4Carrier, F4Carrier, f4_auto_apply(e), f4_ops, f4_ops),
+    (forall k : F2Carrier, f4_auto_apply(e, f2_into_f4(k)) = f2_into_f4(k)),
+    structure_iso_preserves(ExtensionData(F2), ExtensionPreserved(F2), F4OverF2, F4OverF2, e));
+}
+theorem f4_auto_ext(e : F4Automorphism, d : F4Automorphism,
+  alpha : f4_auto_apply(e, f4_2) = f4_auto_apply(d, f4_2)) : e = d {
+  obtain (e0, (e1, (en, (ea, em)))) = f4_auto_field_map(e);
+  obtain (d0, (d1, (dn, (da, dm)))) = f4_auto_field_map(d);
+  let onePath = trans(e1, sym(d1));
+  have other : f4_auto_apply(e, f4_3) = f4_auto_apply(d, f4_3) {
+    exact trans(ea(f4_2, f4_1),
+      trans(cong((fun (x : F4Carrier) => f4_add(x, f4_auto_apply(e, f4_1))), alpha),
+        trans(cong(f4_add(f4_auto_apply(d, f4_2)), onePath), sym(da(f4_2, f4_1)))));
+  }
+  exact structure_iso_ext(ExtensionData(F2), ExtensionPreserved(F2), extension_preserved_prop(F2), F4OverF2, F4OverF2, e, d,
+    (fun (x : F4Carrier) => f4_induction((fun (x : F4Carrier) => f4_auto_apply(e, x) = f4_auto_apply(d, x)),
+      trans(e0, sym(d0)), onePath, alpha, other, x)));
+}
+theorem f4_auto_injective(e : F4Automorphism, x : F4Carrier, y : F4Carrier, p : f4_auto_apply(e, x) = f4_auto_apply(e, y)) : x = y {
+  let bijection = structure_iso_bijection(ExtensionData(F2), ExtensionPreserved(F2), F4OverF2, F4OverF2, e);
+  exact trans(sym(left_inverse(F4Carrier, F4Carrier, bijection, x)),
+    trans(cong(backward(F4Carrier, F4Carrier, bijection), p), left_inverse(F4Carrier, F4Carrier, bijection, y)));
+}
+def f4_symmetry(b : F2Carrier) = f2_induction((fun (b : F2Carrier) => F4Automorphism), f4_identity_automorphism, f4_frobenius_automorphism, b);
+def f4_root_bit(x : F4Carrier) = f4_induction((fun (x : F4Carrier) => F2Carrier), f2_0, f2_0, f2_0, f2_1, x);
+def f4_symmetry_bit(e : F4Automorphism) = f4_root_bit(f4_auto_apply(e, f4_2));
+theorem f4_symmetry_bit_roundtrip(b : F2Carrier) : f4_symmetry_bit(f4_symmetry(b)) = b {
+  exact f2_induction((fun (b : F2Carrier) => f4_symmetry_bit(f4_symmetry(b)) = b), refl(f2_0), refl(f2_1), b);
+}
+theorem f4_symmetry_classify(e : F4Automorphism) : f4_symmetry(f4_symmetry_bit(e)) = e {
+  obtain (e0, (e1, (en, (ea, em)))) = f4_auto_field_map(e);
+  let f = f4_auto_apply(e);
+  have classify : (f(f4_2) = f(f4_2)) -> (f4_symmetry(f4_symmetry_bit(e)) = e) {
+  exact f4_induction((fun (v : F4Carrier) => (f(f4_2) = v) -> (f4_symmetry(f4_root_bit(v)) = e)),
+    (fun (p : f(f4_2) = f4_0) => typed((f4_symmetry(f4_root_bit(f4_0)) = e), absurd(f4_2_not_0(f4_auto_injective(e, f4_2, f4_0, trans(p, sym(e0))))))),
+    (fun (p : f(f4_2) = f4_1) => typed((f4_symmetry(f4_root_bit(f4_1)) = e), absurd(f4_2_not_1(f4_auto_injective(e, f4_2, f4_1, trans(p, sym(e1))))))),
+    (fun (p : f(f4_2) = f4_2) => f4_auto_ext(f4_identity_automorphism, e, sym(p))),
+    (fun (p : f(f4_2) = f4_3) => f4_auto_ext(f4_frobenius_automorphism, e, sym(p))), f(f4_2));
+  }
+  exact classify(refl(f(f4_2)));
+}
+theorem f4_galois_has_two_elements : Bijection(F2Carrier, F4Automorphism) {
+  exact (f4_symmetry, (f4_symmetry_bit, (f4_symmetry_bit_roundtrip, f4_symmetry_classify)));
+}
+
+def f4_auto_compose(e : F4Automorphism, d : F4Automorphism) = extension_iso_compose(F2, F4OverF2, F4OverF2, F4OverF2, e, d);
+theorem f4_symmetry_add(a : F2Carrier, b : F2Carrier) : f4_symmetry(f2_add(a, b)) = f4_auto_compose(f4_symmetry(a), f4_symmetry(b)) {
+  exact f2_induction((fun (a : F2Carrier) => f4_symmetry(f2_add(a, b)) = f4_auto_compose(f4_symmetry(a), f4_symmetry(b))),
+    f2_induction((fun (b : F2Carrier) => f4_symmetry(f2_add(f2_0, b)) = f4_auto_compose(f4_symmetry(f2_0), f4_symmetry(b))),
+      f4_auto_ext(f4_identity_automorphism, f4_auto_compose(f4_identity_automorphism, f4_identity_automorphism), refl(f4_2)),
+      f4_auto_ext(f4_frobenius_automorphism, f4_auto_compose(f4_identity_automorphism, f4_frobenius_automorphism), refl(f4_3)), b),
+    f2_induction((fun (b : F2Carrier) => f4_symmetry(f2_add(f2_1, b)) = f4_auto_compose(f4_symmetry(f2_1), f4_symmetry(b))),
+      f4_auto_ext(f4_frobenius_automorphism, f4_auto_compose(f4_frobenius_automorphism, f4_identity_automorphism), refl(f4_3)),
+      sym(f4_frobenius_square), b), a);
+}
+theorem f4_auto_square(e : F4Automorphism) : f4_auto_compose(e, e) = f4_identity_automorphism {
+  exact trans(sym(cong((fun (e : F4Automorphism) => f4_auto_compose(e, e)), f4_symmetry_classify(e))),
+    trans(sym(f4_symmetry_add(f4_symmetry_bit(e), f4_symmetry_bit(e))), cong(f4_symmetry, f2_add_neg(f4_symmetry_bit(e)))));
+}
+def F4GaloisGroup = GaloisGroup(F2, F4OverF2);
+def cyclic_two_laws : Group(F2Carrier, f2_0, f2_add) {
+  exact (fin_is_set(2), (f2_add_assoc, (f2_add_zero,
+    ((fun (x : F2Carrier) => trans(f2_add_comm(x, f2_0), f2_add_zero(x))),
+     (fun (x : F2Carrier) => typed((exists y : F2Carrier, (f2_add(y, x) = f2_0) and (f2_add(x, y) = f2_0)), (x, (f2_add_neg(x), f2_add_neg(x)))))))));
+}
+def CyclicTwo = group_object(F2Carrier, f2_0, f2_add, cyclic_two_laws);
+theorem f4_galois_is_cyclic_two : GroupIso(CyclicTwo, F4GaloisGroup) {
+  exact (f4_symmetry, (f4_symmetry_bit, (f4_symmetry_bit_roundtrip, (f4_symmetry_classify, f4_symmetry_add))));
+}
+theorem f4_galois_group_equality : CyclicTwo =[GroupType] F4GaloisGroup {
+  exact isomorphic_groups_equal(CyclicTwo, F4GaloisGroup, f4_galois_is_cyclic_two);
+}

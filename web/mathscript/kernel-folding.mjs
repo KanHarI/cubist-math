@@ -149,6 +149,34 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
       throw new Error("Folding comparison did not converge");
     }
     const normalType = term => b.emit("UnHigh", [reduceFocused(b.emit("HighType", [term]))]);
+    // Unbox only aliases introduced for this display. Expanding the original
+    // theorem references can expose enormous proof bodies and is unnecessary:
+    // both sides already share those same checked references.
+    function reduceDisplayAliases(term) {
+      const findAlias = (id, seen = new Set()) => {
+        if (aliasWitnesses.has(id)) return [];
+        if (seen.has(id)) return null;
+        seen.add(id);
+        const node = b.k.node(id);
+        for (let i = 0; i < node.children.length; i++) {
+          const path = findAlias(node.children[i], seen);
+          if (path) return [i, ...path];
+        }
+        return null;
+      };
+      for (let i = 0; i < 4096; i++) {
+        term = b.emit("High1", [b.emit("HighExp", [term])]);
+        const next = b.emit("BetaReduceGrossKnuth", [term]);
+        if (b.view(next, 0) !== b.view(term, 0)) { term = next; continue; }
+        const right = b.k.node(b.view(next, 0)).children[1];
+        const path = findAlias(right);
+        if (!path) return b.emit("UnHigh", [next]);
+        term = next;
+        for (const child of path) term = b.emit(`High${child}`, [term]);
+        term = b.emit("DefReducePointed", [term]);
+      }
+      throw new Error("Display alias comparison did not converge");
+    }
     function synth(node, scope = new Map()) {
       if (!node) throw new Error("No folding plan for this term");
       if (node.kind === "Name") {
@@ -260,7 +288,7 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
         candidate = b.emit("UCumul", [candidate]); sort = b.k.node(b.view(candidate, 1));
       }
       // Left sides retain the exact input terms; only right sides normalize.
-      const witness = term => b.emit("UnHigh", [reduceFocused(b.emit("High1", [b.emit("HighExp", [b.emit("DefEqRefl", [normalType(term)])])]))]);
+      const witness = term => reduceDisplayAliases(b.emit("DefEqRefl", [normalType(term)]));
       const a = witness(candidate), c = witness(original);
       const an = b.k.node(b.view(a, 0)), cn = b.k.node(b.view(c, 0));
       if (an.children[1] !== cn.children[1] || b.view(a, 1) !== b.view(c, 1))

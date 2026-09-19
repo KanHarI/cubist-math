@@ -18,6 +18,13 @@ export const proofTopics = [
 ];
 
 export const proofChoices = [
+  { id: "f4_galois_group", topic: "algebra", title: "Galois theory · Gal(F₄/F₂) is cyclic of order two" },
+  { id: "f4_galois", topic: "algebra", title: "Galois theory · Frobenius as a nontrivial loop" },
+  { id: "field_extensions", topic: "algebra", title: "Galois theory · automorphisms are loops" },
+  { id: "galois_paths", topic: "algebra", title: "Galois theory · transport and composition" },
+  { id: "finite_fields", topic: "algebra", title: "Finite fields · F₂ and F₄ from explicit tables" },
+  { id: "algebraic_fields", topic: "algebra", title: "Fields · unordered algebraic fields and isomorphisms" },
+  { id: "structured_sets", topic: "homotopy", title: "Univalence · structure identity for sets" },
   { id: "affine_integral_linearity", topic: "contour-integration", title: "Curve integrals · complex linearity and equality along the curve", complexDevelopment: true },
   { id: "curve_integrand_sums", topic: "contour-integration", title: "Curve contours · linearity in the sampled integrand", complexDevelopment: true },
   { id: "field_uniform_radii", topic: "general-analysis", title: "Uniform continuity · constructive common positive radii", complexDevelopment: true },

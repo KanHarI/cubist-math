@@ -30,7 +30,7 @@ def group_identity_family(G : GroupType, H : GroupType) = typed(U1, GroupIso(G, 
 def group_identity_encode(G : GroupType, H : GroupType, iso : GroupIso(G, H)) =
   identity_system_encode(GroupType, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, iso);
 
-// Rijke, Introduction to Homotopy U0 Theory, Theorem 19.3.6.
+// Rijke, Introduction to Homotopy Type Theory, Theorem 19.3.6.
 // The forward map is the canonical transport of the identity isomorphism.
 // The carrier, operations and law proofs all belong to the equality on the left.
 theorem group_structure_identity(G : GroupType, H : GroupType) : Equiv(U1, (G = H), GroupIso(G, H)) {

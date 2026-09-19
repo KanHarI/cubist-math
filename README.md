@@ -109,6 +109,13 @@ to the winding isomorphism gives an actual equality of the
 circle loop group and the integer group. It uses univalence and function
 extensionality, without choice or excluded middle.
 
+The [Galois development](docs/galois.md) identifies automorphisms fixing a base
+field with loops in the type of field extensions. It checks transport on
+elements and composition of symmetries, constructs `F2` and `F4` by finite
+tables, and proves `Gal(F4/F2)` is cyclic of order two. Frobenius becomes a
+nontrivial loop that exchanges the roots of `x^2 + x + 1` and squares to
+reflexivity. Open `?proof=f4_galois_group` or `?proof=f4_galois`.
+
 The [finite counting development](docs/finite_counting.md) constructs `Fin(n)`
 from sums of Unit and proves the binomial, permutation (`k!`), and function
 (`m^n`, including `k^k`) counts. Open `?proof=binomial_counting`,

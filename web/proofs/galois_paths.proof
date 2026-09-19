@@ -1,0 +1,136 @@
+import field_extensions;
+
+// Composition is defined on the algebraic maps, with preservation checked
+// component by component. The convention is: first e, then d (d after e).
+def field_ops_compose(A : U0, B : U0, C : U0, f : A -> B, g : B -> C,
+  a : FieldOps(A), b : FieldOps(B), c : FieldOps(C),
+  p : FieldOpsPreserved(A, B, f, a, b), q : FieldOpsPreserved(B, C, g, b, c)) :
+  FieldOpsPreserved(A, C, (fun (x : A) => g(f(x))), a, c) {
+  obtain (p0, (p1, (pn, (pa, pm)))) = p;
+  obtain (q0, (q1, (qn, (qa, qm)))) = q;
+  exact (trans(cong(g, p0), q0), (trans(cong(g, p1), q1),
+    ((fun (x : A) => trans(cong(g, pn(x)), qn(f(x)))),
+      ((fun (x : A) => fun (y : A) => trans(cong(g, pa(x, y)), qa(f(x), f(y)))),
+        (fun (x : A) => fun (y : A) => trans(cong(g, pm(x, y)), qm(f(x), f(y))))))));
+}
+def extension_preserved_compose(K : AlgebraicField, A : U0, B : U0, C : U0, f : A -> B, g : B -> C,
+  a : ExtensionData(K, A), b : ExtensionData(K, B), c : ExtensionData(K, C),
+  p : ExtensionPreserved(K, A, B, f, a, b), q : ExtensionPreserved(K, B, C, g, b, c)) :
+  ExtensionPreserved(K, A, C, (fun (x : A) => g(f(x))), a, c) {
+  obtain (pf, pk) = p;
+  obtain (qf, qk) = q;
+  exact (field_ops_compose(A, B, C, f, g,
+    field_data_ops(A, extension_field_data(K, A, a)), field_data_ops(B, extension_field_data(K, B, b)), field_data_ops(C, extension_field_data(K, C, c)), pf, qf),
+    (fun (k : af_carrier(K)) => trans(cong(g, pk(k)), qk(k))));
+}
+def extension_iso_compose(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), G : FieldExt(K),
+  e : ExtensionIso(K, E, F), d : ExtensionIso(K, F, G)) : ExtensionIso(K, E, G) {
+  let S = ExtensionData(K);
+  let R = ExtensionPreserved(K);
+  let A = extension_carrier(K, E);
+  let B = extension_carrier(K, F);
+  let C = extension_carrier(K, G);
+  let f = extension_iso_forward(K, E, F, e);
+  let g = extension_iso_forward(K, F, G, d);
+  let bijection = compose_bijection(A, B, C, structure_iso_bijection(S, R, E, F, e), structure_iso_bijection(S, R, F, G, d));
+  exact ((fun (x : A) => g(f(x))),
+    (sigma_second((A -> C), InverseData(A, C), bijection),
+      extension_preserved_compose(K, A, B, C, f, g, structure_data(S, E), structure_data(S, F), structure_data(S, G),
+        structure_iso_preserves(S, R, E, F, e), structure_iso_preserves(S, R, F, G, d))));
+}
+
+// Transport in the carrier family is exactly the forward algebraic map.
+theorem extension_transport_forward(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) :
+  forall x : extension_carrier(K, E), transport(extension_carrier(K), E, F, p, x) =
+    extension_iso_forward(K, E, F, extension_path_iso(K, E, F, p), x) {
+  exact path_induction(FieldExt(K),
+    (fun (E : FieldExt(K)) => fun (F : FieldExt(K)) => fun (p : E = F) =>
+      forall x : extension_carrier(K, E), transport(extension_carrier(K), E, F, p, x) =
+        extension_iso_forward(K, E, F, extension_path_iso(K, E, F, p), x)),
+    (fun (E : FieldExt(K)) => fun (x : extension_carrier(K, E)) => refl(x)), E, F, p);
+}
+theorem galois_loop_action(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E), x : extension_carrier(K, E)) :
+  transport(extension_carrier(K), E, E, extension_iso_path(K, E, E, e), x) = extension_iso_forward(K, E, E, e, x) {
+  exact trans(extension_transport_forward(K, E, E, extension_iso_path(K, E, E, e), x),
+    cong((fun (v : Galois(K, E)) => extension_iso_forward(K, E, E, v, x)), extension_iso_roundtrip(K, E, E, e)));
+}
+
+theorem extension_concat_forward(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) :
+  forall G : FieldExt(K), forall q : F = G, forall x : extension_carrier(K, E),
+    extension_iso_forward(K, E, G, extension_path_iso(K, E, G, trans(p, q)), x) =
+      extension_iso_forward(K, F, G, extension_path_iso(K, F, G, q), extension_iso_forward(K, E, F, extension_path_iso(K, E, F, p), x)) {
+  exact path_induction(FieldExt(K),
+    (fun (E : FieldExt(K)) => fun (F : FieldExt(K)) => fun (p : E = F) =>
+      forall G : FieldExt(K), forall q : F = G, forall x : extension_carrier(K, E),
+        extension_iso_forward(K, E, G, extension_path_iso(K, E, G, trans(p, q)), x) =
+          extension_iso_forward(K, F, G, extension_path_iso(K, F, G, q), extension_iso_forward(K, E, F, extension_path_iso(K, E, F, p), x))),
+    (fun (E : FieldExt(K)) => fun (G : FieldExt(K)) => fun (q : E = G) => fun (x : extension_carrier(K, E)) =>
+      refl(extension_iso_forward(K, E, G, extension_path_iso(K, E, G, q), x))), E, F, p);
+}
+theorem extension_paths_compose(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), G : FieldExt(K), p : E = F, q : F = G) :
+  extension_path_iso(K, E, G, trans(p, q)) = extension_iso_compose(K, E, F, G, extension_path_iso(K, E, F, p), extension_path_iso(K, F, G, q)) {
+  exact structure_iso_ext(ExtensionData(K), ExtensionPreserved(K), extension_preserved_prop(K), E, G,
+    extension_path_iso(K, E, G, trans(p, q)), extension_iso_compose(K, E, F, G, extension_path_iso(K, E, F, p), extension_path_iso(K, F, G, q)),
+    extension_concat_forward(K, E, F, p, G, q));
+}
+theorem galois_composition_is_concatenation(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E), d : Galois(K, E)) :
+  extension_iso_path(K, E, E, extension_iso_compose(K, E, E, E, e, d)) =
+    trans(extension_iso_path(K, E, E, e), extension_iso_path(K, E, E, d)) {
+  let p = extension_iso_path(K, E, E, e);
+  let q = extension_iso_path(K, E, E, d);
+  have decoded : extension_path_iso(K, E, E, trans(p, q)) = extension_iso_compose(K, E, E, E, e, d) {
+    exact trans(extension_paths_compose(K, E, E, E, p, q),
+      trans(cong((fun (v : Galois(K, E)) => extension_iso_compose(K, E, E, E, v, extension_path_iso(K, E, E, q))), extension_iso_roundtrip(K, E, E, e)),
+        cong(extension_iso_compose(K, E, E, E, e), extension_iso_roundtrip(K, E, E, d))));
+  }
+  exact trans(sym(cong(extension_iso_path(K, E, E), decoded)), extension_path_roundtrip(K, E, E, trans(p, q)));
+}
+theorem galois_identity_is_reflexivity(K : AlgebraicField, E : FieldExt(K)) :
+  extension_iso_path(K, E, E, extension_identity_iso(K, E)) = refl(E) {
+  exact extension_path_roundtrip(K, E, E, refl(E));
+}
+
+// A symmetry that moves an element cannot become the reflexive loop.
+theorem galois_moving_loop_nontrivial(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E), x : extension_carrier(K, E),
+  moves : (extension_iso_forward(K, E, E, e, x) = x) -> Void,
+  trivial : extension_iso_path(K, E, E, e) = refl(E)) : Void {
+  exact moves(trans(sym(galois_loop_action(K, E, e, x)),
+    cong((fun (p : E = E) => transport(extension_carrier(K), E, E, p, x)), trivial)));
+}
+
+// The algebraic automorphisms form a group. Path reversal supplies the inverse;
+// the round-trip laws ensure that this retains the original algebraic map.
+def galois_compose(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E), d : Galois(K, E)) = extension_iso_compose(K, E, E, E, e, d);
+def galois_inverse(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)) =
+  extension_path_iso(K, E, E, sym(extension_iso_path(K, E, E, e)));
+theorem galois_left_inverse(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)) :
+  galois_compose(K, E, galois_inverse(K, E, e), e) = extension_identity_iso(K, E) {
+  let p = extension_iso_path(K, E, E, e);
+  exact trans(cong(galois_compose(K, E, galois_inverse(K, E, e)), sym(extension_iso_roundtrip(K, E, E, e))),
+    trans(sym(extension_paths_compose(K, E, E, E, sym(p), p)),
+      cong(extension_path_iso(K, E, E), inverse_left(FieldExt(K), E, E, p))));
+}
+theorem galois_right_inverse(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)) :
+  galois_compose(K, E, e, galois_inverse(K, E, e)) = extension_identity_iso(K, E) {
+  let p = extension_iso_path(K, E, E, e);
+  exact trans(cong((fun (d : Galois(K, E)) => galois_compose(K, E, d, galois_inverse(K, E, e))), sym(extension_iso_roundtrip(K, E, E, e))),
+    trans(sym(extension_paths_compose(K, E, E, E, p, sym(p))),
+      cong(extension_path_iso(K, E, E), inverse_right(FieldExt(K), E, E, p))));
+}
+def galois_group_laws(K : AlgebraicField, E : FieldExt(K)) : Group(Galois(K, E), extension_identity_iso(K, E), galois_compose(K, E)) {
+  let S = ExtensionData(K);
+  let R = ExtensionPreserved(K);
+  let prop = extension_preserved_prop(K);
+  exact (structure_iso_set(S, R, prop, E, E),
+    ((fun (e : Galois(K, E)) => fun (d : Galois(K, E)) => fun (h : Galois(K, E)) =>
+      structure_iso_ext(S, R, prop, E, E, galois_compose(K, E, galois_compose(K, E, e, d), h), galois_compose(K, E, e, galois_compose(K, E, d, h)),
+        (fun (x : extension_carrier(K, E)) => refl(extension_iso_forward(K, E, E, h, extension_iso_forward(K, E, E, d, extension_iso_forward(K, E, E, e, x))))))),
+    ((fun (e : Galois(K, E)) => structure_iso_ext(S, R, prop, E, E, galois_compose(K, E, extension_identity_iso(K, E), e), e,
+      (fun (x : extension_carrier(K, E)) => refl(extension_iso_forward(K, E, E, e, x))))),
+    ((fun (e : Galois(K, E)) => structure_iso_ext(S, R, prop, E, E, galois_compose(K, E, e, extension_identity_iso(K, E)), e,
+      (fun (x : extension_carrier(K, E)) => refl(extension_iso_forward(K, E, E, e, x))))),
+     (fun (e : Galois(K, E)) => typed((exists d : Galois(K, E), (galois_compose(K, E, d, e) = extension_identity_iso(K, E)) and (galois_compose(K, E, e, d) = extension_identity_iso(K, E))),
+       (galois_inverse(K, E, e), (galois_left_inverse(K, E, e), galois_right_inverse(K, E, e)))))))));
+}
+def GaloisGroup(K : AlgebraicField, E : FieldExt(K)) =
+  group_object(Galois(K, E), extension_identity_iso(K, E), galois_compose(K, E), galois_group_laws(K, E));

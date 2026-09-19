@@ -33,7 +33,7 @@ try {
   assert.match(await page.title(), /Proof highlights/);
   assert.equal(await page.locator("h1").count(), 1);
   const links = await page.locator(".proof-card").evaluateAll(cards => cards.map(card => card.href));
-  assert.equal(links.length, 7);
+  assert.equal(links.length, 8);
   // Every card points to a registered source and to a real theorem in that source.
   for (const link of links) {
     const query = new URL(link).searchParams;
@@ -52,7 +52,7 @@ try {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({ path: "/private/tmp/thth-highlights-desktop.png", fullPage: true });
   // Check representative destinations, including the named final result.
-  for (const proof of groupOnly ? ["group_univalence"] : ["euclid", "circle", "group_univalence"]) {
+  for (const proof of groupOnly ? ["group_univalence"] : ["euclid", "circle", "group_univalence", "f4_galois_group"]) {
     await page.locator(`.proof-card[href*="proof=${proof}&"]`).click();
     await idle();
     assert.equal(await page.locator("#proof-picker").inputValue(), proof);
@@ -60,7 +60,7 @@ try {
     assert.equal(await page.locator("#example").count(), 0);
     assert.equal(await page.getByRole("button", { name: "Euclid example" }).count(), 0);
     assert.equal(await page.locator("#diagnostic").isVisible(), false);
-    assert.match(await page.locator("#result").textContent(), proof === "euclid" ? /Verified euclid/ : proof === "circle" ? /fundamental_group_of_circle/ : /group_structure_identity/);
+    assert.match(await page.locator("#result").textContent(), proof === "euclid" ? /Verified euclid/ : proof === "circle" ? /fundamental_group_of_circle/ : proof === "group_univalence" ? /group_structure_identity/ : /f4_galois_is_cyclic_two/);
     await page.getByRole("link", { name: "Proof highlights", exact: true }).click();
     assert.match(await page.title(), /Proof highlights/);
   }
@@ -84,7 +84,7 @@ try {
     await popup.close();
   }
   assert.deepEqual(errors, []);
-  console.log(`PASS proof landing: root, seven highlights, destinations, ${groupOnly ? "group identity" : "workbench transfer"}, mobile (${process.env.THTH_BROWSER ?? "chromium"})`);
+  console.log(`PASS proof landing: root, eight highlights, destinations, ${groupOnly ? "group identity" : "workbench transfer"}, mobile (${process.env.THTH_BROWSER ?? "chromium"})`);
 } finally {
   await browser?.close();
   server.kill();

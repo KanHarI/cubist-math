@@ -1,5 +1,12 @@
 // Bundled mathematical source modules; no checked proof snapshots.
 export const sourceModules = [
+  "structured_sets",
+  "algebraic_fields",
+  "field_extensions",
+  "galois_paths",
+  "finite_fields",
+  "f4_galois",
+  "f4_galois_group",
   "primes",
   "equivalences",
   "finite",
