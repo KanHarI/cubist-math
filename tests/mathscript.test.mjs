@@ -1014,8 +1014,8 @@ test("magnitude closeness needs a strict radius margin", () => {
 test("larger contour proofs check beyond the former million-instruction limit", () => {
   // Real mathematical imports exercise the raised limit without bypassing
   // kernel verification or allocating millions of artificial instructions.
-  // Keep this resource-limit regression unoptimized so compiler improvements
-  // do not remove the large trace that it is specifically meant to exercise.
+  // Disable instruction-reducing caches so compiler improvements do not remove
+  // the large trace this regression is specifically meant to exercise.
   const source = "import contour_sums;\nimport sample_magnitude_bounds;\n" + sources.contour_tag_limits;
   const c = compile(module, source, sources, { optimizations: { normalForms: false, instructions: false } });
   try {

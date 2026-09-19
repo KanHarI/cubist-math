@@ -70,10 +70,10 @@ the relevant mutation and implementation regressions. Plain `npm test` runs
 the complete regression suite for the final check; `npm run test:browser` runs
 the browser checks separately.
 
-MathScript offers separate `--reuse-normal-forms` and
-`--memoize-instructions` flags for selected proof checks and `cli/repl.mjs`,
-with matching proof-viewer toggles near the top. Both default on; disable them
-individually with `--no-reuse-normal-forms` and `--no-memoize-instructions`. See
+MathScript offers separate `--reuse-normal-forms`, `--memoize-instructions`,
+and `--index-fresh-contexts` flags for selected proof checks and `cli/repl.mjs`,
+with matching proof-viewer toggles near the top. All default on; add `no-`
+after `--` to disable an option individually. See
 [compiler optimization experiments](docs/compiler_optimizations.md) for
 measurements and comparison commands.
 

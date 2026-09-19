@@ -2,24 +2,26 @@
 
 MathScript compiler optimizations are independently selectable. They change
 which checked instructions the compiler emits; the kernel's inference rules
-and axiom policy stay the same. Both options are enabled by default.
+and axiom policy stay the same. All options are enabled by default.
 
 | Optimization | CLI flag | What it reuses |
 | --- | --- | --- |
 | Normal-form reuse | `--reuse-normal-forms` | Checked normalization results, including intermediate terms and the resulting normal form. Cache entries distinguish kernel judgments, recorded axiom dependencies, and beta-only versus definition-unfolding reduction. |
 | Instruction memoization | `--memoize-instructions` | A previously checked instruction with the same operation, named premises, and context arguments. |
+| Fresh-context indexing | `--index-fresh-contexts` | An incrementally maintained index of existing variable contexts, replacing repeated scans of all bindings. It selects the same fresh context and preserves the instruction trace. |
 
-For a focused proof check, defaults enable both. Disable either one or both
+For a focused proof check, defaults enable all three. Disable them
 independently:
 
 ```sh
 npm test -- sample_relations
 npm test -- --no-memoize-instructions sample_relations
 npm test -- --no-reuse-normal-forms sample_relations
-npm test -- --no-reuse-normal-forms --no-memoize-instructions sample_relations
+npm test -- --no-index-fresh-contexts sample_relations
+npm test -- --no-reuse-normal-forms --no-memoize-instructions --no-index-fresh-contexts sample_relations
 ```
 
-The proof viewer exposes the two options separately near the top and rechecks
+The proof viewer exposes the options separately near the top and rechecks
 the proof when the selection changes. Your saved checkbox choices take
 precedence over the defaults. Exported traces contain ordinary kernel
 instructions and can be replayed without enabling compiler optimizations.
@@ -38,7 +40,7 @@ combination:
 ```sh
 node tools/benchmark-compiler.mjs sample_relations
 node tools/benchmark-compiler.mjs --replay sample_relations
-node tools/benchmark-compiler.mjs --reuse-normal-forms --memoize-instructions sample_relations
+node tools/benchmark-compiler.mjs --reuse-normal-forms --memoize-instructions --index-fresh-contexts sample_relations
 node tools/benchmark-compiler.mjs --json sample_relations
 ```
 
@@ -48,25 +50,35 @@ fixed source and compiler configuration. Elapsed times are measurements of
 individual runs and vary with machine load; fewer instructions do not imply
 an equal percentage reduction in time or memory.
 
-For `sample_tagged` and its imports, the measured instruction counts are:
+For `sample_tagged` and its imports, a comparison run measured:
 
-| Configuration | Kernel instructions | Reduction from baseline |
-| --- | ---: | ---: |
-| Baseline | 457,688 | — |
-| Normal-form reuse | 419,678 | 8.3% |
-| Instruction memoization | 282,139 | 38.4% |
-| Both | 244,439 | 46.6% |
+| Configuration | Kernel instructions | Reduction from baseline | Compilation |
+| --- | ---: | ---: | ---: |
+| Baseline | 457,688 | — | 13.49 s |
+| Normal-form reuse | 419,678 | 8.3% | 12.84 s |
+| Instruction memoization | 282,139 | 38.4% | 9.20 s |
+| Fresh-context indexing | 457,688 | 0% | 1.66 s |
+| All three | 244,439 | 46.6% | 1.40 s |
 
-All four traces were replayed successfully, with identical displayed result
-statements and axiom dependencies. In this run, compilation took 15.46 seconds
-for baseline and 8.87 seconds with both options.
+All five traces were replayed successfully, with identical displayed result
+statements and axiom dependencies.
 
 The larger `curve_tag_stability` development checked and replayed with
 1,211,134 instructions, compared with its previously checked baseline of
 2,752,249 (56.0% fewer). Its dependencies remained `lib_Trunc` and
-`lib_trunc_intro`. Optimized compilation took 247.78 seconds and replay took
+`lib_trunc_intro`. Before context indexing, compilation with both instruction
+caches took 247.78 seconds and replay took
 5.06 seconds. It still produced 767,529 distinct kernel judgments: the main
 saving is in repeated instruction emission, not the mathematical content.
+
+CPU profiling of `curve_contour_limits` with the two instruction caches
+enabled identified repeated fresh-context lookup as roughly 93% of sampled
+time. Enabling the context index reduced measured compilation from 338.69
+seconds to 9.17 seconds (about 37 times faster). Both runs emitted 1,371,581
+instructions and produced 868,820 kernel judgments, with identical statements
+and axiom dependencies. The indexed trace also replayed in a fresh kernel in
+4.61 seconds. The index changes context lookup, not proof size or the rules
+used to check a proof.
 
 The focused regression suite also replays small baseline and optimized
 programs into the same kernel and verifies each proof against both versions
@@ -77,7 +89,7 @@ functions, axiom dependencies, and rejection of invalid proofs.
 
 Theorems already use boxed kernel definitions. Ordinary `def` declarations
 are transparent; `opaque def` keeps a named definition folded and supports
-checked unfolding when conversion needs it. The two reuse optimizations do
+checked unfolding when conversion needs it. These optimizations do
 not change these language semantics.
 
 Automatically boxing ordinary definitions requires a separate experiment:
@@ -93,3 +105,11 @@ did not agree. Extending the conversion fallback exposed the same issue at
 dependent function application. The prototype was reverted. A viable approach
 needs application and conversion to coordinate selective unfolding, such as
 reducing only enough to expose a function's outer type constructor.
+
+Boxing individual concepts already works where existing conversion supports
+them: changing only `InfinitelyManyPrimes` to `opaque def` still verified
+Euclid's theorem. Its expression became a `DRef` instead of an expanded `Pi`,
+but the trace grew from 22,589 to 22,614 instructions for the required
+conversions. This experiment was not applied to the source library. A smaller
+displayed expression alone does not establish a reduction in compilation
+work or memory; the kernel already shares structurally identical subterms.

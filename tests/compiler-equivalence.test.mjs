@@ -5,12 +5,11 @@ import { Kernel } from "../web/kernel.mjs";
 import { compile } from "../web/mathscript/compiler.mjs";
 
 const module = await createKernel();
-const configurations = [
-  { normalForms: false, instructions: false },
-  { normalForms: true, instructions: false },
-  { normalForms: false, instructions: true },
-  { normalForms: true, instructions: true },
-];
+const configurations = Array.from({ length: 8 }, (_, mask) => ({
+  normalForms: !!(mask & 1),
+  instructions: !!(mask & 2),
+  freshContexts: !!(mask & 4),
+}));
 
 // Replay into the same kernel so agreement is checked by the kernel itself,
 // rather than by comparing display strings or IDs from different engines.
@@ -50,6 +49,13 @@ const fixtures = {
     def folded = successor(1);
     def opened = unfold(folded);
     theorem converted : successor(1) = 2 { exact refl(2); }
+  `,
+  "opaque quantified propositions": `
+    opaque def ReflexiveNaturals = forall n : Nat, n = n;
+    theorem all_reflexive : ReflexiveNaturals {
+      intro n;
+      exact refl(n);
+    }
   `,
   "axiom dependencies through erased arguments": `
     axiom chosen : Nat;
