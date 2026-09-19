@@ -739,15 +739,15 @@ function renderKernel(view) {
   const notation = view.folded;
   $("kernel-view").disabled = false;
   $("kernel-view").querySelector('[value="mathscript"]').disabled = !mathscript;
-  $("kernel-view").querySelector('[value="notation"]').disabled = !notation;
-  if (!mathscript) $("kernel-view").value = "raw";
+  $("kernel-view").querySelector('[value="notation"]').disabled = !view.expression && !view.type;
+  if (!mathscript && $("kernel-view").value === "mathscript") $("kernel-view").value = "notation";
   const mode = $("kernel-view").value;
   const folded = mode === "mathscript" && mathscript;
-  const typeset = mode === "notation" && notation;
+  const typeset = mode === "notation" && (notation ?? { verified: {} });
   $("kernel-view-note").textContent = typeset
     ? Object.keys(typeset.verified).length
       ? "Checked kernel term with folded definitions. The kernel verified its definitional equality to the stored term. Click a name to inspect it."
-      : "A verified folded view is unavailable for this declaration; showing the stored kernel terms."
+      : "Showing the stored checked kernel terms in mathematical notation; a verified folded view is unavailable."
     : folded
     ? "MathScript from the last successful check, preserving definition names and notation."
     : "Raw checked kernel representation.";
@@ -756,8 +756,9 @@ function renderKernel(view) {
   const symbols = new Map([...last.symbols ?? [], ...last.imports, ...last.outputs].map(info => [info.binding, info]));
   for (const side of ["expression", "type"]) {
     const container = $("kernel-" + side);
-    container.classList.toggle("typeset", !!typeset?.[side]);
-    if (typeset?.[side]) renderMathNotation(container, kernelMathTree(typeset[side], typeset.references), {
+    const tree = typeset && (typeset[side] ?? view[side]);
+    container.classList.toggle("typeset", !!tree);
+    if (tree) renderMathNotation(container, kernelMathTree(tree, typeset[side] ? typeset.references : {}, view.contextNames), {
       resolve: binding => symbols.get(binding),
       inspect: info => inspect(decorate(info)),
     });
@@ -765,7 +766,7 @@ function renderKernel(view) {
       ? layout(view[side], view.contextNames).text : "Context assumption";
   }
   if (typeset && Object.keys(typeset.verified).length && (!typeset.expression || !typeset.type))
-    $("kernel-view-note").textContent += " Where folding could not be verified, the stored term is shown.";
+    $("kernel-view-note").textContent += " Where folding could not be verified, the stored term is typeset directly.";
   $("export-folding").hidden = !typeset || !Object.keys(typeset.verified).length;
   $("kernel-inference").textContent =
     `${view.inference?.op ?? view.kind}. ${view.assumptions.length ? view.assumptions.length + " open assumptions." : "Closed judgement."}`;

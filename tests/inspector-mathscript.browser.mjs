@@ -32,6 +32,26 @@ try {
   };
   await page.goto(`http://127.0.0.1:${port}/proof.html?proof=euclid`);
   await idle();
+  for (const name of ["nat_le_total", "prime_divisor_exists", "factorial"]) {
+    await inspect(name);
+    assert.equal(await page.locator("#kernel-type math").count(), 1, name);
+    assert.equal(await page.locator("#kernel-expression math").count(), 1, name);
+    assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /could not|unavailable/);
+    assert.doesNotMatch(await page.locator("#kernel-type").textContent(), /#[0-9]|…/);
+    if (name === "nat_le_total") assert.equal(await page.locator('#kernel-type [data-name="le"]').count(), 2);
+    if (name === "prime_divisor_exists") assert.equal(await page.locator('#kernel-type [data-name="Divides"]').count(), 1);
+    if (name === "factorial") {
+      assert.match(await page.locator("#kernel-expression").textContent(), /λn\.nat\.elim\[k,h\]\(1,mul\(succ\(k\),h\),n\)/);
+      assert.equal(await page.locator('#kernel-expression [data-name="mul"]').count(), 1);
+      await page.locator("#kernel-expression").scrollIntoViewIfNeeded();
+      await page.screenshot({ path: "/private/tmp/thth-factorial-folded.png", fullPage: true });
+      await page.locator('#kernel-expression [data-name="mul"]').click();
+      await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "mul" && !document.querySelector("#kernel-view").disabled);
+      // mul uses an unsupported primitive call in its source folding plan;
+      // its actual checked kernel AST must still receive mathematical notation.
+      assert.equal(await page.locator("#kernel-expression math").count(), 1);
+    }
+  }
   await inspect("InfinitelyManyPrimes");
   const expression = "forall n : Nat, exists p : Nat, Prime(p) and n < p";
   assert.equal(await page.locator("#kernel-view").inputValue(), "notation");

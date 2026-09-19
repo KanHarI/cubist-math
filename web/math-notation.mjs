@@ -16,6 +16,11 @@ export function kernelMathTree(tree, references = {}, contextNames = {}) {
     if (["CRef", "UCRef"].includes(node.kind)) return { kind: "Name", name: contextNames[node.parameter] ?? `c${node.parameter}`, local: true };
     if (["Nat", "Unit", "Void"].includes(node.kind)) return named(node.kind);
     if (node.kind === "ZN") return { kind: "Number", value: 0 };
+    if (node.kind === "SN") {
+      const predecessor = visit(node.children[0], env);
+      return predecessor.kind === "Number" ? { kind: "Number", value: predecessor.value + 1 }
+        : { kind: "Call", fn: named("succ"), args: [predecessor] };
+    }
     if (node.kind === "Singleton") return named("⋆");
     if (node.kind === "DRef") return named(`def${node.parameter}`);
     if (["Pi", "Sigma"].includes(node.kind)) {
@@ -40,7 +45,9 @@ export function kernelMathTree(tree, references = {}, contextNames = {}) {
       left: visit(node.children[1], env), right: visit(node.children[2], env) };
     if (["Tuple", "Sum", "DefEq"].includes(node.kind)) return { kind: { Tuple: "Pair", Sum: "Sum", DefEq: "DefEq" }[node.kind],
       left: visit(node.children[0], env), right: visit(node.children[1], env) };
-    const extra = Array.from({ length: kernelBinderCount(node.kind) }, (_, i) => `x${env.length + i}`);
+    const extra = Array.from({ length: kernelBinderCount(node.kind) }, (_, i) => node.binderNames?.[i] ?? `x${env.length + i}`);
+    if (node.kind === "IndNat") return { kind: "NatElim", names: extra,
+      args: node.children.map(child => visit(child, [...extra].reverse().concat(env))) };
     const call = { kind: "Call", fn: named(node.kind), args: node.children.map(child => visit(child, [...extra].reverse().concat(env))) };
     return extra.length ? { kind: "Scope", names: extra, body: call } : call;
   }
@@ -79,6 +86,11 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
       return symbol;
     }
     if (node.kind === "Universe") return element("msub", element("mi", "𝒰"), element("mn", String(node.level)));
+    if (node.kind === "NatElim") {
+      const scope = row(operator("["), element("mi", node.names[0]), operator(","), element("mi", node.names[1]), operator("]"));
+      return row(element("msub", element("mi", "nat.elim"), scope),
+        fenced(row(visit(node.args[0]), operator(","), visit(node.args[1]), operator(","), visit(node.args[2]))));
+    }
     if (node.kind === "Scope") return row(operator("["), element("mtext", node.names.join(", ")), operator("]"), operator("."), visit(node.body));
     if (node.kind === "Number") return element("mn", String(node.value));
     if (["Pi", "Sigma", "Lambda"].includes(node.kind)) {

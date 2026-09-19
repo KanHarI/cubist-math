@@ -132,6 +132,18 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
         for (let i = 0; i < node.value; i++) n = b.emit("NatIntroS", [n]);
         return n;
       }
+      if (node.kind === "Induction") {
+        const nat = b.emit("NatForm"), z = b.fresh(nat), k = b.fresh(nat);
+        const motive = synth(node.type, new Map(scope).set(node.index, z.v));
+        const hypothesis = b.fresh(b.subst(motive, z, k.v));
+        const base = synth(node.base, scope);
+        const step = synth(node.step, new Map(scope).set(node.index, k.v).set(node.hypothesis, hypothesis.v));
+        const zero = b.emit("NatIntroZ"), successor = b.emit("NatIntroS", [k.v]);
+        return b.emit("NatElim", [motive,
+          b.coerceDefinitions(base, b.subst(motive, z, zero)),
+          b.coerceDefinitions(step, b.subst(motive, z, successor)),
+          normalType(synth(node.value, scope))], [z.c, k.c, hypothesis.c]);
+      }
       if (["Pi", "Sigma", "Lambda"].includes(node.kind)) {
         const domain = synth(node.domain, scope);
         // Keep the folded domain in the displayed binder, but retain a checked
@@ -207,6 +219,10 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
         annotate(tree.children[1], hint.args.at(-1));
       } else if (tree.kind === "Sum" && hint.kind === "Sum") {
         annotate(tree.children[0], hint.left); annotate(tree.children[1], hint.right);
+      } else if (tree.kind === "IndNat" && hint.kind === "Induction") {
+        tree.binderNames = [hint.index, hint.hypothesis];
+        annotate(tree.children[0], hint.base); annotate(tree.children[1], hint.step);
+        annotate(tree.children[2], hint.value);
       }
       return tree;
     }

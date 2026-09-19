@@ -15,6 +15,12 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
     return name(node.name);
   }
   if (node.kind === "number") return { kind: "Number", value: node.value };
+  if (node.kind === "induction") {
+    const scope = new Set(bound).add(node.index.text);
+    return { kind: "Induction", index: node.index.text, hypothesis: node.hypothesis.text,
+      value: visit(node.value), type: visit(node.type, scope), base: visit(node.base),
+      step: visit(node.step, new Set(scope).add(node.hypothesis.text)) };
+  }
   if (["forall", "exists", "lambda"].includes(node.kind)) {
     const scope = new Set(bound).add(node.name.text);
     return { kind: { forall: "Pi", exists: "Sigma", lambda: "Lambda" }[node.kind],
@@ -35,12 +41,16 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
     const operation = { "+": "add", "*": "mul", "<=": "le" }[node.operator];
     if (operation) return call(name(operation), [left, right]);
   }
-  // Eliminator syntax and tactic blocks retain the raw kernel/source views.
+  // Unsupported eliminator syntax and tactic blocks retain the stored term.
   // Do not invent a folded term when its translation is not represented here.
   throw new Error(`No folded notation for ${node.kind}`);
 }
 
 function inferredType(T, globals, bound = new Set()) {
+  // The full type's spelling includes substitutions performed by induction
+  // and application. Nested descriptor templates can still contain the old
+  // motive variables (e.g. a2 instead of a in nat_le_total).
+  try { return notationFromSyntax(parse(T.pretty, true), globals, bound); } catch {}
   // An alias retains its name even when the elaborator knows its Pi/Sigma body.
   if (/^[A-Za-z_][A-Za-z_0-9]*(?:\(|$)/.test(T.pretty))
     return notationFromSyntax(parse(T.pretty, true), globals, bound);

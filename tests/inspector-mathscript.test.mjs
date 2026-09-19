@@ -176,3 +176,49 @@ test("classical complex inverse has a certified folded dependent type including 
     assert.equal(type.fn.binding, "ComplexUnit");
   } finally { c.kernel.dispose(); }
 });
+
+test("inferred induction types use substituted parameters and factorial has a certified folded eliminator", async () => {
+  const { source, sources } = await loadProof(new URL("../web/proofs/euclid.proof", import.meta.url).pathname);
+  const c = compile(module, source, sources);
+  try {
+    for (const name of ["nat_le_total", "prime_divisor_exists", "factorial"]) {
+      const f = checkedFoldedView(c, name, { certificate: true });
+      assert.deepEqual(f.failures, {}, name);
+      const replay = new Kernel(module, f.certificate.policy.allowAxioms);
+      try {
+        for (const step of f.certificate.steps) replay.apply(step);
+        const expr = binding => module._wb_view(replay.handle, 0, replay.bindings.get(binding).id, 0);
+        for (const evidence of Object.values(f.verified)) {
+          const witness = replay.node(expr(evidence.witness));
+          assert.equal(witness.kind, "DefEq");
+          assert.deepEqual(witness.children, [expr(evidence.candidate), expr(evidence.original)]);
+        }
+      } finally { replay.dispose(); }
+      const type = kernelMathTree(f.type, f.references);
+      assert.doesNotMatch(JSON.stringify(type), /"name":"(?:a2|k|#\d+)"/);
+      if (name === "nat_le_total") {
+        assert.equal(type.name, "a");
+        assert.deepEqual(type.body.body.left.args.map(a => a.name), ["a", "c"]);
+      } else if (name === "prime_divisor_exists") {
+        assert.equal(type.body.right.body.right.fn.name, "Divides");
+        assert.equal(type.body.right.body.right.args[1].name, "n");
+      } else {
+        const expression = kernelMathTree(f.expression, f.references);
+        assert.equal(expression.name, "n");
+        assert.equal(expression.body.kind, "NatElim");
+        assert.deepEqual(expression.body.names, ["k", "h"]);
+        assert.deepEqual(expression.body.args[0], { kind: "Number", value: 1 });
+        assert.equal(expression.body.args[1].fn.binding, "mul");
+        assert.equal(expression.body.args[1].args[0].args[0].name, "k");
+        assert.equal(expression.body.args[1].args[1].name, "h");
+        assert.equal(expression.body.args[2].name, "n");
+        assert.ok(f.expression.size < 25);
+      }
+    }
+    const plan = c.imports.find(o => o.name === "factorial").mathscript.foldingPlan.expression;
+    plan.body.step.fn.binding = "add";
+    const rejected = checkedFoldedView(c, "factorial");
+    assert.equal(rejected.expression, null);
+    assert.match(rejected.failures.expression, /not definitionally equal/);
+  } finally { c.kernel.dispose(); }
+});
