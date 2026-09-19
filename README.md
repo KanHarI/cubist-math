@@ -70,6 +70,12 @@ the relevant mutation and implementation regressions. Plain `npm test` runs
 the complete regression suite for the final check; `npm run test:browser` runs
 the browser checks separately.
 
+MathScript offers separate `--reuse-normal-forms` and
+`--memoize-instructions` flags for selected proof checks and `cli/repl.mjs`,
+with matching proof-viewer toggles. Both default off. See
+[compiler optimization experiments](docs/compiler_optimizations.md) for
+measurements and comparison commands.
+
 See the [workbench and CLI guide](web/README.md) for SDK setup, examples,
 source syntax, resource bounds, and current limitations.
 

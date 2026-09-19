@@ -54,9 +54,10 @@ export class Builder {
   }
   norm(a) {
     const mode = this.opaque ? "beta" : "defs";
-    const identity = value => `${this.k.bindings.get(value).id}` +
-      (this.optimizations.normalForms
-        ? `:${JSON.stringify([...this.k.axiomDependencies.get(value)].sort())}` : "");
+    // Even the baseline cache must preserve derivation provenance: the same
+    // normalized judgment can be derived with or without an unrelated axiom.
+    const identity = value => `${this.k.bindings.get(value).id}:` +
+      JSON.stringify([...this.k.axiomDependencies.get(value)].sort());
     const key = `${mode}:${identity(a)}`;
     if (this.normal.has(key)) return this.normal.get(key);
     const visited = [];
