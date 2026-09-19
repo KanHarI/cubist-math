@@ -72,7 +72,8 @@ the browser checks separately.
 
 MathScript offers separate `--reuse-normal-forms` and
 `--memoize-instructions` flags for selected proof checks and `cli/repl.mjs`,
-with matching proof-viewer toggles. Both default off. See
+with matching proof-viewer toggles near the top. Both default on; disable them
+individually with `--no-reuse-normal-forms` and `--no-memoize-instructions`. See
 [compiler optimization experiments](docs/compiler_optimizations.md) for
 measurements and comparison commands.
 

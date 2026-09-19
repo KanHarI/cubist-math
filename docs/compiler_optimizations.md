@@ -2,23 +2,26 @@
 
 MathScript compiler optimizations are independently selectable. They change
 which checked instructions the compiler emits; the kernel's inference rules
-and axiom policy stay the same. Both options start disabled.
+and axiom policy stay the same. Both options are enabled by default.
 
 | Optimization | CLI flag | What it reuses |
 | --- | --- | --- |
 | Normal-form reuse | `--reuse-normal-forms` | Checked normalization results, including intermediate terms and the resulting normal form. Cache entries distinguish kernel judgments, recorded axiom dependencies, and beta-only versus definition-unfolding reduction. |
 | Instruction memoization | `--memoize-instructions` | A previously checked instruction with the same operation, named premises, and context arguments. |
 
-For a focused proof check:
+For a focused proof check, defaults enable both. Disable either one or both
+independently:
 
 ```sh
-npm test -- --reuse-normal-forms sample_relations
-npm test -- --memoize-instructions sample_relations
-npm test -- --reuse-normal-forms --memoize-instructions sample_relations
+npm test -- sample_relations
+npm test -- --no-memoize-instructions sample_relations
+npm test -- --no-reuse-normal-forms sample_relations
+npm test -- --no-reuse-normal-forms --no-memoize-instructions sample_relations
 ```
 
-The proof viewer exposes the two options separately and rechecks the proof
-when the selection changes. Exported traces contain ordinary kernel
+The proof viewer exposes the two options separately near the top and rechecks
+the proof when the selection changes. Your saved checkbox choices take
+precedence over the defaults. Exported traces contain ordinary kernel
 instructions and can be replayed without enabling compiler optimizations.
 Recorded `construction` programs already specify their instructions; the
 viewer disables these compiler options for them.

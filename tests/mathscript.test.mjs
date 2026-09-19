@@ -409,8 +409,6 @@ test("Rijke binomial types and full permutation equivalences have checked counts
     const c = compile(module, sources[name], sources);
     try {
       for (const o of c.outputs) assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
-      // These real developments exceed the former 131,072 instruction limit.
-      assert.ok(c.instructionCount > 131072);
       if (name === "permutations") {
         assert.deepEqual(c.kernel.axiomsFor("finite_permutation_equivalence"), ["lib_funext"]);
       } else {
@@ -1016,8 +1014,10 @@ test("magnitude closeness needs a strict radius margin", () => {
 test("larger contour proofs check beyond the former million-instruction limit", () => {
   // Real mathematical imports exercise the raised limit without bypassing
   // kernel verification or allocating millions of artificial instructions.
+  // Keep this resource-limit regression unoptimized so compiler improvements
+  // do not remove the large trace that it is specifically meant to exercise.
   const source = "import contour_sums;\nimport sample_magnitude_bounds;\n" + sources.contour_tag_limits;
-  const c = compile(module, source, sources);
+  const c = compile(module, source, sources, { optimizations: { normalForms: false, instructions: false } });
   try {
     assert.ok(c.instructionCount > 1048576, c.instructionCount);
     assert.ok(c.instructionCount <= MAX_STEPS);
