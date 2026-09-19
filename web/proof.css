@@ -597,10 +597,10 @@ select {
   padding: 8px;
 }
 
-#kernel-truncation-options {
+#kernel-truncation-options, #kernel-binder-options {
   display: block;
   margin-top: 10px;
 }
-#kernel-truncation-options[hidden] {
+#kernel-truncation-options[hidden], #kernel-binder-options[hidden] {
   display: none;
 }

@@ -4,7 +4,7 @@ import createKernel from "../web/dist/kernel.mjs";
 import { compile } from "../web/mathscript/compiler.mjs";
 import { loadProof } from "../tools/test-selection.mjs";
 import { checkedFoldedView, exportInspection, checkedContextView, inspectionContextNames, inspectionAxiomNotation } from "../web/mathscript/kernel-folding.mjs";
-import { kernelMathTree, isTruncationApplication } from "../web/math-notation.mjs";
+import { kernelMathTree, isTruncationApplication, independentBinderGroups } from "../web/math-notation.mjs";
 import { Kernel } from "../web/kernel.mjs";
 import { Session } from "../web/session.mjs";
 import { layout, pathFromMarked } from "../web/expressions.mjs";
@@ -387,5 +387,60 @@ test("truncation sugar does not recognize a user axiom with a matching name", ()
     assert.equal(type.fn.binding, "lib_Trunc");
     assert.equal(type.fn.axiomNotation, undefined);
     assert.equal(isTruncationApplication(type), false);
+  } finally { c.kernel.dispose(); }
+});
+
+
+test("independent binder grouping follows checked scopes, preserves order, and compares domains structurally", () => {
+  const c = compile(module, `
+    def fixture(F : Type1, zero : F, one : F, lt : F -> F -> Type) = F;
+    def dependent = forall A : Type, forall a : A, forall family : (forall t : Nat, a = a), Unit;
+    def mixed = forall A : Type, exists a : A, exists b : A, Unit;
+    def external = forall A : Type, forall B : Type, forall x : A, forall y : B, Unit;
+    def eliminated = forall n : Nat, forall x : (induction n as k return Type { zero => Unit; succ previous => previous; }), Unit;
+  `);
+  const names = tree => independentBinderGroups(tree).groups.map(group => group.map(binder => binder.name));
+  const display = (name, side = "expression") => {
+    const folded = checkedFoldedView(c, name);
+    assert.deepEqual(folded.failures, {});
+    return { ast: folded[side], tree: kernelMathTree(folded[side], folded.references) };
+  };
+  try {
+    const { tree, ast } = display("fixture", "type");
+    const before = structuredClone(ast);
+    assert.deepEqual(names(tree), [["F"], ["zero", "one", "lt"]]);
+    const group = independentBinderGroups(tree).groups[1];
+    assert.equal(group[0].domainKey, group[1].domainKey);
+    assert.notEqual(group[1].domainKey, group[2].domainKey);
+    assert.deepEqual(independentBinderGroups(tree, false).groups.map(g => g.map(b => b.name)), [["F"], ["zero"], ["one"], ["lt"]]);
+    assert.deepEqual(ast, before);
+    const nested = display("dependent");
+    assert.deepEqual(names(nested.tree), [["A"], ["a"], ["family"]]);
+    // Rename the inner binder to look like the outer dependency. The kernel
+    // reference index still points outside it, so grouping must remain blocked.
+    nested.ast.children[1].children[1].children[0].binderName = "a";
+    assert.deepEqual(names(kernelMathTree(nested.ast)), [["A"], ["a"], ["family"]]);
+    const mixed = display("mixed");
+    assert.deepEqual(names(mixed.tree), [["A"], ["a", "b"]]);
+    assert.deepEqual(independentBinderGroups(mixed.tree).groups.map(g => g[0].kind), ["Pi", "Sigma"]);
+    const repeated = structuredClone(ast);
+    repeated.children[1].children[1].binderName = "zero";
+    assert.deepEqual(names(kernelMathTree(repeated)), [["F"], ["zero"], ["zero", "lt"]]);
+    const shadowed = display("external").ast;
+    shadowed.binderName = "T";
+    shadowed.children[1].binderName = "T";
+    const shadowGroups = independentBinderGroups(kernelMathTree(shadowed)).groups;
+    assert.deepEqual(shadowGroups.map(g => g.map(b => b.name)), [["T"], ["T"], ["x", "y"]]);
+    assert.equal(shadowGroups[2][0].domain.name, shadowGroups[2][1].domain.name);
+    assert.notEqual(shadowGroups[2][0].domainKey, shadowGroups[2][1].domainKey);
+    const incomplete = structuredClone(ast);
+    incomplete.children[1].children[1].children[0].truncated = true;
+    assert.deepEqual(names(kernelMathTree(incomplete)), [["F"], ["zero"], ["one"], ["lt"]]);
+    const eliminated = c.kernel.inspect("eliminated").expression;
+    eliminated.binderName = "n"; eliminated.children[1].binderName = "x";
+    const induction = kernelMathTree(eliminated);
+    assert.equal(induction.body.domain.kind, "NatElim");
+    assert.deepEqual(induction.body.domainDependencies, [1]);
+    assert.deepEqual(names(induction), [["n"], ["x"]]);
   } finally { c.kernel.dispose(); }
 });

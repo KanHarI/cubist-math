@@ -739,6 +739,7 @@ function renderKernel(view) {
   if (!mathscript && $("kernel-view").value === "mathscript") $("kernel-view").value = "notation";
   const mode = $("kernel-view").value;
   $("kernel-truncation-options").hidden = mode !== "notation";
+  $("kernel-binder-options").hidden = mode !== "notation";
   const folded = mode === "mathscript" && mathscript;
   const typeset = mode === "notation" && (notation ?? { verified: {} });
   $("kernel-view-note").textContent = typeset
@@ -757,7 +758,8 @@ function renderKernel(view) {
     symbols.set(entry.binding, { ...symbols.get(entry.binding), name: entry.name, binding: entry.binding, role: "Kernel context assumption" });
   }
   const navigation = { resolve: binding => symbols.get(binding), inspect: info => inspect(decorate(info)),
-    truncationSugar: $("kernel-truncation-sugar").checked };
+    truncationSugar: $("kernel-truncation-sugar").checked,
+    groupIndependentBinders: $("kernel-group-binders").checked };
   $("kernel-context-note").textContent = view.assumptions.length
     ? "Open assumptions of this checked judgement. Click a name to inspect its type and source. Π, Σ and λ bind variables inside the term."
     : "Empty context. Π, Σ and λ bind variables inside the term.";
@@ -825,6 +827,7 @@ function renderKernel(view) {
 }
 $("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-truncation-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
+$("kernel-group-binders").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = async () => {
   if (!checkedKernelView) return;
   const binding = checkedKernelView.name;

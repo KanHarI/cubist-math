@@ -206,7 +206,10 @@ try {
   await idle();
   await inspect("classical_complex_nonzero_inverse");
   assert.equal(await page.locator("#kernel-type math").count(), 1);
+  assert.ok(await page.locator("#kernel-type mtable > mtr").count() < 14);
+  await page.locator("#kernel-group-binders").uncheck();
   assert.equal(await page.locator("#kernel-type mtable > mtr").count(), 14);
+  await page.locator("#kernel-group-binders").check();
   assert.equal(await page.locator('#kernel-type [data-name="ComplexUnit"]').count(), 1);
   assert.equal(await page.locator('#kernel-type [data-name="Complex"]').count(), 2);
   assert.equal(await page.locator('#kernel-type [data-name="complex_zero"]').count(), 1);
@@ -262,6 +265,26 @@ try {
   assert.equal(await page.locator("#result").textContent(), checkedResult);
   await page.locator('#kernel-expression [data-axiom="lib_Trunc"]').first().click();
   await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "lib_Trunc" && !document.querySelector("#kernel-view").disabled);
+
+  await page.goto(`http://127.0.0.1:${port}/proof.html?proof=field_interval`);
+  await idle();
+  await inspect("FieldUnitInterval");
+  assert.equal(await page.locator("#kernel-group-binders").isChecked(), true);
+  assert.equal(await page.locator('#kernel-type [data-binder-group="zero,one,lt"]').count(), 1);
+  assert.match(await page.locator("#kernel-type").textContent(), /Π\(zero,one:F;lt:F→F→𝒰0\)\./);
+  assert.equal(await page.locator("#kernel-type mtable > mtr").count(), 3);
+  const groupingResult = await page.locator("#result").textContent();
+  await page.locator("#kernel-type").scrollIntoViewIfNeeded();
+  await page.screenshot({path:"/private/tmp/thth-grouped-binders.png", fullPage:true});
+  await page.locator("#kernel-group-binders").uncheck();
+  assert.equal(await page.locator("#kernel-type [data-binder-group]").count(), 0);
+  assert.equal(await page.locator("#kernel-type mtable > mtr").count(), 5);
+  assert.equal(await page.locator("#kernel-truncation-sugar").isChecked(), true);
+  await page.locator("#kernel-truncation-sugar").uncheck();
+  await page.locator("#kernel-group-binders").check();
+  assert.equal(await page.locator('#kernel-type [data-binder-group="zero,one,lt"]').count(), 1);
+  assert.equal(await page.locator("#kernel-truncation-sugar").isChecked(), false);
+  assert.equal(await page.locator("#result").textContent(), groupingResult);
 
   assert.deepEqual(errors, []);
   console.log("Certified mathematical kernel view, definition/source navigation, workbench export/unfold/reduce, source/raw views, checked snapshots, and full expansion passed.");

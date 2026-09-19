@@ -142,6 +142,18 @@ propositional truncation as `‖A‖`; disabling it exposes the named axiom
 application, including its universe argument. This is display notation only:
 it does not replace the checked term or alter workbench exports.
 
+**Group independent binders** abbreviates consecutive Π binders, or consecutive
+Σ binders, when their domains do not refer to earlier members of the group.
+For example, `Π (zero, one : F; lt : F → F → 𝒰₀)` abbreviates three
+successive Π binders. Equal domains are shared only when their kernel
+structures match after accounting for binder depth. The earlier binder
+declaring `F` stays separate.
+Dependencies are read from kernel variable indices, not display names.
+Ambiguous groups involving reused display names stay separate as well.
+Grouping preserves binder order and never mixes Π with Σ; turn it off to see
+each binder separately. This notation does not replace the term with a single
+binder over a product type or change its checked derivation.
+
 This view is an actual kernel term with checked definition references, not
 MathScript text rewritten with mathematical symbols. The successful source
 snapshot proposes a shape for the folded term. A separate kernel replays the
