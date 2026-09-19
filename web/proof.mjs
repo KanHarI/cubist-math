@@ -1,6 +1,13 @@
 import catalogue from "./proofs/catalogue.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
+import { renderMathNotation, kernelMathTree } from "./math-notation.mjs";
+import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 const choices = [
+  { id: "sample_subdivisions", title: "Curve sampling · flatten subdivisions across a partition", complexDevelopment: true },
+  { id: "affine_refinement", title: "Curve contours · width-scaled finite refinement errors", complexDevelopment: true },
+  { id: "interval_refinement", title: "Curve sampling · refinement tags in a common interval", complexDevelopment: true },
+  { id: "parameter_refinement", title: "Curve contours · coarse edge and refined sum identity", complexDevelopment: true },
+  { id: "sample_refinement_tags", title: "Curve sampling · repeated tags and endpoint containment", complexDevelopment: true },
   { id: "curve_tag_stability", title: "Curve contours · fine meshes control admissible tag changes", complexDevelopment: true },
   { id: "uniform_curve_tags", title: "Curve sampling · continuity bounds integrand errors", complexDevelopment: true },
   { id: "interval_sampling", title: "Curve sampling · admissible endpoint tags and mesh bounds", complexDevelopment: true },
@@ -640,15 +647,18 @@ async function inspect(info, remember = true) {
   $("inspect-axioms").replaceChildren();
   $("locals").replaceChildren();
   $("kernel-details").hidden = info.kind === "goal";
-  $("kernel-details").open = false;
+  $("kernel-details").open = true;
+  $("open-kernel-expression").disabled = true;
+  $("open-kernel-type").disabled = true;
   $("kernel-expression").textContent = "";
   $("kernel-type").textContent = "";
   $("kernel-inference").textContent = "";
   checkedKernelView = null;
-  $("kernel-view").value = "mathscript";
+  $("kernel-view").value = "notation";
   $("kernel-view").disabled = true;
   $("kernel-view-note").textContent = "";
   $("expand-kernel").hidden = true;
+  $("export-folding").hidden = true;
   for (const line of document.querySelectorAll(".source-line.active"))
     line.classList.remove("active");
   if (info.line)
@@ -722,21 +732,41 @@ function renderType(text) {
 let checkedKernelView = null;
 function renderKernel(view) {
   checkedKernelView = view;
+  $("open-kernel-expression").disabled = !view.expression;
+  $("open-kernel-type").disabled = !view.type;
   const declaration = [...last.outputs, ...last.imports].find(item => item.binding === view.name);
   const mathscript = declaration?.mathscript;
+  const notation = view.folded;
   $("kernel-view").disabled = false;
   $("kernel-view").querySelector('[value="mathscript"]').disabled = !mathscript;
+  $("kernel-view").querySelector('[value="notation"]').disabled = !notation;
   if (!mathscript) $("kernel-view").value = "raw";
-  const folded = $("kernel-view").value === "mathscript" && mathscript;
-  $("kernel-view-note").textContent = folded
+  const mode = $("kernel-view").value;
+  const folded = mode === "mathscript" && mathscript;
+  const typeset = mode === "notation" && notation;
+  $("kernel-view-note").textContent = typeset
+    ? Object.keys(typeset.verified).length
+      ? "Checked kernel term with folded definitions. The kernel verified its definitional equality to the stored term. Click a name to inspect it."
+      : "A verified folded view is unavailable for this declaration; showing the stored kernel terms."
+    : folded
     ? "MathScript from the last successful check, preserving definition names and notation."
     : "Raw checked kernel representation.";
   $("kernel-expression-label").textContent = folded?.expressionKind === "declaration" ? "Declaration" : "Expression";
   renderAxioms($("inspect-axioms"), view.axioms ?? []);
-  $("kernel-expression").textContent = folded ? mathscript.expression : view.expression
-    ? layout(view.expression, view.contextNames).text
-    : "Context assumption";
-  $("kernel-type").textContent = folded ? mathscript.type : layout(view.type, view.contextNames).text;
+  const symbols = new Map([...last.symbols ?? [], ...last.imports, ...last.outputs].map(info => [info.binding, info]));
+  for (const side of ["expression", "type"]) {
+    const container = $("kernel-" + side);
+    container.classList.toggle("typeset", !!typeset?.[side]);
+    if (typeset?.[side]) renderMathNotation(container, kernelMathTree(typeset[side], typeset.references), {
+      resolve: binding => symbols.get(binding),
+      inspect: info => inspect(decorate(info)),
+    });
+    else container.textContent = folded ? mathscript[side] : view[side]
+      ? layout(view[side], view.contextNames).text : "Context assumption";
+  }
+  if (typeset && Object.keys(typeset.verified).length && (!typeset.expression || !typeset.type))
+    $("kernel-view-note").textContent += " Where folding could not be verified, the stored term is shown.";
+  $("export-folding").hidden = !typeset || !Object.keys(typeset.verified).length;
   $("kernel-inference").textContent =
     `${view.inference?.op ?? view.kind}. ${view.assumptions.length ? view.assumptions.length + " open assumptions." : "Closed judgement."}`;
   $("kernel-premises").replaceChildren();
@@ -754,9 +784,30 @@ function renderKernel(view) {
   }
   const truncated = (n) => n && (n.truncated || n.children.some(truncated));
   $("expand-kernel").hidden =
-    !!folded || (!truncated(view.expression) && !truncated(view.type));
+    !!folded || (!truncated(typeset?.expression ?? view.expression) && !truncated(typeset?.type ?? view.type));
 }
 $("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
+for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = async () => {
+  if (!checkedKernelView) return;
+  const binding = checkedKernelView.name;
+  const folded = $("kernel-view").value === "notation" && !!checkedKernelView.folded?.verified[side];
+  const tab = window.open("about:blank", "_blank");
+  if (!tab) { diagnostic(new Error("Allow a new tab to open the kernel workbench.")); return; }
+  tab.document.body.textContent = "Preparing checked expression…";
+  try {
+    const payload = await request("export-inspection", { binding, side, folded });
+    const key = await saveWorkbenchTransfer(payload);
+    tab.location.href = new URL(`index.html?transfer=${encodeURIComponent(key)}`, location.href).href;
+  } catch (error) { tab.close(); diagnostic(error); }
+};
+$("export-folding").onclick = async () => {
+  if (!checkedKernelView) return;
+  const binding = checkedKernelView.name;
+  try {
+    const certificate = await request("export-folding", { binding });
+    if (certificate) download(JSON.stringify(certificate, null, 2), `${binding}-folding.json`, "application/json");
+  } catch (error) { diagnostic(error); }
+};
 function download(text, name, type) {
   const url = URL.createObjectURL(new Blob([text], { type })),
     a = document.createElement("a");

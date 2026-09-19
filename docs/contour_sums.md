@@ -193,8 +193,13 @@ for ordered interval sampling. These parameter samples now map to the
 original complex contour sums, with a checked transfer of an existing limit
 under vanishing tag errors. Uniform continuity along the curve now gives a
 positive mesh threshold controlling changes between admissible tags, with
-explicit left- and right-endpoint schemes. Still needed are refinements and
-their mesh control, Cauchy and
+explicit left- and right-endpoint schemes. For an affine curve, an arbitrary
+finite subdivision of one coarse interval now has a width-scaled error bound,
+derived from continuity and tag admissibility. Per-edge subdivisions also
+flatten to one actual sample list with a checked sum identity; see
+[finite subdivisions](complex_curves.md#finite-subdivisions-of-coarse-intervals).
+Still needed are global refinement estimates and
+mesh control, Cauchy and
 homotopy estimates for the integrands in question, comparison with
 the puncture homotopy type, and the local generator integral `2*pi*i*residue`.
 The full residue theorem, algebraic closure, and Great Picard remain open.

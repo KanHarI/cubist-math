@@ -138,21 +138,29 @@
           <a id="view-source" class="source-link" hidden>View source →</a>
           <div id="inspect-axioms" class="axiom-dependencies"></div>
           <div id="locals"></div>
-          <details id="kernel-details">
+          <details id="kernel-details" open>
             <summary>Checked kernel details</summary>
             <p id="kernel-inference" class="hint"></p>
             <div id="kernel-premises"></div>
             <label for="kernel-view">Representation</label>
             <select id="kernel-view">
+              <option value="notation">Kernel notation (folded)</option>
               <option value="mathscript">MathScript (folded)</option>
               <option value="raw">Raw kernel term</option>
             </select>
             <p id="kernel-view-note" class="hint"></p>
-            <strong id="kernel-expression-label">Expression</strong>
-            <pre id="kernel-expression"></pre>
-            <strong>Type</strong>
-            <pre id="kernel-type"></pre>
+            <div class="kernel-term-label">
+              <strong id="kernel-expression-label">Expression</strong>
+              <button id="open-kernel-expression" disabled>Open in workbench ↗</button>
+            </div>
+            <div id="kernel-expression" class="kernel-term"></div>
+            <div class="kernel-term-label">
+              <strong>Type</strong>
+              <button id="open-kernel-type" disabled>Open in workbench ↗</button>
+            </div>
+            <div id="kernel-type" class="kernel-term"></div>
             <button id="expand-kernel" hidden>Show full term</button>
+            <button id="export-folding" hidden>Download folding certificate</button>
           </details>
           <p class="hint">
             Inspection never changes the proof. Definitions and local
@@ -219,6 +227,6 @@ theorem use_assumption : forall A : Type, IsSet(A) -> IsSet(A) {
         </p>
       </details>
     </main>
-    <script type="module" src="proof.mjs?version=mathscript-source-3"></script>
+    <script type="module" src="proof.mjs?version=kernel-math-notation-1"></script>
   </body>
 </html>

@@ -1,5 +1,8 @@
 // One renderer supplies text, occurrence ranges, and CLI selection semantics.
 // A path identifies an occurrence even when several occurrences share an AST ID.
+// The upstream kernel adds this depth to every child, including domains.
+export const kernelBinderCount = kind => ["Lambda", "Pi", "Sigma", "W", "IndEq"].includes(kind) ? 1
+  : ["IndNat", "IndSigma", "IndSum", "IndW"].includes(kind) ? 2 : 0;
 export const roles = {
   Pi: ["domain", "codomain"],
   Sigma: ["domain", "codomain"],
@@ -100,6 +103,14 @@ export function layout(tree, contextNames = {}) {
       child(0);
       emit(" + ");
       child(1);
+      emit(")");
+    } else if (kernelBinderCount(n.kind)) {
+      const names = Array.from({ length: kernelBinderCount(n.kind) }, (_, i) => `x${env.length + i}`);
+      emit(`(${operators[n.kind] || n.kind} [${names.join(", ")}]. `);
+      n.children.forEach((_, i) => {
+        if (i) emit(", ");
+        child(i, [...names].reverse().concat(env));
+      });
       emit(")");
     } else {
       emit((operators[n.kind] || n.kind) + "(");

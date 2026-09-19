@@ -159,6 +159,10 @@ tag-independence proof supplies those variation bounds itself.
 Uniform continuity along the curve now yields a positive mesh threshold
 controlling all admissible tag changes, including the constructed left- and
 right-endpoint sums.
+Arbitrary finite subdivisions of a coarse affine interval now have a
+width-scaled contour-error bound. Subdivisions across a whole partition can
+be flattened to one sample list with a checked identity for its sum; the
+global refinement bound remains to be assembled from these results.
 Proving convergence of the contour sums and
 the required homotopy estimates, and relating geometric curves to homotopy
 paths, remain open.

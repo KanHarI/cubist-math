@@ -1216,3 +1216,90 @@ test("admissible tag estimates require the upper endpoint bound and a strict mes
   assert.notEqual(weakMesh, sources.interval_tag_bounds);
   assert.throws(() => compile(module, weakMesh, sources), /Expected|Conversion types differ/);
 });
+
+test("arbitrary finite affine refinements have width-scaled errors for actual contour sums", t => {
+  const c = compile(module, sources.affine_refinement, sources);
+  try {
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => a === "lib_Trunc"), output.name);
+    }
+    const estimate = c.outputs.find(o => o.name === "affine_refinement_uniform_estimate");
+    assert.ok(estimate);
+    assert.match(estimate.type, /uniform : ComplexUniformCurve/);
+    assert.match(estimate.type, /exists mesh : F/);
+    assert.match(estimate.type, /exists errorSum : Complex\(F\)/);
+    assert.match(estimate.type, /curve_contour_samples/);
+    assert.match(estimate.type, /curve_coarse_contribution/);
+    assert.match(estimate.type, /mulF\(delta, mulF\(sample_interval_width/);
+    assert.match(estimate.type, /IntervalAdmissibleTags/);
+    assert.match(estimate.type, /IntervalTagWithin/);
+    assert.doesNotMatch(estimate.type, /errors :|variation :|oldConverges :/);
+    assert.ok(c.kernel.bindings.has("parameter_constant_tag_sum"));
+    assert.ok(c.kernel.bindings.has("sample_between_global"));
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; ${c.kernel.stats().judgements.toLocaleString()} judgments`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("refinement bounds require coarse-tag containment and both slope coordinates", () => {
+  const coarseWithin = "IntervalTagWithin(F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices), sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag) ->";
+  const outside = sources.interval_refinement.replaceAll(coarseWithin, "Unit ->");
+  assert.notEqual(outside, sources.interval_refinement);
+  assert.throws(() => compile(module, outside, sources), /Expected|Conversion types differ/);
+  const realOnly = sources.affine_refinement.replace(
+    "addF(maxF(complex_real(F, slope), negF(complex_real(F, slope))), maxF(complex_imag(F, slope), negF(complex_imag(F, slope))))",
+    "maxF(complex_real(F, slope), negF(complex_real(F, slope)))");
+  assert.notEqual(realOnly, sources.affine_refinement);
+  assert.throws(() => compile(module, realOnly, sources), /Expected|Conversion types differ/);
+});
+
+test("refinement identities preserve the coarse edge orientation", () => {
+  const backwards = sources.parameter_refinement.replaceAll(
+    "sample_first(C, n, vertices), sample_last(C, n, vertices)",
+    "sample_last(C, n, vertices), sample_first(C, n, vertices)");
+  assert.notEqual(backwards, sources.parameter_refinement);
+  assert.throws(() => compile(module, backwards, sources), /Expected|Conversion types differ/);
+});
+
+test("per-edge subdivisions flatten to actual samples with exactly the sum of their contributions", t => {
+  const c = compile(module, sources.sample_subdivisions, sources);
+  try {
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.deepEqual(c.kernel.axiomsFor(output.binding), [], output.name);
+    }
+    assert.ok(c.outputs.some(o => o.name === "sample_subdivisions_flatten"));
+    const result = c.outputs.find(o => o.name === "FlattenedSubdivision");
+    assert.match(result.mathscript.expression, /exists flat : SampleSubdivision/);
+    assert.match(result.mathscript.expression, /sample_first/);
+    assert.match(result.mathscript.expression, /sample_last/);
+    assert.match(result.mathscript.expression, /subdivision_sum/);
+    assert.match(result.mathscript.expression, /subdivision_total/);
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("subdivision concatenation handles an empty tail and requires matching endpoints", () => {
+  const example = `import sample_subdivisions;
+    def refined_pair : SampleSubdivision(Nat, 0, 2) {
+      exact (2, (typed((Nat and Nat and Nat), (0, (1, 2))), (typed((Nat and Nat and Unit), (0, (1, tt))), (refl(0), refl(2)))));
+    }
+    def joined_pair = join_subdivisions(Nat, 0, 2, 2, refined_pair, empty_subdivision(Nat, 2));
+    theorem joined_pair_count : subdivision_count(Nat, 0, 2, joined_pair) = 2 { exact refl(2); }
+    theorem joined_pair_sum : subdivision_sum(Nat, Nat, 0, (fun (x : Nat) => fun (y : Nat) => x + y),
+      (fun (a : Nat) => fun (b : Nat) => fun (tag : Nat) => tag), 0, 2, joined_pair) = 1 { exact refl(1); }
+  `;
+  const c = compile(module, example, sources);
+  try {
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.deepEqual(c.kernel.axiomsFor(output.binding), []);
+    }
+  } finally { c.kernel.dispose(); }
+  const unmatched = sources.sample_subdivisions.replaceAll(
+    "right : SampleSubdivision(C, b, c)", "right : SampleSubdivision(C, a, c)");
+  assert.notEqual(unmatched, sources.sample_subdivisions);
+  assert.throws(() => compile(module, unmatched, sources), /Expected|Conversion types differ/);
+});

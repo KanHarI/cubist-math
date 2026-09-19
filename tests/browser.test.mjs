@@ -551,6 +551,8 @@ try {
     ["complex_curve_variation", "complex_interval_deformation_variation"],
     ["curve_contour_limits", "affine_curve_contour_tag_independent_limit"],
     ["curve_tag_stability", "affine_contour_endpoint_sums_close"],
+    ["affine_refinement", "affine_refinement_uniform_estimate"],
+    ["sample_subdivisions", "sample_subdivisions_flatten"],
     ["complex_affine", "complex_linear_deformation_uniform"],
     ["complex_contour_tag_limits", "complex_contour_tag_independent_limit"],
     ["field_scale_limits", "field_nonnegative_scale_zero_converges"],

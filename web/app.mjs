@@ -1,4 +1,5 @@
 import proofs from "./proofs/catalogue.mjs";
+import { readWorkbenchTransfer, removeWorkbenchTransfer } from "./workbench-transfer.mjs";
 import {
   layout,
   roles,
@@ -75,8 +76,22 @@ function start() {
       state = data.state;
       renderState();
       try {
-        await choose("nested");
-        selection = { side: "expression", path: [1] };
+        const transfer = new URLSearchParams(location.search).get("transfer");
+        if (transfer) {
+          const payload = await readWorkbenchTransfer(transfer);
+          if (!payload.selection || !["expression", "type"].includes(payload.selection.side))
+            throw new Error("Invalid expression transfer selection");
+          await move("import", { document: payload.document, adoptPolicy: true });
+          await choose(payload.selection.name);
+          selection = { side: payload.selection.side, path: [] };
+          await removeWorkbenchTransfer(transfer);
+          const address = new URL(location.href);
+          address.searchParams.delete("transfer");
+          history.replaceState(null, "", address);
+        } else {
+          await choose("nested");
+          selection = { side: "expression", path: [1] };
+        }
         renderInspector();
       } catch (e) {
         error(e);

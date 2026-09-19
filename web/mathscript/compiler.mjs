@@ -1,6 +1,7 @@
 import { compileConstruction } from "./construction.mjs";
 import { Builder } from "./builder.mjs";
 import { parse } from "./parser.mjs";
+import { declarationNotation } from "./notation.mjs";
 import { declarations } from "./library.mjs";
 import preludeLibrary from "../proofs/library.mjs";
 import { MAX_STEPS } from "../language.mjs";
@@ -1706,7 +1707,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
           expressionKind = "declaration";
         }
       }
-      return { expression, expressionKind, type: T.pretty };
+      return { expression, expressionKind, type: T.pretty, foldingPlan: declarationNotation(decl, T, env) };
     }
     let completedDeclarations = 0;
     const reportProgress = () => onProgress?.({

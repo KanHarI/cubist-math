@@ -143,10 +143,54 @@ corollary compares the actual constructed right- and left-endpoint sums.
 These finite results depend only on existing truncation and its introduction
 rule; they use neither excluded middle nor choice.
 
-The two tag schemes still share the same sampled vertices. This does not yet
-compare different partitions or prove a Cauchy sequence of sums. We still
-need refinements, their geometric bounds, and a construction of the initial
-integral limit before proceeding to homotopy invariance and local residues.
+## Finite subdivisions of coarse intervals
+
+[affine_refinement](../web/proofs/affine_refinement.proof) now compares one
+coarse contribution with an arbitrary finite subdivision of that interval.
+For `curve(t) = z + t*slope`, put
+
+```text
+L = max(re(slope), -re(slope)) + max(im(slope), -im(slope)).
+```
+
+Given uniform continuity of `integrand(curve(t))` and `delta > 0`, the theorem
+`affine_refinement_uniform_estimate` constructs a positive mesh threshold.
+For an interval `[a,b]` narrower than that threshold, any admissible finite
+subdivision and any coarse tag `u` in `[a,b]` satisfy
+
+```text
+fine contour sum = integrand(curve(u)) * (curve(b) - curve(a)) + error
+ComplexBoxBound(error, delta * ((b-a) * L)).
+```
+
+Both coordinates of the error are bounded in magnitude. The theorem supplies
+the error as data and refers to the actual mapped contour sum. It assumes
+neither convergence nor a supplied error or variation certificate. The
+width factor is retained so that errors can later be summed across coarse
+cells without multiplying the bound by their count.
+
+The coarse tag need not belong to every fine subinterval.
+[interval_refinement](../web/proofs/interval_refinement.proof) instead proves
+that all fine tags belong to the outer interval, then uses continuity on
+that common interval. [parameter_refinement](../web/proofs/parameter_refinement.proof)
+proves that repeating the coarse tag makes the fine sum telescope exactly,
+and computes the error when those repeated tags are changed to the fine tags.
+[sample_refinement_tags](../web/proofs/sample_refinement_tags.proof) supplies
+the finite containment and repeated-tag proofs. The algebraic identities use
+no axioms; the affine estimate depends only on `lib_Trunc` in the scalar
+order interface, without excluded middle or choice.
+
+[sample_subdivisions](../web/proofs/sample_subdivisions.proof) represents a
+separate subdivision for every edge of a coarse partition. Its flattening
+theorem constructs one actual sample list with the same outer endpoints and
+sum equal to the sum of the per-edge contributions. Adjacent pieces carry
+equality witnesses for their shared endpoint; zero-edge pieces are allowed
+only with equal endpoints. This theorem is axiom-free.
+
+The width-scaled local error estimate and this flattening theorem still need
+to be combined into a global partition estimate. Common refinements or an
+explicit nested sampling scheme, their mesh control, and Cauchy convergence
+remain to be proved. No integral limit is constructed by these finite results.
 
 ## Relationship to homotopy paths
 
@@ -164,6 +208,6 @@ asserting such a comparison.
 
 Uniform continuity here varies `t` with `z` and `e` fixed. A homotopy of
 entire loops needs continuity also in the loop parameter, which remains to
-be proved. We also still need admissible refinements, convergence
+be proved. We also still need global refinement and convergence
 estimates for the chosen integrands, and the local integral
 calculation in the residue theorem.

@@ -121,11 +121,45 @@ work or memory; the kernel already shares structurally identical subterms.
 
 ## Inspector readability
 
-Checked declarations default to a **MathScript (folded)** view in the
-inspector. For example, `InfinitelyManyPrimes` displays
-`forall n : Nat, exists p : Nat, Prime(p) and n < p`. This view is recorded
-from the source that successfully checked, preserving its names and notation.
-Imported declarations work the same way, and failed checks retain the previous
-checked snapshot. The **Raw kernel term** selector and **Show full term**
-button retain access to the actual kernel representation. This presentation
-change does not alter proof storage or add a definition-boxing optimization.
+Checked declarations default to **Kernel notation (folded)**. For example,
+`InfinitelyManyPrimes` is typeset with dependent products and sums as
+`Π (n : Nat), Σ (p : Nat), Prime(p) × isLt(n, p)`. Native MathML supplies the
+mathematical layout; no external rendering service is needed. Definition
+names open their inspection, including the existing source-navigation link.
+Kernel details are open by default. Long binder chains are laid out on separate
+lines so dependent types remain readable.
+
+This view is an actual kernel term with checked definition references, not
+MathScript text rewritten with mathematical symbols. The successful source
+snapshot proposes a shape for the folded term. A separate kernel replays the
+required premises, constructs the proposed term with ordinary formation and
+application rules, and proves a `DefEq` judgment connecting it to the stored
+term. Only the resulting kernel AST is rendered. The kernel's binder-index
+convention applies to domains as well as codomains; product and arrow notation
+is used only when the anonymous binder is absent from the codomain.
+
+**Download folding certificate** exports the replayable instructions and the
+names of both terms and their checked definitional-equality witness. Folding
+does not change the original proof engine, instruction count, axiom list, or
+proof export. Unsupported forms or failed comparisons fall back to the stored
+kernel term. The source-derived folding proposal is never treated as evidence.
+
+Each expression and type has an **Open in workbench** action. It opens a new
+tab, replays the required checked instructions under the same axiom policy,
+and selects the transferred term. A folded expression retains its certified
+folded type by an explicit kernel type rewrite. Definitions can then be
+unfolded, applications beta-reduced, and dependencies inspected with the usual
+preview/accept workflow. The original mathematical proof is unaffected.
+The transfer uses same-origin IndexedDB rather than putting large proof traces
+in a URL or sessionStorage; it is removed after successful import.
+
+Raw rendering also names the binder slots introduced by eliminators such as
+`nat.elim [x1, x2]. ...`. These slots are part of the kernel's de Bruijn
+indexing, including its depth convention for every constructor child. Omitting
+them previously caused valid bound variables to appear as unexplained `#6`
+or `#3` references. Expression-selection paths still refer to the original AST.
+
+The separate **MathScript (folded)** option retains the successful source
+snapshot. **Raw kernel term** and **Show full term** retain the stored
+representation without display folding. Imported declarations use the same
+checks, and failed proof checks preserve the previous successful snapshot.

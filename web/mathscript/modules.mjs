@@ -113,4 +113,9 @@ export const sourceModules = [
   "parameter_contour_estimates",
   "curve_contour_estimates",
   "curve_tag_stability",
+  "sample_refinement_tags",
+  "sample_subdivisions",
+  "parameter_refinement",
+  "interval_refinement",
+  "affine_refinement",
 ];

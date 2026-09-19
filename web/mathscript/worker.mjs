@@ -2,6 +2,7 @@ import createKernel from "../dist/kernel.mjs";
 import { compile } from "./compiler.mjs";
 import { sourceModules } from "./modules.mjs";
 import { MAX_STEPS } from "../language.mjs";
+import { checkedFoldedView, exportInspection } from "./kernel-folding.mjs";
 const module = await createKernel();
 const library = Object.fromEntries(
   await Promise.all(
@@ -31,10 +32,16 @@ self.onmessage = ({ data: { id, command, args } }) => {
       result = { ...metadata, stats: kernel.stats() };
     } else {
       if (!checked) throw new Error("Check a proof first.");
-      if (command === "inspect")
+      if (command === "inspect") {
         result = checked.kernel.inspect(args.binding, {
           expand: args.expand ?? [],
         });
+        result.folded = checkedFoldedView(checked, args.binding, { expand: args.expand ?? [] });
+      }
+      else if (command === "export-folding")
+        result = checkedFoldedView(checked, args.binding, { certificate: true })?.certificate;
+      else if (command === "export-inspection")
+        result = exportInspection(checked, args.binding, args.side, args.folded);
       else if (command === "export")
         result = {
           format: "thth-workbench",

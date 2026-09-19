@@ -19,9 +19,9 @@ composition and telescoping laws, exact refinement errors, and scalar
 tag-error estimates in terms of sampled variation. Complex tag errors now
 have checked coordinate bounds and convergence to zero. Changing tags
 preserves an existing limit under the vanishing-error and bounded-variation
-hypotheses, without sign decisions or square roots. Admissible
-sampling schemes on geometric curves, convergence, and the homotopy estimates
-remain to be built.
+hypotheses, without sign decisions or square roots. Admissible finite
+sampling schemes are now defined; convergence and the homotopy estimates
+remain to be proved.
 
 [Geometric interval curves](complex_curves.md) now include straight segments
 with checked endpoints and constructive uniform continuity. The existing
@@ -33,7 +33,12 @@ bounds, independent of the sample count. These parameter samples are now
 connected to the original contour sums: changing tags preserves an existing
 limit when sampled integrand errors tend to zero. Admissibility, uniform
 continuity along the curve, and a sufficiently fine mesh now imply the
-finite error bounds. Constructing refinements and an initial limit remains open.
+finite error bounds. An arbitrary finite subdivision of one coarse interval
+now has a checked error bounded by its width times the value-error tolerance
+and the affine coordinate length. Per-edge subdivisions can also be flattened
+to one sample list with exactly the sum of their contributions. Combining
+these into a global refinement estimate and constructing an initial integral
+limit remain open.
 
 | Module | Result |
 | --- | --- |
