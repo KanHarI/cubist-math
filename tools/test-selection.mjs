@@ -15,8 +15,9 @@ export const help = `Usage: npm test -- [options] [module | file ...]
   npm test -- --changed                  Check added/modified .proof files
   npm test -- --reuse-normal-forms complex_inverses  Cache checked normal forms
   npm test -- --memoize-instructions complex_inverses  Reuse identical instructions
-  Both default on; disable separately with --no-reuse-normal-forms and
-  --no-memoize-instructions. Repeated flags use the last setting.
+  npm test -- --index-fresh-contexts complex_inverses  Index fresh binder contexts
+  All default on; disable separately with --no-reuse-normal-forms,
+  --no-memoize-instructions, --no-index-fresh-contexts. Last setting wins.
   npm test -- tests/workbench.test.mjs    Run one JavaScript test file
   npm test -- --test-name-pattern="complex inverses"  Filter regression tests
 
@@ -34,7 +35,7 @@ export function changedProofs(root = projectRoot) {
 
 export function selectTests(args, { root = projectRoot, changed = () => changedProofs(root) } = {}) {
   const tests = [], proofs = [], flags = [];
-  const optimizations = { normalForms: true, instructions: true };
+  const optimizations = { normalForms: true, instructions: true, freshContexts: true };
   let explicitOptimizations = false;
   let explicitSelection = false;
   const proof = value => {
@@ -47,9 +48,9 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
     const arg = args[i];
     if (arg === "--help" || arg === "-h") return { help: true };
     if (arg === "--") continue;
-    if (["--reuse-normal-forms", "--memoize-instructions", "--no-reuse-normal-forms", "--no-memoize-instructions"].includes(arg)) {
+    if (["--reuse-normal-forms", "--memoize-instructions", "--no-reuse-normal-forms", "--no-memoize-instructions", "--index-fresh-contexts", "--no-index-fresh-contexts"].includes(arg)) {
       explicitOptimizations = true;
-      optimizations[arg.endsWith("reuse-normal-forms") ? "normalForms" : "instructions"] = !arg.startsWith("--no-");
+      optimizations[arg.endsWith("reuse-normal-forms") ? "normalForms" : arg.endsWith("index-fresh-contexts") ? "freshContexts" : "instructions"] = !arg.startsWith("--no-");
     } else if (arg === "--changed") {
       explicitSelection = true;
       changed().forEach(proof);

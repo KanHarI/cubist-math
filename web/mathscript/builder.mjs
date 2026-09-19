@@ -12,6 +12,8 @@ export class Builder {
     this.boxedDefinitions = new Set();
     this.optimizations = optimizations;
     this.instructions = new Map();
+    this.freshContexts = new Map();
+    this.indexedContextSteps = 0;
   }
   emit(op, args = [], free = [], context = null, name = null) {
     // Reuse only the identical derivation, including premise names and binder
@@ -84,13 +86,29 @@ export class Builder {
   }
   fresh(A, name = null) {
     const c = name ? name + "_context" : `p${++this.serial}_context`;
+    let previous = null;
+    if (this.optimizations.freshContexts) {
+      // Match Kernel.apply's fresh-context search, including contexts emitted
+      // directly by callers. Each recorded instruction is examined once.
+      while (this.indexedContextSteps < this.k.steps.length) {
+        const step = this.k.steps[this.indexedContextSteps++];
+        const binding = this.k.bindings.get(step.name);
+        if (binding.kind !== "context") continue;
+        const type = this.k.module._wb_view(this.k.handle, 1, binding.id, 0);
+        const counter = this.k.module._wb_view(this.k.handle, 1, binding.id, 2);
+        const old = this.freshContexts.get(type);
+        if (!old || counter > old.counter)
+          this.freshContexts.set(type, { name: step.name, counter });
+      }
+      previous = this.freshContexts.get(this.view(A, 0))?.name ?? null;
+    }
     this.k.apply({
       name: c,
       op: "CtxExt",
       args: [A],
-      free: [null],
+      free: [previous],
       context: null,
-      fresh: true,
+      fresh: !this.optimizations.freshContexts,
     });
     return { A, c, v: this.emit("Vble", [], [], c, name) };
   }
