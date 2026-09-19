@@ -5,11 +5,11 @@ import descent_loop_laws;
 // descend to homotopy paths. Representatives of the same path may have
 // different approximations at every finite stage.
 
-theorem homotopy_limit_descent(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem homotopy_limit_descent(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
-  C : Type1, X : Type, point : X, present : C -> (point = point),
+  C : U1, X : U0, point : X, present : C -> (point = point),
   covered : (forall p : point = point, FieldExists(exists c : C, present(c) = p)),
   approximations : C -> Nat -> F,
   cauchy : (forall c : C, FieldCauchy(F, zero, addF, lt, approximations(c))),
@@ -31,11 +31,11 @@ theorem homotopy_limit_descent(F : Type1, zero : F, one : F, addF : F -> F -> F,
     surjective_descent_beta(C, (point = point), F, setF, present, value, covered, consistent));
 }
 
-theorem homotopy_limit_period(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem homotopy_limit_period(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
-  C : Type1, X : Type, point : X, present : C -> (point = point),
+  C : U1, X : U0, point : X, present : C -> (point = point),
   covered : (forall p : point = point, FieldExists(exists c : C, present(c) = p)),
   approximations : C -> Nat -> F,
   cauchy : (forall c : C, FieldCauchy(F, zero, addF, lt, approximations(c))),

@@ -91,6 +91,11 @@ sources at `http://127.0.0.1:8088/proof.html?proof=euclid` or `?proof=circle` af
 `make serve`. Sources live in [`web/proofs/`](web/proofs/); `.proof` files contain
 mathematical programs, while `.construction.proof` files preserve kernel audit steps.
 
+Universes are written `U0`, `U1`, and so on. A parameter `U : Universe` lets one
+definition serve multiple levels: `Equiv(U, A, B)`, `IsEquiv(U, A, B, f)`,
+and axiom specializations such as `Choice(U)` and `Univalence(U)`. The notation
+`x =[T] y` specifies the carrier of an equality explicitly.
+
 The [circle development](docs/circle_fundamental_group.md) constructs
 `S1 = Suspension(Unit or Unit)` and checks its fundamental group is isomorphic to
 integer addition. Its proof and supporting lemmas are high-level source; the C
@@ -98,7 +103,9 @@ extension implements general suspension rules only.
 
 The [group structure identity development](docs/group_identity.md) proves
 `(G = H) ≃ GroupIso(G, H)` for bundled small groups, with both canonical inverse
-laws. Applying it to the winding isomorphism gives an actual equality of the
+laws. Univalence then gives the equality of types
+`GroupIso(G, H) =[U1] (G =[GroupType] H)`. Applying the structure identity result
+to the winding isomorphism gives an actual equality of the
 circle loop group and the integer group. It uses univalence and function
 extensionality, without choice or excluded middle.
 

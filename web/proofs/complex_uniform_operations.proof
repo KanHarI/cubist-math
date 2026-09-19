@@ -2,7 +2,7 @@ import field_uniform_radii;
 import complex_curves;
 import complex_limits;
 
-theorem complex_close_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+theorem complex_close_add(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   x : Complex(F), y : Complex(F), u : Complex(F), v : Complex(F), epsilon : F, delta : F,
   xy : ComplexClose(F, addF, lt, x, y, epsilon), uv : ComplexClose(F, addF, lt, u, v, delta)) :
   ComplexClose(F, addF, lt, complex_add(F, addF, x, u), complex_add(F, addF, y, v), addF(epsilon, delta)) {
@@ -14,7 +14,7 @@ theorem complex_close_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF
 
 // The common input radius is constructed from the two supplied moduli.
 // There is no comparison or choice of which modulus is smaller.
-theorem complex_uniform_curve_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
+theorem complex_uniform_curve_add(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
   f : FieldUnitInterval(F, zero, one, lt) -> Complex(F), g : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
   uniformF : ComplexUniformCurve(F, zero, one, addF, lt, f), uniformG : ComplexUniformCurve(F, zero, one, addF, lt, g)) :
   ComplexUniformCurve(F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => complex_add(F, addF, f(t), g(t)))) {

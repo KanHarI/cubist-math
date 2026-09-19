@@ -36,6 +36,6 @@ theorem endofunction_count(k : Nat) : Bijection(Fin(k) -> Fin(k), Fin(power_coun
 theorem three_to_three : Bijection(Fin(3) -> Fin(3), Fin(27)) { exact endofunction_count(3); }
 theorem empty_to_empty : Bijection(Fin(0) -> Fin(0), Fin(1)) { exact endofunction_count(0); }
 
-theorem finite_function_equivalence(n : Nat, m : Nat) : Equiv(Fin(n) -> Fin(m), Fin(power_count(m, n))) {
+theorem finite_function_equivalence(n : Nat, m : Nat) : Equiv(U0, Fin(n) -> Fin(m), Fin(power_count(m, n))) {
   exact bijection_equiv(Fin(n) -> Fin(m), Fin(power_count(m, n)), fin_is_set(power_count(m, n)), finite_function_count(n, m));
 }

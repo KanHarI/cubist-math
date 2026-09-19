@@ -4,9 +4,9 @@ import subdivision_refinement;
 // A partition estimate constructs some flattening. A refinement certificate
 // identifies its sum with the specified fine samples; equal sample lists are
 // not required. Transport only the value of the fine contour sum.
-theorem curve_refinement_partition_estimate(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem curve_refinement_partition_estimate(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
-  condition : (forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt), FieldUnitInterval(F, zero, one, lt) -> SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b) -> Type1),
+  condition : (forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt), FieldUnitInterval(F, zero, one, lt) -> SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b) -> U1),
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), radius : F,
   refinement : SubdivisionRefinementSum(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF), parameter_contour_edge(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t)))), condition, a, b, coarse, fine),
   estimates : (forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, coarse), subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, coarse)),
@@ -32,7 +32,7 @@ theorem curve_refinement_partition_estimate(F : Type1, zero : F, one : F, addF :
 
 // The error estimate now applies to a specified actual fine sample, rather
 // than only the fresh flattening returned by the partition estimate.
-theorem affine_refinement_sum_estimate(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem affine_refinement_sum_estimate(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F), integrand : Complex(F) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)))),

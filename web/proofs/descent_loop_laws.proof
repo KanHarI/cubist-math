@@ -3,7 +3,7 @@ import loop_words;
 
 // Transfer unit and composition laws from representatives to identity loops.
 // Mere coverage suffices because each equality of values is a proposition.
-theorem descended_loop_map_laws(C : Type1, X : Type, point : X, G : Type1,
+theorem descended_loop_map_laws(C : U1, X : U0, point : X, G : U1,
   setG : FieldSet(G), unit : G, multiply : G -> G -> G,
   present : C -> (point = point), covered : (forall p : point = point, FieldExists(exists c : C, present(c) = p)),
   value : C -> G, period : (point = point) -> G, computes : (forall c : C, period(present(c)) = value(c)),

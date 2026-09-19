@@ -160,6 +160,7 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
         if (node.name === "Unit") return b.emit("UnitForm");
         if (node.name === "Void") return b.emit("VoidForm");
         if (node.name === "tt") return b.emit("UnitIntro");
+        if (node.name === "Universe") return b.emit("UIntroOmega");
         if (!node.binding) throw new Error(`No checked definition for ${node.name}`);
         // Open local terms cannot be boxed as closed definitions. Reuse their
         // checked term, preserving its context, and certify the containing type.
@@ -221,13 +222,26 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
           while (expected.kind === "U" && actual.kind === "U" && actual.parameter < expected.parameter) {
             value = b.emit("UCumul", [value]); actual = b.k.node(b.view(value, 1));
           }
+          if (expected.kind === "UUOmega" && ["U", "UCRef"].includes(actual.kind))
+            value = b.emit("UCumulOmega", [value]);
           fn = b.emit("PiElim", [fn, value]);
         }
         return fn;
       }
-      if (node.kind === "Equality") {
+      if (["Equality", "Identity"].includes(node.kind)) {
         let left = synth(node.left, scope), right = synth(node.right, scope);
-        const carrier = typeOf(left);
+        const carrier = node.carrier ? synth(node.carrier, scope) : typeOf(left);
+        if (node.carrier) {
+          const target = b.k.node(b.view(carrier, 0));
+          const lift = value => {
+            let actual = b.k.node(b.view(value, 1));
+            while (target.kind === "U" && actual.kind === "U" && actual.parameter < target.parameter) {
+              value = b.emit("UCumul", [value]); actual = b.k.node(b.view(value, 1));
+            }
+            return value;
+          };
+          left = lift(left); right = lift(right);
+        }
         // Restore the folded carrier by checked type conversion, without
         // unfolding the terms themselves or hiding an unverified annotation.
         if (b.view(left, 1) !== b.view(carrier, 0)) left = b.coerceDefinitions(left, carrier);

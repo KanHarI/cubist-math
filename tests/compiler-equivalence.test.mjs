@@ -32,12 +32,12 @@ function replayInto(kernel, compiled, prefix) {
 
 const fixtures = {
   "dependent functions and higher universes": `
-    def identity(A : Type1, x : A) = x;
-    def naturalType = identity(Type, Nat);
-    theorem identity_path(A : Type1, x : A) : identity(A, x) = x {
+    def identity(A : U1, x : A) = x;
+    def naturalType = identity(U0, Nat);
+    theorem identity_path(A : U1, x : A) : identity(A, x) = x {
       exact refl(x);
     }
-    theorem independent_binders(A : Type, x : A, y : A) : y = y {
+    theorem independent_binders(A : U0, x : A, y : A) : y = y {
       exact refl(y);
     }
   `,
@@ -107,7 +107,7 @@ test("each compiler optimization configuration still rejects invalid proofs", ()
   const invalid = [
     "def wrong : Nat { exact tt; }",
     "opaque def successor(n : Nat) = succ(n); theorem wrong : successor(1) = 3 { exact refl(2); }",
-    "theorem wrong(A : Type, x : A, y : A) : x = y { exact refl(x); }",
+    "theorem wrong(A : U0, x : A, y : A) : x = y { exact refl(x); }",
     `theorem wrong(n : Nat) : n = 0 {
       exact induction n as k return (k = 0) {
         zero => refl(0);

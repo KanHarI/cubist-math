@@ -3,8 +3,8 @@ import field_scale_limits;
 import complex_limits;
 
 // Only delta_n -> 0 is required: fixed-length scaling is proved above.
-theorem complex_parameter_tag_errors_converge(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_parameter_tag_errors_converge(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), curve : C -> Complex(F), values : C -> Complex(F),
   realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F,
   count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(C, count(n))),
@@ -23,8 +23,8 @@ theorem complex_parameter_tag_errors_converge(C : Type1, F : Type1, zero : F, on
 
 // Given convergence for one choice of tags, any choice satisfying the
 // vanishing sampled-error condition converges to that same complex value.
-theorem complex_parameter_tag_independent_limit(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_parameter_tag_independent_limit(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), curve : C -> Complex(F), values : C -> Complex(F),
   realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F,
   count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(C, count(n))),

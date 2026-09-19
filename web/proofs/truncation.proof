@@ -2,15 +2,15 @@ import prelude;
 import paths;
 
 // Reuse the original prelude truncation type, unit, and proposition axiom.
-def IsProp(A : Type) = forall x : A, forall y : A, x = y;
-def Mere(A : Type) = truncation(A);
-def merely(A : Type, a : A) = truncation_intro(A, a);
-def mere_is_prop(A : Type) = truncation_prop(A);
+def IsProp(A : U0) = forall x : A, forall y : A, x = y;
+def Mere(A : U0) = Truncate(U0, A);
+def merely(A : U0, a : A) = TruncateIntro(U0, A, a);
+def mere_is_prop(A : U0) = TruncateProp(U0, A);
 
 // The prelude supplies the standard elimination axiom. This checked wrapper
 // rearranges its premises; it introduces no additional axiom.
-def mere_eliminate(A : Type, P : Type, proposition : IsProp(P), f : A -> P) =
-  truncation_elim(A, P, proposition, f);
+def mere_eliminate(A : U0, P : U0, proposition : IsProp(P), f : A -> P) =
+  TruncateElim(U0, A, P, proposition, f);
 
-def mere_map(A : Type, B : Type, f : A -> B, h : Mere(A)) =
+def mere_map(A : U0, B : U0, f : A -> B, h : Mere(A)) =
   mere_eliminate(A, Mere(B), mere_is_prop(B), (fun (a : A) => merely(B, f(a))), h);

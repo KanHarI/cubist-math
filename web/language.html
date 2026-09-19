@@ -47,8 +47,8 @@
         <article id="reference">
           <section id="first-proof">
             <h2>A first proof</h2>
-            <pre><code data-check="core">theorem identity : forall A : Type, A -&gt; A {
-  intro A;       // A : Type
+            <pre><code data-check="core">theorem identity : forall A : U0, A -&gt; A {
+  intro A;       // A : U0
   intro value;   // value : A
   exact value;
 }</code></pre>
@@ -63,17 +63,17 @@ import sets;
 // Declarations follow the imports.</code></pre>
             <p>Imports come first and use module names without quotes or a file extension. Imported mathematical source and its dependencies are checked. The special <code>prelude</code> import makes the existing axiom library available; an import alone does not make every theorem depend on all its axioms.</p>
             <p>Names are case-sensitive: a letter or underscore, followed by letters, digits, or underscores. Write comments with <code>//</code> through the end of the line. Block comments, quoted strings, and Unicode operators are not source syntax. Use <code>-&gt;</code>, <code>forall</code>, and <code>exists</code>; the inspector can display mathematical symbols.</p>
-            <p>Declarations become available in source order. There are no implicit arguments or forward declarations. Each parameter has its own explicit type: <code>(A : Type, x : A, y : A)</code>. Choose fresh local names to avoid collisions with names already in scope.</p>
+            <p>Declarations become available in source order. There are no implicit arguments or forward declarations. Each parameter has its own explicit type: <code>(A : U0, x : A, y : A)</code>. Choose fresh local names to avoid collisions with names already in scope.</p>
           </section>
           <section id="declarations">
             <h2>Declarations</h2>
-            <pre><code data-check="core">def identity_term(A : Type, x : A) = x;
+            <pre><code data-check="core">def identity_term(A : U0, x : A) = x;
 
-def same(A : Type, x : A) : A {
+def same(A : U0, x : A) : A {
   exact x;
 }
 
-theorem self_equal(A : Type, x : A) : x = x {
+theorem self_equal(A : U0, x : A) : x = x {
   exact refl(x);
 }
 
@@ -107,16 +107,23 @@ opaque def next(n : Nat) = succ(n);</code></pre>
               </tbody>
             </table></div>
             <p class="note"><code>exists</code> is an actual dependent pair with a witness. It is not automatically truncated. Likewise, <code>or</code> retains its choice of summand. Use <a href="#axioms">propositional truncation</a> when you mean mere existence.</p>
-            <p><code>Type</code> denotes U₀; <code>Type1</code>, <code>Type2</code>, and <code>Type3</code> denote U₁, U₂, and U₃. In particular <code>Type : Type1</code>. Smaller types can be lifted to larger universes; a larger type cannot be silently lowered.</p>
-            <pre><code data-check="core">def large_identity(A : Type1, x : A) = x;
-def lifted_unit = typed(Type1, Unit);</code></pre>
-            <p>A declaration with <code>A : Type</code> remains restricted to small types. MathScript has no user-defined universe-level variables or automatic universe polymorphism. Write an appropriate universe explicitly, or use the universe-indexed axiom wrappers below. A family may need an explicit lift, such as <code>fun (a : A) =&gt; typed(Type1, Unit)</code>.</p>
-            <p><code>IsProp(A)</code>, <code>IsSet(A)</code>, and <code>Equiv(A, B)</code> are library definitions, not new sorts or language keywords. In particular, <code>IsSet(A)</code> says that any two identity proofs between the same elements agree.</p>
+            <p><code>U0</code> denotes U₀; <code>U1</code>, <code>U2</code>, and <code>U3</code> denote U₁, U₂, and U₃. In particular <code>U0 : U1</code>. Smaller types can be lifted to larger universes; a larger type cannot be silently lowered.</p>
+            <pre><code data-check="core">def large_identity(A : U1, x : A) = x;
+def lifted_unit = typed(U1, Unit);
+def identity(U : Universe, A : U, x : A) = x;
+def small_identity = identity(U0);
+def universe_identity = identity(U2, U1, U0);</code></pre>
+            <p>A declaration with <code>A : U0</code> remains restricted to small types. Write <code>U : Universe</code> to parameterize a declaration over a universe. The argument must be a universe, not an arbitrary type. Universe arguments are explicit; the compiler does not infer them. A family may need an explicit lift, such as <code>fun (a : A) =&gt; typed(U1, Unit)</code>.</p>
+            <p><code>IsProp(A)</code>, <code>IsSet(A)</code>, and <code>Equiv(U, A, B)</code> are library definitions, not new sorts or language keywords. In particular, <code>IsSet(A)</code> says that any two identity proofs between the same elements agree.</p>
           </section>
           <section id="expressions">
             <h2>Terms and notation</h2>
+            <p><code>x =[T] y</code> is equality with an explicit carrier: both endpoints must have type <code>T</code>. Plain <code>x = y</code> infers that carrier. This is an identity type, not an assertion of definitional equality or a cast.</p>
+            <pre><code data-check="core">theorem explicit_reflexivity(U : Universe, A : U, x : A) : x =[A] x {
+  exact refl(x);
+}</code></pre>
             <p>Application is curried: <code>f(a, b)</code> means <code>f(a)(b)</code>. A lambda binds one parameter; nest lambdas for more. Parentheses group expressions. Pairs are binary; write <code>(a, (b, c))</code> for a nested pair.</p>
-            <pre><code data-check="core">def constant(A : Type, B : Type) =
+            <pre><code data-check="core">def constant(A : U0, B : U0) =
   fun (a : A) =&gt; fun (b : B) =&gt; a;
 
 def two_units = typed(Unit and Unit, (tt, tt));
@@ -144,7 +151,7 @@ def choose_left = typed(Unit or Nat, left(tt));</code></pre>
               <dt><code>cases term { left x =&gt; { … } right y =&gt; { … } }</code></dt>
               <dd>Prove the current goal in each branch of a disjoint sum. Each branch has its corresponding witness available.</dd>
             </dl>
-            <pre><code data-check="core">theorem swap_product(A : Type, B : Type) :
+            <pre><code data-check="core">theorem swap_product(A : U0, B : U0) :
     (A and B) -&gt; (B and A) {
   intro pair;
   obtain (a, b) = pair;
@@ -155,7 +162,7 @@ def choose_left = typed(Unit or Nat, left(tt));</code></pre>
   exact result;
 }
 
-theorem swap_sum(A : Type, B : Type, value : A or B) : B or A {
+theorem swap_sum(A : U0, B : U0, value : A or B) : B or A {
   cases value {
     left a =&gt; { exact right(a); }
     right b =&gt; { exact left(b); }
@@ -164,10 +171,10 @@ theorem swap_sum(A : Type, B : Type, value : A or B) : B or A {
             <h3>Where does <code>setA : IsSet(A)</code> come from?</h3>
             <pre><code data-check="sets">import sets;
 
-def SetAssumption = forall A : Type, IsSet(A) -&gt; IsSet(A);
+def SetAssumption = forall A : U0, IsSet(A) -&gt; IsSet(A);
 
 theorem use_set_assumption : SetAssumption {
-  intro A;       // A : Type, from the forall
+  intro A;       // A : U0, from the forall
   intro setA;    // setA : IsSet(A), from the implication
   exact setA;
 }</code></pre>
@@ -206,9 +213,10 @@ theorem copy_two : copy(2) = 2 {
             <div class="table-scroll"><table>
               <thead><tr><th>Operation</th><th>Required data and result</th></tr></thead>
               <tbody>
+                <tr><td><code>x =[T] y</code></td><td>Equality of two elements of the explicitly supplied carrier <code>T</code>; the same identity type as <code>Eq(T, x, y)</code>. Plain <code>x = y</code> infers the carrier.</td></tr>
                 <tr><td><code>Eq(A, x, y)</code></td><td>The identity type with its carrier explicit.</td></tr>
                 <tr><td><code>refl(x)</code></td><td>A path <code>x = x</code>.</td></tr>
-                <tr><td><code>sym(p)</code></td><td>From <code>p : x = y</code>, obtain <code>y = x</code>. Requires the <code>paths</code> library.</td></tr>
+                <tr><td><code>sym(p)</code></td><td>Symmetry: reverse <code>p : x =[T] y</code> to obtain <code>y =[T] x</code>, preserving the carrier. Requires the <code>paths</code> library.</td></tr>
                 <tr><td><code>trans(p, q)</code></td><td>Compose <code>p : x = y</code> and <code>q : y = z</code>. Requires <code>paths</code>.</td></tr>
                 <tr><td><code>cong(f, p)</code></td><td>For a function with constant codomain, map a path to <code>f(x) = f(y)</code>. Requires <code>paths</code>.</td></tr>
                 <tr><td><code>transport(C, x, y, p, value)</code></td><td>Move <code>value : C(x)</code> along <code>p : x = y</code> to obtain <code>C(y)</code>.</td></tr>
@@ -219,9 +227,16 @@ theorem copy_two : copy(2) = 2 {
             <p>The path-induction motive takes <code>x : A</code>, <code>y : A</code>, and <code>p : x = y</code>, and returns a type. The reflexive case <code>base</code> takes <code>a : A</code> and proves <code>motive(a, a, refl(a))</code>. The eliminator returns <code>motive(x, y, p)</code>.</p>
             <pre><code data-check="paths">import paths;
 
-theorem reverse_path(A : Type, x : A, y : A, p : x = y) : y = x {
+theorem reverse_path(A : U0, x : A, y : A, p : x = y) : y = x {
   exact sym(p);
 }</code></pre>
+            <p><code>sym</code> is a language convenience for the library's <code>inverse</code> function, which is proved by path induction. It adds no axiom. It also reverses equalities of types: in <code>A =[U] B</code>, the endpoints <code>A</code> and <code>B</code> are types and their carrier is the universe <code>U</code>.</p>
+            <pre><code data-check="paths">import paths;
+
+theorem reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
+  exact sym(p);
+}</code></pre>
+            <p>For example, univalence applied to the group structure identity equivalence gives <code>(G =[GroupType] H) =[U1] GroupIso(G, H)</code>. Applying <code>sym</code> gives the orientation used in <a href="proof.html?proof=group_univalence&amp;name=group_isomorphism_is_equality">the highlighted group theorem</a>: <code>GroupIso(G, H) =[U1] (G =[GroupType] H)</code>.</p>
             <p>Some inferred pair projections do not retain enough equality information for <code>sym</code>, <code>trans</code>, or <code>cong</code>. Introduce an explicitly typed claim with <code>have p : x = y { exact term; }</code> in that case.</p>
           </section>
           <section id="suspensions">
@@ -236,36 +251,38 @@ theorem reverse_path(A : Type, x : A, y : A, p : x = y) : y = x {
             <h2>Axioms and propositional truncation</h2>
             <p>The operations in this section use principles from <code>import prelude;</code> (possibly through another imported module). They are explicit dependencies, not consequences of the basic introduction and elimination rules. A user-written <code>axiom</code> declaration is likewise an assumption; its name and dependencies remain inspectable.</p>
             <h3>Truncation</h3>
-            <p><code>truncation(A)</code>, often named <code>Mere(A)</code> by the library, expresses mere inhabitation. It discards access to a chosen witness. The inspector can render it as <span class="math">‖A‖</span>; that is display notation, not source syntax.</p>
+            <p><code>Truncate(U0, A)</code>, often named <code>Mere(A)</code> by the library, expresses mere inhabitation. It discards access to a chosen witness. The inspector can render it as <span class="math">‖A‖</span>; that is display notation, not source syntax.</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Small-universe operation</th><th>Meaning</th></tr></thead>
               <tbody>
-                <tr><td><code>truncation(A)</code></td><td>The propositional truncation of <code>A : Type</code>.</td></tr>
-                <tr><td><code>truncation_intro(A, a)</code></td><td>Send <code>a : A</code> into its truncation.</td></tr>
-                <tr><td><code>truncation_prop(A)</code></td><td>Evidence that any two elements of the truncation are equal.</td></tr>
-                <tr><td><code>truncation_elim(A, P, proposition, map)</code></td><td>Given <code>proposition : forall x : P, forall y : P, x = y</code> and <code>map : A -&gt; P</code>, return <code>truncation(A) -&gt; P</code>.</td></tr>
+                <tr><td><code>Truncate(U0, A)</code></td><td>The propositional truncation of <code>A : U0</code>.</td></tr>
+                <tr><td><code>TruncateIntro(U0, A, a)</code></td><td>Send <code>a : A</code> into its truncation.</td></tr>
+                <tr><td><code>TruncateProp(U0, A)</code></td><td>Evidence that any two elements of the truncation are equal.</td></tr>
+                <tr><td><code>TruncateElim(U0, A, P, proposition, map)</code></td><td>Given <code>proposition : forall x : P, forall y : P, x = y</code> and <code>map : A -&gt; P</code>, return <code>Truncate(U0, A) -&gt; P</code>.</td></tr>
               </tbody>
             </table></div>
-            <p>For a named universe, use <code>truncation_at(U, A)</code>, <code>truncation_intro_at(U, A, a)</code>, <code>truncation_prop_at(U, A)</code>, or <code>truncation_elim_at(U, A, P, proposition, map)</code>. Here <code>U</code> must be a universe such as <code>Type1</code>, and both <code>A</code> and the elimination target <code>P</code> must belong to it.</p>
-            <p class="note">The current prelude truncation constructor returns a type in U₀ even for larger inputs. These wrappers preserve that signature; they do not assert universe-preserving truncation. In particular, <code>truncation_at(Type1, Type)</code> is valid, while <code>truncation_at(Type, Type)</code> is not.</p>
+            <p>For a named universe, use <code>Truncate(U, A)</code>, <code>TruncateIntro(U, A, a)</code>, <code>TruncateProp(U, A)</code>, or <code>TruncateElim(U, A, P, proposition, map)</code>. Here <code>U</code> must be a universe such as <code>U1</code>, and both <code>A</code> and the elimination target <code>P</code> must belong to it.</p>
+            <p class="note">The current prelude truncation constructor returns a type in U₀ even for larger inputs. These wrappers preserve that signature; they do not assert universe-preserving truncation. In particular, <code>Truncate(U1, U0)</code> is valid, while <code>Truncate(U0, U0)</code> is not.</p>
             <h3>Function extensionality and univalence</h3>
             <dl>
-              <dt><code>funext(A, B, f, g, pointwise)</code></dt>
-              <dd>For a family <code>B : A -&gt; Type</code> and dependent functions <code>f</code>, <code>g</code>, turn <code>forall x : A, f(x) = g(x)</code> into <code>f = g</code>.</dd>
-              <dt><code>funext_at(U, A, B, f, g, pointwise)</code></dt>
+              <dt><code>FunExt(U0, A, B, f, g, pointwise)</code></dt>
+              <dd>For a family <code>B : A -&gt; U0</code> and dependent functions <code>f</code>, <code>g</code>, turn <code>forall x : A, f(x) = g(x)</code> into <code>f = g</code>.</dd>
+              <dt><code>FunExt(U, A, B, f, g, pointwise)</code></dt>
               <dd>The explicit-universe form, with <code>A : U</code> and <code>B : A -&gt; U</code>.</dd>
-              <dt><code>univalence(A, B, equivalence)</code></dt>
+              <dt><code>Univalence(U0, A, B, equivalence)</code></dt>
               <dd>For small types and equivalence evidence in the library’s native equivalence representation, produce <code>A = B</code>. A pair of arbitrary forward and backward maps is not enough.</dd>
-              <dt><code>univalence_beta(A, B, equivalence, x)</code></dt>
+              <dt><code>UnivalenceBeta(U0, A, B, equivalence, x)</code></dt>
               <dd>Prove that transport of <code>x : A</code> along the univalence path equals the image of <code>x</code> under the equivalence’s forward function.</dd>
             </dl>
+            <p><code>Univalence(U)(A, B, e)</code> accepts the single library definition <code>e : Equiv(U, A, B)</code> and gives <code>A =[U] B</code>. <code>UnivalenceBeta(U1)</code>, for example, checks its transport computation rule at U₁. That computation-rule specializer currently requires a named finite universe, since the existing axiom also takes its enclosing universe.</p>
             <h3>Classical principles and choice</h3>
             <dl>
-              <dt><code>classical_truncation(A, doubleNegation)</code></dt>
-              <dd>Uses excluded middle to turn <code>doubleNegation : (A -&gt; Void) -&gt; Void</code> into <code>truncation(A)</code>, for <code>A : Type</code>.</dd>
-              <dt><code>set_choice(A, B, setA, setFibers, inhabited)</code></dt>
-              <dd>For a small set <code>A</code>, a small family <code>B</code> of sets, and <code>inhabited : forall a : A, truncation(B(a))</code>, obtain <code>truncation(forall a : A, B(a))</code>. <code>setA</code> proves <code>IsSet(A)</code>; <code>setFibers</code> proves it for every fiber. This wrapper specializes the existing choice axiom to U₀. It does not return a selected function outside truncation.</dd>
+              <dt><code>LEM(U0, A, doubleNegation)</code></dt>
+              <dd>Uses excluded middle to turn <code>doubleNegation : (A -&gt; Void) -&gt; Void</code> into <code>Truncate(U0, A)</code>, for <code>A : U0</code>.</dd>
+              <dt><code>Choice(U)(A, B, setA, setFibers, inhabited)</code></dt>
+              <dd>For <code>A : U</code>, <code>B : A -&gt; U</code>, and <code>inhabited : forall a : A, Truncate(U, B(a))</code>, obtain <code>Truncate(U, forall a : A, B(a))</code>. <code>setA</code> proves that A is a set; <code>setFibers</code> proves it for every fiber. This applies the existing choice axiom at the selected universe. It does not return a selected function outside truncation.</dd>
             </dl>
+            <p>All these interfaces are first-class universe specializations: <code>Choice(U0)</code>, <code>FunExt(U1)</code>, <code>Truncate(U2)</code> and <code>Univalence(U1)</code> are functions you can name or pass onward. Except for the computation-rule restriction above, a declared <code>U : Universe</code> also works. Supplying the universe and later arguments together is equivalent: <code>Choice(U0, A, B, setA, setFibers, inhabited)</code>.</p>
             <p>These are separate dependencies: using truncation or function extensionality does not by itself request excluded middle or choice. Inspect the axiom list on the particular theorem for the dependencies of its checked derivation, including its type and context.</p>
           </section>
           <section id="conversion">

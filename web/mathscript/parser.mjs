@@ -4,12 +4,12 @@ export function tokenize(source) {
     throw new Error("Source exceeds 1 MB.");
   const tokens = [];
   const re =
-    /\s+|\/\/[^\n]*|(?:<=|=>|->)|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[(){}:,;+*<=>]|./gy;
+    /\s+|\/\/[^\n]*|(?:<=|=>|->)|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;+*<=>]|./gy;
   for (const match of source.matchAll(re)) {
     const text = match[0];
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|[(){}:,;+*<=>])$/.test(text)
+      !/^(?:[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|[\[\](){}:,;+*<=>])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: match.index,
@@ -212,9 +212,12 @@ export function parse(source, typeOnly = false) {
       }
       const p = prec[peek()];
       if (p === undefined || p < min) break;
-      const operatorToken = take(),
-        operator = operatorToken.text,
-        right = expr(p + (["->", "and", "or"].includes(operator) ? 0 : 1));
+      const operatorToken = take(), operator = operatorToken.text;
+      let carrier;
+      if (operator === "=" && peek() === "[") {
+        take("["); carrier = expr(); take("]");
+      }
+      const right = expr(p + (["->", "and", "or"].includes(operator) ? 0 : 1));
       a = {
         kind: "binary",
         operator,
@@ -222,6 +225,7 @@ export function parse(source, typeOnly = false) {
         operatorEnd: operatorToken.end,
         left: a,
         right,
+        ...(carrier ? { carrier } : {}),
         start: a.start,
         end: right.end,
       };

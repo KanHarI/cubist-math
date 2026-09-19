@@ -39,16 +39,16 @@ def successor_predecessor(z : Z) = match z as w return (successorZ(predecessorZ(
 };
 
 def successor_triangle(z : Z) = match z as w return
-  (ap(Z, Z, successorZ, predecessorZ(successorZ(w)), w, predecessor_successor(w)) = successor_predecessor(successorZ(w))) {
+  (ap(U1, Z, Z, successorZ, predecessorZ(successorZ(w)), w, predecessor_successor(w)) = successor_predecessor(successorZ(w))) {
   left n => refl(refl(nonnegative(succ(n))));
   right n => induction n as k return
-    (ap(Z, Z, successorZ, predecessorZ(successorZ(negative(k))), negative(k), predecessor_successor(negative(k))) = successor_predecessor(successorZ(negative(k)))) {
+    (ap(U1, Z, Z, successorZ, predecessorZ(successorZ(negative(k))), negative(k), predecessor_successor(negative(k))) = successor_predecessor(successorZ(negative(k)))) {
     zero => refl(refl(zeroZ));
     succ previous => refl(refl(negative(k)));
   };
 };
 
-def successor_equivalence = typed(Equiv(Z, Z),
+def successor_equivalence = typed(Equiv(U0, Z, Z),
   (successorZ, (predecessorZ, (predecessor_successor, (successor_predecessor, successor_triangle)))));
 
 // Ordinary integer addition: iterate successor or predecessor in the second argument.
@@ -67,7 +67,7 @@ def addZ(x : Z, y : Z) = match y return Z {
 
 // Decidable equality, used to show that Z is a set rather than a higher type.
 def predecessorN(n : Nat) = induction n as k return Nat { zero => 0; succ previous => k; };
-def zero_fiber(n : Nat) = induction n as k return Type { zero => Unit; succ previous => Void; };
+def zero_fiber(n : Nat) = induction n as k return U0 { zero => Unit; succ previous => Void; };
 def zero_not_successor(n : Nat, p : 0 = succ(n)) = transport(zero_fiber, 0, succ(n), p, tt);
 
 def nat_equal_decidable(n : Nat) = induction n as k return (forall m : Nat, Decidable(k = m)) {
@@ -85,7 +85,7 @@ def nat_equal_decidable(n : Nat) = induction n as k return (forall m : Nat, Deci
 };
 
 def magnitude(z : Z) = match z return Nat { left n => n; right n => n; };
-def sign_fiber(z : Z) = match z return Type { left n => Unit; right n => Void; };
+def sign_fiber(z : Z) = match z return U0 { left n => Unit; right n => Void; };
 def signs_differ(n : Nat, m : Nat, p : nonnegative(n) = negative(m)) =
   transport(sign_fiber, nonnegative(n), negative(m), p, tt);
 

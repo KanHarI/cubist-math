@@ -21,13 +21,13 @@ The final results use the full `Equiv` type, including half-adjoint coherence:
 
 ```text
 finite_binomial_equivalence(n, k) :
-  Equiv(Binomial(Fin(n), Fin(k)), Fin(choose(n, k)))
+  Equiv(U0, Binomial(Fin(n), Fin(k)), Fin(choose(n, k)))
 
 finite_permutation_equivalence(k) :
-  Equiv(Equiv(Fin(k), Fin(k)), Fin(factorial_count(k)))
+  Equiv(U0, Equiv(U0, Fin(k), Fin(k)), Fin(factorial_count(k)))
 
 finite_function_equivalence(n, m) :
-  Equiv(Fin(n) -> Fin(m), Fin(power_count(m, n)))
+  Equiv(U0, Fin(n) -> Fin(m), Fin(power_count(m, n)))
 ```
 
 `endofunction_count(k)` specializes the last construction to `k^k` and presents
@@ -55,7 +55,7 @@ section 17.6](https://arxiv.org/pdf/2212.11082#page=238).
 Bool = Unit or Unit
 Selected(A, predicate) = exists a : A, Truth(predicate(a))
 Binomial(A, B) = exists predicate : A -> Bool,
-  Mere(Equiv(B, Selected(A, predicate)))
+  Mere(Equiv(U0, B, Selected(A, predicate)))
 ```
 
 `Truth(true) = Unit` and `Truth(false) = Void`. This is the decidable-predicate

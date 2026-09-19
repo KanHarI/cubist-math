@@ -1,14 +1,14 @@
 import interval_tag_bounds;
 import sample_tagged;
 
-def IntervalAdmissibleTags(F : Type1, zero : F, one : F, lt : F -> F -> Type, n : Nat) =
+def IntervalAdmissibleTags(F : U1, zero : F, one : F, lt : F -> F -> U0, n : Nat) =
   SampleTagged(FieldUnitInterval(F, zero, one, lt), IntervalTagWithin(F, zero, one, lt), n);
-def IntervalMeshBelow(F : Type1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, radius : F, n : Nat) =
+def IntervalMeshBelow(F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F, n : Nat) =
   SampleAdjacent(FieldUnitInterval(F, zero, one, lt),
     (fun (a : FieldUnitInterval(F, zero, one, lt)) => fun (b : FieldUnitInterval(F, zero, one, lt)) =>
       lt(interval_difference(F, zero, one, addF, negF, lt, a, b), radius)), n);
 
-theorem interval_tag_orders_endpoints(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> Type,
+theorem interval_tag_orders_endpoints(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt), within : IntervalTagWithin(F, zero, one, lt, a, b, tag)) :
   FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, a), field_interval_coordinate(F, zero, one, lt, b)) {
@@ -17,7 +17,7 @@ theorem interval_tag_orders_endpoints(F : Type1, zero : F, one : F, addF : F -> 
   exact order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, coordinate(a), coordinate(tag), coordinate(b), lower, upper);
 }
 
-theorem interval_admissible_samples_ordered(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> Type,
+theorem interval_admissible_samples_ordered(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n), valid : IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)) :
   SampleAdjacent(FieldUnitInterval(F, zero, one, lt), (fun (a : FieldUnitInterval(F, zero, one, lt)) => fun (b : FieldUnitInterval(F, zero, one, lt)) =>
@@ -28,7 +28,7 @@ theorem interval_admissible_samples_ordered(F : Type1, zero : F, one : F, addF :
     (fun (a : I) => fun (b : I) => fun (tag : I) => interval_tag_orders_endpoints(F, zero, one, addF, mulF, lt, arithmetic, a, b, tag)), n, vertices, tags, valid);
 }
 
-theorem interval_endpoint_tags_admissible(F : Type1, zero : F, one : F, lt : F -> F -> Type, order : StrictOrder(F, lt), n : Nat,
+theorem interval_endpoint_tags_admissible(F : U1, zero : F, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   ordered : SampleAdjacent(FieldUnitInterval(F, zero, one, lt), (fun (a : FieldUnitInterval(F, zero, one, lt)) => fun (b : FieldUnitInterval(F, zero, one, lt)) =>
     FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, a), field_interval_coordinate(F, zero, one, lt, b))), n, vertices)) :

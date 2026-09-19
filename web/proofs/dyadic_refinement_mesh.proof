@@ -3,8 +3,8 @@ import subdivision_tagged_zip;
 import interval_subdivisions;
 
 // Coarse width bounds and fine admissibility refer to the same actual family.
-theorem interval_refinement_mesh(F : Type1, zero : F, one : F, addF : F -> F -> F,
-  mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem interval_refinement_mesh(F : U1, zero : F, one : F, addF : F -> F -> F,
+  mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), radius : F, mesh : F, small : lt(radius, mesh),
   n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
@@ -32,9 +32,9 @@ theorem interval_refinement_mesh(F : Type1, zero : F, one : F, addF : F -> F -> 
 
 // Once this dyadic level meets the mesh bound, every later level gives a
 // refinement certificate satisfying the hypotheses of the analytic estimates.
-theorem dyadic_samples_refine_below_mesh(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem dyadic_samples_refine_below_mesh(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), G : Type1, zeroG : G, addG : G -> G -> G,
+  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
   leftUnit : (forall x : G, addG(zeroG, x) = x), rightUnit : (forall x : G, addG(x, zeroG) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> G, depth : Nat, extra : Nat, a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b)),

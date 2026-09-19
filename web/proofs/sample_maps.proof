@@ -1,20 +1,20 @@
 import sample_chains;
 
 // Map both kinds of finite sampling data, preserving their lengths.
-def map_sample_vertices(C : Type1, D : Type1, f : C -> D, n : Nat) =
+def map_sample_vertices(C : U1, D : U1, f : C -> D, n : Nat) =
   induction n as k return (SampleVertices(C, k) -> SampleVertices(D, k)) {
     zero => f;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) =>
       typed((D and SampleVertices(D, k)), (f(field_fst(C, SampleVertices(C, k), vertices)), previous(field_snd(C, SampleVertices(C, k), vertices))));
   };
-def map_sample_tags(C : Type1, D : Type1, f : C -> D, n : Nat) =
+def map_sample_tags(C : U1, D : U1, f : C -> D, n : Nat) =
   induction n as k return (SampleTags(C, k) -> SampleTags(D, k)) {
     zero => fun (tags : Unit) => tags;
     succ previous => fun (tags : SampleTags(C, succ(k))) =>
       typed((D and SampleTags(D, k)), (f(field_fst(C, SampleTags(C, k), tags)), previous(field_snd(C, SampleTags(C, k), tags))));
   };
 
-theorem map_sample_first(C : Type1, D : Type1, f : C -> D, n : Nat) :
+theorem map_sample_first(C : U1, D : U1, f : C -> D, n : Nat) :
   forall vertices : SampleVertices(C, n), sample_first(D, n, map_sample_vertices(C, D, f, n, vertices)) = f(sample_first(C, n, vertices)) {
   exact induction n as k return (forall vertices : SampleVertices(C, k), sample_first(D, k, map_sample_vertices(C, D, f, k, vertices)) = f(sample_first(C, k, vertices))) {
     zero => fun (vertices : C) => refl(f(vertices));
@@ -22,7 +22,7 @@ theorem map_sample_first(C : Type1, D : Type1, f : C -> D, n : Nat) :
   };
 }
 
-theorem map_sample_last(C : Type1, D : Type1, f : C -> D, n : Nat) :
+theorem map_sample_last(C : U1, D : U1, f : C -> D, n : Nat) :
   forall vertices : SampleVertices(C, n), sample_last(D, n, map_sample_vertices(C, D, f, n, vertices)) = f(sample_last(C, n, vertices)) {
   exact induction n as k return (forall vertices : SampleVertices(C, k), sample_last(D, k, map_sample_vertices(C, D, f, k, vertices)) = f(sample_last(C, k, vertices))) {
     zero => fun (vertices : C) => refl(f(vertices));
@@ -31,7 +31,7 @@ theorem map_sample_last(C : Type1, D : Type1, f : C -> D, n : Nat) :
 }
 
 // Sampling after a map agrees with evaluating the pulled-back edge formula.
-theorem map_sample_sum(C : Type1, D : Type1, f : C -> D, G : Type1, zero : G, addG : G -> G -> G,
+theorem map_sample_sum(C : U1, D : U1, f : C -> D, G : U1, zero : G, addG : G -> G -> G,
   edge : D -> D -> D -> G, n : Nat) :
   forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
     sample_sum(D, G, zero, addG, edge, n, map_sample_vertices(C, D, f, n, vertices), map_sample_tags(C, D, f, n, tags)) =

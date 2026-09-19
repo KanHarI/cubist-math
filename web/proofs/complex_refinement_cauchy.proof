@@ -3,7 +3,7 @@ import complex_limits;
 import field_magnitude_close;
 
 // Dropping the first term keeps the same limit and the same sufficient bound.
-theorem complex_converges_successor(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type,
+theorem complex_converges_successor(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   sequence : Nat -> Complex(F), value : Complex(F), converges : ComplexConverges(F, zero, addF, lt, sequence, value)) :
   ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => sequence(succ(n))), value) {
   intro epsilon;
@@ -13,7 +13,7 @@ theorem complex_converges_successor(F : Type1, zero : F, addF : F -> F -> F, lt 
 }
 
 // Coordinate balls have the symmetry and triangle laws of their real parts.
-theorem complex_close_symmetry(F : Type1, addF : F -> F -> F, lt : F -> F -> Type,
+theorem complex_close_symmetry(F : U1, addF : F -> F -> F, lt : F -> F -> U0,
   x : Complex(F), y : Complex(F), epsilon : F, close : ComplexClose(F, addF, lt, x, y, epsilon)) :
   ComplexClose(F, addF, lt, y, x, epsilon) {
   obtain (realClose, imagClose) = close;
@@ -21,7 +21,7 @@ theorem complex_close_symmetry(F : Type1, addF : F -> F -> F, lt : F -> F -> Typ
     field_close_symmetry(F, addF, lt, complex_imag(F, x), complex_imag(F, y), epsilon, imagClose));
 }
 
-theorem complex_close_triangle(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+theorem complex_close_triangle(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   x : Complex(F), y : Complex(F), z : Complex(F), epsilon : F, delta : F,
   xy : ComplexClose(F, addF, lt, x, y, epsilon), yz : ComplexClose(F, addF, lt, y, z, delta)) :
   ComplexClose(F, addF, lt, x, z, addF(epsilon, delta)) {
@@ -33,7 +33,7 @@ theorem complex_close_triangle(F : Type1, zero : F, one : F, addF : F -> F -> F,
 
 // A checked error certificate gives a strict ball once its weak radius is
 // strictly below epsilon. No sign decision on either coordinate is used.
-theorem complex_perturbation_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+theorem complex_perturbation_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   old : Complex(F), fresh : Complex(F), radius : F, epsilon : F,
   perturbation : ComplexPerturbation(F, addF, negF, lt, old, fresh, radius), small : lt(radius, epsilon)) :
   ComplexClose(F, addF, lt, old, fresh, epsilon) {
@@ -48,7 +48,7 @@ theorem complex_perturbation_close(F : Type1, zero : F, one : F, addF : F -> F -
 
 // Compare arbitrary m and n through their common later level m+n.
 // The sum order on indices is commutative; contour sums need not be.
-theorem complex_cauchy_from_refinements(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+theorem complex_cauchy_from_refinements(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   halving : Halving(F, zero, addF, lt), sequence : Nat -> Complex(F),
   refines : (forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat,
     forall n : Nat, forall extra : Nat, IndexLE(bound, n) -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon))) :

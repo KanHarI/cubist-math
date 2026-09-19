@@ -1,45 +1,45 @@
 import ordered_fields;
 
 // Natural indices are separate from the field's ordered carrier.
-def IndexLE(n : Nat) = induction n as k return (Nat -> Type) {
+def IndexLE(n : Nat) = induction n as k return (Nat -> U0) {
   zero => fun (m : Nat) => Unit;
-  succ previous => fun (m : Nat) => induction m as j return Type {
+  succ previous => fun (m : Nat) => induction m as j return U0 {
     zero => Void;
     succ ignored => previous(j);
   };
 };
-def field_natural(F : Type1, zero : F, one : F, addF : F -> F -> F, n : Nat) =
+def field_natural(F : U1, zero : F, one : F, addF : F -> F -> F, n : Nat) =
   induction n as k return F { zero => zero; succ previous => addF(previous, one); };
-def Archimedean(F : Type1, zero : F, one : F, addF : F -> F -> F, lt : F -> F -> Type) =
+def Archimedean(F : U1, zero : F, one : F, addF : F -> F -> F, lt : F -> F -> U0) =
   forall x : F, FieldExists(exists n : Nat, lt(x, field_natural(F, zero, one, addF, n)));
 
 // |x-y| < epsilon, expressed without requiring a total absolute-value API.
-def FieldClose(F : Type1, addF : F -> F -> F, lt : F -> F -> Type, x : F, y : F, epsilon : F) =
+def FieldClose(F : U1, addF : F -> F -> F, lt : F -> F -> U0, x : F, y : F, epsilon : F) =
   lt(x, addF(y, epsilon)) and lt(y, addF(x, epsilon));
 
 // The bound is an actual natural number. A merely existing modulus is a
 // different interface and would require a separate choice argument.
-def FieldCauchy(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type, sequence : Nat -> F) =
+def FieldCauchy(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> F) =
   forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat,
     forall m : Nat, forall n : Nat, IndexLE(bound, m) -> IndexLE(bound, n) ->
       FieldClose(F, addF, lt, sequence(m), sequence(n), epsilon);
-def FieldConverges(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type,
+def FieldConverges(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   sequence : Nat -> F, limit : F) =
   forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat,
     forall n : Nat, IndexLE(bound, n) -> FieldClose(F, addF, lt, sequence(n), limit, epsilon);
-def CauchyComplete(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type) =
+def CauchyComplete(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0) =
   forall sequence : Nat -> F, FieldCauchy(F, zero, addF, lt, sequence) ->
     exists limit : F, FieldConverges(F, zero, addF, lt, sequence, limit);
 
-def CompleteOrderedField(F : Type1, zero : F, one : F,
+def CompleteOrderedField(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> Type) =
+  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> U0) =
   OrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt) and
   Archimedean(F, zero, one, addF, lt) and CauchyComplete(F, zero, addF, lt);
 
 // Stronger order completeness is a separate property, not hidden in Cauchy
 // completeness or replaced by the classical least-upper-bound principle.
-def CutLaws(F : Type1, lt : F -> F -> Type, lower : F -> Type, upper : F -> Type) =
+def CutLaws(F : U1, lt : F -> F -> U0, lower : F -> U0, upper : F -> U0) =
   (forall x : F, FieldProp(lower(x))) and
   (forall x : F, FieldProp(upper(x))) and
   FieldExists(exists x : F, lower(x)) and
@@ -48,24 +48,24 @@ def CutLaws(F : Type1, lt : F -> F -> Type, lower : F -> Type, upper : F -> Type
   (forall y : F, FieldIff(upper(y), FieldExists(exists x : F, upper(x) and lt(x, y)))) and
   (forall x : F, lower(x) -> upper(x) -> Void) and
   (forall x : F, forall y : F, lt(x, y) -> FieldOr(lower(x), upper(y)));
-def RealizesCut(F : Type1, lt : F -> F -> Type, lower : F -> Type, upper : F -> Type, point : F) =
+def RealizesCut(F : U1, lt : F -> F -> U0, lower : F -> U0, upper : F -> U0, point : F) =
   (forall x : F, FieldIff(lower(x), lt(x, point))) and
   (forall x : F, FieldIff(upper(x), lt(point, x)));
-def DedekindComplete(F : Type1, lt : F -> F -> Type) =
-  forall lower : F -> Type, forall upper : F -> Type, CutLaws(F, lt, lower, upper) ->
+def DedekindComplete(F : U1, lt : F -> F -> U0) =
+  forall lower : F -> U0, forall upper : F -> U0, CutLaws(F, lt, lower, upper) ->
     exists point : F, RealizesCut(F, lt, lower, upper, point);
 
-theorem complete_field_ordered(F : Type1, zero : F, one : F,
+theorem complete_field_ordered(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> Type,
+  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> U0,
   complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt)) :
   OrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt) {
   obtain (ordered, (archimedean, cauchy)) = complete;
   exact ordered;
 }
-theorem complete_field_limit(F : Type1, zero : F, one : F,
+theorem complete_field_limit(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> Type,
+  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> U0,
   complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt),
   sequence : Nat -> F, cauchySequence : FieldCauchy(F, zero, addF, lt, sequence)) :
   exists limit : F, FieldConverges(F, zero, addF, lt, sequence, limit) {
@@ -73,7 +73,7 @@ theorem complete_field_limit(F : Type1, zero : F, one : F,
   exact cauchy(sequence, cauchySequence);
 }
 
-theorem field_constant_converges(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type,
+theorem field_constant_converges(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   unit : (forall x : F, addF(x, zero) = x),
   translate : (forall x : F, forall y : F, forall z : F, lt(x, y) -> lt(addF(z, x), addF(z, y))), x : F) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => x), x) {

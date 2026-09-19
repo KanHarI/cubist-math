@@ -3,7 +3,7 @@ import field_scale_limits;
 
 // An actual natural bound yields an actual depth with small dyadic width.
 // The subsequent Archimedean theorem keeps the truncation of its input bound.
-theorem dyadic_width_small_from_natural_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem dyadic_width_small_from_natural_bound(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x),
   width : F, nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon),
   reciprocal : F, inverseLaw : mulF(epsilon, reciprocal) = one, n : Nat,
@@ -33,7 +33,7 @@ theorem dyadic_width_small_from_natural_bound(F : Type1, zero : F, one : F, addF
 
 // Constructive Archimedeanness gives mere existence of a sufficiently small
 // width. No natural-number modulus is selected out of that truncation.
-theorem dyadic_width_arbitrarily_small(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem dyadic_width_arbitrarily_small(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x),
   inverses : FieldInverses(F, zero, one, mulF, lt), archimedean : Archimedean(F, zero, one, addF, lt),
   width : F, nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon)) :

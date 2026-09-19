@@ -6,8 +6,8 @@ def index_sum_left(n : Nat, m : Nat) =
   transport((fun (k : Nat) => IndexLE(n, k)), m + n, n + m, nat_add_comm(m, n), nat_le_add(m, n));
 def index_sum_right(n : Nat, m : Nat) = typed(IndexLE(m, n + m), nat_le_add(n, m));
 
-theorem field_converges_constant(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_converges_constant(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => x), x) {
   intro epsilon;
@@ -15,8 +15,8 @@ theorem field_converges_constant(F : Type1, zero : F, one : F, addF : F -> F -> 
   exact (0, (fun (n : Nat) => fun (large : IndexLE(0, n)) => field_close_self(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, epsilon, positive)));
 }
 
-theorem field_limit_unique(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_limit_unique(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), halving : Halving(F, zero, addF, lt), sequence : Nat -> F, x : F, y : F, toX : FieldConverges(F, zero, addF, lt, sequence, x), toY : FieldConverges(F, zero, addF, lt, sequence, y)) :
   x = y {
   obtain (half, (halfSum, halfPositive)) = halving;
@@ -33,8 +33,8 @@ theorem field_limit_unique(F : Type1, zero : F, one : F, addF : F -> F -> F, mul
   exact field_close_separated(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, close);
 }
 
-theorem field_converges_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_converges_add(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), halving : Halving(F, zero, addF, lt), xs : Nat -> F, ys : Nat -> F, x : F, y : F, toX : FieldConverges(F, zero, addF, lt, xs, x), toY : FieldConverges(F, zero, addF, lt, ys, y)) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => addF(xs(n), ys(n))), addF(x, y)) {
   obtain (half, (halfSum, halfPositive)) = halving;
@@ -51,8 +51,8 @@ theorem field_converges_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mu
         rightClose(n, nat_le_trans(rightBound, bound, n, index_sum_right(leftBound, rightBound), large))))));
 }
 
-theorem field_converges_is_cauchy(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_converges_is_cauchy(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), halving : Halving(F, zero, addF, lt), sequence : Nat -> F, limit : F, converges : FieldConverges(F, zero, addF, lt, sequence, limit)) :
   FieldCauchy(F, zero, addF, lt, sequence) {
   obtain (half, (halfSum, halfPositive)) = halving;
@@ -65,8 +65,8 @@ theorem field_converges_is_cauchy(F : Type1, zero : F, one : F, addF : F -> F ->
 
 }
 
-theorem field_cauchy_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_cauchy_add(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), halving : Halving(F, zero, addF, lt), xs : Nat -> F, ys : Nat -> F, cauchyX : FieldCauchy(F, zero, addF, lt, xs), cauchyY : FieldCauchy(F, zero, addF, lt, ys)) :
   FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => addF(xs(n), ys(n)))) {
   obtain (half, (halfSum, halfPositive)) = halving;
@@ -84,7 +84,7 @@ theorem field_cauchy_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF 
 }
 
 // A pointwise equality of sequences preserves its convergence certificate.
-theorem field_converges_pointwise(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type,
+theorem field_converges_pointwise(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   xs : Nat -> F, ys : Nat -> F, same : (forall n : Nat, xs(n) = ys(n)), limit : F,
   converges : FieldConverges(F, zero, addF, lt, xs, limit)) : FieldConverges(F, zero, addF, lt, ys, limit) {
   intro epsilon;
@@ -94,8 +94,8 @@ theorem field_converges_pointwise(F : Type1, zero : F, addF : F -> F -> F, lt : 
     transport((fun (value : F) => FieldClose(F, addF, lt, value, limit, epsilon)), xs(n), ys(n), same(n), close(n, large))));
 }
 
-theorem ordered_field_limit_unique(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem ordered_field_limit_unique(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), sequence : Nat -> F, x : F, y : F, toX : FieldConverges(F, zero, addF, lt, sequence, x), toY : FieldConverges(F, zero, addF, lt, sequence, y)) :
   x = y {
   exact field_limit_unique(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses), sequence, x, y, toX, toY);

@@ -2,13 +2,13 @@ import binomial_pascal;
 import binomial;
 
 // There is exactly one empty subset, for any finite ambient type.
-def empty_predicate(A : Type, x : A) = no;
-def empty_selected_is_empty(A : Type, s : Selected(A, empty_predicate(A))) = selected_witness(A, empty_predicate(A), s);
+def empty_predicate(A : U0, x : A) = no;
+def empty_selected_is_empty(A : U0, s : Selected(A, empty_predicate(A))) = selected_witness(A, empty_predicate(A), s);
 def empty_binomial(n : Nat) = bin_pair(n, 0, empty_predicate(Fin(n)),
   merely(Bijection(Fin(0), Selected(Fin(n), empty_predicate(Fin(n)))),
     reverse_bijection(Selected(Fin(n), empty_predicate(Fin(n))), Void,
       impossible_bijection(Selected(Fin(n), empty_predicate(Fin(n))), empty_selected_is_empty(Fin(n))))));
-def empty_cardinality_excludes(A : Type, p : A -> Bool, h : Mere(Bijection(Void, Selected(A, p))), a : A, witness : Truth(p(a))) =
+def empty_cardinality_excludes(A : U0, p : A -> Bool, h : Mere(Bijection(Void, Selected(A, p))), a : A, witness : Truth(p(a))) =
   mere_eliminate(Bijection(Void, Selected(A, p)), Void, void_prop,
     (fun (e : Bijection(Void, Selected(A, p))) => backward(Void, Selected(A, p), e, typed(Selected(A, p), (a, witness)))), h);
 def false_when_empty(b : Bool) = match b as c return ((Truth(c) -> Void) -> (c = no)) {
@@ -19,7 +19,7 @@ theorem empty_binomial_unique(n : Nat, s : FiniteBinomial(n, 0)) : empty_binomia
   let p = bin_predicate(n, 0, s);
   let h = bin_cardinality(n, 0, s);
   exact bin_ext(n, 0, empty_binomial(n), s,
-    funext(Fin(n), (fun (a : Fin(n)) => Bool), empty_predicate(Fin(n)), p,
+    FunExt(U0, Fin(n), (fun (a : Fin(n)) => Bool), empty_predicate(Fin(n)), p,
       (fun (a : Fin(n)) => sym(typed((p(a) = no), false_when_empty(p(a), empty_cardinality_excludes(Fin(n), p, h, a)))))));
 }
 def binomial_zero(n : Nat) = typed(Bijection(FiniteBinomial(n, 0), Unit),
@@ -57,16 +57,16 @@ theorem finite_binomial_count(n : Nat, k : Nat) : Bijection(Binomial(Fin(n), Fin
 theorem choose_five_two : Bijection(Binomial(Fin(5), Fin(2)), Fin(10)) { exact finite_binomial_count(5, 2); }
 theorem choose_too_many : Bijection(Binomial(Fin(2), Fin(3)), Fin(0)) { exact finite_binomial_count(2, 3); }
 
-theorem finite_binomial_equivalence(n : Nat, k : Nat) : Equiv(Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) {
+theorem finite_binomial_equivalence(n : Nat, k : Nat) : Equiv(U0, Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) {
   exact bijection_equiv(Binomial(Fin(n), Fin(k)), Fin(choose(n, k)), fin_is_set(choose(n, k)), finite_binomial_count(n, k));
 }
 
 // The same result for the literal sums of Unit requested in the question.
 theorem choose_units_five_two : Bijection(Binomial(five, two), Fin(10)) {
-  let path_five = univalence(five, Fin(5), bijection_equiv(five, Fin(5), fin_is_set(5), five_to_fin));
-  let path_two = univalence(two, Fin(2), bijection_equiv(two, Fin(2), fin_is_set(2), two_to_fin));
+  let path_five = Univalence(U0, five, Fin(5), bijection_equiv(five, Fin(5), fin_is_set(5), five_to_fin));
+  let path_two = Univalence(U0, two, Fin(2), bijection_equiv(two, Fin(2), fin_is_set(2), two_to_fin));
   have path_binomial : Binomial(five, two) = Binomial(Fin(5), Fin(2)) {
-    exact trans(cong((fun (A : Type) => Binomial(A, two)), typed((five = Fin(5)), path_five)),
+    exact trans(cong((fun (A : U0) => Binomial(A, two)), typed((five = Fin(5)), path_five)),
       cong(Binomial(Fin(5)), typed((two = Fin(2)), path_two)));
   }
   exact compose_bijection(Binomial(five, two), Binomial(Fin(5), Fin(2)), Fin(10),

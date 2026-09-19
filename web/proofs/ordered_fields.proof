@@ -1,32 +1,32 @@
 import field_logic;
 
-// Representation-independent algebra. F may live in Type or Type1.
+// Representation-independent algebra. F may live in U0 or U1.
 // Neither excluded middle nor choice is part of these assumptions.
-def AddLaws(F : Type1, zero : F, addF : F -> F -> F, negF : F -> F) =
+def AddLaws(F : U1, zero : F, addF : F -> F -> F, negF : F -> F) =
   (forall x : F, forall y : F, forall z : F, addF(addF(x, y), z) = addF(x, addF(y, z))) and
   (forall x : F, forall y : F, addF(x, y) = addF(y, x)) and
   (forall x : F, addF(zero, x) = x) and
   (forall x : F, addF(negF(x), x) = zero);
-def MulLaws(F : Type1, one : F, addF : F -> F -> F, mulF : F -> F -> F) =
+def MulLaws(F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F) =
   (forall x : F, forall y : F, forall z : F, mulF(mulF(x, y), z) = mulF(x, mulF(y, z))) and
   (forall x : F, forall y : F, mulF(x, y) = mulF(y, x)) and
   (forall x : F, mulF(one, x) = x) and
   (forall x : F, forall y : F, forall z : F, mulF(x, addF(y, z)) = addF(mulF(x, y), mulF(x, z)));
-def CommutativeRing(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F) =
+def CommutativeRing(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F) =
   FieldSet(F) and AddLaws(F, zero, addF, negF) and MulLaws(F, one, addF, mulF);
 
-def FieldLe(F : Type1, lt : F -> F -> Type, x : F, y : F) = lt(y, x) -> Void;
-def FieldApart(F : Type1, lt : F -> F -> Type, x : F, y : F) = FieldOr(lt(x, y), lt(y, x));
+def FieldLe(F : U1, lt : F -> F -> U0, x : F, y : F) = lt(y, x) -> Void;
+def FieldApart(F : U1, lt : F -> F -> U0, x : F, y : F) = FieldOr(lt(x, y), lt(y, x));
 
 // Cotransitivity is the constructive order law, not decidable trichotomy.
-def StrictOrder(F : Type1, lt : F -> F -> Type) =
+def StrictOrder(F : U1, lt : F -> F -> U0) =
   (forall x : F, forall y : F, FieldProp(lt(x, y))) and
   (forall x : F, lt(x, x) -> Void) and
   (forall x : F, forall y : F, forall z : F, lt(x, y) -> lt(y, z) -> lt(x, z)) and
   (forall x : F, forall y : F, forall z : F, lt(x, y) -> FieldOr(lt(x, z), lt(z, y))) and
   (forall x : F, forall y : F, FieldLe(F, lt, x, y) -> FieldLe(F, lt, y, x) -> x = y);
 
-def FieldLattice(F : Type1, lt : F -> F -> Type, minF : F -> F -> F, maxF : F -> F -> F) =
+def FieldLattice(F : U1, lt : F -> F -> U0, minF : F -> F -> F, maxF : F -> F -> F) =
   (forall x : F, forall y : F, FieldLe(F, lt, minF(x, y), x)) and
   (forall x : F, forall y : F, FieldLe(F, lt, minF(x, y), y)) and
   (forall x : F, forall y : F, forall z : F, FieldLe(F, lt, z, x) -> FieldLe(F, lt, z, y) -> FieldLe(F, lt, z, minF(x, y))) and
@@ -34,8 +34,8 @@ def FieldLattice(F : Type1, lt : F -> F -> Type, minF : F -> F -> F, maxF : F ->
   (forall x : F, forall y : F, FieldLe(F, lt, y, maxF(x, y))) and
   (forall x : F, forall y : F, forall z : F, FieldLe(F, lt, x, z) -> FieldLe(F, lt, y, z) -> FieldLe(F, lt, maxF(x, y), z));
 
-def OrderedArithmetic(F : Type1, zero : F, one : F,
-  addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> Type) =
+def OrderedArithmetic(F : U1, zero : F, one : F,
+  addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0) =
   lt(zero, one) and
   (forall x : F, forall y : F, forall z : F, FieldIff(lt(x, y), lt(addF(x, z), addF(y, z)))) and
   (forall x : F, forall y : F, forall z : F, lt(zero, z) -> FieldIff(lt(x, y), lt(mulF(x, z), mulF(y, z)))) and
@@ -44,37 +44,37 @@ def OrderedArithmetic(F : Type1, zero : F, one : F,
   (forall x : F, forall y : F, forall z : F, FieldLe(F, lt, x, y) -> lt(y, z) -> lt(x, z)) and
   (forall x : F, forall y : F, lt(zero, addF(x, y)) -> FieldOr(lt(zero, x), lt(zero, y)));
 
-def FieldInverses(F : Type1, zero : F, one : F, mulF : F -> F -> F, lt : F -> F -> Type) =
+def FieldInverses(F : U1, zero : F, one : F, mulF : F -> F -> F, lt : F -> F -> U0) =
   forall x : F, FieldIff(FieldApart(F, lt, x, zero), (exists y : F, mulF(x, y) = one));
 
-def OrderedField(F : Type1, zero : F, one : F,
+def OrderedField(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> Type) =
+  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> U0) =
   CommutativeRing(F, zero, one, addF, mulF, negF) and
   StrictOrder(F, lt) and FieldLattice(F, lt, minF, maxF) and
   OrderedArithmetic(F, zero, one, addF, mulF, lt) and FieldInverses(F, zero, one, mulF, lt);
 
 // Consequences of the interface, usable with every future construction.
-theorem field_add_right_unit(F : Type1, zero : F, addF : F -> F -> F, negF : F -> F,
+theorem field_add_right_unit(F : U1, zero : F, addF : F -> F -> F, negF : F -> F,
   laws : AddLaws(F, zero, addF, negF), x : F) : addF(x, zero) = x {
   obtain (assoc, (comm, (unit, additiveInverse))) = laws;
   exact trans(comm(x, zero), unit(x));
 }
-theorem field_add_cancel(F : Type1, zero : F, addF : F -> F -> F, negF : F -> F,
+theorem field_add_cancel(F : U1, zero : F, addF : F -> F -> F, negF : F -> F,
   laws : AddLaws(F, zero, addF, negF), x : F, y : F, z : F, same : addF(x, y) = addF(x, z)) : y = z {
   obtain (assoc, (comm, (unit, additiveInverse))) = laws;
   let undoY = trans(sym(assoc(negF(x), x, y)), trans(cong((fun (a : F) => addF(a, y)), additiveInverse(x)), unit(y)));
   let undoZ = trans(sym(assoc(negF(x), x, z)), trans(cong((fun (a : F) => addF(a, z)), additiveInverse(x)), unit(z)));
   exact trans(sym(undoY), trans(cong((fun (a : F) => addF(negF(x), a)), same), undoZ));
 }
-theorem field_inverse_unique(F : Type1, one : F, addF : F -> F -> F, mulF : F -> F -> F,
+theorem field_inverse_unique(F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F,
   laws : MulLaws(F, one, addF, mulF), x : F, y : F, z : F, leftLaw : mulF(x, y) = one, rightLaw : mulF(x, z) = one) : y = z {
   obtain (assoc, (comm, (unit, distribute))) = laws;
   exact trans(sym(unit(y)), trans(cong((fun (a : F) => mulF(a, y)), sym(rightLaw)),
     trans(assoc(x, z, y), trans(cong(mulF(x), comm(z, y)),
       trans(sym(assoc(x, y, z)), trans(cong((fun (a : F) => mulF(a, z)), leftLaw), unit(z)))))));
 }
-theorem field_zero_not_one(F : Type1, zero : F, one : F, lt : F -> F -> Type,
+theorem field_zero_not_one(F : U1, zero : F, one : F, lt : F -> F -> U0,
   order : StrictOrder(F, lt), positive : lt(zero, one)) : (zero = one) -> Void {
   obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
   intro same;

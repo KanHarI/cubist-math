@@ -10,7 +10,7 @@ checked integral laws, validation, outstanding obligations and entry points.
 
 ## Checked now
 
-All carriers below may live in `Type1`, as our proposition-valued Dedekind
+All carriers below may live in `U1`, as our proposition-valued Dedekind
 constructions do. No kernel operations or axioms were added.
 
 The new [limit and homotopy-descent results](analysis_limits.md) prove scalar

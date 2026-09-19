@@ -3,14 +3,14 @@ import finite;
 
 // Finite sums and the single-supported-term identity.
 
-def finite_sum(G : Type1, zero : G, addG : G -> G -> G, n : Nat) =
+def finite_sum(G : U1, zero : G, addG : G -> G -> G, n : Nat) =
   induction n as k return ((Fin(k) -> G) -> G) {
     zero => fun (values : Fin(0) -> G) => zero;
     succ previous => fun (values : Fin(succ(k)) -> G) =>
       addG(values(typed(Unit or Fin(k), left(tt))), previous((fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i))))));
   };
 
-theorem finite_sum_zero(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
+theorem finite_sum_zero(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
   forall values : Fin(n) -> G, (forall i : Fin(n), values(i) = zero) -> finite_sum(G, zero, addG, n, values) = zero {
   obtain (assoc, (comm, (unit, inverseLaw))) = laws;
   exact induction n as k return (forall values : Fin(k) -> G, (forall i : Fin(k), values(i) = zero) -> finite_sum(G, zero, addG, k, values) = zero) {
@@ -21,7 +21,7 @@ theorem finite_sum_zero(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, 
   };
 }
 
-theorem finite_sum_add(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
+theorem finite_sum_add(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
   forall values : Fin(n) -> G, forall other : Fin(n) -> G, finite_sum(G, zero, addG, n, (fun (i : Fin(n)) => addG(values(i), other(i)))) = addG(finite_sum(G, zero, addG, n, values), finite_sum(G, zero, addG, n, other)) {
   obtain (assoc, (comm, (unit, inverseLaw))) = laws;
   exact induction n as k return (forall values : Fin(k) -> G, forall other : Fin(k) -> G, finite_sum(G, zero, addG, k, (fun (i : Fin(k)) => addG(values(i), other(i)))) = addG(finite_sum(G, zero, addG, k, values), finite_sum(G, zero, addG, k, other))) {
@@ -34,7 +34,7 @@ theorem finite_sum_add(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, l
   };
 }
 
-theorem finite_sum_cong(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
+theorem finite_sum_cong(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
   forall values : Fin(n) -> G, forall other : Fin(n) -> G, (forall i : Fin(n), values(i) = other(i)) -> finite_sum(G, zero, addG, n, values) = finite_sum(G, zero, addG, n, other) {
   exact induction n as k return (forall values : Fin(k) -> G, forall other : Fin(k) -> G, (forall i : Fin(k), values(i) = other(i)) -> finite_sum(G, zero, addG, k, values) = finite_sum(G, zero, addG, k, other)) {
     zero => fun (values : Fin(0) -> G) => fun (other : Fin(0) -> G) => fun (same : (forall i : Fin(0), values(i) = other(i))) => refl(zero);
@@ -45,7 +45,7 @@ theorem finite_sum_cong(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, 
   };
 }
 
-theorem finite_sum_single(G : Type1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
+theorem finite_sum_single(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat) :
   forall values : Fin(n) -> G, forall selected : Fin(n), forall v : G, (values(selected) = v) -> (forall i : Fin(n), ((selected = i) -> Void) -> values(i) = zero) -> finite_sum(G, zero, addG, n, values) = v {
   obtain (assoc, (comm, (unit, inverseLaw))) = laws;
   exact induction n as k return (forall values : Fin(k) -> G, forall selected : Fin(k), forall v : G, (values(selected) = v) -> (forall i : Fin(k), ((selected = i) -> Void) -> values(i) = zero) -> finite_sum(G, zero, addG, k, values) = v) {

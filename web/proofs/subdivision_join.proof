@@ -2,7 +2,7 @@ import subdivision_transport;
 
 // Join the per-edge refinements of two coarse sample lists. The endpoint of
 // each left head piece is transported along the checked join endpoint path.
-def join_subdivision_families_step(C : Type1, n : Nat, previous : (forall vertices : SampleVertices(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
+def join_subdivision_families_step(C : U1, n : Nat, previous : (forall vertices : SampleVertices(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
     forall m : Nat, forall rightVertices : SampleVertices(C, m), forall rightPieces : SampleSubdivisions(C, m, rightVertices),
     (sample_last(C, n, vertices) = sample_first(C, m, rightVertices)) ->
       SampleSubdivisions(C, n + m, join_vertices(C, n, vertices, m, rightVertices))),
@@ -23,7 +23,7 @@ def join_subdivision_families_step(C : Type1, n : Nat, previous : (forall vertic
       previous(tail, tailPieces, m, rightVertices, rightPieces, same)));
 }
 
-def join_subdivision_families(C : Type1, n : Nat) =
+def join_subdivision_families(C : U1, n : Nat) =
   induction n as k return (forall vertices : SampleVertices(C, k), forall pieces : SampleSubdivisions(C, k, vertices),
     forall m : Nat, forall rightVertices : SampleVertices(C, m), forall rightPieces : SampleSubdivisions(C, m, rightVertices),
     (sample_last(C, k, vertices) = sample_first(C, m, rightVertices)) ->
@@ -34,7 +34,7 @@ def join_subdivision_families(C : Type1, n : Nat) =
     succ previous => join_subdivision_families_step(C, k, previous);
   };
 
-theorem subdivision_total_join_step(C : Type1, G : Type1, zero : G, addG : G -> G -> G,
+theorem subdivision_total_join_step(C : U1, G : U1, zero : G, addG : G -> G -> G,
   unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat, previous : (forall vertices : SampleVertices(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
@@ -65,7 +65,7 @@ theorem subdivision_total_join_step(C : Type1, G : Type1, zero : G, addG : G -> 
 
 // The equality retains the actual supplied families and their order;
 // no commutativity assumption or choice of a replacement sum is used.
-theorem subdivision_total_join(C : Type1, G : Type1, zero : G, addG : G -> G -> G,
+theorem subdivision_total_join(C : U1, G : U1, zero : G, addG : G -> G -> G,
   unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat) : forall vertices : SampleVertices(C, n), forall pieces : SampleSubdivisions(C, n, vertices),

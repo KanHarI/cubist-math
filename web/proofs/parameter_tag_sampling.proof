@@ -2,8 +2,8 @@ import parameter_contour_bounds;
 import sample_tagged;
 
 // Lift a bound for two admissible tags in one small edge to all sampled edges.
-theorem parameter_tag_bounds_from_samples(C : Type1, F : Type1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
-  values : C -> Complex(F), delta : F, mesh : C -> C -> Type, valid : C -> C -> C -> Type,
+theorem parameter_tag_bounds_from_samples(C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  values : C -> Complex(F), delta : F, mesh : C -> C -> U0, valid : C -> C -> C -> U0,
   localBound : (forall a : C, forall b : C, forall x : C, forall y : C, mesh(a, b) -> valid(a, b, x) -> valid(a, b, y) -> ComplexBoxBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), values(x), values(y)), delta)), n : Nat) :
   forall vertices : SampleVertices(C, n), forall oldTags : SampleTags(C, n), forall newTags : SampleTags(C, n),
     SampleAdjacent(C, mesh, n, vertices) -> SampleTagged(C, valid, n, vertices, oldTags) -> SampleTagged(C, valid, n, vertices, newTags) ->

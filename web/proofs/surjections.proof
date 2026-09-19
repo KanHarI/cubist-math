@@ -3,12 +3,12 @@ import truncation;
 
 // A surjection has merely inhabited fibers. A right inverse includes a map
 // g : B -> A and the pointwise law f(g(y)) = y (not g(f(x)) = x).
-def Surjective(A : Type, B : Type, f : A -> B) = forall y : B, Mere(Fiber(A, B, f, y));
-def RightInverse(A : Type, B : Type, f : A -> B) =
+def Surjective(A : U0, B : U0, f : A -> B) = forall y : B, Mere(Fiber(A, B, f, y));
+def RightInverse(A : U0, B : U0, f : A -> B) =
   exists g : B -> A, forall y : B, f(g(y)) = y;
 
 // Explicit preimages already contain the data of a right inverse: no choice.
-theorem right_inverse_from_preimages(A : Type, B : Type, f : A -> B,
+theorem right_inverse_from_preimages(A : U0, B : U0, f : A -> B,
   preimages : (forall y : B, Fiber(A, B, f, y))) : RightInverse(A, B, f) {
   let g = fun (y : B) => sigma_first(A, (fun (x : A) => f(x) = y), preimages(y));
   exact (g, (fun (y : B) => sigma_second(A, (fun (x : A) => f(x) = y), preimages(y))));
@@ -17,12 +17,12 @@ theorem right_inverse_from_preimages(A : Type, B : Type, f : A -> B,
 // A subtype of a set is a set. Reconstruct a path from its first projection;
 // setness of A makes this operation constant on paths. Correct its value at
 // reflexivity, then path induction identifies the corrected path with p.
-def subtype_path(A : Type, P : A -> Type,
+def subtype_path(A : U0, P : A -> U0,
   prop : (forall x : A, Proposition(P(x))),
   u : (exists x : A, P(x)), v : (exists x : A, P(x)), p : u = v) =
   subtype_ext(A, P, prop, u, v, cong(sigma_first(A, P), p));
 
-theorem subtype_path_correction(A : Type, P : A -> Type,
+theorem subtype_path_correction(A : U0, P : A -> U0,
   prop : (forall x : A, Proposition(P(x))),
   u : (exists x : A, P(x)), v : (exists x : A, P(x)), p : u = v) :
   trans(sym(subtype_path(A, P, prop, u, u, refl(u))), subtype_path(A, P, prop, u, v, p)) = p {
@@ -32,7 +32,7 @@ theorem subtype_path_correction(A : Type, P : A -> Type,
     inverse_left((exists x : A, P(x)), u, u, subtype_path(A, P, prop, u, u, refl(u))), v, p);
 }
 
-theorem subtype_is_set(A : Type, P : A -> Type, setA : IsSet(A),
+theorem subtype_is_set(A : U0, P : A -> U0, setA : IsSet(A),
   prop : (forall x : A, Proposition(P(x)))) : IsSet(exists x : A, P(x)) {
   intro u;
   intro v;
@@ -47,26 +47,26 @@ theorem subtype_is_set(A : Type, P : A -> Type, setA : IsSet(A),
       subtype_path_correction(A, P, prop, u, v, q)));
 }
 
-theorem fiber_is_set(A : Type, B : Type, setA : IsSet(A), setB : IsSet(B), f : A -> B, y : B) :
+theorem fiber_is_set(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, y : B) :
   IsSet(Fiber(A, B, f, y)) {
   exact subtype_is_set(A, (fun (x : A) => f(x) = y), setA, (fun (x : A) => setB(f(x), y)));
 }
 
 def EverySurjectionHasRightInverse =
-  forall A : Type, forall B : Type, IsSet(A) -> IsSet(B) ->
+  forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) ->
     forall f : A -> B, Surjective(A, B, f) -> Mere(RightInverse(A, B, f));
 
 // Apply the existing set-level axiom of choice to the fibers over B.
 // Its conclusion is mere existence; truncation is eliminated only into the
 // proposition Mere(RightInverse(...)), never into an arbitrarily chosen map.
 theorem every_surjection_has_right_inverse : EverySurjectionHasRightInverse {
-  intro A;          // A : Type
-  intro B;          // B : Type
+  intro A;          // A : U0
+  intro B;          // B : U0
   intro setA;       // setA : IsSet(A), from the first implication above
   intro setB;       // setB : IsSet(B), from the second implication above
   intro f;          // f : A -> B
   intro surjective; // surjective : Surjective(A, B, f)
-  let preimages = set_choice(B, Fiber(A, B, f), setB, fiber_is_set(A, B, setA, setB, f), surjective);
+  let preimages = Choice(U0, B, Fiber(A, B, f), setB, fiber_is_set(A, B, setA, setB, f), surjective);
   exact mere_map((forall y : B, Fiber(A, B, f, y)), RightInverse(A, B, f),
     right_inverse_from_preimages(A, B, f), preimages);
 }

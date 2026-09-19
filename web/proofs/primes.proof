@@ -44,9 +44,9 @@ def mul(x : Nat, y : Nat) =
   };
 
 def le(x : Nat) =
-  induction x as k return (Nat -> Type) {
+  induction x as k return (Nat -> U0) {
     zero => (fun (x2 : Nat) => Unit);
-    succ h => (fun (y : Nat) => induction y as j return Type {
+    succ h => (fun (y : Nat) => induction y as j return U0 {
       zero => Void;
       succ ignored => h(j);
     });
@@ -55,14 +55,14 @@ def le(x : Nat) =
 theorem nat_zero_ne_succ(n : Nat, p : (0 = succ(n))) =
   path_induction(
     Nat,
-    (fun (x : Nat) => (fun (y : Nat) => (fun (path : (x = y)) => ((fun (n2 : Nat) => induction n2 as k return Type {
+    (fun (x : Nat) => (fun (y : Nat) => (fun (path : (x = y)) => ((fun (n2 : Nat) => induction n2 as k return U0 {
       zero => Unit;
       succ h => Void;
-    })(x) -> (fun (n2 : Nat) => induction n2 as k return Type {
+    })(x) -> (fun (n2 : Nat) => induction n2 as k return U0 {
       zero => Unit;
       succ h => Void;
     })(y))))),
-    (fun (x : Nat) => (fun (t : (fun (n2 : Nat) => induction n2 as k return Type {
+    (fun (x : Nat) => (fun (t : (fun (n2 : Nat) => induction n2 as k return U0 {
       zero => Unit;
       succ h => Void;
     })(x)) => t)),
@@ -221,7 +221,7 @@ theorem nat_quotient_bound(d : Nat, q : Nat) =
     succ h => nat_le_trans(q2, (q2 * succ(succ(d))), succ((d + (q2 * succ(succ(d))))), h, nat_le_step((q2 * succ(succ(d))), (d + (q2 * succ(succ(d)))), nat_le_add(d, (q2 * succ(succ(d))))));
   };
 
-theorem bounded_least_search(P : (Nat -> Type), dec : (forall n : Nat, (P(n) or (P(n) -> Void))), n : Nat) =
+theorem bounded_least_search(P : (Nat -> U0), dec : (forall n : Nat, (P(n) or (P(n) -> Void))), n : Nat) =
   induction n as n2 return ((exists i : Nat, ((i <= n2) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))) or (forall j : Nat, ((j <= n2) -> (P(j) -> Void)))) {
     zero => match dec(0) return ((exists i : Nat, ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))) or (forall j : Nat, ((j <= 0) -> (P(j) -> Void)))) {
       left p => typed(((exists i : Nat, ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))) or (forall j : Nat, ((j <= 0) -> (P(j) -> Void)))), left(typed((exists i : Nat, ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))), (0, typed(((0 <= 0) and (P(0) and (forall j : Nat, ((succ(j) <= 0) -> (P(j) -> Void))))), (tt, typed((P(0) and (forall j : Nat, ((succ(j) <= 0) -> (P(j) -> Void)))), (p, (fun (j : Nat) => (fun (impossible : (succ(j) <= 0)) => (fun (x : P(j)) => impossible)))))))))));
@@ -259,7 +259,7 @@ theorem bounded_least_search(P : (Nat -> Type), dec : (forall n : Nat, (P(n) or 
     };
   };
 
-theorem least_bounded_witness(P : (Nat -> Type), dec : (forall n : Nat, (P(n) or (P(n) -> Void))), n : Nat, pn : P(n)) =
+theorem least_bounded_witness(P : (Nat -> U0), dec : (forall n : Nat, (P(n) or (P(n) -> Void))), n : Nat, pn : P(n)) =
   match bounded_least_search(P, dec, n) return (exists i : Nat, ((i <= n) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))) {
     left witness => witness;
     right empty => typed((exists i : Nat, ((i <= n) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))), absurd(empty(n, nat_le_refl(n), pn)));

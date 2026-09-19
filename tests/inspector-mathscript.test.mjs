@@ -16,7 +16,7 @@ test("checked inspector metadata preserves definition bodies, named theorem type
   try {
     const concept = c.outputs.find(o => o.name === "InfinitelyManyPrimes");
     assert.equal(concept.mathscript.expression, "forall n : Nat, exists p : Nat, Prime(p) and n < p");
-    assert.equal(concept.mathscript.type, "Type");
+    assert.equal(concept.mathscript.type, "U0");
     const theorem = c.outputs.find(o => o.name === "euclid");
     assert.equal(theorem.mathscript.expression, "euclid");
     assert.equal(theorem.mathscript.type, "InfinitelyManyPrimes");
@@ -32,13 +32,13 @@ test("checked inspector metadata preserves definition bodies, named theorem type
 
 test("source projection handles parameterized lambdas and typed definition blocks without guessing aliases", () => {
   const c = compile(module, `
-    def identity(A : Type, x : A) = x;
+    def identity(A : U0, x : A) = x;
     def lambda = fun (x : Nat) => x;
     def block : Nat { exact 0; }
     theorem reference : Nat { exact 0; }
   `);
   try {
-    assert.equal(c.outputs[0].mathscript.expression, "fun (A : Type) => fun (x : A) => x");
+    assert.equal(c.outputs[0].mathscript.expression, "fun (A : U0) => fun (x : A) => x");
     assert.equal(c.outputs[1].mathscript.expression, "fun (x : Nat) => x");
     assert.equal(c.outputs[2].mathscript.expression, "def block : Nat { exact 0; }");
     assert.equal(c.outputs[2].mathscript.expressionKind, "declaration");
@@ -119,7 +119,7 @@ test("the kernel rejects incorrect folding proposals instead of displaying sourc
 });
 
 test("folded dependent domains follow the kernel binder convention and local names are not definition links", () => {
-  const c = compile(module, "def family = forall A : Type, forall x : A, exists y : A, x = y;");
+  const c = compile(module, "def family = forall A : U0, forall x : A, exists y : A, x = y;");
   try {
     const f = checkedFoldedView(c, "family");
     assert.deepEqual(f.failures, {});
@@ -393,11 +393,11 @@ test("truncation sugar does not recognize a user axiom with a matching name", ()
 
 test("independent binder grouping follows checked scopes, preserves order, and compares domains structurally", () => {
   const c = compile(module, `
-    def fixture(F : Type1, zero : F, one : F, lt : F -> F -> Type) = F;
-    def dependent = forall A : Type, forall a : A, forall family : (forall t : Nat, a = a), Unit;
-    def mixed = forall A : Type, exists a : A, exists b : A, Unit;
-    def external = forall A : Type, forall B : Type, forall x : A, forall y : B, Unit;
-    def eliminated = forall n : Nat, forall x : (induction n as k return Type { zero => Unit; succ previous => previous; }), Unit;
+    def fixture(F : U1, zero : F, one : F, lt : F -> F -> U0) = F;
+    def dependent = forall A : U0, forall a : A, forall family : (forall t : Nat, a = a), Unit;
+    def mixed = forall A : U0, exists a : A, exists b : A, Unit;
+    def external = forall A : U0, forall B : U0, forall x : A, forall y : B, Unit;
+    def eliminated = forall n : Nat, forall x : (induction n as k return U0 { zero => Unit; succ previous => previous; }), Unit;
   `);
   const names = tree => independentBinderGroups(tree).groups.map(group => group.map(binder => binder.name));
   const display = (name, side = "expression") => {

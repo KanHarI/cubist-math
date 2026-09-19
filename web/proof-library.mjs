@@ -157,7 +157,7 @@ export const proofChoices = [
   { id: "cauchy_quotient", topic: "real-analysis", title: "Real numbers · ordinary Cauchy quotient", realDevelopment: true },
   { id: "ordered_fields", topic: "real-analysis", title: "Ordered fields · laws and algebraic lemmas", realDevelopment: true },
   { id: "set_quotients", topic: "sets-maps", title: "Equivalence classes · representatives and choice", realDevelopment: true },
-  { id: "field_logic", topic: "basic-logic", title: "Field foundations · logic in Type1", realDevelopment: true },
+  { id: "field_logic", topic: "basic-logic", title: "Logic in U1 · propositions and truncation", realDevelopment: true },
   { id: "field_extensionality", topic: "real-analysis", title: "Field foundations · predicate equality", realDevelopment: true },
   { id: "surjections", topic: "sets-maps", title: "Surjections · right inverses and choice" },
   { id: "maps", topic: "sets-maps", title: "Maps · injections, embeddings and fibers" },

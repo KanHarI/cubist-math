@@ -13,7 +13,7 @@ The [MathScript source](../web/proofs/surjections.proof) proves the usual
 set-theoretic statement using the existing prelude axiom of choice (`AOC`):
 
 ```text
-forall A : Type, forall B : Type, IsSet(A) -> IsSet(B) ->
+forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) ->
   forall f : A -> B, Surjective(A, B, f) -> Mere(RightInverse(A, B, f))
 ```
 
@@ -36,7 +36,7 @@ are axiom-free. The final theorem depends exactly on `AOC`, `lib_Trunc`,
 `lib_trunc_intro`, `lib_trunc_is_trunc`, and `lib_trunc_elim`. It does not use
 excluded middle, function extensionality, or univalence.
 
-The compiler's `set_choice(A, B, setA, setFibers, inhabited)` interface checks
+The compiler's `Choice(U0)(A, B, setA, setFibers, inhabited)` interface checks
 all premises and applies the existing `AOC` declaration through the kernel.
 It introduces no new axiom or kernel rule. In the web inspector, both the
-`set_choice` call and the theorem's `AOC` dependency link to that declaration.
+`Choice` call and the theorem's `AOC` dependency link to that declaration.

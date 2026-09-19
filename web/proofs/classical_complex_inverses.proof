@@ -3,9 +3,9 @@ import classical;
 
 // The constructive core uses positive apartness. This separate corollary
 // explicitly uses the existing LEM axiom to turn negated equality into it.
-theorem classical_complex_nonzero_apart(F : Type1, zero : F, one : F,
+theorem classical_complex_nonzero_apart(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   z : Complex(F), nonzero : (z = complex_zero(F, zero)) -> Void) :
   ComplexApartZero(F, zero, addF, mulF, lt, z) {
@@ -16,9 +16,9 @@ theorem classical_complex_nonzero_apart(F : Type1, zero : F, one : F,
       nonzero(complex_apart_tight(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z, notApart))));
 }
 
-theorem classical_complex_nonzero_inverse(F : Type1, zero : F, one : F,
+theorem classical_complex_nonzero_inverse(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), z : Complex(F),
   nonzero : (z = complex_zero(F, zero)) -> Void) :

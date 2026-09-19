@@ -13,7 +13,7 @@ the free-group normal-form theorem nor the residue theorem is asserted here.
 ## The type and its paths
 
 ```text
-def Bouquet(A : Type) = Suspension(Unit or A);
+def Bouquet(A : U0) = Suspension(Unit or A);
 def PunctureGraph(n : Nat) = Bouquet(Fin(n));
 ```
 
@@ -90,7 +90,7 @@ length determines word values; the generation theorem extends the result to
 all loops. Elimination of mere word existence is valid because the equality
 being proved is a proposition (`G` is a set).
 
-The target can live in `Type1`, which accommodates complex numbers built from
+The target can live in `U1`, which accommodates complex numbers built from
 our intended proposition-valued Dedekind reals. The supporting
 `small_mere_eliminate` lemma uses the existing universe-lowering truncation
 signature, as explained in [the real-number foundation notes](reals.md).
@@ -103,7 +103,7 @@ period(p) = sum over i : Fin(n) of
   integer_multiple(values(i), puncture_winding(n, i, p))
 ```
 
-Here `G` is any set in `Type1` with abelian-group addition, `period` preserves
+Here `G` is any set in `U1` with abelian-group addition, `period` preserves
 the constant loop and concatenation, and `values(i)` is its value on generator
 `i`. Signed integer multiples and finite sums are constructed by recursion;
 their additivity and the single-supported-term sum are proved without axioms.

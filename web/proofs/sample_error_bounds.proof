@@ -4,16 +4,16 @@ import field_closeness;
 // Bounds are required only for the finitely sampled edges. A positive slack
 // radius makes the strict inequality valid also for the empty sum.
 
-def SampleCloseBounds(C : Type1, F : Type1, addF : F -> F -> F, lt : F -> F -> Type,
+def SampleCloseBounds(C : U1, F : U1, addF : F -> F -> F, lt : F -> F -> U0,
   edge : C -> C -> C -> F, other : C -> C -> C -> F, radius : C -> C -> C -> F, n : Nat) =
-  induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> Type) {
+  induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C) => fun (tags : Unit) => Unit;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) =>
       FieldClose(F, addF, lt, edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), other(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), radius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))) and previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags));
   };
 
-theorem sample_sum_error_bound(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem sample_sum_error_bound(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   edge : C -> C -> C -> F, other : C -> C -> C -> F, radius : C -> C -> C -> F, n : Nat) :
   forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), SampleCloseBounds(C, F, addF, lt, edge, other, radius, n, vertices, tags) ->

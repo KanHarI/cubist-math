@@ -2,16 +2,16 @@ import contour_refinement;
 import sample_magnitude;
 
 // The uniform change in f is required only at the old/new sampled tags.
-def ContourTagBounds(F : Type1, addF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, f : F -> F, delta : F, n : Nat) =
-  induction n as k return (SampleVertices(F, k) -> SampleTags(F, k) -> SampleTags(F, k) -> Type) {
+def ContourTagBounds(F : U1, addF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, f : F -> F, delta : F, n : Nat) =
+  induction n as k return (SampleVertices(F, k) -> SampleTags(F, k) -> SampleTags(F, k) -> U0) {
     zero => fun (vertices : F) => fun (oldTags : Unit) => fun (newTags : Unit) => Unit;
     succ previous => fun (vertices : SampleVertices(F, succ(k))) => fun (oldTags : SampleTags(F, succ(k))) => fun (newTags : SampleTags(F, succ(k))) =>
       FieldMagnitudeBound(F, negF, lt, coordinate_difference(F, addF, negF, f(field_fst(F, SampleTags(F, k), oldTags)), f(field_fst(F, SampleTags(F, k), newTags))), delta) and previous(field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags), field_snd(F, SampleTags(F, k), newTags));
   };
 
-theorem contour_tag_error_variation_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem contour_tag_error_variation_bound(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   f : F -> F, weight : F -> F -> F -> F, delta : F, n : Nat) :
   forall vertices : SampleVertices(F, n), forall oldTags : SampleTags(F, n), forall newTags : SampleTags(F, n),
@@ -36,8 +36,8 @@ theorem contour_tag_error_variation_bound(F : Type1, zero : F, one : F, addF : F
   };
 }
 
-theorem contour_tag_error_length_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem contour_tag_error_length_bound(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   f : F -> F, weight : F -> F -> F -> F, delta : F, length : F,
   nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,

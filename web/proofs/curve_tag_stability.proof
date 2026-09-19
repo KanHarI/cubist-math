@@ -1,7 +1,7 @@
 import curve_contour_estimates;
 import uniform_curve_tags;
 
-def CurveFineTagsClose(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+def CurveFineTagsClose(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F), epsilon : F, mesh : F) =
   forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
     forall oldTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n), forall newTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
@@ -12,8 +12,8 @@ def CurveFineTagsClose(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : 
 
 // Uniform continuity of the integrand along the curve and bounded variation
 // give a mesh threshold valid for every admissible pair of tag schemes.
-theorem curve_contour_uniform_tag_stability(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem curve_contour_uniform_tag_stability(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t)))),
@@ -41,8 +41,8 @@ theorem curve_contour_uniform_tag_stability(F : Type1, zero : F, one : F, addF :
   exact (mesh, (positiveMesh, stable));
 }
 
-theorem affine_contour_uniform_tag_stability(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem affine_contour_uniform_tag_stability(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
   minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F), integrand : Complex(F) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error, t)))),
@@ -64,8 +64,8 @@ theorem affine_contour_uniform_tag_stability(F : Type1, zero : F, one : F, addF 
 
 // Concrete left and right endpoint sums are instances; their tags are
 // constructed from the vertices and their admissibility is proved.
-theorem affine_contour_endpoint_sums_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem affine_contour_endpoint_sums_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
   minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F), integrand : Complex(F) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error, t)))),

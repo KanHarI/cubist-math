@@ -2,7 +2,7 @@ import ring_laws;
 
 // Multiplicativity of the sum-of-squares norm, by proved ring identities.
 
-theorem complex_coordinate_norm_product(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_norm_product(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F) :
   addF(mulF(addF(mulF(a, c), negF(mulF(b, d))), addF(mulF(a, c), negF(mulF(b, d)))), mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))) = mulF(addF(mulF(a, a), mulF(b, b)), addF(mulF(c, c), mulF(d, d))) {
   let leftStep1 = cong((fun (value : F) => addF(value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c))))), ring_distribute_left(F, zero, one, addF, mulF, negF, ring, mulF(a, c), negF(mulF(b, d)), addF(mulF(a, c), negF(mulF(b, d)))));
@@ -63,7 +63,7 @@ theorem complex_coordinate_norm_product(F : Type1, zero : F, one : F, addF : F -
   exact trans(trans(leftStep1, trans(leftStep2, trans(leftStep3, trans(leftStep4, trans(leftStep5, trans(leftStep6, trans(leftStep7, trans(leftStep8, trans(leftStep9, trans(leftStep10, trans(leftStep11, trans(leftStep12, trans(leftStep13, trans(leftStep14, trans(leftStep15, trans(leftStep16, trans(leftStep17, trans(leftStep18, trans(leftStep19, trans(leftStep20, trans(leftStep21, trans(leftStep22, trans(leftStep23, trans(leftStep24, trans(leftStep25, trans(leftStep26, trans(leftStep27, trans(leftStep28, trans(leftStep29, trans(leftStep30, trans(leftStep31, trans(leftStep32, trans(leftStep33, trans(leftStep34, trans(leftStep35, trans(leftStep36, trans(leftStep37, trans(leftStep38, trans(leftStep39, trans(leftStep40, trans(leftStep41, trans(leftStep42, trans(leftStep43, trans(leftStep44, trans(leftStep45, trans(leftStep46, leftStep47)))))))))))))))))))))))))))))))))))))))))))))), sym(trans(rightStep1, trans(rightStep2, trans(rightStep3, trans(rightStep4, trans(rightStep5, trans(rightStep6, trans(rightStep7, rightStep8)))))))));
 }
 
-theorem complex_coordinate_norm_one(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_norm_one(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)) :
   addF(mulF(one, one), mulF(zero, zero)) = one {
   let leftStep1 = cong((fun (value : F) => addF(value, mulF(zero, zero))), ring_mul_one(F, zero, one, addF, mulF, negF, ring, one));

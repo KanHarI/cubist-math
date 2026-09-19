@@ -4,35 +4,35 @@ import primes;
 
 // Ordinary sequences equipped with moduli, followed by an equivalence-class
 // quotient. This is not the higher inductive-inductive Cauchy completion.
-def CauchySequence(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type) =
+def CauchySequence(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0) =
   exists sequence : Nat -> Q, FieldCauchy(Q, zero, addQ, ltQ, sequence);
-def cauchy_sequence(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+def cauchy_sequence(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   sequence : CauchySequence(Q, zero, addQ, ltQ)) : Nat -> Q {
   exact field_first(Nat -> Q, FieldCauchy(Q, zero, addQ, ltQ), sequence);
 }
-def cauchy_modulus(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+def cauchy_modulus(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   sequence : CauchySequence(Q, zero, addQ, ltQ)) =
   field_second(Nat -> Q, FieldCauchy(Q, zero, addQ, ltQ), sequence);
-def EventualClose(Q : Type, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+def EventualClose(Q : U0, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   x : Nat -> Q, y : Nat -> Q, epsilon : Q) =
   FieldExists(exists bound : Nat, forall n : Nat, IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon));
-def SequenceSame(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type, x : Nat -> Q, y : Nat -> Q) =
+def SequenceSame(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x : Nat -> Q, y : Nat -> Q) =
   forall epsilon : Q, ltQ(zero, epsilon) -> EventualClose(Q, addQ, ltQ, x, y, epsilon);
-def CauchySame(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+def CauchySame(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   x : CauchySequence(Q, zero, addQ, ltQ), y : CauchySequence(Q, zero, addQ, ltQ)) =
   SequenceSame(Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y));
-def CauchyQuotient(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type) =
+def CauchyQuotient(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0) =
   SetQuotient(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ));
 
-theorem sequence_same_prop(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type, x : Nat -> Q, y : Nat -> Q) :
+theorem sequence_same_prop(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x : Nat -> Q, y : Nat -> Q) :
   FieldProp(SequenceSame(Q, zero, addQ, ltQ, x, y)) {
-  exact field_forall_prop(Q, (fun (epsilon : Q) => typed(Type1, ltQ(zero, epsilon) -> EventualClose(Q, addQ, ltQ, x, y, epsilon))),
+  exact field_forall_prop(Q, (fun (epsilon : Q) => typed(U1, ltQ(zero, epsilon) -> EventualClose(Q, addQ, ltQ, x, y, epsilon))),
     (fun (epsilon : Q) => field_forall_prop(ltQ(zero, epsilon),
-      (fun (positive : ltQ(zero, epsilon)) => typed(Type1, EventualClose(Q, addQ, ltQ, x, y, epsilon))),
+      (fun (positive : ltQ(zero, epsilon)) => typed(U1, EventualClose(Q, addQ, ltQ, x, y, epsilon))),
       (fun (positive : ltQ(zero, epsilon)) => field_exists_prop(exists bound : Nat,
         forall n : Nat, IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon))))));
 }
-theorem sequence_same_reflexive(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+theorem sequence_same_reflexive(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   closeSelf : (forall x : Q, forall epsilon : Q, ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)),
   x : Nat -> Q) : SequenceSame(Q, zero, addQ, ltQ, x, x) {
   intro epsilon;
@@ -41,7 +41,7 @@ theorem sequence_same_reflexive(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q 
     typed((exists bound : Nat, forall n : Nat, IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), x(n), epsilon)),
       (0, (fun (n : Nat) => fun (bound : IndexLE(0, n)) => closeSelf(x(n), epsilon, positive)))));
 }
-theorem sequence_same_symmetric(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+theorem sequence_same_symmetric(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   x : Nat -> Q, y : Nat -> Q, same : SequenceSame(Q, zero, addQ, ltQ, x, y)) : SequenceSame(Q, zero, addQ, ltQ, y, x) {
   intro epsilon;
   intro positive;
@@ -58,11 +58,11 @@ theorem sequence_same_symmetric(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q 
 // The small-radius form of the triangle inequality needed for transitivity.
 // cauchy_ordered derives it from supplied ordered-field laws. Constructing
 // the concrete rational arithmetic remains a separate obligation.
-def CloseComposition(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type) =
+def CloseComposition(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0) =
   forall epsilon : Q, ltQ(zero, epsilon) -> exists delta : Q, ltQ(zero, delta) and
     (forall x : Q, forall y : Q, forall z : Q,
       FieldClose(Q, addQ, ltQ, x, y, delta) -> FieldClose(Q, addQ, ltQ, y, z, delta) -> FieldClose(Q, addQ, ltQ, x, z, epsilon));
-theorem close_tails_compose(Q : Type, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+theorem close_tails_compose(Q : U0, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   x : Nat -> Q, y : Nat -> Q, z : Nat -> Q, epsilon : Q, delta : Q,
   composeClose : (forall a : Q, forall b : Q, forall c : Q,
     FieldClose(Q, addQ, ltQ, a, b, delta) -> FieldClose(Q, addQ, ltQ, b, c, delta) -> FieldClose(Q, addQ, ltQ, a, c, epsilon)),
@@ -78,7 +78,7 @@ theorem close_tails_compose(Q : Type, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
       leftClose(n, nat_le_trans(leftBound, leftBound + rightBound, n, boundLeft, large)),
       rightClose(n, nat_le_trans(rightBound, leftBound + rightBound, n, nat_le_add(leftBound, rightBound), large)))));
 }
-theorem sequence_same_transitive(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+theorem sequence_same_transitive(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   composeClose : CloseComposition(Q, zero, addQ, ltQ), x : Nat -> Q, y : Nat -> Q, z : Nat -> Q,
   xy : SequenceSame(Q, zero, addQ, ltQ, x, y), yz : SequenceSame(Q, zero, addQ, ltQ, y, z)) :
   SequenceSame(Q, zero, addQ, ltQ, x, z) {
@@ -92,7 +92,7 @@ theorem sequence_same_transitive(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q
     (fun (leftActual : leftTail) => field_exists_map(rightTail, resultTail,
       close_tails_compose(Q, addQ, ltQ, x, y, z, epsilon, delta, composeAt, leftActual), yz(delta, deltaPositive))), xy(delta, deltaPositive));
 }
-theorem cauchy_same_equivalence(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+theorem cauchy_same_equivalence(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   closeSelf : (forall x : Q, forall epsilon : Q, ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)),
   composeClose : CloseComposition(Q, zero, addQ, ltQ)) :
   EquivalenceRelation(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ)) {
@@ -104,7 +104,7 @@ theorem cauchy_same_equivalence(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q 
      (fun (x : sequenceType) => fun (y : sequenceType) => fun (z : sequenceType) =>
        sequence_same_transitive(Q, zero, addQ, ltQ, composeClose, underlying(x), underlying(y), underlying(z))))));
 }
-theorem cauchy_class_represented(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+theorem cauchy_class_represented(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   x : CauchyQuotient(Q, zero, addQ, ltQ)) :
   FieldExists(exists s : CauchySequence(Q, zero, addQ, ltQ),
     quotient_class(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), s) = x) {
@@ -112,7 +112,7 @@ theorem cauchy_class_represented(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q
 }
 
 // Choice is an explicit argument. Its conclusion stays truncated.
-theorem cauchy_sequence_representatives(Q : Type, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> Type,
+theorem cauchy_sequence_representatives(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   sequence : Nat -> CauchyQuotient(Q, zero, addQ, ltQ),
   choice : RepresentativeChoice(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), sequence)) :
   FieldExists(forall n : Nat, exists s : CauchySequence(Q, zero, addQ, ltQ),

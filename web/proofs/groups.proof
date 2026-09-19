@@ -2,14 +2,14 @@ import sets;
 
 // A group with a specified unit and multiplication. Inverses are witnesses;
 // the group laws make them unique, so no choice principle is needed.
-def Group(A : Type, unit : A, multiply : A -> A -> A) =
+def Group(A : U0, unit : A, multiply : A -> A -> A) =
   IsSet(A) and
   (forall x : A, forall y : A, forall z : A, multiply(multiply(x, y), z) = multiply(x, multiply(y, z))) and
   (forall x : A, multiply(unit, x) = x) and
   (forall x : A, multiply(x, unit) = x) and
   (forall x : A, exists y : A, (multiply(y, x) = unit) and (multiply(x, y) = unit));
 
-def GroupIsomorphism(A : Type, multiplyA : A -> A -> A, B : Type, multiplyB : B -> B -> B) =
+def GroupIsomorphism(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B) =
   exists f : A -> B, exists g : B -> A,
   (forall x : A, g(f(x)) = x) and
   (forall y : B, f(g(y)) = y) and

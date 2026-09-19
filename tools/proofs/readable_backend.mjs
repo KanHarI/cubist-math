@@ -43,7 +43,7 @@ const aliases = {
 export function foundation() {
   const N = name("Nat"),
     Z = node("number", { value: 0 }),
-    U = name("Type"),
+    U = name("U0"),
     V = name("Void"),
     T = name("Unit"),
     tt = name("tt");

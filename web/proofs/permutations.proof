@@ -21,7 +21,7 @@ def permutation_split(n : Nat, e : Permutations(succ(n))) =
 def permutation_join(n : Nat, p : Fin(succ(n)) and Permutations(n)) =
   permutation_join_at(n, fst(Fin(succ(n)), Permutations(n), p), snd(Fin(succ(n)), Permutations(n), p));
 
-theorem extension_restriction_point(A : Type, B : Type, e : Bijection(Unit or A, Unit or B),
+theorem extension_restriction_point(A : U0, B : U0, e : Bijection(Unit or A, Unit or B),
   fixed : forward(Unit or A, Unit or B, e, head(A)) = head(B), x : Unit or A) =
   match x as z return
     (sum_map(Unit, A, Unit, B, (fun (u : Unit) => u), forward(A, B, restrict_bijection(A, B, e, fixed)), z) = forward(Unit or A, Unit or B, e, z)) {
@@ -35,7 +35,7 @@ theorem permutation_rebuild(n : Nat, e : Permutations(succ(n))) : permutation_jo
   let image = permutation_image(n, e);
   let adjusted = adjust_permutation(n, image, e);
   exact bijection_ext(S, S, fin_is_set(succ(n)), fin_is_set(succ(n)), permutation_join(n, permutation_split(n, e)), e,
-    funext(S, (fun (x : S) => S), forward(S, S, permutation_join(n, permutation_split(n, e))), forward(S, S, e),
+    FunExt(U0, S, (fun (x : S) => S), forward(S, S, permutation_join(n, permutation_split(n, e))), forward(S, S, e),
       (fun (x : S) => trans(cong(swap(Fin(n), fin_decidable(n), image),
         extension_restriction_point(Fin(n), Fin(n), adjusted, swap_chosen(Fin(n), fin_decidable(n), image), x)),
         swap_twice(Fin(n), fin_decidable(n), image, forward(S, S, e, x))))));
@@ -64,7 +64,7 @@ theorem permutation_join_tail_point(n : Nat, y : Fin(succ(n)), d : Permutations(
 
 theorem permutation_join_tail(n : Nat, y : Fin(succ(n)), d : Permutations(n)) : permutation_tail(n, permutation_join_at(n, y, d)) = d {
   exact bijection_ext(Fin(n), Fin(n), fin_is_set(n), fin_is_set(n), permutation_tail(n, permutation_join_at(n, y, d)), d,
-    funext(Fin(n), (fun (a : Fin(n)) => Fin(n)), forward(Fin(n), Fin(n), permutation_tail(n, permutation_join_at(n, y, d))), forward(Fin(n), Fin(n), d), permutation_join_tail_point(n, y, d)));
+    FunExt(U0, Fin(n), (fun (a : Fin(n)) => Fin(n)), forward(Fin(n), Fin(n), permutation_tail(n, permutation_join_at(n, y, d))), forward(Fin(n), Fin(n), d), permutation_join_tail_point(n, y, d)));
 }
 
 theorem permutation_split_join(n : Nat, p : Fin(succ(n)) and Permutations(n)) : permutation_split(n, permutation_join(n, p)) = p {
@@ -80,7 +80,7 @@ theorem permutation_successor(n : Nat) : Bijection(Permutations(succ(n)), Fin(su
 
 theorem empty_permutation_unique(e : Permutations(0)) : identity_bijection(Fin(0)) = e {
   exact bijection_ext(Fin(0), Fin(0), fin_is_set(0), fin_is_set(0), identity_bijection(Fin(0)), e,
-    funext(Fin(0), (fun (x : Fin(0)) => Fin(0)), forward(Fin(0), Fin(0), identity_bijection(Fin(0))), forward(Fin(0), Fin(0), e),
+    FunExt(U0, Fin(0), (fun (x : Fin(0)) => Fin(0)), forward(Fin(0), Fin(0), identity_bijection(Fin(0))), forward(Fin(0), Fin(0), e),
       (fun (x : Fin(0)) => typed((x = forward(Fin(0), Fin(0), e, x)), absurd(x)))));
 }
 def empty_permutation_bijection = typed(Bijection(Permutations(0), Unit),
@@ -103,11 +103,11 @@ theorem finite_permutation_count(n : Nat) = induction n as k return Bijection(Pe
 theorem three_permutations : Bijection(Permutations(3), Fin(6)) { exact finite_permutation_count(3); }
 
 // Count the library's full equivalence type, including its coherence field.
-theorem finite_equivalence_count(k : Nat) : Bijection(Equiv(Fin(k), Fin(k)), Fin(factorial_count(k))) {
-  exact compose_bijection(Equiv(Fin(k), Fin(k)), Permutations(k), Fin(factorial_count(k)),
+theorem finite_equivalence_count(k : Nat) : Bijection(Equiv(U0, Fin(k), Fin(k)), Fin(factorial_count(k))) {
+  exact compose_bijection(Equiv(U0, Fin(k), Fin(k)), Permutations(k), Fin(factorial_count(k)),
     equivalences_are_bijections(Fin(k), Fin(k), fin_is_set(k), fin_is_set(k)), finite_permutation_count(k));
 }
 
-theorem finite_permutation_equivalence(k : Nat) : Equiv(Equiv(Fin(k), Fin(k)), Fin(factorial_count(k))) {
-  exact bijection_equiv(Equiv(Fin(k), Fin(k)), Fin(factorial_count(k)), fin_is_set(factorial_count(k)), finite_equivalence_count(k));
+theorem finite_permutation_equivalence(k : Nat) : Equiv(U0, Equiv(U0, Fin(k), Fin(k)), Fin(factorial_count(k))) {
+  exact bijection_equiv(Equiv(U0, Fin(k), Fin(k)), Fin(factorial_count(k)), fin_is_set(factorial_count(k)), finite_equivalence_count(k));
 }

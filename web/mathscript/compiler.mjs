@@ -59,9 +59,9 @@ export function compile(module, source, library, { onProgress, optimizations = {
   for (const name of program.imports) visit(name);
   const sourceDeclarations = [...importedDeclarations, ...program.declarations];
   const usesDeclaredAxioms = sourceDeclarations.some(d => d.kind === "axiom");
-  const usesTruncation = sourceDeclarations.some(d => /"name":"truncation(?:_intro|_prop|_elim)?(?:_at)?"/.test(JSON.stringify(d)));
-  const usesChoice = sourceDeclarations.some(d => /"name":"set_choice"/.test(JSON.stringify(d)));
-  const usesClassical = sourceDeclarations.some(d => /"name":"classical_truncation"/.test(JSON.stringify(d)));
+  const usesTruncation = sourceDeclarations.some(d => /"name":"Truncate(?:Intro|Prop|Elim)?"/.test(JSON.stringify(d)));
+  const usesChoice = sourceDeclarations.some(d => /"name":"Choice"/.test(JSON.stringify(d)));
+  const usesLEM = sourceDeclarations.some(d => /"name":"LEM"/.test(JSON.stringify(d)));
   const b = new Builder(module, {
     loadLibrary: false,
     allowAxioms: usesPrelude || usesDeclaredAxioms,
@@ -97,8 +97,8 @@ export function compile(module, source, library, { onProgress, optimizations = {
       if (usesTruncation)
         ["lib_Trunc", "lib_trunc_intro", "lib_trunc_is_trunc", "lib_trunc_elim"].forEach(need);
       if (usesChoice) need("AOC");
-      if (usesClassical) need("LEM");
-      if (usesChoice || usesClassical) need("lib_Trunc");
+      if (usesLEM) need("LEM");
+      if (usesChoice || usesLEM) need("lib_Trunc");
       for (const step of preludeLibrary.steps)
         if (needed.has(step.name)) b.k.apply(step);
     }
@@ -108,13 +108,15 @@ export function compile(module, source, library, { onProgress, optimizations = {
     const op = (...args) => b.emit(...args),
       norm = (x) => b.norm(x);
     const env = new Map();
+    const universeNames = new Map();
     const U = op("UIntro0"),
       U1 = op("UIntro", [U]),
+      universeSort = op("UIntroOmega"),
       N = op("NatForm"),
       V = op("VoidForm"),
       Unit = op("UnitForm");
     const atom = (j, pretty) => ({ j, kind: "atom", pretty });
-    const type = atom(U, "Type"),
+    const type = atom(U, "U0"),
       nat = atom(N, "Nat"),
       voidType = atom(V, "Void");
     const smallTypes = new Map();
@@ -123,7 +125,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
       // Reuse a previously checked small-universe judgement of the same type
       // and assumption set. This never lowers a universe by assertion: the
       // replacement premise already exists in the kernel. It avoids propagating
-      // an unnecessary Type1 lift into equalities between paths in a small type.
+      // an unnecessary U1 lift into equalities between paths in a small type.
       while (indexedTypes < b.k.steps.length) {
         const step = b.k.steps[indexedTypes++],
           binding = b.k.bindings.get(step.name);
@@ -138,8 +140,8 @@ export function compile(module, source, library, { onProgress, optimizations = {
       const known = smallTypes.get(`${b.view(T.j, 0)}:${b.view(T.j, 2)}`);
       return known ? { ...T, j: known.j } : T;
     }
-    function equalityType(A, x, y, pretty = `${x.display} = ${y.display}`) {
-      A = smallestKnownType(A);
+    function equalityType(A, x, y, pretty = `${x.display} = ${y.display}`, minimize = true) {
+      if (minimize) A = smallestKnownType(A);
       return {
         j: b.eq(A.j, x.binding, y.binding),
         kind: "atom",
@@ -148,30 +150,38 @@ export function compile(module, source, library, { onProgress, optimizations = {
       };
     }
     function val(binding, type, display, extra = {}) {
+      if (type?.j === universeSort && b.k.node(b.view(binding, 0)).kind === "UCRef")
+        universeNames.set(b.view(binding, 0), display);
       return { binding, type, display, ...extra };
     }
-    env.set("Type", val(U, atom(U1, "Type1"), "Type"));
+    env.set("U0", val(U, atom(U1, "U1"), "U0"));
     env.set("Nat", val(N, type, "Nat"));
     env.set("Void", val(V, type, "Void"));
     env.set("Unit", val(Unit, type, "Unit"));
     env.set("tt", val(op("UnitIntro"), atom(Unit, "Unit"), "tt"));
     const universes = [U, U1];
     function sortType(binding) {
-      const sort = b.k.node(b.view(binding, 1));
+      const sortId = b.view(binding, 1), sort = b.k.node(sortId);
+      if (sort.kind === "UUOmega") return atom(universeSort, "Universe");
+      if (sort.kind === "UCRef") {
+        const variable = b.universeVariables.get(sortId);
+        if (!variable) throw new Error("Missing checked universe variable.");
+        return atom(variable, universeNames.get(sortId) ?? "universe");
+      }
       if (sort.kind !== "U") return null;
       while (universes.length <= sort.parameter)
         universes.push(op("UIntro", [universes.at(-1)]));
       return atom(
         universes[sort.parameter],
-        sort.parameter ? `Type${sort.parameter}` : "Type",
+        sort.parameter ? `U${sort.parameter}` : "U0",
       );
     }
     for (let i = 1; i <= 3; i++) {
       while (universes.length <= i + 1)
         universes.push(op("UIntro", [universes.at(-1)]));
       env.set(
-        `Type${i}`,
-        val(universes[i], atom(universes[i + 1], `Type${i + 1}`), `Type${i}`),
+        `U${i}`,
+        val(universes[i], atom(universes[i + 1], `U${i + 1}`), `U${i}`),
       );
     }
     const instantiated = new Map();
@@ -251,7 +261,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
       if (n.kind === "call")
         return `${describe(n.fn, e)}(${n.args.map((x) => describe(x, e)).join(", ")})`;
       if (n.kind === "binary")
-        return `(${describe(n.left, e)} ${n.operator} ${describe(n.right, e)})`;
+        return `(${describe(n.left, e)} ${n.operator}${n.carrier ? `[${describe(n.carrier, e)}]` : ""} ${describe(n.right, e)})`;
       return (sources[n.library] ?? source).slice(n.start, n.end);
     }
     function record(node, value, role = "expression") {
@@ -270,6 +280,9 @@ export function compile(module, source, library, { onProgress, optimizations = {
       // Cumulativity is a checked inference on a type-valued argument.
       const actualSort = b.k.node(b.view(value.binding, 1)),
         targetSort = b.k.node(b.view(T.j, 0));
+      if (targetSort.kind === "UUOmega" &&
+          !["U", "UCRef"].includes(b.k.node(b.view(value.binding, 0)).kind))
+        throw new Error("Expected a universe argument such as U0 or U1, not an arbitrary type or term.");
       if (
         actualSort.kind === "U" &&
         targetSort.kind === "U" &&
@@ -280,6 +293,10 @@ export function compile(module, source, library, { onProgress, optimizations = {
           binding = op("UCumul", [binding]);
         value = { ...value, binding, type: T };
       }
+      if (["U", "UCRef"].includes(actualSort.kind) && targetSort.kind === "UUOmega")
+        value = { ...value, binding: op("UCumulOmega", [value.binding]), type: T };
+      if (actualSort.kind === "U" && actualSort.parameter === 0 && targetSort.kind === "UCRef")
+        value = { ...value, binding: op("UCumul0", [value.binding, T.j]), type: T };
       try {
         return { ...value, binding: b.coerce(value.binding, T.j), type: T };
       } catch (error) {
@@ -342,6 +359,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
     }
     function asType(n, e) {
       if (!n.library) current = n;
+      if (n.kind === "name" && n.name === "Universe") return atom(universeSort, "Universe");
       if (n.kind === "forall" || n.kind === "exists") {
         const A = asType(n.domain, e),
           body = (x) => asType(n.body, new Map(e).set(n.name.text, x));
@@ -364,7 +382,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
       }
       const v = infer(n, e),
         sort = b.k.node(b.view(v.binding, 1));
-      if (!["U", "UUOmega", "UUKappa"].includes(sort.kind))
+      if (!["U", "UCRef", "UUOmega", "UUKappa"].includes(sort.kind))
         throw new Error(`${describe(n, e)} is a term, not a type.`);
       return {
         ...(v.representedType ?? atom(v.binding, describe(n, e))),
@@ -520,26 +538,15 @@ export function compile(module, source, library, { onProgress, optimizations = {
         if (primitive) {
           v = primitive(n.args, e);
           const principle = {
-            univalence: ["lib_univalence", "Equiv(A, B) -> (A = B)"],
-            univalence_beta: [
-              "lib_ua_elim",
-              "Transport along univalence equals the equivalence function",
-            ],
-            truncation: ["lib_Trunc", "Type -> Type"],
-            truncation_intro: ["lib_trunc_intro", "A -> Mere(A)"],
-            truncation_prop: ["lib_trunc_is_trunc", "IsProp(Mere(A))"],
-            truncation_elim: ["lib_trunc_elim", "IsProp(P) -> (A -> P) -> Mere(A) -> P"],
-            truncation_at: ["lib_Trunc", "Universe-indexed propositional truncation"],
-            truncation_intro_at: ["lib_trunc_intro", "Universe-indexed truncation introduction"],
-            truncation_prop_at: ["lib_trunc_is_trunc", "Universe-indexed truncation is a proposition"],
-            truncation_elim_at: ["lib_trunc_elim", "Universe-indexed truncation elimination into propositions"],
-            funext_at: ["lib_funext", "Universe-indexed function extensionality"],
-            set_choice: ["AOC", "Choice for a family of inhabited sets indexed by a set"],
-            classical_truncation: ["LEM", "Double negation implies mere inhabitation"],
-            funext: [
-              "lib_funext",
-              "Pointwise equality implies function equality",
-            ],
+            Choice: ["AOC", "Universe-indexed choice for a family of inhabited sets indexed by a set"],
+            LEM: ["LEM", "Universe-indexed excluded middle"],
+            FunExt: ["lib_funext", "Universe-indexed FunExt"],
+            Truncate: ["lib_Trunc", "Universe-indexed Truncate"],
+            TruncateIntro: ["lib_trunc_intro", "Universe-indexed TruncateIntro"],
+            TruncateProp: ["lib_trunc_is_trunc", "Universe-indexed TruncateProp"],
+            TruncateElim: ["lib_trunc_elim", "Universe-indexed TruncateElim"],
+            Univalence: ["lib_univalence", "Universe-indexed Univalence"],
+            UnivalenceBeta: ["lib_ua_elim", "Universe-indexed UnivalenceBeta"],
           }[n.fn.name];
           if (principle && recording && !n.library)
             links.push({
@@ -573,9 +580,10 @@ export function compile(module, source, library, { onProgress, optimizations = {
         let x = infer(n.left, e),
           y = infer(n.right, e);
         if (n.operator === "=") {
-          x = convert(x, x.type);
-          y = convert(y, x.type);
-          const E = equalityType(x.type, x, y, describe(n, e));
+          const carrier = n.carrier ? asType(n.carrier, e) : x.type;
+          x = convert(x, carrier);
+          y = convert(y, carrier);
+          const E = equalityType(carrier, x, y, describe(n, e), !n.carrier);
           v = val(E.j, type, describe(n, e), { representedType: E });
         } else {
           x = convert(x, nat);
@@ -623,18 +631,20 @@ export function compile(module, source, library, { onProgress, optimizations = {
           sourceName: name,
           description:
             n.operator === "="
-              ? `a = b denotes Eq(A, a, b), where A is the checked type of a and b.`
+              ? n.carrier
+                ? `a =[T] b denotes Eq(T, a, b); both endpoints are checked in the explicitly supplied carrier T.`
+                : `a = b denotes Eq(A, a, b), where A is the checked type of a and b.`
               : `a ${n.operator} b denotes ${name}(a, b), applied as (${name}(a))(b).${n.operator === "<" ? " isLt(a, b) is le(succ(a), b)." : ""}`,
         });
       }
       if (
         !v.representedType &&
-        ["U", "UUOmega", "UUKappa"].includes(
+        ["U", "UCRef", "UUOmega", "UUKappa"].includes(
           b.k.node(b.view(v.binding, 1)).kind,
         )
       )
         v.representedType = atom(v.binding, describe(n, e));
-      // In particular a quantified type over Type lives in Type1, not Type.
+      // In particular a quantified type over U0 lives in U1, not U0.
       // Obtain its sort from the checked judgement rather than guessing U0.
       const sort = sortType(v.binding);
       if (sort) v = { ...v, type: sort };
@@ -813,7 +823,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
     }
     function represented(value) {
       const sort = b.k.node(b.view(value.binding, 1));
-      if (!["U", "UUOmega", "UUKappa"].includes(sort.kind))
+      if (!["U", "UCRef", "UUOmega", "UUKappa"].includes(sort.kind))
         throw new Error("The motive must return a type.");
       return {
         ...(value.representedType ?? atom(value.binding, value.display)),
@@ -926,17 +936,17 @@ export function compile(module, source, library, { onProgress, optimizations = {
         throw new Error(`Prelude signature did not normalize: ${name}`);
       });
     }
-    function nativeEquivalence(A, B, value) {
+    function nativeEquivalence(A, B, value, universe = type) {
       const arrow = b.arrow(A.j, B.j),
         f = b.fresh(arrow),
-        family = b.app("lib_isEquiv", op("UCumulOmega", [U]), A.j, B.j, f.v),
+        family = b.app("lib_isEquiv", universeArgument(universe), A.j, B.j, f.v),
         E = norm(op("SigmaForm", [arrow, family], [f.c]));
       return b.coerce(value.binding, E);
     }
-    function forwardEquivalence(A, B, proof) {
+    function forwardEquivalence(A, B, proof, universe = type) {
       const arrow = b.arrow(A.j, B.j),
         f = b.fresh(arrow),
-        family = b.app("lib_isEquiv", op("UCumulOmega", [U]), A.j, B.j, f.v),
+        family = b.app("lib_isEquiv", universeArgument(universe), A.j, B.j, f.v),
         h = b.fresh(family);
       return norm(op("SigmaElim", [arrow, f.v, proof], [null, f.c, h.c]));
     }
@@ -948,28 +958,163 @@ export function compile(module, source, library, { onProgress, optimizations = {
       return p.type.equality();
     }
     function asValue(A) {
+      A = smallestKnownType(A);
       return val(A.j, sortType(A.j), A.pretty, { representedType: A });
     }
     function explicitUniverse(n, e) {
       const universe = asType(n, e);
-      if (b.k.node(b.view(universe.j, 0)).kind !== "U")
-        throw new Error("Expected a universe such as Type, Type1, or Type2.");
+      if (!["U", "UCRef"].includes(b.k.node(b.view(universe.j, 0)).kind))
+        throw new Error("Expected a universe such as U0, U1, or U2.");
       return universe;
     }
-    function typeInUniverse(n, e, universe) {
-      const T = asType(n, e);
-      return { ...T, j: convert(asValue(T), atom(universe.j, universe.pretty)).binding };
+    function universeArgument(universe) {
+      return convert(asValue(universe), atom(universeSort, "Universe")).binding;
+    }
+    // Construct a first-class checked function together with its dependent
+    // type metadata. This is the same Pi introduction used for source lambdas.
+    function lambdaValue(A, label, body) {
+      const x = b.fresh(A.j), binder = { ...x, label };
+      const result = body(val(x.v, A, label));
+      const T = { kind: "pi", j: op("PiForm", [A.j, result.type.j], [x.c]),
+        domain: A, binder, template: result.type,
+        body: a => instantiateType(result.type, [binder], [a]),
+        pretty: `forall ${label} : ${A.pretty}, ${result.type.pretty}` };
+      return val(op("PiIntro", [A.j, result.binding], [x.c]), T, label,
+        { functionTemplate: { body: result, binder, variables: [], values: [] } });
+    }
+    const axiomSpecializations = new Map();
+    function specializeAxiom(name, universe) {
+      const key = `${name}:${b.view(universe.j, 0)}`;
+      if (!axiomSpecializations.has(key))
+        axiomSpecializations.set(key, buildAxiomSpecialization(name, universe));
+      return axiomSpecializations.get(key);
+    }
+    function buildAxiomSpecialization(name, universe) {
+      const u = universeArgument(universe), types = atom(universe.j, universe.pretty);
+      const prop = T => pi(T, x => pi(T, y => equalityType(T, x, y)), "x");
+      const set = T => pi(T, x => pi(T, y => prop(equalityType(T, x, y))), "x");
+      const mere = T => atom(b.app("lib_Trunc", u, T.j), `Truncate(${universe.pretty}, ${T.pretty})`);
+      const lam = lambdaValue;
+      const result = (binding, T, description) => val(binding, T, description);
+      const axiomName = { Choice: "AOC", LEM: "LEM", FunExt: "lib_funext",
+        Truncate: "lib_Trunc", TruncateIntro: "lib_trunc_intro",
+        TruncateProp: "lib_trunc_is_trunc", TruncateElim: "lib_trunc_elim",
+        Univalence: "lib_univalence", UnivalenceBeta: "lib_ua_elim" }[name];
+      const axiom = preludeAxiom(axiomName);
+      return lam(types, "A", a => {
+        const A = represented(a);
+        if (name === "Truncate") {
+          const T = mere(A);
+          return val(T.j, type, T.pretty, { representedType: T });
+        }
+        if (name === "TruncateIntro") return lam(A, "a", x =>
+          result(b.app(axiom, u, A.j, x.binding), mere(A), "truncation introduction"));
+        if (name === "TruncateProp") {
+          const T = mere(A), P = prop(T);
+          return result(b.coerce(b.app(axiom, u, A.j), P.j), P, "truncation is a proposition");
+        }
+        if (name === "TruncateElim") return lam(types, "P", p => {
+          const P = represented(p);
+          return lam(prop(P), "proposition", proof => lam(pi(A, () => P), "map", f => {
+            const premise = op("SigmaIntro", [f.binding, proof.type.j, proof.binding], [null]);
+            return result(b.app(axiom, u, A.j, P.j, premise), pi(mere(A), () => P), "truncation elimination");
+          }));
+        });
+        if (name === "LEM") return lam(pi(pi(A, () => voidType), () => voidType), "doubleNegation", nn =>
+          result(b.app(axiom, u, A.j, nn.binding), mere(A), "classical mere inhabitation"));
+        if (["Choice", "FunExt"].includes(name)) return lam(pi(A, () => types), "B", B => {
+          const fiber = x => represented(apply(B, [x]));
+          const sections = pi(A, fiber);
+          if (name === "Choice") return lam(set(A), "setA", setA => {
+            const setFibers = pi(A, x => set(fiber(x)));
+            return lam(setFibers, "setFibers", sets => lam(pi(A, x => mere(fiber(x))), "inhabited", inhabited => {
+              const conditions = op("SigmaIntro", [setA.binding, setFibers.j, sets.binding], [null]);
+              return result(b.app(axiom, u, A.j, B.binding, conditions, inhabited.binding), mere(sections), "axiom of choice");
+            }));
+          });
+          return lam(sections, "f", f => lam(sections, "g", g =>
+            lam(pi(A, x => equalityType(fiber(x), apply(f, [x]), apply(g, [x]))), "pointwise", h =>
+              result(b.app(axiom, u, A.j, B.binding, f.binding, g.binding, h.binding),
+                equalityType(sections, f, g), "function extensionality"))));
+        });
+        return lam(types, "B", bv => {
+          const B = represented(bv), arrow = pi(A, () => B);
+          const E = sigma(arrow, f => atom(withPrelude(() => b.app("lib_isEquiv", u, A.j, B.j, f.binding)),
+            `IsEquiv(${universe.pretty}, ${A.pretty}, ${B.pretty}, ${f.display})`));
+          return lam(E, "equivalence", e => {
+            const eqv = withPrelude(() => nativeEquivalence(A, B, e, universe));
+            const path = b.app(preludeAxiom("lib_univalence"), u, A.j, B.j, eqv);
+            if (name === "Univalence") return result(path, equalityType(types, a, bv, `${A.pretty} =[${universe.pretty}] ${B.pretty}`, false), "univalence");
+            return lam(A, "x", x => {
+              const id = b.lam(universe.j, T => T);
+              const xAtA = b.coerce(x.binding, op("PiElim", [id, A.j]));
+              const moved = norm(op("Transport", [id, A.j, B.j, path, xAtA]));
+              const image = b.app(withPrelude(() => forwardEquivalence(A, B, eqv, universe)), x.binding);
+              const T = atom(b.eq(B.j, moved, image), "univalence computation");
+              const parent = sortType(universe.j);
+              if (!parent || parent.pretty === "Universe")
+                throw new Error("UnivalenceBeta requires a named universe U0, U1, ... so its successor is available.");
+              return result(b.app(axiom, universeArgument(parent), universe.j, A.j, B.j, eqv, x.binding), T, "univalence computation");
+            });
+          });
+        });
+      });
     }
     function pathFunction(e, name) {
       if (!e.has(name)) throw new Error(`Import paths to use ${name}.`);
       return e.get(name);
     }
     const primitives = {
+      Choice(args, e) {
+        if (!args.length) throw new Error("Choice requires a universe argument.");
+        const fn = specializeAxiom("Choice", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      LEM(args, e) {
+        if (!args.length) throw new Error("LEM requires a universe argument.");
+        const fn = specializeAxiom("LEM", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      FunExt(args, e) {
+        if (!args.length) throw new Error("FunExt requires a universe argument.");
+        const fn = specializeAxiom("FunExt", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      Truncate(args, e) {
+        if (!args.length) throw new Error("Truncate requires a universe argument.");
+        const fn = specializeAxiom("Truncate", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      TruncateIntro(args, e) {
+        if (!args.length) throw new Error("TruncateIntro requires a universe argument.");
+        const fn = specializeAxiom("TruncateIntro", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      TruncateProp(args, e) {
+        if (!args.length) throw new Error("TruncateProp requires a universe argument.");
+        const fn = specializeAxiom("TruncateProp", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      TruncateElim(args, e) {
+        if (!args.length) throw new Error("TruncateElim requires a universe argument.");
+        const fn = specializeAxiom("TruncateElim", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      Univalence(args, e) {
+        if (!args.length) throw new Error("Univalence requires a universe argument.");
+        const fn = specializeAxiom("Univalence", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      UnivalenceBeta(args, e) {
+        if (!args.length) throw new Error("UnivalenceBeta requires a universe argument.");
+        const fn = specializeAxiom("UnivalenceBeta", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
       sym(args, e) {
         arity(args, 1, "sym");
         const p = infer(args[0], e),
           { carrier: A, from: x, to: y } = pathData(p);
-        return apply(pathFunction(e, "inverse"), [asValue(A), x, y, p]);
+        return apply(pathFunction(e, "inverse"), [asValue(sortType(A.j)), asValue(A), x, y, p]);
       },
       trans(args, e) {
         arity(args, 2, "trans");
@@ -978,7 +1123,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
           a = pathData(p),
           b = pathData(q);
         return apply(pathFunction(e, "concatenate"), [
-          asValue(a.carrier),
+          asValue(sortType(a.carrier.j)), asValue(a.carrier),
           a.from,
           a.to,
           b.to,
@@ -993,7 +1138,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
           { carrier: A, from: x, to: y } = pathData(p);
         if (f.type.kind !== "pi") throw new Error("cong needs a function.");
         return apply(pathFunction(e, "ap"), [
-          asValue(A),
+          asValue(sortType(f.type.j)), asValue(f.type.domain),
           asValue(f.type.body(x)),
           f,
           x,
@@ -1001,91 +1146,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
           p,
         ]);
       },
-      univalence(args, e) {
-        arity(args, 3, "univalence");
-        const A = asType(args[0], e),
-          B = asType(args[1], e),
-          evidence = infer(args[2], e);
-        return withPrelude(() => {
-          const eqv = nativeEquivalence(A, B, evidence),
-            result = b.app(
-              "lib_univalence",
-              op("UCumulOmega", [U]),
-              A.j,
-              B.j,
-              eqv,
-            );
-          return val(
-            result,
-            atom(b.eq(U, A.j, B.j), `${A.pretty} = ${B.pretty}`),
-            "univalence",
-          );
-        });
-      },
-      univalence_beta(args, e) {
-        arity(args, 4, "univalence_beta");
-        const A = asType(args[0], e),
-          B = asType(args[1], e),
-          evidence = infer(args[2], e),
-          x = check(args[3], e, A);
-        return withPrelude(() => {
-          const eqv = nativeEquivalence(A, B, evidence),
-            path = b.app(
-              "lib_univalence",
-              op("UCumulOmega", [U]),
-              A.j,
-              B.j,
-              eqv,
-            ),
-            id = b.lam(U, (T) => T),
-            xAtA = b.coerce(x.binding, op("PiElim", [id, A.j])),
-            moved = norm(op("Transport", [id, A.j, B.j, path, xAtA])),
-            image = b.app(forwardEquivalence(A, B, eqv), x.binding),
-            T = atom(b.eq(B.j, moved, image), "univalence computation"),
-            proof = b.app(
-              "lib_ua_elim",
-              op("UCumulOmega", [U1]),
-              U,
-              A.j,
-              B.j,
-              eqv,
-              x.binding,
-            );
-          return convert(val(proof, T, "univalence computation"), T);
-        });
-      },
-      funext(args, e) {
-        arity(args, 5, "funext");
-        const A = asType(args[0], e),
-          B = infer(args[1], e),
-          F = pi(A, (x) => represented(apply(B, [x]))),
-          f = check(args[2], e, F),
-          g = check(args[3], e, F),
-          H = pi(A, (x) =>
-            atom(
-              b.eq(F.body(x).j, apply(f, [x]).binding, apply(g, [x]).binding),
-              "pointwise equality",
-            ),
-          ),
-          h = check(args[4], e, H);
-        // Unfold the library signature before specializing it. Unfolding the
-        // whole application would also expand opaque user definitions inside
-        // its arguments and change the endpoints of the resulting equality.
-        const axiom = preludeAxiom("lib_funext");
-        return val(
-          b.app(
-            axiom,
-            op("UCumulOmega", [U]),
-            A.j,
-            B.binding,
-            f.binding,
-            g.binding,
-            h.binding,
-          ),
-          atom(b.eq(F.j, f.binding, g.binding), "function equality"),
-          "function extensionality",
-        );
-      },
+
       // Dependent elimination of a pair. All formation, branch substitution,
       // and discharge checks are performed by the existing Sigma rules.
       pair_induction(args, e) {
@@ -1130,132 +1191,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
           "pair induction",
         );
       },
-      truncation_at(args, e) {
-        arity(args, 2, "truncation_at");
-        const universe = explicitUniverse(args[0], e),
-          A = typeInUniverse(args[1], e, universe),
-          axiom = preludeAxiom("lib_Trunc"),
-          j = b.app(axiom, op("UCumulOmega", [universe.j]), A.j);
-        return val(j, type, `Mere[${universe.pretty}](${A.pretty})`, {
-          representedType: atom(j, `Mere[${universe.pretty}](${A.pretty})`),
-        });
-      },
-      truncation_intro_at(args, e) {
-        arity(args, 3, "truncation_intro_at");
-        const universe = explicitUniverse(args[0], e),
-          A = typeInUniverse(args[1], e, universe),
-          a = check(args[2], e, A),
-          axiom = preludeAxiom("lib_trunc_intro"),
-          u = op("UCumulOmega", [universe.j]),
-          T = atom(b.app("lib_Trunc", u, A.j), `Mere[${universe.pretty}](${A.pretty})`);
-        return val(b.app(axiom, u, A.j, a.binding), T, "truncation introduction");
-      },
-      truncation_prop_at(args, e) {
-        arity(args, 2, "truncation_prop_at");
-        const universe = explicitUniverse(args[0], e),
-          A = typeInUniverse(args[1], e, universe),
-          axiom = preludeAxiom("lib_trunc_is_trunc"),
-          u = op("UCumulOmega", [universe.j]),
-          T = atom(b.app("lib_Trunc", u, A.j), `Mere[${universe.pretty}](${A.pretty})`),
-          P = pi(T, x => pi(T, y => equalityType(T, x, y)));
-        return val(b.coerce(b.app(axiom, u, A.j), P.j), P, "truncation is a proposition");
-      },
-      truncation_elim_at(args, e) {
-        arity(args, 5, "truncation_elim_at");
-        const universe = explicitUniverse(args[0], e),
-          A = typeInUniverse(args[1], e, universe),
-          P = typeInUniverse(args[2], e, universe),
-          isProp = pi(P, x => pi(P, y => equalityType(P, x, y))),
-          proposition = check(args[3], e, isProp),
-          f = check(args[4], e, pi(A, () => P)),
-          axiom = preludeAxiom("lib_trunc_elim"),
-          u = op("UCumulOmega", [universe.j]),
-          premise = op("SigmaIntro", [f.binding, isProp.j, proposition.binding], [null]),
-          T = atom(b.app("lib_Trunc", u, A.j), `Mere[${universe.pretty}](${A.pretty})`);
-        return val(b.app(axiom, u, A.j, P.j, premise), pi(T, () => P), "truncation elimination");
-      },
-      funext_at(args, e) {
-        arity(args, 6, "funext_at");
-        const universe = explicitUniverse(args[0], e),
-          A = typeInUniverse(args[1], e, universe),
-          B = check(args[2], e, pi(A, () => atom(universe.j, universe.pretty))),
-          F = pi(A, x => represented(apply(B, [x]))),
-          f = check(args[3], e, F),
-          g = check(args[4], e, F),
-          H = pi(A, x => equalityType(F.body(x), apply(f, [x]), apply(g, [x]))),
-          h = check(args[5], e, H),
-          axiom = preludeAxiom("lib_funext"),
-          result = b.app(axiom, op("UCumulOmega", [universe.j]), A.j, B.binding, f.binding, g.binding, h.binding);
-        return val(result, equalityType(F, f, g), "function extensionality");
-      },
-      classical_truncation(args, e) {
-        arity(args, 2, "classical_truncation");
-        const A = asType(args[0], e),
-          notA = pi(A, () => voidType),
-          nn = check(args[1], e, pi(notA, () => voidType)),
-          axiom = preludeAxiom("LEM"),
-          result = b.app(axiom, op("UCumulOmega", [U]), A.j, nn.binding),
-          T = b.app("lib_Trunc", op("UCumulOmega", [U]), A.j);
-        return val(result, atom(T, `Mere(${A.pretty})`), "classical mere inhabitation");
-      },
-      set_choice(args, e) {
-        arity(args, 5, "set_choice");
-        const A = asType(args[0], e),
-          B = check(args[1], e, pi(A, () => type)),
-          isSet = T => pi(T, x => pi(T, y => {
-            const paths = equalityType(T, x, y);
-            return pi(paths, p => pi(paths, q => equalityType(paths, p, q)));
-          })),
-          setA = check(args[2], e, isSet(A)),
-          setFibers = pi(A, x => isSet(represented(apply(B, [x])))),
-          sets = check(args[3], e, setFibers),
-          axiom = preludeAxiom("AOC"),
-          mere = T => atom(b.app("lib_Trunc", op("UCumulOmega", [U]), T.j), `Mere(${T.pretty})`),
-          inhabited = check(args[4], e, pi(A, x => mere(represented(apply(B, [x]))))),
-          sections = pi(A, x => represented(apply(B, [x]))),
-          conditions = op("SigmaIntro", [setA.binding, setFibers.j, sets.binding], [null]),
-          result = b.app(axiom, op("UCumulOmega", [U]), A.j, B.binding, conditions, inhabited.binding);
-        return val(result, mere(sections), "axiom of choice");
-      },
-      truncation(args, e) {
-        arity(args, 1, "truncation");
-        const A = asType(args[0], e);
-        return withPrelude(() => {
-          const j = b.app("lib_Trunc", op("UCumulOmega", [U]), A.j);
-          return val(j, type, `Mere(${A.pretty})`, {representedType: atom(j, `Mere(${A.pretty})`)});
-        });
-      },
-      truncation_intro(args, e) {
-        arity(args, 2, "truncation_intro");
-        const A = asType(args[0], e), a = check(args[1], e, A);
-        return withPrelude(() => {
-          const T = b.app("lib_Trunc", op("UCumulOmega", [U]), A.j);
-          return val(b.app("lib_trunc_intro", op("UCumulOmega", [U]), A.j, a.binding), atom(T, `Mere(${A.pretty})`), "truncation introduction");
-        });
-      },
-      truncation_prop(args, e) {
-        arity(args, 1, "truncation_prop");
-        const A = asType(args[0], e);
-        return withPrelude(() => {
-          const j = b.app("lib_Trunc", op("UCumulOmega", [U]), A.j), T = atom(j, `Mere(${A.pretty})`),
-            P = pi(T, x => pi(T, y => equalityType(T, x, y)));
-          return val(b.coerce(b.app("lib_trunc_is_trunc", op("UCumulOmega", [U]), A.j), P.j), P, "truncation is a proposition");
-        });
-      },
-      truncation_elim(args, e) {
-        arity(args, 4, "truncation_elim");
-        const A = asType(args[0], e),
-          P = asType(args[1], e),
-          isProp = pi(P, x => pi(P, y => equalityType(P, x, y))),
-          proposition = check(args[2], e, isProp),
-          f = check(args[3], e, pi(A, () => P)),
-          axiom = preludeAxiom("lib_trunc_elim"),
-          // The prelude packages the map and proposition evidence as a pair.
-          premise = op("SigmaIntro", [f.binding, isProp.j, proposition.binding], [null]),
-          result = b.app(axiom, op("UCumulOmega", [U]), A.j, P.j, premise),
-          mereA = atom(b.app("lib_Trunc", op("UCumulOmega", [U]), A.j), `Mere(${A.pretty})`);
-        return val(result, pi(mereA, () => P), "truncation elimination");
-      },
+
       unit_induction(args, e) {
         arity(args, 3, "unit_induction");
         const C = infer(args[0], e),

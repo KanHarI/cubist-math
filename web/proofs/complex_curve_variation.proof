@@ -1,17 +1,17 @@
 import complex_curves;
 import affine_variation;
 
-def curve_real_increment(F : Type1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+def curve_real_increment(F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)) =
   coordinate_difference(F, addF, negF, complex_real(F, curve(s)), complex_real(F, curve(t)));
-def curve_imag_increment(F : Type1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+def curve_imag_increment(F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)) =
   coordinate_difference(F, addF, negF, complex_imag(F, curve(s)), complex_imag(F, curve(t)));
 
 // A bound on every ordered finite sampling of this actual geometric curve.
 // The weights bound individual coordinate increments; their combined sum
 // is bounded independently of the number of samples.
-def ComplexCurveVariation(F : Type1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+def ComplexCurveVariation(F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
   realWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F,
   imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F, length : F) =
@@ -22,8 +22,8 @@ def ComplexCurveVariation(F : Type1, zero : F, one : F, addF : F -> F -> F, negF
       FieldLe(F, lt, sample_sum(FieldUnitInterval(F, zero, one, lt), F, zero, addF,
         (fun (s : FieldUnitInterval(F, zero, one, lt)) => fun (t : FieldUnitInterval(F, zero, one, lt)) => fun (tag : FieldUnitInterval(F, zero, one, lt)) => addF(realWeight(s, t, tag), imagWeight(s, t, tag))), n, vertices, tags), length);
 
-theorem complex_interval_deformation_variation(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_interval_deformation_variation(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F)) :
   ComplexCurveVariation(F, zero, one, addF, negF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error),

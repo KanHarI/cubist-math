@@ -36,7 +36,7 @@ The source explorer makes both notation and numeral meanings inspectable.
 ## Mathematical syntax
 
 ```text
-def identity(A : Type, x : A) = x;
+def identity(A : U0, x : A) = x;
 
 def copy(n : Nat) = induction n as k return Nat {
   zero => 0;
@@ -114,6 +114,14 @@ unpack pair as (x, y) return C {
 `C` is a motive on the entire pair and `branch(a, b)` proves `C((a, b))`. Its
 formation, substitution, and assumption discharge use the existing kernel rules.
 
+`x =[T] y` specifies equality in the carrier `T`, while `x = y` infers it.
+In particular, `A =[U] B` is equality of types `A : U` and `B : U` in the
+universe `U`. With `import paths;`, `sym(p)` reverses
+`p : x =[T] y` to give `y =[T] x`; it also reverses equalities of types.
+`trans(p, q)` composes paths and `cong(f, p)` applies a function to a path.
+These language conveniences call checked library definitions proved by path
+induction and introduce no axiom. `refl(x)` supplies the reflexive path `x = x`.
+
 Equality induction is available as
 `path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
 function of two endpoints and their equality proof. The foundational symmetry,
@@ -125,24 +133,45 @@ available for proof-producing source tools.
 
 ### Explicit universe specialization
 
-`Type` denotes U0; `Type1`, `Type2`, and `Type3` denote the next universes.
-Definitions with an `A : Type` parameter still require a small type. The
-following primitives apply the original prelude axioms at an explicitly named
-universe; they introduce no new axioms:
+`U0` denotes U0; `U1`, `U2`, and `U3` denote the next universes.
+Definitions with an `A : U0` parameter still require a small type. The
+universe argument can also be a parameter declared as `U : Universe`.
+For example, `def identity(U : Universe, A : U, x : A) = x;` is checked once
+and can be specialized as `identity(U0)` or `identity(U2)`. `Universe` is a
+universe-parameter sort, not an unrestricted ordinary type parameter.
+
+The following functions specialize the original prelude axioms; they
+introduce no new axioms:
 
 ```text
-truncation_at(U, A)
-truncation_intro_at(U, A, a)
-truncation_prop_at(U, A)
-truncation_elim_at(U, A, P, proposition_proof, map)
-funext_at(U, A, B, f, g, pointwise_equality)
+Truncate(U, A)
+TruncateIntro(U, A, a)
+TruncateProp(U, A)
+TruncateElim(U, A, P, proposition_proof, map)
+FunExt(U, A, B, f, g, pointwise_equality)
+Choice(U)(A, B, setA, setFibers, inhabited)
+LEM(U)(A, double_negation)
+Univalence(U)(A, B, equivalence)
+UnivalenceBeta(U1)(A, B, equivalence, x)
 ```
+
+Each universe specialization is a first-class function. The two application
+styles above are interchangeable. `Choice` still requires setness of the
+index type and every fiber and returns only a truncated section.
+`Univalence` accepts `Equiv(U, A, B)` and returns `A =[U] B`.
+`UnivalenceBeta` currently specializes at named finite universes, whose
+successor can be supplied to the existing computation axiom.
+
+`Equiv(U, A, B)` and `IsEquiv(U, A, B, f)` in `paths.proof` are ordinary
+universe-parameterized definitions. `x =[T] y` explicitly selects the carrier
+of equality; both endpoints are checked against `T`. Plain `x = y` still
+infers the carrier. Neither notation asserts definitional equality.
 
 `A` and the elimination target `P` must belong to `U`; `B` is a family
 `A -> U`. Smaller types can be lifted, but larger types cannot be lowered.
-For example, `truncation_at(Type1, Type)` is valid and
-`truncation_at(Type, Type)` is rejected. A family may need an explicit lift,
-such as `fun (a : A) => typed(Type1, Unit)`.
+For example, `Truncate(U1, U0)` is valid and
+`Truncate(U0, U0)` is rejected. A family may need an explicit lift,
+such as `fun (a : A) => typed(U1, Unit)`.
 
 The existing prelude truncation constructor returns U0 even when its input is
 large. These wrappers preserve that signature; they do not promise
@@ -198,8 +227,8 @@ theorem euclid : InfinitelyManyPrimes {
 
 `intro n;` opens the outer `forall` (or implication) of the checked goal, including through a definition name. It records the new local assumption and remaining goal for source inspection. The kernel checks the resulting function against the named proposition.
 
-For a goal `forall A : Type, IsSet(A) -> IsSet(A)`, `intro A;` introduces
-`A : Type`, then `intro setA;` introduces `setA : IsSet(A)`. The remaining goal
+For a goal `forall A : U0, IsSet(A) -> IsSet(A)`, `intro A;` introduces
+`A : U0`, then `intro setA;` introduces `setA : IsSet(A)`. The remaining goal
 is `IsSet(A)`, proved by `exact setA;`. The identifier `setA` is a name you
 choose; its type is inferred from the next input of the goal. `IsSet` comes
 from `import sets;` and asserts that any two equality proofs with the same

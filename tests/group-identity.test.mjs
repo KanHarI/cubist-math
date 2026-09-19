@@ -18,14 +18,16 @@ function checked(source, sources = loaded.sources) {
 test("group structure identity is a full equivalence with both canonical inverse laws", () => {
   const c = checked(loaded.source);
   try {
-    for (const name of ["group_structure_identity", "group_identity_encode_decode", "group_identity_decode_encode", "group_isomorphism_paths_injective"]) {
+    for (const name of ["group_structure_identity", "group_isomorphism_is_equality", "group_identity_encode_decode", "group_identity_decode_encode", "group_isomorphism_paths_injective"]) {
       const output = c.outputs.find(o => o.name === name);
       assert.ok(output, name);
       assert.deepEqual(c.kernel.axiomsFor(output.binding).sort(), assumptions);
     }
-    assert.match(loaded.source, /HigherEquiv\(\(G = H\), GroupIso\(G, H\)\)/);
-    assert.match(loaded.sources.group_identity, /def GroupType = exists A : Type, GroupOperations\(A\)/);
-    assert.match(loaded.sources.group_identity, /def GroupOperations\(A : Type\) = exists unit : A, exists multiply : A -> A -> A, Group\(A, unit, multiply\)/);
+    assert.match(loaded.source, /Equiv\(U1, \(G = H\), GroupIso\(G, H\)\)/);
+    assert.match(c.outputs.find(o => o.name === "group_isomorphism_is_equality").type,
+      /GroupIso\(G, H\).*?=\[U1\].*?G =\[GroupType\] H/);
+    assert.match(loaded.sources.group_identity, /def GroupType = exists A : U0, GroupOperations\(A\)/);
+    assert.match(loaded.sources.group_identity, /def GroupOperations\(A : U0\) = exists unit : A, exists multiply : A -> A -> A, Group\(A, unit, multiply\)/);
     // No local postulate can substitute for the structure identity argument.
     for (const id of ["group_identity", "group_isomorphisms", "group_total_identity", "identity_systems"])
       assert.doesNotMatch(loaded.sources[id], /\baxiom\s|\bpostulate\s*\(/);
@@ -34,7 +36,7 @@ test("group structure identity is a full equivalence with both canonical inverse
 
 test("group identity identifies full records over genuinely different singleton carriers", () => {
   const source = `${loaded.source}
-    def singleton_group_laws(A : Type, point : A, contracts : (forall x : A, point = x)) :
+    def singleton_group_laws(A : U0, point : A, contracts : (forall x : A, point = x)) :
       Group(A, point, (fun (x : A) => fun (y : A) => point)) {
       exact (proposition_is_set(A, (fun (x : A) => fun (y : A) => trans(sym(contracts(x)), contracts(y)))),
         ((fun (x : A) => fun (y : A) => fun (z : A) => refl(point)),

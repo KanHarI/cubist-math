@@ -110,7 +110,7 @@ test("functions, pairs, higher-order substitution, and numeral computation", asy
   }
   const dependent = compile(
     module,
-    "def Both = fun (A : Type) => A and A; theorem duplicate = fun (A : Type) => fun (x : A) => typed(Both(A), (x,x));",
+    "def Both = fun (A : U0) => A and A; theorem duplicate = fun (A : U0) => fun (x : A) => typed(Both(A), (x,x));",
   );
   dependent.kernel.dispose();
 });
@@ -320,7 +320,7 @@ test("CLI opens the complete high-level fundamental-group proof", () => {
 test("axioms are tracked per result rather than per imported module", () => {
   const c = compile(
     module,
-    "import prelude; import paths; def plain = 0; theorem reflexive : 0 = 0 { exact refl(0); } theorem extensional : (fun (x : Nat) => x) = (fun (x : Nat) => x) { exact funext(Nat, (fun (x : Nat) => Nat), (fun (x : Nat) => x), (fun (x : Nat) => x), (fun (x : Nat) => refl(x))); }",
+    "import prelude; import paths; def plain = 0; theorem reflexive : 0 = 0 { exact refl(0); } theorem extensional : (fun (x : Nat) => x) = (fun (x : Nat) => x) { exact FunExt(U0, Nat, (fun (x : Nat) => Nat), (fun (x : Nat) => x), (fun (x : Nat) => x), (fun (x : Nat) => refl(x))); }",
     sources,
   );
   try {
@@ -426,7 +426,7 @@ test("Rijke binomial types and full permutation equivalences have checked counts
 
 test("truncation elimination uses the prelude axiom and checks both premises", () => {
   const c = compile(module, `import truncation;
-    def map_identity(A : Type) = mere_map(A, A, (fun (a : A) => a));`, sources);
+    def map_identity(A : U0) = mere_map(A, A, (fun (a : A) => a));`, sources);
   try {
     assert.deepEqual(c.kernel.axiomsFor("map_identity").sort(),
       ["lib_Trunc", "lib_trunc_intro", "lib_trunc_is_trunc", "lib_trunc_elim"].sort());
@@ -434,10 +434,10 @@ test("truncation elimination uses the prelude axiom and checks both premises", (
     assert.ok(c.kernel.steps.some(s => s.op === "Axiom" && s.name === "lib_trunc_elim"));
   } finally { c.kernel.dispose(); }
   assert.throws(() => compile(module, `import truncation;
-    def bad(A : Type, P : Type, prop : IsProp(P), f : Type -> P) =
+    def bad(A : U0, P : U0, prop : IsProp(P), f : U0 -> P) =
       mere_eliminate(A, P, prop, f);`, sources), /Expected/);
   assert.throws(() => compile(module, `import truncation;
-    def bad(A : Type, P : Type, f : A -> P) = mere_eliminate(A, P, tt, f);`, sources), /Expected/);
+    def bad(A : U0, P : U0, f : A -> P) = mere_eliminate(A, P, tt, f);`, sources), /Expected/);
 });
 
 
@@ -451,7 +451,7 @@ test("every surjection between sets has a right inverse using the existing choic
       ["AOC", "lib_Trunc", "lib_trunc_elim", "lib_trunc_intro", "lib_trunc_is_trunc"].sort());
     for (const name of ["right_inverse_from_preimages", "subtype_is_set", "fiber_is_set"])
       assert.deepEqual(c.kernel.axiomsFor(name), [], name);
-    assert.ok(c.links.some(link => link.name === "set_choice" && link.binding === "AOC" &&
+    assert.ok(c.links.some(link => link.name === "Choice" && link.binding === "AOC" &&
       link.sourceModule === "prelude_library_construction"));
   } finally { c.kernel.dispose(); }
   // Choice gives mere existence, not a distinguished inverse function.
@@ -461,9 +461,9 @@ test("every surjection between sets has a right inverse using the existing choic
 
 test("set choice checks its family, setness conditions, and inhabitation evidence", () => {
   const program = `import sets; import truncation;
-    def choose(A : Type, B : A -> Type, base : IsSet(A),
+    def choose(A : U0, B : A -> U0, base : IsSet(A),
       fibers : (forall x : A, IsSet(B(x))), inhabited : (forall x : A, Mere(B(x)))) =
-      set_choice(A, B, base, fibers, inhabited);`;
+      Choice(U0, A, B, base, fibers, inhabited);`;
   const c = compile(module, program, sources);
   try {
     assert.ok(c.kernel.verify("choose_type", "choose"));
@@ -476,7 +476,7 @@ test("set choice checks its family, setness conditions, and inhabitation evidenc
     "A, B, base, fibers, tt",
   ]) {
     assert.throws(() => compile(module, program.replace(
-      "set_choice(A, B, base, fibers, inhabited)", `set_choice(${args})`), sources), /Expected/);
+      "Choice(U0, A, B, base, fibers, inhabited)", `Choice(U0, ${args})`), sources), /Expected/);
   }
 });
 
@@ -505,7 +505,7 @@ test("Cantor-Schroeder-Bernstein constructs a full equivalence without choice", 
 
 test("classical logic checks double-negation evidence and restricts elimination to propositions", () => {
   const valid = `import classical;
-    def eliminate(P : Type, prop : Proposition(P), nn : (P -> Void) -> Void) = double_negation(P, prop, nn);`;
+    def eliminate(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) = double_negation(P, prop, nn);`;
   for (const call of ["double_negation(P, tt, nn)", "double_negation(P, prop, tt)"])
     assert.throws(() => compile(module, valid.replace("double_negation(P, prop, nn)", call), sources), /Expected/);
 });
@@ -539,31 +539,31 @@ test("compiler reports completed definitions including imports and stops on erro
 
 test("explicit universe primitives support large types and reject invalid specialization", () => {
   const c = compile(module, `import prelude;
-    def large = truncation_at(Type1, Type);
-    def larger = truncation_at(Type2, Type1);
-    def large_intro = truncation_intro_at(Type1, Type, Unit);
-    def large_prop = truncation_prop_at(Type1, Type);
-    theorem high_funext(A : Type2, B : A -> Type2, f : (forall a : A, B(a))) : f = f {
-      exact funext_at(Type2, A, B, f, f, (fun (a : A) => refl(f(a))));
+    def large = Truncate(U1, U0);
+    def larger = Truncate(U2, U1);
+    def large_intro = TruncateIntro(U1, U0, Unit);
+    def large_prop = TruncateProp(U1, U0);
+    theorem high_funext(A : U2, B : A -> U2, f : (forall a : A, B(a))) : f = f {
+      exact FunExt(U2, A, B, f, f, (fun (a : A) => refl(f(a))));
     }
-    def high_elim(A : Type2, P : Type2, prop : (forall x : P, forall y : P, x = y), f : A -> P) =
-      truncation_elim_at(Type2, A, P, prop, f);`, sources);
+    def high_elim(A : U2, P : U2, prop : (forall x : P, forall y : P, x = y), f : A -> P) =
+      TruncateElim(U2, A, P, prop, f);`, sources);
   try {
     for (const o of c.outputs) assert.ok(c.kernel.verify(o.proposition, o.binding), o.name);
     assert.deepEqual(c.kernel.axiomsFor("high_funext"), ["lib_funext"]);
     assert.deepEqual(c.kernel.axiomsFor("high_elim").sort(), ["lib_Trunc", "lib_trunc_elim"]);
     assert.deepEqual(c.kernel.axiomsFor("large"), ["lib_Trunc"]);
-    assert.ok(c.links.some(link => link.name === "funext_at" && link.binding === "lib_funext"));
-    assert.ok(c.links.some(link => link.name === "truncation_at" && link.binding === "lib_Trunc"));
+    assert.ok(c.links.some(link => link.name === "FunExt" && link.binding === "lib_funext"));
+    assert.ok(c.links.some(link => link.name === "Truncate" && link.binding === "lib_Trunc"));
     assert.ok(!c.kernel.bindings.has("LEM"));
     assert.ok(!c.kernel.bindings.has("AOC"));
   } finally { c.kernel.dispose(); }
   for (const expression of [
-    "truncation_at(Type, Type)",
-    "truncation_at(Unit, Unit)",
-    "truncation_intro_at(Type1, Unit, 0)",
-    "truncation_elim_at(Type1, Unit, Nat, (fun (a : Nat) => fun (b : Nat) => refl(a)), (fun (x : Unit) => 0))",
-    "truncation_elim_at(Type1, Unit, Type1, tt, tt)",
+    "Truncate(U0, U0)",
+    "Truncate(Unit, Unit)",
+    "TruncateIntro(U1, Unit, 0)",
+    "TruncateElim(U1, Unit, Nat, (fun (a : Nat) => fun (b : Nat) => refl(a)), (fun (x : Unit) => 0))",
+    "TruncateElim(U1, Unit, U1, tt, tt)",
   ]) {
     assert.throws(() => compile(module, `import prelude; def bad = ${expression};`, sources), /Expected/);
   }
@@ -643,7 +643,7 @@ test("puncture graph constructions and all-loop generation check without classic
       }
       if (name === "bouquet_invariants") {
         assert.deepEqual(c.kernel.axiomsFor("bouquet_maps_determined_by_generators").sort(), foundational);
-        assert.match(c.outputs.find(o => o.name === "bouquet_maps_determined_by_generators").type, /Type1/);
+        assert.match(c.outputs.find(o => o.name === "bouquet_maps_determined_by_generators").type, /U1/);
       }
       if (name === "puncture_noncommutative") {
         assert.deepEqual(c.kernel.axiomsFor("puncture_commutator_nontrivial").sort(), ["lib_ua_elim", "lib_univalence"]);
@@ -659,7 +659,7 @@ test("the generation proof cannot replace mere word existence with a selected wo
   assert.notEqual(untruncated, sources.bouquet_generation);
   assert.throws(() => compile(module, untruncated, sources), /Expected/);
   assert.throws(() => compile(module, `import bouquet_generation;
-    theorem empty_word_for_every_loop(A : Type, p : BouquetLoops(A)) : BouquetGenerated(A, p) {
+    theorem empty_word_for_every_loop(A : U0, p : BouquetLoops(A)) : BouquetGenerated(A, p) {
       exact generated_identity(A, Bouquet(A), bouquet_base(A), bouquet_generator(A));
     }`, sources), /Expected/);
 });
@@ -680,12 +680,12 @@ test("signed cancellation and noncommutativity reject incorrect generator action
 
 test("large-proposition elimination still checks proposition evidence", () => {
   assert.throws(() => compile(module, `import field_logic;
-    def invalid(A : Type, h : truncation(A)) : A {
+    def invalid(A : U0, h : Truncate(U0, A)) : A {
       exact small_mere_eliminate(A, A, (fun (x : A) => fun (y : A) => refl(x)), (fun (x : A) => x), h);
     }`, sources), /Expected/);
 });
 
-test("complex ring and polynomial identities check at Type1 with only stated assumptions", () => {
+test("complex ring and polynomial identities check at U1 with only stated assumptions", () => {
   const truncation = ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim", "lib_trunc_is_trunc"].sort();
   for (const name of ["field_products", "ring_laws", "complex_coordinates", "complex_numbers", "complex_algebra", "complex_polynomials", "polynomial_difference"]) {
     const c = compile(module, sources[name], sources);
@@ -703,7 +703,7 @@ test("complex ring and polynomial identities check at Type1 with only stated ass
         assert.match(c.outputs.find(o => o.name === "complex_inverse_from_norm").type, /normLaw/);
       }
       if (name === "complex_numbers") {
-        assert.match(c.outputs.find(o => o.name === "Complex").type, /Type1/);
+        assert.match(c.outputs.find(o => o.name === "Complex").type, /U1/);
       }
       if (name === "complex_polynomials") {
         assert.match(c.outputs.find(o => o.name === "algebraic_closure_implies_square_roots").type, /closed : MonicAlgebraicClosure/);
@@ -771,7 +771,7 @@ test("circle degree obstructs contraction without classical logic or choice", ()
       assert.ok(!c.kernel.bindings.has("AOC"));
       if (name === "circle_degree") {
         assert.deepEqual(c.kernel.axiomsFor("positive_degree_no_contractible_extension").sort(), ["lib_ua_elim", "lib_univalence"]);
-        assert.match(c.outputs.find(o => o.name === "positive_degree_no_contractible_extension").type, /X : Type1/);
+        assert.match(c.outputs.find(o => o.name === "positive_degree_no_contractible_extension").type, /X : U1/);
       }
     } finally { c.kernel.dispose(); }
   }
@@ -905,7 +905,7 @@ test("limits descend from representatives without choosing curves or finite-stag
     assert.ok(!c.kernel.bindings.has("LEM"));
     assert.ok(!c.kernel.bindings.has("AOC"));
     const type = c.outputs.find(o => o.name === "homotopy_limit_period").type;
-    assert.match(type, /C : Type1/);
+    assert.match(type, /C : U1/);
     assert.match(type, /covered/);
     assert.match(type, /homotopyError/);
     assert.match(type, /FieldAsymptotic/);
@@ -976,7 +976,11 @@ test("constructive magnitude and variation estimates control contour tag errors"
       assert.ok(c.outputs.some(o => o.name === theorem));
       for (const o of c.outputs) {
         assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
-        assert.ok(c.kernel.axiomsFor(o.binding).every(a => a === "lib_Trunc"), o.name);
+        // The scalar convergence lemma introduces the positive denominator's
+        // apartness witness into a truncation before applying field inverses.
+        const allowed = o.name === "contour_tag_errors_from_vanishing_values"
+          ? ["lib_Trunc", "lib_trunc_intro"] : ["lib_Trunc"];
+        assert.ok(c.kernel.axiomsFor(o.binding).every(a => allowed.includes(a)), o.name);
       }
       assert.ok(!c.kernel.bindings.has("LEM"));
       assert.ok(!c.kernel.bindings.has("AOC"));
@@ -1697,7 +1701,7 @@ test("refinement families join with checked endpoint paths and ordered sums with
 
 test("a joined two-edge coarse partition retains the actual three-edge refinement", () => {
   const example = `import subdivision_refinement;
-    def condition(a : Nat, b : Nat, tag : Nat, piece : SampleSubdivision(Nat, a, b)) = typed(Type1, Unit);
+    def condition(a : Nat, b : Nat, tag : Nat, piece : SampleSubdivision(Nat, a, b)) = typed(U1, Unit);
     def edge(a : Nat, b : Nat, tag : Nat) = tag;
     def coarseLeft = single_edge_subdivision(Nat, 0, 2);
     def coarseRight = single_edge_subdivision(Nat, 2, 3);

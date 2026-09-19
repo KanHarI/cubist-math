@@ -2,13 +2,13 @@ import sample_subdivision_conditions;
 import complex_perturbations;
 
 // The local radius is attached to a coarse edge, not to each refined edge.
-def ComplexSubdivisionEstimate(C : Type1, F : Type1, zero : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+def ComplexSubdivisionEstimate(C : U1, F : U1, zero : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   edge : C -> C -> C -> Complex(F), radius : C -> C -> C -> F,
   a : C, b : C, tag : C, piece : SampleSubdivision(C, a, b)) =
   ComplexPerturbation(F, addF, negF, lt, edge(a, b, tag), subdivision_sum(C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, a, b, piece), radius(a, b, tag));
 
-theorem complex_subdivision_total_estimate_step(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_subdivision_total_estimate_step(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   edge : C -> C -> C -> Complex(F), radius : C -> C -> C -> F, n : Nat,
   previous : (forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
@@ -35,8 +35,8 @@ theorem complex_subdivision_total_estimate_step(C : Type1, F : Type1, zero : F, 
 }
 
 // Combine actual local error witnesses along an arbitrary finite partition.
-theorem complex_subdivision_total_estimate(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_subdivision_total_estimate(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   edge : C -> C -> C -> Complex(F), radius : C -> C -> C -> F, n : Nat) :
   forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
@@ -52,8 +52,8 @@ theorem complex_subdivision_total_estimate(C : Type1, F : Type1, zero : F, one :
 
 // Return an actual flattened subdivision and an error certificate for its sum.
 // The resulting bound is exactly the sum of the coarse-edge radii.
-theorem complex_subdivision_flat_estimate(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_subdivision_flat_estimate(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   edge : C -> C -> C -> Complex(F), radius : C -> C -> C -> F, n : Nat,
   vertices : SampleVertices(C, n), tags : SampleTags(C, n), pieces : SampleSubdivisions(C, n, vertices),

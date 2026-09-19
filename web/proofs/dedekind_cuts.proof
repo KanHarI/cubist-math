@@ -2,38 +2,38 @@ import complete_fields;
 
 // The base Q and its order are parameters. No rational-field laws are assumed
 // silently: principal cuts explicitly require density and absence of endpoints.
-def DenseOrder(Q : Type, ltQ : Q -> Q -> Type) =
+def DenseOrder(Q : U0, ltQ : Q -> Q -> U0) =
   forall p : Q, forall q : Q, ltQ(p, q) -> FieldExists(exists r : Q, ltQ(p, r) and ltQ(r, q));
-def NoEndpoints(Q : Type, ltQ : Q -> Q -> Type) =
+def NoEndpoints(Q : U0, ltQ : Q -> Q -> U0) =
   forall q : Q, FieldExists(exists p : Q, ltQ(p, q)) and FieldExists(exists r : Q, ltQ(q, r));
 
-// Proposition-valued cuts form a Type1 carrier; they are not Boolean cuts.
-def DedekindCut(Q : Type, ltQ : Q -> Q -> Type) =
-  exists lower : Q -> Type, exists upper : Q -> Type, CutLaws(Q, ltQ, lower, upper);
-def cut_lower(Q : Type, ltQ : Q -> Q -> Type, cut : DedekindCut(Q, ltQ)) : Q -> Type {
-  exact field_first(Q -> Type, (fun (lower : Q -> Type) => exists upper : Q -> Type, CutLaws(Q, ltQ, lower, upper)), cut);
+// Proposition-valued cuts form a U1 carrier; they are not Boolean cuts.
+def DedekindCut(Q : U0, ltQ : Q -> Q -> U0) =
+  exists lower : Q -> U0, exists upper : Q -> U0, CutLaws(Q, ltQ, lower, upper);
+def cut_lower(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) : Q -> U0 {
+  exact field_first(Q -> U0, (fun (lower : Q -> U0) => exists upper : Q -> U0, CutLaws(Q, ltQ, lower, upper)), cut);
 }
-def cut_rest(Q : Type, ltQ : Q -> Q -> Type, cut : DedekindCut(Q, ltQ)) =
-  field_second(Q -> Type, (fun (lower : Q -> Type) => exists upper : Q -> Type, CutLaws(Q, ltQ, lower, upper)), cut);
-def cut_upper(Q : Type, ltQ : Q -> Q -> Type, cut : DedekindCut(Q, ltQ)) : Q -> Type {
-  exact field_first(Q -> Type, CutLaws(Q, ltQ, cut_lower(Q, ltQ, cut)), cut_rest(Q, ltQ, cut));
+def cut_rest(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) =
+  field_second(Q -> U0, (fun (lower : Q -> U0) => exists upper : Q -> U0, CutLaws(Q, ltQ, lower, upper)), cut);
+def cut_upper(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) : Q -> U0 {
+  exact field_first(Q -> U0, CutLaws(Q, ltQ, cut_lower(Q, ltQ, cut)), cut_rest(Q, ltQ, cut));
 }
-def cut_laws(Q : Type, ltQ : Q -> Q -> Type, cut : DedekindCut(Q, ltQ)) : CutLaws(Q, ltQ, cut_lower(Q, ltQ, cut), cut_upper(Q, ltQ, cut)) {
-  exact field_second(Q -> Type, CutLaws(Q, ltQ, cut_lower(Q, ltQ, cut)), cut_rest(Q, ltQ, cut));
+def cut_laws(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) : CutLaws(Q, ltQ, cut_lower(Q, ltQ, cut), cut_upper(Q, ltQ, cut)) {
+  exact field_second(Q -> U0, CutLaws(Q, ltQ, cut_lower(Q, ltQ, cut)), cut_rest(Q, ltQ, cut));
 }
 
-def cut_lower_prop(Q : Type, ltQ : Q -> Q -> Type, cut : DedekindCut(Q, ltQ)) :
+def cut_lower_prop(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) :
   forall q : Q, FieldProp(cut_lower(Q, ltQ, cut, q)) {
   obtain (lowerProp, (upperProp, (below, (above, (lowerRound, (upperRound, (disjoint, located))))))) = cut_laws(Q, ltQ, cut);
   exact lowerProp;
 }
-def cut_upper_prop(Q : Type, ltQ : Q -> Q -> Type, cut : DedekindCut(Q, ltQ)) :
+def cut_upper_prop(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) :
   forall q : Q, FieldProp(cut_upper(Q, ltQ, cut, q)) {
   obtain (lowerProp, (upperProp, (below, (above, (lowerRound, (upperRound, (disjoint, located))))))) = cut_laws(Q, ltQ, cut);
   exact upperProp;
 }
 
-theorem principal_cut_laws(Q : Type, ltQ : Q -> Q -> Type,
+theorem principal_cut_laws(Q : U0, ltQ : Q -> Q -> U0,
   order : StrictOrder(Q, ltQ), dense : DenseOrder(Q, ltQ), unbounded : NoEndpoints(Q, ltQ), q : Q) :
   CutLaws(Q, ltQ, (fun (x : Q) => ltQ(x, q)), (fun (x : Q) => ltQ(q, x))) {
   obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
@@ -54,15 +54,15 @@ theorem principal_cut_laws(Q : Type, ltQ : Q -> Q -> Type,
     ((fun (x : Q) => fun (xq : ltQ(x, q)) => fun (qx : ltQ(q, x)) => irreflexive(x, transitive(x, q, x, xq, qx))),
       (fun (x : Q) => fun (y : Q) => fun (xy : ltQ(x, y)) => cotransitive(x, y, q, xy)))))))));
 }
-def principal_cut(Q : Type, ltQ : Q -> Q -> Type,
+def principal_cut(Q : U0, ltQ : Q -> Q -> U0,
   order : StrictOrder(Q, ltQ), dense : DenseOrder(Q, ltQ), unbounded : NoEndpoints(Q, ltQ), q : Q) =
   typed(DedekindCut(Q, ltQ), ((fun (x : Q) => ltQ(x, q)),
     ((fun (x : Q) => ltQ(q, x)), principal_cut_laws(Q, ltQ, order, dense, unbounded, q))));
 
-def CutLess(Q : Type, ltQ : Q -> Q -> Type, x : DedekindCut(Q, ltQ), y : DedekindCut(Q, ltQ)) =
+def CutLess(Q : U0, ltQ : Q -> Q -> U0, x : DedekindCut(Q, ltQ), y : DedekindCut(Q, ltQ)) =
   FieldExists(exists q : Q, cut_upper(Q, ltQ, x, q) and cut_lower(Q, ltQ, y, q));
 
-theorem principal_cut_order(Q : Type, ltQ : Q -> Q -> Type,
+theorem principal_cut_order(Q : U0, ltQ : Q -> Q -> U0,
   order : StrictOrder(Q, ltQ), dense : DenseOrder(Q, ltQ), unbounded : NoEndpoints(Q, ltQ), p : Q, q : Q) :
   FieldIff(ltQ(p, q), CutLess(Q, ltQ, principal_cut(Q, ltQ, order, dense, unbounded, p), principal_cut(Q, ltQ, order, dense, unbounded, q))) {
   obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
@@ -73,7 +73,7 @@ theorem principal_cut_order(Q : Type, ltQ : Q -> Q -> Type,
       })));
 }
 
-theorem cut_less_irreflexive(Q : Type, ltQ : Q -> Q -> Type, x : DedekindCut(Q, ltQ)) : CutLess(Q, ltQ, x, x) -> Void {
+theorem cut_less_irreflexive(Q : U0, ltQ : Q -> Q -> U0, x : DedekindCut(Q, ltQ)) : CutLess(Q, ltQ, x, x) -> Void {
   obtain (lowerProp, (upperProp, (inhabitedLower, (inhabitedUpper, (roundedLower, (roundedUpper, (disjoint, located))))))) = cut_laws(Q, ltQ, x);
   exact field_exists_elim((exists q : Q, cut_upper(Q, ltQ, x, q) and cut_lower(Q, ltQ, x, q)), Void,
     (fun (a : Void) => fun (b : Void) => typed((a = b), absurd(a))),
@@ -83,21 +83,21 @@ theorem cut_less_irreflexive(Q : Type, ltQ : Q -> Q -> Type, x : DedekindCut(Q, 
       }));
 }
 
-theorem cut_lower_downward(Q : Type, ltQ : Q -> Q -> Type, x : DedekindCut(Q, ltQ),
+theorem cut_lower_downward(Q : U0, ltQ : Q -> Q -> U0, x : DedekindCut(Q, ltQ),
   p : Q, q : Q, below : ltQ(p, q), member : cut_lower(Q, ltQ, x, q)) : cut_lower(Q, ltQ, x, p) {
   obtain (lowerProp, (upperProp, (inhabitedLower, (inhabitedUpper, (roundedLower, (roundedUpper, (disjoint, located))))))) = cut_laws(Q, ltQ, x);
   obtain (roundForward, roundBack) = roundedLower(p);
   let witnessType = exists r : Q, ltQ(p, r) and cut_lower(Q, ltQ, x, r);
   exact roundBack(field_exists_intro(witnessType, typed(witnessType, (q, (below, member)))));
 }
-theorem cut_upper_upward(Q : Type, ltQ : Q -> Q -> Type, x : DedekindCut(Q, ltQ),
+theorem cut_upper_upward(Q : U0, ltQ : Q -> Q -> U0, x : DedekindCut(Q, ltQ),
   p : Q, q : Q, below : ltQ(p, q), member : cut_upper(Q, ltQ, x, p)) : cut_upper(Q, ltQ, x, q) {
   obtain (lowerProp, (upperProp, (inhabitedLower, (inhabitedUpper, (roundedLower, (roundedUpper, (disjoint, located))))))) = cut_laws(Q, ltQ, x);
   obtain (roundForward, roundBack) = roundedUpper(q);
   let witnessType = exists r : Q, cut_upper(Q, ltQ, x, r) and ltQ(r, q);
   exact roundBack(field_exists_intro(witnessType, typed(witnessType, (p, (member, below)))));
 }
-theorem cut_separated(Q : Type, ltQ : Q -> Q -> Type, order : StrictOrder(Q, ltQ), x : DedekindCut(Q, ltQ),
+theorem cut_separated(Q : U0, ltQ : Q -> Q -> U0, order : StrictOrder(Q, ltQ), x : DedekindCut(Q, ltQ),
   p : Q, q : Q, lower : cut_lower(Q, ltQ, x, p), upper : cut_upper(Q, ltQ, x, q)) : ltQ(p, q) {
   obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
   obtain (lowerProp, (upperProp, (inhabitedLower, (inhabitedUpper, (roundedLower, (roundedUpper, (disjoint, located))))))) = cut_laws(Q, ltQ, x);
@@ -114,7 +114,7 @@ theorem cut_separated(Q : Type, ltQ : Q -> Q -> Type, order : StrictOrder(Q, ltQ
         };
       }), roundForward(lower));
 }
-theorem cut_less_transitive(Q : Type, ltQ : Q -> Q -> Type, order : StrictOrder(Q, ltQ),
+theorem cut_less_transitive(Q : U0, ltQ : Q -> Q -> U0, order : StrictOrder(Q, ltQ),
   x : DedekindCut(Q, ltQ), y : DedekindCut(Q, ltQ), z : DedekindCut(Q, ltQ), xy : CutLess(Q, ltQ, x, y), yz : CutLess(Q, ltQ, y, z)) :
   CutLess(Q, ltQ, x, z) {
   let leftWitness = exists p : Q, cut_upper(Q, ltQ, x, p) and cut_lower(Q, ltQ, y, p);
@@ -132,7 +132,7 @@ theorem cut_less_transitive(Q : Type, ltQ : Q -> Q -> Type, order : StrictOrder(
       };
     }), xy);
 }
-theorem principal_cut_injective(Q : Type, ltQ : Q -> Q -> Type,
+theorem principal_cut_injective(Q : U0, ltQ : Q -> Q -> U0,
   order : StrictOrder(Q, ltQ), dense : DenseOrder(Q, ltQ), unbounded : NoEndpoints(Q, ltQ), p : Q, q : Q,
   same : principal_cut(Q, ltQ, order, dense, unbounded, p) = principal_cut(Q, ltQ, order, dense, unbounded, q)) : p = q {
   obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;

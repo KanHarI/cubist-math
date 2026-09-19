@@ -2,7 +2,7 @@ import curve_sample_sums;
 import contour_sums;
 
 // Right scalar multiplication, using commutativity of the coefficient ring.
-theorem contour_sum_scale(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem contour_sum_scale(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, coefficient : F, n : Nat, vertices : SampleVertices(F, n), tags : SampleTags(F, n)) :
   contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => mulF(f(x), coefficient)), n, vertices, tags) =
     mulF(contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags), coefficient) {
@@ -24,7 +24,7 @@ theorem contour_sum_scale(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF
       ring_mul_comm(F, zero, one, addF, mulF, negF, ring, coefficient, contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags))));
 }
 
-theorem curve_subdivision_samples_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem curve_subdivision_samples_add(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f : Complex(F) -> Complex(F), g : Complex(F) -> Complex(F),
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)) :
   curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, (fun (x : Complex(F)) => complex_add(F, addF, f(x), g(x))), a, b, piece) =
@@ -37,7 +37,7 @@ theorem curve_subdivision_samples_add(F : Type1, zero : F, one : F, addF : F -> 
     map_sample_tags(I, Complex(F), curve, n, subdivision_tags(I, a, b, piece)));
 }
 
-theorem curve_subdivision_samples_scale(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem curve_subdivision_samples_scale(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f : Complex(F) -> Complex(F), coefficient : Complex(F),
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)) :
   curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, (fun (x : Complex(F)) => complex_mul(F, addF, mulF, negF, f(x), coefficient)), a, b, piece) =
@@ -53,7 +53,7 @@ theorem curve_subdivision_samples_scale(F : Type1, zero : F, one : F, addF : F -
 
 // Only values on the curve matter; no equality of the whole functions is
 // required, and no function-extensionality axiom is used.
-theorem curve_subdivision_samples_cong(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem curve_subdivision_samples_cong(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f : Complex(F) -> Complex(F), g : Complex(F) -> Complex(F),
   same : (forall t : FieldUnitInterval(F, zero, one, lt), f(curve(t)) = g(curve(t))),
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)) :

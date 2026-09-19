@@ -1,16 +1,16 @@
 import sample_magnitude;
 
 // Adjacent vertices satisfy a relation; no condition is imposed on tags.
-def SampleAdjacent(C : Type1, related : C -> C -> Type, n : Nat) =
-  induction n as k return (SampleVertices(C, k) -> Type) {
+def SampleAdjacent(C : U1, related : C -> C -> U0, n : Nat) =
+  induction n as k return (SampleVertices(C, k) -> U0) {
     zero => fun (vertices : C) => Unit;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) =>
       related(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))) and
         previous(field_snd(C, SampleVertices(C, k), vertices));
   };
 
-theorem sample_adjacent_magnitude(C : Type1, F : Type1, negF : F -> F, lt : F -> F -> Type,
-  related : C -> C -> Type, edge : C -> C -> C -> F, radius : C -> C -> C -> F,
+theorem sample_adjacent_magnitude(C : U1, F : U1, negF : F -> F, lt : F -> F -> U0,
+  related : C -> C -> U0, edge : C -> C -> C -> F, radius : C -> C -> C -> F,
   bounded : (forall a : C, forall b : C, forall tag : C, related(a, b) -> FieldMagnitudeBound(F, negF, lt, edge(a, b, tag), radius(a, b, tag))), n : Nat) :
   forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), SampleAdjacent(C, related, n, vertices) -> SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags) {
   exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), SampleAdjacent(C, related, k, vertices) -> SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, vertices, tags)) {

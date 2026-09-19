@@ -3,21 +3,21 @@ import interval_sampling;
 
 // Coarse tags remain in their own coarse intervals; every refined tag lies
 // within its refined interval. The mesh restriction is on coarse widths.
-def IntervalSubdivisionFine(F : Type1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, mesh : F,
+def IntervalSubdivisionFine(F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt), piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)) =
-  typed(Type1, IntervalTagWithin(F, zero, one, lt, a, b, tag) and
+  typed(U1, IntervalTagWithin(F, zero, one, lt, a, b, tag) and
     lt(interval_difference(F, zero, one, addF, negF, lt, a, b), mesh) and
       IntervalAdmissibleTags(F, zero, one, lt, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
         subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece), subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, piece)));
 
-def interval_refinement_radius(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, delta : F, length : F, a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)) =
+def interval_refinement_radius(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, delta : F, length : F, a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)) =
   mulF(delta, interval_weight(F, zero, one, addF, mulF, negF, lt, length, a, b, tag));
 
 // The sum of all coarse radii is delta times outer width times length,
 // with no factor for the number of coarse intervals or refined samples.
-theorem interval_refinement_radius_sum(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem interval_refinement_radius_sum(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   delta : F, length : F, n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)) :
   sample_sum(FieldUnitInterval(F, zero, one, lt), F, zero, addF, interval_refinement_radius(F, zero, one, addF, mulF, negF, lt, delta, length), n, vertices, tags) =
     mulF(delta, mulF(interval_difference(F, zero, one, addF, negF, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices), sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)), length)) {

@@ -1,8 +1,8 @@
 import sample_magnitude;
 import sample_sum_laws;
 
-theorem sample_sum_magnitude_bound(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem sample_sum_magnitude_bound(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   edge : C -> C -> C -> F, radius : C -> C -> C -> F, n : Nat) :
   forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags) ->
@@ -16,8 +16,8 @@ theorem sample_sum_magnitude_bound(C : Type1, F : Type1, zero : F, one : F, addF
   };
 }
 
-theorem sample_magnitude_product(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem sample_magnitude_product(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   edge : C -> C -> C -> F, other : C -> C -> C -> F,
   radius : C -> C -> C -> F, otherRadius : C -> C -> C -> F, n : Nat) :
@@ -36,8 +36,8 @@ theorem sample_magnitude_product(C : Type1, F : Type1, zero : F, one : F, addF :
 }
 
 // Uniform error times total variation controls the weighted sum.
-theorem sample_weighted_sum_bound(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem sample_weighted_sum_bound(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   edge : C -> C -> C -> F, other : C -> C -> C -> F, weight : C -> C -> C -> F,
   delta : F, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,

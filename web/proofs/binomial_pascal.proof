@@ -65,15 +65,15 @@ theorem pascal_left(n : Nat, k : Nat, s : FiniteBinomial(succ(n), succ(k))) : pa
     trans(pascal_predicate_roundtrip(n, k, predicate_tail(Fin(n), p), p(head(Fin(n))), normalize_card(n, succ(k), p, h)), predicate_eta(Fin(n), p)));
 }
 
-def sum_left_or(A : Type, B : Type, fallback : A, x : A or B) = match x return A { left a => a; right b => fallback; };
-def sum_right_or(A : Type, B : Type, fallback : B, x : A or B) = match x return B { left a => fallback; right b => b; };
+def sum_left_or(A : U0, B : U0, fallback : A, x : A or B) = match x return A { left a => a; right b => fallback; };
+def sum_right_or(A : U0, B : U0, fallback : B, x : A or B) = match x return B { left a => fallback; right b => b; };
 theorem pascal_right_selected(n : Nat, k : Nat, s : FiniteBinomial(n, k)) :
   pascal_forward(n, k, pascal_backward(n, k, typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), left(s)))) = typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), left(s)) {
   let result = pascal_forward(n, k, pascal_backward(n, k, typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), left(s))));
   let restored = sum_left_or(FiniteBinomial(n, k), FiniteBinomial(n, succ(k)), s, result);
   exact cong((fun (v : FiniteBinomial(n, k)) => typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), left(v))),
     bin_ext(n, k, restored, s,
-      funext(Fin(n), (fun (a : Fin(n)) => Bool), bin_predicate(n, k, restored), bin_predicate(n, k, s), (fun (a : Fin(n)) => refl(bin_predicate(n, k, s, a))))));
+      FunExt(U0, Fin(n), (fun (a : Fin(n)) => Bool), bin_predicate(n, k, restored), bin_predicate(n, k, s), (fun (a : Fin(n)) => refl(bin_predicate(n, k, s, a))))));
 }
 theorem pascal_right_omitted(n : Nat, k : Nat, s : FiniteBinomial(n, succ(k))) :
   pascal_forward(n, k, pascal_backward(n, k, typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), right(s)))) = typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), right(s)) {
@@ -81,7 +81,7 @@ theorem pascal_right_omitted(n : Nat, k : Nat, s : FiniteBinomial(n, succ(k))) :
   let restored = sum_right_or(FiniteBinomial(n, k), FiniteBinomial(n, succ(k)), s, result);
   exact cong((fun (v : FiniteBinomial(n, succ(k))) => typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), right(v))),
     bin_ext(n, succ(k), restored, s,
-      funext(Fin(n), (fun (a : Fin(n)) => Bool), bin_predicate(n, succ(k), restored), bin_predicate(n, succ(k), s), (fun (a : Fin(n)) => refl(bin_predicate(n, succ(k), s, a))))));
+      FunExt(U0, Fin(n), (fun (a : Fin(n)) => Bool), bin_predicate(n, succ(k), restored), bin_predicate(n, succ(k), s), (fun (a : Fin(n)) => refl(bin_predicate(n, succ(k), s, a))))));
 }
 def pascal_right(n : Nat, k : Nat, s : FiniteBinomial(n, k) or FiniteBinomial(n, succ(k))) =
   match s as z return (pascal_forward(n, k, pascal_backward(n, k, z)) = z) {

@@ -3,7 +3,7 @@ import ring_laws;
 // Coordinate identities for the complex multiplication formula.
 // Every normalization step below is an application of a proved ring law.
 
-theorem complex_coordinate_assoc_real(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_assoc_real(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F, e : F, f : F) :
   addF(mulF(addF(mulF(a, c), negF(mulF(b, d))), e), negF(mulF(addF(mulF(a, d), mulF(b, c)), f))) = addF(mulF(a, addF(mulF(c, e), negF(mulF(d, f)))), negF(mulF(b, addF(mulF(c, f), mulF(d, e))))) {
   let leftStep1 = cong((fun (value : F) => addF(value, negF(mulF(addF(mulF(a, d), mulF(b, c)), f)))), ring_distribute_left(F, zero, one, addF, mulF, negF, ring, mulF(a, c), negF(mulF(b, d)), e));
@@ -25,7 +25,7 @@ theorem complex_coordinate_assoc_real(F : Type1, zero : F, one : F, addF : F -> 
   exact trans(trans(leftStep1, trans(leftStep2, trans(leftStep3, trans(leftStep4, trans(leftStep5, trans(leftStep6, trans(leftStep7, trans(leftStep8, trans(leftStep9, trans(leftStep10, leftStep11)))))))))), sym(trans(rightStep1, trans(rightStep2, trans(rightStep3, trans(rightStep4, rightStep5))))));
 }
 
-theorem complex_coordinate_assoc_imag(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_assoc_imag(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F, e : F, f : F) :
   addF(mulF(addF(mulF(a, c), negF(mulF(b, d))), f), mulF(addF(mulF(a, d), mulF(b, c)), e)) = addF(mulF(a, addF(mulF(c, f), mulF(d, e))), mulF(b, addF(mulF(c, e), negF(mulF(d, f))))) {
   let leftStep1 = cong((fun (value : F) => addF(value, mulF(addF(mulF(a, d), mulF(b, c)), e))), ring_distribute_left(F, zero, one, addF, mulF, negF, ring, mulF(a, c), negF(mulF(b, d)), f));
@@ -45,7 +45,7 @@ theorem complex_coordinate_assoc_imag(F : Type1, zero : F, one : F, addF : F -> 
   exact trans(trans(leftStep1, trans(leftStep2, trans(leftStep3, trans(leftStep4, trans(leftStep5, trans(leftStep6, trans(leftStep7, trans(leftStep8, trans(leftStep9, leftStep10))))))))), sym(trans(rightStep1, trans(rightStep2, trans(rightStep3, rightStep4)))));
 }
 
-theorem complex_coordinate_distribute_real(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_distribute_real(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F, e : F, f : F) :
   addF(mulF(a, addF(c, e)), negF(mulF(b, addF(d, f)))) = addF(addF(mulF(a, c), negF(mulF(b, d))), addF(mulF(a, e), negF(mulF(b, f)))) {
   let leftStep1 = cong((fun (value : F) => addF(value, negF(mulF(b, addF(d, f))))), ring_distribute(F, zero, one, addF, mulF, negF, ring, a, c, e));
@@ -57,7 +57,7 @@ theorem complex_coordinate_distribute_real(F : Type1, zero : F, one : F, addF : 
   exact trans(trans(leftStep1, trans(leftStep2, trans(leftStep3, leftStep4))), sym(trans(rightStep1, rightStep2)));
 }
 
-theorem complex_coordinate_distribute_imag(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_distribute_imag(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F, e : F, f : F) :
   addF(mulF(a, addF(d, f)), mulF(b, addF(c, e))) = addF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, f), mulF(b, e))) {
   let leftStep1 = cong((fun (value : F) => addF(value, mulF(b, addF(c, e)))), ring_distribute(F, zero, one, addF, mulF, negF, ring, a, d, f));
@@ -68,7 +68,7 @@ theorem complex_coordinate_distribute_imag(F : Type1, zero : F, one : F, addF : 
   exact trans(trans(leftStep1, trans(leftStep2, leftStep3)), sym(trans(rightStep1, rightStep2)));
 }
 
-theorem complex_coordinate_comm_real(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_comm_real(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F) :
   addF(mulF(a, c), negF(mulF(b, d))) = addF(mulF(c, a), negF(mulF(d, b))) {
   let rightStep1 = cong((fun (value : F) => addF(value, negF(mulF(d, b)))), ring_mul_comm(F, zero, one, addF, mulF, negF, ring, c, a));
@@ -76,7 +76,7 @@ theorem complex_coordinate_comm_real(F : Type1, zero : F, one : F, addF : F -> F
   exact trans(refl(addF(mulF(a, c), negF(mulF(b, d)))), sym(trans(rightStep1, rightStep2)));
 }
 
-theorem complex_coordinate_comm_imag(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_comm_imag(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F) :
   addF(mulF(a, d), mulF(b, c)) = addF(mulF(c, b), mulF(d, a)) {
   let rightStep1 = cong((fun (value : F) => addF(value, mulF(d, a))), ring_mul_comm(F, zero, one, addF, mulF, negF, ring, c, b));
@@ -85,7 +85,7 @@ theorem complex_coordinate_comm_imag(F : Type1, zero : F, one : F, addF : F -> F
   exact trans(refl(addF(mulF(a, d), mulF(b, c))), sym(trans(rightStep1, trans(rightStep2, rightStep3))));
 }
 
-theorem complex_coordinate_one_real(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_one_real(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F) :
   addF(mulF(one, a), negF(mulF(zero, b))) = a {
   let leftStep1 = cong((fun (value : F) => addF(value, negF(mulF(zero, b)))), ring_mul_one(F, zero, one, addF, mulF, negF, ring, a));
@@ -95,7 +95,7 @@ theorem complex_coordinate_one_real(F : Type1, zero : F, one : F, addF : F -> F 
   exact trans(trans(leftStep1, trans(leftStep2, trans(leftStep3, leftStep4))), sym(refl(a)));
 }
 
-theorem complex_coordinate_one_imag(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_one_imag(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F) :
   addF(mulF(one, b), mulF(zero, a)) = b {
   let leftStep1 = cong((fun (value : F) => addF(value, mulF(zero, a))), ring_mul_one(F, zero, one, addF, mulF, negF, ring, b));
@@ -104,7 +104,7 @@ theorem complex_coordinate_one_imag(F : Type1, zero : F, one : F, addF : F -> F 
   exact trans(trans(leftStep1, trans(leftStep2, leftStep3)), sym(refl(b)));
 }
 
-theorem complex_coordinate_i_square_real(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_i_square_real(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)) :
   addF(mulF(zero, zero), negF(mulF(one, one))) = negF(one) {
   let leftStep1 = cong((fun (value : F) => addF(value, negF(mulF(one, one)))), ring_zero_mul(F, zero, one, addF, mulF, negF, ring, zero));
@@ -113,7 +113,7 @@ theorem complex_coordinate_i_square_real(F : Type1, zero : F, one : F, addF : F 
   exact trans(trans(leftStep1, trans(leftStep2, leftStep3)), sym(refl(negF(one))));
 }
 
-theorem complex_coordinate_i_square_imag(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_i_square_imag(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)) :
   addF(mulF(zero, one), mulF(one, zero)) = zero {
   let leftStep1 = cong((fun (value : F) => addF(value, mulF(one, zero))), ring_zero_mul(F, zero, one, addF, mulF, negF, ring, one));
@@ -122,7 +122,7 @@ theorem complex_coordinate_i_square_imag(F : Type1, zero : F, one : F, addF : F 
   exact trans(trans(leftStep1, trans(leftStep2, leftStep3)), sym(refl(zero)));
 }
 
-theorem complex_coordinate_norm_real(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_norm_real(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F) :
   addF(mulF(a, a), negF(mulF(b, negF(b)))) = addF(mulF(a, a), mulF(b, b)) {
   let leftStep1 = cong((fun (value : F) => addF(mulF(a, a), value)), cong((fun (value : F) => negF(value)), ring_mul_neg(F, zero, one, addF, mulF, negF, ring, b, b)));
@@ -130,7 +130,7 @@ theorem complex_coordinate_norm_real(F : Type1, zero : F, one : F, addF : F -> F
   exact trans(trans(leftStep1, leftStep2), sym(refl(addF(mulF(a, a), mulF(b, b)))));
 }
 
-theorem complex_coordinate_norm_imag(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_norm_imag(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F) :
   addF(mulF(a, negF(b)), mulF(b, a)) = zero {
   let leftStep1 = cong((fun (value : F) => addF(value, mulF(b, a))), ring_mul_neg(F, zero, one, addF, mulF, negF, ring, a, b));
@@ -139,7 +139,7 @@ theorem complex_coordinate_norm_imag(F : Type1, zero : F, one : F, addF : F -> F
   exact trans(trans(leftStep1, trans(leftStep2, leftStep3)), sym(refl(zero)));
 }
 
-theorem complex_coordinate_inverse_real(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_inverse_real(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, d : F) :
   addF(mulF(a, mulF(a, d)), negF(mulF(b, negF(mulF(b, d))))) = mulF(addF(mulF(a, a), mulF(b, b)), d) {
   let leftStep1 = cong((fun (value : F) => addF(mulF(a, mulF(a, d)), value)), cong((fun (value : F) => negF(value)), ring_mul_neg(F, zero, one, addF, mulF, negF, ring, b, mulF(b, d))));
@@ -150,7 +150,7 @@ theorem complex_coordinate_inverse_real(F : Type1, zero : F, one : F, addF : F -
   exact trans(trans(leftStep1, leftStep2), sym(trans(rightStep1, trans(rightStep2, rightStep3))));
 }
 
-theorem complex_coordinate_inverse_imag(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_inverse_imag(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, d : F) :
   addF(mulF(a, negF(mulF(b, d))), mulF(b, mulF(a, d))) = zero {
   let leftStep1 = cong((fun (value : F) => addF(value, mulF(b, mulF(a, d)))), ring_mul_neg(F, zero, one, addF, mulF, negF, ring, a, mulF(b, d)));

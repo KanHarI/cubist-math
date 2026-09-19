@@ -505,7 +505,7 @@ try {
   });
   await surjectionResult.locator('[data-axiom="AOC"]').click();
   assert.match(await page.locator("#view-source").getAttribute("href"), /proof=prelude_library_construction&name=AOC/);
-  await page.locator('#read-source [data-name="set_choice"]').click();
+  await page.locator('#read-source [data-name="Choice"]').click();
   assert.match(await page.locator("#view-source").getAttribute("href"), /name=AOC/);
   await page.locator('#read-source [data-name="setA"]').first().click();
   assert.match(await page.locator("#inspect-type").textContent(), /IsSet\(A\)/);
@@ -627,9 +627,9 @@ try {
   }
   await selectProof(page, "field_logic");
   await page.locator("#result:not([hidden])").waitFor();
-  await page.locator('#read-source [data-name="truncation_at"]').first().click();
+  await page.locator('#read-source [data-name="Truncate"]').first().click();
   assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_Trunc/);
-  assert.match(await page.locator("#language-guide").textContent(), /Type1/);
+  assert.match(await page.locator("#language-guide").textContent(), /U1/);
   await selectProof(page, "circle");
   await page.locator("#result:not([hidden])").waitFor();
   assert.equal(await page.locator("#development-note").isVisible(), false);
@@ -683,7 +683,7 @@ try {
   );
   await page.goBack();
   await page.locator("#result:not([hidden])").waitFor();
-  await page.locator('#read-source [data-name="univalence"]').first().click();
+  await page.locator('#read-source [data-name="Univalence"]').first().click();
   assert.match(
     await page.locator("#view-source").getAttribute("href"),
     /prelude_library_construction&name=lib_univalence/,
@@ -731,8 +731,8 @@ try {
   assert.match(await page.locator("#read-source .active").textContent(), /lib_trunc_elim = postulate/);
   await selectProof(page, "truncation");
   await page.locator("#result:not([hidden])").waitFor();
-  await page.locator('#read-source [data-name="truncation_elim"]').click();
-  assert.equal(await page.locator("#inspect-name").textContent(), "truncation_elim");
+  await page.locator('#read-source [data-name="TruncateElim"]').click();
+  assert.equal(await page.locator("#inspect-name").textContent(), "TruncateElim");
   assert.match(await page.locator("#view-source").getAttribute("href"), /prelude_library_construction&name=lib_trunc_elim/);
   assert.ok(limitRequests.length > 0);
   assert.ok(limitRequests.every((url) => url.includes("?version=")));

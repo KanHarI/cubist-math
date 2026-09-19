@@ -4,15 +4,15 @@ import complex_curve_variation;
 
 // The geometric sampling remains in the interval; only its images enter
 // the original complex contour sums. No inverse of the curve is needed.
-def curve_contour_samples(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+def curve_contour_samples(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)) =
   complex_contour_sum(F, zero, addF, mulF, negF, integrand, n,
     map_sample_vertices(FieldUnitInterval(F, zero, one, lt), Complex(F), curve, n, vertices),
     map_sample_tags(FieldUnitInterval(F, zero, one, lt), Complex(F), curve, n, tags));
 
-theorem curve_contour_tag_change_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem curve_contour_tag_change_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
   realWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F,

@@ -201,11 +201,30 @@
           Comments start with <code>//</code>.
         </p>
         <p>
-          <code>Type</code> is U0; <code>Type1</code>, <code>Type2</code>, and
-          <code>Type3</code> name larger universes. Library definitions may fix
-          a universe. <code>truncation_at(Type1, A)</code> and
-          <code>funext_at(Type1, A, B, f, g, h)</code> explicitly specialize the
-          existing universe-generic axioms; they do not introduce new axioms.
+          <code>U0</code>, <code>U1</code>, <code>U2</code> and <code>U3</code>
+          name universes, with <code>U0 : U1</code>. A parameter
+          <code>U : Universe</code> accepts a universe argument.
+          <code>Equiv(U, A, B)</code> and <code>IsEquiv(U, A, B, f)</code>
+          work at that universe. <code>Choice(U0)</code>, <code>LEM(U0)</code>
+          (excluded middle), <code>FunExt(U1)</code>,
+          <code>Truncate(U1)</code> and <code>Univalence(U1)</code> specialize
+          existing axioms.
+        </p>
+        <p>
+          <code>x =[T] y</code> means equality of <code>x</code> and
+          <code>y</code> as elements of <code>T</code>; plain <code>x = y</code>
+          infers that carrier. In particular, <code>A =[U] B</code> is equality
+          of types <code>A : U</code> and <code>B : U</code> in universe
+          <code>U</code>.
+        </p>
+        <p>
+          <code>refl(x)</code> proves <code>x = x</code>.
+          With <code>import paths;</code>, <code>sym(p)</code> reverses
+          <code>p : x =[T] y</code> to give <code>y =[T] x</code>;
+          <code>trans(p, q)</code> joins paths <code>x = y</code> and
+          <code>y = z</code>; <code>cong(f, p)</code> gives
+          <code>f(x) = f(y)</code>. These are checked path operations,
+          with no additional axioms. See <a href="language.html#paths">equality and paths</a>.
         </p>
         <p>
           <code>intro name;</code> introduces the next input or assumption from
@@ -215,8 +234,8 @@
           the goal, including when the goal is a named definition.
         </p>
         <pre>import sets;
-theorem use_assumption : forall A : Type, IsSet(A) -> IsSet(A) {
-  intro A;       // A : Type
+theorem use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
+  intro A;       // A : U0
   intro setA;    // setA : IsSet(A)
   exact setA;
 }</pre>
@@ -246,7 +265,7 @@ theorem use_assumption : forall A : Type, IsSet(A) -> IsSet(A) {
           <code>A + B</code> in kernel notation. Mere existence requires
           truncation; <code>exists</code> does not truncate automatically.
         </p>
-        <pre>def identity(A : Type, x : A) = x;
+        <pre>def identity(A : U0, x : A) = x;
 def pair = typed(Nat and Nat, (0, 1));
 def either = typed(Unit or Nat, left(tt));
 theorem pair_first : Nat {

@@ -18,7 +18,7 @@ export const declarations = [
   [
     "le",
     "nat_le",
-    "forall a : Nat, forall b : Nat, Type",
+    "forall a : Nat, forall b : Nat, U0",
     "Natural-number order",
     "0 <= b is Unit; succ(a) <= 0 is Void; succ(a) <= succ(b) is a <= b.",
   ],
@@ -32,14 +32,14 @@ export const declarations = [
   [
     "Divides",
     "Divides",
-    "forall d : Nat, forall n : Nat, Type",
+    "forall d : Nat, forall n : Nat, U0",
     "Divisibility",
     "Divides(d, n) means exists k : Nat, k * d = n.",
   ],
   [
     "Prime",
     "Prime",
-    "forall p : Nat, Type",
+    "forall p : Nat, U0",
     "Prime number",
     "Prime(p) means exists i : Nat, (p = 2 + i) and forall j : Nat, j < i -> Divides(2 + j, p) -> Void.",
   ],

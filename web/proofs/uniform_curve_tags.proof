@@ -2,8 +2,8 @@ import interval_sampling;
 import parameter_tag_sampling;
 import complex_curves;
 
-theorem complex_close_difference_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_close_difference_bound(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F), radius : F,
   close : ComplexClose(F, addF, lt, w, z, radius)) :
   ComplexBoxBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), z, w), radius) {
@@ -22,8 +22,8 @@ theorem complex_close_difference_bound(F : Type1, zero : F, one : F, addF : F ->
 
 // Uniform continuity produces a positive mesh threshold. Tag errors are
 // then proved from admissibility, rather than supplied as an extra premise.
-theorem uniform_curve_tag_bounds(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem uniform_curve_tag_bounds(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   values : FieldUnitInterval(F, zero, one, lt) -> Complex(F), uniform : ComplexUniformCurve(F, zero, one, addF, lt, values), epsilon : F, positive : lt(zero, epsilon)) :
   exists mesh : F, lt(zero, mesh) and (forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),

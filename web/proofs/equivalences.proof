@@ -2,24 +2,24 @@ import prelude;
 import paths;
 
 // A bijection is a function, an inverse, and both pointwise inverse laws.
-def Bijection(A : Type, B : Type) =
+def Bijection(A : U0, B : U0) =
   exists f : A -> B, exists g : B -> A,
     (forall x : A, g(f(x)) = x) and (forall y : B, f(g(y)) = y);
 
-def sigma_first(A : Type, B : A -> Type, p : (exists x : A, B(x))) =
+def sigma_first(A : U0, B : A -> U0, p : (exists x : A, B(x))) =
   unpack p as (x, h) return A { x; };
-def sigma_second(A : Type, B : A -> Type, p : (exists x : A, B(x))) =
+def sigma_second(A : U0, B : A -> U0, p : (exists x : A, B(x))) =
   pair_induction((fun (q : (exists x : A, B(x))) => B(sigma_first(A, B, q))),
     (fun (x : A) => fun (h : B(x)) => h), p);
 
-def forward(A : Type, B : Type, e : Bijection(A, B)) =
+def forward(A : U0, B : U0, e : Bijection(A, B)) =
   unpack e as (f, rest) return (A -> B) { f; };
-def backward(A : Type, B : Type, e : Bijection(A, B)) =
+def backward(A : U0, B : U0, e : Bijection(A, B)) =
   unpack e as (f, rest) return (B -> A) {
     unpack rest as (g, laws) return (B -> A) { g; };
   };
 
-theorem left_inverse(A : Type, B : Type, e : Bijection(A, B)) =
+theorem left_inverse(A : U0, B : U0, e : Bijection(A, B)) =
   pair_induction((fun (v : Bijection(A, B)) => forall x : A, backward(A, B, v, forward(A, B, v, x)) = x),
     (fun (f : A -> B) => fun (rest : (exists g : B -> A, (forall x : A, g(f(x)) = x) and (forall y : B, f(g(y)) = y))) =>
       pair_induction((fun (r : (exists g : B -> A, (forall x : A, g(f(x)) = x) and (forall y : B, f(g(y)) = y))) =>
@@ -27,7 +27,7 @@ theorem left_inverse(A : Type, B : Type, e : Bijection(A, B)) =
         (fun (g : B -> A) => fun (laws : (forall x : A, g(f(x)) = x) and (forall y : B, f(g(y)) = y)) =>
           sigma_first((forall x : A, g(f(x)) = x), (fun (eta : (forall x : A, g(f(x)) = x)) => forall y : B, f(g(y)) = y), laws)), rest)), e);
 
-theorem right_inverse(A : Type, B : Type, e : Bijection(A, B)) =
+theorem right_inverse(A : U0, B : U0, e : Bijection(A, B)) =
   pair_induction((fun (v : Bijection(A, B)) => forall y : B, forward(A, B, v, backward(A, B, v, y)) = y),
     (fun (f : A -> B) => fun (rest : (exists g : B -> A, (forall x : A, g(f(x)) = x) and (forall y : B, f(g(y)) = y))) =>
       pair_induction((fun (r : (exists g : B -> A, (forall x : A, g(f(x)) = x) and (forall y : B, f(g(y)) = y))) =>
@@ -35,22 +35,22 @@ theorem right_inverse(A : Type, B : Type, e : Bijection(A, B)) =
         (fun (g : B -> A) => fun (laws : (forall x : A, g(f(x)) = x) and (forall y : B, f(g(y)) = y)) =>
           sigma_second((forall x : A, g(f(x)) = x), (fun (eta : (forall x : A, g(f(x)) = x)) => forall y : B, f(g(y)) = y), laws)), rest)), e);
 
-def identity_bijection(A : Type) = typed(Bijection(A, A),
+def identity_bijection(A : U0) = typed(Bijection(A, A),
   ((fun (x : A) => x), ((fun (x : A) => x), ((fun (x : A) => refl(x)), (fun (x : A) => refl(x))))));
 
-def reverse_bijection(A : Type, B : Type, e : Bijection(A, B)) = typed(Bijection(B, A),
+def reverse_bijection(A : U0, B : U0, e : Bijection(A, B)) = typed(Bijection(B, A),
   (backward(A, B, e), (forward(A, B, e), (right_inverse(A, B, e), left_inverse(A, B, e)))));
 
-def compose_bijection(A : Type, B : Type, C : Type, e : Bijection(A, B), d : Bijection(B, C)) = typed(Bijection(A, C),
+def compose_bijection(A : U0, B : U0, C : U0, e : Bijection(A, B), d : Bijection(B, C)) = typed(Bijection(A, C),
   ((fun (x : A) => forward(B, C, d, forward(A, B, e, x))),
     ((fun (z : C) => backward(A, B, e, backward(B, C, d, z))),
       ((fun (x : A) => trans(cong(backward(A, B, e), left_inverse(B, C, d, forward(A, B, e, x))), left_inverse(A, B, e, x))),
        (fun (z : C) => trans(cong(forward(B, C, d), right_inverse(A, B, e, backward(B, C, d, z))), right_inverse(B, C, d, z)))))));
 
-def sum_map(A : Type, B : Type, C : Type, D : Type, f : A -> C, g : B -> D, x : A or B) =
+def sum_map(A : U0, B : U0, C : U0, D : U0, f : A -> C, g : B -> D, x : A or B) =
   match x return (C or D) { left a => left(f(a)); right b => right(g(b)); };
 
-theorem sum_inverse(A : Type, B : Type, C : Type, D : Type,
+theorem sum_inverse(A : U0, B : U0, C : U0, D : U0,
   f : A -> C, g : B -> D, fi : C -> A, gi : D -> B,
   eta : (forall a : A, fi(f(a)) = a), eps : (forall b : B, gi(g(b)) = b), x : A or B) =
   match x as z return (sum_map(C, D, A, B, fi, gi, sum_map(A, B, C, D, f, g, z)) = z) {
@@ -58,7 +58,7 @@ theorem sum_inverse(A : Type, B : Type, C : Type, D : Type,
     right b => cong((fun (v : B) => typed(A or B, right(v))), eps(b));
   };
 
-def sum_bijection(A : Type, B : Type, C : Type, D : Type, e : Bijection(A, C), d : Bijection(B, D)) =
+def sum_bijection(A : U0, B : U0, C : U0, D : U0, e : Bijection(A, C), d : Bijection(B, D)) =
   typed(Bijection(A or B, C or D),
     (sum_map(A, B, C, D, forward(A, C, e), forward(B, D, d)),
       (sum_map(C, D, A, B, backward(A, C, e), backward(B, D, d)),
@@ -66,19 +66,19 @@ def sum_bijection(A : Type, B : Type, C : Type, D : Type, e : Bijection(A, C), d
          sum_inverse(C, D, A, B, backward(A, C, e), backward(B, D, d), forward(A, C, e), forward(B, D, d), right_inverse(A, C, e), right_inverse(B, D, d))))));
 
 // Equality and maps of ordinary products.
-def fst(A : Type, B : Type, p : A and B) = sigma_first(A, (fun (x : A) => B), p);
-def snd(A : Type, B : Type, p : A and B) = sigma_second(A, (fun (x : A) => B), p);
-def product_path(A : Type, B : Type, x : A, y : A, p : x = y, u : B, v : B, q : u = v) =
+def fst(A : U0, B : U0, p : A and B) = sigma_first(A, (fun (x : A) => B), p);
+def snd(A : U0, B : U0, p : A and B) = sigma_second(A, (fun (x : A) => B), p);
+def product_path(A : U0, B : U0, x : A, y : A, p : x = y, u : B, v : B, q : u = v) =
   trans(cong((fun (a : A) => typed(A and B, (a, u))), p),
     cong((fun (b : B) => typed(A and B, (y, b))), q));
-def product_map(A : Type, B : Type, C : Type, D : Type, f : A -> C, g : B -> D, p : A and B) =
+def product_map(A : U0, B : U0, C : U0, D : U0, f : A -> C, g : B -> D, p : A and B) =
   typed(C and D, (f(fst(A, B, p)), g(snd(A, B, p))));
-theorem product_inverse(A : Type, B : Type, C : Type, D : Type,
+theorem product_inverse(A : U0, B : U0, C : U0, D : U0,
   f : A -> C, g : B -> D, fi : C -> A, gi : D -> B,
   eta : (forall a : A, fi(f(a)) = a), eps : (forall b : B, gi(g(b)) = b), p : A and B) =
   pair_induction((fun (q : A and B) => product_map(C, D, A, B, fi, gi, product_map(A, B, C, D, f, g, q)) = q),
     (fun (a : A) => fun (b : B) => product_path(A, B, fi(f(a)), a, eta(a), gi(g(b)), b, eps(b))), p);
-theorem product_bijection(A : Type, B : Type, C : Type, D : Type, e : Bijection(A, C), d : Bijection(B, D)) =
+theorem product_bijection(A : U0, B : U0, C : U0, D : U0, e : Bijection(A, C), d : Bijection(B, D)) =
   typed(Bijection(A and B, C and D),
     (product_map(A, B, C, D, forward(A, C, e), forward(B, D, d)),
       (product_map(C, D, A, B, backward(A, C, e), backward(B, D, d)),
@@ -86,32 +86,32 @@ theorem product_bijection(A : Type, B : Type, C : Type, D : Type, e : Bijection(
          product_inverse(C, D, A, B, backward(A, C, e), backward(B, D, d), forward(A, C, e), forward(B, D, d), right_inverse(A, C, e), right_inverse(B, D, d))))));
 
 def unit_equal(u : Unit) = unit_induction((fun (v : Unit) => tt = v), refl(tt), u);
-def empty_function(A : Type, x : Void) = typed(A, absurd(x));
-theorem empty_functions(A : Type) = typed(Bijection(Void -> A, Unit),
+def empty_function(A : U0, x : Void) = typed(A, absurd(x));
+theorem empty_functions(A : U0) = typed(Bijection(Void -> A, Unit),
   ((fun (f : Void -> A) => tt), ((fun (u : Unit) => empty_function(A)),
-    ((fun (f : Void -> A) => funext(Void, (fun (x : Void) => A), empty_function(A), f,
+    ((fun (f : Void -> A) => FunExt(U0, Void, (fun (x : Void) => A), empty_function(A), f,
       (fun (x : Void) => typed((empty_function(A, x) = f(x)), absurd(x))))), unit_equal))));
 
 // A function on a sum is determined by its value on Unit and its tail.
-def function_split(A : Type, B : Type, f : (Unit or A) -> B) =
+def function_split(A : U0, B : U0, f : (Unit or A) -> B) =
   typed(B and (A -> B), (f(typed(Unit or A, left(tt))), (fun (a : A) => f(typed(Unit or A, right(a))))));
-def function_join(A : Type, B : Type, p : B and (A -> B), x : Unit or A) =
+def function_join(A : U0, B : U0, p : B and (A -> B), x : Unit or A) =
   match x return B { left u => fst(B, A -> B, p); right a => typed(A -> B, snd(B, A -> B, p))(a); };
-def function_join_split_point(A : Type, B : Type, f : (Unit or A) -> B, x : Unit or A) =
+def function_join_split_point(A : U0, B : U0, f : (Unit or A) -> B, x : Unit or A) =
   match x as z return (function_join(A, B, function_split(A, B, f), z) = f(z)) {
     left u => cong((fun (v : Unit) => f(typed(Unit or A, left(v)))), unit_equal(u));
     right a => refl(f(typed(Unit or A, right(a))));
   };
-def function_split_join(A : Type, B : Type, p : B and (A -> B)) =
+def function_split_join(A : U0, B : U0, p : B and (A -> B)) =
   pair_induction((fun (q : B and (A -> B)) => function_split(A, B, function_join(A, B, q)) = q),
     (fun (b : B) => fun (g : A -> B) => product_path(B, A -> B, b, b, refl(b),
       (fun (a : A) => g(a)), g,
-      typed(((fun (a : A) => g(a)) = g), funext(A, (fun (a : A) => B), (fun (a : A) => g(a)), g, (fun (a : A) => refl(g(a))))))), p);
-theorem functions_on_successor(A : Type, B : Type) = typed(Bijection((Unit or A) -> B, B and (A -> B)),
+      typed(((fun (a : A) => g(a)) = g), FunExt(U0, A, (fun (a : A) => B), (fun (a : A) => g(a)), g, (fun (a : A) => refl(g(a))))))), p);
+theorem functions_on_successor(A : U0, B : U0) = typed(Bijection((Unit or A) -> B, B and (A -> B)),
   (function_split(A, B), (function_join(A, B),
-    ((fun (f : (Unit or A) -> B) => funext(Unit or A, (fun (x : Unit or A) => B), function_join(A, B, function_split(A, B, f)), f, function_join_split_point(A, B, f))), function_split_join(A, B)))));
+    ((fun (f : (Unit or A) -> B) => FunExt(U0, Unit or A, (fun (x : Unit or A) => B), function_join(A, B, function_split(A, B, f)), f, function_join_split_point(A, B, f))), function_split_join(A, B)))));
 
-def impossible_bijection(A : Type, empty : A -> Void) = typed(
+def impossible_bijection(A : U0, empty : A -> Void) = typed(
   Bijection(A, Void),
   (empty,
     (empty_function(A),
@@ -121,16 +121,16 @@ def impossible_bijection(A : Type, empty : A -> Void) = typed(
   )
 );
 
-def product_successor_out(A : Type, B : Type, p : (Unit or A) and B) =
+def product_successor_out(A : U0, B : U0, p : (Unit or A) and B) =
   unpack p as (x, b) return (B or (A and B)) {
     match x return (B or (A and B)) { left u => left(b); right a => right(typed(A and B, (a, b))); };
   };
-def product_successor_in(A : Type, B : Type, y : B or (A and B)) =
+def product_successor_in(A : U0, B : U0, y : B or (A and B)) =
   match y return ((Unit or A) and B) {
     left b => (typed(Unit or A, left(tt)), b);
     right p => (typed(Unit or A, right(fst(A, B, p))), snd(A, B, p));
   };
-def product_successor_left(A : Type, B : Type, p : (Unit or A) and B) =
+def product_successor_left(A : U0, B : U0, p : (Unit or A) and B) =
   pair_induction((fun (q : (Unit or A) and B) => product_successor_in(A, B, product_successor_out(A, B, q)) = q),
     (fun (x : Unit or A) => fun (b : B) =>
       match x as z return (product_successor_in(A, B, product_successor_out(A, B, typed((Unit or A) and B, (z, b)))) = typed((Unit or A) and B, (z, b))) {
@@ -138,36 +138,36 @@ def product_successor_left(A : Type, B : Type, p : (Unit or A) and B) =
           cong((fun (v : Unit) => typed(Unit or A, left(v))), unit_equal(u)), b, b, refl(b));
         right a => refl(typed((Unit or A) and B, (typed(Unit or A, right(a)), b)));
       }), p);
-def product_successor_right(A : Type, B : Type, y : B or (A and B)) =
+def product_successor_right(A : U0, B : U0, y : B or (A and B)) =
   match y as z return (product_successor_out(A, B, product_successor_in(A, B, z)) = z) {
     left b => refl(typed(B or (A and B), left(b)));
     right p => pair_induction((fun (q : A and B) =>
       product_successor_out(A, B, product_successor_in(A, B, typed(B or (A and B), right(q)))) = typed(B or (A and B), right(q))),
       (fun (a : A) => fun (b : B) => refl(typed(B or (A and B), right(typed(A and B, (a, b)))))), p);
   };
-theorem product_successor(A : Type, B : Type) = typed(Bijection((Unit or A) and B, B or (A and B)),
+theorem product_successor(A : U0, B : U0) = typed(Bijection((Unit or A) and B, B or (A and B)),
   (product_successor_out(A, B), (product_successor_in(A, B), (product_successor_left(A, B), product_successor_right(A, B)))));
 
 // For sets, the coherence field of an equivalence follows from uniqueness
 // of equality proofs. No choice or new equivalence axiom is needed.
-def LeftLaw(A : Type, B : Type, f : A -> B, g : B -> A) = forall x : A, g(f(x)) = x;
-def RightLaw(A : Type, B : Type, f : A -> B, g : B -> A) = forall y : B, f(g(y)) = y;
-def Coherence(A : Type, B : Type, f : A -> B, g : B -> A, eta : LeftLaw(A, B, f, g), eps : RightLaw(A, B, f, g)) =
-  forall x : A, typed((f(g(f(x))) = f(x)), ap(A, B, f, g(f(x)), x, eta(x))) = eps(f(x));
-def HalfAdjointLaws(A : Type, B : Type, f : A -> B, g : B -> A) =
+def LeftLaw(A : U0, B : U0, f : A -> B, g : B -> A) = forall x : A, g(f(x)) = x;
+def RightLaw(A : U0, B : U0, f : A -> B, g : B -> A) = forall y : B, f(g(y)) = y;
+def Coherence(A : U0, B : U0, f : A -> B, g : B -> A, eta : LeftLaw(A, B, f, g), eps : RightLaw(A, B, f, g)) =
+  forall x : A, typed((f(g(f(x))) = f(x)), ap(U1, A, B, f, g(f(x)), x, eta(x))) = eps(f(x));
+def HalfAdjointLaws(A : U0, B : U0, f : A -> B, g : B -> A) =
   exists eta : LeftLaw(A, B, f, g), exists eps : RightLaw(A, B, f, g), Coherence(A, B, f, g, eta, eps);
-def equivalence_function(A : Type, B : Type, e : Equiv(A, B)) = sigma_first(A -> B, IsEquiv(A, B), e);
-def equivalence_inverse_data(A : Type, B : Type, e : Equiv(A, B)) = sigma_second(A -> B, IsEquiv(A, B), e);
-def equivalence_inverse(A : Type, B : Type, e : Equiv(A, B)) =
+def equivalence_function(A : U0, B : U0, e : Equiv(U0, A, B)) = sigma_first(A -> B, IsEquiv(U0, A, B), e);
+def equivalence_inverse_data(A : U0, B : U0, e : Equiv(U0, A, B)) = sigma_second(A -> B, IsEquiv(U0, A, B), e);
+def equivalence_inverse(A : U0, B : U0, e : Equiv(U0, A, B)) =
   sigma_first(B -> A, HalfAdjointLaws(A, B, equivalence_function(A, B, e)), equivalence_inverse_data(A, B, e));
-def equivalence_laws(A : Type, B : Type, e : Equiv(A, B)) =
+def equivalence_laws(A : U0, B : U0, e : Equiv(U0, A, B)) =
   sigma_second(B -> A, HalfAdjointLaws(A, B, equivalence_function(A, B, e)), equivalence_inverse_data(A, B, e));
-def equivalence_left(A : Type, B : Type, e : Equiv(A, B)) =
+def equivalence_left(A : U0, B : U0, e : Equiv(U0, A, B)) =
   sigma_first(LeftLaw(A, B, equivalence_function(A, B, e), equivalence_inverse(A, B, e)),
     (fun (eta : LeftLaw(A, B, equivalence_function(A, B, e), equivalence_inverse(A, B, e))) =>
       exists eps : RightLaw(A, B, equivalence_function(A, B, e), equivalence_inverse(A, B, e)),
         Coherence(A, B, equivalence_function(A, B, e), equivalence_inverse(A, B, e), eta, eps)), equivalence_laws(A, B, e));
-def equivalence_right(A : Type, B : Type, e : Equiv(A, B)) =
+def equivalence_right(A : U0, B : U0, e : Equiv(U0, A, B)) =
   sigma_first(RightLaw(A, B, equivalence_function(A, B, e), equivalence_inverse(A, B, e)),
     Coherence(A, B, equivalence_function(A, B, e), equivalence_inverse(A, B, e), equivalence_left(A, B, e)),
     sigma_second(LeftLaw(A, B, equivalence_function(A, B, e), equivalence_inverse(A, B, e)),
@@ -175,15 +175,15 @@ def equivalence_right(A : Type, B : Type, e : Equiv(A, B)) =
         exists eps : RightLaw(A, B, equivalence_function(A, B, e), equivalence_inverse(A, B, e)),
           Coherence(A, B, equivalence_function(A, B, e), equivalence_inverse(A, B, e), eta, eps)), equivalence_laws(A, B, e)));
 
-def bijection_equiv(A : Type, B : Type,
+def bijection_equiv(A : U0, B : U0,
   setB : (forall x : B, forall y : B, forall p : x = y, forall q : x = y, p = q),
-  e : Bijection(A, B)) : Equiv(A, B) {
+  e : Bijection(A, B)) : Equiv(U0, A, B) {
   let f = forward(A, B, e);
   let g = backward(A, B, e);
   let eta = left_inverse(A, B, e);
   let eps = right_inverse(A, B, e);
   exact (f, (g, (eta, (eps,
-    (fun (x : A) => setB(f(g(f(x))), f(x), ap(A, B, f, g(f(x)), x, eta(x)), eps(f(x))))))));
+    (fun (x : A) => setB(f(g(f(x))), f(x), ap(U1, A, B, f, g(f(x)), x, eta(x)), eps(f(x))))))));
 }
-def equiv_bijection(A : Type, B : Type, e : Equiv(A, B)) = typed(Bijection(A, B),
+def equiv_bijection(A : U0, B : U0, e : Equiv(U0, A, B)) = typed(Bijection(A, B),
   (equivalence_function(A, B, e), (equivalence_inverse(A, B, e), (equivalence_left(A, B, e), equivalence_right(A, B, e)))));

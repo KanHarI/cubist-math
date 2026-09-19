@@ -13,9 +13,9 @@ def state_one = typed(Unit or Fin(2), right(first_puncture));
 def state_two = typed(Unit or Fin(2), right(second_puncture));
 def first_permutation = bijection_equiv(Fin(3), Fin(3), fin_is_set(3), swap_bijection(Fin(2), fin_decidable(2), state_one));
 def second_permutation = bijection_equiv(Fin(3), Fin(3), fin_is_set(3), swap_bijection(Fin(2), fin_decidable(2), state_two));
-def puncture_permutations(label : Fin(2)) = match typed(Unit or Fin(1), label) return Equiv(Fin(3), Fin(3)) {
+def puncture_permutations(label : Fin(2)) = match typed(Unit or Fin(1), label) return Equiv(U0, Fin(3), Fin(3)) {
   left u => first_permutation;
-  right tail => match typed(Unit or Void, tail) return Equiv(Fin(3), Fin(3)) {
+  right tail => match typed(Unit or Void, tail) return Equiv(U0, Fin(3), Fin(3)) {
     left u => second_permutation;
     right impossible => absurd(impossible);
   };
@@ -24,7 +24,7 @@ def first_puncture_loop = puncture_loop(2, first_puncture);
 def second_puncture_loop = puncture_loop(2, second_puncture);
 def two_loop_product(p : BouquetLoops(Fin(2)), q : BouquetLoops(Fin(2))) =
   append_path(PunctureGraph(2), bouquet_base(Fin(2)), bouquet_base(Fin(2)), bouquet_base(Fin(2)), p, q);
-def two_loop_inverse(p : BouquetLoops(Fin(2))) = inverse(PunctureGraph(2), bouquet_base(Fin(2)), bouquet_base(Fin(2)), p);
+def two_loop_inverse(p : BouquetLoops(Fin(2))) = inverse(U1, PunctureGraph(2), bouquet_base(Fin(2)), bouquet_base(Fin(2)), p);
 def puncture_ab = two_loop_product(first_puncture_loop, second_puncture_loop);
 def puncture_aba_inverse = two_loop_product(puncture_ab, two_loop_inverse(first_puncture_loop));
 def puncture_commutator = two_loop_product(puncture_aba_inverse, two_loop_inverse(second_puncture_loop));

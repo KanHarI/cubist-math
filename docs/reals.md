@@ -75,15 +75,15 @@ rational field or finish the quotient's field and completeness certificates.
 
 ## Universes and foundational assumptions
 
-`Q : Type` is small. Predicates `Q -> Type`, and hence proposition-valued cuts,
-live in `Type1`. The shared interface accepts a carrier `F : Type1`, so these
+`Q : U0` is small. Predicates `Q -> U0`, and hence proposition-valued cuts,
+live in `U1`. The shared interface accepts a carrier `F : U1`, so these
 cuts do not have to be replaced with Booleans to fit its universe.
 
 [field_logic.proof](../web/proofs/field_logic.proof) specializes the **existing**
-prelude truncation and function-extensionality axioms at `Type1` using the new
+prelude truncation and function-extensionality axioms at `U1` using the new
 explicit-universe primitives. [field_extensionality.proof](../web/proofs/field_extensionality.proof)
 adds small-proposition extensionality via the existing univalence axiom and
-equality lemmas for dependent pairs in `Type1`.
+equality lemmas for dependent pairs in `U1`.
 
 There is a foundational qualification: the existing prelude `lib_Trunc` returns
 a type in **U0 even for an input in a higher universe**. `FieldExists` retains

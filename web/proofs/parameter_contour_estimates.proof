@@ -4,14 +4,14 @@ import complex_algebra;
 // Values may be any function of the parameter. For a geometric integrand,
 // use values(t) = integrand(curve(t)); parameter_contour_sum_is_mapped
 // proves equality with the original contour sums at the mapped samples.
-def complex_parameter_contour_sum(C : Type1, F : Type1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+def complex_parameter_contour_sum(C : U1, F : U1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   curve : C -> Complex(F), values : C -> Complex(F), n : Nat) =
   parameter_contour_sum(C, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, values, n);
 
 
 // Actual complex finite sums become close under the coordinate variation bound.
-theorem complex_parameter_tag_change_close(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_parameter_tag_change_close(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve : C -> Complex(F), values : C -> Complex(F),
   realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F,
   delta : F, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,

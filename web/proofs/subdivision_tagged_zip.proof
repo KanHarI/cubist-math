@@ -3,9 +3,9 @@ import sample_tagged;
 
 // Combine a coarse-edge condition and a condition on its actual subdivision.
 // Both families have the same vertices and tags, so their heads correspond.
-theorem subdivision_tagged_zip_step(C : Type1, coarse : C -> C -> C -> Type,
-  fine : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1),
-  other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1),
+theorem subdivision_tagged_zip_step(C : U1, coarse : C -> C -> C -> U0,
+  fine : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
+  other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   combine : (forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b), coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)),
   n : Nat, previous : (forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
     SampleTagged(C, coarse, n, vertices, tags) -> SubdivisionTagged(C, fine, n, vertices, tags, pieces) -> SubdivisionTagged(C, other, n, vertices, tags, pieces)),
@@ -27,9 +27,9 @@ theorem subdivision_tagged_zip_step(C : Type1, coarse : C -> C -> C -> Type,
     (combine(a, b, tag, headPiece, headCoarse, headFine), previous(tail, tailTags, tailPieces, tailCoarse, tailFine)));
 }
 
-theorem subdivision_tagged_zip(C : Type1, coarse : C -> C -> C -> Type,
-  fine : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1),
-  other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1),
+theorem subdivision_tagged_zip(C : U1, coarse : C -> C -> C -> U0,
+  fine : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
+  other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   combine : (forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b), coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)), n : Nat) :
   forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
     SampleTagged(C, coarse, n, vertices, tags) -> SubdivisionTagged(C, fine, n, vertices, tags, pieces) -> SubdivisionTagged(C, other, n, vertices, tags, pieces) {

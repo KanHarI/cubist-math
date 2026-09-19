@@ -4,8 +4,8 @@ import complex_algebra;
 import complex_limits;
 
 // Actual complex finite sums become close under the coordinate variation bound.
-theorem complex_contour_tag_change_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_contour_tag_change_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),
   realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F,
   delta : F, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,
@@ -27,8 +27,8 @@ theorem complex_contour_tag_change_close(F : Type1, zero : F, one : F, addF : F 
 }
 
 // Only delta_n -> 0 is required: fixed-length scaling is proved above.
-theorem complex_contour_tag_errors_converge(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_contour_tag_errors_converge(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), f : Complex(F) -> Complex(F),
   realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F,
   count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(Complex(F), count(n))),
@@ -47,8 +47,8 @@ theorem complex_contour_tag_errors_converge(F : Type1, zero : F, one : F, addF :
 
 // Given convergence for one choice of tags, any choice satisfying the
 // vanishing sampled-error condition converges to that same complex value.
-theorem complex_contour_tag_independent_limit(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_contour_tag_independent_limit(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), f : Complex(F) -> Complex(F),
   realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F,
   count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(Complex(F), count(n))),

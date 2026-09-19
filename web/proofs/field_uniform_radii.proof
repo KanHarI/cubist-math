@@ -1,7 +1,7 @@
 import field_scale_limits;
 
 // Widening a two-sided order ball preserves closeness.
-theorem field_close_enlarge(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, delta : F, epsilon : F,
+theorem field_close_enlarge(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, delta : F, epsilon : F,
   smaller : FieldLe(F, lt, delta, epsilon), close : FieldClose(F, addF, lt, x, y, delta)) :
   FieldClose(F, addF, lt, x, y, epsilon) {
   obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, rest))))) = arithmetic;
@@ -14,7 +14,7 @@ theorem field_close_enlarge(F : Type1, zero : F, one : F, addF : F -> F -> F, mu
 
 // An actual common positive radius without comparing r and s or deciding
 // which is smaller. Choose delta with delta*(r+s) < r*s, then cancel r+s.
-theorem field_common_positive_radius(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+theorem field_common_positive_radius(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), r : F, s : F, positiveR : lt(zero, r), positiveS : lt(zero, s)) :
   exists delta : F, lt(zero, delta) and FieldLe(F, lt, delta, r) and FieldLe(F, lt, delta, s) {
   obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, rest))))) = arithmetic;

@@ -2,8 +2,8 @@ import field_magnitude;
 import complete_fields;
 
 // Turn a weak magnitude estimate and a strict radius bound into closeness.
-theorem field_magnitude_small_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_magnitude_small_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F, epsilon : F,
   bound : FieldMagnitudeBound(F, negF, lt, x, radius), small : lt(radius, epsilon)) :
   FieldClose(F, addF, lt, x, zero, epsilon) {
@@ -19,8 +19,8 @@ theorem field_magnitude_small_close(F : Type1, zero : F, one : F, addF : F -> F 
       ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x), shifted));
 }
 
-theorem field_close_translate(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_close_translate(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, epsilon : F, shift : F,
   close : FieldClose(F, addF, lt, x, y, epsilon)) :
   FieldClose(F, addF, lt, addF(shift, x), addF(shift, y), epsilon) {
@@ -41,8 +41,8 @@ theorem field_close_translate(F : Type1, zero : F, one : F, addF : F -> F -> F, 
       sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, shift, x, epsilon)), shiftLess(y, addF(x, epsilon), lower)));
 }
 
-theorem field_magnitude_perturbation_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_magnitude_perturbation_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, error : F, radius : F, epsilon : F,
   computes : y = addF(x, error), bound : FieldMagnitudeBound(F, negF, lt, error, radius), small : lt(radius, epsilon)) :
   FieldClose(F, addF, lt, y, x, epsilon) {
@@ -54,8 +54,8 @@ theorem field_magnitude_perturbation_close(F : Type1, zero : F, one : F, addF : 
 }
 
 // A bound tending to zero forces the bounded error to tend to zero.
-theorem field_magnitude_squeeze(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_magnitude_squeeze(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors : Nat -> F, radii : Nat -> F,
   bounds : (forall n : Nat, FieldMagnitudeBound(F, negF, lt, errors(n), radii(n))),
   vanishes : FieldConverges(F, zero, addF, lt, radii, zero)) :

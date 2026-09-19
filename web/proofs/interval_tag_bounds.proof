@@ -2,13 +2,13 @@ import interval_weights;
 import complete_fields;
 
 // Inclusive endpoint bounds allow left and right endpoint tags.
-def IntervalTagWithin(F : Type1, zero : F, one : F, lt : F -> F -> Type,
+def IntervalTagWithin(F : U1, zero : F, one : F, lt : F -> F -> U0,
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)) =
   FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, a), field_interval_coordinate(F, zero, one, lt, tag)) and
   FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, tag), field_interval_coordinate(F, zero, one, lt, b));
 
-theorem field_between_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+theorem field_between_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   a : F, b : F, x : F, y : F, lowerX : FieldLe(F, lt, a, x), upperX : FieldLe(F, lt, x, b),
   lowerY : FieldLe(F, lt, a, y), upperY : FieldLe(F, lt, y, b), radius : F,
   small : lt(coordinate_difference(F, addF, negF, a, b), radius)) : FieldClose(F, addF, lt, x, y, radius) {
@@ -24,8 +24,8 @@ theorem field_between_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mu
     ltLe(y, addF(a, radius), addF(x, radius), yBelow, order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, a, x, radius, lowerX)));
 }
 
-theorem interval_tags_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+theorem interval_tags_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), x : FieldUnitInterval(F, zero, one, lt), y : FieldUnitInterval(F, zero, one, lt),
   withinX : IntervalTagWithin(F, zero, one, lt, a, b, x), withinY : IntervalTagWithin(F, zero, one, lt, a, b, y), radius : F,
   small : lt(interval_difference(F, zero, one, addF, negF, lt, a, b), radius)) :

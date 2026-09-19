@@ -4,8 +4,8 @@ import dyadic_sampling;
 // A certificate ties an actual fine sum to actual per-edge refinements of
 // the coarse samples. This is a sum identity for the specified edge function,
 // not an assertion that arbitrary sample lists with equal sums are identical.
-def SubdivisionRefinementSum(C : Type1, G : Type1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G,
-  condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1),
+def SubdivisionRefinementSum(C : U1, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G,
+  condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   a : C, b : C, coarse : SampleSubdivision(C, a, b), fine : SampleSubdivision(C, a, b)) =
   exists pieces : SampleSubdivisions(C, subdivision_count(C, a, b, coarse), subdivision_vertices(C, a, b, coarse)),
     SubdivisionTagged(C, condition, subdivision_count(C, a, b, coarse), subdivision_vertices(C, a, b, coarse), subdivision_tags(C, a, b, coarse), pieces) and
@@ -14,11 +14,11 @@ def SubdivisionRefinementSum(C : Type1, G : Type1, zero : G, addG : G -> G -> G,
 
 // The two coarse halves and the two fine halves are joined in the same order.
 // Both the per-edge conditions and the exact fine-sum identity are retained.
-theorem subdivision_refinement_sum_join(C : Type1, G : Type1, zero : G, addG : G -> G -> G,
+theorem subdivision_refinement_sum_join(C : U1, G : U1, zero : G, addG : G -> G -> G,
   unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G,
-  condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1), a : C, b : C, c : C,
+  condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), a : C, b : C, c : C,
   coarseLeft : SampleSubdivision(C, a, b), coarseRight : SampleSubdivision(C, b, c),
   fineLeft : SampleSubdivision(C, a, b), fineRight : SampleSubdivision(C, b, c),
   left : SubdivisionRefinementSum(C, G, zero, addG, edge, condition, a, b, coarseLeft, fineLeft), right : SubdivisionRefinementSum(C, G, zero, addG, edge, condition, b, c, coarseRight, fineRight)) :
@@ -51,9 +51,9 @@ theorem subdivision_refinement_sum_join(C : Type1, G : Type1, zero : G, addG : G
 
 // Every finite subdivision refines the one-edge coarse interval for sums.
 // The caller supplies the actual local condition for that fine subdivision.
-theorem subdivision_refinement_sum_single(C : Type1, G : Type1, zero : G, addG : G -> G -> G,
+theorem subdivision_refinement_sum_single(C : U1, G : U1, zero : G, addG : G -> G -> G,
   rightUnit : (forall x : G, addG(x, zero) = x), edge : C -> C -> C -> G,
-  condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1),
+  condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   a : C, b : C, fine : SampleSubdivision(C, a, b), valid : condition(a, b, a, fine)) :
   SubdivisionRefinementSum(C, G, zero, addG, edge, condition, a, b, single_edge_subdivision(C, a, b), fine) {
   let pieces = typed((SampleSubdivision(C, a, b) and Unit), (fine, tt));

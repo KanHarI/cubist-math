@@ -3,8 +3,8 @@ import parameter_contour_limits;
 
 // Given convergence for one tag scheme, bounded variation and vanishing
 // sampled value errors transfer that limit to the other tag scheme.
-theorem curve_contour_tag_independent_limit(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem curve_contour_tag_independent_limit(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
   realWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F,
@@ -50,8 +50,8 @@ theorem curve_contour_tag_independent_limit(F : Type1, zero : F, one : F, addF :
 // For the constructed affine curve, the variation hypothesis is discharged
 // by its proved lattice bounds. Only the integrand's sampled errors and one
 // convergent tag scheme remain inputs; convergence is not postulated afresh.
-theorem affine_curve_contour_tag_independent_limit(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem affine_curve_contour_tag_independent_limit(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
   minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F), integrand : Complex(F) -> Complex(F),
   count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(FieldUnitInterval(F, zero, one, lt), count(n))),

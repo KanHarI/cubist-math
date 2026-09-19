@@ -2,7 +2,7 @@ import complex_polynomials;
 
 // The algebraic step in Horner division by X - r.
 
-theorem polynomial_difference_step(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem polynomial_difference_step(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, x : F, r : F, q : F, d : F) :
   addF(a, mulF(x, addF(q, mulF(addF(x, negF(r)), d)))) = addF(addF(a, mulF(r, q)), mulF(addF(x, negF(r)), addF(q, mulF(x, d)))) {
   let leftStep1 = cong((fun (value : F) => addF(a, value)), cong((fun (value : F) => mulF(x, value)), cong((fun (value : F) => addF(q, value)), cong((fun (value : F) => mulF(value, d)), ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, negF(r))))));
@@ -42,7 +42,7 @@ theorem polynomial_difference_step(F : Type1, zero : F, one : F, addF : F -> F -
 }
 
 // This is a polynomial expression, defined by recursion, with no division.
-def monic_divided_difference(F : Type1, zero : F, one : F,
+def monic_divided_difference(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, x : F, r : F, n : Nat) =
   induction n as k return (MonicCoefficients(F, k) -> F) {
     zero => fun (u : Unit) => zero;
@@ -52,7 +52,7 @@ def monic_divided_difference(F : Type1, zero : F, one : F,
       };
   };
 
-theorem monic_difference_identity(F : Type1, zero : F, one : F,
+theorem monic_difference_identity(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, r : F, n : Nat) :
   forall coefficients : MonicCoefficients(F, n),
@@ -82,7 +82,7 @@ theorem monic_difference_identity(F : Type1, zero : F, one : F,
 
 // Once an exact root r is supplied, this proves the pointwise factor identity
 // p(x) = (x-r) q(x). It does not assert that a root exists.
-theorem monic_factor_at_root(F : Type1, zero : F, one : F,
+theorem monic_factor_at_root(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : Nat,
   coefficients : MonicCoefficients(F, n), r : F,

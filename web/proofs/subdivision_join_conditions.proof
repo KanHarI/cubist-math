@@ -2,7 +2,7 @@ import subdivision_join;
 
 // The condition can depend on the actual fine subdivision, not just on
 // endpoints. Transport along the endpoint path preserves this dependency.
-theorem subdivision_tagged_join_step(C : Type1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1), n : Nat,
+theorem subdivision_tagged_join_step(C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), n : Nat,
   previous : (forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
     forall m : Nat, forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m), forall rightPieces : SampleSubdivisions(C, m, rightVertices),
     forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices),
@@ -33,7 +33,7 @@ theorem subdivision_tagged_join_step(C : Type1, condition : (forall a : C, foral
       previous(tail, tailTags, tailPieces, m, rightVertices, rightTags, rightPieces, same, tailValid, rightValid)));
 }
 
-theorem subdivision_tagged_join(C : Type1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1), n : Nat) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
+theorem subdivision_tagged_join(C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), n : Nat) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
     forall m : Nat, forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m), forall rightPieces : SampleSubdivisions(C, m, rightVertices),
     forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices),
     SubdivisionTagged(C, condition, n, vertices, tags, pieces) -> SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces) ->

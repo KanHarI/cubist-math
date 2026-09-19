@@ -18,7 +18,7 @@ const source = `
   def twice(f : Nat -> Nat, n : Nat) = f(f(n));
   theorem converted : next(1) = 2 { exact refl(2); }
   theorem repeated : twice(succ, 0) = 2 { exact refl(2); }
-  theorem duplicate(A : Type, x : A) = typed(A and A, (x, x));
+  theorem duplicate(A : U0, x : A) = typed(A and A, (x, x));
 `;
 
 test("independent compiler optimizations reduce instructions and retain replayable checked proofs", () => {
@@ -73,7 +73,7 @@ test("cached instructions retain distinct binders, highlights, names, and axiom 
 test("all optimization combinations reject invalid dependent proofs and opaque conversions", () => {
   for (const optimizations of configurations) {
     assert.throws(() => compile(module,
-      "theorem bad(A : Type, B : Type, x : A) : B { exact x; }", {}, { optimizations }), /Expected/);
+      "theorem bad(A : U0, B : U0, x : A) : B { exact x; }", {}, { optimizations }), /Expected/);
     assert.throws(() => compile(module,
       "opaque def Box = Nat; theorem bad : Box { exact tt; }", {}, { optimizations }), /Expected/);
   }

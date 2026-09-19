@@ -14,6 +14,7 @@ export class Builder {
     this.instructions = new Map();
     this.freshContexts = new Map();
     this.indexedContextSteps = 0;
+    this.universeVariables = new Map();
   }
   emit(op, args = [], free = [], context = null, name = null) {
     // Reuse only the identical derivation, including premise names and binder
@@ -106,7 +107,12 @@ export class Builder {
       free: [previous],
       context: null,
     });
-    return { A, c, v: this.emit("Vble", [], [], c, name) };
+    // A parameter of Universe is a universe variable, not an ordinary type
+    // variable. Use the existing checked universe-variable inference rule.
+    const isUniverse = this.k.node(this.view(A, 0)).kind === "UUOmega";
+    const v = this.emit(isUniverse ? "UVble" : "Vble", [], [], c, name);
+    if (isUniverse) this.universeVariables.set(this.view(v, 0), v);
+    return { A, c, v };
   }
   lam(A, fn) {
     const x = this.fresh(A);

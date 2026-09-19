@@ -2,28 +2,28 @@ import parameter_contours;
 import complex_contour_bounds;
 
 // The domain C retains each parameter even when the curve revisits a point.
-def complex_parameter_tag_error_sum(C : Type1, F : Type1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+def complex_parameter_tag_error_sum(C : U1, F : U1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   curve : C -> Complex(F), values : C -> Complex(F), n : Nat) =
   parameter_contour_tag_error_sum(C, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, values, n);
 
 // Error and displacement bounds are required only at visited samples.
-def ComplexParameterTagBounds(C : Type1, F : Type1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+def ComplexParameterTagBounds(C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   values : C -> Complex(F), delta : F, n : Nat) =
-  induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> SampleTags(C, k) -> Type) {
+  induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C) => fun (oldTags : Unit) => fun (newTags : Unit) => Unit;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (oldTags : SampleTags(C, succ(k))) => fun (newTags : SampleTags(C, succ(k))) =>
       ComplexBoxBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), values(field_fst(C, SampleTags(C, k), oldTags)), values(field_fst(C, SampleTags(C, k), newTags))), delta) and previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags), field_snd(C, SampleTags(C, k), newTags));
   };
-def ComplexParameterIncrementBounds(C : Type1, F : Type1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, curve : C -> Complex(F),
+def ComplexParameterIncrementBounds(C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
   realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, n : Nat) =
-  induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> Type) {
+  induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C) => fun (oldTags : Unit) => Unit;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (oldTags : SampleTags(C, succ(k))) =>
       ComplexRectangleBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), curve(field_fst(C, SampleVertices(C, k), vertices)), curve(sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)))), realWeight(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), oldTags)), imagWeight(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), oldTags))) and previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags));
   };
 
-theorem complex_parameter_tag_error_variation_bound(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_parameter_tag_error_variation_bound(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve : C -> Complex(F), values : C -> Complex(F),
   realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, delta : F, n : Nat) :
   forall vertices : SampleVertices(C, n), forall oldTags : SampleTags(C, n), forall newTags : SampleTags(C, n),
@@ -46,8 +46,8 @@ theorem complex_parameter_tag_error_variation_bound(C : Type1, F : Type1, zero :
   };
 }
 
-theorem complex_parameter_tag_error_length_bound(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_parameter_tag_error_length_bound(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve : C -> Complex(F), values : C -> Complex(F),
   realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F,
   delta : F, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,

@@ -14,12 +14,12 @@ def choose(n : Nat) = induction n as row return (Nat -> Nat) {
 
 // A structural representation of k-element subsets of n alternatives.
 // The successor branches respectively select or omit the first alternative.
-def Selections(n : Nat) = induction n as row return (Nat -> Type) {
-  zero => fun (k : Nat) => induction k as column return Type {
+def Selections(n : Nat) = induction n as row return (Nat -> U0) {
+  zero => fun (k : Nat) => induction k as column return U0 {
     zero => Unit;
     succ previous => Void;
   };
-  succ previous_row => fun (k : Nat) => induction k as column return Type {
+  succ previous_row => fun (k : Nat) => induction k as column return U0 {
     zero => Unit;
     succ previous => previous_row(column) or previous_row(succ(column));
   };

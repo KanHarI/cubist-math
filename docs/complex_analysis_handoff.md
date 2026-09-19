@@ -135,7 +135,7 @@ coefficients and zero lengths need no zero test.
 
 ## Assumptions that must stay visible
 
-- The scalar carrier is `F : Type1`, with explicit ring, strict-order,
+- The scalar carrier is `F : U1`, with explicit ring, strict-order,
   ordered-arithmetic, lattice and inverse certificates. Completeness is
   supplied, not derived for a concrete real-number model.
 - `ArchimedeanBounds` supplies an **actual natural witness** for each input.

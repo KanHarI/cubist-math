@@ -2,7 +2,7 @@ import ring_laws;
 
 // Explicit ring rewrites for the parallelogram identity.
 
-theorem complex_coordinate_parallelogram(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem complex_coordinate_parallelogram(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F) :
   addF(mulF(addF(a, b), addF(a, b)), mulF(addF(a, negF(b)), addF(a, negF(b)))) = addF(addF(mulF(a, a), mulF(b, b)), addF(mulF(a, a), mulF(b, b))) {
   let leftStep1 = cong((fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))), ring_distribute_left(F, zero, one, addF, mulF, negF, ring, a, b, addF(a, b)));

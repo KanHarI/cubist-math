@@ -2,7 +2,7 @@ import interval_subdivisions;
 import ordered_halves;
 
 // If a + increment = b, the oriented difference from a to b is increment.
-theorem difference_from_increment(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, increment : F, sums : addF(a, increment) = b) :
+theorem difference_from_increment(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, increment : F, sums : addF(a, increment) = b) :
   coordinate_difference(F, addF, negF, a, b) = increment {
   exact trans(cong((fun (v : F) => addF(v, negF(a))), sym(sums)),
     trans(cong((fun (v : F) => addF(v, negF(a))), ring_add_comm(F, zero, one, addF, mulF, negF, ring, a, increment)),
@@ -12,7 +12,7 @@ theorem difference_from_increment(F : Type1, zero : F, one : F, addF : F -> F ->
 
 // A weakly nonnegative quantity has a weakly nonnegative half, including
 // zero-width intervals. No decision whether that width is zero is required.
-theorem nonnegative_half_from_sum(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem nonnegative_half_from_sum(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), epsilon : F, half : F,
   sum : addF(half, half) = epsilon, nonnegativeEpsilon : FieldLe(F, lt, zero, epsilon)) : FieldLe(F, lt, zero, half) {
   obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
@@ -26,7 +26,7 @@ theorem nonnegative_half_from_sum(F : Type1, zero : F, one : F, addF : F -> F ->
 
 // Construct a midpoint in the interval subtype, with proofs that both
 // subinterval widths are the prescribed half of the original width.
-theorem interval_midpoint(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem interval_midpoint(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x),
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b))) :
@@ -58,12 +58,12 @@ theorem interval_midpoint(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF
 }
 
 // The concrete two-edge subdivision uses left endpoint tags.
-def two_edge_subdivision(C : Type1, a : C, midpoint : C, b : C) : SampleSubdivision(C, a, b) {
+def two_edge_subdivision(C : U1, a : C, midpoint : C, b : C) : SampleSubdivision(C, a, b) {
   exact (2, (typed((C and C and C), (a, (midpoint, b))),
     (typed((C and C and Unit), (a, (midpoint, tt))), (refl(a), refl(b)))));
 }
 
-theorem two_edge_subdivision_admissible(F : Type1, zero : F, one : F, lt : F -> F -> Type,
+theorem two_edge_subdivision_admissible(F : U1, zero : F, one : F, lt : F -> F -> U0,
   order : StrictOrder(F, lt), a : FieldUnitInterval(F, zero, one, lt), midpoint : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
   within : IntervalTagWithin(F, zero, one, lt, a, b, midpoint)) :
   IntervalAdmissibleTags(F, zero, one, lt, 2,
@@ -77,7 +77,7 @@ theorem two_edge_subdivision_admissible(F : Type1, zero : F, one : F, lt : F -> 
 
 // Supply the halving operation from the ordered field itself, then construct
 // both admissible samples. This requires no midpoint or sampling oracle.
-theorem ordered_interval_bisection(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem ordered_interval_bisection(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, a), field_interval_coordinate(F, zero, one, lt, b))) :

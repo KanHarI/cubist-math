@@ -1,7 +1,7 @@
 import complex_convergence;
 import field_limits;
 
-theorem complex_converges_coordinates(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type, sequence : Nat -> Complex(F), limit : Complex(F)) :
+theorem complex_converges_coordinates(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F), limit : Complex(F)) :
   (ComplexConverges(F, zero, addF, lt, sequence, limit) -> (FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, limit)) and FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, limit)))) and ((FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, limit)) and FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, limit))) -> ComplexConverges(F, zero, addF, lt, sequence, limit)) {
   have forward : ComplexConverges(F, zero, addF, lt, sequence, limit) -> (FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, limit)) and FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, limit))) {
     intro given;
@@ -35,7 +35,7 @@ theorem complex_converges_coordinates(F : Type1, zero : F, addF : F -> F -> F, l
   exact (forward, backward);
 }
 
-theorem complex_cauchy_coordinates(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type, sequence : Nat -> Complex(F)) :
+theorem complex_cauchy_coordinates(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F)) :
   (ComplexCauchy(F, zero, addF, lt, sequence) -> (FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n)))) and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n)))))) and ((FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n)))) and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))))) -> ComplexCauchy(F, zero, addF, lt, sequence)) {
   have forward : ComplexCauchy(F, zero, addF, lt, sequence) -> (FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n)))) and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))))) {
     intro given;
@@ -69,7 +69,7 @@ theorem complex_cauchy_coordinates(F : Type1, zero : F, addF : F -> F -> F, lt :
   exact (forward, backward);
 }
 
-theorem complex_cauchy_complete(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type, complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> Complex(F), cauchy : ComplexCauchy(F, zero, addF, lt, sequence)) :
+theorem complex_cauchy_complete(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> Complex(F), cauchy : ComplexCauchy(F, zero, addF, lt, sequence)) :
   exists limit : Complex(F), ComplexConverges(F, zero, addF, lt, sequence, limit) {
   obtain (split, combine) = complex_cauchy_coordinates(F, zero, addF, lt, sequence);
   have coordinateCauchy : FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n)))) and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n)))) { exact split(cauchy); }
@@ -87,8 +87,8 @@ theorem complex_cauchy_complete(F : Type1, zero : F, addF : F -> F -> F, lt : F 
   exact (limit, assemble(typed((FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), realLimit) and FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), imagLimit)), (realConverges, imagConverges))));
 }
 
-theorem complex_limit_unique(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_limit_unique(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), halving : Halving(F, zero, addF, lt), sequence : Nat -> Complex(F), x : Complex(F), y : Complex(F), toX : ComplexConverges(F, zero, addF, lt, sequence, x), toY : ComplexConverges(F, zero, addF, lt, sequence, y)) :
   x = y {
   obtain (splitX, combineX) = complex_converges_coordinates(F, zero, addF, lt, sequence, x);
@@ -102,8 +102,8 @@ theorem complex_limit_unique(F : Type1, zero : F, one : F, addF : F -> F -> F, m
     field_limit_unique(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, x), complex_imag(F, y), imagX, imagY));
 }
 
-theorem complex_converges_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_converges_add(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), halving : Halving(F, zero, addF, lt), xs : Nat -> Complex(F), ys : Nat -> Complex(F), x : Complex(F), y : Complex(F), toX : ComplexConverges(F, zero, addF, lt, xs, x), toY : ComplexConverges(F, zero, addF, lt, ys, y)) :
   ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => complex_add(F, addF, xs(n), ys(n))), complex_add(F, addF, x, y)) {
   obtain (splitX, combineX) = complex_converges_coordinates(F, zero, addF, lt, xs, x);
@@ -118,8 +118,8 @@ theorem complex_converges_add(F : Type1, zero : F, one : F, addF : F -> F -> F, 
     field_converges_add(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, (fun (n : Nat) => complex_imag(F, xs(n))), (fun (n : Nat) => complex_imag(F, ys(n))), complex_imag(F, x), complex_imag(F, y), imagX, imagY))));
 }
 
-theorem complex_converges_is_cauchy(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_converges_is_cauchy(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), halving : Halving(F, zero, addF, lt), sequence : Nat -> Complex(F), limit : Complex(F), converges : ComplexConverges(F, zero, addF, lt, sequence, limit)) :
   ComplexCauchy(F, zero, addF, lt, sequence) {
   obtain (project, assemble) = complex_converges_coordinates(F, zero, addF, lt, sequence, limit);
@@ -131,7 +131,7 @@ theorem complex_converges_is_cauchy(F : Type1, zero : F, one : F, addF : F -> F 
 }
 
 // Equality of sequence terms transfers the existing convergence certificate.
-theorem complex_converges_pointwise(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type,
+theorem complex_converges_pointwise(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   xs : Nat -> Complex(F), ys : Nat -> Complex(F), same : (forall n : Nat, xs(n) = ys(n)), value : Complex(F),
   converges : ComplexConverges(F, zero, addF, lt, xs, value)) : ComplexConverges(F, zero, addF, lt, ys, value) {
   intro epsilon;

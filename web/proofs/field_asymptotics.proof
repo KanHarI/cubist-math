@@ -3,12 +3,12 @@ import field_products;
 
 // Mere eventual closeness is enough to identify limits. No selection of a
 // bound for every radius is needed when the conclusion is an equality.
-def FieldAsymptotic(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type,
+def FieldAsymptotic(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   xs : Nat -> F, ys : Nat -> F) =
   forall epsilon : F, lt(zero, epsilon) ->
     FieldExists(exists bound : Nat, forall n : Nat, IndexLE(bound, n) -> FieldClose(F, addF, lt, xs(n), ys(n), epsilon));
 
-theorem field_close_prop(F : Type1, addF : F -> F -> F, lt : F -> F -> Type,
+theorem field_close_prop(F : U1, addF : F -> F -> F, lt : F -> F -> U0,
   order : StrictOrder(F, lt), x : F, y : F, epsilon : F) : FieldProp(FieldClose(F, addF, lt, x, y, epsilon)) {
   obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
   let upper = lt(x, addF(y, epsilon));
@@ -20,9 +20,9 @@ theorem field_close_prop(F : Type1, addF : F -> F -> F, lt : F -> F -> Type,
     prop(y, addF(x, epsilon), field_snd(upper, lower, p), field_snd(upper, lower, q)));
 }
 
-theorem field_asymptotic_limits_equal(F : Type1, zero : F, one : F,
+theorem field_asymptotic_limits_equal(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   halving : Halving(F, zero, addF, lt), xs : Nat -> F, ys : Nat -> F,
   same : FieldAsymptotic(F, zero, addF, lt, xs, ys), x : F, y : F,
@@ -61,11 +61,11 @@ theorem field_asymptotic_limits_equal(F : Type1, zero : F, one : F,
 
 // A complete scalar field supplies a limit together with convergence data.
 // The operator uses that data directly, not an axiom selecting from truncation.
-def field_sequence_limit(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type,
+def field_sequence_limit(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> F,
   cauchy : FieldCauchy(F, zero, addF, lt, sequence)) =
   field_first(F, FieldConverges(F, zero, addF, lt, sequence), complete(sequence, cauchy));
-def field_sequence_limit_converges(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type,
+def field_sequence_limit_converges(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> F,
   cauchy : FieldCauchy(F, zero, addF, lt, sequence)) =
   field_second(F, FieldConverges(F, zero, addF, lt, sequence), complete(sequence, cauchy));

@@ -2,23 +2,23 @@ import finite;
 
 // Swap the first alternative with a chosen alternative. These maps will also
 // split a permutation into its first image and a permutation of the remainder.
-def head(A : Type) = typed(Unit or A, left(tt));
-def tail(A : Type, a : A) = typed(Unit or A, right(a));
-def swap_tail(A : Type, a : A, b : A, d : Decidable(a = b)) =
+def head(A : U0) = typed(Unit or A, left(tt));
+def tail(A : U0, a : A) = typed(Unit or A, right(a));
+def swap_tail(A : U0, a : A, b : A, d : Decidable(a = b)) =
   match d return (Unit or A) { left p => head(A); right no => tail(A, b); };
-theorem swap_tail_equal(A : Type, a : A, b : A, d : Decidable(a = b), p : a = b) =
+theorem swap_tail_equal(A : U0, a : A, b : A, d : Decidable(a = b), p : a = b) =
   match d as decision return (swap_tail(A, a, b, decision) = head(A)) {
     left yes => refl(head(A));
     right no => typed((swap_tail(A, a, b, typed(Decidable(a = b), right(no))) = head(A)), absurd(no(p)));
   };
-theorem swap_tail_different(A : Type, a : A, b : A, d : Decidable(a = b), no : (a = b) -> Void) =
+theorem swap_tail_different(A : U0, a : A, b : A, d : Decidable(a = b), no : (a = b) -> Void) =
   match d as decision return (swap_tail(A, a, b, decision) = tail(A, b)) {
     left yes => typed((swap_tail(A, a, b, typed(Decidable(a = b), left(yes))) = tail(A, b)), absurd(no(yes)));
     right impossible => refl(tail(A, b));
   };
-def swap_right(A : Type, decide : (forall a : A, forall b : A, Decidable(a = b)), a : A, x : Unit or A) =
+def swap_right(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), a : A, x : Unit or A) =
   match x return (Unit or A) { left u => tail(A, a); right b => swap_tail(A, a, b, decide(a, b)); };
-theorem swap_right_twice(A : Type, decide : (forall a : A, forall b : A, Decidable(a = b)), a : A, x : Unit or A) =
+theorem swap_right_twice(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), a : A, x : Unit or A) =
   match x as z return (swap_right(A, decide, a, swap_right(A, decide, a, z)) = z) {
     left u => trans(swap_tail_equal(A, a, a, decide(a, a), refl(a)),
       cong((fun (v : Unit) => typed(Unit or A, left(v))), unit_equal(u)));
@@ -29,53 +29,53 @@ theorem swap_right_twice(A : Type, decide : (forall a : A, forall b : A, Decidab
         swap_tail_different(A, a, b, decide(a, b), no));
     };
   };
-def swap(A : Type, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A, x : Unit or A) =
+def swap(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A, x : Unit or A) =
   match chosen return (Unit or A) { left u => x; right a => swap_right(A, decide, a, x); };
-theorem swap_twice(A : Type, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A, x : Unit or A) =
+theorem swap_twice(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A, x : Unit or A) =
   match chosen as c return (swap(A, decide, c, swap(A, decide, c, x)) = x) {
     left u => refl(x);
     right a => swap_right_twice(A, decide, a, x);
   };
-theorem swap_head(A : Type, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A) =
+theorem swap_head(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A) =
   match chosen as c return (swap(A, decide, c, head(A)) = c) {
     left u => cong((fun (v : Unit) => typed(Unit or A, left(v))), unit_equal(u));
     right a => refl(tail(A, a));
   };
-theorem swap_chosen(A : Type, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A) =
+theorem swap_chosen(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A) =
   trans(sym(cong(swap(A, decide, chosen), swap_head(A, decide, chosen))), swap_twice(A, decide, chosen, head(A)));
-def swap_bijection(A : Type, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A) =
+def swap_bijection(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A) =
   typed(Bijection(Unit or A, Unit or A),
     (swap(A, decide, chosen), (swap(A, decide, chosen), (swap_twice(A, decide, chosen), swap_twice(A, decide, chosen)))));
 
 // Remove the first alternative from a map known to preserve that alternative.
-def not_head_tail(A : Type, x : Unit or A) =
+def not_head_tail(A : U0, x : Unit or A) =
   match x as z return (((z = head(A)) -> Void) -> A) {
     left u => fun (no : (typed(Unit or A, left(u)) = head(A)) -> Void) =>
       typed(A, absurd(no(cong((fun (v : Unit) => typed(Unit or A, left(v))), sym(unit_equal(u))))));
     right a => fun (no : (tail(A, a) = head(A)) -> Void) => a;
   };
-theorem not_head_tail_path(A : Type, x : Unit or A) =
+theorem not_head_tail_path(A : U0, x : Unit or A) =
   match x as z return (forall no : (z = head(A)) -> Void, tail(A, not_head_tail(A, z, no)) = z) {
     left u => fun (no : (typed(Unit or A, left(u)) = head(A)) -> Void) =>
       typed((tail(A, not_head_tail(A, typed(Unit or A, left(u)), no)) = typed(Unit or A, left(u))),
         absurd(no(cong((fun (v : Unit) => typed(Unit or A, left(v))), sym(unit_equal(u))))));
     right a => fun (no : (tail(A, a) = head(A)) -> Void) => refl(tail(A, a));
   };
-def inverse_injective(A : Type, B : Type, f : A -> B, g : B -> A,
+def inverse_injective(A : U0, B : U0, f : A -> B, g : B -> A,
   eta : (forall x : A, g(f(x)) = x), x : A, y : A, p : f(x) = f(y)) =
   trans(sym(eta(x)), trans(cong(g, p), eta(y)));
-theorem preserves_tail(A : Type, B : Type, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+theorem preserves_tail(A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A,
   bad : f(tail(A, a)) = head(B)) =
   sum_disjoint(A, tt, a, sym(inverse_injective(Unit or A, Unit or B, f, g, eta, tail(A, a), head(A), trans(bad, sym(fixed)))));
-def restrict_tail(A : Type, B : Type, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+def restrict_tail(A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A) =
   not_head_tail(B, f(tail(A, a)), preserves_tail(A, B, f, g, eta, fixed, a));
-theorem restrict_tail_path(A : Type, B : Type, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+theorem restrict_tail_path(A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A) =
   not_head_tail_path(B, f(tail(A, a)), preserves_tail(A, B, f, g, eta, fixed, a));
 
-theorem restriction_inverse(A : Type, B : Type, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+theorem restriction_inverse(A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), eps : (forall y : Unit or B, f(g(y)) = y),
   fixed_f : f(head(A)) = head(B), fixed_g : g(head(B)) = head(A), a : A) :
   restrict_tail(B, A, g, f, eps, fixed_g, restrict_tail(A, B, f, g, eta, fixed_f, a)) = a
@@ -85,7 +85,7 @@ theorem restriction_inverse(A : Type, B : Type, f : (Unit or A) -> (Unit or B), 
     trans(restrict_tail_path(B, A, g, f, eps, fixed_g, r),
       trans(cong(g, restrict_tail_path(A, B, f, g, eta, fixed_f, a)), eta(tail(A, a)))));
 }
-def restrict_bijection(A : Type, B : Type, e : Bijection(Unit or A, Unit or B),
+def restrict_bijection(A : U0, B : U0, e : Bijection(Unit or A, Unit or B),
   fixed : forward(Unit or A, Unit or B, e, head(A)) = head(B)) : Bijection(A, B) {
   let f = forward(Unit or A, Unit or B, e);
   let g = backward(Unit or A, Unit or B, e);

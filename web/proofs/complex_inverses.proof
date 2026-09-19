@@ -4,14 +4,14 @@ import complex_norm_coordinates;
 
 // Positive squared norm is constructive apartness from zero. Negated equality
 // is a different notion; no conversion from it is assumed in this module.
-def ComplexApartZero(F : Type1, zero : F, addF : F -> F -> F,
-  mulF : F -> F -> F, lt : F -> F -> Type, z : Complex(F)) =
+def ComplexApartZero(F : U1, zero : F, addF : F -> F -> F,
+  mulF : F -> F -> F, lt : F -> F -> U0, z : Complex(F)) =
   lt(zero, complex_norm_squared(F, addF, mulF, z));
-def ComplexUnit(F : Type1, zero : F, one : F, addF : F -> F -> F,
+def ComplexUnit(F : U1, zero : F, one : F, addF : F -> F -> F,
   mulF : F -> F -> F, negF : F -> F, z : Complex(F)) =
   exists w : Complex(F), complex_mul(F, addF, mulF, negF, z, w) = complex_one(F, zero, one);
 
-theorem complex_norm_multiplicative(F : Type1, zero : F, one : F,
+theorem complex_norm_multiplicative(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F)) :
   complex_norm_squared(F, addF, mulF, complex_mul(F, addF, mulF, negF, z, w)) =
@@ -19,29 +19,29 @@ theorem complex_norm_multiplicative(F : Type1, zero : F, one : F,
   exact complex_coordinate_norm_product(F, zero, one, addF, mulF, negF, ring,
     complex_real(F, z), complex_imag(F, z), complex_real(F, w), complex_imag(F, w));
 }
-theorem complex_norm_one(F : Type1, zero : F, one : F,
+theorem complex_norm_one(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)) :
   complex_norm_squared(F, addF, mulF, complex_one(F, zero, one)) = one {
   exact complex_coordinate_norm_one(F, zero, one, addF, mulF, negF, ring);
 }
 
-theorem complex_norm_nonnegative(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_norm_nonnegative(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F)) :
   FieldLe(F, lt, zero, complex_norm_squared(F, addF, mulF, z)) {
   exact ordered_sum_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)), ordered_square_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)), ordered_square_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z)));
 }
 
-theorem complex_apart_from_real(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_apart_from_real(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), apartReal : FieldApart(F, lt, complex_real(F, z), zero)) :
   ComplexApartZero(F, zero, addF, mulF, lt, z) {
   exact ordered_positive_plus_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)), ordered_square_of_apart(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z), apartReal), ordered_square_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z)));
 }
 
-theorem complex_apart_from_imag(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_apart_from_imag(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), apartImag : FieldApart(F, lt, complex_imag(F, z), zero)) :
   ComplexApartZero(F, zero, addF, mulF, lt, z) {
   let positive = ordered_positive_plus_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(complex_imag(F, z), complex_imag(F, z)), mulF(complex_real(F, z), complex_real(F, z)), ordered_square_of_apart(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z), apartImag), ordered_square_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)));
@@ -49,8 +49,8 @@ theorem complex_apart_from_imag(F : Type1, zero : F, one : F, addF : F -> F -> F
     ring_add_comm(F, zero, one, addF, mulF, negF, ring, mulF(complex_imag(F, z), complex_imag(F, z)), mulF(complex_real(F, z), complex_real(F, z))), positive);
 }
 
-theorem complex_apart_inverse(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_apart_inverse(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), z : Complex(F), positiveNorm : ComplexApartZero(F, zero, addF, mulF, lt, z)) :
   ComplexUnit(F, zero, one, addF, mulF, negF, z) {
   let squaredNorm = complex_norm_squared(F, addF, mulF, z);
@@ -64,8 +64,8 @@ theorem complex_apart_inverse(F : Type1, zero : F, one : F, addF : F -> F -> F, 
   exact complex_inverse_from_norm(F, zero, one, addF, mulF, negF, ring, z, reciprocal, normLaw);
 }
 
-theorem complex_inverse_apart(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_inverse_apart(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), z : Complex(F), inverseWitness : ComplexUnit(F, zero, one, addF, mulF, negF, z)) :
   ComplexApartZero(F, zero, addF, mulF, lt, z) {
   obtain (w, productLaw) = inverseWitness;
@@ -85,15 +85,15 @@ theorem complex_inverse_apart(F : Type1, zero : F, one : F, addF : F -> F -> F, 
     }), apartNorm);
 }
 
-theorem complex_units_iff_apart(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_units_iff_apart(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), z : Complex(F)) :
   FieldIff(ComplexApartZero(F, zero, addF, mulF, lt, z), ComplexUnit(F, zero, one, addF, mulF, negF, z)) {
   exact (complex_apart_inverse(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, z), complex_inverse_apart(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, z));
 }
 
 // Tightness of the scalar order: failure of positive apartness gives equality.
-theorem ordered_not_apart_zero(F : Type1, zero : F, lt : F -> F -> Type,
+theorem ordered_not_apart_zero(F : U1, zero : F, lt : F -> F -> U0,
   order : StrictOrder(F, lt), x : F, notApart : FieldApart(F, lt, x, zero) -> Void) : x = zero {
   obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
   exact antisymmetric(x, zero,
@@ -103,8 +103,8 @@ theorem ordered_not_apart_zero(F : Type1, zero : F, lt : F -> F -> Type,
       typed((lt(x, zero) or lt(zero, x)), left(negative))))));
 }
 
-theorem complex_apart_tight(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_apart_tight(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), notApart : ComplexApartZero(F, zero, addF, mulF, lt, z) -> Void) :
   z = complex_zero(F, zero) {
   let realZero = ordered_not_apart_zero(F, zero, lt, order, complex_real(F, z),
@@ -116,9 +116,9 @@ theorem complex_apart_tight(F : Type1, zero : F, one : F, addF : F -> F -> F, mu
 
 // Directly usable with each future real-field construction. Neither
 // completeness nor classical logic is required by this algebraic result.
-theorem complex_ordered_field_inverses(F : Type1, zero : F, one : F,
+theorem complex_ordered_field_inverses(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> Type,
+  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> U0,
   field : OrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt), z : Complex(F)) :
   FieldIff(ComplexApartZero(F, zero, addF, mulF, lt, z), ComplexUnit(F, zero, one, addF, mulF, negF, z)) {
   obtain (ring, (order, (lattice, (arithmetic, inverses)))) = field;

@@ -3,13 +3,19 @@
 [Open the checked structure identity theorem](../web/proof.html?proof=group_univalence).
 [Open its application to the circle](../web/proof.html?proof=circle_group_identity).
 
-The formalization proves
+The formalization proves equality of the types themselves:
 
-```
-group_structure_identity(G, H) : HigherEquiv((G = H), GroupIso(G, H))
+```text
+group_isomorphism_is_equality(G, H) :
+  GroupIso(G, H) =[U1] (G =[GroupType] H)
 ```
 
-for actual bundled groups `G` and `H`. The forward function is the canonical
+This applies univalence to the checked canonical equivalence
+`group_structure_identity(G, H) : Equiv(U1, (G = H), GroupIso(G, H))`.
+The notation `x =[T] y` specifies the carrier of an identity type. Suppressing
+those annotations gives the landing-page formula `GroupIso(G, H) = (G = H)`.
+
+Both results concern actual bundled groups `G` and `H`. The equivalence's forward function is the canonical
 one: transport the identity isomorphism along a group equality. The inverse
 constructs a group equality from an isomorphism. Both round trips are checked,
 including the half-adjoint coherence required by our equivalence definition.
@@ -30,7 +36,7 @@ The existing `Group(A, unit, multiply)` is a type of group-law evidence.
 The new bundle is
 
 ```
-GroupType = exists A : Type,
+GroupType = exists A : U0,
               exists unit : A,
                 exists multiply : A -> A -> A,
                   Group(A, unit, multiply)
@@ -42,12 +48,14 @@ preservation is derived; it is not silently added as a hypothesis. Inverses and
 group-law evidence are proved unique where needed using the group laws and the
 set condition on carriers.
 
-`GroupType` lives in `Type1` because its carrier ranges over `Type`. Consequently
-its identity type is represented at that universe level too. `HigherEquiv`
-provides the same half-adjoint data as the existing `Equiv`, with `Type1`
-parameters; no new inference rule or axiom is involved. This development bundles
-small groups. Generalizing the carrier universe is separate from the theorem
-already checked here.
+`GroupType` lives in `U1` because its carrier ranges over `U0`. Consequently
+its identity type is represented at that universe level too. The single
+`Equiv(U, A, B)` definition takes an explicit universe parameter; the theorem
+uses `U1`. Its underlying `IsEquiv(U, A, B, f)` is the same half-adjoint
+equivalence data at every universe, and the existing univalence axiom accepts
+it directly. No separate higher-universe equivalence definition remains.
+This development bundles small groups; generalizing their carrier universe
+is separate from generalizing equivalence itself.
 
 Group equality is an identity type, not definitional equality or a truncated
 claim of isomorphism. Different isomorphisms give different paths:
@@ -70,7 +78,7 @@ collapse them. The function used to generate these paths is
   relation fibers are sets. These generic results require no axioms.
 - [group_univalence.proof](../web/proofs/group_univalence.proof): isomorphism
   fibers are sets; the full group structure identity equivalence and both
-  canonical inverse laws.
+  canonical inverse laws, followed by equality of the isomorphism and identity types.
 - [circle_group_identity.proof](../web/proofs/circle_group_identity.proof): the
   already checked winding isomorphism yields `CircleLoopGroup = IntegerGroup`.
   Decoding this equality recovers that same isomorphism.

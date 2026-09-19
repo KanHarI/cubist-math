@@ -3,11 +3,11 @@ import complex_magnitude;
 import complex_convergence;
 import complex_deformation;
 
-def complex_box_radius(F : Type1, negF : F -> F, maxF : F -> F -> F, z : Complex(F)) =
+def complex_box_radius(F : U1, negF : F -> F, maxF : F -> F -> F, z : Complex(F)) =
   maxF(maxF(complex_real(F, z), negF(complex_real(F, z))), maxF(complex_imag(F, z), negF(complex_imag(F, z))));
 
-theorem complex_lattice_box_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_lattice_box_bound(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F)) :
   ComplexBoxBound(F, negF, lt, z, complex_box_radius(F, negF, maxF, z)) {
@@ -24,12 +24,12 @@ theorem complex_lattice_box_bound(F : Type1, zero : F, one : F, addF : F -> F ->
 
 // Uniform continuity on the whole scalar line; restriction to the interval
 // is in complex_curves. The radius is actual data, not mere existence.
-def ComplexUniformLine(F : Type1, zero : F, addF : F -> F -> F, lt : F -> F -> Type, curve : F -> Complex(F)) =
+def ComplexUniformLine(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, curve : F -> Complex(F)) =
   forall epsilon : F, lt(zero, epsilon) -> exists delta : F, lt(zero, delta) and
     (forall s : F, forall t : F, FieldClose(F, addF, lt, s, t, delta) -> ComplexClose(F, addF, lt, curve(s), curve(t), epsilon));
 
-theorem complex_linear_deformation_uniform(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_linear_deformation_uniform(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
   minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F)) :
   ComplexUniformLine(F, zero, addF, lt, (fun (t : F) => complex_linear_deformation(F, addF, mulF, t, z, error))) {

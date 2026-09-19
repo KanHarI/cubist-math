@@ -4,7 +4,7 @@ import circle;
 
 // Collapse all but one labelled generator to the constant loop of S1.
 // Finite equality is decided constructively, without excluded middle.
-def decision_circle_loop(P : Type, decision : Decidable(P)) = match decision return LoopsS1 {
+def decision_circle_loop(P : U0, decision : Decidable(P)) = match decision return LoopsS1 {
   left yes => loop;
   right no => refl(base);
 };
@@ -25,7 +25,7 @@ theorem selected_circle_other(n : Nat, selected : Fin(n), label : Fin(n), differ
 }
 def puncture_circle_map(n : Nat, selected : Fin(n)) = bouquet_map(Fin(n), S1, base, selected_circle_loop(n, selected));
 def puncture_winding(n : Nat, selected : Fin(n), p : BouquetLoops(Fin(n))) =
-  winding(ap(PunctureGraph(n), S1, puncture_circle_map(n, selected), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p));
+  winding(ap(U1, PunctureGraph(n), S1, puncture_circle_map(n, selected), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p));
 theorem puncture_winding_self(n : Nat, selected : Fin(n)) : puncture_winding(n, selected, puncture_loop(n, selected)) = nonnegative(1) {
   exact trans(cong(winding, bouquet_map_generator(Fin(n), S1, base, selected_circle_loop(n, selected), selected)),
     trans(cong(winding, selected_circle_self(n, selected)), winding_generator));
@@ -42,13 +42,13 @@ theorem puncture_winding_append(n : Nat, selected : Fin(n), p : BouquetLoops(Fin
   let map = puncture_circle_map(n, selected);
   exact trans(cong(puncture_winding(n, selected), append_path_agrees(PunctureGraph(n), point, point, point, p, q)),
     trans(cong(winding, map_concat(PunctureGraph(n), S1, map, point, point, point, p, q)),
-      winding_concatenate(ap(PunctureGraph(n), S1, map, point, point, p), ap(PunctureGraph(n), S1, map, point, point, q))));
+      winding_concatenate(ap(U1, PunctureGraph(n), S1, map, point, point, p), ap(U1, PunctureGraph(n), S1, map, point, point, q))));
 }
 theorem puncture_winding_inverse(n : Nat, selected : Fin(n), p : BouquetLoops(Fin(n))) :
-  puncture_winding(n, selected, inverse(PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p)) = inverse_integer(puncture_winding(n, selected, p)) {
-  let mapped = ap(PunctureGraph(n), S1, puncture_circle_map(n, selected), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p);
+  puncture_winding(n, selected, inverse(U1, PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p)) = inverse_integer(puncture_winding(n, selected, p)) {
+  let mapped = ap(U1, PunctureGraph(n), S1, puncture_circle_map(n, selected), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p);
   exact trans(cong(winding, map_inverse(PunctureGraph(n), S1, puncture_circle_map(n, selected), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p)),
-    cong((fun (q : LoopsS1) => winding(inverse(S1, base, base, q))), sym(integer_loop_winding(mapped))));
+    cong((fun (q : LoopsS1) => winding(inverse(U1, S1, base, base, q))), sym(integer_loop_winding(mapped))));
 }
 theorem puncture_winding_laws(n : Nat, selected : Fin(n)) :
   LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), Z, zeroZ, addZ, puncture_winding(n, selected)) {
@@ -67,12 +67,12 @@ theorem puncture_generators_distinct(n : Nat, selected : Fin(n), label : Fin(n),
   exact zero_not_successor(0, sym(cong(magnitude, falseInteger)));
 }
 theorem puncture_winding_reverse_self(n : Nat, selected : Fin(n)) :
-  puncture_winding(n, selected, inverse(PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), puncture_loop(n, selected))) = negative(0) {
+  puncture_winding(n, selected, inverse(U1, PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), puncture_loop(n, selected))) = negative(0) {
   exact trans(puncture_winding_inverse(n, selected, puncture_loop(n, selected)),
     trans(cong(inverse_integer, puncture_winding_self(n, selected)), code_loop_inverse(zeroZ)));
 }
 theorem puncture_winding_reverse_other(n : Nat, selected : Fin(n), label : Fin(n), different : (selected = label) -> Void) :
-  puncture_winding(n, selected, inverse(PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), puncture_loop(n, label))) = zeroZ {
+  puncture_winding(n, selected, inverse(U1, PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), puncture_loop(n, label))) = zeroZ {
   exact trans(puncture_winding_inverse(n, selected, puncture_loop(n, label)), cong(inverse_integer, puncture_winding_other(n, selected, label, different)));
 }
 theorem puncture_winding_append_values(n : Nat, selected : Fin(n), p : BouquetLoops(Fin(n)), q : BouquetLoops(Fin(n)),

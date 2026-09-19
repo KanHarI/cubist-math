@@ -10,8 +10,8 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
     ...(bound.has(value) ? { local: true } : globals.get(value)?.binding ? { binding: globals.get(value).binding } : {}) });
   const call = (fn, args) => ({ kind: "Call", fn, args });
   if (node.kind === "name") {
-    if (!bound.has(node.name) && /^Type[0-3]?$/.test(node.name))
-      return { kind: "Universe", level: Number(node.name.slice(4) || 0) };
+    if (!bound.has(node.name) && /^U[0-9]+$/.test(node.name))
+      return { kind: "Universe", level: Number(node.name.slice(1)) };
     return name(node.name);
   }
   if (node.kind === "number") return { kind: "Number", value: node.value };
@@ -31,6 +31,8 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
   if (node.kind === "binary") {
     const left = visit(node.left), right = visit(node.right);
     const kind = { and: "Product", or: "Sum", "->": "Arrow", "=": "Equality" }[node.operator];
+    if (kind === "Equality" && node.carrier)
+      return { kind: "Identity", carrier: visit(node.carrier), left, right };
     if (kind) return { kind, left, right };
     if (node.operator === "<") {
       // Match the elaborator: isLt when in scope; otherwise le(succ(n), p).

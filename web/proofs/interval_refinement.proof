@@ -2,8 +2,8 @@ import uniform_curve_tags;
 import sample_refinement_tags;
 
 // Tags admissible for a refinement all lie within its outer endpoints.
-theorem interval_refinement_tags_global(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F,
-  lt : F -> F -> Type, order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat,
+theorem interval_refinement_tags_global(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F,
+  lt : F -> F -> U0, order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n), valid : IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)) :
   SampleTagged(FieldUnitInterval(F, zero, one, lt), (fun (x : FieldUnitInterval(F, zero, one, lt)) => fun (y : FieldUnitInterval(F, zero, one, lt)) => IntervalTagWithin(F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices), sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices))), n, vertices, tags) {
   let I = FieldUnitInterval(F, zero, one, lt);
@@ -19,8 +19,8 @@ theorem interval_refinement_tags_global(F : Type1, zero : F, one : F, addF : F -
 
 // A coarse tag need not be admissible for each refined edge. The common
 // containing interval, rather than the refined edge, controls its distance.
-theorem uniform_refinement_tag_bounds(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem uniform_refinement_tag_bounds(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   values : FieldUnitInterval(F, zero, one, lt) -> Complex(F), uniform : ComplexUniformCurve(F, zero, one, addF, lt, values), epsilon : F, positive : lt(zero, epsilon)) :
   exists mesh : F, lt(zero, mesh) and (forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), forall coarseTag : FieldUnitInterval(F, zero, one, lt), forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),

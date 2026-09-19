@@ -2,14 +2,14 @@ import dyadic_data;
 import subdivision_refinement;
 
 // The fine samples on each coarse edge remain inside that edge.
-def IntervalRefinementAdmissible(F : Type1, zero : F, one : F, lt : F -> F -> Type,
+def IntervalRefinementAdmissible(F : U1, zero : F, one : F, lt : F -> F -> U0,
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt), piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)) =
-  typed(Type1, IntervalAdmissibleTags(F, zero, one, lt, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
+  typed(U1, IntervalAdmissibleTags(F, zero, one, lt, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
     subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece), subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, piece)));
 
-theorem dyadic_refinement_zero(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem dyadic_refinement_zero(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), G : Type1, zeroG : G, addG : G -> G -> G,
+  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
   leftUnit : (forall x : G, addG(zeroG, x) = x), rightUnit : (forall x : G, addG(x, zeroG) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> G, extra : Nat, a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b))) :
@@ -24,9 +24,9 @@ theorem dyadic_refinement_zero(F : Type1, zero : F, one : F, addF : F -> F -> F,
     sym(dyadic_piece_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered)), initial);
 }
 
-theorem dyadic_refinement_step(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem dyadic_refinement_step(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), G : Type1, zeroG : G, addG : G -> G -> G,
+  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
   leftUnit : (forall x : G, addG(zeroG, x) = x), rightUnit : (forall x : G, addG(x, zeroG) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> G, depth : Nat,
@@ -56,9 +56,9 @@ theorem dyadic_refinement_step(F : Type1, zero : F, one : F, addF : F -> F -> F,
 
 // Any later level is an actual admissible per-edge refinement of this one.
 // The target sum may be noncommutative: concatenation order is preserved.
-theorem dyadic_samples_refine(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+theorem dyadic_samples_refine(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), G : Type1, zeroG : G, addG : G -> G -> G,
+  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
   leftUnit : (forall x : G, addG(zeroG, x) = x), rightUnit : (forall x : G, addG(x, zeroG) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> G, depth : Nat) :

@@ -1,7 +1,7 @@
 import contour_samples;
 import sample_sum_laws;
 
-theorem contour_sum_join(F : Type1, zero : F, one : F,
+theorem contour_sum_join(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, n : Nat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n), m : Nat,
@@ -13,7 +13,7 @@ theorem contour_sum_join(F : Type1, zero : F, one : F,
     ring_add_assoc(F, zero, one, addF, mulF, negF, ring), contour_edge(F, addF, mulF, negF, f), n, vertices, tags, m, rightVertices, rightTags, meets);
 }
 
-theorem contour_sum_add(F : Type1, zero : F, one : F,
+theorem contour_sum_add(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, g : F -> F,
   n : Nat, vertices : SampleVertices(F, n), tags : SampleTags(F, n)) :
@@ -30,7 +30,7 @@ theorem contour_sum_add(F : Type1, zero : F, one : F,
 
 // Telescoping exact increments are useful for comparing contour sums with
 // candidate primitives; no derivative or fundamental theorem is assumed.
-theorem potential_sample_sum(C : Type1, F : Type1, zero : F, one : F,
+theorem potential_sample_sum(C : U1, F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), potential : C -> F,
   n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)) :
@@ -44,7 +44,7 @@ theorem potential_sample_sum(C : Type1, F : Type1, zero : F, one : F,
     n, vertices, tags);
 }
 
-theorem contour_sum_constant(F : Type1, zero : F, one : F,
+theorem contour_sum_constant(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : F,
   n : Nat, vertices : SampleVertices(F, n), tags : SampleTags(F, n)) :
@@ -57,7 +57,7 @@ theorem contour_sum_constant(F : Type1, zero : F, one : F,
     cong(mulF(coefficient), potential_sample_sum(F, F, zero, one, addF, mulF, negF, ring, (fun (x : F) => x), n, vertices, tags)));
 }
 
-theorem contour_sum_constant_closed(F : Type1, zero : F, one : F,
+theorem contour_sum_constant_closed(F : U1, zero : F, one : F,
   addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : F,
   n : Nat, vertices : SampleVertices(F, n), tags : SampleTags(F, n),

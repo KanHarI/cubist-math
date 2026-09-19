@@ -5,9 +5,9 @@ Run `make serve` and open
 The [MathScript source](../web/proofs/schroeder_bernstein.proof) proves:
 
 ```text
-forall A : Type, forall B : Type, IsSet(A) -> IsSet(B) ->
+forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) ->
   forall f : A -> B, forall g : B -> A,
-    Injective(A, B, f) -> Injective(B, A, g) -> Equiv(A, B)
+    Injective(A, B, f) -> Injective(B, A, g) -> Equiv(U0, A, B)
 ```
 
 `Injective` means left-cancellable: `f(x) = f(y)` implies `x = y`.

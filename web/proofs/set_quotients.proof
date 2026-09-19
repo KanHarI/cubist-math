@@ -2,44 +2,44 @@ import field_extensionality;
 
 // Equivalence classes as predicates, not an additional quotient axiom.
 // ClassWitness is truncated: a class does not carry a selected representative.
-def ClassWitness(A : Type1, relation : A -> A -> Type, predicate : A -> Type) =
+def ClassWitness(A : U1, relation : A -> A -> U0, predicate : A -> U0) =
   FieldExists(exists representative : A, forall a : A, predicate(a) = relation(representative, a));
-def class_witness_family(A : Type1, relation : A -> A -> Type) : (A -> Type) -> Type1 {
-  exact fun (predicate : A -> Type) => typed(Type1, ClassWitness(A, relation, predicate));
+def class_witness_family(A : U1, relation : A -> A -> U0) : (A -> U0) -> U1 {
+  exact fun (predicate : A -> U0) => typed(U1, ClassWitness(A, relation, predicate));
 }
-def SetQuotient(A : Type1, relation : A -> A -> Type) =
-  exists predicate : A -> Type, ClassWitness(A, relation, predicate);
-def quotient_predicate(A : Type1, relation : A -> A -> Type, q : SetQuotient(A, relation)) : A -> Type {
-  exact field_first(A -> Type, class_witness_family(A, relation), q);
+def SetQuotient(A : U1, relation : A -> A -> U0) =
+  exists predicate : A -> U0, ClassWitness(A, relation, predicate);
+def quotient_predicate(A : U1, relation : A -> A -> U0, q : SetQuotient(A, relation)) : A -> U0 {
+  exact field_first(A -> U0, class_witness_family(A, relation), q);
 }
-def quotient_witness(A : Type1, relation : A -> A -> Type, q : SetQuotient(A, relation)) =
-  field_second(A -> Type, class_witness_family(A, relation), q);
-def quotient_class(A : Type1, relation : A -> A -> Type, a : A) =
+def quotient_witness(A : U1, relation : A -> A -> U0, q : SetQuotient(A, relation)) =
+  field_second(A -> U0, class_witness_family(A, relation), q);
+def quotient_class(A : U1, relation : A -> A -> U0, a : A) =
   typed(SetQuotient(A, relation), (relation(a),
     field_exists_intro((exists representative : A, forall x : A, relation(a, x) = relation(representative, x)),
       typed((exists representative : A, forall x : A, relation(a, x) = relation(representative, x)),
         (a, (fun (x : A) => refl(relation(a, x))))))));
-theorem quotient_ext(A : Type1, relation : A -> A -> Type, x : SetQuotient(A, relation), y : SetQuotient(A, relation),
+theorem quotient_ext(A : U1, relation : A -> A -> U0, x : SetQuotient(A, relation), y : SetQuotient(A, relation),
   same : quotient_predicate(A, relation, x) = quotient_predicate(A, relation, y)) : x = y {
-  exact field_subtype_ext(A -> Type, class_witness_family(A, relation),
-    (fun (predicate : A -> Type) => field_exists_prop(exists a : A, forall b : A, predicate(b) = relation(a, b))), x, y, same);
+  exact field_subtype_ext(A -> U0, class_witness_family(A, relation),
+    (fun (predicate : A -> U0) => field_exists_prop(exists a : A, forall b : A, predicate(b) = relation(a, b))), x, y, same);
 }
-theorem quotient_surjective(A : Type1, relation : A -> A -> Type, q : SetQuotient(A, relation)) :
+theorem quotient_surjective(A : U1, relation : A -> A -> U0, q : SetQuotient(A, relation)) :
   FieldExists(exists a : A, quotient_class(A, relation, a) = q) {
   exact field_exists_map((exists a : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(a, x)),
     (exists a : A, quotient_class(A, relation, a) = q),
     (fun (witness : (exists a : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(a, x))) =>
       unpack witness as (a, same) return (exists a : A, quotient_class(A, relation, a) = q) {
         (a, quotient_ext(A, relation, quotient_class(A, relation, a), q,
-          sym(funext_at(Type1, A, (fun (x : A) => typed(Type1, Type)), quotient_predicate(A, relation, q), relation(a), same))));
+          sym(FunExt(U1, A, (fun (x : A) => typed(U1, U0)), quotient_predicate(A, relation, q), relation(a), same))));
       }), quotient_witness(A, relation, q));
 }
-def EquivalenceRelation(A : Type1, relation : A -> A -> Type) =
+def EquivalenceRelation(A : U1, relation : A -> A -> U0) =
   (forall x : A, forall y : A, FieldProp(relation(x, y))) and
   (forall x : A, relation(x, x)) and
   (forall x : A, forall y : A, relation(x, y) -> relation(y, x)) and
   (forall x : A, forall y : A, forall z : A, relation(x, y) -> relation(y, z) -> relation(x, z));
-theorem related_classes_equal(A : Type1, relation : A -> A -> Type, laws : EquivalenceRelation(A, relation),
+theorem related_classes_equal(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
   x : A, y : A, related : relation(x, y)) : quotient_class(A, relation, x) = quotient_class(A, relation, y) {
   obtain (prop, (reflexive, (symmetric, transitive))) = laws;
   exact quotient_ext(A, relation, quotient_class(A, relation, x), quotient_class(A, relation, y),
@@ -48,7 +48,7 @@ theorem related_classes_equal(A : Type1, relation : A -> A -> Type, laws : Equiv
         ((fun (xz : relation(x, z)) => transitive(y, x, z, symmetric(x, y, related), xz)),
          (fun (yz : relation(y, z)) => transitive(x, y, z, related, yz)))))));
 }
-theorem equal_classes_related(A : Type1, relation : A -> A -> Type, laws : EquivalenceRelation(A, relation),
+theorem equal_classes_related(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
   x : A, y : A, same : quotient_class(A, relation, x) = quotient_class(A, relation, y)) : relation(x, y) {
   obtain (prop, (reflexive, (symmetric, transitive))) = laws;
   exact transport((fun (q : SetQuotient(A, relation)) => quotient_predicate(A, relation, q, y)),
@@ -57,10 +57,10 @@ theorem equal_classes_related(A : Type1, relation : A -> A -> Type, laws : Equiv
 
 // The exact countable choice instance used to lift a sequence of classes.
 // This is a hypothesis, not an axiom declaration or an extracted representative.
-def RepresentativeChoice(A : Type1, relation : A -> A -> Type, sequence : Nat -> SetQuotient(A, relation)) =
+def RepresentativeChoice(A : U1, relation : A -> A -> U0, sequence : Nat -> SetQuotient(A, relation)) =
   (forall n : Nat, FieldExists(exists a : A, quotient_class(A, relation, a) = sequence(n))) ->
     FieldExists(forall n : Nat, exists a : A, quotient_class(A, relation, a) = sequence(n));
-theorem quotient_sequence_representatives(A : Type1, relation : A -> A -> Type,
+theorem quotient_sequence_representatives(A : U1, relation : A -> A -> U0,
   sequence : Nat -> SetQuotient(A, relation), choice : RepresentativeChoice(A, relation, sequence)) :
   FieldExists(forall n : Nat, exists a : A, quotient_class(A, relation, a) = sequence(n)) {
   exact choice(fun (n : Nat) => quotient_surjective(A, relation, sequence(n)));

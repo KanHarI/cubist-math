@@ -3,9 +3,9 @@ import cauchy_quotient;
 
 // Discharge the closeness premises of the ordinary Cauchy quotient over a
 // supplied small ordered field. A concrete rational field is still needed.
-theorem ordered_close_composition(Q : Type, zero : Q, one : Q,
+theorem ordered_close_composition(Q : U0, zero : Q, one : Q,
   addQ : Q -> Q -> Q, mulQ : Q -> Q -> Q, negQ : Q -> Q,
-  ltQ : Q -> Q -> Type, ring : CommutativeRing(Q, zero, one, addQ, mulQ, negQ),
+  ltQ : Q -> Q -> U0, ring : CommutativeRing(Q, zero, one, addQ, mulQ, negQ),
   order : StrictOrder(Q, ltQ), arithmetic : OrderedArithmetic(Q, zero, one, addQ, mulQ, ltQ),
   inverses : FieldInverses(Q, zero, one, mulQ, ltQ)) : CloseComposition(Q, zero, addQ, ltQ) {
   obtain (half, (halfSum, halfPositive)) = ordered_field_halving(Q, zero, one, addQ, mulQ, negQ, ltQ, ring, order, arithmetic, inverses);
@@ -16,9 +16,9 @@ theorem ordered_close_composition(Q : Type, zero : Q, one : Q,
       field_close_halved_triangle(Q, zero, one, addQ, mulQ, negQ, ltQ, ring, order, arithmetic, half, halfSum, x, y, z, epsilon))));
 }
 
-theorem ordered_cauchy_same_equivalence(Q : Type, zero : Q, one : Q,
+theorem ordered_cauchy_same_equivalence(Q : U0, zero : Q, one : Q,
   addQ : Q -> Q -> Q, mulQ : Q -> Q -> Q, negQ : Q -> Q,
-  ltQ : Q -> Q -> Type, ring : CommutativeRing(Q, zero, one, addQ, mulQ, negQ),
+  ltQ : Q -> Q -> U0, ring : CommutativeRing(Q, zero, one, addQ, mulQ, negQ),
   order : StrictOrder(Q, ltQ), arithmetic : OrderedArithmetic(Q, zero, one, addQ, mulQ, ltQ),
   inverses : FieldInverses(Q, zero, one, mulQ, ltQ)) :
   EquivalenceRelation(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ)) {

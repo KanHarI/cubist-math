@@ -2,14 +2,14 @@ import complex_numbers;
 import field_magnitude;
 
 // Coordinate boxes avoid square roots and work over constructive scalars.
-def ComplexRectangleBound(F : Type1, negF : F -> F, lt : F -> F -> Type,
+def ComplexRectangleBound(F : U1, negF : F -> F, lt : F -> F -> U0,
   z : Complex(F), realRadius : F, imagRadius : F) =
   FieldMagnitudeBound(F, negF, lt, complex_real(F, z), realRadius) and FieldMagnitudeBound(F, negF, lt, complex_imag(F, z), imagRadius);
-def ComplexBoxBound(F : Type1, negF : F -> F, lt : F -> F -> Type, z : Complex(F), radius : F) =
+def ComplexBoxBound(F : U1, negF : F -> F, lt : F -> F -> U0, z : Complex(F), radius : F) =
   ComplexRectangleBound(F, negF, lt, z, radius, radius);
 
-theorem complex_box_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_box_add(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F), r : F, s : F,
   boundZ : ComplexBoxBound(F, negF, lt, z, r), boundW : ComplexBoxBound(F, negF, lt, w, s)) :
   ComplexBoxBound(F, negF, lt, complex_add(F, addF, z, w), addF(r, s)) {
@@ -19,8 +19,8 @@ theorem complex_box_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF :
     field_magnitude_add(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z), complex_imag(F, w), r, s, zi, wi));
 }
 
-theorem complex_box_mul_rectangle(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem complex_box_mul_rectangle(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F), delta : F, r : F, s : F,
   boundZ : ComplexBoxBound(F, negF, lt, z, delta), boundW : ComplexRectangleBound(F, negF, lt, w, r, s)) :
   ComplexBoxBound(F, negF, lt, complex_mul(F, addF, mulF, negF, z, w), mulF(delta, addF(r, s))) {

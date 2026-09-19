@@ -1,15 +1,15 @@
 import field_scale_limits;
 
 // A canonical bound uses the lattice, not a decision about the sign of x.
-theorem field_lattice_magnitude(F : Type1, negF : F -> F, lt : F -> F -> Type,
+theorem field_lattice_magnitude(F : U1, negF : F -> F, lt : F -> F -> U0,
   minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), x : F) :
   FieldMagnitudeBound(F, negF, lt, x, maxF(x, negF(x))) {
   obtain (minLeft, (minRight, (minGreatest, (maxLeft, (maxRight, maxLeast))))) = lattice;
   exact (maxLeft(x, negF(x)), maxRight(x, negF(x)));
 }
 
-theorem field_close_difference_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_close_difference_bound(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s : F, t : F, delta : F,
   close : FieldClose(F, addF, lt, s, t, delta)) :
   FieldMagnitudeBound(F, negF, lt, addF(negF(t), s), delta) {
@@ -20,7 +20,7 @@ theorem field_close_difference_bound(F : Type1, zero : F, one : F, addF : F -> F
 }
 
 // The increment formula used to turn a parameter bound into a curve bound.
-theorem field_affine_increment(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem field_affine_increment(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, d : F, s : F, t : F) :
   addF(a, mulF(s, d)) = addF(addF(a, mulF(t, d)), mulF(addF(negF(t), s), d)) {
   have recover : addF(t, addF(negF(t), s)) = s {
@@ -33,8 +33,8 @@ theorem field_affine_increment(F : Type1, zero : F, one : F, addF : F -> F -> F,
       sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, a, mulF(t, d), mulF(addF(negF(t), s), d)))));
 }
 
-theorem field_affine_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+theorem field_affine_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   a : F, d : F, length : F, bounded : FieldMagnitudeBound(F, negF, lt, d, length),
   s : F, t : F, delta : F, epsilon : F, close : FieldClose(F, addF, lt, s, t, delta), small : lt(mulF(delta, length), epsilon)) :
