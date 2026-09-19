@@ -134,6 +134,9 @@ complex commutative ring over a supplied real ring, proves the conjugate and
 inverse formulas, and checks polynomial difference and factor identities.
 Open `?proof=complex_algebra` or `?proof=polynomial_difference`. Algebraic closure
 and Great Picard are development targets, not established theorems.
+Complex-analysis work is currently paused; the
+[development handoff](docs/complex_analysis_handoff.md) records the checked
+results, remaining obligations and how to resume.
 
 The winding route now has checked [circle-degree obstructions](web/proofs/circle_degree.proof)
 and [zero-avoiding linear deformations](web/proofs/complex_deformation.proof).
@@ -165,7 +168,9 @@ Their ordered interval samples have checked coordinate variation bounds
 independent of the number of sample points.
 The actual affine dyadic sums now have a checked Cauchy modulus when supplied
 actual Archimedean bounds. Completeness constructs their unique limit, and
-splitting at the constructed midpoint splits that limit into a sum. These
+splitting at the constructed midpoint splits that limit into a sum. The
+constructed integrals are complex-linear in the integrand, with continuity
+witnesses built for sums and scalar multiples. These
 results preserve constructive assumptions; comparison with arbitrary fine
 partitions and homotopy invariance remain to be proved.
 The parameter samples now map to the original contour sums; the affine
@@ -184,9 +189,9 @@ Archimedeanness yields mere existence of admissible samples below every
 positive mesh, without choice or excluded middle.
 Widths remain small at every later level. Actual scalar convergence moduli
 are checked when explicit Archimedean bound functions are provided.
-Proving convergence of the contour sums and
-the required homotopy estimates, and relating geometric curves to homotopy
-paths, remain open.
+Convergence for general contour sampling schemes, the required homotopy
+estimates, and the comparison of geometric curves with homotopy paths remain
+open.
 
 The [Euclid argument](web/proofs/euclid.proof) imports its
 [arithmetic and prime-number foundations](web/proofs/primes.proof), all checked

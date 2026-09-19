@@ -5,6 +5,11 @@ of the contour integral or proofs of the residue theorem, algebraic closure,
 or Great Picard. The scalar complete ordered field remains a parameter;
 concrete real-field constructions are still incomplete.
 
+The later [affine dyadic construction](complex_curves.md#constructed-affine-dyadic-integrals)
+does construct an initial integral with elementary laws. The
+[paused-development handoff](complex_analysis_handoff.md) records the current
+combined status; the general descent obligations below remain outstanding.
+
 ## Checked limit results
 
 `ordered_halves` constructs a positive halving operator from the ordered-field
@@ -94,8 +99,10 @@ Fixed-factor scaling now derives this from `delta_n -> 0` when `L >= 0`.
 The complex coordinate version proves the same bound and preserves the
 limit when changing tags under those estimates; convergence for the
 original tags is still an input.
-Their Cauchy and deformation estimates still need to be proved,
-alongside a justified geometric presentation of the homotopy paths.
+Cauchyness has subsequently been proved for actual affine dyadic sums under
+explicit continuity and Archimedean-bound hypotheses. General-contour
+convergence and deformation estimates still need to be proved, alongside a
+justified geometric presentation of the homotopy paths.
 Local generator integrals and the normalization `2*pi*i`
 still need to be constructed and calculated. These obligations remain part
 of the full residue-theorem goal; the real models and the separate algebraic

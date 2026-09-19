@@ -4,6 +4,10 @@
 theorem of algebra, the residue theorem, or Great Picard. The concrete real
 field instances described in [reals.md](reals.md) are still incomplete.
 
+Development is paused as of 2026-09-19. The
+[handoff and resumption guide](complex_analysis_handoff.md) records the latest
+checked integral laws, validation, outstanding obligations and entry points.
+
 ## Checked now
 
 All carriers below may live in `Type1`, as our proposition-valued Dedekind
@@ -20,8 +24,9 @@ tag-error estimates in terms of sampled variation. Complex tag errors now
 have checked coordinate bounds and convergence to zero. Changing tags
 preserves an existing limit under the vanishing-error and bounded-variation
 hypotheses, without sign decisions or square roots. Admissible finite
-sampling schemes are now defined; convergence and the homotopy estimates
-remain to be proved.
+sampling schemes are now defined. The affine dyadic construction described
+below proves convergence for those samples; general-contour convergence and
+the homotopy estimates remain to be proved.
 
 [Geometric interval curves](complex_curves.md) now include straight segments
 with checked endpoints and constructive uniform continuity. The existing
@@ -47,8 +52,12 @@ without choice. These widths are now proved to decrease, giving fine samples
 at every sufficiently deep level. Actual scalar convergence moduli are also
 constructed from explicitly supplied Archimedean bound functions; extracting
 such functions from the merely existential interface is not assumed.
-Cross-level refinement identities, Cauchy convergence of contour sums, and
-construction of an initial integral limit remain open.
+Cross-level refinement identities now connect the actual dyadic samples.
+Their sums are proved Cauchy, and supplied scalar completeness constructs a
+unique affine dyadic integral. Its midpoint splitting, constant-integrand
+formula and complex linearity are proved. These results do not yet establish
+comparison with arbitrary fine partitions or homotopy invariance; see the
+[integral construction](complex_curves.md#constructed-affine-dyadic-integrals).
 
 | Module | Result |
 | --- | --- |
@@ -213,7 +222,8 @@ does not imply Picard's analytic conclusion.
 The separate [geometric-curve development](complex_curves.md#constructed-affine-dyadic-integrals)
 now constructs unique dyadic integral limits along affine curves from uniform
 continuity, Cauchy completeness and actual Archimedean bounds. Its midpoint
-splitting law is proved from finite sums. Comparison with general partitions,
+splitting, constant-integrand and complex-linearity laws are proved from
+finite sums and uniqueness of limits. Comparison with general partitions,
 homotopy invariance and the punctured-plane comparison remain unproved.
 
 The implementation order is therefore real-field instances and complex

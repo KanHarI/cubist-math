@@ -1635,6 +1635,47 @@ test("the common-refinement Cauchy proof must account for both errors", () => {
   assert.throws(() => compile(module, shortened, sources), /Expected|Conversion types differ/);
 });
 
+test("constructed affine integrals are complex-linear with derived continuity witnesses", t => {
+  const c = compile(module, sources.affine_integral_linearity, sources);
+  try {
+    const outputs = [...c.outputs, ...c.imports];
+    for (const name of ["field_common_positive_radius", "complex_uniform_curve_add", "complex_scalar_uniform_radius",
+      "complex_converges_scale", "curve_subdivision_samples_cong", "affine_dyadic_integral_add",
+      "affine_dyadic_integral_scale", "affine_dyadic_integral_cong"]) {
+      const output = outputs.find(o => o.name === name);
+      assert.ok(output, name);
+      assert.ok(c.kernel.verify(output.proposition, output.binding), name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim"].includes(a)), name);
+    }
+    const addition = outputs.find(o => o.name === "affine_dyadic_integral_add");
+    assert.match(addition.type, /uniformF : ComplexUniformCurve/);
+    assert.match(addition.type, /uniformG : ComplexUniformCurve/);
+    assert.match(addition.type, /affine_integrand_add_uniform/);
+    assert.doesNotMatch(addition.type, /uniformSum :|additive :|converges :/);
+    const scaling = outputs.find(o => o.name === "affine_dyadic_integral_scale");
+    assert.match(scaling.type, /coefficient : Complex\(F\)/);
+    assert.match(scaling.type, /affine_integrand_scale_uniform/);
+    assert.doesNotMatch(scaling.type, /uniformScaled :|nonzero :|apart :|converges :/);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; derived moduli and integral linearity`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("a common input modulus requires genuinely positive starting radii", () => {
+  const weakened = sources.field_uniform_radii.replace("positiveR : lt(zero, r)", "positiveR : FieldLe(F, lt, zero, r)");
+  assert.notEqual(weakened, sources.field_uniform_radii);
+  assert.throws(() => compile(module, weakened, sources), /Expected|Conversion types differ/);
+});
+
+test("finite contour linearity cannot drop the complex scalar factor", () => {
+  const dropped = sources.curve_integrand_sums.replace(
+    "mulF(contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags), coefficient) {",
+    "contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags) {");
+  assert.notEqual(dropped, sources.curve_integrand_sums);
+  assert.throws(() => compile(module, dropped, sources), /Expected|Conversion types differ/);
+});
+
 test("refinement families join with checked endpoint paths and ordered sums without axioms", t => {
   const c = compile(module, sources.subdivision_refinement, sources);
   try {

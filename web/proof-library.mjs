@@ -18,6 +18,11 @@ export const proofTopics = [
 ];
 
 export const proofChoices = [
+  { id: "affine_integral_linearity", topic: "contour-integration", title: "Curve integrals · complex linearity and equality along the curve", complexDevelopment: true },
+  { id: "curve_integrand_sums", topic: "contour-integration", title: "Curve contours · linearity in the sampled integrand", complexDevelopment: true },
+  { id: "field_uniform_radii", topic: "general-analysis", title: "Uniform continuity · constructive common positive radii", complexDevelopment: true },
+  { id: "complex_uniform_operations", topic: "complex-analysis", title: "Complex continuity · addition with an explicit modulus", complexDevelopment: true },
+  { id: "complex_scalar_continuity", topic: "complex-analysis", title: "Complex continuity · fixed scalar multiplication and limits", complexDevelopment: true },
   { id: "affine_integrals", topic: "contour-integration", title: "Curve integrals · construct the affine dyadic limit", complexDevelopment: true },
   { id: "affine_integral_midpoint", topic: "contour-integration", title: "Curve integrals · splitting at the midpoint", complexDevelopment: true },
   { id: "affine_integral_constants", topic: "contour-integration", title: "Curve integrals · integrating a constant", complexDevelopment: true },

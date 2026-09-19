@@ -345,6 +345,27 @@ proves the normalization formula: integrating a constant `c` gives
 the finite sums already have exactly this value by telescoping. Uniqueness
 identifies their constructed integral with it.
 
+[affine_integral_linearity](../web/proofs/affine_integral_linearity.proof)
+proves additivity in the integrand, multiplication by a fixed complex scalar,
+and equality of integrals when the integrands agree along the curve. The sum
+and scaled integrands receive constructed continuity witnesses; those
+properties are not extra hypotheses. The proof uses the corresponding
+finite identities in [curve_integrand_sums](../web/proofs/curve_integrand_sums.proof)
+and uniqueness of limits. Equality along the curve needs no equality of the
+whole functions and no function-extensionality axiom.
+
+[field_uniform_radii](../web/proofs/field_uniform_radii.proof) constructs a
+common positive input tolerance without choosing the smaller of two numbers:
+for positive `r,s`, choose positive `delta` with `delta*(r+s) < r*s` and cancel
+the positive factor `r+s` to bound `delta` by both. This supports
+[addition of uniformly continuous curves](../web/proofs/complex_uniform_operations.proof).
+[Scalar continuity](../web/proofs/complex_scalar_continuity.proof) uses
+coordinate magnitude bounds and the positive denominator in the existing
+scaled-radius construction, so it includes the zero coefficient without
+a zero test. It also proves preservation of convergence under fixed complex
+scalar multiplication. All these moduli are actual witnesses and introduce
+no excluded middle or choice.
+
 This constructs the unique limit of the specified dyadic samples. Comparison
 with arbitrary fine partitions, splitting at arbitrary points, reversal,
 and homotopy invariance remain to be proved. Actual moduli from the existing

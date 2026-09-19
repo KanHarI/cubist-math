@@ -1,0 +1,44 @@
+import field_uniform_radii;
+import complex_curves;
+import complex_limits;
+
+theorem complex_close_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  x : Complex(F), y : Complex(F), u : Complex(F), v : Complex(F), epsilon : F, delta : F,
+  xy : ComplexClose(F, addF, lt, x, y, epsilon), uv : ComplexClose(F, addF, lt, u, v, delta)) :
+  ComplexClose(F, addF, lt, complex_add(F, addF, x, u), complex_add(F, addF, y, v), addF(epsilon, delta)) {
+  obtain (realXY, imagXY) = xy;
+  obtain (realUV, imagUV) = uv;
+  exact (field_close_add(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, x), complex_real(F, y), complex_real(F, u), complex_real(F, v), epsilon, delta, realXY, realUV),
+    field_close_add(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, x), complex_imag(F, y), complex_imag(F, u), complex_imag(F, v), epsilon, delta, imagXY, imagUV));
+}
+
+// The common input radius is constructed from the two supplied moduli.
+// There is no comparison or choice of which modulus is smaller.
+theorem complex_uniform_curve_add(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
+  f : FieldUnitInterval(F, zero, one, lt) -> Complex(F), g : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
+  uniformF : ComplexUniformCurve(F, zero, one, addF, lt, f), uniformG : ComplexUniformCurve(F, zero, one, addF, lt, g)) :
+  ComplexUniformCurve(F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => complex_add(F, addF, f(t), g(t)))) {
+  obtain (half, (halfSum, halfPositive)) = ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
+  intro epsilon;
+  intro positive;
+  let smaller = half(epsilon);
+  let positiveSmaller = halfPositive(epsilon, positive);
+  obtain (r, (positiveR, closeF)) = uniformF(smaller, positiveSmaller);
+  obtain (s, (positiveS, closeG)) = uniformG(smaller, positiveSmaller);
+  obtain (delta, (positiveDelta, (belowR, belowS))) = field_common_positive_radius(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, r, s, positiveR, positiveS);
+  have close : forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
+    FieldClose(F, addF, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b), delta) ->
+    ComplexClose(F, addF, lt, complex_add(F, addF, f(a), g(a)), complex_add(F, addF, f(b), g(b)), epsilon) {
+    intro a;
+    intro b;
+    intro nearby;
+    let x = field_interval_coordinate(F, zero, one, lt)(a);
+    let y = field_interval_coordinate(F, zero, one, lt)(b);
+    let first = closeF(a, b, field_close_enlarge(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, r, belowR, nearby));
+    let second = closeG(a, b, field_close_enlarge(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, s, belowS, nearby));
+    exact transport((fun (radius : F) => ComplexClose(F, addF, lt, complex_add(F, addF, f(a), g(a)), complex_add(F, addF, f(b), g(b)), radius)),
+      addF(smaller, smaller), epsilon, halfSum(epsilon),
+      complex_close_add(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f(a), f(b), g(a), g(b), smaller, smaller, first, second));
+  }
+  exact (delta, (positiveDelta, close));
+}
