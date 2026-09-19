@@ -405,6 +405,16 @@ const keywords = new Set([
   "return",
   "as",
 ]);
+// Language-provided forms share the keyword palette; ordinary library and
+// user-defined functions retain the green reference style.
+const builtinForms = new Set([
+  "Nat", "Unit", "Void", "Universe", "tt", "succ", "refl", "absurd",
+  "sym", "trans", "cong", "transport", "apd", "Eq", "typed", "unfold",
+  "induct", "unpack", "pair_induction", "unit_induction",
+  "Suspension", "north", "south", "meridian", "suspension_induction",
+  "suspension_meridian_beta", "Choice", "LEM", "FunExt", "Truncate",
+  "TruncateIntro", "TruncateProp", "TruncateElim", "Univalence", "UnivalenceBeta",
+]);
 function renderSource() {
   $("read-source").replaceChildren();
   if (!last) return;
@@ -481,24 +491,31 @@ function renderSource() {
         link.href = `proof.html?proof=${encodeURIComponent(text === "prelude" ? "prelude_library_construction" : text)}`;
         link.title = `Open ${text} module source`;
         code.append(link);
-      } else if (keywords.has(text)) {
-        const span = document.createElement("span");
-        span.className = "keyword";
-        span.textContent = text;
-        code.append(span);
-      } else if (linkMap.has(start)) {
+      } else {
         const info = linkMap.get(start);
+        const expansion = last.mode === "mathematical" && /^[0-9]+$/.test(text) && Number(text) <= 256
+          ? "succ(".repeat(Number(text)) + "0" + ")".repeat(Number(text))
+          : info?.expansion;
+        const style = keywords.has(text) || builtinForms.has(text) || /^U[0-9]+$/.test(text)
+          ? "keyword" : expansion ? "macro" : "";
         if (info) {
           const button = document.createElement("button");
-          button.className = "reference";
+          button.className = `reference${style ? " " + style : ""}`;
           button.textContent = text;
-          button.title = `Inspect ${text}`;
+          button.title = expansion ? `${text} expands to ${expansion}` : `Inspect ${text}`;
+          if (expansion) button.setAttribute("aria-label", button.title);
           button.dataset.name = text;
           button.onclick = () =>
             inspect({ ...decorate(info), line: index + 1 });
           code.append(button);
+        } else if (style) {
+          const span = document.createElement("span");
+          span.className = style;
+          span.textContent = text;
+          if (expansion) span.title = `${text} expands to ${expansion}`;
+          code.append(span);
         } else code.append(document.createTextNode(text));
-      } else code.append(document.createTextNode(text));
+      }
       cursor = token.index + text.length;
     }
     row.append(number, code);
@@ -624,6 +641,7 @@ function renderKernel(view) {
   const mode = $("kernel-view").value;
   $("kernel-truncation-options").hidden = mode !== "notation";
   $("kernel-binder-options").hidden = mode !== "notation";
+  $("kernel-identity-options").hidden = mode !== "notation";
   const folded = mode === "mathscript" && mathscript;
   const typeset = mode === "notation" && (notation ?? { verified: {} });
   $("kernel-view-note").textContent = typeset
@@ -643,6 +661,7 @@ function renderKernel(view) {
   }
   const navigation = { resolve: binding => symbols.get(binding), inspect: info => inspect(decorate(info)),
     truncationSugar: $("kernel-truncation-sugar").checked,
+    identitySugar: $("kernel-identity-sugar").checked,
     groupIndependentBinders: $("kernel-group-binders").checked };
   $("kernel-context-note").textContent = view.assumptions.length
     ? "Open assumptions of this checked judgement. Click a name to inspect its type and source. Π, Σ and λ bind variables inside the term."
@@ -712,6 +731,7 @@ function renderKernel(view) {
 $("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-truncation-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-group-binders").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
+$("kernel-identity-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = async () => {
   if (!checkedKernelView) return;
   const binding = checkedKernelView.name;

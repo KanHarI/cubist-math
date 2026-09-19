@@ -115,7 +115,7 @@ export function isTruncationApplication(node) {
 
 // Native MathML provides mathematical typesetting without a CDN, TeX input,
 // HTML interpolation, or a change to the stored proof.
-export function renderMathNotation(container, tree, { resolve = () => null, inspect = () => {}, truncationSugar = false, groupIndependentBinders = false } = {}) {
+export function renderMathNotation(container, tree, { resolve = () => null, inspect = () => {}, truncationSugar = false, groupIndependentBinders = false, identitySugar = true } = {}) {
   const doc = container.ownerDocument;
   const element = (tag, ...children) => {
     const node = doc.createElementNS(mathNamespace, tag);
@@ -204,8 +204,18 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
       return row(["Name", "Call"].includes(node.fn.kind) ? fn : fenced(fn), fenced(row(...args)));
     }
     if (node.kind === "Pair") return row(operator("⟨"), visit(node.left), operator(","), visit(node.right), operator("⟩"));
-    if (node.kind === "Identity") return row(element("msub", element("mi", "Id"), visit(node.carrier)),
-      fenced(row(visit(node.left), operator(","), visit(node.right))));
+    if (node.kind === "Identity") {
+      if (identitySugar) {
+        // Keep the carrier explicit, including for nested identities. This is
+        // only notation for Eq, never a conversion to definitional equality.
+        const formula = fenced(row(visit(node.left), operator("="), operator("["),
+          visit(node.carrier), operator("]"), visit(node.right)));
+        formula.dataset.identitySugar = "true";
+        return formula;
+      }
+      return row(element("msub", element("mi", "Id"), visit(node.carrier)),
+        fenced(row(visit(node.left), operator(","), visit(node.right))));
+    }
     const symbols = { Product: "×", Sum: "+", Arrow: "→", Equality: "=", DefEq: "≡" };
     const precedence = { Pi: 0, Sigma: 0, Lambda: 0, Arrow: 1, Sum: 2, Product: 3, Equality: 4, DefEq: 4 };
     if (symbols[node.kind]) {

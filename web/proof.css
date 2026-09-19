@@ -302,6 +302,17 @@ pre {
   color: #735689;
   font-weight: 600;
 }
+.reference.keyword {
+  text-decoration-color: #b7a7c4;
+}
+.macro {
+  color: #98531c;
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: #cba888;
+  text-underline-offset: 3px;
+}
 .comment {
   color: #7c8d80;
 }

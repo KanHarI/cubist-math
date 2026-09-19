@@ -615,7 +615,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
         const name = {
             "+": "add",
             "*": "mul",
-            "<": "isLt",
+            "<": e.has("isLt") ? "isLt" : "le",
             "<=": "le",
             "=": "Eq",
           }[n.operator],
@@ -629,6 +629,8 @@ export function compile(module, source, library, { onProgress, optimizations = {
           role: "notation",
           sourceModule: entry ? "primes" : undefined,
           sourceName: name,
+          expansion: n.operator === "=" ? undefined
+            : `${name}(${n.operator === "<" && name === "le" ? `succ(${describe(n.left, e)})` : describe(n.left, e)}, ${describe(n.right, e)})`,
           description:
             n.operator === "="
               ? n.carrier
