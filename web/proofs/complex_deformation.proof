@@ -63,10 +63,10 @@ theorem complex_scale_norm_bound(F : Type1, zero : F, one : F, addF : F -> F -> 
   FieldLe(F, lt, complex_norm_squared(F, addF, mulF, complex_scale(F, mulF, t, z)), complex_norm_squared(F, addF, mulF, z)) {
   obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
   let n = complex_norm_squared(F, addF, mulF, z);
-  let nonnegative = ordered_sum_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)), ordered_square_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)), ordered_square_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z)));
+  let nonnegativeNorm = ordered_sum_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)), ordered_square_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)), ordered_square_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z)));
   let upperSquare = ordered_unit_interval_square(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, lower, upper);
   let step = transport((fun (v : F) => FieldLe(F, lt, mulF(mulF(t, t), n), v)), mulF(one, n), n,
-    ring_mul_one(F, zero, one, addF, mulF, negF, ring, n), weakScale(mulF(t, t), one, n, upperSquare, nonnegative));
+    ring_mul_one(F, zero, one, addF, mulF, negF, ring, n), weakScale(mulF(t, t), one, n, upperSquare, nonnegativeNorm));
   exact transport((fun (v : F) => FieldLe(F, lt, v, n)), mulF(mulF(t, t), n), complex_norm_squared(F, addF, mulF, complex_scale(F, mulF, t, z)),
     sym(complex_scaled_norm(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, z)), step);
 }

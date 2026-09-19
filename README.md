@@ -149,6 +149,9 @@ Their ordered interval samples have checked coordinate variation bounds
 independent of the number of sample points.
 The parameter samples now map to the original contour sums; the affine
 tag-independence proof supplies those variation bounds itself.
+Uniform continuity along the curve now yields a positive mesh threshold
+controlling all admissible tag changes, including the constructed left- and
+right-endpoint sums.
 Proving convergence of the contour sums and
 the required homotopy estimates, and relating geometric curves to homotopy
 paths, remain open.

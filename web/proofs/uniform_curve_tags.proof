@@ -1,0 +1,51 @@
+import interval_sampling;
+import parameter_tag_sampling;
+import complex_curves;
+
+theorem complex_close_difference_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F), radius : F,
+  close : ComplexClose(F, addF, lt, w, z, radius)) :
+  ComplexBoxBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), z, w), radius) {
+  obtain (realClose, imagClose) = close;
+  let zr = complex_real(F, z);
+  let zi = complex_imag(F, z);
+  let wr = complex_real(F, w);
+  let wi = complex_imag(F, w);
+  exact (transport((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius)), addF(negF(zr), wr), addF(wr, negF(zr)),
+    ring_add_comm(F, zero, one, addF, mulF, negF, ring, negF(zr), wr),
+    field_close_difference_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, wr, zr, radius, realClose)),
+    transport((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius)), addF(negF(zi), wi), addF(wi, negF(zi)),
+      ring_add_comm(F, zero, one, addF, mulF, negF, ring, negF(zi), wi),
+      field_close_difference_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, wi, zi, radius, imagClose)));
+}
+
+// Uniform continuity produces a positive mesh threshold. Tag errors are
+// then proved from admissibility, rather than supplied as an extra premise.
+theorem uniform_curve_tag_bounds(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  values : FieldUnitInterval(F, zero, one, lt) -> Complex(F), uniform : ComplexUniformCurve(F, zero, one, addF, lt, values), epsilon : F, positive : lt(zero, epsilon)) :
+  exists mesh : F, lt(zero, mesh) and (forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall oldTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n), forall newTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices) ->
+    IntervalAdmissibleTags(F, zero, one, lt, n, vertices, oldTags) -> IntervalAdmissibleTags(F, zero, one, lt, n, vertices, newTags) ->
+      ComplexParameterTagBounds(FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, values, epsilon, n, vertices, oldTags, newTags)) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  obtain (mesh, (positiveMesh, closeValues)) = uniform(epsilon, positive);
+  let smallEdge = (fun (a : I) => fun (b : I) => lt(interval_difference(F, zero, one, addF, negF, lt, a, b), mesh));
+  have localBound : forall a : I, forall b : I, forall x : I, forall y : I, smallEdge(a, b) ->
+    IntervalTagWithin(F, zero, one, lt, a, b, x) -> IntervalTagWithin(F, zero, one, lt, a, b, y) ->
+      ComplexBoxBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), values(x), values(y)), epsilon) {
+    intro a;
+    intro b;
+    intro x;
+    intro y;
+    intro small;
+    intro withinX;
+    intro withinY;
+    let closeParameters = interval_tags_close(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, a, b, y, x, withinY, withinX, mesh, small);
+    exact complex_close_difference_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, values(x), values(y), epsilon, closeValues(y, x, closeParameters));
+  }
+  exact (mesh, (positiveMesh, (fun (n : Nat) => parameter_tag_bounds_from_samples(I, F, addF, negF, lt, values, epsilon, smallEdge, IntervalTagWithin(F, zero, one, lt), localBound, n))));
+}

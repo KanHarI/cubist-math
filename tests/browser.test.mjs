@@ -550,6 +550,7 @@ try {
     ["complex_curves", "complex_straight_curve_endpoints"],
     ["complex_curve_variation", "complex_interval_deformation_variation"],
     ["curve_contour_limits", "affine_curve_contour_tag_independent_limit"],
+    ["curve_tag_stability", "affine_contour_endpoint_sums_close"],
     ["complex_affine", "complex_linear_deformation_uniform"],
     ["complex_contour_tag_limits", "complex_contour_tag_independent_limit"],
     ["field_scale_limits", "field_nonnegative_scale_zero_converges"],
@@ -571,7 +572,8 @@ try {
     ["polynomial_difference", "monic_factor_at_root"],
   ]) {
     await page.locator("#proof-picker").selectOption(proof);
-    await page.locator("#result:not([hidden])").waitFor({ timeout: proof === "curve_contour_limits" ? 900000 : 300000 });
+    await page.locator("#result:not([hidden]), #diagnostic:not([hidden])").waitFor({ timeout: ["curve_contour_limits", "curve_tag_stability"].includes(proof) ? 900000 : 300000 });
+    assert.equal(await page.locator("#diagnostic").isVisible(), false, await page.locator("#diagnostic").textContent());
     assert.match(await page.locator("#result").textContent(), new RegExp(`Verified ${theorem}`));
     assert.equal(await page.locator("#complex-note").isVisible(), true);
     assert.match(await page.locator("#complex-note").textContent(), /Great Picard remain to be proved/);

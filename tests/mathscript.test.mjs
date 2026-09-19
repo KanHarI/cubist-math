@@ -1177,3 +1177,42 @@ test("mapping contour samples preserves the integrand and the orientation of tag
   assert.notEqual(identityIntegrand, sources.parameter_contours);
   assert.throws(() => compile(module, identityIntegrand, sources), /Expected|Conversion types differ/);
 });
+
+test("fine mesh and uniform continuity control affine contour tags without assumed errors", t => {
+  const c = compile(module, sources.curve_tag_stability, sources);
+  try {
+    const allowed = new Set(["lib_Trunc", "lib_trunc_intro"]);
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => allowed.has(a)), output.name);
+    }
+    const stability = c.outputs.find(o => o.name === "affine_contour_uniform_tag_stability");
+    const endpoints = c.outputs.find(o => o.name === "affine_contour_endpoint_sums_close");
+    assert.ok(stability);
+    assert.ok(endpoints);
+    assert.match(stability.type, /uniform : ComplexUniformCurve/);
+    assert.match(stability.type, /exists mesh : F/);
+    assert.doesNotMatch(stability.type, /errors :|variation :|oldConverges :/);
+    assert.match(endpoints.type, /sample_left_tags/);
+    assert.match(endpoints.type, /sample_right_tags/);
+    assert.match(endpoints.type, /IntervalMeshBelow/);
+    assert.ok(c.kernel.bindings.has("interval_endpoint_tags_admissible"));
+    assert.ok(c.kernel.bindings.has("uniform_curve_tag_bounds"));
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; ${c.kernel.stats().judgements.toLocaleString()} judgments`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("admissible tag estimates require the upper endpoint bound and a strict mesh bound", () => {
+  const outside = sources.interval_tag_bounds.replace(
+    "FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, tag), field_interval_coordinate(F, zero, one, lt, b))",
+    "FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, b), field_interval_coordinate(F, zero, one, lt, tag))");
+  assert.notEqual(outside, sources.interval_tag_bounds);
+  assert.throws(() => compile(module, outside, sources), /Expected|Conversion types differ/);
+  const weakMesh = sources.interval_tag_bounds.replace(
+    "small : lt(coordinate_difference(F, addF, negF, a, b), radius)",
+    "small : FieldLe(F, lt, coordinate_difference(F, addF, negF, a, b), radius)");
+  assert.notEqual(weakMesh, sources.interval_tag_bounds);
+  assert.throws(() => compile(module, weakMesh, sources), /Expected|Conversion types differ/);
+});

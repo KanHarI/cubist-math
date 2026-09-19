@@ -1,0 +1,41 @@
+import parameter_contour_estimates;
+import parameter_increment_bounds;
+import complex_curve_variation;
+
+// The geometric sampling remains in the interval; only its images enter
+// the original complex contour sums. No inverse of the curve is needed.
+def curve_contour_samples(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F), n : Nat,
+  vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)) =
+  complex_contour_sum(F, zero, addF, mulF, negF, integrand, n,
+    map_sample_vertices(FieldUnitInterval(F, zero, one, lt), Complex(F), curve, n, vertices),
+    map_sample_tags(FieldUnitInterval(F, zero, one, lt), Complex(F), curve, n, tags));
+
+theorem curve_contour_tag_change_close(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
+  realWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F,
+  imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F,
+  length : F, variation : ComplexCurveVariation(F, zero, one, addF, negF, lt, curve, realWeight, imagWeight, length),
+  delta : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,
+  vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), oldTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n), newTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+  ordered : IntervalOrderedSamples(F, zero, one, lt, n, vertices),
+  errors : ComplexParameterTagBounds(FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t))), delta, n, vertices, oldTags, newTags),
+  epsilon : F, small : lt(mulF(delta, length), epsilon)) :
+  ComplexClose(F, addF, lt, curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, newTags), curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, oldTags), epsilon) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let values = (fun (t : I) => integrand(curve(t)));
+  obtain (realBounds, (imagBounds, totalBound)) = variation(n, vertices, oldTags, ordered);
+  let increments = parameter_coordinate_increment_bounds(I, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, oldTags, realBounds, imagBounds);
+  let close = complex_parameter_tag_change_close(I, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight, imagWeight, delta, length, nonnegativeDelta, n, vertices, oldTags, newTags, errors, increments, totalBound, epsilon, small);
+  let oldParam = complex_parameter_contour_sum(I, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags);
+  let newParam = complex_parameter_contour_sum(I, F, zero, addF, mulF, negF, curve, values, n, vertices, newTags);
+  let oldMapped = curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, oldTags);
+  let newMapped = curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, newTags);
+  let oldSame = parameter_contour_sum_is_mapped(I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, integrand, n, vertices, oldTags);
+  let newSame = parameter_contour_sum_is_mapped(I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, integrand, n, vertices, newTags);
+  let changeFirst = transport((fun (v : Complex(F)) => ComplexClose(F, addF, lt, v, oldParam, epsilon)), newParam, newMapped, newSame, close);
+  exact transport((fun (v : Complex(F)) => ComplexClose(F, addF, lt, newMapped, v, epsilon)), oldParam, oldMapped, oldSame, changeFirst);
+}
+

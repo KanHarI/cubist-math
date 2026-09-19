@@ -191,8 +191,10 @@ new kernel rule, or new theorem-specific axiom is used.
 straight segments with checked endpoints and coordinate variation bounds
 for ordered interval sampling. These parameter samples now map to the
 original complex contour sums, with a checked transfer of an existing limit
-under vanishing tag errors. Still needed are admissible refinements, mesh
-control, Cauchy and
+under vanishing tag errors. Uniform continuity along the curve now gives a
+positive mesh threshold controlling changes between admissible tags, with
+explicit left- and right-endpoint schemes. Still needed are refinements and
+their mesh control, Cauchy and
 homotopy estimates for the integrands in question, comparison with
 the puncture homotopy type, and the local generator integral `2*pi*i*residue`.
 The full residue theorem, algebraic closure, and Great Picard remain open.

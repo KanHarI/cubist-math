@@ -31,8 +31,9 @@ homotopy-type paths remain open.
 Ordered finite samples of these curves now have checked coordinate variation
 bounds, independent of the sample count. These parameter samples are now
 connected to the original contour sums: changing tags preserves an existing
-limit when sampled integrand errors tend to zero. Deriving those errors from
-admissibility and mesh control, and constructing an initial limit, remain open.
+limit when sampled integrand errors tend to zero. Admissibility, uniform
+continuity along the curve, and a sufficiently fine mesh now imply the
+finite error bounds. Constructing refinements and an initial limit remains open.
 
 | Module | Result |
 | --- | --- |

@@ -1,0 +1,34 @@
+import parameter_contour_bounds;
+import complex_algebra;
+
+// Values may be any function of the parameter. For a geometric integrand,
+// use values(t) = integrand(curve(t)); parameter_contour_sum_is_mapped
+// proves equality with the original contour sums at the mapped samples.
+def complex_parameter_contour_sum(C : Type1, F : Type1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  curve : C -> Complex(F), values : C -> Complex(F), n : Nat) =
+  parameter_contour_sum(C, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, values, n);
+
+
+// Actual complex finite sums become close under the coordinate variation bound.
+theorem complex_parameter_tag_change_close(C : Type1, F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve : C -> Complex(F), values : C -> Complex(F),
+  realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F,
+  delta : F, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,
+  vertices : SampleVertices(C, n), oldTags : SampleTags(C, n), newTags : SampleTags(C, n),
+  errors : ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags), increments : ComplexParameterIncrementBounds(C, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, oldTags),
+  variation : FieldLe(F, lt, sample_sum(C, F, zero, addF, (fun (a : C) => fun (b : C) => fun (t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n, vertices, oldTags), length), epsilon : F, small : lt(mulF(delta, length), epsilon)) :
+  ComplexClose(F, addF, lt, complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, newTags), complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags), epsilon) {
+  let bound = complex_parameter_tag_error_length_bound(C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight, imagWeight, delta, length, nonnegativeDelta, n, vertices, oldTags, newTags, errors, increments, variation);
+  obtain (realBound, imagBound) = bound;
+  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let computes = parameter_contour_sum_change_tags(C, Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, curve, values, n, vertices, oldTags, newTags);
+  let oldSum = complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags);
+  let newSum = complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, newTags);
+  let error = complex_parameter_tag_error_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, newTags);
+  exact (field_magnitude_perturbation_close(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, oldSum), complex_real(F, newSum), complex_real(F, error), mulF(delta, length), epsilon,
+    cong(complex_real(F), computes), realBound, small),
+    field_magnitude_perturbation_close(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, oldSum), complex_imag(F, newSum), complex_imag(F, error), mulF(delta, length), epsilon,
+      cong(complex_imag(F), computes), imagBound, small));
+}
+

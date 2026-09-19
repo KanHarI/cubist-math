@@ -105,4 +105,12 @@ export const sourceModules = [
   "parameter_increment_bounds",
   "parameter_contour_limits",
   "curve_contour_limits",
+  "interval_tag_bounds",
+  "sample_tagged",
+  "interval_sampling",
+  "parameter_tag_sampling",
+  "uniform_curve_tags",
+  "parameter_contour_estimates",
+  "curve_contour_estimates",
+  "curve_tag_stability",
 ];

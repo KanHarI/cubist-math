@@ -1,6 +1,14 @@
 import catalogue from "./proofs/catalogue.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 const choices = [
+  { id: "curve_tag_stability", title: "Curve contours · fine meshes control admissible tag changes", complexDevelopment: true },
+  { id: "uniform_curve_tags", title: "Curve sampling · continuity bounds integrand errors", complexDevelopment: true },
+  { id: "interval_sampling", title: "Curve sampling · admissible endpoint tags and mesh bounds", complexDevelopment: true },
+  { id: "interval_tag_bounds", title: "Curve sampling · tags in a short interval are close", complexDevelopment: true },
+  { id: "sample_tagged", title: "Curve sampling · explicit endpoint tag lists", complexDevelopment: true },
+  { id: "parameter_tag_sampling", title: "Curve sampling · local tag bounds control all samples", complexDevelopment: true },
+  { id: "curve_contour_estimates", title: "Curve contours · finite tag-change estimates", complexDevelopment: true },
+  { id: "parameter_contour_estimates", title: "Curve contours · finite estimates with parameter weights", complexDevelopment: true },
   { id: "curve_contour_limits", title: "Curve contours · affine tag-independent limits", complexDevelopment: true },
   { id: "parameter_contour_limits", title: "Curve contours · limits with parameter weights", complexDevelopment: true },
   { id: "parameter_contour_bounds", title: "Curve contours · parameter-based error estimates", complexDevelopment: true },
