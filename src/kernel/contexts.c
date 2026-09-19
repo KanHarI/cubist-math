@@ -11,6 +11,10 @@ bool context_matches(tt_engine *e, tt_id context_id, tt_id expected_type) {
  * tt_apply before this function reads them. */
 bool check_contexts(tt_engine *e, const tt_opcode_info *rule, const judgement *premises,
                     const tt_id *free_contexts) {
+    /* Example: abstracting A while leaving x:A as an open assumption is
+     * forbidden. In Sigma elimination, however, x:A and y:B(x) may both be
+     * discharged: metadata explicitly permits y's dependency on x.
+     * (mask & (1u << i)) asks whether i belongs to the encoded finite subset. */
     for (unsigned discharged = 0; discharged < rule->free_contexts; discharged++)
         if (free_contexts[discharged]) {
             tt_id allowed_dependencies[4] = {0};
@@ -44,6 +48,9 @@ bool check_contexts(tt_engine *e, const tt_opcode_info *rule, const judgement *p
  * free context: the discharge mask is different for each premise. */
 tt_id output_context(tt_engine *e, const tt_opcode_info *rule, const judgement *premises, tt_id ctx,
                      const tt_id *free_contexts) {
+    /* For PiIntro the masks are {2}: binary 10 removes x only from premise 1
+     * (the body), not from premise 0 (the domain). Assumptions needed to form
+     * the domain therefore remain assumptions of the resulting function. */
     tt_id out = 0;
     for (unsigned premise = 0; premise < rule->judgements; premise++)
         for (tt_id set = premises[premise].set; set; set = e->nodes[set].ch[0]) {

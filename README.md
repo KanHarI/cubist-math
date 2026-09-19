@@ -29,7 +29,10 @@ every C source file, including tests, included headers, and generated proof code
 Warnings, style, performance, and portability findings fail the target; CI runs
 the same check. `CPPCHECK=/path/to/cppcheck make lint` selects another installation.
 
-The type-checking kernel is isolated in [`src/kernel/`](src/kernel/). Its
+The type-checking kernel is isolated in [`src/kernel/`](src/kernel/). The
+[mathematician’s reading guide](docs/kernel.md) explains the C notation through
+inference rules, a complete proof example, and the context and binding conventions.
+Its
 [review guide](src/kernel/README.md) explains the validation path, rule notation,
 context discharge, storage invariants, substitution, and compatibility limits.
 

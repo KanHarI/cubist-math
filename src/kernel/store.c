@@ -86,6 +86,9 @@ tt_id intern(tt_engine *e, node n) {
         return 0;
     while (e->nt.slots[pos].id) {
         slot s = e->nt.slots[pos];
+        /* memcmp compares kind, payload and all four children, byte for byte.
+         * Thus a hash collision cannot turn distinct mathematical terms into
+         * the same ID. The checked layout is declared in internal.h. */
         if (s.hash == hash && !memcmp(&e->nodes[s.id], &n, offsetof(node, size)))
             return s.id;
         pos = (pos + 1) & (e->nt.cap - 1);
@@ -172,6 +175,9 @@ tt_id make4(tt_engine *e, node_kind k, tt_id a, tt_id b, tt_id c, tt_id d) {
     return intern(e, (node){.kind = k, .ch = {a, b, c, d}, .arity = 4});
 }
 tt_id set_add(tt_engine *e, tt_id s, tt_id id) {
+    /* Dependency sets are increasing lists without duplicates. Sharing their
+     * unchanged tails makes Gamma unions cheap; list order is by context ID,
+     * not the order of a user-written telescope of dependent variables. */
     if (!id)
         return s;
     if (!s)

@@ -94,6 +94,10 @@ tt_id transform(tt_engine *e, tt_id ast, unsigned mode, const tt_id *ctx, const 
             }
             result = leaf(e, N_VRef, (uint32_t)v);
         } else if (mode == MAP_BETA_SUBST) {
+            /* At traversal depth d, indices [d,d+count) name the binders being
+             * removed. Substitute those simultaneously; indices above them
+             * decrease by count. MAP_SHIFT adjusts the replacement for the
+             * levels at its insertion site, including the eliminator bias. */
             if (n.param >= depth && n.param < depth + count) {
                 tt_id delta = depth + (ctx ? ctx[0] : 0);
                 if (values[n.param - depth])
@@ -254,6 +258,8 @@ tt_id reduce(tt_engine *e, tt_id a, bool defs, bool recursive) {
     return result;
 }
 tt_id pointed(const tt_engine *e, tt_id a, tt_id path) {
+    /* This is a route through syntax children, e.g. [1,0], NOT an inhabitant
+     * of an identity type. N_Path is bookkeeping; N_Eq represents HoTT paths. */
     while (path && a) {
         node p = e->nodes[path], n = e->nodes[a];
         if (p.param >= n.arity)

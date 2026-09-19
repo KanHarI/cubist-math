@@ -1,5 +1,11 @@
 # Reviewing the type-checking kernel
 
+For a mathematical introduction, start with
+[Reading the kernel as inference rules](../../docs/kernel.md). It explains the
+C notation, works through a complete checked identity function, and distinguishes
+identity paths, definitional equality, substitution, and context discharge.
+This file is the implementation checklist to use alongside that introduction.
+
 This directory contains the checked inference implementation and its trusted
 support code. Start with `apply.c`, then read the context and rule checks. The
 public interface is [`include/thth.h`](../../include/thth.h); private data

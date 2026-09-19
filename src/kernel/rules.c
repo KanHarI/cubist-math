@@ -82,6 +82,8 @@ bool infer_rule(tt_engine *e, tt_opcode op, const tt_id *ids, const judgement *j
         break;
     /* Definitional equalities retain their common type; definitions are closed. */
     case TT_Def:
+        /* From |- t:A record name(t) == t : A. The reference stores the
+         * original checked judgement ID, so looking it up recovers both t,A. */
         REQUIRE(!j[0].set);
         r->expr = make2(e, N_DefEq, leaf(e, N_DRef, ids[0]), EXPR(0));
         r->type = TYPE(0);
@@ -216,11 +218,14 @@ bool infer_rule(tt_engine *e, tt_opcode op, const tt_id *ids, const judgement *j
         r->type = TYPE(0);
         break;
     case TT_EqForm:
+        /* A:U, a:A, b:A give (a =_A b):U. Unlike N_DefEq, this is a type
+         * whose inhabitants are paths; merely forming it proves no equality. */
         REQUIRE(universe(e, TYPE(0)) && TYPE(1) == EXPR(0) && TYPE(2) == EXPR(0));
         r->expr = make3(e, N_Eq, EXPR(0), EXPR(1), EXPR(2));
         r->type = TYPE(0);
         break;
     case TT_EqIntro:
+        /* a:A gives refl(a):(a =_A a). No rule identifies all such paths. */
         r->expr = make1(e, N_Refl, EXPR(0));
         r->type = make3(e, N_Eq, TYPE(0), EXPR(0), EXPR(0));
         break;

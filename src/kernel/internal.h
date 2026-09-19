@@ -56,6 +56,10 @@ typedef enum {
     N_SuspBeta,
     N_KIND_COUNT
 } node_kind;
+/* Mathematical syntax is a DAG (a tree with repeated subterms shared).
+ * kind chooses the constructor; param is its reference/numeric payload;
+ * ch[0..arity) are its ordered arguments. See docs/kernel.md's constructor map.
+ * size counts the expanded tree, whereas arena length counts shared nodes. */
 typedef struct {
     uint32_t kind, param;
     tt_id ch[4];
@@ -67,6 +71,9 @@ typedef struct {
  * derived at allocation; arity is fixed by the constructor's kind. */
 _Static_assert(offsetof(node, size) == 6 * sizeof(uint32_t), "node key layout");
 enum { HAS_CONTEXT = 1, HAS_VARIABLE = 2, HAS_DEF = 4 };
+/* Gamma |- expr : type. set encodes Gamma; path/highlight select a syntactic
+ * occurrence for explicit rewriting. N_DefEq additionally records a checked
+ * judgemental equality; it is not the identity type N_Eq. */
 typedef struct {
     tt_id expr, type, set, path;
     uint32_t highlight; /* 0 absent, 1 expression, 2 type */
@@ -75,6 +82,9 @@ typedef struct {
 } judgement;
 /* Semantic key ends at highlight. Derivation fields retain the first proof. */
 _Static_assert(offsetof(judgement, op) == 5 * sizeof(uint32_t), "judgement key layout");
+/* One named assumption x : type, together with assumptions needed by its type.
+ * The context ID is x's identity. counter distinguishes otherwise identical
+ * assumptions; it is neither a de Bruijn index nor a universe level. */
 typedef struct {
     tt_id type, set;
     uint32_t counter;
@@ -101,6 +111,8 @@ typedef struct {
 } map_cache;
 struct tt_engine {
     tt_config conf;
+    /* For each arena: n* is the number of occupied entries, c* its allocated
+     * capacity. IDs index these arrays; entry zero is reserved as a sentinel. */
     node *nodes;
     uint32_t nn, cn;
     judgement *judgements;

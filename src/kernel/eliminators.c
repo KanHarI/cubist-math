@@ -5,6 +5,8 @@ static tt_id substitute_two_contexts(tt_engine *e, tt_id a, tt_id x, tt_id y, tt
     return transform(e, a, MAP_CONTEXT, cs, vs, 2, 0);
 }
 static tt_id bind_two_contexts(tt_engine *e, tt_id a, tt_id x, tt_id y) {
+    /* Close x first and y second: in the branch body y is index 0, x index 1.
+     * Beta substitution uses the reverse ordered list [value_of_y,value_of_x]. */
     tt_id cs[] = {x, y}, vs[] = {1, 0};
     return transform(e, a, MAP_BIND, cs, vs, 2, 0);
 }
@@ -187,6 +189,11 @@ bool infer_eliminator(tt_engine *e, tt_opcode op, const judgement *j, const tt_i
         /* C(n), zero branch, successor branch, [n]; f = [n, predecessor, ih].
          * The induction hypothesis has type C(predecessor), while the branch
          * must prove C(succ(predecessor)). These are distinct checks. */
+        /* In mathematical notation:
+         *   C(n):U, z:C(0), [k:Nat, h:C(k)] s:C(succ(k)), n:Nat
+         *   ---------------------------------------------------
+         *                     ind(C,z,s,n):C(n)
+         * The motive C is checked here but is not stored in the IndNat term. */
         tt_id nat_type = 0, zero = 0, input = 0, body = 0, expected = 0;
         nat_type = leaf(e, N_Nat, 0);
         zero = leaf(e, N_ZN, 0);
@@ -217,6 +224,9 @@ bool infer_eliminator(tt_engine *e, tt_opcode op, const judgement *j, const tt_i
     case TT_WComp: {
         /* C(z), branch d(a,f), tree (or label and child function).
          * f[] = [z:W(A,B), a:A, children:Pi b:B(a).W(A,B)]. */
+        /* The branch additionally accepts recursive results:
+         * d(a,children) : (Pi b:B(a). C(children(b))) -> C(sup(a,children)).
+         * This is induction on all subtrees, not just a case split on labels. */
         tt_id label_type = 0, arity_family = 0, arity_type = 0, recursive_motive = 0, input = 0,
               body = 0, expected = 0;
         bool comp = op == TT_WComp;
