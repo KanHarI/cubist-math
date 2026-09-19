@@ -604,3 +604,19 @@ select {
 #kernel-truncation-options[hidden], #kernel-binder-options[hidden] {
   display: none;
 }
+
+.proof-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+#proof-count {
+  color: #657b6c;
+  font-size: 12px;
+}
+@media (max-width: 650px) {
+  .proof-navigation select { width: 100%; min-width: 0; }
+}

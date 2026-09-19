@@ -134,4 +134,8 @@ export const sourceModules = [
   "dyadic_tails",
   "dyadic_convergence",
   "fine_interval_tails",
+  "subdivision_transport",
+  "subdivision_join",
+  "subdivision_join_conditions",
+  "subdivision_refinement",
 ];

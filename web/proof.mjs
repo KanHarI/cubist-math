@@ -1,152 +1,9 @@
-import catalogue from "./proofs/catalogue.mjs";
+import { proofChoices as choices, proofTopics, proofsInTopic } from "./proof-library.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 import { renderMathNotation, kernelMathTree } from "./math-notation.mjs";
 import { axiomLabels } from "./axiom-labels.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
-const choices = [
-  { id: "fine_interval_tails", title: "Curve sampling · fine samples at every sufficiently deep level", complexDevelopment: true },
-  { id: "dyadic_convergence", title: "Curve sampling · explicit bounds and dyadic convergence", complexDevelopment: true },
-  { id: "dyadic_tails", title: "Curve sampling · monotone widths and eventual mesh bounds", complexDevelopment: true },
-  { id: "fine_interval_samples", title: "Curve sampling · arbitrarily fine constructive subdivisions", complexDevelopment: true },
-  { id: "dyadic_decay", title: "Curve sampling · Archimedean decay of dyadic widths", complexDevelopment: true },
-  { id: "dyadic_width_bounds", title: "Curve sampling · scalar bounds for repeated halving", complexDevelopment: true },
-  { id: "dyadic_mesh", title: "Curve sampling · dyadic bounds imply strict mesh bounds", complexDevelopment: true },
-  { id: "dyadic_sampling", title: "Curve sampling · repeated bisection with exact edge counts", complexDevelopment: true },
-  { id: "sample_condition_maps", title: "Curve sampling · map local tag conditions", complexDevelopment: true },
-  { id: "sample_join_conditions", title: "Curve sampling · concatenation preserves admissible tags", complexDevelopment: true },
-  { id: "interval_bisection", title: "Curve sampling · constructive midpoint subdivisions", complexDevelopment: true },
-  { id: "affine_partition_refinement", title: "Curve contours · uniform refinement across an entire partition", complexDevelopment: true },
-  { id: "interval_subdivisions", title: "Curve sampling · subdivision admissibility and total error radius", complexDevelopment: true },
-  { id: "complex_subdivision_estimates", title: "Curve contours · sum subdivision errors across a partition", complexDevelopment: true },
-  { id: "complex_perturbations", title: "Complex estimates · explicit additive error certificates", complexDevelopment: true },
-  { id: "sample_subdivision_conditions", title: "Curve sampling · conditions on each tagged subdivision", complexDevelopment: true },
-  { id: "sample_subdivisions", title: "Curve sampling · flatten subdivisions across a partition", complexDevelopment: true },
-  { id: "affine_refinement", title: "Curve contours · width-scaled finite refinement errors", complexDevelopment: true },
-  { id: "interval_refinement", title: "Curve sampling · refinement tags in a common interval", complexDevelopment: true },
-  { id: "parameter_refinement", title: "Curve contours · coarse edge and refined sum identity", complexDevelopment: true },
-  { id: "sample_refinement_tags", title: "Curve sampling · repeated tags and endpoint containment", complexDevelopment: true },
-  { id: "curve_tag_stability", title: "Curve contours · fine meshes control admissible tag changes", complexDevelopment: true },
-  { id: "uniform_curve_tags", title: "Curve sampling · continuity bounds integrand errors", complexDevelopment: true },
-  { id: "interval_sampling", title: "Curve sampling · admissible endpoint tags and mesh bounds", complexDevelopment: true },
-  { id: "interval_tag_bounds", title: "Curve sampling · tags in a short interval are close", complexDevelopment: true },
-  { id: "sample_tagged", title: "Curve sampling · explicit endpoint tag lists", complexDevelopment: true },
-  { id: "parameter_tag_sampling", title: "Curve sampling · local tag bounds control all samples", complexDevelopment: true },
-  { id: "curve_contour_estimates", title: "Curve contours · finite tag-change estimates", complexDevelopment: true },
-  { id: "parameter_contour_estimates", title: "Curve contours · finite estimates with parameter weights", complexDevelopment: true },
-  { id: "curve_contour_limits", title: "Curve contours · affine tag-independent limits", complexDevelopment: true },
-  { id: "parameter_contour_limits", title: "Curve contours · limits with parameter weights", complexDevelopment: true },
-  { id: "parameter_contour_bounds", title: "Curve contours · parameter-based error estimates", complexDevelopment: true },
-  { id: "parameter_increment_bounds", title: "Curve contours · coordinate increment certificates", complexDevelopment: true },
-  { id: "parameter_contours", title: "Curve contours · sums on mapped samples", complexDevelopment: true },
-  { id: "sample_maps", title: "Curve sampling · mapping vertices and tags", complexDevelopment: true },
-  { id: "complex_curve_variation", title: "Complex curves · bounded coordinate variation", complexDevelopment: true },
-  { id: "affine_variation", title: "Curve sampling · ordered affine increment bounds", complexDevelopment: true },
-  { id: "interval_weights", title: "Curve sampling · telescoping interval weights", complexDevelopment: true },
-  { id: "sample_relations", title: "Curve sampling · conditions on adjacent vertices", complexDevelopment: true },
-  { id: "complex_curves", title: "Complex curves · continuous straight segments and endpoints", complexDevelopment: true },
-  { id: "complex_affine", title: "Complex curves · constructive uniform continuity", complexDevelopment: true },
-  { id: "field_interval", title: "Curve parameters · the closed unit interval", complexDevelopment: true },
-  { id: "field_affine", title: "Affine estimates · parameter differences control increments", complexDevelopment: true },
-  { id: "complex_contour_tag_limits", title: "Complex contours · tag-independent limits", complexDevelopment: true },
-  { id: "complex_contour_bounds", title: "Complex contours · coordinate variation estimates", complexDevelopment: true },
-  { id: "field_scale_limits", title: "Limits · fixed factors preserve vanishing errors", complexDevelopment: true },
-  { id: "complex_convergence", title: "Complex limits · convergence and Cauchy definitions", complexDevelopment: true },
-  { id: "complex_contour_samples", title: "Complex contours · finite sums", complexDevelopment: true },
-  { id: "contour_tag_limits", title: "Contour estimates · vanishing tag errors", complexDevelopment: true },
-  { id: "contour_error_bounds", title: "Contour estimates · error times variation", complexDevelopment: true },
-  { id: "complex_magnitude", title: "Complex estimates · coordinate bounds without square roots", complexDevelopment: true },
-  { id: "field_magnitude_close", title: "Error bounds · closeness and convergence to zero", complexDevelopment: true },
-  { id: "sample_magnitude_bounds", title: "Finite estimates · weighted sums and variation", complexDevelopment: true },
-  { id: "sample_magnitude", title: "Finite estimates · bounds at sampled edges", complexDevelopment: true },
-  { id: "field_magnitude", title: "Ordered estimates · constructive magnitude bounds", complexDevelopment: true },
-  { id: "complex_contour_sums", title: "Contour sums · complex composition and backtracking", complexDevelopment: true },
-  { id: "contour_examples", title: "Contour sums · finite backtracking errors", complexDevelopment: true },
-  { id: "contour_refinement", title: "Contour sums · refinement and tag errors", complexDevelopment: true },
-  { id: "contour_samples", title: "Contour sums · samples and oriented increments", complexDevelopment: true },
-  { id: "contour_sums", title: "Contour sums · linearity and telescoping", complexDevelopment: true },
-  { id: "sample_error_bounds", title: "Finite sums · accumulated error bounds", complexDevelopment: true },
-  { id: "sample_sum_laws", title: "Finite sums · composition and telescoping", complexDevelopment: true },
-  { id: "sample_chains", title: "Sampling data · vertices, tags and concatenation", complexDevelopment: true },
-  { id: "homotopy_limits", title: "Homotopy periods · limits descend from curves", punctureDevelopment: true },
-  { id: "surjective_descent", title: "Descent · unique values without chosen representatives" },
-  { id: "descent_loop_laws", title: "Homotopy periods · composition through representatives", punctureDevelopment: true },
-  { id: "complex_limit_periods", title: "Complex periods · constructed from Cauchy approximations", punctureDevelopment: true },
-  { id: "limit_periods", title: "Homotopy periods · limits of approximate laws", punctureDevelopment: true },
-  { id: "complex_limits", title: "Complex analysis · completeness and limit laws", complexDevelopment: true },
-  { id: "field_asymptotics", title: "Limits · vanishing errors preserve the limit", complexDevelopment: true },
-  { id: "field_limits", title: "Limits · uniqueness, addition and Cauchy sequences", complexDevelopment: true },
-  { id: "field_closeness", title: "Error bounds · triangle, addition and separation", complexDevelopment: true },
-  { id: "ordered_halves", title: "Ordered fields · constructive halving", complexDevelopment: true },
-  { id: "cauchy_ordered", title: "Cauchy quotient · closeness assumptions proved", realDevelopment: true },
-  { id: "complex_numbers", title: "Complex numbers · coordinates and operations", complexDevelopment: true },
-  { id: "puncture_periods", title: "Puncture periods · the winding sum formula", punctureDevelopment: true },
-  { id: "complex_periods", title: "Complex periods · local contributions and winding", punctureDevelopment: true },
-  { id: "puncture_period_examples", title: "Periods · noncontractible loop with zero period", punctureDevelopment: true },
-  { id: "integer_multiples", title: "Additive groups · signed integer multiples" },
-  { id: "finite_sums", title: "Finite sums · additivity and single terms" },
-  { id: "ordered_bounds", title: "Ordered fields · constructive inequality bounds", complexDevelopment: true },
-  { id: "quadratic_identities", title: "Quadratic algebra · parallelogram identity", complexDevelopment: true },
-  { id: "circle_degree", title: "Circle degree · obstruction to contraction", complexDevelopment: true },
-  { id: "complex_deformation", title: "Complex deformations · dominant term avoids zero", complexDevelopment: true },
-  { id: "homotopy_paths", title: "Homotopies · moving basepoints and contractions", complexDevelopment: true },
-  { id: "complex_inverses", title: "Complex numbers · constructive inverses and apartness", complexDevelopment: true },
-  { id: "classical_complex_inverses", title: "Complex numbers · nonzero inverses using excluded middle", complexDevelopment: true },
-  { id: "ordered_squares", title: "Ordered fields · constructive square positivity", complexDevelopment: true },
-  { id: "complex_norm_coordinates", title: "Complex numbers · multiplicative norm", complexDevelopment: true },
-  { id: "complex_algebra", title: "Complex numbers · ring, conjugation and inverses", complexDevelopment: true },
-  { id: "complex_polynomials", title: "Polynomials · roots and algebraic closure target", complexDevelopment: true },
-  { id: "polynomial_difference", title: "Polynomials · difference and factor identities", complexDevelopment: true },
-  { id: "complex_coordinates", title: "Complex numbers · coordinate identities", complexDevelopment: true },
-  { id: "ring_laws", title: "Ring algebra · derived identities", complexDevelopment: true },
-  { id: "field_products", title: "Field foundations · products are sets", complexDevelopment: true },
-  { id: "bouquet_generation", title: "Punctures · every loop is a word", punctureDevelopment: true },
-  { id: "puncture_noncommutative", title: "Punctures · zero winding, nontrivial loop", punctureDevelopment: true },
-  { id: "bouquet_invariants", title: "Loop invariants · determined by generators", punctureDevelopment: true },
-  { id: "puncture_winding", title: "Punctures · winding around each generator", punctureDevelopment: true },
-  { id: "puncture_graph", title: "Punctures · graph and generating loops", punctureDevelopment: true },
-  { id: "loop_words", title: "Loop words · evaluation and cancellation", punctureDevelopment: true },
-  { id: "bouquet_actions", title: "Loop actions · transport in local systems", punctureDevelopment: true },
-  { id: "bouquet_cover", title: "Loop generation · auxiliary family", punctureDevelopment: true },
-  { id: "path_actions", title: "Paths · append, map and reconnect", punctureDevelopment: true },
-  { id: "complete_fields", title: "Real numbers · shared completeness interface", realDevelopment: true },
-  { id: "dedekind_cuts", title: "Real numbers · constructive Dedekind cuts", realDevelopment: true },
-  { id: "boolean_cuts", title: "Real numbers · classical Boolean cuts", realDevelopment: true },
-  { id: "cauchy_quotient", title: "Real numbers · ordinary Cauchy quotient", realDevelopment: true },
-  { id: "ordered_fields", title: "Ordered fields · laws and algebraic lemmas", realDevelopment: true },
-  { id: "set_quotients", title: "Equivalence classes · representatives and choice", realDevelopment: true },
-  { id: "field_logic", title: "Field foundations · logic in Type1", realDevelopment: true },
-  { id: "field_extensionality", title: "Field foundations · predicate equality", realDevelopment: true },
-  { id: "surjections", title: "Surjections · right inverses and choice" },
-  { id: "maps", title: "Maps · injections, embeddings and fibers" },
-  { id: "classical", title: "Classical logic · excluded middle" },
-  { id: "schroeder_bernstein", title: "Cantor–Schröder–Bernstein · mutual injections" },
-  { id: "binomial_counting", title: "Binomial types · finite cardinality" },
-  { id: "permutations", title: "Permutations · factorials" },
-  { id: "binomial_types", title: "Binomial types · Rijke construction" },
-  { id: "binomial_pascal", title: "Binomial types · Pascal bijection" },
-  { id: "truncation", title: "Propositional truncation · explicit principles" },
-  { id: "finite_cancellation", title: "Finite types · cancellation and cardinality" },
-  { id: "bijection_equality", title: "Bijections · equality and coherence" },
-  { id: "function_counting", title: "Finite functions · powers" },
-  { id: "binomial", title: "Subsets · Pascal counting" },
-  { id: "finite", title: "Finite types · sums of Unit" },
-  { id: "equivalences", title: "Bijections · reusable constructions" },
-  { id: "groups", title: "Groups · structures and isomorphisms" },
-  { id: "sets", title: "Sets · decidable equality" },
-  { id: "circle", title: "Circle · fundamental group is Z" },
-  { id: "integers", title: "Integers · successor equivalence" },
-  { id: "paths", title: "Paths · equality reasoning" },
-  { id: "suspension", title: "Suspension & the circle · foundations" },
-  { id: "euclid", title: "Euclid · mathematical proof" },
-  { id: "basics", title: "Functions, pairs & induction · examples" },
-  { id: "primes", title: "Primes · mathematical foundations" },
-  ...catalogue.map((p) => ({
-    ...p,
-    id: p.id + "_construction",
-    file: p.id + ".construction.proof",
-    title: p.title + " · kernel audit",
-  })),
-];
+
 const query = new URLSearchParams(location.search);
 const proofId = choices.some((p) => p.id === query.get("proof"))
   ? query.get("proof")
@@ -222,13 +79,36 @@ $("source-notice").hidden = !sourceNotice;
 $("previous-draft").hidden = !previousDraft;
 $("previous-draft").onclick = () =>
   download(previousDraft, proofId + "-previous.proof", "text/plain");
-for (const item of choices) {
+for (const topic of proofTopics) {
   const option = document.createElement("option");
-  option.value = item.id;
-  option.textContent = item.title;
-  $("proof-picker").append(option);
+  option.value = topic.id;
+  option.textContent = topic.title;
+  $("proof-topic").append(option);
 }
-$("proof-picker").value = proofId;
+function showTopic(topic) {
+  const proofs = proofsInTopic(topic);
+  $("proof-picker").replaceChildren();
+  // Browsing a topic must not navigate away from an edited proof.
+  if (!proofs.some(item => item.id === proofId)) {
+    const prompt = document.createElement("option");
+    prompt.value = "";
+    prompt.textContent = "Choose a proof…";
+    prompt.disabled = true;
+    prompt.selected = true;
+    $("proof-picker").append(prompt);
+  }
+  for (const item of proofs) {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = item.title;
+    $("proof-picker").append(option);
+  }
+  if (proofs.some(item => item.id === proofId)) $("proof-picker").value = proofId;
+  $("proof-count").textContent = `${proofs.length} proofs`;
+}
+$("proof-topic").value = choices.find(item => item.id === proofId).topic;
+showTopic($("proof-topic").value);
+$("proof-topic").onchange = () => showTopic($("proof-topic").value);
 function rememberDraft() {
   try {
     sessionStorage.setItem(
@@ -238,6 +118,7 @@ function rememberDraft() {
   } catch {}
 }
 $("proof-picker").onchange = () => {
+  if (!$("proof-picker").value) return;
   rememberDraft();
   location.href = `proof.html?proof=${encodeURIComponent($("proof-picker").value)}`;
 };

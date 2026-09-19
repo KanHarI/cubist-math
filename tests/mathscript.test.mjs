@@ -1509,3 +1509,63 @@ test("dyadic tail bounds reject reversed monotonicity and silent extraction of A
   assert.notEqual(chosen, sources.fine_interval_tails);
   assert.throws(() => compile(module, chosen, sources));
 });
+
+test("refinement families join with checked endpoint paths and ordered sums without axioms", t => {
+  const c = compile(module, sources.subdivision_refinement, sources);
+  try {
+    const outputs = [...c.outputs, ...c.imports];
+    for (const name of ["subdivision_sum_move_end", "subdivision_condition_move_end", "subdivision_total_join",
+      "subdivision_tagged_join", "subdivision_refinement_sum_join", "subdivision_refinement_sum_single"]) {
+      const output = outputs.find(o => o.name === name);
+      assert.ok(output, name);
+      assert.ok(c.kernel.verify(output.proposition, output.binding), name);
+      assert.deepEqual(c.kernel.axiomsFor(output.binding), [], name);
+    }
+    const join = outputs.find(o => o.name === "subdivision_refinement_sum_join");
+    assert.match(join.type, /coarseLeft : SampleSubdivision/);
+    assert.match(join.type, /fineLeft : SampleSubdivision/);
+    assert.doesNotMatch(join.type, /commutative|choice|LEM/);
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; axiom-free dependent refinement joins`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("a joined two-edge coarse partition retains the actual three-edge refinement", () => {
+  const example = `import subdivision_refinement;
+    def condition(a : Nat, b : Nat, tag : Nat, piece : SampleSubdivision(Nat, a, b)) = typed(Type1, Unit);
+    def edge(a : Nat, b : Nat, tag : Nat) = tag;
+    def coarseLeft = single_edge_subdivision(Nat, 0, 2);
+    def coarseRight = single_edge_subdivision(Nat, 2, 3);
+    def fineLeft = two_edge_subdivision(Nat, 0, 1, 2);
+    def fineRight = single_edge_subdivision(Nat, 2, 3);
+    def coarse = join_subdivisions(Nat, 0, 2, 3, coarseLeft, coarseRight);
+    def fine = join_subdivisions(Nat, 0, 2, 3, fineLeft, fineRight);
+    theorem refinement : SubdivisionRefinementSum(Nat, Nat, 0, add, edge, condition, 0, 3, coarse, fine) {
+      let left = subdivision_refinement_sum_single(Nat, Nat, 0, add, nat_add_zero, edge, condition, 0, 2, fineLeft, tt);
+      let right = subdivision_refinement_sum_single(Nat, Nat, 0, add, nat_add_zero, edge, condition, 2, 3, fineRight, tt);
+      exact subdivision_refinement_sum_join(Nat, Nat, 0, add, (fun (n : Nat) => refl(n)), nat_add_assoc, edge, condition,
+        0, 2, 3, coarseLeft, coarseRight, fineLeft, fineRight, left, right);
+    }
+    theorem coarse_count : subdivision_count(Nat, 0, 3, coarse) = 2 { exact refl(2); }
+    theorem fine_count : subdivision_count(Nat, 0, 3, fine) = 3 { exact refl(3); }
+    theorem actual_sum : subdivision_sum(Nat, Nat, 0, add, edge, 0, 3, fine) = 3 { exact refl(3); }
+  `;
+  const c = compile(module, example, sources);
+  try {
+    for (const name of ["refinement", "coarse_count", "fine_count", "actual_sum"]) {
+      const output = c.outputs.find(o => o.name === name);
+      assert.ok(c.kernel.verify(output.proposition, output.binding), name);
+      assert.deepEqual(c.kernel.axiomsFor(output.binding), [], name);
+    }
+  } finally { c.kernel.dispose(); }
+  const wrong = example.replace("fine) = 3 { exact refl(3); }", "fine) = 2 { exact refl(2); }");
+  assert.notEqual(wrong, example);
+  assert.throws(() => compile(module, wrong, sources));
+});
+
+test("refinement joins reject reversing an ordered monoid sum", () => {
+  const ordered = "addG(subdivision_total(C, G, zero, addG, edge, n, vertices, pieces), subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces))";
+  const reversed = "addG(subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces), subdivision_total(C, G, zero, addG, edge, n, vertices, pieces))";
+  const wrong = sources.subdivision_join.replaceAll(ordered, reversed);
+  assert.notEqual(wrong, sources.subdivision_join);
+  assert.throws(() => compile(module, wrong, sources));
+});

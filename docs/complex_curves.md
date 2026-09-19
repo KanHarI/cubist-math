@@ -226,6 +226,12 @@ that concatenating subdivisions with matching endpoints preserves their tag
 conditions, including empty prefixes and suffixes. This axiom-free result
 will keep the samples admissible when the bisections are iterated.
 
+Here **dyadic** means repeated halving: one interval becomes two, then four,
+then eight. The unit parameter interval has width `1 / 2^n` at level `n`.
+These are subdivisions of the curve's parameter, not equal arc-length pieces.
+Their contour sums sample the integrand on each small interval and multiply
+by the curve's complex displacement across that interval.
+
 [dyadic_sampling](../web/proofs/dyadic_sampling.proof) now recursively bisects
 both half-intervals and joins their samples. At depth `n` the result has
 exactly `2^n` edges, admissible tags, and every edge's width is bounded by
@@ -266,7 +272,19 @@ from `Archimedean`. The modulus uses a bound for `width / epsilon`.
 With ordinary Archimedeanness, only the per-tolerance tail existence is
 claimed. These lemmas introduce neither excluded middle nor choice.
 
-Cross-level refinement identities for these constructed samples, Cauchy
+Joining refinement families is now checked in
+[subdivision_join](../web/proofs/subdivision_join.proof): the actual per-edge
+subdivisions concatenate with an exact identity for their ordered sum.
+[Endpoint transport](../web/proofs/subdivision_transport.proof) and
+[condition preservation](../web/proofs/subdivision_join_conditions.proof)
+handle the dependent endpoint types without assuming equality of their
+proofs. [subdivision_refinement](../web/proofs/subdivision_refinement.proof)
+combines two such refinement certificates when both the coarse and fine
+halves are joined. These results are axiom-free and require no commutativity
+of the sum. The certificate identifies sums for the specified edge function;
+it does not identify arbitrary sample lists merely because their sums agree.
+
+Applying these joins to prove the cross-level dyadic refinement identities, Cauchy
 convergence of contour sums, and homotopy estimates remain to be proved.
 Actual moduli from the existing merely existential interface still require
 a separate bridge or a concrete bound construction. No integral limit

@@ -4,6 +4,7 @@ import { readFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import proofs from "../web/proofs/catalogue.mjs";
+import { selectProof } from "./proof-navigation.mjs";
 const child = spawn(
   "python3",
   [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
@@ -464,7 +465,7 @@ try {
     await page.locator("#proof-title").textContent(),
     /mathematical foundations/,
   );
-  await page.locator("#proof-picker").selectOption("basics");
+  await selectProof(page, "basics");
   await page.waitForFunction(() =>
     document.querySelector("#result").textContent.includes("copy_of_two"),
   );
@@ -496,7 +497,7 @@ try {
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.locator("#proof-picker").selectOption("surjections");
+  await selectProof(page, "surjections");
   await page.locator("#result:not([hidden])").waitFor();
   assert.match(await page.locator("#result").textContent(), /Verified every_surjection_has_right_inverse/);
   const surjectionResult = page.locator("#result > div").filter({
@@ -509,7 +510,7 @@ try {
   await page.locator('#read-source [data-name="setA"]').first().click();
   assert.match(await page.locator("#inspect-type").textContent(), /IsSet\(A\)/);
   assert.match(await page.locator("#language-guide").textContent(), /intro name;/);
-  await page.locator("#proof-picker").selectOption("schroeder_bernstein");
+  await selectProof(page, "schroeder_bernstein");
   await page.locator("#result:not([hidden])").waitFor();
   assert.match(await page.locator("#result").textContent(), /Verified cantor_schroeder_bernstein/);
   const csbResult = page.locator("#result > div").filter({
@@ -532,7 +533,7 @@ try {
     ["puncture_winding", "puncture_generators_distinct"],
     ["puncture_noncommutative", "winding_vector_does_not_classify_loops"],
   ]) {
-    await page.locator("#proof-picker").selectOption(proof);
+    await selectProof(page, proof);
     await page.locator("#result:not([hidden])").waitFor({ timeout: 120000 });
     assert.match(await page.locator("#result").textContent(), new RegExp(`Verified ${theorem}`));
     assert.equal(await page.locator("#puncture-note").isVisible(), true);
@@ -568,6 +569,10 @@ try {
     ["dyadic_tails", "dyadic_width_eventually_small"],
     ["dyadic_convergence", "dyadic_width_converges_from_bounds"],
     ["fine_interval_tails", "archimedean_interval_fine_tail"],
+    ["subdivision_transport", "subdivision_condition_move_end"],
+    ["subdivision_join", "subdivision_total_join"],
+    ["subdivision_join_conditions", "subdivision_tagged_join"],
+    ["subdivision_refinement", "subdivision_refinement_sum_join"],
 
     ["affine_partition_refinement", "affine_partition_uniform_estimate"],
 
@@ -591,7 +596,7 @@ try {
     ["complex_polynomials", "monic_linear_root_unique"],
     ["polynomial_difference", "monic_factor_at_root"],
   ]) {
-    await page.locator("#proof-picker").selectOption(proof);
+    await selectProof(page, proof);
     await page.locator("#result:not([hidden]), #diagnostic:not([hidden])").waitFor({ timeout: ["curve_contour_limits", "curve_tag_stability"].includes(proof) ? 900000 : 300000 });
     assert.equal(await page.locator("#diagnostic").isVisible(), false, await page.locator("#diagnostic").textContent());
     assert.match(await page.locator("#result").textContent(), new RegExp(`Verified ${theorem}`));
@@ -611,7 +616,7 @@ try {
     ["boolean_cuts", "classical_upper_membership"],
     ["cauchy_quotient", "cauchy_sequence_representatives"],
   ]) {
-    await page.locator("#proof-picker").selectOption(proof);
+    await selectProof(page, proof);
     await page.locator("#result:not([hidden])").waitFor();
     assert.match(await page.locator("#result").textContent(), new RegExp(`Verified ${theorem}`));
     assert.equal(await page.locator("#development-note").isVisible(), true);
@@ -620,12 +625,12 @@ try {
     if (proof !== "boolean_cuts") assert.equal(await page.locator('#result [data-axiom="LEM"]').count(), 0);
     else assert.ok(await page.locator('#result [data-axiom="LEM"]').count() > 0);
   }
-  await page.locator("#proof-picker").selectOption("field_logic");
+  await selectProof(page, "field_logic");
   await page.locator("#result:not([hidden])").waitFor();
   await page.locator('#read-source [data-name="truncation_at"]').first().click();
   assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_Trunc/);
   assert.match(await page.locator("#language-guide").textContent(), /Type1/);
-  await page.locator("#proof-picker").selectOption("circle");
+  await selectProof(page, "circle");
   await page.locator("#result:not([hidden])").waitFor();
   assert.equal(await page.locator("#development-note").isVisible(), false);
   assert.equal(await page.locator("#puncture-note").isVisible(), false);
@@ -699,7 +704,7 @@ try {
       await workerGate;
       await route.continue();
     }, { times: 1 });
-    await page.locator("#proof-picker").selectOption(proof);
+    await selectProof(page, proof);
     await page.locator("#check-loader:not([hidden])").waitFor();
     assert.equal(await page.locator("#source-panel").getAttribute("aria-busy"), "true");
     assert.equal(await page.locator("#check-progress").getAttribute("value"), null);
@@ -724,7 +729,7 @@ try {
   await page.locator("#view-source").click();
   await page.locator("#result:not([hidden])").waitFor();
   assert.match(await page.locator("#read-source .active").textContent(), /lib_trunc_elim = postulate/);
-  await page.locator("#proof-picker").selectOption("truncation");
+  await selectProof(page, "truncation");
   await page.locator("#result:not([hidden])").waitFor();
   await page.locator('#read-source [data-name="truncation_elim"]').click();
   assert.equal(await page.locator("#inspect-name").textContent(), "truncation_elim");
