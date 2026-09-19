@@ -96,6 +96,12 @@ The [circle development](docs/circle_fundamental_group.md) constructs
 integer addition. Its proof and supporting lemmas are high-level source; the C
 extension implements general suspension rules only.
 
+The [group structure identity development](docs/group_identity.md) proves
+`(G = H) ≃ GroupIso(G, H)` for bundled small groups, with both canonical inverse
+laws. Applying it to the winding isomorphism gives an actual equality of the
+circle loop group and the integer group. It uses univalence and function
+extensionality, without choice or excluded middle.
+
 The [finite counting development](docs/finite_counting.md) constructs `Fin(n)`
 from sums of Unit and proves the binomial, permutation (`k!`), and function
 (`m^n`, including `k^k`) counts. Open `?proof=binomial_counting`,

@@ -18,6 +18,16 @@ export const proofTopics = [
 ];
 
 export const proofChoices = [
+  { id: "group_univalence", topic: "algebra", title: "Groups · isomorphism is equality" },
+  { id: "circle_group_identity", topic: "homotopy", title: "Circle · the loop group equals the integer group" },
+  { id: "group_identity", topic: "algebra", title: "Groups · bundled structures and identity paths" },
+  { id: "group_isomorphisms", topic: "algebra", title: "Groups · extensionality of isomorphisms" },
+  { id: "group_total_identity", topic: "algebra", title: "Groups · the contractible isomorphism family" },
+  { id: "identity_systems", topic: "homotopy", title: "Identity systems · canonical path equivalences" },
+  { id: "subdivision_tagged_zip", topic: "curves-sampling", title: "Curve sampling · combine coarse and refined tag conditions", complexDevelopment: true },
+  { id: "dyadic_refinement_mesh", topic: "curves-sampling", title: "Curve sampling · dyadic refinement below a requested mesh", complexDevelopment: true },
+  { id: "curve_refinement_estimates", topic: "contour-integration", title: "Curve contours · estimates for specified fine samples", complexDevelopment: true },
+  { id: "dyadic_contour_estimates", topic: "contour-integration", title: "Curve contours · uniform errors between dyadic levels", complexDevelopment: true },
   { id: "interval_midpoint_data", topic: "curves-sampling", title: "Curve sampling · a midpoint and its checked bounds", complexDevelopment: true },
   { id: "dyadic_data", topic: "curves-sampling", title: "Curve sampling · exact dyadic construction equations", complexDevelopment: true },
   { id: "dyadic_refinement", topic: "curves-sampling", title: "Curve sampling · later dyadic levels refine earlier ones", complexDevelopment: true },

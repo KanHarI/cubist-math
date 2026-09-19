@@ -1,0 +1,41 @@
+import sample_subdivision_conditions;
+import sample_tagged;
+
+// Combine a coarse-edge condition and a condition on its actual subdivision.
+// Both families have the same vertices and tags, so their heads correspond.
+theorem subdivision_tagged_zip_step(C : Type1, coarse : C -> C -> C -> Type,
+  fine : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1),
+  other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1),
+  combine : (forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b), coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)),
+  n : Nat, previous : (forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
+    SampleTagged(C, coarse, n, vertices, tags) -> SubdivisionTagged(C, fine, n, vertices, tags, pieces) -> SubdivisionTagged(C, other, n, vertices, tags, pieces)),
+  vertices : SampleVertices(C, succ(n)), tags : SampleTags(C, succ(n)), pieces : SampleSubdivisions(C, succ(n), vertices),
+  coarseValid : SampleTagged(C, coarse, succ(n), vertices, tags), fineValid : SubdivisionTagged(C, fine, succ(n), vertices, tags, pieces)) :
+  SubdivisionTagged(C, other, succ(n), vertices, tags, pieces) {
+  let a = field_fst(C, SampleVertices(C, n), vertices);
+  let tail = field_snd(C, SampleVertices(C, n), vertices);
+  let b = sample_first(C, n, tail);
+  let tag = field_fst(C, SampleTags(C, n), tags);
+  let tailTags = field_snd(C, SampleTags(C, n), tags);
+  let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  have coarseData : coarse(a, b, tag) and SampleTagged(C, coarse, n, tail, tailTags) { exact coarseValid; }
+  have fineData : fine(a, b, tag, headPiece) and SubdivisionTagged(C, fine, n, tail, tailTags, tailPieces) { exact fineValid; }
+  obtain (headCoarse, tailCoarse) = coarseData;
+  obtain (headFine, tailFine) = fineData;
+  exact typed((other(a, b, tag, headPiece) and SubdivisionTagged(C, other, n, tail, tailTags, tailPieces)),
+    (combine(a, b, tag, headPiece, headCoarse, headFine), previous(tail, tailTags, tailPieces, tailCoarse, tailFine)));
+}
+
+theorem subdivision_tagged_zip(C : Type1, coarse : C -> C -> C -> Type,
+  fine : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1),
+  other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> Type1),
+  combine : (forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b), coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)), n : Nat) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
+    SampleTagged(C, coarse, n, vertices, tags) -> SubdivisionTagged(C, fine, n, vertices, tags, pieces) -> SubdivisionTagged(C, other, n, vertices, tags, pieces) {
+  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), forall pieces : SampleSubdivisions(C, k, vertices),
+    SampleTagged(C, coarse, k, vertices, tags) -> SubdivisionTagged(C, fine, k, vertices, tags, pieces) -> SubdivisionTagged(C, other, k, vertices, tags, pieces)) {
+    zero => fun (vertices : C) => fun (tags : Unit) => fun (pieces : Unit) => fun (coarseValid : Unit) => fun (fineValid : Unit) => tt;
+    succ previous => subdivision_tagged_zip_step(C, coarse, fine, other, combine, k, previous);
+  };
+}

@@ -1541,6 +1541,39 @@ test("dyadic construction equations reject joining the wrong sampling level", ()
   assert.throws(() => compile(module, wrong, sources), /Expected|Conversion types differ/);
 });
 
+test("uniform dyadic contour estimates control the actual later sampling levels", t => {
+  const c = compile(module, sources.dyadic_contour_estimates, sources);
+  try {
+    const outputs = [...c.outputs, ...c.imports];
+    for (const name of ["subdivision_tagged_zip", "dyadic_samples_refine_below_mesh",
+      "curve_refinement_partition_estimate", "affine_refinement_sum_estimate", "affine_dyadic_refinement_estimate"]) {
+      const output = outputs.find(o => o.name === name);
+      assert.ok(output, name);
+      assert.ok(c.kernel.verify(output.proposition, output.binding), name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => a === "lib_Trunc"), name);
+    }
+    const estimate = outputs.find(o => o.name === "affine_dyadic_refinement_estimate");
+    assert.match(estimate.type, /uniform : ComplexUniformCurve/);
+    assert.match(estimate.type, /exists mesh : F/);
+    assert.match(estimate.type, /forall depth : Nat, forall extra : Nat/);
+    assert.match(estimate.type, /ComplexPerturbation/);
+    assert.match(estimate.type, /dyadic_piece/);
+    assert.match(estimate.type, /\(depth \+ extra\)/);
+    assert.doesNotMatch(estimate.type, /FieldConverges|FieldCauchy|LEM|AOC|localEstimates :/);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; uniform errors for the actual fine samples`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("a flattening estimate cannot identify the fine contour without its sum certificate", () => {
+  const disconnected = sources.curve_refinement_estimates.replace(
+    "let identifies = trans(flatComputes, trans(sym(computes), mappedFine));",
+    "let identifies = flatComputes;");
+  assert.notEqual(disconnected, sources.curve_refinement_estimates);
+  assert.throws(() => compile(module, disconnected, sources), /Expected|Conversion types differ/);
+});
+
 test("refinement families join with checked endpoint paths and ordered sums without axioms", t => {
   const c = compile(module, sources.subdivision_refinement, sources);
   try {

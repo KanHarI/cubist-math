@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { parse } from "../web/mathscript/parser.mjs";
 
 export const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-export const defaultTests = ["tests/workbench.test.mjs", "tests/mathscript.test.mjs", "tests/test-runner.test.mjs", "tests/proof-watchdog.test.mjs", "tests/proof-library.test.mjs", "tests/compiler-optimizations.test.mjs", "tests/compiler-equivalence.test.mjs", "tests/inspector-mathscript.test.mjs"];
+export const defaultTests = ["tests/workbench.test.mjs", "tests/mathscript.test.mjs", "tests/test-runner.test.mjs", "tests/proof-watchdog.test.mjs", "tests/proof-library.test.mjs", "tests/group-identity.test.mjs", "tests/compiler-optimizations.test.mjs", "tests/compiler-equivalence.test.mjs", "tests/inspector-mathscript.test.mjs"];
 export const help = `Usage: npm test -- [options] [module | file ...]
 
   npm test                              Full regression suite (final check)

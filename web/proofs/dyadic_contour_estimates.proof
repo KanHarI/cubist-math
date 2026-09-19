@@ -1,0 +1,41 @@
+import curve_refinement_estimates;
+import dyadic_refinement_mesh;
+
+// Uniform continuity supplies one mesh controlling every later dyadic level.
+// The bound depends on the outer width, not the number of samples.
+theorem affine_dyadic_refinement_estimate(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F), integrand : Complex(F) -> Complex(F),
+  uniform : ComplexUniformCurve(F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)))),
+  delta : F, positiveDelta : lt(zero, delta),
+  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x)) :
+  exists mesh : F, lt(zero, mesh) and (forall depth : Nat, forall extra : Nat, forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt), forall ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b)),
+    lt(dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b)), mesh) ->
+    ComplexPerturbation(F, addF, negF, lt, curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, dyadic_piece(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered)), curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, dyadic_piece(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth + extra, a, b, ordered)), mulF(delta, mulF(interval_difference(F, zero, one, addF, negF, lt)(a, b), affine_coordinate_length(F, addF, negF, maxF, slope))))) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
+  let zeroC = complex_zero(F, zero);
+  let addC = complex_add(F, addF);
+  let edge = parameter_contour_edge(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t))));
+  let leftUnit = complex_add_zero(F, zero, one, addF, mulF, negF, ring);
+  let assoc = complex_add_assoc(F, zero, one, addF, mulF, negF, ring);
+  have rightUnit : forall x : Complex(F), addC(x, zeroC) = x {
+    intro x;
+    exact trans(complex_add_comm(F, zero, one, addF, mulF, negF, ring, x, zeroC), leftUnit(x));
+  }
+  obtain (mesh, (positiveMesh, estimates)) = affine_refinement_sum_estimate(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope, integrand, uniform, delta, positiveDelta);
+  have bounds : forall depth : Nat, forall extra : Nat, forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt), forall ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b)),
+    lt(dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b)), mesh) ->
+    ComplexPerturbation(F, addF, negF, lt, curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, dyadic_piece(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered)), curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, dyadic_piece(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth + extra, a, b, ordered)), mulF(delta, mulF(interval_difference(F, zero, one, addF, negF, lt)(a, b), affine_coordinate_length(F, addF, negF, maxF, slope)))) {
+    intro depth;
+    intro extra;
+    intro a;
+    intro b;
+    intro ordered;
+    intro small;
+    let refinement = dyadic_samples_refine_below_mesh(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, Complex(F), zeroC, addC, leftUnit, rightUnit, assoc, edge,
+      depth, extra, a, b, ordered, mesh, small);
+    exact estimates(a, b, dyadic_piece(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered), dyadic_piece(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth + extra, a, b, ordered), refinement);
+  }
+  exact (mesh, (positiveMesh, bounds));
+}

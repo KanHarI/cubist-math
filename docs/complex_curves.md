@@ -295,8 +295,24 @@ proves their tags are admissible, and identifies their ordered total with
 the actual finer sum. This holds for any monoid-valued edge function;
 commutativity, excluded middle, and choice are not required.
 
-Combining these actual refinements with mesh estimates to prove Cauchy
-convergence of contour sums, and proving homotopy estimates, remain to be done.
+[subdivision_tagged_zip](../web/proofs/subdivision_tagged_zip.proof) combines
+coarse-edge bounds and admissibility of the actual per-edge refinements.
+[dyadic_refinement_mesh](../web/proofs/dyadic_refinement_mesh.proof) applies
+this to obtain the mesh hypotheses required by the analytic estimates.
+[curve_refinement_estimates](../web/proofs/curve_refinement_estimates.proof)
+transfers an estimate for a constructed flattening to the specified fine
+samples, using their exact sum identity rather than identifying sample lists.
+
+[dyadic_contour_estimates](../web/proofs/dyadic_contour_estimates.proof) now
+proves an actual cross-level bound: for a uniformly continuous integrand along
+an affine curve, each positive `delta` supplies one positive mesh such that
+all dyadic levels `n` meeting that mesh and all refinements `n + k` differ by
+a `ComplexPerturbation` bounded by `delta * outerWidth * coordinateLength`.
+The bound is independent of both sample counts. This remains a finite-sum
+estimate, with the supplied field and continuity assumptions explicit.
+
+Using these estimates to construct a Cauchy modulus and the limit of contour
+sums, and proving homotopy estimates, remain to be done.
 Actual moduli from the existing merely existential interface still require
 a separate bridge or a concrete bound construction. No integral limit
 is constructed by these finite results.

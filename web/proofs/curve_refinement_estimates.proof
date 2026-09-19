@@ -1,0 +1,75 @@
+import affine_partition_refinement;
+import subdivision_refinement;
+
+// A partition estimate constructs some flattening. A refinement certificate
+// identifies its sum with the specified fine samples; equal sample lists are
+// not required. Transport only the value of the fine contour sum.
+theorem curve_refinement_partition_estimate(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
+  condition : (forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt), FieldUnitInterval(F, zero, one, lt) -> SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b) -> Type1),
+  a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), radius : F,
+  refinement : SubdivisionRefinementSum(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF), parameter_contour_edge(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t)))), condition, a, b, coarse, fine),
+  estimates : (forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, coarse), subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, coarse)),
+    SubdivisionTagged(FieldUnitInterval(F, zero, one, lt), condition, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, coarse), subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, coarse), subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, coarse), pieces) ->
+    CurvePartitionEstimate(F, zero, one, addF, mulF, negF, lt, curve, integrand, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, coarse), subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, coarse), subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, coarse), pieces, radius))) :
+  ComplexPerturbation(F, addF, negF, lt, curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, coarse), curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, fine), radius) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let n = subdivision_count(I, a, b, coarse);
+  let vertices = subdivision_vertices(I, a, b, coarse);
+  let tags = subdivision_tags(I, a, b, coarse);
+  let first = sample_first(I, n, vertices);
+  let last = sample_last(I, n, vertices);
+  obtain (pieces, (valid, computes)) = refinement;
+  obtain (flat, (flatComputes, bounded)) = estimates(pieces, valid);
+  let mappedFine = parameter_contour_sum_is_mapped(I, Complex(F), complex_zero(F, zero), complex_add(F, addF),
+    complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, integrand,
+    subdivision_count(I, a, b, fine), subdivision_vertices(I, a, b, fine), subdivision_tags(I, a, b, fine));
+  let identifies = trans(flatComputes, trans(sym(computes), mappedFine));
+  exact transport((fun (sum : Complex(F)) => ComplexPerturbation(F, addF, negF, lt, curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, coarse), sum, radius)),
+    curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, first, last, flat), curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, fine), identifies, bounded);
+}
+
+
+// The error estimate now applies to a specified actual fine sample, rather
+// than only the fresh flattening returned by the partition estimate.
+theorem affine_refinement_sum_estimate(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F), integrand : Complex(F) -> Complex(F),
+  uniform : ComplexUniformCurve(F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)))),
+  delta : F, positiveDelta : lt(zero, delta)) :
+  exists mesh : F, lt(zero, mesh) and (forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt), forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+    SubdivisionRefinementSum(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF), parameter_contour_edge(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)))),
+      IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine) ->
+    ComplexPerturbation(F, addF, negF, lt, curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, coarse), curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, fine), mulF(delta, mulF(interval_difference(F, zero, one, addF, negF, lt)(a, b), affine_coordinate_length(F, addF, negF, maxF, slope))))) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
+  let length = affine_coordinate_length(F, addF, negF, maxF, slope);
+  let width = interval_difference(F, zero, one, addF, negF, lt);
+  obtain (mesh, (positiveMesh, estimates)) = affine_partition_uniform_estimate(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope, integrand, uniform, delta, positiveDelta);
+  have actual : forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt), forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+    SubdivisionRefinementSum(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF), parameter_contour_edge(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)))),
+      IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine) ->
+    ComplexPerturbation(F, addF, negF, lt, curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, coarse), curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, fine), mulF(delta, mulF(interval_difference(F, zero, one, addF, negF, lt)(a, b), affine_coordinate_length(F, addF, negF, maxF, slope)))) {
+    intro a;
+    intro b;
+    intro coarse;
+    intro fine;
+    intro refinement;
+    let n = subdivision_count(I, a, b, coarse);
+    let vertices = subdivision_vertices(I, a, b, coarse);
+    let tags = subdivision_tags(I, a, b, coarse);
+    let first = sample_first(I, n, vertices);
+    let last = sample_last(I, n, vertices);
+    let oldRadius = mulF(delta, mulF(width(first, last), length));
+    let bounded = curve_refinement_partition_estimate(F, zero, one, addF, mulF, negF, lt, curve, integrand,
+      IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine, oldRadius, refinement, estimates(n, vertices, tags));
+    have firstPath : first = a { exact field_fst((first = a), (last = b), subdivision_endpoints(I, a, b, coarse)); }
+    have lastPath : last = b { exact field_snd((first = a), (last = b), subdivision_endpoints(I, a, b, coarse)); }
+    let widthPath = trans(cong((fun (v : I) => width(v, last)), firstPath), cong(width(a), lastPath));
+    let radiusPath = cong((fun (v : F) => mulF(delta, mulF(v, length))), widthPath);
+    exact transport((fun (radius : F) => ComplexPerturbation(F, addF, negF, lt,
+      curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, coarse), curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, fine), radius)),
+      oldRadius, mulF(delta, mulF(width(a, b), length)), radiusPath, bounded);
+  }
+  exact (mesh, (positiveMesh, actual));
+}
