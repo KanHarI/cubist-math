@@ -1510,6 +1510,37 @@ test("dyadic tail bounds reject reversed monotonicity and silent extraction of A
   assert.throws(() => compile(module, chosen, sources));
 });
 
+test("actual dyadic levels refine each other with admissible pieces and ordered sums", t => {
+  const c = compile(module, sources.dyadic_refinement, sources);
+  try {
+    const outputs = [...c.outputs, ...c.imports];
+    for (const name of ["dyadic_piece_zero", "dyadic_piece_succ", "dyadic_piece_count",
+      "dyadic_piece_admissible", "dyadic_samples_refine"]) {
+      const output = outputs.find(o => o.name === name);
+      assert.ok(output, name);
+      assert.ok(c.kernel.verify(output.proposition, output.binding), name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => a === "lib_Trunc"), name);
+    }
+    const refinement = outputs.find(o => o.name === "dyadic_samples_refine");
+    assert.match(refinement.type, /forall extra : Nat/);
+    assert.match(refinement.type, /SubdivisionRefinementSum/);
+    assert.match(refinement.type, /IntervalRefinementAdmissible/);
+    assert.match(refinement.type, /\(depth \+ extra\)/);
+    assert.doesNotMatch(refinement.type, /commutative|choice|LEM|partition :|pieces :/);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; actual recursively constructed refinements`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("dyadic construction equations reject joining the wrong sampling level", () => {
+  const wrong = sources.dyadic_data.replace(
+    "depth, a, b, ordered) {\n  exact refl(dyadic_children_join",
+    "succ(depth), a, b, ordered) {\n  exact refl(dyadic_children_join");
+  assert.notEqual(wrong, sources.dyadic_data);
+  assert.throws(() => compile(module, wrong, sources), /Expected|Conversion types differ/);
+});
+
 test("refinement families join with checked endpoint paths and ordered sums without axioms", t => {
   const c = compile(module, sources.subdivision_refinement, sources);
   try {

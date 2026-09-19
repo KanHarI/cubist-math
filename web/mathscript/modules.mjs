@@ -124,6 +124,7 @@ export const sourceModules = [
   "interval_subdivisions",
   "affine_partition_refinement",
   "interval_bisection",
+  "interval_midpoint_data",
   "sample_join_conditions",
   "sample_condition_maps",
   "dyadic_sampling",
@@ -138,4 +139,6 @@ export const sourceModules = [
   "subdivision_join",
   "subdivision_join_conditions",
   "subdivision_refinement",
+  "dyadic_data",
+  "dyadic_refinement",
 ];

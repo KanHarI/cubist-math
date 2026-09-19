@@ -284,8 +284,19 @@ halves are joined. These results are axiom-free and require no commutativity
 of the sum. The certificate identifies sums for the specified edge function;
 it does not identify arbitrary sample lists merely because their sums agree.
 
-Applying these joins to prove the cross-level dyadic refinement identities, Cauchy
-convergence of contour sums, and homotopy estimates remain to be proved.
+[dyadic_data](../web/proofs/dyadic_data.proof) exposes the actual recursively
+constructed samples, with checked equations for the initial edge and the
+join of two sampled halves. The data-producing definitions are transparent
+so these equations compute. The midpoint and its bounds are projections
+of the same constructed witness, not independently chosen points.
+[dyadic_refinement](../web/proofs/dyadic_refinement.proof) now proves that
+level `n + k` refines level `n`: it constructs the per-edge subdivisions,
+proves their tags are admissible, and identifies their ordered total with
+the actual finer sum. This holds for any monoid-valued edge function;
+commutativity, excluded middle, and choice are not required.
+
+Combining these actual refinements with mesh estimates to prove Cauchy
+convergence of contour sums, and proving homotopy estimates, remain to be done.
 Actual moduli from the existing merely existential interface still require
 a separate bridge or a concrete bound construction. No integral limit
 is constructed by these finite results.

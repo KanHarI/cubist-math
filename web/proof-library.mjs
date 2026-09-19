@@ -18,6 +18,9 @@ export const proofTopics = [
 ];
 
 export const proofChoices = [
+  { id: "interval_midpoint_data", topic: "curves-sampling", title: "Curve sampling · a midpoint and its checked bounds", complexDevelopment: true },
+  { id: "dyadic_data", topic: "curves-sampling", title: "Curve sampling · exact dyadic construction equations", complexDevelopment: true },
+  { id: "dyadic_refinement", topic: "curves-sampling", title: "Curve sampling · later dyadic levels refine earlier ones", complexDevelopment: true },
   { id: "subdivision_transport", topic: "curves-sampling", title: "Curve sampling · transport refinement endpoints", complexDevelopment: true },
   { id: "subdivision_join", topic: "curves-sampling", title: "Curve sampling · join per-edge refinement families", complexDevelopment: true },
   { id: "subdivision_join_conditions", topic: "curves-sampling", title: "Curve sampling · preserve refinement conditions under joins", complexDevelopment: true },
