@@ -5,10 +5,9 @@ import { Kernel } from "../web/kernel.mjs";
 import { compile } from "../web/mathscript/compiler.mjs";
 
 const module = await createKernel();
-const configurations = Array.from({ length: 8 }, (_, mask) => ({
+const configurations = Array.from({ length: 4 }, (_, mask) => ({
   normalForms: !!(mask & 1),
   instructions: !!(mask & 2),
-  freshContexts: !!(mask & 4),
 }));
 
 // Replay into the same kernel so agreement is checked by the kernel itself,

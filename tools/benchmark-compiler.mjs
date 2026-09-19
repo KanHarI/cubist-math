@@ -15,7 +15,6 @@ and axiom dependencies. Only selected proofs and their imports are compiled.
 
   --reuse-normal-forms     Compare baseline with normal-form reuse
   --memoize-instructions   Compare baseline with instruction memoization
-  --index-fresh-contexts   Compare baseline with incremental context lookup
   --baseline-only          Measure only baseline compilation
   --replay                 Replay every instruction in a fresh kernel
   --json                   Print machine-readable results
@@ -91,13 +90,12 @@ async function main(args) {
     return;
   }
   const proofs = [];
-  const selected = { normalForms: false, instructions: false, freshContexts: false };
+  const selected = { normalForms: false, instructions: false };
   let baselineOnly = false, replay = false, json = false;
   for (const arg of args) {
     if (arg === "--help" || arg === "-h") { console.log(help); return; }
     if (arg === "--reuse-normal-forms") selected.normalForms = true;
     else if (arg === "--memoize-instructions") selected.instructions = true;
-    else if (arg === "--index-fresh-contexts") selected.freshContexts = true;
     else if (arg === "--baseline-only") baselineOnly = true;
     else if (arg === "--replay") replay = true;
     else if (arg === "--json") json = true;
@@ -106,11 +104,11 @@ async function main(args) {
   }
   if (!proofs.length) throw new Error(help);
   if (baselineOnly && Object.values(selected).some(Boolean)) throw new Error("--baseline-only cannot be combined with optimization flags");
-  const baseline = { normalForms: false, instructions: false, freshContexts: false };
+  const baseline = { normalForms: false, instructions: false };
   const modes = baselineOnly ? [baseline] : Object.values(selected).some(Boolean) ? [baseline, selected] : [
     baseline, { ...baseline, normalForms: true },
-    { ...baseline, instructions: true }, { ...baseline, freshContexts: true },
-    { normalForms: true, instructions: true, freshContexts: true },
+    { ...baseline, instructions: true },
+    { normalForms: true, instructions: true },
   ];
   const results = [];
   for (const path of [...new Set(proofs)]) {

@@ -2,23 +2,21 @@
 
 MathScript compiler optimizations are independently selectable. They change
 which checked instructions the compiler emits; the kernel's inference rules
-and axiom policy stay the same. All options are enabled by default.
+and axiom policy stay the same. Both options are enabled by default.
 
 | Optimization | CLI flag | What it reuses |
 | --- | --- | --- |
 | Normal-form reuse | `--reuse-normal-forms` | Checked normalization results, including intermediate terms and the resulting normal form. Cache entries distinguish kernel judgments, recorded axiom dependencies, and beta-only versus definition-unfolding reduction. |
 | Instruction memoization | `--memoize-instructions` | A previously checked instruction with the same operation, named premises, and context arguments. |
-| Fresh-context indexing | `--index-fresh-contexts` | An incrementally maintained index of existing variable contexts, replacing repeated scans of all bindings. It selects the same fresh context and preserves the instruction trace. |
 
-For a focused proof check, defaults enable all three. Disable them
+For a focused proof check, defaults enable both. Disable them
 independently:
 
 ```sh
 npm test -- sample_relations
 npm test -- --no-memoize-instructions sample_relations
 npm test -- --no-reuse-normal-forms sample_relations
-npm test -- --no-index-fresh-contexts sample_relations
-npm test -- --no-reuse-normal-forms --no-memoize-instructions --no-index-fresh-contexts sample_relations
+npm test -- --no-reuse-normal-forms --no-memoize-instructions sample_relations
 ```
 
 The proof viewer exposes the options separately near the top and rechecks
@@ -27,6 +25,11 @@ precedence over the defaults. Exported traces contain ordinary kernel
 instructions and can be replayed without enabling compiler optimizations.
 Recorded `construction` programs already specify their instructions; the
 viewer disables these compiler options for them.
+
+Fresh-context indexing is ordinary compiler behavior, with no flag or UI
+toggle. It maintains an index of existing variable contexts and replaces
+repeated scans of all bindings while selecting exactly the same fresh
+variables. It remains active with either or both instruction caches disabled.
 
 ## Measure each optimization
 
@@ -40,7 +43,7 @@ combination:
 ```sh
 node tools/benchmark-compiler.mjs sample_relations
 node tools/benchmark-compiler.mjs --replay sample_relations
-node tools/benchmark-compiler.mjs --reuse-normal-forms --memoize-instructions --index-fresh-contexts sample_relations
+node tools/benchmark-compiler.mjs --reuse-normal-forms --memoize-instructions sample_relations
 node tools/benchmark-compiler.mjs --json sample_relations
 ```
 
@@ -50,18 +53,20 @@ fixed source and compiler configuration. Elapsed times are measurements of
 individual runs and vary with machine load; fewer instructions do not imply
 an equal percentage reduction in time or memory.
 
-For `sample_tagged` and its imports, a comparison run measured:
+During the context-index experiment, `sample_tagged` and its imports measured:
 
 | Configuration | Kernel instructions | Reduction from baseline | Compilation |
 | --- | ---: | ---: | ---: |
-| Baseline | 457,688 | — | 13.49 s |
-| Normal-form reuse | 419,678 | 8.3% | 12.84 s |
-| Instruction memoization | 282,139 | 38.4% | 9.20 s |
-| Fresh-context indexing | 457,688 | 0% | 1.66 s |
-| All three | 244,439 | 46.6% | 1.40 s |
+| Old baseline, full context scans | 457,688 | — | 13.49 s |
+| Normal-form reuse, full context scans | 419,678 | 8.3% | 12.84 s |
+| Instruction memoization, full context scans | 282,139 | 38.4% | 9.20 s |
+| Context index, caches disabled | 457,688 | 0% | 1.66 s |
+| Context index and both caches | 244,439 | 46.6% | 1.40 s |
 
 All five traces were replayed successfully, with identical displayed result
 statements and axiom dependencies.
+The benchmark now always uses the context index, including for its baseline;
+the full-scan measurements above describe the earlier implementation.
 
 The larger `curve_tag_stability` development checked and replayed with
 1,211,134 instructions, compared with its previously checked baseline of
@@ -113,3 +118,14 @@ but the trace grew from 22,589 to 22,614 instructions for the required
 conversions. This experiment was not applied to the source library. A smaller
 displayed expression alone does not establish a reduction in compilation
 work or memory; the kernel already shares structurally identical subterms.
+
+## Inspector readability
+
+Checked declarations default to a **MathScript (folded)** view in the
+inspector. For example, `InfinitelyManyPrimes` displays
+`forall n : Nat, exists p : Nat, Prime(p) and n < p`. This view is recorded
+from the source that successfully checked, preserving its names and notation.
+Imported declarations work the same way, and failed checks retain the previous
+checked snapshot. The **Raw kernel term** selector and **Show full term**
+button retain access to the actual kernel representation. This presentation
+change does not alter proof storage or add a definition-boxing optimization.

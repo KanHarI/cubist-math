@@ -38,7 +38,6 @@ test("independent compiler optimizations reduce instructions and retain replayab
       assert.deepEqual(c.optimizations, {
         normalForms: optimizations.normalForms === true,
         instructions: optimizations.instructions === true,
-        freshContexts: true,
       });
     } finally { replay.dispose(); c.kernel.dispose(); }
   }
@@ -89,10 +88,9 @@ test("optimization options reject unknown keys and non-Boolean values", () => {
 
 test("mathematical compilation defaults to both optimizations with independent opt-outs", () => {
   for (const [options, expected] of [
-    [undefined, { normalForms: true, instructions: true, freshContexts: true }],
-    [{ optimizations: { normalForms: false } }, { normalForms: false, instructions: true, freshContexts: true }],
-    [{ optimizations: { instructions: false } }, { normalForms: true, instructions: false, freshContexts: true }],
-    [{ optimizations: { freshContexts: false } }, { normalForms: true, instructions: true, freshContexts: false }],
+    [undefined, { normalForms: true, instructions: true }],
+    [{ optimizations: { normalForms: false } }, { normalForms: false, instructions: true }],
+    [{ optimizations: { instructions: false } }, { normalForms: true, instructions: false }],
   ]) {
     const c = compile(module, source, {}, options);
     try { assert.deepEqual(c.optimizations, expected); }
@@ -106,23 +104,25 @@ test("construction instructions remain unchanged with default and explicit optim
     { optimizations: { normalForms: false, instructions: false } }]) {
     const c = compile(module, "construction example { export unit = unit_value(); }", {}, options);
     try {
-      assert.deepEqual(c.optimizations, { normalForms: false, instructions: false, freshContexts: false });
+      assert.deepEqual(c.optimizations, { normalForms: false, instructions: false });
       if (baseline) assert.deepEqual(c.kernel.steps, baseline);
       else baseline = c.kernel.steps;
     } finally { c.kernel.dispose(); }
   }
 });
 
-test("fresh-context indexing preserves the entire checked instruction trace", () => {
-  const baseline = compile(module, source, {}, { optimizations: { freshContexts: false } });
-  const indexed = compile(module, source, {}, { optimizations: { freshContexts: true } });
-  try { assert.deepEqual(indexed.kernel.steps, baseline.kernel.steps); }
-  finally { baseline.kernel.dispose(); indexed.kernel.dispose(); }
-});
+// Keep the old full-scan lookup only as a test oracle, not a compiler mode.
+class ScanningBuilder extends Builder {
+  fresh(A, name = null) {
+    const c = name ? name + "_context" : `p${++this.serial}_context`;
+    this.k.apply({ name: c, op: "CtxExt", args: [A], free: [null], context: null, fresh: true });
+    return { A, c, v: this.emit("Vble", [], [], c, name) };
+  }
+}
 
 test("fresh-context indexing tracks manual contexts, counter ties, and distinct dependent types", () => {
-  const run = freshContexts => {
-    const b = new Builder(module, { loadLibrary: false, optimizations: { freshContexts } });
+  const run = BuilderClass => {
+    const b = new BuilderClass(module, { loadLibrary: false });
     try {
       const unit = b.emit("UnitForm"), nat = b.emit("NatForm");
       const first = b.fresh(unit, "first");
@@ -145,5 +145,5 @@ test("fresh-context indexing tracks manual contexts, counter ties, and distinct 
       return b.k.steps;
     } finally { b.k.dispose(); }
   };
-  assert.deepEqual(run(true), run(false));
+  assert.deepEqual(run(Builder), run(ScanningBuilder));
 });

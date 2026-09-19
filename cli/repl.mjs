@@ -5,11 +5,11 @@ import { readFile, writeFile, stat } from "node:fs/promises";
 import createKernel from "../web/dist/kernel.mjs";
 import { compile } from "../web/mathscript/compiler.mjs";
 const options = process.argv.slice(2);
-if (options.some(option => !["--reuse-normal-forms", "--memoize-instructions", "--no-reuse-normal-forms", "--no-memoize-instructions", "--index-fresh-contexts", "--no-index-fresh-contexts"].includes(option)))
-  throw new Error("Usage: node cli/repl.mjs [--[no-]reuse-normal-forms] [--[no-]memoize-instructions] [--[no-]index-fresh-contexts]");
-const optimizations = { normalForms: true, instructions: true, freshContexts: true };
+if (options.some(option => !["--reuse-normal-forms", "--memoize-instructions", "--no-reuse-normal-forms", "--no-memoize-instructions"].includes(option)))
+  throw new Error("Usage: node cli/repl.mjs [--[no-]reuse-normal-forms] [--[no-]memoize-instructions]");
+const optimizations = { normalForms: true, instructions: true };
 for (const option of options)
-  optimizations[option.endsWith("reuse-normal-forms") ? "normalForms" : option.endsWith("index-fresh-contexts") ? "freshContexts" : "instructions"] = !option.startsWith("--no-");
+  optimizations[option.endsWith("reuse-normal-forms") ? "normalForms" : "instructions"] = !option.startsWith("--no-");
 import { Session } from "../web/session.mjs";
 import library from "../web/proofs/library.mjs";
 import proofs from "../web/proofs/catalogue.mjs";
@@ -136,7 +136,7 @@ check PROPOSITION PROOF      Check the closed theorem against its proof
 source / stats / ops          Show instructions, metrics, or all 67 operations
 save FILE / load FILE        Save or replay the active proof branch as JSON
 prove FILE.proof            Compile mathematical source and open its checked proof
-                            Optimizations on; CLI flags: --no-reuse-normal-forms, --no-memoize-instructions, --no-index-fresh-contexts
+                            Optimizations on; CLI flags: --no-reuse-normal-forms, --no-memoize-instructions
 run FILE.math               Preview a source program before accepting it
 axioms on / axioms off       Explicitly change the axiom policy
 help / quit`;

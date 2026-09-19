@@ -11,14 +11,14 @@ import { MAX_STEPS } from "../language.mjs";
 export function compile(module, source, library, { onProgress, optimizations = {} } = {}) {
   if (!optimizations || typeof optimizations !== "object" || Array.isArray(optimizations) ||
       Object.entries(optimizations).some(([key, value]) =>
-        !["normalForms", "instructions", "freshContexts"].includes(key) || typeof value !== "boolean"))
-    throw new Error("Compiler optimizations must contain only Boolean normalForms, instructions, and freshContexts options.");
+        !["normalForms", "instructions"].includes(key) || typeof value !== "boolean"))
+    throw new Error("Compiler optimizations must contain only Boolean normalForms and instructions options.");
   if (/^\s*(?:\/\/[^\n]*\n\s*)*construction\b/.test(source)) {
     // Recorded construction instructions are replayed exactly in every mode.
     return { ...compileConstruction(module, source, { onProgress }),
-      optimizations: { normalForms: false, instructions: false, freshContexts: false } };
+      optimizations: { normalForms: false, instructions: false } };
   }
-  optimizations = { normalForms: optimizations.normalForms ?? true, instructions: optimizations.instructions ?? true, freshContexts: optimizations.freshContexts ?? true };
+  optimizations = { normalForms: optimizations.normalForms ?? true, instructions: optimizations.instructions ?? true };
   const program = parse(source);
   const sources =
     typeof library === "string" ? { primes: library } : (library ?? {});

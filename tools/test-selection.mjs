@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { parse } from "../web/mathscript/parser.mjs";
 
 export const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-export const defaultTests = ["tests/workbench.test.mjs", "tests/mathscript.test.mjs", "tests/test-runner.test.mjs", "tests/proof-watchdog.test.mjs", "tests/compiler-optimizations.test.mjs", "tests/compiler-equivalence.test.mjs"];
+export const defaultTests = ["tests/workbench.test.mjs", "tests/mathscript.test.mjs", "tests/test-runner.test.mjs", "tests/proof-watchdog.test.mjs", "tests/compiler-optimizations.test.mjs", "tests/compiler-equivalence.test.mjs", "tests/inspector-mathscript.test.mjs"];
 export const help = `Usage: npm test -- [options] [module | file ...]
 
   npm test                              Full regression suite (final check)
@@ -15,9 +15,8 @@ export const help = `Usage: npm test -- [options] [module | file ...]
   npm test -- --changed                  Check added/modified .proof files
   npm test -- --reuse-normal-forms complex_inverses  Cache checked normal forms
   npm test -- --memoize-instructions complex_inverses  Reuse identical instructions
-  npm test -- --index-fresh-contexts complex_inverses  Index fresh binder contexts
   All default on; disable separately with --no-reuse-normal-forms,
-  --no-memoize-instructions, --no-index-fresh-contexts. Last setting wins.
+  --no-memoize-instructions. Last setting wins.
   npm test -- tests/workbench.test.mjs    Run one JavaScript test file
   npm test -- --test-name-pattern="complex inverses"  Filter regression tests
 
@@ -35,7 +34,7 @@ export function changedProofs(root = projectRoot) {
 
 export function selectTests(args, { root = projectRoot, changed = () => changedProofs(root) } = {}) {
   const tests = [], proofs = [], flags = [];
-  const optimizations = { normalForms: true, instructions: true, freshContexts: true };
+  const optimizations = { normalForms: true, instructions: true };
   let explicitOptimizations = false;
   let explicitSelection = false;
   const proof = value => {
@@ -48,9 +47,9 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
     const arg = args[i];
     if (arg === "--help" || arg === "-h") return { help: true };
     if (arg === "--") continue;
-    if (["--reuse-normal-forms", "--memoize-instructions", "--no-reuse-normal-forms", "--no-memoize-instructions", "--index-fresh-contexts", "--no-index-fresh-contexts"].includes(arg)) {
+    if (["--reuse-normal-forms", "--memoize-instructions", "--no-reuse-normal-forms", "--no-memoize-instructions"].includes(arg)) {
       explicitOptimizations = true;
-      optimizations[arg.endsWith("reuse-normal-forms") ? "normalForms" : arg.endsWith("index-fresh-contexts") ? "freshContexts" : "instructions"] = !arg.startsWith("--no-");
+      optimizations[arg.endsWith("reuse-normal-forms") ? "normalForms" : "instructions"] = !arg.startsWith("--no-");
     } else if (arg === "--changed") {
       explicitSelection = true;
       changed().forEach(proof);

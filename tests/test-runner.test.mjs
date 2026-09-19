@@ -30,20 +30,16 @@ test("proof selection deduplicates module names and paths without enabling full 
 });
 
 test("compiler optimizations default on with independent ordered CLI overrides", () => {
-  assert.deepEqual(selectTests(["basics"]).optimizations, { normalForms: true, instructions: true, freshContexts: true });
-  assert.deepEqual(selectTests(["--no-reuse-normal-forms", "basics"]).optimizations, { normalForms: false, instructions: true, freshContexts: true });
-  assert.deepEqual(selectTests(["--no-memoize-instructions", "basics"]).optimizations, { normalForms: true, instructions: false, freshContexts: true });
+  assert.deepEqual(selectTests(["basics"]).optimizations, { normalForms: true, instructions: true });
+  assert.deepEqual(selectTests(["--no-reuse-normal-forms", "basics"]).optimizations, { normalForms: false, instructions: true });
+  assert.deepEqual(selectTests(["--no-memoize-instructions", "basics"]).optimizations, { normalForms: true, instructions: false });
   const neither = selectTests(["--no-reuse-normal-forms", "--no-memoize-instructions", "basics"]);
-  assert.deepEqual(neither.optimizations, { normalForms: false, instructions: false, freshContexts: true });
+  assert.deepEqual(neither.optimizations, { normalForms: false, instructions: false });
   assert.deepEqual(neither.flags, []);
-  assert.deepEqual(selectTests(["--no-index-fresh-contexts", "basics"]).optimizations,
-    { normalForms: true, instructions: true, freshContexts: false });
-  assert.deepEqual(selectTests(["--no-index-fresh-contexts", "--index-fresh-contexts", "basics"]).optimizations,
-    { normalForms: true, instructions: true, freshContexts: true });
   assert.deepEqual(selectTests(["--no-reuse-normal-forms", "--reuse-normal-forms", "basics"]).optimizations,
-    { normalForms: true, instructions: true, freshContexts: true });
+    { normalForms: true, instructions: true });
   assert.deepEqual(selectTests(["--memoize-instructions", "--no-memoize-instructions", "basics"]).optimizations,
-    { normalForms: true, instructions: false, freshContexts: true });
+    { normalForms: true, instructions: false });
   assert.throws(() => selectTests(["--reuse-normal-forms"]), /require selected proof modules/);
   assert.throws(() => selectTests(["--no-reuse-normal-forms"]), /require selected proof modules/);
 });

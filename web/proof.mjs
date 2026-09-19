@@ -181,7 +181,7 @@ let worker,
 const pending = new Map(),
   history = [];
 $("editor").value = example;
-for (const id of ["reuse-normal-forms", "memoize-instructions", "index-fresh-contexts"]) {
+for (const id of ["reuse-normal-forms", "memoize-instructions"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
@@ -250,11 +250,11 @@ function dirty() {
 }
 function compilerOptimizations() {
   if (/^\s*(?:\/\/[^\n]*\n\s*)*construction\b/.test($("editor").value)) return {};
-  return { normalForms: $("reuse-normal-forms").checked, instructions: $("memoize-instructions").checked, freshContexts: $("index-fresh-contexts").checked };
+  return { normalForms: $("reuse-normal-forms").checked, instructions: $("memoize-instructions").checked };
 }
 function refreshStatus() {
   $("check").disabled = !ready || pending.size > 0;
-  for (const id of ["reuse-normal-forms", "memoize-instructions", "index-fresh-contexts"])
+  for (const id of ["reuse-normal-forms", "memoize-instructions"])
     $(id).disabled = !ready || pending.size > 0 || !Object.keys(compilerOptimizations()).length;
   $("export").disabled = !last || pending.size > 0;
   $("dirty").textContent = dirty()
@@ -766,7 +766,7 @@ function download(text, name, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 $("check").onclick = check;
-for (const id of ["reuse-normal-forms", "memoize-instructions", "index-fresh-contexts"]) $(id).onchange = () => {
+for (const id of ["reuse-normal-forms", "memoize-instructions"]) $(id).onchange = () => {
   try { localStorage.setItem("mathscript:" + id, String($(id).checked)); } catch {}
   check();
 };
