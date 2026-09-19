@@ -206,8 +206,10 @@ static tt_id beta(tt_engine *e, tt_id a, bool defs) {
         return n.ch[e->nodes[data.ch[1]].kind == N_North ? 1 : 2];
     }
     case N_IndUnit:
-        vals[0] = leaf(e, N_Singleton, 0);
-        return transform(e, n.ch[0], MAP_BETA_SUBST, NULL, vals, 1, 0);
+        /* The point branch already has type C(*). IndUnit binds no variable
+         * (see binders), so its computation rule simply returns that branch.
+         * Substitution here would capture a variable of an enclosing lambda. */
+        return n.ch[0];
     case N_IndW: {
         node input = e->nodes[n.ch[1]];
         tt_id lower = (uint32_t)-2;

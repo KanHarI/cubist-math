@@ -49,6 +49,16 @@ static void cover_rules(tt_engine *e) {
     ONE(High3, ONE(HighExp, elim));
     check_computation(e, A(EqComp, unit, one, zero, 0, 0, 0, 0, 0, 0, 0), one);
     check_computation(e, A(UnitComp, unit, one, 0, 0, 0, 0, 0, 0, 0, 0), one);
+    /* The Unit point branch has no bound variable: reducing it inside a
+     * lambda must preserve that lambda's variable, rather than replace it
+     * with the Unit point or decrement its index. */
+    tt_id natctx = A(CtxExt, nat, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    tt_id natvar = A(Vble, 0, 0, 0, 0, 0, natctx, 0, 0, 0, 0);
+    tt_id unit_case = A(UnitElim, nat, natvar, one, 0, 0, 0, idctx, 0, 0, 0);
+    tt_id closed_case = A(PiIntro, nat, unit_case, 0, 0, 0, 0, natctx, 0, 0, 0);
+    tt_id nat_identity = A(PiIntro, nat, natvar, 0, 0, 0, 0, natctx, 0, 0, 0);
+    CHECK(e->judgements[ONE(BetaReduceGrossKnuth, closed_case)].expr ==
+          e->judgements[nat_identity].expr);
     check_computation(e, A(SumCompL, unit, one, one, one, 0, 0, 0, 0, 0, 0), one);
     check_computation(e, A(SumCompR, unit, one, one, one, 0, 0, 0, 0, 0, 0), one);
     tt_id ni = A(NatElim, unit, one, one, succ, 0, 0, 0, 0, 0, 0);

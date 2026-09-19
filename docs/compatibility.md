@@ -100,6 +100,12 @@ The WNat-to-Nat equivalence additionally exposed:
    failed to substitute the recursive lambda's argument. W beta also lowers
    constructor arguments when they leave the original eliminator. The native
    regression uses an arbitrary child function, not just constant children.
+6. **Unit beta under binders:** the point branch already has type `C(*)`, and
+   `IndUnit` has no binder. Its reduction must return that branch unchanged.
+   Substituting a fictitious bound variable replaced or shifted variables of
+   enclosing functions. The native regression checks
+   `fun n : Nat => unit.elim(n, *)` against the identity function; finite-field
+   table proofs also exercise Unit elimination nested inside sum elimination.
 
 The historical oracle skipped the defective computation rules. The current
 fixture has been regenerated after correcting the truncation axiom's function
