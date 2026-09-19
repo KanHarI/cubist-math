@@ -1,5 +1,12 @@
 import catalogue from "./proofs/catalogue.mjs";
+import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 const choices = [
+  { id: "curve_contour_limits", title: "Curve contours · affine tag-independent limits", complexDevelopment: true },
+  { id: "parameter_contour_limits", title: "Curve contours · limits with parameter weights", complexDevelopment: true },
+  { id: "parameter_contour_bounds", title: "Curve contours · parameter-based error estimates", complexDevelopment: true },
+  { id: "parameter_increment_bounds", title: "Curve contours · coordinate increment certificates", complexDevelopment: true },
+  { id: "parameter_contours", title: "Curve contours · sums on mapped samples", complexDevelopment: true },
+  { id: "sample_maps", title: "Curve sampling · mapping vertices and tags", complexDevelopment: true },
   { id: "complex_curve_variation", title: "Complex curves · bounded coordinate variation", complexDevelopment: true },
   { id: "affine_variation", title: "Curve sampling · ordered affine increment bounds", complexDevelopment: true },
   { id: "interval_weights", title: "Curve sampling · telescoping interval weights", complexDevelopment: true },
@@ -246,21 +253,21 @@ function refreshStatus() {
 function request(command, args = {}) {
   const id = ++serial;
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
+    const watchdog = proofRequestWatchdog(command, () => {
       worker.terminate();
       ready = false;
       for (const p of pending.values()) {
-        clearTimeout(p.timer);
+        p.watchdog.stop();
         p.reject(
           new Error(
-            "Checking timed out. Reload the page to restart the kernel.",
+            "The checking worker stopped making progress. Reload the page to restart the kernel.",
           ),
         );
       }
       pending.clear();
       refreshStatus();
-    }, command === "check" ? 300000 : 30000);
-    pending.set(id, { resolve, reject, timer });
+    });
+    pending.set(id, { resolve, reject, watchdog });
     refreshStatus();
     worker.postMessage({ id, command, args });
   });
@@ -840,11 +847,12 @@ async function startWorker(version = undefined) {
     const p = pending.get(data.id);
     if (!p) return;
     if (data.progress) {
+      p.watchdog.progress(data.progress);
       checkingProgress(data.progress);
       return;
     }
     pending.delete(data.id);
-    clearTimeout(p.timer);
+    p.watchdog.stop();
     if (data.error)
       p.reject(Object.assign(new Error(data.error.message), data.error));
     else p.resolve(data.result);
@@ -854,7 +862,7 @@ async function startWorker(version = undefined) {
     ready = false;
     worker.terminate();
     for (const p of pending.values()) {
-      clearTimeout(p.timer);
+      p.watchdog.stop();
       p.reject(new Error(e.message || "Unable to load the checking worker."));
     }
     pending.clear();

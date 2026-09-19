@@ -99,4 +99,10 @@ export const sourceModules = [
   "sample_relations",
   "affine_variation",
   "complex_curve_variation",
+  "sample_maps",
+  "parameter_contours",
+  "parameter_contour_bounds",
+  "parameter_increment_bounds",
+  "parameter_contour_limits",
+  "curve_contour_limits",
 ];

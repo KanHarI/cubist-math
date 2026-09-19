@@ -29,8 +29,10 @@ domination estimate proves that the corresponding interval deformation
 avoids zero. Joint continuity for a family of loops and the comparison with
 homotopy-type paths remain open.
 Ordered finite samples of these curves now have checked coordinate variation
-bounds, independent of the sample count. The parameter sampling still needs
-to be connected to contour approximation and integrand error bounds.
+bounds, independent of the sample count. These parameter samples are now
+connected to the original contour sums: changing tags preserves an existing
+limit when sampled integrand errors tend to zero. Deriving those errors from
+admissibility and mesh control, and constructing an initial limit, remain open.
 
 | Module | Result |
 | --- | --- |

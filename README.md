@@ -147,6 +147,8 @@ now include uniformly continuous straight segments and their endpoints, with
 zero avoidance under the squared-norm domination condition.
 Their ordered interval samples have checked coordinate variation bounds
 independent of the number of sample points.
+The parameter samples now map to the original contour sums; the affine
+tag-independence proof supplies those variation bounds itself.
 Proving convergence of the contour sums and
 the required homotopy estimates, and relating geometric curves to homotopy
 paths, remain open.

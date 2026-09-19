@@ -166,7 +166,9 @@ judgment storage grows by doubling as needed, without fixed count caps.
 The WASM heap starts at 16 MiB and may grow up to the wasm32 address-space
 ceiling of 4 GiB, subject to successful allocation; it does not reserve
 that whole amount as physical memory at startup. Mathematical
-checking has a 300-second timeout; other worker requests have a 30-second timeout.
+checking has a 300-second inactivity timeout. Advancing kernel-step or
+completed-definition counters restart it; repeated progress messages with
+unchanged counters do not. Other worker requests have a 30-second timeout.
 
 The mathematical layer covers Euclid, the circle fundamental group,
 [right inverses of surjections using choice](surjections.md), and

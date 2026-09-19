@@ -65,8 +65,48 @@ The sample domain here is the parameter interval, retaining the association
 between each sample and its parameter. Tags do not affect these weights.
 This does not yet impose that each integrand tag lies between its adjacent
 vertices, or construct a sequence of partitions with mesh tending to zero.
-The contour estimates still need to be connected to this parameter sampling,
-including the bounds on changes in integrand values.
+The contour estimates are now connected to this parameter sampling as
+described below. Bounds on changes in integrand values still need to be
+derived from admissibility, mesh size, and continuity of the integrand.
+
+## Contour sums on parameter samples
+
+[sample_maps](../web/proofs/sample_maps.proof) maps vertices and tags through
+a curve and proves that evaluating the mapped samples agrees with evaluating
+the pulled-back edge expression. [parameter_contours](../web/proofs/parameter_contours.proof)
+defines the latter explicitly as
+
+```text
+sum(values(tag) * (curve(next) - curve(previous))).
+```
+
+When `values(t) = integrand(curve(t))`, the kernel proves equality with the
+original contour sums on the mapped vertices and tags. It also proves the
+exact finite change-of-tags identity. These algebraic results are axiom-free.
+There is no requirement that the curve be injective: weights remain functions
+of the parameters, even if the curve revisits a complex point.
+
+[parameter_contour_bounds](../web/proofs/parameter_contour_bounds.proof) and
+[parameter_contour_limits](../web/proofs/parameter_contour_limits.proof)
+prove the coordinate error estimates and transfer of limits for this
+parameter domain. [parameter_increment_bounds](../web/proofs/parameter_increment_bounds.proof)
+packages the separately proved real and imaginary increment bounds for use
+by those estimates.
+
+[curve_contour_limits](../web/proofs/curve_contour_limits.proof) connects
+`ComplexCurveVariation` to the actual mapped complex sums. In particular,
+`affine_curve_contour_tag_independent_limit` supplies the proved variation
+certificate for `z + t*e`, so no extra variation assumption appears in its
+statement. If the sampled integrand errors are bounded by nonnegative
+`delta(n)` tending to zero, and the sums for the old tags converge to `value`,
+then the sums for the new tags converge to that same `value`. Both use the
+same sequence of ordered sampled vertices.
+
+This transfers an existing limit; it does not prove that either scheme is
+Cauchy in the first place. Admissible tags, refining partitions, mesh control,
+and the resulting integrand estimates remain to be constructed. The limit
+proofs use only existing truncation, introduction, and elimination; they add
+no excluded middle, choice, kernel rule, or theorem-specific axiom.
 
 ## Relationship to homotopy paths
 

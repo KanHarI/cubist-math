@@ -1134,3 +1134,46 @@ test("curve variation needs forward ordered parameters and includes imaginary va
   assert.notEqual(noImaginaryLength, sources.complex_curve_variation);
   assert.throws(() => compile(module, noImaginaryLength, sources), /Expected|Conversion types differ/);
 });
+
+test("mapped affine contour limits use the proved geometric variation bound", t => {
+  const c = compile(module, sources.curve_contour_limits, sources);
+  try {
+    const allowed = new Set(["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim"]);
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => allowed.has(a)), output.name);
+    }
+    const result = c.outputs.find(o => o.name === "affine_curve_contour_tag_independent_limit");
+    assert.ok(result);
+    assert.match(result.type, /oldConverges : ComplexConverges/);
+    assert.match(result.type, /vanishes : FieldConverges/);
+    assert.match(result.type, /IntervalOrderedSamples/);
+    assert.match(result.type, /curve_contour_samples/);
+    assert.doesNotMatch(result.type, /variation :|increments :|realWeight :|imagWeight :/);
+    assert.ok(c.kernel.bindings.has("complex_interval_deformation_variation"));
+    assert.ok(c.kernel.bindings.has("parameter_contour_sum_is_mapped"));
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; ${c.kernel.stats().judgements.toLocaleString()} judgments`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("mapping contour samples preserves the integrand and the orientation of tag errors", () => {
+  const c = compile(module, sources.sample_maps, sources);
+  try {
+    assert.ok(c.outputs.some(o => o.name === "map_sample_sum"));
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.deepEqual(c.kernel.axiomsFor(output.binding), []);
+    }
+  } finally { c.kernel.dispose(); }
+  const wrongSign = sources.parameter_contours.replace(
+    "curve(a), curve(b), values(oldTag), values(newTag)", "curve(a), curve(b), values(newTag), values(oldTag)");
+  assert.notEqual(wrongSign, sources.parameter_contours);
+  assert.throws(() => compile(module, wrongSign, sources), /Expected|Conversion types differ/);
+  const identityIntegrand = sources.parameter_contours.replace(
+    "contour_sum(F, zero, addF, mulF, negF, integrand, n, map_sample_vertices",
+    "contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => x), n, map_sample_vertices");
+  assert.notEqual(identityIntegrand, sources.parameter_contours);
+  assert.throws(() => compile(module, identityIntegrand, sources), /Expected|Conversion types differ/);
+});

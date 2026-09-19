@@ -189,8 +189,10 @@ new kernel rule, or new theorem-specific axiom is used.
 
 [Geometric curves](complex_curves.md) now include uniformly continuous
 straight segments with checked endpoints and coordinate variation bounds
-for ordered interval sampling. Still needed are the connection to these
-parameter samples, admissible refinements, Cauchy and
+for ordered interval sampling. These parameter samples now map to the
+original complex contour sums, with a checked transfer of an existing limit
+under vanishing tag errors. Still needed are admissible refinements, mesh
+control, Cauchy and
 homotopy estimates for the integrands in question, comparison with
 the puncture homotopy type, and the local generator integral `2*pi*i*residue`.
 The full residue theorem, algebraic closure, and Great Picard remain open.
