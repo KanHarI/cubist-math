@@ -129,6 +129,19 @@ names open their inspection, including the existing source-navigation link.
 Kernel details are open by default. Long binder chains are laid out on separate
 lines so dependent types remain readable.
 
+The **Context** section lists the checked open assumptions and their types.
+Click an assumption's name, including a reference to it in another type, to
+inspect its own judgment and navigate to its source. These are the kernel's
+actual context entries; variables bound inside a term by Π, Σ, or λ remain
+internal binders. A closed judgment therefore has an empty context even when
+its expression contains such binders.
+
+Axiom leaves retain their checked identities and link to the corresponding
+axiom inspection. The truncation notation toggle displays a fully applied
+propositional truncation as `‖A‖`; disabling it exposes the named axiom
+application, including its universe argument. This is display notation only:
+it does not replace the checked term or alter workbench exports.
+
 This view is an actual kernel term with checked definition references, not
 MathScript text rewritten with mathematical symbols. The successful source
 snapshot proposes a shape for the folded term. A separate kernel replays the

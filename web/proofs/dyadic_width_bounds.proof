@@ -1,0 +1,67 @@
+import dyadic_sampling;
+
+// Scalar estimates for mesh decay; these use no Archimedean or completeness
+// assumption and do not extract witnesses from propositional truncation.
+theorem field_natural_nonnegative(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat) : FieldLe(F, lt, zero, field_natural(F, zero, one, addF)(n)) {
+  obtain (positiveOne, remaining) = arithmetic;
+  let nonnegativeOne = ordered_lt_implies_le(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, one, positiveOne);
+  exact induction n as k return FieldLe(F, lt, zero, field_natural(F, zero, one, addF)(k)) {
+    zero => order_le_refl(F, lt, order, zero);
+    succ previous => ordered_sum_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, field_natural(F, zero, one, addF)(k), one, previous, nonnegativeOne);
+  };
+}
+
+theorem field_natural_successor_ge_one(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat) : FieldLe(F, lt, one, field_natural(F, zero, one, addF)(succ(n))) {
+  exact transport((fun (v : F) => FieldLe(F, lt, v, field_natural(F, zero, one, addF)(succ(n)))), addF(zero, one), one,
+    ring_add_zero(F, zero, one, addF, mulF, negF, ring, one), order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, field_natural(F, zero, one, addF)(n), one, field_natural_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, n)));
+}
+
+theorem dyadic_width_nonnegative(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), depth : Nat) :
+  forall width : F, FieldLe(F, lt, zero, width) -> FieldLe(F, lt, zero, dyadic_width(F, half, depth, width)) {
+  exact induction depth as k return (forall width : F, FieldLe(F, lt, zero, width) -> FieldLe(F, lt, zero, dyadic_width(F, half, k, width))) {
+    zero => fun (width : F) => fun (nonnegativeWidth : FieldLe(F, lt, zero, width)) => nonnegativeWidth;
+    succ previous => fun (width : F) => fun (nonnegativeWidth : FieldLe(F, lt, zero, width)) =>
+      previous(half(width), nonnegative_half_from_sum(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, half(width), halfSum(width), nonnegativeWidth));
+  };
+}
+
+theorem dyadic_width_growth_step(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), depth : Nat, previous : (forall width : F, FieldLe(F, lt, zero, width) -> FieldLe(F, lt, mulF(field_natural(F, zero, one, addF)(succ(depth)), dyadic_width(F, half, depth, width)), width)),
+  width : F, nonnegativeWidth : FieldLe(F, lt, zero, width)) :
+  FieldLe(F, lt, mulF(field_natural(F, zero, one, addF)(succ(succ(depth))), dyadic_width(F, half, succ(depth), width)), width) {
+  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  let factor = field_natural(F, zero, one, addF)(succ(depth));
+  let h = half(width);
+  let next = dyadic_width(F, half, depth, h);
+  let nonnegativeHalf = nonnegative_half_from_sum(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, h, halfSum(width), nonnegativeWidth);
+  let nonnegativeNext = dyadic_width_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, h, nonnegativeHalf);
+  let oldBound = previous(h, nonnegativeHalf);
+  let unitBound = transport((fun (v : F) => FieldLe(F, lt, v, mulF(factor, next))), mulF(one, next), next,
+    ring_mul_one(F, zero, one, addF, mulF, negF, ring, next), weakScale(one, factor, next, field_natural_successor_ge_one(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, depth), nonnegativeNext));
+  let nextBound = order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, next, mulF(factor, next), h, unitBound, oldBound);
+  let doubledBound = order_le_add(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, mulF(factor, next), h, next, h, oldBound, nextBound);
+  have distribute : mulF(addF(factor, one), next) = addF(mulF(factor, next), next) {
+    exact trans(ring_distribute_left(F, zero, one, addF, mulF, negF, ring, factor, one, next), cong(addF(mulF(factor, next)), ring_mul_one(F, zero, one, addF, mulF, negF, ring, next)));
+  }
+  let productBound = transport((fun (v : F) => FieldLe(F, lt, v, addF(h, h))), addF(mulF(factor, next), next), mulF(addF(factor, one), next), sym(distribute), doubledBound);
+  exact transport(FieldLe(F, lt, mulF(addF(factor, one), next)), addF(h, h), width, halfSum(width), productBound);
+}
+
+// (depth + 1) * width_after_depth_halvings <= original_width.
+// This weaker-than-exponential bound suffices for the Archimedean argument.
+theorem dyadic_width_growth_bound(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), depth : Nat) : forall width : F, FieldLe(F, lt, zero, width) -> FieldLe(F, lt, mulF(field_natural(F, zero, one, addF)(succ(depth)), dyadic_width(F, half, depth, width)), width) {
+  have base : forall width : F, FieldLe(F, lt, zero, width) -> FieldLe(F, lt, mulF(field_natural(F, zero, one, addF)(succ(0)), dyadic_width(F, half, 0, width)), width) {
+    intro width;
+    intro nonnegativeWidth;
+    let identity = trans(cong((fun (v : F) => mulF(v, width)), ring_add_zero(F, zero, one, addF, mulF, negF, ring, one)), ring_mul_one(F, zero, one, addF, mulF, negF, ring, width));
+    exact transport((fun (v : F) => FieldLe(F, lt, v, width)), width, mulF(addF(zero, one), width), sym(identity), order_le_refl(F, lt, order, width));
+  }
+  exact induction depth as k return (forall width : F, FieldLe(F, lt, zero, width) -> FieldLe(F, lt, mulF(field_natural(F, zero, one, addF)(succ(k)), dyadic_width(F, half, k, width)), width)) {
+    zero => base;
+    succ previous => dyadic_width_growth_step(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, k, previous);
+  };
+}

@@ -2,7 +2,7 @@ import createKernel from "../dist/kernel.mjs";
 import { compile } from "./compiler.mjs";
 import { sourceModules } from "./modules.mjs";
 import { MAX_STEPS } from "../language.mjs";
-import { checkedFoldedView, exportInspection, inspectionContextNames } from "./kernel-folding.mjs";
+import { checkedFoldedView, exportInspection, inspectionContextNames, checkedContextView, inspectionAxiomNotation } from "./kernel-folding.mjs";
 const module = await createKernel();
 const library = Object.fromEntries(
   await Promise.all(
@@ -38,6 +38,8 @@ self.onmessage = ({ data: { id, command, args } }) => {
         });
         Object.assign(result.contextNames, inspectionContextNames(checked));
         result.folded = checkedFoldedView(checked, args.binding, { expand: args.expand ?? [] });
+        result.context = checkedContextView(checked, result);
+        result.axiomNotation = inspectionAxiomNotation(checked);
       }
       else if (command === "export-folding")
         result = checkedFoldedView(checked, args.binding, { certificate: true })?.certificate;

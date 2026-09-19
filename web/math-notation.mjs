@@ -1,19 +1,28 @@
 import { kernelBinderCount } from "./expressions.mjs";
+import { axiomLabels } from "./axiom-labels.mjs";
 const mathNamespace = "http://www.w3.org/1998/Math/MathML";
 
 // Read only actual checked AST constructors. Names annotate definition nodes;
 // binder labels are cosmetic. The upstream kernel counts a binder in *both*
 // children of Pi/Sigma, including the domain (see src/kernel/ast.c).
-export function kernelMathTree(tree, references = {}, contextNames = {}) {
+export function kernelMathTree(tree, references = {}, contextNames = {}, contextReferences = {}, declarations = {}, axiomNotation = {}) {
   const usesBinder = (node, depth = 0) => node.kind === "VRef" ? node.parameter === depth
     : node.children.some(child => usesBinder(child, depth + kernelBinderCount(node.kind)));
   const named = name => ({ kind: "Name", name });
   function visit(node, env = []) {
     if (node.truncated) return named("…");
     if (node.kind === "DRef" && references[node.id]) return { kind: "Name", ...references[node.id] };
+    if (node.kind === "Axiom") {
+      const binding = declarations[node.id];
+      return { kind: "Name", name: axiomNotation[node.id] === "truncation" ? "TruncateAt"
+        : binding ? axiomLabels[binding] ?? binding : "axiom",
+        axiomParameter: node.parameter, ...(binding ? { binding } : {}),
+        ...(axiomNotation[node.id] ? { axiomNotation: axiomNotation[node.id] } : {}) };
+    }
     if (node.kind === "U") return { kind: "Universe", level: node.parameter };
     if (node.kind === "VRef") return { kind: "Name", name: env[node.parameter] ?? `#${node.parameter | 0}`, local: true };
-    if (["CRef", "UCRef"].includes(node.kind)) return { kind: "Name", name: contextNames[node.parameter] ?? `c${node.parameter}`, local: true };
+    if (["CRef", "UCRef"].includes(node.kind)) return { kind: "Name", name: contextNames[node.parameter] ?? `c${node.parameter}`, local: true,
+      ...(contextReferences[node.parameter] ? { contextId: node.parameter, contextBinding: contextReferences[node.parameter].binding } : {}) };
     if (["Nat", "Unit", "Void"].includes(node.kind)) return named(node.kind);
     if (node.kind === "ZN") return { kind: "Number", value: 0 };
     if (node.kind === "SN") {
@@ -54,9 +63,14 @@ export function kernelMathTree(tree, references = {}, contextNames = {}) {
   return visit(tree);
 }
 
+export function isTruncationApplication(node) {
+  return node.kind === "Call" && node.fn.kind === "Name" && node.fn.axiomNotation === "truncation"
+    && node.fn.axiomParameter !== undefined && node.args.length === 2;
+}
+
 // Native MathML provides mathematical typesetting without a CDN, TeX input,
 // HTML interpolation, or a change to the stored proof.
-export function renderMathNotation(container, tree, { resolve = () => null, inspect = () => {} } = {}) {
+export function renderMathNotation(container, tree, { resolve = () => null, inspect = () => {}, truncationSugar = false } = {}) {
   const doc = container.ownerDocument;
   const element = (tag, ...children) => {
     const node = doc.createElementNS(mathNamespace, tag);
@@ -66,24 +80,36 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
   const row = (...children) => element("mrow", ...children);
   const operator = text => element("mo", text);
   const fenced = node => row(operator("("), node, operator(")"));
+  function reference(symbol, node) {
+    const target = node.contextBinding ? resolve(node.contextBinding)
+      : node.binding && !node.local ? resolve(node.binding) : null;
+    if (target) {
+      symbol.dataset.name = node.name;
+      if (node.contextBinding) symbol.dataset.contextId = node.contextId;
+      if (node.axiomParameter !== undefined) symbol.dataset.axiom = node.binding;
+      symbol.setAttribute("class", "math-reference");
+      symbol.setAttribute("role", "button");
+      symbol.setAttribute("tabindex", "0");
+      symbol.setAttribute("aria-label", `Inspect ${node.name}`);
+      symbol.setAttribute("title", node.axiomParameter !== undefined
+        ? `Axiom ${node.axiomParameter}: ${node.binding}. Inspect its checked type and source`
+        : node.contextBinding
+        ? `Inspect context assumption ${node.name} and view its source`
+        : `Inspect ${node.name} and view its source`);
+      symbol.addEventListener("click", () => inspect(target));
+      symbol.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); inspect(target); }
+      });
+    }
+    return symbol;
+  }
   function visit(node) {
     if (node.kind === "Name") {
       const symbol = element("mi", node.name);
       if (!node.local) symbol.setAttribute("mathvariant", "normal");
-      const target = node.binding && !node.local ? resolve(node.binding) : null;
-      if (target) {
-        symbol.dataset.name = node.name;
-        symbol.setAttribute("class", "math-reference");
-        symbol.setAttribute("role", "button");
-        symbol.setAttribute("tabindex", "0");
-        symbol.setAttribute("aria-label", `Inspect ${node.name}`);
-        symbol.setAttribute("title", `Inspect ${node.name} and view its source`);
-        symbol.addEventListener("click", () => inspect(target));
-        symbol.addEventListener("keydown", event => {
-          if (event.key === "Enter" || event.key === " ") { event.preventDefault(); inspect(target); }
-        });
-      }
-      return symbol;
+      reference(symbol, node);
+      return node.axiomParameter === undefined ? symbol
+        : element("msub", symbol, element("mtext", `Axiom ${node.axiomParameter}`));
     }
     if (node.kind === "Universe") return element("msub", element("mi", "𝒰"), element("mn", String(node.level)));
     if (node.kind === "NatElim") {
@@ -103,6 +129,11 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
         ["Product", "Sum", "Arrow", "Equality"].includes(node.body.kind) ? fenced(body) : body);
     }
     if (node.kind === "Call") {
+      if (truncationSugar && isTruncationApplication(node)) {
+        const formula = row(reference(operator("‖"), node.fn), visit(node.args[1]), reference(operator("‖"), node.fn));
+        formula.dataset.truncationSugar = "true";
+        return formula;
+      }
       const args = [];
       node.args.forEach((arg, i) => { if (i) args.push(operator(",")); args.push(visit(arg)); });
       const fn = visit(node.fn);

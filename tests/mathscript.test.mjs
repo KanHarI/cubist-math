@@ -1408,3 +1408,57 @@ test("concatenation preserves subdivision tag conditions including an empty suff
   assert.notEqual(wrongTag, example);
   assert.throws(() => compile(module, wrongTag, sources), /Expected|Conversion types differ/);
 });
+
+test("Archimedean intervals have arbitrarily fine constructed dyadic samples with mere existence preserved", t => {
+  const c = compile(module, sources.fine_interval_samples, sources);
+  try {
+    const names = ["sample_tagged_map", "dyadic_interval_samples", "dyadic_interval_samples_fine",
+      "dyadic_width_growth_bound", "dyadic_width_arbitrarily_small", "archimedean_interval_fine_samples"];
+    for (const name of names) {
+      const output = [...c.outputs, ...c.imports].find(o => o.name === name);
+      assert.ok(output, name);
+      assert.ok(c.kernel.verify(output.proposition, output.binding), name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim", "lib_trunc_is_trunc"].includes(a)), name);
+    }
+    const result = c.outputs.find(o => o.name === "archimedean_interval_fine_samples");
+    assert.match(result.type, /archimedean : Archimedean/);
+    assert.match(result.type, /positiveMesh : lt\(zero, mesh\)/);
+    assert.match(result.type, /FieldExists\(FineIntervalSamples/);
+    assert.doesNotMatch(result.type, /half :|partition :|samples :|small :|LEM|AOC/);
+    const data = c.outputs.find(o => o.name === "FineIntervalSamples");
+    assert.match(data.mathscript.expression, /exists depth : Nat, exists piece : SampleSubdivision/);
+    assert.match(data.mathscript.expression, /dyadic_count\(depth\)/);
+    assert.match(data.mathscript.expression, /IntervalAdmissibleTags/);
+    assert.match(data.mathscript.expression, /IntervalMeshBelow/);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; constructive truncation only`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("dyadic edge counts double and the refinement proof rejects a linear count", () => {
+  const c = compile(module, `import dyadic_sampling;
+    theorem initial_count : dyadic_count(0) = 1 { exact refl(1); }
+    theorem third_count : dyadic_count(3) = 8 { exact refl(8); }
+  `, sources);
+  try {
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.deepEqual(c.kernel.axiomsFor(output.binding), []);
+    }
+  } finally { c.kernel.dispose(); }
+  const linear = sources.dyadic_sampling.replace("succ previous => previous + previous;", "succ previous => succ(previous);");
+  assert.notEqual(linear, sources.dyadic_sampling);
+  assert.throws(() => compile(module, linear, sources), /Expected|Conversion types differ/);
+});
+
+test("strict mesh bounds and truncation cannot be silently weakened in dyadic sampling", () => {
+  const weak = sources.dyadic_mesh.replace("small : lt(radius, mesh)", "small : FieldLe(F, lt, radius, mesh)");
+  assert.notEqual(weak, sources.dyadic_mesh);
+  assert.throws(() => compile(module, weak, sources), /Expected|Conversion types differ/);
+  const chosen = sources.fine_interval_samples.replace(
+    "FieldExists(FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b)) {",
+    "FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b) {");
+  assert.notEqual(chosen, sources.fine_interval_samples);
+  assert.throws(() => compile(module, chosen, sources), /Expected|Conversion types differ/);
+});

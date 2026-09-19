@@ -125,4 +125,10 @@ export const sourceModules = [
   "affine_partition_refinement",
   "interval_bisection",
   "sample_join_conditions",
+  "sample_condition_maps",
+  "dyadic_sampling",
+  "dyadic_mesh",
+  "dyadic_width_bounds",
+  "dyadic_decay",
+  "fine_interval_samples",
 ];

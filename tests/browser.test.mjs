@@ -559,6 +559,13 @@ try {
     ["interval_subdivisions", "interval_refinement_radius_sum"],
     ["interval_bisection", "ordered_interval_bisection"],
     ["sample_join_conditions", "subdivision_tagged_valid_join"],
+    ["sample_condition_maps", "sample_tagged_map"],
+    ["dyadic_sampling", "dyadic_interval_samples"],
+    ["dyadic_mesh", "dyadic_interval_samples_fine"],
+    ["dyadic_width_bounds", "dyadic_width_growth_bound"],
+    ["dyadic_decay", "dyadic_width_arbitrarily_small"],
+    ["fine_interval_samples", "archimedean_interval_fine_samples"],
+
     ["affine_partition_refinement", "affine_partition_uniform_estimate"],
 
     ["complex_affine", "complex_linear_deformation_uniform"],

@@ -1,0 +1,69 @@
+import interval_bisection;
+import sample_join_conditions;
+
+// Counts double while widths are repeatedly halved. Iterating on the inside
+// makes the recursive width of a half-interval exactly the next outer width.
+def dyadic_count(n : Nat) = induction n as k return Nat { zero => 1; succ previous => previous + previous; };
+def dyadic_width(F : Type1, half : F -> F, n : Nat) = induction n as k return (F -> F) {
+  zero => fun (width : F) => width;
+  succ previous => fun (width : F) => previous(half(width));
+};
+
+def IntervalTaggedWidth(F : Type1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, radius : F,
+  a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)) =
+  IntervalTagWithin(F, zero, one, lt, a, b, tag) and FieldLe(F, lt, interval_difference(F, zero, one, addF, negF, lt)(a, b), radius);
+
+def DyadicIntervalSamples(F : Type1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, half : F -> F, depth : Nat, a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt)) =
+  exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth)) and
+    SubdivisionTaggedValid(FieldUnitInterval(F, zero, one, lt), IntervalTaggedWidth(F, zero, one, addF, negF, lt, dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b))), a, b, piece);
+
+def single_edge_subdivision(C : Type1, a : C, b : C) : SampleSubdivision(C, a, b) {
+  exact (1, (typed((C and C), (a, b)), (typed((C and Unit), (a, tt)), (refl(a), refl(b)))));
+}
+
+theorem dyadic_interval_samples_zero(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b))) : DyadicIntervalSamples(F, zero, one, addF, negF, lt, half, 0, a, b) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let radius = interval_difference(F, zero, one, addF, negF, lt)(a, b);
+  have valid : IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius, a, b, a) and Unit {
+    exact (((order_le_refl(F, lt, order, field_interval_coordinate(F, zero, one, lt)(a)), ordered), order_le_refl(F, lt, order, radius)), tt);
+  }
+  exact (single_edge_subdivision(I, a, b), (refl(1), valid));
+}
+
+theorem dyadic_interval_samples_step(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), depth : Nat, previous : (forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt), FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b)) -> DyadicIntervalSamples(F, zero, one, addF, negF, lt, half, depth, a, b)),
+  a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b))) : DyadicIntervalSamples(F, zero, one, addF, negF, lt, half, succ(depth), a, b) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let width = interval_difference(F, zero, one, addF, negF, lt);
+  obtain (midpoint, (within, (leftWidth, rightWidth))) = interval_midpoint(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered);
+  obtain (leftOrdered, rightOrdered) = within;
+  obtain (left, (leftCount, leftValid)) = previous(a, midpoint, leftOrdered);
+  obtain (right, (rightCount, rightValid)) = previous(midpoint, b, rightOrdered);
+  let radius = dyadic_width(F, half, succ(depth), width(a, b));
+  let condition = IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
+  let leftRadius = dyadic_width(F, half, depth, width(a, midpoint));
+  let rightRadius = dyadic_width(F, half, depth, width(midpoint, b));
+  let leftBounds = transport((fun (r : F) => SubdivisionTaggedValid(I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), a, midpoint, left)),
+    leftRadius, radius, cong(dyadic_width(F, half, depth), leftWidth), leftValid);
+  let rightBounds = transport((fun (r : F) => SubdivisionTaggedValid(I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), midpoint, b, right)),
+    rightRadius, radius, cong(dyadic_width(F, half, depth), rightWidth), rightValid);
+  let valid = subdivision_tagged_valid_join(I, condition, a, midpoint, b, left, right, leftBounds, rightBounds);
+  let count = trans(cong((fun (n : Nat) => n + subdivision_count(I, midpoint, b, right)), leftCount),
+    cong((fun (n : Nat) => dyadic_count(depth) + n), rightCount));
+  exact (join_subdivisions(I, a, midpoint, b, left, right), (count, valid));
+}
+
+// Recursively construct all sampling data, rather than assume a fine partition.
+// Each stage has exactly 2^depth edges and a checked weak mesh bound.
+theorem dyadic_interval_samples(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), depth : Nat) : forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt), FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b)) -> DyadicIntervalSamples(F, zero, one, addF, negF, lt, half, depth, a, b) {
+  exact induction depth as k return (forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt), FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b)) -> DyadicIntervalSamples(F, zero, one, addF, negF, lt, half, k, a, b)) {
+    zero => dyadic_interval_samples_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum);
+    succ previous => dyadic_interval_samples_step(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, k, previous);
+  };
+}

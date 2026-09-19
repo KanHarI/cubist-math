@@ -165,6 +165,9 @@ be flattened to one sample list with a checked identity for its sum. The
 global affine refinement bound is now checked: the total error is bounded by
 the tolerance times outer width times coordinate length, independent of the
 number of coarse edges or refined samples.
+Recursive midpoint bisection now gives exact edge counts and mesh bounds;
+Archimedeanness yields mere existence of admissible samples below every
+positive mesh, without choice or excluded middle.
 Proving convergence of the contour sums and
 the required homotopy estimates, and relating geometric curves to homotopy
 paths, remain open.

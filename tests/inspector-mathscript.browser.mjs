@@ -51,6 +51,20 @@ try {
     assert.deepEqual(bounds, { startsInside: true, glyphsInside: true, scrollReachesEnd: true });
   };
   await checkMathBounds("#kernel-type");
+  assert.deepEqual(await page.locator("#kernel-context-list > li").evaluateAll(rows => rows.map(row => row.dataset.name)), ["n", "i", "bounded"]);
+  assert.deepEqual(await page.locator("#kernel-context-list .kernel-context-type").allTextContents(), ["Nat", "Nat", "le(succ(succ(i)),n)"]);
+  await page.locator("#kernel-premises button").first().click();
+  await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+  assert.deepEqual(await page.locator("#kernel-context-list > li").evaluateAll(rows => rows.map(row => row.dataset.name)), ["n", "i"]);
+  assert.equal(await page.locator("#kernel-expression").textContent(), "Context assumption");
+  await page.locator('.source-line[data-line="16"] [data-name="bounded"]').click();
+  await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+  await page.locator('#kernel-type [data-name="i"]').click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "i" && !document.querySelector("#kernel-view").disabled);
+  await page.locator("#view-source").click();
+  assert.equal(await page.locator('.source-line[data-line="10"]').evaluate(row => row.classList.contains("active")), true);
+  await page.locator('.source-line[data-line="16"] [data-name="bounded"]').click();
+  await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
   await page.screenshot({path:"/private/tmp/thth-bounded-folded.png",fullPage:true});
   for (const name of ["nat_le_total", "prime_divisor_exists", "factorial"]) {
     await inspect(name);
@@ -87,6 +101,8 @@ try {
   assert.match(await page.locator("#kernel-expression").textContent(), /Prime\(p\)×isLt\(n,p\)/);
   assert.match(await page.locator("#kernel-view-note").textContent(), /kernel verified its definitional equality/);
   assert.equal(await page.locator('#kernel-expression [data-name="p"]').count(), 0);
+  assert.equal(await page.locator("#kernel-context-list > li").count(), 0);
+  assert.match(await page.locator("#kernel-context-note").textContent(), /Empty context/);
   await page.screenshot({ path: "/private/tmp/thth-kernel-folded-math.png", fullPage: true });
   const downloadEvent = page.waitForEvent("download");
   await page.locator("#export-folding").click();
@@ -198,6 +214,55 @@ try {
   assert.doesNotMatch(await page.locator("#kernel-type").textContent(), /#[0-9]|…/);
   await page.locator("#kernel-type").scrollIntoViewIfNeeded();
   await page.screenshot({ path: "/private/tmp/thth-classical-inverse-folded.png", fullPage: true });
+
+  await page.goto(`http://127.0.0.1:${port}/proof.html?proof=sample_join_conditions`);
+  await idle();
+  await page.locator('.source-line[data-line="6"] [data-name="condition"]').first().click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "condition" && !document.querySelector("#kernel-view").disabled);
+  assert.deepEqual(await page.locator("#kernel-context-list > li").evaluateAll(rows => rows.map(row => row.dataset.name)), ["C", "condition"]);
+  assert.deepEqual(await page.locator("#kernel-context-list .kernel-context-type").allTextContents(), ["𝒰1", "C→C→C→𝒰0"]);
+  assert.equal(await page.locator('#kernel-type [data-name="C"][data-context-id]').count(), 3);
+  assert.match(await page.locator("#kernel-inference").textContent(), /2 open assumptions/);
+  await page.locator("#kernel-context").scrollIntoViewIfNeeded();
+  await page.screenshot({path:"/private/tmp/thth-kernel-context.png", fullPage:true});
+  await page.locator('#kernel-context-list > li[data-name="C"] > span > button').click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "C" && !document.querySelector("#kernel-view").disabled);
+  assert.equal(await page.locator("#kernel-type").textContent(), "𝒰1");
+  await page.locator("#view-source").click();
+  assert.equal(await page.locator('.source-line[data-line="6"]').evaluate(row => row.classList.contains("active")), true);
+  await page.locator("#back").click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "condition" && !document.querySelector("#kernel-view").disabled);
+  await page.locator('#kernel-type [data-name="C"]').first().click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "C" && !document.querySelector("#kernel-view").disabled);
+  assert.equal(await page.locator("#kernel-context-list > li").count(), 1);
+
+  await page.goto(`http://127.0.0.1:${port}/proof.html?proof=complete_fields`);
+  await idle();
+  await inspect("FieldExists");
+  assert.equal(await page.locator("#kernel-truncation-sugar").isChecked(), true);
+  assert.equal(await page.locator("#kernel-expression").textContent(), "λx0.‖x0‖");
+  const checkedResult = await page.locator("#result").textContent();
+  await page.locator("#kernel-truncation-sugar").uncheck();
+  assert.match(await page.locator("#kernel-expression").textContent(), /λx0\.TruncateAtAxiom [0-9]+\(𝒰1,x0\)/);
+  assert.doesNotMatch(await page.locator("#kernel-expression").textContent(), /Axiom\(\)/);
+  const truncation = page.locator('#kernel-expression [data-axiom="lib_Trunc"]');
+  assert.equal(await truncation.count(), 1);
+  assert.match(await truncation.getAttribute("title"), /Axiom [0-9]+: lib_Trunc/);
+  await page.locator("#kernel-expression").scrollIntoViewIfNeeded();
+  await page.screenshot({path:"/private/tmp/thth-fieldexists-axiom.png", fullPage:true});
+  await truncation.click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "lib_Trunc" && !document.querySelector("#kernel-view").disabled);
+  assert.match(await page.locator("#view-source").getAttribute("href"), /prelude_library_construction&name=lib_Trunc/);
+  assert.equal(await page.locator("#kernel-type math").count(), 1);
+  await page.locator("#back").click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "FieldExists" && !document.querySelector("#kernel-view").disabled);
+  assert.equal(await page.locator("#kernel-truncation-sugar").isChecked(), false);
+  await page.locator("#kernel-truncation-sugar").check();
+  assert.equal(await page.locator("#kernel-expression").textContent(), "λx0.‖x0‖");
+  assert.equal(await page.locator("#result").textContent(), checkedResult);
+  await page.locator('#kernel-expression [data-axiom="lib_Trunc"]').first().click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "lib_Trunc" && !document.querySelector("#kernel-view").disabled);
+
   assert.deepEqual(errors, []);
   console.log("Certified mathematical kernel view, definition/source navigation, workbench export/unfold/reduce, source/raw views, checked snapshots, and full expansion passed.");
 } finally {

@@ -148,7 +148,16 @@
               <option value="mathscript">MathScript (folded)</option>
               <option value="raw">Raw kernel term</option>
             </select>
+            <label id="kernel-truncation-options" class="hint">
+              <input id="kernel-truncation-sugar" type="checkbox" checked />
+              Truncation notation ‖A‖
+            </label>
             <p id="kernel-view-note" class="hint"></p>
+            <section id="kernel-context" aria-labelledby="kernel-context-label">
+              <strong id="kernel-context-label">Context</strong>
+              <p id="kernel-context-note" class="hint"></p>
+              <ol id="kernel-context-list"></ol>
+            </section>
             <div class="kernel-term-label">
               <strong id="kernel-expression-label">Expression</strong>
               <button id="open-kernel-expression" disabled>Open in workbench ↗</button>

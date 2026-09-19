@@ -1,8 +1,15 @@
 import catalogue from "./proofs/catalogue.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 import { renderMathNotation, kernelMathTree } from "./math-notation.mjs";
+import { axiomLabels } from "./axiom-labels.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 const choices = [
+  { id: "fine_interval_samples", title: "Curve sampling · arbitrarily fine constructive subdivisions", complexDevelopment: true },
+  { id: "dyadic_decay", title: "Curve sampling · Archimedean decay of dyadic widths", complexDevelopment: true },
+  { id: "dyadic_width_bounds", title: "Curve sampling · scalar bounds for repeated halving", complexDevelopment: true },
+  { id: "dyadic_mesh", title: "Curve sampling · dyadic bounds imply strict mesh bounds", complexDevelopment: true },
+  { id: "dyadic_sampling", title: "Curve sampling · repeated bisection with exact edge counts", complexDevelopment: true },
+  { id: "sample_condition_maps", title: "Curve sampling · map local tag conditions", complexDevelopment: true },
   { id: "sample_join_conditions", title: "Curve sampling · concatenation preserves admissible tags", complexDevelopment: true },
   { id: "interval_bisection", title: "Curve sampling · constructive midpoint subdivisions", complexDevelopment: true },
   { id: "affine_partition_refinement", title: "Curve contours · uniform refinement across an entire partition", complexDevelopment: true },
@@ -428,20 +435,14 @@ function renderLibrary() {
     $("definitions").append(button);
   }
 }
-const axiomLabels = {
-  lib_univalence: "Univalence",
-  lib_ua_elim: "Univalence transport computation",
-  lib_funext: "Function extensionality",
-  lib_funext_compute: "Function extensionality computation",
-  lib_LEM: "Excluded middle",
-  lib_AOC: "Axiom of choice",
-  LEM: "Excluded middle",
-  AOC: "Axiom of choice",
-  lib_Trunc: "Propositional truncation",
-  lib_trunc_intro: "Truncation introduction",
-  lib_trunc_elim: "Truncation elimination",
-  lib_trunc_is_trunc: "Truncation is a proposition",
-};
+
+function axiomInfo(binding) {
+  return decorate({ binding, name: binding, role: "explicit axiom",
+    ...[...last.outputs, ...last.imports].find(o => o.binding === binding),
+    ...(last.preludeAxioms?.includes(binding)
+      ? { sourceModule: "prelude_library_construction", sourceName: binding } : {}),
+  });
+}
 function renderAxioms(target, axioms) {
   target.replaceChildren(document.createTextNode("Axioms used: "));
   if (!axioms.length) {
@@ -455,21 +456,7 @@ function renderAxioms(target, axioms) {
     button.dataset.axiom = binding;
     button.textContent = axiomLabels[binding] ?? binding;
     button.title = `Inspect ${binding} and its declared type`;
-    button.onclick = () =>
-      inspect(
-        decorate({
-          binding,
-          name: binding,
-          role: "explicit axiom",
-          ...[...last.outputs, ...last.imports].find(o => o.binding === binding),
-          ...(last.preludeAxioms?.includes(binding)
-            ? {
-                sourceModule: "prelude_library_construction",
-                sourceName: binding,
-              }
-            : {}),
-        }),
-      );
+    button.onclick = () => inspect(axiomInfo(binding));
     target.append(button);
   }
 }
@@ -660,6 +647,8 @@ async function inspect(info, remember = true) {
   $("kernel-expression").textContent = "";
   $("kernel-type").textContent = "";
   $("kernel-inference").textContent = "";
+  $("kernel-context-list").replaceChildren();
+  $("kernel-context-note").textContent = "";
   checkedKernelView = null;
   $("kernel-view").value = "notation";
   $("kernel-view").disabled = true;
@@ -749,6 +738,7 @@ function renderKernel(view) {
   $("kernel-view").querySelector('[value="notation"]').disabled = !view.expression && !view.type;
   if (!mathscript && $("kernel-view").value === "mathscript") $("kernel-view").value = "notation";
   const mode = $("kernel-view").value;
+  $("kernel-truncation-options").hidden = mode !== "notation";
   const folded = mode === "mathscript" && mathscript;
   const typeset = mode === "notation" && (notation ?? { verified: {} });
   $("kernel-view-note").textContent = typeset
@@ -760,15 +750,54 @@ function renderKernel(view) {
     : "Raw checked kernel representation.";
   $("kernel-expression-label").textContent = folded?.expressionKind === "declaration" ? "Declaration" : "Expression";
   renderAxioms($("inspect-axioms"), view.axioms ?? []);
-  const symbols = new Map([...last.symbols ?? [], ...last.imports, ...last.outputs].map(info => [info.binding, info]));
+  const symbols = new Map([...(last.symbols ?? []), ...(last.localViews ?? []), ...last.imports, ...last.outputs].map(info => [info.binding, info]));
+  for (const binding of view.axioms ?? []) symbols.set(binding, axiomInfo(binding));
+  for (const entry of view.context?.entries ?? []) {
+    if (!entry.binding) continue;
+    symbols.set(entry.binding, { ...symbols.get(entry.binding), name: entry.name, binding: entry.binding, role: "Kernel context assumption" });
+  }
+  const navigation = { resolve: binding => symbols.get(binding), inspect: info => inspect(decorate(info)),
+    truncationSugar: $("kernel-truncation-sugar").checked };
+  $("kernel-context-note").textContent = view.assumptions.length
+    ? "Open assumptions of this checked judgement. Click a name to inspect its type and source. Π, Σ and λ bind variables inside the term."
+    : "Empty context. Π, Σ and λ bind variables inside the term.";
+  $("kernel-context-list").replaceChildren();
+  for (const entry of view.context?.entries ?? []) {
+    const row = document.createElement("li");
+    row.className = "kernel-context-row";
+    row.dataset.contextId = entry.id;
+    row.dataset.name = entry.name;
+    const label = document.createElement("span");
+    const name = document.createElement("button");
+    name.className = "reference";
+    name.dataset.name = entry.name;
+    name.textContent = entry.name;
+    name.title = `Inspect context assumption ${entry.name}`;
+    name.disabled = !entry.binding;
+    name.onclick = () => { if (entry.binding) navigation.inspect(symbols.get(entry.binding)); };
+    label.append(name, document.createTextNode(" : "));
+    const type = document.createElement("div");
+    type.className = "kernel-term kernel-context-type";
+    const certified = mode === "notation" && entry.folded;
+    if (mode === "raw") type.textContent = layout(entry.type, view.contextNames).text;
+    else {
+      type.classList.add("typeset");
+      renderMathNotation(type, kernelMathTree(certified?.type ?? entry.type, certified?.references ?? {},
+        certified?.contextNames ?? view.contextNames, certified?.contextReferences ?? view.context?.references ?? {},
+        certified?.declarations ?? view.declarations, certified?.axiomNotation ?? view.axiomNotation), navigation);
+    }
+    row.append(label, type);
+    $("kernel-context-list").append(row);
+  }
   for (const side of ["expression", "type"]) {
     const container = $("kernel-" + side);
     const tree = typeset && (typeset[side] ?? view[side]);
     container.classList.toggle("typeset", !!tree);
-    if (tree) renderMathNotation(container, kernelMathTree(tree, typeset[side] ? typeset.references : {}, typeset[side] ? typeset.contextNames ?? view.contextNames : view.contextNames), {
-      resolve: binding => symbols.get(binding),
-      inspect: info => inspect(decorate(info)),
-    });
+    if (tree) renderMathNotation(container, kernelMathTree(tree, typeset[side] ? typeset.references : {},
+      typeset[side] ? typeset.contextNames ?? view.contextNames : view.contextNames,
+      typeset[side] ? typeset.contextReferences ?? {} : view.context?.references ?? {},
+      typeset[side] ? typeset.declarations ?? {} : view.declarations,
+      typeset[side] ? typeset.axiomNotation ?? {} : view.axiomNotation), navigation);
     else container.textContent = folded ? mathscript[side] : view[side]
       ? layout(view[side], view.contextNames).text : "Context assumption";
   }
@@ -795,6 +824,7 @@ function renderKernel(view) {
     !!folded || (!truncated(typeset?.expression ?? view.expression) && !truncated(typeset?.type ?? view.type));
 }
 $("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
+$("kernel-truncation-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = async () => {
   if (!checkedKernelView) return;
   const binding = checkedKernelView.name;

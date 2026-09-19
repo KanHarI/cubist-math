@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import createKernel from "../web/dist/kernel.mjs";
 import { compile } from "../web/mathscript/compiler.mjs";
 import { loadProof } from "../tools/test-selection.mjs";
-import { checkedFoldedView, exportInspection } from "../web/mathscript/kernel-folding.mjs";
-import { kernelMathTree } from "../web/math-notation.mjs";
+import { checkedFoldedView, exportInspection, checkedContextView, inspectionContextNames, inspectionAxiomNotation } from "../web/mathscript/kernel-folding.mjs";
+import { kernelMathTree, isTruncationApplication } from "../web/math-notation.mjs";
 import { Kernel } from "../web/kernel.mjs";
 import { Session } from "../web/session.mjs";
 import { layout, pathFromMarked } from "../web/expressions.mjs";
@@ -285,4 +285,107 @@ test("local folding preserves checked assumptions and uses source labels for con
     assert.equal(extra.expression, null);
     assert.match(extra.failures.expression, /changes the original assumptions/);
   } finally { replay.dispose(); c.kernel.dispose(); }
+});
+
+
+test("kernel context rows use exactly the checked open assumptions and keep bound variables separate", async () => {
+  for (const [moduleName, localName, expected] of [
+    ["sample_join_conditions", "condition", ["C", "condition"]],
+    ["euclid", "bounded", ["n", "i", "bounded"]],
+  ]) {
+    const { source, sources } = await loadProof(new URL(`../web/proofs/${moduleName}.proof`, import.meta.url).pathname);
+    const c = compile(module, source, sources);
+    try {
+      const local = c.localViews.find(local => local.name === localName);
+      const view = c.kernel.inspect(local.binding);
+      Object.assign(view.contextNames, inspectionContextNames(c));
+      view.folded = checkedFoldedView(c, local.binding);
+      const context = checkedContextView(c, view);
+      assert.deepEqual(context.entries.map(entry => entry.name), expected);
+      assert.deepEqual(context.entries.map(entry => entry.id), view.assumptions.map(entry => entry.id));
+      for (const entry of context.entries) {
+        const actual = c.kernel.inspect(entry.contextBinding);
+        assert.equal(entry.type.id, actual.type.id);
+        const term = c.kernel.inspect(entry.binding).expression;
+        assert.equal(term.kind, "CRef");
+        assert.equal(term.parameter, entry.id);
+      }
+      if (localName === "condition") {
+        assert.equal(context.entries[0].type.kind, "U");
+        assert.equal(context.entries[0].type.parameter, 1);
+        const f = context.entries[1].folded;
+        let type = kernelMathTree(f.type, f.references, f.contextNames, f.contextReferences);
+        for (let i = 0; i < 3; i++) {
+          assert.equal(type.kind, "Arrow");
+          assert.equal(type.left.name, "C");
+          assert.equal(type.left.contextBinding, context.entries[0].binding);
+          type = type.right;
+        }
+        assert.deepEqual(type, { kind: "Universe", level: 0 });
+      }
+      const rawContext = c.kernel.inspect(context.entries.at(-1).contextBinding);
+      const rawEntries = checkedContextView(c, rawContext).entries;
+      assert.deepEqual(rawEntries.map(entry => entry.name), expected.slice(0, -1));
+      const unnamed = checkedContextView({ ...c, localViews: [] }, {
+        ...view, assumptions: view.assumptions.map(entry => ({ ...entry, names: [] })),
+      });
+      assert.ok(unnamed.entries.every(entry => !entry.binding && entry.name === `c${entry.id}`));
+      const closed = c.kernel.inspect(c.outputs.at(-1).binding);
+      assert.deepEqual(checkedContextView(c, closed).entries, []);
+    } finally { c.kernel.dispose(); }
+  }
+  const bound = kernelMathTree({ kind: "Pi", children: [
+    { kind: "Nat", children: [] }, { kind: "VRef", parameter: 0, children: [] },
+  ] }, {}, { 0: "external" }, { 0: { name: "external", binding: "external" } });
+  assert.equal(bound.body.name, "x0");
+  assert.equal(bound.body.contextBinding, undefined);
+});
+
+test("mathematical axiom leaves retain checked identities and resolve FieldExists to propositional truncation", async () => {
+  const { source, sources } = await loadProof(new URL("../web/proofs/complete_fields.proof", import.meta.url).pathname);
+  const c = compile(module, source, sources);
+  try {
+    const view = c.kernel.inspect("FieldExists");
+    const displayed = kernelMathTree(view.expression, {}, view.contextNames, {}, view.declarations, inspectionAxiomNotation(c));
+    const axiom = view.expression.children[0].children[0].children[0];
+    assert.equal(axiom.kind, "Axiom");
+    assert.equal(displayed.body.fn.kind, "Name");
+    assert.equal(displayed.body.fn.name, "TruncateAt");
+    assert.equal(isTruncationApplication(displayed.body), true);
+    assert.equal(isTruncationApplication({ ...displayed.body, args: displayed.body.args.slice(0, 1) }), false);
+    assert.equal(isTruncationApplication({ ...displayed.body, args: [...displayed.body.args, displayed.body.args[1]] }), false);
+    assert.equal(displayed.body.fn.binding, "lib_Trunc");
+    assert.equal(displayed.body.fn.axiomParameter, axiom.parameter);
+    assert.equal(c.kernel.inspect(displayed.body.fn.binding).expression.id, axiom.id);
+    assert.equal(displayed.body.args[0].level, 1);
+    assert.deepEqual(view.axioms, ["lib_Trunc"]);
+  } finally { c.kernel.dispose(); }
+  const separate = compile(module, "axiom first : Nat; axiom second : Nat -> Nat;");
+  try {
+    const views = ["first", "second"].map(binding => separate.kernel.inspect(binding));
+    const mapped = views.map(view => kernelMathTree(view.expression, {}, {}, {}, view.declarations));
+    assert.deepEqual(mapped.map(node => node.binding), ["first", "second"]);
+    assert.notEqual(mapped[0].axiomParameter, mapped[1].axiomParameter);
+    for (const view of views) {
+      const fallback = kernelMathTree(view.expression);
+      assert.equal(fallback.kind, "Name");
+      assert.equal(fallback.name, "axiom");
+      assert.equal(fallback.axiomParameter, view.expression.parameter);
+    }
+  } finally { separate.kernel.dispose(); }
+});
+
+
+test("truncation sugar does not recognize a user axiom with a matching name", () => {
+  const c = compile(module, "axiom lib_Trunc : Nat -> Nat -> Nat; def lookalike = lib_Trunc(0, 0);");
+  try {
+    const view = c.kernel.inspect("lookalike");
+    const notation = inspectionAxiomNotation(c);
+    assert.deepEqual(notation, {});
+    const type = kernelMathTree(view.expression, {}, {}, {}, view.declarations, notation);
+    assert.equal(type.kind, "Call");
+    assert.equal(type.fn.binding, "lib_Trunc");
+    assert.equal(type.fn.axiomNotation, undefined);
+    assert.equal(isTruncationApplication(type), false);
+  } finally { c.kernel.dispose(); }
 });

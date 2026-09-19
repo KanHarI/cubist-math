@@ -226,9 +226,33 @@ that concatenating subdivisions with matching endpoints preserves their tag
 conditions, including empty prefixes and suffixes. This axiom-free result
 will keep the samples admissible when the bisections are iterated.
 
-Iterating these bisections into a compatible nested sampling scheme, proving
-its mesh tends to zero, and deriving Cauchy convergence remain to be proved.
-No integral limit is constructed by these finite results.
+[dyadic_sampling](../web/proofs/dyadic_sampling.proof) now recursively bisects
+both half-intervals and joins their samples. At depth `n` the result has
+exactly `2^n` edges, admissible tags, and every edge's width is bounded by
+`n` halvings of the original width. Empty-width intervals are included.
+[dyadic_mesh](../web/proofs/dyadic_mesh.proof) converts this weak width bound
+into the existing strict mesh predicate whenever the scalar bound is smaller
+than the requested mesh. Its condition maps preserve the actual sample data.
+
+[dyadic_width_bounds](../web/proofs/dyadic_width_bounds.proof) proves
+`(n + 1) * refined_width <= original_width`.
+[dyadic_decay](../web/proofs/dyadic_decay.proof) combines that estimate with
+positive reciprocals and Archimedeanness to prove that arbitrarily small
+dyadic widths merely exist. No excluded middle or choice is used.
+[fine_interval_samples](../web/proofs/fine_interval_samples.proof) then proves
+that every weakly ordered interval has admissible dyadic samples below any
+positive mesh, again with mere existence. Midpoints, tags, widths and counts
+are derived; no partition oracle is an input.
+
+The truncation is deliberate: `Archimedean` supplies a merely existing natural
+bound. This result does not select a natural modulus for each mesh. The
+existing `FieldCauchy` interface asks for actual moduli, so using it will need
+an explicit modulus or a separately justified conversion. The proof never
+eliminates a truncation directly into the sampling data.
+
+Cross-level refinement identities for these constructed samples, Cauchy
+convergence, and homotopy estimates remain to be proved. No integral limit
+is constructed by these finite results.
 
 ## Relationship to homotopy paths
 

@@ -40,8 +40,11 @@ to one sample list with exactly the sum of their contributions. The global
 affine refinement estimate now controls the error of this actual flattened
 sum by `delta * outer width * coordinate length`, without a sample-count
 factor. Constructive midpoints and their admissible two-edge subdivisions
-are now checked as well. Iteration into compatible sampling schemes with
-vanishing mesh and construction of an initial integral limit remain open.
+are now checked as well. Recursive bisection constructs exactly `2^n` edges
+with checked width bounds. Archimedeanness then gives mere existence of
+admissible samples below every positive mesh, preserving its truncation
+without choice. Cross-level refinement identities, actual convergence
+moduli, and construction of an initial integral limit remain open.
 
 | Module | Result |
 | --- | --- |

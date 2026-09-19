@@ -570,3 +570,37 @@ select {
   align-items: center;
   gap: 6px;
 }
+
+#kernel-context {
+  margin: 16px 0 24px;
+}
+#kernel-context-list {
+  padding: 0;
+  margin: 8px 0;
+  list-style: none;
+}
+.kernel-context-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  margin: 8px 0;
+}
+.kernel-context-row > span {
+  padding-top: 8px;
+}
+.kernel-context-type.kernel-term {
+  min-width: 0;
+  max-height: 140px;
+  overflow: auto;
+  margin: 0;
+  padding: 8px;
+}
+
+#kernel-truncation-options {
+  display: block;
+  margin-top: 10px;
+}
+#kernel-truncation-options[hidden] {
+  display: none;
+}

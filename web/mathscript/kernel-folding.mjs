@@ -42,15 +42,51 @@ export function exportInspection(checked, binding, side, folded = true) {
 
 // Labels only annotate actual context-reference nodes. They do not replace
 // expressions, and duplicate labels remain distinguished by kernel context IDs.
-export function inspectionContextNames(checked, kernel = checked.kernel) {
+export function inspectionContextReferences(checked, kernel = checked.kernel) {
   const result = {};
   for (const local of checked.localViews ?? []) {
     const binding = kernel.bindings.get(local.binding);
     if (binding?.kind !== "judgement") continue;
     const tree = kernel.node(kernel.module._wb_view(kernel.handle, 0, binding.id, 0));
-    if (["CRef", "UCRef"].includes(tree.kind) && !(tree.parameter in result)) result[tree.parameter] = local.name;
+    if (["CRef", "UCRef"].includes(tree.kind) && !(tree.parameter in result))
+      result[tree.parameter] = { name: local.name, binding: local.binding };
   }
   return result;
+}
+
+export function inspectionContextNames(checked, kernel = checked.kernel) {
+  return Object.fromEntries(Object.entries(inspectionContextReferences(checked, kernel)).map(([id, ref]) => [id, ref.name]));
+}
+
+// Recognize notation only for the imported library axiom's actual AST identity.
+// A user declaration that merely reuses the spelling lib_Trunc does not qualify.
+export function inspectionAxiomNotation(checked, kernel = checked.kernel) {
+  if (!checked.preludeAxioms?.includes("lib_Trunc")) return {};
+  const binding = kernel.bindings.get("lib_Trunc");
+  if (binding?.kind !== "judgement") return {};
+  const term = kernel.node(kernel.module._wb_view(kernel.handle, 0, binding.id, 0));
+  return term.kind === "Axiom" ? { [term.id]: "truncation" } : {};
+}
+
+// Read the contexts attached to this exact checked judgement. A source local
+// supplies a label/navigation target only when its checked CRef has that ID.
+export function checkedContextView(checked, view) {
+  const kernel = checked.kernel, references = inspectionContextReferences(checked);
+  const entries = view.assumptions.map(assumption => {
+    const contextBinding = assumption.names[0];
+    const reference = references[assumption.id] ?? { name: contextBinding ?? `c${assumption.id}`, binding: contextBinding };
+    references[assumption.id] = reference;
+    const type = kernel.tree(kernel.module._wb_view(kernel.handle, 1, assumption.id, 0), { left: 350, maxDepth: 40 });
+    // Reuse a certified type already produced for the selected context variable.
+    // Other rows show their actual stored type; clicking one certifies its own
+    // folded view without eagerly replaying every context's dependency closure.
+    const folded = reference.binding === view.name && view.folded?.verified.type && type.id === view.type?.id
+      ? { type: view.folded.type, references: view.folded.references,
+          contextNames: view.folded.contextNames, contextReferences: view.folded.contextReferences,
+          declarations: view.folded.declarations, axiomNotation: view.folded.axiomNotation } : null;
+    return { id: assumption.id, ...reference, contextBinding, type, folded };
+  });
+  return { entries, references };
 }
 
 // Source syntax only proposes a folded term. A separate kernel checks every
@@ -242,7 +278,7 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
       }
       return tree;
     }
-    const result = { references, contextNames: inspectionContextNames(checked, b.k), verified: {}, expression: null, type: null, failures: {} };
+    const result = { references, contextNames: inspectionContextNames(checked, b.k), contextReferences: inspectionContextReferences(checked, b.k), declarations: Object.fromEntries(b.k.declarations), axiomNotation: inspectionAxiomNotation(checked, b.k), verified: {}, expression: null, type: null, failures: {} };
     for (const [side, original] of [["expression", output.binding], ["type", output.proposition]]) {
       try {
         if (side === "type" && b.view(original, 0) !== b.view(output.binding, 1))
