@@ -34,6 +34,14 @@ try {
   const both = await checked();
   assert.equal(await page.locator("#reuse-normal-forms").isChecked(), true);
   assert.equal(await page.locator("#memoize-instructions").isChecked(), true);
+  assert.equal(await page.locator("#index-fresh-contexts").isChecked(), true);
+  await page.locator("#index-fresh-contexts").uncheck();
+  assert.equal(await checked(), both, "Context indexing changes elapsed work, not kernel instructions");
+  await page.reload();
+  assert.equal(await checked(), both);
+  assert.equal(await page.locator("#index-fresh-contexts").isChecked(), false);
+  await page.locator("#index-fresh-contexts").check();
+  assert.equal(await checked(), both);
   const position = await page.locator("#reuse-normal-forms").boundingBox();
   const sourcePosition = await page.locator("#source-panel").boundingBox();
   assert.ok(position.y < sourcePosition.y, "Optimization controls appear above the proof workspace");
@@ -63,6 +71,7 @@ try {
   await page.locator("#edit-mode").click();
   await page.locator("#editor").fill("construction example { export unit = unit_value(); }");
   assert.equal(await page.locator("#memoize-instructions").isDisabled(), true);
+  assert.equal(await page.locator("#index-fresh-contexts").isDisabled(), true);
   await page.locator("#check").click();
   await page.waitForFunction(() => document.querySelector("#check-loader").hidden &&
     document.querySelector("#check").disabled === false);
