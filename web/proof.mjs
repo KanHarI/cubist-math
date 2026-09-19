@@ -181,6 +181,9 @@ let worker,
 const pending = new Map(),
   history = [];
 $("editor").value = example;
+for (const id of ["reuse-normal-forms", "memoize-instructions"]) {
+  try { $(id).checked = localStorage.getItem("mathscript:" + id) === "true"; } catch {}
+}
 $("proof-title").textContent = choices.find((p) => p.id === proofId).title;
 $("development-note").hidden = !choices.find((p) => p.id === proofId).realDevelopment;
 $("puncture-note").hidden = !choices.find((p) => p.id === proofId).punctureDevelopment;
@@ -244,8 +247,14 @@ function diagnostic(e) {
 function dirty() {
   return last && $("editor").value !== last.source;
 }
+function compilerOptimizations() {
+  if (/^\s*(?:\/\/[^\n]*\n\s*)*construction\b/.test($("editor").value)) return {};
+  return { normalForms: $("reuse-normal-forms").checked, instructions: $("memoize-instructions").checked };
+}
 function refreshStatus() {
   $("check").disabled = !ready || pending.size > 0;
+  for (const id of ["reuse-normal-forms", "memoize-instructions"])
+    $(id).disabled = !ready || pending.size > 0 || !Object.keys(compilerOptimizations()).length;
   $("export").disabled = !last || pending.size > 0;
   $("dirty").textContent = dirty()
     ? "Edited — changes are not checked. Read shows the last checked version."
@@ -286,7 +295,7 @@ async function check() {
   $("diagnostic").hidden = true;
   const source = $("editor").value;
   try {
-    const result = await request("check", { source });
+    const result = await request("check", { source, optimizations: compilerOptimizations() });
     last = result;
     history.length = 0;
     renderLibrary();
@@ -738,6 +747,10 @@ function download(text, name, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 $("check").onclick = check;
+for (const id of ["reuse-normal-forms", "memoize-instructions"]) $(id).onchange = () => {
+  try { localStorage.setItem("mathscript:" + id, String($(id).checked)); } catch {}
+  check();
+};
 $("read-mode").onclick = () => setMode("read");
 $("edit-mode").onclick = () => setMode("edit");
 $("editor").oninput = () => {

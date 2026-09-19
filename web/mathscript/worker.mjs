@@ -22,6 +22,7 @@ self.onmessage = ({ data: { id, command, args } }) => {
     let result;
     if (command === "check") {
       const next = compile(module, args.source, library, {
+        optimizations: args.optimizations,
         onProgress: progress => self.postMessage({ id, progress }),
       });
       checked?.kernel.dispose();
