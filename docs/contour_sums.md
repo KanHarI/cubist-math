@@ -1,8 +1,10 @@
 # Finite contour sums and homotopy paths
 
 These are checked finite approximations for the contour-integral development.
-They do not yet construct an integral, prove Cauchy's theorem, or discharge
-the analytic premises of the residue theorem. The ring or ordered field is
+The later [affine dyadic construction](complex_curves.md#constructed-affine-dyadic-integrals)
+now constructs an integral limit from them under explicit field hypotheses.
+Cauchy's theorem and the analytic premises of the residue theorem remain
+unproved. The ring or ordered field is
 an explicit parameter; the concrete real-field constructions remain incomplete.
 
 ## What the finite data represents
@@ -204,8 +206,11 @@ Recursive bisection now constructs finite dyadic levels with exact edge
 counts, and Archimedeanness proves mere existence of admissible samples
 below every positive mesh, uniformly at all sufficiently deep levels.
 Scalar width convergence has an actual modulus when actual Archimedean
-bound functions are supplied explicitly. Still needed are cross-level
-refinement identities, moduli from the shared field interface, Cauchy and
-homotopy estimates for the integrands in question, comparison with
+bound functions are supplied explicitly. Cross-level refinement identities
+and a Cauchy modulus for uniformly continuous integrands along affine curves
+are now checked, and completeness constructs the unique dyadic integral limit.
+Splitting at the constructed midpoint preserves addition of those limits.
+Still needed are moduli from the merely existential shared field interface,
+arbitrary-partition comparisons and homotopy estimates, comparison with
 the puncture homotopy type, and the local generator integral `2*pi*i*residue`.
 The full residue theorem, algebraic closure, and Great Picard remain open.

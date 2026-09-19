@@ -146,7 +146,7 @@ The [puncture period formula](web/proofs/puncture_periods.proof) now proves
 that every additive invariant of a loop in the puncture homotopy type is the
 sum of its winding numbers times its generator values. It is also
 [specialized to complex addition](web/proofs/complex_periods.proof). This is
-the homotopy part of the residue argument; contour integration and the local
+the homotopy part of the residue argument; general contour integration and the local
 residue calculation remain to be constructed and proved.
 
 [Limit and descent proofs](docs/analysis_limits.md) now construct additive
@@ -163,6 +163,11 @@ now include uniformly continuous straight segments and their endpoints, with
 zero avoidance under the squared-norm domination condition.
 Their ordered interval samples have checked coordinate variation bounds
 independent of the number of sample points.
+The actual affine dyadic sums now have a checked Cauchy modulus when supplied
+actual Archimedean bounds. Completeness constructs their unique limit, and
+splitting at the constructed midpoint splits that limit into a sum. These
+results preserve constructive assumptions; comparison with arbitrary fine
+partitions and homotopy invariance remain to be proved.
 The parameter samples now map to the original contour sums; the affine
 tag-independence proof supplies those variation bounds itself.
 Uniform continuity along the curve now yields a positive mesh threshold

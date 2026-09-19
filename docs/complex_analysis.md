@@ -210,6 +210,12 @@ integral, or establish analytic bounds. Those are separate prerequisites.
 In particular, a twice-punctured plane's noncommutative loop structure alone
 does not imply Picard's analytic conclusion.
 
+The separate [geometric-curve development](complex_curves.md#constructed-affine-dyadic-integrals)
+now constructs unique dyadic integral limits along affine curves from uniform
+continuity, Cauchy completeness and actual Archimedean bounds. Its midpoint
+splitting law is proved from finite sums. Comparison with general partitions,
+homotopy invariance and the punctured-plane comparison remain unproved.
+
 The implementation order is therefore real-field instances and complex
 inverses, polynomial estimates and continuous topology, algebraic closure by
 winding, then integrals, Cauchy theory, the residue theorem and the further

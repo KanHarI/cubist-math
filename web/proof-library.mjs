@@ -18,6 +18,12 @@ export const proofTopics = [
 ];
 
 export const proofChoices = [
+  { id: "affine_integrals", topic: "contour-integration", title: "Curve integrals · construct the affine dyadic limit", complexDevelopment: true },
+  { id: "affine_integral_midpoint", topic: "contour-integration", title: "Curve integrals · splitting at the midpoint", complexDevelopment: true },
+  { id: "affine_integral_constants", topic: "contour-integration", title: "Curve integrals · integrating a constant", complexDevelopment: true },
+  { id: "affine_dyadic_limits", topic: "contour-integration", title: "Curve integrals · actual dyadic sums are Cauchy", complexDevelopment: true },
+  { id: "complex_refinement_cauchy", topic: "complex-analysis", title: "Complex limits · common refinements give a Cauchy modulus", complexDevelopment: true },
+  { id: "curve_sample_sums", topic: "contour-integration", title: "Curve contours · concatenating the actual mapped sums", complexDevelopment: true },
   { id: "group_univalence", topic: "algebra", title: "Groups · isomorphism is equality" },
   { id: "circle_group_identity", topic: "homotopy", title: "Circle · the loop group equals the integer group" },
   { id: "group_identity", topic: "algebra", title: "Groups · bundled structures and identity paths" },

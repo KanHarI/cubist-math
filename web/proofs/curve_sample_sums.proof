@@ -1,0 +1,32 @@
+import affine_partition_refinement;
+
+// The parameter sum and the sum on the image curve are the same checked value.
+theorem curve_subdivision_sum_is_mapped(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
+  a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)) :
+  subdivision_sum(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF), parameter_contour_edge(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t)))), a, b, piece) = curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, piece) {
+  exact parameter_contour_sum_is_mapped(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF),
+    complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, integrand,
+    subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece), subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece), subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, piece));
+}
+
+theorem curve_subdivision_samples_join(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
+  a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), c : FieldUnitInterval(F, zero, one, lt), left : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), right : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), b, c)) :
+  curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, c, join_subdivisions(FieldUnitInterval(F, zero, one, lt), a, b, c, left, right)) =
+    complex_add(F, addF, curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, left), curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, b, c, right)) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let addC = complex_add(F, addF);
+  let zeroC = complex_zero(F, zero);
+  let edge = parameter_contour_edge(FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t))));
+  let joined = join_subdivisions(I, a, b, c, left, right);
+  let rightSum = subdivision_sum(I, Complex(F), zeroC, addC, edge, b, c, right);
+  let leftValue = curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, left);
+  let joinPath = subdivision_sum_join(I, Complex(F), zeroC, addC,
+    complex_add_zero(F, zero, one, addF, mulF, negF, ring), complex_add_assoc(F, zero, one, addF, mulF, negF, ring),
+    edge, a, b, c, left, right);
+  exact trans(sym(curve_subdivision_sum_is_mapped(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, c, joined)),
+    trans(joinPath,
+      trans(cong((fun (x : Complex(F)) => addC(x, rightSum)), curve_subdivision_sum_is_mapped(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, left)),
+        cong(addC(leftValue), curve_subdivision_sum_is_mapped(F, zero, one, addF, mulF, negF, lt, curve, integrand, b, c, right)))));
+}

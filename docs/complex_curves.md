@@ -104,11 +104,11 @@ statement. If the sampled integrand errors are bounded by nonnegative
 then the sums for the new tags converge to that same `value`. Both use the
 same sequence of ordered sampled vertices.
 
-This transfers an existing limit; it does not prove that either scheme is
-Cauchy in the first place. The admissibility and mesh estimates below now
-supply finite integrand bounds; refining partitions and the Cauchy proof
-remain to be constructed. The limit
-proofs use only existing truncation, introduction, and elimination; they add
+This result transfers an existing limit. The later dyadic construction below
+now supplies a Cauchy proof and a limit under explicit actual Archimedean
+bounds and completeness. Arbitrary sampling schemes still need comparison
+with that construction. The limit proofs use only existing truncation,
+introduction, and elimination; they add
 no excluded middle, choice, kernel rule, or theorem-specific axiom.
 
 ## Admissible tags and a sufficiently fine mesh
@@ -311,11 +311,46 @@ a `ComplexPerturbation` bounded by `delta * outerWidth * coordinateLength`.
 The bound is independent of both sample counts. This remains a finite-sum
 estimate, with the supplied field and continuity assumptions explicit.
 
-Using these estimates to construct a Cauchy modulus and the limit of contour
-sums, and proving homotopy estimates, remain to be done.
-Actual moduli from the existing merely existential interface still require
-a separate bridge or a concrete bound construction. No integral limit
-is constructed by these finite results.
+## Constructed affine dyadic integrals
+
+[complex_refinement_cauchy](../web/proofs/complex_refinement_cauchy.proof)
+proves the common-refinement argument: compare levels `m` and `n` through
+`m + n`, using half the requested tolerance for each comparison. The resulting
+bound is an actual natural number, as required by `ComplexCauchy`.
+
+[affine_dyadic_limits](../web/proofs/affine_dyadic_limits.proof) applies this
+to the actual sums, using the proved mesh estimate and dyadic width decay.
+It requires `ArchimedeanBounds`, which supplies actual natural witnesses;
+the merely existential `Archimedean` field property is not silently strengthened.
+Uniform continuity supplies a mesh for the requested integrand error, and
+the natural bound for the shrinking width supplies the sampling index.
+Zero segment length is covered without deciding whether it is zero.
+
+[affine_integrals](../web/proofs/affine_integrals.proof) then applies
+`CauchyComplete` coordinatewise to construct `affine_dyadic_integral`, proves
+its convergence and uniqueness, and proves that changing the witnesses for
+inverses, Archimedean bounds, uniform continuity or completeness leaves the
+value unchanged. No convergence assumption about the sums appears as an input
+to this construction. No excluded middle, choice, or new kernel rule is used.
+
+[affine_integral_midpoint](../web/proofs/affine_integral_midpoint.proof)
+proves that the integral from `a` to `b` is the sum of the integrals over its
+two constructed half-intervals, along the same affine curve. It uses the exact
+finite join equation from [curve_sample_sums](../web/proofs/curve_sample_sums.proof)
+and uniqueness of limits; it does not assume additivity of integrals.
+
+[affine_integral_constants](../web/proofs/affine_integral_constants.proof)
+proves the normalization formula: integrating a constant `c` gives
+`c * (curve(b) - curve(a))`. Constant uniform continuity is constructed, and
+the finite sums already have exactly this value by telescoping. Uniqueness
+identifies their constructed integral with it.
+
+This constructs the unique limit of the specified dyadic samples. Comparison
+with arbitrary fine partitions, splitting at arbitrary points, reversal,
+and homotopy invariance remain to be proved. Actual moduli from the existing
+merely existential Archimedean interface still require a separate bridge or
+a concrete bound construction, and concrete complete-field models remain
+unfinished.
 
 ## Relationship to homotopy paths
 

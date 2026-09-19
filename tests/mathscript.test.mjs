@@ -1574,6 +1574,67 @@ test("a flattening estimate cannot identify the fine contour without its sum cer
   assert.throws(() => compile(module, disconnected, sources), /Expected|Conversion types differ/);
 });
 
+test("actual affine contour sums construct a unique integral and split at the midpoint", t => {
+  const c = compile(module, sources.affine_integral_midpoint, sources);
+  try {
+    const outputs = [...c.outputs, ...c.imports];
+    for (const name of ["complex_cauchy_from_refinements", "affine_dyadic_cauchy",
+      "affine_dyadic_integral_exists", "affine_dyadic_integral_converges", "affine_dyadic_integral_unique",
+      "affine_dyadic_integral_independent_data", "affine_dyadic_integral_midpoint"]) {
+      const output = outputs.find(o => o.name === name);
+      assert.ok(output, name);
+      assert.ok(c.kernel.verify(output.proposition, output.binding), name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim"].includes(a)), name);
+    }
+    const exists = outputs.find(o => o.name === "affine_dyadic_integral_exists");
+    assert.match(exists.type, /bounds : ArchimedeanBounds/);
+    assert.match(exists.type, /complete : CauchyComplete/);
+    assert.match(exists.type, /uniform : ComplexUniformCurve/);
+    assert.match(exists.type, /exists value : Complex\(F\), ComplexConverges/);
+    assert.doesNotMatch(exists.type, /cauchy :|converges :|localEstimates :|FieldExists\(exists value/);
+    const midpoint = outputs.find(o => o.name === "affine_dyadic_integral_midpoint");
+    assert.match(midpoint.type, /interval_midpoint_point/);
+    assert.match(midpoint.type, /complex_add/);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; constructed dyadic integral with explicit modulus data`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("the constructed affine integral of a constant has the oriented endpoint formula", t => {
+  const c = compile(module, sources.affine_integral_constants, sources);
+  try {
+    for (const output of c.outputs) {
+      assert.ok(c.kernel.verify(output.proposition, output.binding), output.name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim"].includes(a)), output.name);
+    }
+    const constant = c.outputs.find(o => o.name === "affine_dyadic_integral_constant");
+    assert.match(constant.type, /affine_dyadic_integral/);
+    assert.match(constant.type, /coordinate_difference/);
+    assert.match(constant.type, /complex_mul/);
+    assert.doesNotMatch(constant.type, /uniform :|converges :|cauchy :/);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; constant integral computed from telescoping sums`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("the affine Cauchy modulus cannot use mere Archimedean existence as actual bounds", () => {
+  const weakened = sources.affine_dyadic_limits.replace(
+    "bounds : ArchimedeanBounds(F, zero, one, addF, lt)",
+    "bounds : Archimedean(F, zero, one, addF, lt)");
+  assert.notEqual(weakened, sources.affine_dyadic_limits);
+  assert.throws(() => compile(module, weakened, sources), /Expected|Conversion types differ/);
+});
+
+test("the common-refinement Cauchy proof must account for both errors", () => {
+  const shortened = sources.complex_refinement_cauchy.replace(
+    "complex_close_triangle(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, sequence(m), sequence(m + n), sequence(n), half(epsilon), half(epsilon), first, reversed)",
+    "first");
+  assert.notEqual(shortened, sources.complex_refinement_cauchy);
+  assert.throws(() => compile(module, shortened, sources), /Expected|Conversion types differ/);
+});
+
 test("refinement families join with checked endpoint paths and ordered sums without axioms", t => {
   const c = compile(module, sources.subdivision_refinement, sources);
   try {
