@@ -29,6 +29,16 @@ test("proof selection deduplicates module names and paths without enabling full 
   assert.deepEqual(selectTests(["--help"]), { help: true });
 });
 
+test("compiler optimizations have independent CLI switches and are not forwarded to Node", () => {
+  assert.deepEqual(selectTests(["basics"]).optimizations, { normalForms: false, instructions: false });
+  assert.deepEqual(selectTests(["--reuse-normal-forms", "basics"]).optimizations, { normalForms: true, instructions: false });
+  assert.deepEqual(selectTests(["--memoize-instructions", "basics"]).optimizations, { normalForms: false, instructions: true });
+  const both = selectTests(["--reuse-normal-forms", "--memoize-instructions", "basics"]);
+  assert.deepEqual(both.optimizations, { normalForms: true, instructions: true });
+  assert.deepEqual(both.flags, []);
+  assert.throws(() => selectTests(["--reuse-normal-forms"]), /require selected proof modules/);
+});
+
 test("selected proofs load only transitive imports and tolerate cycles for compiler diagnostics", async t => {
   const root = await mkdtemp(join(tmpdir(), "mathscript-imports-"));
   t.after(() => rm(root, { recursive: true, force: true }));

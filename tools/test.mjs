@@ -10,7 +10,7 @@ try {
     process.stdout.write("No added or modified .proof files to check.\n");
   } else {
     await Promise.all([...selected.tests, ...selected.proofs].map(path => access(path)));
-    const environment = { ...process.env, MATHSCRIPT_TEST_PROOFS: JSON.stringify(selected.proofs) };
+    const environment = { ...process.env, MATHSCRIPT_TEST_PROOFS: JSON.stringify(selected.proofs), MATHSCRIPT_OPTIMIZATIONS: JSON.stringify(selected.optimizations) };
     // A nested invocation must start its own Node test run, not inherit the
     // parent runner's internal child-process protocol.
     delete environment.NODE_TEST_CONTEXT;

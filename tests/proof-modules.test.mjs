@@ -10,7 +10,7 @@ const module = await createKernel();
 for (const path of selected) {
   test(`proof: ${path.split("/").at(-1)}`, async t => {
     const { source, sources } = await loadProof(path);
-    const c = compile(module, source, sources);
+    const c = compile(module, source, sources, { optimizations: JSON.parse(process.env.MATHSCRIPT_OPTIMIZATIONS ?? "{}") });
     try {
       if (c.mode === "construction") {
         for (const check of c.checks) assert.ok(c.kernel.verify(check.proposition, check.proof), check.proof);
@@ -20,6 +20,7 @@ for (const path of selected) {
         }
       }
       t.diagnostic(`${c.outputs.length} declarations; ${c.instructionCount.toLocaleString()} kernel steps; ${Object.keys(sources).length} source imports`);
+      t.diagnostic(`Compiler optimizations: ${Object.entries(c.optimizations ?? {}).filter(([, enabled]) => enabled).map(([name]) => name).join(", ") || "off"}`);
       const axioms = [...new Set(c.outputs.flatMap(output => c.kernel.axiomsFor(output.binding)))].sort();
       t.diagnostic(`Axioms used: ${axioms.join(", ") || "none"}`);
     } finally { c.kernel.dispose(); }

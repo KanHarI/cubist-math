@@ -4,6 +4,10 @@ import { createInterface } from "node:readline";
 import { readFile, writeFile, stat } from "node:fs/promises";
 import createKernel from "../web/dist/kernel.mjs";
 import { compile } from "../web/mathscript/compiler.mjs";
+const options = process.argv.slice(2);
+if (options.some(option => !["--reuse-normal-forms", "--memoize-instructions"].includes(option)))
+  throw new Error("Usage: node cli/repl.mjs [--reuse-normal-forms] [--memoize-instructions]");
+const optimizations = { normalForms: options.includes("--reuse-normal-forms"), instructions: options.includes("--memoize-instructions") };
 import { Session } from "../web/session.mjs";
 import library from "../web/proofs/library.mjs";
 import proofs from "../web/proofs/catalogue.mjs";
@@ -130,6 +134,7 @@ check PROPOSITION PROOF      Check the closed theorem against its proof
 source / stats / ops          Show instructions, metrics, or all 67 operations
 save FILE / load FILE        Save or replay the active proof branch as JSON
 prove FILE.proof            Compile mathematical source and open its checked proof
+                            CLI flags: --reuse-normal-forms, --memoize-instructions
 run FILE.math               Preview a source program before accepting it
 axioms on / axioms off       Explicitly change the axiom policy
 help / quit`;
@@ -250,7 +255,7 @@ async function command(line) {
             ]),
           ),
         );
-      const compiled = compile(module, source, foundation);
+      const compiled = compile(module, source, foundation, { optimizations });
       try {
         session.import(
           {

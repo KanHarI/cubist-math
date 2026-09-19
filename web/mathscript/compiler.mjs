@@ -8,9 +8,17 @@ import { MAX_STEPS } from "../language.mjs";
 // Bidirectional elaboration into the existing checked instruction language.
 // Type descriptors carry checked judgements and closures for dependent binders;
 // they never manufacture kernel nodes or bypass conversion/type checking.
-export function compile(module, source, library, { onProgress } = {}) {
-  if (/^\s*(?:\/\/[^\n]*\n\s*)*construction\b/.test(source))
-    return compileConstruction(module, source, { onProgress });
+export function compile(module, source, library, { onProgress, optimizations = {} } = {}) {
+  if (!optimizations || typeof optimizations !== "object" || Array.isArray(optimizations) ||
+      Object.entries(optimizations).some(([key, value]) =>
+        !["normalForms", "instructions"].includes(key) || typeof value !== "boolean"))
+    throw new Error("Compiler optimizations must contain only Boolean normalForms and instructions options.");
+  optimizations = { normalForms: optimizations.normalForms ?? false, instructions: optimizations.instructions ?? false };
+  if (/^\s*(?:\/\/[^\n]*\n\s*)*construction\b/.test(source)) {
+    if (Object.values(optimizations).some(Boolean))
+      throw new Error("Compiler optimizations apply to mathematical source, not recorded construction instructions.");
+    return { ...compileConstruction(module, source, { onProgress }), optimizations };
+  }
   const program = parse(source);
   const sources =
     typeof library === "string" ? { primes: library } : (library ?? {});
@@ -56,6 +64,7 @@ export function compile(module, source, library, { onProgress } = {}) {
   const b = new Builder(module, {
     loadLibrary: false,
     allowAxioms: usesPrelude || usesDeclaredAxioms,
+    optimizations,
   });
   const links = [],
     steps = [],
@@ -1830,6 +1839,7 @@ export function compile(module, source, library, { onProgress } = {}) {
       allowAxioms: usesPrelude || usesDeclaredAxioms,
       axiomCount: b.k.steps.filter((s) => s.op === "Axiom").length,
       mode: "mathematical",
+      optimizations: { normalForms: optimizations.normalForms === true, instructions: optimizations.instructions === true },
       preludeAxioms: usesPrelude ? preludeLibrary.steps
         .filter(s => s.op === "Axiom" && b.k.bindings.has(s.name))
         .map(s => s.name) : [],

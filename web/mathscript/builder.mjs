@@ -4,14 +4,23 @@ import library from "../proofs/library.mjs";
 // A proof-producing metaprogram: every construction and conversion is a public
 // checked instruction. JavaScript only chooses premises and fresh names.
 export class Builder {
-  constructor(module, { loadLibrary = true, allowAxioms = loadLibrary } = {}) {
+  constructor(module, { loadLibrary = true, allowAxioms = loadLibrary, optimizations = {} } = {}) {
     this.k = new Kernel(module, allowAxioms);
     if (loadLibrary) for (const s of library.steps) this.k.apply(s);
     this.serial = 0;
     this.normal = new Map();
     this.boxedDefinitions = new Set();
+    this.optimizations = optimizations;
+    this.instructions = new Map();
   }
   emit(op, args = [], free = [], context = null, name = null) {
+    // Reuse only the identical derivation, including premise names and binder
+    // identities. Equal kernel judgements can have different axiom provenance.
+    // Fresh declarations and requested public names must always be emitted.
+    const reusable = this.optimizations.instructions && name === null &&
+      !["Axiom", "Def", "CtxExt"].includes(op);
+    const key = reusable ? JSON.stringify([op, args, free, context]) : null;
+    if (reusable && this.instructions.has(key)) return this.instructions.get(key);
     if (this.maxSteps && this.k.steps.length >= this.maxSteps)
       throw new Error(
         `Compiled mathematical proof exceeds ${this.maxSteps} instructions.`,
@@ -32,6 +41,7 @@ export class Builder {
       throw new Error(e.message);
     }
     if (this.progress && (this.k.steps.length & 1023) === 0) this.progress();
+    if (reusable) this.instructions.set(key, name);
     return name;
   }
   view(name, field) {
@@ -43,9 +53,15 @@ export class Builder {
     );
   }
   norm(a) {
-    const key = `${this.opaque ? "beta" : "defs"}:${this.k.bindings.get(a).id}`;
+    const mode = this.opaque ? "beta" : "defs";
+    const identity = value => `${this.k.bindings.get(value).id}` +
+      (this.optimizations.normalForms
+        ? `:${JSON.stringify([...this.k.axiomDependencies.get(value)].sort())}` : "");
+    const key = `${mode}:${identity(a)}`;
     if (this.normal.has(key)) return this.normal.get(key);
+    const visited = [];
     for (let i = 0; i < 100; i++) {
+      if (this.optimizations.normalForms) visited.push(`${mode}:${identity(a)}`);
       const b = this.emit(
         this.opaque ? "BetaReduceGrossKnuth" : "DefBetaReduceGrossKnuth",
         [a],
@@ -55,6 +71,10 @@ export class Builder {
         this.view(a, 1) === this.view(b, 1)
       ) {
         this.normal.set(key, b);
+        if (this.optimizations.normalForms) {
+          for (const input of visited) this.normal.set(input, b);
+          this.normal.set(`${mode}:${identity(b)}`, b);
+        }
         return b;
       }
       a = b;

@@ -13,6 +13,9 @@ export const help = `Usage: npm test -- [options] [module | file ...]
   npm test -- --module ordered_squares   Same, with an explicit module flag
   npm test -- web/proofs/circle.proof     Check a proof by path
   npm test -- --changed                  Check added/modified .proof files
+  npm test -- --reuse-normal-forms complex_inverses  Cache checked normal forms
+  npm test -- --memoize-instructions complex_inverses  Reuse identical instructions
+  Both optimizations default off and can be combined.
   npm test -- tests/workbench.test.mjs    Run one JavaScript test file
   npm test -- --test-name-pattern="complex inverses"  Filter regression tests
 
@@ -30,6 +33,7 @@ export function changedProofs(root = projectRoot) {
 
 export function selectTests(args, { root = projectRoot, changed = () => changedProofs(root) } = {}) {
   const tests = [], proofs = [], flags = [];
+  const optimizations = { normalForms: false, instructions: false };
   let explicitSelection = false;
   const proof = value => {
     const path = /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? `web/proofs/${value}.proof` : value;
@@ -41,7 +45,9 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
     const arg = args[i];
     if (arg === "--help" || arg === "-h") return { help: true };
     if (arg === "--") continue;
-    if (arg === "--changed") {
+    if (arg === "--reuse-normal-forms" || arg === "--memoize-instructions") {
+      optimizations[arg === "--reuse-normal-forms" ? "normalForms" : "instructions"] = true;
+    } else if (arg === "--changed") {
       explicitSelection = true;
       changed().forEach(proof);
     } else if (arg === "--module" || arg.startsWith("--module=")) {
@@ -71,7 +77,9 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
     }
     tests.push(resolve(root, "tests/proof-modules.test.mjs"));
   }
-  return { tests: [...new Set(tests)], proofs: [...new Set(proofs)], flags };
+  if (Object.values(optimizations).some(Boolean) && !proofs.length)
+    throw new Error("Compiler optimization flags require selected proof modules; regression tests choose their own compiler modes.");
+  return { tests: [...new Set(tests)], proofs: [...new Set(proofs)], flags, optimizations };
 }
 
 // Load only the selected proof's transitive source imports. Parsing is shared
