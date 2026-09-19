@@ -1462,3 +1462,50 @@ test("strict mesh bounds and truncation cannot be silently weakened in dyadic sa
   assert.notEqual(chosen, sources.fine_interval_samples);
   assert.throws(() => compile(module, chosen, sources), /Expected|Conversion types differ/);
 });
+
+test("dyadic tails preserve constructive assumptions and distinguish actual from merely existing bounds", t => {
+  const c = compile(module, sources.fine_interval_tails, sources);
+  try {
+    const names = ["dyadic_width_step_le", "dyadic_width_antitone", "dyadic_width_eventually_small",
+      "dyadic_width_converges_from_bounds", "archimedean_interval_fine_tail", "bounded_archimedean_interval_fine_tail"];
+    const outputs = [...c.outputs, ...c.imports];
+    for (const name of names) {
+      const output = outputs.find(o => o.name === name);
+      assert.ok(output, name);
+      assert.ok(c.kernel.verify(output.proposition, output.binding), name);
+      assert.ok(c.kernel.axiomsFor(output.binding).every(a => ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim", "lib_trunc_is_trunc"].includes(a)), name);
+    }
+    const convergence = outputs.find(o => o.name === "dyadic_width_converges_from_bounds");
+    assert.match(convergence.type, /bounds : ArchimedeanBounds/);
+    assert.match(convergence.type, /FieldConverges/);
+    const ordinary = outputs.find(o => o.name === "archimedean_interval_fine_tail");
+    assert.match(ordinary.type, /archimedean : Archimedean/);
+    assert.match(ordinary.type, /FieldExists\(FineIntervalTail/);
+    const actual = outputs.find(o => o.name === "bounded_archimedean_interval_fine_tail");
+    assert.match(actual.type, /bounds : ArchimedeanBounds/);
+    assert.doesNotMatch(actual.type, /FieldExists/);
+    const tail = c.outputs.find(o => o.name === "FineIntervalTail");
+    assert.match(tail.mathscript.expression, /exists bound : Nat, forall depth : Nat, IndexLE\(bound, depth\) -> FineDyadicLevel/);
+    assert.ok(!c.kernel.bindings.has("LEM"));
+    assert.ok(!c.kernel.bindings.has("AOC"));
+    t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; constructed tails with explicit modulus assumptions`);
+  } finally { c.kernel.dispose(); }
+});
+
+test("dyadic tail bounds reject reversed monotonicity and silent extraction of Archimedean witnesses", () => {
+  const reversed = sources.dyadic_tails.replace(
+    "FieldLe(F, lt, dyadic_width(F, half, n, width), dyadic_width(F, half, bound, width)) {",
+    "FieldLe(F, lt, dyadic_width(F, half, bound, width), dyadic_width(F, half, n, width)) {");
+  assert.notEqual(reversed, sources.dyadic_tails);
+  assert.throws(() => compile(module, reversed, sources));
+  const mereBounds = sources.dyadic_convergence.replace(
+    "bounds : ArchimedeanBounds(F, zero, one, addF, lt),\n  width : F",
+    "bounds : Archimedean(F, zero, one, addF, lt),\n  width : F");
+  assert.notEqual(mereBounds, sources.dyadic_convergence);
+  assert.throws(() => compile(module, mereBounds, sources));
+  const chosen = sources.fine_interval_tails.replace(
+    ": FieldExists(FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b)) {",
+    ": FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b) {");
+  assert.notEqual(chosen, sources.fine_interval_tails);
+  assert.throws(() => compile(module, chosen, sources));
+});

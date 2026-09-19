@@ -202,8 +202,10 @@ to `delta * outer width * coordinate length`, independent of the number of
 samples; see [finite subdivisions](complex_curves.md#finite-subdivisions-of-coarse-intervals).
 Recursive bisection now constructs finite dyadic levels with exact edge
 counts, and Archimedeanness proves mere existence of admissible samples
-below every positive mesh. Still needed are cross-level refinement
-identities, convergence moduli, Cauchy and
+below every positive mesh, uniformly at all sufficiently deep levels.
+Scalar width convergence has an actual modulus when actual Archimedean
+bound functions are supplied explicitly. Still needed are cross-level
+refinement identities, moduli from the shared field interface, Cauchy and
 homotopy estimates for the integrands in question, comparison with
 the puncture homotopy type, and the local generator integral `2*pi*i*residue`.
 The full residue theorem, algebraic closure, and Great Picard remain open.

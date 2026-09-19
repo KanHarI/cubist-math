@@ -250,8 +250,26 @@ existing `FieldCauchy` interface asks for actual moduli, so using it will need
 an explicit modulus or a separately justified conversion. The proof never
 eliminates a truncation directly into the sampling data.
 
+[dyadic_tails](../web/proofs/dyadic_tails.proof) proves that these widths
+decrease with the natural index. Once a width is below a tolerance, every
+later width remains below it. Archimedeanness therefore gives a merely
+existing bound for the entire tail, not just one small sample.
+[fine_interval_tails](../web/proofs/fine_interval_tails.proof) constructs
+admissible samples below the requested mesh at every later level. The family
+comes from recursive bisection, so no choice of samples is needed.
+
+[dyadic_convergence](../web/proofs/dyadic_convergence.proof) also checks actual
+`FieldConverges` convergence of the scalar widths to zero when an
+`ArchimedeanBounds` function is supplied. That stronger datum returns an
+actual natural witness for each field element; it is explicitly separate
+from `Archimedean`. The modulus uses a bound for `width / epsilon`.
+With ordinary Archimedeanness, only the per-tolerance tail existence is
+claimed. These lemmas introduce neither excluded middle nor choice.
+
 Cross-level refinement identities for these constructed samples, Cauchy
-convergence, and homotopy estimates remain to be proved. No integral limit
+convergence of contour sums, and homotopy estimates remain to be proved.
+Actual moduli from the existing merely existential interface still require
+a separate bridge or a concrete bound construction. No integral limit
 is constructed by these finite results.
 
 ## Relationship to homotopy paths

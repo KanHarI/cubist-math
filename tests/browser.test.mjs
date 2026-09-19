@@ -565,6 +565,9 @@ try {
     ["dyadic_width_bounds", "dyadic_width_growth_bound"],
     ["dyadic_decay", "dyadic_width_arbitrarily_small"],
     ["fine_interval_samples", "archimedean_interval_fine_samples"],
+    ["dyadic_tails", "dyadic_width_eventually_small"],
+    ["dyadic_convergence", "dyadic_width_converges_from_bounds"],
+    ["fine_interval_tails", "archimedean_interval_fine_tail"],
 
     ["affine_partition_refinement", "affine_partition_uniform_estimate"],
 

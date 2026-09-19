@@ -168,6 +168,8 @@ number of coarse edges or refined samples.
 Recursive midpoint bisection now gives exact edge counts and mesh bounds;
 Archimedeanness yields mere existence of admissible samples below every
 positive mesh, without choice or excluded middle.
+Widths remain small at every later level. Actual scalar convergence moduli
+are checked when explicit Archimedean bound functions are provided.
 Proving convergence of the contour sums and
 the required homotopy estimates, and relating geometric curves to homotopy
 paths, remain open.

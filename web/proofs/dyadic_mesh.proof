@@ -40,8 +40,8 @@ theorem interval_tagged_width_mesh(F : Type1, zero : F, one : F, addF : F -> F -
 }
 
 // A bound on the scalar dyadic width yields actual admissible samples below
-// the requested mesh. The scalar decay statement itself is not assumed here
-// for all tolerances; it remains a separate theorem to establish.
+// the requested mesh. Scalar decay for all positive tolerances is proved
+// separately in dyadic_decay, using the Archimedean assumption.
 theorem dyadic_interval_samples_fine(F : Type1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> Type,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), depth : Nat,

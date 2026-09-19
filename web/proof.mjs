@@ -4,6 +4,9 @@ import { renderMathNotation, kernelMathTree } from "./math-notation.mjs";
 import { axiomLabels } from "./axiom-labels.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 const choices = [
+  { id: "fine_interval_tails", title: "Curve sampling · fine samples at every sufficiently deep level", complexDevelopment: true },
+  { id: "dyadic_convergence", title: "Curve sampling · explicit bounds and dyadic convergence", complexDevelopment: true },
+  { id: "dyadic_tails", title: "Curve sampling · monotone widths and eventual mesh bounds", complexDevelopment: true },
   { id: "fine_interval_samples", title: "Curve sampling · arbitrarily fine constructive subdivisions", complexDevelopment: true },
   { id: "dyadic_decay", title: "Curve sampling · Archimedean decay of dyadic widths", complexDevelopment: true },
   { id: "dyadic_width_bounds", title: "Curve sampling · scalar bounds for repeated halving", complexDevelopment: true },

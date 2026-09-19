@@ -43,8 +43,12 @@ factor. Constructive midpoints and their admissible two-edge subdivisions
 are now checked as well. Recursive bisection constructs exactly `2^n` edges
 with checked width bounds. Archimedeanness then gives mere existence of
 admissible samples below every positive mesh, preserving its truncation
-without choice. Cross-level refinement identities, actual convergence
-moduli, and construction of an initial integral limit remain open.
+without choice. These widths are now proved to decrease, giving fine samples
+at every sufficiently deep level. Actual scalar convergence moduli are also
+constructed from explicitly supplied Archimedean bound functions; extracting
+such functions from the merely existential interface is not assumed.
+Cross-level refinement identities, Cauchy convergence of contour sums, and
+construction of an initial integral limit remain open.
 
 | Module | Result |
 | --- | --- |

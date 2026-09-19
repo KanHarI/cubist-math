@@ -131,4 +131,7 @@ export const sourceModules = [
   "dyadic_width_bounds",
   "dyadic_decay",
   "fine_interval_samples",
+  "dyadic_tails",
+  "dyadic_convergence",
+  "fine_interval_tails",
 ];
