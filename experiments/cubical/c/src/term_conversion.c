@@ -1,4 +1,4 @@
-/* Definitional equality compares normal forms modulo alpha-renaming. Interval
+/* Definitional equality first compares folded syntax, then demanded heads. Interval
  * normal forms remain De Morgan expressions; endpoint tests are face formulas.
  * An unbound name must never be identified with a binder on the other side. */
 #include "term_internal.h"
@@ -69,87 +69,95 @@ static bool formula_equal(cc_kernel *k, uint32_t a, uint32_t b, const alpha_bind
     return true;
 }
 
-static bool alpha(cc_kernel *, cc_term, cc_term, const alpha_binding *, const alpha_binding *);
+static bool alpha(cc_kernel *, cc_term, cc_term, const alpha_binding *, const alpha_binding *, bool);
 
 static bool tube_alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms,
-                       const alpha_binding *outer_dims, const alpha_binding *inner_dims) {
+                       const alpha_binding *outer_dims, const alpha_binding *inner_dims, bool reduce) {
     if (!a || !b)
         return a == b;
     cc_node left = k->nodes[a], right = k->nodes[b];
     if (left.kind != CC_TUBE || right.kind != CC_TUBE)
         return false;
     return formula_equal(k, left.payload, right.payload, outer_dims) &&
-           alpha(k, left.child[0], right.child[0], terms, inner_dims) &&
-           tube_alpha(k, left.child[1], right.child[1], terms, outer_dims, inner_dims);
+           alpha(k, left.child[0], right.child[0], terms, inner_dims, reduce) &&
+           tube_alpha(k, left.child[1], right.child[1], terms, outer_dims, inner_dims, reduce);
 }
 
 static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms,
-                   const alpha_binding *dims) {
+                   const alpha_binding *dims, bool reduce) {
     if (!ck_tick(k, false))
         return false;
     if (!a || !b)
         return a == b;
     if (a == b && !terms && !dims)
         return true;
-    a = ck_whnf(k, a);
-    b = ck_whnf(k, b);
+    if (reduce && alpha(k, a, b, terms, dims, false))
+        return true;
+    if (reduce) {
+        a = ck_whnf(k, a);
+        b = ck_whnf(k, b);
+    }
     if (!a || !b)
         return false;
     cc_node left = k->nodes[a], right = k->nodes[b];
     if (left.kind != right.kind) {
+        if (!reduce)
+            return false;
         /* Typed surjective pairing: compare a pair with the two projections
          * of the other term. This also handles components that only expose
          * their projection after reduction; it does not normalize unused data. */
         if (left.kind == CC_PAIR) {
             cc_term first = ck_make(k, CC_FST, 0, b, 0, 0, 0);
             cc_term second = ck_make(k, CC_SND, 0, b, 0, 0, 0);
-            return alpha(k, left.child[1], first, terms, dims) &&
-                   alpha(k, left.child[2], second, terms, dims);
+            return alpha(k, left.child[1], first, terms, dims, reduce) &&
+                   alpha(k, left.child[2], second, terms, dims, reduce);
         }
         if (right.kind == CC_PAIR) {
             cc_term first = ck_make(k, CC_FST, 0, a, 0, 0, 0);
             cc_term second = ck_make(k, CC_SND, 0, a, 0, 0, 0);
-            return alpha(k, first, right.child[1], terms, dims) &&
-                   alpha(k, second, right.child[2], terms, dims);
+            return alpha(k, first, right.child[1], terms, dims, reduce) &&
+                   alpha(k, second, right.child[2], terms, dims, reduce);
         }
         return false;
     }
-    if (left.kind == CC_U)
+    if (left.kind == CC_U || left.kind == CC_DEFREF)
         return left.payload == right.payload;
     if (left.kind == CC_VAR)
         return same_name(left.payload, right.payload, terms);
     if (ck_term_binder(left.kind)) {
         alpha_binding binding = {left.payload, right.payload, terms};
-        return alpha(k, left.child[0], right.child[0], terms, dims) &&
-               alpha(k, left.child[1], right.child[1], &binding, dims);
+        return alpha(k, left.child[0], right.child[0], terms, dims, reduce) &&
+               alpha(k, left.child[1], right.child[1], &binding, dims, reduce);
     }
     if (ck_dim_binder(left.kind)) {
         alpha_binding binding = {left.payload, right.payload, dims};
-        if (!alpha(k, left.child[0], right.child[0], terms, &binding))
+        if (!alpha(k, left.child[0], right.child[0], terms, &binding, reduce))
             return false;
         if (left.kind == CC_PLAM)
-            return alpha(k, left.child[1], right.child[1], terms, &binding);
+            return alpha(k, left.child[1], right.child[1], terms, &binding, reduce);
         if (left.kind == CC_COMP)
-            return tube_alpha(k, left.child[1], right.child[1], terms, dims, &binding) &&
-                   alpha(k, left.child[2], right.child[2], terms, dims);
-        return alpha(k, left.child[1], right.child[1], terms, dims) &&
-               alpha(k, left.child[2], right.child[2], terms, dims);
+            return tube_alpha(k, left.child[1], right.child[1], terms, dims, &binding, reduce) &&
+                   alpha(k, left.child[2], right.child[2], terms, dims, reduce);
+        return alpha(k, left.child[1], right.child[1], terms, dims, reduce) &&
+               alpha(k, left.child[2], right.child[2], terms, dims, reduce);
     }
     if ((left.kind == CC_GLUE_SYSTEM || left.kind == CC_TUBE) && !formula_equal(k, left.payload, right.payload, dims))
         return false;
     if (left.kind == CC_PAPP)
         return formula_equal(k, left.payload, right.payload, dims) &&
-               alpha(k, left.child[0], right.child[0], terms, dims);
+               alpha(k, left.child[0], right.child[0], terms, dims, reduce);
     for (unsigned i = 0; i < ck_arity(left.kind); ++i)
-        if (!alpha(k, left.child[i], right.child[i], terms, dims))
+        if (!alpha(k, left.child[i], right.child[i], terms, dims, reduce))
             return false;
     return true;
 }
 
 bool ck_convertible(cc_kernel *k, cc_term a, cc_term b) {
-    a = ck_whnf(k, a);
-    b = ck_whnf(k, b);
-    return !k->error[0] && alpha(k, a, b, NULL, NULL);
+    /* Prefer the folded checked structure. Equal closed references never
+     * need their bodies evaluated, even inside larger matching types. */
+    if (alpha(k, a, b, NULL, NULL, false))
+        return true;
+    return !k->error[0] && alpha(k, a, b, NULL, NULL, true);
 }
 
 bool ck_expect(cc_kernel *k, cc_term actual, cc_term expected) {

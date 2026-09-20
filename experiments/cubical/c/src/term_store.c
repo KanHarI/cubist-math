@@ -25,7 +25,7 @@ bool ck_tick(cc_kernel *k, bool checking) {
 
 unsigned ck_arity(cc_term_kind kind) {
     switch (kind) {
-    case CC_U: case CC_VAR: case CC_NAT: case CC_ZERO: case CC_UNIT: case CC_POINT: case CC_VOID:
+    case CC_DEFREF: case CC_U: case CC_VAR: case CC_NAT: case CC_ZERO: case CC_UNIT: case CC_POINT: case CC_VOID:
         return 0;
     case CC_SUCC: case CC_FST: case CC_SND:
         return 1;
@@ -47,6 +47,7 @@ cc_kernel *cc_kernel_new(void) {
     if (k) {
         k->count = 1;
         k->formula_count = 1;
+        k->definition_count = 1;
         k->next_symbol = 1;
         k->budget = UINT64_C(10000000);
     }
@@ -58,6 +59,7 @@ void cc_kernel_free(cc_kernel *k) {
         return;
     for (size_t i = 1; i < k->formula_count; ++i)
         cc_clear(&k->formulas[i]);
+    free(k->definitions);
     free(k->formulas);
     free(k->weak_cache);
     free(k->nodes);

@@ -37,6 +37,12 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
         result->expression = raw;
         result->type = ck_make(k, CC_U, n.payload + 1, 0, 0, 0, 0);
         return result->type != 0;
+    case CC_DEFREF:
+        if (!n.payload || n.payload >= k->definition_count)
+            return ck_fail(k, "Unknown checked definition reference.");
+        result->expression = raw;
+        result->type = k->definitions[n.payload].type;
+        return true;
     case CC_VAR:
         for (; ctx; ctx = ctx->previous)
             if (ctx->name == n.payload) {
@@ -130,7 +136,8 @@ bool cc_kernel_check(cc_kernel *k, cc_term raw, cc_term expected,
         result->type = checked.type;
         result->normal = 0; /* Normalization is an explicit inspector operation. */
         result->arena_nodes = k->count - 1;
-        result->arena_bytes = k->capacity * (sizeof(cc_node) + sizeof(cc_term));
+        result->arena_bytes = k->capacity * (sizeof(cc_node) + sizeof(cc_term)) +
+                              k->definition_capacity * sizeof(cc_definition);
         result->checking_steps = k->checking_steps;
         result->reduction_steps = k->reduction_steps;
         success = !k->error[0];

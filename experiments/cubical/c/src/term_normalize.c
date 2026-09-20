@@ -29,6 +29,11 @@ static cc_term nonempty_system(cc_kernel *k, cc_term system, bool types) {
 
 static cc_term weak(cc_kernel *k, cc_term term) {
     cc_node n = k->nodes[term];
+    if (n.kind == CC_DEFREF) {
+        if (!n.payload || n.payload >= k->definition_count)
+            return ck_fail(k, "Unknown definition reached reduction."), 0;
+        return ck_whnf(k, k->definitions[n.payload].value);
+    }
     if (n.kind == CC_GLUE || n.kind == CC_GLUE_TERM) {
         unsigned slot = n.kind == CC_GLUE ? 1 : 2;
         cc_term system = nonempty_system(k, n.child[slot], n.kind == CC_GLUE);
