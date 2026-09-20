@@ -225,3 +225,21 @@ The derived-library suite also certifies the closed total-space formulation of
 univalence at U0 and U2: `forall A, IsContr(Sigma X, Equiv(X,A))`. See the
 [experiment milestone](../../../docs/cubical/experiment.md#derived-univalence-milestone).
 The explicit `idtoequiv isEquiv` API is still a remaining library connection.
+
+### Sharing during folded conversion
+
+Folded alpha-comparison also memoizes syntax pairs. Its exact key includes
+both term handles and unique identifiers for the complete term-binder and
+dimension-binder scopes. Scope identifiers are never reused; they are not
+hashes of context names. This preserves the distinction between bound and free
+names, including under shadowing. Collisions only replace an older cache entry.
+No typing judgement or reduced equality is cached by this table.
+
+The 8192-entry table adds 256 KiB on the tested native platform, included in
+reported arena memory. Comparing a closed arithmetic DAG with 2^24 unfolded
+branches beneath differently named lambdas takes 105 comparison/reduction
+steps. The source integration fixture for a direct binary-to-base-2-radix
+univalence beta proof previously exhausted the unchanged ten-million-operation
+budget; it now checks in 480 checking and 1,242,556 reduction steps, with 423,468
+arena nodes. The source frontend separately avoids duplicating this concrete
+proof by checking a generic beta lemma and applying it to the endpoint.

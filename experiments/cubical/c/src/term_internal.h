@@ -36,10 +36,21 @@ typedef struct {
 } cc_syntax_memo;
 #define CC_SYNTAX_MEMO_SIZE 8192
 
+/* Folded alpha-comparison keys include exact, never-reused binder scopes.
+ * This memoizes a syntactic comparison, never a typing judgement. */
+typedef struct {
+    cc_term left, right;
+    uint64_t term_scope, dimension_scope;
+    bool equal;
+} cc_alpha_memo;
+#define CC_ALPHA_MEMO_SIZE 8192
+
 struct cc_kernel {
     cc_node *nodes;
     cc_term *weak_cache;
     cc_syntax_memo *syntax_memo;
+    cc_alpha_memo *alpha_memo;
+    uint64_t next_alpha_scope;
     size_t count, capacity;
     cc_definition *definitions;
     size_t definition_count, definition_capacity;

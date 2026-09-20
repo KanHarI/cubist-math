@@ -138,7 +138,8 @@ bool cc_kernel_check(cc_kernel *k, cc_term raw, cc_term expected,
         result->arena_nodes = k->count - 1;
         result->arena_bytes = k->capacity * (sizeof(cc_node) + sizeof(cc_term)) +
                               k->definition_capacity * sizeof(cc_definition) +
-                              (k->syntax_memo ? CC_SYNTAX_MEMO_SIZE * sizeof(cc_syntax_memo) : 0);
+                              (k->syntax_memo ? CC_SYNTAX_MEMO_SIZE * sizeof(cc_syntax_memo) : 0) +
+                              (k->alpha_memo ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_memo) : 0);
         result->checking_steps = k->checking_steps;
         result->reduction_steps = k->reduction_steps;
         success = !k->error[0];
