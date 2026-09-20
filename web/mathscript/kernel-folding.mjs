@@ -460,7 +460,7 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
       }
       throw new Error(`Unsupported folded constructor: ${node.kind}`);
     }
-    function comparison(candidate, original) {
+    function comparison(candidate, original, openDefinition = false) {
       if (b.view(candidate, 0) === b.view(original, 0) && b.view(candidate, 1) === b.view(original, 1))
         return { candidate, original, witness: b.emit("DefEqRefl", [candidate]) };
       const direct = aliasWitnesses.get(b.view(candidate, 0));
@@ -472,8 +472,18 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
         candidate = b.emit("UCumul", [candidate]); sort = b.k.node(b.view(candidate, 1));
       }
       // Left sides retain the exact input terms; only right sides normalize.
-      const witness = term => reduceDisplayAliases(b.emit("DefEqRefl", [normalType(term)]));
-      const a = witness(candidate), c = witness(original);
+      const witness = (term, open) => {
+        let equation = b.emit("DefEqRefl", [normalType(term)]);
+        if (open && b.k.node(b.view(term, 0)).kind === "DRef") {
+          // Inspecting an opaque definition's own body may open that one
+          // definition. Its nested named references stay boxed as usual.
+          equation = b.emit("UnHigh", [b.emit("DefReducePointed", [
+            b.emit("High1", [b.emit("HighExp", [equation])]),
+          ])]);
+        }
+        return reduceDisplayAliases(equation);
+      };
+      const a = witness(candidate, false), c = witness(original, openDefinition);
       const an = b.k.node(b.view(a, 0)), cn = b.k.node(b.view(c, 0));
       if (an.children[1] !== cn.children[1] || b.view(a, 1) !== b.view(c, 1))
         throw new Error("Folded term is not definitionally equal to the stored term");
@@ -555,7 +565,7 @@ export function checkedFoldedView(checked, binding, { certificate = false, expan
           candidate = foldKnownDefinitions(plan.inferredTypeBinding);
         }
         let evidence;
-        try { evidence = comparison(candidate, original); }
+        try { evidence = comparison(candidate, original, side === "expression" && b.k.node(b.view(candidate, 0)).kind !== "DRef"); }
         catch (error) {
           if (side !== "type" || !plan.inferredTypeBinding) throw error;
           evidence = comparison(foldKnownDefinitions(plan.inferredTypeBinding), original);
