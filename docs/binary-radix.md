@@ -4,9 +4,11 @@ The mathematical sources now prove `10! = 3628800` using W-type binary numbers,
 using one generic radix development instantiated at bases 2 and 10, and by
 transporting the results among these representations and unary `Nat`.
 
-**Backend distinction:** these proofs currently check on the production Id/J
-kernel. The transfer proofs explicitly depend on its existing univalence axiom.
-They are not yet checks by the native cubical kernel. That migration requires
+**Backend distinction:** the complete development checks on the production Id/J
+kernel, where the transfer proofs explicitly depend on its existing univalence
+axiom. The three manual factorial proofs and the binary dependent induction
+development additionally check on the new native cubical kernel, with computational
+paths and function extensionality. Cubical transfer remains unfinished and requires
 computational univalence, source translation, and all existing library features;
 there must be no old-kernel fallback labelled as a successful cubical check.
 
@@ -101,6 +103,9 @@ npm test -- radix_univalence_transfer
 ```
 
 The new C backend and remaining website migration are tracked separately under
-`docs/cubical/`. Cubical univalence's construction is based on the Glue rules in
+[`docs/cubical/browser-integration.md`](cubical/browser-integration.md).
+Run `make cubical-wasm` and `node --test tests/cubical-wasm.test.mjs` for its
+independent source and computational-transport checks.
+Cubical univalence's construction is based on the Glue rules in
 [Cohen–Coquand–Huber–Mörtberg](https://arxiv.org/abs/1611.02108), not a new opaque
 transport oracle.

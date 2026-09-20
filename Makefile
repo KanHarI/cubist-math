@@ -46,6 +46,17 @@ web/dist/kernel.mjs: $(KERNEL_SRC) src/kernel/internal.h src/kernel/metadata.inc
 	$(EMCC) -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Isrc $(KERNEL_SRC) wasm/bridge.c --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(WASM_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]' -o $@
 wasm-test: wasm
 	npm test
+
+# Independent cubical backend. Kept separate until the complete source library
+# passes its checker; the production site must not silently fall back to Id/J.
+CUBICAL_DIR = experiments/cubical/c
+CUBICAL_SRC = $(wildcard $(CUBICAL_DIR)/src/*.c)
+CUBICAL_EXPORTS = '["_cb_new","_cb_free","_cb_error","_cb_term","_cb_formula_begin","_cb_formula_clause","_cb_formula_end","_cb_context_clear","_cb_context_add","_cb_check","_cb_result","_cb_normalize","_cb_node","_cb_formula_view","_cb_define","_cb_definition","_cb_head"]'
+.PHONY: cubical-wasm
+cubical-wasm: web/dist/cubical.mjs
+web/dist/cubical.mjs: $(CUBICAL_SRC) $(wildcard $(CUBICAL_DIR)/include/*.h) $(CUBICAL_DIR)/src/term_internal.h wasm/cubical_bridge.c Makefile
+	mkdir -p web/dist
+	$(EMCC) -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -I$(CUBICAL_DIR)/include -I$(CUBICAL_DIR)/src $(CUBICAL_SRC) wasm/cubical_bridge.c --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(CUBICAL_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]' -o $@
 PORT ?= 8088
 serve: wasm
 	@echo "MathScript: http://127.0.0.1:$(PORT)/"
