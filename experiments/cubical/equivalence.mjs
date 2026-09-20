@@ -153,3 +153,17 @@ export function univalenceContraction(A,level=0,identity=identityEquivalence(A))
   const contraction=T.lam(z,total,T.line(i,total,shared));
   return T.pair(contractible(total),center,contraction);
 }
+
+// Strict inverse maps give a particularly small fiber contraction. This is a
+// syntax builder, not a rule assuming an inverse: both inverse equations must
+// hold by ordinary conversion or the constructed term is rejected.
+export function strictIsomorphismEquivalence(A,B,forward,inverse) {
+  const y=fresh('target',A,B,forward,inverse),u=fresh('fiber_point',A,B,forward,inverse,y);
+  const i=fresh('contraction',A,B,forward,inverse,y,u),j=fresh('segment',A,B,forward,inverse,y,u,i);
+  const F=fiber(A,B,forward,v(y));
+  const center=T.pair(F,ap(inverse,v(y)),T.line(j,B,v(y)));
+  const along=T.at(snd(v(u)),I.variable(i));
+  const segment=T.line(j,B,T.at(snd(v(u)),I.meet(I.variable(i),I.variable(j))));
+  const contraction=T.lam(u,F,T.line(i,F,T.pair(F,ap(inverse,along),segment)));
+  return T.pair(equiv(A,B),forward,T.lam(y,B,T.pair(contractible(F),center,contraction)));
+}

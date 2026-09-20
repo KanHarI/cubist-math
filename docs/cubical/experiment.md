@@ -160,3 +160,9 @@ This proves the canonical contractible-total-space formulation. The explicit
 identity-system equivalence theorem, and the full library/HIT migration and
 computational-univalence factorial-transfer acceptance remain separate tasks.
 Primary source: [CCHM, section 7.2, theorem 9 and corollary 10](https://arxiv.org/html/1611.02108).
+
+A further nonidentity computation test transports `(succ(0), point)` through
+the checked product-swap equivalence `(Nat × Unit) ≃ (Unit × Nat)` and obtains
+`(point, succ(0))`. Both independent checkers compute and recheck that output.
+The strict-isomorphism helper used for this test is only an inert term builder:
+an incorrect inverse fails ordinary type checking.
