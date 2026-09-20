@@ -12,7 +12,7 @@ bool ck_dim_binder(cc_term_kind kind) {
     return kind == CC_PATH || kind == CC_PLAM || kind == CC_COMP;
 }
 
-bool ck_term_free(cc_kernel *k, cc_term term, uint32_t name) {
+static bool term_free(cc_kernel *k, cc_term term, uint32_t name) {
     if (!term || !ck_tick(k, false))
         return false;
     cc_node n = k->nodes[term];
@@ -27,6 +27,15 @@ bool ck_term_free(cc_kernel *k, cc_term term, uint32_t name) {
     return false;
 }
 
+bool ck_term_free(cc_kernel *k, cc_term term, uint32_t name) {
+    uint64_t result;
+    if (ck_memo_get(k, 1, term, name, 0, &result))
+        return result != 0;
+    bool free = term_free(k, term, name);
+    ck_memo_put(k, 1, term, name, 0, free);
+    return free;
+}
+
 static uint64_t formula_names(const cc_formula *f) {
     uint64_t names = 0;
     if (f)
@@ -35,7 +44,7 @@ static uint64_t formula_names(const cc_formula *f) {
     return names;
 }
 
-uint64_t ck_free_dims(cc_kernel *k, cc_term term) {
+static uint64_t free_dims(cc_kernel *k, cc_term term) {
     if (!term || !ck_tick(k, false))
         return 0;
     cc_node n = k->nodes[term];
@@ -51,6 +60,15 @@ uint64_t ck_free_dims(cc_kernel *k, cc_term term) {
     return result;
 }
 
+uint64_t ck_free_dims(cc_kernel *k, cc_term term) {
+    uint64_t result;
+    if (ck_memo_get(k, 2, term, 0, 0, &result))
+        return result;
+    result = free_dims(k, term);
+    ck_memo_put(k, 2, term, 0, 0, result);
+    return result;
+}
+
 unsigned ck_fresh_dimension(cc_kernel *k, uint64_t avoid) {
     for (unsigned d = 0; d < CC_DIMENSIONS; ++d)
         if (!(avoid & (UINT64_C(1) << d)))
@@ -62,11 +80,13 @@ unsigned ck_fresh_dimension(cc_kernel *k, uint64_t avoid) {
 static cc_term tube_substitute(cc_kernel *, cc_term, unsigned,
                                 const cc_formula *, bool, bool);
 
-cc_term ck_substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term value) {
+static cc_term substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term value) {
     if (!term)
         return 0;
     if (!ck_tick(k, false))
         return 0;
+    if (!ck_term_free(k, term, name))
+        return term;
     cc_node n = k->nodes[term];
     if (n.kind == CC_VAR && n.payload == name)
         return value;
@@ -107,6 +127,16 @@ cc_term ck_substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term value) 
     return ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
 }
 
+cc_term ck_substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term value) {
+    uint64_t result;
+    if (ck_memo_get(k, 3, term, name, value, &result))
+        return (cc_term)result;
+    cc_term changed = substitute(k, term, name, value);
+    if (changed)
+        ck_memo_put(k, 3, term, name, value, changed);
+    return changed;
+}
+
 static cc_term tube_substitute(cc_kernel *k, cc_term term, unsigned dim,
                                const cc_formula *value, bool bodies, bool faces) {
     if (!term)
@@ -141,6 +171,8 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
         return 0;
     if (dim >= CC_DIMENSIONS || !value || value->sort != CC_INTERVAL)
         return ck_fail(k, "Invalid dimension substitution."), 0;
+    if (!(ck_free_dims(k, term) & (UINT64_C(1) << dim)))
+        return term;
     cc_node n = k->nodes[term];
     if (ck_dim_binder(n.kind) && n.payload >= CC_DIMENSIONS)
         return ck_fail(k, "Dimension binder outside native range."), 0;

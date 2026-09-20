@@ -28,9 +28,18 @@ typedef struct {
     cc_term value, type;
 } cc_definition;
 
+/* Exact-key memo entries affect time only. A collision discards the older
+ * entry; it can never establish equality or approve an unchecked term. */
+typedef struct {
+    uint32_t operation, term, name, value;
+    uint64_t result;
+} cc_syntax_memo;
+#define CC_SYNTAX_MEMO_SIZE 8192
+
 struct cc_kernel {
     cc_node *nodes;
     cc_term *weak_cache;
+    cc_syntax_memo *syntax_memo;
     size_t count, capacity;
     cc_definition *definitions;
     size_t definition_count, definition_capacity;
@@ -42,6 +51,8 @@ struct cc_kernel {
     char error[192];
 };
 
+bool ck_memo_get(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_term value, uint64_t *result);
+void ck_memo_put(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_term value, uint64_t result);
 bool ck_fail(cc_kernel *, const char *);
 bool ck_tick(cc_kernel *, bool checking);
 unsigned ck_arity(cc_term_kind);

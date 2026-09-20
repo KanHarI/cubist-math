@@ -2,9 +2,11 @@
  * directly, without this line protocol. Exactly one query is accepted:
  * F sort length (positive-mask negative-mask)*
  * N kind payload child0 child1 child2 child3
+ * D symbol value-handle expected-type-handle (appends a term alias)
  * A symbol type-handle
  * Q term-handle expected-type-handle normalize-flag
- * Formula handles and syntax handles are separate 1-based sequences. */
+ * Formula and term handles are logical 1-based aliases, independent of nodes
+ * allocated internally while checking definitions. */
 #include "cubical_kernel.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +38,7 @@ static void field(cc_kernel *k, const char *name, cc_term t, unsigned depth) {
 static void term(cc_kernel *k, cc_term t, unsigned depth) {
     static const char *tags[] = {"", "U", "Var", "Pi", "Lam", "App", "Sigma", "Pair", "Fst", "Snd",
         "Nat", "Zero", "Succ", "NatRec", "Unit", "Point", "Path", "PLam", "PApp", "Comp", "Tube",
-        "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr", "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue"};
+        "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr", "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "Ref"};
     cc_term_kind kind;
     uint32_t payload;
     cc_term ch[4];
@@ -46,6 +48,11 @@ static void term(cc_kernel *k, cc_term t, unsigned depth) {
     }
     printf("{\"tag\":\"%s\"", tags[kind]);
     if (kind == CC_U) printf(",\"level\":%u", payload);
+    if (kind == CC_DEFREF) {
+        uint32_t symbol;
+        if (cc_kernel_definition(k, t, &symbol, NULL, NULL))
+            printf(",\"name\":\"v%u\"", symbol);
+    }
     if (kind == CC_VAR) printf(",\"name\":\"v%u\"", payload);
     if (kind == CC_PI || kind == CC_LAM || kind == CC_SIGMA || kind == CC_W) {
         printf(",\"name\":\"v%u\"", payload);
@@ -127,18 +134,70 @@ static void term(cc_kernel *k, cc_term t, unsigned depth) {
     putchar('}');
 }
 
+typedef struct {
+    uint32_t *items;
+    size_t count, capacity;
+} aliases;
+
+static bool append_alias(aliases *table, uint32_t handle) {
+    if (!handle)
+        return false;
+    if (table->count == table->capacity) {
+        size_t capacity = table->capacity ? table->capacity * 2 : 256;
+        if (capacity < table->capacity || capacity > SIZE_MAX / sizeof(uint32_t))
+            return false;
+        uint32_t *grown = realloc(table->items, capacity * sizeof *grown);
+        if (!grown)
+            return false;
+        table->items = grown;
+        table->capacity = capacity;
+    }
+    table->items[table->count++] = handle;
+    return true;
+}
+
+static uint32_t resolve(const aliases *table, uint32_t alias) {
+    return alias && alias <= table->count ? table->items[alias - 1] : 0;
+}
+
 int main(void) {
     cc_kernel *k = cc_kernel_new();
     if (!k) return 2;
     cc_assumption *assumptions = NULL;
     size_t count = 0;
+    aliases terms = {0}, formulas = {0};
     char command;
     int status = 1;
     while (scanf(" %c", &command) == 1) {
         if (command == 'N') {
             unsigned kind, payload, a, b, c, d;
-            if (scanf(" %u %u %u %u %u %u", &kind, &payload, &a, &b, &c, &d) != 6 ||
-                !cc_kernel_term(k, (cc_term_kind)kind, payload, a, b, c, d)) break;
+            if (scanf(" %u %u %u %u %u %u", &kind, &payload, &a, &b, &c, &d) != 6)
+                break;
+            if ((a && !resolve(&terms, a)) || (b && !resolve(&terms, b)) ||
+                (c && !resolve(&terms, c)) || (d && !resolve(&terms, d)))
+                break;
+            if (kind == CC_PAPP || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) {
+                payload = resolve(&formulas, payload);
+                if (!payload)
+                    break;
+            }
+            cc_term value = cc_kernel_term(k, (cc_term_kind)kind, payload,
+                resolve(&terms, a), resolve(&terms, b), resolve(&terms, c), resolve(&terms, d));
+            if (!append_alias(&terms, value))
+                break;
+        } else if (command == 'D') {
+            unsigned symbol, value, expected;
+            if (scanf(" %u %u %u", &symbol, &value, &expected) != 3 ||
+                !resolve(&terms, value) || (expected && !resolve(&terms, expected)))
+                break;
+            cc_term reference = cc_kernel_define(k, symbol, resolve(&terms, value), resolve(&terms, expected));
+            if (!reference) {
+                printf("{\"ok\":false,\"error\":\"%s\"}\n", cc_kernel_error(k));
+                status = 0;
+                break;
+            }
+            if (!append_alias(&terms, reference))
+                break;
         } else if (command == 'F') {
             unsigned sort; size_t length;
             if (scanf(" %u %zu", &sort, &length) != 2 || sort > CC_FACE || length > 100000) break;
@@ -150,7 +209,7 @@ int main(void) {
             bool ok = true;
             for (size_t i = 0; i < length; ++i)
                 if (scanf(" %" SCNu64 " %" SCNu64, &f.clauses[i].positive, &f.clauses[i].negative) != 2) { ok = false; break; }
-            if (ok) ok = cc_kernel_formula(k, &f) != 0;
+            if (ok) ok = append_alias(&formulas, cc_kernel_formula(k, &f));
             cc_clear(&f);
             if (!ok) break;
         } else if (command == 'A') {
@@ -159,10 +218,16 @@ int main(void) {
             cc_assumption *grown = realloc(assumptions, (count + 1) * sizeof *assumptions);
             if (!grown) break;
             assumptions = grown;
-            assumptions[count++] = (cc_assumption){symbol, type};
+            if (!resolve(&terms, type))
+                break;
+            assumptions[count++] = (cc_assumption){symbol, resolve(&terms, type)};
         } else if (command == 'Q') {
             unsigned value, expected, normalize;
             if (scanf(" %u %u %u", &value, &expected, &normalize) != 3) break;
+            if (!resolve(&terms, value) || (expected && !resolve(&terms, expected)))
+                break;
+            value = resolve(&terms, value);
+            expected = resolve(&terms, expected);
             cc_checked_result result;
             if (cc_kernel_check(k, value, expected, assumptions, count, &result)) {
                 if (normalize) {
@@ -184,6 +249,8 @@ int main(void) {
         } else break;
     }
     if (status) fprintf(stderr, "Invalid native syntax request: %s\n", cc_kernel_error(k));
+    free(terms.items);
+    free(formulas.items);
     free(assumptions);
     cc_kernel_free(k);
     return status;

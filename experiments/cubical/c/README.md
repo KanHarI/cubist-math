@@ -168,7 +168,24 @@ normalization inspector, it accepts raw syntax but never certifies it; final
 
 The native API regression builds 22 checked applications of doubling and checks
 a reflexive path at the compact natural 2^22: **252 arena nodes, 7 checking steps
-and 26 reduction steps** for the final check, without expanding its unary value.
+and 28 reduction steps** for the final check, without expanding its unary value.
 This is a compactness regression, not the requested factorial transport proof.
 The tests also reject duplicate names, free variables, wrong declared types,
 unknown references and equality between distinct numeric definitions.
+
+### Sharing during substitution
+
+Free-name analysis and capture-avoiding substitution memoize exact immutable
+syntax keys. This prevents repeated traversal of a shared term as if it were
+an exponentially larger tree. The bounded direct-mapped table has 8192 entries;
+a hash collision only discards an optimization. It stores no typing judgements
+and cannot bypass checking a context or a face restriction. Its allocation is
+included in the reported arena memory. Substitution also returns the original
+node immediately when the substituted variable/dimension does not occur.
+
+A 24-level shared-DAG regression exercises weak-head inspection. With the source
+frontend's independently supplied failing arithmetic fixtures, the default
+10-million-step budget now checks binary factorial 7 in 59,153 reduction steps
+and the radix fixture in 152,535. Their respective cumulative node counts are
+14,681 and 83,238. These are source frontend checkpoints, not yet the final
+computational-univalence factorial transfer acceptance test.

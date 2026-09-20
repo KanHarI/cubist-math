@@ -7,8 +7,8 @@ import {interval as I,face as F} from "./lattice.mjs";
 const kinds=["","U","Var","Pi","Lam","App","Sigma","Pair","Fst","Snd","Nat","Zero","Succ","NatRec","Unit","Point","Path","PLam","PApp","Comp","Tube","Void","Abort","W","Sup","WRec","Sum","Inl","Inr","SumRec","UnitRec","Glue","GlueSystem","GlueTerm","Unglue"];
 const nativeRoot=fileURLToPath(new URL("./c/",import.meta.url));
 
-export function nativeRequest(term,expected=null,assumptions=[],{normalize=true}={}) {
-  const lines=[],names=new Map(),reverse=new Map(),formulas=new Map();let terms=0;
+export function nativeRequest(term,expected=null,assumptions=[],{normalize=true,definitions=[]}={}) {
+  const lines=[],names=new Map(),reverse=new Map(),formulas=new Map(),references=new Map();let terms=0;
   const name=n=>{if(!names.has(n)){names.set(n,names.size+1);reverse.set(names.get(n),n);}return names.get(n);};
   const node=(tag,payload=0,children=[])=>{
     const kind=kinds.indexOf(tag);if(kind<1)throw Error(`Unsupported native term ${tag}`);
@@ -31,6 +31,10 @@ export function nativeRequest(term,expected=null,assumptions=[],{normalize=true}
     switch(t.tag){
       case "U":return node(t.tag,t.level);
       case "Var":return node(t.tag,name(t.name));
+      case "Ref":{
+        if(!references.has(t.name))throw Error(`Unknown checked definition ${t.name}`);
+        return references.get(t.name);
+      }
       case "Nat":case "Zero":case "Unit":case "Point":case "Void":return node(t.tag);
       case "Pi":case "Lam":case "Sigma":case "W":return node(t.tag,name(t.name),[child(t.domain),child(t.body)]);
       case "App":return node(t.tag,0,[child(t.fn),child(t.arg)]);
@@ -69,6 +73,11 @@ export function nativeRequest(term,expected=null,assumptions=[],{normalize=true}
       default:throw Error(`Unsupported native term ${t.tag}`);
     }
   };
+  for(const definition of definitions){
+    const symbol=name(definition.name),body=encode(definition.value),type=definition.type?encode(definition.type):0;
+    lines.push(`D ${symbol} ${body} ${type}`);
+    references.set(definition.name,++terms);
+  }
   for(const [n,type]of assumptions){const symbol=name(n),handle=encode(type);lines.push(`A ${symbol} ${handle}`);}
   const value=encode(term),type=expected?encode(expected):0;lines.push(`Q ${value} ${type} ${normalize?1:0}`);
   const decode=t=>{
@@ -81,9 +90,9 @@ export function nativeRequest(term,expected=null,assumptions=[],{normalize=true}
   return {input:lines.join("\n")+"\n",decode};
 }
 
-export function checkNative(term,expected=null,assumptions=[],{build=process.env.CUBICAL_NATIVE_BUILD??"build",normalize=true}={}) {
+export function checkNative(term,expected=null,assumptions=[],{build=process.env.CUBICAL_NATIVE_BUILD??"build",normalize=true,definitions=[]}={}) {
   if(!["build","build-ubsan","build-sanitize"].includes(build))throw Error("Unknown native build.");
-  const {input,decode}=nativeRequest(term,expected,assumptions,{normalize});
+  const {input,decode}=nativeRequest(term,expected,assumptions,{normalize,definitions});
   const run=spawnSync(`${nativeRoot}${build}/kernel-cli`,[],{input,encoding:"utf8",maxBuffer:32*1024*1024,timeout:20000,killSignal:"SIGKILL"});
   if(run.status!==0)throw Error(`Native checker process failed (${run.status}): ${run.stderr}`);
   return decode(JSON.parse(run.stdout));

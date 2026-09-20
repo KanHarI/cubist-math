@@ -61,6 +61,7 @@ void cc_kernel_free(cc_kernel *k) {
         cc_clear(&k->formulas[i]);
     free(k->definitions);
     free(k->formulas);
+    free(k->syntax_memo);
     free(k->weak_cache);
     free(k->nodes);
     free(k);

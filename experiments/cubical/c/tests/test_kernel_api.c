@@ -90,6 +90,16 @@ static void checked_definitions(void) {
     printf("Folded 2^22 equality: %zu nodes, %llu checking + %llu reduction steps.\n",
            checked.arena_nodes, (unsigned long long)checked.checking_steps,
            (unsigned long long)checked.reduction_steps);
+    /* The inspector also sees shared, not-yet-checked syntax. Free-name
+     * analysis must visit this DAG once rather than walking 2^24 branches.
+     * Its weak head is a lambda, so no arithmetic evaluation is requested. */
+    cc_term shared = one;
+    for (unsigned i = 0; i < 24; ++i)
+        shared = cc_kernel_term(k, CC_NATREC, 0, motive, shared, step, shared);
+    cc_term inner = cc_kernel_term(k, CC_LAM, 18, nat, free_var, 0, 0);
+    cc_term outer = cc_kernel_term(k, CC_LAM, 17, nat, inner, 0, 0);
+    cc_term inserted = cc_kernel_term(k, CC_APP, 0, outer, shared, 0, 0);
+    assert(kind(k, cc_kernel_whnf(k, inserted)) == CC_LAM);
     cc_kernel_free(k);
 }
 
