@@ -99,3 +99,18 @@ test("native W recursive hypotheses compute through dependent sum-selected ariti
   const result=agree(T.wrec(T.lam("tree",W,T.nat),step,node(node(leaf))),T.nat);
   assert.deepEqual(result.normal,T.succ(T.succ(T.zero)));
 });
+
+test("term substitution also avoids capture of free dimensions",()=>{
+  const p=v("p"),pi=T.at(p,I.variable("i"));
+  const functionType=T.pi("x",T.nat,path(T.nat,v("x"),v("x")));
+  const body=T.line("i",path(T.nat,pi,pi),app(v("f"),pi));
+  const reflexivity=T.lam("x",T.nat,T.line("i",T.nat,v("x")));
+  // Insert this closed function under an equally named outer dimension, then
+  // apply it to a term using that outer dimension. Beta must rename its binder.
+  const term=app(T.lam("f",functionType,body),reflexivity);
+  const result=agree(term,null,[["p",path(T.nat,T.zero,T.succ(T.zero))]]);
+  assert.equal(result.normal.tag,"PLam");
+  assert.equal(result.normal.body.tag,"PLam");
+  assert.notEqual(result.normal.dim,result.normal.body.dim);
+  assert(I.equal(result.normal.body.body.arg,I.variable(result.normal.dim)));
+});

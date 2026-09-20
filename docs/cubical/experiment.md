@@ -75,12 +75,13 @@ checked as equivalences with contractible fibers. Tests execute transport along
 the identity equivalence of Nat; separately generated composition expansions
 recheck before reduction, including persistent faces and overlapping tubes.
 The required face universal quantifier and Sigma eta are also implemented in C.
-These reference Glue rules are **not yet ported to the native checker**. The
+These Glue and universe rules now also run in the native checker, with
+independent normal-form comparisons and rechecks. The
 full theorem that idtoequiv is an equivalence remains to be constructed; a map
 from equivalences to universe paths alone is not that theorem.
 
 No existing declaration is claimed translated merely because it parses or the
-old kernel checks it. Missing native Glue/universe computation, HITs and bridge
+old kernel checks it. Missing full univalence proofs, inductive composition, HITs and bridge
 rules are explicit gaps, never assumptions inserted into the new checker.
 
 The experiment now incorporates production `main` at `1f6cddb`. The previously
@@ -109,7 +110,7 @@ files separate inference, substitution, conversion and computation by rule
 family. Checking preserves compact syntax; optional normalization is a distinct
 inspection operation. Path endpoint annotations are reconstructed internally.
 
-All 68 experiment tests pass, with 27 cases in the native/derived-equivalence
+All 79 experiment tests pass, with 38 cases in the native/derived-equivalence
 UBSan run and 2,100 seeded
 C/JavaScript algebra comparisons. Native tests also pass UBSan; ASan remains
 unavailable due to the documented runtime startup deadlock. A compact Nat
@@ -117,9 +118,9 @@ computation denoting 4,194,304 checks with 1,329 nodes and 65,536 reserved arena
 bytes, without constructing the unary numeral. This does not yet establish
 the factorial-through-univalence acceptance test.
 
-Native composition covers Nat, Unit, Pi, Sigma and Path, including dependent
-filling and varying function domains. Glue, universe computation, W/sum
-composition, HITs and the strict Id bridge remain explicit gaps. There is no
+Native composition covers Nat, Unit, Pi, Sigma, Path, Glue and universes,
+including dependent filling and varying function domains. W/sum composition,
+HITs and the strict Id bridge remain explicit gaps. There is no
 website integration or old-kernel fallback. The earlier 117 translated source
 declarations have not yet been run through the native checker as a corpus;
 new term-level cross-checks do not by themselves establish source migration.

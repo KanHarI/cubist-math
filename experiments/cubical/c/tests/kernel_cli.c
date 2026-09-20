@@ -36,7 +36,7 @@ static void field(cc_kernel *k, const char *name, cc_term t, unsigned depth) {
 static void term(cc_kernel *k, cc_term t, unsigned depth) {
     static const char *tags[] = {"", "U", "Var", "Pi", "Lam", "App", "Sigma", "Pair", "Fst", "Snd",
         "Nat", "Zero", "Succ", "NatRec", "Unit", "Point", "Path", "PLam", "PApp", "Comp", "Tube",
-        "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr", "SumRec", "UnitRec"};
+        "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr", "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue"};
     cc_term_kind kind;
     uint32_t payload;
     cc_term ch[4];
@@ -87,6 +87,30 @@ static void term(cc_kernel *k, cc_term t, unsigned depth) {
     if (kind == CC_ABORT) { field(k, "as", ch[0], depth); field(k, "impossible", ch[1], depth); }
     if (kind == CC_SUP) { field(k, "as", ch[0], depth); field(k, "label", ch[1], depth); field(k, "children", ch[2], depth); }
     if (kind == CC_WREC) { field(k, "motive", ch[0], depth); field(k, "step", ch[1], depth); field(k, "value", ch[2], depth); }
+    if (kind == CC_UNGLUE) { field(k, "as", ch[0], depth); field(k, "value", ch[1], depth); }
+    if (kind == CC_GLUE || kind == CC_GLUE_TERM) {
+        bool type = kind == CC_GLUE;
+        if (!type) field(k, "as", ch[0], depth);
+        field(k, "base", ch[type ? 0 : 1], depth);
+        fputs(",\"system\":[", stdout);
+        cc_term cursor = ch[type ? 1 : 2];
+        bool comma = false;
+        while (cursor) {
+            cc_term_kind part_kind;
+            uint32_t face;
+            cc_term part[4];
+            if (!cc_kernel_node(k, cursor, &part_kind, &face, part)) break;
+            if (comma) putchar(',');
+            fputs("{\"face\":", stdout);
+            formula(cc_kernel_get_formula(k, face));
+            field(k, type ? "type" : "term", part[0], depth);
+            if (type) field(k, "equiv", part[1], depth);
+            putchar('}');
+            comma = true;
+            cursor = part[type ? 2 : 1];
+        }
+        putchar(']');
+    }
     if (kind == CC_SUM) { field(k, "left", ch[0], depth); field(k, "right", ch[1], depth); }
     if (kind == CC_INL || kind == CC_INR) { field(k, "as", ch[0], depth); field(k, "value", ch[1], depth); }
     if (kind == CC_SUMREC) {

@@ -7,9 +7,9 @@ paths, and composition.** It independently checks inert input rather than
 trusting JavaScript certificates. Composition checks every tube/base equation
 and overlap, with native Nat/Unit/Pi/Sigma/Path computation matching the JS
 reference.
-Native Glue and universe composition remain pending; their first checked
-reference implementation is in `../core.mjs`. HITs and the strict Id bridge
-remain incomplete throughout the experiment.
+Native Glue and universe composition now match the independently checked
+reference rules. The full theorem that `idtoequiv` is an equivalence, HITs,
+W/sum composition and the strict Id bridge remain incomplete.
 This is not yet the website kernel or a full cubical/library migration.
 
 ## Reading the mathematics in the code
@@ -29,6 +29,10 @@ This is not yet the website kernel or a full cubical/library migration.
 | `src/check_functions.c` | Pi/Sigma formation, introduction and elimination |
 | `src/check_inductives.c` | Nat, Unit, Void, sums and general W rules |
 | `src/check_paths.c` | Dependent paths and reconstructed endpoint annotations |
+| `src/face_context.c` | Shared restriction of checked telescopes and face clauses |
+| `src/equivalence_terms.c` | Derived contractible-fiber types and identity equivalence |
+| `src/check_glue.c` | Checked gluing equivalences, boundaries and overlap coherence |
+| `src/glue_compute.c` | Glue composition and derived universe composition |
 | `src/check_composition.c` | Restricted contexts, partial boundaries and all overlaps |
 | `src/composition_compute.c` | Derived filling and constructor-specific composition |
 | `tests/lattice_cli.c` | Inert test input, separate from the trusted algebra |
@@ -106,7 +110,7 @@ without traversing every subtree in advance.
 
 The compactness regression checks a nested doubling expression denoting
 4,194,304 at Nat. It allocates 1,329 arena nodes / 65,536 reserved arena bytes,
-with 355 checking and 1,397 reduction steps, and ignores it by beta reduction
+at the first native checkpoint (355 checking and 1,397 reduction steps there), and ignores it by beta reduction
 without constructing the numeral. These bytes measure node/cache reservation,
 not whole-process RSS or formula storage. This is not yet the requested
 factorial theorem transported by computational univalence: Glue, the checked
@@ -119,20 +123,29 @@ whole-library production use. The machine-readable constructor protocol is a
 test adapter; the opaque C API is suitable for a subsequent WASM binding, which
 has not yet been wired into the website.
 
-At this milestone all 68 experimental tests pass. Nine native term tests
+At this milestone all 79 experimental tests pass. Ten native term tests
 cross-check typing/normal forms against the independently implemented JavaScript
 rules, include negative typing cases and actual dependent W/finite-sum motives.
-The native invariant suite and native and derived-equivalence test files also pass UBSan (27 test
+The native invariant suite and native and derived-equivalence test files also pass UBSan (38 test
 cases, including the 2,100 seeded dimension-algebra comparisons).
 
 Thirteen native composition tests also compare inferred types and normal forms
 with the JavaScript reference, and recheck the computed terms independently.
 They include neutral path boundaries and transport through a varying function
-domain, not just closed numerals. Universe, Glue, W and sum-specific composition
+domain, not just closed numerals. W and sum-specific composition
 computation remain gaps; a neutral composition is retained where no implemented
 rule applies. Cubical canonicity for the full language is therefore not claimed.
 
 The latest supporting native rules include universal face quantification and
 Sigma eta. Identity equivalences are built from contractible fibers in ordinary
-syntax and independently check in both implementations. The reference Glue
-suite is additional JavaScript evidence, not a native Glue test result.
+syntax and independently check in both implementations. Ten native Glue tests cross-check formation, projection, eta and actual
+transport computation against JavaScript. They also recheck normal forms of
+persistent-face and universe-composition examples. This is not yet a complete
+univalence theorem or a migrated factorial proof.
+
+Term substitution renames dimension binders when the inserted term contains
+free dimensions. The dedicated regression inserts a closed path-producing
+function under a dimension of the same name and then applies it to a varying
+argument. Empty Glue faces are removed before conversion. Free-name analysis
+and substitution consume the same checking budget, so a small shared syntax DAG
+cannot cause an unbounded uncounted traversal.

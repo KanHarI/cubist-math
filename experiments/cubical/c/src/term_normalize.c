@@ -9,8 +9,86 @@ static cc_term app(cc_kernel *k, cc_term f, cc_term x) {
     return ck_make(k, CC_APP, 0, f, x, 0, 0);
 }
 
+static cc_term nonempty_system(cc_kernel *k, cc_term system, bool types) {
+    if (!system)
+        return 0;
+    cc_node piece = k->nodes[system];
+    const cc_formula *face = cc_kernel_get_formula(k, piece.payload);
+    if (!face || face->sort != CC_FACE)
+        return ck_fail(k, "Unchecked partial face reached reduction."), 0;
+    bool empty = face->length == 0;
+    unsigned next = types ? 2 : 1;
+    cc_term tail = nonempty_system(k, piece.child[next], types);
+    if (empty)
+        return tail;
+    if (tail == piece.child[next])
+        return system;
+    piece.child[next] = tail;
+    return ck_make(k, piece.kind, piece.payload, piece.child[0], piece.child[1], piece.child[2], 0);
+}
+
 static cc_term weak(cc_kernel *k, cc_term term) {
     cc_node n = k->nodes[term];
+    if (n.kind == CC_GLUE || n.kind == CC_GLUE_TERM) {
+        unsigned slot = n.kind == CC_GLUE ? 1 : 2;
+        cc_term system = nonempty_system(k, n.child[slot], n.kind == CC_GLUE);
+        if (system != n.child[slot]) {
+            n.child[slot] = system;
+            return ck_whnf(k, ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], 0));
+        }
+        while (system) {
+            cc_node piece = k->nodes[system];
+            const cc_formula *face = cc_kernel_get_formula(k, piece.payload);
+            if (!face || face->sort != CC_FACE)
+                return ck_fail(k, "Unchecked Glue face reached reduction."), 0;
+            if (face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative)
+                return ck_whnf(k, piece.child[0]);
+            system = piece.child[n.kind == CC_GLUE ? 2 : 1];
+        }
+    }
+    if (n.kind == CC_GLUE_TERM) {
+        cc_term projected = ck_whnf(k, n.child[1]);
+        if (!projected)
+            return 0;
+        cc_node projection = k->nodes[projected];
+        if (projection.kind == CC_UNGLUE && ck_convertible(k, n.child[0], projection.child[0])) {
+            bool agrees = true;
+            for (cc_term system = n.child[2]; system && agrees;) {
+                cc_node piece = k->nodes[system];
+                const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
+                cc_formula face;
+                cc_init(&face, CC_FACE);
+                if (cc_copy(&face, raw) != CC_OK)
+                    return ck_fail(k, "Glue eta face allocation failed."), 0;
+                for (size_t i = 0; i < face.length && agrees; ++i)
+                    agrees = ck_convertible(k, piece.child[0], ck_restrict(k, projection.child[1], face.clauses[i]));
+                cc_clear(&face);
+                system = piece.child[1];
+            }
+            if (agrees)
+                return ck_whnf(k, projection.child[1]);
+        }
+    }
+    if (n.kind == CC_UNGLUE) {
+        cc_node type = k->nodes[n.child[0]];
+        if (type.kind != CC_GLUE)
+            return ck_fail(k, "Unchecked Glue projection reached reduction."), 0;
+        for (cc_term system = type.child[1]; system;) {
+            cc_node piece = k->nodes[system];
+            const cc_formula *face = cc_kernel_get_formula(k, piece.payload);
+            if (face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative) {
+                cc_term function = ck_make(k, CC_FST, 0, piece.child[1], 0, 0, 0);
+                return ck_whnf(k, app(k, function, n.child[1]));
+            }
+            system = piece.child[2];
+        }
+        cc_term value = ck_whnf(k, n.child[1]);
+        if (!value)
+            return 0;
+        if (k->nodes[value].kind == CC_GLUE_TERM)
+            return ck_whnf(k, k->nodes[value].child[1]);
+        return value == n.child[1] ? term : ck_make(k, CC_UNGLUE, 0, n.child[0], value, 0, 0);
+    }
     if (n.kind == CC_APP) {
         cc_term fn = ck_whnf(k, n.child[0]);
         if (!fn)
