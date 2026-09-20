@@ -79,6 +79,7 @@ bool ck_inductives(cc_kernel *, cc_node, const cc_context *, uint64_t, cc_judgem
 bool ck_paths(cc_kernel *, cc_node, const cc_context *, uint64_t, cc_judgement *);
 bool ck_composition(cc_kernel *, cc_node, const cc_context *, uint64_t, cc_judgement *);
 cc_term ck_reduce_composition(cc_kernel *, cc_term);
+cc_term ck_inductive_composition(cc_kernel *, cc_term, cc_term, cc_term);
 cc_term ck_endpoint_term(cc_kernel *, cc_term, unsigned, unsigned);
 cc_formula_id ck_interval_variable(cc_kernel *, unsigned);
 cc_formula_id ck_endpoint_face(cc_kernel *, unsigned, unsigned);

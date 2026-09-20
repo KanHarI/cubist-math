@@ -243,6 +243,20 @@ function normal(t, fuel) {
       if(r.base.tag==="Succ"&&r.system.every(p=>p.term.tag==="Succ"))return normal(T.succ(T.comp(r.dim,r.family,r.system.map(p=>({...p,term:p.term.value})),r.base.value)),fuel);
     }
     if(r.family.tag==="Unit"&&r.base.tag==="Point"&&r.system.every(p=>p.term.tag==="Point"))return T.point;
+    if(r.family.tag==="Sum"&&["Inl","Inr"].includes(r.base.tag)&&r.system.every(p=>p.term.tag===r.base.tag)) {
+      const left=r.base.tag==="Inl",family=r.family[left?"left":"right"];
+      const value=T.comp(r.dim,family,r.system.map(p=>({...p,term:p.term.value})),r.base.value);
+      return normal((left?T.inl:T.inr)(dsub(r.family,r.dim,I.one),value),fuel);
+    }
+    if(r.family.tag==="W"&&r.base.tag==="Sup"&&r.system.every(p=>p.term.tag==="Sup")) {
+      const labels=r.system.map(p=>({...p,term:p.term.label}));
+      const labelLine=fill(r.dim,r.family.domain,labels,r.base.label,I.variable(r.dim));
+      const label=T.comp(r.dim,r.family.domain,labels,r.base.label);
+      const child=fresh("child",new Set([...free(r),r.family.name]));
+      const childFamily=T.pi(child,substitute(r.family.body,r.family.name,labelLine),r.family);
+      const children=T.comp(r.dim,childFamily,r.system.map(p=>({...p,term:p.term.children})),r.base.children);
+      return normal(T.sup(dsub(r.family,r.dim,I.one),label,children),fuel);
+    }
     if(r.family.tag==="U")return normal(universeComposition(r),fuel);
     if(r.family.tag==="Glue")return normal(glueComposition(r),fuel);
     if(r.family.tag==="Sigma") {
