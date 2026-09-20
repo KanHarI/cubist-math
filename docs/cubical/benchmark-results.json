@@ -1,0 +1,40 @@
+{
+  "scope": "Dimension-algebra microbenchmark only. Three algebra operations per iteration; no type checking, proof instructions or universe/HIT computation. Peak RSS includes each runtime. A single run is not a stable performance claim.",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "node": "v24.13.0",
+  "native": {
+    "iterations": 10000,
+    "cpuMilliseconds": 5.537,
+    "peakRssBytes": 1392640,
+    "checksum": 20000
+  },
+  "javascript": {
+    "iterations": 10000,
+    "cpuMilliseconds": 176.338,
+    "peakRssBytes": 62242816,
+    "checksum": 20000
+  },
+  "mathematicalBenchmarks": [
+    {
+      "name": "univalence transport",
+      "status": "not available: required cubical migration/computational rules incomplete"
+    },
+    {
+      "name": "circle winding",
+      "status": "not available: required cubical migration/computational rules incomplete"
+    },
+    {
+      "name": "group structure identity",
+      "status": "not available: required cubical migration/computational rules incomplete"
+    },
+    {
+      "name": "F4 Galois correspondence",
+      "status": "not available: required cubical migration/computational rules incomplete"
+    },
+    {
+      "name": "quotient group",
+      "status": "not available: required cubical migration/computational rules incomplete"
+    }
+  ]
+}

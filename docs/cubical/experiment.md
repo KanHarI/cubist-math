@@ -86,6 +86,18 @@ The source's compile-time `Universe` parameter and extra kernel universe
 constructors require a specified translation, not erasure. Quotient HITs should
 preserve the input universe once their computation and elimination are checked.
 
+## Native C work
+
+The first independently implemented C component is now available under
+[`experiments/cubical/c`](../../experiments/cubical/c/README.md): interval and
+face normalization, reversal, endpoint equations, substitution and entailment.
+It is organized by mathematical responsibility with shared formula storage.
+Its native checks and 1,800 C/JavaScript cross-checks pass; the README records
+the sanitizer results and limitations. Native type checking, paths and
+composition are the next ports; do not confuse this working component with a
+complete native cubical kernel. The reference fragment's 116 translated
+declarations are not yet checked by C.
+
 ## Verification commands
 
 Run `node --test experiments/cubical/tests/*.test.mjs` for the experimental core.
