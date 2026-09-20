@@ -116,7 +116,7 @@ const restrict = (t,clause) => clause.reduce((term,x)=>dsub(term,x.slice(0,-2),x
 
 // Derived filling, CCHM section 4.4. The added r=0 wall keeps the starting lid
 // fixed. This is syntax built from comp, never an additional trusted axiom.
-function fill(dim,family,system,base,r) {
+export function fill(dim,family,system,base,r) {
   const avoid=new Set([...free(family,true),...free(base,true),...I.names(r),dim]);
   for(const p of system)for(const n of [...free(p.term,true),...I.names(p.face)])avoid.add(n);
   const j=fresh("fill",avoid),along=I.meet(r,I.variable(j));

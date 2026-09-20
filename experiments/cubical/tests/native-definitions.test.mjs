@@ -41,3 +41,23 @@ test('native definition references compare distinct bodies rather than assuming 
   const falseType=T.path('i',T.nat,ref('one'),ref('one'));
   assert.equal(checkNative(proof,falseType,[],{definitions,normalize:false}).ok,false);
 });
+
+test('conversion exposes endpoints and compares small arguments before evaluating huge Nat results',()=>{
+  const motive=T.lam('n',T.nat,T.nat),one=T.succ(T.zero);
+  const double=T.lam('n',T.nat,T.natrec(motive,T.zero,
+    T.lam('p',T.nat,T.lam('ih',T.nat,T.succ(T.succ(v('ih'))))),v('n')));
+  const power=T.lam('n',T.nat,T.natrec(motive,one,
+    T.lam('p',T.nat,T.lam('ih',T.nat,T.app(ref('double'),v('ih')))),v('n')));
+  let twentyTwo=T.zero;
+  for(let i=0;i<22;i++)twentyTwo=T.succ(twentyTwo);
+  const definitions=[{name:'double',value:double},{name:'power',value:power},
+    {name:'index',value:T.line('i',T.nat,twentyTwo)},
+    {name:'huge',value:T.app(ref('power'),twentyTwo)}];
+  const endpoint=T.app(ref('power'),T.at(ref('index'),I.one));
+  const proof=T.line('i',T.nat,T.comp('j',T.nat,[{face:F.top,term:endpoint}],endpoint));
+  const type=T.path('i',T.nat,ref('huge'),ref('huge'));
+  const result=checkNative(proof,type,[],{definitions,normalize:false});
+  assert(result.ok,result.error);
+  assert(result.arenaNodes<5000,JSON.stringify(result));
+  assert(result.reductionSteps<100000);
+});

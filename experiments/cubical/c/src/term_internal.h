@@ -68,6 +68,7 @@ cc_term ck_substitute(cc_kernel *, cc_term, uint32_t, cc_term);
 cc_term ck_dimension_substitute(cc_kernel *, cc_term, unsigned, const cc_formula *);
 cc_term ck_restrict(cc_kernel *, cc_term, cc_clause);
 cc_term ck_whnf(cc_kernel *, cc_term);
+cc_term ck_expose(cc_kernel *, cc_term);
 cc_term ck_normal(cc_kernel *, cc_term);
 bool ck_convertible(cc_kernel *, cc_term, cc_term);
 bool ck_expect(cc_kernel *, cc_term actual, cc_term expected);
