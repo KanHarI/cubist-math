@@ -103,8 +103,37 @@ static void checked_definitions(void) {
     cc_kernel_free(k);
 }
 
+static void open_cube(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
+    cc_term universe = cc_kernel_term(k, CC_U, 0, 0, 0, 0, 0);
+    cc_term family_type = cc_kernel_term(k, CC_PATH, 1, universe, nat, unit, 0);
+    cc_term family = cc_kernel_term(k, CC_VAR, 100, 0, 0, 0, 0);
+    cc_formula i;
+    cc_init(&i, CC_INTERVAL);
+    assert(cc_generator(&i, 0, true) == CC_OK);
+    cc_formula_id direction = cc_kernel_formula(k, &i);
+    cc_clear(&i);
+    cc_term at_i = cc_kernel_term(k, CC_PAPP, direction, family, 0, 0, 0);
+    cc_term x = cc_kernel_term(k, CC_VAR, 101, 0, 0, 0, 0);
+    cc_assumption assumptions[] = {{100, family_type}, {101, at_i}};
+    cc_checked_result result;
+    assert(cc_kernel_check_in_cube(k, x, at_i, assumptions, 2, UINT64_C(1), &result));
+    assert(result.expression && result.type);
+    assert(!cc_kernel_check(k, x, at_i, assumptions, 2, &result));
+    assert(!result.expression && !result.type);
+    assert(!cc_kernel_check_in_cube(k, x, at_i, assumptions, 2, UINT64_C(2), &result));
+    assert(cc_kernel_check_in_cube(k, x, at_i, assumptions, 2, UINT64_C(1), &result));
+    /* An open checking result does not bypass closed definition checking. */
+    assert(!cc_kernel_define(k, 102, x, at_i));
+    cc_kernel_free(k);
+}
+
 int main(void) {
     checked_definitions();
+    open_cube();
     cc_kernel *kernel = cc_kernel_new();
     assert(kernel);
     cc_term nat = cc_kernel_term(kernel, CC_NAT, 0, 0, 0, 0, 0);
