@@ -154,3 +154,45 @@ test("native elaboration checks all manual factorial sources while retaining che
   assert.equal(bad.declarations[0].status, "not-translated");
   assert.equal(k.definitions.has("wrong_factorial"), false);
 });
+
+test("the existing Nat factorial theorem checks cubically without a million-successor expression", async t => {
+  const k = session(t), checker = new NativeCubicalElaborator(k);
+  const translator = new Translator({ normalize: false, checker });
+  let env = new Map(), theorem;
+  // The full generic equivalence API is not used by this compatibility proof.
+  // Those separate declarations are explicitly rejected as untranslated;
+  // no assumptions are registered in their place.
+  for (const name of ["primes", "binary_naturals", "binary_arithmetic", "binary_induction", "binary_equivalence", "binary_arithmetic_correct"]) {
+    const source = await readFile(new URL(`../web/proofs/${name}.proof`, import.meta.url), "utf8");
+    const result = translator.translate(source, env);
+    env = result.env;
+    for (const d of result.declarations) {
+      if (["binary_nat_equiv", "nat_binary_equiv"].includes(d.name)) {
+        assert.equal(d.status, "not-translated");
+        assert.equal(k.definitions.has(d.name), false);
+      } else assert.equal(d.status, "checked-native-cubical", `${d.name}: ${d.reason}`);
+      if (d.name === "factorial_ten_from_binary") theorem = d;
+    }
+  }
+  assert.ok(theorem);
+  const { arenaNodes, arenaBytes } = theorem.native;
+  assert.ok(arenaNodes < 1000000, JSON.stringify(theorem.native));
+  assert.ok(arenaBytes < 64 * 1024 * 1024, JSON.stringify(theorem.native));
+  const lengths = new Map();
+  let maximum = 0;
+  for (let id = 1; id <= arenaNodes; id++) {
+    const node = k.node(id);
+    if (node.kind === "Zero") lengths.set(id, 0);
+    if (node.kind === "Succ" && lengths.has(node.children[0])) {
+      const length = lengths.get(node.children[0]) + 1;
+      lengths.set(id, length);
+      maximum = Math.max(maximum, length);
+    }
+  }
+  assert.equal(maximum, 10);
+  const signature = k.definition(k.definitions.get("factorial_ten_from_binary")).type;
+  const type = checker.syntax.decode(signature);
+  assert.equal(type.tag, "Path");
+  assert.equal(type.left.fn.name, "factorial");
+  assert.equal(type.right.name, "nat_3628800");
+});

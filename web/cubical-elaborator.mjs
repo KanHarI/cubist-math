@@ -20,6 +20,13 @@ export class NativeCubicalElaborator {
     this.steps += checked.checkingSteps;
     return checked.term;
   }
+  ascribe(term, type) {
+    // Application of the identity at the declared type retains that exact
+    // signature in the kernel's inferred result. The next native check checks
+    // the conversion; this is no unchecked annotation or new kernel rule.
+    const name = `ascription${++this.serial}`;
+    return { tag: "App", fn: { tag: "Lam", name, domain: type, body: { tag: "Var", name } }, arg: term };
+  }
   nf(term) {
     // Translator's nf calls ask for Pi/Sigma/Path heads, not full normal forms.
     return this.syntax.decode(this.kernel.head(this.syntax.encode(term)));

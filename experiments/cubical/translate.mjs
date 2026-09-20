@@ -103,7 +103,8 @@ export class Translator {
         const builtin=n.fn.kind==="name"&&!env.has(n.fn.name)?n.fn.name:null;
         if(builtin==="typed"&&n.args.length===2) {
           const type=tr(n.args[0],null),term=tr(n.args[1],type);
-          this.checker.check(term,type,ctx,new Set());return term;
+          const checked=this.checker.check(term,type,ctx,new Set());
+          return this.checker.ascribe?.(checked,type)??checked;
         }
         if(builtin==="succ"&&n.args.length===1)return T.succ(tr(n.args[0],T.nat));
         if(builtin==="W"&&n.args.length===2) {
@@ -238,10 +239,20 @@ export class Translator {
         };
         return T.sumrec(motive,branch("left"),branch("right"),value);
       }
+      case "unpack": {
+        const value=tr(n.value,null),sigma=this.checker.nf(inferred(value).type);
+        if(sigma.tag!=="Sigma")throw Error("unpack requires a dependent pair.");
+        const goal=tr(n.type,null),scope=new Map(env)
+          .set(n.left.text,T.first(value)).set(n.right.text,T.second(value));
+        const body=this.term(n.body,ctx,scope,goal);
+        this.checker.check(body,goal,ctx,new Set());
+        return body;
+      }
       case "proof": {
         const type=tr(n.type,null);
         const term=this.block(n.statements,type,ctx,env);
-        this.checker.check(term,type,ctx,new Set());return term;
+        const checked=this.checker.check(term,type,ctx,new Set());
+        return this.checker.ascribe?.(checked,type)??checked;
       }
       default:throw Error(`Untranslated syntax: ${n.kind}`);
     }
@@ -265,6 +276,29 @@ export class Translator {
       const value=this.term(first.value,ctx,env,null);
       this.checker.infer(value,ctx,new Set());
       return this.block(rest,goal,ctx,new Map(env).set(first.target.name,value));
+    }
+    if(first.kind==="obtain") {
+      const value=this.term(first.value,ctx,env,null),scope=new Map(env);
+      const bind=(pattern,term)=>{
+        if(pattern.kind==="name") {scope.set(pattern.name,term);return;}
+        if(pattern.kind!=="pair"||this.checker.nf(this.checker.infer(term,ctx,new Set()).type).tag!=="Sigma")
+          throw Error("obtain requires a dependent pair matching its pattern.");
+        bind(pattern.left,T.first(term));bind(pattern.right,T.second(term));
+      };
+      this.checker.infer(value,ctx,new Set());bind(first.target,value);
+      return this.block(rest,goal,ctx,scope);
+    }
+    if(first.kind==="cases") {
+      if(rest.length)throw Error("Statements after cases are not yet translated.");
+      const value=this.term(first.value,ctx,env,null),type=this.checker.infer(value,ctx,new Set()).type;
+      const sum=this.checker.nf(type);
+      if(sum.tag!=="Sum")throw Error("cases requires a sum type.");
+      const motive=T.lam(this.fresh(),type,goal);
+      const branch=side=>{
+        const name=this.fresh(),domain=sum[side],scope=new Map(env).set(first[side].text,T.variable(name));
+        return T.lam(name,domain,this.block(first[side+"Body"],goal,new Map(ctx).set(name,domain),scope));
+      };
+      return T.sumrec(motive,branch("left"),branch("right"),value);
     }
     if(first.kind==="have") {
       const type=this.term(first.type,ctx,env,null),value=this.block(first.body,type,ctx,env);
