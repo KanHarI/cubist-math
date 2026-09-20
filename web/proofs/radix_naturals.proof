@@ -1,0 +1,89 @@
+// RadixDigit(n) has n inhabitants. Its leftmost alternative has value n-1;
+// this ordering makes increment and overflow structural, with no comparison.
+def RadixDigit(n : Nat) = induction n as k return U0 {
+    zero => Void;
+    succ previous => Unit or previous;
+  };
+def radix_digit_top(n : Nat) = typed(Unit or RadixDigit(n), left(tt));
+def radix_digit_weaken(n : Nat, digit : RadixDigit(n)) = typed(Unit or RadixDigit(n), right(digit));
+def radix_digit_zero(n : Nat) = induction n as k return RadixDigit(succ(k)) {
+    zero => radix_digit_top(0);
+    succ previous => radix_digit_weaken(succ(k), previous);
+  };
+def radix_digit_value(n : Nat) : RadixDigit(n) -> Nat {
+  exact induction n as k return (RadixDigit(k) -> Nat) {
+    zero => fun (impossible : Void) => typed(Nat, absurd(impossible));
+    succ previous => fun (digit : RadixDigit(succ(k))) => match typed(Unit or RadixDigit(k), digit) return Nat {
+      left top => k;
+      right lower => previous(lower);
+    };
+  };
+}
+// A right result means overflow. A left result is the next digit in range.
+def radix_digit_succ(n : Nat) : RadixDigit(n) -> (RadixDigit(n) or Unit) {
+  exact induction n as k return (RadixDigit(k) -> (RadixDigit(k) or Unit)) {
+    zero => fun (impossible : Void) => typed(Void or Unit, absurd(impossible));
+    succ previous => fun (digit : RadixDigit(succ(k))) => match typed(Unit or RadixDigit(k), digit) return (
+      RadixDigit(succ(k)) or Unit
+    ) {
+      left top => right(tt);
+      right lower => match previous(lower) return (RadixDigit(succ(k)) or Unit) {
+        left next => left(radix_digit_weaken(k, next));
+        right carry => left(radix_digit_top(k));
+      };
+    };
+  };
+}
+
+// The parameter extra denotes radix extra+2, ensuring radix at least two.
+// Leaves supply the nonzero leading digit; unary nodes append any radix digit.
+def RadixLabel(extra : Nat) = RadixDigit(succ(extra)) or RadixDigit(succ(succ(extra)));
+def RadixArity(extra : Nat, tag : RadixLabel(extra)) = match tag return U0 {
+    left leading => Void;
+    right digit => Unit;
+  };
+def RadixPositive(extra : Nat) = W(RadixLabel(extra), RadixArity(extra));
+def radix_leading(extra : Nat, leading : RadixDigit(succ(extra))) =
+  sup(
+    RadixPositive(extra), typed(RadixLabel(extra), left(leading)),
+    fun (v : Void) => typed(RadixPositive(extra), absurd(v))
+  );
+def radix_append(extra : Nat, digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra)) =
+  sup(RadixPositive(extra), typed(RadixLabel(extra), right(digit)), fun (u : Unit) => child);
+def RadixNat(extra : Nat) = Unit or RadixPositive(extra);
+def radix_zero(extra : Nat) = typed(RadixNat(extra), left(tt));
+def radix_positive(extra : Nat, p : RadixPositive(extra)) = typed(RadixNat(extra), right(p));
+def radix_one(extra : Nat) = radix_leading(extra, radix_digit_zero(extra));
+
+def radix_positive_rec(
+  extra : Nat, R : U0, leading : RadixDigit(succ(extra)) -> R, digit : RadixDigit(succ(succ(extra)))
+  -> RadixPositive(extra) -> R -> R, p : RadixPositive(extra)
+) =
+  wrec(
+    RadixPositive(extra), fun (tree : RadixPositive(extra)) => R,
+    fun (tag : RadixLabel(extra)) => fun (children : RadixArity(extra, tag) -> RadixPositive(extra)) => fun (
+      ih : RadixArity(extra, tag) -> R
+    ) => (
+      match tag as label return (
+        (RadixArity(extra, label) -> RadixPositive(extra)) -> (RadixArity(extra, label) -> R) -> R
+      ) {
+        left first => fun (f : Void -> RadixPositive(extra)) => fun (h : Void -> R) => leading(
+          first
+        );
+        right next => fun (f : Unit -> RadixPositive(extra)) => fun (h : Unit -> R) => digit(
+          next, f(tt), h(tt)
+        );
+      }
+    )(children, ih), p
+  );
+
+def radix_positive_cases(
+  extra : Nat, R : U0, leading : RadixDigit(succ(extra)) -> R, digit : RadixDigit(succ(succ(extra)))
+  -> RadixPositive(extra) -> R, p : RadixPositive(extra)
+) =
+  radix_positive_rec(
+    extra, R, leading,
+    fun (d : RadixDigit(succ(succ(extra)))) => fun (child : RadixPositive(extra)) => fun (
+      ignored : R
+    ) => digit(d, child), p
+  );

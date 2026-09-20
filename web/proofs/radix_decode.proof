@@ -1,0 +1,178 @@
+import radix_arithmetic;
+import radix_induction;
+import radix_digit_laws;
+import primes;
+
+opaque def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) = radix_positive_rec(
+  extra, Nat,
+  (fun (first : RadixDigit(succ(extra))) => succ(radix_digit_value(succ(extra), first))),
+  (
+    fun (digit : RadixDigit(succ(succ(extra)))) => fun (child : RadixPositive(extra)) => fun (
+      ih : Nat
+    ) => succ(succ(extra)) * ih + radix_digit_value(succ(succ(extra)), digit)
+  ), p
+);
+opaque def radix_to_nat(extra : Nat, n : RadixNat(extra)) = match n return Nat {
+  left zero => 0;
+  right p => radix_positive_to_nat(extra, p);
+};
+theorem radix_decode_leading(extra : Nat, d : RadixDigit(succ(extra))) : radix_positive_to_nat(
+  extra, radix_leading(extra, d)
+) = succ(radix_digit_value(succ(extra), d)) {
+  exact refl(succ(radix_digit_value(succ(extra), d)));
+}
+theorem radix_decode_append(
+  extra : Nat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra)
+) : radix_positive_to_nat(extra, radix_append(extra, d, p)) = succ(succ(extra)) * radix_positive_to_nat(
+  extra, p
+) + radix_digit_value(succ(succ(extra)), d) {
+  exact refl(
+    succ(succ(extra)) * radix_positive_to_nat(extra, p) + radix_digit_value(succ(succ(extra)), d)
+  );
+}
+theorem radix_decode_one(extra : Nat) : radix_positive_to_nat(extra, radix_one(extra)) = 1 {
+  exact trans(
+    radix_decode_leading(extra, radix_digit_zero(extra)), cong(succ, radix_digit_zero_value(extra))
+  );
+}
+theorem radix_decode_shift_zero(extra : Nat, p : RadixPositive(extra)) : radix_positive_to_nat(
+  extra, radix_append(extra, radix_digit_zero(succ(extra)), p)
+) = succ(succ(extra)) * radix_positive_to_nat(extra, p) {
+  let product = succ(succ(extra)) * radix_positive_to_nat(extra, p);
+  exact trans(
+    radix_decode_append(extra, radix_digit_zero(succ(extra)), p),
+    trans(cong(add(product), radix_digit_zero_value(succ(extra))), nat_add_zero(product))
+  );
+}
+theorem radix_decode_shift_one(extra : Nat) : radix_positive_to_nat(
+  extra, radix_append(extra, radix_digit_zero(succ(extra)), radix_one(extra))
+) = succ(succ(extra)) {
+  let base = succ(succ(extra));
+  exact trans(
+    radix_decode_shift_zero(extra, radix_one(extra)),
+    trans(
+      cong(mul(base), radix_decode_one(extra)), trans(nat_mul_comm(base, 1), nat_add_zero(base))
+    )
+  );
+}
+
+def RadixLeadingIncrement(extra : Nat, result : RadixDigit(succ(extra)) or Unit) =
+  match result return RadixPositive(extra) {
+    left next => radix_leading(extra, next);
+    right carry => radix_append(extra, radix_digit_zero(succ(extra)), radix_one(extra));
+  };
+theorem radix_decode_leading_increment(
+  extra : Nat, d : RadixDigit(succ(extra)), result : RadixDigit(succ(extra)) or Unit
+) : RadixDigitStepLaw(succ(extra), d, result)
+-> (
+  radix_positive_to_nat(extra, RadixLeadingIncrement(extra, result)) = succ(
+    radix_positive_to_nat(extra, radix_leading(extra, d))
+  )
+) {
+  exact match result as r return (
+    RadixDigitStepLaw(succ(extra), d, r)
+    -> (
+      radix_positive_to_nat(extra, RadixLeadingIncrement(extra, r)) = succ(
+        radix_positive_to_nat(extra, radix_leading(extra, d))
+      )
+    )
+  ) {
+    left next => fun (
+      same : radix_digit_value(succ(extra), next) = succ(radix_digit_value(succ(extra), d))
+    ) => trans(radix_decode_leading(extra, next), cong(succ, same));
+    right carry => fun (same : succ(radix_digit_value(succ(extra), d)) = succ(extra)) => trans(
+      radix_decode_shift_one(extra), sym(cong(succ, same))
+    );
+  };
+}
+def RadixAppendIncrement(
+  extra : Nat, p : RadixPositive(extra), result : RadixDigit(succ(succ(extra))) or Unit
+) =
+  match result return RadixPositive(extra) {
+    left next => radix_append(extra, next, p);
+    right carry => radix_append(extra, radix_digit_zero(succ(extra)), radix_positive_succ(extra, p));
+  };
+theorem radix_decode_append_increment(
+  extra : Nat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra),
+  ih : radix_positive_to_nat(extra, radix_positive_succ(extra, p)) = succ(
+    radix_positive_to_nat(extra, p)
+  ), result : RadixDigit(succ(succ(extra))) or Unit
+) : RadixDigitStepLaw(succ(succ(extra)), d, result)
+-> (
+  radix_positive_to_nat(extra, RadixAppendIncrement(extra, p, result)) = succ(
+    radix_positive_to_nat(extra, radix_append(extra, d, p))
+  )
+) {
+  let base = succ(succ(extra));
+  let value = radix_positive_to_nat(extra, p);
+  let digit = radix_digit_value(base, d);
+  exact match result as r return (
+    RadixDigitStepLaw(base, d, r)
+    -> (
+      radix_positive_to_nat(extra, RadixAppendIncrement(extra, p, r)) = succ(
+        radix_positive_to_nat(extra, radix_append(extra, d, p))
+      )
+    )
+  ) {
+    left next => fun (same : radix_digit_value(base, next) = succ(digit)) => trans(
+      radix_decode_append(extra, next, p),
+      trans(cong(add(base * value), same), nat_add_succ(base * value, digit))
+    );
+    right carry => fun (same : succ(digit) = base) => trans(
+      radix_decode_shift_zero(extra, radix_positive_succ(extra, p)),
+      trans(
+        cong(mul(base), ih),
+        trans(
+          nat_mul_succ(base, value),
+          trans(
+            nat_add_comm(base, base * value),
+            trans(cong(add(base * value), sym(same)), nat_add_succ(base * value, digit))
+          )
+        )
+      )
+    );
+  };
+}
+theorem radix_decode_positive_succ(extra : Nat, p : RadixPositive(extra)) : radix_positive_to_nat(
+  extra, radix_positive_succ(extra, p)
+) = succ(radix_positive_to_nat(extra, p)) {
+  exact radix_positive_induction(
+    extra,
+    (
+      fun (q : RadixPositive(extra)) => radix_positive_to_nat(extra, radix_positive_succ(extra, q)) = succ(
+        radix_positive_to_nat(extra, q)
+      )
+    ),
+    (
+      fun (d : RadixDigit(succ(extra))) => radix_decode_leading_increment(
+        extra, d, radix_digit_succ(succ(extra), d), radix_digit_succ_law(succ(extra), d)
+      )
+    ),
+    (
+      fun (d : RadixDigit(succ(succ(extra)))) => fun (q : RadixPositive(extra)) => fun (
+        ih : radix_positive_to_nat(extra, radix_positive_succ(extra, q)) = succ(
+          radix_positive_to_nat(extra, q)
+        )
+      ) => radix_decode_append_increment(
+        extra, d, q, ih, radix_digit_succ(succ(succ(extra)), d),
+        radix_digit_succ_law(succ(succ(extra)), d)
+      )
+    ), p
+  );
+}
+theorem radix_decode_succ(extra : Nat, n : RadixNat(extra)) : radix_to_nat(
+  extra, radix_succ(extra, n)
+) = succ(radix_to_nat(extra, n)) {
+  exact match n as x return (
+    radix_to_nat(extra, radix_succ(extra, x)) = succ(radix_to_nat(extra, x))
+  ) {
+    left zero => radix_decode_one(extra);
+    right p => radix_decode_positive_succ(extra, p);
+  };
+}
+theorem radix_nat_roundtrip(extra : Nat, n : Nat) : radix_to_nat(extra, radix_of_nat(extra, n)) = n {
+  exact induction n as k return (radix_to_nat(extra, radix_of_nat(extra, k)) = k) {
+    zero => refl(0);
+    succ previous => trans(radix_decode_succ(extra, radix_of_nat(extra, k)), cong(succ, previous));
+  };
+}

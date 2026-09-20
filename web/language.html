@@ -135,6 +135,36 @@ def choose_left = typed(Unit or Nat, left(tt));</code></pre>
             <p>From tightest to loosest: application, <code>*</code>, <code>+</code>, <code>= &lt; &lt;=</code>, <code>and</code>, <code>or</code>, <code>-&gt;</code>. Arrow, <code>and</code>, and <code>or</code> associate to the right; the other infix operators associate to the left. The body of <code>fun</code>, <code>forall</code>, or <code>exists</code> extends through the following expression.</p>
             <p>Thus <code>A -&gt; B -&gt; C</code> means <code>A -&gt; (B -&gt; C)</code>. Do not chain comparisons: write <code>(a &lt; b) and (b &lt; c)</code>. Numerals expand to repeated <code>succ</code>, not machine integers. In the source reader, keywords and built-in forms such as <code>sym</code> and <code>succ</code> are purple, named functions are green, and numeral literals, tuple macros and arithmetic notation are amber with dotted underlines. Hover over a macro to see its expansion: <code>2</code> shows <code>succ(succ(0))</code>, and <code>a + b</code> shows <code>add(a, b)</code>.</p>
           </section>
+          <section id="w-types">
+            <h2>W types and binary numbers</h2>
+            <p><code>W(A, B)</code> is the type of well-founded trees with a label
+            <code>a : A</code> and a child for each <code>b : B(a)</code>.
+            Both <code>A</code> and every <code>B(a)</code> are checked types.
+            The universe is the maximum of their universes.</p>
+            <p><code>sup(T, a, children)</code> requires <code>T = W(A, B)</code>,
+            <code>a : A</code> and <code>children : B(a) -&gt; T</code>.
+            <code>wrec(T, P, step, tree)</code> returns <code>P(tree)</code>.
+            Its branch takes <code>a : A</code>, <code>children : B(a) -&gt; T</code>,
+            and <code>ih : forall b : B(a), P(children(b))</code>, then returns
+            <code>P(sup(T, a, children))</code>. At a constructor it computes
+            by applying that branch to the recursive results on the children.
+            These are checked W rules, not axioms or JavaScript recursion.</p>
+            <p>After <code>import binary_naturals;</code>, a literal such as
+            <code>0b110</code> has type <code>BinaryNat</code> and expands to
+            <code>binary_positive(binary_bit0(binary_bit1(binary_one)))</code>.
+            <code>0b0</code> expands to <code>binary_zero</code>. Leading zeroes
+            do not affect the value. Only digits 0 and 1 are accepted; the parser
+            permits at most 256 significant bits, and the kernel's term-depth
+            resource bound also applies. Digits are stored as text, so there is
+            no machine-number rounding. These literals denote nonnegative
+            numbers; decimal literals still use unary <code>Nat</code>.</p>
+            <p><code>binary_add</code>, <code>binary_mul</code> and
+            <code>binary_of_nat</code> are available from
+            <code>binary_arithmetic</code>. Arithmetic symbols are not overloaded.
+            The <a href="proof.html?proof=binary_arithmetic&amp;name=binary_factorial_ten">binary factorial proof</a>
+            and <a href="proof.html?proof=radix_factorial">base-2 and base-10 instances</a>
+            compute 10! without a unary expansion of 3628800.</p>
+          </section>
           <section id="blocks">
             <h2>Proof blocks</h2>
             <p>A block starts with an expected goal type. Each statement extends the local context or proves that goal. <code>exact</code> and <code>cases</code> finish a block; no statements may follow them in the same block.</p>

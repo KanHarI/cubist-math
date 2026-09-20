@@ -237,7 +237,22 @@ The mathematical layer covers Euclid, the circle fundamental group,
 [right inverses of surjections using choice](surjections.md), and
 [finite counting](finite_counting.md), including functions, permutations, and
 Rijke binomial types. Ports of the
-older universe-polymorphic and W-type library are still in progress. Dedicated
+older universe-polymorphic library are still in progress. General W types now
+use `W(A, B)`, `sup(T, label, children)` and `wrec(T, motive, step, tree)`.
+The branch takes the label, its child function, and dependent recursive results
+for all children. These elaborate to the existing checked W rules.
+
+With `import binary_naturals;`, `0b110` denotes a binary natural number, expanding
+to `binary_positive(binary_bit0(binary_bit1(binary_one)))`. `0b0` denotes
+`binary_zero`. Leading zeroes are ignored; malformed digits are rejected.
+There is a parser limit of 256 significant bits, subject also to kernel term
+depth limits. No machine-number conversion or unary successor chain is used.
+Decimal literals retain their existing unary `Nat` meaning. Import
+`binary_arithmetic` for `binary_add`, `binary_mul`, `binary_of_nat` and the
+axiom-free proof `binary_factorial_ten`. `radix_factorial` checks the same
+generic radix algorithm at base 2 and base 10; its parameter is radix minus two.
+
+Dedicated
 calculation blocks, implicit arguments, and editor completion are future work.
 
 A named proposition can be used directly as a theorem type:

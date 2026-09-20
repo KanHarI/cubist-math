@@ -427,6 +427,7 @@ const keywords = new Set([
 // Language-provided forms share the keyword palette; ordinary library and
 // user-defined functions retain the green reference style.
 const builtinForms = new Set([
+  "W", "sup", "wrec",
   "Nat", "Unit", "Void", "Universe", "tt", "succ", "refl", "absurd",
   "sym", "trans", "cong", "transport", "apd", "Eq", "typed", "unfold",
   "induct", "unpack", "pair_induction", "unit_induction", "path_induction",
@@ -490,7 +491,7 @@ function renderSource() {
     code.className = "line-code";
     let cursor = 0;
     for (const token of line.matchAll(
-      /\/\/.*|(?:<=|->|=>)|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[+*<=>]|\s+|./g,
+      /\/\/.*|(?:<=|->|=>)|0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[+*<=>]|\s+|./g,
     )) {
       if (token.index > cursor)
         code.append(document.createTextNode(line.slice(cursor, token.index)));

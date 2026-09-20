@@ -1,0 +1,76 @@
+import radix_naturals;
+import paths;
+import prelude;
+
+theorem radix_empty_children(extra : Nat, f : Void -> RadixPositive(extra)) : (
+  fun (v : Void) => typed(RadixPositive(extra), absurd(v))
+) = f {
+  exact FunExt(
+    U0, Void, (fun (v : Void) => RadixPositive(extra)),
+    (fun (v : Void) => typed(RadixPositive(extra), absurd(v))), f,
+    (fun (v : Void) => typed((typed(RadixPositive(extra), absurd(v)) = f(v)), absurd(v)))
+  );
+}
+theorem radix_unit_children(extra : Nat, f : Unit -> RadixPositive(extra)) : (
+  fun (u : Unit) => f(tt)
+) = f {
+  exact FunExt(
+    U0, Unit, (fun (u : Unit) => RadixPositive(extra)), (fun (u : Unit) => f(tt)), f,
+    (fun (u : Unit) => unit_induction((fun (v : Unit) => f(tt) = f(v)), refl(f(tt)), u))
+  );
+}
+def RadixBranch(extra : Nat, P : RadixPositive(extra) -> U0, label : RadixLabel(extra)) =
+  forall children : RadixArity(extra, label) -> RadixPositive(extra),
+  (forall branch : RadixArity(extra, label), P(children(branch)))
+  -> P(sup(RadixPositive(extra), label, children));
+def radix_leading_branch(
+  extra : Nat, P : RadixPositive(extra) -> U0,
+  leading : (forall d : RadixDigit(succ(extra)), P(radix_leading(extra, d))),
+  d : RadixDigit(succ(extra)), children : Void -> RadixPositive(extra), ih : forall v : Void,
+  P(children(v))
+) =
+  transport(
+    P, radix_leading(extra, d),
+    sup(RadixPositive(extra), typed(RadixLabel(extra), left(d)), children),
+    cong(
+      (
+        fun (f : Void -> RadixPositive(extra)) => sup(
+          RadixPositive(extra), typed(RadixLabel(extra), left(d)), f
+        )
+      ), radix_empty_children(extra, children)
+    ), leading(d)
+  );
+def radix_append_branch(
+  extra : Nat, P : RadixPositive(extra) -> U0,
+  append : (
+    forall d : RadixDigit(succ(succ(extra))), forall p : RadixPositive(extra), P(p)
+    -> P(radix_append(extra, d, p))
+  ), d : RadixDigit(succ(succ(extra))), children : Unit -> RadixPositive(extra),
+  ih : forall u : Unit, P(children(u))
+) =
+  transport(
+    P, radix_append(extra, d, children(tt)),
+    sup(RadixPositive(extra), typed(RadixLabel(extra), right(d)), children),
+    cong(
+      (
+        fun (f : Unit -> RadixPositive(extra)) => sup(
+          RadixPositive(extra), typed(RadixLabel(extra), right(d)), f
+        )
+      ), radix_unit_children(extra, children)
+    ), append(d, children(tt), ih(tt))
+  );
+def radix_positive_induction(
+  extra : Nat, P : RadixPositive(extra) -> U0,
+  leading : (forall d : RadixDigit(succ(extra)), P(radix_leading(extra, d))),
+  append : (
+    forall d : RadixDigit(succ(succ(extra))), forall p : RadixPositive(extra), P(p)
+    -> P(radix_append(extra, d, p))
+  ), p : RadixPositive(extra)
+) =
+  wrec(
+    RadixPositive(extra), P,
+    (fun (tag : RadixLabel(extra)) => match tag as label return RadixBranch(extra, P, label) {
+        left d => radix_leading_branch(extra, P, leading, d);
+        right d => radix_append_branch(extra, P, append, d);
+      }), p
+  );

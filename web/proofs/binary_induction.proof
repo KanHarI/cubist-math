@@ -1,0 +1,99 @@
+import binary_naturals;
+import paths;
+import prelude;
+
+// W constructors store child functions. Extensionality identifies an empty
+// child function with the leaf's function, or a Unit-indexed one with its value.
+theorem binary_empty_children(f : Void -> BinaryPositive) : (
+  fun (v : Void) => typed(BinaryPositive, absurd(v))
+) = f {
+  exact FunExt(
+    U0, Void, (fun (v : Void) => BinaryPositive),
+    (fun (v : Void) => typed(BinaryPositive, absurd(v))), f,
+    (fun (v : Void) => typed((typed(BinaryPositive, absurd(v)) = f(v)), absurd(v)))
+  );
+}
+theorem binary_unit_children(f : Unit -> BinaryPositive) : (fun (u : Unit) => f(tt)) = f {
+  exact FunExt(
+    U0, Unit, (fun (u : Unit) => BinaryPositive), (fun (u : Unit) => f(tt)), f,
+    (fun (u : Unit) => unit_induction((fun (v : Unit) => f(tt) = f(v)), refl(f(tt)), u))
+  );
+}
+def binary_label_induction(
+  C : BinaryLabel -> U0, one : C(typed(BinaryLabel, left(tt))),
+  even : C(typed(BinaryLabel, right(left(tt)))), odd : C(typed(BinaryLabel, right(right(tt)))),
+  tag : BinaryLabel
+) =
+  match tag as label return C(label) {
+    left u => unit_induction((fun (v : Unit) => C(typed(BinaryLabel, left(v)))), one, u);
+    right bit => match bit as digit return C(typed(BinaryLabel, right(digit))) {
+      left u => unit_induction((fun (v : Unit) => C(typed(BinaryLabel, right(left(v))))), even, u);
+      right u => unit_induction((fun (v : Unit) => C(typed(BinaryLabel, right(right(v))))), odd, u);
+    };
+  };
+
+def BinaryBranch(P : BinaryPositive -> U0, label : BinaryLabel) =
+  forall children : BinaryArity(label) -> BinaryPositive,
+  (forall branch : BinaryArity(label), P(children(branch)))
+  -> P(sup(BinaryPositive, label, children));
+
+def binary_one_branch(
+  P : BinaryPositive -> U0, one : P(binary_one), children : Void -> BinaryPositive,
+  ih : forall v : Void, P(children(v))
+) =
+  transport(
+    P, binary_one, sup(BinaryPositive, typed(BinaryLabel, left(tt)), children),
+    cong(
+      (fun (f : Void -> BinaryPositive) => sup(BinaryPositive, typed(BinaryLabel, left(tt)), f)),
+      binary_empty_children(children)
+    ), one
+  );
+def binary_even_branch(
+  P : BinaryPositive -> U0, even : (forall p : BinaryPositive, P(p) -> P(binary_bit0(p))),
+  children : Unit -> BinaryPositive, ih : forall u : Unit, P(children(u))
+) =
+  transport(
+    P, binary_bit0(children(tt)),
+    sup(BinaryPositive, typed(BinaryLabel, right(left(tt))), children),
+    cong(
+      (
+        fun (f : Unit -> BinaryPositive) => sup(
+          BinaryPositive, typed(BinaryLabel, right(left(tt))), f
+        )
+      ), binary_unit_children(children)
+    ), even(children(tt), ih(tt))
+  );
+def binary_odd_branch(
+  P : BinaryPositive -> U0, odd : (forall p : BinaryPositive, P(p) -> P(binary_bit1(p))),
+  children : Unit -> BinaryPositive, ih : forall u : Unit, P(children(u))
+) =
+  transport(
+    P, binary_bit1(children(tt)),
+    sup(BinaryPositive, typed(BinaryLabel, right(right(tt))), children),
+    cong(
+      (
+        fun (f : Unit -> BinaryPositive) => sup(
+          BinaryPositive, typed(BinaryLabel, right(right(tt))), f
+        )
+      ), binary_unit_children(children)
+    ), odd(children(tt), ih(tt))
+  );
+
+// Dependent induction in the familiar one / even / odd presentation.
+def binary_positive_induction(
+  P : BinaryPositive -> U0, one : P(binary_one),
+  even : (forall p : BinaryPositive, P(p) -> P(binary_bit0(p))),
+  odd : (forall p : BinaryPositive, P(p) -> P(binary_bit1(p))), p : BinaryPositive
+) =
+  wrec(
+    BinaryPositive, P,
+    (
+      fun (tag : BinaryLabel) => typed(
+        BinaryBranch(P, tag),
+        binary_label_induction(
+          BinaryBranch(P), binary_one_branch(P, one), binary_even_branch(P, even),
+          binary_odd_branch(P, odd), tag
+        )
+      )
+    ), p
+  );

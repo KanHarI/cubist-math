@@ -1,4 +1,5 @@
 import { parse } from "./parser.mjs";
+import { binaryLiteralSyntax } from "./binary-literals.mjs";
 
 // Folding proposals from successfully checked syntax. These nodes are NEVER
 // displayed directly: kernel-folding.mjs must construct and certify an actual
@@ -18,6 +19,7 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
     return name(node.name);
   }
   if (node.kind === "number") return { kind: "Number", value: node.value };
+  if (node.kind === "binaryNumber") return visit(binaryLiteralSyntax(node));
   if (node.kind === "induction") {
     const scope = new Set(bound).add(node.index.text);
     return { kind: "Induction", index: node.index.text, hypothesis: node.hypothesis.text,

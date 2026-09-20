@@ -1,0 +1,55 @@
+import binary_arithmetic_correct;
+
+// This is ordinary HoTT univalence transport on the current kernel. The
+// cubical migration must derive its univalence computationally before this
+// becomes the native cubical transport acceptance test.
+def number_equivalence_map(A : U0, B : U0, e : Equiv(U0, A, B)) : A -> B {
+  exact unpack e as (f, laws) return (A -> B) {
+    f;
+  };
+}
+
+// First transport the endpoints and their path along ua(e), then use the
+// univalence computation law to express the endpoints through the forward map.
+theorem univalence_transfer_equality(
+  A : U0, B : U0, e : Equiv(U0, A, B), x : A, y : A, same : x = y
+) : number_equivalence_map(A, B, e, x) = number_equivalence_map(A, B, e, y) {
+  let moved = fun (v : A) => transport((fun (T : U0) => T), A, B, ua(U0, A, B, e), v);
+  have betaX : moved(x) = number_equivalence_map(A, B, e, x) {
+    exact UnivalenceBeta(U0, A, B, e, x);
+  }
+  have betaY : moved(y) = number_equivalence_map(A, B, e, y) {
+    exact UnivalenceBeta(U0, A, B, e, y);
+  }
+  exact trans(sym(betaX), trans(cong(moved, same), betaY));
+}
+
+// Arithmetic compatibility identifies the transported factorial with the
+// existing Nat factorial, while the binary-to-Nat result stays folded.
+theorem factorial_ten_via_univalence : factorial(10) = nat_3628800 {
+  exact trans(
+    sym(binary_factorial_correct(10)),
+    univalence_transfer_equality(
+      BinaryNat, Nat, binary_nat_equiv, binary_factorial(10), 0b1101110101111100000000,
+      binary_factorial_ten
+    )
+  );
+}
+
+theorem binary_encode_factorial(n : Nat) : binary_factorial(n) = binary_of_nat(factorial(n)) {
+  exact trans(
+    sym(binary_roundtrip(binary_factorial(n))), cong(binary_of_nat, binary_factorial_correct(n))
+  );
+}
+
+// The opposite direction transports the Nat theorem back to binary numbers.
+theorem binary_factorial_ten_via_nat : binary_factorial(10) = 0b1101110101111100000000 {
+  exact trans(
+    binary_encode_factorial(10),
+    trans(
+      univalence_transfer_equality(
+        Nat, BinaryNat, nat_binary_equiv, factorial(10), nat_3628800, factorial_ten_via_univalence
+      ), binary_roundtrip(0b1101110101111100000000)
+    )
+  );
+}

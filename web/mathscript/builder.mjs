@@ -65,7 +65,10 @@ export class Builder {
     const key = `${mode}:${identity(a)}`;
     if (this.normal.has(key)) return this.normal.get(key);
     const visited = [];
-    for (let i = 0; i < 100; i++) {
+    // Each pass is itself checked and charged to the instruction budget.
+    // A fixed 100-pass cutoff rejected terminating digit arithmetic; stop at
+    // the checked fixed point, with emit/allocation enforcing resource bounds.
+    for (;;) {
       if (this.optimizations.normalForms) visited.push(`${mode}:${identity(a)}`);
       const b = this.emit(
         this.opaque ? "BetaReduceGrossKnuth" : "DefBetaReduceGrossKnuth",
@@ -84,7 +87,6 @@ export class Builder {
       }
       a = b;
     }
-    throw new Error("Normalization did not converge");
   }
   fresh(A, name = null) {
     const c = name ? name + "_context" : `p${++this.serial}_context`;
@@ -149,7 +151,7 @@ export class Builder {
     }
     let witness = this.emit("HighExp", [this.emit("DefEqRefl", [T])]);
     witness = this.emit("High1", [witness]);
-    for (let i = 0; i < 100; i++) {
+    for (;;) {
       const b = this.emit(
         this.opaque ? "BetaReduceGrossKnuth" : "DefBetaReduceGrossKnuth",
         [witness],

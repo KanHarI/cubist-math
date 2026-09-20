@@ -657,7 +657,9 @@ theorem nontrivial_divisor_not_consecutive(
 
 // Factorial.
 // factorial(0) = 1; factorial(succ(n)) = succ(n) * factorial(n).
-def factorial(n : Nat) = induction n as k return Nat {
+// Keep calls folded so a theorem can mention a large factorial without
+// first constructing its unary value. Checked conversion still unfolds it.
+opaque def factorial(n : Nat) = induction n as k return Nat {
     zero => 1;
     succ h => (succ(k) * h);
   };

@@ -1,0 +1,140 @@
+import binary_arithmetic;
+import binary_induction;
+import primes;
+import equivalence_from_inverse;
+
+// Keep evaluation into unary Nat folded. A compact binary input can denote a
+// huge unary result without materializing that result during proof transport.
+opaque def binary_positive_to_nat(p : BinaryPositive) = binary_positive_rec(
+  Nat, 1, fun (child : BinaryPositive) => fun (ih : Nat) => ih + ih,
+  fun (child : BinaryPositive) => fun (ih : Nat) => succ(ih + ih), p
+);
+opaque def binary_to_nat(n : BinaryNat) = match n return Nat {
+  left zero => 0;
+  right p => binary_positive_to_nat(p);
+};
+
+theorem binary_decode_one : binary_positive_to_nat(binary_one) = 1 {
+  exact refl(1);
+}
+theorem binary_decode_even(p : BinaryPositive) : binary_positive_to_nat(binary_bit0(p)) = binary_positive_to_nat(
+  p
+) + binary_positive_to_nat(p) {
+  exact refl(binary_positive_to_nat(p) + binary_positive_to_nat(p));
+}
+theorem binary_decode_odd(p : BinaryPositive) : binary_positive_to_nat(binary_bit1(p)) = succ(
+  binary_positive_to_nat(p) + binary_positive_to_nat(p)
+) {
+  exact refl(succ(binary_positive_to_nat(p) + binary_positive_to_nat(p)));
+}
+theorem binary_decode_positive_succ(p : BinaryPositive) : binary_positive_to_nat(
+  binary_positive_succ(p)
+) = succ(binary_positive_to_nat(p)) {
+  exact binary_positive_induction(
+    (
+      fun (q : BinaryPositive) => binary_positive_to_nat(binary_positive_succ(q)) = succ(
+        binary_positive_to_nat(q)
+      )
+    ), refl(2),
+    (
+      fun (q : BinaryPositive) => fun (
+        ih : binary_positive_to_nat(binary_positive_succ(q)) = succ(binary_positive_to_nat(q))
+      ) => refl(succ(binary_positive_to_nat(q) + binary_positive_to_nat(q)))
+    ),
+    (
+      fun (q : BinaryPositive) => fun (
+        ih : binary_positive_to_nat(binary_positive_succ(q)) = succ(binary_positive_to_nat(q))
+      ) => trans(
+        binary_decode_even(binary_positive_succ(q)),
+        trans(
+          cong((fun (v : Nat) => v + v), ih),
+          cong(succ, nat_add_succ(binary_positive_to_nat(q), binary_positive_to_nat(q)))
+        )
+      )
+    ), p
+  );
+}
+theorem binary_decode_succ(n : BinaryNat) : binary_to_nat(binary_succ(n)) = succ(binary_to_nat(n)) {
+  exact match n as x return (binary_to_nat(binary_succ(x)) = succ(binary_to_nat(x))) {
+    left zero => refl(1);
+    right p => binary_decode_positive_succ(p);
+  };
+}
+theorem binary_nat_roundtrip(n : Nat) : binary_to_nat(binary_of_nat(n)) = n {
+  exact induction n as k return (binary_to_nat(binary_of_nat(k)) = k) {
+    zero => refl(0);
+    succ previous => trans(binary_decode_succ(binary_of_nat(k)), cong(succ, previous));
+  };
+}
+
+def binary_double(n : BinaryNat) = match n return BinaryNat {
+    left zero => binary_zero;
+    right p => binary_positive(binary_bit0(p));
+  };
+theorem binary_double_succ(n : BinaryNat) : binary_double(binary_succ(n)) = binary_succ(
+  binary_succ(binary_double(n))
+) {
+  exact match n as x return (
+    binary_double(binary_succ(x)) = binary_succ(binary_succ(binary_double(x)))
+  ) {
+    left zero => refl(0b10);
+    right p => refl(binary_positive(binary_bit0(binary_positive_succ(p))));
+  };
+}
+theorem binary_encode_double(n : Nat) : binary_of_nat(n + n) = binary_double(binary_of_nat(n)) {
+  exact induction n as k return (binary_of_nat(k + k) = binary_double(binary_of_nat(k))) {
+    zero => refl(0b0);
+    succ previous => trans(
+      cong((fun (v : Nat) => binary_of_nat(succ(v))), nat_add_succ(k, k)),
+      trans(
+        cong((fun (v : BinaryNat) => binary_succ(binary_succ(v))), previous),
+        sym(binary_double_succ(binary_of_nat(k)))
+      )
+    );
+  };
+}
+theorem binary_positive_roundtrip(p : BinaryPositive) : binary_of_nat(binary_positive_to_nat(p)) = binary_positive(
+  p
+) {
+  exact binary_positive_induction(
+    (fun (q : BinaryPositive) => binary_of_nat(binary_positive_to_nat(q)) = binary_positive(q)),
+    cong(binary_of_nat, binary_decode_one),
+    (
+      fun (q : BinaryPositive) => fun (
+        ih : binary_of_nat(binary_positive_to_nat(q)) = binary_positive(q)
+      ) => trans(
+        cong(binary_of_nat, binary_decode_even(q)),
+        trans(binary_encode_double(binary_positive_to_nat(q)), cong(binary_double, ih))
+      )
+    ),
+    (
+      fun (q : BinaryPositive) => fun (
+        ih : binary_of_nat(binary_positive_to_nat(q)) = binary_positive(q)
+      ) => trans(
+        cong(binary_of_nat, binary_decode_odd(q)),
+        cong(
+          binary_succ,
+          trans(binary_encode_double(binary_positive_to_nat(q)), cong(binary_double, ih))
+        )
+      )
+    ), p
+  );
+}
+theorem binary_roundtrip(n : BinaryNat) : binary_of_nat(binary_to_nat(n)) = n {
+  exact match n as x return (binary_of_nat(binary_to_nat(x)) = x) {
+    left zero => unit_induction(
+      (fun (u : Unit) => binary_zero = typed(BinaryNat, left(u))), refl(binary_zero), zero
+    );
+    right p => binary_positive_roundtrip(p);
+  };
+}
+
+// Full equivalences retain both round trips and the half-adjoint coherence.
+def binary_nat_equiv =
+  equiv_from_inverse(
+    U0, BinaryNat, Nat, binary_to_nat, binary_of_nat, binary_roundtrip, binary_nat_roundtrip
+  );
+def nat_binary_equiv =
+  equiv_from_inverse(
+    U0, Nat, BinaryNat, binary_of_nat, binary_to_nat, binary_nat_roundtrip, binary_roundtrip
+  );

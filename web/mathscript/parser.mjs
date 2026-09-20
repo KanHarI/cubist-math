@@ -4,12 +4,12 @@ export function tokenize(source) {
     throw new Error("Source exceeds 1 MB.");
   const tokens = [];
   const re =
-    /\s+|\/\/[^\n]*|(?:<=|=>|->)|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;+*<=>]|./gy;
+    /\s+|\/\/[^\n]*|(?:<=|=>|->)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;+*<=>]|./gy;
   for (const match of source.matchAll(re)) {
     const text = match[0];
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|[\[\](){}:,;+*<=>])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|[\[\](){}:,;+*<=>])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: match.index,
@@ -192,6 +192,11 @@ export function parse(source, typeOnly = false) {
       };
     } else if (t.text === "(") {
       a = tuple(t, expr(), () => expr());
+    } else if (/^0b[01]+$/.test(t.text)) {
+      const digits = t.text.slice(2).replace(/^0+(?=.)/, "");
+      if (digits.length > 256)
+        throw Object.assign(new Error("Binary literals are limited to 256 significant bits."), { offset: t.start });
+      a = { kind: "binaryNumber", digits, spelling: t.text, start: t.start, end: t.end };
     } else if (/^[0-9]+$/.test(t.text)) {
       if (Number(t.text) > 256)
         throw Object.assign(

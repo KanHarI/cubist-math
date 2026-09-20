@@ -1,0 +1,593 @@
+import radix_arithmetic;
+
+// The same radix arithmetic and factorial are checked at radix 2 and radix 10.
+// The parameter is radix minus two. Every numeral below is a compact W tree.
+def base_two_digit_0 = radix_digit_weaken(1, radix_digit_top(0));
+def base_two_digit_1 = radix_digit_top(1);
+def base_two_leading_1 = radix_leading(0, radix_digit_top(0));
+
+// 1 in decimal; digits 1 in base 2.
+def base_two_factorial_value_1 = radix_positive(0, base_two_leading_1);
+theorem base_two_factorial_1 : radix_factorial(0, 1) = base_two_factorial_value_1 {
+  exact radix_factorial_value_step(0, 0, radix_positive(0, radix_one(0)), radix_factorial_zero(0));
+}
+
+// 2 in decimal; digits 10 in base 2.
+def base_two_factorial_value_2 =
+  radix_positive(0, radix_append(0, base_two_digit_0, base_two_leading_1));
+theorem base_two_factorial_2 : radix_factorial(0, 2) = base_two_factorial_value_2 {
+  exact radix_factorial_value_step(0, 1, base_two_factorial_value_1, base_two_factorial_1);
+}
+
+// 6 in decimal; digits 110 in base 2.
+def base_two_factorial_value_3 =
+  radix_positive(
+    0, radix_append(0, base_two_digit_0, radix_append(0, base_two_digit_1, base_two_leading_1))
+  );
+theorem base_two_factorial_3 : radix_factorial(0, 3) = base_two_factorial_value_3 {
+  exact radix_factorial_value_step(0, 2, base_two_factorial_value_2, base_two_factorial_2);
+}
+
+// 24 in decimal; digits 11000 in base 2.
+def base_two_factorial_value_4 =
+  radix_positive(
+    0,
+    radix_append(
+      0, base_two_digit_0,
+      radix_append(
+        0, base_two_digit_0,
+        radix_append(0, base_two_digit_0, radix_append(0, base_two_digit_1, base_two_leading_1))
+      )
+    )
+  );
+theorem base_two_factorial_4 : radix_factorial(0, 4) = base_two_factorial_value_4 {
+  exact radix_factorial_value_step(0, 3, base_two_factorial_value_3, base_two_factorial_3);
+}
+
+// 120 in decimal; digits 1111000 in base 2.
+def base_two_factorial_value_5 =
+  radix_positive(
+    0,
+    radix_append(
+      0, base_two_digit_0,
+      radix_append(
+        0, base_two_digit_0,
+        radix_append(
+          0, base_two_digit_0,
+          radix_append(
+            0, base_two_digit_1,
+            radix_append(0, base_two_digit_1, radix_append(0, base_two_digit_1, base_two_leading_1))
+          )
+        )
+      )
+    )
+  );
+theorem base_two_factorial_5 : radix_factorial(0, 5) = base_two_factorial_value_5 {
+  exact radix_factorial_value_step(0, 4, base_two_factorial_value_4, base_two_factorial_4);
+}
+
+// 720 in decimal; digits 1011010000 in base 2.
+def base_two_factorial_value_6 =
+  radix_positive(
+    0,
+    radix_append(
+      0, base_two_digit_0,
+      radix_append(
+        0, base_two_digit_0,
+        radix_append(
+          0, base_two_digit_0,
+          radix_append(
+            0, base_two_digit_0,
+            radix_append(
+              0, base_two_digit_1,
+              radix_append(
+                0, base_two_digit_0,
+                radix_append(
+                  0, base_two_digit_1,
+                  radix_append(
+                    0, base_two_digit_1, radix_append(0, base_two_digit_0, base_two_leading_1)
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+theorem base_two_factorial_6 : radix_factorial(0, 6) = base_two_factorial_value_6 {
+  exact radix_factorial_value_step(0, 5, base_two_factorial_value_5, base_two_factorial_5);
+}
+
+// 5040 in decimal; digits 1001110110000 in base 2.
+def base_two_factorial_value_7 =
+  radix_positive(
+    0,
+    radix_append(
+      0, base_two_digit_0,
+      radix_append(
+        0, base_two_digit_0,
+        radix_append(
+          0, base_two_digit_0,
+          radix_append(
+            0, base_two_digit_0,
+            radix_append(
+              0, base_two_digit_1,
+              radix_append(
+                0, base_two_digit_1,
+                radix_append(
+                  0, base_two_digit_0,
+                  radix_append(
+                    0, base_two_digit_1,
+                    radix_append(
+                      0, base_two_digit_1,
+                      radix_append(
+                        0, base_two_digit_1,
+                        radix_append(
+                          0, base_two_digit_0, radix_append(0, base_two_digit_0, base_two_leading_1)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+theorem base_two_factorial_7 : radix_factorial(0, 7) = base_two_factorial_value_7 {
+  exact radix_factorial_value_step(0, 6, base_two_factorial_value_6, base_two_factorial_6);
+}
+
+// 40320 in decimal; digits 1001110110000000 in base 2.
+def base_two_factorial_value_8 =
+  radix_positive(
+    0,
+    radix_append(
+      0, base_two_digit_0,
+      radix_append(
+        0, base_two_digit_0,
+        radix_append(
+          0, base_two_digit_0,
+          radix_append(
+            0, base_two_digit_0,
+            radix_append(
+              0, base_two_digit_0,
+              radix_append(
+                0, base_two_digit_0,
+                radix_append(
+                  0, base_two_digit_0,
+                  radix_append(
+                    0, base_two_digit_1,
+                    radix_append(
+                      0, base_two_digit_1,
+                      radix_append(
+                        0, base_two_digit_0,
+                        radix_append(
+                          0, base_two_digit_1,
+                          radix_append(
+                            0, base_two_digit_1,
+                            radix_append(
+                              0, base_two_digit_1,
+                              radix_append(
+                                0, base_two_digit_0,
+                                radix_append(0, base_two_digit_0, base_two_leading_1)
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+theorem base_two_factorial_8 : radix_factorial(0, 8) = base_two_factorial_value_8 {
+  exact radix_factorial_value_step(0, 7, base_two_factorial_value_7, base_two_factorial_7);
+}
+
+// 362880 in decimal; digits 1011000100110000000 in base 2.
+def base_two_factorial_value_9 =
+  radix_positive(
+    0,
+    radix_append(
+      0, base_two_digit_0,
+      radix_append(
+        0, base_two_digit_0,
+        radix_append(
+          0, base_two_digit_0,
+          radix_append(
+            0, base_two_digit_0,
+            radix_append(
+              0, base_two_digit_0,
+              radix_append(
+                0, base_two_digit_0,
+                radix_append(
+                  0, base_two_digit_0,
+                  radix_append(
+                    0, base_two_digit_1,
+                    radix_append(
+                      0, base_two_digit_1,
+                      radix_append(
+                        0, base_two_digit_0,
+                        radix_append(
+                          0, base_two_digit_0,
+                          radix_append(
+                            0, base_two_digit_1,
+                            radix_append(
+                              0, base_two_digit_0,
+                              radix_append(
+                                0, base_two_digit_0,
+                                radix_append(
+                                  0, base_two_digit_0,
+                                  radix_append(
+                                    0, base_two_digit_1,
+                                    radix_append(
+                                      0, base_two_digit_1,
+                                      radix_append(0, base_two_digit_0, base_two_leading_1)
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+theorem base_two_factorial_9 : radix_factorial(0, 9) = base_two_factorial_value_9 {
+  exact radix_factorial_value_step(0, 8, base_two_factorial_value_8, base_two_factorial_8);
+}
+
+// 3628800 in decimal; digits 1101110101111100000000 in base 2.
+def base_two_factorial_value_10 =
+  radix_positive(
+    0,
+    radix_append(
+      0, base_two_digit_0,
+      radix_append(
+        0, base_two_digit_0,
+        radix_append(
+          0, base_two_digit_0,
+          radix_append(
+            0, base_two_digit_0,
+            radix_append(
+              0, base_two_digit_0,
+              radix_append(
+                0, base_two_digit_0,
+                radix_append(
+                  0, base_two_digit_0,
+                  radix_append(
+                    0, base_two_digit_0,
+                    radix_append(
+                      0, base_two_digit_1,
+                      radix_append(
+                        0, base_two_digit_1,
+                        radix_append(
+                          0, base_two_digit_1,
+                          radix_append(
+                            0, base_two_digit_1,
+                            radix_append(
+                              0, base_two_digit_1,
+                              radix_append(
+                                0, base_two_digit_0,
+                                radix_append(
+                                  0, base_two_digit_1,
+                                  radix_append(
+                                    0, base_two_digit_0,
+                                    radix_append(
+                                      0, base_two_digit_1,
+                                      radix_append(
+                                        0, base_two_digit_1,
+                                        radix_append(
+                                          0, base_two_digit_1,
+                                          radix_append(
+                                            0, base_two_digit_0,
+                                            radix_append(0, base_two_digit_1, base_two_leading_1)
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+theorem radix_factorial_ten_base_two : radix_factorial(0, 10) = base_two_factorial_value_10 {
+  exact radix_factorial_value_step(0, 9, base_two_factorial_value_9, base_two_factorial_9);
+}
+def base_ten_digit_0 =
+  radix_digit_weaken(
+    9,
+    radix_digit_weaken(
+      8,
+      radix_digit_weaken(
+        7,
+        radix_digit_weaken(
+          6,
+          radix_digit_weaken(
+            5,
+            radix_digit_weaken(
+              4,
+              radix_digit_weaken(
+                3, radix_digit_weaken(2, radix_digit_weaken(1, radix_digit_top(0)))
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+def base_ten_digit_1 =
+  radix_digit_weaken(
+    9,
+    radix_digit_weaken(
+      8,
+      radix_digit_weaken(
+        7,
+        radix_digit_weaken(
+          6,
+          radix_digit_weaken(
+            5,
+            radix_digit_weaken(4, radix_digit_weaken(3, radix_digit_weaken(2, radix_digit_top(1))))
+          )
+        )
+      )
+    )
+  );
+def base_ten_digit_2 =
+  radix_digit_weaken(
+    9,
+    radix_digit_weaken(
+      8,
+      radix_digit_weaken(
+        7,
+        radix_digit_weaken(
+          6, radix_digit_weaken(5, radix_digit_weaken(4, radix_digit_weaken(3, radix_digit_top(2))))
+        )
+      )
+    )
+  );
+def base_ten_digit_3 =
+  radix_digit_weaken(
+    9,
+    radix_digit_weaken(
+      8,
+      radix_digit_weaken(
+        7, radix_digit_weaken(6, radix_digit_weaken(5, radix_digit_weaken(4, radix_digit_top(3))))
+      )
+    )
+  );
+def base_ten_digit_4 =
+  radix_digit_weaken(
+    9,
+    radix_digit_weaken(
+      8, radix_digit_weaken(7, radix_digit_weaken(6, radix_digit_weaken(5, radix_digit_top(4))))
+    )
+  );
+def base_ten_digit_5 =
+  radix_digit_weaken(
+    9, radix_digit_weaken(8, radix_digit_weaken(7, radix_digit_weaken(6, radix_digit_top(5))))
+  );
+def base_ten_digit_6 =
+  radix_digit_weaken(9, radix_digit_weaken(8, radix_digit_weaken(7, radix_digit_top(6))));
+def base_ten_digit_7 = radix_digit_weaken(9, radix_digit_weaken(8, radix_digit_top(7)));
+def base_ten_digit_8 = radix_digit_weaken(9, radix_digit_top(8));
+def base_ten_digit_9 = radix_digit_top(9);
+def base_ten_leading_1 =
+  radix_leading(
+    8,
+    radix_digit_weaken(
+      8,
+      radix_digit_weaken(
+        7,
+        radix_digit_weaken(
+          6,
+          radix_digit_weaken(
+            5,
+            radix_digit_weaken(
+              4,
+              radix_digit_weaken(
+                3, radix_digit_weaken(2, radix_digit_weaken(1, radix_digit_top(0)))
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+def base_ten_leading_2 =
+  radix_leading(
+    8,
+    radix_digit_weaken(
+      8,
+      radix_digit_weaken(
+        7,
+        radix_digit_weaken(
+          6,
+          radix_digit_weaken(
+            5,
+            radix_digit_weaken(4, radix_digit_weaken(3, radix_digit_weaken(2, radix_digit_top(1))))
+          )
+        )
+      )
+    )
+  );
+def base_ten_leading_3 =
+  radix_leading(
+    8,
+    radix_digit_weaken(
+      8,
+      radix_digit_weaken(
+        7,
+        radix_digit_weaken(
+          6, radix_digit_weaken(5, radix_digit_weaken(4, radix_digit_weaken(3, radix_digit_top(2))))
+        )
+      )
+    )
+  );
+def base_ten_leading_4 =
+  radix_leading(
+    8,
+    radix_digit_weaken(
+      8,
+      radix_digit_weaken(
+        7, radix_digit_weaken(6, radix_digit_weaken(5, radix_digit_weaken(4, radix_digit_top(3))))
+      )
+    )
+  );
+def base_ten_leading_5 =
+  radix_leading(
+    8,
+    radix_digit_weaken(
+      8, radix_digit_weaken(7, radix_digit_weaken(6, radix_digit_weaken(5, radix_digit_top(4))))
+    )
+  );
+def base_ten_leading_6 =
+  radix_leading(
+    8, radix_digit_weaken(8, radix_digit_weaken(7, radix_digit_weaken(6, radix_digit_top(5))))
+  );
+def base_ten_leading_7 =
+  radix_leading(8, radix_digit_weaken(8, radix_digit_weaken(7, radix_digit_top(6))));
+def base_ten_leading_8 = radix_leading(8, radix_digit_weaken(8, radix_digit_top(7)));
+def base_ten_leading_9 = radix_leading(8, radix_digit_top(8));
+
+// 1 in decimal; digits 1 in base 10.
+def base_ten_factorial_value_1 = radix_positive(8, base_ten_leading_1);
+theorem base_ten_factorial_1 : radix_factorial(8, 1) = base_ten_factorial_value_1 {
+  exact radix_factorial_value_step(8, 0, radix_positive(8, radix_one(8)), radix_factorial_zero(8));
+}
+
+// 2 in decimal; digits 2 in base 10.
+def base_ten_factorial_value_2 = radix_positive(8, base_ten_leading_2);
+theorem base_ten_factorial_2 : radix_factorial(8, 2) = base_ten_factorial_value_2 {
+  exact radix_factorial_value_step(8, 1, base_ten_factorial_value_1, base_ten_factorial_1);
+}
+
+// 6 in decimal; digits 6 in base 10.
+def base_ten_factorial_value_3 = radix_positive(8, base_ten_leading_6);
+theorem base_ten_factorial_3 : radix_factorial(8, 3) = base_ten_factorial_value_3 {
+  exact radix_factorial_value_step(8, 2, base_ten_factorial_value_2, base_ten_factorial_2);
+}
+
+// 24 in decimal; digits 24 in base 10.
+def base_ten_factorial_value_4 =
+  radix_positive(8, radix_append(8, base_ten_digit_4, base_ten_leading_2));
+theorem base_ten_factorial_4 : radix_factorial(8, 4) = base_ten_factorial_value_4 {
+  exact radix_factorial_value_step(8, 3, base_ten_factorial_value_3, base_ten_factorial_3);
+}
+
+// 120 in decimal; digits 120 in base 10.
+def base_ten_factorial_value_5 =
+  radix_positive(
+    8, radix_append(8, base_ten_digit_0, radix_append(8, base_ten_digit_2, base_ten_leading_1))
+  );
+theorem base_ten_factorial_5 : radix_factorial(8, 5) = base_ten_factorial_value_5 {
+  exact radix_factorial_value_step(8, 4, base_ten_factorial_value_4, base_ten_factorial_4);
+}
+
+// 720 in decimal; digits 720 in base 10.
+def base_ten_factorial_value_6 =
+  radix_positive(
+    8, radix_append(8, base_ten_digit_0, radix_append(8, base_ten_digit_2, base_ten_leading_7))
+  );
+theorem base_ten_factorial_6 : radix_factorial(8, 6) = base_ten_factorial_value_6 {
+  exact radix_factorial_value_step(8, 5, base_ten_factorial_value_5, base_ten_factorial_5);
+}
+
+// 5040 in decimal; digits 5040 in base 10.
+def base_ten_factorial_value_7 =
+  radix_positive(
+    8,
+    radix_append(
+      8, base_ten_digit_0,
+      radix_append(8, base_ten_digit_4, radix_append(8, base_ten_digit_0, base_ten_leading_5))
+    )
+  );
+theorem base_ten_factorial_7 : radix_factorial(8, 7) = base_ten_factorial_value_7 {
+  exact radix_factorial_value_step(8, 6, base_ten_factorial_value_6, base_ten_factorial_6);
+}
+
+// 40320 in decimal; digits 40320 in base 10.
+def base_ten_factorial_value_8 =
+  radix_positive(
+    8,
+    radix_append(
+      8, base_ten_digit_0,
+      radix_append(
+        8, base_ten_digit_2,
+        radix_append(8, base_ten_digit_3, radix_append(8, base_ten_digit_0, base_ten_leading_4))
+      )
+    )
+  );
+theorem base_ten_factorial_8 : radix_factorial(8, 8) = base_ten_factorial_value_8 {
+  exact radix_factorial_value_step(8, 7, base_ten_factorial_value_7, base_ten_factorial_7);
+}
+
+// 362880 in decimal; digits 362880 in base 10.
+def base_ten_factorial_value_9 =
+  radix_positive(
+    8,
+    radix_append(
+      8, base_ten_digit_0,
+      radix_append(
+        8, base_ten_digit_8,
+        radix_append(
+          8, base_ten_digit_8,
+          radix_append(8, base_ten_digit_2, radix_append(8, base_ten_digit_6, base_ten_leading_3))
+        )
+      )
+    )
+  );
+theorem base_ten_factorial_9 : radix_factorial(8, 9) = base_ten_factorial_value_9 {
+  exact radix_factorial_value_step(8, 8, base_ten_factorial_value_8, base_ten_factorial_8);
+}
+
+// 3628800 in decimal; digits 3628800 in base 10.
+def base_ten_factorial_value_10 =
+  radix_positive(
+    8,
+    radix_append(
+      8, base_ten_digit_0,
+      radix_append(
+        8, base_ten_digit_0,
+        radix_append(
+          8, base_ten_digit_8,
+          radix_append(
+            8, base_ten_digit_8,
+            radix_append(8, base_ten_digit_2, radix_append(8, base_ten_digit_6, base_ten_leading_3))
+          )
+        )
+      )
+    )
+  );
+theorem radix_factorial_ten_base_ten : radix_factorial(8, 10) = base_ten_factorial_value_10 {
+  exact radix_factorial_value_step(8, 9, base_ten_factorial_value_9, base_ten_factorial_9);
+}

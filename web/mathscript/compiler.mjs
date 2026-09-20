@@ -1,6 +1,7 @@
 import { compileConstruction } from "./construction.mjs";
 import { Builder } from "./builder.mjs";
 import { parse } from "./parser.mjs";
+import { binaryLiteralSyntax, binaryLiteralExpansion } from "./binary-literals.mjs";
 import { leadingDocumentation } from "./documentation.mjs";
 import { declarationNotation, inferredType, notationFromSyntax } from "./notation.mjs";
 import { declarations } from "./library.mjs";
@@ -235,6 +236,30 @@ export function compile(module, source, library, { onProgress, optimizations = {
             : `exists ${label} : ${operand(A.pretty)}, ${C.pretty}`,
       };
     }
+    // W types use the same checked dependent-family descriptor as Pi and Sigma.
+    // Keeping the family here lets aliases remain named in later applications.
+    function wType(A, body, label = "label") {
+      const x = b.fresh(A.j), C = body(val(x.v, A, label));
+      return {
+        kind: "w", j: op("WForm", [A.j, C.j], [x.c]), domain: A,
+        binder: { ...x, label }, template: C,
+        body: a => instantiateType(C, [{ ...x, label }], [a]),
+        pretty: `W(${A.pretty}, fun (${label} : ${A.pretty}) => ${C.pretty})`,
+      };
+    }
+    function wShape(T) {
+      if (T.kind !== "w") throw new Error("Expected a W type.");
+      return wType(T.domain, a => T.body(a));
+    }
+    function wSup(T, label, children) {
+      const raw = wShape(T), a = convert(label, raw.domain),
+        x = b.fresh(raw.domain.j), family = raw.body(val(x.v, raw.domain, "label")),
+        // WIntro expects the literal substituted arity, before beta reduction.
+        arityAtLabel = { ...raw.body(a), j: b.subst(family.j, x, a.binding) },
+        f = convert(children, pi(arityAtLabel, () => raw));
+      return convert(val(op("WIntro", [a.binding, family.j, f.binding], [x.c]), raw,
+        `sup(${T.pretty}, ${a.display}, ${children.display})`), T);
+    }
     const numeralCache = [val(op("NatIntroZ"), nat, "0")];
     function numeral(n) {
       while (numeralCache.length <= n)
@@ -279,6 +304,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
     function describe(n, e) {
       if (n.kind === "name") return e.get(n.name)?.display ?? n.name;
       if (n.kind === "number") return String(n.value);
+      if (n.kind === "binaryNumber") return n.spelling;
       if (n.kind === "call")
         return `${describe(n.fn, e)}(${n.args.map((x) => describe(x, e)).join(", ")})`;
       if (n.kind === "binary")
@@ -566,6 +592,15 @@ export function compile(module, source, library, { onProgress, optimizations = {
         v = e.get(n.name);
         if (!v) throw new Error(`Unknown name '${n.name}'.`);
       } else if (n.kind === "number") v = numeral(n.value);
+      else if (n.kind === "binaryNumber") {
+        if (!["binary_zero", "binary_one", "binary_bit0", "binary_bit1", "binary_positive"].every(name => e.has(name)))
+          throw new Error("Binary literals require import binary_naturals;.");
+        v = { ...infer(binaryLiteralSyntax(n), e), display: n.spelling };
+        if (recording && !n.library)
+          links.push({ start: n.start, end: n.end, name: n.spelling, binding: v.binding,
+            type: v.type.pretty, role: "binary-number literal", expansion: binaryLiteralExpansion(n),
+            description: "Binary literal: one checked constructor per bit, with no unary numeral expansion." });
+      }
       else if (n.kind === "call") {
         const primitive = n.fn.kind === "name" ? primitives[n.fn.name] : null;
         if (primitive) {
@@ -1160,6 +1195,32 @@ export function compile(module, source, library, { onProgress, optimizations = {
       return e.get(name);
     }
     const primitives = {
+      W(args, e) {
+        arity(args, 2, "W");
+        const A = asType(args[0], e), family = infer(args[1], e),
+          T = wType(A, a => represented(apply(family, [a])));
+        return val(T.j, sortType(T.j), describe({ kind: "call", fn: { kind: "name", name: "W" }, args }, e),
+          { representedType: T });
+      },
+      sup(args, e) {
+        arity(args, 3, "sup");
+        return wSup(asType(args[0], e), infer(args[1], e), infer(args[2], e));
+      },
+      wrec(args, e) {
+        arity(args, 4, "wrec");
+        const T = wShape(asType(args[0], e)), motive = infer(args[1], e),
+          at = v => represented(apply(motive, [v])),
+          z = b.fresh(T.j), C = at(val(z.v, T, "tree")),
+          a = b.fresh(T.domain.j), av = val(a.v, T.domain, "label"),
+          B = T.body(av), F = pi(B, () => T), f = b.fresh(F.j),
+          fv = val(f.v, F, "children"),
+          hypotheses = pi(B, branch => at(apply(fv, [branch])), "branch"),
+          result = at(wSup(T, av, fv)),
+          branch = convert(apply(infer(args[2], e), [av, fv]), pi(hypotheses, () => result)),
+          tree = convert(infer(args[3], e), T);
+        return val(norm(op("WElim", [C.j, branch.binding, tree.binding], [z.c, a.c, f.c])),
+          at(tree), "W induction");
+      },
       Choice(args, e) {
         if (!args.length) throw new Error("Choice requires a universe argument.");
         const fn = specializeAxiom("Choice", explicitUniverse(args[0], e));
@@ -1542,8 +1603,8 @@ export function compile(module, source, library, { onProgress, optimizations = {
               "NatElim",
               [
                 C.j,
-                b.coerce(zero.binding, b.subst(C.j, z, numeral(0).binding)),
-                b.coerce(branch.binding, b.subst(C.j, z, successor)),
+                convert(zero, { ...zero.type, j: b.subst(C.j, z, numeral(0).binding) }).binding,
+                convert(branch, { ...branch.type, j: b.subst(C.j, z, successor) }).binding,
                 n.binding,
               ],
               [z.c, k.c, h.c],

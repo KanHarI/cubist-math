@@ -272,6 +272,19 @@ theorem use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
           <code>&lt;</code>, and <code>&lt;=</code>.
         </p>
         <p>
+          With <code>import binary_naturals;</code>, <code>0b110</code> denotes
+          six in <code>BinaryNat</code>, using one W constructor per bit.
+          Hover to see its constructor expansion. Decimal literals such as
+          <code>6</code> remain unary <code>Nat</code>; conversion is explicit.
+        </p>
+        <p>
+          <code>W(A, B)</code> forms well-founded trees with labels in
+          <code>A</code> and children indexed by <code>B(label)</code>.
+          <code>sup(T, label, children)</code> builds a tree;
+          <code>wrec(T, motive, step, tree)</code> performs dependent induction.
+          See <a href="language.html#w-types">W types and binary numbers</a>.
+        </p>
+        <p>
           <code>forall</code> is a dependent function (Π); <code>exists</code>
           is a dependent pair (Σ) with an actual witness. <code>A and B</code>
           is a product; <code>A or B</code> is a disjoint sum, displayed as
