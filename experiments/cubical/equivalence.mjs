@@ -226,8 +226,8 @@ function inverseEquivalenceTerm(A,B,f,g,eta,epsilon) {
 // them by fresh free names while using the reference fill/substitution helpers,
 // then restore the exact native reference nodes. Only the native registry can
 // certify these references; no global definition is treated as an assumption.
-export function equivalenceFromInverse(A,B,f,g,eta,epsilon) {
-  const inputs=[A,B,f,g,eta,epsilon],references=new Map(),reserved=[...inputs];
+function withNativeReferences(inputs,build) {
+  const references=new Map(),reserved=[...inputs];
   const rewrite=(node,restore=false)=>{
     if(Array.isArray(node))return node.map(value=>rewrite(value,restore));
     if(!node||typeof node!=="object")return node;
@@ -241,5 +241,38 @@ export function equivalenceFromInverse(A,B,f,g,eta,epsilon) {
     return Object.fromEntries(Object.entries(node).map(([key,value])=>[key,rewrite(value,restore)]));
   };
   const symbolic=inputs.map(input=>rewrite(input));
-  return rewrite(inverseEquivalenceTerm(...symbolic),true);
+  return rewrite(build(...symbolic),true);
+}
+
+export function equivalenceFromInverse(A,B,f,g,eta,epsilon) {
+  return withNativeReferences([A,B,f,g,eta,epsilon],inverseEquivalenceTerm);
+}
+
+// The standard Glue universe path, with exactly the supplied equivalence on
+// the starting face and the identity equivalence on the ending face.
+export function univalencePath(A,B,e,level=0) {
+  return withNativeReferences([A,B,e],(A,B,e)=>{
+    const i=fresh('univalence',A,B,e);
+    return T.line(i,T.universe(level),T.glueType(B,[
+      {face:F.endpoint(i,0),type:A,equiv:e},
+      {face:F.endpoint(i,1),type:B,equiv:identityEquivalence(B)},
+    ]));
+  });
+}
+
+// Applying unglue to the transport filling gives a path from f(x) to transport(x).
+// Reversing that path gives the usual propositional beta law. The filler and
+// its endpoints are checked cubical operations, not a univalence-beta axiom.
+export function univalenceTransportBeta(A,B,e,x) {
+  return withNativeReferences([A,B,e,x],(A,B,e,x)=>{
+    const i=fresh('transport_beta',A,B,e,x),k=fresh('transport_direction',A,B,e,x,i);
+    const identity=identityEquivalence(B);
+    const G=r=>T.glueType(B,[
+      {face:F.equalEndpoint(r,0),type:A,equiv:e},
+      {face:F.equalEndpoint(r,1),type:B,equiv:identity},
+    ]);
+    const reverse=I.reverse(I.variable(i));
+    const filled=fill(k,G(I.variable(k)),[],x,reverse);
+    return T.line(i,B,T.unglue(G(reverse),filled));
+  });
 }
