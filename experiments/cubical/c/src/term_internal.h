@@ -23,10 +23,17 @@ typedef struct {
     cc_term expression, type;
 } cc_judgement;
 
+typedef struct {
+    uint32_t symbol;
+    cc_term value, type;
+} cc_definition;
+
 struct cc_kernel {
     cc_node *nodes;
     cc_term *weak_cache;
     size_t count, capacity;
+    cc_definition *definitions;
+    size_t definition_count, definition_capacity;
     cc_formula *formulas;
     size_t formula_count, formula_capacity;
     uint32_t next_symbol;

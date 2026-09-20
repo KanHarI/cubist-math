@@ -149,3 +149,26 @@ function under a dimension of the same name and then applies it to a varying
 argument. Empty Glue faces are removed before conversion. Free-name analysis
 and substitution consume the same checking budget, so a small shared syntax DAG
 cannot cause an unbounded uncounted traversal.
+
+### Checked definitions and demanded heads
+
+`cc_kernel_define(kernel, symbol, value, expected_type)` checks a closed body
+using only earlier checked definitions and publishes a folded `CC_DEFREF`
+(tag 35). Failure publishes no definition. Definitions are transparent for
+conversion, and a separate `cc_kernel_definition` query returns their checked
+bodies and inferred types. Source opacity is an elaboration/display decision,
+not a new assumption. No unchecked external theorem can enter this registry.
+
+Conversion first compares folded syntax modulo binder renaming, including
+matching definition references. It unfolds definitions only when that comparison
+fails. `cc_kernel_whnf` exposes the demanded head without strongly normalizing
+arguments, and is suitable for an elaborator's type-shape queries. Like the
+normalization inspector, it accepts raw syntax but never certifies it; final
+`cc_kernel_check` must validate all elaborated results.
+
+The native API regression builds 22 checked applications of doubling and checks
+a reflexive path at the compact natural 2^22: **252 arena nodes, 7 checking steps
+and 26 reduction steps** for the final check, without expanding its unary value.
+This is a compactness regression, not the requested factorial transport proof.
+The tests also reject duplicate names, free variables, wrong declared types,
+unknown references and equality between distinct numeric definitions.

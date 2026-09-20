@@ -17,7 +17,7 @@ typedef enum {
     CC_PATH, CC_PLAM, CC_PAPP, CC_COMP, CC_TUBE,
     CC_VOID, CC_ABORT, CC_W, CC_SUP, CC_WREC,
     CC_SUM, CC_INL, CC_INR, CC_SUMREC, CC_UNITREC,
-    CC_GLUE, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_UNGLUE
+    CC_GLUE, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_UNGLUE, CC_DEFREF
 } cc_term_kind;
 
 typedef struct {
@@ -49,6 +49,7 @@ void cc_kernel_clear_error(cc_kernel *);
  * UnitRec(motive,point-case,value).
  * Glue(base,system); GlueSystem(face-formula; partial-type,equivalence,next).
  * GlueTerm(Glue-type,base-value,partial-tubes); Unglue(Glue-type,value).
+ * DefRef(registry-index) refers only to a previously checked definition.
  * Nat/Zero/Unit/Point/Void have no children. Missing children must be zero.
  * The checker discards an untrusted PApp's optional second child (annotation).
  */
@@ -61,6 +62,16 @@ cc_formula_id cc_kernel_formula(cc_kernel *, const cc_formula *);
  * production-kernel handle or axiom fallback can be supplied through this API. */
 bool cc_kernel_check(cc_kernel *, cc_term, cc_term expected,
                      const cc_assumption *, size_t count, cc_checked_result *);
+
+/* Register a closed definition, checked using only earlier checked references.
+ * A symbol may be registered once. On failure no definition is published.
+ * The returned expression is a folded DefRef, never an assumed axiom. */
+cc_term cc_kernel_define(cc_kernel *, uint32_t symbol, cc_term value, cc_term expected_type);
+bool cc_kernel_definition(const cc_kernel *, cc_term reference, uint32_t *symbol,
+                          cc_term *value, cc_term *type);
+/* Expose only the demanded head. Like normalize, this is inspection only:
+ * it accepts raw syntax but does not certify it, including under free names. */
+cc_term cc_kernel_whnf(cc_kernel *, cc_term);
 
 /* Explicit inspection reduction. Checking itself leaves terms compact.
  * This function does not certify a raw term; pass a successful checked handle. */
