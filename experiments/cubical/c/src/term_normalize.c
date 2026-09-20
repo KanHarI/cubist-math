@@ -196,9 +196,9 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         return result;
     }
     if (n.kind == CC_LAM || n.kind == CC_PLAM) {
-        cc_term body = ck_whnf(k, n.child[1]);
-        if (!body)
-            return 0;
+        /* A lambda is already a weak head. Eta may inspect its syntax, but
+         * must not evaluate the body before an argument is supplied. */
+        cc_term body = n.child[1];
         cc_node head = k->nodes[body];
         if (n.kind == CC_LAM && head.kind == CC_APP) {
             cc_node argument = k->nodes[head.child[1]];

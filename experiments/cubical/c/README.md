@@ -201,3 +201,22 @@ varying arities, and independently recheck the resulting normal terms in both
 implementations. A tube whose constructor cannot be exposed stays neutral.
 This does not introduce a strict constant-family transport rule or an equality
 between arbitrary trees.
+
+### Conversion preserves compact endpoints
+
+Conversion tries folded syntax, then definition/beta/projection/boundary exposure,
+then congruence of matching constructors before computing their values. For
+example, equality of `decode(p @ 1)` and `decode(bits)` first compares the small
+arguments. It does not evaluate both resulting unary naturals. A lambda is
+already a weak head; its body is not evaluated by a head query. Function/path
+eta is handled explicitly when conversion requires it. Conversion recursion is
+guarded at 512 active levels, reporting a failed request rather than relying on
+a host stack overflow.
+
+The independent native source fixture for `factorial_ten_from_binary` now checks
+with **86,638 cumulative arena nodes / 4,392,448 reported bytes**. Its final check
+uses 182 checking and 76,790 reduction steps. The focused regression reproduces
+the mechanism using a compact 2^22 value hidden behind path endpoints and an
+alias; fewer than 5,000 nodes are permitted. The fixture establishes the existing
+Nat equality using translated compatibility proofs; the stronger acceptance
+criterion of actual computational-univalence transfer is still outstanding.
