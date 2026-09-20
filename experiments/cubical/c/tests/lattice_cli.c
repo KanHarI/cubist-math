@@ -48,11 +48,17 @@ static bool expression(const char **p, cc_formula *out, unsigned depth) {
 static void print_formula(const cc_formula *f) {
     putchar('[');
     for (size_t c = 0; c < f->length; ++c) {
-        if (c) putchar(','); putchar('['); bool comma = false;
+        if (c)
+            putchar(',');
+        putchar('[');
+        bool comma = false;
         for (unsigned d = 0; d < CC_DIMENSIONS; ++d) for (unsigned end = 0; end < 2; ++end) {
             uint64_t bit = UINT64_C(1) << d;
             if ((end ? f->clauses[c].positive : f->clauses[c].negative) & bit) {
-                if (comma) putchar(','); printf("\"d%u:%u\"", d, end); comma = true;
+                if (comma)
+                    putchar(',');
+                printf("\"d%u:%u\"", d, end);
+                comma = true;
             }
         }
         putchar(']');

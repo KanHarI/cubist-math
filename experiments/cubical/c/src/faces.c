@@ -36,8 +36,9 @@ cc_status cc_endpoint(cc_formula *out, const cc_formula *r, unsigned endpoint) {
 
 cc_status cc_face_substitute(cc_formula *out, const cc_formula *a,
                              unsigned dimension, const cc_formula *value) {
-    if (out->sort != CC_FACE || a->sort != CC_FACE || value->sort != CC_INTERVAL ||
-        dimension >= CC_DIMENSIONS) return CC_BAD_INPUT;
+    if (out->sort != CC_FACE || a->sort != CC_FACE ||
+        value->sort != CC_INTERVAL || dimension >= CC_DIMENSIONS)
+        return CC_BAD_INPUT;
     uint64_t bit = UINT64_C(1) << dimension;
     cc_formula candidate, at_zero, at_one, product;
     cc_init(&candidate, CC_FACE);

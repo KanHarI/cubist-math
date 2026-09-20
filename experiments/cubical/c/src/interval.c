@@ -30,8 +30,9 @@ cc_status cc_reverse(cc_formula *out, const cc_formula *a) {
 
 cc_status cc_interval_substitute(cc_formula *out, const cc_formula *a,
                                  unsigned dimension, const cc_formula *value) {
-    if (out->sort != CC_INTERVAL || a->sort != CC_INTERVAL || value->sort != CC_INTERVAL ||
-        dimension >= CC_DIMENSIONS) return CC_BAD_INPUT;
+    if (out->sort != CC_INTERVAL || a->sort != CC_INTERVAL ||
+        value->sort != CC_INTERVAL || dimension >= CC_DIMENSIONS)
+        return CC_BAD_INPUT;
     uint64_t bit = UINT64_C(1) << dimension;
     cc_formula candidate, reversed, product;
     cc_init(&candidate, CC_INTERVAL);

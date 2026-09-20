@@ -1,6 +1,7 @@
 {
   "meaning": "AST inventory only; statuses are not claims of kernel verification",
-  "sourceModules": 212,
+  "sourceRevision": "1f6cddb2939ff55d90ea6422857a81ca8d1d0f2b",
+  "sourceModules": 216,
   "legacyConstructionArtifacts": [
     "aoc.construction.proof",
     "based_path_induction.construction.proof",
@@ -31,7 +32,7 @@
     "wnat.construction.proof",
     "wnat_equiv.construction.proof"
   ],
-  "declarations": 2069,
+  "declarations": 2128,
   "translated": 0,
   "modules": [
     {
@@ -10319,6 +10320,154 @@
       ]
     },
     {
+      "module": "group_cosets",
+      "imports": [
+        "normal_subgroups",
+        "set_quotients"
+      ],
+      "declarations": [
+        {
+          "name": "SameLeftCoset",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "coset_factor",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "same_coset_from_factor",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "same_coset_refl",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "same_coset_sym",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "same_coset_trans",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "same_coset_equivalence",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "same_coset_multiply_left",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "group_conjugate_shift",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "same_coset_multiply_right",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "normal_coset_multiply",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "same_coset_unit_member",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "right_coset_compatibility_implies_normal",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "normal_coset_inverse",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "group_hom_difference",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_coset_of_equal_images",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_coset_equal_images",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "LeftCosets",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "left_coset",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "same_coset_path",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "coset_path_membership",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "normal_coset_product_path",
+          "kind": "theorem",
+          "status": "not-translated"
+        }
+      ],
+      "syntax": {
+        "def": 3,
+        "lambda": 19,
+        "name": 1161,
+        "call": 387,
+        "theorem": 19,
+        "binary": 13,
+        "let": 26,
+        "exact": 19,
+        "pair": 3,
+        "forall": 3,
+        "intro": 3
+      },
+      "directObligations": {
+        "identity_elimination": [
+          "transport",
+          "trans",
+          "sym",
+          "cong"
+        ]
+      },
+      "transitiveObligations": [
+        "function_extensionality",
+        "identity_elimination",
+        "kernel_prelude_exports",
+        "truncation",
+        "univalence",
+        "universe_polymorphism"
+      ]
+    },
+    {
       "module": "group_homomorphisms",
       "imports": [
         "group_operations"
@@ -10683,6 +10832,82 @@
         "function_extensionality",
         "identity_elimination",
         "kernel_prelude_exports",
+        "universe_polymorphism"
+      ]
+    },
+    {
+      "module": "group_quotient_maps",
+      "imports": [
+        "group_cosets",
+        "quotient_descent"
+      ],
+      "declarations": [
+        {
+          "name": "KillsSubgroup",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "killing_subgroup_respects_cosets",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "group_quotient_map",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "group_quotient_map_beta",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "group_quotient_map_unique",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "group_quotient_map_unit",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "group_quotient_map_multiply",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_factor_kills_subgroup",
+          "kind": "theorem",
+          "status": "not-translated"
+        }
+      ],
+      "syntax": {
+        "def": 2,
+        "lambda": 10,
+        "name": 423,
+        "call": 130,
+        "forall": 3,
+        "binary": 10,
+        "theorem": 6,
+        "intro": 5,
+        "exact": 6,
+        "let": 3
+      },
+      "directObligations": {
+        "identity_elimination": [
+          "trans",
+          "sym",
+          "cong"
+        ]
+      },
+      "transitiveObligations": [
+        "function_extensionality",
+        "identity_elimination",
+        "kernel_prelude_exports",
+        "truncation",
+        "univalence",
         "universe_polymorphism"
       ]
     },
@@ -12060,6 +12285,135 @@
         "kernel_prelude_exports",
         "truncation",
         "universe_polymorphism"
+      ]
+    },
+    {
+      "module": "kernel_quotient_image",
+      "imports": [
+        "group_quotient_maps",
+        "subgroup_images",
+        "equivalence_from_inverse"
+      ],
+      "declarations": [
+        {
+          "name": "KernelQuotient",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "GroupImageCarrier",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "group_image_map",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "image_map_respects_kernel",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_quotient_to_image",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_quotient_to_image_beta",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "ImageFiberPredicate",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "image_fiber_class_witness",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "image_to_kernel_quotient",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_quotient_image_right",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_quotient_image_member",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_quotient_image_member_inverse",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_quotient_image_left",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_quotient_image_equiv",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_quotient_image_equality",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "kernel_quotient_is_set",
+          "kind": "theorem",
+          "status": "not-translated"
+        }
+      ],
+      "syntax": {
+        "def": 7,
+        "lambda": 25,
+        "name": 919,
+        "call": 260,
+        "theorem": 9,
+        "intro": 6,
+        "exact": 14,
+        "binary": 14,
+        "let": 16,
+        "exists": 3,
+        "forall": 3,
+        "have": 3,
+        "obtain": 3,
+        "pair": 8
+      },
+      "directObligations": {
+        "identity_elimination": [
+          "transport",
+          "trans",
+          "sym",
+          "cong"
+        ],
+        "univalence": [
+          "ua"
+        ],
+        "w_type": [
+          "W"
+        ]
+      },
+      "transitiveObligations": [
+        "function_extensionality",
+        "identity_elimination",
+        "kernel_prelude_exports",
+        "truncation",
+        "univalence",
+        "universe_polymorphism",
+        "w_type"
       ]
     },
     {
@@ -14464,6 +14818,113 @@
         "identity_elimination",
         "kernel_prelude_exports",
         "truncation",
+        "universe_polymorphism"
+      ]
+    },
+    {
+      "module": "quotient_descent",
+      "imports": [
+        "set_quotients"
+      ],
+      "declarations": [
+        {
+          "name": "RespectsRelation",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "QuotientValue",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_predicate_prop",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_value_prop",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_induction_prop",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_value_unique",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_value_pair_prop",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_value",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_rec",
+          "kind": "def",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_rec_member",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_rec_beta",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_maps_ext",
+          "kind": "theorem",
+          "status": "not-translated"
+        },
+        {
+          "name": "quotient_rec_unique",
+          "kind": "theorem",
+          "status": "not-translated"
+        }
+      ],
+      "syntax": {
+        "def": 4,
+        "lambda": 23,
+        "name": 807,
+        "binary": 69,
+        "forall": 13,
+        "call": 183,
+        "theorem": 9,
+        "obtain": 7,
+        "pair": 14,
+        "have": 5,
+        "exists": 12,
+        "intro": 6,
+        "exact": 16,
+        "let": 2
+      },
+      "directObligations": {
+        "identity_elimination": [
+          "transport",
+          "trans",
+          "sym"
+        ],
+        "function_extensionality": [
+          "FunExt"
+        ]
+      },
+      "transitiveObligations": [
+        "function_extensionality",
+        "identity_elimination",
+        "kernel_prelude_exports",
+        "truncation",
+        "univalence",
         "universe_polymorphism"
       ]
     },

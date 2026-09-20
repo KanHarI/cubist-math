@@ -27,7 +27,7 @@ test("independent C and JS algebras agree on 1,800 seeded requests",()=>{
       [F,F.substitute(F.equalEndpoint(a.value,1),`d${dimension}`,b.value)],
       [null,F.entails(F.equalEndpoint(a.value,1),F.equalEndpoint(b.value,1))]);
   }
-  const result=spawnSync(binary,[],{input:requests.join("\n")+"\n",encoding:"utf8",maxBuffer:32*1024*1024,timeout:20000});
+  const result=spawnSync(binary,[],{input:requests.join("\n")+"\n",encoding:"utf8",maxBuffer:32*1024*1024,timeout:20000,killSignal:"SIGKILL"});
   assert.equal(result.status,0,result.stderr);
   const lines=result.stdout.trim().split("\n");assert.equal(lines.length,expected.length);
   for(let i=0;i<lines.length;i++) {
@@ -38,7 +38,7 @@ test("independent C and JS algebras agree on 1,800 seeded requests",()=>{
 });
 test("native adapter rejects malformed requests and dimension overflow",()=>{
   for(const input of ["N (v 64)","N (v -1)","N (and 0)","N 0 ignored","E2 0","N (not (v 0)"]) {
-    const result=spawnSync(binary,[],{input:input+"\n",encoding:"utf8"});
+    const result=spawnSync(binary,[],{input:input+"\n",encoding:"utf8",timeout:5000,killSignal:"SIGKILL"});
     assert.equal(result.status,1,input);assert.equal(result.stdout,"");
   }
 });

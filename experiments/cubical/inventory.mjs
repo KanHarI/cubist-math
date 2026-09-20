@@ -2,6 +2,7 @@
 import {readFile,readdir,writeFile} from "node:fs/promises";
 import {parse} from "../../web/mathscript/parser.mjs";
 import {fileURLToPath} from "node:url";
+import {execFileSync} from "node:child_process";
 const proofRoot=new URL("../../web/proofs/",import.meta.url);
 const obligations={
   identity_elimination:["path_induction","based_induction","transport","apd","trans","sym","cong"],
@@ -38,7 +39,8 @@ export async function inventory() {
       Object.keys(dep.directObligations).forEach(x=>transitive.add(x));dep.imports.forEach(visit);};
     visit(m.module);m.transitiveObligations=[...transitive].sort();
   }
-  return {meaning:"AST inventory only; statuses are not claims of kernel verification",sourceModules:modules.length,legacyConstructionArtifacts:constructions,
+  const sourceRevision=execFileSync("git",["log","-1","--format=%H","--","web/proofs"],{cwd:fileURLToPath(new URL("../../",import.meta.url)),encoding:"utf8"}).trim();
+  return {meaning:"AST inventory only; statuses are not claims of kernel verification",sourceRevision,sourceModules:modules.length,legacyConstructionArtifacts:constructions,
     declarations:modules.reduce((n,m)=>n+m.declarations.length,0),translated:0,modules};
 }
 if(process.argv[1]===fileURLToPath(import.meta.url)) {

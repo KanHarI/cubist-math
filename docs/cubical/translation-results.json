@@ -1,9 +1,10 @@
 {
   "scope": "Actual translation into the checked CCHM structural/path/composition fragment. Glue, universe composition, HITs and the strict Id bridge are not implemented; this is not full cubical migration.",
-  "elapsedMilliseconds": 862,
-  "peakRssBytes": 270467072,
-  "checked": 116,
-  "untranslated": 1953,
+  "sourceRevision": "1f6cddb2939ff55d90ea6422857a81ca8d1d0f2b",
+  "elapsedMilliseconds": 928,
+  "peakRssBytes": 273842176,
+  "checked": 117,
+  "untranslated": 2011,
   "modules": [
     {
       "module": "affine_dyadic_limits",
@@ -6474,6 +6475,121 @@
       ]
     },
     {
+      "module": "group_cosets",
+      "declarations": [
+        {
+          "name": "SameLeftCoset",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "coset_factor",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: group_carrier"
+        },
+        {
+          "name": "same_coset_from_factor",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "same_coset_refl",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "same_coset_sym",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "same_coset_trans",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "same_coset_equivalence",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "same_coset_multiply_left",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "group_conjugate_shift",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: group_carrier"
+        },
+        {
+          "name": "same_coset_multiply_right",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "normal_coset_multiply",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "same_coset_unit_member",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "right_coset_compatibility_implies_normal",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "normal_coset_inverse",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "group_hom_difference",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_coset_of_equal_images",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_coset_equal_images",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "LeftCosets",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "left_coset",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "same_coset_path",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "coset_path_membership",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        },
+        {
+          "name": "normal_coset_product_path",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: Subgroup"
+        }
+      ]
+    },
+    {
       "module": "group_homomorphisms",
       "declarations": [
         {
@@ -6714,6 +6830,51 @@
           "name": "abelian_conjugation_trivial",
           "status": "not-translated",
           "reason": "Untranslated dependency: IsAbelian"
+        }
+      ]
+    },
+    {
+      "module": "group_quotient_maps",
+      "declarations": [
+        {
+          "name": "KillsSubgroup",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "killing_subgroup_respects_cosets",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "group_quotient_map",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "group_quotient_map_beta",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "group_quotient_map_unique",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "group_quotient_map_unit",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "group_quotient_map_multiply",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "quotient_factor_kills_subgroup",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
         }
       ]
     },
@@ -7560,6 +7721,91 @@
           "name": "interval_weight_sum_bound",
           "status": "not-translated",
           "reason": "Untranslated dependency: OrderedArithmetic"
+        }
+      ]
+    },
+    {
+      "module": "kernel_quotient_image",
+      "declarations": [
+        {
+          "name": "KernelQuotient",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "GroupImageCarrier",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "group_image_map",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "image_map_respects_kernel",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_quotient_to_image",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_quotient_to_image_beta",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "ImageFiberPredicate",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "image_fiber_class_witness",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "image_to_kernel_quotient",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_quotient_image_right",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_quotient_image_member",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_quotient_image_member_inverse",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_quotient_image_left",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_quotient_image_equiv",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_quotient_image_equality",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
+        },
+        {
+          "name": "kernel_quotient_is_set",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: GroupHom"
         }
       ]
     },
@@ -9114,6 +9360,75 @@
           "name": "complex_coordinate_parallelogram",
           "status": "not-translated",
           "reason": "Proof block tactics not yet translated."
+        }
+      ]
+    },
+    {
+      "module": "quotient_descent",
+      "declarations": [
+        {
+          "name": "RespectsRelation",
+          "status": "checked-cubical-fragment"
+        },
+        {
+          "name": "QuotientValue",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
+        },
+        {
+          "name": "quotient_predicate_prop",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
+        },
+        {
+          "name": "quotient_value_prop",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
+        },
+        {
+          "name": "quotient_induction_prop",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
+        },
+        {
+          "name": "quotient_value_unique",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
+        },
+        {
+          "name": "quotient_value_pair_prop",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
+        },
+        {
+          "name": "quotient_value",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
+        },
+        {
+          "name": "quotient_rec",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
+        },
+        {
+          "name": "quotient_rec_member",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
+        },
+        {
+          "name": "quotient_rec_beta",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: quotient_rec"
+        },
+        {
+          "name": "quotient_maps_ext",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
+        },
+        {
+          "name": "quotient_rec_unique",
+          "status": "not-translated",
+          "reason": "Untranslated dependency: SetQuotient"
         }
       ]
     },
