@@ -16,6 +16,12 @@ int main(void) {
     assert(cc_one(&other) == CC_OK);
     bool entails = true;
     assert(cc_face_entails(&other, &face, &entails) == CC_OK && !entails);
+    assert(cc_face_forall(&other, 63, &face) == CC_OK && other.length == 0);
+    assert(cc_face_forall(&face, 63, &face) == CC_OK && face.length == 0);
+    assert(cc_one(&other) == CC_OK);
+    assert(cc_face_forall(&other, 0, &other) == CC_OK && other.length == 1);
+    assert(cc_face_forall(&other, 64, &other) == CC_BAD_INPUT);
+    assert(cc_face_forall(&other, 0, &i) == CC_BAD_INPUT);
     assert(cc_generator(&i, 64, true) == CC_BAD_INPUT);
     assert(i.length == 1 && i.clauses[0].positive == (UINT64_C(1) << 63));
     assert(cc_endpoint(&face, &i, 2) == CC_BAD_INPUT);

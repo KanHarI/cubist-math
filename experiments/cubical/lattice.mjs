@@ -71,6 +71,12 @@ export const face = Object.freeze({
     return canonical(phi, true).reduce((sum, clause) => join(sum, clause.reduce((product, x) => meet(product,
       x.slice(0, -2) === n ? face.equalEndpoint(r, Number(x.at(-1))) : [[x]], true), full), true), empty);
   },
+  // Greatest face independent of n that entails phi. Endpoint cases do NOT
+  // cover an interval: forall i. ((i=0) or (i=1)) is bottom, not top.
+  forall(n,phi) {
+    name(n);
+    return canonical(phi,true).filter(clause=>clause.every(x=>x.slice(0,-2)!==n));
+  },
   entails(phi, psi) {
     phi = canonical(phi, true); psi = canonical(psi, true);
     return phi.every(c => psi.some(d => subset(d, c)));

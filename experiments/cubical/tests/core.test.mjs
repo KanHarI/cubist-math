@@ -60,7 +60,7 @@ test("bad endpoints, unbound dimensions and forged annotations are rejected",()=
   const forged={...at(v("p"),I.zero),pathType:path(T.nat,T.zero,T.zero)};
   assert.deepEqual(c.verify(forged,A,assumptions).normal,a);
   assert.throws(()=>c.verify(T.variable("I")),/Unbound term/);
-  assert.throws(()=>c.verify({tag:"Glue"}),/Unknown term/);
+  assert.throws(()=>c.verify({tag:"Glue"}),/finite Glue system/);
 });
 test("term substitution avoids capture under binders",()=>{
   const c=new Checker();
