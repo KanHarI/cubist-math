@@ -167,3 +167,79 @@ export function strictIsomorphismEquivalence(A,B,forward,inverse) {
   const contraction=T.lam(u,F,T.line(i,F,T.pair(F,ap(inverse,along),segment)));
   return T.pair(equiv(A,B),forward,T.lam(y,B,T.pair(contractible(F),center,contraction)));
 }
+
+// Connect two points of a fiber using only inverse homotopies. The successive
+// fillings make the coherence square explicit, avoiding strict-J adjointification.
+// Adapted to y = f(x) from Cubical.Foundations.Isomorphism.lemIso:
+// https://github.com/agda/cubical/blob/master/Cubical/Foundations/Isomorphism.agda
+function inverseFiberPath(A,B,f,g,eta,epsilon,y,u0,u1) {
+  const used=[A,B,f,g,eta,epsilon,y,u0,u1];
+  const dimension=stem=>{const name=fresh(stem,used);used.push(name);return name;};
+  const i=dimension('fiber_axis'),j=dimension('square_axis'),k=dimension('comparison_axis');
+  const h0=dimension('first_fill'),h1=dimension('second_fill'),h2=dimension('middle_fill');
+  const x0=fst(u0),x1=fst(u1),p0=snd(u0),p1=snd(u1),gy=ap(g,y);
+  const first=(r,s)=>fill(h0,A,[
+    {face:F.equalEndpoint(r,1),term:T.at(ap(eta,x0),I.variable(h0))},
+    {face:F.equalEndpoint(r,0),term:gy},
+  ],ap(g,T.at(p0,r)),s);
+  const second=(r,s)=>fill(h1,A,[
+    {face:F.equalEndpoint(r,1),term:T.at(ap(eta,x1),I.variable(h1))},
+    {face:F.equalEndpoint(r,0),term:gy},
+  ],ap(g,T.at(p1,r)),s);
+  const middle=(r,s)=>fill(h2,A,[
+    {face:F.equalEndpoint(r,1),term:second(I.variable(h2),I.one)},
+    {face:F.equalEndpoint(r,0),term:first(I.variable(h2),I.one)},
+  ],gy,s);
+  const r=I.variable(i),s=I.variable(j),t=I.variable(k);
+  const p=middle(r,I.one);
+  // This square has edges g(p0), g(p1), g(f(p)), and the constant g(y).
+  const square=T.comp(k,A,[
+    {face:F.endpoint(i,1),term:second(s,I.reverse(t))},
+    {face:F.endpoint(i,0),term:first(s,I.reverse(t))},
+    {face:F.endpoint(j,1),term:T.at(ap(eta,p),I.reverse(t))},
+    {face:F.endpoint(j,0),term:gy},
+  ],middle(r,s));
+  // epsilon changes those four edges into p0, p1, f(p), and y.
+  const imageSquare=T.comp(k,B,[
+    {face:F.endpoint(i,1),term:T.at(ap(epsilon,T.at(p1,s)),t)},
+    {face:F.endpoint(i,0),term:T.at(ap(epsilon,T.at(p0,s)),t)},
+    {face:F.endpoint(j,1),term:T.at(ap(epsilon,ap(f,p)),t)},
+    {face:F.endpoint(j,0),term:T.at(ap(epsilon,y),t)},
+  ],ap(f,square));
+  const targetFiber=fiber(A,B,f,y);
+  return T.line(i,targetFiber,T.pair(targetFiber,p,T.line(j,B,imageSquare)));
+}
+
+// eta(x): g(f(x)) = x; epsilon(y): f(g(y)) = y. Neither homotopy is
+// required to compute to reflexivity, and no triangle identity is assumed.
+function inverseEquivalenceTerm(A,B,f,g,eta,epsilon) {
+  const y=fresh('target',A,B,f,g,eta,epsilon),u=fresh('fiber_point',A,B,f,g,eta,epsilon,y);
+  const r=fresh('reverse_section',A,B,f,g,eta,epsilon,y,u);
+  const F=fiber(A,B,f,v(y));
+  const section=T.line(r,B,T.at(ap(epsilon,v(y)),I.reverse(I.variable(r))));
+  const center=T.pair(F,ap(g,v(y)),section);
+  const contraction=T.lam(u,F,inverseFiberPath(A,B,f,g,eta,epsilon,v(y),center,v(u)));
+  return T.pair(equiv(A,B),f,T.lam(y,B,T.pair(contractible(F),center,contraction)));
+}
+
+// Reference names are opaque to this syntax builder. Temporarily represent
+// them by fresh free names while using the reference fill/substitution helpers,
+// then restore the exact native reference nodes. Only the native registry can
+// certify these references; no global definition is treated as an assumption.
+export function equivalenceFromInverse(A,B,f,g,eta,epsilon) {
+  const inputs=[A,B,f,g,eta,epsilon],references=new Map(),reserved=[...inputs];
+  const rewrite=(node,restore=false)=>{
+    if(Array.isArray(node))return node.map(value=>rewrite(value,restore));
+    if(!node||typeof node!=="object")return node;
+    if(restore&&node.tag==="Var"&&references.has(node.name))return references.get(node.name);
+    if(!restore&&["Ref","DefRef"].includes(node.tag)) {
+      const name=fresh('checked_reference',reserved);
+      reserved.push(name);
+      references.set(name,node);
+      return v(name);
+    }
+    return Object.fromEntries(Object.entries(node).map(([key,value])=>[key,rewrite(value,restore)]));
+  };
+  const symbolic=inputs.map(input=>rewrite(input));
+  return rewrite(inverseEquivalenceTerm(...symbolic),true);
+}
