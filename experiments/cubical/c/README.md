@@ -220,3 +220,8 @@ the mechanism using a compact 2^22 value hidden behind path endpoints and an
 alias; fewer than 5,000 nodes are permitted. The fixture establishes the existing
 Nat equality using translated compatibility proofs; the stronger acceptance
 criterion of actual computational-univalence transfer is still outstanding.
+
+The derived-library suite also certifies the closed total-space formulation of
+univalence at U0 and U2: `forall A, IsContr(Sigma X, Equiv(X,A))`. See the
+[experiment milestone](../../../docs/cubical/experiment.md#derived-univalence-milestone).
+The explicit `idtoequiv isEquiv` API is still a remaining library connection.

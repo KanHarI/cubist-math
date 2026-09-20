@@ -135,3 +135,28 @@ Run `node experiments/cubical/check-library.mjs` to regenerate actual translatio
 results; every successful declaration is checked again from inert term syntax.
 Run `node experiments/cubical/inventory.mjs` for the separate AST-only census.
 No experiment command changes the production WASM binary or deploys the site.
+
+## Derived univalence milestone
+
+`experiments/cubical/equivalence.mjs` now builds and independently checks the
+CCHM theorem that `unglue` is an equivalence (contractible fibers), uniqueness of
+contractibility witnesses, and the total-space formulation of univalence:
+
+```text
+forall A : U_l, IsContr(Sigma X : U_l, Equiv(X, A))
+```
+
+The final theorem is closed in the native checker. Its identity-equivalence
+helper is registered as an earlier closed checked definition, not an assumption.
+The proof uses only existing Glue, composition, Pi, Sigma and interval paths;
+it adds no axiom or trusted rule. A reference check validates the same derived
+construction using the previously checked helper's type. Tests cover levels
+U0 and U2. Checking leaves proof bodies folded; strongly normalizing the entire
+univalence witness would duplicate a large amount of proof structure and is
+unnecessary for certification.
+
+This proves the canonical contractible-total-space formulation. The explicit
+`idtoequiv isEquiv` library API still needs to be derived/connected via the
+identity-system equivalence theorem, and the full library/HIT migration and
+computational-univalence factorial-transfer acceptance remain separate tasks.
+Primary source: [CCHM, section 7.2, theorem 9 and corollary 10](https://arxiv.org/html/1611.02108).
