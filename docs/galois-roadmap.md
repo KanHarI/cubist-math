@@ -1,8 +1,8 @@
 # Requirements for a full Galois theory development
 
-Status: paused for later resumption (2026-09-20). Start with the
+Status: resumed on main (2026-09-20). Start with the
 [resumption checkpoint](galois-handoff.md), including validation results and
-the unresolved exporter/reference CI failures. The listed stage-1 constructions
+the repaired exporter/reference CI failures. The listed stage-1 constructions
 and its Galois-connection completion criterion are checked; stages 2–9 remain
 requirements. The quotient-group layer is still needed for the later stages.
 Checked results and their assumptions are described in
@@ -216,7 +216,17 @@ and trivial homomorphisms have their expected images as equal subgroup bundles.
 The image construction and surjectivity use only the existing truncation
 axioms; bundle equalities additionally use function extensionality and univalence.
 
-Next: quotient groups and a non-normal subgroup example for the later
+`group_cosets` now proves that `S(x⁻¹y)` is an equivalence relation, that left
+translation always preserves it, and that right translation preserves it
+exactly when S is normal. Multiplication and inversion respect normal cosets.
+Kernel cosets are exactly homomorphism fibers. These relation-level results
+require no axioms. The module also identifies related representatives with
+equality paths in the existing U1 predicate quotient and proves representative
+independence of products, using the existing quotient dependencies.
+It does not yet descend multiplication to arbitrary quotient elements or
+construct a bundled quotient group.
+
+Next: quotient descent, quotient groups and a non-normal subgroup example for the later
 normality and quotient statements.
 Then proceed to explicit finite linear algebra and degree, preserving the
 separate algebraic and infinite-theory milestones below.
@@ -226,8 +236,8 @@ Implementation constraints for the next group layer:
 - The checked image construction uses propositional truncation, unlike the
   actual unique preimages used for field-embedding images. Continue to use
   its merely surjective factor without selecting representatives.
-- For a normal subgroup N, use the coset relation `N(x⁻¹ y)`. Prove its
-  equivalence laws and compatibility with multiplication before descending
+- For a normal subgroup N, reuse the checked `SameLeftCoset(G, N)` relation
+  and `normal_coset_multiply` / `normal_coset_inverse` to descend
   the operations. State the quotient universal property for homomorphisms
   annihilating N; derive the first isomorphism theorem from it.
 - Resolve universe size explicitly before constructing a general quotient

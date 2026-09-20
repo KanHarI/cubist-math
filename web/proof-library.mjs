@@ -20,6 +20,7 @@ export const proofTopics = [
 
 export const proofChoices = [
   { id: "subgroup_images", topic: "algebra", title: "Subgroups · images, adjunction and surjective factorization" },
+  { id: "group_cosets", topic: "algebra", title: "Cosets · normality, quotient paths and homomorphism fibers" },
   { id: "subgroup_carriers", topic: "algebra", title: "Subgroups · realized groups and unique factorization" },
   { id: "equivalence_from_inverse", topic: "homotopy", title: "Equivalences · coherent inverses by path algebra" },
   { id: "finite_decisions", topic: "finite-counting", title: "Finite types · constructive membership decisions" },

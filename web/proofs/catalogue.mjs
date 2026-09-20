@@ -142,7 +142,7 @@ export default [
     "title": "Homotopy",
     "file": "homotopy.thth.json",
     "source": "src/builtins/homotopy.rs",
-    "steps": 2521,
+    "steps": 2522,
     "allowAxioms": true,
     "exports": [
       "lib_Homotopy",
@@ -205,7 +205,7 @@ export default [
     "title": "Pi void unique",
     "file": "pi_void_unique.thth.json",
     "source": "src/builtins/pi_void_unique.rs",
-    "steps": 2569,
+    "steps": 2570,
     "allowAxioms": true,
     "exports": [
       "lib_pi_void_unique"
@@ -216,7 +216,7 @@ export default [
     "title": "Wnat",
     "file": "wnat.thth.json",
     "source": "src/builtins/wnat.rs",
-    "steps": 2664,
+    "steps": 2665,
     "allowAxioms": true,
     "exports": [
       "lib_UNat",
@@ -312,7 +312,7 @@ export default [
     "title": "Prelude library (51 exports)",
     "file": "prelude_library.thth.json",
     "source": "src/builtins/create_builtins_vector.rs",
-    "steps": 8396,
+    "steps": 8399,
     "allowAxioms": true,
     "exports": [
       "lib_U0",
@@ -386,7 +386,7 @@ export default [
   },
   {
     "id": "wnat_equiv",
-    "title": "WNat \u2243 Nat (isEquiv)",
+    "title": "WNat ≃ Nat (isEquiv)",
     "file": "wnat_equiv.thth.json",
     "source": "tools/proofs/wnat_equiv.mjs",
     "steps": 1910,

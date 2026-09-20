@@ -25,6 +25,7 @@ export const sourceModules = [
   "subgroup_constructions",
   "subgroup_carriers",
   "subgroup_images",
+  "group_cosets",
   "normal_subgroups",
   "f4_normal_subgroups",
   "subfields",

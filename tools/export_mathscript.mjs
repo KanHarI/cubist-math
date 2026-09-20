@@ -3,6 +3,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import catalogue from "../web/proofs/catalogue.mjs";
 import { constructors } from "../web/mathscript/construction.mjs";
+import { formatMathScript } from "../web/mathscript/formatter.mjs";
 for (const entry of catalogue) {
   const doc = JSON.parse(
     await readFile(
@@ -38,7 +39,7 @@ for (const entry of catalogue) {
       "../web/proofs/" + entry.id + ".construction.proof",
       import.meta.url,
     ),
-    lines.join("\n"),
+    formatMathScript(lines.join("\n")),
   );
 }
 console.log(

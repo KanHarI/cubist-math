@@ -4,7 +4,20 @@ import argparse
 import re
 from pathlib import Path
 
-p=argparse.ArgumentParser();p.add_argument('baseline',type=Path);a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('baseline',type=Path)
+p.add_argument('--correct-unit-beta', action='store_true',
+               help='Backport the binder-free Unit computation rule to the copied Rust baseline')
+a=p.parse_args()
+if a.correct_unit_beta:
+    # Unit elimination's point branch has type C(*), with no abstracted
+    # variable. Returning it must neither substitute nor shift outer binders.
+    path=a.baseline/'src/ast/beta_reduce.rs'
+    source=path.read_text()
+    start=source.index('        ExpAst::IndUnit {')
+    branch=source.index('            ExpAst::Singleton => ', start)
+    end=source.index('            _ => panic!("Expression not beta reducible"),', branch)
+    source=source[:branch]+'            ExpAst::Singleton => result_value.clone(),\n'+source[end:]
+    path.write_text(source)
 root=Path(__file__).resolve().parents[1]
 labels=re.findall(r'TT_(\w+) = (\d+)',(root/'include/tt_opcodes.h').read_text())
 arms='\n'.join(f'        {v} => {name}{{}}.into(),' for name,v in labels if name not in ('None', 'Nop', 'SuspForm', 'SuspNorth', 'SuspSouth', 'SuspMerid', 'SuspElim', 'SuspMeridComp', 'Transport', 'Apd'))

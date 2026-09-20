@@ -1,7 +1,12 @@
 # Galois symmetries as loops
 
-Development is paused at the [2026-09-20 resumption checkpoint](galois-handoff.md).
-It records the checked scope, exact restart point, and unresolved integration
+Development resumed on main from the [2026-09-20 checkpoint](galois-handoff.md).
+The latest module, `group_cosets`, establishes coset equivalence, the exact
+role of normality in multiplication, compatibility with inversion, and kernel
+cosets as homomorphism fibers. It connects these relations to quotient equality
+paths. Quotient descent and the bundled quotient group remain to be built;
+the predicate quotient's U1 carrier must be accommodated explicitly.
+It records the checked scope, exact restart point, and repaired integration
 failures; the [roadmap](galois-roadmap.md) retains the complete target.
 
 For planned work, see [requirements for full Galois theory](galois-roadmap.md),
