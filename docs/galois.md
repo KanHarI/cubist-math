@@ -1,5 +1,9 @@
 # Galois symmetries as loops
 
+Development is paused at the [2026-09-20 resumption checkpoint](galois-handoff.md).
+It records the checked scope, exact restart point, and unresolved integration
+failures; the [roadmap](galois-roadmap.md) retains the complete target.
+
 For planned work, see [requirements for full Galois theory](galois-roadmap.md),
 including Lang's distinguished classes. That document is a roadmap, not a
 claim that the general correspondence is already proved.

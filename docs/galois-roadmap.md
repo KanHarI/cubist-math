@@ -1,8 +1,11 @@
 # Requirements for a full Galois theory development
 
-Status: active development. The listed stage-1 constructions and its Galois-
-connection completion criterion are checked; stages 2–9 remain requirements.
-The quotient-group layer is still needed for the later stages. Checked results and their assumptions are described in
+Status: paused for later resumption (2026-09-20). Start with the
+[resumption checkpoint](galois-handoff.md), including validation results and
+the unresolved exporter/reference CI failures. The listed stage-1 constructions
+and its Galois-connection completion criterion are checked; stages 2–9 remain
+requirements. The quotient-group layer is still needed for the later stages.
+Checked results and their assumptions are described in
 [Galois symmetries as loops](galois.md).
 
 ## Existing foundation and remaining scope
@@ -31,8 +34,9 @@ These are actual equalities of bundles. `f4_galois_correspondence` now packages
 the two assignments as a full `Equiv(U1, ...)` between decidable subgroups and
 decidable intermediate fields; both maps reverse inclusion. Membership
 decisions are explicit data, with uniqueness proved by function extensionality.
-This does not yet prove degrees or supply the general finite correspondence. Generated subfields and ambient composita are now
-constructed from finite derivations, with their leastness and lattice laws. Most of the remaining
+This does not yet prove degrees or supply the general finite correspondence.
+Generated subfields and ambient composita are constructed from finite
+derivations, with their leastness and lattice laws. Most of the remaining
 general algebra is finite linear algebra, polynomial theory, algebraic
 extensions, and Artin's fixed-field theorem.
 
@@ -121,8 +125,9 @@ needed is a smaller initial target.
 
 Checked source modules: `subgroups`, `subfields`, `subfield_intersections`,
 `intermediate_fields`, `galois_fixed_points`, `galois_fixed_fields`,
-`galois_fixing_subgroups`, `f4_fixed_field`, `f4_intermediate_fields`, and
-`f4_galois_connection`, `decidable_subobjects` and `f4_galois_correspondence`. The reusable `order_maps` interface and its
+`galois_fixing_subgroups`, `f4_fixed_field`, `f4_intermediate_fields`,
+`f4_galois_connection`, `decidable_subobjects` and `f4_galois_correspondence`.
+The reusable `order_maps` interface and its
 `galois_orders` instance establish variance and idempotent closure as bundle
 equality. All are available in the proof selector.
 
@@ -235,7 +240,6 @@ Implementation constraints for the next group layer:
   Finite quotients with decidable membership can have a separate small
   presentation, but do not settle the size of arbitrary quotients.
 
-
 ## Precise finite target
 
 For a finite normal separable extension L/K, let G = Aut_K(L). Prove:
@@ -307,10 +311,10 @@ planned requirements on the website.
 ## Effort assessment
 
 This is a substantial library project, not a short extension of the F4
-calculation. The current automorphism/loop layer is reusable, but most of
-stages 1–7 remain before the general finite theorem. Stages 8–9 form another
-substantial project. Estimate calendar time only after stages 1–2 expose the
-cost of reusable subobject and finite-dimensional proofs in MathScript.
+calculation. The current automorphism/loop layer is reusable, but stages
+2–7 remain before the general finite theorem. Stages 8–9 form another
+substantial project. Estimate calendar time only after stage 2 exposes the cost of reusable
+finite-dimensional proofs in MathScript.
 Development is now authorized by the subsequent request to work toward this
 full roadmap. This file retains the complete target; the checked first-stage
 results do not narrow it.
