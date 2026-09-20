@@ -106,6 +106,21 @@ export class Translator {
           const checked=this.checker.check(term,type,ctx,new Set());
           return this.checker.ascribe?.(checked,type)??checked;
         }
+        if(builtin==="pair_induction"&&n.args.length===3) {
+          const [motive,branch,value]=n.args.map(a=>tr(a,null));
+          const sigma=this.checker.nf(inferred(value).type);
+          if(sigma.tag!=="Sigma")throw Error("pair_induction requires a dependent pair.");
+          const x=this.fresh(),y=this.fresh(),first=T.variable(x),second=T.variable(y);
+          const fiber=T.app(T.lam(sigma.name,sigma.domain,sigma.body),first);
+          const branchType=T.pi(x,sigma.domain,T.pi(y,fiber,
+            T.app(motive,T.pair(sigma,first,second))));
+          this.checker.check(branch,branchType,ctx,new Set());
+          // Cubical Sigma eta identifies (fst p, snd p) with p. The native
+          // checker verifies the dependent result conversion at the motive.
+          const result=T.app(T.app(branch,T.first(value)),T.second(value));
+          const type=T.app(motive,value),checked=this.checker.check(result,type,ctx,new Set());
+          return this.checker.ascribe?.(checked,type)??checked;
+        }
         if(builtin==="succ"&&n.args.length===1)return T.succ(tr(n.args[0],T.nat));
         if(builtin==="W"&&n.args.length===2) {
           const domain=tr(n.args[0],null),family=tr(n.args[1],null),name=this.fresh();

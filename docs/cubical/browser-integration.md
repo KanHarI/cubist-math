@@ -6,6 +6,7 @@ The new C checker builds independently to `web/dist/cubical.mjs` and
 ```
 make cubical-wasm
 node --test tests/cubical-wasm.test.mjs
+node --test tests/cubical-transfers.test.mjs
 ```
 
 `wasm/cubical_bridge.c` exposes session tokens and integer syntax handles. It
@@ -27,10 +28,22 @@ Current independent WASM tests cover:
 - computational transport along the Glue universe path for the identity
   equivalence of `Nat`, without a univalence axiom;
 - every declaration of `binary_arithmetic`, `binary_induction`, `radix_naturals`,
-  `radix_arithmetic`, and `radix_factorial`, through a native elaborator.
+  `radix_arithmetic`, and `radix_factorial`, through a native elaborator;
+- `factorial_ten_from_binary`, about the existing `Nat` factorial, using the
+  binary arithmetic compatibility proofs without materializing its unary value;
+- the binary/Nat, radix/Nat and direct binary/radix inverse laws, converted to
+  checked contractible-fiber equivalences and actual Glue universe paths;
+- transport of the manual factorial proofs in all four requested directions,
+  including radix bases 2 and 10, followed by the derived computation law and
+  arithmetic compatibility to identify the original target factorial;
+- seven concrete transferred factorial statements in
+  `experiments/cubical/factorial-transfer.proof`, including the existing
+  `Nat` statement `factorial(10) = nat_3628800`.
 
 The source translator now handles W formation/introduction/induction, sums and
-dependent matches, binary literals, and `intro`/`let`/`have`/`exact` blocks.
+dependent matches, binary literals, dependent pair induction (`pair_induction`),
+pair elimination (`unpack` and `obtain`),
+sum `cases`, and `intro`/`let`/`have`/`exact` blocks.
 Native checking is an explicit final gate when requested; unsupported source
 is reported as untranslated and never replaced by an assumed declaration.
 `web/cubical-elaborator.mjs` now performs inference, conversion and head queries
@@ -41,8 +54,31 @@ The three manual factorial proofs pass: the binary development uses approximatel
 43,657 nodes / 2.3 MB, and the two generic-radix instances together use approximately
 349,389 nodes / 17 MB. These are complete source checks, not imported certificates.
 
+The combined four-direction Glue transfer check uses approximately 1.35 million
+arena nodes and 67 MB. Scanning its complete arena finds no closed successor
+chain larger than **10**. JavaScript builds syntax; the C/WASM checker verifies
+the inverse proofs, equivalences, universe paths and transported equalities.
+No univalence, function extensionality, choice or LEM axiom is registered.
+Dependency traversal verifies that each result contains actual Glue/composition,
+and that a binary-to-radix transfer never uses the target's manual factorial
+theorem. Conversely, radix-to-binary/Nat transfers do not use the binary manual
+factorial theorem. Separate digit-conversion certificates identify the numerals.
+
+The transport computation law is first registered as a checked function of an
+arbitrary argument, then applied to each factorial endpoint. Keeping this shared
+proof folded avoids repeated checking of a large substituted beta body. The
+initial direct-body radix check exhausted the existing work budget; this
+factoring solves it without increasing that budget or changing a kernel rule.
+
+`experiments/cubical/number-transport.mjs` contains the checked-definition
+assembly for this migration. The production half-adjoint `Equiv` declarations
+remain explicitly untranslated: their source inverse laws build the cubical
+contractible-fiber witnesses instead. The generic production `Equiv` API still
+needs migration; these helpers do not silently substitute an unchecked witness.
+
 The website's regular proof inspector **still uses the production Id/J kernel**.
-The new backend is not its default, and the general `idtoequiv isEquiv` theorem,
-full library translation, and the cubical factorial transport acceptance test
-are not complete. The existing compact factorial transfer proofs are documented
+The new backend is not its default. The general production `idtoequiv isEquiv`
+API, strict identity elimination compatibility, higher inductive types and full
+library translation remain unfinished. The compact factorial transfer acceptance
+test now passes natively. The production transfer proofs are documented
 separately in [binary-radix.md](../binary-radix.md).

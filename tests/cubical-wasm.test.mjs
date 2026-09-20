@@ -115,6 +115,21 @@ test("the actual W binary source checks entirely in cubical WASM", async t => {
   assert.equal(bad.declarations[0].status, "not-translated");
 });
 
+test("dependent pair induction checks its motive and both branch arguments natively", t => {
+  const k = session(t), checker = new NativeCubicalElaborator(k);
+  const translator = new Translator({ normalize: false, checker });
+  const result = translator.translate(`
+    def second(A : U0, B : A -> U0, p : (exists x : A, B(x))) =
+      pair_induction((fun (q : (exists x : A, B(x))) => B(unpack q as (a, b) return A { a; })),
+        (fun (a : A) => fun (b : B(a)) => b), p);
+    def wrong(p : Nat and Nat) = pair_induction(
+      (fun (q : Nat and Nat) => Nat), (fun (a : Nat) => fun (b : Unit) => a), p);
+  `);
+  assert.equal(result.declarations[0].status, "checked-native-cubical", result.declarations[0].reason);
+  assert.equal(result.declarations[1].status, "not-translated");
+  assert.equal(k.definitions.has("wrong"), false);
+});
+
 test("cubical WASM computes transport through Glue without a univalence axiom", t => {
   const k = session(t), syntax = new CubicalSyntax(k), e = identityEquivalence(T.nat);
   const ua = T.line("ua", T.universe(0), T.glueType(T.nat, [

@@ -1,0 +1,56 @@
+// Native cubical migration checkpoint. The runner supplies the named
+// cubical_* proofs below after checking their Glue transports, derived beta
+// laws and arithmetic compatibility in C. They are checked definitions, not
+// axioms. All other names come from the original binary/radix source modules.
+
+theorem factorial_ten_binary_to_nat : factorial(10) = nat_3628800 {
+  exact cubical_factorial_ten_via_univalence;
+}
+
+theorem factorial_ten_binary_to_base_two : radix_factorial(0, 10) = base_two_factorial_value_10 {
+  exact trans(
+    cubical_binary_radix_base_2_original_factorial,
+    trans(
+      cong(binary_to_radix(0), sym(base_two_3628800_to_binary)),
+      radix_binary_roundtrip(0, base_two_factorial_value_10)
+    )
+  );
+}
+
+theorem factorial_ten_binary_to_base_ten : radix_factorial(8, 10) = base_ten_factorial_value_10 {
+  exact trans(
+    cubical_binary_radix_base_10_original_factorial,
+    trans(
+      cong(binary_to_radix(8), sym(base_ten_3628800_to_binary)),
+      radix_binary_roundtrip(8, base_ten_factorial_value_10)
+    )
+  );
+}
+
+theorem factorial_ten_base_two_to_binary : binary_factorial(10) = 0b1101110101111100000000 {
+  exact trans(cubical_radix_binary_base_2_original_factorial, base_two_3628800_to_binary);
+}
+
+theorem factorial_ten_base_ten_to_binary : binary_factorial(10) = 0b1101110101111100000000 {
+  exact trans(cubical_radix_binary_base_10_original_factorial, base_ten_3628800_to_binary);
+}
+
+theorem factorial_ten_base_two_to_nat : factorial(10) = nat_3628800 {
+  exact trans(
+    cubical_radix_nat_base_2_original_factorial,
+    trans(
+      sym(radix_binary_correct(0, base_two_factorial_value_10)),
+      cong(binary_to_nat, base_two_3628800_to_binary)
+    )
+  );
+}
+
+theorem factorial_ten_base_ten_to_nat : factorial(10) = nat_3628800 {
+  exact trans(
+    cubical_radix_nat_base_10_original_factorial,
+    trans(
+      sym(radix_binary_correct(8, base_ten_factorial_value_10)),
+      cong(binary_to_nat, base_ten_3628800_to_binary)
+    )
+  );
+}

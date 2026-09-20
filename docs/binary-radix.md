@@ -8,9 +8,14 @@ transporting the results among these representations and unary `Nat`.
 kernel, where the transfer proofs explicitly depend on its existing univalence
 axiom. The three manual factorial proofs and the binary dependent induction
 development additionally check on the new native cubical kernel, with computational
-paths and function extensionality. Cubical transfer remains unfinished and requires
-computational univalence, source translation, and all existing library features;
-there must be no old-kernel fallback labelled as a successful cubical check.
+paths and function extensionality. The existing Nat factorial compatibility
+theorem also checks natively without constructing its large unary value.
+Native Glue transport now checks in all four directions, with radix instances
+at bases 2 and 10. The derived cubical computation law and arithmetic compatibility
+identify the original target factorial and its concrete numeral. Full library and
+website migration are separate outstanding work; there is no old-kernel fallback
+labelled as a successful cubical check. See
+[native browser integration](cubical/browser-integration.md) for current checks.
 
 ## Representation and syntax
 
@@ -79,9 +84,16 @@ Measured before inspection on the complete four-direction transfer module:
 
 `tests/representation-transfer.test.mjs` checks these structural bounds, actual
 proof verification, and exact axiom dependencies. It explicitly does not claim
-to be the future native cubical acceptance test. That test must check the same
-statements with computational Glue/univalence, with no UA/FunExt axiom fallback,
-and preserve the compact allocation bound.
+to be a native cubical check. `tests/cubical-wasm.test.mjs` additionally checks
+the original Nat factorial compatibility theorem natively.
+`tests/cubical-transfers.test.mjs` checks actual Glue transport in all four
+directions: about 1.35 million nodes / 67 MB for the combined source arena, and
+the largest closed unary numeral remains **10**. These checks register no
+UA/FunExt axioms. Seven concrete endpoint theorems are written in
+`experiments/cubical/factorial-transfer.proof`; their native runner supplies the
+checked transport definitions from `experiments/cubical/number-transport.mjs`.
+Dependency checks ensure that each transfer uses its source factorial theorem,
+not the target representation's manual factorial theorem.
 
 ## Normalization and verification
 
