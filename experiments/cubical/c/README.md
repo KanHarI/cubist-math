@@ -1,11 +1,13 @@
-# Experimental C kernel: first native component
+# Experimental C kernel: dependent terms and interval paths
 
 This is a new implementation, isolated from `src/kernel/` and its certificate
-format. **Its present native component is the interval and face algebra, not a
-complete type checker.** The independently implemented JavaScript reference
-also checks Pi/Sigma, Nat induction, paths and composition. Those inference
-rules have not yet been ported to C. Glue, universe composition, HITs and the
-strict Id bridge remain incomplete in the experiment as a whole.
+format. **The native checker now implements explicit cumulative universes,
+Pi/Sigma, Nat, Unit, Void, sums, general dependent W induction, and interval
+paths.** It independently checks inert input rather than trusting JavaScript
+certificates. The JavaScript reference additionally implements composition;
+the native composition constructor currently rejects requests explicitly.
+Glue, universe composition, HITs and the strict Id bridge remain incomplete.
+This is not yet the website kernel or a full cubical/library migration.
 
 ## Reading the mathematics in the code
 
@@ -15,6 +17,15 @@ strict Id bridge remain incomplete in the experiment as a whole.
 | `src/formula.c` | Finite joins of finite meets; absorption and shared storage |
 | `src/interval.c` | De Morgan reversal and dimension substitution |
 | `src/faces.c` | Endpoint equations, face substitution and entailment |
+| `include/cubical_kernel.h` | Opaque arena, raw handles and checked-result API |
+| `src/term_store.c` | Inert syntax allocation and bounded handles |
+| `src/term_substitution.c` | Capture-avoiding term and dimension substitution |
+| `src/term_conversion.c` | Demand-driven conversion modulo bound names |
+| `src/term_normalize.c` | Weak-head computation; separate optional normal forms |
+| `src/check.c` | Checked telescopes, dispatch and result publication |
+| `src/check_functions.c` | Pi/Sigma formation, introduction and elimination |
+| `src/check_inductives.c` | Nat, Unit, Void, sums and general W rules |
+| `src/check_paths.c` | Dependent paths and reconstructed endpoint annotations |
 | `tests/lattice_cli.c` | Inert test input, separate from the trusted algebra |
 
 A clause is a conjunction of generators, represented by two bitsets. A formula
@@ -38,17 +49,17 @@ The first representation supports 64 distinct dimensions, including dimension
 63. Dimension 64 is rejected, never masked to zero. This is a documented native
 prototype restriction, not a restriction of cubical type theory. Dynamic
 bitsets or a sparse dimension representation are required before removing it.
-The future type layer should represent universe *levels* separately from terms,
-with successor and maximum, retaining `Group(U0):U1` rather than erasing it to a
-broad universe sort. Cumulative upward inclusion is not downward resizing.
+Universe levels are explicit unsigned integers, with checked successor and
+maximum. There is no term-level Universe erasure; level schemas still need a
+frontend instantiation mechanism. Cumulative upward inclusion is not downward resizing.
 
 ## Checks and measurements
 
 ```sh
 make -C experiments/cubical/c test
-node --test experiments/cubical/tests/native.test.mjs
+node --test experiments/cubical/tests/native.test.mjs experiments/cubical/tests/native-kernel.test.mjs
 make -C experiments/cubical/c BUILD=build-ubsan CFLAGS='-O1 -g -std=c11 -Wall -Wextra -Wpedantic -Werror -fsanitize=undefined -fno-omit-frame-pointer' test
-CUBICAL_NATIVE_BUILD=build-ubsan node --test experiments/cubical/tests/native.test.mjs
+CUBICAL_NATIVE_BUILD=build-ubsan node --test experiments/cubical/tests/native.test.mjs experiments/cubical/tests/native-kernel.test.mjs
 node experiments/cubical/benchmark.mjs
 ```
 
@@ -71,3 +82,40 @@ for C, versus 176 ms / 62 MB for JavaScript. Runtime startup contributes to RSS;
 this does not predict whole-proof performance. Univalence transport, circle,
 group identity, F4 correspondence and quotient benchmarks remain explicitly
 unavailable until the relevant translation and computation rules exist.
+
+## Checked API and compact computation
+
+`cc_kernel_term` only creates inert syntax. `cc_kernel_check` validates the
+ordered assumption telescope, infers the term and checks an optional expected
+type. Every path application's endpoint annotation is reconstructed internally;
+a caller cannot forge an endpoint computation by supplying that annotation.
+On failure the entire result is cleared. There is no old-kernel fallback.
+Read-only node access supports an inspector with an external table of names.
+
+Checking returns the checked expression and type without normalizing either.
+`cc_kernel_normalize` is a separate explicit inspection operation; it does not
+certify an arbitrary raw handle. The test CLI accepts a normalization option.
+Conversion exposes only needed heads: beta reduction does not evaluate unused
+arguments, and W induction constructs child induction hypotheses as functions
+without traversing every subtree in advance.
+
+The compactness regression checks a nested doubling expression denoting
+4,194,304 at Nat. It allocates 1,329 arena nodes / 65,536 reserved arena bytes,
+with 355 checking and 1,397 reduction steps, and ignores it by beta reduction
+without constructing the numeral. These bytes measure node/cache reservation,
+not whole-process RSS or formula storage. This is not yet the requested
+factorial theorem transported by computational univalence: Glue, the checked
+Nat/binary equivalence and operation compatibility must be integrated first.
+
+Native inputs and generated terms currently have a 512-node syntax-depth guard,
+64 dimension names and a ten-million-step per-request budget. They fail
+explicitly when exceeded. These prototype resource limits must be revised for
+whole-library production use. The machine-readable constructor protocol is a
+test adapter; the opaque C API is suitable for a subsequent WASM binding, which
+has not yet been wired into the website.
+
+At this milestone all 41 experimental tests pass. Eight native term tests
+cross-check typing/normal forms against the independently implemented JavaScript
+rules, include negative typing cases and actual dependent W/finite-sum motives.
+The native invariant suite and both native test files also pass UBSan (10 test
+cases, including the 1,800 seeded dimension-algebra comparisons).

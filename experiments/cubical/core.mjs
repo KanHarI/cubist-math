@@ -17,7 +17,15 @@ export const T = {
   comp: (dim,family,system,base) => ({tag:"Comp",dim,family,system,base}),
   nat: {tag:"Nat"}, zero:{tag:"Zero"}, succ: value => ({tag:"Succ",value}),
   natrec: (motive,zero,step,value) => ({tag:"NatRec",motive,zero,step,value}),
-  unit: {tag:"Unit"}, point: {tag:"Point"},
+  unit: {tag:"Unit"}, point: {tag:"Point"}, void: {tag:"Void"},
+  abort: (as,impossible) => ({tag:"Abort",as,impossible}),
+  w: (name,domain,body) => ({tag:"W",name,domain,body}),
+  sup: (as,label,children) => ({tag:"Sup",as,label,children}),
+  wrec: (motive,step,value) => ({tag:"WRec",motive,step,value}),
+  sum: (left,right) => ({tag:"Sum",left,right}),
+  inl: (as,value) => ({tag:"Inl",as,value}), inr: (as,value) => ({tag:"Inr",as,value}),
+  sumrec: (motive,left,right,value) => ({tag:"SumRec",motive,left,right,value}),
+  unitrec: (motive,point,value) => ({tag:"UnitRec",motive,point,value}),
 };
 const fail = message => { throw new Error(message); };
 const validName = n => typeof n === "string" && /^[A-Za-z_][A-Za-z_0-9]*$/.test(n);
@@ -28,9 +36,12 @@ const children = {
   App:["fn","arg"], Pair:["as","first","second"], Fst:["pair"], Snd:["pair"],
   Path:["family","left","right"], PLam:["family","body"], PApp:["path","pathType"],
   NatRec:["motive","zero","step","value"],
-  Comp:["family","base"],
+  Comp:["family","base"], Void:[], Abort:["as","impossible"],
+  W:["domain","body"], Sup:["as","label","children"], WRec:["motive","step","value"],
+  Sum:["left","right"], Inl:["as","value"], Inr:["as","value"],
+  SumRec:["motive","left","right","value"], UnitRec:["motive","point","value"],
 };
-const termBinder = t => ["Pi","Lam","Sigma"].includes(t.tag);
+const termBinder = t => ["Pi","Lam","Sigma","W"].includes(t.tag);
 const dimBinder = t => ["Path","PLam","Comp"].includes(t.tag);
 function free(t, dimension = false, result = new Set()) {
   if (!t || !children[t.tag]) fail("Unknown term constructor.");
@@ -155,6 +166,15 @@ function normal(t, fuel) {
   if (r.tag === "Snd" && r.pair.tag === "Pair") return r.pair.second;
   if (r.tag === "NatRec" && r.value.tag === "Zero") return r.zero;
   if (r.tag === "NatRec" && r.value.tag === "Succ") return normal(T.app(T.app(r.step,r.value.value),{...r,value:r.value.value}),fuel);
+  if(r.tag==="WRec" && r.value.tag==="Sup") {
+    const w=r.value.as, n=fresh("child",new Set([...free(r),w.name]));
+    const arity=substitute(w.body,w.name,r.value.label);
+    const ih=T.lam(n,arity,T.wrec(r.motive,r.step,T.app(r.value.children,T.variable(n))));
+    return normal(T.app(T.app(T.app(r.step,r.value.label),r.value.children),ih),fuel);
+  }
+  if(r.tag==="SumRec" && ["Inl","Inr"].includes(r.value.tag))
+    return normal(T.app(r.value.tag==="Inl"?r.left:r.right,r.value.value),fuel);
+  if(r.tag==="UnitRec" && r.value.tag==="Point") return r.point;
   if (r.tag === "PApp") {
     if (I.equal(r.arg,I.zero)) return normal(r.pathType.left,fuel);
     if (I.equal(r.arg,I.one)) return normal(r.pathType.right,fuel);
@@ -184,7 +204,7 @@ export class Checker {
     switch(t.tag) {
       case "U": if(!Number.isSafeInteger(t.level)||t.level<0||t.level>=Number.MAX_SAFE_INTEGER) fail("Invalid universe level."); return result(T.universe(t.level),T.universe(t.level+1));
       case "Var": named(t.name); if(!ctx.has(t.name)) fail(`Unbound term variable ${t.name}.`); return result(T.variable(t.name),ctx.get(t.name));
-      case "Nat": case "Unit": return result({tag:t.tag},T.universe(0));
+      case "Nat": case "Unit": case "Void": return result({tag:t.tag},T.universe(0));
       case "Zero": return result(T.zero,T.nat);
       case "Point": return result(T.point,T.unit);
       case "Succ": return result(T.succ(check(t.value,T.nat)),T.nat);
@@ -196,7 +216,47 @@ export class Checker {
         const step=check(t.step,T.pi(n,T.nat,T.pi(h,T.app(motive.term,T.variable(n)),T.app(motive.term,T.succ(T.variable(n))))));
         return result(T.natrec(motive.term,zero,step,value),T.app(motive.term,value));
       }
-      case "Pi": case "Sigma": case "Lam": {
+      case "Abort": {
+        const as=type(t.as).term;
+        return result(T.abort(as,check(t.impossible,T.void)),as);
+      }
+      case "Sum": {
+        const left=type(t.left),right=type(t.right);
+        return result(T.sum(left.term,right.term),T.universe(Math.max(left.level,right.level)));
+      }
+      case "Inl": case "Inr": {
+        const as=type(t.as).term,sum=this.nf(as);
+        if(sum.tag!=="Sum") fail("Expected a sum type.");
+        return result({...t,as,value:check(t.value,t.tag==="Inl"?sum.left:sum.right)},as);
+      }
+      case "SumRec": case "UnitRec": case "WRec": {
+        const value=infer(t.value),base=this.nf(value.type),motive=infer(t.motive),mt=this.nf(motive.type);
+        const wanted={SumRec:"Sum",UnitRec:"Unit",WRec:"W"}[t.tag];
+        if(base.tag!==wanted)fail("Wrong inductive scrutinee.");
+        if(mt.tag!=="Pi"||!this.equal(mt.domain,base)||this.nf(mt.body).tag!=="U")fail("Wrong induction motive.");
+        const avoid=new Set([...ctx.keys(),...free(t)]),freshName=n=>{n=fresh(n,avoid);avoid.add(n);return n;};
+        if(t.tag==="UnitRec")return result(T.unitrec(motive.term,check(t.point,T.app(motive.term,T.point)),value.term),T.app(motive.term,value.term));
+        if(t.tag==="SumRec") {
+          const l=freshName("left"),r=freshName("right");
+          const left=check(t.left,T.pi(l,base.left,T.app(motive.term,T.inl(base,T.variable(l)))));
+          const right=check(t.right,T.pi(r,base.right,T.app(motive.term,T.inr(base,T.variable(r)))));
+          return result(T.sumrec(motive.term,left,right,value.term),T.app(motive.term,value.term));
+        }
+        const a=freshName("label"),c=freshName("children"),b=freshName("index"),h=freshName("ih");
+        const label=T.variable(a),children=T.variable(c),index=T.variable(b),arity=substitute(base.body,base.name,label);
+        const childType=T.pi(b,arity,base),ihType=T.pi(b,arity,T.app(motive.term,T.app(children,index)));
+        const st=T.pi(a,base.domain,T.pi(c,childType,T.pi(h,ihType,T.app(motive.term,T.sup(base,label,children)))));
+        return result(T.wrec(motive.term,check(t.step,st),value.term),T.app(motive.term,value.term));
+      }
+      case "Sup": {
+        const as=type(t.as).term,w=this.nf(as);
+        if(w.tag!=="W")fail("Expected a W-type.");
+        const label=check(t.label,w.domain),arity=substitute(w.body,w.name,label);
+        const n=fresh("index",new Set([...ctx.keys(),...free(as)]));
+        const children=check(t.children,T.pi(n,arity,as));
+        return result(T.sup(as,label,children),as);
+      }
+      case "Pi": case "Sigma": case "Lam": case "W": {
         named(t.name);
         if(ctx.has(t.name)) {
           const name=fresh(t.name,new Set([...ctx.keys(),...free(t)]));
