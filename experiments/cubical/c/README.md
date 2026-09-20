@@ -8,8 +8,8 @@ trusting JavaScript certificates. Composition checks every tube/base equation
 and overlap, with native Nat/Unit/Pi/Sigma/Path computation matching the JS
 reference.
 Native Glue and universe composition now match the independently checked
-reference rules. The full theorem that `idtoequiv` is an equivalence, HITs,
-W/sum composition and the strict Id bridge remain incomplete.
+reference rules. The full theorem that `idtoequiv` is an equivalence, the
+strict Id bridge and higher inductive types remain incomplete.
 This is not yet the website kernel or a full cubical/library migration.
 
 ## Reading the mathematics in the code
@@ -132,8 +132,8 @@ cases, including the 2,100 seeded dimension-algebra comparisons).
 Thirteen native composition tests also compare inferred types and normal forms
 with the JavaScript reference, and recheck the computed terms independently.
 They include neutral path boundaries and transport through a varying function
-domain, not just closed numerals. W and sum-specific composition
-computation remain gaps; a neutral composition is retained where no implemented
+domain, not just closed numerals. Constructor composition for W and sum types
+is also implemented. A neutral composition is retained where no implemented
 rule applies. Cubical canonicity for the full language is therefore not claimed.
 
 The latest supporting native rules include universal face quantification and
@@ -189,3 +189,15 @@ frontend's independently supplied failing arithmetic fixtures, the default
 and the radix fixture in 152,535. Their respective cumulative node counts are
 14,681 and 83,238. These are source frontend checkpoints, not yet the final
 computational-univalence factorial transfer acceptance test.
+
+### Constructor composition for Sum and W
+
+Both checkers now compute composition through matching sum/tree constructors.
+For a W type, they first fill the label, then compose its children as a dependent
+function over the varying arity. The native implementation lives in
+`src/inductive_composition.c`; the reference implements the same mathematical
+rule independently. Tests check empty/nonempty walls, varying label types and
+varying arities, and independently recheck the resulting normal terms in both
+implementations. A tube whose constructor cannot be exposed stays neutral.
+This does not introduce a strict constant-family transport rule or an equality
+between arbitrary trees.

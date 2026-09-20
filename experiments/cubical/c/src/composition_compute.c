@@ -141,6 +141,11 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
             return ck_make(k, CC_SUCC, 0, recursive, 0, 0, 0);
         }
     }
+    if (type.kind == CC_SUM || type.kind == CC_W) {
+        cc_term normalized = family == n.child[0] && system == n.child[1] ? term :
+            ck_make(k, CC_COMP, dim, family, system, base, 0);
+        return ck_inductive_composition(k, normalized, family, system);
+    }
     if (type.kind == CC_GLUE)
         return ck_whnf(k, ck_glue_composition(k, dim, family, system, base));
     if (type.kind == CC_U)
@@ -208,7 +213,6 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
         cc_term end_family = ck_endpoint_term(k, body_family, dim, 1);
         return ck_make(k, CC_PLAM, direction, end_family, body, 0, 0);
     }
-    /* A neutral family has a neutral composition. Universe/Glue and W-specific
-     * computation are not invented here; those rule families remain pending. */
+    /* A neutral family has a neutral composition. */
     return family == n.child[0] && system == n.child[1] ? term : ck_make(k, CC_COMP, dim, family, system, base, 0);
 }

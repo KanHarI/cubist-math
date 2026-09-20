@@ -119,11 +119,14 @@ bytes, without constructing the unary numeral. This does not yet establish
 the factorial-through-univalence acceptance test.
 
 Native composition covers Nat, Unit, Pi, Sigma, Path, Glue and universes,
-including dependent filling and varying function domains. W/sum composition,
-HITs and the strict Id bridge remain explicit gaps. There is no
-website integration or old-kernel fallback. The earlier 117 translated source
-declarations have not yet been run through the native checker as a corpus;
-new term-level cross-checks do not by themselves establish source migration.
+including dependent filling and varying function domains. Constructor composition
+for W/sums is now implemented. HITs and the strict Id bridge remain explicit gaps.
+The main branch is integrating the WASM API and a native-only source frontend;
+its manual binary and radix factorial source proofs now pass the new checker.
+Those integration changes are coordinated separately from this kernel branch.
+The earlier census of 117 translated declarations is a historical source
+inventory, not a claim that the full library has migrated. Neither checker
+falls back to the old kernel.
 
 ## Verification commands
 
