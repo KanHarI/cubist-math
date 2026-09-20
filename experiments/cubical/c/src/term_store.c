@@ -172,3 +172,8 @@ uint32_t ck_fresh_symbol(cc_kernel *k) {
     }
     return k->next_symbol++;
 }
+
+void cc_kernel_clear_error(cc_kernel *k) {
+    if (k)
+        k->error[0] = '\0';
+}

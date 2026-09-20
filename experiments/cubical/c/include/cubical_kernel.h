@@ -33,6 +33,8 @@ typedef struct {
 cc_kernel *cc_kernel_new(void);
 void cc_kernel_free(cc_kernel *);
 const char *cc_kernel_error(const cc_kernel *);
+/* Clear a rejected request before constructing corrected raw syntax. */
+void cc_kernel_clear_error(cc_kernel *);
 
 /* Child order:
  * U(level), Var(symbol); Pi/Lam/Sigma/W(symbol; domain, body).
