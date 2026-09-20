@@ -113,8 +113,16 @@ premise from `U -> P` to `A -> P`, and independently replayed against Rust.
 `tests/reference_verification.json` preserves the historical verification and
 records the new trace hash and corrected-kernel verification.
 
-With the backported Rust fixes (`2bae35d`), replay checks all 3,652 records with
-zero skips. An additional replay checks all 1,910 instructions in the complete
+The current single-axiom univalence fixture contains **9,606 records**, all
+independently replayed with zero skips. It uses the backported Rust fixes
+(`2bae35d`) plus the explicit Unit beta correction described above. To reproduce
+the latter on the copied baseline, run `bench/prepare_oracle.py` with
+`--correct-unit-beta`; this never modifies the upstream checkout. The earlier
+3,652-record verification remains recorded in the metadata's historical entry.
+Univalence's generated proof expresses transport by equality induction so that
+the independent oracle needs no C-only `Transport` instruction.
+
+The historical additional replay checked all 1,910 instructions in the complete
 WNat-to-Nat equivalence, also with zero skips. To enable these previously skipped
 checks, pass `--corrected-kernel` to the oracle built from the corrected Rust
 checkout. Separate Rust and C regressions check dependent Nat motives and binder

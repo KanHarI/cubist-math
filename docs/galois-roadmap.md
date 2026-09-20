@@ -1,8 +1,8 @@
 # Requirements for a full Galois theory development
 
-Status: paused for later resumption (2026-09-20). Start with the
+Status: resumed on main (2026-09-20). Start with the
 [resumption checkpoint](galois-handoff.md), including validation results and
-the unresolved exporter/reference CI failures. The listed stage-1 constructions
+the repaired exporter/reference CI failures. The listed stage-1 constructions
 and its Galois-connection completion criterion are checked; stages 2–9 remain
 requirements. The quotient-group layer is still needed for the later stages.
 Checked results and their assumptions are described in
@@ -216,7 +216,35 @@ and trivial homomorphisms have their expected images as equal subgroup bundles.
 The image construction and surjectivity use only the existing truncation
 axioms; bundle equalities additionally use function extensionality and univalence.
 
-Next: quotient groups and a non-normal subgroup example for the later
+`group_cosets` now proves that `S(x⁻¹y)` is an equivalence relation, that left
+translation always preserves it, and that right translation preserves it
+exactly when S is normal. Multiplication and inversion respect normal cosets.
+Kernel cosets are exactly homomorphism fibers. These relation-level results
+require no axioms. The module also identifies related representatives with
+equality paths in the existing U1 predicate quotient and proves representative
+independence of products, using the existing quotient dependencies.
+It does not yet descend multiplication to arbitrary quotient elements or
+construct a bundled quotient group.
+
+`quotient_descent` constructs the unique map from the predicate quotient to a
+U1 set from a map respecting the relation. Its value is characterized by all
+representatives; uniqueness makes the entire value/evidence pair a proposition,
+so truncation elimination requires no chosen representative. It proves the
+propositional computation rule and uniqueness of the descended map. These
+constructions use truncation and function extensionality, without univalence,
+LEM or choice.
+
+`group_quotient_maps` applies this to a homomorphism that kills a subgroup,
+with the triangle, uniqueness, unit and representative-product formulas, and
+the converse that a factorization kills the subgroup. `kernel_quotient_image`
+proves the carrier equivalence `G/ker(h) ≃ im(h)`: the inverse sends an image
+element to its whole fiber predicate. Both inverse homotopies are checked.
+Univalence gives equality of these carriers in U1, and transporting setness
+shows the kernel quotient is a set. No preimage choice or universe lowering
+is used. This is the carrier part of the first isomorphism theorem, not yet
+a `GroupIso` between bundled quotient and image groups.
+
+Next: a universe-polymorphic group interface, quotient groups and a non-normal subgroup example for the later
 normality and quotient statements.
 Then proceed to explicit finite linear algebra and degree, preserving the
 separate algebraic and infinite-theory milestones below.
@@ -226,10 +254,11 @@ Implementation constraints for the next group layer:
 - The checked image construction uses propositional truncation, unlike the
   actual unique preimages used for field-embedding images. Continue to use
   its merely surjective factor without selecting representatives.
-- For a normal subgroup N, use the coset relation `N(x⁻¹ y)`. Prove its
-  equivalence laws and compatibility with multiplication before descending
-  the operations. State the quotient universal property for homomorphisms
-  annihilating N; derive the first isomorphism theorem from it.
+- For a normal subgroup N, reuse the checked `SameLeftCoset(G, N)` relation
+  and `normal_coset_multiply` / `normal_coset_inverse` to descend
+  the operations. Reuse the checked unique descent in `group_quotient_maps`
+  for the group universal property, and bundle the carrier equivalence from
+  `kernel_quotient_image` as the first group isomorphism theorem.
 - Resolve universe size explicitly before constructing a general quotient
   as a bundled group. The existing `SetQuotient` represents classes by
   predicates and lives in U1 even for a U0 carrier; the current `Group`

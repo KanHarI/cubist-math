@@ -219,9 +219,9 @@ const rawAp = norm("lib_ap"),
 const etaOpaque = op("DefEqExtL", [op("Def", [eta])]);
 const epsilonOpaque = op("DefEqExtL", [op("Def", [epsilon])]);
 b.opaque = true;
-// Resolve the polymorphic ap definition once; all subsequent conversion is beta.
-b.normal.set(`beta:${b.k.bindings.get("lib_ap").id}`, rawAp);
-const P = paths(b, U0omega);
+// Pass the unfolded checked ap explicitly; subsequent conversion is beta-only.
+// Do not seed Builder's private normalization cache (which tracks provenance).
+const P = paths(b, U0omega, rawAp);
 const k = b.lam(W, (x) => app(g, app(f, x))),
   l = b.lam(Nat, (y) => app(f, app(g, y)));
 const epsilonAdjusted = b.named(

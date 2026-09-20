@@ -242,7 +242,7 @@ test("CLI uses both path and parenthesis selection with the same checked engine"
   assert.match(result.stdout, /ACCEPTED/);
   assert.match(result.stdout, /cli_result \[judgement\]/);
 });
-test("WASM replays all 3652 native reference records, with identical successful fingerprints", async () => {
+test("WASM replays all 9606 native reference records, with identical successful fingerprints", async () => {
   const k = new Kernel(module, true);
   let successes = 0,
     checked = 0;

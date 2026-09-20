@@ -71,9 +71,9 @@ function data(U, A, B) {
 const ua = b.named(b.lam(Universe, U => b.lam(U, A => b.lam(U, B => data(U, A, B).g))), "derived_ua");
 // Transport and the underlying function of idtoequiv agree, by path induction.
 function transport(U, A, B, p, x) {
-  const identity = b.lam(U, T => T);
-  const value = b.coerce(x, op("PiElim", [identity, A]));
-  return norm(op("Transport", [identity, A, B, p, value]));
+  // Derive universe transport by J so the native library trace also replays
+  // in the independent Rust kernel, which has no Transport convenience rule.
+  return app(J(U, (A, B) => b.arrow(A, B), A => b.lam(A, x => x), A, B, p), x);
 }
 const beta = b.named(b.lam(Universe, U => b.lam(U, A => b.lam(U, B => {
   const d = data(U, A, B);

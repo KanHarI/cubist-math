@@ -1,6 +1,6 @@
 // Path algebra derived only with equality induction. Concatenation eliminates
 // its second path, so p · refl computes to p; left units are proved explicitly.
-export function paths(b, U0omega) {
+export function paths(b, U0omega, apDefinition = "lib_ap") {
   const op = (...xs) => b.emit(...xs),
     app = (...xs) => b.app(...xs),
     norm = (x) => b.norm(x);
@@ -28,7 +28,7 @@ export function paths(b, U0omega) {
     );
     return norm(op("EqElim", [C, d, a, c, p], [x.c, y.c, q.c, z.c]));
   }
-  const ap = (A, C, f, x, y, p) => app("lib_ap", U0omega, A, C, f, x, y, p);
+  const ap = (A, C, f, x, y, p) => app(apDefinition, U0omega, A, C, f, x, y, p);
   function cached(tag, A, build) {
     const key = tag + ":" + b.view(A, 0);
     if (!cache.has(key)) cache.set(key, build());

@@ -1,9 +1,17 @@
 # Galois development: resumption checkpoint
 
-Recorded 2026-09-20. Mathematical development is paused for later resumption.
-The implementation checkpoint is commit
+Updated 2026-09-20 after resuming mathematical development on main.
+The earlier paused checkpoint is commit
 [`5f34197`](https://github.com/KanHarI/thth-c/commit/5f34197).
 There is no unfinished mathematical source file or partial proof to recover.
+
+The current increment adds `quotient_descent`, `group_quotient_maps` and
+`kernel_quotient_image` on top of the coset checkpoint `1e137e6`. Maps constant
+on classes descend uniquely into sets, without representative choice. For
+homomorphisms this yields the carrier equivalence `G/ker(h) ≃ im(h)`, equality
+of those carriers in U1 by univalence, and setness of the kernel quotient.
+The next step is the universe-polymorphic group interface and quotient group
+operations, followed by bundling this equivalence as a group isomorphism.
 
 Read this file first when resuming, then the [full roadmap](galois-roadmap.md)
 and the [mathematical development guide](galois.md). The roadmap remains the
@@ -41,6 +49,10 @@ the website proof selector.
 | Subgroups | `subgroups`, `subgroup_constructions`, `normal_subgroups`: inclusion orders, inverse images, small intersections, normal kernels, conjugation and transport |
 | Subgroups as groups | `subgroup_carriers`: `subgroup_as_group`, injective `subgroup_inclusion`, `subgroup_factor`, its triangle and uniqueness |
 | Images of homomorphisms | `subgroup_images`: image closure, `subgroup_image_preimage_adjunction`, covariance, `group_image_factor_triangle`, `group_image_factor_surjective`; identity/trivial image equalities |
+| Cosets and quotient paths | `group_cosets`: `same_coset_equivalence`, `normal_coset_multiply`, `normal_coset_inverse`, `right_coset_compatibility_implies_normal`, `kernel_coset_equal_images`, `kernel_coset_of_equal_images`, `normal_coset_product_path` |
+| Quotient descent | `quotient_descent`: `quotient_induction_prop`, `quotient_rec`, `quotient_rec_beta`, `quotient_maps_ext`, `quotient_rec_unique`; no univalence needed |
+| Descent of homomorphisms | `group_quotient_maps`: `group_quotient_map`, its beta/unique/unit/multiply laws, `quotient_factor_kills_subgroup` |
+| Kernel quotient and image | `kernel_quotient_image`: `kernel_quotient_image_equiv`, both inverse laws, `kernel_quotient_image_equality`, `kernel_quotient_is_set`; a carrier equivalence, not yet a bundled quotient `GroupIso` |
 | Subfields and embeddings | `subfields`, `subfield_carriers`, `field_embeddings`, `intermediate_fields`, `intermediate_towers`: realized fields, injective inclusions and commuting towers |
 | Field images and factorization | `subfield_preimages`, `subfield_images`, `subfield_image_orders`, `field_embedding_factorization`, `field_embedding_image`, `f4_embedding_images`: adjunction, unique factorization and isomorphism onto the image |
 | Generated subfields | `subfield_generation_steps`, `generated_subfields`, `subfield_composita`, `subfield_transport`, `compositum_embeddings`, `f4_generated_subfields`: finite derivations, leastness, compositum laws and change of ambient field |
@@ -52,7 +64,7 @@ the website proof selector.
 | Decidable correspondence | `finite_decisions`, `decidable_subobjects`, `f4_galois_correspondence`: membership algorithms, uniqueness of decision data, inverse maps and order reversal |
 | General coherent inverses | `equivalence_from_inverse`: `equiv_from_inverse` converts two inverse homotopies into the existing full half-adjoint `Equiv`, for arbitrary types/universes, by path induction alone |
 
-The latest principal result is:
+The concrete F4 correspondence is:
 
 ```text
 f4_galois_correspondence : Equiv(
@@ -87,6 +99,8 @@ not itself decide arbitrary proposition-valued membership.
 | Group image construction, adjunction and surjectivity | Existing propositional-truncation axioms |
 | Group image factorization triangle | Truncation and function extensionality |
 | Image subgroup equalities | Truncation, function extensionality and univalence |
+| Quotient recursor and its computation/uniqueness, homomorphism descent | Truncation and function extensionality; exact subsets audited in `tests/quotient-descent.test.mjs` |
+| Kernel quotient/image equivalence and equality; quotient setness | Truncation, function extensionality and univalence; no LEM or choice |
 
 The new correspondence and image modules use neither LEM nor choice. Their
 tests assert exact kernel axiom dependencies, not just successful checking.
@@ -102,7 +116,24 @@ one axiom asserts it is an equivalence; `ua` and its beta/eta laws are derived.
 Use the same universe-polymorphic `IsEquiv` throughout. Do not revive a
 separate `HigherIsEquiv`. See [univalence.md](univalence.md).
 
-## Validation and unresolved integration failures
+## Validation and repaired integration failures
+
+Latest quotient increment: **37 declarations** across the three new modules
+check, and all seven targeted regressions pass. Final full `npm test`:
+**236 passed, zero failures** (460.7 seconds). Four new browser inspections
+pass with certified folding and definition links; all four static-site smoke
+checks pass. All **244 sources** pass formatting. No production kernel or
+axiom declaration changed in this increment.
+
+Previous increment: all 22 coset declarations check; six focused regressions
+pass, including exact dependencies, certified folding, rejection of missing
+normality evidence, representative extraction and silent U1-to-U0 lowering.
+The combined workbench/coset regression run passes all 20 tests.
+Final full `npm test`: **229 passed, zero failures** (459.6 seconds).
+Three new coset browser inspections pass with verified folding and links;
+all four static-site smoke checks pass. All **241 sources** pass formatting.
+The native reference comparison passes all 9,606 records, and repeating
+the complete proof export produces identical artifacts.
 
 Local validation before this pause:
 
@@ -130,23 +161,31 @@ C-engine CI** for `5f34197`:
    `Builder.coerce` with `Conversion types differ`.
 
 [Failing CI run](https://github.com/KanHarI/thth-c/actions/runs/35511108966).
-These were reported after the successful local checks and are **unresolved at
-this checkpoint**. Inspect the run logs and reproduce the individual failure
-before changing anything. Reconcile the intended univalence migration with
-the independent reference check; do not blindly replace the frozen reference
-or weaken equality/export checks. The website publication workflow is a
-different job; successful publication does not resolve these failures.
+Both failures were reproduced and repaired during resumption:
+
+- WNat's helper was seeding an obsolete private normalization-cache key.
+  It now passes the checked, unfolded `ap` definition explicitly. Its complete
+  1,910-instruction export replays with only function extensionality.
+- The current native reference contains 9,606 records, independently verified
+  by Rust with zero skips before updating the fixture. Universe transport in
+  the generated univalence proof is derived by J, and the copied Rust baseline
+  receives the documented Unit beta correction with `--correct-unit-beta`.
+  Historical verification remains in `tests/reference_verification.json`.
+- `make proof-export` now succeeds. Generated construction sources use the
+  formatter during export so regenerated sources retain canonical formatting.
+
+The website publication workflow is a separate job; its successful publication
+was not used as evidence for these repairs. No production kernel rule changed.
 
 ## Recommended restart sequence
 
-1. Read this checkpoint and check for later commits or CI fixes. Reconcile the
-   exporter/reference failures above before treating the integration baseline
-   as green.
-2. Develop the coset relation `N(x⁻¹ y)` and its equivalence laws. For normal N,
-   prove compatibility with multiplication before descending operations.
-3. Resolve the quotient universe plan, then construct quotient groups with
-   their elimination/universal property for homomorphisms annihilating N.
-   Reuse the image factorization for the first isomorphism theorem.
+1. Read this checkpoint and check for later commits or CI fixes.
+2. Reuse the checked coset relation `N(x⁻¹ y)`, equivalence laws, and normal
+   multiplication/inverse compatibility in `group_cosets`.
+3. Resolve the quotient universe plan, then construct quotient group operations.
+   Reuse `quotient_rec` and `group_quotient_map_unique` for their universal
+   property. Bundle the checked `kernel_quotient_image_equiv` as a group
+   isomorphism after proving compatibility with the quotient operations.
 4. Add a non-normal subgroup example and a quotient example that catches a
    missing normality hypothesis. The abelian F4 example cannot test that issue.
 5. Begin explicit finite linear algebra: vector spaces, supplied finite bases,
@@ -155,16 +194,32 @@ different job; successful publication does not resolve these failures.
 
 The immediate design constraint is that our predicate-based `SetQuotient`
 lives in U1 even for U0 input, while `Group` currently bundles U0 carriers.
-No solution has been implemented. Evaluate a universe-polymorphic group
+Kernel quotients now have a proved small presentation by their images, and
+are sets by transport along the univalence equality. This does not solve the
+universe problem for arbitrary normal-subgroup quotients, nor does it change
+the universe of the predicate quotient itself. Evaluate a universe-polymorphic group
 interface, a justified small quotient construction, or a small presentation
 under stated hypotheses. Do not silently resize or introduce an incompatible
 second notion of group. Finite decidable quotient presentations do not solve
 the general universe problem.
 
-Cubical foundations were discussed, but **no migration was authorized or
-implemented**. Current code remains the Id/J kernel with axiomatic univalence
-and native suspension. A cubical experiment is a separate possible project,
-not a prerequisite for resuming Galois. Complex analysis also remains paused.
+A resumption probe also exposed a language constraint: an ordinary definition
+`Group(U : Universe) = exists A : U, ...` is assigned the broad `Universe`
+sort. Applying it to U0 does not by itself recover a judgement in U1, and
+`typed(U1, Group(U0))` cannot justify lowering that sort. Plan universe-level
+specialization/rechecking for this interface, rather than asserting a narrower
+sort or duplicating the library as `HigherGroup`. The existing axiom
+specializations already rebuild checked binders for concrete universes; this
+is distinct from merely substituting a universe into a broadly typed term.
+
+An isolated cubical experiment is authorized on branch `experiment/cubical-hott`
+in `/private/tmp/thth-cubical-hott`. Main remains the Id/J kernel with axiomatic
+univalence and native suspension. The experiment is not a prerequisite for
+Galois and must not be silently merged into it. Complex analysis remains paused.
+The user has also authorized a new C cubical kernel after a stable reference
+milestone, emphasizing readability alongside performance. The experiment agent
+owns that work, including rule organization, documentation, cross-checks and
+benchmarks. It is not part of this main-branch algebra checkpoint.
 
 ## Commands and implementation details worth retaining
 
@@ -172,6 +227,9 @@ Run selected modules and their imports during development:
 
 ```sh
 npm test -- subgroup_images normal_subgroups
+npm test -- group_cosets tests/group-cosets.test.mjs
+npm test -- quotient_descent group_quotient_maps kernel_quotient_image
+npm test -- tests/quotient-descent.test.mjs
 npm test -- f4_galois_correspondence
 npm test -- tests/subgroup-images.test.mjs tests/normal-subgroups.test.mjs
 npm test -- tests/galois-correspondence.test.mjs tests/galois-fixed.test.mjs

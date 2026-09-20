@@ -1,8 +1,24 @@
 # Galois symmetries as loops
 
-Development is paused at the [2026-09-20 resumption checkpoint](galois-handoff.md).
-It records the checked scope, exact restart point, and unresolved integration
-failures; the [roadmap](galois-roadmap.md) retains the complete target.
+Development resumed on main from the [2026-09-20 checkpoint](galois-handoff.md).
+The latest modules establish constructive quotient descent and identify the
+kernel quotient with the image of a homomorphism:
+
+```text
+kernel_quotient_image_equiv(G, H, h) :
+  Equiv(U1, KernelQuotient(G, H, h), GroupImageCarrier(G, H, h))
+
+kernel_quotient_image_equality(G, H, h) :
+  KernelQuotient(G, H, h) =[U1] GroupImageCarrier(G, H, h)
+```
+
+The inverse uses the entire fiber predicate, without selecting preimages.
+Univalence identifies the carriers, and setness transports from the image to
+the quotient. This establishes the carrier part of the first isomorphism
+theorem. A bundled quotient `GroupIso` still requires a universe-polymorphic
+group interface and quotient operations. The [checkpoint](galois-handoff.md)
+records validation and the exact next step; the [roadmap](galois-roadmap.md)
+retains the complete target.
 
 For planned work, see [requirements for full Galois theory](galois-roadmap.md),
 including Lang's distinguished classes. That document is a roadmap, not a
