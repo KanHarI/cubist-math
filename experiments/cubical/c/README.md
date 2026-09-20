@@ -3,9 +3,10 @@
 This is a new implementation, isolated from `src/kernel/` and its certificate
 format. **The native checker now implements explicit cumulative universes,
 Pi/Sigma, Nat, Unit, Void, sums, general dependent W induction, and interval
-paths.** It independently checks inert input rather than trusting JavaScript
-certificates. The JavaScript reference additionally implements composition;
-the native composition constructor currently rejects requests explicitly.
+paths, and composition.** It independently checks inert input rather than
+trusting JavaScript certificates. Composition checks every tube/base equation
+and overlap, with native Nat/Unit/Pi/Sigma/Path computation matching the JS
+reference.
 Glue, universe composition, HITs and the strict Id bridge remain incomplete.
 This is not yet the website kernel or a full cubical/library migration.
 
@@ -26,6 +27,8 @@ This is not yet the website kernel or a full cubical/library migration.
 | `src/check_functions.c` | Pi/Sigma formation, introduction and elimination |
 | `src/check_inductives.c` | Nat, Unit, Void, sums and general W rules |
 | `src/check_paths.c` | Dependent paths and reconstructed endpoint annotations |
+| `src/check_composition.c` | Restricted contexts, partial boundaries and all overlaps |
+| `src/composition_compute.c` | Derived filling and constructor-specific composition |
 | `tests/lattice_cli.c` | Inert test input, separate from the trusted algebra |
 
 A clause is a conjunction of generators, represented by two bitsets. A formula
@@ -114,8 +117,15 @@ whole-library production use. The machine-readable constructor protocol is a
 test adapter; the opaque C API is suitable for a subsequent WASM binding, which
 has not yet been wired into the website.
 
-At this milestone all 41 experimental tests pass. Eight native term tests
+At this milestone all 55 experimental tests pass. Nine native term tests
 cross-check typing/normal forms against the independently implemented JavaScript
 rules, include negative typing cases and actual dependent W/finite-sum motives.
-The native invariant suite and both native test files also pass UBSan (10 test
+The native invariant suite and three native test files also pass UBSan (24 test
 cases, including the 1,800 seeded dimension-algebra comparisons).
+
+Thirteen native composition tests also compare inferred types and normal forms
+with the JavaScript reference, and recheck the computed terms independently.
+They include neutral path boundaries and transport through a varying function
+domain, not just closed numerals. Universe, Glue, W and sum-specific composition
+computation remain gaps; a neutral composition is retained where no implemented
+rule applies. Cubical canonicity for the full language is therefore not claimed.

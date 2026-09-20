@@ -42,9 +42,9 @@ test("native Nat induction computes and rejects a wrong recursive step",()=>{
   const wrong=T.lam("n",T.nat,T.lam("ih",T.unit,T.zero));
   assert.equal(checkNative(T.natrec(motive,T.zero,wrong,T.zero)).ok,false);
 });
-test("native checker rejects forged endpoint claims and unsupported composition",()=>{
+test("native checker rejects forged endpoint claims and unbound variables",()=>{
   assert.equal(checkNative(T.line("j",T.nat,T.zero),path(T.nat,T.zero,T.succ(T.zero))).ok,false);
-  assert.equal(checkNative(T.comp("i",T.nat,[],T.zero)).ok,false);
+  agree(T.comp("i",T.nat,[],T.zero),T.nat);
   assert.equal(checkNative(v("missing")).ok,false);
 });
 
@@ -84,4 +84,18 @@ test("checking keeps exponentially large Nat computations compact",()=>{
   const ignored=checkNative(app(T.lam("unused",T.nat,T.zero),large),T.nat);
   assert(ignored.ok,ignored.error);
   assert.deepEqual(ignored.normal,T.zero);
+});
+
+test("native W recursive hypotheses compute through dependent sum-selected arities",()=>{
+  const labels=T.sum(T.unit,T.unit),left=T.inl(labels,T.point),right=T.inr(labels,T.point);
+  const arity=label=>T.sumrec(T.lam("label",labels,T.universe(0)),T.lam("u",T.unit,T.void),T.lam("u",T.unit,T.unit),label);
+  const W=T.w("label",labels,arity(v("label")));
+  const leaf=T.sup(W,left,T.lam("none",T.void,T.abort(W,v("none"))));
+  const node=child=>T.sup(W,right,T.lam("u",T.unit,child));
+  const stepFamily=T.lam("label",labels,T.pi("children",T.pi("index",arity(v("label")),W),T.pi("ih",T.pi("index",arity(v("label")),T.nat),T.nat)));
+  const leafStep=T.lam("u",T.unit,T.lam("children",T.pi("none",T.void,W),T.lam("ih",T.pi("none",T.void,T.nat),T.zero)));
+  const nodeStep=T.lam("u",T.unit,T.lam("children",T.pi("index",T.unit,W),T.lam("ih",T.pi("index",T.unit,T.nat),T.succ(app(v("ih"),T.point)))));
+  const step=T.lam("label",labels,T.sumrec(stepFamily,leafStep,nodeStep,v("label")));
+  const result=agree(T.wrec(T.lam("tree",W,T.nat),step,node(node(leaf))),T.nat);
+  assert.deepEqual(result.normal,T.succ(T.succ(T.zero)));
 });

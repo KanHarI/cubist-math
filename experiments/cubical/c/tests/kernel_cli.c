@@ -3,7 +3,7 @@
  * F sort length (positive-mask negative-mask)*
  * N kind payload child0 child1 child2 child3
  * A symbol type-handle
- * Q term-handle expected-type-handle
+ * Q term-handle expected-type-handle normalize-flag
  * Formula handles and syntax handles are separate 1-based sequences. */
 #include "cubical_kernel.h"
 #include <stdio.h>

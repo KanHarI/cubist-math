@@ -91,15 +91,27 @@ preserve the input universe once their computation and elimination are checked.
 
 ## Native C work
 
-The first independently implemented C component is now available under
-[`experiments/cubical/c`](../../experiments/cubical/c/README.md): interval and
-face normalization, reversal, endpoint equations, substitution and entailment.
-It is organized by mathematical responsibility with shared formula storage.
-Its native checks and 1,800 C/JavaScript cross-checks pass; the README records
-the sanitizer results and limitations. Native type checking, paths and
-composition are the next ports; do not confuse this working component with a
-complete native cubical kernel. The reference fragment's 117 translated
-declarations are not yet checked by C.
+The independent native checker under
+[`experiments/cubical/c`](../../experiments/cubical/c/README.md) now implements
+interval/face algebra, explicit universe levels, Pi/Sigma, Nat/Unit/Void/sums,
+general dependent W induction, interval paths and checked composition. Its
+files separate inference, substitution, conversion and computation by rule
+family. Checking preserves compact syntax; optional normalization is a distinct
+inspection operation. Path endpoint annotations are reconstructed internally.
+
+All 55 experiment tests pass, including 24 native cases and 1,800 seeded
+C/JavaScript algebra comparisons. Native tests also pass UBSan; ASan remains
+unavailable due to the documented runtime startup deadlock. A compact Nat
+computation denoting 4,194,304 checks with 1,329 nodes and 65,536 reserved arena
+bytes, without constructing the unary numeral. This does not yet establish
+the factorial-through-univalence acceptance test.
+
+Native composition covers Nat, Unit, Pi, Sigma and Path, including dependent
+filling and varying function domains. Glue, universe computation, W/sum
+composition, HITs and the strict Id bridge remain explicit gaps. There is no
+website integration or old-kernel fallback. The earlier 117 translated source
+declarations have not yet been run through the native checker as a corpus;
+new term-level cross-checks do not by themselves establish source migration.
 
 ## Verification commands
 
