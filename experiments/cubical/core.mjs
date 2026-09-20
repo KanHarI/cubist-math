@@ -30,6 +30,11 @@ export const T = {
   glueType: (base,system) => ({tag:"Glue",base,system}),
   glue: (as,base,system) => ({tag:"GlueTerm",as,base,system}),
   unglue: (as,value) => ({tag:"Unglue",as,value}),
+  pushout: (center,left,right,maps) => ({tag:"Pushout",center,left,right,maps}),
+  pushLeft: (as,value) => ({tag:"PushLeft",as,value}),
+  pushRight: (as,value) => ({tag:"PushRight",as,value}),
+  pushPath: (as,value,arg) => ({tag:"PushPath",as,value,arg}),
+  pushElim: (motive,left,right,bridge) => ({tag:"PushElim",motive,left,right,bridge}),
 };
 const fail = message => { throw new Error(message); };
 const validName = n => typeof n === "string" && /^[A-Za-z_][A-Za-z_0-9]*$/.test(n);
@@ -45,12 +50,14 @@ const children = {
   Sum:["left","right"], Inl:["as","value"], Inr:["as","value"],
   SumRec:["motive","left","right","value"], UnitRec:["motive","point","value"],
   Glue:["base"], GlueTerm:["as","base"], Unglue:["as","value"],
+  Pushout:["center","left","right","maps"], PushLeft:["as","value"],
+  PushRight:["as","value"], PushPath:["as","value"], PushElim:["motive","left","right","bridge"],
 };
 const termBinder = t => ["Pi","Lam","Sigma","W"].includes(t.tag);
 const dimBinder = t => ["Path","PLam","Comp"].includes(t.tag);
 function free(t, dimension = false, result = new Set()) {
   if (!t || !children[t.tag]) fail("Unknown term constructor.");
-  if (dimension && t.tag === "PApp") for (const n of I.names(t.arg)) result.add(n);
+  if (dimension && ["PApp","PushPath"].includes(t.tag)) for (const n of I.names(t.arg)) result.add(n);
   if (!dimension && t.tag === "Var") result.add(t.name);
   if(["Glue","GlueTerm"].includes(t.tag))for(const piece of t.system) {
     for(const key of t.tag==="Glue"?["type","equiv"]:["term"])
@@ -99,7 +106,7 @@ function substitute(t, n, value, dimension = false) {
     if (isBinder && binder === n && boundChildren.includes(key)) continue;
     result[key] = substitute(result[key], n, value, dimension);
   }
-  if (dimension && t.tag === "PApp") result.arg = I.substitute(t.arg,n,value);
+  if (dimension && ["PApp","PushPath"].includes(t.tag)) result.arg = I.substitute(t.arg,n,value);
   if(t.tag==="Comp")result.system=result.system.map(p=>({
     face:dimension?F.substitute(p.face,n,value):p.face,
     term:dimension&&binder===n?p.term:substitute(p.term,n,value,dimension),
@@ -195,12 +202,14 @@ function alpha(t, vars = [], dims = []) {
   if(["Glue","GlueTerm"].includes(t.tag))return [t.tag,...children[t.tag].map(key=>child(key)),
     t.system.map(p=>[p.face.map(c=>c.map(x=>[dims.includes(x.slice(0,-2))?["bound",dims.lastIndexOf(x.slice(0,-2))]:["free",x.slice(0,-2)],x.at(-1)]).sort()).sort(),
       ...(t.tag==="Glue"?["type","equiv"]:["term"]).map(key=>alpha(p[key],vars,dims))])];
+  if(t.tag==="PushPath")return ["PushPath",child("as"),child("value"),
+    t.arg.map(c=>c.map(x=>[dims.includes(x.slice(0,-2))?["bound",dims.lastIndexOf(x.slice(0,-2))]:["free",x.slice(0,-2)],x.at(-1)]).sort()).sort()];
   if(t.tag==="Comp")return ["Comp",child("family",vars,[...dims,t.dim]),child("base"),
     t.system.map(p=>[p.face.map(c=>c.map(x=>[dims.includes(x.slice(0,-2))?["bound",dims.lastIndexOf(x.slice(0,-2))]:["free",x.slice(0,-2)],x.at(-1)]).sort()).sort(),alpha(p.term,vars,[...dims,t.dim])])];
   if (dimBinder(t)) return t.tag === "Path"
     ? ["Path",child("family",vars,[...dims,t.dim]),child("left"),child("right")]
     : ["PLam",child("family",vars,[...dims,t.dim]),child("body",vars,[...dims,t.dim])];
-  if (t.tag === "PApp") return ["PApp",child("path"),
+  if (["PApp","PushPath"].includes(t.tag)) return ["PApp",child("path"),
     t.arg.map(c => c.map(x => [dims.includes(x.slice(0,-2)) ? ["bound",dims.lastIndexOf(x.slice(0,-2))] : ["free",x.slice(0,-2)],x.at(-1)]).sort()).sort()];
   return [t.tag,...children[t.tag].map(key => child(key))];
 }
@@ -233,6 +242,17 @@ function normal(t, fuel) {
       if(same(r.as,r.base.as)&&r.system.every(p=>p.face.every(clause=>same(p.term,restrict(r.base.value,clause)))))
         return r.base.value;
     }
+  }
+  if(r.tag==="PushPath") {
+    if(I.equal(r.arg,I.zero))return normal(T.pushLeft(r.as,T.app(T.first(r.as.maps),r.value)),fuel);
+    if(I.equal(r.arg,I.one))return normal(T.pushRight(r.as,T.app(T.second(r.as.maps),r.value)),fuel);
+  }
+  if(r.tag==="App"&&r.fn.tag==="PushElim") {
+    const e=r.fn,z=r.arg;
+    if(z.tag==="PushLeft")return normal(T.app(e.left,z.value),fuel);
+    if(z.tag==="PushRight")return normal(T.app(e.right,z.value),fuel);
+    if(z.tag==="PushPath")return normal({...T.at(T.app(e.bridge,z.value),z.arg),
+      pathType:pushoutBridgeType(z.as,e.motive,e.left,e.right,z.value)},fuel);
   }
   if(r.tag==="Comp") {
     r.system=r.system.filter(p=>!F.equal(p.face,F.bottom)).map(p=>({...p,term:normal(p.term,fuel)}));
@@ -344,6 +364,12 @@ function identityEquivalenceTerm(A) {
   return T.pair(equivalenceType(A,A),id,T.lam(y,A,T.pair(contr,center,contraction)));
 }
 
+function pushoutBridgeType(P,motive,left,right,c) {
+  const d=fresh("push_bridge",new Set([P,motive,left,right,c].flatMap(t=>[...free(t,true)])));
+  return T.path(d,T.app(motive,T.pushPath(P,c,I.variable(d))),
+    T.app(left,T.app(T.first(P.maps),c)),T.app(right,T.app(T.second(P.maps),c)));
+}
+
 export class Checker {
   constructor({fuel=100000} = {}) { this.limit = fuel; this.steps = 0; }
   nf(t) { const budget={left:this.limit}; const result=normal(t,budget); this.steps += this.limit-budget.left; return result; }
@@ -368,6 +394,30 @@ export class Checker {
       case "Zero": return result(T.zero,T.nat);
       case "Point": return result(T.point,T.unit);
       case "Succ": return result(T.succ(check(t.value,T.nat)),T.nat);
+      case "Pushout": {
+        const center=type(t.center),left=type(t.left),right=type(t.right);
+        const used=new Set([...ctx.keys(),...free(t)]),c=fresh("span_arg",used);used.add(c);
+        const f=fresh("span_left",used);
+        const maps=check(t.maps,T.sigma(f,T.pi(c,center.term,left.term),T.pi(c,center.term,right.term)));
+        return result(T.pushout(center.term,left.term,right.term,maps),T.universe(Math.max(center.level,left.level,right.level)));
+      }
+      case "PushLeft": case "PushRight": case "PushPath": {
+        const as=type(t.as).term,P=this.nf(as);
+        if(P.tag!=="Pushout")fail("Expected a pushout type.");
+        const value=check(t.value,t.tag==="PushPath"?P.center:t.tag==="PushLeft"?P.left:P.right);
+        if(t.tag==="PushPath")for(const n of I.names(t.arg))if(!dims.has(n))fail("Pushout bridge uses an unbound dimension.");
+        return result({...t,as,value,...(t.tag==="PushPath"?{arg:I.normalize(t.arg)}:{})},as);
+      }
+      case "PushElim": {
+        const motive=infer(t.motive),mt=this.nf(motive.type),P=mt.tag==="Pi"?this.nf(mt.domain):null;
+        if(P?.tag!=="Pushout"||this.nf(mt.body).tag!=="U")fail("Expected a pushout type family.");
+        const used=new Set([...ctx.keys(),...free(t)]),choose=n=>{n=fresh(n,used);used.add(n);return n;};
+        const a=choose("push_left"),b=choose("push_right"),c=choose("push_center"),z=choose("push_point");
+        const left=check(t.left,T.pi(a,P.left,T.app(motive.term,T.pushLeft(P,T.variable(a)))));
+        const right=check(t.right,T.pi(b,P.right,T.app(motive.term,T.pushRight(P,T.variable(b)))));
+        const bridge=check(t.bridge,T.pi(c,P.center,pushoutBridgeType(P,motive.term,left,right,T.variable(c))));
+        return result(T.pushElim(motive.term,left,right,bridge),T.pi(z,P,T.app(motive.term,T.variable(z))));
+      }
       case "NatRec": {
         const motive=infer(t.motive), mt=this.nf(motive.type);
         if(mt.tag!=="Pi"||!this.equal(mt.domain,T.nat)||this.nf(mt.body).tag!=="U") fail("Expected a natural-number type family.");

@@ -31,12 +31,12 @@ unsigned ck_arity(cc_term_kind kind) {
         return 1;
     case CC_PI: case CC_LAM: case CC_APP: case CC_SIGMA: case CC_PLAM: case CC_PAPP:
     case CC_TUBE: case CC_ABORT: case CC_W: case CC_SUM: case CC_INL: case CC_INR:
-    case CC_GLUE: case CC_UNGLUE:
+    case CC_GLUE: case CC_UNGLUE: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH:
         return 2;
     case CC_PAIR: case CC_PATH: case CC_COMP: case CC_SUP: case CC_WREC: case CC_UNITREC:
     case CC_GLUE_SYSTEM: case CC_GLUE_TERM:
         return 3;
-    case CC_NATREC: case CC_SUMREC:
+    case CC_NATREC: case CC_SUMREC: case CC_PUSHOUT: case CC_PUSH_ELIM:
         return 4;
     }
     return 5;

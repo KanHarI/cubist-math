@@ -29,6 +29,8 @@ static cc_term nonempty_system(cc_kernel *k, cc_term system, bool types) {
 
 static cc_term weak(cc_kernel *k, cc_term term) {
     cc_node n = k->nodes[term];
+    if (n.kind == CC_PUSH_PATH)
+        return ck_pushout_reduce(k, term);
     if (n.kind == CC_DEFREF) {
         if (!n.payload || n.payload >= k->definition_count)
             return ck_fail(k, "Unknown definition reached reduction."), 0;
@@ -95,6 +97,9 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         return value == n.child[1] ? term : ck_make(k, CC_UNGLUE, 0, n.child[0], value, 0, 0);
     }
     if (n.kind == CC_APP) {
+        cc_term function = ck_whnf(k, n.child[0]);
+        if (function && k->nodes[function].kind == CC_PUSH_ELIM)
+            return ck_pushout_reduce(k, ck_make(k, CC_APP, 0, function, n.child[1], 0, 0));
         cc_term fn = ck_whnf(k, n.child[0]);
         if (!fn)
             return 0;

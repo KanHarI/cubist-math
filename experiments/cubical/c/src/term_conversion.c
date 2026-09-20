@@ -250,6 +250,8 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
     }
     if ((left.kind == CC_GLUE_SYSTEM || left.kind == CC_TUBE) && !formula_equal(k, left.payload, right.payload, dims))
         return false;
+    if (left.kind == CC_PUSH_PATH && !formula_equal(k, left.payload, right.payload, dims))
+        return false;
     if (left.kind == CC_PAPP)
         return formula_equal(k, left.payload, right.payload, dims) &&
                alpha(k, left.child[0], right.child[0], terms, dims, children_mode);
