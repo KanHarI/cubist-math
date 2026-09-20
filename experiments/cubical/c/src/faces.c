@@ -88,3 +88,22 @@ cc_status cc_face_entails(const cc_formula *phi, const cc_formula *psi, bool *re
     *result = true;
     return CC_OK;
 }
+
+/* Universal face quantification keeps exactly the clauses independent of i.
+ * Dropping the i-literal itself would be existential projection and is WRONG:
+ * forall i. ((i=0) or (i=1)) must remain bottom in the face lattice. */
+cc_status cc_face_forall(cc_formula *out, unsigned dimension, const cc_formula *face) {
+    if (out->sort != CC_FACE || face->sort != CC_FACE || dimension >= CC_DIMENSIONS)
+        return CC_BAD_INPUT;
+    uint64_t bit = UINT64_C(1) << dimension;
+    cc_formula candidate;
+    cc_init(&candidate, CC_FACE);
+    cc_status status = CC_OK;
+    for (size_t i = 0; i < face->length && status == CC_OK; ++i)
+        if (!((face->clauses[i].positive | face->clauses[i].negative) & bit))
+            status = cc_insert(&candidate, face->clauses[i]);
+    if (status == CC_OK)
+        cc_publish(out, &candidate);
+    cc_clear(&candidate);
+    return status;
+}

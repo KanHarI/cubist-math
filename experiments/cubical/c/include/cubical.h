@@ -48,6 +48,8 @@ cc_status cc_interval_substitute(cc_formula *, const cc_formula *, unsigned,
 cc_status cc_endpoint(cc_formula *, const cc_formula *, unsigned endpoint);
 cc_status cc_face_substitute(cc_formula *, const cc_formula *, unsigned,
                              const cc_formula *);
+/* Greatest face independent of dimension that entails the input face. */
+cc_status cc_face_forall(cc_formula *, unsigned dimension, const cc_formula *);
 /* Return the decision in result only on CC_OK. Interval implication is NOT
  * silently used for face entailment or vice versa. */
 cc_status cc_face_entails(const cc_formula *, const cc_formula *, bool *result);

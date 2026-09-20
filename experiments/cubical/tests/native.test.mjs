@@ -17,15 +17,16 @@ function expression(depth) {
   if(op===0)return {text:`(not ${a.text})`,value:I.reverse(a.value)};
   const b=expression(depth-1);return {text:`(${op===1?"and":"or"} ${a.text} ${b.text})`,value:(op===1?I.meet:I.join)(a.value,b.value)};
 }
-test("independent C and JS algebras agree on 1,800 seeded requests",()=>{
+test("independent C and JS algebras agree on 2,100 seeded requests",()=>{
   const requests=[],expected=[];
   for(let n=0;n<300;n++) {
     const a=expression(5),b=expression(3),dimension=n%2===0?0:63;
-    requests.push(`N ${a.text}`,`E0 ${a.text}`,`E1 ${a.text}`,`SI ${dimension} ${a.text} ${b.text}`,`SF ${dimension} ${a.text} ${b.text}`,`IMPL ${a.text} ${b.text}`);
+    requests.push(`N ${a.text}`,`E0 ${a.text}`,`E1 ${a.text}`,`SI ${dimension} ${a.text} ${b.text}`,`SF ${dimension} ${a.text} ${b.text}`,`IMPL ${a.text} ${b.text}`,`FORALL ${dimension} ${a.text}`);
     expected.push([I,a.value],[F,F.equalEndpoint(a.value,0)],[F,F.equalEndpoint(a.value,1)],
       [I,I.substitute(a.value,`d${dimension}`,b.value)],
       [F,F.substitute(F.equalEndpoint(a.value,1),`d${dimension}`,b.value)],
-      [null,F.entails(F.equalEndpoint(a.value,1),F.equalEndpoint(b.value,1))]);
+      [null,F.entails(F.equalEndpoint(a.value,1),F.equalEndpoint(b.value,1))],
+      [F,F.forall(`d${dimension}`,F.equalEndpoint(a.value,1))]);
   }
   const result=spawnSync(binary,[],{input:requests.join("\n")+"\n",encoding:"utf8",maxBuffer:32*1024*1024,timeout:20000,killSignal:"SIGKILL"});
   assert.equal(result.status,0,result.stderr);

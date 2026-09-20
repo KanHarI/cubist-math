@@ -96,8 +96,24 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
     if (!a || !b)
         return false;
     cc_node left = k->nodes[a], right = k->nodes[b];
-    if (left.kind != right.kind)
+    if (left.kind != right.kind) {
+        /* Typed surjective pairing: compare a pair with the two projections
+         * of the other term. This also handles components that only expose
+         * their projection after reduction; it does not normalize unused data. */
+        if (left.kind == CC_PAIR) {
+            cc_term first = ck_make(k, CC_FST, 0, b, 0, 0, 0);
+            cc_term second = ck_make(k, CC_SND, 0, b, 0, 0, 0);
+            return alpha(k, left.child[1], first, terms, dims) &&
+                   alpha(k, left.child[2], second, terms, dims);
+        }
+        if (right.kind == CC_PAIR) {
+            cc_term first = ck_make(k, CC_FST, 0, a, 0, 0, 0);
+            cc_term second = ck_make(k, CC_SND, 0, a, 0, 0, 0);
+            return alpha(k, first, right.child[1], terms, dims) &&
+                   alpha(k, second, right.child[2], terms, dims);
+        }
         return false;
+    }
     if (left.kind == CC_U)
         return left.payload == right.payload;
     if (left.kind == CC_VAR)

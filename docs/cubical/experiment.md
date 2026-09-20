@@ -69,9 +69,19 @@ judgemental J beta rule for an unknown type. Concrete universe-schema uses are
 checked at their supplied level; the schema itself is not counted as a translated
 closed declaration. Downward resizing is rejected.
 
-No existing declaration is claimed translated merely because it parses or because
-the old kernel checks it. Missing universe composition, Glue or HIT rules are gaps, not
-assumptions silently inserted into a new checker.
+The JavaScript reference now includes Glue formation, introduction, projection,
+eta, the CCHM composition algorithm and universe composition. Glue witnesses are
+checked as equivalences with contractible fibers. Tests execute transport along
+the identity equivalence of Nat; separately generated composition expansions
+recheck before reduction, including persistent faces and overlapping tubes.
+The required face universal quantifier and Sigma eta are also implemented in C.
+These reference Glue rules are **not yet ported to the native checker**. The
+full theorem that idtoequiv is an equivalence remains to be constructed; a map
+from equivalences to universe paths alone is not that theorem.
+
+No existing declaration is claimed translated merely because it parses or the
+old kernel checks it. Missing native Glue/universe computation, HITs and bridge
+rules are explicit gaps, never assumptions inserted into the new checker.
 
 The experiment now incorporates production `main` at `1f6cddb`. The previously
 reported reference-trace/proof-export failures have been repaired there, and the
@@ -99,7 +109,8 @@ files separate inference, substitution, conversion and computation by rule
 family. Checking preserves compact syntax; optional normalization is a distinct
 inspection operation. Path endpoint annotations are reconstructed internally.
 
-All 55 experiment tests pass, including 24 native cases and 1,800 seeded
+All 68 experiment tests pass, with 27 cases in the native/derived-equivalence
+UBSan run and 2,100 seeded
 C/JavaScript algebra comparisons. Native tests also pass UBSan; ASan remains
 unavailable due to the documented runtime startup deadlock. A compact Nat
 computation denoting 4,194,304 checks with 1,329 nodes and 65,536 reserved arena

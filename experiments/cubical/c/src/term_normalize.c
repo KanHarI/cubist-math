@@ -20,6 +20,15 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return ck_whnf(k, ck_substitute(k, head.child[1], head.payload, n.child[1]));
         return fn == n.child[0] ? term : app(k, fn, n.child[1]);
     }
+    if (n.kind == CC_PAIR) {
+        /* Surjective pairing. Inspect only projection syntax here: forcing
+         * arbitrary components would destroy the demand-driven strategy. */
+        cc_node first = k->nodes[n.child[1]];
+        cc_node second = k->nodes[n.child[2]];
+        if (first.kind == CC_FST && second.kind == CC_SND &&
+            ck_convertible(k, first.child[0], second.child[0]))
+            return ck_whnf(k, first.child[0]);
+    }
     if (n.kind == CC_FST || n.kind == CC_SND) {
         cc_term pair = ck_whnf(k, n.child[0]);
         if (!pair)

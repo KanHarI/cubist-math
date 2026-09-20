@@ -79,6 +79,13 @@ int main(void) {
                 cc_clear(&output); cc_init(&output, CC_FACE);
                 ok = cc_endpoint(&left, &a, 1) == CC_OK && cc_face_substitute(&output, &left, d, &b) == CC_OK;
             }
+        } else if (ok && !strcmp(command, "FORALL")) {
+            unsigned dimension;
+            cc_clear(&output);
+            cc_init(&output, CC_FACE);
+            ok = number(&p, &dimension) && expression(&p, &a, 0) &&
+                 cc_endpoint(&left, &a, 1) == CC_OK &&
+                 cc_face_forall(&output, dimension, &left) == CC_OK;
         } else if (ok && !strcmp(command, "IMPL")) {
             implication = true;
             ok = expression(&p, &a, 0) && expression(&p, &b, 0) && cc_endpoint(&left, &a, 1) == CC_OK &&
