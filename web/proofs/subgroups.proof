@@ -1,0 +1,151 @@
+import group_identity;
+import field_extensionality;
+
+// Subgroups are proposition-valued subsets of a bundled small group.
+// Inverse closure uses a witnessed left inverse, so no inverse operation
+// or choice of witnesses is added to the group signature.
+def SubgroupLaws(G : Group, H : group_carrier(G) -> U0) =
+  (forall x : group_carrier(G), Proposition(H(x))) and H(group_unit(G))
+  and (
+    forall x : group_carrier(G), forall y : group_carrier(G), H(x) -> H(y)
+    -> H(group_multiply(G, x, y))
+  )
+  and (
+    forall x : group_carrier(G), forall y : group_carrier(G), H(x)
+    -> (group_multiply(G, y, x) = group_unit(G)) -> H(y)
+  );
+def Subgroup(G : Group) = exists H : group_carrier(G) -> U0, SubgroupLaws(G, H);
+def subgroup_members(G : Group, S : Subgroup(G)) =
+  unpack S as (H, laws) return (group_carrier(G) -> U0) {
+    H;
+  };
+def subgroup_laws(G : Group, S : Subgroup(G)) : SubgroupLaws(G, subgroup_members(G, S)) {
+  exact field_second(
+    (group_carrier(G) -> U0), (fun (H : group_carrier(G) -> U0) => typed(U1, SubgroupLaws(G, H))), S
+  );
+}
+
+theorem subgroup_prop(
+  G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G)
+) : Proposition(H(x)) {
+  obtain (prop, unit, multiplyLocal, invClosed) = laws;
+  exact prop(x);
+}
+theorem subgroup_unit(G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H)) : H(
+  group_unit(G)
+) {
+  obtain (prop, unit, multiplyLocal, invClosed) = laws;
+  exact unit;
+}
+theorem subgroup_multiply(
+  G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G),
+  y : group_carrier(G), hx : H(x), hy : H(y)
+) : H(group_multiply(G, x, y)) {
+  obtain (prop, unit, multiplyLocal, invClosed) = laws;
+  exact multiplyLocal(x, y, hx, hy);
+}
+theorem subgroup_inverse(
+  G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G),
+  y : group_carrier(G), hx : H(x), inverseLaw : group_multiply(G, y, x) = group_unit(G)
+) : H(y) {
+  obtain (prop, unit, multiplyLocal, invClosed) = laws;
+  exact invClosed(x, y, hx, inverseLaw);
+}
+
+// The entire law bundle is a proposition; subgroups retain only membership data.
+theorem subgroup_laws_prop(
+  G : Group, H : group_carrier(G) -> U0, p : SubgroupLaws(G, H), q : SubgroupLaws(G, H)
+) : p = q {
+  let A = group_carrier(G);
+  let unit = group_unit(G);
+  let multiplyLocal = group_multiply(G);
+  let known = subgroup_prop(G, H, p);
+  let membershipLaw = (forall x : A, Proposition(H(x)));
+  let membershipUnique =
+    forall_prop(A, (fun (x : A) => Proposition(H(x))), (fun (x : A) => is_prop_prop(H(x))));
+  let unitLaw = H(unit);
+  let unitUnique = known(unit);
+  let multiplicationLaw =
+    (forall x : A, (forall y : A, (forall hx : H(x), (forall hy : H(y), H(multiplyLocal(x, y))))));
+  let multiplicationUnique =
+    forall_prop(
+      A,
+      (
+        fun (x : A) => (
+          forall y : A, (forall hx : H(x), (forall hy : H(y), H(multiplyLocal(x, y))))
+        )
+      ),
+      (
+        fun (x : A) => forall_prop(
+          A, (fun (y : A) => (forall hx : H(x), (forall hy : H(y), H(multiplyLocal(x, y))))),
+          (
+            fun (y : A) => forall_prop(
+              H(x), (fun (hx : H(x)) => (forall hy : H(y), H(multiplyLocal(x, y)))),
+              (
+                fun (hx : H(x)) => forall_prop(
+                  H(y), (fun (hy : H(y)) => H(multiplyLocal(x, y))),
+                  (fun (hy : H(y)) => known(multiplyLocal(x, y)))
+                )
+              )
+            )
+          )
+        )
+      )
+    );
+  let inversionLaw =
+    (
+      forall x : A,
+      (forall y : A, (forall hx : H(x), (forall inverseLaw : multiplyLocal(y, x) = unit, H(y))))
+    );
+  let inversionUnique =
+    forall_prop(
+      A,
+      (
+        fun (x : A) => (
+          forall y : A, (forall hx : H(x), (forall inverseLaw : multiplyLocal(y, x) = unit, H(y)))
+        )
+      ),
+      (
+        fun (x : A) => forall_prop(
+          A,
+          (
+            fun (y : A) => (
+              forall hx : H(x), (forall inverseLaw : multiplyLocal(y, x) = unit, H(y))
+            )
+          ),
+          (
+            fun (y : A) => forall_prop(
+              H(x), (fun (hx : H(x)) => (forall inverseLaw : multiplyLocal(y, x) = unit, H(y))),
+              (
+                fun (hx : H(x)) => forall_prop(
+                  multiplyLocal(y, x) = unit,
+                  (fun (inverseLaw : multiplyLocal(y, x) = unit) => H(y)),
+                  (fun (inverseLaw : multiplyLocal(y, x) = unit) => known(y))
+                )
+              )
+            )
+          )
+        )
+      )
+    );
+  let multiplicationTail = multiplicationLaw and inversionLaw;
+  let multiplicationTailUnique =
+    product_prop(multiplicationLaw, inversionLaw, multiplicationUnique, inversionUnique);
+  let unitTail = unitLaw and multiplicationTail;
+  let unitTailUnique =
+    product_prop(unitLaw, multiplicationTail, unitUnique, multiplicationTailUnique);
+  let membershipTail = membershipLaw and unitTail;
+  let membershipTailUnique =
+    product_prop(membershipLaw, unitTail, membershipUnique, unitTailUnique);
+  exact membershipTailUnique(p, q);
+}
+
+theorem subgroup_ext(
+  G : Group, S : Subgroup(G), T : Subgroup(G),
+  same : subgroup_members(G, S) = subgroup_members(G, T)
+) : S =[Subgroup(G)] T {
+  exact field_subtype_ext(
+    (group_carrier(G) -> U0), (fun (H : group_carrier(G) -> U0) => typed(U1, SubgroupLaws(G, H))),
+    subgroup_laws_prop(G), S, T, same
+  );
+}

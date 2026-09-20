@@ -26,17 +26,23 @@ construction product_commutes {
   private s0023_Vble = variable(s0022_CtxExt);
   private s0024_CtxExt = assume(s0021_SigmaForm, none);
   private s0025_Vble = variable(s0024_CtxExt);
-  private s0026_SigmaElim = pair_eliminate(s0013_Vble, s0019_Vble, s0025_Vble, none, s0018_CtxExt, s0022_CtxExt);
+  private s0026_SigmaElim = pair_eliminate(
+    s0013_Vble, s0019_Vble, s0025_Vble, none, s0018_CtxExt, s0022_CtxExt
+  );
   private s0027_PiIntro = function_intro(s0021_SigmaForm, s0026_SigmaElim, s0024_CtxExt);
   private s0028_PiIntro = function_intro(s0015_PiForm, s0027_PiIntro, s0016_CtxExt);
   private s0029_PiIntro = function_intro(s0001_UIntro0, s0028_PiIntro, s0011_CtxExt);
   private s0030_SigmaIntro = pair_intro(s0019_Vble, s0020_PiElim, s0023_Vble, s0018_CtxExt);
   private s0031_PiComp = function_compute(s0026_SigmaElim, s0030_SigmaIntro, s0024_CtxExt);
-  private s0032_SigmaComp = pair_compute(s0013_Vble, s0019_Vble, s0019_Vble, s0023_Vble, none, s0018_CtxExt, none);
+  private s0032_SigmaComp = pair_compute(
+    s0013_Vble, s0019_Vble, s0019_Vble, s0023_Vble, none, s0018_CtxExt, none
+  );
   private s0033_DefEqSwp = definition_symmetry(s0032_SigmaComp);
   private s0034_Subs = substitute(s0023_Vble, s0033_DefEqSwp);
   private s0035_PiElim = apply(s0017_Vble, s0026_SigmaElim);
-  private s0036_SigmaElim = pair_eliminate(s0035_PiElim, s0034_Subs, s0025_Vble, s0024_CtxExt, s0018_CtxExt, s0022_CtxExt);
+  private s0036_SigmaElim = pair_eliminate(
+    s0035_PiElim, s0034_Subs, s0025_Vble, s0024_CtxExt, s0018_CtxExt, s0022_CtxExt
+  );
   private s0037_PiIntro = function_intro(s0021_SigmaForm, s0036_SigmaElim, s0024_CtxExt);
   private s0038_PiIntro = function_intro(s0015_PiForm, s0037_PiIntro, s0016_CtxExt);
   private s0039_PiIntro = function_intro(s0001_UIntro0, s0038_PiIntro, s0011_CtxExt);

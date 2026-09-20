@@ -3,12 +3,16 @@ import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 import { renderMathNotation, kernelMathTree } from "./math-notation.mjs";
 import { axiomLabels } from "./axiom-labels.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
+import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 
 const query = new URLSearchParams(location.search);
 const proofId = choices.some((p) => p.id === query.get("proof"))
   ? query.get("proof")
   : "euclid";
 const sourceURL = `proofs/${choices.find((p) => p.id === proofId).file ?? proofId + ".proof"}`;
+const snapshot = readProofNavigation(query.get("restore"));
+let restoring = snapshot?.proof === proofId ? snapshot : null;
+const crossFileBack = restoring?.back ?? query.get("back");
 const response = await fetch(sourceURL, { cache: "no-store" });
 if (!response.ok) throw new Error("Unable to load source: " + sourceURL);
 const original = await response.text();
@@ -50,7 +54,7 @@ try {
   }
   previousDraft ??= sessionStorage.getItem("mathscript:previous:" + proofId);
 } catch {}
-const example = savedDraft ?? original;
+const example = restoring?.source ?? savedDraft ?? original;
 import { layout } from "./expressions.mjs";
 const $ = (id) => document.getElementById(id);
 let worker,
@@ -214,8 +218,17 @@ async function check() {
       [...(result.declarations ?? []), ...result.outputs].find(
         (d) => d.binding === target,
       );
-    await inspect(decorate(info ?? result.outputs.at(-1)), false);
-    if (info) revealSource(info);
+    if (restoring) {
+      const saved = restoring;
+      restoring = null;
+      history.push(...saved.history);
+      await inspect(saved.selected ?? decorate(result.outputs.at(-1)), false);
+      $("read-source").scrollTop = saved.sourceScroll ?? 0;
+      window.scrollTo(0, saved.scroll ?? 0);
+    } else {
+      await inspect(decorate(info ?? result.outputs.at(-1)), false);
+      if (info) revealSource(info);
+    }
     rememberDraft();
   } catch (e) {
     diagnostic(e);
@@ -251,7 +264,8 @@ function decorate(info) {
       d.binding === info.binding &&
       ["local", "parameter", "def", "theorem"].includes(d.role),
   );
-  const value = { ...declaration, ...info, ...imported, kind: "value" };
+  const output = last?.outputs.find(d => d.binding === info.binding && d.name === info.name);
+  const value = { ...declaration, ...output, ...info, ...imported, kind: "value" };
   if (value.definitionStart === undefined && local)
     value.definitionStart = local.start;
   if (/^[0-9]+$/.test(info.name ?? "")) {
@@ -286,6 +300,11 @@ function sourceLink(info) {
     link.textContent =
       info.kind === "module" ? "View module source →" : "View source →";
     link.hidden = false;
+    link.onclick = () => {
+      const address = new URL(link.href);
+      address.searchParams.set("back", rememberInspection());
+      link.href = address.href;
+    };
   } else if (Number.isInteger(info.definitionStart)) {
     link.href = "#read-source";
     link.textContent = "View source →";
@@ -410,10 +429,10 @@ const keywords = new Set([
 const builtinForms = new Set([
   "Nat", "Unit", "Void", "Universe", "tt", "succ", "refl", "absurd",
   "sym", "trans", "cong", "transport", "apd", "Eq", "typed", "unfold",
-  "induct", "unpack", "pair_induction", "unit_induction",
+  "induct", "unpack", "pair_induction", "unit_induction", "path_induction",
   "Suspension", "north", "south", "meridian", "suspension_induction",
   "suspension_meridian_beta", "Choice", "LEM", "FunExt", "Truncate",
-  "TruncateIntro", "TruncateProp", "TruncateElim", "Univalence", "UnivalenceBeta",
+  "TruncateIntro", "TruncateProp", "TruncateElim", "Univalence", "UnivalenceBeta", "UnivalenceEta", "ua", "idtoequiv",
 ]);
 function renderSource() {
   $("read-source").replaceChildren();
@@ -490,9 +509,14 @@ function renderSource() {
         link.dataset.name = text;
         link.href = `proof.html?proof=${encodeURIComponent(text === "prelude" ? "prelude_library_construction" : text)}`;
         link.title = `Open ${text} module source`;
+        link.onclick = () => {
+          const address = new URL(link.href);
+          address.searchParams.set("back", rememberInspection());
+          link.href = address.href;
+        };
         code.append(link);
       } else {
-        const info = linkMap.get(start);
+        const info = keywords.has(text) && !builtinForms.has(text) ? null : linkMap.get(start);
         const expansion = last.mode === "mathematical" && /^[0-9]+$/.test(text) && Number(text) <= 256
           ? "succ(".repeat(Number(text)) + "0" + ")".repeat(Number(text))
           : info?.expansion;
@@ -530,7 +554,7 @@ async function inspect(info, remember = true) {
   }
   selected = info;
   const sequence = ++inspectSerial;
-  $("back").hidden = !history.length;
+  $("back").hidden = !history.length && !proofReturnURL(crossFileBack);
   $("inspect-name").textContent = info.name;
   $("inspect-kind").textContent =
     info.kind === "goal"
@@ -664,8 +688,8 @@ function renderKernel(view) {
     identitySugar: $("kernel-identity-sugar").checked,
     groupIndependentBinders: $("kernel-group-binders").checked };
   $("kernel-context-note").textContent = view.assumptions.length
-    ? "Open assumptions of this checked judgement. Click a name to inspect its type and source. Π, Σ and λ bind variables inside the term."
-    : "Empty context. Π, Σ and λ bind variables inside the term.";
+    ? "Open assumptions of this checked judgement. Click a name to inspect its type and source."
+    : "Empty context";
   $("kernel-context-list").replaceChildren();
   for (const entry of view.context?.entries ?? []) {
     const row = document.createElement("li");
@@ -736,11 +760,15 @@ for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = as
   if (!checkedKernelView) return;
   const binding = checkedKernelView.name;
   const folded = $("kernel-view").value === "notation" && !!checkedKernelView.folded?.verified[side];
+  // Save before opening the tab, so its sessionStorage clone includes the
+  // return selection even if the workbench transfer is prepared asynchronously.
+  const returnURL = proofReturnURL(rememberInspection());
   const tab = window.open("about:blank", "_blank");
   if (!tab) { diagnostic(new Error("Allow a new tab to open the kernel workbench.")); return; }
   tab.document.body.textContent = "Preparing checked expression…";
   try {
     const payload = await request("export-inspection", { binding, side, folded });
+    payload.proofReturn = returnURL;
     const key = await saveWorkbenchTransfer(payload);
     tab.location.href = new URL(`workbench.html?transfer=${encodeURIComponent(key)}`, location.href).href;
   } catch (error) { tab.close(); diagnostic(error); }
@@ -783,9 +811,18 @@ $("editor").onkeydown = (e) => {
   }
 };
 $("search").oninput = renderLibrary;
+function rememberInspection() {
+  return saveProofNavigation({ proof: proofId, source: last.source,
+    selected, history, back: crossFileBack, scroll: window.scrollY,
+    sourceScroll: $("read-source").scrollTop });
+}
 $("back").onclick = () => {
   const previous = history.pop();
   if (previous) inspect(previous, false);
+  else {
+    const address = proofReturnURL(crossFileBack);
+    if (address) location.href = address;
+  }
 };
 $("save").onclick = () =>
   download($("editor").value, proofId + ".proof", "text/plain");

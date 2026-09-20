@@ -1,0 +1,76 @@
+import subfield_transport;
+import f4_intermediate_fields;
+
+// Zero and one already give the embedded F2, for any choice of generators.
+theorem f4_generated_contains_base(P : F4Carrier -> U0, k : F2Carrier) : GeneratedField(
+  F4, P, f2_into_f4(k)
+) {
+  exact f2_induction(
+    (fun (k : F2Carrier) => GeneratedField(F4, P, f2_into_f4(k))), generated_field_zero(F4, P),
+    generated_field_one(F4, P), k
+  );
+}
+def f4_generated_intermediate(P : F4Carrier -> U0) : IntermediateField(F2, F4OverF2) {
+  exact (GeneratedField(F4, P), generated_field_laws(F4, P), f4_generated_contains_base(P));
+}
+
+// A single generator alpha suffices; its square or alpha+1 is not additional
+// generating data. The conclusion is equality of the complete subfields.
+def F4AlphaGenerator(x : F4Carrier) = x = f4_2;
+theorem f4_alpha_generates_field : generated_subfield(F4, F4AlphaGenerator) =[Subfield(F4)] subfield_top(
+  F4
+) {
+  let P = GeneratedField(F4, F4AlphaGenerator);
+  let every =
+    f4_intermediate_with_alpha(
+      P, intermediate_laws(F2, F4OverF2, f4_generated_intermediate(F4AlphaGenerator)),
+      generated_field_contains(F4, F4AlphaGenerator, f4_2, refl(f4_2))
+    );
+  exact subfield_inclusion_antisymmetric(
+    F4, generated_subfield(F4, F4AlphaGenerator), subfield_top(F4),
+    (fun (x : F4Carrier) => fun (member : P(x)) => tt),
+    (fun (x : F4Carrier) => fun (member : Unit) => every(x))
+  );
+}
+
+def f4_base_subfield = intermediate_subfield(F2, F4OverF2, f4_base_intermediate);
+
+theorem f4_base_in_prime : SubfieldIncluded(F4, f4_base_subfield, prime_subfield(F4)) {
+  intro x;
+  intro member;
+  obtain (k, same) = typed(F2Image(x), member);
+  exact transport(
+    GeneratedField(F4, (fun (x : F4Carrier) => Void)), f2_into_f4(k), x, same,
+    f4_generated_contains_base((fun (x : F4Carrier) => Void), k)
+  );
+}
+
+// No generators give exactly F2 inside F4. This also rules out an accidental
+// definition of generated membership which contains every ambient element.
+theorem f4_prime_subfield_is_base : prime_subfield(F4) =[Subfield(F4)] f4_base_subfield {
+  exact subfield_inclusion_antisymmetric(
+    F4, prime_subfield(F4), f4_base_subfield, prime_subfield_least(F4, f4_base_subfield),
+    f4_base_in_prime
+  );
+}
+
+// The generated prime subfield does not accidentally contain alpha.
+theorem f4_alpha_not_in_prime(member : subfield_members(F4, prime_subfield(F4), f4_2)) : Void {
+  have inBase : F2Image(f4_2) {
+    exact prime_subfield_least(F4, f4_base_subfield, f4_2, member);
+  }
+  exact f4_3_not_2(f4_base_is_fixed(f4_2, inBase, f4_frobenius_automorphism, tt));
+}
+
+// A concrete unequal-rank check: alpha + (-alpha) is derived at rank two.
+def f4_alpha_derivation = field_derivation_generator(F4, F4AlphaGenerator, f4_2, refl(f4_2));
+def f4_neg_alpha_derivation = field_derivation_neg(F4, F4AlphaGenerator, f4_2, f4_alpha_derivation);
+def f4_add_derivation =
+  field_derivation_add(
+    F4, F4AlphaGenerator, f4_2, f4_2, f4_alpha_derivation, f4_neg_alpha_derivation
+  );
+theorem f4_add_derivation_rank : sigma_first(
+  Nat, (fun (n : Nat) => FieldClosureStage(F4, F4AlphaGenerator, n, f4_0)), f4_add_derivation
+) = 2 {
+  exact refl(2);
+}

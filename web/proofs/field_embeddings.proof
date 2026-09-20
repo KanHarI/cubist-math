@@ -1,0 +1,186 @@
+import field_extensions;
+
+// Morphisms between bundled fields reuse the existing embedding data of an
+// extension. Injectivity remains explicit, independently of any zero test.
+def FieldEmbedding(K : AlgebraicField, L : AlgebraicField) =
+  FieldEmbeddingData(K, af_carrier(L), structure_data(FieldData, L));
+def field_embedding_map(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) : af_carrier(
+  K
+) -> af_carrier(L) {
+  exact extension_embedding_function(K, af_carrier(L), structure_data(FieldData, L), e);
+}
+def field_embedding_evidence(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) : FieldEmbeddingLaws(
+  K, af_carrier(L), structure_data(FieldData, L), field_embedding_map(K, L, e)
+) {
+  exact sigma_second(
+    (af_carrier(K) -> af_carrier(L)),
+    FieldEmbeddingLaws(K, af_carrier(L), structure_data(FieldData, L)), e
+  );
+}
+def field_embedding_preserves(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) : FieldOpsPreserved(
+  af_carrier(K), af_carrier(L), field_embedding_map(K, L, e), af_operations(K), af_operations(L)
+) {
+  obtain (preserves, injective) = field_embedding_evidence(K, L, e);
+  exact preserves;
+}
+theorem field_embedding_injective(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K),
+  y : af_carrier(K), same : field_embedding_map(K, L, e, x) = field_embedding_map(K, L, e, y)
+) : x = y {
+  obtain (preserves, injective) = field_embedding_evidence(K, L, e);
+  exact injective(x, y, same);
+}
+
+def field_embedding_identity(K : AlgebraicField) : FieldEmbedding(K, K) {
+  exact (
+    (fun (x : af_carrier(K)) => x), field_ops_identity(af_carrier(K), af_operations(K)),
+    (fun (x : af_carrier(K)) => fun (y : af_carrier(K)) => fun (same : x = y) => same)
+  );
+}
+
+// Composition and identities supply the morphism operations needed for towers.
+// Composition is written in traversal order: first e, then d.
+theorem field_embedding_composite_preserves(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
+  d : FieldEmbedding(L, M)
+) : FieldOpsPreserved(
+  af_carrier(K), af_carrier(M),
+  (fun (x : af_carrier(K)) => field_embedding_map(L, M, d, field_embedding_map(K, L, e, x))),
+  af_operations(K), af_operations(M)
+) {
+  let A = af_carrier(K);
+  let f = field_embedding_map(K, L, e);
+  let g = field_embedding_map(L, M, d);
+  obtain (e0, e1, en, ea, em) = field_embedding_preserves(K, L, e);
+  obtain (d0, d1, dn, da, dm) = field_embedding_preserves(L, M, d);
+  exact (
+    trans(cong(g, e0), d0), trans(cong(g, e1), d1),
+    (fun (x : A) => trans(cong(g, en(x)), dn(f(x)))),
+    (fun (x : A) => fun (y : A) => trans(cong(g, ea(x, y)), da(f(x), f(y)))),
+    (fun (x : A) => fun (y : A) => trans(cong(g, em(x, y)), dm(f(x), f(y))))
+  );
+}
+
+def field_embedding_compose(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
+  d : FieldEmbedding(L, M)
+) : FieldEmbedding(K, M) {
+  let f = field_embedding_map(K, L, e);
+  let g = field_embedding_map(L, M, d);
+  exact (
+    (fun (x : af_carrier(K)) => g(f(x))), field_embedding_composite_preserves(K, L, M, e, d),
+    (
+      fun (x : af_carrier(K)) => fun (y : af_carrier(K)) => fun (same : g(f(x)) = g(f(y))) => field_embedding_injective(
+        K, L, e, x, y, field_embedding_injective(L, M, d, f(x), f(y), same)
+      )
+    )
+  );
+}
+
+// Embedding-law evidence is propositional. Equal underlying maps give equal
+// morphisms, so categorical laws do not distinguish irrelevant law proofs.
+theorem field_embedding_ext(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), d : FieldEmbedding(K, L),
+  same : (
+    forall x : af_carrier(K), field_embedding_map(K, L, e, x) = field_embedding_map(K, L, d, x)
+  )
+) : e = d {
+  exact subtype_ext(
+    (af_carrier(K) -> af_carrier(L)),
+    FieldEmbeddingLaws(K, af_carrier(L), structure_data(FieldData, L)),
+    field_embedding_laws_prop(K, af_carrier(L), af_set(L), structure_data(FieldData, L)), e, d,
+    FunExt(
+      U0, af_carrier(K), (fun (x : af_carrier(K)) => af_carrier(L)), field_embedding_map(K, L, e),
+      field_embedding_map(K, L, d), same
+    )
+  );
+}
+
+theorem field_embedding_left_identity(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
+) : field_embedding_compose(K, K, L, field_embedding_identity(K), e) = e {
+  exact field_embedding_ext(
+    K, L, field_embedding_compose(K, K, L, field_embedding_identity(K), e), e,
+    (fun (x : af_carrier(K)) => refl(field_embedding_map(K, L, e, x)))
+  );
+}
+theorem field_embedding_right_identity(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
+) : field_embedding_compose(K, L, L, e, field_embedding_identity(L)) = e {
+  exact field_embedding_ext(
+    K, L, field_embedding_compose(K, L, L, e, field_embedding_identity(L)), e,
+    (fun (x : af_carrier(K)) => refl(field_embedding_map(K, L, e, x)))
+  );
+}
+theorem field_embedding_associative(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, N : AlgebraicField,
+  e : FieldEmbedding(K, L), d : FieldEmbedding(L, M), h : FieldEmbedding(M, N)
+) : field_embedding_compose(K, M, N, field_embedding_compose(K, L, M, e, d), h) = field_embedding_compose(
+  K, L, N, e, field_embedding_compose(L, M, N, d, h)
+) {
+  exact field_embedding_ext(
+    K, N, field_embedding_compose(K, M, N, field_embedding_compose(K, L, M, e, d), h),
+    field_embedding_compose(K, L, N, e, field_embedding_compose(L, M, N, d, h)),
+    (
+      fun (x : af_carrier(K)) => refl(
+        field_embedding_map(M, N, h, field_embedding_map(L, M, d, field_embedding_map(K, L, e, x)))
+      )
+    )
+  );
+}
+
+def embedding_as_extension(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
+  structure_object(
+    ExtensionData(K), af_carrier(L),
+    typed(ExtensionData(K, af_carrier(L)), (structure_data(FieldData, L), e)), af_set(L)
+  );
+def extension_inclusion_embedding(K : AlgebraicField, E : FieldExt(K)) : FieldEmbedding(
+  K, extension_field(K, E)
+) {
+  exact extension_embedding_data(K, extension_carrier(K, E), structure_data(ExtensionData(K), E));
+}
+
+// A tower is a specified commutative triangle of embeddings, not a literal
+// containment of carrier types. This is the data needed by the tower criterion.
+def FieldTower(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, kl : FieldEmbedding(K, L),
+  lm : FieldEmbedding(L, M), km : FieldEmbedding(K, M)
+) =
+  field_embedding_compose(K, L, M, kl, lm) = km;
+
+// An element admitting an inverse is unequal to zero, constructively.
+theorem field_nonzero_of_inverse(
+  F : AlgebraicField, x : af_carrier(F), y : af_carrier(F),
+  inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
+    af_carrier(F), af_operations(F)
+  )
+) : FieldNonzero(af_carrier(F), af_operations(F), x) {
+  intro equalZero;
+  let A = af_carrier(F);
+  let ops = af_operations(F);
+  let zero = af_zero(A, ops);
+  let one = af_one(A, ops);
+  let addF = af_add(A, ops);
+  let mulF = af_mul(A, ops);
+  let negF = af_neg(A, ops);
+  obtain (ringLaws, nontrivial, inverses) = typed(AlgebraicFieldLaws(A, ops), af_laws(F));
+  let ring = algebraic_field_ring(A, ops, af_set(F), ringLaws);
+  exact nontrivial(
+    trans(
+      sym(inverseLaw),
+      trans(
+        cong((fun (a : A) => mulF(a, y)), equalZero),
+        ring_zero_mul(A, zero, one, addF, mulF, negF, ring, y)
+      )
+    )
+  );
+}
+
+theorem field_embedding_reflects_nonzero(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K),
+  nonzero : FieldNonzero(af_carrier(L), af_operations(L), field_embedding_map(K, L, e, x))
+) : FieldNonzero(af_carrier(K), af_operations(K), x) {
+  intro equalZero;
+  obtain (p0, p1, pn, pa, pm) = field_embedding_preserves(K, L, e);
+  exact nonzero(trans(cong(field_embedding_map(K, L, e), equalZero), p0));
+}

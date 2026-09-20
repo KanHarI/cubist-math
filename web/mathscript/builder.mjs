@@ -15,6 +15,7 @@ export class Builder {
     this.freshContexts = new Map();
     this.indexedContextSteps = 0;
     this.universeVariables = new Map();
+    this.contextVariables = new Map();
   }
   emit(op, args = [], free = [], context = null, name = null) {
     // Reuse only the identical derivation, including premise names and binder
@@ -112,6 +113,7 @@ export class Builder {
     const isUniverse = this.k.node(this.view(A, 0)).kind === "UUOmega";
     const v = this.emit(isUniverse ? "UVble" : "Vble", [], [], c, name);
     if (isUniverse) this.universeVariables.set(this.view(v, 0), v);
+    this.contextVariables.set(v, { A, c, v });
     return { A, c, v };
   }
   lam(A, fn) {

@@ -63,6 +63,7 @@ import sets;
 // Declarations follow the imports.</code></pre>
             <p>Imports come first and use module names without quotes or a file extension. Imported mathematical source and its dependencies are checked. The special <code>prelude</code> import makes the existing axiom library available; an import alone does not make every theorem depend on all its axioms.</p>
             <p>Names are case-sensitive: a letter or underscore, followed by letters, digits, or underscores. Write comments with <code>//</code> through the end of the line. Block comments, quoted strings, and Unicode operators are not source syntax. Use <code>-&gt;</code>, <code>forall</code>, and <code>exists</code>; the inspector can display mathematical symbols.</p>
+            <p>Put <code>//</code> comments immediately above a declaration to show them as its inspector description, including through imports. Consecutive lines are joined into a paragraph; an empty <code>//</code> line starts another paragraph. A physical blank line separates a section comment from a declaration. Trailing comments do not document the next declaration. Descriptions are plain text and do not affect the checked proof.</p>
             <p>Declarations become available in source order. There are no implicit arguments or forward declarations. Each parameter has its own explicit type: <code>(A : U0, x : A, y : A)</code>. Choose fresh local names to avoid collisions with names already in scope.</p>
           </section>
           <section id="declarations">
@@ -122,7 +123,7 @@ def universe_identity = identity(U2, U1, U0);</code></pre>
             <pre><code data-check="core">theorem explicit_reflexivity(U : Universe, A : U, x : A) : x =[A] x {
   exact refl(x);
 }</code></pre>
-            <p>Application is curried: <code>f(a, b)</code> means <code>f(a)(b)</code>. A lambda binds one parameter; nest lambdas for more. Parentheses group expressions. Pairs are binary; write <code>(a, (b, c))</code> for a nested pair.</p>
+            <p>Application is curried: <code>f(a, b)</code> means <code>f(a)(b)</code>. A lambda binds one parameter; nest lambdas for more. Parentheses group expressions. The kernel uses binary pairs. Tuple notation <code>(a, b, c, d)</code> expands to <code>(a, (b, (c, d)))</code>. Explicit left-nesting stays distinct: <code>((a, b), c)</code> is a different shape. Pass a tuple as one argument with <code>f((a, b, c))</code>; <code>f(a, b, c)</code> remains curried application.</p>
             <pre><code data-check="core">def constant(A : U0, B : U0) =
   fun (a : A) =&gt; fun (b : B) =&gt; a;
 
@@ -132,7 +133,7 @@ def choose_left = typed(Unit or Nat, left(tt));</code></pre>
             <p>Arithmetic operators <code>+</code>, <code>*</code>, <code>&lt;</code>, and <code>&lt;=</code> are for <code>Nat</code> and use the arithmetic library (normally <code>import primes;</code>). They are not overloaded field operations. They denote <code>add</code>, <code>mul</code>, <code>isLt</code>, and <code>le</code>; <code>n &lt; m</code> is <code>le(succ(n), m)</code>. The inspector’s <span class="math">+</span> for disjoint sum is display notation; write <code>or</code> in source.</p>
             <h3>Precedence</h3>
             <p>From tightest to loosest: application, <code>*</code>, <code>+</code>, <code>= &lt; &lt;=</code>, <code>and</code>, <code>or</code>, <code>-&gt;</code>. Arrow, <code>and</code>, and <code>or</code> associate to the right; the other infix operators associate to the left. The body of <code>fun</code>, <code>forall</code>, or <code>exists</code> extends through the following expression.</p>
-            <p>Thus <code>A -&gt; B -&gt; C</code> means <code>A -&gt; (B -&gt; C)</code>. Do not chain comparisons: write <code>(a &lt; b) and (b &lt; c)</code>. Numerals expand to repeated <code>succ</code>, not machine integers. In the source reader, keywords and built-in forms such as <code>sym</code> and <code>succ</code> are purple, named functions are green, and numeral literals and arithmetic notation are amber with dotted underlines. Hover over a macro to see its expansion: <code>2</code> shows <code>succ(succ(0))</code>, and <code>a + b</code> shows <code>add(a, b)</code>.</p>
+            <p>Thus <code>A -&gt; B -&gt; C</code> means <code>A -&gt; (B -&gt; C)</code>. Do not chain comparisons: write <code>(a &lt; b) and (b &lt; c)</code>. Numerals expand to repeated <code>succ</code>, not machine integers. In the source reader, keywords and built-in forms such as <code>sym</code> and <code>succ</code> are purple, named functions are green, and numeral literals, tuple macros and arithmetic notation are amber with dotted underlines. Hover over a macro to see its expansion: <code>2</code> shows <code>succ(succ(0))</code>, and <code>a + b</code> shows <code>add(a, b)</code>.</p>
           </section>
           <section id="blocks">
             <h2>Proof blocks</h2>
@@ -199,7 +200,16 @@ theorem copy_two : copy(2) = 2 {
   right n =&gt; n;
 };</code></pre>
             <p>For a result depending on the entire sum element, write <code>match value as z return C(z) { left x =&gt; …; right y =&gt; …; }</code>. The branch goals substitute <code>left(x)</code> and <code>right(y)</code> for <code>z</code>. The nondependent function form is <code>cases(value, resultType, leftBranch, rightBranch)</code>.</p>
-            <h3>Pairs</h3>
+            <h3>Pairs and tuples</h3>
+            <pre><code data-check="core">def triple(n : Nat) : exists m : Nat, (m = n) and Nat {
+  exact (n, refl(n), succ(n));
+}
+theorem third : Nat {
+  obtain (a, same, b) = triple(0);
+  exact b;
+}</code></pre>
+            <p>Tuples with three or more components are macros for right-associated dependent pairs; no extra kernel rule is involved. The same notation works in <code>obtain</code> patterns. Their parentheses are styled as macros: hover to see the binary expansion, or click to inspect the checked expression and type. A tuple needs an expected product or dependent-pair type, just like a binary pair.</p>
+            <p><code>npm run linearize:mathscript</code> scans the source ASTs and flattens right-nested tuples, preserving comments and explicit left-nesting. It checks that each rewritten source has the identical expanded AST before saving. Use <code>-- --check</code> to report candidates without changing files. The ordinary <code>npm run format:mathscript</code> formatter also linearizes tuples automatically.</p>
             <pre><code data-check="core">def first_nat(pair : Nat and Nat) =
   unpack pair as (a, b) return Nat { a; };</code></pre>
             <p><code>unpack</code> has a result type formed outside the new pair variables. Its function form is <code>unpack(pair, resultType, branch)</code>, where <code>branch</code> takes both components. <code>obtain</code> provides the corresponding block form.</p>
@@ -236,7 +246,7 @@ theorem reverse_path(A : U0, x : A, y : A, p : x = y) : y = x {
 theorem reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
   exact sym(p);
 }</code></pre>
-            <p>For example, univalence applied to the group structure identity equivalence gives <code>(G =[GroupType] H) =[U1] GroupIso(G, H)</code>. Applying <code>sym</code> gives the orientation used in <a href="proof.html?proof=group_univalence&amp;name=group_isomorphism_is_equality">the highlighted group theorem</a>: <code>GroupIso(G, H) =[U1] (G =[GroupType] H)</code>.</p>
+            <p>For example, univalence applied to the group structure identity equivalence gives <code>(G =[Group] H) =[U1] GroupIso(G, H)</code>. Applying <code>sym</code> gives the orientation used in <a href="proof.html?proof=group_univalence&amp;name=group_isomorphism_is_equality">the highlighted group theorem</a>: <code>GroupIso(G, H) =[U1] (G =[Group] H)</code>.</p>
             <p>Some inferred pair projections do not retain enough equality information for <code>sym</code>, <code>trans</code>, or <code>cong</code>. Introduce an explicitly typed claim with <code>have p : x = y { exact term; }</code> in that case.</p>
           </section>
           <section id="suspensions">
@@ -269,12 +279,16 @@ theorem reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
               <dd>For a family <code>B : A -&gt; U0</code> and dependent functions <code>f</code>, <code>g</code>, turn <code>forall x : A, f(x) = g(x)</code> into <code>f = g</code>.</dd>
               <dt><code>FunExt(U, A, B, f, g, pointwise)</code></dt>
               <dd>The explicit-universe form, with <code>A : U</code> and <code>B : A -&gt; U</code>.</dd>
-              <dt><code>Univalence(U0, A, B, equivalence)</code></dt>
+              <dt><code>Univalence(U0, A, B)</code></dt>
+              <dd>The single axiom: <code>IsEquiv(U1, (A =[U0] B), Equiv(U0, A, B), idtoequiv(U0, A, B))</code>.</dd>
+              <dt><code>idtoequiv(U, A, B, p)</code></dt>
+              <dd>The equivalence induced by a type equality, constructed by path induction without axioms.</dd>
+              <dt><code>ua(U0, A, B, equivalence)</code></dt>
               <dd>For small types and equivalence evidence in the library’s native equivalence representation, produce <code>A = B</code>. A pair of arbitrary forward and backward maps is not enough.</dd>
               <dt><code>UnivalenceBeta(U0, A, B, equivalence, x)</code></dt>
               <dd>Prove that transport of <code>x : A</code> along the univalence path equals the image of <code>x</code> under the equivalence’s forward function.</dd>
             </dl>
-            <p><code>Univalence(U)(A, B, e)</code> accepts the single library definition <code>e : Equiv(U, A, B)</code> and gives <code>A =[U] B</code>. <code>UnivalenceBeta(U1)</code>, for example, checks its transport computation rule at U₁. That computation-rule specializer currently requires a named finite universe, since the existing axiom also takes its enclosing universe.</p>
+            <p><code>ua(U)(A, B, e)</code> is the inverse extracted from <code>Univalence(U, A, B)</code>. <code>UnivalenceBeta</code> is a derived transport theorem. <code>UnivalenceEta(U, A, B, p)</code> proves <code>ua(U, A, B, idtoequiv(U, A, B, p)) = p</code>. Neither law is an additional axiom. All accept a parameter <code>U : Universe</code>.</p>
             <h3>Classical principles and choice</h3>
             <dl>
               <dt><code>LEM(U0, A, doubleNegation)</code></dt>
@@ -282,7 +296,7 @@ theorem reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
               <dt><code>Choice(U)(A, B, setA, setFibers, inhabited)</code></dt>
               <dd>For <code>A : U</code>, <code>B : A -&gt; U</code>, and <code>inhabited : forall a : A, Truncate(U, B(a))</code>, obtain <code>Truncate(U, forall a : A, B(a))</code>. <code>setA</code> proves that A is a set; <code>setFibers</code> proves it for every fiber. This applies the existing choice axiom at the selected universe. It does not return a selected function outside truncation.</dd>
             </dl>
-            <p>All these interfaces are first-class universe specializations: <code>Choice(U0)</code>, <code>FunExt(U1)</code>, <code>Truncate(U2)</code> and <code>Univalence(U1)</code> are functions you can name or pass onward. Except for the computation-rule restriction above, a declared <code>U : Universe</code> also works. Supplying the universe and later arguments together is equivalent: <code>Choice(U0, A, B, setA, setFibers, inhabited)</code>.</p>
+            <p>All these interfaces are first-class universe specializations: <code>Choice(U0)</code>, <code>FunExt(U1)</code>, <code>Truncate(U2)</code> and <code>Univalence(U1)</code> are functions you can name or pass onward. A declared <code>U : Universe</code> also works. Supplying the universe and later arguments together is equivalent: <code>Choice(U0, A, B, setA, setFibers, inhabited)</code>.</p>
             <p>These are separate dependencies: using truncation or function extensionality does not by itself request excluded middle or choice. Inspect the axiom list on the particular theorem for the dependencies of its checked derivation, including its type and context.</p>
           </section>
           <section id="conversion">

@@ -26,7 +26,10 @@ construction primes {
   private p24_Vble = variable(p23_context);
   private p25_EqForm = equality_type(p1_NatForm, p19_Vble, p17_Vble);
   private p26_EqIntro = reflexivity(p24_Vble);
-  private p44_EqElim = equality_eliminate(p25_EqForm, p26_EqIntro, p10_Vble, p12_Vble, p15_Vble, p16_context, p18_context, p21_context, p23_context);
+  private p44_EqElim = equality_eliminate(
+    p25_EqForm, p26_EqIntro, p10_Vble, p12_Vble, p15_Vble, p16_context, p18_context, p21_context,
+    p23_context
+  );
   private p46_PiIntro = function_intro(p13_EqForm, p44_EqElim, p14_context);
   private p47_PiIntro = function_intro(p1_NatForm, p46_PiIntro, p11_context);
   private p48_PiIntro = function_intro(p1_NatForm, p47_PiIntro, p9_context);
@@ -59,7 +62,10 @@ construction primes {
   private p77_context = assume(p76_EqForm, none);
   private p78_Vble = variable(p77_context);
   private p79_PiIntro = function_intro(p76_EqForm, p78_Vble, p77_context);
-  private p97_EqElim = equality_eliminate(p75_PiForm, p79_PiIntro, p55_Vble, p57_Vble, p63_Vble, p64_context, p66_context, p69_context, p71_context);
+  private p97_EqElim = equality_eliminate(
+    p75_PiForm, p79_PiIntro, p55_Vble, p57_Vble, p63_Vble, p64_context, p66_context, p69_context,
+    p71_context
+  );
   private p100_PiElim = apply(p97_EqElim, p60_Vble);
   private p102_PiIntro = function_intro(p61_EqForm, p100_PiElim, p62_context);
   private p103_PiIntro = function_intro(p58_EqForm, p102_PiIntro, p59_context);
@@ -91,7 +97,10 @@ construction primes {
   private p136_EqForm = equality_type(p1_NatForm, p131_PiElim, p134_PiElim);
   private p138_PiElim = apply(p112_Vble, p128_Vble);
   private p140_EqIntro = reflexivity(p138_PiElim);
-  private p158_EqElim = equality_eliminate(p136_EqForm, p140_EqIntro, p114_Vble, p116_Vble, p119_Vble, p120_context, p122_context, p125_context, p127_context);
+  private p158_EqElim = equality_eliminate(
+    p136_EqForm, p140_EqIntro, p114_Vble, p116_Vble, p119_Vble, p120_context, p122_context,
+    p125_context, p127_context
+  );
   private p160_PiIntro = function_intro(p117_EqForm, p158_EqElim, p118_context);
   private p161_PiIntro = function_intro(p1_NatForm, p160_PiIntro, p115_context);
   private p162_PiIntro = function_intro(p1_NatForm, p161_PiIntro, p113_context);
@@ -114,7 +123,9 @@ construction primes {
   private p181_context = assume(p180_DefEqExtR, p177_context);
   private p182_Vble = variable(p181_context);
   private p186_NatIntroS = successor(p182_Vble);
-  private p191_NatElim = natural_induction(p1_NatForm, p174_Vble, p186_NatIntroS, p172_Vble, p175_context, p177_context, p181_context);
+  private p191_NatElim = natural_induction(
+    p1_NatForm, p174_Vble, p186_NatIntroS, p172_Vble, p175_context, p177_context, p181_context
+  );
   private p193_PiIntro = function_intro(p1_NatForm, p191_NatElim, p173_context);
   private p194_PiIntro = function_intro(p1_NatForm, p193_PiIntro, p171_context);
   private p195_DefEqRefl = definition_refl(p194_PiIntro);
@@ -134,7 +145,10 @@ construction primes {
   private p214_BetaReduceGrossKnuth = reduce_pass(p213_PiElim);
   private p218_PiElim = apply(p214_BetaReduceGrossKnuth, p207_Vble);
   private p219_BetaReduceGrossKnuth = reduce_pass(p218_PiElim);
-  private p225_NatElim = natural_induction(p1_NatForm, p2_NatIntroZ, p219_BetaReduceGrossKnuth, p197_Vble, p200_context, p202_context, p206_context);
+  private p225_NatElim = natural_induction(
+    p1_NatForm, p2_NatIntroZ, p219_BetaReduceGrossKnuth, p197_Vble, p200_context, p202_context,
+    p206_context
+  );
   private p227_PiIntro = function_intro(p1_NatForm, p225_NatElim, p198_context);
   private p228_PiIntro = function_intro(p1_NatForm, p227_PiIntro, p196_context);
   private p229_DefEqRefl = definition_refl(p228_PiIntro);
@@ -160,9 +174,13 @@ construction primes {
   private p254_DefEqExtR = definition_right(p253_PiComp);
   private p255_context = assume(p254_DefEqExtR, none);
   private p262_PiElim = apply(p243_Vble, p252_Vble);
-  private p267_NatElim = natural_induction(p3_UIntro0, p4_VoidForm, p262_PiElim, p248_Vble, p249_context, p251_context, p255_context);
+  private p267_NatElim = natural_induction(
+    p3_UIntro0, p4_VoidForm, p262_PiElim, p248_Vble, p249_context, p251_context, p255_context
+  );
   private p269_PiIntro = function_intro(p1_NatForm, p267_NatElim, p247_context);
-  private p274_NatElim = natural_induction(p232_PiForm, p235_PiIntro, p269_PiIntro, p231_Vble, p236_context, p238_context, p242_context);
+  private p274_NatElim = natural_induction(
+    p232_PiForm, p235_PiIntro, p269_PiIntro, p231_Vble, p236_context, p238_context, p242_context
+  );
   private p276_PiIntro = function_intro(p1_NatForm, p274_NatElim, p230_context);
   private p277_DefEqRefl = definition_refl(p276_PiIntro);
   export nat_le = definition_right(p277_DefEqRefl);
@@ -174,7 +192,9 @@ construction primes {
   private p284_PiComp = function_compute(p3_UIntro0, p283_Vble, p280_context);
   private p285_DefEqExtR = definition_right(p284_PiComp);
   private p286_context = assume(p285_DefEqExtR, p255_context);
-  private p294_NatElim = natural_induction(p3_UIntro0, p5_UnitForm, p4_VoidForm, p279_Vble, p280_context, p282_context, p286_context);
+  private p294_NatElim = natural_induction(
+    p3_UIntro0, p5_UnitForm, p4_VoidForm, p279_Vble, p280_context, p282_context, p286_context
+  );
   private p296_PiIntro = function_intro(p1_NatForm, p294_NatElim, p278_context);
   private p297_context = assume(p1_NatForm, p282_context);
   private p298_Vble = variable(p297_context);
@@ -200,7 +220,10 @@ construction primes {
   private p327_context = assume(p325_BetaReduceGrossKnuth, none);
   private p328_Vble = variable(p327_context);
   private p329_PiIntro = function_intro(p325_BetaReduceGrossKnuth, p328_Vble, p327_context);
-  private p347_EqElim = equality_eliminate(p322_PiForm, p329_PiIntro, p2_NatIntroZ, p299_NatIntroS, p302_Vble, p304_context, p306_context, p309_context, p311_context);
+  private p347_EqElim = equality_eliminate(
+    p322_PiForm, p329_PiIntro, p2_NatIntroZ, p299_NatIntroS, p302_Vble, p304_context, p306_context,
+    p309_context, p311_context
+  );
   private p348_BetaReduceGrossKnuth = reduce_pass(p347_EqElim);
   private p352_PiElim = apply(p348_BetaReduceGrossKnuth, p6_UnitIntro);
   private p354_PiIntro = function_intro(p300_EqForm, p352_PiElim, p301_context);
@@ -215,7 +238,9 @@ construction primes {
   private p365_PiComp = function_compute(p1_NatForm, p364_Vble, p361_context);
   private p366_DefEqExtR = definition_right(p365_PiComp);
   private p367_context = assume(p366_DefEqExtR, p363_context);
-  private p375_NatElim = natural_induction(p1_NatForm, p2_NatIntroZ, p364_Vble, p360_Vble, p361_context, p363_context, p367_context);
+  private p375_NatElim = natural_induction(
+    p1_NatForm, p2_NatIntroZ, p364_Vble, p360_Vble, p361_context, p363_context, p367_context
+  );
   private p377_PiIntro = function_intro(p1_NatForm, p375_NatElim, p359_context);
   private p378_context = assume(p1_NatForm, p367_context);
   private p379_Vble = variable(p378_context);
@@ -285,7 +310,9 @@ construction primes {
   private p480_HighType = select_type(p467_PiElim);
   private p481_HighSubs = rewrite_selected(p480_HighType, p479_DefEqSwp);
   private p482_UnHigh = clear_selection(p481_HighSubs);
-  private p483_NatElim = natural_induction(p429_EqForm, p447_UnHigh, p482_UnHigh, p415_Vble, p417_context, p419_context, p432_context);
+  private p483_NatElim = natural_induction(
+    p429_EqForm, p447_UnHigh, p482_UnHigh, p415_Vble, p417_context, p419_context, p432_context
+  );
   private p485_PiIntro = function_intro(p1_NatForm, p483_NatElim, p414_context);
   private p486_Def = define(p485_PiIntro);
   private p487_DefEqExtL = definition_left(p486_Def);
@@ -352,7 +379,9 @@ construction primes {
   private p581_HighType = select_type(p568_PiIntro);
   private p582_HighSubs = rewrite_selected(p581_HighType, p580_DefEqSwp);
   private p583_UnHigh = clear_selection(p582_HighSubs);
-  private p584_NatElim = natural_induction(p519_PiForm, p537_UnHigh, p583_UnHigh, p490_Vble, p496_context, p498_context, p522_context);
+  private p584_NatElim = natural_induction(
+    p519_PiForm, p537_UnHigh, p583_UnHigh, p490_Vble, p496_context, p498_context, p522_context
+  );
   private p586_PiIntro = function_intro(p1_NatForm, p584_NatElim, p489_context);
   private p587_Def = define(p586_PiIntro);
   private p588_DefEqExtL = definition_left(p587_Def);
@@ -391,7 +420,9 @@ construction primes {
   private p639_BetaReduceGrossKnuth = reduce_pass(p638_PiElim);
   private p643_PiElim = apply(p618_BetaReduceGrossKnuth, p639_BetaReduceGrossKnuth);
   private p644_BetaReduceGrossKnuth = reduce_pass(p643_PiElim);
-  private p646_EqForm = equality_type(p1_NatForm, p632_BetaReduceGrossKnuth, p644_BetaReduceGrossKnuth);
+  private p646_EqForm = equality_type(
+    p1_NatForm, p632_BetaReduceGrossKnuth, p644_BetaReduceGrossKnuth
+  );
   private p647_PiForm = function_type(p1_NatForm, p646_EqForm, p614_context);
   private p648_PiForm = function_type(p1_NatForm, p647_PiForm, p612_context);
   private p649_PiComp = function_compute(p648_PiForm, p611_Vble, p608_context);
@@ -444,7 +475,9 @@ construction primes {
   private p729_HighType = select_type(p716_PiIntro);
   private p730_HighSubs = rewrite_selected(p729_HighType, p728_DefEqSwp);
   private p731_UnHigh = clear_selection(p730_HighSubs);
-  private p732_NatElim = natural_induction(p648_PiForm, p666_UnHigh, p731_UnHigh, p591_Vble, p608_context, p610_context, p651_context);
+  private p732_NatElim = natural_induction(
+    p648_PiForm, p666_UnHigh, p731_UnHigh, p591_Vble, p608_context, p610_context, p651_context
+  );
   private p734_PiIntro = function_intro(p1_NatForm, p732_NatElim, p590_context);
   private p735_Def = define(p734_PiIntro);
   private p736_DefEqExtL = definition_left(p735_Def);
@@ -475,7 +508,9 @@ construction primes {
   private p778_BetaReduceGrossKnuth = reduce_pass(p777_PiElim);
   private p781_PiElim = apply(p778_BetaReduceGrossKnuth, p763_Vble);
   private p782_BetaReduceGrossKnuth = reduce_pass(p781_PiElim);
-  private p784_EqForm = equality_type(p1_NatForm, p775_BetaReduceGrossKnuth, p782_BetaReduceGrossKnuth);
+  private p784_EqForm = equality_type(
+    p1_NatForm, p775_BetaReduceGrossKnuth, p782_BetaReduceGrossKnuth
+  );
   private p785_PiForm = function_type(p1_NatForm, p784_EqForm, p766_context);
   private p786_PiComp = function_compute(p785_PiForm, p765_Vble, p762_context);
   private p787_DefEqExtR = definition_right(p786_PiComp);
@@ -531,7 +566,9 @@ construction primes {
   private p890_HighType = select_type(p877_PiIntro);
   private p891_HighSubs = rewrite_selected(p890_HighType, p889_DefEqSwp);
   private p892_UnHigh = clear_selection(p891_HighSubs);
-  private p893_NatElim = natural_induction(p785_PiForm, p803_UnHigh, p892_UnHigh, p739_Vble, p762_context, p764_context, p788_context);
+  private p893_NatElim = natural_induction(
+    p785_PiForm, p803_UnHigh, p892_UnHigh, p739_Vble, p762_context, p764_context, p788_context
+  );
   private p895_PiIntro = function_intro(p1_NatForm, p893_NatElim, p738_context);
   private p896_Def = define(p895_PiIntro);
   private p897_DefEqExtL = definition_left(p896_Def);
@@ -570,7 +607,9 @@ construction primes {
   private p944_HighType = select_type(p916_Vble);
   private p945_HighSubs = rewrite_selected(p944_HighType, p943_DefEqSwp);
   private p946_UnHigh = clear_selection(p945_HighSubs);
-  private p947_NatElim = natural_induction(p911_PiElim, p929_UnHigh, p946_UnHigh, p900_Vble, p901_context, p903_context, p915_context);
+  private p947_NatElim = natural_induction(
+    p911_PiElim, p929_UnHigh, p946_UnHigh, p900_Vble, p901_context, p903_context, p915_context
+  );
   private p949_PiIntro = function_intro(p1_NatForm, p947_NatElim, p899_context);
   private p950_Def = define(p949_PiIntro);
   private p951_DefEqExtL = definition_left(p950_Def);
@@ -617,7 +656,9 @@ construction primes {
   private p1010_HighType = select_type(p995_PiIntro);
   private p1011_HighSubs = rewrite_selected(p1010_HighType, p1009_DefEqSwp);
   private p1012_UnHigh = clear_selection(p1011_HighSubs);
-  private p1013_NatElim = natural_induction(p971_PiForm, p989_UnHigh, p1012_UnHigh, p954_Vble, p959_context, p961_context, p974_context);
+  private p1013_NatElim = natural_induction(
+    p971_PiForm, p989_UnHigh, p1012_UnHigh, p954_Vble, p959_context, p961_context, p974_context
+  );
   private p1015_PiIntro = function_intro(p1_NatForm, p1013_NatElim, p953_context);
   private p1016_Def = define(p1015_PiIntro);
   private p1017_DefEqExtL = definition_left(p1016_Def);
@@ -710,7 +751,10 @@ construction primes {
   private p1150_HighType = select_type(p1137_PiIntro);
   private p1151_HighSubs = rewrite_selected(p1150_HighType, p1149_DefEqSwp);
   private p1152_UnHigh = clear_selection(p1151_HighSubs);
-  private p1153_NatElim = natural_induction(p1102_PiForm, p1120_UnHigh, p1152_UnHigh, p1067_Vble, p1084_context, p1086_context, p1105_context);
+  private p1153_NatElim = natural_induction(
+    p1102_PiForm, p1120_UnHigh, p1152_UnHigh, p1067_Vble, p1084_context, p1086_context,
+    p1105_context
+  );
   private p1155_PiIntro = function_intro(p1_NatForm, p1153_NatElim, p1066_context);
   private p1157_PiComp = function_compute(p1047_PiForm, p1070_NatIntroS, p1027_context);
   private p1158_DefEqExtR = definition_right(p1157_PiComp);
@@ -723,7 +767,10 @@ construction primes {
   private p1170_HighType = select_type(p1155_PiIntro);
   private p1171_HighSubs = rewrite_selected(p1170_HighType, p1169_DefEqSwp);
   private p1172_UnHigh = clear_selection(p1171_HighSubs);
-  private p1173_NatElim = natural_induction(p1047_PiForm, p1065_UnHigh, p1172_UnHigh, p1020_Vble, p1027_context, p1029_context, p1050_context);
+  private p1173_NatElim = natural_induction(
+    p1047_PiForm, p1065_UnHigh, p1172_UnHigh, p1020_Vble, p1027_context, p1029_context,
+    p1050_context
+  );
   private p1175_PiIntro = function_intro(p1_NatForm, p1173_NatElim, p1019_context);
   private p1176_Def = define(p1175_PiIntro);
   private p1177_DefEqExtL = definition_left(p1176_Def);
@@ -886,7 +933,10 @@ construction primes {
   private p1420_HighType = select_type(p1407_PiIntro);
   private p1421_HighSubs = rewrite_selected(p1420_HighType, p1419_DefEqSwp);
   private p1422_UnHigh = clear_selection(p1421_HighSubs);
-  private p1423_NatElim = natural_induction(p1363_PiForm, p1381_UnHigh, p1422_UnHigh, p1318_Vble, p1340_context, p1342_context, p1366_context);
+  private p1423_NatElim = natural_induction(
+    p1363_PiForm, p1381_UnHigh, p1422_UnHigh, p1318_Vble, p1340_context, p1342_context,
+    p1366_context
+  );
   private p1425_PiIntro = function_intro(p1_NatForm, p1423_NatElim, p1317_context);
   private p1427_PiComp = function_compute(p1298_PiForm, p1346_NatIntroS, p1272_context);
   private p1428_DefEqExtR = definition_right(p1427_PiComp);
@@ -898,7 +948,10 @@ construction primes {
   private p1438_HighType = select_type(p1425_PiIntro);
   private p1439_HighSubs = rewrite_selected(p1438_HighType, p1437_DefEqSwp);
   private p1440_UnHigh = clear_selection(p1439_HighSubs);
-  private p1441_NatElim = natural_induction(p1298_PiForm, p1316_UnHigh, p1440_UnHigh, p1250_Vble, p1272_context, p1274_context, p1301_context);
+  private p1441_NatElim = natural_induction(
+    p1298_PiForm, p1316_UnHigh, p1440_UnHigh, p1250_Vble, p1272_context, p1274_context,
+    p1301_context
+  );
   private p1443_PiIntro = function_intro(p1_NatForm, p1441_NatElim, p1249_context);
   private p1445_PiComp = function_compute(p1230_PiForm, p1257_NatIntroS, p1201_context);
   private p1446_DefEqExtR = definition_right(p1445_PiComp);
@@ -910,7 +963,10 @@ construction primes {
   private p1456_HighType = select_type(p1443_PiIntro);
   private p1457_HighSubs = rewrite_selected(p1456_HighType, p1455_DefEqSwp);
   private p1458_UnHigh = clear_selection(p1457_HighSubs);
-  private p1459_NatElim = natural_induction(p1230_PiForm, p1248_UnHigh, p1458_UnHigh, p1180_Vble, p1201_context, p1203_context, p1233_context);
+  private p1459_NatElim = natural_induction(
+    p1230_PiForm, p1248_UnHigh, p1458_UnHigh, p1180_Vble, p1201_context, p1203_context,
+    p1233_context
+  );
   private p1461_PiIntro = function_intro(p1_NatForm, p1459_NatElim, p1179_context);
   private p1462_Def = define(p1461_PiIntro);
   private p1463_DefEqExtL = definition_left(p1462_Def);
@@ -927,7 +983,9 @@ construction primes {
   private p1484_PiElim = apply(p1481_BetaReduceGrossKnuth, p2_NatIntroZ);
   private p1485_BetaReduceGrossKnuth = reduce_pass(p1484_PiElim);
   private p1486_BetaReduceGrossKnuth = reduce_pass(p1485_BetaReduceGrossKnuth);
-  private p1488_SumIntroL = either_left(p1475_BetaReduceGrossKnuth, p1486_BetaReduceGrossKnuth, p6_UnitIntro);
+  private p1488_SumIntroL = either_left(
+    p1475_BetaReduceGrossKnuth, p1486_BetaReduceGrossKnuth, p6_UnitIntro
+  );
   private p1489_PiIntro = function_intro(p1_NatForm, p1488_SumIntroL, p1467_context);
   private p1490_context = assume(p1_NatForm, p1467_context);
   private p1491_Vble = variable(p1490_context);
@@ -976,7 +1034,9 @@ construction primes {
   private p1555_PiElim = apply(p1552_BetaReduceGrossKnuth, p1536_NatIntroS);
   private p1556_BetaReduceGrossKnuth = reduce_pass(p1555_PiElim);
   private p1557_BetaReduceGrossKnuth = reduce_pass(p1556_BetaReduceGrossKnuth);
-  private p1559_SumIntroR = either_right(p1545_BetaReduceGrossKnuth, p1557_BetaReduceGrossKnuth, p6_UnitIntro);
+  private p1559_SumIntroR = either_right(
+    p1545_BetaReduceGrossKnuth, p1557_BetaReduceGrossKnuth, p6_UnitIntro
+  );
   private p1560_context = assume(p1_NatForm, p1534_context);
   private p1561_Vble = variable(p1560_context);
   private p1562_context = assume(p1_NatForm, p1560_context);
@@ -1016,7 +1076,10 @@ construction primes {
   private p1616_HighType = select_type(p1603_PiElim);
   private p1617_HighSubs = rewrite_selected(p1616_HighType, p1615_DefEqSwp);
   private p1618_UnHigh = clear_selection(p1617_HighSubs);
-  private p1619_NatElim = natural_induction(p1582_SumForm, p1600_UnHigh, p1618_UnHigh, p1535_Vble, p1560_context, p1562_context, p1585_context);
+  private p1619_NatElim = natural_induction(
+    p1582_SumForm, p1600_UnHigh, p1618_UnHigh, p1535_Vble, p1560_context, p1562_context,
+    p1585_context
+  );
   private p1621_PiIntro = function_intro(p1_NatForm, p1619_NatElim, p1534_context);
   private p1623_PiComp = function_compute(p1515_PiForm, p1536_NatIntroS, p1490_context);
   private p1624_DefEqExtR = definition_right(p1623_PiComp);
@@ -1028,7 +1091,10 @@ construction primes {
   private p1634_HighType = select_type(p1621_PiIntro);
   private p1635_HighSubs = rewrite_selected(p1634_HighType, p1633_DefEqSwp);
   private p1636_UnHigh = clear_selection(p1635_HighSubs);
-  private p1637_NatElim = natural_induction(p1515_PiForm, p1533_UnHigh, p1636_UnHigh, p1466_Vble, p1490_context, p1492_context, p1518_context);
+  private p1637_NatElim = natural_induction(
+    p1515_PiForm, p1533_UnHigh, p1636_UnHigh, p1466_Vble, p1490_context, p1492_context,
+    p1518_context
+  );
   private p1639_PiIntro = function_intro(p1_NatForm, p1637_NatElim, p1465_context);
   private p1640_Def = define(p1639_PiIntro);
   private p1641_DefEqExtL = definition_left(p1640_Def);
@@ -1142,7 +1208,10 @@ construction primes {
   private p1838_PiElim = apply(p1732_PiElim, p1781_NatIntroS);
   private p1841_PiElim = apply(p1838_PiElim, p1815_Vble);
   private p1843_SumIntroR = either_right(p1790_PiElim, p1810_EqForm, p1841_PiElim);
-  private p1845_SumElim = either_eliminate(p1811_SumForm, p1825_SumIntroL, p1843_SumIntroR, p1798_PiElim, none, p1812_context, p1814_context);
+  private p1845_SumElim = either_eliminate(
+    p1811_SumForm, p1825_SumIntroL, p1843_SumIntroR, p1798_PiElim, none, p1812_context,
+    p1814_context
+  );
   private p1847_PiIntro = function_intro(p1784_PiElim, p1845_SumElim, p1786_context);
   private p1849_PiComp = function_compute(p1762_PiForm, p1781_NatIntroS, p1740_context);
   private p1850_DefEqExtR = definition_right(p1849_PiComp);
@@ -1154,7 +1223,10 @@ construction primes {
   private p1860_HighType = select_type(p1847_PiIntro);
   private p1861_HighSubs = rewrite_selected(p1860_HighType, p1859_DefEqSwp);
   private p1862_UnHigh = clear_selection(p1861_HighSubs);
-  private p1863_NatElim = natural_induction(p1762_PiForm, p1780_UnHigh, p1862_UnHigh, p1702_Vble, p1740_context, p1742_context, p1765_context);
+  private p1863_NatElim = natural_induction(
+    p1762_PiForm, p1780_UnHigh, p1862_UnHigh, p1702_Vble, p1740_context, p1742_context,
+    p1765_context
+  );
   private p1865_PiIntro = function_intro(p1_NatForm, p1863_NatElim, p1701_context);
   private p1867_PiComp = function_compute(p1682_PiForm, p1712_NatIntroS, p1659_context);
   private p1868_DefEqExtR = definition_right(p1867_PiComp);
@@ -1167,7 +1239,10 @@ construction primes {
   private p1880_HighType = select_type(p1865_PiIntro);
   private p1881_HighSubs = rewrite_selected(p1880_HighType, p1879_DefEqSwp);
   private p1882_UnHigh = clear_selection(p1881_HighSubs);
-  private p1883_NatElim = natural_induction(p1682_PiForm, p1700_UnHigh, p1882_UnHigh, p1644_Vble, p1659_context, p1661_context, p1685_context);
+  private p1883_NatElim = natural_induction(
+    p1682_PiForm, p1700_UnHigh, p1882_UnHigh, p1644_Vble, p1659_context, p1661_context,
+    p1685_context
+  );
   private p1885_PiIntro = function_intro(p1_NatForm, p1883_NatElim, p1643_context);
   private p1886_Def = define(p1885_PiIntro);
   private p1887_DefEqExtL = definition_left(p1886_Def);
@@ -1227,7 +1302,10 @@ construction primes {
   private p1974_HighType = select_type(p1961_PiIntro);
   private p1975_HighSubs = rewrite_selected(p1974_HighType, p1973_DefEqSwp);
   private p1976_UnHigh = clear_selection(p1975_HighSubs);
-  private p1977_NatElim = natural_induction(p1920_PiForm, p1938_UnHigh, p1976_UnHigh, p1890_Vble, p1898_context, p1900_context, p1923_context);
+  private p1977_NatElim = natural_induction(
+    p1920_PiForm, p1938_UnHigh, p1976_UnHigh, p1890_Vble, p1898_context, p1900_context,
+    p1923_context
+  );
   private p1979_PiIntro = function_intro(p1_NatForm, p1977_NatElim, p1889_context);
   private p1980_Def = define(p1979_PiIntro);
   private p1981_DefEqExtL = definition_left(p1980_Def);
@@ -1252,7 +1330,10 @@ construction primes {
   private p2011_PiForm = function_type(p2008_EqForm, p4_VoidForm, none);
   private p2014_PiElim = apply(p357_DefEqExtL, p1995_Vble);
   private p2016_SumIntroR = either_right(p2008_EqForm, p2011_PiForm, p2014_PiElim);
-  private p2021_NatElim = natural_induction(p1999_SumForm, p1991_SumIntroL, p2016_SumIntroR, p1986_Vble, p1992_context, p1994_context, p2002_context);
+  private p2021_NatElim = natural_induction(
+    p1999_SumForm, p1991_SumIntroL, p2016_SumIntroR, p1986_Vble, p1992_context, p1994_context,
+    p2002_context
+  );
   private p2023_PiIntro = function_intro(p1_NatForm, p2021_NatElim, p1985_context);
   private p2024_context = assume(p1_NatForm, p1994_context);
   private p2025_Vble = variable(p2024_context);
@@ -1315,10 +1396,19 @@ construction primes {
   private p2144_PiElim = apply(p2105_Vble, p2141_PiElim);
   private p2146_PiIntro = function_intro(p2096_EqForm, p2144_PiElim, p2133_context);
   private p2148_SumIntroR = either_right(p2096_EqForm, p2100_PiForm, p2146_PiIntro);
-  private p2150_SumElim = either_eliminate(p2101_SumForm, p2121_SumIntroL, p2148_SumIntroR, p2092_PiElim, none, p2102_context, p2104_context);
-  private p2155_NatElim = natural_induction(p2079_SumForm, p2069_SumIntroR, p2150_SumElim, p2043_Vble, p2070_context, p2072_context, p2082_context);
+  private p2150_SumElim = either_eliminate(
+    p2101_SumForm, p2121_SumIntroL, p2148_SumIntroR, p2092_PiElim, none, p2102_context,
+    p2104_context
+  );
+  private p2155_NatElim = natural_induction(
+    p2079_SumForm, p2069_SumIntroR, p2150_SumElim, p2043_Vble, p2070_context, p2072_context,
+    p2082_context
+  );
   private p2157_PiIntro = function_intro(p1_NatForm, p2155_NatElim, p2042_context);
-  private p2162_NatElim = natural_induction(p2034_PiForm, p2023_PiIntro, p2157_PiIntro, p1984_Vble, p2024_context, p2026_context, p2037_context);
+  private p2162_NatElim = natural_induction(
+    p2034_PiForm, p2023_PiIntro, p2157_PiIntro, p1984_Vble, p2024_context, p2026_context,
+    p2037_context
+  );
   private p2164_PiIntro = function_intro(p1_NatForm, p2162_NatElim, p1983_context);
   private p2165_Def = define(p2164_PiIntro);
   private p2166_DefEqExtL = definition_left(p2165_Def);
@@ -1348,7 +1438,9 @@ construction primes {
   private p2195_BetaReduceGrossKnuth = reduce_pass(p2194_PiElim);
   private p2199_PiElim = apply(p2190_BetaReduceGrossKnuth, p2187_Vble);
   private p2200_BetaReduceGrossKnuth = reduce_pass(p2199_PiElim);
-  private p2202_EqForm = equality_type(p1_NatForm, p2195_BetaReduceGrossKnuth, p2200_BetaReduceGrossKnuth);
+  private p2202_EqForm = equality_type(
+    p1_NatForm, p2195_BetaReduceGrossKnuth, p2200_BetaReduceGrossKnuth
+  );
   private p2203_EqForm = equality_type(p1_NatForm, p2185_Vble, p2187_Vble);
   private p2204_PiForm = function_type(p2202_EqForm, p2203_EqForm, none);
   private p2205_PiForm = function_type(p1_NatForm, p2204_PiForm, p2186_context);
@@ -1402,7 +1494,10 @@ construction primes {
   private p2283_HighType = select_type(p2270_PiIntro);
   private p2284_HighSubs = rewrite_selected(p2283_HighType, p2282_DefEqSwp);
   private p2285_UnHigh = clear_selection(p2284_HighSubs);
-  private p2286_NatElim = natural_induction(p2206_PiForm, p2224_UnHigh, p2285_UnHigh, p2169_Vble, p2180_context, p2182_context, p2209_context);
+  private p2286_NatElim = natural_induction(
+    p2206_PiForm, p2224_UnHigh, p2285_UnHigh, p2169_Vble, p2180_context, p2182_context,
+    p2209_context
+  );
   private p2288_PiIntro = function_intro(p1_NatForm, p2286_NatElim, p2168_context);
   private p2289_Def = define(p2288_PiIntro);
   private p2290_DefEqExtL = definition_left(p2289_Def);
@@ -1442,7 +1537,10 @@ construction primes {
   private p2339_HighType = select_type(p2313_Vble);
   private p2340_HighSubs = rewrite_selected(p2339_HighType, p2338_DefEqSwp);
   private p2341_UnHigh = clear_selection(p2340_HighSubs);
-  private p2342_NatElim = natural_induction(p2309_EqForm, p2326_UnHigh, p2341_UnHigh, p2293_Vble, p2295_context, p2297_context, p2312_context);
+  private p2342_NatElim = natural_induction(
+    p2309_EqForm, p2326_UnHigh, p2341_UnHigh, p2293_Vble, p2295_context, p2297_context,
+    p2312_context
+  );
   private p2344_PiIntro = function_intro(p1_NatForm, p2342_NatElim, p2292_context);
   private p2345_Def = define(p2344_PiIntro);
   private p2346_DefEqExtL = definition_left(p2345_Def);
@@ -1536,7 +1634,9 @@ construction primes {
   private p2530_BetaReduceGrossKnuth = reduce_pass(p2529_PiElim);
   private p2534_PiElim = apply(p2530_BetaReduceGrossKnuth, p2527_BetaReduceGrossKnuth);
   private p2535_BetaReduceGrossKnuth = reduce_pass(p2534_PiElim);
-  private p2537_EqForm = equality_type(p1_NatForm, p2522_BetaReduceGrossKnuth, p2535_BetaReduceGrossKnuth);
+  private p2537_EqForm = equality_type(
+    p1_NatForm, p2522_BetaReduceGrossKnuth, p2535_BetaReduceGrossKnuth
+  );
   private p2538_PiForm = function_type(p1_NatForm, p2537_EqForm, p2511_context);
   private p2539_PiComp = function_compute(p2538_PiForm, p2510_Vble, p2507_context);
   private p2540_DefEqExtR = definition_right(p2539_PiComp);
@@ -1606,7 +1706,10 @@ construction primes {
   private p2688_HighType = select_type(p2675_PiIntro);
   private p2689_HighSubs = rewrite_selected(p2688_HighType, p2687_DefEqSwp);
   private p2690_UnHigh = clear_selection(p2689_HighSubs);
-  private p2691_NatElim = natural_induction(p2538_PiForm, p2556_UnHigh, p2690_UnHigh, p2502_Vble, p2507_context, p2509_context, p2541_context);
+  private p2691_NatElim = natural_induction(
+    p2538_PiForm, p2556_UnHigh, p2690_UnHigh, p2502_Vble, p2507_context, p2509_context,
+    p2541_context
+  );
   private p2693_PiIntro = function_intro(p1_NatForm, p2691_NatElim, p2501_context);
   private p2694_Def = define(p2693_PiIntro);
   private p2695_DefEqExtL = definition_left(p2694_Def);
@@ -1638,7 +1741,9 @@ construction primes {
   private p2737_BetaReduceGrossKnuth = reduce_pass(p2736_PiElim);
   private p2740_PiElim = apply(p2737_BetaReduceGrossKnuth, p2722_Vble);
   private p2741_BetaReduceGrossKnuth = reduce_pass(p2740_PiElim);
-  private p2743_EqForm = equality_type(p1_NatForm, p2734_BetaReduceGrossKnuth, p2741_BetaReduceGrossKnuth);
+  private p2743_EqForm = equality_type(
+    p1_NatForm, p2734_BetaReduceGrossKnuth, p2741_BetaReduceGrossKnuth
+  );
   private p2744_PiForm = function_type(p1_NatForm, p2743_EqForm, p2725_context);
   private p2745_PiComp = function_compute(p2744_PiForm, p2724_Vble, p2721_context);
   private p2746_DefEqExtR = definition_right(p2745_PiComp);
@@ -1702,7 +1807,10 @@ construction primes {
   private p2870_HighType = select_type(p2857_PiIntro);
   private p2871_HighSubs = rewrite_selected(p2870_HighType, p2869_DefEqSwp);
   private p2872_UnHigh = clear_selection(p2871_HighSubs);
-  private p2873_NatElim = natural_induction(p2744_PiForm, p2762_UnHigh, p2872_UnHigh, p2698_Vble, p2721_context, p2723_context, p2747_context);
+  private p2873_NatElim = natural_induction(
+    p2744_PiForm, p2762_UnHigh, p2872_UnHigh, p2698_Vble, p2721_context, p2723_context,
+    p2747_context
+  );
   private p2875_PiIntro = function_intro(p1_NatForm, p2873_NatElim, p2697_context);
   private p2876_Def = define(p2875_PiIntro);
   private p2877_DefEqExtL = definition_left(p2876_Def);
@@ -1747,7 +1855,9 @@ construction primes {
   private p2939_BetaReduceGrossKnuth = reduce_pass(p2938_PiElim);
   private p2943_PiElim = apply(p2939_BetaReduceGrossKnuth, p2935_BetaReduceGrossKnuth);
   private p2944_BetaReduceGrossKnuth = reduce_pass(p2943_PiElim);
-  private p2946_EqForm = equality_type(p1_NatForm, p2921_BetaReduceGrossKnuth, p2944_BetaReduceGrossKnuth);
+  private p2946_EqForm = equality_type(
+    p1_NatForm, p2921_BetaReduceGrossKnuth, p2944_BetaReduceGrossKnuth
+  );
   private p2947_PiForm = function_type(p1_NatForm, p2946_EqForm, p2903_context);
   private p2948_PiForm = function_type(p1_NatForm, p2947_PiForm, p2901_context);
   private p2949_PiComp = function_compute(p2948_PiForm, p2900_Vble, p2897_context);
@@ -1832,7 +1942,10 @@ construction primes {
   private p3133_HighType = select_type(p3120_PiIntro);
   private p3134_HighSubs = rewrite_selected(p3133_HighType, p3132_DefEqSwp);
   private p3135_UnHigh = clear_selection(p3134_HighSubs);
-  private p3136_NatElim = natural_induction(p2948_PiForm, p2966_UnHigh, p3135_UnHigh, p2880_Vble, p2897_context, p2899_context, p2951_context);
+  private p3136_NatElim = natural_induction(
+    p2948_PiForm, p2966_UnHigh, p3135_UnHigh, p2880_Vble, p2897_context, p2899_context,
+    p2951_context
+  );
   private p3138_PiIntro = function_intro(p1_NatForm, p3136_NatElim, p2879_context);
   private p3139_Def = define(p3138_PiIntro);
   private p3140_DefEqExtL = definition_left(p3139_Def);
@@ -1863,7 +1976,9 @@ construction primes {
   private p3182_BetaReduceGrossKnuth = reduce_pass(p3181_PiElim);
   private p3186_PiElim = apply(p3161_BetaReduceGrossKnuth, p3182_BetaReduceGrossKnuth);
   private p3187_BetaReduceGrossKnuth = reduce_pass(p3186_PiElim);
-  private p3189_EqForm = equality_type(p1_NatForm, p3175_BetaReduceGrossKnuth, p3187_BetaReduceGrossKnuth);
+  private p3189_EqForm = equality_type(
+    p1_NatForm, p3175_BetaReduceGrossKnuth, p3187_BetaReduceGrossKnuth
+  );
   private p3190_PiForm = function_type(p1_NatForm, p3189_EqForm, p3157_context);
   private p3191_PiForm = function_type(p1_NatForm, p3190_PiForm, p3155_context);
   private p3192_PiComp = function_compute(p3191_PiForm, p3154_Vble, p3151_context);
@@ -1941,7 +2056,10 @@ construction primes {
   private p3347_HighType = select_type(p3334_PiIntro);
   private p3348_HighSubs = rewrite_selected(p3347_HighType, p3346_DefEqSwp);
   private p3349_UnHigh = clear_selection(p3348_HighSubs);
-  private p3350_NatElim = natural_induction(p3191_PiForm, p3209_UnHigh, p3349_UnHigh, p3143_Vble, p3151_context, p3153_context, p3194_context);
+  private p3350_NatElim = natural_induction(
+    p3191_PiForm, p3209_UnHigh, p3349_UnHigh, p3143_Vble, p3151_context, p3153_context,
+    p3194_context
+  );
   private p3352_PiIntro = function_intro(p1_NatForm, p3350_NatElim, p3142_context);
   private p3353_Def = define(p3352_PiIntro);
   private p3354_DefEqExtL = definition_left(p3353_Def);
@@ -2010,7 +2128,10 @@ construction primes {
   private p3463_HighType = select_type(p3448_PiElim);
   private p3464_HighSubs = rewrite_selected(p3463_HighType, p3462_DefEqSwp);
   private p3465_UnHigh = clear_selection(p3464_HighSubs);
-  private p3466_NatElim = natural_induction(p3382_PiElim, p3400_UnHigh, p3465_UnHigh, p3359_Vble, p3360_context, p3362_context, p3386_context);
+  private p3466_NatElim = natural_induction(
+    p3382_PiElim, p3400_UnHigh, p3465_UnHigh, p3359_Vble, p3360_context, p3362_context,
+    p3386_context
+  );
   private p3468_PiIntro = function_intro(p1_NatForm, p3466_NatElim, p3358_context);
   private p3469_PiIntro = function_intro(p1_NatForm, p3468_PiIntro, p3356_context);
   private p3470_Def = define(p3469_PiIntro);
@@ -2105,7 +2226,9 @@ construction primes {
   private p3672_context = assume(p3490_PiElim, p3649_context);
   private p3677_SigmaIntro = pair_intro(p3549_Vble, p3648_PiForm, p3624_PiIntro, p3672_context);
   private p3678_context = assume(p5_UnitForm, p1647_context);
-  private p3683_SigmaIntro = pair_intro(p6_UnitIntro, p3651_SigmaForm, p3677_SigmaIntro, p3678_context);
+  private p3683_SigmaIntro = pair_intro(
+    p6_UnitIntro, p3651_SigmaForm, p3677_SigmaIntro, p3678_context
+  );
   private p3684_context = assume(p1_NatForm, p3653_context);
   private p3685_Vble = variable(p3684_context);
   private p3687_PiElim = apply(p276_PiIntro, p3685_Vble);
@@ -2170,14 +2293,20 @@ construction primes {
   private p3826_context = assume(p3824_PiElim, none);
   private p3827_Vble = variable(p3826_context);
   private p3828_PiIntro = function_intro(p3824_PiElim, p3827_Vble, p3826_context);
-  private p3846_EqElim = equality_eliminate(p3822_PiForm, p3828_PiIntro, p3788_Vble, p2_NatIntroZ, p3805_PiElim, p3807_context, p3809_context, p3812_context, p3814_context);
+  private p3846_EqElim = equality_eliminate(
+    p3822_PiForm, p3828_PiIntro, p3788_Vble, p2_NatIntroZ, p3805_PiElim, p3807_context,
+    p3809_context, p3812_context, p3814_context
+  );
   private p3849_PiElim = apply(p3846_EqElim, p3801_Vble);
   private p3852_PiElim = apply(p3551_Vble, p3849_PiElim);
   private p3854_PiIntro = function_intro(p3798_PiElim, p3852_PiElim, p3800_context);
   private p3855_PiIntro = function_intro(p3794_PiElim, p3854_PiIntro, p3796_context);
   private p3856_PiIntro = function_intro(p1_NatForm, p3855_PiIntro, p3787_context);
   private p3858_SumIntroR = either_right(p3532_SigmaForm, p3546_PiForm, p3856_PiIntro);
-  private p3860_SumElim = either_eliminate(p3547_SumForm, p3735_SumIntroL, p3858_SumIntroR, p3495_PiElim, none, p3548_context, p3550_context);
+  private p3860_SumElim = either_eliminate(
+    p3547_SumForm, p3735_SumIntroL, p3858_SumIntroR, p3495_PiElim, none, p3548_context,
+    p3550_context
+  );
   private p3862_context = assume(p1_NatForm, p3814_context);
   private p3863_Vble = variable(p3862_context);
   private p3864_context = assume(p1_NatForm, p3862_context);
@@ -2340,7 +2469,9 @@ construction primes {
   private p4276_context = assume(p4093_PiElim, p4254_context);
   private p4281_SigmaIntro = pair_intro(p4151_Vble, p4112_PiForm, p4171_Vble, p4276_context);
   private p4282_context = assume(p4233_PiElim, none);
-  private p4287_SigmaIntro = pair_intro(p4230_PiElim, p4115_SigmaForm, p4281_SigmaIntro, p4282_context);
+  private p4287_SigmaIntro = pair_intro(
+    p4230_PiElim, p4115_SigmaForm, p4281_SigmaIntro, p4282_context
+  );
   private p4288_context = assume(p1_NatForm, p4258_context);
   private p4289_Vble = variable(p4288_context);
   private p4291_PiElim = apply(p276_PiIntro, p4289_Vble);
@@ -2363,11 +2494,19 @@ construction primes {
   private p4319_SigmaForm = pair_type(p4297_PiElim, p4316_PiForm, p4317_context);
   private p4320_context = assume(p4295_PiElim, none);
   private p4322_SigmaForm = pair_type(p4295_PiElim, p4319_SigmaForm, p4320_context);
-  private p4326_SigmaIntro = pair_intro(p4085_Vble, p4322_SigmaForm, p4287_SigmaIntro, p4288_context);
+  private p4326_SigmaIntro = pair_intro(
+    p4085_Vble, p4322_SigmaForm, p4287_SigmaIntro, p4288_context
+  );
   private p4328_SumIntroL = either_left(p4012_SigmaForm, p4026_PiForm, p4326_SigmaIntro);
-  private p4330_SigmaElim = pair_eliminate(p4027_SumForm, p4328_SumIntroL, p4148_Vble, none, p4150_context, p4170_context);
-  private p4332_SigmaElim = pair_eliminate(p4027_SumForm, p4330_SigmaElim, p4120_Vble, none, p4123_context, p4147_context);
-  private p4334_SigmaElim = pair_eliminate(p4027_SumForm, p4332_SigmaElim, p4029_Vble, none, p4084_context, p4119_context);
+  private p4330_SigmaElim = pair_eliminate(
+    p4027_SumForm, p4328_SumIntroL, p4148_Vble, none, p4150_context, p4170_context
+  );
+  private p4332_SigmaElim = pair_eliminate(
+    p4027_SumForm, p4330_SigmaElim, p4120_Vble, none, p4123_context, p4147_context
+  );
+  private p4334_SigmaElim = pair_eliminate(
+    p4027_SumForm, p4332_SigmaElim, p4029_Vble, none, p4084_context, p4119_context
+  );
   private p4337_PiElim = apply(p3475_Vble, p3975_NatIntroS);
   private p4341_PiForm = function_type(p4337_PiElim, p4_VoidForm, none);
   private p4343_PiElim = apply(p3487_Vble, p3975_NatIntroS);
@@ -2397,7 +2536,9 @@ construction primes {
   private p4512_context = assume(p4337_PiElim, p4489_context);
   private p4517_SigmaIntro = pair_intro(p4398_Vble, p3974_PiForm, p4031_Vble, p4512_context);
   private p4518_context = assume(p4467_BetaReduceGrossKnuth, none);
-  private p4523_SigmaIntro = pair_intro(p4458_BetaReduceGrossKnuth, p4491_SigmaForm, p4517_SigmaIntro, p4518_context);
+  private p4523_SigmaIntro = pair_intro(
+    p4458_BetaReduceGrossKnuth, p4491_SigmaForm, p4517_SigmaIntro, p4518_context
+  );
   private p4524_context = assume(p1_NatForm, p4493_context);
   private p4525_Vble = variable(p4524_context);
   private p4527_PiElim = apply(p276_PiIntro, p4525_Vble);
@@ -2431,7 +2572,9 @@ construction primes {
   private p4572_HighType = select_type(p4523_SigmaIntro);
   private p4573_HighSubs = rewrite_selected(p4572_HighType, p4571_DefEqSwp);
   private p4574_UnHigh = clear_selection(p4573_HighSubs);
-  private p4575_SigmaIntro = pair_intro(p3975_NatIntroS, p4558_SigmaForm, p4574_UnHigh, p4524_context);
+  private p4575_SigmaIntro = pair_intro(
+    p3975_NatIntroS, p4558_SigmaForm, p4574_UnHigh, p4524_context
+  );
   private p4577_SumIntroL = either_left(p4012_SigmaForm, p4026_PiForm, p4575_SigmaIntro);
   private p4580_context = assume(p1_NatForm, p4535_context);
   private p4591_context = assume(p1_NatForm, p4580_context);
@@ -2473,17 +2616,30 @@ construction primes {
   private p4692_context = assume(p4690_PiElim, none);
   private p4693_Vble = variable(p4692_context);
   private p4694_PiIntro = function_intro(p4690_PiElim, p4693_Vble, p4692_context);
-  private p4712_EqElim = equality_eliminate(p4688_PiForm, p4694_PiIntro, p4632_Vble, p3975_NatIntroS, p4663_Vble, p4673_context, p4675_context, p4678_context, p4680_context);
+  private p4712_EqElim = equality_eliminate(
+    p4688_PiForm, p4694_PiIntro, p4632_Vble, p3975_NatIntroS, p4663_Vble, p4673_context,
+    p4675_context, p4678_context, p4680_context
+  );
   private p4714_PiElim = apply(p4712_EqElim, p4646_Vble);
   private p4717_PiElim = apply(p4400_Vble, p4714_PiElim);
-  private p4719_SumElim = either_eliminate(p4_VoidForm, p4670_PiElim, p4717_PiElim, p4658_PiElim, none, p4660_context, p4662_context);
+  private p4719_SumElim = either_eliminate(
+    p4_VoidForm, p4670_PiElim, p4717_PiElim, p4658_PiElim, none, p4660_context, p4662_context
+  );
   private p4721_PiIntro = function_intro(p4643_PiElim, p4719_SumElim, p4645_context);
   private p4722_PiIntro = function_intro(p4639_PiElim, p4721_PiIntro, p4641_context);
   private p4723_PiIntro = function_intro(p1_NatForm, p4722_PiIntro, p4631_context);
   private p4725_SumIntroR = either_right(p4012_SigmaForm, p4026_PiForm, p4723_PiIntro);
-  private p4727_SumElim = either_eliminate(p4027_SumForm, p4577_SumIntroL, p4725_SumIntroR, p4343_PiElim, none, p4397_context, p4399_context);
-  private p4729_SumElim = either_eliminate(p4027_SumForm, p4334_SigmaElim, p4727_SumElim, p3921_Vble, none, p4028_context, p4030_context);
-  private p4734_NatElim = natural_induction(p3917_SumForm, p3860_SumElim, p4729_SumElim, p3489_Vble, p3862_context, p3864_context, p3920_context);
+  private p4727_SumElim = either_eliminate(
+    p4027_SumForm, p4577_SumIntroL, p4725_SumIntroR, p4343_PiElim, none, p4397_context,
+    p4399_context
+  );
+  private p4729_SumElim = either_eliminate(
+    p4027_SumForm, p4334_SigmaElim, p4727_SumElim, p3921_Vble, none, p4028_context, p4030_context
+  );
+  private p4734_NatElim = natural_induction(
+    p3917_SumForm, p3860_SumElim, p4729_SumElim, p3489_Vble, p3862_context, p3864_context,
+    p3920_context
+  );
   private p4736_PiIntro = function_intro(p1_NatForm, p4734_NatElim, p3488_context);
   private p4737_PiIntro = function_intro(p3485_PiForm, p4736_PiIntro, p3486_context);
   private p4738_PiIntro = function_intro(p232_PiForm, p4737_PiIntro, p3474_context);
@@ -2554,7 +2710,9 @@ construction primes {
   private p4904_PiElim = apply(p4902_PiElim, p4899_PiElim);
   private p4907_PiElim = apply(p4904_PiElim, p4763_Vble);
   private p4909_VoidElim = empty_eliminate(p4799_SigmaForm, p4907_PiElim, none);
-  private p4911_SumElim = either_eliminate(p4799_SigmaForm, p4859_Vble, p4909_VoidElim, p4820_PiElim, none, p4858_context, p4860_context);
+  private p4911_SumElim = either_eliminate(
+    p4799_SigmaForm, p4859_Vble, p4909_VoidElim, p4820_PiElim, none, p4858_context, p4860_context
+  );
   private p4913_PiIntro = function_intro(p4760_PiElim, p4911_SumElim, p4762_context);
   private p4914_PiIntro = function_intro(p1_NatForm, p4913_PiIntro, p4757_context);
   private p4915_PiIntro = function_intro(p4754_PiForm, p4914_PiIntro, p4755_context);
@@ -2708,9 +2866,15 @@ construction primes {
   private p5211_EqForm = equality_type(p1_NatForm, p5209_BetaReduceGrossKnuth, p4943_Vble);
   private p5215_SigmaIntro = pair_intro(p5079_Vble, p5211_EqForm, p5148_Vble, p5199_context);
   private p5217_SumIntroL = either_left(p4994_SigmaForm, p5009_PiForm, p5215_SigmaIntro);
-  private p5219_SigmaElim = pair_eliminate(p5010_SumForm, p5217_SumIntroL, p5145_Vble, none, p5147_context, p5168_context);
-  private p5221_SigmaElim = pair_eliminate(p5010_SumForm, p5219_SigmaElim, p5116_Vble, none, p5119_context, p5144_context);
-  private p5223_SigmaElim = pair_eliminate(p5010_SumForm, p5221_SigmaElim, p5075_Vble, none, p5078_context, p5115_context);
+  private p5219_SigmaElim = pair_eliminate(
+    p5010_SumForm, p5217_SumIntroL, p5145_Vble, none, p5147_context, p5168_context
+  );
+  private p5221_SigmaElim = pair_eliminate(
+    p5010_SumForm, p5219_SigmaElim, p5116_Vble, none, p5119_context, p5144_context
+  );
+  private p5223_SigmaElim = pair_eliminate(
+    p5010_SumForm, p5221_SigmaElim, p5075_Vble, none, p5078_context, p5115_context
+  );
   private p5225_context = assume(p1_NatForm, p5199_context);
   private p5239_context = assume(p1_NatForm, p5225_context);
   private p5254_context = assume(p1_NatForm, p5239_context);
@@ -2746,15 +2910,23 @@ construction primes {
   private p5318_context = assume(p5316_PiElim, none);
   private p5319_Vble = variable(p5318_context);
   private p5320_PiIntro = function_intro(p5316_PiElim, p5319_Vble, p5318_context);
-  private p5338_EqElim = equality_eliminate(p5313_PiForm, p5320_PiIntro, p5280_BetaReduceGrossKnuth, p4943_Vble, p5284_Vble, p5293_context, p5295_context, p5298_context, p5300_context);
+  private p5338_EqElim = equality_eliminate(
+    p5313_PiForm, p5320_PiIntro, p5280_BetaReduceGrossKnuth, p4943_Vble, p5284_Vble, p5293_context,
+    p5295_context, p5298_context, p5300_context
+  );
   private p5340_PiElim = apply(p5338_EqElim, p5291_PiElim);
   private p5343_PiElim = apply(p5077_Vble, p5271_Vble);
   private p5345_PiElim = apply(p5343_PiElim, p5340_PiElim);
   private p5348_PiElim = apply(p5345_PiElim, p5284_Vble);
-  private p5350_SigmaElim = pair_eliminate(p4_VoidForm, p5348_PiElim, p5269_Vble, none, p5270_context, p5283_context);
+  private p5350_SigmaElim = pair_eliminate(
+    p4_VoidForm, p5348_PiElim, p5269_Vble, none, p5270_context, p5283_context
+  );
   private p5352_PiIntro = function_intro(p4994_SigmaForm, p5350_SigmaElim, p5268_context);
   private p5354_SumIntroR = either_right(p4994_SigmaForm, p5009_PiForm, p5352_PiIntro);
-  private p5356_SumElim = either_eliminate(p5010_SumForm, p5223_SigmaElim, p5354_SumIntroR, p5072_PiElim, none, p5074_context, p5076_context);
+  private p5356_SumElim = either_eliminate(
+    p5010_SumForm, p5223_SigmaElim, p5354_SumIntroR, p5072_PiElim, none, p5074_context,
+    p5076_context
+  );
   private p5358_PiIntro = function_intro(p1_NatForm, p5356_SumElim, p4942_context);
   private p5359_PiIntro = function_intro(p1_NatForm, p5358_PiIntro, p4940_context);
   private p5360_Def = define(p5359_PiIntro);
@@ -2847,9 +3019,15 @@ construction primes {
   private p5518_PiElim = apply(p5515_BetaReduceGrossKnuth, p5364_Vble);
   private p5519_BetaReduceGrossKnuth = reduce_pass(p5518_PiElim);
   private p5521_EqForm = equality_type(p1_NatForm, p5519_BetaReduceGrossKnuth, p5368_Vble);
-  private p5524_SigmaIntro = pair_intro(p5439_BetaReduceGrossKnuth, p5521_EqForm, p5509_PiElim, p5511_context);
-  private p5526_SigmaElim = pair_eliminate(p5410_SigmaForm, p5524_SigmaIntro, p5398_Vble, none, p5424_context, p5435_context);
-  private p5528_SigmaElim = pair_eliminate(p5410_SigmaForm, p5526_SigmaElim, p5383_Vble, none, p5411_context, p5422_context);
+  private p5524_SigmaIntro = pair_intro(
+    p5439_BetaReduceGrossKnuth, p5521_EqForm, p5509_PiElim, p5511_context
+  );
+  private p5526_SigmaElim = pair_eliminate(
+    p5410_SigmaForm, p5524_SigmaIntro, p5398_Vble, none, p5424_context, p5435_context
+  );
+  private p5528_SigmaElim = pair_eliminate(
+    p5410_SigmaForm, p5526_SigmaElim, p5383_Vble, none, p5411_context, p5422_context
+  );
   private p5530_PiIntro = function_intro(p5396_SigmaForm, p5528_SigmaElim, p5397_context);
   private p5531_PiIntro = function_intro(p5381_SigmaForm, p5530_PiIntro, p5382_context);
   private p5532_PiIntro = function_intro(p1_NatForm, p5531_PiIntro, p5367_context);
@@ -2938,7 +3116,10 @@ construction primes {
   private p5661_HighType = select_type(p5648_PiIntro);
   private p5662_HighSubs = rewrite_selected(p5661_HighType, p5660_DefEqSwp);
   private p5663_UnHigh = clear_selection(p5662_HighSubs);
-  private p5664_NatElim = natural_induction(p5571_PiForm, p5588_UnHigh, p5663_UnHigh, p5543_Vble, p5546_context, p5548_context, p5574_context);
+  private p5664_NatElim = natural_induction(
+    p5571_PiForm, p5588_UnHigh, p5663_UnHigh, p5543_Vble, p5546_context, p5548_context,
+    p5574_context
+  );
   private p5666_PiIntro = function_intro(p1_NatForm, p5664_NatElim, p5542_context);
   private p5667_context = assume(p1_NatForm, p5548_context);
   private p5668_Vble = variable(p5667_context);
@@ -3076,7 +3257,10 @@ construction primes {
   private p5896_HighType = select_type(p5883_PiIntro);
   private p5897_HighSubs = rewrite_selected(p5896_HighType, p5895_DefEqSwp);
   private p5898_UnHigh = clear_selection(p5897_HighSubs);
-  private p5899_NatElim = natural_induction(p5753_PiForm, p5770_UnHigh, p5898_UnHigh, p5718_Vble, p5734_context, p5736_context, p5756_context);
+  private p5899_NatElim = natural_induction(
+    p5753_PiForm, p5770_UnHigh, p5898_UnHigh, p5718_Vble, p5734_context, p5736_context,
+    p5756_context
+  );
   private p5901_PiIntro = function_intro(p1_NatForm, p5899_NatElim, p5717_context);
   private p5903_PiComp = function_compute(p5698_PiForm, p5719_NatIntroS, p5669_context);
   private p5904_DefEqExtR = definition_right(p5903_PiComp);
@@ -3088,7 +3272,10 @@ construction primes {
   private p5914_HighType = select_type(p5901_PiIntro);
   private p5915_HighSubs = rewrite_selected(p5914_HighType, p5913_DefEqSwp);
   private p5916_UnHigh = clear_selection(p5915_HighSubs);
-  private p5917_NatElim = natural_induction(p5698_PiForm, p5716_UnHigh, p5916_UnHigh, p5668_Vble, p5669_context, p5671_context, p5701_context);
+  private p5917_NatElim = natural_induction(
+    p5698_PiForm, p5716_UnHigh, p5916_UnHigh, p5668_Vble, p5669_context, p5671_context,
+    p5701_context
+  );
   private p5919_PiIntro = function_intro(p1_NatForm, p5917_NatElim, p5667_context);
   private p5920_PiIntro = function_intro(p1_NatForm, p5919_PiIntro, p5538_context);
   private p5921_Def = define(p5920_PiIntro);
@@ -3162,8 +3349,12 @@ construction primes {
   private p6041_PiElim = apply(p6039_PiElim, p5965_Vble);
   private p6043_PiElim = apply(p6041_PiElim, p5980_Vble);
   private p6045_PiElim = apply(p6043_PiElim, p6035_PiElim);
-  private p6047_SigmaElim = pair_eliminate(p4_VoidForm, p6045_PiElim, p5963_Vble, none, p5979_context, p5993_context);
-  private p6049_SigmaElim = pair_eliminate(p4_VoidForm, p6047_SigmaElim, p5946_Vble, none, p5964_context, p5977_context);
+  private p6047_SigmaElim = pair_eliminate(
+    p4_VoidForm, p6045_PiElim, p5963_Vble, none, p5979_context, p5993_context
+  );
+  private p6049_SigmaElim = pair_eliminate(
+    p4_VoidForm, p6047_SigmaElim, p5946_Vble, none, p5964_context, p5977_context
+  );
   private p6051_PiIntro = function_intro(p5961_SigmaForm, p6049_SigmaElim, p5962_context);
   private p6052_PiIntro = function_intro(p5944_SigmaForm, p6051_PiIntro, p5945_context);
   private p6053_PiIntro = function_intro(p1_NatForm, p6052_PiIntro, p5926_context);
@@ -3187,7 +3378,10 @@ construction primes {
   private p6074_BetaReduceGrossKnuth = reduce_pass(p6073_BetaReduceGrossKnuth);
   private p6078_PiElim = apply(p6074_BetaReduceGrossKnuth, p6067_Vble);
   private p6079_BetaReduceGrossKnuth = reduce_pass(p6078_PiElim);
-  private p6085_NatElim = natural_induction(p1_NatForm, p7_NatIntroS, p6079_BetaReduceGrossKnuth, p6059_Vble, p6060_context, p6062_context, p6066_context);
+  private p6085_NatElim = natural_induction(
+    p1_NatForm, p7_NatIntroS, p6079_BetaReduceGrossKnuth, p6059_Vble, p6060_context, p6062_context,
+    p6066_context
+  );
   private p6087_PiIntro = function_intro(p1_NatForm, p6085_NatElim, p6058_context);
   private p6088_DefEqRefl = definition_refl(p6087_PiIntro);
   export nat_factorial = definition_right(p6088_DefEqRefl);
@@ -3243,7 +3437,10 @@ construction primes {
   private p6163_DefEqSwp = definition_symmetry(p6161_BetaReduceGrossKnuth);
   private p6165_HighSubs = rewrite_selected(p1063_HighType, p6163_DefEqSwp);
   private p6166_UnHigh = clear_selection(p6165_HighSubs);
-  private p6167_NatElim = natural_induction(p6128_PiForm, p6146_UnHigh, p6166_UnHigh, p6090_Vble, p6103_context, p6105_context, p6131_context);
+  private p6167_NatElim = natural_induction(
+    p6128_PiForm, p6146_UnHigh, p6166_UnHigh, p6090_Vble, p6103_context, p6105_context,
+    p6131_context
+  );
   private p6169_PiIntro = function_intro(p1_NatForm, p6167_NatElim, p6089_context);
   private p6170_Def = define(p6169_PiIntro);
   private p6171_DefEqExtL = definition_left(p6170_Def);
@@ -3280,7 +3477,9 @@ construction primes {
   private p6223_PiElim = apply(p6220_PiElim, p6217_BetaReduceGrossKnuth);
   private p6226_PiElim = apply(p6223_PiElim, p6192_Vble);
   private p6228_NatIntroS = successor(p6178_Vble);
-  private p6229_PiComp = function_compute(p6187_BetaReduceGrossKnuth, p6228_NatIntroS, p6175_context);
+  private p6229_PiComp = function_compute(
+    p6187_BetaReduceGrossKnuth, p6228_NatIntroS, p6175_context
+  );
   private p6230_DefEqExtR = definition_right(p6229_PiComp);
   private p6233_DefEqRefl = definition_refl(p6230_DefEqExtR);
   private p6234_HighExp = select_expression(p6233_DefEqRefl);
@@ -3290,7 +3489,10 @@ construction primes {
   private p6239_HighType = select_type(p6226_PiElim);
   private p6240_HighSubs = rewrite_selected(p6239_HighType, p6238_DefEqSwp);
   private p6241_UnHigh = clear_selection(p6240_HighSubs);
-  private p6242_NatElim = natural_induction(p6187_BetaReduceGrossKnuth, p6205_UnHigh, p6241_UnHigh, p6174_Vble, p6175_context, p6177_context, p6191_context);
+  private p6242_NatElim = natural_induction(
+    p6187_BetaReduceGrossKnuth, p6205_UnHigh, p6241_UnHigh, p6174_Vble, p6175_context,
+    p6177_context, p6191_context
+  );
   private p6244_PiIntro = function_intro(p1_NatForm, p6242_NatElim, p6173_context);
   private p6245_Def = define(p6244_PiIntro);
   private p6246_DefEqExtL = definition_left(p6245_Def);
@@ -3336,7 +3538,9 @@ construction primes {
   private p6298_BetaReduceGrossKnuth = reduce_pass(p6297_PiElim);
   private p6299_BetaReduceGrossKnuth = reduce_pass(p6298_BetaReduceGrossKnuth);
   private p6300_BetaReduceGrossKnuth = reduce_pass(p6299_BetaReduceGrossKnuth);
-  private p6302_EqForm = equality_type(p1_NatForm, p6300_BetaReduceGrossKnuth, p6288_BetaReduceGrossKnuth);
+  private p6302_EqForm = equality_type(
+    p1_NatForm, p6300_BetaReduceGrossKnuth, p6288_BetaReduceGrossKnuth
+  );
   private p6303_SigmaForm = pair_type(p1_NatForm, p6302_EqForm, p6290_context);
   private p6304_PiForm = function_type(p6285_BetaReduceGrossKnuth, p6303_SigmaForm, none);
   private p6305_PiComp = function_compute(p6304_PiForm, p6276_Vble, p6273_context);
@@ -3378,7 +3582,9 @@ construction primes {
   private p6362_BetaReduceGrossKnuth = reduce_pass(p6361_PiElim);
   private p6363_BetaReduceGrossKnuth = reduce_pass(p6362_BetaReduceGrossKnuth);
   private p6364_BetaReduceGrossKnuth = reduce_pass(p6363_BetaReduceGrossKnuth);
-  private p6366_EqForm = equality_type(p1_NatForm, p6364_BetaReduceGrossKnuth, p6352_BetaReduceGrossKnuth);
+  private p6366_EqForm = equality_type(
+    p1_NatForm, p6364_BetaReduceGrossKnuth, p6352_BetaReduceGrossKnuth
+  );
   private p6367_SigmaForm = pair_type(p1_NatForm, p6366_EqForm, p6354_context);
   private p6368_context = assume(p6335_BetaReduceGrossKnuth, none);
   private p6369_Vble = variable(p6368_context);
@@ -3394,7 +3600,9 @@ construction primes {
   private p6390_BetaReduceGrossKnuth = reduce_pass(p6389_PiElim);
   private p6394_PiElim = apply(p6390_BetaReduceGrossKnuth, p6373_BetaReduceGrossKnuth);
   private p6395_BetaReduceGrossKnuth = reduce_pass(p6394_PiElim);
-  private p6399_EqForm = equality_type(p1_NatForm, p6395_BetaReduceGrossKnuth, p6352_BetaReduceGrossKnuth);
+  private p6399_EqForm = equality_type(
+    p1_NatForm, p6395_BetaReduceGrossKnuth, p6352_BetaReduceGrossKnuth
+  );
   private p6400_PiComp = function_compute(p6399_EqForm, p6323_NatIntroS, p6385_context);
   private p6401_DefEqExtR = definition_right(p6400_PiComp);
   private p6405_DefEqRefl = definition_refl(p6401_DefEqExtR);
@@ -3447,9 +3655,16 @@ construction primes {
   private p6506_BetaReduceGrossKnuth = reduce_pass(p6505_PiElim);
   private p6507_BetaReduceGrossKnuth = reduce_pass(p6506_BetaReduceGrossKnuth);
   private p6508_BetaReduceGrossKnuth = reduce_pass(p6507_BetaReduceGrossKnuth);
-  private p6512_EqForm = equality_type(p1_NatForm, p6508_BetaReduceGrossKnuth, p6352_BetaReduceGrossKnuth);
-  private p6515_SigmaIntro = pair_intro(p6373_BetaReduceGrossKnuth, p6512_EqForm, p6496_PiElim, p6498_context);
-  private p6517_SumElim = either_eliminate(p6367_SigmaForm, p6429_PiElim, p6515_SigmaIntro, p6347_PiElim, none, p6368_context, p6370_context);
+  private p6512_EqForm = equality_type(
+    p1_NatForm, p6508_BetaReduceGrossKnuth, p6352_BetaReduceGrossKnuth
+  );
+  private p6515_SigmaIntro = pair_intro(
+    p6373_BetaReduceGrossKnuth, p6512_EqForm, p6496_PiElim, p6498_context
+  );
+  private p6517_SumElim = either_eliminate(
+    p6367_SigmaForm, p6429_PiElim, p6515_SigmaIntro, p6347_PiElim, none, p6368_context,
+    p6370_context
+  );
   private p6519_PiIntro = function_intro(p6328_BetaReduceGrossKnuth, p6517_SumElim, p6330_context);
   private p6521_PiComp = function_compute(p6304_PiForm, p6323_NatIntroS, p6273_context);
   private p6522_DefEqExtR = definition_right(p6521_PiComp);
@@ -3461,7 +3676,10 @@ construction primes {
   private p6532_HighType = select_type(p6519_PiIntro);
   private p6533_HighSubs = rewrite_selected(p6532_HighType, p6531_DefEqSwp);
   private p6534_UnHigh = clear_selection(p6533_HighSubs);
-  private p6535_NatElim = natural_induction(p6304_PiForm, p6322_UnHigh, p6534_UnHigh, p6253_Vble, p6273_context, p6275_context, p6307_context);
+  private p6535_NatElim = natural_induction(
+    p6304_PiForm, p6322_UnHigh, p6534_UnHigh, p6253_Vble, p6273_context, p6275_context,
+    p6307_context
+  );
   private p6537_PiIntro = function_intro(p1_NatForm, p6535_NatElim, p6252_context);
   private p6538_PiIntro = function_intro(p1_NatForm, p6537_PiIntro, p6248_context);
   private p6539_Def = define(p6538_PiIntro);
@@ -3978,7 +4196,9 @@ construction primes {
   private p7319_PiForm = function_type(p1_NatForm, p7318_PiForm, p7287_context);
   private p7320_context = assume(p7286_EqForm, none);
   private p7322_SigmaForm = pair_type(p7286_EqForm, p7319_PiForm, p7320_context);
-  private p7326_SigmaIntro = pair_intro(p7083_Vble, p7322_SigmaForm, p7281_SigmaIntro, p7282_context);
+  private p7326_SigmaIntro = pair_intro(
+    p7083_Vble, p7322_SigmaForm, p7281_SigmaIntro, p7282_context
+  );
   private p7327_context = assume(p1_NatForm, p7302_context);
   private p7328_Vble = variable(p7327_context);
   private p7329_NatIntroS = successor(p7328_Vble);
@@ -4011,7 +4231,9 @@ construction primes {
   private p7368_SigmaForm = pair_type(p1_NatForm, p7367_SigmaForm, p7327_context);
   private p7369_context = assume(p1_NatForm, p7347_context);
   private p7383_context = assume(p7368_SigmaForm, none);
-  private p7387_SigmaIntro = pair_intro(p7326_SigmaIntro, p7092_BetaReduceGrossKnuth, p7152_Vble, p7383_context);
+  private p7387_SigmaIntro = pair_intro(
+    p7326_SigmaIntro, p7092_BetaReduceGrossKnuth, p7152_Vble, p7383_context
+  );
   private p7388_context = assume(p1_NatForm, p7369_context);
   private p7389_Vble = variable(p7388_context);
   private p7390_NatIntroS = successor(p7389_Vble);
@@ -4058,10 +4280,18 @@ construction primes {
   private p7450_SigmaForm = pair_type(p1_NatForm, p7449_EqForm, p7436_context);
   private p7451_context = assume(p7433_SigmaForm, none);
   private p7453_SigmaForm = pair_type(p7433_SigmaForm, p7450_SigmaForm, p7451_context);
-  private p7457_SigmaIntro = pair_intro(p7083_Vble, p7453_SigmaForm, p7387_SigmaIntro, p7388_context);
-  private p7459_SigmaElim = pair_eliminate(p7081_SigmaForm, p7457_SigmaIntro, p7149_Vble, none, p7151_context, p7172_context);
-  private p7461_SigmaElim = pair_eliminate(p7081_SigmaForm, p7459_SigmaElim, p7120_Vble, none, p7123_context, p7148_context);
-  private p7463_SigmaElim = pair_eliminate(p7081_SigmaForm, p7461_SigmaElim, p7013_PiElim, none, p7082_context, p7119_context);
+  private p7457_SigmaIntro = pair_intro(
+    p7083_Vble, p7453_SigmaForm, p7387_SigmaIntro, p7388_context
+  );
+  private p7459_SigmaElim = pair_eliminate(
+    p7081_SigmaForm, p7457_SigmaIntro, p7149_Vble, none, p7151_context, p7172_context
+  );
+  private p7461_SigmaElim = pair_eliminate(
+    p7081_SigmaForm, p7459_SigmaElim, p7120_Vble, none, p7123_context, p7148_context
+  );
+  private p7463_SigmaElim = pair_eliminate(
+    p7081_SigmaForm, p7461_SigmaElim, p7013_PiElim, none, p7082_context, p7119_context
+  );
   private p7465_PiIntro = function_intro(p5_UnitForm, p7463_SigmaElim, p6932_context);
   private p7467_PiComp = function_compute(p6913_PiForm, p6934_NatIntroS, p6834_context);
   private p7468_DefEqExtR = definition_right(p7467_PiComp);
@@ -4073,7 +4303,10 @@ construction primes {
   private p7478_HighType = select_type(p7465_PiIntro);
   private p7479_HighSubs = rewrite_selected(p7478_HighType, p7477_DefEqSwp);
   private p7480_UnHigh = clear_selection(p7479_HighSubs);
-  private p7481_NatElim = natural_induction(p6913_PiForm, p6931_UnHigh, p7480_UnHigh, p6664_Vble, p6834_context, p6836_context, p6916_context);
+  private p7481_NatElim = natural_induction(
+    p6913_PiForm, p6931_UnHigh, p7480_UnHigh, p6664_Vble, p6834_context, p6836_context,
+    p6916_context
+  );
   private p7483_NatIntroS = successor(p6664_Vble);
   private p7484_PiComp = function_compute(p6744_PiForm, p7483_NatIntroS, p6661_context);
   private p7485_DefEqExtR = definition_right(p7484_PiComp);
@@ -4085,7 +4318,10 @@ construction primes {
   private p7494_HighType = select_type(p7481_NatElim);
   private p7495_HighSubs = rewrite_selected(p7494_HighType, p7493_DefEqSwp);
   private p7496_UnHigh = clear_selection(p7495_HighSubs);
-  private p7497_NatElim = natural_induction(p6744_PiForm, p6762_UnHigh, p7496_UnHigh, p6589_Vble, p6661_context, p6663_context, p6747_context);
+  private p7497_NatElim = natural_induction(
+    p6744_PiForm, p6762_UnHigh, p7496_UnHigh, p6589_Vble, p6661_context, p6663_context,
+    p6747_context
+  );
   private p7499_PiIntro = function_intro(p1_NatForm, p7497_NatElim, p6588_context);
   private p7500_Def = define(p7499_PiIntro);
   private p7501_DefEqExtL = definition_left(p7500_Def);
@@ -4272,12 +4508,17 @@ construction primes {
   private p7876_PiElim = apply(p7874_PiElim, p7868_PiElim);
   private p7879_PiElim = apply(p7876_PiElim, p7826_Vble);
   private p7881_VoidElim = empty_eliminate(p7840_BetaReduceGrossKnuth, p7879_PiElim, none);
-  private p7884_SumElim = either_eliminate(p7840_BetaReduceGrossKnuth, p7881_VoidElim, p7856_Vble, p7848_PiElim, none, p7853_context, p7855_context);
+  private p7884_SumElim = either_eliminate(
+    p7840_BetaReduceGrossKnuth, p7881_VoidElim, p7856_Vble, p7848_PiElim, none, p7853_context,
+    p7855_context
+  );
   private p7886_context = assume(p1_NatForm, p7811_context);
   private p7891_context = assume(p1_NatForm, p7886_context);
   private p7906_context = assume(p1_NatForm, p7891_context);
   private p7931_context = assume(p7688_SigmaForm, p7809_context);
-  private p7935_SigmaIntro = pair_intro(p7810_Vble, p7840_BetaReduceGrossKnuth, p7884_SumElim, p7931_context);
+  private p7935_SigmaIntro = pair_intro(
+    p7810_Vble, p7840_BetaReduceGrossKnuth, p7884_SumElim, p7931_context
+  );
   private p7936_context = assume(p1_NatForm, p7906_context);
   private p7937_Vble = variable(p7936_context);
   private p7938_context = assume(p1_NatForm, p7936_context);
@@ -4324,9 +4565,15 @@ construction primes {
   private p8000_HighType = select_type(p7935_SigmaIntro);
   private p8001_HighSubs = rewrite_selected(p8000_HighType, p7999_DefEqSwp);
   private p8002_UnHigh = clear_selection(p8001_HighSubs);
-  private p8003_SigmaIntro = pair_intro(p7646_NatIntroS, p7988_SigmaForm, p8002_UnHigh, p7936_context);
-  private p8005_SigmaElim = pair_eliminate(p7642_SigmaForm, p8003_SigmaIntro, p7710_Vble, none, p7809_context, p7825_context);
-  private p8007_SigmaElim = pair_eliminate(p7642_SigmaForm, p8005_SigmaElim, p7582_PiElim, none, p7643_context, p7709_context);
+  private p8003_SigmaIntro = pair_intro(
+    p7646_NatIntroS, p7988_SigmaForm, p8002_UnHigh, p7936_context
+  );
+  private p8005_SigmaElim = pair_eliminate(
+    p7642_SigmaForm, p8003_SigmaIntro, p7710_Vble, none, p7809_context, p7825_context
+  );
+  private p8007_SigmaElim = pair_eliminate(
+    p7642_SigmaForm, p8005_SigmaElim, p7582_PiElim, none, p7643_context, p7709_context
+  );
   private p8009_PiIntro = function_intro(p1_NatForm, p8007_SigmaElim, p7566_context);
   private p8010_DefEqRefl = definition_refl(p8009_PiIntro);
   export infinitely_many_primes = definition_right(p8010_DefEqRefl);

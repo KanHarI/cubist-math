@@ -3,49 +3,102 @@ import field_scale_limits;
 
 // An actual natural bound yields an actual depth with small dyadic width.
 // The subsequent Archimedean theorem keeps the truncation of its input bound.
-theorem dyadic_width_small_from_natural_bound(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x),
-  width : F, nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon),
+theorem dyadic_width_small_from_natural_bound(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), width : F,
+  nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon),
   reciprocal : F, inverseLaw : mulF(epsilon, reciprocal) = one, n : Nat,
-  large : lt(mulF(width, reciprocal), field_natural(F, zero, one, addF)(n))) : lt(dyadic_width(F, half, n, width), epsilon) {
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  large : lt(mulF(width, reciprocal), field_natural(F, zero, one, addF)(n))
+) : lt(dyadic_width(F, half, n, width), epsilon) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   let natural = field_natural(F, zero, one, addF);
   let factor = natural(succ(n));
   let divided = mulF(width, reciprocal);
   let sampledWidth = dyadic_width(F, half, n, width);
-  let nonnegativeOne = ordered_lt_implies_le(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, one, positiveOne);
-  let nextNatural = order_le_add_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, natural(n), one, nonnegativeOne);
+  let nonnegativeOne =
+    ordered_lt_implies_le(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, one, positiveOne
+    );
+  let nextNatural =
+    order_le_add_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, natural(n), one, nonnegativeOne
+    );
   let largeFactor = ltLe(divided, natural(n), factor, large, nextNatural);
-  let positiveFactor = ltLe(zero, one, factor, positiveOne, field_natural_successor_ge_one(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, n));
+  let positiveFactor =
+    ltLe(
+      zero, one, factor, positiveOne,
+      field_natural_successor_ge_one(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, n)
+    );
   obtain (multiply, unMultiply) = scale(divided, factor, epsilon, positiveEpsilon);
   have restores : mulF(divided, epsilon) = width {
-    exact trans(ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, width, reciprocal, epsilon),
-      trans(cong(mulF(width), trans(ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, epsilon), inverseLaw)), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, width)));
+    exact trans(
+      ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, width, reciprocal, epsilon),
+      trans(
+        cong(
+          mulF(width),
+          trans(
+            ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, epsilon), inverseLaw
+          )
+        ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, width)
+      )
+    );
   }
-  let aboveWidth = transport((fun (v : F) => lt(v, mulF(factor, epsilon))), mulF(divided, epsilon), width, restores, multiply(largeFactor));
-  let bounded = dyadic_width_growth_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, n, width, nonnegativeWidth);
-  let productLess = leLt(mulF(factor, sampledWidth), width, mulF(factor, epsilon), bounded, aboveWidth);
-  let leftCommutes = transport((fun (v : F) => lt(v, mulF(factor, epsilon))), mulF(factor, sampledWidth), mulF(sampledWidth, factor), ring_mul_comm(F, zero, one, addF, mulF, negF, ring, factor, sampledWidth), productLess);
-  let rightCommutes = transport(lt(mulF(sampledWidth, factor)), mulF(factor, epsilon), mulF(epsilon, factor), ring_mul_comm(F, zero, one, addF, mulF, negF, ring, factor, epsilon), leftCommutes);
+  let aboveWidth =
+    transport(
+      (fun (v : F) => lt(v, mulF(factor, epsilon))), mulF(divided, epsilon), width, restores,
+      multiply(largeFactor)
+    );
+  let bounded =
+    dyadic_width_growth_bound(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, n, width,
+      nonnegativeWidth
+    );
+  let productLess =
+    leLt(mulF(factor, sampledWidth), width, mulF(factor, epsilon), bounded, aboveWidth);
+  let leftCommutes =
+    transport(
+      (fun (v : F) => lt(v, mulF(factor, epsilon))), mulF(factor, sampledWidth),
+      mulF(sampledWidth, factor),
+      ring_mul_comm(F, zero, one, addF, mulF, negF, ring, factor, sampledWidth), productLess
+    );
+  let rightCommutes =
+    transport(
+      lt(mulF(sampledWidth, factor)), mulF(factor, epsilon), mulF(epsilon, factor),
+      ring_mul_comm(F, zero, one, addF, mulF, negF, ring, factor, epsilon), leftCommutes
+    );
   obtain (preserve, reflect) = scale(sampledWidth, epsilon, factor, positiveFactor);
   exact reflect(rightCommutes);
 }
 
 // Constructive Archimedeanness gives mere existence of a sufficiently small
 // width. No natural-number modulus is selected out of that truncation.
-theorem dyadic_width_arbitrarily_small(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x),
-  inverses : FieldInverses(F, zero, one, mulF, lt), archimedean : Archimedean(F, zero, one, addF, lt),
-  width : F, nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon)) :
-  FieldExists(exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon)) {
-  obtain (reciprocal, (positiveReciprocal, inverseLaw)) = field_positive_reciprocal(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, epsilon, positiveEpsilon);
+theorem dyadic_width_arbitrarily_small(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
+  halfSum : (forall x : F, addF(half(x), half(x)) = x),
+  inverses : FieldInverses(F, zero, one, mulF, lt),
+  archimedean : Archimedean(F, zero, one, addF, lt), width : F,
+  nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon)
+) : FieldExists(exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon)) {
+  obtain (reciprocal, positiveReciprocal, inverseLaw) = field_positive_reciprocal(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, epsilon, positiveEpsilon
+  );
   let divided = mulF(width, reciprocal);
   let A = (exists n : Nat, lt(divided, field_natural(F, zero, one, addF)(n)));
   let B = (exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon));
   have mapping : A -> B {
     intro data;
     obtain (n, large) = data;
-    exact (n, dyadic_width_small_from_natural_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width, nonnegativeWidth, epsilon, positiveEpsilon, reciprocal, inverseLaw, n, large));
+    exact (
+      n,
+      dyadic_width_small_from_natural_bound(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width,
+        nonnegativeWidth, epsilon, positiveEpsilon, reciprocal, inverseLaw, n, large
+      )
+    );
   }
   exact field_exists_map(A, B, mapping, archimedean(divided));
 }

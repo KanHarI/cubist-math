@@ -1,99 +1,177 @@
 import dyadic_decay;
 
 // Halving a nonnegative width cannot increase it.
-theorem nonnegative_half_le(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), width : F, halfWidth : F,
-  sum : addF(halfWidth, halfWidth) = width, nonnegativeWidth : FieldLe(F, lt, zero, width)) :
-  FieldLe(F, lt, halfWidth, width) {
-  let nonnegativeHalf = nonnegative_half_from_sum(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, halfWidth, sum, nonnegativeWidth);
-  exact transport(FieldLe(F, lt, halfWidth), addF(halfWidth, halfWidth), width, sum,
-    order_le_add_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, halfWidth, halfWidth, nonnegativeHalf));
+theorem nonnegative_half_le(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), width : F, halfWidth : F,
+  sum : addF(halfWidth, halfWidth) = width, nonnegativeWidth : FieldLe(F, lt, zero, width)
+) : FieldLe(F, lt, halfWidth, width) {
+  let nonnegativeHalf =
+    nonnegative_half_from_sum(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, halfWidth, sum,
+      nonnegativeWidth
+    );
+  exact transport(
+    FieldLe(F, lt, halfWidth), addF(halfWidth, halfWidth), width, sum,
+    order_le_add_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, halfWidth, halfWidth, nonnegativeHalf
+    )
+  );
 }
 
 // The recursive width applies one halving to the input before the previous
 // iterate. Induction therefore generalizes over that input width.
-theorem dyadic_width_step_le(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), depth : Nat) :
-  forall width : F, FieldLe(F, lt, zero, width) ->
-    FieldLe(F, lt, dyadic_width(F, half, succ(depth), width), dyadic_width(F, half, depth, width)) {
-  exact induction depth as k return (forall width : F, FieldLe(F, lt, zero, width) ->
-    FieldLe(F, lt, dyadic_width(F, half, succ(k), width), dyadic_width(F, half, k, width))) {
-    zero => fun (width : F) => fun (nonnegativeWidth : FieldLe(F, lt, zero, width)) =>
-      nonnegative_half_le(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, half(width), halfSum(width), nonnegativeWidth);
-    succ previous => fun (width : F) => fun (nonnegativeWidth : FieldLe(F, lt, zero, width)) =>
-      previous(half(width), nonnegative_half_from_sum(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, half(width), halfSum(width), nonnegativeWidth));
+theorem dyadic_width_step_le(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), depth : Nat
+) : forall width : F, FieldLe(F, lt, zero, width)
+-> FieldLe(F, lt, dyadic_width(F, half, succ(depth), width), dyadic_width(F, half, depth, width)) {
+  exact induction depth as k return (
+    forall width : F, FieldLe(F, lt, zero, width)
+    -> FieldLe(F, lt, dyadic_width(F, half, succ(k), width), dyadic_width(F, half, k, width))
+  ) {
+    zero => fun (width : F) => fun (nonnegativeWidth : FieldLe(F, lt, zero, width)) => nonnegative_half_le(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, half(width),
+      halfSum(width), nonnegativeWidth
+    );
+    succ previous => fun (width : F) => fun (nonnegativeWidth : FieldLe(F, lt, zero, width)) => previous(
+      half(width),
+      nonnegative_half_from_sum(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, half(width),
+        halfSum(width), nonnegativeWidth
+      )
+    );
   };
 }
 
 // Turn successive weak decreases into the inequality for arbitrary ordered
 // natural indices. IndexLE is definitionally the same natural order as le.
-theorem field_sequence_antitone_step(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), sequence : Nat -> F,
+theorem field_sequence_antitone_step(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  sequence : Nat -> F,
   decreasing : (forall k : Nat, FieldLe(F, lt, sequence(succ(k)), sequence(k))), n : Nat,
-  previous : (forall m : Nat, IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m))),
-  m : Nat, ordered : IndexLE(m, succ(n))) : FieldLe(F, lt, sequence(succ(n)), sequence(m)) {
+  previous : (forall m : Nat, IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m))), m : Nat,
+  ordered : IndexLE(m, succ(n))
+) : FieldLe(F, lt, sequence(succ(n)), sequence(m)) {
   cases nat_le_succ_split(m, n, ordered) {
     left earlier => {
-      exact order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, sequence(succ(n)), sequence(n), sequence(m), decreasing(n), previous(m, earlier));
+      exact order_le_trans(
+        F, zero, one, addF, mulF, lt, arithmetic, sequence(succ(n)), sequence(n), sequence(m),
+        decreasing(n), previous(m, earlier)
+      );
     }
     right same => {
-      exact transport((fun (k : Nat) => FieldLe(F, lt, sequence(succ(n)), sequence(k))), succ(n), m, sym(same),
-        order_le_refl(F, lt, order, sequence(succ(n))));
+      exact transport(
+        (fun (k : Nat) => FieldLe(F, lt, sequence(succ(n)), sequence(k))), succ(n), m, sym(same),
+        order_le_refl(F, lt, order, sequence(succ(n)))
+      );
     }
   }
 }
 
-theorem field_sequence_antitone(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), sequence : Nat -> F,
-  decreasing : (forall k : Nat, FieldLe(F, lt, sequence(succ(k)), sequence(k))), n : Nat) :
-  forall m : Nat, IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m)) {
+theorem field_sequence_antitone(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
+  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  sequence : Nat -> F,
+  decreasing : (forall k : Nat, FieldLe(F, lt, sequence(succ(k)), sequence(k))), n : Nat
+) : forall m : Nat, IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m)) {
   have base : forall m : Nat, IndexLE(m, 0) -> FieldLe(F, lt, sequence(0), sequence(m)) {
     intro m;
     intro ordered;
-    exact transport((fun (k : Nat) => FieldLe(F, lt, sequence(0), sequence(k))), 0, m, sym(nat_le_zero(m, ordered)),
-      order_le_refl(F, lt, order, sequence(0)));
+    exact transport(
+      (fun (k : Nat) => FieldLe(F, lt, sequence(0), sequence(k))), 0, m,
+      sym(nat_le_zero(m, ordered)), order_le_refl(F, lt, order, sequence(0))
+    );
   }
-  exact induction n as k return (forall m : Nat, IndexLE(m, k) -> FieldLe(F, lt, sequence(k), sequence(m))) {
+  exact induction n as k return (
+    forall m : Nat, IndexLE(m, k) -> FieldLe(F, lt, sequence(k), sequence(m))
+  ) {
     zero => base;
-    succ previous => field_sequence_antitone_step(F, zero, one, addF, mulF, lt, order, arithmetic, sequence, decreasing, k, previous);
+    succ previous => field_sequence_antitone_step(
+      F, zero, one, addF, mulF, lt, order, arithmetic, sequence, decreasing, k, previous
+    );
   };
 }
 
-theorem dyadic_width_antitone(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), width : F,
-  nonnegativeWidth : FieldLe(F, lt, zero, width), bound : Nat, n : Nat, later : IndexLE(bound, n)) :
-  FieldLe(F, lt, dyadic_width(F, half, n, width), dyadic_width(F, half, bound, width)) {
-  exact field_sequence_antitone(F, zero, one, addF, mulF, lt, order, arithmetic,
+theorem dyadic_width_antitone(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), width : F,
+  nonnegativeWidth : FieldLe(F, lt, zero, width), bound : Nat, n : Nat, later : IndexLE(bound, n)
+) : FieldLe(F, lt, dyadic_width(F, half, n, width), dyadic_width(F, half, bound, width)) {
+  exact field_sequence_antitone(
+    F, zero, one, addF, mulF, lt, order, arithmetic,
     (fun (k : Nat) => dyadic_width(F, half, k, width)),
-    (fun (k : Nat) => dyadic_width_step_le(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, k, width, nonnegativeWidth)), n, bound, later);
+    (
+      fun (k : Nat) => dyadic_width_step_le(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, k, width,
+        nonnegativeWidth
+      )
+    ), n, bound, later
+  );
 }
 
-theorem dyadic_width_small_tail(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), width : F,
+theorem dyadic_width_small_tail(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), width : F,
   nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, bound : Nat,
-  small : lt(dyadic_width(F, half, bound, width), epsilon)) :
-  forall n : Nat, IndexLE(bound, n) -> lt(dyadic_width(F, half, n, width), epsilon) {
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+  small : lt(dyadic_width(F, half, bound, width), epsilon)
+) : forall n : Nat, IndexLE(bound, n) -> lt(dyadic_width(F, half, n, width), epsilon) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   intro n;
   intro later;
-  exact leLt(dyadic_width(F, half, n, width), dyadic_width(F, half, bound, width), epsilon,
-    dyadic_width_antitone(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width, nonnegativeWidth, bound, n, later), small);
+  exact leLt(
+    dyadic_width(F, half, n, width), dyadic_width(F, half, bound, width), epsilon,
+    dyadic_width_antitone(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width,
+      nonnegativeWidth, bound, n, later
+    ), small
+  );
 }
 
 // Archimedeanness supplies a merely existing bound for the whole tail.
 // This does not choose an actual convergence modulus.
-theorem dyadic_width_eventually_small(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x),
-  inverses : FieldInverses(F, zero, one, mulF, lt), archimedean : Archimedean(F, zero, one, addF, lt),
-  width : F, nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon)) :
-  FieldExists(exists bound : Nat, forall n : Nat, IndexLE(bound, n) -> lt(dyadic_width(F, half, n, width), epsilon)) {
+theorem dyadic_width_eventually_small(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
+  halfSum : (forall x : F, addF(half(x), half(x)) = x),
+  inverses : FieldInverses(F, zero, one, mulF, lt),
+  archimedean : Archimedean(F, zero, one, addF, lt), width : F,
+  nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon)
+) : FieldExists(
+  exists bound : Nat, forall n : Nat, IndexLE(bound, n)
+  -> lt(dyadic_width(F, half, n, width), epsilon)
+) {
   let A = (exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon));
-  let B = (exists bound : Nat, forall n : Nat, IndexLE(bound, n) -> lt(dyadic_width(F, half, n, width), epsilon));
+  let B =
+    (
+      exists bound : Nat, forall n : Nat, IndexLE(bound, n)
+      -> lt(dyadic_width(F, half, n, width), epsilon)
+    );
   have mapping : A -> B {
     intro data;
     obtain (bound, small) = data;
-    exact (bound, dyadic_width_small_tail(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width, nonnegativeWidth, epsilon, bound, small));
+    exact (
+      bound,
+      dyadic_width_small_tail(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width,
+        nonnegativeWidth, epsilon, bound, small
+      )
+    );
   }
-  exact field_exists_map(A, B, mapping,
-    dyadic_width_arbitrarily_small(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses, archimedean, width, nonnegativeWidth, epsilon, positiveEpsilon));
+  exact field_exists_map(
+    A, B, mapping,
+    dyadic_width_arbitrarily_small(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses,
+      archimedean, width, nonnegativeWidth, epsilon, positiveEpsilon
+    )
+  );
 }

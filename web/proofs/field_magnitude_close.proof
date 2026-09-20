@@ -2,73 +2,123 @@ import field_magnitude;
 import complete_fields;
 
 // Turn a weak magnitude estimate and a strict radius bound into closeness.
-theorem field_magnitude_small_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F, epsilon : F,
-  bound : FieldMagnitudeBound(F, negF, lt, x, radius), small : lt(radius, epsilon)) :
-  FieldClose(F, addF, lt, x, zero, epsilon) {
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+theorem field_magnitude_small_close(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F, epsilon : F,
+  bound : FieldMagnitudeBound(F, negF, lt, x, radius), small : lt(radius, epsilon)
+) : FieldClose(F, addF, lt, x, zero, epsilon) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   obtain (upper, lower) = bound;
   let less = leLt(x, radius, epsilon, upper, small);
   let negLess = leLt(negF(x), radius, epsilon, lower, small);
   obtain (shiftForward, shiftBackward) = translate(negF(x), epsilon, x);
-  let shifted = transport(lt(addF(negF(x), x)), addF(epsilon, x), addF(x, epsilon),
-    ring_add_comm(F, zero, one, addF, mulF, negF, ring, epsilon, x), shiftForward(negLess));
-  exact (transport(lt(x), epsilon, addF(zero, epsilon), sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)), less),
-    transport((fun (v : F) => lt(v, addF(x, epsilon))), addF(negF(x), x), zero,
-      ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x), shifted));
+  let shifted =
+    transport(
+      lt(addF(negF(x), x)), addF(epsilon, x), addF(x, epsilon),
+      ring_add_comm(F, zero, one, addF, mulF, negF, ring, epsilon, x), shiftForward(negLess)
+    );
+  exact (
+    transport(
+      lt(x), epsilon, addF(zero, epsilon),
+      sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)), less
+    ),
+    transport(
+      (fun (v : F) => lt(v, addF(x, epsilon))), addF(negF(x), x), zero,
+      ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x), shifted
+    )
+  );
 }
 
-theorem field_close_translate(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, epsilon : F, shift : F,
-  close : FieldClose(F, addF, lt, x, y, epsilon)) :
-  FieldClose(F, addF, lt, addF(shift, x), addF(shift, y), epsilon) {
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+theorem field_close_translate(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, epsilon : F,
+  shift : F, close : FieldClose(F, addF, lt, x, y, epsilon)
+) : FieldClose(F, addF, lt, addF(shift, x), addF(shift, y), epsilon) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   obtain (upper, lower) = close;
   have shiftLess : forall u : F, forall v : F, lt(u, v) -> lt(addF(shift, u), addF(shift, v)) {
     intro u;
     intro v;
     intro less;
     obtain (forward, backward) = translate(u, v, shift);
-    let first = transport((fun (a : F) => lt(a, addF(v, shift))), addF(u, shift), addF(shift, u),
-      ring_add_comm(F, zero, one, addF, mulF, negF, ring, u, shift), forward(less));
-    exact transport(lt(addF(shift, u)), addF(v, shift), addF(shift, v), ring_add_comm(F, zero, one, addF, mulF, negF, ring, v, shift), first);
+    let first =
+      transport(
+        (fun (a : F) => lt(a, addF(v, shift))), addF(u, shift), addF(shift, u),
+        ring_add_comm(F, zero, one, addF, mulF, negF, ring, u, shift), forward(less)
+      );
+    exact transport(
+      lt(addF(shift, u)), addF(v, shift), addF(shift, v),
+      ring_add_comm(F, zero, one, addF, mulF, negF, ring, v, shift), first
+    );
   }
-  exact (transport(lt(addF(shift, x)), addF(shift, addF(y, epsilon)), addF(addF(shift, y), epsilon),
-    sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, shift, y, epsilon)), shiftLess(x, addF(y, epsilon), upper)),
-    transport(lt(addF(shift, y)), addF(shift, addF(x, epsilon)), addF(addF(shift, x), epsilon),
-      sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, shift, x, epsilon)), shiftLess(y, addF(x, epsilon), lower)));
+  exact (
+    transport(
+      lt(addF(shift, x)), addF(shift, addF(y, epsilon)), addF(addF(shift, y), epsilon),
+      sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, shift, y, epsilon)),
+      shiftLess(x, addF(y, epsilon), upper)
+    ),
+    transport(
+      lt(addF(shift, y)), addF(shift, addF(x, epsilon)), addF(addF(shift, x), epsilon),
+      sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, shift, x, epsilon)),
+      shiftLess(y, addF(x, epsilon), lower)
+    )
+  );
 }
 
-theorem field_magnitude_perturbation_close(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, error : F, radius : F, epsilon : F,
-  computes : y = addF(x, error), bound : FieldMagnitudeBound(F, negF, lt, error, radius), small : lt(radius, epsilon)) :
-  FieldClose(F, addF, lt, y, x, epsilon) {
-  let close = field_magnitude_small_close(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, radius, epsilon, bound, small);
-  let shifted = field_close_translate(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, zero, epsilon, x, close);
-  let unitRemoved = transport((fun (v : F) => FieldClose(F, addF, lt, addF(x, error), v, epsilon)), addF(x, zero), x,
-    ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x), shifted);
-  exact transport((fun (v : F) => FieldClose(F, addF, lt, v, x, epsilon)), addF(x, error), y, sym(computes), unitRemoved);
+theorem field_magnitude_perturbation_close(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, error : F, radius : F,
+  epsilon : F, computes : y = addF(x, error),
+  bound : FieldMagnitudeBound(F, negF, lt, error, radius), small : lt(radius, epsilon)
+) : FieldClose(F, addF, lt, y, x, epsilon) {
+  let close =
+    field_magnitude_small_close(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, radius, epsilon, bound,
+      small
+    );
+  let shifted =
+    field_close_translate(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, zero, epsilon, x, close
+    );
+  let unitRemoved =
+    transport(
+      (fun (v : F) => FieldClose(F, addF, lt, addF(x, error), v, epsilon)), addF(x, zero), x,
+      ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x), shifted
+    );
+  exact transport(
+    (fun (v : F) => FieldClose(F, addF, lt, v, x, epsilon)), addF(x, error), y, sym(computes),
+    unitRemoved
+  );
 }
 
 // A bound tending to zero forces the bounded error to tend to zero.
-theorem field_magnitude_squeeze(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors : Nat -> F, radii : Nat -> F,
+theorem field_magnitude_squeeze(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors : Nat -> F, radii : Nat -> F,
   bounds : (forall n : Nat, FieldMagnitudeBound(F, negF, lt, errors(n), radii(n))),
-  vanishes : FieldConverges(F, zero, addF, lt, radii, zero)) :
-  FieldConverges(F, zero, addF, lt, errors, zero) {
+  vanishes : FieldConverges(F, zero, addF, lt, radii, zero)
+) : FieldConverges(F, zero, addF, lt, errors, zero) {
   intro epsilon;
   intro positive;
   obtain (bound, close) = vanishes(epsilon, positive);
-  have tail : forall n : Nat, IndexLE(bound, n) -> FieldClose(F, addF, lt, errors(n), zero, epsilon) {
+  have tail : forall n : Nat, IndexLE(bound, n)
+  -> FieldClose(F, addF, lt, errors(n), zero, epsilon) {
     intro n;
     intro large;
     obtain (upper, lower) = close(n, large);
-    let small = transport(lt(radii(n)), addF(zero, epsilon), epsilon, ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon), upper);
-    exact field_magnitude_small_close(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, errors(n), radii(n), epsilon, bounds(n), small);
+    let small =
+      transport(
+        lt(radii(n)), addF(zero, epsilon), epsilon,
+        ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon), upper
+      );
+    exact field_magnitude_small_close(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, errors(n), radii(n), epsilon,
+      bounds(n), small
+    );
   }
   exact (bound, tail);
 }

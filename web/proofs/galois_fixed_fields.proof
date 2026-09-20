@@ -1,0 +1,187 @@
+import galois_fixed_points;
+
+import intermediate_fields;
+
+// The abstract structure-isomorphism law specialized to this extension.
+def galois_preserves_extension(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)) : ExtensionPreserved(
+  K, extension_carrier(K, E), extension_carrier(K, E), extension_iso_forward(K, E, E, e),
+  structure_data(ExtensionData(K), E), structure_data(ExtensionData(K), E)
+) {
+  exact structure_iso_preserves(ExtensionData(K), ExtensionPreserved(K), E, E, e);
+}
+
+// A field symmetry preserves each operation and fixes the embedded base field.
+def galois_preserves_field_ops(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)) : FieldOpsPreserved(
+  extension_carrier(K, E), extension_carrier(K, E), extension_iso_forward(K, E, E, e),
+  af_operations(extension_field(K, E)), af_operations(extension_field(K, E))
+) {
+  obtain (operations, base) = galois_preserves_extension(K, E, e);
+  exact operations;
+}
+
+theorem galois_fixes_base(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E), k : af_carrier(K)) : extension_iso_forward(
+  K, E, E, e, extension_inclusion(K, E, k)
+) = extension_inclusion(K, E, k) {
+  obtain (operations, base) = galois_preserves_extension(K, E, e);
+  exact base(k);
+}
+
+theorem galois_fixed_prop(
+  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E)
+) : Proposition(GaloisFixed(K, E, H, x)) {
+  exact forall_prop(
+    Galois(K, E), (fun (e : Galois(K, E)) => H(e) -> (extension_iso_forward(K, E, E, e, x) = x)),
+    (
+      fun (e : Galois(K, E)) => forall_prop(
+        H(e), (fun (member : H(e)) => extension_iso_forward(K, E, E, e, x) = x),
+        (
+          fun (member : H(e)) => structure_set(
+            ExtensionData(K), E, extension_iso_forward(K, E, E, e, x), x
+          )
+        )
+      )
+    )
+  );
+}
+
+theorem galois_fixed_zero(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) : GaloisFixed(
+  K, E, H, af_zero(extension_carrier(K, E), af_operations(extension_field(K, E)))
+) {
+  intro e;
+  intro member;
+  obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
+  exact p0;
+}
+
+theorem galois_fixed_one(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) : GaloisFixed(
+  K, E, H, af_one(extension_carrier(K, E), af_operations(extension_field(K, E)))
+) {
+  intro e;
+  intro member;
+  obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
+  exact p1;
+}
+
+theorem galois_fixed_neg(
+  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E),
+  fixed : GaloisFixed(K, E, H, x)
+) : GaloisFixed(K, E, H, af_neg(extension_carrier(K, E), af_operations(extension_field(K, E)), x)) {
+  intro e;
+  intro member;
+  obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
+  exact trans(
+    pn(x),
+    cong(af_neg(extension_carrier(K, E), af_operations(extension_field(K, E))), fixed(e, member))
+  );
+}
+
+theorem galois_fixed_add(
+  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E),
+  y : extension_carrier(K, E), fixedX : GaloisFixed(K, E, H, x), fixedY : GaloisFixed(K, E, H, y)
+) : GaloisFixed(
+  K, E, H, af_add(extension_carrier(K, E), af_operations(extension_field(K, E)), x, y)
+) {
+  intro e;
+  intro member;
+  obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
+  exact trans(
+    pa(x, y),
+    trans(
+      cong(
+        (
+          fun (a : extension_carrier(K, E)) => af_add(
+            extension_carrier(K, E), af_operations(extension_field(K, E)), a,
+            extension_iso_forward(K, E, E, e, y)
+          )
+        ), fixedX(e, member)
+      ),
+      cong(
+        af_add(extension_carrier(K, E), af_operations(extension_field(K, E)), x), fixedY(e, member)
+      )
+    )
+  );
+}
+
+theorem galois_fixed_mul(
+  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E),
+  y : extension_carrier(K, E), fixedX : GaloisFixed(K, E, H, x), fixedY : GaloisFixed(K, E, H, y)
+) : GaloisFixed(
+  K, E, H, af_mul(extension_carrier(K, E), af_operations(extension_field(K, E)), x, y)
+) {
+  intro e;
+  intro member;
+  obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
+  exact trans(
+    pm(x, y),
+    trans(
+      cong(
+        (
+          fun (a : extension_carrier(K, E)) => af_mul(
+            extension_carrier(K, E), af_operations(extension_field(K, E)), a,
+            extension_iso_forward(K, E, E, e, y)
+          )
+        ), fixedX(e, member)
+      ),
+      cong(
+        af_mul(extension_carrier(K, E), af_operations(extension_field(K, E)), x), fixedY(e, member)
+      )
+    )
+  );
+}
+
+// If x is fixed and x*y=1, the image of y is another inverse of x. Uniqueness
+// of inverses forces that image to be y. There is no choice of an inverse here.
+theorem galois_fixed_inverse(
+  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E),
+  y : extension_carrier(K, E), fixed : GaloisFixed(K, E, H, x),
+  inverseLaw : af_mul(extension_carrier(K, E), af_operations(extension_field(K, E)), x, y) = af_one(
+    extension_carrier(K, E), af_operations(extension_field(K, E))
+  )
+) : GaloisFixed(K, E, H, y) {
+  intro e;
+  intro member;
+  let F = extension_field(K, E);
+  let A = extension_carrier(K, E);
+  let ops = af_operations(F);
+  let f = extension_iso_forward(K, E, E, e);
+  obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
+  have imageInverse : af_mul(A, ops, x, f(y)) = af_one(A, ops) {
+    exact trans(
+      cong((fun (a : A) => af_mul(A, ops, a, f(y))), sym(fixed(e, member))),
+      trans(sym(pm(x, y)), trans(cong(f, inverseLaw), p1))
+    );
+  }
+  exact algebraic_inverse_unique(
+    A, ops, af_set(F), field_ring_data(A, ops, af_laws(F)), x, f(y), y, imageInverse, inverseLaw
+  );
+}
+
+// Fixed elements of any family of automorphisms form a subfield, even before
+// the family is assumed to be a subgroup.
+theorem galois_fixed_subfield_laws(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) : SubfieldLaws(
+  extension_field(K, E), GaloisFixed(K, E, H)
+) {
+  exact (
+    galois_fixed_prop(K, E, H), galois_fixed_zero(K, E, H), galois_fixed_one(K, E, H),
+    galois_fixed_neg(K, E, H), galois_fixed_add(K, E, H), galois_fixed_mul(K, E, H),
+    galois_fixed_inverse(K, E, H)
+  );
+}
+
+theorem galois_fixed_contains_base(
+  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, k : af_carrier(K)
+) : GaloisFixed(K, E, H, extension_inclusion(K, E, k)) {
+  intro e;
+  intro member;
+  exact galois_fixes_base(K, E, e, k);
+}
+
+// The fixed subfield is an intermediate field of E/K. Its membership stays
+// proposition-valued without assuming LEM or resizing the universe.
+def galois_fixed_field(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) : IntermediateField(
+  K, E
+) {
+  exact (
+    GaloisFixed(K, E, H), galois_fixed_subfield_laws(K, E, H), galois_fixed_contains_base(K, E, H)
+  );
+}

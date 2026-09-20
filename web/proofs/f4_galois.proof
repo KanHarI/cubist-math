@@ -3,134 +3,261 @@ import galois_paths;
 
 // The extension F4/F2, with its concrete inclusion and Frobenius symmetry.
 def f2_into_f4(x : F2Carrier) = f2_induction((fun (x : F2Carrier) => F4Carrier), f4_0, f4_1, x);
-def f4_retract_f2(x : F4Carrier) = f4_induction((fun (x : F4Carrier) => F2Carrier), f2_0, f2_1, f2_0, f2_1, x);
+def f4_retract_f2(x : F4Carrier) =
+  f4_induction((fun (x : F4Carrier) => F2Carrier), f2_0, f2_1, f2_0, f2_1, x);
 theorem f2_inclusion_retraction(x : F2Carrier) : f4_retract_f2(f2_into_f4(x)) = x {
-  exact f2_induction((fun (x : F2Carrier) => f4_retract_f2(f2_into_f4(x)) = x), refl(f2_0), refl(f2_1), x);
+  exact f2_induction(
+    (fun (x : F2Carrier) => f4_retract_f2(f2_into_f4(x)) = x), refl(f2_0), refl(f2_1), x
+  );
 }
+
 theorem f2_inclusion_injective(x : F2Carrier, y : F2Carrier, p : f2_into_f4(x) = f2_into_f4(y)) : x = y {
-  exact trans(sym(f2_inclusion_retraction(x)), trans(cong(f4_retract_f2, p), f2_inclusion_retraction(y)));
+  exact trans(
+    sym(f2_inclusion_retraction(x)), trans(cong(f4_retract_f2, p), f2_inclusion_retraction(y))
+  );
 }
-theorem f2_inclusion_add(x : F2Carrier, y : F2Carrier) : f2_into_f4(f2_add(x, y)) = f4_add(f2_into_f4(x), f2_into_f4(y)) {
-  exact f2_induction((fun (x : F2Carrier) => f2_into_f4(f2_add(x, y)) = f4_add(f2_into_f4(x), f2_into_f4(y))),
-    f2_induction((fun (y : F2Carrier) => f2_into_f4(f2_add(f2_0, y)) = f4_add(f2_into_f4(f2_0), f2_into_f4(y))),
-    refl(f2_into_f4(f2_add(f2_0, f2_0))),
-    refl(f2_into_f4(f2_add(f2_0, f2_1))), y),
-    f2_induction((fun (y : F2Carrier) => f2_into_f4(f2_add(f2_1, y)) = f4_add(f2_into_f4(f2_1), f2_into_f4(y))),
-    refl(f2_into_f4(f2_add(f2_1, f2_0))),
-    refl(f2_into_f4(f2_add(f2_1, f2_1))), y), x);
+
+theorem f2_inclusion_add(x : F2Carrier, y : F2Carrier) : f2_into_f4(f2_add(x, y)) = f4_add(
+  f2_into_f4(x), f2_into_f4(y)
+) {
+  exact f2_induction(
+    (fun (x : F2Carrier) => f2_into_f4(f2_add(x, y)) = f4_add(f2_into_f4(x), f2_into_f4(y))),
+    f2_induction(
+      (fun (y : F2Carrier) => f2_into_f4(f2_add(f2_0, y)) = f4_add(f2_into_f4(f2_0), f2_into_f4(y))),
+      refl(f2_into_f4(f2_add(f2_0, f2_0))), refl(f2_into_f4(f2_add(f2_0, f2_1))), y
+    ),
+    f2_induction(
+      (fun (y : F2Carrier) => f2_into_f4(f2_add(f2_1, y)) = f4_add(f2_into_f4(f2_1), f2_into_f4(y))),
+      refl(f2_into_f4(f2_add(f2_1, f2_0))), refl(f2_into_f4(f2_add(f2_1, f2_1))), y
+    ), x
+  );
 }
-theorem f2_inclusion_mul(x : F2Carrier, y : F2Carrier) : f2_into_f4(f2_mul(x, y)) = f4_mul(f2_into_f4(x), f2_into_f4(y)) {
-  exact f2_induction((fun (x : F2Carrier) => f2_into_f4(f2_mul(x, y)) = f4_mul(f2_into_f4(x), f2_into_f4(y))),
-    f2_induction((fun (y : F2Carrier) => f2_into_f4(f2_mul(f2_0, y)) = f4_mul(f2_into_f4(f2_0), f2_into_f4(y))),
-    refl(f2_into_f4(f2_mul(f2_0, f2_0))),
-    refl(f2_into_f4(f2_mul(f2_0, f2_1))), y),
-    f2_induction((fun (y : F2Carrier) => f2_into_f4(f2_mul(f2_1, y)) = f4_mul(f2_into_f4(f2_1), f2_into_f4(y))),
-    refl(f2_into_f4(f2_mul(f2_1, f2_0))),
-    refl(f2_into_f4(f2_mul(f2_1, f2_1))), y), x);
+
+theorem f2_inclusion_mul(x : F2Carrier, y : F2Carrier) : f2_into_f4(f2_mul(x, y)) = f4_mul(
+  f2_into_f4(x), f2_into_f4(y)
+) {
+  exact f2_induction(
+    (fun (x : F2Carrier) => f2_into_f4(f2_mul(x, y)) = f4_mul(f2_into_f4(x), f2_into_f4(y))),
+    f2_induction(
+      (fun (y : F2Carrier) => f2_into_f4(f2_mul(f2_0, y)) = f4_mul(f2_into_f4(f2_0), f2_into_f4(y))),
+      refl(f2_into_f4(f2_mul(f2_0, f2_0))), refl(f2_into_f4(f2_mul(f2_0, f2_1))), y
+    ),
+    f2_induction(
+      (fun (y : F2Carrier) => f2_into_f4(f2_mul(f2_1, y)) = f4_mul(f2_into_f4(f2_1), f2_into_f4(y))),
+      refl(f2_into_f4(f2_mul(f2_1, f2_0))), refl(f2_into_f4(f2_mul(f2_1, f2_1))), y
+    ), x
+  );
 }
+
 def f2_inclusion_preserves : FieldOpsPreserved(F2Carrier, F4Carrier, f2_into_f4, f2_ops, f4_ops) {
-  exact (refl(f4_0), (refl(f4_1), ((fun (x : F2Carrier) => refl(f2_into_f4(x))), (f2_inclusion_add, f2_inclusion_mul))));
+  exact (
+    refl(f4_0), refl(f4_1), (fun (x : F2Carrier) => refl(f2_into_f4(x))), f2_inclusion_add,
+    f2_inclusion_mul
+  );
 }
+
 def f4_extension_data : ExtensionData(F2, F4Carrier) {
-  exact (typed(FieldData(F4Carrier), (f4_ops, f4_laws)), (f2_into_f4, (f2_inclusion_preserves, f2_inclusion_injective)));
+  exact (
+    typed(FieldData(F4Carrier), (f4_ops, f4_laws)), f2_into_f4, f2_inclusion_preserves,
+    f2_inclusion_injective
+  );
 }
+
 def F4OverF2 = structure_object(ExtensionData(F2), F4Carrier, f4_extension_data, fin_is_set(4));
 
 // Frobenius x |-> x^2 fixes 0 and 1 and exchanges alpha with alpha+1.
 def f4_frobenius(x : F4Carrier) = f4_mul(x, x);
-theorem f4_frobenius_add(x : F4Carrier, y : F4Carrier) : f4_frobenius(f4_add(x, y)) = f4_add(f4_frobenius(x), f4_frobenius(y)) {
-  exact f4_induction((fun (x : F4Carrier) => f4_frobenius(f4_add(x, y)) = f4_add(f4_frobenius(x), f4_frobenius(y))),
-    f4_induction((fun (y : F4Carrier) => f4_frobenius(f4_add(f4_0, y)) = f4_add(f4_frobenius(f4_0), f4_frobenius(y))),
-    refl(f4_frobenius(f4_add(f4_0, f4_0))),
-    refl(f4_frobenius(f4_add(f4_0, f4_1))),
-    refl(f4_frobenius(f4_add(f4_0, f4_2))),
-    refl(f4_frobenius(f4_add(f4_0, f4_3))), y),
-    f4_induction((fun (y : F4Carrier) => f4_frobenius(f4_add(f4_1, y)) = f4_add(f4_frobenius(f4_1), f4_frobenius(y))),
-    refl(f4_frobenius(f4_add(f4_1, f4_0))),
-    refl(f4_frobenius(f4_add(f4_1, f4_1))),
-    refl(f4_frobenius(f4_add(f4_1, f4_2))),
-    refl(f4_frobenius(f4_add(f4_1, f4_3))), y),
-    f4_induction((fun (y : F4Carrier) => f4_frobenius(f4_add(f4_2, y)) = f4_add(f4_frobenius(f4_2), f4_frobenius(y))),
-    refl(f4_frobenius(f4_add(f4_2, f4_0))),
-    refl(f4_frobenius(f4_add(f4_2, f4_1))),
-    refl(f4_frobenius(f4_add(f4_2, f4_2))),
-    refl(f4_frobenius(f4_add(f4_2, f4_3))), y),
-    f4_induction((fun (y : F4Carrier) => f4_frobenius(f4_add(f4_3, y)) = f4_add(f4_frobenius(f4_3), f4_frobenius(y))),
-    refl(f4_frobenius(f4_add(f4_3, f4_0))),
-    refl(f4_frobenius(f4_add(f4_3, f4_1))),
-    refl(f4_frobenius(f4_add(f4_3, f4_2))),
-    refl(f4_frobenius(f4_add(f4_3, f4_3))), y), x);
+theorem f4_frobenius_add(x : F4Carrier, y : F4Carrier) : f4_frobenius(f4_add(x, y)) = f4_add(
+  f4_frobenius(x), f4_frobenius(y)
+) {
+  exact f4_induction(
+    (fun (x : F4Carrier) => f4_frobenius(f4_add(x, y)) = f4_add(f4_frobenius(x), f4_frobenius(y))),
+    f4_induction(
+      (
+        fun (y : F4Carrier) => f4_frobenius(f4_add(f4_0, y)) = f4_add(
+          f4_frobenius(f4_0), f4_frobenius(y)
+        )
+      ), refl(f4_frobenius(f4_add(f4_0, f4_0))), refl(f4_frobenius(f4_add(f4_0, f4_1))),
+      refl(f4_frobenius(f4_add(f4_0, f4_2))), refl(f4_frobenius(f4_add(f4_0, f4_3))), y
+    ),
+    f4_induction(
+      (
+        fun (y : F4Carrier) => f4_frobenius(f4_add(f4_1, y)) = f4_add(
+          f4_frobenius(f4_1), f4_frobenius(y)
+        )
+      ), refl(f4_frobenius(f4_add(f4_1, f4_0))), refl(f4_frobenius(f4_add(f4_1, f4_1))),
+      refl(f4_frobenius(f4_add(f4_1, f4_2))), refl(f4_frobenius(f4_add(f4_1, f4_3))), y
+    ),
+    f4_induction(
+      (
+        fun (y : F4Carrier) => f4_frobenius(f4_add(f4_2, y)) = f4_add(
+          f4_frobenius(f4_2), f4_frobenius(y)
+        )
+      ), refl(f4_frobenius(f4_add(f4_2, f4_0))), refl(f4_frobenius(f4_add(f4_2, f4_1))),
+      refl(f4_frobenius(f4_add(f4_2, f4_2))), refl(f4_frobenius(f4_add(f4_2, f4_3))), y
+    ),
+    f4_induction(
+      (
+        fun (y : F4Carrier) => f4_frobenius(f4_add(f4_3, y)) = f4_add(
+          f4_frobenius(f4_3), f4_frobenius(y)
+        )
+      ), refl(f4_frobenius(f4_add(f4_3, f4_0))), refl(f4_frobenius(f4_add(f4_3, f4_1))),
+      refl(f4_frobenius(f4_add(f4_3, f4_2))), refl(f4_frobenius(f4_add(f4_3, f4_3))), y
+    ), x
+  );
 }
-theorem f4_frobenius_mul(x : F4Carrier, y : F4Carrier) : f4_frobenius(f4_mul(x, y)) = f4_mul(f4_frobenius(x), f4_frobenius(y)) {
-  exact f4_induction((fun (x : F4Carrier) => f4_frobenius(f4_mul(x, y)) = f4_mul(f4_frobenius(x), f4_frobenius(y))),
-    f4_induction((fun (y : F4Carrier) => f4_frobenius(f4_mul(f4_0, y)) = f4_mul(f4_frobenius(f4_0), f4_frobenius(y))),
-    refl(f4_frobenius(f4_mul(f4_0, f4_0))),
-    refl(f4_frobenius(f4_mul(f4_0, f4_1))),
-    refl(f4_frobenius(f4_mul(f4_0, f4_2))),
-    refl(f4_frobenius(f4_mul(f4_0, f4_3))), y),
-    f4_induction((fun (y : F4Carrier) => f4_frobenius(f4_mul(f4_1, y)) = f4_mul(f4_frobenius(f4_1), f4_frobenius(y))),
-    refl(f4_frobenius(f4_mul(f4_1, f4_0))),
-    refl(f4_frobenius(f4_mul(f4_1, f4_1))),
-    refl(f4_frobenius(f4_mul(f4_1, f4_2))),
-    refl(f4_frobenius(f4_mul(f4_1, f4_3))), y),
-    f4_induction((fun (y : F4Carrier) => f4_frobenius(f4_mul(f4_2, y)) = f4_mul(f4_frobenius(f4_2), f4_frobenius(y))),
-    refl(f4_frobenius(f4_mul(f4_2, f4_0))),
-    refl(f4_frobenius(f4_mul(f4_2, f4_1))),
-    refl(f4_frobenius(f4_mul(f4_2, f4_2))),
-    refl(f4_frobenius(f4_mul(f4_2, f4_3))), y),
-    f4_induction((fun (y : F4Carrier) => f4_frobenius(f4_mul(f4_3, y)) = f4_mul(f4_frobenius(f4_3), f4_frobenius(y))),
-    refl(f4_frobenius(f4_mul(f4_3, f4_0))),
-    refl(f4_frobenius(f4_mul(f4_3, f4_1))),
-    refl(f4_frobenius(f4_mul(f4_3, f4_2))),
-    refl(f4_frobenius(f4_mul(f4_3, f4_3))), y), x);
+
+theorem f4_frobenius_mul(x : F4Carrier, y : F4Carrier) : f4_frobenius(f4_mul(x, y)) = f4_mul(
+  f4_frobenius(x), f4_frobenius(y)
+) {
+  exact f4_induction(
+    (fun (x : F4Carrier) => f4_frobenius(f4_mul(x, y)) = f4_mul(f4_frobenius(x), f4_frobenius(y))),
+    f4_induction(
+      (
+        fun (y : F4Carrier) => f4_frobenius(f4_mul(f4_0, y)) = f4_mul(
+          f4_frobenius(f4_0), f4_frobenius(y)
+        )
+      ), refl(f4_frobenius(f4_mul(f4_0, f4_0))), refl(f4_frobenius(f4_mul(f4_0, f4_1))),
+      refl(f4_frobenius(f4_mul(f4_0, f4_2))), refl(f4_frobenius(f4_mul(f4_0, f4_3))), y
+    ),
+    f4_induction(
+      (
+        fun (y : F4Carrier) => f4_frobenius(f4_mul(f4_1, y)) = f4_mul(
+          f4_frobenius(f4_1), f4_frobenius(y)
+        )
+      ), refl(f4_frobenius(f4_mul(f4_1, f4_0))), refl(f4_frobenius(f4_mul(f4_1, f4_1))),
+      refl(f4_frobenius(f4_mul(f4_1, f4_2))), refl(f4_frobenius(f4_mul(f4_1, f4_3))), y
+    ),
+    f4_induction(
+      (
+        fun (y : F4Carrier) => f4_frobenius(f4_mul(f4_2, y)) = f4_mul(
+          f4_frobenius(f4_2), f4_frobenius(y)
+        )
+      ), refl(f4_frobenius(f4_mul(f4_2, f4_0))), refl(f4_frobenius(f4_mul(f4_2, f4_1))),
+      refl(f4_frobenius(f4_mul(f4_2, f4_2))), refl(f4_frobenius(f4_mul(f4_2, f4_3))), y
+    ),
+    f4_induction(
+      (
+        fun (y : F4Carrier) => f4_frobenius(f4_mul(f4_3, y)) = f4_mul(
+          f4_frobenius(f4_3), f4_frobenius(y)
+        )
+      ), refl(f4_frobenius(f4_mul(f4_3, f4_0))), refl(f4_frobenius(f4_mul(f4_3, f4_1))),
+      refl(f4_frobenius(f4_mul(f4_3, f4_2))), refl(f4_frobenius(f4_mul(f4_3, f4_3))), y
+    ), x
+  );
 }
+
 theorem f4_frobenius_involution(x : F4Carrier) : f4_frobenius(f4_frobenius(x)) = x {
-  exact f4_induction((fun (x : F4Carrier) => f4_frobenius(f4_frobenius(x)) = x),
-    refl(f4_frobenius(f4_frobenius(f4_0))),
-    refl(f4_frobenius(f4_frobenius(f4_1))),
-    refl(f4_frobenius(f4_frobenius(f4_2))),
-    refl(f4_frobenius(f4_frobenius(f4_3))), x);
+  exact f4_induction(
+    (fun (x : F4Carrier) => f4_frobenius(f4_frobenius(x)) = x),
+    refl(f4_frobenius(f4_frobenius(f4_0))), refl(f4_frobenius(f4_frobenius(f4_1))),
+    refl(f4_frobenius(f4_frobenius(f4_2))), refl(f4_frobenius(f4_frobenius(f4_3))), x
+  );
 }
+
 theorem f4_frobenius_fixes_base(x : F2Carrier) : f4_frobenius(f2_into_f4(x)) = f2_into_f4(x) {
-  exact f2_induction((fun (x : F2Carrier) => f4_frobenius(f2_into_f4(x)) = f2_into_f4(x)),
-    refl(f4_frobenius(f2_into_f4(f2_0))),
-    refl(f4_frobenius(f2_into_f4(f2_1))), x);
+  exact f2_induction(
+    (fun (x : F2Carrier) => f4_frobenius(f2_into_f4(x)) = f2_into_f4(x)),
+    refl(f4_frobenius(f2_into_f4(f2_0))), refl(f4_frobenius(f2_into_f4(f2_1))), x
+  );
 }
+
 def f4_frobenius_preserves : FieldOpsPreserved(F4Carrier, F4Carrier, f4_frobenius, f4_ops, f4_ops) {
-  exact (refl(f4_0), (refl(f4_1), ((fun (x : F4Carrier) => refl(f4_frobenius(x))), (f4_frobenius_add, f4_frobenius_mul))));
+  exact (
+    refl(f4_0), refl(f4_1), (fun (x : F4Carrier) => refl(f4_frobenius(x))), f4_frobenius_add,
+    f4_frobenius_mul
+  );
 }
-def f4_frobenius_extension_preserved : ExtensionPreserved(F2, F4Carrier, F4Carrier, f4_frobenius, f4_extension_data, f4_extension_data) {
+
+def f4_frobenius_extension_preserved : ExtensionPreserved(
+  F2, F4Carrier, F4Carrier, f4_frobenius, f4_extension_data, f4_extension_data
+) {
   exact (f4_frobenius_preserves, f4_frobenius_fixes_base);
 }
+
 def f4_frobenius_automorphism : Galois(F2, F4OverF2) {
-  exact (f4_frobenius, ((f4_frobenius, (f4_frobenius_involution, f4_frobenius_involution)),
-    f4_frobenius_extension_preserved));
+  exact (
+    f4_frobenius, (f4_frobenius, f4_frobenius_involution, f4_frobenius_involution),
+    f4_frobenius_extension_preserved
+  );
 }
+
 def f4_identity_automorphism = extension_identity_iso(F2, F4OverF2);
-theorem f4_frobenius_square :
-  extension_iso_compose(F2, F4OverF2, F4OverF2, F4OverF2, f4_frobenius_automorphism, f4_frobenius_automorphism) = f4_identity_automorphism {
-  exact structure_iso_ext(ExtensionData(F2), ExtensionPreserved(F2), extension_preserved_prop(F2), F4OverF2, F4OverF2,
-    extension_iso_compose(F2, F4OverF2, F4OverF2, F4OverF2, f4_frobenius_automorphism, f4_frobenius_automorphism), f4_identity_automorphism, f4_frobenius_involution);
+theorem f4_frobenius_square : extension_iso_compose(
+  F2, F4OverF2, F4OverF2, F4OverF2, f4_frobenius_automorphism, f4_frobenius_automorphism
+) = f4_identity_automorphism {
+  exact structure_iso_ext(
+    ExtensionData(F2), ExtensionPreserved(F2), extension_preserved_prop(F2), F4OverF2, F4OverF2,
+    extension_iso_compose(
+      F2, F4OverF2, F4OverF2, F4OverF2, f4_frobenius_automorphism, f4_frobenius_automorphism
+    ), f4_identity_automorphism, f4_frobenius_involution
+  );
 }
 
 // Both roots exist in the constructed field; they are distinct.
 def f4_root_polynomial(x : F4Carrier) = f4_add(f4_add(f4_mul(x, x), x), f4_1);
-theorem f4_alpha_root : f4_root_polynomial(f4_2) = f4_0 { exact refl(f4_0); }
-theorem f4_other_root : f4_root_polynomial(f4_3) = f4_0 { exact refl(f4_0); }
-def f4_3_not_2(p : f4_3 = f4_2) = sum_disjoint(Fin(1), tt, typed((Unit or Fin(0)), left(tt)), sym(tail_injective(Fin(2), typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt)))), typed((Unit or Fin(1)), left(tt)), tail_injective(Fin(3), typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt)))))), typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))), p))));
-def f4_2_not_0(p : f4_2 = f4_0) = sum_disjoint(Fin(3), tt, typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))), sym(p));
-def f4_2_not_1(p : f4_2 = f4_1) = sum_disjoint(Fin(2), tt, typed((Unit or Fin(1)), left(tt)), sym(tail_injective(Fin(3), typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))), typed((Unit or Fin(2)), left(tt)), p)));
+theorem f4_alpha_root : f4_root_polynomial(f4_2) = f4_0 {
+  exact refl(f4_0);
+}
+
+theorem f4_other_root : f4_root_polynomial(f4_3) = f4_0 {
+  exact refl(f4_0);
+}
+
+def f4_3_not_2(p : f4_3 = f4_2) =
+  sum_disjoint(
+    Fin(1), tt, typed((Unit or Fin(0)), left(tt)),
+    sym(
+      tail_injective(
+        Fin(2), typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt)))),
+        typed((Unit or Fin(1)), left(tt)),
+        tail_injective(
+          Fin(3),
+          typed(
+            (Unit or Fin(2)),
+            right(typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt)))))
+          ), typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))), p
+        )
+      )
+    )
+  );
+def f4_2_not_0(p : f4_2 = f4_0) =
+  sum_disjoint(
+    Fin(3), tt, typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))), sym(p)
+  );
+def f4_2_not_1(p : f4_2 = f4_1) =
+  sum_disjoint(
+    Fin(2), tt, typed((Unit or Fin(1)), left(tt)),
+    sym(
+      tail_injective(
+        Fin(3), typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))),
+        typed((Unit or Fin(2)), left(tt)), p
+      )
+    )
+  );
 
 // This is a path of whole field extensions, not a path between field elements.
 def f4_galois_loop = extension_iso_path(F2, F4OverF2, F4OverF2, f4_frobenius_automorphism);
-theorem f4_loop_exchanges_roots :
-  transport(extension_carrier(F2), F4OverF2, F4OverF2, f4_galois_loop, f4_2) = f4_3 {
+theorem f4_loop_exchanges_roots : transport(
+  extension_carrier(F2), F4OverF2, F4OverF2, f4_galois_loop, f4_2
+) = f4_3 {
   exact galois_loop_action(F2, F4OverF2, f4_frobenius_automorphism, f4_2);
 }
+
 theorem f4_loop_nontrivial : (f4_galois_loop = refl(F4OverF2)) -> Void {
   exact galois_moving_loop_nontrivial(F2, F4OverF2, f4_frobenius_automorphism, f4_2, f4_3_not_2);
 }
+
 theorem f4_loop_twice : trans(f4_galois_loop, f4_galois_loop) = refl(F4OverF2) {
-  exact trans(sym(galois_composition_is_concatenation(F2, F4OverF2, f4_frobenius_automorphism, f4_frobenius_automorphism)),
-    trans(cong(extension_iso_path(F2, F4OverF2, F4OverF2), f4_frobenius_square), galois_identity_is_reflexivity(F2, F4OverF2)));
+  exact trans(
+    sym(
+      galois_composition_is_concatenation(
+        F2, F4OverF2, f4_frobenius_automorphism, f4_frobenius_automorphism
+      )
+    ),
+    trans(
+      cong(extension_iso_path(F2, F4OverF2, F4OverF2), f4_frobenius_square),
+      galois_identity_is_reflexivity(F2, F4OverF2)
+    )
+  );
 }

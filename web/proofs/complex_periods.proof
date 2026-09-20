@@ -5,20 +5,29 @@ import puncture_periods;
 // field remains a supplied ring. The normalization (eventually 2*pi*i),
 // the contour integral, its homotopy invariance/additivity, and the local
 // residue calculation are explicit inputs, not postulated analytic facts.
-theorem complex_puncture_period_formula(F : U1, zero : F, one : F,
-  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : Nat,
-  period : BouquetLoops(Fin(n)) -> Complex(F),
-  periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), Complex(F),
-    complex_zero(F, zero), complex_add(F, addF), period),
-  normalization : Complex(F), residues : Fin(n) -> Complex(F),
-  localValues : (forall i : Fin(n), period(puncture_loop(n, i)) =
-    complex_mul(F, addF, mulF, negF, normalization, residues(i))), p : BouquetLoops(Fin(n))) :
-  period(p) = weighted_winding_sum(n, Complex(F), complex_zero(F, zero),
-    complex_add(F, addF), complex_neg(F, negF),
-    (fun (i : Fin(n)) => complex_mul(F, addF, mulF, negF, normalization, residues(i))), p) {
-  obtain (setC, (additive, multiplicative)) = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-  exact puncture_period_formula(n, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_neg(F, negF),
-    setC, additive, period, periodLaws,
-    (fun (i : Fin(n)) => complex_mul(F, addF, mulF, negF, normalization, residues(i))), localValues, p);
+theorem complex_puncture_period_formula(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : Nat, period : BouquetLoops(Fin(n))
+  -> Complex(F),
+  periodLaws : LoopMapLaws(
+    PunctureGraph(n), bouquet_base(Fin(n)), Complex(F), complex_zero(F, zero), complex_add(F, addF),
+    period
+  ), normalization : Complex(F), residues : Fin(n) -> Complex(F),
+  localValues : (
+    forall i : Fin(n),
+    period(puncture_loop(n, i)) = complex_mul(F, addF, mulF, negF, normalization, residues(i))
+  ), p : BouquetLoops(Fin(n))
+) : period(p) = weighted_winding_sum(
+  n, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_neg(F, negF),
+  (fun (i : Fin(n)) => complex_mul(F, addF, mulF, negF, normalization, residues(i))), p
+) {
+  obtain (setC, additive, multiplicative) = complex_commutative_ring(
+    F, zero, one, addF, mulF, negF, ring
+  );
+  exact puncture_period_formula(
+    n, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_neg(F, negF), setC,
+    additive, period, periodLaws,
+    (fun (i : Fin(n)) => complex_mul(F, addF, mulF, negF, normalization, residues(i))), localValues,
+    p
+  );
 }

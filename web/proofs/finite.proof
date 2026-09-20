@@ -4,37 +4,40 @@ import sets;
 // The natural-number-to-type bridge: n distinct alternatives, built from sums.
 // Fin(0) = Void; Fin(n+1) = Unit or Fin(n).
 def Fin(n : Nat) = induction n as k return U0 {
-  zero => Void;
-  succ previous => Unit or previous;
-};
+    zero => Void;
+    succ previous => Unit or previous;
+  };
 def add_count(n : Nat, m : Nat) = induction n as k return Nat {
-  zero => m;
-  succ previous => succ(previous);
-};
+    zero => m;
+    succ previous => succ(previous);
+  };
 
 def empty_sum_out(A : U0, x : Void or A) = match x return A {
-  left impossible => absurd(impossible);
-  right a => a;
-};
+    left impossible => absurd(impossible);
+    right a => a;
+  };
 def empty_sum_roundtrip(A : U0, x : Void or A) =
   match x as z return (typed(Void or A, right(empty_sum_out(A, z))) = z) {
     left impossible => absurd(impossible);
     right a => refl(typed(Void or A, right(a)));
   };
-def empty_sum_bijection(A : U0) = typed(Bijection(Void or A, A),
-  (empty_sum_out(A), ((fun (a : A) => typed(Void or A, right(a))),
-    (empty_sum_roundtrip(A), (fun (a : A) => refl(a))))));
+def empty_sum_bijection(A : U0) =
+  typed(
+    Bijection(Void or A, A),
+    (
+      empty_sum_out(A), (fun (a : A) => typed(Void or A, right(a))), empty_sum_roundtrip(A),
+      (fun (a : A) => refl(a))
+    )
+  );
 
-def sum_associate(A : U0, B : U0, C : U0, x : (A or B) or C) =
-  match x return (A or (B or C)) {
+def sum_associate(A : U0, B : U0, C : U0, x : (A or B) or C) = match x return (A or (B or C)) {
     left ab => match ab return (A or (B or C)) {
       left a => left(a);
       right b => right(typed(B or C, left(b)));
     };
     right c => right(typed(B or C, right(c)));
   };
-def sum_unassociate(A : U0, B : U0, C : U0, x : A or (B or C)) =
-  match x return ((A or B) or C) {
+def sum_unassociate(A : U0, B : U0, C : U0, x : A or (B or C)) = match x return ((A or B) or C) {
     left a => left(typed(A or B, left(a)));
     right bc => match bc return ((A or B) or C) {
       left b => left(typed(A or B, right(b)));
@@ -43,7 +46,11 @@ def sum_unassociate(A : U0, B : U0, C : U0, x : A or (B or C)) =
   };
 def sum_associate_left(A : U0, B : U0, C : U0, x : (A or B) or C) =
   match x as z return (sum_unassociate(A, B, C, sum_associate(A, B, C, z)) = z) {
-    left ab => match ab as w return (sum_unassociate(A, B, C, sum_associate(A, B, C, typed((A or B) or C, left(w)))) = typed((A or B) or C, left(w))) {
+    left ab => match ab as w return (
+      sum_unassociate(A, B, C, sum_associate(A, B, C, typed((A or B) or C, left(w)))) = typed(
+        (A or B) or C, left(w)
+      )
+    ) {
       left a => refl(typed((A or B) or C, left(typed(A or B, left(a)))));
       right b => refl(typed((A or B) or C, left(typed(A or B, right(b)))));
     };
@@ -52,32 +59,55 @@ def sum_associate_left(A : U0, B : U0, C : U0, x : (A or B) or C) =
 def sum_associate_right(A : U0, B : U0, C : U0, x : A or (B or C)) =
   match x as z return (sum_associate(A, B, C, sum_unassociate(A, B, C, z)) = z) {
     left a => refl(typed(A or (B or C), left(a)));
-    right bc => match bc as w return (sum_associate(A, B, C, sum_unassociate(A, B, C, typed(A or (B or C), right(w)))) = typed(A or (B or C), right(w))) {
+    right bc => match bc as w return (
+      sum_associate(A, B, C, sum_unassociate(A, B, C, typed(A or (B or C), right(w)))) = typed(
+        A or (B or C), right(w)
+      )
+    ) {
       left b => refl(typed(A or (B or C), right(typed(B or C, left(b)))));
       right c => refl(typed(A or (B or C), right(typed(B or C, right(c)))));
     };
   };
-def sum_associativity(A : U0, B : U0, C : U0) = typed(Bijection((A or B) or C, A or (B or C)),
-  (sum_associate(A, B, C), (sum_unassociate(A, B, C), (sum_associate_left(A, B, C), sum_associate_right(A, B, C)))));
+def sum_associativity(A : U0, B : U0, C : U0) =
+  typed(
+    Bijection((A or B) or C, A or (B or C)),
+    (
+      sum_associate(A, B, C), sum_unassociate(A, B, C), sum_associate_left(A, B, C),
+      sum_associate_right(A, B, C)
+    )
+  );
 
 // Joining an n-element enumeration to an m-element enumeration.
-theorem fin_sum(n : Nat, m : Nat) = induction n as k return Bijection(Fin(k) or Fin(m), Fin(add_count(k, m))) {
+theorem fin_sum(n : Nat, m : Nat) = induction n as k return Bijection(
+  Fin(k) or Fin(m), Fin(add_count(k, m))
+) {
   zero => empty_sum_bijection(Fin(m));
-  succ previous => compose_bijection((Unit or Fin(k)) or Fin(m), Unit or (Fin(k) or Fin(m)), Unit or Fin(add_count(k, m)),
+  succ previous => compose_bijection(
+    (Unit or Fin(k)) or Fin(m), Unit or (Fin(k) or Fin(m)), Unit or Fin(add_count(k, m)),
     sum_associativity(Unit, Fin(k), Fin(m)),
-    sum_bijection(Unit, Fin(k) or Fin(m), Unit, Fin(add_count(k, m)), identity_bijection(Unit), previous));
+    sum_bijection(
+      Unit, Fin(k) or Fin(m), Unit, Fin(add_count(k, m)), identity_bijection(Unit), previous
+    )
+  );
 };
 
 def one_out(x : Fin(1)) = match typed(Unit or Void, x) return Unit {
-  left u => u;
-  right impossible => absurd(impossible);
-};
-def one_roundtrip(x : Fin(1)) = match typed(Unit or Void, x) as z return (typed(Unit or Void, left(one_out(z))) = z) {
-  left u => refl(typed(Unit or Void, left(u)));
-  right impossible => absurd(impossible);
-};
-def unit_to_fin_one = typed(Bijection(Unit, Fin(1)),
-  ((fun (u : Unit) => typed(Unit or Void, left(u))), (one_out, ((fun (u : Unit) => refl(u)), one_roundtrip))));
+    left u => u;
+    right impossible => absurd(impossible);
+  };
+def one_roundtrip(x : Fin(1)) =
+  match typed(Unit or Void, x) as z return (typed(Unit or Void, left(one_out(z))) = z) {
+    left u => refl(typed(Unit or Void, left(u)));
+    right impossible => absurd(impossible);
+  };
+def unit_to_fin_one =
+  typed(
+    Bijection(Unit, Fin(1)),
+    (
+      (fun (u : Unit) => typed(Unit or Void, left(u))), one_out, (fun (u : Unit) => refl(u)),
+      one_roundtrip
+    )
+  );
 
 def two = Unit or Unit;
 def three = Unit or two;
@@ -89,33 +119,81 @@ def four_to_fin = sum_bijection(Unit, three, Unit, Fin(3), identity_bijection(Un
 def five_to_fin = sum_bijection(Unit, four, Unit, Fin(4), identity_bijection(Unit), four_to_fin);
 
 // The constructors of a finite sum are disjoint and injective.
-def sum_tag(A : U0, x : Unit or A) = match x return U0 { left u => Unit; right a => Void; };
-def sum_disjoint(A : U0, u : Unit, a : A, p : typed(Unit or A, left(u)) = typed(Unit or A, right(a))) =
+def sum_tag(A : U0, x : Unit or A) = match x return U0 {
+    left u => Unit;
+    right a => Void;
+  };
+def sum_disjoint(
+  A : U0, u : Unit, a : A, p : typed(Unit or A, left(u)) = typed(Unit or A, right(a))
+) =
   transport(sum_tag(A), typed(Unit or A, left(u)), typed(Unit or A, right(a)), p, tt);
-def tail_or(A : U0, fallback : A, x : Unit or A) = match x return A { left u => fallback; right a => a; };
-def tail_injective(A : U0, a : A, b : A, p : typed(Unit or A, right(a)) = typed(Unit or A, right(b))) =
+def tail_or(A : U0, fallback : A, x : Unit or A) = match x return A {
+    left u => fallback;
+    right a => a;
+  };
+def tail_injective(
+  A : U0, a : A, b : A, p : typed(Unit or A, right(a)) = typed(Unit or A, right(b))
+) =
   cong(tail_or(A, a), p);
 
-theorem fin_decidable(n : Nat) = induction n as k return (forall a : Fin(k), forall b : Fin(k), Decidable(a = b)) {
+theorem fin_decidable(n : Nat) = induction n as k return (
+  forall a : Fin(k), forall b : Fin(k), Decidable(a = b)
+) {
   zero => fun (a : Fin(0)) => fun (b : Fin(0)) => typed(Decidable(a = b), absurd(a));
-  succ previous => fun (a : Fin(succ(k))) => fun (b : Fin(succ(k))) =>
-    match typed(Unit or Fin(k), a) as x return Decidable(x = b) {
-      left u => match typed(Unit or Fin(k), b) as y return Decidable(typed(Unit or Fin(k), left(u)) = y) {
-        left v => typed(Decidable(typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), left(v))),
-          left(cong((fun (w : Unit) => typed(Unit or Fin(k), left(w))), trans(sym(unit_equal(u)), unit_equal(v)))));
-        right j => typed(Decidable(typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), right(j))),
-          right(fun (p : typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), right(j))) => sum_disjoint(Fin(k), u, j, p)));
-      };
-      right i => match typed(Unit or Fin(k), b) as y return Decidable(typed(Unit or Fin(k), right(i)) = y) {
-        left v => typed(Decidable(typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), left(v))),
-          right(fun (p : typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), left(v))) => sum_disjoint(Fin(k), v, i, sym(p))));
-        right j => match previous(i, j) return Decidable(typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))) {
-          left p => typed(Decidable(typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))),
-            left(cong((fun (w : Fin(k)) => typed(Unit or Fin(k), right(w))), typed((i = j), p))));
-          right no => typed(Decidable(typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))),
-            right(fun (p : typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))) => no(tail_injective(Fin(k), i, j, p))));
-        };
+  succ previous => fun (a : Fin(succ(k))) => fun (b : Fin(succ(k))) => match typed(
+    Unit or Fin(k), a
+  ) as x return Decidable(x = b) {
+    left u => match typed(Unit or Fin(k), b) as y return Decidable(
+      typed(Unit or Fin(k), left(u)) = y
+    ) {
+      left v => typed(
+        Decidable(typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), left(v))),
+        left(
+          cong(
+            (fun (w : Unit) => typed(Unit or Fin(k), left(w))),
+            trans(sym(unit_equal(u)), unit_equal(v))
+          )
+        )
+      );
+      right j => typed(
+        Decidable(typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), right(j))),
+        right(
+          fun (p : typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), right(j))) => sum_disjoint(
+            Fin(k), u, j, p
+          )
+        )
+      );
+    };
+    right i => match typed(Unit or Fin(k), b) as y return Decidable(
+      typed(Unit or Fin(k), right(i)) = y
+    ) {
+      left v => typed(
+        Decidable(typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), left(v))),
+        right(
+          fun (p : typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), left(v))) => sum_disjoint(
+            Fin(k), v, i, sym(p)
+          )
+        )
+      );
+      right j => match previous(i, j) return Decidable(
+        typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))
+      ) {
+        left p => typed(
+          Decidable(typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))),
+          left(cong((fun (w : Fin(k)) => typed(Unit or Fin(k), right(w))), typed((i = j), p)))
+        );
+        right no => typed(
+          Decidable(typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))),
+          right(
+            fun (p : typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))) => no(
+              tail_injective(Fin(k), i, j, p)
+            )
+          )
+        );
       };
     };
+  };
 };
-theorem fin_is_set(n : Nat) : IsSet(Fin(n)) { exact hedberg(Fin(n), fin_decidable(n)); }
+theorem fin_is_set(n : Nat) : IsSet(Fin(n)) {
+  exact hedberg(Fin(n), fin_decidable(n));
+}

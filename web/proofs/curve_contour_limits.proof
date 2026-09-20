@@ -3,78 +3,208 @@ import parameter_contour_limits;
 
 // Given convergence for one tag scheme, bounded variation and vanishing
 // sampled value errors transfer that limit to the other tag scheme.
-theorem curve_contour_tag_independent_limit(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
-  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
-  realWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F,
-  imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F,
-  length : F, nonnegativeLength : FieldLe(F, lt, zero, length), variation : ComplexCurveVariation(F, zero, one, addF, negF, lt, curve, realWeight, imagWeight, length),
-  count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(FieldUnitInterval(F, zero, one, lt), count(n))),
-  oldTags : (forall n : Nat, SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))), newTags : (forall n : Nat, SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))),
-  ordered : (forall n : Nat, IntervalOrderedSamples(F, zero, one, lt, count(n), vertices(n))), delta : Nat -> F,
-  nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
-  errors : (forall n : Nat, ComplexParameterTagBounds(FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t))), delta(n), count(n), vertices(n), oldTags(n), newTags(n))),
-  vanishes : FieldConverges(F, zero, addF, lt, delta, zero), value : Complex(F),
-  oldConverges : ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), oldTags(n))), value)) :
-  ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), newTags(n))), value) {
+theorem curve_contour_tag_independent_limit(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  inverses : FieldInverses(F, zero, one, mulF, lt), curve : FieldUnitInterval(F, zero, one, lt)
+  -> Complex(F), integrand : Complex(F) -> Complex(F),
+  realWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
+  -> FieldUnitInterval(F, zero, one, lt) -> F, imagWeight : FieldUnitInterval(F, zero, one, lt)
+  -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F, length : F,
+  nonnegativeLength : FieldLe(F, lt, zero, length),
+  variation : ComplexCurveVariation(
+    F, zero, one, addF, negF, lt, curve, realWeight, imagWeight, length
+  ), count : Nat -> Nat,
+  vertices : (forall n : Nat, SampleVertices(FieldUnitInterval(F, zero, one, lt), count(n))),
+  oldTags : (forall n : Nat, SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))),
+  newTags : (forall n : Nat, SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))),
+  ordered : (forall n : Nat, IntervalOrderedSamples(F, zero, one, lt, count(n), vertices(n))),
+  delta : Nat -> F, nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
+  errors : (
+    forall n : Nat,
+    ComplexParameterTagBounds(
+      FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt,
+      (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t))), delta(n), count(n),
+      vertices(n), oldTags(n), newTags(n)
+    )
+  ), vanishes : FieldConverges(F, zero, addF, lt, delta, zero), value : Complex(F),
+  oldConverges : ComplexConverges(
+    F, zero, addF, lt,
+    (
+      fun (n : Nat) => curve_contour_samples(
+        F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), oldTags(n)
+      )
+    ), value
+  )
+) : ComplexConverges(
+  F, zero, addF, lt,
+  (
+    fun (n : Nat) => curve_contour_samples(
+      F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), newTags(n)
+    )
+  ), value
+) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let values = (fun (t : I) => integrand(curve(t)));
-  let oldMapped = (fun (n : Nat) => curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), oldTags(n)));
-  let newMapped = (fun (n : Nat) => curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), newTags(n)));
-  let oldParam = (fun (n : Nat) => complex_parameter_contour_sum(I, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n)));
-  let newParam = (fun (n : Nat) => complex_parameter_contour_sum(I, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n)));
-  have increments : forall n : Nat, ComplexParameterIncrementBounds(I, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n)) {
+  let oldMapped =
+    (
+      fun (n : Nat) => curve_contour_samples(
+        F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), oldTags(n)
+      )
+    );
+  let newMapped =
+    (
+      fun (n : Nat) => curve_contour_samples(
+        F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), newTags(n)
+      )
+    );
+  let oldParam =
+    (
+      fun (n : Nat) => complex_parameter_contour_sum(
+        I, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n)
+      )
+    );
+  let newParam =
+    (
+      fun (n : Nat) => complex_parameter_contour_sum(
+        I, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n)
+      )
+    );
+  have increments : forall n : Nat,
+  ComplexParameterIncrementBounds(
+    I, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n)
+  ) {
     intro n;
-    obtain (realBounds, (imagBounds, totalBound)) = variation(count(n), vertices(n), oldTags(n), ordered(n));
-    exact parameter_coordinate_increment_bounds(I, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n), realBounds, imagBounds);
+    obtain (realBounds, imagBounds, totalBound) = variation(
+      count(n), vertices(n), oldTags(n), ordered(n)
+    );
+    exact parameter_coordinate_increment_bounds(
+      I, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n),
+      realBounds, imagBounds
+    );
   }
-  have total : forall n : Nat, FieldLe(F, lt, sample_sum(I, F, zero, addF, (fun (a : I) => fun (b : I) => fun (t : I) => addF(realWeight(a, b, t), imagWeight(a, b, t))), count(n), vertices(n), oldTags(n)), length) {
+  have total : forall n : Nat,
+  FieldLe(
+    F, lt,
+    sample_sum(
+      I, F, zero, addF,
+      (fun (a : I) => fun (b : I) => fun (t : I) => addF(realWeight(a, b, t), imagWeight(a, b, t))),
+      count(n), vertices(n), oldTags(n)
+    ), length
+  ) {
     intro n;
-    obtain (realBounds, (imagBounds, totalBound)) = variation(count(n), vertices(n), oldTags(n), ordered(n));
+    obtain (realBounds, imagBounds, totalBound) = variation(
+      count(n), vertices(n), oldTags(n), ordered(n)
+    );
     exact totalBound;
   }
   have oldSame : forall n : Nat, oldMapped(n) = oldParam(n) {
     intro n;
-    exact sym(parameter_contour_sum_is_mapped(I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, integrand, count(n), vertices(n), oldTags(n)));
+    exact sym(
+      parameter_contour_sum_is_mapped(
+        I, Complex(F), complex_zero(F, zero), complex_add(F, addF),
+        complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, integrand, count(n),
+        vertices(n), oldTags(n)
+      )
+    );
   }
   have newSame : forall n : Nat, newParam(n) = newMapped(n) {
     intro n;
-    exact parameter_contour_sum_is_mapped(I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, integrand, count(n), vertices(n), newTags(n));
+    exact parameter_contour_sum_is_mapped(
+      I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
+      complex_neg(F, negF), curve, integrand, count(n), vertices(n), newTags(n)
+    );
   }
-  let oldLimit = complex_converges_pointwise(F, zero, addF, lt, oldMapped, oldParam, oldSame, value, oldConverges);
-  let newLimit = complex_parameter_tag_independent_limit(I, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, curve, values, realWeight, imagWeight, count, vertices, oldTags, newTags, delta, length, nonnegativeLength, nonnegativeDelta, errors, increments, total, vanishes, value, oldLimit);
-  exact complex_converges_pointwise(F, zero, addF, lt, newParam, newMapped, newSame, value, newLimit);
+  let oldLimit =
+    complex_converges_pointwise(
+      F, zero, addF, lt, oldMapped, oldParam, oldSame, value, oldConverges
+    );
+  let newLimit =
+    complex_parameter_tag_independent_limit(
+      I, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, curve, values,
+      realWeight, imagWeight, count, vertices, oldTags, newTags, delta, length, nonnegativeLength,
+      nonnegativeDelta, errors, increments, total, vanishes, value, oldLimit
+    );
+  exact complex_converges_pointwise(
+    F, zero, addF, lt, newParam, newMapped, newSame, value, newLimit
+  );
 }
 
 // For the constructed affine curve, the variation hypothesis is discharged
 // by its proved lattice bounds. Only the integrand's sampled errors and one
 // convergent tag scheme remain inputs; convergence is not postulated afresh.
-theorem affine_curve_contour_tag_independent_limit(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt),
-  minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F), integrand : Complex(F) -> Complex(F),
-  count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(FieldUnitInterval(F, zero, one, lt), count(n))),
-  oldTags : (forall n : Nat, SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))), newTags : (forall n : Nat, SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))),
-  ordered : (forall n : Nat, IntervalOrderedSamples(F, zero, one, lt, count(n), vertices(n))), delta : Nat -> F,
-  nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
-  errors : (forall n : Nat, ComplexParameterTagBounds(FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt,
-    (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error, t))), delta(n), count(n), vertices(n), oldTags(n), newTags(n))),
-  vanishes : FieldConverges(F, zero, addF, lt, delta, zero), value : Complex(F),
-  oldConverges : ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => curve_contour_samples(F, zero, one, addF, mulF, negF, lt,
-    complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, count(n), vertices(n), oldTags(n))), value)) :
-  ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => curve_contour_samples(F, zero, one, addF, mulF, negF, lt,
-    complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, count(n), vertices(n), newTags(n))), value) {
+theorem affine_curve_contour_tag_independent_limit(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF : F -> F -> F, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F),
+  integrand : Complex(F) -> Complex(F), count : Nat -> Nat,
+  vertices : (forall n : Nat, SampleVertices(FieldUnitInterval(F, zero, one, lt), count(n))),
+  oldTags : (forall n : Nat, SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))),
+  newTags : (forall n : Nat, SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))),
+  ordered : (forall n : Nat, IntervalOrderedSamples(F, zero, one, lt, count(n), vertices(n))),
+  delta : Nat -> F, nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
+  errors : (
+    forall n : Nat,
+    ComplexParameterTagBounds(
+      FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt,
+      (
+        fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
+          complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error, t)
+        )
+      ), delta(n), count(n), vertices(n), oldTags(n), newTags(n)
+    )
+  ), vanishes : FieldConverges(F, zero, addF, lt, delta, zero), value : Complex(F),
+  oldConverges : ComplexConverges(
+    F, zero, addF, lt,
+    (
+      fun (n : Nat) => curve_contour_samples(
+        F, zero, one, addF, mulF, negF, lt,
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, count(n),
+        vertices(n), oldTags(n)
+      )
+    ), value
+  )
+) : ComplexConverges(
+  F, zero, addF, lt,
+  (
+    fun (n : Nat) => curve_contour_samples(
+      F, zero, one, addF, mulF, negF, lt,
+      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, count(n),
+      vertices(n), newTags(n)
+    )
+  ), value
+) {
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error);
   let r = maxF(complex_real(F, error), negF(complex_real(F, error)));
   let s = maxF(complex_imag(F, error), negF(complex_imag(F, error)));
   let boundReal = field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_real(F, error));
   let boundImag = field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_imag(F, error));
-  let nonnegativeR = field_magnitude_radius_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), r, boundReal);
-  let nonnegativeS = field_magnitude_radius_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, error), s, boundImag);
-  let nonnegativeLength = ordered_sum_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, nonnegativeR, nonnegativeS);
-  let variation = complex_interval_deformation_variation(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, error);
-  exact curve_contour_tag_independent_limit(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, curve, integrand,
-    interval_weight(F, zero, one, addF, mulF, negF, lt, r), interval_weight(F, zero, one, addF, mulF, negF, lt, s),
-    addF(r, s), nonnegativeLength, variation, count, vertices, oldTags, newTags, ordered, delta, nonnegativeDelta, errors, vanishes, value, oldConverges);
+  let nonnegativeR =
+    field_magnitude_radius_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), r,
+      boundReal
+    );
+  let nonnegativeS =
+    field_magnitude_radius_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, error), s,
+      boundImag
+    );
+  let nonnegativeLength =
+    ordered_sum_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, nonnegativeR, nonnegativeS
+    );
+  let variation =
+    complex_interval_deformation_variation(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, error
+    );
+  exact curve_contour_tag_independent_limit(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, curve, integrand,
+    interval_weight(F, zero, one, addF, mulF, negF, lt, r),
+    interval_weight(F, zero, one, addF, mulF, negF, lt, s), addF(r, s), nonnegativeLength,
+    variation, count, vertices, oldTags, newTags, ordered, delta, nonnegativeDelta, errors,
+    vanishes, value, oldConverges
+  );
 }

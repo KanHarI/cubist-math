@@ -1,5 +1,6 @@
 import proofs from "./proofs/catalogue.mjs";
 import { readWorkbenchTransfer, removeWorkbenchTransfer } from "./workbench-transfer.mjs";
+import { validatedProofURL } from "./proof-navigation.mjs";
 import {
   layout,
   roles,
@@ -8,6 +9,12 @@ import {
   atPath,
 } from "./expressions.mjs";
 const $ = (id) => document.getElementById(id);
+function setProofReturn(value) {
+  const address = value && validatedProofURL(value);
+  $("back-mathscript").hidden = !address;
+  if (address) $("back-mathscript").href = address;
+}
+setProofReturn(history.state?.proofReturn);
 let worker,
   sequence = 0,
   state,
@@ -87,7 +94,9 @@ function start() {
           await removeWorkbenchTransfer(transfer);
           const address = new URL(location.href);
           address.searchParams.delete("transfer");
-          history.replaceState(null, "", address);
+          const proofReturn = payload.proofReturn && validatedProofURL(payload.proofReturn);
+          history.replaceState({ proofReturn }, "", address);
+          setProofReturn(proofReturn);
         } else {
           await choose("nested");
           selection = { side: "expression", path: [1] };
@@ -259,7 +268,7 @@ function renderTree(container, tree, side) {
     container.textContent = "—";
     return;
   }
-  const { text, spans } = layout(tree, view.contextNames),
+  const { text, spans } = layout(tree, view.contextNames, view.referenceNames),
     byPath = new Map(spans.map((s) => [JSON.stringify(s.path), s]));
   function build(path) {
     const range = byPath.get(JSON.stringify(path)),
@@ -270,7 +279,7 @@ function renderTree(container, tree, side) {
     el.setAttribute("role", "button");
     el.dataset.side = side;
     el.dataset.path = path.join(".");
-    el.title = `${n.kind} · ${side}${path.map((i) => "." + i).join("")}`;
+    el.title = `${n.kind} #${n.parameter} · ${side}${path.map((i) => "." + i).join("")}`;
     const declaration = view.declarations[n.id];
     const target = declaration !== active ? declaration : null;
     if (target) {
@@ -350,23 +359,61 @@ function renderInspector() {
     $("active-name").textContent = "Choose an object";
     $("expression").replaceChildren();
     $("type").replaceChildren();
+    $("kernel-context").replaceChildren();
     return;
   }
-  $("active-name").textContent = active;
+  $("active-name").textContent = view.displayNames?.[active] ?? active;
+  $("active-name").dataset.binding = active;
+  $("active-name").title = active;
+  $("clear").disabled = !selection && !view.focus?.side;
+  $("clear").title = view.focus?.side
+    ? "Preview the kernel UnHigh operation on this focused judgement"
+    : "Clear the selected highlight without changing the checked term";
   $("object-kind").textContent = view.axiom ? "explicit axiom" : view.kind;
   renderTree($("expression"), view.expression, "expression");
   renderTree($("type"), view.type, "type");
+  $("kernel-context").replaceChildren();
+  if (!view.context?.length) $("kernel-context").textContent = "Empty context";
+  for (const entry of view.context ?? []) {
+    const row = document.createElement("div");
+    row.dataset.name = entry.name;
+    const name = document.createElement("button");
+    name.className = "reference";
+    name.textContent = entry.name;
+    name.title = `Context ${entry.id} · ${entry.binding}`;
+    name.onclick = () => navigate(entry.binding).catch(error);
+    const type = document.createElement("span");
+    const rendered = layout(entry.type, view.contextNames, view.referenceNames);
+    let cursor = 0;
+    for (const span of rendered.spans.filter(span => !span.node.children.length).sort((a, b) => a.start - b.start)) {
+      const node = span.node;
+      const target = ["CRef", "UCRef"].includes(node.kind)
+        ? view.context.find(row => row.id === node.parameter)?.binding : view.declarations[node.id];
+      if (!target) continue;
+      const link = objectLink(target);
+      link.className = "reference";
+      link.textContent = rendered.text.slice(span.start, span.end);
+      link.dataset.declaration = target;
+      link.title = `Inspect ${target}`;
+      type.append(document.createTextNode(rendered.text.slice(cursor, span.start)), link);
+      cursor = span.end;
+    }
+    type.append(document.createTextNode(rendered.text.slice(cursor)));
+    row.append(name, document.createTextNode(" : "), type);
+    $("kernel-context").append(row);
+  }
   $("used-axioms").replaceChildren();
   if (!view.axioms.length) $("used-axioms").textContent = "None";
   for (const [index, name] of view.axioms.entries()) {
     if (index) $("used-axioms").append(document.createTextNode(", "));
     const button = document.createElement("button");
-    button.textContent = name;
+    button.textContent = view.displayNames?.[name] ?? name;
+    button.title = name;
     button.onclick = () => navigate(name).catch(error);
     $("used-axioms").append(button);
   }
   $("assumptions").textContent =
-    view.assumptions.map((c) => c.names.join(" / ") || `c${c.id}`).join(", ") ||
+    view.assumptions.map((c) => view.contextNames[c.id] ?? c.names.join(" / ") ?? `c${c.id}`).join(", ") ||
     "None — closed";
   let selected = null;
   if (selection) selected = atPath(view[selection.side], selection.path);
@@ -415,9 +462,10 @@ function showPreview(p) {
   $("preview-result").textContent = layout(
     p.result.expression || p.result.type,
     p.result.contextNames,
+    p.result.referenceNames,
   ).text;
   $("preview-type").textContent =
-    "Type: " + layout(p.result.type, p.result.contextNames).text;
+    "Type: " + layout(p.result.type, p.result.contextNames, p.result.referenceNames).text;
   $("preview-code").textContent = p.source;
   $("preview-time").textContent =
     `${p.milliseconds.toFixed(1)} ms including replay`;
@@ -480,7 +528,12 @@ bind("reject", async () => {
   $("preview").hidden = true;
 });
 bind("undo", () => move("undo"));
-bind("clear", () => {
+bind("clear", async () => {
+  if (view?.focus?.side) {
+    showPreview(await request("previewFocus", { name: active, operation: "UnHigh",
+      resultName: $("result-name").value.trim() || "unhighlighted" }));
+    return;
+  }
   selection = null;
   renderInspector();
 });
@@ -501,13 +554,14 @@ bind("copy-mark", () => {
   $("marked").value = layout(
     view[$("mark-side").value],
     view.contextNames,
+    view.referenceNames,
   ).text;
 });
 bind("select-mark", () => {
   const side = $("mark-side").value;
   selection = {
     side,
-    path: pathFromMarked(view[side], $("marked").value, view.contextNames),
+    path: pathFromMarked(view[side], $("marked").value, view.contextNames, view.referenceNames),
   };
   renderInspector();
 });

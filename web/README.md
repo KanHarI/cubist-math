@@ -1,5 +1,18 @@
 # Interactive proof workbench
 
+Opening a checked MathScript expression in the workbench preserves named
+definitions, context variables, and axioms. The context panel lists the open
+assumptions with their checked types; folded context types are used only when
+their exported definitional-equality certificates replay successfully. Names
+are presentation metadata attached to bindings, never replacements for kernel
+terms. Kernel binding names remain available in tooltips.
+
+**← Back to MathScript** restores the source file, inspector selection, and
+scroll position. **Un-highlight** clears a visual selection; on a kernel-focused
+judgement it previews the `UnHigh` rule, which still requires accepting the
+preview. Named references continue to support Shift-click selection and the
+copy-and-mark path selector.
+
 The browser and CLI use the **same JavaScript session interpreter and actual C
 kernel compiled to WebAssembly**. There is no JavaScript type-checker or simulated
 proof engine. Each accepted instruction calls `tt_apply`.
@@ -33,7 +46,7 @@ The native engine still builds with `make` without Node, Python, or Emscripten.
 
 ## Existing proofs and the prelude library
 
-Both interfaces start with the prelude's full **50 exported judgements**, including
+Both interfaces start with the prelude's full **51 exported judgements**, including
 `LEM` and `AOC`. Other library names use `lib_`, for example `lib_Unit`,
 `lib_pr1`, `lib_funext`, and `lib_univalence`, to leave ordinary names free for
 user programs. Explicit axiom instructions are labelled **AXIOM** in the browser;
@@ -76,7 +89,7 @@ provides a small constructive starting point; `goto 0` then clears its program.
 
 Every original construction step is preserved, including repeated instructions
 whose results share an interned ID. Individual proof files show intermediate
-objects by default. The combined library initially shows only its 50 exports;
+objects by default. The combined library initially shows only its 51 exports;
 use **Show intermediate steps**, or CLI `list all` and `show NAME`, to inspect
 its derivation. Selection, reduction, and additional inference work on those
 objects exactly as they do on newly constructed objects.

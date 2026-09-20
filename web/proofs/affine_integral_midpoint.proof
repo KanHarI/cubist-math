@@ -3,51 +3,212 @@ import curve_sample_sums;
 
 // This is the recursion equation for the actual contour sums, using the
 // same midpoint and the same endpoint-order proofs as the sampler.
-theorem affine_dyadic_sum_successor(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F), integrand : Complex(F) -> Complex(F), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b)), depth : Nat) :
-  affine_dyadic_sum(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand, a, b, ordered, succ(depth)) =
-    complex_add(F, addF,
-      affine_dyadic_sum(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand, a, interval_midpoint_point(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered), interval_midpoint_left_order(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered), depth),
-      affine_dyadic_sum(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand, interval_midpoint_point(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered), b, interval_midpoint_right_order(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered), depth)) {
+theorem affine_dyadic_sum_successor(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F),
+  integrand : Complex(F) -> Complex(F), a : FieldUnitInterval(F, zero, one, lt),
+  b : FieldUnitInterval(F, zero, one, lt),
+  ordered : FieldLe(
+    F, lt, field_interval_coordinate(F, zero, one, lt)(a),
+    field_interval_coordinate(F, zero, one, lt)(b)
+  ), depth : Nat
+) : affine_dyadic_sum(
+  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand,
+  a, b, ordered, succ(depth)
+) = complex_add(
+  F, addF,
+  affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand,
+    a,
+    interval_midpoint_point(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    ),
+    interval_midpoint_left_order(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    ), depth
+  ),
+  affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand,
+    interval_midpoint_point(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    ), b,
+    interval_midpoint_right_order(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    ), depth
+  )
+) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
-  let midpoint = interval_midpoint_point(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered);
-  let leftOrdered = interval_midpoint_left_order(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered);
-  let rightOrdered = interval_midpoint_right_order(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered);
-  let left = dyadic_piece(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, midpoint, leftOrdered);
-  let right = dyadic_piece(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, midpoint, b, rightOrdered);
-  let samples = curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b);
-  exact trans(cong(samples, dyadic_piece_succ(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered)),
-    curve_subdivision_samples_join(F, zero, one, addF, mulF, negF, lt, ring, curve, integrand, a, midpoint, b, left, right));
+  let midpoint =
+    interval_midpoint_point(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    );
+  let leftOrdered =
+    interval_midpoint_left_order(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    );
+  let rightOrdered =
+    interval_midpoint_right_order(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    );
+  let left =
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a,
+      midpoint, leftOrdered
+    );
+  let right =
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, midpoint,
+      b, rightOrdered
+    );
+  let samples =
+    curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b);
+  exact trans(
+    cong(
+      samples,
+      dyadic_piece_succ(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
+        ordered
+      )
+    ),
+    curve_subdivision_samples_join(
+      F, zero, one, addF, mulF, negF, lt, ring, curve, integrand, a, midpoint, b, left, right
+    )
+  );
 }
-
 
 // Completeness and uniqueness carry the exact finite-sum equation to limits.
 // All three integrals use the same affine curve and its restricted endpoints.
-theorem affine_dyadic_integral_midpoint(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt), bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F), integrand : Complex(F) -> Complex(F), uniform : ComplexUniformCurve(F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)))), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt), ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b)), complete : CauchyComplete(F, zero, addF, lt)) :
-  affine_dyadic_integral(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses, bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete) =
-    complex_add(F, addF, affine_dyadic_integral(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses, bounds, half, halfSum, z, slope, integrand, uniform, a, interval_midpoint_point(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered), interval_midpoint_left_order(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered), complete), affine_dyadic_integral(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses, bounds, half, halfSum, z, slope, integrand, uniform, interval_midpoint_point(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered), b, interval_midpoint_right_order(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered), complete)) {
-  let midpoint = interval_midpoint_point(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered);
-  let leftOrdered = interval_midpoint_left_order(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered);
-  let rightOrdered = interval_midpoint_right_order(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered);
-  let whole = affine_dyadic_sum(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand, a, b, ordered);
-  let left = affine_dyadic_sum(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand, a, midpoint, leftOrdered);
-  let right = affine_dyadic_sum(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand, midpoint, b, rightOrdered);
-  let value = affine_dyadic_integral(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses, bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete);
-  let leftValue = affine_dyadic_integral(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses, bounds, half, halfSum, z, slope, integrand, uniform, a, midpoint, leftOrdered, complete);
-  let rightValue = affine_dyadic_integral(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses, bounds, half, halfSum, z, slope, integrand, uniform, midpoint, b, rightOrdered, complete);
-  let halving = ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
-  let wholeConverges = affine_dyadic_integral_converges(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses, bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete);
-  let leftConverges = affine_dyadic_integral_converges(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses, bounds, half, halfSum, z, slope, integrand, uniform, a, midpoint, leftOrdered, complete);
-  let rightConverges = affine_dyadic_integral_converges(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses, bounds, half, halfSum, z, slope, integrand, uniform, midpoint, b, rightOrdered, complete);
+theorem affine_dyadic_integral_midpoint(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
+  -> F, lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
+  bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F),
+  integrand : Complex(F) -> Complex(F),
+  uniform : ComplexUniformCurve(
+    F, zero, one, addF, lt,
+    (
+      fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
+      )
+    )
+  ), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  ordered : FieldLe(
+    F, lt, field_interval_coordinate(F, zero, one, lt)(a),
+    field_interval_coordinate(F, zero, one, lt)(b)
+  ), complete : CauchyComplete(F, zero, addF, lt)
+) : affine_dyadic_integral(
+  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+  bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete
+) = complex_add(
+  F, addF,
+  affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+    bounds, half, halfSum, z, slope, integrand, uniform, a,
+    interval_midpoint_point(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    ),
+    interval_midpoint_left_order(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    ), complete
+  ),
+  affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+    bounds, half, halfSum, z, slope, integrand, uniform,
+    interval_midpoint_point(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    ), b,
+    interval_midpoint_right_order(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    ), complete
+  )
+) {
+  let midpoint =
+    interval_midpoint_point(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    );
+  let leftOrdered =
+    interval_midpoint_left_order(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    );
+  let rightOrdered =
+    interval_midpoint_right_order(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    );
+  let whole =
+    affine_dyadic_sum(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
+      integrand, a, b, ordered
+    );
+  let left =
+    affine_dyadic_sum(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
+      integrand, a, midpoint, leftOrdered
+    );
+  let right =
+    affine_dyadic_sum(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
+      integrand, midpoint, b, rightOrdered
+    );
+  let value =
+    affine_dyadic_integral(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete
+    );
+  let leftValue =
+    affine_dyadic_integral(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, integrand, uniform, a, midpoint, leftOrdered, complete
+    );
+  let rightValue =
+    affine_dyadic_integral(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, integrand, uniform, midpoint, b, rightOrdered, complete
+    );
+  let halving =
+    ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
+  let wholeConverges =
+    affine_dyadic_integral_converges(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete
+    );
+  let leftConverges =
+    affine_dyadic_integral_converges(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, integrand, uniform, a, midpoint, leftOrdered, complete
+    );
+  let rightConverges =
+    affine_dyadic_integral_converges(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, integrand, uniform, midpoint, b, rightOrdered, complete
+    );
   let total = (fun (n : Nat) => complex_add(F, addF, left(n), right(n)));
   let shifted = (fun (n : Nat) => whole(succ(n)));
   let sumValue = complex_add(F, addF, leftValue, rightValue);
-  let totalConverges = complex_converges_add(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, left, right, leftValue, rightValue, leftConverges, rightConverges);
+  let totalConverges =
+    complex_converges_add(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, left, right, leftValue,
+      rightValue, leftConverges, rightConverges
+    );
   have computes : forall n : Nat, total(n) = shifted(n) {
     intro n;
-    exact sym(affine_dyadic_sum_successor(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand, a, b, ordered, n));
+    exact sym(
+      affine_dyadic_sum_successor(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
+        integrand, a, b, ordered, n
+      )
+    );
   }
-  let sumConverges = complex_converges_pointwise(F, zero, addF, lt, total, shifted, computes, sumValue, totalConverges);
-  exact complex_limit_unique(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, shifted, value, sumValue,
-    complex_converges_successor(F, zero, addF, lt, whole, value, wholeConverges), sumConverges);
+  let sumConverges =
+    complex_converges_pointwise(
+      F, zero, addF, lt, total, shifted, computes, sumValue, totalConverges
+    );
+  exact complex_limit_unique(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, shifted, value, sumValue,
+    complex_converges_successor(F, zero, addF, lt, whole, value, wholeConverges), sumConverges
+  );
 }

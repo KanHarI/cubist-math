@@ -46,6 +46,8 @@ h2 { margin: 0; font-size: 21px; font-weight: 600; }
 .featured { border-top: 3px solid #769780; }
 .formula { margin: 20px 0 3px; font: 35px/1.5 Georgia, 'Times New Roman', serif; color: #375e45; }
 .group-formula { font-size: clamp(22px, 2.5vw, 35px); }
+.typed-equality { white-space: nowrap; }
+.typed-equality sub { font-size: .5em; }
 h3 { font-size: 22px; line-height: 1.35; font-weight: 600; letter-spacing: -.3px; margin: 16px 0 0; }
 .proof-card p { color: #526459; margin: 12px 0 18px; }
 .assumptions { font-size: 13px; color: #526459; margin-top: auto; }

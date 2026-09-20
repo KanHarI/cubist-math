@@ -3,22 +3,54 @@ import sample_subdivisions;
 // A condition for each coarse tag together with its own finite subdivision.
 // Conditions can contain witnesses in U1; no propositional truncation or
 // selection of witnesses is built into this finite family.
-def SubdivisionTagged(C : U1,
-  condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), n : Nat) =
-  induction n as k return (forall vertices : SampleVertices(C, k), SampleTags(C, k) -> SampleSubdivisions(C, k, vertices) -> U1) {
+def SubdivisionTagged(
+  C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), n : Nat
+) =
+  induction n as k return (
+    forall vertices : SampleVertices(C, k), SampleTags(C, k) -> SampleSubdivisions(C, k, vertices)
+    -> U1
+  ) {
     zero => fun (vertices : C) => fun (tags : Unit) => fun (pieces : Unit) => typed(U1, Unit);
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) => fun (pieces : SampleSubdivisions(C, succ(k), vertices)) =>
-      condition(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags), field_fst(SampleSubdivision(C, field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))), SampleSubdivisions(C, k, field_snd(C, SampleVertices(C, k), vertices)), pieces)) and previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags), field_snd(SampleSubdivision(C, field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))), SampleSubdivisions(C, k, field_snd(C, SampleVertices(C, k), vertices)), pieces));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+      tags : SampleTags(C, succ(k))
+    ) => fun (pieces : SampleSubdivisions(C, succ(k), vertices)) => condition(
+      field_fst(C, SampleVertices(C, k), vertices),
+      sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+      field_fst(C, SampleTags(C, k), tags),
+      field_fst(
+        SampleSubdivision(
+          C, field_fst(C, SampleVertices(C, k), vertices),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))
+        ), SampleSubdivisions(C, k, field_snd(C, SampleVertices(C, k), vertices)), pieces
+      )
+    )
+    and previous(
+      field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags),
+      field_snd(
+        SampleSubdivision(
+          C, field_fst(C, SampleVertices(C, k), vertices),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))
+        ), SampleSubdivisions(C, k, field_snd(C, SampleVertices(C, k), vertices)), pieces
+      )
+    );
   };
 
-theorem subdivision_tagged_map_step(C : U1,
-  condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
+theorem subdivision_tagged_map_step(
+  C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
-  mapping : (forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b), condition(a, b, tag, piece) -> other(a, b, tag, piece)),
-  n : Nat, previous : (forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
-    SubdivisionTagged(C, condition, n, vertices, tags, pieces) -> SubdivisionTagged(C, other, n, vertices, tags, pieces)),
-  vertices : SampleVertices(C, succ(n)), tags : SampleTags(C, succ(n)), pieces : SampleSubdivisions(C, succ(n), vertices),
-  valid : SubdivisionTagged(C, condition, succ(n), vertices, tags, pieces)) : SubdivisionTagged(C, other, succ(n), vertices, tags, pieces) {
+  mapping : (
+    forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b),
+    condition(a, b, tag, piece) -> other(a, b, tag, piece)
+  ), n : Nat,
+  previous : (
+    forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+    forall pieces : SampleSubdivisions(C, n, vertices),
+    SubdivisionTagged(C, condition, n, vertices, tags, pieces)
+    -> SubdivisionTagged(C, other, n, vertices, tags, pieces)
+  ), vertices : SampleVertices(C, succ(n)), tags : SampleTags(C, succ(n)),
+  pieces : SampleSubdivisions(C, succ(n), vertices),
+  valid : SubdivisionTagged(C, condition, succ(n), vertices, tags, pieces)
+) : SubdivisionTagged(C, other, succ(n), vertices, tags, pieces) {
   let a = field_fst(C, SampleVertices(C, n), vertices);
   let tail = field_snd(C, SampleVertices(C, n), vertices);
   let b = sample_first(C, n, tail);
@@ -26,20 +58,34 @@ theorem subdivision_tagged_map_step(C : U1,
   let tailTags = field_snd(C, SampleTags(C, n), tags);
   let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
   let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  have data : condition(a, b, tag, headPiece) and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) { exact valid; }
+  have data : condition(a, b, tag, headPiece)
+  and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) {
+    exact valid;
+  }
   obtain (headValid, tailValid) = data;
-  exact typed((other(a, b, tag, headPiece) and SubdivisionTagged(C, other, n, tail, tailTags, tailPieces)),
-    (mapping(a, b, tag, headPiece, headValid), previous(tail, tailTags, tailPieces, tailValid)));
+  exact typed(
+    (other(a, b, tag, headPiece) and SubdivisionTagged(C, other, n, tail, tailTags, tailPieces)),
+    (mapping(a, b, tag, headPiece, headValid), previous(tail, tailTags, tailPieces, tailValid))
+  );
 }
 
-theorem subdivision_tagged_map(C : U1,
-  condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
+theorem subdivision_tagged_map(
+  C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
-  mapping : (forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b), condition(a, b, tag, piece) -> other(a, b, tag, piece)), n : Nat) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
-    SubdivisionTagged(C, condition, n, vertices, tags, pieces) -> SubdivisionTagged(C, other, n, vertices, tags, pieces) {
-  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), forall pieces : SampleSubdivisions(C, k, vertices),
-    SubdivisionTagged(C, condition, k, vertices, tags, pieces) -> SubdivisionTagged(C, other, k, vertices, tags, pieces)) {
+  mapping : (
+    forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b),
+    condition(a, b, tag, piece) -> other(a, b, tag, piece)
+  ), n : Nat
+) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+forall pieces : SampleSubdivisions(C, n, vertices),
+SubdivisionTagged(C, condition, n, vertices, tags, pieces)
+-> SubdivisionTagged(C, other, n, vertices, tags, pieces) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
+    forall pieces : SampleSubdivisions(C, k, vertices),
+    SubdivisionTagged(C, condition, k, vertices, tags, pieces)
+    -> SubdivisionTagged(C, other, k, vertices, tags, pieces)
+  ) {
     zero => fun (vertices : C) => fun (tags : Unit) => fun (pieces : Unit) => fun (valid : Unit) => tt;
     succ previous => subdivision_tagged_map_step(C, condition, other, mapping, k, previous);
   };

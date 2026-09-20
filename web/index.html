@@ -14,6 +14,7 @@
       <nav aria-label="Main navigation">
         <a href="proof.html">Browse all proofs</a>
         <a href="workbench.html">Kernel workbench</a>
+        <a href="https://github.com/KanHarI/thth-c">GitHub repository</a>
       </nav>
     </header>
     <main>
@@ -37,17 +38,17 @@
             <span class="assumptions">No axioms required.</span>
             <span class="open-proof">Read Euclid’s proof <span aria-hidden="true">→</span></span>
           </a>
-          <a class="proof-card featured" href="proof.html?proof=circle&amp;name=fundamental_group_of_circle">
+          <a class="proof-card featured" href="proof.html?proof=circle_group_identity&amp;name=circle_group_isomorphism">
             <span class="eyebrow">HOMOTOPY TYPE THEORY</span>
-            <div class="formula" aria-hidden="true">π₁(S¹) ≅ ℤ</div>
+            <div class="formula" aria-label="The fundamental group of the circle is isomorphic to the integer group">π₁(S¹) ≅ ℤ</div>
             <h3>The circle’s fundamental group</h3>
-            <p>A loop is measured by its integer winding number. The encode–decode argument connects paths in the circle type with integers, respecting loop composition.</p>
-            <span class="assumptions">Uses univalence and the suspension construction of S¹.</span>
+            <p>Winding number gives a group isomorphism from the circle’s loops to the additive group of integers. Its inverse turns each integer into a loop, and loop composition corresponds to addition.</p>
+            <span class="assumptions">Uses univalence, function extensionality, and the suspension construction of S¹.</span>
             <span class="open-proof">Explore loops and integers <span aria-hidden="true">→</span></span>
           </a>
           <a class="proof-card featured" href="proof.html?proof=group_univalence&amp;name=group_isomorphism_is_equality">
             <span class="eyebrow">ALGEBRA &amp; UNIVALENCE</span>
-            <div class="formula group-formula" aria-label="Group isomorphism from G to H equals equality of G and H">GroupIso(<i>G</i>, <i>H</i>) = (<i>G</i> = <i>H</i>)</div>
+            <div class="formula group-formula" aria-label="Group isomorphism from G to H equals, in universe U one, equality of G and H in Group">(<i>G</i> ≅ <i>H</i>) <span class="typed-equality">=<sub>𝒰₁</sub></span> (<i>G</i> <span class="typed-equality">=<sub>Group</sub></span> <i>H</i>)</div>
             <h3>Isomorphic groups are equal</h3>
             <p>The type of group isomorphisms is equal to the type of equalities between groups. Univalence identifies the types themselves, preserving the full structures: carriers, operations, and laws.</p>
             <span class="assumptions">Uses univalence and function extensionality.</span>

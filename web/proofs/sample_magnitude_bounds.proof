@@ -1,67 +1,344 @@
 import sample_magnitude;
 import sample_sum_laws;
 
-theorem sample_sum_magnitude_bound(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  edge : C -> C -> C -> F, radius : C -> C -> C -> F, n : Nat) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags) ->
-    FieldMagnitudeBound(F, negF, lt, sample_sum(C, F, zero, addF, edge, n, vertices, tags), sample_sum(C, F, zero, addF, radius, n, vertices, tags)) {
-  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, vertices, tags) ->
-    FieldMagnitudeBound(F, negF, lt, sample_sum(C, F, zero, addF, edge, k, vertices, tags), sample_sum(C, F, zero, addF, radius, k, vertices, tags))) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (bounds : Unit) => field_magnitude_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic);
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) => fun (bounds : SampleMagnitudeBounds(C, F, negF, lt, edge, radius, succ(k), vertices, tags)) =>
-      field_magnitude_add(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), sample_sum(C, F, zero, addF, edge, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), radius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), sample_sum(C, F, zero, addF, radius, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)),
-        field_fst(FieldMagnitudeBound(F, negF, lt, edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), radius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), bounds), previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags), field_snd(FieldMagnitudeBound(F, negF, lt, edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), radius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), bounds)));
+theorem sample_sum_magnitude_bound(
+  C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
+  -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> F, radius : C
+  -> C -> C -> F, n : Nat
+) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags)
+-> FieldMagnitudeBound(
+  F, negF, lt, sample_sum(C, F, zero, addF, edge, n, vertices, tags),
+  sample_sum(C, F, zero, addF, radius, n, vertices, tags)
+) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
+    SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, vertices, tags)
+    -> FieldMagnitudeBound(
+      F, negF, lt, sample_sum(C, F, zero, addF, edge, k, vertices, tags),
+      sample_sum(C, F, zero, addF, radius, k, vertices, tags)
+    )
+  ) {
+    zero => fun (vertices : C) => fun (tags : Unit) => fun (bounds : Unit) => field_magnitude_zero(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic
+    );
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+      tags : SampleTags(C, succ(k))
+    ) => fun (bounds : SampleMagnitudeBounds(C, F, negF, lt, edge, radius, succ(k), vertices, tags)) => field_magnitude_add(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
+      edge(
+        field_fst(C, SampleVertices(C, k), vertices),
+        sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+        field_fst(C, SampleTags(C, k), tags)
+      ),
+      sample_sum(
+        C, F, zero, addF, edge, k, field_snd(C, SampleVertices(C, k), vertices),
+        field_snd(C, SampleTags(C, k), tags)
+      ),
+      radius(
+        field_fst(C, SampleVertices(C, k), vertices),
+        sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+        field_fst(C, SampleTags(C, k), tags)
+      ),
+      sample_sum(
+        C, F, zero, addF, radius, k, field_snd(C, SampleVertices(C, k), vertices),
+        field_snd(C, SampleTags(C, k), tags)
+      ),
+      field_fst(
+        FieldMagnitudeBound(
+          F, negF, lt,
+          edge(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), tags)
+          ),
+          radius(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), tags)
+          )
+        ),
+        SampleMagnitudeBounds(
+          C, F, negF, lt, edge, radius, k, field_snd(C, SampleVertices(C, k), vertices),
+          field_snd(C, SampleTags(C, k), tags)
+        ), bounds
+      ),
+      previous(
+        field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags),
+        field_snd(
+          FieldMagnitudeBound(
+            F, negF, lt,
+            edge(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), tags)
+            ),
+            radius(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), tags)
+            )
+          ),
+          SampleMagnitudeBounds(
+            C, F, negF, lt, edge, radius, k, field_snd(C, SampleVertices(C, k), vertices),
+            field_snd(C, SampleTags(C, k), tags)
+          ), bounds
+        )
+      )
+    );
   };
 }
 
-theorem sample_magnitude_product(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  edge : C -> C -> C -> F, other : C -> C -> C -> F,
-  radius : C -> C -> C -> F, otherRadius : C -> C -> C -> F, n : Nat) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags) ->
-    SampleMagnitudeBounds(C, F, negF, lt, other, otherRadius, n, vertices, tags) -> SampleMagnitudeBounds(C, F, negF, lt, (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))), (fun (a : C) => fun (b : C) => fun (t : C) => mulF(radius(a, b, t), otherRadius(a, b, t))), n, vertices, tags) {
-  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, vertices, tags) ->
-    SampleMagnitudeBounds(C, F, negF, lt, other, otherRadius, k, vertices, tags) -> SampleMagnitudeBounds(C, F, negF, lt, (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))), (fun (a : C) => fun (b : C) => fun (t : C) => mulF(radius(a, b, t), otherRadius(a, b, t))), k, vertices, tags)) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (leftBounds : Unit) => fun (rightBounds : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) =>
-      fun (leftBounds : SampleMagnitudeBounds(C, F, negF, lt, edge, radius, succ(k), vertices, tags)) => fun (rightBounds : SampleMagnitudeBounds(C, F, negF, lt, other, otherRadius, succ(k), vertices, tags)) =>
-        typed((FieldMagnitudeBound(F, negF, lt, mulF(edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), other(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), mulF(radius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), otherRadius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)))) and SampleMagnitudeBounds(C, F, negF, lt, (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))), (fun (a : C) => fun (b : C) => fun (t : C) => mulF(radius(a, b, t), otherRadius(a, b, t))), k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags))),
-          (field_magnitude_mul(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), other(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), radius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), otherRadius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)),
-            field_fst(FieldMagnitudeBound(F, negF, lt, edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), radius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), leftBounds), field_fst(FieldMagnitudeBound(F, negF, lt, other(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), otherRadius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), SampleMagnitudeBounds(C, F, negF, lt, other, otherRadius, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), rightBounds)),
-            previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags), field_snd(FieldMagnitudeBound(F, negF, lt, edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), radius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), leftBounds), field_snd(FieldMagnitudeBound(F, negF, lt, other(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), otherRadius(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), SampleMagnitudeBounds(C, F, negF, lt, other, otherRadius, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), rightBounds))));
+theorem sample_magnitude_product(
+  C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
+  -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> F, other : C
+  -> C -> C -> F, radius : C -> C -> C -> F, otherRadius : C -> C -> C -> F, n : Nat
+) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags)
+-> SampleMagnitudeBounds(C, F, negF, lt, other, otherRadius, n, vertices, tags)
+-> SampleMagnitudeBounds(
+  C, F, negF, lt,
+  (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))),
+  (fun (a : C) => fun (b : C) => fun (t : C) => mulF(radius(a, b, t), otherRadius(a, b, t))), n,
+  vertices, tags
+) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
+    SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, vertices, tags)
+    -> SampleMagnitudeBounds(C, F, negF, lt, other, otherRadius, k, vertices, tags)
+    -> SampleMagnitudeBounds(
+      C, F, negF, lt,
+      (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))),
+      (fun (a : C) => fun (b : C) => fun (t : C) => mulF(radius(a, b, t), otherRadius(a, b, t))), k,
+      vertices, tags
+    )
+  ) {
+    zero => fun (vertices : C) => fun (tags : Unit) => fun (leftBounds : Unit) => fun (
+      rightBounds : Unit
+    ) => tt;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+      tags : SampleTags(C, succ(k))
+    ) => fun (
+      leftBounds : SampleMagnitudeBounds(C, F, negF, lt, edge, radius, succ(k), vertices, tags)
+    ) => fun (
+      rightBounds : SampleMagnitudeBounds(
+        C, F, negF, lt, other, otherRadius, succ(k), vertices, tags
+      )
+    ) => typed(
+      (
+        FieldMagnitudeBound(
+          F, negF, lt,
+          mulF(
+            edge(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), tags)
+            ),
+            other(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), tags)
+            )
+          ),
+          mulF(
+            radius(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), tags)
+            ),
+            otherRadius(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), tags)
+            )
+          )
+        )
+        and SampleMagnitudeBounds(
+          C, F, negF, lt,
+          (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))),
+          (fun (a : C) => fun (b : C) => fun (t : C) => mulF(radius(a, b, t), otherRadius(a, b, t))),
+          k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)
+        )
+      ),
+      (
+        field_magnitude_mul(
+          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
+          edge(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), tags)
+          ),
+          other(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), tags)
+          ),
+          radius(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), tags)
+          ),
+          otherRadius(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), tags)
+          ),
+          field_fst(
+            FieldMagnitudeBound(
+              F, negF, lt,
+              edge(
+                field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              ),
+              radius(
+                field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              )
+            ),
+            SampleMagnitudeBounds(
+              C, F, negF, lt, edge, radius, k, field_snd(C, SampleVertices(C, k), vertices),
+              field_snd(C, SampleTags(C, k), tags)
+            ), leftBounds
+          ),
+          field_fst(
+            FieldMagnitudeBound(
+              F, negF, lt,
+              other(
+                field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              ),
+              otherRadius(
+                field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              )
+            ),
+            SampleMagnitudeBounds(
+              C, F, negF, lt, other, otherRadius, k, field_snd(C, SampleVertices(C, k), vertices),
+              field_snd(C, SampleTags(C, k), tags)
+            ), rightBounds
+          )
+        ),
+        previous(
+          field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags),
+          field_snd(
+            FieldMagnitudeBound(
+              F, negF, lt,
+              edge(
+                field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              ),
+              radius(
+                field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              )
+            ),
+            SampleMagnitudeBounds(
+              C, F, negF, lt, edge, radius, k, field_snd(C, SampleVertices(C, k), vertices),
+              field_snd(C, SampleTags(C, k), tags)
+            ), leftBounds
+          ),
+          field_snd(
+            FieldMagnitudeBound(
+              F, negF, lt,
+              other(
+                field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              ),
+              otherRadius(
+                field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              )
+            ),
+            SampleMagnitudeBounds(
+              C, F, negF, lt, other, otherRadius, k, field_snd(C, SampleVertices(C, k), vertices),
+              field_snd(C, SampleTags(C, k), tags)
+            ), rightBounds
+          )
+        )
+      )
+    );
   };
 }
 
 // Uniform error times total variation controls the weighted sum.
-theorem sample_weighted_sum_bound(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  edge : C -> C -> C -> F, other : C -> C -> C -> F, weight : C -> C -> C -> F,
-  delta : F, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,
-  vertices : SampleVertices(C, n), tags : SampleTags(C, n),
-  errors : SampleMagnitudeBounds(C, F, negF, lt, edge, (fun (a : C) => fun (b : C) => fun (t : C) => delta), n, vertices, tags),
-  increments : SampleMagnitudeBounds(C, F, negF, lt, other, weight, n, vertices, tags),
-  variation : FieldLe(F, lt, sample_sum(C, F, zero, addF, weight, n, vertices, tags), length)) :
-  FieldMagnitudeBound(F, negF, lt, sample_sum(C, F, zero, addF, (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))), n, vertices, tags), mulF(delta, length)) {
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+theorem sample_weighted_sum_bound(
+  C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
+  -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> F, other : C
+  -> C -> C -> F, weight : C -> C -> C -> F, delta : F, length : F,
+  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat, vertices : SampleVertices(C, n),
+  tags : SampleTags(C, n),
+  errors : SampleMagnitudeBounds(
+    C, F, negF, lt, edge, (fun (a : C) => fun (b : C) => fun (t : C) => delta), n, vertices, tags
+  ), increments : SampleMagnitudeBounds(C, F, negF, lt, other, weight, n, vertices, tags),
+  variation : FieldLe(F, lt, sample_sum(C, F, zero, addF, weight, n, vertices, tags), length)
+) : FieldMagnitudeBound(
+  F, negF, lt,
+  sample_sum(
+    C, F, zero, addF,
+    (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))), n, vertices,
+    tags
+  ), mulF(delta, length)
+) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   let radii = (fun (a : C) => fun (b : C) => fun (t : C) => mulF(delta, weight(a, b, t)));
   let products = (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t)));
   let totalWeight = sample_sum(C, F, zero, addF, weight, n, vertices, tags);
-  let bounds = sample_magnitude_product(C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, edge, other, (fun (a : C) => fun (b : C) => fun (t : C) => delta), weight, n, vertices, tags, errors, increments);
-  let total = sample_sum_magnitude_bound(C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, products, radii, n, vertices, tags, bounds);
+  let bounds =
+    sample_magnitude_product(
+      C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, edge, other,
+      (fun (a : C) => fun (b : C) => fun (t : C) => delta), weight, n, vertices, tags, errors,
+      increments
+    );
+  let total =
+    sample_sum_magnitude_bound(
+      C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, products, radii, n, vertices,
+      tags, bounds
+    );
   have factors : sample_sum(C, F, zero, addF, radii, n, vertices, tags) = mulF(delta, totalWeight) {
-    exact sym(sample_sum_map(C, F, zero, addF, F, zero, addF, mulF(delta),
-      ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta), (fun (x : F) => fun (y : F) => ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, x, y)), weight, n, vertices, tags));
+    exact sym(
+      sample_sum_map(
+        C, F, zero, addF, F, zero, addF, mulF(delta),
+        ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta),
+        (
+          fun (x : F) => fun (y : F) => ring_distribute(
+            F, zero, one, addF, mulF, negF, ring, delta, x, y
+          )
+        ), weight, n, vertices, tags
+      )
+    );
   }
-  let factored = transport(FieldMagnitudeBound(F, negF, lt, sample_sum(C, F, zero, addF, products, n, vertices, tags)),
-    sample_sum(C, F, zero, addF, radii, n, vertices, tags), mulF(delta, totalWeight), factors, total);
+  let factored =
+    transport(
+      FieldMagnitudeBound(F, negF, lt, sample_sum(C, F, zero, addF, products, n, vertices, tags)),
+      sample_sum(C, F, zero, addF, radii, n, vertices, tags), mulF(delta, totalWeight), factors,
+      total
+    );
   let rightScaled = weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
-  let leftScaled = transport((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta))), mulF(totalWeight, delta), mulF(delta, totalWeight),
-    ring_mul_comm(F, zero, one, addF, mulF, negF, ring, totalWeight, delta), rightScaled);
-  let grows = transport(FieldLe(F, lt, mulF(delta, totalWeight)), mulF(length, delta), mulF(delta, length),
-    ring_mul_comm(F, zero, one, addF, mulF, negF, ring, length, delta), leftScaled);
-  exact field_magnitude_enlarge(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, sample_sum(C, F, zero, addF, products, n, vertices, tags), mulF(delta, totalWeight), mulF(delta, length), factored, grows);
+  let leftScaled =
+    transport(
+      (fun (v : F) => FieldLe(F, lt, v, mulF(length, delta))), mulF(totalWeight, delta),
+      mulF(delta, totalWeight),
+      ring_mul_comm(F, zero, one, addF, mulF, negF, ring, totalWeight, delta), rightScaled
+    );
+  let grows =
+    transport(
+      FieldLe(F, lt, mulF(delta, totalWeight)), mulF(length, delta), mulF(delta, length),
+      ring_mul_comm(F, zero, one, addF, mulF, negF, ring, length, delta), leftScaled
+    );
+  exact field_magnitude_enlarge(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
+    sample_sum(C, F, zero, addF, products, n, vertices, tags), mulF(delta, totalWeight),
+    mulF(delta, length), factored, grows
+  );
 }

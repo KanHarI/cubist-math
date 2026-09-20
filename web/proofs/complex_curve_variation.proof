@@ -1,59 +1,137 @@
 import complex_curves;
 import affine_variation;
 
-def curve_real_increment(F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)) =
+def curve_real_increment(
+  F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
+  s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt),
+  tag : FieldUnitInterval(F, zero, one, lt)
+) =
   coordinate_difference(F, addF, negF, complex_real(F, curve(s)), complex_real(F, curve(t)));
-def curve_imag_increment(F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)) =
+def curve_imag_increment(
+  F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
+  s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt),
+  tag : FieldUnitInterval(F, zero, one, lt)
+) =
   coordinate_difference(F, addF, negF, complex_imag(F, curve(s)), complex_imag(F, curve(t)));
 
 // A bound on every ordered finite sampling of this actual geometric curve.
 // The weights bound individual coordinate increments; their combined sum
 // is bounded independently of the number of samples.
-def ComplexCurveVariation(F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+def ComplexCurveVariation(
+  F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  realWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F,
-  imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F, length : F) =
-  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-    IntervalOrderedSamples(F, zero, one, lt, n, vertices) ->
-      SampleMagnitudeBounds(FieldUnitInterval(F, zero, one, lt), F, negF, lt, curve_real_increment(F, zero, one, addF, negF, lt, curve), realWeight, n, vertices, tags) and
-      SampleMagnitudeBounds(FieldUnitInterval(F, zero, one, lt), F, negF, lt, curve_imag_increment(F, zero, one, addF, negF, lt, curve), imagWeight, n, vertices, tags) and
-      FieldLe(F, lt, sample_sum(FieldUnitInterval(F, zero, one, lt), F, zero, addF,
-        (fun (s : FieldUnitInterval(F, zero, one, lt)) => fun (t : FieldUnitInterval(F, zero, one, lt)) => fun (tag : FieldUnitInterval(F, zero, one, lt)) => addF(realWeight(s, t, tag), imagWeight(s, t, tag))), n, vertices, tags), length);
+  realWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
+  -> FieldUnitInterval(F, zero, one, lt) -> F, imagWeight : FieldUnitInterval(F, zero, one, lt)
+  -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F, length : F
+) =
+  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+  IntervalOrderedSamples(F, zero, one, lt, n, vertices)
+  -> SampleMagnitudeBounds(
+    FieldUnitInterval(F, zero, one, lt), F, negF, lt,
+    curve_real_increment(F, zero, one, addF, negF, lt, curve), realWeight, n, vertices, tags
+  )
+  and SampleMagnitudeBounds(
+    FieldUnitInterval(F, zero, one, lt), F, negF, lt,
+    curve_imag_increment(F, zero, one, addF, negF, lt, curve), imagWeight, n, vertices, tags
+  )
+  and FieldLe(
+    F, lt,
+    sample_sum(
+      FieldUnitInterval(F, zero, one, lt), F, zero, addF,
+      (
+        fun (s : FieldUnitInterval(F, zero, one, lt)) => fun (
+          t : FieldUnitInterval(F, zero, one, lt)
+        ) => fun (tag : FieldUnitInterval(F, zero, one, lt)) => addF(
+          realWeight(s, t, tag), imagWeight(s, t, tag)
+        )
+      ), n, vertices, tags
+    ), length
+  );
 
-theorem complex_interval_deformation_variation(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F)) :
-  ComplexCurveVariation(F, zero, one, addF, negF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error),
-    interval_weight(F, zero, one, addF, mulF, negF, lt, maxF(complex_real(F, error), negF(complex_real(F, error)))),
-    interval_weight(F, zero, one, addF, mulF, negF, lt, maxF(complex_imag(F, error), negF(complex_imag(F, error)))),
-    addF(maxF(complex_real(F, error), negF(complex_real(F, error))), maxF(complex_imag(F, error), negF(complex_imag(F, error))))) {
+theorem complex_interval_deformation_variation(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
+  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F)
+) : ComplexCurveVariation(
+  F, zero, one, addF, negF, lt,
+  complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error),
+  interval_weight(
+    F, zero, one, addF, mulF, negF, lt, maxF(complex_real(F, error), negF(complex_real(F, error)))
+  ),
+  interval_weight(
+    F, zero, one, addF, mulF, negF, lt, maxF(complex_imag(F, error), negF(complex_imag(F, error)))
+  ),
+  addF(
+    maxF(complex_real(F, error), negF(complex_real(F, error))),
+    maxF(complex_imag(F, error), negF(complex_imag(F, error)))
+  )
+) {
   intro n;
   intro vertices;
   intro tags;
   intro ordered;
-  obtain (setF, (addLaws, mulLaws)) = ring;
+  obtain (setF, addLaws, mulLaws) = ring;
   let I = FieldUnitInterval(F, zero, one, lt);
   let r = maxF(complex_real(F, error), negF(complex_real(F, error)));
   let s = maxF(complex_imag(F, error), negF(complex_imag(F, error)));
   let boundReal = field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_real(F, error));
   let boundImag = field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_imag(F, error));
-  let nonnegativeR = field_magnitude_radius_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), r, boundReal);
-  let nonnegativeS = field_magnitude_radius_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, error), s, boundImag);
+  let nonnegativeR =
+    field_magnitude_radius_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), r,
+      boundReal
+    );
+  let nonnegativeS =
+    field_magnitude_radius_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, error), s,
+      boundImag
+    );
   let realWeight = interval_weight(F, zero, one, addF, mulF, negF, lt, r);
   let imagWeight = interval_weight(F, zero, one, addF, mulF, negF, lt, s);
   let realSum = sample_sum(I, F, zero, addF, realWeight, n, vertices, tags);
   let imagSum = sample_sum(I, F, zero, addF, imagWeight, n, vertices, tags);
-  let realBelow = interval_weight_sum_bound(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, r, nonnegativeR, n, vertices, tags);
-  let imagBelow = interval_weight_sum_bound(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, s, nonnegativeS, n, vertices, tags);
-  let sumBelow = order_le_add(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, realSum, r, imagSum, s, realBelow, imagBelow);
-  let sumWeight = (fun (a : I) => fun (b : I) => fun (tag : I) => addF(realWeight(a, b, tag), imagWeight(a, b, tag)));
-  have combined : FieldLe(F, lt, sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags), addF(r, s)) {
-    exact transport((fun (v : F) => FieldLe(F, lt, v, addF(r, s))), addF(realSum, imagSum), sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags),
-      sym(sample_sum_add(I, F, zero, addF, negF, addLaws, realWeight, imagWeight, n, vertices, tags)), sumBelow);
+  let realBelow =
+    interval_weight_sum_bound(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, r, nonnegativeR, n, vertices, tags
+    );
+  let imagBelow =
+    interval_weight_sum_bound(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, s, nonnegativeS, n, vertices, tags
+    );
+  let sumBelow =
+    order_le_add(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, realSum, r, imagSum, s, realBelow,
+      imagBelow
+    );
+  let sumWeight =
+    (
+      fun (a : I) => fun (b : I) => fun (tag : I) => addF(
+        realWeight(a, b, tag), imagWeight(a, b, tag)
+      )
+    );
+  have combined : FieldLe(
+    F, lt, sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags), addF(r, s)
+  ) {
+    exact transport(
+      (fun (v : F) => FieldLe(F, lt, v, addF(r, s))), addF(realSum, imagSum),
+      sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags),
+      sym(
+        sample_sum_add(I, F, zero, addF, negF, addLaws, realWeight, imagWeight, n, vertices, tags)
+      ), sumBelow
+    );
   }
-  exact (interval_affine_increment_bounds(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z), complex_real(F, error), r, boundReal, n, vertices, tags, ordered),
-    (interval_affine_increment_bounds(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z), complex_imag(F, error), s, boundImag, n, vertices, tags, ordered), combined));
+  exact (
+    interval_affine_increment_bounds(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z),
+      complex_real(F, error), r, boundReal, n, vertices, tags, ordered
+    ),
+    interval_affine_increment_bounds(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z),
+      complex_imag(F, error), s, boundImag, n, vertices, tags, ordered
+    ), combined
+  );
 }

@@ -1,5 +1,6 @@
 import { Kernel } from "../kernel.mjs";
 import { tokenize } from "./parser.mjs";
+import { leadingDocumentation } from "./documentation.mjs";
 import { layout } from "../expressions.mjs";
 import { MAX_STEPS } from "../language.mjs";
 
@@ -202,6 +203,7 @@ export function compileConstruction(module, source, { onProgress } = {}) {
       const binding = kernel.bindings.get(n.text);
       const info = {
         name: n.text,
+        description: leadingDocumentation(source, t.start)?.text ?? "",
         binding: n.text,
         role: binding.axiom ? "explicit axiom" : binding.kind,
         type: null,

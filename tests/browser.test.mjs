@@ -657,7 +657,7 @@ try {
         .locator("[data-axiom]")
         .evaluateAll((nodes) => nodes.map((n) => n.dataset.axiom))
     ).sort(),
-    ["lib_funext", "lib_ua_elim", "lib_univalence"],
+    ["lib_funext", "lib_univalence"],
   );
   await finalResult.locator('[data-axiom="lib_funext"]').click();
   assert.equal(await page.locator("#inspect-name").textContent(), "lib_funext");
@@ -683,10 +683,10 @@ try {
   );
   await page.goBack();
   await page.locator("#result:not([hidden])").waitFor();
-  await page.locator('#read-source [data-name="Univalence"]').first().click();
+  await page.locator('#read-source [data-name="ua"]').first().click();
   assert.match(
     await page.locator("#view-source").getAttribute("href"),
-    /prelude_library_construction&name=lib_univalence/,
+    /prelude_library_construction&name=lib_ua/,
   );
   await page.screenshot({
     path: fileURLToPath(new URL("../.tools/circle-proof.png", import.meta.url)),

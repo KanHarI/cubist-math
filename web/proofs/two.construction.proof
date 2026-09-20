@@ -44,7 +44,10 @@ construction two {
   private s0041_Subs = substitute(s0039_Vble, s0014_Def);
   private s0042_UnitElim = unit_eliminate(s0032_PiElim, s0040_Subs, s0029_Vble, s0028_CtxExt);
   private s0043_UnitElim = unit_eliminate(s0033_PiElim, s0041_Subs, s0029_Vble, s0028_CtxExt);
-  private s0044_SumElim = either_eliminate(s0027_PiElim, s0042_UnitElim, s0043_UnitElim, s0026_Vble, s0025_CtxExt, s0028_CtxExt, s0028_CtxExt);
+  private s0044_SumElim = either_eliminate(
+    s0027_PiElim, s0042_UnitElim, s0043_UnitElim, s0026_Vble, s0025_CtxExt, s0028_CtxExt,
+    s0028_CtxExt
+  );
   private s0045_PiIntro = function_intro(s0004_SumForm, s0044_SumElim, s0025_CtxExt);
   private s0046_PiElim = apply(s0045_PiIntro, s0018_Subs);
   private s0047_BetaReduceGrossKnuth = reduce_pass(s0046_PiElim);

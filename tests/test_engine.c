@@ -34,6 +34,12 @@ static void cover_rules(tt_engine *e) {
           zero = ZERO(NatIntroZ), void_t = ZERO(VoidForm);
     ONE(UCumul, u);
     ONE(UCumulKappa, u);
+    /* Cumulativity changes the universe of a type, retaining its expression. */
+    tt_id lifted_unit = A(UCumulContext, unit, u, 0, 0, 0, 0, 0, 0, 0, 0);
+    CHECK(e->judgements[lifted_unit].expr == e->judgements[unit].expr);
+    CHECK(e->judgements[lifted_unit].type == e->judgements[u].type);
+    tt_id wrong_lift[] = {one, u}, rejected_lift = 0;
+    CHECK(tt_apply(e, TT_UCumulContext, wrong_lift, 2, 0, NULL, 0, &rejected_lift) == TT_INVALID);
     tt_id succ = ONE(NatIntroS, zero);
     tt_id idctx = A(CtxExt, unit, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     tt_id var = A(Vble, 0, 0, 0, 0, 0, idctx, 0, 0, 0, 0);

@@ -3,26 +3,37 @@ import classical;
 
 // The constructive core uses positive apartness. This separate corollary
 // explicitly uses the existing LEM axiom to turn negated equality into it.
-theorem classical_complex_nonzero_apart(F : U1, zero : F, one : F,
-  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  z : Complex(F), nonzero : (z = complex_zero(F, zero)) -> Void) :
-  ComplexApartZero(F, zero, addF, mulF, lt, z) {
-  obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
-  exact double_negation(ComplexApartZero(F, zero, addF, mulF, lt, z),
+theorem classical_complex_nonzero_apart(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F),
+  nonzero : (z = complex_zero(F, zero)) -> Void
+) : ComplexApartZero(F, zero, addF, mulF, lt, z) {
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
+  exact double_negation(
+    ComplexApartZero(F, zero, addF, mulF, lt, z),
     prop(zero, complex_norm_squared(F, addF, mulF, z)),
-    (fun (notApart : ComplexApartZero(F, zero, addF, mulF, lt, z) -> Void) =>
-      nonzero(complex_apart_tight(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z, notApart))));
+    (
+      fun (notApart : ComplexApartZero(F, zero, addF, mulF, lt, z) -> Void) => nonzero(
+        complex_apart_tight(
+          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z, notApart
+        )
+      )
+    )
+  );
 }
 
-theorem classical_complex_nonzero_inverse(F : U1, zero : F, one : F,
-  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+theorem classical_complex_nonzero_inverse(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), z : Complex(F),
-  nonzero : (z = complex_zero(F, zero)) -> Void) :
-  ComplexUnit(F, zero, one, addF, mulF, negF, z) {
-  exact complex_apart_inverse(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, z,
-    classical_complex_nonzero_apart(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z, nonzero));
+  nonzero : (z = complex_zero(F, zero)) -> Void
+) : ComplexUnit(F, zero, one, addF, mulF, negF, z) {
+  exact complex_apart_inverse(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, z,
+    classical_complex_nonzero_apart(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z, nonzero
+    )
+  );
 }

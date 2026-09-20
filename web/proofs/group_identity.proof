@@ -1,205 +1,133 @@
 import groups;
-import field_extensionality;
+import bijection_equality;
 
-// Small carriers, bundled in U1. This is equality of complete group records.
-def GroupOperations(A : U0) = exists unit : A, exists multiply : A -> A -> A, Group(A, unit, multiply);
-def GroupType = exists A : U0, GroupOperations(A);
-def group_object(A : U0, unit : A, multiply : A -> A -> A, laws : Group(A, unit, multiply)) =
-  typed(GroupType, (A, (unit, (multiply, laws))));
-def group_carrier(G : GroupType) = field_first(U0, (fun (A : U0) => typed(U1, GroupOperations(A))), G);
-def group_operations(G : GroupType) = field_second(U0, (fun (A : U0) => typed(U1, GroupOperations(A))), G);
-def group_unit(G : GroupType) = sigma_first(group_carrier(G),
-  (fun (unit : group_carrier(G)) => exists multiply : group_carrier(G) -> group_carrier(G) -> group_carrier(G), Group(group_carrier(G), unit, multiply)), group_operations(G));
-def group_multiplication_data(G : GroupType) = sigma_second(group_carrier(G),
-  (fun (unit : group_carrier(G)) => exists multiply : group_carrier(G) -> group_carrier(G) -> group_carrier(G), Group(group_carrier(G), unit, multiply)), group_operations(G));
-def group_multiply(G : GroupType) : group_carrier(G) -> group_carrier(G) -> group_carrier(G) {
-  exact sigma_first(group_carrier(G) -> group_carrier(G) -> group_carrier(G), Group(group_carrier(G), group_unit(G)), group_multiplication_data(G));
-}
-def group_laws(G : GroupType) = sigma_second(group_carrier(G) -> group_carrier(G) -> group_carrier(G), Group(group_carrier(G), group_unit(G)), group_multiplication_data(G));
-
-def GroupAssociative(A : U0, multiply : A -> A -> A) = forall x : A, forall y : A, forall z : A, multiply(multiply(x, y), z) = multiply(x, multiply(y, z));
-def GroupLeftUnit(A : U0, unit : A, multiply : A -> A -> A) = forall x : A, multiply(unit, x) = x;
-def GroupRightUnit(A : U0, unit : A, multiply : A -> A -> A) = forall x : A, multiply(x, unit) = x;
-def GroupInverseLaws(A : U0, unit : A, multiply : A -> A -> A, x : A, y : A) = (multiply(y, x) = unit) and (multiply(x, y) = unit);
-def GroupInverses(A : U0, unit : A, multiply : A -> A -> A) = forall x : A, exists y : A, GroupInverseLaws(A, unit, multiply, x, y);
-def group_set_law(A : U0, unit : A, multiply : A -> A -> A, laws : Group(A, unit, multiply)) : IsSet(A) {
-  exact fst(IsSet(A), (GroupAssociative(A, multiply) and GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), laws);
-}
-def group_associative_law(A : U0, unit : A, multiply : A -> A -> A, laws : Group(A, unit, multiply)) : GroupAssociative(A, multiply) {
-  exact fst(GroupAssociative(A, multiply), (GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), snd(IsSet(A), (GroupAssociative(A, multiply) and GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), laws));
-}
-def group_left_unit_law(A : U0, unit : A, multiply : A -> A -> A, laws : Group(A, unit, multiply)) : GroupLeftUnit(A, unit, multiply) {
-  exact fst(GroupLeftUnit(A, unit, multiply), (GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), snd(GroupAssociative(A, multiply), (GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), snd(IsSet(A), (GroupAssociative(A, multiply) and GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), laws)));
-}
-def group_right_unit_law(A : U0, unit : A, multiply : A -> A -> A, laws : Group(A, unit, multiply)) : GroupRightUnit(A, unit, multiply) {
-  exact fst(GroupRightUnit(A, unit, multiply), (GroupInverses(A, unit, multiply)), snd(GroupLeftUnit(A, unit, multiply), (GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), snd(GroupAssociative(A, multiply), (GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), snd(IsSet(A), (GroupAssociative(A, multiply) and GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), laws))));
-}
-def group_inverses_law(A : U0, unit : A, multiply : A -> A -> A, laws : Group(A, unit, multiply)) : GroupInverses(A, unit, multiply) {
-  exact snd(GroupRightUnit(A, unit, multiply), (GroupInverses(A, unit, multiply)), snd(GroupLeftUnit(A, unit, multiply), (GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), snd(GroupAssociative(A, multiply), (GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), snd(IsSet(A), (GroupAssociative(A, multiply) and GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), laws))));
+// A left inverse and a right inverse of the same element agree:
+// y = y·1 = y·(x·z) = (y·x)·z = 1·z = z.
+theorem group_inverse_unique(
+  A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply), x : A, y : A,
+  z : A, leftLaw : multiply(y, x) = unit, rightLaw : multiply(x, z) = unit
+) : y = z {
+  exact trans(
+    sym(group_right_unit_law(A, unit, multiply, laws, y)),
+    trans(
+      cong(multiply(y), sym(rightLaw)),
+      trans(
+        sym(group_associative_law(A, unit, multiply, laws, y, x, z)),
+        trans(
+          cong((fun (w : A) => multiply(w, z)), leftLaw),
+          group_left_unit_law(A, unit, multiply, laws, z)
+        )
+      )
+    )
+  );
 }
 
-theorem group_inverse_unique(A : U0, unit : A, multiply : A -> A -> A,
-  laws : Group(A, unit, multiply), x : A, y : A, z : A,
-  leftLaw : multiply(y, x) = unit, rightLaw : multiply(x, z) = unit) : y = z {
-  exact trans(sym(group_right_unit_law(A, unit, multiply, laws, y)),
-    trans(cong(multiply(y), sym(rightLaw)),
-      trans(sym(group_associative_law(A, unit, multiply, laws, y, x, z)),
-        trans(cong((fun (w : A) => multiply(w, z)), leftLaw), group_left_unit_law(A, unit, multiply, laws, z)))));
-}
-
-theorem group_set_evidence_prop(A : U0, p : IsSet(A), q : IsSet(A)) : p = q {
-  exact FunExt(U0, A, (fun (x : A) => forall y : A, Proposition(x = y)), p, q,
-    (fun (x : A) => FunExt(U0, A, (fun (y : A) => Proposition(x = y)), p(x), q(x),
-      (fun (y : A) => FunExt(U0, (x = y), (fun (r : x = y) => forall t : x = y, r = t), p(x, y), q(x, y),
-        (fun (r : x = y) => FunExt(U0, (x = y), (fun (t : x = y) => r = t), p(x, y, r), q(x, y, r),
-          (fun (t : x = y) => proposition_is_set((x = y), p(x, y), r, t, p(x, y, r, t), q(x, y, r, t))))))))));
-}
-def group_product_prop(P : U0, Q : U0, propP : Proposition(P), propQ : Proposition(Q)) =
-  sigma_prop(P, (fun (p : P) => Q), propP, (fun (p : P) => propQ));
-
-theorem group_inverse_evidence_prop(A : U0, unit : A, multiply : A -> A -> A,
-  laws : Group(A, unit, multiply), x : A,
+theorem group_inverse_evidence_prop(
+  A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply), x : A,
   p : (exists y : A, GroupInverseLaws(A, unit, multiply, x, y)),
-  q : (exists y : A, GroupInverseLaws(A, unit, multiply, x, y))) : p = q {
+  q : (exists y : A, GroupInverseLaws(A, unit, multiply, x, y))
+) : p = q {
   let y = sigma_first(A, GroupInverseLaws(A, unit, multiply, x), p);
   let z = sigma_first(A, GroupInverseLaws(A, unit, multiply, x), q);
   let py = sigma_second(A, GroupInverseLaws(A, unit, multiply, x), p);
   let qz = sigma_second(A, GroupInverseLaws(A, unit, multiply, x), q);
   let setA = group_set_law(A, unit, multiply, laws);
-  exact subtype_ext(A, GroupInverseLaws(A, unit, multiply, x),
-    (fun (w : A) => group_product_prop((multiply(w, x) = unit), (multiply(x, w) = unit), setA(multiply(w, x), unit), setA(multiply(x, w), unit))),
-    p, q, group_inverse_unique(A, unit, multiply, laws, x, y, z,
-      fst((multiply(y, x) = unit), (multiply(x, y) = unit), py),
-      snd((multiply(z, x) = unit), (multiply(x, z) = unit), qz)));
+  exact subtype_ext(
+    A, GroupInverseLaws(A, unit, multiply, x),
+    (
+      fun (w : A) => product_prop(
+        (multiply(w, x) = unit), (multiply(x, w) = unit), setA(multiply(w, x), unit),
+        setA(multiply(x, w), unit)
+      )
+    ), p, q,
+    group_inverse_unique(
+      A, unit, multiply, laws, x, y, z, fst((multiply(y, x) = unit), (multiply(x, y) = unit), py),
+      snd((multiply(z, x) = unit), (multiply(x, z) = unit), qz)
+    )
+  );
 }
 
-theorem group_laws_prop(A : U0, unit : A, multiply : A -> A -> A,
-  p : Group(A, unit, multiply), q : Group(A, unit, multiply)) : p = q {
+// Once the carrier, unit and multiplication are fixed, the law evidence
+// carries no further information. Function extensionality compares laws.
+theorem group_laws_prop(
+  A : U0, unit : A, multiply : A -> A -> A, p : GroupLaws(A, unit, multiply),
+  q : GroupLaws(A, unit, multiply)
+) : p = q {
   let setA = group_set_law(A, unit, multiply, p);
-  let assocProp = forall_prop(A, (fun (x : A) => forall y : A, forall z : A, multiply(multiply(x, y), z) = multiply(x, multiply(y, z))),
-    (fun (x : A) => forall_prop(A, (fun (y : A) => forall z : A, multiply(multiply(x, y), z) = multiply(x, multiply(y, z))),
-      (fun (y : A) => forall_prop(A, (fun (z : A) => multiply(multiply(x, y), z) = multiply(x, multiply(y, z))),
-        (fun (z : A) => setA(multiply(multiply(x, y), z), multiply(x, multiply(y, z)))))))));
-  let leftProp = forall_prop(A, (fun (x : A) => multiply(unit, x) = x), (fun (x : A) => setA(multiply(unit, x), x)));
-  let rightProp = forall_prop(A, (fun (x : A) => multiply(x, unit) = x), (fun (x : A) => setA(multiply(x, unit), x)));
-  let inverseProp = forall_prop(A, (fun (x : A) => exists y : A, GroupInverseLaws(A, unit, multiply, x, y)), group_inverse_evidence_prop(A, unit, multiply, p));
-  exact group_product_prop(IsSet(A), (GroupAssociative(A, multiply) and GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), group_set_evidence_prop(A), group_product_prop(GroupAssociative(A, multiply), (GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), assocProp, group_product_prop(GroupLeftUnit(A, unit, multiply), (GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), leftProp, group_product_prop(GroupRightUnit(A, unit, multiply), (GroupInverses(A, unit, multiply)), rightProp, inverseProp))))(p, q);
+  let assocProp =
+    forall_prop(
+      A,
+      (
+        fun (x : A) => forall y : A, forall z : A,
+        multiply(multiply(x, y), z) = multiply(x, multiply(y, z))
+      ),
+      (
+        fun (x : A) => forall_prop(
+          A,
+          (fun (y : A) => forall z : A, multiply(multiply(x, y), z) = multiply(x, multiply(y, z))),
+          (
+            fun (y : A) => forall_prop(
+              A, (fun (z : A) => multiply(multiply(x, y), z) = multiply(x, multiply(y, z))),
+              (fun (z : A) => setA(multiply(multiply(x, y), z), multiply(x, multiply(y, z))))
+            )
+          )
+        )
+      )
+    );
+  let leftProp =
+    forall_prop(
+      A, (fun (x : A) => multiply(unit, x) = x), (fun (x : A) => setA(multiply(unit, x), x))
+    );
+  let rightProp =
+    forall_prop(
+      A, (fun (x : A) => multiply(x, unit) = x), (fun (x : A) => setA(multiply(x, unit), x))
+    );
+  let inverseProp =
+    forall_prop(
+      A, (fun (x : A) => exists y : A, GroupInverseLaws(A, unit, multiply, x, y)),
+      group_inverse_evidence_prop(A, unit, multiply, p)
+    );
+  exact product_prop(
+    IsSet(A),
+    (
+      GroupAssociative(A, multiply) and GroupLeftUnit(A, unit, multiply)
+      and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)
+    ), is_set_prop(A),
+    product_prop(
+      GroupAssociative(A, multiply),
+      (
+        GroupLeftUnit(A, unit, multiply) and GroupRightUnit(A, unit, multiply)
+        and GroupInverses(A, unit, multiply)
+      ), assocProp,
+      product_prop(
+        GroupLeftUnit(A, unit, multiply),
+        (GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)), leftProp,
+        product_prop(
+          GroupRightUnit(A, unit, multiply), (GroupInverses(A, unit, multiply)), rightProp,
+          inverseProp
+        )
+      )
+    )
+  )(p, q);
 }
 
-// Proof fields are propositions; equality of the operations determines the record.
-theorem group_multiplication_path(A : U0, unit : A, multiply : A -> A -> A,
-  other : A -> A -> A, same : multiply = other,
-  laws : Group(A, unit, multiply), otherLaws : Group(A, unit, other)) :
-  group_object(A, unit, multiply, laws) = group_object(A, unit, other, otherLaws) {
-  let pairPath = subtype_ext((A -> A -> A), Group(A, unit), group_laws_prop(A, unit),
-    typed((exists op : A -> A -> A, Group(A, unit, op)), (multiply, laws)),
-    typed((exists op : A -> A -> A, Group(A, unit, op)), (other, otherLaws)), same);
-  exact cong((fun (data : (exists op : A -> A -> A, Group(A, unit, op))) => typed(GroupType, (A, (unit, data)))), pairPath);
-}
-theorem group_same_carrier(A : U0, unit : A, otherUnit : A, sameUnit : unit = otherUnit,
-  multiply : A -> A -> A, other : A -> A -> A, sameMultiply : multiply = other,
-  laws : Group(A, unit, multiply), otherLaws : Group(A, otherUnit, other)) :
-  group_object(A, unit, multiply, laws) = group_object(A, otherUnit, other, otherLaws) {
-  exact path_induction(A,
-    (fun (u : A) => fun (v : A) => fun (p : u = v) => forall multiply : A -> A -> A, forall other : A -> A -> A, (multiply = other) ->
-      forall laws : Group(A, u, multiply), forall otherLaws : Group(A, v, other), group_object(A, u, multiply, laws) = group_object(A, v, other, otherLaws)),
-    (fun (u : A) => group_multiplication_path(A, u)), unit, otherUnit, sameUnit)(multiply, other, sameMultiply, laws, otherLaws);
-}
-
-def group_carrier_transport(A : U0, B : U0, p : A = B, x : A) = transport((fun (T : U0) => T), A, B, p, x);
-// Path induction verifies the transport of both operations through carrier equality.
-theorem group_transport_path(A : U0, B : U0, p : A = B) : forall unitA : A, forall unitB : B,
-      forall multiplyA : A -> A -> A, forall multiplyB : B -> B -> B,
-      forall lawsA : Group(A, unitA, multiplyA), forall lawsB : Group(B, unitB, multiplyB),
-      (group_carrier_transport(A, B, p, unitA) = unitB) ->
-      (forall x : A, forall y : A, group_carrier_transport(A, B, p, multiplyA(x, y)) =
-        multiplyB(group_carrier_transport(A, B, p, x), group_carrier_transport(A, B, p, y))) ->
-      (group_object(A, unitA, multiplyA, lawsA) = group_object(B, unitB, multiplyB, lawsB)) {
-  exact path_induction(U0,
-    (fun (A : U0) => fun (B : U0) => fun (p : A = B) => forall unitA : A, forall unitB : B,
-      forall multiplyA : A -> A -> A, forall multiplyB : B -> B -> B,
-      forall lawsA : Group(A, unitA, multiplyA), forall lawsB : Group(B, unitB, multiplyB),
-      (group_carrier_transport(A, B, p, unitA) = unitB) ->
-      (forall x : A, forall y : A, group_carrier_transport(A, B, p, multiplyA(x, y)) =
-        multiplyB(group_carrier_transport(A, B, p, x), group_carrier_transport(A, B, p, y))) ->
-      (group_object(A, unitA, multiplyA, lawsA) = group_object(B, unitB, multiplyB, lawsB))),
-    (fun (A : U0) => fun (unitA : A) => fun (unitB : A) =>
-      fun (multiplyA : A -> A -> A) => fun (multiplyB : A -> A -> A) =>
-      fun (lawsA : Group(A, unitA, multiplyA)) => fun (lawsB : Group(A, unitB, multiplyB)) =>
-      fun (sameUnit : unitA = unitB) => fun (sameMultiply : (forall x : A, forall y : A, multiplyA(x, y) = multiplyB(x, y))) =>
-        group_same_carrier(A, unitA, unitB, sameUnit, multiplyA, multiplyB,
-          FunExt(U0, A, (fun (x : A) => A -> A), multiplyA, multiplyB,
-            (fun (x : A) => FunExt(U0, A, (fun (y : A) => A), multiplyA(x), multiplyB(x), sameMultiply(x)))), lawsA, lawsB)), A, B, p);
-}
-
+def group_carrier_transport(A : U0, B : U0, p : A = B, x : A) =
+  transport((fun (T : U0) => T), A, B, p, x);
 // Multiplication-preserving equivalences preserve units; this is derived, not required.
-theorem group_isomorphism_preserves_unit(A : U0, unitA : A, multiplyA : A -> A -> A,
-  lawsA : Group(A, unitA, multiplyA), B : U0, unitB : B, multiplyB : B -> B -> B,
-  lawsB : Group(B, unitB, multiplyB), f : A -> B, g : B -> A,
-  rightLaw : (forall y : B, f(g(y)) = y),
-  preserves : (forall x : A, forall y : A, f(multiplyA(x, y)) = multiplyB(f(x), f(y)))) : f(unitA) = unitB {
-  exact trans(sym(group_right_unit_law(B, unitB, multiplyB, lawsB, f(unitA))),
-    trans(cong(multiplyB(f(unitA)), sym(rightLaw(unitB))),
-      trans(sym(preserves(unitA, g(unitB))),
-        trans(cong(f, group_left_unit_law(A, unitA, multiplyA, lawsA, g(unitB))), rightLaw(unitB)))));
+theorem group_isomorphism_preserves_unit(
+  A : U0, unitA : A, multiplyA : A -> A -> A, lawsA : GroupLaws(A, unitA, multiplyA), B : U0,
+  unitB : B, multiplyB : B -> B -> B, lawsB : GroupLaws(B, unitB, multiplyB), f : A -> B, g : B
+  -> A, rightLaw : (forall y : B, f(g(y)) = y),
+  preserves : (forall x : A, forall y : A, f(multiplyA(x, y)) = multiplyB(f(x), f(y)))
+) : f(unitA) = unitB {
+  exact trans(
+    sym(group_right_unit_law(B, unitB, multiplyB, lawsB, f(unitA))),
+    trans(
+      cong(multiplyB(f(unitA)), sym(rightLaw(unitB))),
+      trans(
+        sym(preserves(unitA, g(unitB))),
+        trans(cong(f, group_left_unit_law(A, unitA, multiplyA, lawsA, g(unitB))), rightLaw(unitB))
+      )
+    )
+  );
 }
-
-theorem isomorphic_group_objects_equal(A : U0, unitA : A, multiplyA : A -> A -> A,
-  lawsA : Group(A, unitA, multiplyA), B : U0, unitB : B, multiplyB : B -> B -> B,
-  lawsB : Group(B, unitB, multiplyB), iso : GroupIsomorphism(A, multiplyA, B, multiplyB)) :
-  group_object(A, unitA, multiplyA, lawsA) = group_object(B, unitB, multiplyB, lawsB) {
-  obtain (f, rest) = iso;
-  obtain (g, conditions) = rest;
-  obtain (leftProof, remaining) = conditions;
-  obtain (rightProof, preservesProof) = remaining;
-  have leftLaw : forall x : A, g(f(x)) = x { exact leftProof; }
-  have rightLaw : forall y : B, f(g(y)) = y { exact rightProof; }
-  have preserves : forall x : A, forall y : A, f(multiplyA(x, y)) = multiplyB(f(x), f(y)) { exact preservesProof; }
-  let bijection = typed(Bijection(A, B), (f, (g, (leftLaw, rightLaw))));
-  let equivalence = bijection_equiv(A, B, group_set_law(B, unitB, multiplyB, lawsB), bijection);
-  let carrierPath = Univalence(U0, A, B, equivalence);
-  have computes : forall x : A, group_carrier_transport(A, B, carrierPath, x) = f(x) {
-    intro x; exact UnivalenceBeta(U0, A, B, equivalence, x);
-  }
-  have unitPath : group_carrier_transport(A, B, carrierPath, unitA) = unitB {
-    exact trans(computes(unitA), group_isomorphism_preserves_unit(A, unitA, multiplyA, lawsA, B, unitB, multiplyB, lawsB, f, g, rightLaw, preserves));
-  }
-  have multiplicationPath : forall x : A, forall y : A,
-    group_carrier_transport(A, B, carrierPath, multiplyA(x, y)) =
-    multiplyB(group_carrier_transport(A, B, carrierPath, x), group_carrier_transport(A, B, carrierPath, y)) {
-    intro x; intro y;
-    exact trans(computes(multiplyA(x, y)), trans(preserves(x, y),
-      trans(cong((fun (b : B) => multiplyB(b, f(y))), sym(computes(x))),
-        cong(multiplyB(group_carrier_transport(A, B, carrierPath, x)), sym(computes(y))))));
-  }
-  exact group_transport_path(A, B, carrierPath, unitA, unitB, multiplyA, multiplyB, lawsA, lawsB, unitPath, multiplicationPath);
-}
-
-def GroupIso(G : GroupType, H : GroupType) =
-  GroupIsomorphism(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H));
-
-theorem group_object_eta(G : GroupType) :
-  group_object(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G)) = G {
-  exact pair_induction((fun (G : GroupType) => group_object(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G)) = G),
-    (fun (A : U0) => fun (ops : GroupOperations(A)) =>
-      pair_induction((fun (ops : GroupOperations(A)) =>
-        group_object(group_carrier(typed(GroupType, (A, ops))), group_unit(typed(GroupType, (A, ops))), group_multiply(typed(GroupType, (A, ops))), group_laws(typed(GroupType, (A, ops)))) = typed(GroupType, (A, ops))),
-        (fun (unit : A) => fun (data : (exists multiply : A -> A -> A, Group(A, unit, multiply))) =>
-          cong((fun (data : (exists multiply : A -> A -> A, Group(A, unit, multiply))) => typed(GroupType, (A, (unit, data)))),
-            sigma_eta((A -> A -> A), Group(A, unit), data))), ops)), G);
-}
-
-// Equality here lives in GroupType, not merely in the universe of carriers.
-theorem isomorphic_groups_equal(G : GroupType, H : GroupType, iso : GroupIso(G, H)) : G = H {
-  exact trans(sym(group_object_eta(G)),
-    trans(isomorphic_group_objects_equal(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G),
-      group_carrier(H), group_unit(H), group_multiply(H), group_laws(H), iso), group_object_eta(H)));
-}
-
-def group_identity_iso(G : GroupType) = typed(GroupIso(G, G),
-  ((fun (x : group_carrier(G)) => x), ((fun (x : group_carrier(G)) => x),
-    ((fun (x : group_carrier(G)) => refl(x)), ((fun (x : group_carrier(G)) => refl(x)),
-      (fun (x : group_carrier(G)) => fun (y : group_carrier(G)) => refl(group_multiply(G, x, y))))))));
-// The canonical map sends reflexivity to the identity isomorphism.
-def group_equality_iso(G : GroupType, H : GroupType, p : G = H) =
-  transport(GroupIso(G), G, H, p, group_identity_iso(G));

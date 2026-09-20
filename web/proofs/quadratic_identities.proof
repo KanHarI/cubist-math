@@ -2,35 +2,382 @@ import ring_laws;
 
 // Explicit ring rewrites for the parallelogram identity.
 
-theorem complex_coordinate_parallelogram(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F) :
-  addF(mulF(addF(a, b), addF(a, b)), mulF(addF(a, negF(b)), addF(a, negF(b)))) = addF(addF(mulF(a, a), mulF(b, b)), addF(mulF(a, a), mulF(b, b))) {
-  let leftStep1 = cong((fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))), ring_distribute_left(F, zero, one, addF, mulF, negF, ring, a, b, addF(a, b)));
-  let leftStep2 = cong((fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))), cong((fun (value : F) => addF(value, mulF(b, addF(a, b)))), ring_distribute(F, zero, one, addF, mulF, negF, ring, a, a, b)));
-  let leftStep3 = cong((fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))), cong((fun (value : F) => addF(addF(mulF(a, a), mulF(a, b)), value)), ring_distribute(F, zero, one, addF, mulF, negF, ring, b, a, b)));
-  let leftStep4 = cong((fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))), cong((fun (value : F) => addF(addF(mulF(a, a), mulF(a, b)), value)), cong((fun (value : F) => addF(value, mulF(b, b))), ring_mul_comm(F, zero, one, addF, mulF, negF, ring, b, a))));
-  let leftStep5 = cong((fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))), ring_add_assoc(F, zero, one, addF, mulF, negF, ring, mulF(a, a), mulF(a, b), addF(mulF(a, b), mulF(b, b))));
-  let leftStep6 = cong((fun (value : F) => addF(addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value)), ring_distribute_left(F, zero, one, addF, mulF, negF, ring, a, negF(b), addF(a, negF(b))));
-  let leftStep7 = cong((fun (value : F) => addF(addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value)), cong((fun (value : F) => addF(value, mulF(negF(b), addF(a, negF(b))))), ring_distribute(F, zero, one, addF, mulF, negF, ring, a, a, negF(b))));
-  let leftStep8 = cong((fun (value : F) => addF(addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value)), cong((fun (value : F) => addF(value, mulF(negF(b), addF(a, negF(b))))), cong((fun (value : F) => addF(mulF(a, a), value)), ring_mul_neg(F, zero, one, addF, mulF, negF, ring, a, b))));
-  let leftStep9 = cong((fun (value : F) => addF(addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value)), cong((fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)), ring_neg_mul(F, zero, one, addF, mulF, negF, ring, b, addF(a, negF(b)))));
-  let leftStep10 = cong((fun (value : F) => addF(addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value)), cong((fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)), cong((fun (value : F) => negF(value)), ring_distribute(F, zero, one, addF, mulF, negF, ring, b, a, negF(b)))));
-  let leftStep11 = cong((fun (value : F) => addF(addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value)), cong((fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)), cong((fun (value : F) => negF(value)), cong((fun (value : F) => addF(value, mulF(b, negF(b)))), ring_mul_comm(F, zero, one, addF, mulF, negF, ring, b, a)))));
-  let leftStep12 = cong((fun (value : F) => addF(addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value)), cong((fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)), cong((fun (value : F) => negF(value)), cong((fun (value : F) => addF(mulF(a, b), value)), ring_mul_neg(F, zero, one, addF, mulF, negF, ring, b, b)))));
-  let leftStep13 = cong((fun (value : F) => addF(addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value)), cong((fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)), ring_neg_add(F, zero, one, addF, mulF, negF, ring, mulF(a, b), negF(mulF(b, b)))));
-  let leftStep14 = cong((fun (value : F) => addF(addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value)), cong((fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)), cong((fun (value : F) => addF(negF(mulF(a, b)), value)), ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(b, b)))));
-  let leftStep15 = cong((fun (value : F) => addF(addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value)), ring_add_assoc(F, zero, one, addF, mulF, negF, ring, mulF(a, a), negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b))));
-  let leftStep16 = ring_add_assoc(F, zero, one, addF, mulF, negF, ring, mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b))), addF(mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b)))));
-  let leftStep17 = cong((fun (value : F) => addF(mulF(a, a), value)), ring_add_assoc(F, zero, one, addF, mulF, negF, ring, mulF(a, b), addF(mulF(a, b), mulF(b, b)), addF(mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b))))));
-  let leftStep18 = cong((fun (value : F) => addF(mulF(a, a), value)), cong((fun (value : F) => addF(mulF(a, b), value)), ring_add_assoc(F, zero, one, addF, mulF, negF, ring, mulF(a, b), mulF(b, b), addF(mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b)))))));
-  let leftStep19 = cong((fun (value : F) => addF(mulF(a, a), value)), cong((fun (value : F) => addF(mulF(a, b), value)), cong((fun (value : F) => addF(mulF(a, b), value)), ring_add_swap(F, zero, one, addF, mulF, negF, ring, mulF(b, b), mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b)))))));
-  let leftStep20 = cong((fun (value : F) => addF(mulF(a, a), value)), cong((fun (value : F) => addF(mulF(a, b), value)), cong((fun (value : F) => addF(mulF(a, b), value)), cong((fun (value : F) => addF(mulF(a, a), value)), ring_add_swap(F, zero, one, addF, mulF, negF, ring, mulF(b, b), negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b)))))));
-  let leftStep21 = cong((fun (value : F) => addF(mulF(a, a), value)), cong((fun (value : F) => addF(mulF(a, b), value)), cong((fun (value : F) => addF(mulF(a, b), value)), cong((fun (value : F) => addF(mulF(a, a), value)), cong((fun (value : F) => addF(negF(mulF(a, b)), value)), ring_add_swap(F, zero, one, addF, mulF, negF, ring, mulF(b, b), negF(mulF(a, b)), mulF(b, b)))))));
-  let leftStep22 = cong((fun (value : F) => addF(mulF(a, a), value)), cong((fun (value : F) => addF(mulF(a, b), value)), ring_add_swap(F, zero, one, addF, mulF, negF, ring, mulF(a, b), mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), addF(mulF(b, b), mulF(b, b)))))));
-  let leftStep23 = cong((fun (value : F) => addF(mulF(a, a), value)), cong((fun (value : F) => addF(mulF(a, b), value)), cong((fun (value : F) => addF(mulF(a, a), value)), ring_add_cancel_prefix(F, zero, one, addF, mulF, negF, ring, mulF(a, b), addF(negF(mulF(a, b)), addF(mulF(b, b), mulF(b, b)))))));
-  let leftStep24 = cong((fun (value : F) => addF(mulF(a, a), value)), ring_add_swap(F, zero, one, addF, mulF, negF, ring, mulF(a, b), mulF(a, a), addF(negF(mulF(a, b)), addF(mulF(b, b), mulF(b, b)))));
-  let leftStep25 = cong((fun (value : F) => addF(mulF(a, a), value)), cong((fun (value : F) => addF(mulF(a, a), value)), ring_add_cancel_prefix(F, zero, one, addF, mulF, negF, ring, mulF(a, b), addF(mulF(b, b), mulF(b, b)))));
-  let rightStep1 = ring_add_assoc(F, zero, one, addF, mulF, negF, ring, mulF(a, a), mulF(b, b), addF(mulF(a, a), mulF(b, b)));
-  let rightStep2 = cong((fun (value : F) => addF(mulF(a, a), value)), ring_add_swap(F, zero, one, addF, mulF, negF, ring, mulF(b, b), mulF(a, a), mulF(b, b)));
-  exact trans(trans(leftStep1, trans(leftStep2, trans(leftStep3, trans(leftStep4, trans(leftStep5, trans(leftStep6, trans(leftStep7, trans(leftStep8, trans(leftStep9, trans(leftStep10, trans(leftStep11, trans(leftStep12, trans(leftStep13, trans(leftStep14, trans(leftStep15, trans(leftStep16, trans(leftStep17, trans(leftStep18, trans(leftStep19, trans(leftStep20, trans(leftStep21, trans(leftStep22, trans(leftStep23, trans(leftStep24, leftStep25)))))))))))))))))))))))), sym(trans(rightStep1, rightStep2)));
+theorem complex_coordinate_parallelogram(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+) : addF(mulF(addF(a, b), addF(a, b)), mulF(addF(a, negF(b)), addF(a, negF(b)))) = addF(
+  addF(mulF(a, a), mulF(b, b)), addF(mulF(a, a), mulF(b, b))
+) {
+  let leftStep1 =
+    cong(
+      (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
+      ring_distribute_left(F, zero, one, addF, mulF, negF, ring, a, b, addF(a, b))
+    );
+  let leftStep2 =
+    cong(
+      (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
+      cong(
+        (fun (value : F) => addF(value, mulF(b, addF(a, b)))),
+        ring_distribute(F, zero, one, addF, mulF, negF, ring, a, a, b)
+      )
+    );
+  let leftStep3 =
+    cong(
+      (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
+      cong(
+        (fun (value : F) => addF(addF(mulF(a, a), mulF(a, b)), value)),
+        ring_distribute(F, zero, one, addF, mulF, negF, ring, b, a, b)
+      )
+    );
+  let leftStep4 =
+    cong(
+      (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
+      cong(
+        (fun (value : F) => addF(addF(mulF(a, a), mulF(a, b)), value)),
+        cong(
+          (fun (value : F) => addF(value, mulF(b, b))),
+          ring_mul_comm(F, zero, one, addF, mulF, negF, ring, b, a)
+        )
+      )
+    );
+  let leftStep5 =
+    cong(
+      (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
+      ring_add_assoc(
+        F, zero, one, addF, mulF, negF, ring, mulF(a, a), mulF(a, b), addF(mulF(a, b), mulF(b, b))
+      )
+    );
+  let leftStep6 =
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ), ring_distribute_left(F, zero, one, addF, mulF, negF, ring, a, negF(b), addF(a, negF(b)))
+    );
+  let leftStep7 =
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      cong(
+        (fun (value : F) => addF(value, mulF(negF(b), addF(a, negF(b))))),
+        ring_distribute(F, zero, one, addF, mulF, negF, ring, a, a, negF(b))
+      )
+    );
+  let leftStep8 =
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      cong(
+        (fun (value : F) => addF(value, mulF(negF(b), addF(a, negF(b))))),
+        cong(
+          (fun (value : F) => addF(mulF(a, a), value)),
+          ring_mul_neg(F, zero, one, addF, mulF, negF, ring, a, b)
+        )
+      )
+    );
+  let leftStep9 =
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      cong(
+        (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+        ring_neg_mul(F, zero, one, addF, mulF, negF, ring, b, addF(a, negF(b)))
+      )
+    );
+  let leftStep10 =
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      cong(
+        (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+        cong(
+          (fun (value : F) => negF(value)),
+          ring_distribute(F, zero, one, addF, mulF, negF, ring, b, a, negF(b))
+        )
+      )
+    );
+  let leftStep11 =
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      cong(
+        (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+        cong(
+          (fun (value : F) => negF(value)),
+          cong(
+            (fun (value : F) => addF(value, mulF(b, negF(b)))),
+            ring_mul_comm(F, zero, one, addF, mulF, negF, ring, b, a)
+          )
+        )
+      )
+    );
+  let leftStep12 =
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      cong(
+        (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+        cong(
+          (fun (value : F) => negF(value)),
+          cong(
+            (fun (value : F) => addF(mulF(a, b), value)),
+            ring_mul_neg(F, zero, one, addF, mulF, negF, ring, b, b)
+          )
+        )
+      )
+    );
+  let leftStep13 =
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      cong(
+        (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+        ring_neg_add(F, zero, one, addF, mulF, negF, ring, mulF(a, b), negF(mulF(b, b)))
+      )
+    );
+  let leftStep14 =
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      cong(
+        (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+        cong(
+          (fun (value : F) => addF(negF(mulF(a, b)), value)),
+          ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(b, b))
+        )
+      )
+    );
+  let leftStep15 =
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      ring_add_assoc(
+        F, zero, one, addF, mulF, negF, ring, mulF(a, a), negF(mulF(a, b)),
+        addF(negF(mulF(a, b)), mulF(b, b))
+      )
+    );
+  let leftStep16 =
+    ring_add_assoc(
+      F, zero, one, addF, mulF, negF, ring, mulF(a, a),
+      addF(mulF(a, b), addF(mulF(a, b), mulF(b, b))),
+      addF(mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b))))
+    );
+  let leftStep17 =
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      ring_add_assoc(
+        F, zero, one, addF, mulF, negF, ring, mulF(a, b), addF(mulF(a, b), mulF(b, b)),
+        addF(mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b))))
+      )
+    );
+  let leftStep18 =
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      cong(
+        (fun (value : F) => addF(mulF(a, b), value)),
+        ring_add_assoc(
+          F, zero, one, addF, mulF, negF, ring, mulF(a, b), mulF(b, b),
+          addF(mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b))))
+        )
+      )
+    );
+  let leftStep19 =
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      cong(
+        (fun (value : F) => addF(mulF(a, b), value)),
+        cong(
+          (fun (value : F) => addF(mulF(a, b), value)),
+          ring_add_swap(
+            F, zero, one, addF, mulF, negF, ring, mulF(b, b), mulF(a, a),
+            addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b)))
+          )
+        )
+      )
+    );
+  let leftStep20 =
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      cong(
+        (fun (value : F) => addF(mulF(a, b), value)),
+        cong(
+          (fun (value : F) => addF(mulF(a, b), value)),
+          cong(
+            (fun (value : F) => addF(mulF(a, a), value)),
+            ring_add_swap(
+              F, zero, one, addF, mulF, negF, ring, mulF(b, b), negF(mulF(a, b)),
+              addF(negF(mulF(a, b)), mulF(b, b))
+            )
+          )
+        )
+      )
+    );
+  let leftStep21 =
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      cong(
+        (fun (value : F) => addF(mulF(a, b), value)),
+        cong(
+          (fun (value : F) => addF(mulF(a, b), value)),
+          cong(
+            (fun (value : F) => addF(mulF(a, a), value)),
+            cong(
+              (fun (value : F) => addF(negF(mulF(a, b)), value)),
+              ring_add_swap(
+                F, zero, one, addF, mulF, negF, ring, mulF(b, b), negF(mulF(a, b)), mulF(b, b)
+              )
+            )
+          )
+        )
+      )
+    );
+  let leftStep22 =
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      cong(
+        (fun (value : F) => addF(mulF(a, b), value)),
+        ring_add_swap(
+          F, zero, one, addF, mulF, negF, ring, mulF(a, b), mulF(a, a),
+          addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), addF(mulF(b, b), mulF(b, b))))
+        )
+      )
+    );
+  let leftStep23 =
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      cong(
+        (fun (value : F) => addF(mulF(a, b), value)),
+        cong(
+          (fun (value : F) => addF(mulF(a, a), value)),
+          ring_add_cancel_prefix(
+            F, zero, one, addF, mulF, negF, ring, mulF(a, b),
+            addF(negF(mulF(a, b)), addF(mulF(b, b), mulF(b, b)))
+          )
+        )
+      )
+    );
+  let leftStep24 =
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      ring_add_swap(
+        F, zero, one, addF, mulF, negF, ring, mulF(a, b), mulF(a, a),
+        addF(negF(mulF(a, b)), addF(mulF(b, b), mulF(b, b)))
+      )
+    );
+  let leftStep25 =
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      cong(
+        (fun (value : F) => addF(mulF(a, a), value)),
+        ring_add_cancel_prefix(
+          F, zero, one, addF, mulF, negF, ring, mulF(a, b), addF(mulF(b, b), mulF(b, b))
+        )
+      )
+    );
+  let rightStep1 =
+    ring_add_assoc(
+      F, zero, one, addF, mulF, negF, ring, mulF(a, a), mulF(b, b), addF(mulF(a, a), mulF(b, b))
+    );
+  let rightStep2 =
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      ring_add_swap(F, zero, one, addF, mulF, negF, ring, mulF(b, b), mulF(a, a), mulF(b, b))
+    );
+  exact trans(
+    trans(
+      leftStep1,
+      trans(
+        leftStep2,
+        trans(
+          leftStep3,
+          trans(
+            leftStep4,
+            trans(
+              leftStep5,
+              trans(
+                leftStep6,
+                trans(
+                  leftStep7,
+                  trans(
+                    leftStep8,
+                    trans(
+                      leftStep9,
+                      trans(
+                        leftStep10,
+                        trans(
+                          leftStep11,
+                          trans(
+                            leftStep12,
+                            trans(
+                              leftStep13,
+                              trans(
+                                leftStep14,
+                                trans(
+                                  leftStep15,
+                                  trans(
+                                    leftStep16,
+                                    trans(
+                                      leftStep17,
+                                      trans(
+                                        leftStep18,
+                                        trans(
+                                          leftStep19,
+                                          trans(
+                                            leftStep20,
+                                            trans(
+                                              leftStep21,
+                                              trans(
+                                                leftStep22,
+                                                trans(leftStep23, trans(leftStep24, leftStep25))
+                                              )
+                                            )
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    ), sym(trans(rightStep1, rightStep2))
+  );
 }

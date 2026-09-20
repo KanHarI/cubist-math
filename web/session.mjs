@@ -16,6 +16,7 @@ export class Session {
     this.engine = new Kernel(module, allowAxioms);
     this.draft = null;
     this.events = [];
+    this.presentation = { names: {}, contextTypes: [] };
   }
   dispose() {
     this.discard();
@@ -67,7 +68,7 @@ export class Session {
     try {
       for (const step of steps) normalized.push(engine.apply(step));
       const token = ++this.serial,
-        result = engine.inspect(normalized.at(-1).name);
+        result = this.present(engine, engine.inspect(normalized.at(-1).name));
       this.draft = {
         token,
         base: this.revision,
@@ -103,6 +104,9 @@ export class Session {
     const binding = this.engine.bindings.get(name);
     if (!binding || binding.kind !== "judgement")
       throw new Error("Select a judgement first.");
+    if (operation === "UnHigh")
+      return this.preview([{ name: resultName || "unhighlighted", op: "UnHigh", args: [name],
+        context: null, free: [], hidden: false }], `Un-highlight ${name}`);
     if (
       !["expression", "type"].includes(side) ||
       !Array.isArray(path) ||
@@ -215,7 +219,50 @@ export class Session {
     };
   }
   inspect(name, options) {
-    return this.engine.inspect(name, options);
+    return this.present(this.engine, this.engine.inspect(name, options));
+  }
+  present(engine, view) {
+    const names = this.presentation.names;
+    view.displayNames = names;
+    view.referenceNames = {};
+    const expression = binding => {
+      const value = engine.bindings.get(binding);
+      return value?.kind === "judgement"
+        ? engine.node(engine.module._wb_view(engine.handle, 0, value.id, 0)) : null;
+    };
+    for (const [id, binding] of engine.declarations)
+      view.referenceNames[id] = names[binding] ?? binding;
+    const variables = new Map();
+    for (const [binding, label] of Object.entries(names)) {
+      const node = expression(binding);
+      if (!node) continue;
+      if (["DRef", "Axiom"].includes(node.kind)) view.referenceNames[node.id] = label;
+      if (["CRef", "UCRef"].includes(node.kind)) {
+        view.contextNames[node.parameter] = label;
+        if (!variables.has(node.parameter)) variables.set(node.parameter, binding);
+      }
+    }
+    view.context = view.assumptions.map(assumption => {
+      const variable = variables.get(assumption.id);
+      const original = engine.module._wb_view(engine.handle, 1, assumption.id, 0);
+      let type = engine.tree(original);
+      const allowed = new Set(engine.list(engine.module._wb_view(engine.handle, 1, assumption.id, 1), true));
+      for (const row of this.presentation.contextTypes) {
+        const sourceVariable = expression(row.variable);
+        if (!["CRef", "UCRef"].includes(sourceVariable?.kind) || sourceVariable.parameter !== assumption.id) continue;
+        const candidate = expression(row.type), witness = expression(row.witness);
+        const w = engine.bindings.get(row.witness);
+        if (candidate && witness?.kind === "DefEq" && witness.children[0] === candidate.id
+          && witness.children[1] === original
+          && engine.list(engine.module._wb_view(engine.handle, 0, w.id, 2), true).every(id => allowed.has(id))) {
+          type = engine.tree(candidate.id);
+          break;
+        }
+      }
+      return { id: assumption.id, name: view.contextNames[assumption.id] ?? assumption.names[0] ?? `c${assumption.id}`,
+        binding: variable ?? assumption.names[0], type };
+    });
+    return view;
   }
   verify(proposition, proof) {
     return this.engine.verify(proposition, proof);
@@ -226,6 +273,7 @@ export class Session {
       version: 1,
       policy: { allowAxioms: this.allowAxioms },
       steps: this.program(),
+      presentation: this.presentation,
     };
   }
   // Bundled Open actions may adopt the displayed policy. Ordinary imports
@@ -248,6 +296,15 @@ export class Session {
     this.discard();
     this.engine.dispose();
     this.engine = engine;
+    // Labels never grant types or change ASTs. Bindings are resolved again in
+    // each replayed engine; AST/context numeric IDs are not portable metadata.
+    const incoming = document.presentation;
+    this.presentation = {
+      names: Object.fromEntries(Object.entries(incoming?.names ?? {}).filter(([binding, name]) =>
+        engine.bindings.has(binding) && typeof name === "string" && name.length > 0 && name.length <= 200)),
+      contextTypes: Array.isArray(incoming?.contextTypes) ? incoming.contextTypes.filter(row =>
+        row && [row.variable, row.type, row.witness].every(name => typeof name === "string" && engine.bindings.has(name))) : [],
+    };
     this.allowAxioms = document.policy.allowAxioms;
     this.revision = ++this.serial;
     this.revisions = new Map([

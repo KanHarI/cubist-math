@@ -134,3 +134,11 @@ IDs and inspected values remain valid until that engine is freed. The library
 does not perform hidden garbage collection or invalidate accepted IDs. Failed
 inferences roll back only newly allocated temporary expression nodes.
 
+## Univalence library presentation
+
+The native library now replaces the upstream trio of univalence postulates
+with the standard single assumption `IsEquiv(idtoequiv)`. The inverse `ua`,
+transport computation theorem and inverse law are checked constructions from
+that assumption. This changes library declarations and export traces, not
+kernel inference rules. The port generator preserves this deliberate library
+difference; see [the univalence proof and regeneration instructions](univalence.md).

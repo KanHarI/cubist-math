@@ -46,7 +46,7 @@ const operators = {
   IndSusp: "suspension.elim",
   SuspBeta: "suspension.meridian_beta",
 };
-export function layout(tree, contextNames = {}) {
+export function layout(tree, contextNames = {}, referenceNames = {}) {
   let text = "";
   const spans = [];
   const emit = (s) => {
@@ -65,8 +65,8 @@ export function layout(tree, contextNames = {}) {
     else if (n.kind === "VRef") emit(env[n.parameter] ?? `#${n.parameter | 0}`);
     else if (n.kind === "CRef" || n.kind === "UCRef")
       emit(contextNames[n.parameter] ?? `c${n.parameter}`);
-    else if (n.kind === "DRef") emit(`def${n.parameter}`);
-    else if (n.kind === "Axiom") emit(`axiom${n.parameter}`);
+    else if (n.kind === "DRef") emit(referenceNames[n.id] ?? `def${n.parameter}`);
+    else if (n.kind === "Axiom") emit(referenceNames[n.id] ?? `axiom${n.parameter}`);
     else if (n.kind === "Lambda") {
       const x = `x${env.length}`;
       emit(`(λ ${x}. `);
@@ -155,8 +155,8 @@ export function pathFromNames(tree, parts) {
   atPath(tree, path);
   return path;
 }
-export function pathFromMarked(tree, marked, contextNames = {}) {
-  const { text, spans } = layout(tree, contextNames);
+export function pathFromMarked(tree, marked, contextNames = {}, referenceNames = {}) {
+  const { text, spans } = layout(tree, contextNames, referenceNames);
   const matches = [];
   for (const span of spans)
     if (!span.node.truncated) {

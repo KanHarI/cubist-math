@@ -56,6 +56,7 @@ export function kernelMathTree(tree, references = {}, contextNames = {}, context
         : { kind: "Call", fn: named("succ"), args: [predecessor] };
     }
     if (node.kind === "Singleton") return named("⋆");
+    if (node.kind === "Refl") return { kind: "Call", fn: named("refl"), args: [visit(node.children[0], env)] };
     if (node.kind === "DRef") return named(`def${node.parameter}`);
     if (["Pi", "Sigma"].includes(node.kind)) {
       const name = node.binderName && node.binderName !== "_" ? node.binderName : `x${env.length}`;
@@ -208,8 +209,8 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
       if (identitySugar) {
         // Keep the carrier explicit, including for nested identities. This is
         // only notation for Eq, never a conversion to definitional equality.
-        const formula = fenced(row(visit(node.left), operator("="), operator("["),
-          visit(node.carrier), operator("]"), visit(node.right)));
+        const formula = fenced(row(visit(node.left),
+          element("msub", operator("="), visit(node.carrier)), visit(node.right)));
         formula.dataset.identitySugar = "true";
         return formula;
       }

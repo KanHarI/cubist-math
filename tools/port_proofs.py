@@ -180,6 +180,31 @@ class Translator:
                 marked.append(f'(void){unused[1]};')
         return '\n'.join('    '+line for line in marked)
 
+def standard_univalence(source):
+    """Replace the upstream split postulates with checked single-axiom proofs.
+
+    The generated helper uses public kernel instructions only. Keep the first
+    fourteen tuple positions stable; append the actual univalence axiom.
+    """
+    start = source.index('    tt_id Ux_R_S_univalence_type_judgement =')
+    end = source.index('    tt_id B_y__Ux_judgement =', start)
+    source = source[:start] + (
+        '    proof_tuple univalence = standard_univalence_proofs(e, def_isequiv, def_ueqequiv);\n'
+    ) + source[end:]
+    start = source.index('    tt_id Uy_Ux_context =', start)
+    end = source.index('\n}', source.index('    return (proof_tuple)', start))
+    source = source[:start] + (
+        '    return (proof_tuple){{def_homotopy, def_happly, def_ap, def_id, def_isequiv, '
+        'funext_axiom, funext_compute_axiom, funext_unique_axiom, def_id_isequiv, '
+        'def_ueqequiv, univalence.v[1], def_transport, univalence.v[2], univalence.v[3], '
+        'univalence.v[0]}};'
+    ) + source[end:]
+    # The old transport-beta proof used pr1 directly; its replacement does not.
+    source = source.replace('tt_id def_pr1 = tuple_1.v[0];',
+                            'tt_id def_pr1 = tuple_1.v[0];\n    (void)def_pr1;')
+    return source
+
+
 def proofs(up):
     functions={}
     sources={}
@@ -212,7 +237,7 @@ def proofs(up):
         # The test projection helper uses the same universe/context helpers as
         # the hand-ported theorem tests; translate those simple bindings here.
         bodies.append(sig+' {\n'+t.block(body,True)+'\n}')
-    (ROOT/'src/proofs_generated.inc').write_text('/* Generated from THTH proof construction programs. Do not edit. */\n'+ '\n'.join(decls)+'\n\n'+'\n\n'.join(bodies)+'\n')
+    (ROOT/'src/proofs_generated.inc').write_text(standard_univalence('/* Generated from THTH proof construction programs. Do not edit. */\n'+ '\n'.join(decls)+'\n\n'+'\n\n'.join(bodies)+'\n'))
     (ROOT/'docs/proof_sources.json').write_text(json.dumps(sources,indent=2)+'\n')
     return len(functions)
 

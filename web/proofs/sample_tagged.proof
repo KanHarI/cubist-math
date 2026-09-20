@@ -3,54 +3,190 @@ import sample_relations;
 def SampleTagged(C : U1, condition : C -> C -> C -> U0, n : Nat) =
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C) => fun (tags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) =>
-      condition(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)) and
-        previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+      tags : SampleTags(C, succ(k))
+    ) => condition(
+      field_fst(C, SampleVertices(C, k), vertices),
+      sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+      field_fst(C, SampleTags(C, k), tags)
+    )
+    and previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags));
   };
 
-theorem sample_tagged_adjacent(C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
-  orders : (forall a : C, forall b : C, forall tag : C, condition(a, b, tag) -> related(a, b)), n : Nat) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), SampleTagged(C, condition, n, vertices, tags) -> SampleAdjacent(C, related, n, vertices) {
-  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), SampleTagged(C, condition, k, vertices, tags) -> SampleAdjacent(C, related, k, vertices)) {
+theorem sample_tagged_adjacent(
+  C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
+  orders : (forall a : C, forall b : C, forall tag : C, condition(a, b, tag) -> related(a, b)),
+  n : Nat
+) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+SampleTagged(C, condition, n, vertices, tags) -> SampleAdjacent(C, related, n, vertices) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
+    SampleTagged(C, condition, k, vertices, tags) -> SampleAdjacent(C, related, k, vertices)
+  ) {
     zero => fun (vertices : C) => fun (tags : Unit) => fun (valid : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) => fun (valid : SampleTagged(C, condition, succ(k), vertices, tags)) =>
-      typed((related(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))) and SampleAdjacent(C, related, k, field_snd(C, SampleVertices(C, k), vertices))),
-        (orders(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags), field_fst(condition(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), SampleTagged(C, condition, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), valid)), previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags), field_snd(condition(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), SampleTagged(C, condition, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), valid))));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+      tags : SampleTags(C, succ(k))
+    ) => fun (valid : SampleTagged(C, condition, succ(k), vertices, tags)) => typed(
+      (
+        related(
+          field_fst(C, SampleVertices(C, k), vertices),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))
+        ) and SampleAdjacent(C, related, k, field_snd(C, SampleVertices(C, k), vertices))
+      ),
+      (
+        orders(
+          field_fst(C, SampleVertices(C, k), vertices),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+          field_fst(C, SampleTags(C, k), tags),
+          field_fst(
+            condition(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), tags)
+            ),
+            SampleTagged(
+              C, condition, k, field_snd(C, SampleVertices(C, k), vertices),
+              field_snd(C, SampleTags(C, k), tags)
+            ), valid
+          )
+        ),
+        previous(
+          field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags),
+          field_snd(
+            condition(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), tags)
+            ),
+            SampleTagged(
+              C, condition, k, field_snd(C, SampleVertices(C, k), vertices),
+              field_snd(C, SampleTags(C, k), tags)
+            ), valid
+          )
+        )
+      )
+    );
   };
 }
 
 def sample_left_tags(C : U1, n : Nat) =
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k)) {
     zero => fun (vertices : C) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) =>
-      typed((C and SampleTags(C, k)), (field_fst(C, SampleVertices(C, k), vertices), previous(field_snd(C, SampleVertices(C, k), vertices))));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => typed(
+      (C and SampleTags(C, k)),
+      (
+        field_fst(C, SampleVertices(C, k), vertices),
+        previous(field_snd(C, SampleVertices(C, k), vertices))
+      )
+    );
   };
 
-theorem sample_left_tags_valid(C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
-  admits : (forall a : C, forall b : C, related(a, b) -> condition(a, b, a)), n : Nat) :
-  forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices) -> SampleTagged(C, condition, n, vertices, sample_left_tags(C, n, vertices)) {
-  exact induction n as k return (forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices) -> SampleTagged(C, condition, k, vertices, sample_left_tags(C, k, vertices))) {
+theorem sample_left_tags_valid(
+  C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
+  admits : (forall a : C, forall b : C, related(a, b) -> condition(a, b, a)), n : Nat
+) : forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices)
+-> SampleTagged(C, condition, n, vertices, sample_left_tags(C, n, vertices)) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices)
+    -> SampleTagged(C, condition, k, vertices, sample_left_tags(C, k, vertices))
+  ) {
     zero => fun (vertices : C) => fun (ordered : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (ordered : SampleAdjacent(C, related, succ(k), vertices)) =>
-      typed((condition(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleVertices(C, k), vertices)) and SampleTagged(C, condition, k, field_snd(C, SampleVertices(C, k), vertices), sample_left_tags(C, k, field_snd(C, SampleVertices(C, k), vertices)))),
-        (admits(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(related(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))), SampleAdjacent(C, related, k, field_snd(C, SampleVertices(C, k), vertices)), ordered)), previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(related(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))), SampleAdjacent(C, related, k, field_snd(C, SampleVertices(C, k), vertices)), ordered))));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+      ordered : SampleAdjacent(C, related, succ(k), vertices)
+    ) => typed(
+      (
+        condition(
+          field_fst(C, SampleVertices(C, k), vertices),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+          field_fst(C, SampleVertices(C, k), vertices)
+        )
+        and SampleTagged(
+          C, condition, k, field_snd(C, SampleVertices(C, k), vertices),
+          sample_left_tags(C, k, field_snd(C, SampleVertices(C, k), vertices))
+        )
+      ),
+      (
+        admits(
+          field_fst(C, SampleVertices(C, k), vertices),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+          field_fst(
+            related(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))
+            ), SampleAdjacent(C, related, k, field_snd(C, SampleVertices(C, k), vertices)), ordered
+          )
+        ),
+        previous(
+          field_snd(C, SampleVertices(C, k), vertices),
+          field_snd(
+            related(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))
+            ), SampleAdjacent(C, related, k, field_snd(C, SampleVertices(C, k), vertices)), ordered
+          )
+        )
+      )
+    );
   };
 }
 
 def sample_right_tags(C : U1, n : Nat) =
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k)) {
     zero => fun (vertices : C) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) =>
-      typed((C and SampleTags(C, k)), (sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), previous(field_snd(C, SampleVertices(C, k), vertices))));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => typed(
+      (C and SampleTags(C, k)),
+      (
+        sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+        previous(field_snd(C, SampleVertices(C, k), vertices))
+      )
+    );
   };
 
-theorem sample_right_tags_valid(C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
-  admits : (forall a : C, forall b : C, related(a, b) -> condition(a, b, b)), n : Nat) :
-  forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices) -> SampleTagged(C, condition, n, vertices, sample_right_tags(C, n, vertices)) {
-  exact induction n as k return (forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices) -> SampleTagged(C, condition, k, vertices, sample_right_tags(C, k, vertices))) {
+theorem sample_right_tags_valid(
+  C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
+  admits : (forall a : C, forall b : C, related(a, b) -> condition(a, b, b)), n : Nat
+) : forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices)
+-> SampleTagged(C, condition, n, vertices, sample_right_tags(C, n, vertices)) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices)
+    -> SampleTagged(C, condition, k, vertices, sample_right_tags(C, k, vertices))
+  ) {
     zero => fun (vertices : C) => fun (ordered : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (ordered : SampleAdjacent(C, related, succ(k), vertices)) =>
-      typed((condition(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))) and SampleTagged(C, condition, k, field_snd(C, SampleVertices(C, k), vertices), sample_right_tags(C, k, field_snd(C, SampleVertices(C, k), vertices)))),
-        (admits(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(related(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))), SampleAdjacent(C, related, k, field_snd(C, SampleVertices(C, k), vertices)), ordered)), previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(related(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))), SampleAdjacent(C, related, k, field_snd(C, SampleVertices(C, k), vertices)), ordered))));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+      ordered : SampleAdjacent(C, related, succ(k), vertices)
+    ) => typed(
+      (
+        condition(
+          field_fst(C, SampleVertices(C, k), vertices),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))
+        )
+        and SampleTagged(
+          C, condition, k, field_snd(C, SampleVertices(C, k), vertices),
+          sample_right_tags(C, k, field_snd(C, SampleVertices(C, k), vertices))
+        )
+      ),
+      (
+        admits(
+          field_fst(C, SampleVertices(C, k), vertices),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+          field_fst(
+            related(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))
+            ), SampleAdjacent(C, related, k, field_snd(C, SampleVertices(C, k), vertices)), ordered
+          )
+        ),
+        previous(
+          field_snd(C, SampleVertices(C, k), vertices),
+          field_snd(
+            related(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))
+            ), SampleAdjacent(C, related, k, field_snd(C, SampleVertices(C, k), vertices)), ordered
+          )
+        )
+      )
+    );
   };
 }

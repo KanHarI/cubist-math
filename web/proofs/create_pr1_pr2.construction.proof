@@ -17,17 +17,23 @@ construction create_pr1_pr2 {
   private s0014_Vble = variable(s0013_CtxExt);
   private s0015_CtxExt = assume(s0012_SigmaForm, none);
   private s0016_Vble = variable(s0015_CtxExt);
-  private s0017_SigmaElim = pair_eliminate(s0004_Vble, s0010_Vble, s0016_Vble, none, s0009_CtxExt, s0013_CtxExt);
+  private s0017_SigmaElim = pair_eliminate(
+    s0004_Vble, s0010_Vble, s0016_Vble, none, s0009_CtxExt, s0013_CtxExt
+  );
   private s0018_PiIntro = function_intro(s0012_SigmaForm, s0017_SigmaElim, s0015_CtxExt);
   private s0019_PiIntro = function_intro(s0006_PiForm, s0018_PiIntro, s0007_CtxExt);
   private s0020_PiIntro = function_intro(s0001_UIntro0, s0019_PiIntro, s0002_CtxExt);
   private s0021_SigmaIntro = pair_intro(s0010_Vble, s0011_PiElim, s0014_Vble, s0009_CtxExt);
   private s0022_PiComp = function_compute(s0017_SigmaElim, s0021_SigmaIntro, s0015_CtxExt);
-  private s0023_SigmaComp = pair_compute(s0004_Vble, s0010_Vble, s0010_Vble, s0014_Vble, none, s0009_CtxExt, none);
+  private s0023_SigmaComp = pair_compute(
+    s0004_Vble, s0010_Vble, s0010_Vble, s0014_Vble, none, s0009_CtxExt, none
+  );
   private s0024_DefEqSwp = definition_symmetry(s0023_SigmaComp);
   private s0025_Subs = substitute(s0014_Vble, s0024_DefEqSwp);
   private s0026_PiElim = apply(s0008_Vble, s0017_SigmaElim);
-  private s0027_SigmaElim = pair_eliminate(s0026_PiElim, s0025_Subs, s0016_Vble, s0015_CtxExt, s0009_CtxExt, s0013_CtxExt);
+  private s0027_SigmaElim = pair_eliminate(
+    s0026_PiElim, s0025_Subs, s0016_Vble, s0015_CtxExt, s0009_CtxExt, s0013_CtxExt
+  );
   private s0028_PiIntro = function_intro(s0012_SigmaForm, s0027_SigmaElim, s0015_CtxExt);
   private s0029_PiIntro = function_intro(s0006_PiForm, s0028_PiIntro, s0007_CtxExt);
   private s0030_PiIntro = function_intro(s0001_UIntro0, s0029_PiIntro, s0002_CtxExt);

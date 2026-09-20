@@ -175,10 +175,10 @@ full homotopy type. Reversing a generator negates its period.
 ## Assumptions and modules
 
 No kernel rules or new axiom declarations were added. The generation proof uses
-the existing univalence and its computation principle, function extensionality,
+the single univalence axiom, function extensionality,
 and propositional truncation (constructor, introduction, propositionhood, and
 elimination). It uses neither excluded middle nor choice. The noncommutativity
-witness only needs univalence and its computation principle; its zero-winding
+witness only needs univalence; its zero-winding
 proof additionally uses function extensionality.
 
 | Module | Purpose |

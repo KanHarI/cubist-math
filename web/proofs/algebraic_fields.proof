@@ -7,36 +7,270 @@ def FieldOps(A : U0) = A and A and (A -> A) and (A -> A -> A) and (A -> A -> A);
 def af_zero(A : U0, ops : FieldOps(A)) : A {
   exact fst((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), ops);
 }
+
 def af_one(A : U0, ops : FieldOps(A)) : A {
-  exact fst((A), ((A -> A) and (A -> A -> A) and (A -> A -> A)), snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), ops));
+  exact fst(
+    (A), ((A -> A) and (A -> A -> A) and (A -> A -> A)),
+    snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), ops)
+  );
 }
+
 def af_neg(A : U0, ops : FieldOps(A)) : A -> A {
-  exact fst((A -> A), ((A -> A -> A) and (A -> A -> A)), snd((A), ((A -> A) and (A -> A -> A) and (A -> A -> A)), snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), ops)));
+  exact fst(
+    (A -> A), ((A -> A -> A) and (A -> A -> A)),
+    snd(
+      (A), ((A -> A) and (A -> A -> A) and (A -> A -> A)),
+      snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), ops)
+    )
+  );
 }
+
 def af_add(A : U0, ops : FieldOps(A)) : A -> A -> A {
-  exact fst((A -> A -> A), ((A -> A -> A)), snd((A -> A), ((A -> A -> A) and (A -> A -> A)), snd((A), ((A -> A) and (A -> A -> A) and (A -> A -> A)), snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), ops))));
+  exact fst(
+    (A -> A -> A), ((A -> A -> A)),
+    snd(
+      (A -> A), ((A -> A -> A) and (A -> A -> A)),
+      snd(
+        (A), ((A -> A) and (A -> A -> A) and (A -> A -> A)),
+        snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), ops)
+      )
+    )
+  );
 }
+
 def af_mul(A : U0, ops : FieldOps(A)) : A -> A -> A {
-  exact snd((A -> A -> A), ((A -> A -> A)), snd((A -> A), ((A -> A -> A) and (A -> A -> A)), snd((A), ((A -> A) and (A -> A -> A) and (A -> A -> A)), snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), ops))));
+  exact snd(
+    (A -> A -> A), ((A -> A -> A)),
+    snd(
+      (A -> A), ((A -> A -> A) and (A -> A -> A)),
+      snd(
+        (A), ((A -> A) and (A -> A -> A) and (A -> A -> A)),
+        snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), ops)
+      )
+    )
+  );
 }
+
 def field_ops(A : U0, zero : A, one : A, neg : A -> A, add : A -> A -> A, mul : A -> A -> A) =
-  typed(FieldOps(A), (zero, (one, (neg, (add, mul)))));
+  typed(FieldOps(A), (zero, one, neg, add, mul));
 def FieldAddLaws(A : U0, ops : FieldOps(A)) =
-  (forall x : A, forall y : A, forall z : A, af_add(A, ops, af_add(A, ops, x, y), z) = af_add(A, ops, x, af_add(A, ops, y, z))) and
-  (forall x : A, forall y : A, af_add(A, ops, x, y) = af_add(A, ops, y, x)) and
-  (forall x : A, af_add(A, ops, af_zero(A, ops), x) = x) and
-  (forall x : A, af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops));
-theorem fieldaddlaws_prop(A : U0, ops : FieldOps(A), setA : IsSet(A)) : Proposition(FieldAddLaws(A, ops)) {
-  exact group_product_prop((forall x : A, forall y : A, forall z : A, af_add(A, ops, af_add(A, ops, x, y), z) = af_add(A, ops, x, af_add(A, ops, y, z))), ((forall x : A, forall y : A, af_add(A, ops, x, y) = af_add(A, ops, y, x)) and (forall x : A, af_add(A, ops, af_zero(A, ops), x) = x) and (forall x : A, af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops))), forall_prop(A, (fun (x : A) => forall y : A, forall z : A, af_add(A, ops, af_add(A, ops, x, y), z) = af_add(A, ops, x, af_add(A, ops, y, z))), (fun (x : A) => forall_prop(A, (fun (y : A) => forall z : A, af_add(A, ops, af_add(A, ops, x, y), z) = af_add(A, ops, x, af_add(A, ops, y, z))), (fun (y : A) => forall_prop(A, (fun (z : A) => af_add(A, ops, af_add(A, ops, x, y), z) = af_add(A, ops, x, af_add(A, ops, y, z))), (fun (z : A) => setA(af_add(A, ops, af_add(A, ops, x, y), z), af_add(A, ops, x, af_add(A, ops, y, z))))))))), group_product_prop((forall x : A, forall y : A, af_add(A, ops, x, y) = af_add(A, ops, y, x)), ((forall x : A, af_add(A, ops, af_zero(A, ops), x) = x) and (forall x : A, af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops))), forall_prop(A, (fun (x : A) => forall y : A, af_add(A, ops, x, y) = af_add(A, ops, y, x)), (fun (x : A) => forall_prop(A, (fun (y : A) => af_add(A, ops, x, y) = af_add(A, ops, y, x)), (fun (y : A) => setA(af_add(A, ops, x, y), af_add(A, ops, y, x)))))), group_product_prop((forall x : A, af_add(A, ops, af_zero(A, ops), x) = x), ((forall x : A, af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops))), forall_prop(A, (fun (x : A) => af_add(A, ops, af_zero(A, ops), x) = x), (fun (x : A) => setA(af_add(A, ops, af_zero(A, ops), x), x))), forall_prop(A, (fun (x : A) => af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops)), (fun (x : A) => setA(af_add(A, ops, af_neg(A, ops, x), x), af_zero(A, ops)))))));
+  (
+    forall x : A, forall y : A, forall z : A,
+    af_add(A, ops, af_add(A, ops, x, y), z) = af_add(A, ops, x, af_add(A, ops, y, z))
+  ) and (forall x : A, forall y : A, af_add(A, ops, x, y) = af_add(A, ops, y, x))
+  and (forall x : A, af_add(A, ops, af_zero(A, ops), x) = x)
+  and (forall x : A, af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops));
+theorem fieldaddlaws_prop(A : U0, ops : FieldOps(A), setA : IsSet(A)) : Proposition(
+  FieldAddLaws(A, ops)
+) {
+  exact product_prop(
+    (
+      forall x : A, forall y : A, forall z : A,
+      af_add(A, ops, af_add(A, ops, x, y), z) = af_add(A, ops, x, af_add(A, ops, y, z))
+    ),
+    (
+      (forall x : A, forall y : A, af_add(A, ops, x, y) = af_add(A, ops, y, x))
+      and (forall x : A, af_add(A, ops, af_zero(A, ops), x) = x)
+      and (forall x : A, af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops))
+    ),
+    forall_prop(
+      A,
+      (
+        fun (x : A) => forall y : A, forall z : A,
+        af_add(A, ops, af_add(A, ops, x, y), z) = af_add(A, ops, x, af_add(A, ops, y, z))
+      ),
+      (
+        fun (x : A) => forall_prop(
+          A,
+          (
+            fun (y : A) => forall z : A,
+            af_add(A, ops, af_add(A, ops, x, y), z) = af_add(A, ops, x, af_add(A, ops, y, z))
+          ),
+          (
+            fun (y : A) => forall_prop(
+              A,
+              (
+                fun (z : A) => af_add(A, ops, af_add(A, ops, x, y), z) = af_add(
+                  A, ops, x, af_add(A, ops, y, z)
+                )
+              ),
+              (
+                fun (z : A) => setA(
+                  af_add(A, ops, af_add(A, ops, x, y), z), af_add(A, ops, x, af_add(A, ops, y, z))
+                )
+              )
+            )
+          )
+        )
+      )
+    ),
+    product_prop(
+      (forall x : A, forall y : A, af_add(A, ops, x, y) = af_add(A, ops, y, x)),
+      (
+        (forall x : A, af_add(A, ops, af_zero(A, ops), x) = x)
+        and (forall x : A, af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops))
+      ),
+      forall_prop(
+        A, (fun (x : A) => forall y : A, af_add(A, ops, x, y) = af_add(A, ops, y, x)),
+        (
+          fun (x : A) => forall_prop(
+            A, (fun (y : A) => af_add(A, ops, x, y) = af_add(A, ops, y, x)),
+            (fun (y : A) => setA(af_add(A, ops, x, y), af_add(A, ops, y, x)))
+          )
+        )
+      ),
+      product_prop(
+        (forall x : A, af_add(A, ops, af_zero(A, ops), x) = x),
+        ((forall x : A, af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops))),
+        forall_prop(
+          A, (fun (x : A) => af_add(A, ops, af_zero(A, ops), x) = x),
+          (fun (x : A) => setA(af_add(A, ops, af_zero(A, ops), x), x))
+        ),
+        forall_prop(
+          A, (fun (x : A) => af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops)),
+          (fun (x : A) => setA(af_add(A, ops, af_neg(A, ops, x), x), af_zero(A, ops)))
+        )
+      )
+    )
+  );
 }
+
 def FieldMulLaws(A : U0, ops : FieldOps(A)) =
-  (forall x : A, forall y : A, forall z : A, af_mul(A, ops, af_mul(A, ops, x, y), z) = af_mul(A, ops, x, af_mul(A, ops, y, z))) and
-  (forall x : A, forall y : A, af_mul(A, ops, x, y) = af_mul(A, ops, y, x)) and
-  (forall x : A, af_mul(A, ops, af_one(A, ops), x) = x) and
-  (forall x : A, forall y : A, forall z : A, af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)));
-theorem fieldmullaws_prop(A : U0, ops : FieldOps(A), setA : IsSet(A)) : Proposition(FieldMulLaws(A, ops)) {
-  exact group_product_prop((forall x : A, forall y : A, forall z : A, af_mul(A, ops, af_mul(A, ops, x, y), z) = af_mul(A, ops, x, af_mul(A, ops, y, z))), ((forall x : A, forall y : A, af_mul(A, ops, x, y) = af_mul(A, ops, y, x)) and (forall x : A, af_mul(A, ops, af_one(A, ops), x) = x) and (forall x : A, forall y : A, forall z : A, af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)))), forall_prop(A, (fun (x : A) => forall y : A, forall z : A, af_mul(A, ops, af_mul(A, ops, x, y), z) = af_mul(A, ops, x, af_mul(A, ops, y, z))), (fun (x : A) => forall_prop(A, (fun (y : A) => forall z : A, af_mul(A, ops, af_mul(A, ops, x, y), z) = af_mul(A, ops, x, af_mul(A, ops, y, z))), (fun (y : A) => forall_prop(A, (fun (z : A) => af_mul(A, ops, af_mul(A, ops, x, y), z) = af_mul(A, ops, x, af_mul(A, ops, y, z))), (fun (z : A) => setA(af_mul(A, ops, af_mul(A, ops, x, y), z), af_mul(A, ops, x, af_mul(A, ops, y, z))))))))), group_product_prop((forall x : A, forall y : A, af_mul(A, ops, x, y) = af_mul(A, ops, y, x)), ((forall x : A, af_mul(A, ops, af_one(A, ops), x) = x) and (forall x : A, forall y : A, forall z : A, af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)))), forall_prop(A, (fun (x : A) => forall y : A, af_mul(A, ops, x, y) = af_mul(A, ops, y, x)), (fun (x : A) => forall_prop(A, (fun (y : A) => af_mul(A, ops, x, y) = af_mul(A, ops, y, x)), (fun (y : A) => setA(af_mul(A, ops, x, y), af_mul(A, ops, y, x)))))), group_product_prop((forall x : A, af_mul(A, ops, af_one(A, ops), x) = x), ((forall x : A, forall y : A, forall z : A, af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)))), forall_prop(A, (fun (x : A) => af_mul(A, ops, af_one(A, ops), x) = x), (fun (x : A) => setA(af_mul(A, ops, af_one(A, ops), x), x))), forall_prop(A, (fun (x : A) => forall y : A, forall z : A, af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z))), (fun (x : A) => forall_prop(A, (fun (y : A) => forall z : A, af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z))), (fun (y : A) => forall_prop(A, (fun (z : A) => af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z))), (fun (z : A) => setA(af_mul(A, ops, x, af_add(A, ops, y, z)), af_add(A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z))))))))))));
+  (
+    forall x : A, forall y : A, forall z : A,
+    af_mul(A, ops, af_mul(A, ops, x, y), z) = af_mul(A, ops, x, af_mul(A, ops, y, z))
+  ) and (forall x : A, forall y : A, af_mul(A, ops, x, y) = af_mul(A, ops, y, x))
+  and (forall x : A, af_mul(A, ops, af_one(A, ops), x) = x)
+  and (
+    forall x : A, forall y : A, forall z : A,
+    af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(
+      A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)
+    )
+  );
+theorem fieldmullaws_prop(A : U0, ops : FieldOps(A), setA : IsSet(A)) : Proposition(
+  FieldMulLaws(A, ops)
+) {
+  exact product_prop(
+    (
+      forall x : A, forall y : A, forall z : A,
+      af_mul(A, ops, af_mul(A, ops, x, y), z) = af_mul(A, ops, x, af_mul(A, ops, y, z))
+    ),
+    (
+      (forall x : A, forall y : A, af_mul(A, ops, x, y) = af_mul(A, ops, y, x))
+      and (forall x : A, af_mul(A, ops, af_one(A, ops), x) = x)
+      and (
+        forall x : A, forall y : A, forall z : A,
+        af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(
+          A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)
+        )
+      )
+    ),
+    forall_prop(
+      A,
+      (
+        fun (x : A) => forall y : A, forall z : A,
+        af_mul(A, ops, af_mul(A, ops, x, y), z) = af_mul(A, ops, x, af_mul(A, ops, y, z))
+      ),
+      (
+        fun (x : A) => forall_prop(
+          A,
+          (
+            fun (y : A) => forall z : A,
+            af_mul(A, ops, af_mul(A, ops, x, y), z) = af_mul(A, ops, x, af_mul(A, ops, y, z))
+          ),
+          (
+            fun (y : A) => forall_prop(
+              A,
+              (
+                fun (z : A) => af_mul(A, ops, af_mul(A, ops, x, y), z) = af_mul(
+                  A, ops, x, af_mul(A, ops, y, z)
+                )
+              ),
+              (
+                fun (z : A) => setA(
+                  af_mul(A, ops, af_mul(A, ops, x, y), z), af_mul(A, ops, x, af_mul(A, ops, y, z))
+                )
+              )
+            )
+          )
+        )
+      )
+    ),
+    product_prop(
+      (forall x : A, forall y : A, af_mul(A, ops, x, y) = af_mul(A, ops, y, x)),
+      (
+        (forall x : A, af_mul(A, ops, af_one(A, ops), x) = x)
+        and (
+          forall x : A, forall y : A, forall z : A,
+          af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(
+            A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)
+          )
+        )
+      ),
+      forall_prop(
+        A, (fun (x : A) => forall y : A, af_mul(A, ops, x, y) = af_mul(A, ops, y, x)),
+        (
+          fun (x : A) => forall_prop(
+            A, (fun (y : A) => af_mul(A, ops, x, y) = af_mul(A, ops, y, x)),
+            (fun (y : A) => setA(af_mul(A, ops, x, y), af_mul(A, ops, y, x)))
+          )
+        )
+      ),
+      product_prop(
+        (forall x : A, af_mul(A, ops, af_one(A, ops), x) = x),
+        (
+          (
+            forall x : A, forall y : A, forall z : A,
+            af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(
+              A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)
+            )
+          )
+        ),
+        forall_prop(
+          A, (fun (x : A) => af_mul(A, ops, af_one(A, ops), x) = x),
+          (fun (x : A) => setA(af_mul(A, ops, af_one(A, ops), x), x))
+        ),
+        forall_prop(
+          A,
+          (
+            fun (x : A) => forall y : A, forall z : A,
+            af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(
+              A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)
+            )
+          ),
+          (
+            fun (x : A) => forall_prop(
+              A,
+              (
+                fun (y : A) => forall z : A,
+                af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(
+                  A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)
+                )
+              ),
+              (
+                fun (y : A) => forall_prop(
+                  A,
+                  (
+                    fun (z : A) => af_mul(A, ops, x, af_add(A, ops, y, z)) = af_add(
+                      A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)
+                    )
+                  ),
+                  (
+                    fun (z : A) => setA(
+                      af_mul(A, ops, x, af_add(A, ops, y, z)),
+                      af_add(A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z))
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
 }
+
 def FieldRingLaws(A : U0, ops : FieldOps(A)) = FieldAddLaws(A, ops) and FieldMulLaws(A, ops);
 def FieldNonzero(A : U0, ops : FieldOps(A), x : A) = (x = af_zero(A, ops)) -> Void;
 def FieldInverseLaws(A : U0, ops : FieldOps(A)) =
@@ -44,42 +278,122 @@ def FieldInverseLaws(A : U0, ops : FieldOps(A)) =
 def AlgebraicFieldLaws(A : U0, ops : FieldOps(A)) =
   FieldRingLaws(A, ops) and FieldNonzero(A, ops, af_one(A, ops)) and FieldInverseLaws(A, ops);
 def FieldData(A : U0) = exists ops : FieldOps(A), AlgebraicFieldLaws(A, ops);
-def field_data_ops(A : U0, data : FieldData(A)) = sigma_first(FieldOps(A), AlgebraicFieldLaws(A), data);
-def field_data_laws(A : U0, data : FieldData(A)) = sigma_second(FieldOps(A), AlgebraicFieldLaws(A), data);
+def field_data_ops(A : U0, data : FieldData(A)) =
+  sigma_first(FieldOps(A), AlgebraicFieldLaws(A), data);
+def field_data_laws(A : U0, data : FieldData(A)) =
+  sigma_second(FieldOps(A), AlgebraicFieldLaws(A), data);
 def field_ring_data(A : U0, ops : FieldOps(A), laws : AlgebraicFieldLaws(A, ops)) =
-  fst(FieldRingLaws(A, ops), (FieldNonzero(A, ops, af_one(A, ops)) and FieldInverseLaws(A, ops)), laws);
+  fst(
+    FieldRingLaws(A, ops), (FieldNonzero(A, ops, af_one(A, ops)) and FieldInverseLaws(A, ops)), laws
+  );
 
 // Reuse the existing commutative-ring development at its checked small instance.
-def algebraic_field_ring(A : U0, ops : FieldOps(A), setA : IsSet(A), laws : FieldRingLaws(A, ops)) :
-  CommutativeRing(A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops)) {
+def algebraic_field_ring(A : U0, ops : FieldOps(A), setA : IsSet(A), laws : FieldRingLaws(A, ops)) : CommutativeRing(
+  A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops)
+) {
   exact (setA, laws);
 }
 
-theorem algebraic_inverse_unique(A : U0, ops : FieldOps(A), setA : IsSet(A), laws : FieldRingLaws(A, ops),
-  x : A, y : A, z : A, hy : af_mul(A, ops, x, y) = af_one(A, ops), hz : af_mul(A, ops, x, z) = af_one(A, ops)) : y = z {
+theorem algebraic_inverse_unique(
+  A : U0, ops : FieldOps(A), setA : IsSet(A), laws : FieldRingLaws(A, ops), x : A, y : A, z : A,
+  hy : af_mul(A, ops, x, y) = af_one(A, ops), hz : af_mul(A, ops, x, z) = af_one(A, ops)
+) : y = z {
   let ring = algebraic_field_ring(A, ops, setA, laws);
-  exact trans(sym(ring_mul_one(A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops), ring, y)),
-    trans(cong((fun (v : A) => af_mul(A, ops, v, y)), sym(trans(ring_mul_comm(A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops), ring, z, x), hz))),
-      trans(ring_mul_assoc(A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops), ring, z, x, y),
-        trans(cong(af_mul(A, ops, z), hy), ring_mul_one_right(A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops), ring, z)))));
+  exact trans(
+    sym(
+      ring_mul_one(
+        A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops), ring, y
+      )
+    ),
+    trans(
+      cong(
+        (fun (v : A) => af_mul(A, ops, v, y)),
+        sym(
+          trans(
+            ring_mul_comm(
+              A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops),
+              ring, z, x
+            ), hz
+          )
+        )
+      ),
+      trans(
+        ring_mul_assoc(
+          A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops), ring,
+          z, x, y
+        ),
+        trans(
+          cong(af_mul(A, ops, z), hy),
+          ring_mul_one_right(
+            A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops),
+            ring, z
+          )
+        )
+      )
+    )
+  );
 }
-theorem algebraic_inverse_evidence_prop(A : U0, ops : FieldOps(A), setA : IsSet(A), laws : FieldRingLaws(A, ops), x : A) :
-  Proposition(exists y : A, af_mul(A, ops, x, y) = af_one(A, ops)) {
-  intro p; intro q;
+
+theorem algebraic_inverse_evidence_prop(
+  A : U0, ops : FieldOps(A), setA : IsSet(A), laws : FieldRingLaws(A, ops), x : A
+) : Proposition(exists y : A, af_mul(A, ops, x, y) = af_one(A, ops)) {
+  intro p;
+  intro q;
   let P = fun (y : A) => af_mul(A, ops, x, y) = af_one(A, ops);
-  exact subtype_ext(A, P, (fun (y : A) => setA(af_mul(A, ops, x, y), af_one(A, ops))), p, q,
-    algebraic_inverse_unique(A, ops, setA, laws, x, sigma_first(A, P, p), sigma_first(A, P, q), sigma_second(A, P, p), sigma_second(A, P, q)));
+  exact subtype_ext(
+    A, P, (fun (y : A) => setA(af_mul(A, ops, x, y), af_one(A, ops))), p, q,
+    algebraic_inverse_unique(
+      A, ops, setA, laws, x, sigma_first(A, P, p), sigma_first(A, P, q), sigma_second(A, P, p),
+      sigma_second(A, P, q)
+    )
+  );
 }
-theorem algebraic_field_laws_prop(A : U0, ops : FieldOps(A), setA : IsSet(A), p : AlgebraicFieldLaws(A, ops), q : AlgebraicFieldLaws(A, ops)) : p = q {
+
+theorem algebraic_field_laws_prop(
+  A : U0, ops : FieldOps(A), setA : IsSet(A), p : AlgebraicFieldLaws(A, ops),
+  q : AlgebraicFieldLaws(A, ops)
+) : p = q {
   let ring = field_ring_data(A, ops, p);
-  let ringProp = group_product_prop(FieldAddLaws(A, ops), FieldMulLaws(A, ops), fieldaddlaws_prop(A, ops, setA), fieldmullaws_prop(A, ops, setA));
-  let nontrivialProp = forall_prop((af_one(A, ops) = af_zero(A, ops)), (fun (e : af_one(A, ops) = af_zero(A, ops)) => Void),
-    (fun (e : af_one(A, ops) = af_zero(A, ops)) => fun (v : Void) => fun (w : Void) => typed((v = w), absurd(v))));
-  let inverseProp = forall_prop(A, (fun (x : A) => FieldNonzero(A, ops, x) -> exists y : A, af_mul(A, ops, x, y) = af_one(A, ops)),
-    (fun (x : A) => forall_prop(FieldNonzero(A, ops, x), (fun (h : FieldNonzero(A, ops, x)) => exists y : A, af_mul(A, ops, x, y) = af_one(A, ops)),
-      (fun (h : FieldNonzero(A, ops, x)) => algebraic_inverse_evidence_prop(A, ops, setA, ring, x)))));
-  exact group_product_prop(FieldRingLaws(A, ops), (FieldNonzero(A, ops, af_one(A, ops)) and FieldInverseLaws(A, ops)), ringProp,
-    group_product_prop(FieldNonzero(A, ops, af_one(A, ops)), FieldInverseLaws(A, ops), nontrivialProp, inverseProp))(p, q);
+  let ringProp =
+    product_prop(
+      FieldAddLaws(A, ops), FieldMulLaws(A, ops), fieldaddlaws_prop(A, ops, setA),
+      fieldmullaws_prop(A, ops, setA)
+    );
+  let nontrivialProp =
+    forall_prop(
+      (af_one(A, ops) = af_zero(A, ops)), (fun (e : af_one(A, ops) = af_zero(A, ops)) => Void),
+      (
+        fun (e : af_one(A, ops) = af_zero(A, ops)) => fun (v : Void) => fun (w : Void) => typed(
+          (v = w), absurd(v)
+        )
+      )
+    );
+  let inverseProp =
+    forall_prop(
+      A,
+      (
+        fun (x : A) => FieldNonzero(A, ops, x) -> exists y : A,
+        af_mul(A, ops, x, y) = af_one(A, ops)
+      ),
+      (
+        fun (x : A) => forall_prop(
+          FieldNonzero(A, ops, x),
+          (fun (h : FieldNonzero(A, ops, x)) => exists y : A, af_mul(A, ops, x, y) = af_one(A, ops)),
+          (
+            fun (h : FieldNonzero(A, ops, x)) => algebraic_inverse_evidence_prop(
+              A, ops, setA, ring, x
+            )
+          )
+        )
+      )
+    );
+  exact product_prop(
+    FieldRingLaws(A, ops), (FieldNonzero(A, ops, af_one(A, ops)) and FieldInverseLaws(A, ops)),
+    ringProp,
+    product_prop(
+      FieldNonzero(A, ops, af_one(A, ops)), FieldInverseLaws(A, ops), nontrivialProp, inverseProp
+    )
+  )(p, q);
 }
 
 def AlgebraicField = Structure(FieldData);
@@ -88,45 +402,185 @@ def algebraic_field(A : U0, ops : FieldOps(A), setA : IsSet(A), laws : Algebraic
 def af_carrier(F : AlgebraicField) = structure_carrier(FieldData, F);
 def af_operations(F : AlgebraicField) = field_data_ops(af_carrier(F), structure_data(FieldData, F));
 def af_laws(F : AlgebraicField) = field_data_laws(af_carrier(F), structure_data(FieldData, F));
-def af_set(F : AlgebraicField) : IsSet(af_carrier(F)) { exact structure_set(FieldData, F); }
-theorem algebra_pair_ext(A : U0, B : U0, p : A and B, q : A and B,
-  first : fst(A, B, p) = fst(A, B, q), second : snd(A, B, p) = snd(A, B, q)) : p = q {
-  exact trans(sym(sigma_eta(A, (fun (a : A) => B), p)),
-    trans(product_path(A, B, fst(A, B, p), fst(A, B, q), first, snd(A, B, p), snd(A, B, q), second), sigma_eta(A, (fun (a : A) => B), q)));
+def af_set(F : AlgebraicField) : IsSet(af_carrier(F)) {
+  exact structure_set(FieldData, F);
 }
+
+theorem algebra_pair_ext(
+  A : U0, B : U0, p : A and B, q : A and B, first : fst(A, B, p) = fst(A, B, q),
+  second : snd(A, B, p) = snd(A, B, q)
+) : p = q {
+  exact trans(
+    sym(sigma_eta(A, (fun (a : A) => B), p)),
+    trans(
+      product_path(A, B, fst(A, B, p), fst(A, B, q), first, snd(A, B, p), snd(A, B, q), second),
+      sigma_eta(A, (fun (a : A) => B), q)
+    )
+  );
+}
+
 def FieldOpsPreserved(A : U0, B : U0, f : A -> B, a : FieldOps(A), b : FieldOps(B)) =
-  (f(af_zero(A, a)) = af_zero(B, b)) and
-  (f(af_one(A, a)) = af_one(B, b)) and
-  (forall x : A, f(af_neg(A, a, x)) = af_neg(B, b, f(x))) and
-  (forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y))) and
-  (forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)));
-theorem field_ops_preserved_prop(A : U0, B : U0, setB : IsSet(B), f : A -> B, a : FieldOps(A), b : FieldOps(B)) :
-  Proposition(FieldOpsPreserved(A, B, f, a, b)) {
-  exact group_product_prop((f(af_zero(A, a)) = af_zero(B, b)), ((f(af_one(A, a)) = af_one(B, b)) and (forall x : A, f(af_neg(A, a, x)) = af_neg(B, b, f(x))) and (forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y))) and (forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)))), setB(f(af_zero(A, a)), af_zero(B, b)), group_product_prop((f(af_one(A, a)) = af_one(B, b)), ((forall x : A, f(af_neg(A, a, x)) = af_neg(B, b, f(x))) and (forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y))) and (forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)))), setB(f(af_one(A, a)), af_one(B, b)), group_product_prop((forall x : A, f(af_neg(A, a, x)) = af_neg(B, b, f(x))), ((forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y))) and (forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)))), forall_prop(A, (fun (x : A) => f(af_neg(A, a, x)) = af_neg(B, b, f(x))), (fun (x : A) => setB(f(af_neg(A, a, x)), af_neg(B, b, f(x))))), group_product_prop((forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y))), ((forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)))), forall_prop(A, (fun (x : A) => forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y))), (fun (x : A) => forall_prop(A, (fun (y : A) => f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y))), (fun (y : A) => setB(f(af_add(A, a, x, y)), af_add(B, b, f(x), f(y))))))), forall_prop(A, (fun (x : A) => forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y))), (fun (x : A) => forall_prop(A, (fun (y : A) => f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y))), (fun (y : A) => setB(f(af_mul(A, a, x, y)), af_mul(B, b, f(x), f(y)))))))))));
+  (f(af_zero(A, a)) = af_zero(B, b)) and (f(af_one(A, a)) = af_one(B, b))
+  and (forall x : A, f(af_neg(A, a, x)) = af_neg(B, b, f(x)))
+  and (forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y)))
+  and (forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)));
+theorem field_ops_preserved_prop(
+  A : U0, B : U0, setB : IsSet(B), f : A -> B, a : FieldOps(A), b : FieldOps(B)
+) : Proposition(FieldOpsPreserved(A, B, f, a, b)) {
+  exact product_prop(
+    (f(af_zero(A, a)) = af_zero(B, b)),
+    (
+      (f(af_one(A, a)) = af_one(B, b)) and (forall x : A, f(af_neg(A, a, x)) = af_neg(B, b, f(x)))
+      and (forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y)))
+      and (forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)))
+    ), setB(f(af_zero(A, a)), af_zero(B, b)),
+    product_prop(
+      (f(af_one(A, a)) = af_one(B, b)),
+      (
+        (forall x : A, f(af_neg(A, a, x)) = af_neg(B, b, f(x)))
+        and (forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y)))
+        and (forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)))
+      ), setB(f(af_one(A, a)), af_one(B, b)),
+      product_prop(
+        (forall x : A, f(af_neg(A, a, x)) = af_neg(B, b, f(x))),
+        (
+          (forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y)))
+          and (forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)))
+        ),
+        forall_prop(
+          A, (fun (x : A) => f(af_neg(A, a, x)) = af_neg(B, b, f(x))),
+          (fun (x : A) => setB(f(af_neg(A, a, x)), af_neg(B, b, f(x))))
+        ),
+        product_prop(
+          (forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y))),
+          ((forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)))),
+          forall_prop(
+            A, (fun (x : A) => forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y))),
+            (
+              fun (x : A) => forall_prop(
+                A, (fun (y : A) => f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y))),
+                (fun (y : A) => setB(f(af_add(A, a, x, y)), af_add(B, b, f(x), f(y))))
+              )
+            )
+          ),
+          forall_prop(
+            A, (fun (x : A) => forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y))),
+            (
+              fun (x : A) => forall_prop(
+                A, (fun (y : A) => f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y))),
+                (fun (y : A) => setB(f(af_mul(A, a, x, y)), af_mul(B, b, f(x), f(y))))
+              )
+            )
+          )
+        )
+      )
+    )
+  );
 }
+
 def field_ops_identity(A : U0, a : FieldOps(A)) : FieldOpsPreserved(A, A, (fun (x : A) => x), a, a) {
-  exact (refl(af_zero(A, a)), (refl(af_one(A, a)), ((fun (x : A) => refl(af_neg(A, a, x))),
-    ((fun (x : A) => fun (y : A) => refl(af_add(A, a, x, y))), (fun (x : A) => fun (y : A) => refl(af_mul(A, a, x, y)))))));
+  exact (
+    refl(af_zero(A, a)), refl(af_one(A, a)), (fun (x : A) => refl(af_neg(A, a, x))),
+    (fun (x : A) => fun (y : A) => refl(af_add(A, a, x, y))),
+    (fun (x : A) => fun (y : A) => refl(af_mul(A, a, x, y)))
+  );
 }
-theorem field_ops_reflect(A : U0, a : FieldOps(A), b : FieldOps(A), preserves : FieldOpsPreserved(A, A, (fun (x : A) => x), a, b)) : a = b {
-  obtain (zeroPath, (onePath, (negPath, (addPath, mulPath)))) = preserves;
+
+theorem field_ops_reflect(
+  A : U0, a : FieldOps(A), b : FieldOps(A),
+  preserves : FieldOpsPreserved(A, A, (fun (x : A) => x), a, b)
+) : a = b {
+  obtain (zeroPath, onePath, negPath, addPath, mulPath) = preserves;
   let negEq = FunExt(U0, A, (fun (x : A) => A), af_neg(A, a), af_neg(A, b), negPath);
-  let addEq = FunExt(U0, A, (fun (x : A) => A -> A), af_add(A, a), af_add(A, b),
-    (fun (x : A) => FunExt(U0, A, (fun (y : A) => A), af_add(A, a, x), af_add(A, b, x), addPath(x))));
-  let mulEq = FunExt(U0, A, (fun (x : A) => A -> A), af_mul(A, a), af_mul(A, b),
-    (fun (x : A) => FunExt(U0, A, (fun (y : A) => A), af_mul(A, a, x), af_mul(A, b, x), mulPath(x))));
-  exact algebra_pair_ext((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), a, b, zeroPath, algebra_pair_ext((A), ((A -> A) and (A -> A -> A) and (A -> A -> A)), snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), a), snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), b), onePath, algebra_pair_ext((A -> A), ((A -> A -> A) and (A -> A -> A)), snd((A), ((A -> A) and (A -> A -> A) and (A -> A -> A)), snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), a)), snd((A), ((A -> A) and (A -> A -> A) and (A -> A -> A)), snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), b)), negEq, algebra_pair_ext((A -> A -> A), ((A -> A -> A)), snd((A -> A), ((A -> A -> A) and (A -> A -> A)), snd((A), ((A -> A) and (A -> A -> A) and (A -> A -> A)), snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), a))), snd((A -> A), ((A -> A -> A) and (A -> A -> A)), snd((A), ((A -> A) and (A -> A -> A) and (A -> A -> A)), snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), b))), addEq, mulEq))));
+  let addEq =
+    FunExt(
+      U0, A, (fun (x : A) => A -> A), af_add(A, a), af_add(A, b),
+      (
+        fun (x : A) => FunExt(
+          U0, A, (fun (y : A) => A), af_add(A, a, x), af_add(A, b, x), addPath(x)
+        )
+      )
+    );
+  let mulEq =
+    FunExt(
+      U0, A, (fun (x : A) => A -> A), af_mul(A, a), af_mul(A, b),
+      (
+        fun (x : A) => FunExt(
+          U0, A, (fun (y : A) => A), af_mul(A, a, x), af_mul(A, b, x), mulPath(x)
+        )
+      )
+    );
+  exact algebra_pair_ext(
+    (A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), a, b, zeroPath,
+    algebra_pair_ext(
+      (A), ((A -> A) and (A -> A -> A) and (A -> A -> A)),
+      snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), a),
+      snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), b), onePath,
+      algebra_pair_ext(
+        (A -> A), ((A -> A -> A) and (A -> A -> A)),
+        snd(
+          (A), ((A -> A) and (A -> A -> A) and (A -> A -> A)),
+          snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), a)
+        ),
+        snd(
+          (A), ((A -> A) and (A -> A -> A) and (A -> A -> A)),
+          snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), b)
+        ), negEq,
+        algebra_pair_ext(
+          (A -> A -> A), ((A -> A -> A)),
+          snd(
+            (A -> A), ((A -> A -> A) and (A -> A -> A)),
+            snd(
+              (A), ((A -> A) and (A -> A -> A) and (A -> A -> A)),
+              snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), a)
+            )
+          ),
+          snd(
+            (A -> A), ((A -> A -> A) and (A -> A -> A)),
+            snd(
+              (A), ((A -> A) and (A -> A -> A) and (A -> A -> A)),
+              snd((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), b)
+            )
+          ), addEq, mulEq
+        )
+      )
+    )
+  );
 }
+
 def FieldPreserved(A : U0, B : U0, f : A -> B, a : FieldData(A), b : FieldData(B)) =
   FieldOpsPreserved(A, B, f, field_data_ops(A, a), field_data_ops(B, b));
-def field_preserved_prop(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, a : FieldData(A), b : FieldData(B)) =
+def field_preserved_prop(
+  A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, a : FieldData(A), b : FieldData(B)
+) =
   field_ops_preserved_prop(A, B, setB, f, field_data_ops(A, a), field_data_ops(B, b));
-def field_preserved_identity(A : U0, a : FieldData(A)) = field_ops_identity(A, field_data_ops(A, a));
-theorem field_preserved_reflect(A : U0, setA : IsSet(A), a : FieldData(A), b : FieldData(A), preserves : FieldPreserved(A, A, (fun (x : A) => x), a, b)) : a = b {
-  exact subtype_ext(FieldOps(A), AlgebraicFieldLaws(A), (fun (ops : FieldOps(A)) => algebraic_field_laws_prop(A, ops, setA)), a, b,
-    field_ops_reflect(A, field_data_ops(A, a), field_data_ops(A, b), preserves));
+def field_preserved_identity(A : U0, a : FieldData(A)) =
+  field_ops_identity(A, field_data_ops(A, a));
+theorem field_preserved_reflect(
+  A : U0, setA : IsSet(A), a : FieldData(A), b : FieldData(A),
+  preserves : FieldPreserved(A, A, (fun (x : A) => x), a, b)
+) : a = b {
+  exact subtype_ext(
+    FieldOps(A), AlgebraicFieldLaws(A),
+    (fun (ops : FieldOps(A)) => algebraic_field_laws_prop(A, ops, setA)), a, b,
+    field_ops_reflect(A, field_data_ops(A, a), field_data_ops(A, b), preserves)
+  );
 }
-def FieldIso(F : AlgebraicField, G : AlgebraicField) = StructureIso(FieldData, FieldPreserved, F, G);
-theorem field_structure_identity(F : AlgebraicField, G : AlgebraicField) : Equiv(U1, (F = G), FieldIso(F, G)) {
-  exact structure_identity(FieldData, FieldPreserved, field_preserved_prop, field_preserved_identity, field_preserved_reflect, F, G);
+
+def FieldIso(F : AlgebraicField, G : AlgebraicField) =
+  StructureIso(FieldData, FieldPreserved, F, G);
+theorem field_structure_identity(F : AlgebraicField, G : AlgebraicField) : Equiv(
+  U1, (F = G), FieldIso(F, G)
+) {
+  exact structure_identity(
+    FieldData, FieldPreserved, field_preserved_prop, field_preserved_identity,
+    field_preserved_reflect, F, G
+  );
 }
+
+// Structure identity turns any field isomorphism into the needed path.
+def field_isotoid(F : AlgebraicField, G : AlgebraicField, e : FieldIso(F, G)) =
+  structure_iso_equality(
+    FieldData, FieldPreserved, field_preserved_prop, field_preserved_identity,
+    field_preserved_reflect, F, G, e
+  );

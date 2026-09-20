@@ -4,67 +4,115 @@ import primes;
 // Finite quadrature DATA: n edges, n+1 sampled vertices, and n tags.
 // These are not definitions of geometric curves or of homotopy paths.
 def SampleVertices(C : U1, n : Nat) = induction n as k return U1 {
-  zero => C;
-  succ previous => C and previous;
-};
+    zero => C;
+    succ previous => C and previous;
+  };
 def SampleTags(C : U1, n : Nat) = induction n as k return U1 {
-  zero => Unit;
-  succ previous => C and previous;
-};
+    zero => Unit;
+    succ previous => C and previous;
+  };
 def sample_first(C : U1, n : Nat) = induction n as k return (SampleVertices(C, k) -> C) {
-  zero => fun (v : C) => v;
-  succ previous => fun (vertices : SampleVertices(C, succ(k))) => field_fst(C, SampleVertices(C, k), vertices);
-};
+    zero => fun (v : C) => v;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => field_fst(
+      C, SampleVertices(C, k), vertices
+    );
+  };
 def sample_last(C : U1, n : Nat) = induction n as k return (SampleVertices(C, k) -> C) {
-  zero => fun (v : C) => v;
-  succ previous => fun (vertices : SampleVertices(C, succ(k))) => previous(field_snd(C, SampleVertices(C, k), vertices));
-};
-def sample_sum(C : U1, G : U1, zero : G, addG : G -> G -> G,
-  edge : C -> C -> C -> G, n : Nat) =
+    zero => fun (v : C) => v;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => previous(
+      field_snd(C, SampleVertices(C, k), vertices)
+    );
+  };
+def sample_sum(C : U1, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, n : Nat) =
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> G) {
     zero => fun (vertices : C) => fun (tags : Unit) => zero;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) =>
-      addG(edge(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)),
-        previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+      tags : SampleTags(C, succ(k))
+    ) => addG(
+      edge(
+        field_fst(C, SampleVertices(C, k), vertices),
+        sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+        field_fst(C, SampleTags(C, k), tags)
+      ),
+      previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags))
+    );
   };
 
 // Concatenation drops the final sampled vertex of the left chain. Its
 // equality with the first right vertex is required by the sum theorem.
 def join_vertices(C : U1, n : Nat) =
-  induction n as k return (SampleVertices(C, k) -> forall m : Nat, SampleVertices(C, m) -> SampleVertices(C, k + m)) {
+  induction n as k return (
+    SampleVertices(C, k) -> forall m : Nat, SampleVertices(C, m) -> SampleVertices(C, k + m)
+  ) {
     zero => fun (vertices : C) => fun (m : Nat) => fun (rightVertices : SampleVertices(C, m)) => rightVertices;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (m : Nat) => fun (rightVertices : SampleVertices(C, m)) =>
-      typed((C and SampleVertices(C, k + m)),
-        (field_fst(C, SampleVertices(C, k), vertices), previous(field_snd(C, SampleVertices(C, k), vertices), m, rightVertices)));
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (m : Nat) => fun (
+      rightVertices : SampleVertices(C, m)
+    ) => typed(
+      (C and SampleVertices(C, k + m)),
+      (
+        field_fst(C, SampleVertices(C, k), vertices),
+        previous(field_snd(C, SampleVertices(C, k), vertices), m, rightVertices)
+      )
+    );
   };
 def join_tags(C : U1, n : Nat) =
-  induction n as k return (SampleTags(C, k) -> forall m : Nat, SampleTags(C, m) -> SampleTags(C, k + m)) {
+  induction n as k return (
+    SampleTags(C, k) -> forall m : Nat, SampleTags(C, m) -> SampleTags(C, k + m)
+  ) {
     zero => fun (tags : Unit) => fun (m : Nat) => fun (rightTags : SampleTags(C, m)) => rightTags;
-    succ previous => fun (tags : SampleTags(C, succ(k))) => fun (m : Nat) => fun (rightTags : SampleTags(C, m)) =>
-      typed((C and SampleTags(C, k + m)),
-        (field_fst(C, SampleTags(C, k), tags), previous(field_snd(C, SampleTags(C, k), tags), m, rightTags)));
+    succ previous => fun (tags : SampleTags(C, succ(k))) => fun (m : Nat) => fun (
+      rightTags : SampleTags(C, m)
+    ) => typed(
+      (C and SampleTags(C, k + m)),
+      (
+        field_fst(C, SampleTags(C, k), tags),
+        previous(field_snd(C, SampleTags(C, k), tags), m, rightTags)
+      )
+    );
   };
 
-theorem join_vertices_first(C : U1, n : Nat) :
-  forall vertices : SampleVertices(C, n), forall m : Nat, forall rightVertices : SampleVertices(C, m),
-    (sample_last(C, n, vertices) = sample_first(C, m, rightVertices)) ->
-    sample_first(C, n + m, join_vertices(C, n, vertices, m, rightVertices)) = sample_first(C, n, vertices) {
-  exact induction n as k return (forall vertices : SampleVertices(C, k), forall m : Nat, forall rightVertices : SampleVertices(C, m),
-    (sample_last(C, k, vertices) = sample_first(C, m, rightVertices)) ->
-    sample_first(C, k + m, join_vertices(C, k, vertices, m, rightVertices)) = sample_first(C, k, vertices)) {
-    zero => fun (vertices : C) => fun (m : Nat) => fun (rightVertices : SampleVertices(C, m)) =>
-      fun (same : vertices = sample_first(C, m, rightVertices)) => sym(same);
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (m : Nat) => fun (rightVertices : SampleVertices(C, m)) =>
-      fun (same : sample_last(C, succ(k), vertices) = sample_first(C, m, rightVertices)) => refl(sample_first(C, succ(k), vertices));
+theorem join_vertices_first(C : U1, n : Nat) : forall vertices : SampleVertices(C, n),
+forall m : Nat, forall rightVertices : SampleVertices(C, m),
+(sample_last(C, n, vertices) = sample_first(C, m, rightVertices))
+-> sample_first(C, n + m, join_vertices(C, n, vertices, m, rightVertices)) = sample_first(
+  C, n, vertices
+) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(C, k), forall m : Nat,
+    forall rightVertices : SampleVertices(C, m),
+    (sample_last(C, k, vertices) = sample_first(C, m, rightVertices))
+    -> sample_first(C, k + m, join_vertices(C, k, vertices, m, rightVertices)) = sample_first(
+      C, k, vertices
+    )
+  ) {
+    zero => fun (vertices : C) => fun (m : Nat) => fun (rightVertices : SampleVertices(C, m)) => fun (
+      same : vertices = sample_first(C, m, rightVertices)
+    ) => sym(same);
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (m : Nat) => fun (
+      rightVertices : SampleVertices(C, m)
+    ) => fun (same : sample_last(C, succ(k), vertices) = sample_first(C, m, rightVertices)) => refl(
+      sample_first(C, succ(k), vertices)
+    );
   };
 }
-theorem join_vertices_last(C : U1, n : Nat) :
-  forall vertices : SampleVertices(C, n), forall m : Nat, forall rightVertices : SampleVertices(C, m),
-    sample_last(C, n + m, join_vertices(C, n, vertices, m, rightVertices)) = sample_last(C, m, rightVertices) {
-  exact induction n as k return (forall vertices : SampleVertices(C, k), forall m : Nat, forall rightVertices : SampleVertices(C, m),
-    sample_last(C, k + m, join_vertices(C, k, vertices, m, rightVertices)) = sample_last(C, m, rightVertices)) {
-    zero => fun (vertices : C) => fun (m : Nat) => fun (rightVertices : SampleVertices(C, m)) => refl(sample_last(C, m, rightVertices));
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (m : Nat) => fun (rightVertices : SampleVertices(C, m)) =>
-      previous(field_snd(C, SampleVertices(C, k), vertices), m, rightVertices);
+
+theorem join_vertices_last(C : U1, n : Nat) : forall vertices : SampleVertices(C, n),
+forall m : Nat, forall rightVertices : SampleVertices(C, m),
+sample_last(C, n + m, join_vertices(C, n, vertices, m, rightVertices)) = sample_last(
+  C, m, rightVertices
+) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(C, k), forall m : Nat,
+    forall rightVertices : SampleVertices(C, m),
+    sample_last(C, k + m, join_vertices(C, k, vertices, m, rightVertices)) = sample_last(
+      C, m, rightVertices
+    )
+  ) {
+    zero => fun (vertices : C) => fun (m : Nat) => fun (rightVertices : SampleVertices(C, m)) => refl(
+      sample_last(C, m, rightVertices)
+    );
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (m : Nat) => fun (
+      rightVertices : SampleVertices(C, m)
+    ) => previous(field_snd(C, SampleVertices(C, k), vertices), m, rightVertices);
   };
 }

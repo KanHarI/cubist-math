@@ -54,6 +54,21 @@ be written as `fun (x : A) => body`. Application `f(a, b)` is curried.
 `theorem` uses an opaque checked proof definition; `def` remains transparent for
 computation. Both are checked for closure.
 
+Place `//` comments immediately above a declaration to document it in the
+inspector, including when it is imported by another proof:
+
+```text
+// Returns its input unchanged.
+def identity(A : U0, x : A) = x;
+```
+
+Consecutive comment lines form a paragraph; an empty `//` line starts another
+paragraph. A physical blank line separates a file or section comment from a
+declaration. Trailing comments are not used as documentation for the next
+declaration. This also works for theorems, axioms, opaque definitions and
+construction declarations. Documentation is displayed as plain text and does
+not change the checked proof.
+
 Use `opaque def` to keep a checked concept named during ordinary reduction:
 
 ```text
@@ -81,6 +96,13 @@ also lists dependencies.
 Types include `forall x : A, B`, `exists x : A, B`, `A -> B`, `A and B`, and
 `A or B`. A pair is `(a, b)`. Its expected type supplies the dependent family;
 `typed(T, expression)` provides an annotation where inference needs one.
+A tuple `(a, b, c, d)` is a macro for `(a, (b, (c, d)))`; the same notation
+works in `obtain (a, b, c, d) = value;`. Explicit left-nesting is preserved:
+`((a, b), c, d)` means `((a, b), (c, d))`. This introduces no new kernel type
+or rule. Three-or-more-component tuple delimiters have macro styling; hover
+to see the binary-pair expansion or click to inspect the checked tuple.
+`f(a, b, c)` remains curried application; pass a tuple as `f((a, b, c))`.
+
 `left(value)` and `right(value)` introduce a disjunction. `refl(x)` proves
 `x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
 
@@ -140,8 +162,8 @@ For example, `def identity(U : Universe, A : U, x : A) = x;` is checked once
 and can be specialized as `identity(U0)` or `identity(U2)`. `Universe` is a
 universe-parameter sort, not an unrestricted ordinary type parameter.
 
-The following functions specialize the original prelude axioms; they
-introduce no new axioms:
+The following functions specialize the library principles and their derived
+operations. See [the single-axiom univalence development](univalence.md).
 
 ```text
 Truncate(U, A)
@@ -151,16 +173,20 @@ TruncateElim(U, A, P, proposition_proof, map)
 FunExt(U, A, B, f, g, pointwise_equality)
 Choice(U)(A, B, setA, setFibers, inhabited)
 LEM(U)(A, double_negation)
-Univalence(U)(A, B, equivalence)
-UnivalenceBeta(U1)(A, B, equivalence, x)
+Univalence(U)(A, B)
+idtoequiv(U, A, B, path)
+ua(U)(A, B, equivalence)
+UnivalenceBeta(U)(A, B, equivalence, x)
+UnivalenceEta(U)(A, B, path)
 ```
 
 Each universe specialization is a first-class function. The two application
 styles above are interchangeable. `Choice` still requires setness of the
 index type and every fiber and returns only a truncated section.
-`Univalence` accepts `Equiv(U, A, B)` and returns `A =[U] B`.
-`UnivalenceBeta` currently specializes at named finite universes, whose
-successor can be supplied to the existing computation axiom.
+`Univalence` asserts that the canonical `idtoequiv` map is an equivalence.
+`ua` is its derived inverse: it accepts `Equiv(U, A, B)` and returns
+`A =[U] B`. `UnivalenceBeta` and `UnivalenceEta` are derived theorems,
+not separate axioms. All these operations also accept `U : Universe`.
 
 `Equiv(U, A, B)` and `IsEquiv(U, A, B, f)` in `paths.proof` are ordinary
 universe-parameterized definitions. `x =[T] y` explicitly selects the carrier
@@ -233,3 +259,22 @@ is `IsSet(A)`, proved by `exact setA;`. The identifier `setA` is a name you
 choose; its type is inferred from the next input of the goal. `IsSet` comes
 from `import sets;` and asserts that any two equality proofs with the same
 endpoints are equal. Click an introduced name to see its inferred type.
+
+## Linearizing nested tuples
+
+`npm run linearize:mathscript` scans the AST of every mathematical proof source
+and converts right-nested pairs and `obtain` patterns to tuple notation.
+It preserves left-nested pairs, function arguments, component order and comments.
+Every proposed rewrite is checked against the fully expanded original AST
+before any files are written, then formatted. Recorded construction sources
+are skipped. Run it again and it makes no further changes.
+
+```sh
+npm run linearize:mathscript -- --check
+npm run linearize:mathscript -- web/proofs/circle_group_identity.proof
+```
+
+`--check` reports remaining candidates without writing and exits nonzero if
+any exist. The ordinary formatter performs this same AST-checked tuple linearization automatically.
+All other formatting changes only whitespace. Programmatic callers can set
+`linearizeTuples: false` for whitespace-only formatting.

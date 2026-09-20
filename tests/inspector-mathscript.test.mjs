@@ -1,7 +1,9 @@
 import test from "node:test";
+import { replaceSyntax } from "./source-edit.mjs";
 import assert from "node:assert/strict";
 import createKernel from "../web/dist/kernel.mjs";
 import { compile } from "../web/mathscript/compiler.mjs";
+import { parse } from "../web/mathscript/parser.mjs";
 import { loadProof } from "../tools/test-selection.mjs";
 import { checkedFoldedView, exportInspection, checkedContextView, inspectionContextNames, inspectionAxiomNotation } from "../web/mathscript/kernel-folding.mjs";
 import { kernelMathTree, isTruncationApplication, independentBinderGroups } from "../web/math-notation.mjs";
@@ -10,6 +12,120 @@ import { Session } from "../web/session.mjs";
 import { layout, pathFromMarked } from "../web/expressions.mjs";
 
 const module = await createKernel();
+test("equality between encoded group paths folds its carrier and keeps the encoding named", async () => {
+  const { source, sources } = await loadProof(new URL("../web/proofs/group_univalence.proof", import.meta.url).pathname);
+  const declaration = parse(source).declarations.find(d => d.name.text === "group_isotoid");
+  const body = declaration.body[0].value;
+  const inferred = source.slice(0, declaration.start)
+    + "def group_isotoid(G : Group, H : Group, iso : GroupIso(G, H)) = "
+    + source.slice(body.start, body.end) + ";" + source.slice(declaration.end);
+  for (const program of [source, inferred]) {
+    const c = compile(module, program, sources);
+    try {
+      const same = c.localViews.find(o => o.name === "same");
+      const f = checkedFoldedView(c, same.binding);
+      assert.deepEqual(f.failures, {});
+      assert.equal(f.type.size, 19);
+      const type = kernelMathTree(f.type, f.references, f.contextNames);
+      assert.equal(type.carrier.carrier.name, "Group");
+      assert.equal(type.carrier.left.name, "G");
+      assert.equal(type.carrier.right.name, "H");
+      assert.equal(type.left.fn.name, "group_isotoid");
+      assert.equal(type.right.fn.name, "group_isotoid");
+    } finally { c.kernel.dispose(); }
+  }
+});
+
+test("natural induction folds without requiring any boxed definition", () => {
+  const c = compile(module, "def Fin(n : Nat) = induction n as k return U0 { zero => Void; succ previous => Unit or previous; };");
+  try { assert.deepEqual(checkedFoldedView(c, "Fin").failures, {}); }
+  finally { c.kernel.dispose(); }
+});
+
+test("nested obtain hypotheses retain their dependent types and folded local definitions", async () => {
+  const { source, sources } = await loadProof(new URL("../web/proofs/euclid.proof", import.meta.url).pathname);
+  const c = compile(module, source, sources);
+  try {
+    for (const name of ["hp", "hd"]) {
+      const local = c.localViews.find(value => value.name === name);
+      const folded = checkedFoldedView(c, local.binding, { certificate: true });
+      assert.deepEqual(folded.failures, {}, name);
+      const type = kernelMathTree(folded.type, folded.references, folded.contextNames);
+      assert.equal(type.fn.name, name === "hp" ? "Prime" : "Divides");
+      assert.equal(type.args[0].fn.name, "add");
+      assert.equal(type.args[0].args[0].value, 2);
+      assert.equal(type.args[0].args[1].name, "i");
+      if (name === "hd") {
+        assert.equal(type.args[1].fn.name, "succ");
+        assert.equal(type.args[1].args[0].fn.name, "factorial");
+        assert.equal(type.args[1].args[0].args[0].name, "n");
+        const view = c.kernel.inspect(local.binding);
+        view.folded = folded;
+        const context = checkedContextView(c, view);
+        const hp = context.entries.find(entry => entry.name === "hp");
+        assert.ok(hp.folded, "hp is folded even when hd is selected");
+        const hpType = kernelMathTree(hp.folded.type, hp.folded.references, hp.folded.contextNames);
+        assert.equal(hpType.fn.name, "Prime");
+        assert.equal(hpType.args[0].args[1].name, "i");
+      }
+      const replay = new Kernel(module, folded.certificate.policy.allowAxioms);
+      try {
+        for (const step of folded.certificate.steps) replay.apply(step);
+        const evidence = folded.verified.type;
+        const equality = replay.inspect(evidence.witness).expression;
+        assert.equal(equality.kind, "DefEq");
+        assert.equal(equality.children[1].id, replay.inspect(local.binding).type.id);
+      } finally { replay.dispose(); }
+    }
+  } finally { c.kernel.dispose(); }
+});
+
+test("lambda context variables retain a source type alias", () => {
+  const c = compile(module, "def Z = Nat or Nat; def identity = fun (x : Z) => x;");
+  try {
+    const local = c.localViews.find(value => value.name === "x");
+    const folded = checkedFoldedView(c, local.binding);
+    assert.deepEqual(folded.failures, {});
+    assert.equal(kernelMathTree(folded.type, folded.references).name, "Z");
+    const exported = exportInspection(c, local.binding, "expression");
+    const workbench = new Session(module);
+    try {
+      workbench.import(exported.document);
+      const view = workbench.inspect(exported.selection.name);
+      assert.equal(view.context.length, 1);
+      assert.equal(view.context[0].name, "x");
+      assert.equal(layout(view.context[0].type, view.contextNames, view.referenceNames).text, "Z");
+    } finally { workbench.dispose(); }
+  } finally { c.kernel.dispose(); }
+});
+
+test("workbench replay preserves source names and certifies the exported context types", async () => {
+  const { source, sources } = await loadProof(new URL("../web/proofs/euclid.proof", import.meta.url).pathname);
+  const c = compile(module, source, sources), session = new Session(module);
+  try {
+    const hd = c.localViews.find(o => o.name === "hd");
+    const exported = exportInspection(c, hd.binding, "expression");
+    session.import(exported.document, true);
+    const view = session.inspect(exported.selection.name);
+    assert.equal(layout(view.expression, view.contextNames, view.referenceNames).text, "hd");
+    assert.deepEqual(view.context.map(entry => entry.name), ["n", "i", "hp", "hd"]);
+    const hp = view.context.find(entry => entry.name === "hp");
+    assert.match(layout(hp.type, view.contextNames, view.referenceNames).text, /^\(Prime .* i\)\)$/);
+    const text = layout(view.type, view.contextNames, view.referenceNames).text;
+    assert.match(text, /Divides.*factorial n/);
+    assert.deepEqual(pathFromMarked(view.type, `[[${text}]]`, view.contextNames, view.referenceNames), []);
+    const document = session.export();
+    session.import(document);
+    assert.equal(session.inspect(exported.selection.name).contextNames[hp.id], "hp");
+    const falseRow = document.presentation.contextTypes.find(row => row.variable === hp.binding);
+    falseRow.type = document.presentation.contextTypes.find(row => row.variable !== hp.binding).type;
+    session.import(document);
+    const changed = session.inspect(exported.selection.name);
+    const fallback = changed.context.find(entry => entry.name === "hp");
+    assert.equal(fallback.type.id, session.engine.inspect(hp.binding).type.id);
+  } finally { session.dispose(); c.kernel.dispose(); }
+});
+
 test("checked inspector metadata preserves definition bodies, named theorem types, and imported syntax", async () => {
   const { source, sources } = await loadProof(new URL("../web/proofs/euclid.proof", import.meta.url).pathname);
   const c = compile(module, source, sources);
@@ -21,11 +137,11 @@ test("checked inspector metadata preserves definition bodies, named theorem type
     assert.equal(theorem.mathscript.expression, "euclid");
     assert.equal(theorem.mathscript.type, "InfinitelyManyPrimes");
     const prime = c.imports.find(o => o.name === "Prime");
-    assert.match(prime.mathscript.expression, /^fun \(p : Nat\) => .*Divides/);
+    assert.match(prime.mathscript.expression, /^fun \(p : Nat\) => .*Divides/s);
     for (const output of [concept, theorem, prime])
       assert.ok(c.kernel.verify(output.proposition, output.binding));
     const snapshot = structuredClone(concept.mathscript);
-    assert.throws(() => compile(module, source.replace("exact (p, (hp, bigger));", "exact tt;"), sources), /Expected/);
+    assert.throws(() => compile(module, replaceSyntax(source, "exact (p, hp, bigger);", "exact tt;"), sources), /Expected/);
     assert.deepEqual(concept.mathscript, snapshot);
   } finally { c.kernel.dispose(); }
 });
@@ -101,6 +217,35 @@ test("folded inspector terms have replayable kernel equality certificates and na
       assert.equal(view.type.kind, "DRef");
       assert.equal(view.declarations[view.type.id], "InfinitelyManyPrimes");
     } finally { workbench.dispose(); }
+  } finally { c.kernel.dispose(); }
+});
+
+test("the circle group type folds around a checked reflexivity constructor", async () => {
+  const { source, sources } = await loadProof(new URL("../web/proofs/circle.proof", import.meta.url).pathname);
+  const c = compile(module, source, sources);
+  try {
+    const f = checkedFoldedView(c, "loop_group");
+    assert.deepEqual(f.failures, {});
+    assert.equal(f.type.size, 8);
+    const type = kernelMathTree(f.type, f.references);
+    assert.equal(type.fn.name, "GroupLaws");
+    assert.equal(type.args[0].name, "LoopsS1");
+    assert.equal(type.args[1].fn.name, "refl");
+    assert.equal(type.args[1].args[0].binding, "base");
+    assert.equal(type.args[2].binding, "loop_multiply");
+    const exported = exportInspection(c, "loop_group", "type");
+    const replay = new Session(module, false);
+    try {
+      replay.import(exported.document, true);
+      assert.equal(replay.inspect(exported.selection.name).expression.size, 8);
+    } finally { replay.dispose(); }
+    // Another loop has the same carrier but cannot replace the identity loop
+    // in this proposed GroupLaws type merely because its display looks plausible.
+    const output = c.outputs.find(o => o.name === "loop_group");
+    output.mathscript.foldingPlan.type.args[1] = { kind: "Name", name: "loop", binding: "loop" };
+    const rejected = checkedFoldedView(c, "loop_group");
+    assert.equal(rejected.verified.type, undefined);
+    assert.match(rejected.failures.type, /not definitionally equal/);
   } finally { c.kernel.dispose(); }
 });
 
@@ -236,7 +381,8 @@ test("local folding preserves checked assumptions and uses source labels for con
       { kind: "Name", name: "bounded", local: true });
     const type = kernelMathTree(folded.type, folded.references, folded.contextNames);
     assert.equal(type.fn.name, "le");
-    assert.equal(type.args[0].args[0].args[0].name, "i");
+    assert.equal(type.args[0].fn.name, "add");
+    assert.equal(type.args[0].args[1].name, "i");
     assert.equal(type.args[1].name, "n");
     for (const step of folded.certificate.steps) replay.apply(step);
     for (const side of ["expression", "type"]) {

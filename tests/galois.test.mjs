@@ -9,7 +9,7 @@ import { Kernel } from "../web/kernel.mjs";
 
 const module = await createKernel();
 const loaded = await loadProof("web/proofs/f4_galois_group.proof");
-const constructive = ["lib_funext", "lib_ua_elim", "lib_univalence"];
+const constructive = ["lib_funext", "lib_univalence"];
 
 test("the Galois group inspector keeps a certified application instead of expanding proof bodies", () => {
   const c = compile(module, loaded.source, loaded.sources);
@@ -20,7 +20,7 @@ test("the Galois group inspector keeps a certified application instead of expand
     const expression = kernelMathTree(f.expression, f.references);
     assert.equal(expression.fn.name, "GaloisGroup");
     assert.deepEqual(expression.args.map(a => a.name), ["F2", "F4OverF2"]);
-    assert.equal(kernelMathTree(f.type, f.references).name, "GroupType");
+    assert.equal(kernelMathTree(f.type, f.references).name, "Group");
     const replay = new Kernel(module, f.certificate.policy.allowAxioms);
     try {
       for (const step of f.certificate.steps) replay.apply(step);
@@ -56,7 +56,7 @@ test("field automorphisms are loops, with transport, composition and the complet
       assert.deepEqual(c.kernel.axiomsFor(name).sort(), constructive, name);
     assert.ok(!c.kernel.bindings.has("AOC"));
     assert.ok(!c.kernel.bindings.has("LEM"));
-    assert.match(c.outputs.find(o => o.name === "f4_galois_group_equality").type, /=\[GroupType\]/);
+    assert.match(c.outputs.find(o => o.name === "f4_galois_group_equality").type, /=\[Group\]/);
     for (const name of ["structured_sets", "algebraic_fields", "field_extensions", "galois_paths", "finite_fields", "f4_galois"])
       assert.doesNotMatch(loaded.sources[name], /\baxiom\s|\bpostulate\s*\(/);
     assert.doesNotMatch(loaded.source, /\baxiom\s|\bpostulate\s*\(/);

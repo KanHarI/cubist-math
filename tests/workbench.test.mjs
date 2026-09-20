@@ -10,6 +10,22 @@ import { layout, pathFromMarked, pathFromNames } from "../web/expressions.mjs";
 const module = await createKernel();
 const fresh = () => new Session(module);
 
+test("Un-highlight previews and commits the kernel UnHigh rule", () => {
+  const session = fresh();
+  try {
+    const setup = session.previewSource("N = NatForm()\nz = NatIntroZ()\nfocused = HighExp(z)");
+    session.accept(setup.token);
+    const before = session.inspect("focused");
+    assert.equal(before.focus.side, "expression");
+    const draft = session.previewFocus({ name: "focused", operation: "UnHigh", resultName: "plain" });
+    assert.equal(session.engine.bindings.has("plain"), false);
+    assert.equal(draft.result.focus.side, null);
+    assert.equal(draft.result.expression.id, before.expression.id);
+    session.accept(draft.token);
+    assert.equal(session.inspect("plain").focus.side, null);
+  } finally { session.dispose(); }
+});
+
 test("axiom dependencies use public aliases by checked identity without changing replay history", () => {
   const k = new Kernel(module, true);
   try {
@@ -380,7 +396,7 @@ test("every ported proof opens, verifies its exports, and round trips as JSON an
         assert.deepEqual(other.inspect(name).type, s.inspect(name).type, name);
       }
       if (entry.id === "prelude_library") {
-        assert.equal(s.snapshot().bindings.filter((b) => !b.hidden).length, 50);
+        assert.equal(s.snapshot().bindings.filter((b) => !b.hidden).length, 51);
         assert.equal(s.inspect("LEM").expression.kind, "Axiom");
         assert.equal(s.inspect("AOC").expression.kind, "Axiom");
         const p = s.previewSource("lem_reflexive = kernel.DefEqRefl(LEM)");

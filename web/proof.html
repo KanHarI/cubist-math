@@ -15,6 +15,7 @@
         <a href="index.html">Proof highlights</a>
         <a href="workbench.html">Kernel workbench</a
         ><a href="#language-guide" id="guide-link">Language quick reference</a>
+        <a href="https://github.com/KanHarI/thth-c">GitHub repository</a>
       </nav>
     </header>
     <main>
@@ -155,16 +156,16 @@
               <option value="raw">Raw kernel term</option>
             </select>
             <label id="kernel-binder-options" class="hint">
-              <input id="kernel-group-binders" type="checkbox" checked />
+              <input id="kernel-group-binders" type="checkbox" />
               Group independent binders
             </label>
             <label id="kernel-truncation-options" class="hint">
               <input id="kernel-truncation-sugar" type="checkbox" checked />
               Truncation notation ‖A‖
             </label>
-            <label id="kernel-identity-options" class="hint" title="Display identity types as (A =[T] B); uncheck to show Id with carrier T">
+            <label id="kernel-identity-options" class="hint" title="Display equality with its carrier as a subscript; uncheck to show Id with carrier T">
               <input id="kernel-identity-sugar" type="checkbox" checked />
-              Equality notation (A =[T] B)
+              Equality notation <math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mo>=</mo><mi>T</mi></msub></math>
             </label>
             <p id="kernel-view-note" class="hint"></p>
             <section id="kernel-context" aria-labelledby="kernel-context-label">
@@ -205,6 +206,11 @@
           Comments start with <code>//</code>.
         </p>
         <p>
+          <code>//</code> comments immediately above a declaration become its
+          inspector description. An empty <code>//</code> line separates paragraphs;
+          a blank source line separates a section comment from a declaration.
+        </p>
+        <p>
           <code>U0</code>, <code>U1</code>, <code>U2</code> and <code>U3</code>
           name universes, with <code>U0 : U1</code>. A parameter
           <code>U : Universe</code> accepts a universe argument.
@@ -213,6 +219,9 @@
           (excluded middle), <code>FunExt(U1)</code>,
           <code>Truncate(U1)</code> and <code>Univalence(U1)</code> specialize
           existing axioms.
+          <code>Univalence(U, A, B)</code> asserts that <code>idtoequiv</code> is an equivalence.
+          Its derived inverse is <code>ua(U, A, B, e)</code>; <code>UnivalenceBeta</code>
+          and <code>UnivalenceEta</code> are derived laws.
         </p>
         <p>
           <code>x =[T] y</code> means equality of <code>x</code> and
@@ -280,6 +289,9 @@ theorem pair_first : Nat {
         <p>
           <code>fun (x : A) => body</code> constructs a function;
           <code>f(a, b)</code> means <code>f(a)(b)</code>.
+          <code>(a, b, c, d)</code> expands to <code>(a, (b, (c, d)))</code>;
+          <code>obtain (a, b, c, d) = value;</code> unpacks that same shape.
+          Hover over tuple parentheses to see the macro expansion.
           <code>typed(T, term)</code> supplies an expected type for pairs and
           injections. <code>exact</code> and <code>cases</code> finish a block;
           no further statements follow them in that block.

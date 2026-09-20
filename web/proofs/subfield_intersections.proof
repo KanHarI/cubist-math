@@ -1,0 +1,78 @@
+import subfields;
+
+// Only small-indexed intersections are taken here: the result remains U0-valued.
+// Intersecting all subfields (a U1-sized family) requires a separate universe
+// argument or a small presentation of the generated subfield.
+def SubfieldIntersection(F : AlgebraicField, I : U0, family : I -> Subfield(F), x : af_carrier(F)) =
+  forall i : I, subfield_members(F, family(i), x);
+
+theorem subfield_intersection_laws(F : AlgebraicField, I : U0, family : I -> Subfield(F)) : SubfieldLaws(
+  F, SubfieldIntersection(F, I, family)
+) {
+  let A = af_carrier(F);
+  let ops = af_operations(F);
+  have prop : forall x : A, Proposition(SubfieldIntersection(F, I, family, x)) {
+    intro x;
+    exact forall_prop(
+      I, (fun (i : I) => subfield_members(F, family(i), x)),
+      (
+        fun (i : I) => subfield_prop(
+          F, subfield_members(F, family(i)), subfield_laws(F, family(i)), x
+        )
+      )
+    );
+  }
+  exact (
+    prop,
+    (fun (i : I) => subfield_zero(F, subfield_members(F, family(i)), subfield_laws(F, family(i)))),
+    (fun (i : I) => subfield_one(F, subfield_members(F, family(i)), subfield_laws(F, family(i)))),
+    (
+      fun (x : A) => fun (px : SubfieldIntersection(F, I, family, x)) => fun (i : I) => subfield_neg(
+        F, subfield_members(F, family(i)), subfield_laws(F, family(i)), x, px(i)
+      )
+    ),
+    (
+      fun (x : A) => fun (y : A) => fun (px : SubfieldIntersection(F, I, family, x)) => fun (
+        py : SubfieldIntersection(F, I, family, y)
+      ) => fun (i : I) => subfield_add(
+        F, subfield_members(F, family(i)), subfield_laws(F, family(i)), x, y, px(i), py(i)
+      )
+    ),
+    (
+      fun (x : A) => fun (y : A) => fun (px : SubfieldIntersection(F, I, family, x)) => fun (
+        py : SubfieldIntersection(F, I, family, y)
+      ) => fun (i : I) => subfield_mul(
+        F, subfield_members(F, family(i)), subfield_laws(F, family(i)), x, y, px(i), py(i)
+      )
+    ),
+    (
+      fun (x : A) => fun (y : A) => fun (px : SubfieldIntersection(F, I, family, x)) => fun (
+        inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops)
+      ) => fun (i : I) => subfield_inverse(
+        F, subfield_members(F, family(i)), subfield_laws(F, family(i)), x, y, px(i), inverseLaw
+      )
+    )
+  );
+}
+
+def subfield_intersection(F : AlgebraicField, I : U0, family : I -> Subfield(F)) : Subfield(F) {
+  exact (SubfieldIntersection(F, I, family), subfield_intersection_laws(F, I, family));
+}
+theorem subfield_intersection_lower(F : AlgebraicField, I : U0, family : I -> Subfield(F), i : I) : SubfieldIncluded(
+  F, subfield_intersection(F, I, family), family(i)
+) {
+  exact (
+    fun (x : af_carrier(F)) => fun (member : SubfieldIntersection(F, I, family, x)) => member(i)
+  );
+}
+
+theorem subfield_intersection_greatest(
+  F : AlgebraicField, I : U0, family : I -> Subfield(F), S : Subfield(F),
+  lower : (forall i : I, SubfieldIncluded(F, S, family(i)))
+) : SubfieldIncluded(F, S, subfield_intersection(F, I, family)) {
+  exact (
+    fun (x : af_carrier(F)) => fun (member : subfield_members(F, S, x)) => fun (i : I) => lower(
+      i, x, member
+    )
+  );
+}

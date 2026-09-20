@@ -11,30 +11,41 @@ def field_exists_prop(A : U1) = TruncateProp(U1, A);
 def field_exists_elim(A : U1, P : U1, prop : FieldProp(P), f : A -> P) =
   TruncateElim(U1, A, P, prop, f);
 def field_exists_map(A : U1, B : U1, f : A -> B, h : FieldExists(A)) =
-  field_exists_elim(A, FieldExists(B), field_exists_prop(B),
-    (fun (a : A) => field_exists_intro(B, f(a))), h);
+  field_exists_elim(
+    A, FieldExists(B), field_exists_prop(B), (fun (a : A) => field_exists_intro(B, f(a))), h
+  );
 def FieldOr(P : U1, Q : U1) = FieldExists(P or Q);
 def FieldIff(P : U1, Q : U1) = (P -> Q) and (Q -> P);
 
-def field_first(A : U1, P : A -> U1, pair : (exists a : A, P(a))) =
-  unpack pair as (a, p) return A { a; };
+def field_first(A : U1, P : A -> U1, pair : (exists a : A, P(a))) = unpack pair as (a, p) return A {
+    a;
+  };
 def field_second(A : U1, P : A -> U1, pair : (exists a : A, P(a))) =
-  pair_induction((fun (v : (exists a : A, P(a))) => P(field_first(A, P, v))),
-    (fun (a : A) => fun (p : P(a)) => p), pair);
+  pair_induction(
+    (fun (v : (exists a : A, P(a))) => P(field_first(A, P, v))),
+    (fun (a : A) => fun (p : P(a)) => p), pair
+  );
 def field_fst(A : U1, B : U1, pair : A and B) = field_first(A, (fun (a : A) => B), pair);
 def field_snd(A : U1, B : U1, pair : A and B) = field_second(A, (fun (a : A) => B), pair);
 
-def field_forall_prop(A : U1, P : A -> U1, prop : (forall a : A, FieldProp(P(a))),
-  f : (forall a : A, P(a)), g : (forall a : A, P(a))) =
+def field_forall_prop(
+  A : U1, P : A -> U1, prop : (forall a : A, FieldProp(P(a))), f : (forall a : A, P(a)),
+  g : (forall a : A, P(a))
+) =
   FunExt(U1, A, P, f, g, (fun (a : A) => prop(a, f(a), g(a))));
 def field_not_prop(A : U1, f : A -> Void, g : A -> Void) =
-  FunExt(U1, A, (fun (a : A) => typed(U1, Void)), f, g,
-    (fun (a : A) => typed((f(a) = g(a)), absurd(f(a)))));
+  FunExt(
+    U1, A, (fun (a : A) => typed(U1, Void)), f, g,
+    (fun (a : A) => typed((f(a) = g(a)), absurd(f(a))))
+  );
 
 // Eliminate a small truncation into a proposition in U1. The intermediate
 // FieldExists(P) is small by the existing universe-lowering Trunc signature.
 // Both eliminations require proposition evidence; no witness is selected.
 def small_mere_eliminate(A : U0, P : U1, prop : FieldProp(P), f : A -> P, h : Truncate(U0, A)) : P {
-  let resize = TruncateElim(U0, A, FieldExists(P), field_exists_prop(P), (fun (a : A) => field_exists_intro(P, f(a))));
+  let resize =
+    TruncateElim(
+      U0, A, FieldExists(P), field_exists_prop(P), (fun (a : A) => field_exists_intro(P, f(a)))
+    );
   exact field_exists_elim(P, P, prop, (fun (p : P) => p), resize(h));
 }

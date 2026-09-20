@@ -1,0 +1,163 @@
+import f4_intermediate_fields;
+
+// Every automorphism is identity or Frobenius. Transport carries a property
+// from the computed representative back to the original automorphism.
+def f4_automorphism_induction(
+  C : F4Automorphism -> U0, identityCase : C(f4_identity_automorphism),
+  frobeniusCase : C(f4_frobenius_automorphism), e : F4Automorphism
+) : C(e) {
+  exact transport(
+    C, f4_symmetry(f4_symmetry_bit(e)), e, f4_symmetry_classify(e),
+    f2_induction(
+      (fun (b : F2Carrier) => C(f4_symmetry(b))), identityCase, frobeniusCase, f4_symmetry_bit(e)
+    )
+  );
+}
+
+// A family with no Frobenius fixes alpha: every remaining symmetry is identity.
+theorem f4_family_without_frobenius_fixes_alpha(
+  H : F4Automorphism -> U0, noFrobenius : H(f4_frobenius_automorphism) -> Void
+) : GaloisFixed(F2, F4OverF2, H, f4_2) {
+  exact (
+    fun (e : F4Automorphism) => f4_automorphism_induction(
+      (fun (d : F4Automorphism) => H(d) -> (f4_auto_apply(d, f4_2) = f4_2)),
+      (fun (member : H(f4_identity_automorphism)) => refl(f4_2)),
+      (
+        fun (member : H(f4_frobenius_automorphism)) => typed(
+          (f4_auto_apply(f4_frobenius_automorphism, f4_2) = f4_2), absurd(noFrobenius(member))
+        )
+      ), e
+    )
+  );
+}
+
+// Deciding Frobenius membership suffices for the nontrivial direction of
+// H = Aut(F4 / Fix(H)); the identity belongs by the subgroup laws.
+theorem f4_fixing_fixed_recovers_members(
+  H : F4Automorphism -> U0, laws : GaloisSubgroupLaws(F2, F4OverF2, H),
+  decideFrobenius : Decidable(H(f4_frobenius_automorphism)), e : F4Automorphism,
+  fixes : GaloisFixing(F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), e)
+) : H(e) {
+  have frobeniusCase : GaloisFixing(
+    F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), f4_frobenius_automorphism
+  ) -> H(f4_frobenius_automorphism) {
+    intro fixesFrobenius;
+    cases decideFrobenius {
+      left member => {
+        exact member;
+      }
+      right noFrobenius => {
+        exact absurd(
+          f4_3_not_2(fixesFrobenius(f4_2, f4_family_without_frobenius_fixes_alpha(H, noFrobenius)))
+        );
+      }
+    }
+  }
+  have recover : GaloisFixing(F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), e) -> H(e) {
+    exact f4_automorphism_induction(
+      (
+        fun (d : F4Automorphism) => GaloisFixing(F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), d)
+        -> H(d)
+      ),
+      (
+        fun (
+          fixesIdentity : GaloisFixing(
+            F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), f4_identity_automorphism
+          )
+        ) => subgroup_unit(F4GaloisGroup, H, laws)
+      ), frobeniusCase, e
+    );
+  }
+  exact recover(fixes);
+}
+
+// Dually, deciding alpha membership recovers the intermediate field from
+// the subgroup of automorphisms fixing it pointwise.
+theorem f4_fixed_fixing_recovers_members(
+  P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P),
+  decideAlpha : Decidable(P(f4_2)), x : F4Carrier,
+  fixed : GaloisFixed(F2, F4OverF2, GaloisFixing(F2, F4OverF2, P), x)
+) : P(x) {
+  cases decideAlpha {
+    left alpha => {
+      exact f4_intermediate_with_alpha(P, laws, alpha, x);
+    }
+    right noAlpha => {
+      have fixesP : GaloisFixing(F2, F4OverF2, P, f4_frobenius_automorphism) {
+        intro y;
+        intro member;
+        exact f4_base_is_fixed(
+          y, f4_intermediate_without_alpha(P, laws, noAlpha, y, member), f4_frobenius_automorphism,
+          tt
+        );
+      }
+      exact f4_intermediate_contains_image(
+        P, laws, x, f4_frobenius_fixed_in_base(x, fixed(f4_frobenius_automorphism, fixesP))
+      );
+    }
+  }
+}
+
+// These are equalities of complete subobjects, with the two decisions explicit.
+theorem f4_fixing_fixed_subgroup(
+  H : GaloisSubgroup(F2, F4OverF2),
+  decideFrobenius : Decidable(galois_subgroup_members(F2, F4OverF2, H, f4_frobenius_automorphism))
+) : fixing_galois_subgroup(F2, F4OverF2, fixed_intermediate_field(F2, F4OverF2, H)) =[
+  GaloisSubgroup(F2, F4OverF2)
+] H {
+  let members = galois_subgroup_members(F2, F4OverF2, H);
+  let closed = GaloisFixing(F2, F4OverF2, GaloisFixed(F2, F4OverF2, members));
+  let laws = subgroup_laws(F4GaloisGroup, H);
+  have same : closed = members {
+    exact field_predicate_ext(
+      F4Automorphism, closed, members,
+      galois_fixing_prop(F2, F4OverF2, GaloisFixed(F2, F4OverF2, members)),
+      subgroup_prop(F4GaloisGroup, members, laws),
+      (
+        fun (e : F4Automorphism) => typed(
+          ((closed(e) -> members(e)) and (members(e) -> closed(e))),
+          (
+            f4_fixing_fixed_recovers_members(members, laws, decideFrobenius, e),
+            galois_fixing_fixed_contains(F2, F4OverF2, members, e)
+          )
+        )
+      )
+    );
+  }
+  exact subgroup_ext(
+    F4GaloisGroup, fixing_galois_subgroup(F2, F4OverF2, fixed_intermediate_field(F2, F4OverF2, H)),
+    H, same
+  );
+}
+
+theorem f4_fixed_fixing_intermediate(
+  M : IntermediateField(F2, F4OverF2),
+  decideAlpha : Decidable(intermediate_members(F2, F4OverF2, M, f4_2))
+) : fixed_intermediate_field(F2, F4OverF2, fixing_galois_subgroup(F2, F4OverF2, M)) =[
+  IntermediateField(F2, F4OverF2)
+] M {
+  let members = intermediate_members(F2, F4OverF2, M);
+  let closed = GaloisFixed(F2, F4OverF2, GaloisFixing(F2, F4OverF2, members));
+  let laws = intermediate_laws(F2, F4OverF2, M);
+  obtain (closure, base) = laws;
+  have same : closed = members {
+    exact field_predicate_ext(
+      F4Carrier, closed, members,
+      galois_fixed_prop(F2, F4OverF2, GaloisFixing(F2, F4OverF2, members)),
+      subfield_prop(F4, members, closure),
+      (
+        fun (x : F4Carrier) => typed(
+          ((closed(x) -> members(x)) and (members(x) -> closed(x))),
+          (
+            f4_fixed_fixing_recovers_members(members, laws, decideAlpha, x),
+            galois_fixed_fixing_contains(F2, F4OverF2, members, x)
+          )
+        )
+      )
+    );
+  }
+  exact intermediate_ext(
+    F2, F4OverF2, fixed_intermediate_field(F2, F4OverF2, fixing_galois_subgroup(F2, F4OverF2, M)),
+    M, same
+  );
+}

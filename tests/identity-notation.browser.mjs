@@ -42,7 +42,10 @@ def Nested = Same =[U0] Same;`);
   assert.equal(await page.locator("#diagnostic").isVisible(), false);
   await inspect("Same");
   assert.equal(await page.locator("#kernel-identity-sugar").isChecked(), true);
-  assert.equal(await page.locator("#kernel-expression").textContent(), "(one=[Natural]one)");
+  assert.equal(await page.locator("#kernel-expression").textContent(), "(one=Naturalone)");
+  assert.equal(await page.locator('#kernel-expression [data-identity-sugar="true"] > mrow > msub > mo').textContent(), "=");
+  assert.equal(await page.locator('#kernel-expression msub > [data-name="Natural"]').count(), 1);
+  assert.equal(await page.locator('#kernel-identity-options math msub').textContent(), "=T");
   assert.equal(await page.locator('#kernel-expression [data-identity-sugar="true"]').count(), 1);
   assert.equal(await page.locator('#kernel-expression [data-name="one"]').count(), 2);
   assert.equal(await page.locator('#kernel-expression [data-name="Natural"]').count(), 1);
@@ -68,11 +71,11 @@ def Nested = Same =[U0] Same;`);
   await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "one" &&
     !document.querySelector("#kernel-view").disabled);
   await inspect("Nested");
-  assert.equal(await page.locator("#kernel-expression").textContent(), "(Same=[𝒰0]Same)");
+  assert.equal(await page.locator("#kernel-expression").textContent(), "(Same=𝒰0Same)");
   await page.locator('.source-line[data-line="4"] [data-name="p"]').first().click();
   await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "p" &&
     !document.querySelector("#kernel-view").disabled);
-  assert.equal(await page.locator("#kernel-type").textContent(), "(n=[Nat]n)");
+  assert.equal(await page.locator("#kernel-type").textContent(), "(n=Natn)");
   assert.equal(await page.locator('#kernel-context-list [data-identity-sugar="true"]').count(), 1);
   await page.locator("#kernel-identity-sugar").uncheck();
   assert.equal(await page.locator("#kernel-type").textContent(), "IdNat(n,n)");

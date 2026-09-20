@@ -32,7 +32,10 @@ construction based_path_induction {
   private s0029_Vble = variable(s0028_CtxExt);
   private s0030_PiIntro = function_intro(s0017_PiElim, s0029_Vble, s0028_CtxExt);
   private s0031_PiIntro = function_intro(s0012_PiForm, s0030_PiIntro, s0013_CtxExt);
-  private s0032_EqElim = equality_eliminate(s0026_PiForm, s0031_PiIntro, s0007_Vble, s0019_Vble, s0023_Vble, s0006_CtxExt, s0018_CtxExt, s0022_CtxExt, s0006_CtxExt);
+  private s0032_EqElim = equality_eliminate(
+    s0026_PiForm, s0031_PiIntro, s0007_Vble, s0019_Vble, s0023_Vble, s0006_CtxExt, s0018_CtxExt,
+    s0022_CtxExt, s0006_CtxExt
+  );
   private s0033_PiElim = apply(s0032_EqElim, s0014_Vble);
   private s0034_PiIntro = function_intro(s0021_EqForm, s0033_PiElim, s0022_CtxExt);
   private s0035_PiIntro = function_intro(s0005_Vble, s0034_PiIntro, s0018_CtxExt);

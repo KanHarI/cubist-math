@@ -1,3 +1,4 @@
+import { replaceSyntax, replaceAllSyntax } from "./source-edit.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -284,7 +285,7 @@ test("circle proof rejects a wrong winding number and a fake inverse law", () =>
     () =>
       compile(
         module,
-        sources.circle.replace(
+        replaceSyntax(sources.circle,
           "winding(loop) = nonnegative(1)",
           "winding(loop) = zeroZ",
         ),
@@ -296,7 +297,7 @@ test("circle proof rejects a wrong winding number and a fake inverse law", () =>
     () =>
       compile(
         module,
-        sources.circle.replace(
+        replaceSyntax(sources.circle,
           "exact decode_encode(base, p);",
           "exact refl(p);",
         ),
@@ -365,7 +366,7 @@ test("finite types, structural subsets, and all finite functions have checked co
     () =>
       compile(
         module,
-        sources.function_counting.replace("Fin(27)", "Fin(26)"),
+        replaceSyntax(sources.function_counting, "Fin(27)", "Fin(26)"),
         sources,
       ),
     /Expected/,
@@ -419,7 +420,7 @@ test("Rijke binomial types and full permutation equivalences have checked counts
     } finally { c.kernel.dispose(); }
   }
   for (const [name, from, to] of [["permutations", "Fin(6)", "Fin(7)"], ["binomial_counting", "Fin(10)", "Fin(9)"]]) {
-    assert.throws(() => compile(module, sources[name].replace(from, to), sources), /Expected/);
+    assert.throws(() => compile(module, replaceSyntax(sources[name], from, to), sources), /Expected/);
   }
 });
 
@@ -455,7 +456,7 @@ test("every surjection between sets has a right inverse using the existing choic
       link.sourceModule === "prelude_library_construction"));
   } finally { c.kernel.dispose(); }
   // Choice gives mere existence, not a distinguished inverse function.
-  assert.throws(() => compile(module, sources.surjections.replace(
+  assert.throws(() => compile(module, replaceSyntax(sources.surjections,
     "-> Mere(RightInverse(A, B, f));", "-> RightInverse(A, B, f);"), sources), /Expected/);
 });
 
@@ -475,7 +476,7 @@ test("set choice checks its family, setness conditions, and inhabitation evidenc
     "A, B, base, tt, inhabited",
     "A, B, base, fibers, tt",
   ]) {
-    assert.throws(() => compile(module, program.replace(
+    assert.throws(() => compile(module, replaceSyntax(program,
       "Choice(U0, A, B, base, fibers, inhabited)", `Choice(U0, ${args})`), sources), /Expected/);
   }
 });
@@ -498,7 +499,7 @@ test("Cantor-Schroeder-Bernstein constructs a full equivalence without choice", 
   } finally { c.kernel.dispose(); }
   // The supplied injection f is not generally surjective; it cannot replace
   // the constructed piecewise bijection while retaining its inverse proofs.
-  assert.throws(() => compile(module, sources.schroeder_bernstein.replace(
+  assert.throws(() => compile(module, replaceSyntax(sources.schroeder_bernstein,
     "injective_split_bijection(A, B, csb_map(A, B, f, g, embedG), csb_injective",
     "injective_split_bijection(A, B, f, csb_injective"), sources), /Expected/);
 });
@@ -507,7 +508,7 @@ test("classical logic checks double-negation evidence and restricts elimination 
   const valid = `import classical;
     def eliminate(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) = double_negation(P, prop, nn);`;
   for (const call of ["double_negation(P, tt, nn)", "double_negation(P, prop, tt)"])
-    assert.throws(() => compile(module, valid.replace("double_negation(P, prop, nn)", call), sources), /Expected/);
+    assert.throws(() => compile(module, replaceSyntax(valid, "double_negation(P, prop, nn)", call), sources), /Expected/);
 });
 
 test("compiler reports completed definitions including imports and stops on errors", () => {
@@ -609,12 +610,12 @@ test("Boolean cut encoding is classical while decoding preserves constructive as
 test("quotient representatives and their choice-dependent sequences remain merely inhabited", () => {
   // Neither the class map's surjectivity proof nor a truncated choice conclusion
   // can supply a distinguished representative (or sequence of representatives).
-  const single = sources.set_quotients.replace(
+  const single = replaceSyntax(sources.set_quotients,
     "FieldExists(exists a : A, quotient_class(A, relation, a) = q) {",
     "(exists a : A, quotient_class(A, relation, a) = q) {");
   assert.notEqual(single, sources.set_quotients);
   assert.throws(() => compile(module, single, sources), /Expected/);
-  const sequence = sources.cauchy_quotient.replace(
+  const sequence = replaceSyntax(sources.cauchy_quotient,
     "FieldExists(forall n : Nat, exists s : CauchySequence(Q, zero, addQ, ltQ),",
     "(forall n : Nat, exists s : CauchySequence(Q, zero, addQ, ltQ),");
   assert.notEqual(sequence, sources.cauchy_quotient);
@@ -622,7 +623,7 @@ test("quotient representatives and their choice-dependent sequences remain merel
 });
 
 test("puncture graph constructions and all-loop generation check without classical logic or choice", () => {
-  const foundational = ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim", "lib_trunc_is_trunc", "lib_funext", "lib_univalence", "lib_ua_elim"].sort();
+  const foundational = ["lib_Trunc", "lib_trunc_intro", "lib_trunc_elim", "lib_trunc_is_trunc", "lib_funext", "lib_univalence"].sort();
   for (const name of ["path_actions", "loop_words", "puncture_graph", "bouquet_cover", "bouquet_generation", "bouquet_invariants", "bouquet_actions", "puncture_winding", "puncture_noncommutative"]) {
     const c = compile(module, sources[name], sources);
     try {
@@ -646,15 +647,15 @@ test("puncture graph constructions and all-loop generation check without classic
         assert.match(c.outputs.find(o => o.name === "bouquet_maps_determined_by_generators").type, /U1/);
       }
       if (name === "puncture_noncommutative") {
-        assert.deepEqual(c.kernel.axiomsFor("puncture_commutator_nontrivial").sort(), ["lib_ua_elim", "lib_univalence"]);
-        assert.deepEqual(c.kernel.axiomsFor("winding_vector_does_not_classify_loops").sort(), ["lib_funext", "lib_ua_elim", "lib_univalence"]);
+        assert.deepEqual(c.kernel.axiomsFor("puncture_commutator_nontrivial").sort(), ["lib_univalence"]);
+        assert.deepEqual(c.kernel.axiomsFor("winding_vector_does_not_classify_loops").sort(), ["lib_funext", "lib_univalence"]);
       }
     } finally { c.kernel.dispose(); }
   }
 });
 
 test("the generation proof cannot replace mere word existence with a selected word", () => {
-  const untruncated = sources.bouquet_generation.replace(
+  const untruncated = replaceSyntax(sources.bouquet_generation,
     "Mere(exists word : Word(Fin(n)),", "(exists word : Word(Fin(n)),");
   assert.notEqual(untruncated, sources.bouquet_generation);
   assert.throws(() => compile(module, untruncated, sources), /Expected/);
@@ -665,14 +666,14 @@ test("the generation proof cannot replace mere word existence with a selected wo
 });
 
 test("signed cancellation and noncommutativity reject incorrect generator actions", () => {
-  const wrongSigns = sources.loop_words.replace(
+  const wrongSigns = replaceSyntax(sources.loop_words,
     "left a => right(a);\n  right a => left(a);",
     "left a => left(a);\n  right a => right(a);");
   assert.notEqual(wrongSigns, sources.loop_words);
   assert.throws(() => compile(module, wrongSigns, sources), /Expected/);
   // If both generators act by the same transposition, the claimed action of
   // the commutator is false. The kernel must reject the purported witness.
-  const collapsedAction = sources.puncture_noncommutative.replace(
+  const collapsedAction = replaceSyntax(sources.puncture_noncommutative,
     "left u => second_permutation;", "left u => first_permutation;");
   assert.notEqual(collapsedAction, sources.puncture_noncommutative);
   assert.throws(() => compile(module, collapsedAction, sources), /Expected/);
@@ -713,17 +714,17 @@ test("complex ring and polynomial identities check at U1 with only stated assump
 });
 
 test("complex multiplication signs and exact-root truncation cannot be changed silently", () => {
-  const wrongSign = sources.complex_numbers.replace(
+  const wrongSign = replaceSyntax(sources.complex_numbers,
     "negF(mulF(complex_imag(F, z), complex_imag(F, w)))",
     "mulF(complex_imag(F, z), complex_imag(F, w))");
   assert.notEqual(wrongSign, sources.complex_numbers);
   assert.throws(() => compile(module, sources.complex_algebra, { ...sources, complex_numbers: wrongSign }), /Expected/);
-  const chosenRoot = sources.complex_polynomials.replace(
+  const chosenRoot = replaceSyntax(sources.complex_polynomials,
     "FieldExists(exists z : F, mulF(z, z) = a) {",
     "(exists z : F, mulF(z, z) = a) {");
   assert.notEqual(chosenRoot, sources.complex_polynomials);
   assert.throws(() => compile(module, chosenRoot, sources), /Expected/);
-  const wrongDifference = sources.polynomial_difference.replace(
+  const wrongDifference = replaceSyntax(sources.polynomial_difference,
     "addF(monic_eval(F, one, addF, mulF, k, tail, r), mulF(x, previous(tail)))",
     "addF(monic_eval(F, one, addF, mulF, k, tail, r), mulF(r, previous(tail)))");
   assert.notEqual(wrongDifference, sources.polynomial_difference);
@@ -764,18 +765,18 @@ test("circle degree obstructs contraction without classical logic or choice", ()
       for (const o of c.outputs) {
         assert.ok(c.kernel.verify(o.proposition, o.binding), `${name}.${o.name}`);
         const axioms = c.kernel.axiomsFor(o.binding);
-        assert.ok(axioms.every(a => ["lib_univalence", "lib_ua_elim"].includes(a)), o.name);
+        assert.ok(axioms.every(a => ["lib_univalence"].includes(a)), o.name);
         if (name === "homotopy_paths") assert.deepEqual(axioms, [], o.name);
       }
       assert.ok(!c.kernel.bindings.has("LEM"));
       assert.ok(!c.kernel.bindings.has("AOC"));
       if (name === "circle_degree") {
-        assert.deepEqual(c.kernel.axiomsFor("positive_degree_no_contractible_extension").sort(), ["lib_ua_elim", "lib_univalence"]);
+        assert.deepEqual(c.kernel.axiomsFor("positive_degree_no_contractible_extension").sort(), ["lib_univalence"]);
         assert.match(c.outputs.find(o => o.name === "positive_degree_no_contractible_extension").type, /X : U1/);
       }
     } finally { c.kernel.dispose(); }
   }
-  const zeroDegree = sources.circle_degree.replace(
+  const zeroDegree = replaceSyntax(sources.circle_degree,
     "circle_map_from_loop(S1, base, positive_loops(n), x)",
     "circle_map_from_loop(S1, base, positive_loops(0), x)");
   assert.notEqual(zeroDegree, sources.circle_degree);
@@ -793,7 +794,7 @@ test("dominant-term deformation avoids zero constructively and needs strict domi
     assert.ok(!c.kernel.bindings.has("AOC"));
     assert.deepEqual(c.kernel.axiomsFor("complex_linear_deformation_nonzero"), ["lib_Trunc"]);
   } finally { c.kernel.dispose(); }
-  const nonStrict = sources.complex_deformation.replace(
+  const nonStrict = replaceSyntax(sources.complex_deformation,
     "dominates : lt(complex_norm_squared(F, addF, mulF, error), complex_norm_squared(F, addF, mulF, z))",
     "dominates : FieldLe(F, lt, complex_norm_squared(F, addF, mulF, error), complex_norm_squared(F, addF, mulF, z))");
   assert.notEqual(nonStrict, sources.complex_deformation);
@@ -813,7 +814,7 @@ test("signed multiples and finite sums keep their constructive algebraic laws", 
     } finally { c.kernel.dispose(); }
   }
   // Our negative(n) represents -(n+1), not -n. Losing this offset must fail.
-  const wrongNegative = sources.integer_multiples.replace(
+  const wrongNegative = replaceSyntax(sources.integer_multiples,
     "right n => natural_multiple(G, zero, addG, negG, negG(x), succ(n));",
     "right n => natural_multiple(G, zero, addG, negG, negG(x), n);");
   assert.notEqual(wrongNegative, sources.integer_multiples);
@@ -823,7 +824,7 @@ test("signed multiples and finite sums keep their constructive algebraic laws", 
 test("homotopy periods satisfy the winding sum without collapsing nontrivial loops", () => {
   const allowed = new Set([
     "lib_Trunc", "lib_funext", "lib_trunc_elim", "lib_trunc_intro",
-    "lib_trunc_is_trunc", "lib_ua_elim", "lib_univalence",
+    "lib_trunc_is_trunc", "lib_univalence",
   ]);
   for (const [name, theorem] of [
     ["puncture_periods", "puncture_period_formula"],
@@ -849,7 +850,7 @@ test("homotopy periods satisfy the winding sum without collapsing nontrivial loo
     } finally { c.kernel.dispose(); }
   }
   // Ignoring winding makes the generator calculation false.
-  const ignoredWinding = sources.puncture_periods.replace(
+  const ignoredWinding = replaceSyntax(sources.puncture_periods,
     "values(i), puncture_winding(n, i, p)", "values(i), zeroZ");
   assert.notEqual(ignoredWinding, sources.puncture_periods);
   assert.throws(() => compile(module, ignoredWinding, sources), /Expected|Conversion types differ/);
@@ -884,12 +885,12 @@ test("Cauchy limits and homotopy periods keep their constructive assumptions", (
 });
 
 test("limit proofs reject an unhalved radius and a wrong limiting sum", () => {
-  const unhalved = sources.ordered_halves.replace(
+  const unhalved = replaceSyntax(sources.ordered_halves,
     "let half = fun (epsilon : F) => mulF(epsilon, reciprocal);",
     "let half = fun (epsilon : F) => epsilon;");
   assert.notEqual(unhalved, sources.ordered_halves);
   assert.throws(() => compile(module, unhalved, sources), /Expected|Conversion types differ/);
-  const wrongSum = sources.limit_periods.replace(
+  const wrongSum = replaceSyntax(sources.limit_periods,
     "period(append_path(X, point, point, point, p, q)) = addF(period(p), period(q))",
     "period(append_path(X, point, point, point, p, q)) = addF(period(p), period(p))");
   assert.notEqual(wrongSum, sources.limit_periods);
@@ -912,7 +913,7 @@ test("limits descend from representatives without choosing curves or finite-stag
     assert.match(type, /LoopMapLaws/);
   } finally { c.kernel.dispose(); }
   // Constancy on presentation fibers is essential to extracting a unique value.
-  const inconsistent = sources.surjective_descent.replace(
+  const inconsistent = replaceSyntax(sources.surjective_descent,
     "consistent(a2, a, trans(same, sym(represents)))", "refl(value(a))");
   assert.notEqual(inconsistent, sources.surjective_descent);
   assert.throws(() => compile(module, inconsistent, sources), /Expected|Conversion types differ/);
@@ -945,12 +946,12 @@ test("finite contour sums compose and account for refinement errors constructive
 });
 
 test("finite contour sums reject false cancellation and reversed tag errors", () => {
-  const cancelled = sources.contour_examples.replace(
+  const cancelled = replaceSyntax(sources.contour_examples,
     "backtrack_vertices(F, zero, one), backtrack_tags(F, zero, one)) = negF(one)",
     "backtrack_vertices(F, zero, one), backtrack_tags(F, zero, one)) = zero");
   assert.notEqual(cancelled, sources.contour_examples);
   assert.throws(() => compile(module, cancelled, sources), /Expected|Conversion types differ/);
-  const reversed = sources.contour_refinement.replace(
+  const reversed = replaceSyntax(sources.contour_refinement,
     "coordinate_difference(F, addF, negF, f(oldTag), f(newTag))",
     "coordinate_difference(F, addF, negF, f(newTag), f(oldTag))");
   assert.notEqual(reversed, sources.contour_refinement);
@@ -958,9 +959,11 @@ test("finite contour sums reject false cancellation and reversed tag errors", ()
 });
 
 test("finite error bounds retain positive slack for the empty sum", () => {
-  const noSlack = sources.sample_error_bounds.replaceAll(
-    /addF\((sample_sum\(C, F, zero, addF, radius, [nk], vertices, tags\)), epsilon\)/g,
-    "$1");
+  let noSlack = sources.sample_error_bounds;
+  for (const index of ["n", "k"]) {
+    const sum = `sample_sum(C, F, zero, addF, radius, ${index}, vertices, tags)`;
+    noSlack = replaceAllSyntax(noSlack, `addF(${sum}, epsilon)`, sum);
+  }
   assert.notEqual(noSlack, sources.sample_error_bounds);
   assert.throws(() => compile(module, noSlack, sources), /Expected|Conversion types differ/);
 });
@@ -997,11 +1000,11 @@ test("constructive magnitude and variation estimates control contour tag errors"
 
 test("magnitude estimates reject one-sided bounds and loss of the variation factor", () => {
   // An upper bound alone cannot control magnitude (large negative values).
-  const oneSided = sources.field_magnitude.replace(
+  const oneSided = replaceSyntax(sources.field_magnitude,
     "FieldLe(F, lt, negF(x), radius);", "FieldLe(F, lt, x, radius);");
   assert.notEqual(oneSided, sources.field_magnitude);
   assert.throws(() => compile(module, oneSided, sources), /Expected|Conversion types differ/);
-  const missingLength = sources.sample_magnitude_bounds.replace(
+  const missingLength = replaceSyntax(sources.sample_magnitude_bounds,
     "other(a, b, t))), n, vertices, tags), mulF(delta, length)) {",
     "other(a, b, t))), n, vertices, tags), delta) {");
   assert.notEqual(missingLength, sources.sample_magnitude_bounds);
@@ -1009,7 +1012,7 @@ test("magnitude estimates reject one-sided bounds and loss of the variation fact
 });
 
 test("magnitude closeness needs a strict radius margin", () => {
-  const closedMargin = sources.field_magnitude_close.replaceAll(
+  const closedMargin = replaceAllSyntax(sources.field_magnitude_close,
     "small : lt(radius, epsilon)", "small : FieldLe(F, lt, radius, epsilon)");
   assert.notEqual(closedMargin, sources.field_magnitude_close);
   assert.throws(() => compile(module, closedMargin, sources), /Expected|Conversion types differ/);
@@ -1060,11 +1063,11 @@ test("vanishing sampled errors preserve the limit of complex contour sums", t =>
 });
 
 test("contour estimates retain the zero-length margin and imaginary variation", () => {
-  const noMargin = sources.field_scale_limits.replace(
+  const noMargin = replaceSyntax(sources.field_scale_limits,
     "let denominator = addF(one, length);", "let denominator = length;");
   assert.notEqual(noMargin, sources.field_scale_limits);
   assert.throws(() => compile(module, noMargin, sources), /Expected|Conversion types differ/);
-  const noImaginaryVariation = sources.complex_contour_bounds.replaceAll(
+  const noImaginaryVariation = replaceAllSyntax(sources.complex_contour_bounds,
     "addF(realWeight(a, b, t), imagWeight(a, b, t))", "realWeight(a, b, t)");
   assert.notEqual(noImaginaryVariation, sources.complex_contour_bounds);
   assert.throws(() => compile(module, noImaginaryVariation, sources), /Expected|Conversion types differ/);
@@ -1096,10 +1099,10 @@ test("straight complex interval curves have constructive continuity, endpoints a
 });
 
 test("affine curves require the oriented parameter increment and both coordinate bounds", () => {
-  const backwards = sources.field_affine.replaceAll("addF(negF(t), s)", "addF(negF(s), t)");
+  const backwards = replaceAllSyntax(sources.field_affine,"addF(negF(t), s)", "addF(negF(s), t)");
   assert.notEqual(backwards, sources.field_affine);
   assert.throws(() => compile(module, backwards, sources), /Expected|Conversion types differ/);
-  const missingImaginaryBound = sources.complex_affine.replace(
+  const missingImaginaryBound = replaceSyntax(sources.complex_affine,
     "maxF(maxF(complex_real(F, z), negF(complex_real(F, z))), maxF(complex_imag(F, z), negF(complex_imag(F, z))))",
     "maxF(complex_real(F, z), negF(complex_real(F, z)))");
   assert.notEqual(missingImaginaryBound, sources.complex_affine);
@@ -1127,12 +1130,12 @@ test("ordered samples of complex affine curves have uniformly bounded coordinate
 });
 
 test("curve variation needs forward ordered parameters and includes imaginary variation", () => {
-  const backwards = sources.affine_variation.replace(
+  const backwards = replaceSyntax(sources.affine_variation,
     "FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, s), field_interval_coordinate(F, zero, one, lt, t))",
     "FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, t), field_interval_coordinate(F, zero, one, lt, s))");
   assert.notEqual(backwards, sources.affine_variation);
   assert.throws(() => compile(module, backwards, sources), /Expected|Conversion types differ/);
-  const noImaginaryLength = sources.complex_curve_variation.replace(
+  const noImaginaryLength = replaceSyntax(sources.complex_curve_variation,
     "addF(maxF(complex_real(F, error), negF(complex_real(F, error))), maxF(complex_imag(F, error), negF(complex_imag(F, error))))",
     "maxF(complex_real(F, error), negF(complex_real(F, error)))");
   assert.notEqual(noImaginaryLength, sources.complex_curve_variation);
@@ -1171,11 +1174,11 @@ test("mapping contour samples preserves the integrand and the orientation of tag
       assert.deepEqual(c.kernel.axiomsFor(output.binding), []);
     }
   } finally { c.kernel.dispose(); }
-  const wrongSign = sources.parameter_contours.replace(
+  const wrongSign = replaceSyntax(sources.parameter_contours,
     "curve(a), curve(b), values(oldTag), values(newTag)", "curve(a), curve(b), values(newTag), values(oldTag)");
   assert.notEqual(wrongSign, sources.parameter_contours);
   assert.throws(() => compile(module, wrongSign, sources), /Expected|Conversion types differ/);
-  const identityIntegrand = sources.parameter_contours.replace(
+  const identityIntegrand = replaceSyntax(sources.parameter_contours,
     "contour_sum(F, zero, addF, mulF, negF, integrand, n, map_sample_vertices",
     "contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => x), n, map_sample_vertices");
   assert.notEqual(identityIntegrand, sources.parameter_contours);
@@ -1209,12 +1212,12 @@ test("fine mesh and uniform continuity control affine contour tags without assum
 });
 
 test("admissible tag estimates require the upper endpoint bound and a strict mesh bound", () => {
-  const outside = sources.interval_tag_bounds.replace(
+  const outside = replaceSyntax(sources.interval_tag_bounds,
     "FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, tag), field_interval_coordinate(F, zero, one, lt, b))",
     "FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt, b), field_interval_coordinate(F, zero, one, lt, tag))");
   assert.notEqual(outside, sources.interval_tag_bounds);
   assert.throws(() => compile(module, outside, sources), /Expected|Conversion types differ/);
-  const weakMesh = sources.interval_tag_bounds.replace(
+  const weakMesh = replaceSyntax(sources.interval_tag_bounds,
     "small : lt(coordinate_difference(F, addF, negF, a, b), radius)",
     "small : FieldLe(F, lt, coordinate_difference(F, addF, negF, a, b), radius)");
   assert.notEqual(weakMesh, sources.interval_tag_bounds);
@@ -1249,10 +1252,10 @@ test("arbitrary finite affine refinements have width-scaled errors for actual co
 
 test("refinement bounds require coarse-tag containment and both slope coordinates", () => {
   const coarseWithin = "IntervalTagWithin(F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices), sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag) ->";
-  const outside = sources.interval_refinement.replaceAll(coarseWithin, "Unit ->");
+  const outside = replaceAllSyntax(sources.interval_refinement,coarseWithin, "Unit ->");
   assert.notEqual(outside, sources.interval_refinement);
   assert.throws(() => compile(module, outside, sources), /Expected|Conversion types differ/);
-  const realOnly = sources.affine_refinement.replace(
+  const realOnly = replaceSyntax(sources.affine_refinement,
     "addF(maxF(complex_real(F, slope), negF(complex_real(F, slope))), maxF(complex_imag(F, slope), negF(complex_imag(F, slope))))",
     "maxF(complex_real(F, slope), negF(complex_real(F, slope)))");
   assert.notEqual(realOnly, sources.affine_refinement);
@@ -1260,7 +1263,7 @@ test("refinement bounds require coarse-tag containment and both slope coordinate
 });
 
 test("refinement identities preserve the coarse edge orientation", () => {
-  const backwards = sources.parameter_refinement.replaceAll(
+  const backwards = replaceAllSyntax(sources.parameter_refinement,
     "sample_first(C, n, vertices), sample_last(C, n, vertices)",
     "sample_last(C, n, vertices), sample_first(C, n, vertices)");
   assert.notEqual(backwards, sources.parameter_refinement);
@@ -1302,7 +1305,7 @@ test("subdivision concatenation handles an empty tail and requires matching endp
       assert.deepEqual(c.kernel.axiomsFor(output.binding), []);
     }
   } finally { c.kernel.dispose(); }
-  const unmatched = sources.sample_subdivisions.replaceAll(
+  const unmatched = replaceAllSyntax(sources.sample_subdivisions,
     "right : SampleSubdivision(C, b, c)", "right : SampleSubdivision(C, a, c)");
   assert.notEqual(unmatched, sources.sample_subdivisions);
   assert.throws(() => compile(module, unmatched, sources), /Expected|Conversion types differ/);
@@ -1327,7 +1330,7 @@ test("uniform affine partition refinements control actual flattened contour sums
     assert.match(estimate.type, /CurvePartitionEstimate/);
     const result = c.outputs.find(o => o.name === "CurvePartitionEstimate");
     assert.match(result.mathscript.expression, /exists flat : SampleSubdivision/);
-    assert.match(result.mathscript.expression, /curve_subdivision_samples.* = subdivision_total/);
+    assert.match(result.mathscript.expression, /curve_subdivision_samples.* = subdivision_total/s);
     assert.match(result.mathscript.expression, /ComplexPerturbation/);
     assert.match(c.outputs.find(o => o.name === "curve_subdivision_samples").mathscript.expression, /curve_contour_samples/);
     assert.match(estimate.type, /mulF\(delta, mulF\(sample_interval_width/);
@@ -1339,12 +1342,12 @@ test("uniform affine partition refinements control actual flattened contour sums
 });
 
 test("partition refinement bounds cannot discard the tail radius or coarse-tag containment", () => {
-  const missingTail = sources.complex_perturbations.replace(
+  const missingTail = replaceSyntax(sources.complex_perturbations,
     "complex_add(F, addF, freshLeft, freshRight), addF(r, s))",
     "complex_add(F, addF, freshLeft, freshRight), r)");
   assert.notEqual(missingTail, sources.complex_perturbations);
   assert.throws(() => compile(module, missingTail, sources), /Expected|Conversion types differ/);
-  const outside = sources.interval_subdivisions.replace(
+  const outside = replaceSyntax(sources.interval_subdivisions,
     "IntervalTagWithin(F, zero, one, lt, a, b, tag) and", "Unit and");
   assert.notEqual(outside, sources.interval_subdivisions);
   assert.throws(() => compile(module, sources.affine_partition_refinement,
@@ -1382,7 +1385,7 @@ test("ordered interval bisection constructs equal-width admissible samples witho
 });
 
 test("midpoint construction certifies half the width rather than the full width", () => {
-  const incorrect = sources.interval_bisection.replace(
+  const incorrect = replaceSyntax(sources.interval_bisection,
     "(a, midpoint) = half(interval_difference(F, zero, one, addF, negF, lt)(a, b)))",
     "(a, midpoint) = interval_difference(F, zero, one, addF, negF, lt)(a, b))");
   assert.notEqual(incorrect, sources.interval_bisection);
@@ -1408,7 +1411,7 @@ test("concatenation preserves subdivision tag conditions including an empty suff
       assert.deepEqual(c.kernel.axiomsFor(output.binding), [], output.name);
     }
   } finally { c.kernel.dispose(); }
-  const wrongTag = example.replace("(typed((Nat and Unit), (0, tt))", "(typed((Nat and Unit), (1, tt))");
+  const wrongTag = replaceSyntax(example, "(typed((Nat and Unit), (0, tt))", "(typed((Nat and Unit), (1, tt))");
   assert.notEqual(wrongTag, example);
   assert.throws(() => compile(module, wrongTag, sources), /Expected|Conversion types differ/);
 });
@@ -1451,16 +1454,16 @@ test("dyadic edge counts double and the refinement proof rejects a linear count"
       assert.deepEqual(c.kernel.axiomsFor(output.binding), []);
     }
   } finally { c.kernel.dispose(); }
-  const linear = sources.dyadic_sampling.replace("succ previous => previous + previous;", "succ previous => succ(previous);");
+  const linear = replaceSyntax(sources.dyadic_sampling, "succ previous => previous + previous;", "succ previous => succ(previous);");
   assert.notEqual(linear, sources.dyadic_sampling);
   assert.throws(() => compile(module, linear, sources), /Expected|Conversion types differ/);
 });
 
 test("strict mesh bounds and truncation cannot be silently weakened in dyadic sampling", () => {
-  const weak = sources.dyadic_mesh.replace("small : lt(radius, mesh)", "small : FieldLe(F, lt, radius, mesh)");
+  const weak = replaceSyntax(sources.dyadic_mesh, "small : lt(radius, mesh)", "small : FieldLe(F, lt, radius, mesh)");
   assert.notEqual(weak, sources.dyadic_mesh);
   assert.throws(() => compile(module, weak, sources), /Expected|Conversion types differ/);
-  const chosen = sources.fine_interval_samples.replace(
+  const chosen = replaceSyntax(sources.fine_interval_samples,
     "FieldExists(FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b)) {",
     "FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b) {");
   assert.notEqual(chosen, sources.fine_interval_samples);
@@ -1489,7 +1492,7 @@ test("dyadic tails preserve constructive assumptions and distinguish actual from
     assert.match(actual.type, /bounds : ArchimedeanBounds/);
     assert.doesNotMatch(actual.type, /FieldExists/);
     const tail = c.outputs.find(o => o.name === "FineIntervalTail");
-    assert.match(tail.mathscript.expression, /exists bound : Nat, forall depth : Nat, IndexLE\(bound, depth\) -> FineDyadicLevel/);
+    assert.match(tail.mathscript.expression, /exists bound : Nat, forall depth : Nat, IndexLE\(bound, depth\)\s+-> FineDyadicLevel/);
     assert.ok(!c.kernel.bindings.has("LEM"));
     assert.ok(!c.kernel.bindings.has("AOC"));
     t.diagnostic(`${c.instructionCount.toLocaleString()} instructions; constructed tails with explicit modulus assumptions`);
@@ -1497,17 +1500,17 @@ test("dyadic tails preserve constructive assumptions and distinguish actual from
 });
 
 test("dyadic tail bounds reject reversed monotonicity and silent extraction of Archimedean witnesses", () => {
-  const reversed = sources.dyadic_tails.replace(
+  const reversed = replaceSyntax(sources.dyadic_tails,
     "FieldLe(F, lt, dyadic_width(F, half, n, width), dyadic_width(F, half, bound, width)) {",
     "FieldLe(F, lt, dyadic_width(F, half, bound, width), dyadic_width(F, half, n, width)) {");
   assert.notEqual(reversed, sources.dyadic_tails);
   assert.throws(() => compile(module, reversed, sources));
-  const mereBounds = sources.dyadic_convergence.replace(
+  const mereBounds = replaceSyntax(sources.dyadic_convergence,
     "bounds : ArchimedeanBounds(F, zero, one, addF, lt),\n  width : F",
     "bounds : Archimedean(F, zero, one, addF, lt),\n  width : F");
   assert.notEqual(mereBounds, sources.dyadic_convergence);
   assert.throws(() => compile(module, mereBounds, sources));
-  const chosen = sources.fine_interval_tails.replace(
+  const chosen = replaceSyntax(sources.fine_interval_tails,
     ": FieldExists(FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b)) {",
     ": FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b) {");
   assert.notEqual(chosen, sources.fine_interval_tails);
@@ -1538,7 +1541,7 @@ test("actual dyadic levels refine each other with admissible pieces and ordered 
 });
 
 test("dyadic construction equations reject joining the wrong sampling level", () => {
-  const wrong = sources.dyadic_data.replace(
+  const wrong = replaceSyntax(sources.dyadic_data,
     "depth, a, b, ordered) {\n  exact refl(dyadic_children_join",
     "succ(depth), a, b, ordered) {\n  exact refl(dyadic_children_join");
   assert.notEqual(wrong, sources.dyadic_data);
@@ -1571,7 +1574,7 @@ test("uniform dyadic contour estimates control the actual later sampling levels"
 });
 
 test("a flattening estimate cannot identify the fine contour without its sum certificate", () => {
-  const disconnected = sources.curve_refinement_estimates.replace(
+  const disconnected = replaceSyntax(sources.curve_refinement_estimates,
     "let identifies = trans(flatComputes, trans(sym(computes), mappedFine));",
     "let identifies = flatComputes;");
   assert.notEqual(disconnected, sources.curve_refinement_estimates);
@@ -1624,7 +1627,7 @@ test("the constructed affine integral of a constant has the oriented endpoint fo
 });
 
 test("the affine Cauchy modulus cannot use mere Archimedean existence as actual bounds", () => {
-  const weakened = sources.affine_dyadic_limits.replace(
+  const weakened = replaceSyntax(sources.affine_dyadic_limits,
     "bounds : ArchimedeanBounds(F, zero, one, addF, lt)",
     "bounds : Archimedean(F, zero, one, addF, lt)");
   assert.notEqual(weakened, sources.affine_dyadic_limits);
@@ -1632,7 +1635,7 @@ test("the affine Cauchy modulus cannot use mere Archimedean existence as actual 
 });
 
 test("the common-refinement Cauchy proof must account for both errors", () => {
-  const shortened = sources.complex_refinement_cauchy.replace(
+  const shortened = replaceSyntax(sources.complex_refinement_cauchy,
     "complex_close_triangle(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, sequence(m), sequence(m + n), sequence(n), half(epsilon), half(epsilon), first, reversed)",
     "first");
   assert.notEqual(shortened, sources.complex_refinement_cauchy);
@@ -1667,13 +1670,13 @@ test("constructed affine integrals are complex-linear with derived continuity wi
 });
 
 test("a common input modulus requires genuinely positive starting radii", () => {
-  const weakened = sources.field_uniform_radii.replace("positiveR : lt(zero, r)", "positiveR : FieldLe(F, lt, zero, r)");
+  const weakened = replaceSyntax(sources.field_uniform_radii, "positiveR : lt(zero, r)", "positiveR : FieldLe(F, lt, zero, r)");
   assert.notEqual(weakened, sources.field_uniform_radii);
   assert.throws(() => compile(module, weakened, sources), /Expected|Conversion types differ/);
 });
 
 test("finite contour linearity cannot drop the complex scalar factor", () => {
-  const dropped = sources.curve_integrand_sums.replace(
+  const dropped = replaceSyntax(sources.curve_integrand_sums,
     "mulF(contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags), coefficient) {",
     "contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags) {");
   assert.notEqual(dropped, sources.curve_integrand_sums);
@@ -1727,7 +1730,7 @@ test("a joined two-edge coarse partition retains the actual three-edge refinemen
       assert.deepEqual(c.kernel.axiomsFor(output.binding), [], name);
     }
   } finally { c.kernel.dispose(); }
-  const wrong = example.replace("fine) = 3 { exact refl(3); }", "fine) = 2 { exact refl(2); }");
+  const wrong = replaceSyntax(example, "fine) = 3 { exact refl(3); }", "fine) = 2 { exact refl(2); }");
   assert.notEqual(wrong, example);
   assert.throws(() => compile(module, wrong, sources));
 });
@@ -1735,7 +1738,7 @@ test("a joined two-edge coarse partition retains the actual three-edge refinemen
 test("refinement joins reject reversing an ordered monoid sum", () => {
   const ordered = "addG(subdivision_total(C, G, zero, addG, edge, n, vertices, pieces), subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces))";
   const reversed = "addG(subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces), subdivision_total(C, G, zero, addG, edge, n, vertices, pieces))";
-  const wrong = sources.subdivision_join.replaceAll(ordered, reversed);
+  const wrong = replaceSyntax(sources.subdivision_join, ordered, reversed, true);
   assert.notEqual(wrong, sources.subdivision_join);
   assert.throws(() => compile(module, wrong, sources));
 });

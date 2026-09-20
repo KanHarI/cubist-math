@@ -17,7 +17,7 @@ $(BUILD)/%.o: src/%.c include/thth.h include/tt_opcodes.h src/kernel/internal.h 
 	mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 $(BUILD)/kernel/apply.o: src/kernel/metadata.inc
-$(BUILD)/proofs.o: src/proofs_generated.inc
+$(BUILD)/proofs.o: src/proofs_generated.inc src/univalence_generated.inc
 $(BUILD)/libthth.a: $(OBJ)
 	$(RM) $@
 	$(AR) rcs $@ $^
@@ -59,6 +59,7 @@ browser-test: wasm
 
 .PHONY: proof-export
 proof-export: wasm
+	node tools/proofs/univalence.mjs
 	python3 tools/export_workbench.py
 	node tools/proofs/wnat_equiv.mjs
 	node tools/proofs/primes.mjs

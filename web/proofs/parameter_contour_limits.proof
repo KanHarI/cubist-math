@@ -3,53 +3,180 @@ import field_scale_limits;
 import complex_limits;
 
 // Only delta_n -> 0 is required: fixed-length scaling is proved above.
-theorem complex_parameter_tag_errors_converge(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), curve : C -> Complex(F), values : C -> Complex(F),
-  realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F,
-  count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(C, count(n))),
-  oldTags : (forall n : Nat, SampleTags(C, count(n))), newTags : (forall n : Nat, SampleTags(C, count(n))),
-  delta : Nat -> F, length : F, nonnegativeLength : FieldLe(F, lt, zero, length),
+theorem complex_parameter_tag_errors_converge(
+  C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
+  -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  inverses : FieldInverses(F, zero, one, mulF, lt), curve : C -> Complex(F), values : C
+  -> Complex(F), realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, count : Nat -> Nat,
+  vertices : (forall n : Nat, SampleVertices(C, count(n))),
+  oldTags : (forall n : Nat, SampleTags(C, count(n))),
+  newTags : (forall n : Nat, SampleTags(C, count(n))), delta : Nat -> F, length : F,
+  nonnegativeLength : FieldLe(F, lt, zero, length),
   nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
-  errors : (forall n : Nat, ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta(n), count(n), vertices(n), oldTags(n), newTags(n))),
-  increments : (forall n : Nat, ComplexParameterIncrementBounds(C, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n))),
-  variation : (forall n : Nat, FieldLe(F, lt, sample_sum(C, F, zero, addF, (fun (a : C) => fun (b : C) => fun (t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), count(n), vertices(n), oldTags(n)), length)),
-  vanishes : FieldConverges(F, zero, addF, lt, delta, zero)) :
-  ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => complex_parameter_tag_error_sum(C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n), newTags(n))), complex_zero(F, zero)) {
-  let scaledVanishes = field_nonnegative_scale_zero_converges(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length, nonnegativeLength, delta, vanishes);
-  exact complex_box_squeeze(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, (fun (n : Nat) => complex_parameter_tag_error_sum(C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n), newTags(n))), (fun (n : Nat) => mulF(delta(n), length)),
-    (fun (n : Nat) => complex_parameter_tag_error_length_bound(C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight, imagWeight, delta(n), length, nonnegativeDelta(n), count(n), vertices(n), oldTags(n), newTags(n), errors(n), increments(n), variation(n))), scaledVanishes);
+  errors : (
+    forall n : Nat,
+    ComplexParameterTagBounds(
+      C, F, addF, negF, lt, values, delta(n), count(n), vertices(n), oldTags(n), newTags(n)
+    )
+  ),
+  increments : (
+    forall n : Nat,
+    ComplexParameterIncrementBounds(
+      C, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n)
+    )
+  ),
+  variation : (
+    forall n : Nat,
+    FieldLe(
+      F, lt,
+      sample_sum(
+        C, F, zero, addF,
+        (
+          fun (a : C) => fun (b : C) => fun (t : C) => addF(
+            realWeight(a, b, t), imagWeight(a, b, t)
+          )
+        ), count(n), vertices(n), oldTags(n)
+      ), length
+    )
+  ), vanishes : FieldConverges(F, zero, addF, lt, delta, zero)
+) : ComplexConverges(
+  F, zero, addF, lt,
+  (
+    fun (n : Nat) => complex_parameter_tag_error_sum(
+      C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n), newTags(n)
+    )
+  ), complex_zero(F, zero)
+) {
+  let scaledVanishes =
+    field_nonnegative_scale_zero_converges(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
+      nonnegativeLength, delta, vanishes
+    );
+  exact complex_box_squeeze(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
+    (
+      fun (n : Nat) => complex_parameter_tag_error_sum(
+        C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n), newTags(n)
+      )
+    ), (fun (n : Nat) => mulF(delta(n), length)),
+    (
+      fun (n : Nat) => complex_parameter_tag_error_length_bound(
+        C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight,
+        imagWeight, delta(n), length, nonnegativeDelta(n), count(n), vertices(n), oldTags(n),
+        newTags(n), errors(n), increments(n), variation(n)
+      )
+    ), scaledVanishes
+  );
 }
 
 // Given convergence for one choice of tags, any choice satisfying the
 // vanishing sampled-error condition converges to that same complex value.
-theorem complex_parameter_tag_independent_limit(C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), inverses : FieldInverses(F, zero, one, mulF, lt), curve : C -> Complex(F), values : C -> Complex(F),
-  realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F,
-  count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(C, count(n))),
-  oldTags : (forall n : Nat, SampleTags(C, count(n))), newTags : (forall n : Nat, SampleTags(C, count(n))),
-  delta : Nat -> F, length : F, nonnegativeLength : FieldLe(F, lt, zero, length),
+theorem complex_parameter_tag_independent_limit(
+  C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
+  -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  inverses : FieldInverses(F, zero, one, mulF, lt), curve : C -> Complex(F), values : C
+  -> Complex(F), realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, count : Nat -> Nat,
+  vertices : (forall n : Nat, SampleVertices(C, count(n))),
+  oldTags : (forall n : Nat, SampleTags(C, count(n))),
+  newTags : (forall n : Nat, SampleTags(C, count(n))), delta : Nat -> F, length : F,
+  nonnegativeLength : FieldLe(F, lt, zero, length),
   nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
-  errors : (forall n : Nat, ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta(n), count(n), vertices(n), oldTags(n), newTags(n))),
-  increments : (forall n : Nat, ComplexParameterIncrementBounds(C, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n))),
-  variation : (forall n : Nat, FieldLe(F, lt, sample_sum(C, F, zero, addF, (fun (a : C) => fun (b : C) => fun (t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), count(n), vertices(n), oldTags(n)), length)),
-  vanishes : FieldConverges(F, zero, addF, lt, delta, zero), value : Complex(F),
-  oldConverges : ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n))), value)) :
-  ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n))), value) {
-  let oldSums = (fun (n : Nat) => complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n)));
-  let newSums = (fun (n : Nat) => complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n)));
-  let errorSums = (fun (n : Nat) => complex_parameter_tag_error_sum(C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n), newTags(n)));
-  let halving = ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
-  let errorConverges = complex_parameter_tag_errors_converge(C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, curve, values, realWeight, imagWeight, count, vertices, oldTags, newTags, delta, length, nonnegativeLength, nonnegativeDelta, errors, increments, variation, vanishes);
-  let added = complex_converges_add(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, oldSums, errorSums, value, complex_zero(F, zero), oldConverges, errorConverges);
+  errors : (
+    forall n : Nat,
+    ComplexParameterTagBounds(
+      C, F, addF, negF, lt, values, delta(n), count(n), vertices(n), oldTags(n), newTags(n)
+    )
+  ),
+  increments : (
+    forall n : Nat,
+    ComplexParameterIncrementBounds(
+      C, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n)
+    )
+  ),
+  variation : (
+    forall n : Nat,
+    FieldLe(
+      F, lt,
+      sample_sum(
+        C, F, zero, addF,
+        (
+          fun (a : C) => fun (b : C) => fun (t : C) => addF(
+            realWeight(a, b, t), imagWeight(a, b, t)
+          )
+        ), count(n), vertices(n), oldTags(n)
+      ), length
+    )
+  ), vanishes : FieldConverges(F, zero, addF, lt, delta, zero), value : Complex(F),
+  oldConverges : ComplexConverges(
+    F, zero, addF, lt,
+    (
+      fun (n : Nat) => complex_parameter_contour_sum(
+        C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n)
+      )
+    ), value
+  )
+) : ComplexConverges(
+  F, zero, addF, lt,
+  (
+    fun (n : Nat) => complex_parameter_contour_sum(
+      C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n)
+    )
+  ), value
+) {
+  let oldSums =
+    (
+      fun (n : Nat) => complex_parameter_contour_sum(
+        C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n)
+      )
+    );
+  let newSums =
+    (
+      fun (n : Nat) => complex_parameter_contour_sum(
+        C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n)
+      )
+    );
+  let errorSums =
+    (
+      fun (n : Nat) => complex_parameter_tag_error_sum(
+        C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n), newTags(n)
+      )
+    );
+  let halving =
+    ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
+  let errorConverges =
+    complex_parameter_tag_errors_converge(
+      C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, curve, values,
+      realWeight, imagWeight, count, vertices, oldTags, newTags, delta, length, nonnegativeLength,
+      nonnegativeDelta, errors, increments, variation, vanishes
+    );
+  let added =
+    complex_converges_add(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, oldSums, errorSums,
+      value, complex_zero(F, zero), oldConverges, errorConverges
+    );
   let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-  let unit = ring_add_zero_right(Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, value);
+  let unit =
+    ring_add_zero_right(
+      Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
+      complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, value
+    );
   let total = fun (n : Nat) => complex_add(F, addF, oldSums(n), errorSums(n));
-  let sameLimit = transport(ComplexConverges(F, zero, addF, lt, total), complex_add(F, addF, value, complex_zero(F, zero)), value, unit, added);
+  let sameLimit =
+    transport(
+      ComplexConverges(F, zero, addF, lt, total),
+      complex_add(F, addF, value, complex_zero(F, zero)), value, unit, added
+    );
   have pointwise : forall n : Nat, total(n) = newSums(n) {
     intro n;
-    exact sym(parameter_contour_sum_change_tags(C, Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, curve, values, count(n), vertices(n), oldTags(n), newTags(n)));
+    exact sym(
+      parameter_contour_sum_change_tags(
+        C, Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
+        complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, curve, values, count(n),
+        vertices(n), oldTags(n), newTags(n)
+      )
+    );
   }
   exact complex_converges_pointwise(F, zero, addF, lt, total, newSums, pointwise, value, sameLimit);
 }

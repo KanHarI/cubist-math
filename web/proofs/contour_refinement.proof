@@ -1,56 +1,219 @@
 import contour_samples;
 
 // Exact error terms from tag changes and splitting an oriented edge.
-def contour_tag_error(F : U1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  f : F -> F, a : F, b : F, oldTag : F, newTag : F) =
-  mulF(coordinate_difference(F, addF, negF, f(oldTag), f(newTag)), coordinate_difference(F, addF, negF, a, b));
+def contour_tag_error(
+  F : U1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, f : F -> F, a : F, b : F,
+  oldTag : F, newTag : F
+) =
+  mulF(
+    coordinate_difference(F, addF, negF, f(oldTag), f(newTag)),
+    coordinate_difference(F, addF, negF, a, b)
+  );
 
-theorem contour_edge_change_tag(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, y : F, oldTag : F, newTag : F) :
-  contour_edge(F, addF, mulF, negF, f, x, y, newTag) = addF(contour_edge(F, addF, mulF, negF, f, x, y, oldTag), contour_tag_error(F, addF, mulF, negF, f, x, y, oldTag, newTag)) {
+theorem contour_edge_change_tag(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, y : F, oldTag : F,
+  newTag : F
+) : contour_edge(F, addF, mulF, negF, f, x, y, newTag) = addF(
+  contour_edge(F, addF, mulF, negF, f, x, y, oldTag),
+  contour_tag_error(F, addF, mulF, negF, f, x, y, oldTag, newTag)
+) {
   let increment = coordinate_difference(F, addF, negF, x, y);
-  exact sym(trans(sym(ring_distribute_left(F, zero, one, addF, mulF, negF, ring, f(oldTag), coordinate_difference(F, addF, negF, f(oldTag), f(newTag)), increment)),
-    cong((fun (v : F) => mulF(v, increment)), difference_add_back(F, zero, one, addF, mulF, negF, ring, f(oldTag), f(newTag)))));
+  exact sym(
+    trans(
+      sym(
+        ring_distribute_left(
+          F, zero, one, addF, mulF, negF, ring, f(oldTag),
+          coordinate_difference(F, addF, negF, f(oldTag), f(newTag)), increment
+        )
+      ),
+      cong(
+        (fun (v : F) => mulF(v, increment)),
+        difference_add_back(F, zero, one, addF, mulF, negF, ring, f(oldTag), f(newTag))
+      )
+    )
+  );
 }
 
-theorem contour_edge_subdivide(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, middle : F, y : F, tag : F) :
-  addF(contour_edge(F, addF, mulF, negF, f, x, middle, tag), contour_edge(F, addF, mulF, negF, f, middle, y, tag)) = contour_edge(F, addF, mulF, negF, f, x, y, tag) {
-  exact trans(sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, f(tag), coordinate_difference(F, addF, negF, x, middle), coordinate_difference(F, addF, negF, middle, y))),
-    cong(mulF(f(tag)), difference_compose(F, zero, one, addF, mulF, negF, ring, x, middle, y)));
+theorem contour_edge_subdivide(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, middle : F, y : F,
+  tag : F
+) : addF(
+  contour_edge(F, addF, mulF, negF, f, x, middle, tag),
+  contour_edge(F, addF, mulF, negF, f, middle, y, tag)
+) = contour_edge(F, addF, mulF, negF, f, x, y, tag) {
+  exact trans(
+    sym(
+      ring_distribute(
+        F, zero, one, addF, mulF, negF, ring, f(tag),
+        coordinate_difference(F, addF, negF, x, middle),
+        coordinate_difference(F, addF, negF, middle, y)
+      )
+    ), cong(mulF(f(tag)), difference_compose(F, zero, one, addF, mulF, negF, ring, x, middle, y))
+  );
 }
 
-theorem contour_edge_refinement(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, middle : F, y : F, coarseTag : F, leftTag : F, rightTag : F) :
-  addF(contour_edge(F, addF, mulF, negF, f, x, middle, leftTag), contour_edge(F, addF, mulF, negF, f, middle, y, rightTag)) =
-    addF(contour_edge(F, addF, mulF, negF, f, x, y, coarseTag), addF(contour_tag_error(F, addF, mulF, negF, f, x, middle, coarseTag, leftTag), contour_tag_error(F, addF, mulF, negF, f, middle, y, coarseTag, rightTag))) {
-  exact trans(cong((fun (v : F) => addF(v, contour_edge(F, addF, mulF, negF, f, middle, y, rightTag))), contour_edge_change_tag(F, zero, one, addF, mulF, negF, ring, f, x, middle, coarseTag, leftTag)),
-    trans(cong(addF(addF(contour_edge(F, addF, mulF, negF, f, x, middle, coarseTag), contour_tag_error(F, addF, mulF, negF, f, x, middle, coarseTag, leftTag))), contour_edge_change_tag(F, zero, one, addF, mulF, negF, ring, f, middle, y, coarseTag, rightTag)),
-      trans(ring_add_shuffle(F, zero, one, addF, mulF, negF, ring, contour_edge(F, addF, mulF, negF, f, x, middle, coarseTag), contour_tag_error(F, addF, mulF, negF, f, x, middle, coarseTag, leftTag), contour_edge(F, addF, mulF, negF, f, middle, y, coarseTag), contour_tag_error(F, addF, mulF, negF, f, middle, y, coarseTag, rightTag)),
-        cong((fun (v : F) => addF(v, addF(contour_tag_error(F, addF, mulF, negF, f, x, middle, coarseTag, leftTag), contour_tag_error(F, addF, mulF, negF, f, middle, y, coarseTag, rightTag)))), contour_edge_subdivide(F, zero, one, addF, mulF, negF, ring, f, x, middle, y, coarseTag)))));
+theorem contour_edge_refinement(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, middle : F, y : F,
+  coarseTag : F, leftTag : F, rightTag : F
+) : addF(
+  contour_edge(F, addF, mulF, negF, f, x, middle, leftTag),
+  contour_edge(F, addF, mulF, negF, f, middle, y, rightTag)
+) = addF(
+  contour_edge(F, addF, mulF, negF, f, x, y, coarseTag),
+  addF(
+    contour_tag_error(F, addF, mulF, negF, f, x, middle, coarseTag, leftTag),
+    contour_tag_error(F, addF, mulF, negF, f, middle, y, coarseTag, rightTag)
+  )
+) {
+  exact trans(
+    cong(
+      (fun (v : F) => addF(v, contour_edge(F, addF, mulF, negF, f, middle, y, rightTag))),
+      contour_edge_change_tag(
+        F, zero, one, addF, mulF, negF, ring, f, x, middle, coarseTag, leftTag
+      )
+    ),
+    trans(
+      cong(
+        addF(
+          addF(
+            contour_edge(F, addF, mulF, negF, f, x, middle, coarseTag),
+            contour_tag_error(F, addF, mulF, negF, f, x, middle, coarseTag, leftTag)
+          )
+        ),
+        contour_edge_change_tag(
+          F, zero, one, addF, mulF, negF, ring, f, middle, y, coarseTag, rightTag
+        )
+      ),
+      trans(
+        ring_add_shuffle(
+          F, zero, one, addF, mulF, negF, ring,
+          contour_edge(F, addF, mulF, negF, f, x, middle, coarseTag),
+          contour_tag_error(F, addF, mulF, negF, f, x, middle, coarseTag, leftTag),
+          contour_edge(F, addF, mulF, negF, f, middle, y, coarseTag),
+          contour_tag_error(F, addF, mulF, negF, f, middle, y, coarseTag, rightTag)
+        ),
+        cong(
+          (
+            fun (v : F) => addF(
+              v,
+              addF(
+                contour_tag_error(F, addF, mulF, negF, f, x, middle, coarseTag, leftTag),
+                contour_tag_error(F, addF, mulF, negF, f, middle, y, coarseTag, rightTag)
+              )
+            )
+          ),
+          contour_edge_subdivide(F, zero, one, addF, mulF, negF, ring, f, x, middle, y, coarseTag)
+        )
+      )
+    )
+  );
 }
 
-def contour_tag_error_sum(F : U1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  f : F -> F, n : Nat) =
+def contour_tag_error_sum(
+  F : U1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, f : F -> F, n : Nat
+) =
   induction n as k return (SampleVertices(F, k) -> SampleTags(F, k) -> SampleTags(F, k) -> F) {
     zero => fun (vertices : F) => fun (oldTags : Unit) => fun (newTags : Unit) => zero;
-    succ previous => fun (vertices : SampleVertices(F, succ(k))) => fun (oldTags : SampleTags(F, succ(k))) => fun (newTags : SampleTags(F, succ(k))) =>
-      addF(contour_tag_error(F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices), sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)), field_fst(F, SampleTags(F, k), oldTags), field_fst(F, SampleTags(F, k), newTags)), previous(field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags), field_snd(F, SampleTags(F, k), newTags)));
+    succ previous => fun (vertices : SampleVertices(F, succ(k))) => fun (
+      oldTags : SampleTags(F, succ(k))
+    ) => fun (newTags : SampleTags(F, succ(k))) => addF(
+      contour_tag_error(
+        F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices),
+        sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)),
+        field_fst(F, SampleTags(F, k), oldTags), field_fst(F, SampleTags(F, k), newTags)
+      ),
+      previous(
+        field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags),
+        field_snd(F, SampleTags(F, k), newTags)
+      )
+    );
   };
 
-theorem contour_sum_change_tags(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, n : Nat) :
-  forall vertices : SampleVertices(F, n), forall oldTags : SampleTags(F, n), forall newTags : SampleTags(F, n),
-    contour_sum(F, zero, addF, mulF, negF, f, n, vertices, newTags) = addF(contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags), contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags)) {
-  exact induction n as k return (forall vertices : SampleVertices(F, k), forall oldTags : SampleTags(F, k), forall newTags : SampleTags(F, k),
-    contour_sum(F, zero, addF, mulF, negF, f, k, vertices, newTags) = addF(contour_sum(F, zero, addF, mulF, negF, f, k, vertices, oldTags), contour_tag_error_sum(F, zero, addF, mulF, negF, f, k, vertices, oldTags, newTags))) {
-    zero => fun (vertices : F) => fun (oldTags : Unit) => fun (newTags : Unit) => sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero));
-    succ previous => fun (vertices : SampleVertices(F, succ(k))) => fun (oldTags : SampleTags(F, succ(k))) => fun (newTags : SampleTags(F, succ(k))) =>
-      trans(cong((fun (value : F) => addF(value, contour_sum(F, zero, addF, mulF, negF, f, k, field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), newTags)))),
-        contour_edge_change_tag(F, zero, one, addF, mulF, negF, ring, f, field_fst(F, SampleVertices(F, k), vertices), sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)), field_fst(F, SampleTags(F, k), oldTags), field_fst(F, SampleTags(F, k), newTags))),
-        trans(cong(addF(addF(contour_edge(F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices), sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)), field_fst(F, SampleTags(F, k), oldTags)), contour_tag_error(F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices), sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)), field_fst(F, SampleTags(F, k), oldTags), field_fst(F, SampleTags(F, k), newTags)))),
-          previous(field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags), field_snd(F, SampleTags(F, k), newTags))),
-          ring_add_shuffle(F, zero, one, addF, mulF, negF, ring, contour_edge(F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices), sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)), field_fst(F, SampleTags(F, k), oldTags)), contour_tag_error(F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices), sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)), field_fst(F, SampleTags(F, k), oldTags), field_fst(F, SampleTags(F, k), newTags)),
-            contour_sum(F, zero, addF, mulF, negF, f, k, field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags)), contour_tag_error_sum(F, zero, addF, mulF, negF, f, k, field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags), field_snd(F, SampleTags(F, k), newTags)))));
+theorem contour_sum_change_tags(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, n : Nat
+) : forall vertices : SampleVertices(F, n), forall oldTags : SampleTags(F, n),
+forall newTags : SampleTags(F, n),
+contour_sum(F, zero, addF, mulF, negF, f, n, vertices, newTags) = addF(
+  contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags),
+  contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags)
+) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(F, k), forall oldTags : SampleTags(F, k),
+    forall newTags : SampleTags(F, k),
+    contour_sum(F, zero, addF, mulF, negF, f, k, vertices, newTags) = addF(
+      contour_sum(F, zero, addF, mulF, negF, f, k, vertices, oldTags),
+      contour_tag_error_sum(F, zero, addF, mulF, negF, f, k, vertices, oldTags, newTags)
+    )
+  ) {
+    zero => fun (vertices : F) => fun (oldTags : Unit) => fun (newTags : Unit) => sym(
+      ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero)
+    );
+    succ previous => fun (vertices : SampleVertices(F, succ(k))) => fun (
+      oldTags : SampleTags(F, succ(k))
+    ) => fun (newTags : SampleTags(F, succ(k))) => trans(
+      cong(
+        (
+          fun (value : F) => addF(
+            value,
+            contour_sum(
+              F, zero, addF, mulF, negF, f, k, field_snd(F, SampleVertices(F, k), vertices),
+              field_snd(F, SampleTags(F, k), newTags)
+            )
+          )
+        ),
+        contour_edge_change_tag(
+          F, zero, one, addF, mulF, negF, ring, f, field_fst(F, SampleVertices(F, k), vertices),
+          sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)),
+          field_fst(F, SampleTags(F, k), oldTags), field_fst(F, SampleTags(F, k), newTags)
+        )
+      ),
+      trans(
+        cong(
+          addF(
+            addF(
+              contour_edge(
+                F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices),
+                sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)),
+                field_fst(F, SampleTags(F, k), oldTags)
+              ),
+              contour_tag_error(
+                F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices),
+                sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)),
+                field_fst(F, SampleTags(F, k), oldTags), field_fst(F, SampleTags(F, k), newTags)
+              )
+            )
+          ),
+          previous(
+            field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags),
+            field_snd(F, SampleTags(F, k), newTags)
+          )
+        ),
+        ring_add_shuffle(
+          F, zero, one, addF, mulF, negF, ring,
+          contour_edge(
+            F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices),
+            sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)),
+            field_fst(F, SampleTags(F, k), oldTags)
+          ),
+          contour_tag_error(
+            F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices),
+            sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)),
+            field_fst(F, SampleTags(F, k), oldTags), field_fst(F, SampleTags(F, k), newTags)
+          ),
+          contour_sum(
+            F, zero, addF, mulF, negF, f, k, field_snd(F, SampleVertices(F, k), vertices),
+            field_snd(F, SampleTags(F, k), oldTags)
+          ),
+          contour_tag_error_sum(
+            F, zero, addF, mulF, negF, f, k, field_snd(F, SampleVertices(F, k), vertices),
+            field_snd(F, SampleTags(F, k), oldTags), field_snd(F, SampleTags(F, k), newTags)
+          )
+        )
+      )
+    );
   };
 }

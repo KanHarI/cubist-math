@@ -52,7 +52,7 @@ try {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({ path: "/private/tmp/thth-highlights-desktop.png", fullPage: true });
   // Check representative destinations, including the named final result.
-  for (const proof of groupOnly ? ["group_univalence"] : ["euclid", "circle", "group_univalence", "f4_galois_group"]) {
+  for (const proof of groupOnly ? ["group_univalence"] : ["euclid", "circle_group_identity", "group_univalence", "f4_galois_group"]) {
     await page.locator(`.proof-card[href*="proof=${proof}&"]`).click();
     await idle();
     assert.equal(await page.locator("#proof-picker").inputValue(), proof);
@@ -60,7 +60,21 @@ try {
     assert.equal(await page.locator("#example").count(), 0);
     assert.equal(await page.getByRole("button", { name: "Euclid example" }).count(), 0);
     assert.equal(await page.locator("#diagnostic").isVisible(), false);
-    assert.match(await page.locator("#result").textContent(), proof === "euclid" ? /Verified euclid/ : proof === "circle" ? /fundamental_group_of_circle/ : proof === "group_univalence" ? /group_structure_identity/ : /f4_galois_is_cyclic_two/);
+    assert.match(await page.locator("#result").textContent(), proof === "euclid" ? /Verified euclid/ : proof === "circle_group_identity" ? /circle_group_isomorphism/ : proof === "group_univalence" ? /group_structure_identity/ : /f4_galois_is_cyclic_two/);
+    if (proof === "circle_group_identity") {
+      await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+      assert.match(await page.locator("#inspect-type").textContent(), /GroupIso\(CircleLoopGroup, IntegerGroup\)/);
+      for (const name of ["GroupIso", "CircleLoopGroup", "IntegerGroup"])
+        assert.equal(await page.locator(`#kernel-type [data-name="${name}"]`).count(), 1);
+      assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
+      const tuple = page.locator('#read-source .reference.macro[data-name="("][title*="winding, (integer_loop"]').first();
+      assert.equal(await tuple.count(), 1);
+      assert.match(await tuple.getAttribute("title"), /winding, \(integer_loop, \(integer_loop_winding/);
+      await tuple.click();
+      assert.equal(await page.locator("#inspect-kind").textContent(), "tuple macro");
+      assert.match(await page.locator("#inspect-description").textContent(), /Expands to \(winding, \(integer_loop/);
+
+    }
     await page.getByRole("link", { name: "Proof highlights", exact: true }).click();
     assert.match(await page.title(), /Proof highlights/);
   }

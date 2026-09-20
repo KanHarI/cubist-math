@@ -3,61 +3,89 @@ import paths;
 // Naturality tracks the moving basepoint of a homotopy. No funext or
 // classical principle is needed: these are consequences of path induction.
 def path_map_constant(A : U1, B : U1, point : B, x : A, y : A, p : x = y) =
-  path_induction(A,
-    (fun (a : A) => fun (b : A) => fun (r : a = b) =>
-      ap(U1, A, B, (fun (v : A) => point), a, b, r) = refl(point)),
-    (fun (a : A) => refl(refl(point))), x, y, p);
+  path_induction(
+    A,
+    (
+      fun (a : A) => fun (b : A) => fun (r : a = b) => ap(U1, A, B, (fun (v : A) => point), a, b, r) = refl(
+        point
+      )
+    ), (fun (a : A) => refl(refl(point))), x, y, p
+  );
 
 def path_map_identity(A : U1, x : A, y : A, p : x = y) =
-  path_induction(A,
-    (fun (a : A) => fun (b : A) => fun (r : a = b) =>
-      ap(U1, A, A, (fun (v : A) => v), a, b, r) = r),
-    (fun (a : A) => refl(refl(a))), x, y, p);
+  path_induction(
+    A,
+    (fun (a : A) => fun (b : A) => fun (r : a = b) => ap(U1, A, A, (fun (v : A) => v), a, b, r) = r),
+    (fun (a : A) => refl(refl(a))), x, y, p
+  );
 
-def homotopy_naturality(A : U1, B : U1, f : A -> B, g : A -> B,
-  homotopy : (forall a : A, f(a) = g(a)), x : A, y : A, p : x = y) =
-  path_induction(A,
-    (fun (a : A) => fun (b : A) => fun (r : a = b) =>
-      concatenate(U1, B, f(a), f(b), g(b), ap(U1, A, B, f, a, b, r), homotopy(b)) =
-      concatenate(U1, B, f(a), g(a), g(b), homotopy(a), ap(U1, A, B, g, a, b, r))),
-    (fun (a : A) => sym(right_unit(B, f(a), g(a), homotopy(a)))), x, y, p);
+def homotopy_naturality(
+  A : U1, B : U1, f : A -> B, g : A -> B, homotopy : (forall a : A, f(a) = g(a)), x : A, y : A,
+  p : x = y
+) =
+  path_induction(
+    A,
+    (
+      fun (a : A) => fun (b : A) => fun (r : a = b) => concatenate(
+        U1, B, f(a), f(b), g(b), ap(U1, A, B, f, a, b, r), homotopy(b)
+      ) = concatenate(U1, B, f(a), g(a), g(b), homotopy(a), ap(U1, A, B, g, a, b, r))
+    ), (fun (a : A) => sym(right_unit(B, f(a), g(a), homotopy(a)))), x, y, p
+  );
 
 def cancel_right_path(A : U1, y : A, z : A, r : y = z) =
-  path_induction(A,
-    (fun (a : A) => fun (b : A) => fun (s : a = b) =>
-      forall x : A, forall p : x = a, forall q : x = a,
-      (concatenate(U1, A, x, a, b, p, s) = concatenate(U1, A, x, a, b, q, s)) -> (p = q)),
-    (fun (a : A) => fun (x : A) => fun (p : x = a) => fun (q : x = a) =>
-      fun (same : concatenate(U1, A, x, a, a, p, refl(a)) = concatenate(U1, A, x, a, a, q, refl(a))) =>
-        trans(sym(right_unit(A, x, a, p)), trans(same, right_unit(A, x, a, q)))), y, z, r);
+  path_induction(
+    A,
+    (
+      fun (a : A) => fun (b : A) => fun (s : a = b) => forall x : A, forall p : x = a,
+      forall q : x = a, (concatenate(U1, A, x, a, b, p, s) = concatenate(U1, A, x, a, b, q, s))
+      -> (p = q)
+    ),
+    (
+      fun (a : A) => fun (x : A) => fun (p : x = a) => fun (q : x = a) => fun (
+        same : concatenate(U1, A, x, a, a, p, refl(a)) = concatenate(U1, A, x, a, a, q, refl(a))
+      ) => trans(sym(right_unit(A, x, a, p)), trans(same, right_unit(A, x, a, q)))
+    ), y, z, r
+  );
 
-theorem null_homotopy_kills_loops(A : U1, B : U1, f : A -> B, point : B,
-  homotopy : (forall a : A, f(a) = point), x : A, p : x = x) :
-  ap(U1, A, B, f, x, x, p) = refl(f(x)) {
+theorem null_homotopy_kills_loops(
+  A : U1, B : U1, f : A -> B, point : B, homotopy : (forall a : A, f(a) = point), x : A, p : x = x
+) : ap(U1, A, B, f, x, x, p) = refl(f(x)) {
   let image = ap(U1, A, B, f, x, x, p);
   have natural : concatenate(U1, B, f(x), f(x), point, image, homotopy(x)) = homotopy(x) {
-    exact trans(homotopy_naturality(A, B, f, (fun (a : A) => point), homotopy, x, x, p),
-      trans(cong((fun (q : point = point) => concatenate(U1, B, f(x), point, point, homotopy(x), q)),
-        path_map_constant(A, B, point, x, x, p)), right_unit(B, f(x), point, homotopy(x))));
+    exact trans(
+      homotopy_naturality(A, B, f, (fun (a : A) => point), homotopy, x, x, p),
+      trans(
+        cong(
+          (fun (q : point = point) => concatenate(U1, B, f(x), point, point, homotopy(x), q)),
+          path_map_constant(A, B, point, x, x, p)
+        ), right_unit(B, f(x), point, homotopy(x))
+      )
+    );
   }
   exact cancel_right_path(B, f(x), point, homotopy(x), f(x), image, refl(f(x)), natural);
 }
 
-theorem contractible_loops_are_null(A : U1, center : A,
-  contraction : (forall x : A, x = center), x : A, p : x = x) : p = refl(x) {
-  exact trans(sym(path_map_identity(A, x, x, p)),
-    null_homotopy_kills_loops(A, A, (fun (a : A) => a), center, contraction, x, p));
+theorem contractible_loops_are_null(
+  A : U1, center : A, contraction : (forall x : A, x = center), x : A, p : x = x
+) : p = refl(x) {
+  exact trans(
+    sym(path_map_identity(A, x, x, p)),
+    null_homotopy_kills_loops(A, A, (fun (a : A) => a), center, contraction, x, p)
+  );
 }
 
 // Rebase a loop along a specified path, with its effect on constant loops.
 def rebase_loop(A : U1, x : A, y : A, connector : x = y, p : x = x) =
   transport((fun (a : A) => a = a), x, y, connector, p);
 def rebase_constant_loop(A : U1, x : A, y : A, connector : x = y) =
-  path_induction(A,
+  path_induction(
+    A,
     (fun (a : A) => fun (b : A) => fun (r : a = b) => rebase_loop(A, a, b, r, refl(a)) = refl(b)),
-    (fun (a : A) => refl(refl(a))), x, y, connector);
+    (fun (a : A) => refl(refl(a))), x, y, connector
+  );
 
-theorem rebase_null_loop(A : U1, x : A, y : A, connector : x = y,
-  p : x = x, null : p = refl(x)) : rebase_loop(A, x, y, connector, p) = refl(y) {
+theorem rebase_null_loop(A : U1, x : A, y : A, connector : x = y, p : x = x, null : p = refl(x)) : rebase_loop(
+  A, x, y, connector, p
+) = refl(y) {
   exact trans(cong(rebase_loop(A, x, y, connector), null), rebase_constant_loop(A, x, y, connector));
 }

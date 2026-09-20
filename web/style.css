@@ -211,6 +211,12 @@ main {
   min-height: 56px;
   padding: 9px 4px;
 }
+#kernel-context > div {
+  margin: 8px 0;
+  font-family: Cambria, "STIX Two Math", Georgia, serif;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
 .term {
   border-radius: 3px;
   cursor: pointer;
@@ -450,3 +456,6 @@ a {
   color: #286541;
   border-bottom: 1px dotted;
 }
+
+/* Source documentation paragraphs are plain text, including any markup. */
+#inspect-description { white-space: pre-line; }

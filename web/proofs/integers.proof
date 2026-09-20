@@ -7,103 +7,151 @@ def negative(n : Nat) = typed(Z, right(n));
 def zeroZ = nonnegative(0);
 
 def successorZ(z : Z) = match z return Z {
-  left n => nonnegative(succ(n));
-  right n => induction n as k return Z {
-    zero => zeroZ;
-    succ previous => negative(k);
+    left n => nonnegative(succ(n));
+    right n => induction n as k return Z {
+      zero => zeroZ;
+      succ previous => negative(k);
+    };
   };
-};
 
 def predecessorZ(z : Z) = match z return Z {
-  left n => induction n as k return Z {
-    zero => negative(0);
-    succ previous => nonnegative(k);
+    left n => induction n as k return Z {
+      zero => negative(0);
+      succ previous => nonnegative(k);
+    };
+    right n => negative(succ(n));
   };
-  right n => negative(succ(n));
-};
 
 def predecessor_successor(z : Z) = match z as w return (predecessorZ(successorZ(w)) = w) {
-  left n => refl(nonnegative(n));
-  right n => induction n as k return (predecessorZ(successorZ(negative(k))) = negative(k)) {
-    zero => refl(negative(0));
-    succ previous => refl(negative(succ(k)));
+    left n => refl(nonnegative(n));
+    right n => induction n as k return (predecessorZ(successorZ(negative(k))) = negative(k)) {
+      zero => refl(negative(0));
+      succ previous => refl(negative(succ(k)));
+    };
   };
-};
 
 def successor_predecessor(z : Z) = match z as w return (successorZ(predecessorZ(w)) = w) {
-  left n => induction n as k return (successorZ(predecessorZ(nonnegative(k))) = nonnegative(k)) {
-    zero => refl(nonnegative(0));
-    succ previous => refl(nonnegative(succ(k)));
+    left n => induction n as k return (successorZ(predecessorZ(nonnegative(k))) = nonnegative(k)) {
+      zero => refl(nonnegative(0));
+      succ previous => refl(nonnegative(succ(k)));
+    };
+    right n => refl(negative(n));
   };
-  right n => refl(negative(n));
-};
 
-def successor_triangle(z : Z) = match z as w return
-  (ap(U1, Z, Z, successorZ, predecessorZ(successorZ(w)), w, predecessor_successor(w)) = successor_predecessor(successorZ(w))) {
-  left n => refl(refl(nonnegative(succ(n))));
-  right n => induction n as k return
-    (ap(U1, Z, Z, successorZ, predecessorZ(successorZ(negative(k))), negative(k), predecessor_successor(negative(k))) = successor_predecessor(successorZ(negative(k)))) {
-    zero => refl(refl(zeroZ));
-    succ previous => refl(refl(negative(k)));
+def successor_triangle(z : Z) =
+  match z as w return (
+    ap(U1, Z, Z, successorZ, predecessorZ(successorZ(w)), w, predecessor_successor(w)) = successor_predecessor(
+      successorZ(w)
+    )
+  ) {
+    left n => refl(refl(nonnegative(succ(n))));
+    right n => induction n as k return (
+      ap(
+        U1, Z, Z, successorZ, predecessorZ(successorZ(negative(k))), negative(k),
+        predecessor_successor(negative(k))
+      ) = successor_predecessor(successorZ(negative(k)))
+    ) {
+      zero => refl(refl(zeroZ));
+      succ previous => refl(refl(negative(k)));
+    };
   };
-};
 
-def successor_equivalence = typed(Equiv(U0, Z, Z),
-  (successorZ, (predecessorZ, (predecessor_successor, (successor_predecessor, successor_triangle)))));
+def successor_equivalence =
+  typed(
+    Equiv(U0, Z, Z),
+    (successorZ, predecessorZ, predecessor_successor, successor_predecessor, successor_triangle)
+  );
 
 // Ordinary integer addition: iterate successor or predecessor in the second argument.
 def add_nonnegative(n : Nat, z : Z) = induction n as k return Z {
-  zero => z;
-  succ previous => successorZ(previous);
-};
+    zero => z;
+    succ previous => successorZ(previous);
+  };
 def add_negative(n : Nat, z : Z) = induction n as k return Z {
-  zero => predecessorZ(z);
-  succ previous => predecessorZ(previous);
-};
+    zero => predecessorZ(z);
+    succ previous => predecessorZ(previous);
+  };
 def addZ(x : Z, y : Z) = match y return Z {
-  left n => add_nonnegative(n, x);
-  right n => add_negative(n, x);
-};
+    left n => add_nonnegative(n, x);
+    right n => add_negative(n, x);
+  };
 
 // Decidable equality, used to show that Z is a set rather than a higher type.
-def predecessorN(n : Nat) = induction n as k return Nat { zero => 0; succ previous => k; };
-def zero_fiber(n : Nat) = induction n as k return U0 { zero => Unit; succ previous => Void; };
+def predecessorN(n : Nat) = induction n as k return Nat {
+    zero => 0;
+    succ previous => k;
+  };
+def zero_fiber(n : Nat) = induction n as k return U0 {
+    zero => Unit;
+    succ previous => Void;
+  };
 def zero_not_successor(n : Nat, p : 0 = succ(n)) = transport(zero_fiber, 0, succ(n), p, tt);
 
 def nat_equal_decidable(n : Nat) = induction n as k return (forall m : Nat, Decidable(k = m)) {
-  zero => fun (m : Nat) => induction m as j return Decidable(0 = j) {
-    zero => typed(Decidable(0 = 0), left(refl(0)));
-    succ unused => typed(Decidable(0 = succ(j)), right(fun (p : 0 = succ(j)) => zero_not_successor(j, p)));
-  };
-  succ previous => fun (m : Nat) => induction m as j return Decidable(succ(k) = j) {
-    zero => typed(Decidable(succ(k) = 0), right(fun (p : succ(k) = 0) => zero_not_successor(k, sym(p))));
-    succ unused => match previous(j) return Decidable(succ(k) = succ(j)) {
-      left p => typed(Decidable(succ(k) = succ(j)), left(cong(succ, typed((k = j), p))));
-      right no => typed(Decidable(succ(k) = succ(j)), right(fun (p : succ(k) = succ(j)) => no(cong(predecessorN, p))));
+    zero => fun (m : Nat) => induction m as j return Decidable(0 = j) {
+      zero => typed(Decidable(0 = 0), left(refl(0)));
+      succ unused => typed(
+        Decidable(0 = succ(j)), right(fun (p : 0 = succ(j)) => zero_not_successor(j, p))
+      );
+    };
+    succ previous => fun (m : Nat) => induction m as j return Decidable(succ(k) = j) {
+      zero => typed(
+        Decidable(succ(k) = 0), right(fun (p : succ(k) = 0) => zero_not_successor(k, sym(p)))
+      );
+      succ unused => match previous(j) return Decidable(succ(k) = succ(j)) {
+        left p => typed(Decidable(succ(k) = succ(j)), left(cong(succ, typed((k = j), p))));
+        right no => typed(
+          Decidable(succ(k) = succ(j)),
+          right(fun (p : succ(k) = succ(j)) => no(cong(predecessorN, p)))
+        );
+      };
     };
   };
-};
 
-def magnitude(z : Z) = match z return Nat { left n => n; right n => n; };
-def sign_fiber(z : Z) = match z return U0 { left n => Unit; right n => Void; };
+def magnitude(z : Z) = match z return Nat {
+    left n => n;
+    right n => n;
+  };
+def sign_fiber(z : Z) = match z return U0 {
+    left n => Unit;
+    right n => Void;
+  };
 def signs_differ(n : Nat, m : Nat, p : nonnegative(n) = negative(m)) =
   transport(sign_fiber, nonnegative(n), negative(m), p, tt);
 
 def integer_equal_decidable(x : Z) = match x as a return (forall y : Z, Decidable(a = y)) {
-  left n => fun (y : Z) => match y as b return Decidable(nonnegative(n) = b) {
-    left m => match nat_equal_decidable(n, m) return Decidable(nonnegative(n) = nonnegative(m)) {
-      left p => typed(Decidable(nonnegative(n) = nonnegative(m)), left(cong(nonnegative, typed((n = m), p))));
-      right no => typed(Decidable(nonnegative(n) = nonnegative(m)), right(fun (p : nonnegative(n) = nonnegative(m)) => no(cong(magnitude, p))));
+    left n => fun (y : Z) => match y as b return Decidable(nonnegative(n) = b) {
+      left m => match nat_equal_decidable(n, m) return Decidable(nonnegative(n) = nonnegative(m)) {
+        left p => typed(
+          Decidable(nonnegative(n) = nonnegative(m)), left(cong(nonnegative, typed((n = m), p)))
+        );
+        right no => typed(
+          Decidable(nonnegative(n) = nonnegative(m)),
+          right(fun (p : nonnegative(n) = nonnegative(m)) => no(cong(magnitude, p)))
+        );
+      };
+      right m => typed(
+        Decidable(nonnegative(n) = negative(m)),
+        right(fun (p : nonnegative(n) = negative(m)) => signs_differ(n, m, p))
+      );
     };
-    right m => typed(Decidable(nonnegative(n) = negative(m)), right(fun (p : nonnegative(n) = negative(m)) => signs_differ(n, m, p)));
-  };
-  right n => fun (y : Z) => match y as b return Decidable(negative(n) = b) {
-    left m => typed(Decidable(negative(n) = nonnegative(m)), right(fun (p : negative(n) = nonnegative(m)) => signs_differ(m, n, sym(p))));
-    right m => match nat_equal_decidable(n, m) return Decidable(negative(n) = negative(m)) {
-      left p => typed(Decidable(negative(n) = negative(m)), left(cong(negative, typed((n = m), p))));
-      right no => typed(Decidable(negative(n) = negative(m)), right(fun (p : negative(n) = negative(m)) => no(cong(magnitude, p))));
+    right n => fun (y : Z) => match y as b return Decidable(negative(n) = b) {
+      left m => typed(
+        Decidable(negative(n) = nonnegative(m)),
+        right(fun (p : negative(n) = nonnegative(m)) => signs_differ(m, n, sym(p)))
+      );
+      right m => match nat_equal_decidable(n, m) return Decidable(negative(n) = negative(m)) {
+        left p => typed(
+          Decidable(negative(n) = negative(m)), left(cong(negative, typed((n = m), p)))
+        );
+        right no => typed(
+          Decidable(negative(n) = negative(m)),
+          right(fun (p : negative(n) = negative(m)) => no(cong(magnitude, p)))
+        );
+      };
     };
   };
-};
 
-theorem integers_are_a_set : IsSet(Z) { exact hedberg(Z, integer_equal_decidable); }
+theorem integers_are_a_set : IsSet(Z) {
+  exact hedberg(Z, integer_equal_decidable);
+}

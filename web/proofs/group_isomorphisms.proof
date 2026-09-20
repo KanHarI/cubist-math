@@ -1,55 +1,80 @@
 import group_identity;
 
-// Isomorphism evidence is unique once the underlying function is fixed.
-def GroupMultiplicative(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, f : A -> B) =
-  forall x : A, forall y : A, f(multiplyA(x, y)) = multiplyB(f(x), f(y));
-def GroupMapLaws(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, f : A -> B, g : B -> A) =
-  LeftLaw(A, B, f, g) and RightLaw(A, B, f, g) and GroupMultiplicative(A, multiplyA, B, multiplyB, f);
-def GroupMapEvidence(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, f : A -> B) =
-  exists g : B -> A, GroupMapLaws(A, multiplyA, B, multiplyB, f, g);
-def group_iso_forward(G : GroupType, H : GroupType, iso : GroupIso(G, H)) : group_carrier(G) -> group_carrier(H) {
-  exact sigma_first((group_carrier(G) -> group_carrier(H)), GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H)), iso);
-}
-
-theorem group_map_laws_prop(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B,
-  setA : IsSet(A), setB : IsSet(B), f : A -> B, g : B -> A) : Proposition(GroupMapLaws(A, multiplyA, B, multiplyB, f, g)) {
-  exact group_product_prop(LeftLaw(A, B, f, g), (RightLaw(A, B, f, g) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)),
+// Isomorphisms are determined by their forward maps. All remaining fields
+// are propositions because group carriers are sets.
+theorem group_map_laws_prop(
+  A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(A),
+  setB : IsSet(B), f : A -> B, g : B -> A
+) : Proposition(GroupMapLaws(A, multiplyA, B, multiplyB, f, g)) {
+  exact product_prop(
+    LeftLaw(A, B, f, g),
+    (RightLaw(A, B, f, g) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)),
     forall_prop(A, (fun (x : A) => g(f(x)) = x), (fun (x : A) => setA(g(f(x)), x))),
-    group_product_prop(RightLaw(A, B, f, g), GroupMultiplicative(A, multiplyA, B, multiplyB, f),
+    product_prop(
+      RightLaw(A, B, f, g), GroupMultiplicative(A, multiplyA, B, multiplyB, f),
       forall_prop(B, (fun (y : B) => f(g(y)) = y), (fun (y : B) => setB(f(g(y)), y))),
-      forall_prop(A, (fun (x : A) => forall y : A, f(multiplyA(x, y)) = multiplyB(f(x), f(y))),
-        (fun (x : A) => forall_prop(A, (fun (y : A) => f(multiplyA(x, y)) = multiplyB(f(x), f(y))),
-          (fun (y : A) => setB(f(multiplyA(x, y)), multiplyB(f(x), f(y)))))))));
+      forall_prop(
+        A, (fun (x : A) => forall y : A, f(multiplyA(x, y)) = multiplyB(f(x), f(y))),
+        (
+          fun (x : A) => forall_prop(
+            A, (fun (y : A) => f(multiplyA(x, y)) = multiplyB(f(x), f(y))),
+            (fun (y : A) => setB(f(multiplyA(x, y)), multiplyB(f(x), f(y))))
+          )
+        )
+      )
+    )
+  );
 }
 
-theorem group_map_evidence_prop(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B,
-  setA : IsSet(A), setB : IsSet(B), f : A -> B,
-  p : GroupMapEvidence(A, multiplyA, B, multiplyB, f), q : GroupMapEvidence(A, multiplyA, B, multiplyB, f)) : p = q {
+theorem group_map_evidence_prop(
+  A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(A),
+  setB : IsSet(B), f : A -> B, p : GroupMapEvidence(A, multiplyA, B, multiplyB, f),
+  q : GroupMapEvidence(A, multiplyA, B, multiplyB, f)
+) : p = q {
   let g = typed((B -> A), sigma_first((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), p));
   let h = typed((B -> A), sigma_first((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), q));
   let pg = sigma_second((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), p);
   let qh = sigma_second((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), q);
   have eta : LeftLaw(A, B, f, h) {
-    exact fst(LeftLaw(A, B, f, h), (RightLaw(A, B, f, h) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)), qh);
+    exact fst(
+      LeftLaw(A, B, f, h),
+      (RightLaw(A, B, f, h) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)), qh
+    );
   }
   have eps : RightLaw(A, B, f, g) {
-    exact fst(RightLaw(A, B, f, g), GroupMultiplicative(A, multiplyA, B, multiplyB, f),
-      snd(LeftLaw(A, B, f, g), (RightLaw(A, B, f, g) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)), pg));
+    exact fst(
+      RightLaw(A, B, f, g), GroupMultiplicative(A, multiplyA, B, multiplyB, f),
+      snd(
+        LeftLaw(A, B, f, g),
+        (RightLaw(A, B, f, g) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)), pg
+      )
+    );
   }
   have same : g = h {
-    exact FunExt(U0, B, (fun (y : B) => A), g, h,
-      (fun (y : B) => trans(sym(eta(g(y))), cong(h, eps(y)))));
+    exact FunExt(
+      U0, B, (fun (y : B) => A), g, h, (fun (y : B) => trans(sym(eta(g(y))), cong(h, eps(y))))
+    );
   }
-  exact subtype_ext((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f),
-    group_map_laws_prop(A, multiplyA, B, multiplyB, setA, setB, f), p, q, same);
+  exact subtype_ext(
+    (B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f),
+    group_map_laws_prop(A, multiplyA, B, multiplyB, setA, setB, f), p, q, same
+  );
 }
 
-theorem group_iso_ext(G : GroupType, H : GroupType, p : GroupIso(G, H), q : GroupIso(G, H),
-  same : forall x : group_carrier(G), group_iso_forward(G, H, p, x) = group_iso_forward(G, H, q, x)) : p = q {
-  exact subtype_ext((group_carrier(G) -> group_carrier(H)),
+theorem group_iso_ext(
+  G : Group, H : Group, p : GroupIso(G, H), q : GroupIso(G, H), same : forall x : group_carrier(G),
+  group_iso_forward(G, H, p, x) = group_iso_forward(G, H, q, x)
+) : p = q {
+  exact subtype_ext(
+    (group_carrier(G) -> group_carrier(H)),
     GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H)),
-    group_map_evidence_prop(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H),
-      group_set_law(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G)),
-      group_set_law(group_carrier(H), group_unit(H), group_multiply(H), group_laws(H))), p, q,
-    FunExt(U0, group_carrier(G), (fun (x : group_carrier(G)) => group_carrier(H)), group_iso_forward(G, H, p), group_iso_forward(G, H, q), same));
+    group_map_evidence_prop(
+      group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H), group_is_set(G),
+      group_is_set(H)
+    ), p, q,
+    FunExt(
+      U0, group_carrier(G), (fun (x : group_carrier(G)) => group_carrier(H)),
+      group_iso_forward(G, H, p), group_iso_forward(G, H, q), same
+    )
+  );
 }

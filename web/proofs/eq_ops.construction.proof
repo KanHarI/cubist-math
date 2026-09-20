@@ -34,7 +34,10 @@ construction eq_ops {
   private s0031_Vble = variable(s0030_CtxExt);
   private s0032_PiIntro = function_intro(s0019_PiElim, s0031_Vble, s0030_CtxExt);
   private s0033_PiIntro = function_intro(s0014_PiForm, s0032_PiIntro, s0015_CtxExt);
-  private s0034_EqElim = equality_eliminate(s0028_PiForm, s0033_PiIntro, s0009_Vble, s0021_Vble, s0025_Vble, s0008_CtxExt, s0020_CtxExt, s0024_CtxExt, s0008_CtxExt);
+  private s0034_EqElim = equality_eliminate(
+    s0028_PiForm, s0033_PiIntro, s0009_Vble, s0021_Vble, s0025_Vble, s0008_CtxExt, s0020_CtxExt,
+    s0024_CtxExt, s0008_CtxExt
+  );
   private s0035_PiElim = apply(s0034_EqElim, s0016_Vble);
   private s0036_PiIntro = function_intro(s0023_EqForm, s0035_PiElim, s0024_CtxExt);
   private s0037_PiIntro = function_intro(s0007_Vble, s0036_PiIntro, s0020_CtxExt);
@@ -59,7 +62,10 @@ construction eq_ops {
   private s0056_CtxExt = assume(s0054_EqForm, none);
   private s0057_Vble = variable(s0056_CtxExt);
   private s0058_EqIntro = reflexivity(s0049_Vble);
-  private s0059_EqElim = equality_eliminate(s0055_EqForm, s0058_EqIntro, s0049_Vble, s0051_Vble, s0057_Vble, s0048_CtxExt, s0050_CtxExt, none, s0048_CtxExt);
+  private s0059_EqElim = equality_eliminate(
+    s0055_EqForm, s0058_EqIntro, s0049_Vble, s0051_Vble, s0057_Vble, s0048_CtxExt, s0050_CtxExt,
+    none, s0048_CtxExt
+  );
   private s0060_PiIntro = function_intro(s0054_EqForm, s0059_EqElim, s0056_CtxExt);
   private s0061_PiIntro = function_intro(s0047_Vble, s0060_PiIntro, s0050_CtxExt);
   private s0062_PiIntro = function_intro(s0047_Vble, s0061_PiIntro, s0048_CtxExt);
@@ -142,7 +148,10 @@ construction eq_ops {
   private s0139_High1 = select_second(s0138_HighType);
   private s0140_HighSubs = rewrite_selected(s0139_High1, s0137_DefEqSwp);
   private s0141_HighSubs = rewrite_selected(s0140_HighSubs, s0137_DefEqSwp);
-  private s0142_EqElim = equality_eliminate(s0135_EqForm, s0141_HighSubs, s0049_Vble, s0051_Vble, s0057_Vble, s0048_CtxExt, s0050_CtxExt, s0056_CtxExt, s0048_CtxExt);
+  private s0142_EqElim = equality_eliminate(
+    s0135_EqForm, s0141_HighSubs, s0049_Vble, s0051_Vble, s0057_Vble, s0048_CtxExt, s0050_CtxExt,
+    s0056_CtxExt, s0048_CtxExt
+  );
   private s0143_PiIntro = function_intro(s0054_EqForm, s0142_EqElim, s0056_CtxExt);
   private s0144_PiIntro = function_intro(s0047_Vble, s0143_PiIntro, s0050_CtxExt);
   private s0145_PiIntro = function_intro(s0047_Vble, s0144_PiIntro, s0048_CtxExt);

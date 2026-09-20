@@ -18,7 +18,9 @@ construction homotopy {
   private s0014_Vble = variable(s0013_CtxExt);
   private s0015_CtxExt = assume(s0011_PiElim, none);
   private s0016_Vble = variable(s0015_CtxExt);
-  private s0017_SigmaElim = pair_eliminate(s0005_Vble, s0010_Vble, s0014_Vble, none, s0009_CtxExt, s0015_CtxExt);
+  private s0017_SigmaElim = pair_eliminate(
+    s0005_Vble, s0010_Vble, s0014_Vble, none, s0009_CtxExt, s0015_CtxExt
+  );
   private s0018_PiIntro = function_intro(s0012_SigmaForm, s0017_SigmaElim, s0013_CtxExt);
   private s0019_PiIntro = function_intro(s0006_PiForm, s0018_PiIntro, s0007_CtxExt);
   private s0020_PiIntro = function_intro(s0003_UVble, s0019_PiIntro, s0004_CtxExt);
@@ -35,9 +37,13 @@ construction homotopy {
   private s0031_BetaReduceGrossKnuth = reduce_pass(s0030_High0);
   private s0032_BetaReduceGrossKnuth = reduce_pass(s0031_BetaReduceGrossKnuth);
   private s0033_Subs = substitute(s0016_Vble, s0032_BetaReduceGrossKnuth);
-  private s0034_SigmaElim = pair_eliminate(s0027_PiElim, s0033_Subs, s0024_SigmaIntro, s0013_CtxExt, s0009_CtxExt, s0015_CtxExt);
+  private s0034_SigmaElim = pair_eliminate(
+    s0027_PiElim, s0033_Subs, s0024_SigmaIntro, s0013_CtxExt, s0009_CtxExt, s0015_CtxExt
+  );
   private s0035_PiElim = apply(s0008_Vble, s0026_PiElim);
-  private s0036_SigmaElim = pair_eliminate(s0035_PiElim, s0034_SigmaElim, s0014_Vble, s0013_CtxExt, s0009_CtxExt, s0015_CtxExt);
+  private s0036_SigmaElim = pair_eliminate(
+    s0035_PiElim, s0034_SigmaElim, s0014_Vble, s0013_CtxExt, s0009_CtxExt, s0015_CtxExt
+  );
   private s0037_PiIntro = function_intro(s0012_SigmaForm, s0036_SigmaElim, s0013_CtxExt);
   private s0038_PiIntro = function_intro(s0006_PiForm, s0037_PiIntro, s0007_CtxExt);
   private s0039_PiIntro = function_intro(s0003_UVble, s0038_PiIntro, s0004_CtxExt);
@@ -79,7 +85,10 @@ construction homotopy {
   private s0075_PiElim = apply(s0058_Vble, s0054_Vble);
   private s0076_EqIntro = reflexivity(s0075_PiElim);
   private s0077_PiIntro = function_intro(s0049_Vble, s0076_EqIntro, s0053_CtxExt);
-  private s0078_EqElim = equality_eliminate(s0064_PiForm, s0077_PiIntro, s0058_Vble, s0060_Vble, s0074_Vble, s0057_CtxExt, s0059_CtxExt, none, s0057_CtxExt);
+  private s0078_EqElim = equality_eliminate(
+    s0064_PiForm, s0077_PiIntro, s0058_Vble, s0060_Vble, s0074_Vble, s0057_CtxExt, s0059_CtxExt,
+    none, s0057_CtxExt
+  );
   private s0079_PiElim = apply(lib_Homotopy, s0047_UVble);
   private s0080_PiElim = apply(s0079_PiElim, s0049_Vble);
   private s0081_PiElim = apply(s0080_PiElim, s0052_Vble);
@@ -117,7 +126,10 @@ construction homotopy {
   private s0113_PiElim = apply(s0111_Vble, s0106_Vble);
   private s0114_EqForm = equality_type(s0103_Vble, s0112_PiElim, s0113_PiElim);
   private s0115_EqIntro = reflexivity(s0112_PiElim);
-  private s0116_EqElim = equality_eliminate(s0114_EqForm, s0115_EqIntro, s0054_Vble, s0106_Vble, s0109_Vble, s0053_CtxExt, s0105_CtxExt, none, s0053_CtxExt);
+  private s0116_EqElim = equality_eliminate(
+    s0114_EqForm, s0115_EqIntro, s0054_Vble, s0106_Vble, s0109_Vble, s0053_CtxExt, s0105_CtxExt,
+    none, s0053_CtxExt
+  );
   private s0117_PiIntro = function_intro(s0107_EqForm, s0116_EqElim, s0108_CtxExt);
   private s0118_PiIntro = function_intro(s0049_Vble, s0117_PiIntro, s0105_CtxExt);
   private s0119_PiIntro = function_intro(s0049_Vble, s0118_PiIntro, s0053_CtxExt);
@@ -377,7 +389,9 @@ construction homotopy {
   private s0373_BetaReducePointed = reduce_selected(s0372_HighUp);
   private s0374_HighUp = select_parent(s0373_BetaReducePointed);
   private s0375_BetaReducePointed = reduce_selected(s0374_HighUp);
-  private s0376_SigmaIntro = pair_intro(s0316_PiIntro, s0375_BetaReducePointed, s0357_Subs, s0324_CtxExt);
+  private s0376_SigmaIntro = pair_intro(
+    s0316_PiIntro, s0375_BetaReducePointed, s0357_Subs, s0324_CtxExt
+  );
   private s0377_PiElim = apply(s0305_PiElim, s0323_Vble);
   private s0378_PiElim = apply(s0377_PiElim, s0325_Vble);
   private s0379_HighExp = select_expression(s0378_PiElim);
@@ -388,11 +402,17 @@ construction homotopy {
   private s0384_BetaReducePointed = reduce_selected(s0383_HighUp);
   private s0385_HighUp = select_parent(s0384_BetaReducePointed);
   private s0386_BetaReducePointed = reduce_selected(s0385_HighUp);
-  private s0387_SigmaForm = pair_type(s0321_BetaReducePointed, s0386_BetaReducePointed, s0324_CtxExt);
-  private s0388_SigmaIntro = pair_intro(s0316_PiIntro, s0387_SigmaForm, s0376_SigmaIntro, s0322_CtxExt);
+  private s0387_SigmaForm = pair_type(
+    s0321_BetaReducePointed, s0386_BetaReducePointed, s0324_CtxExt
+  );
+  private s0388_SigmaIntro = pair_intro(
+    s0316_PiIntro, s0387_SigmaForm, s0376_SigmaIntro, s0322_CtxExt
+  );
   private s0389_SigmaForm = pair_type(s0284_PiForm, s0301_PiForm, s0287_CtxExt);
   private s0390_SigmaForm = pair_type(s0284_PiForm, s0389_SigmaForm, s0285_CtxExt);
-  private s0391_SigmaIntro = pair_intro(s0168_PiElim, s0390_SigmaForm, s0388_SigmaIntro, s0280_CtxExt);
+  private s0391_SigmaIntro = pair_intro(
+    s0168_PiElim, s0390_SigmaForm, s0388_SigmaIntro, s0280_CtxExt
+  );
   private s0392_Subs = substitute(s0391_SigmaIntro, s0278_BetaReduceGrossKnuth);
   private s0393_PiIntro = function_intro(s0047_UVble, s0392_Subs, s0048_CtxExt);
   private s0394_PiIntro = function_intro(s0045_UIntroOmega, s0393_PiIntro, s0046_CtxExt);
@@ -437,109 +457,2467 @@ construction homotopy {
   private s0433_PiElim = apply(s0432_PiElim, s0429_Vble);
   private s0434_SigmaIntro = pair_intro(s0424_PiElim, s0433_PiElim, s0426_PiElim, s0428_CtxExt);
   private s0435_Subs = substitute(s0434_SigmaIntro, s0422_BetaReduceGrossKnuth);
-  private s0436_EqElim = equality_eliminate(s0414_PiElim, s0435_Subs, s0406_Vble, s0408_Vble, s0411_Vble, s0405_CtxExt, s0407_CtxExt, none, s0405_CtxExt);
+  private s0436_EqElim = equality_eliminate(
+    s0414_PiElim, s0435_Subs, s0406_Vble, s0408_Vble, s0411_Vble, s0405_CtxExt, s0407_CtxExt, none,
+    s0405_CtxExt
+  );
   private s0437_PiIntro = function_intro(s0409_EqForm, s0436_EqElim, s0410_CtxExt);
   private s0438_PiIntro = function_intro(s0047_UVble, s0437_PiIntro, s0407_CtxExt);
   private s0439_PiIntro = function_intro(s0047_UVble, s0438_PiIntro, s0405_CtxExt);
   private s0440_PiIntro = function_intro(s0045_UIntroOmega, s0439_PiIntro, s0046_CtxExt);
   private s0441_Def = define(s0440_PiIntro);
   export lib_AreEquiv = definition_left(s0441_Def);
-  private s0443_PiForm = function_type(s0414_PiElim, s0409_EqForm, none);
-  private s0444_PiForm = function_type(s0047_UVble, s0443_PiForm, s0407_CtxExt);
-  private s0445_PiForm = function_type(s0047_UVble, s0444_PiForm, s0405_CtxExt);
-  private s0446_PiForm = function_type(s0045_UIntroOmega, s0445_PiForm, s0046_CtxExt);
-  export lib_univalence = postulate(s0446_PiForm);
-  private s0448_PiElim = apply(s0052_Vble, s0106_Vble);
-  private s0449_PiForm = function_type(s0055_PiElim, s0448_PiElim, none);
-  private s0450_PiElim = apply(s0423_PiElim, s0055_PiElim);
-  private s0451_EqElim = equality_eliminate(s0449_PiForm, s0450_PiElim, s0054_Vble, s0106_Vble, s0109_Vble, s0053_CtxExt, s0105_CtxExt, none, s0053_CtxExt);
-  private s0452_PiIntro = function_intro(s0107_EqForm, s0451_EqElim, s0108_CtxExt);
-  private s0453_PiIntro = function_intro(s0406_Vble, s0452_PiIntro, s0105_CtxExt);
-  private s0454_PiIntro = function_intro(s0406_Vble, s0453_PiIntro, s0053_CtxExt);
-  private s0455_PiIntro = function_intro(s0050_PiForm, s0454_PiIntro, s0051_CtxExt);
-  private s0456_PiIntro = function_intro(s0047_UVble, s0455_PiIntro, s0405_CtxExt);
-  private s0457_PiIntro = function_intro(s0045_UIntroOmega, s0456_PiIntro, s0046_CtxExt);
-  private s0458_Def = define(s0457_PiIntro);
-  export lib_transport = definition_left(s0458_Def);
-  private s0460_CtxExt = assume(s0047_UVble, none);
-  private s0461_UVble = universe_variable(s0460_CtxExt);
-  private s0462_PiElim = apply(s0423_PiElim, s0461_UVble);
-  private s0463_PiElim = apply(lib_transport, s0047_UVble);
-  private s0464_PiElim = apply(s0463_PiElim, s0461_UVble);
-  private s0465_CtxExt = assume(s0461_UVble, none);
-  private s0466_Vble = variable(s0465_CtxExt);
-  private s0467_PiElim = apply(s0462_PiElim, s0466_Vble);
-  private s0468_UCumulContext = universe_lift_context(s0467_PiElim, s0461_UVble);
-  private s0469_PiIntro = function_intro(s0461_UVble, s0468_UCumulContext, s0465_CtxExt);
-  private s0470_PiElim = apply(s0464_PiElim, s0469_PiIntro);
-  private s0471_CtxExt = assume(s0461_UVble, s0465_CtxExt);
-  private s0472_Vble = variable(s0471_CtxExt);
-  private s0473_UCumulOmega = universe_lift_omega(s0461_UVble);
-  private s0474_PiElim = apply(s0404_DefEqExtL, s0473_UCumulOmega);
-  private s0475_PiElim = apply(s0474_PiElim, s0466_Vble);
-  private s0476_PiElim = apply(s0475_PiElim, s0472_Vble);
-  private s0477_CtxExt = assume(s0476_PiElim, none);
-  private s0478_Vble = variable(s0477_CtxExt);
-  private s0479_PiElim = apply(lib_univalence, s0473_UCumulOmega);
-  private s0480_PiElim = apply(s0479_PiElim, s0466_Vble);
-  private s0481_PiElim = apply(s0480_PiElim, s0472_Vble);
-  private s0482_PiElim = apply(s0481_PiElim, s0478_Vble);
-  private s0483_PiElim = apply(s0470_PiElim, s0466_Vble);
-  private s0484_PiElim = apply(s0483_PiElim, s0472_Vble);
-  private s0485_PiElim = apply(s0484_PiElim, s0482_PiElim);
-  private s0486_Subs = substitute(s0485_PiElim, s0458_Def);
-  private s0487_Subs = substitute(s0486_Subs, s0129_Def);
-  private s0488_BetaReduceGrossKnuth = reduce_pass(s0487_Subs);
-  private s0489_BetaReduceGrossKnuth = reduce_pass(s0488_BetaReduceGrossKnuth);
-  private s0490_BetaReduceGrossKnuth = reduce_pass(s0489_BetaReduceGrossKnuth);
-  private s0491_Subs = substitute(s0478_Vble, s0403_Def);
-  private s0492_BetaReduceGrossKnuth = reduce_pass(s0491_Subs);
-  private s0493_BetaReduceGrossKnuth = reduce_pass(s0492_BetaReduceGrossKnuth);
-  private s0494_BetaReduceGrossKnuth = reduce_pass(s0493_BetaReduceGrossKnuth);
-  private s0495_PiElim = apply(s0023_DefEqExtL, s0473_UCumulOmega);
-  private s0496_PiForm = function_type(s0466_Vble, s0472_Vble, none);
-  private s0497_PiElim = apply(s0495_PiElim, s0496_PiForm);
-  private s0498_PiElim = apply(lib_isEquiv, s0473_UCumulOmega);
-  private s0499_PiElim = apply(s0498_PiElim, s0466_Vble);
-  private s0500_PiElim = apply(s0499_PiElim, s0472_Vble);
-  private s0501_PiElim = apply(s0497_PiElim, s0500_PiElim);
-  private s0502_PiElim = apply(s0501_PiElim, s0494_BetaReduceGrossKnuth);
-  private s0503_HighExp = select_expression(s0502_PiElim);
-  private s0504_High0 = select_first(s0503_HighExp);
-  private s0505_High0 = select_first(s0504_High0);
-  private s0506_High0 = select_first(s0505_High0);
-  private s0507_High0 = select_first(s0506_High0);
-  private s0508_DefLookup = definition_body(s0507_High0);
-  private s0509_UnHigh = clear_selection(s0507_High0);
-  private s0510_Subs = substitute(s0509_UnHigh, s0508_DefLookup);
-  private s0511_BetaReduceGrossKnuth = reduce_pass(s0510_Subs);
-  private s0512_BetaReduceGrossKnuth = reduce_pass(s0511_BetaReduceGrossKnuth);
-  private s0513_BetaReduceGrossKnuth = reduce_pass(s0512_BetaReduceGrossKnuth);
-  private s0514_CtxExt = assume(s0466_Vble, none);
-  private s0515_Vble = variable(s0514_CtxExt);
-  private s0516_PiElim = apply(s0490_BetaReduceGrossKnuth, s0515_Vble);
-  private s0517_PiElim = apply(s0513_BetaReduceGrossKnuth, s0515_Vble);
-  private s0518_EqForm = equality_type(s0472_Vble, s0516_PiElim, s0517_PiElim);
-  private s0519_PiForm = function_type(s0466_Vble, s0518_EqForm, s0514_CtxExt);
-  private s0520_PiForm = function_type(s0476_PiElim, s0519_PiForm, s0477_CtxExt);
-  private s0521_PiForm = function_type(s0461_UVble, s0520_PiForm, s0471_CtxExt);
-  private s0522_PiForm = function_type(s0461_UVble, s0521_PiForm, s0465_CtxExt);
-  private s0523_PiForm = function_type(s0047_UVble, s0522_PiForm, s0460_CtxExt);
-  private s0524_PiForm = function_type(s0045_UIntroOmega, s0523_PiForm, s0046_CtxExt);
-  export lib_ua_elim = postulate(s0524_PiForm);
-  private s0526_EqForm = equality_type(s0461_UVble, s0466_Vble, s0472_Vble);
-  private s0527_CtxExt = assume(s0526_EqForm, none);
-  private s0528_Vble = variable(s0527_CtxExt);
-  private s0529_PiElim = apply(lib_AreEquiv, s0473_UCumulOmega);
-  private s0530_PiElim = apply(s0529_PiElim, s0466_Vble);
-  private s0531_PiElim = apply(s0530_PiElim, s0472_Vble);
-  private s0532_PiElim = apply(s0531_PiElim, s0528_Vble);
-  private s0533_PiElim = apply(s0481_PiElim, s0532_PiElim);
-  private s0534_EqForm = equality_type(s0526_EqForm, s0528_Vble, s0533_PiElim);
-  private s0535_PiForm = function_type(s0526_EqForm, s0534_EqForm, s0527_CtxExt);
-  private s0536_PiForm = function_type(s0461_UVble, s0535_PiForm, s0471_CtxExt);
-  private s0537_PiForm = function_type(s0461_UVble, s0536_PiForm, s0465_CtxExt);
-  private s0538_PiForm = function_type(s0047_UVble, s0537_PiForm, s0460_CtxExt);
-  private s0539_PiForm = function_type(s0045_UIntroOmega, s0538_PiForm, s0046_CtxExt);
-  export lib_ua_unique = postulate(s0539_PiForm);
+  private s0443_UIntroOmega = universe_omega();
+  private s0444_CtxExt = assume(s0443_UIntroOmega, none);
+  private s0445_UVble = universe_variable(s0444_CtxExt);
+  private s0446_CtxExt = assume(s0445_UVble, none);
+  private s0447_Vble = variable(s0446_CtxExt);
+  private s0448_CtxExt = assume(s0445_UVble, s0446_CtxExt);
+  private s0449_Vble = variable(s0448_CtxExt);
+  private s0450_EqForm = equality_type(s0445_UVble, s0447_Vble, s0449_Vble);
+  private s0451_PiForm = function_type(s0447_Vble, s0449_Vble, none);
+  private s0452_CtxExt = assume(s0451_PiForm, none);
+  private s0453_Vble = variable(s0452_CtxExt);
+  private s0454_DefBetaReduceGrossKnuth = unfold_pass(lib_isEquiv);
+  private s0455_DefBetaReduceGrossKnuth = unfold_pass(s0454_DefBetaReduceGrossKnuth);
+  private s0456_DefBetaReduceGrossKnuth = unfold_pass(s0455_DefBetaReduceGrossKnuth);
+  private s0457_DefBetaReduceGrossKnuth = unfold_pass(s0456_DefBetaReduceGrossKnuth);
+  private s0458_DefBetaReduceGrossKnuth = unfold_pass(s0445_UVble);
+  private s0459_PiElim = apply(s0457_DefBetaReduceGrossKnuth, s0458_DefBetaReduceGrossKnuth);
+  private s0460_DefBetaReduceGrossKnuth = unfold_pass(s0459_PiElim);
+  private s0461_DefBetaReduceGrossKnuth = unfold_pass(s0460_DefBetaReduceGrossKnuth);
+  private s0462_DefBetaReduceGrossKnuth = unfold_pass(s0447_Vble);
+  private s0463_PiElim = apply(s0461_DefBetaReduceGrossKnuth, s0462_DefBetaReduceGrossKnuth);
+  private s0464_DefBetaReduceGrossKnuth = unfold_pass(s0463_PiElim);
+  private s0465_DefBetaReduceGrossKnuth = unfold_pass(s0464_DefBetaReduceGrossKnuth);
+  private s0466_DefBetaReduceGrossKnuth = unfold_pass(s0449_Vble);
+  private s0467_PiElim = apply(s0465_DefBetaReduceGrossKnuth, s0466_DefBetaReduceGrossKnuth);
+  private s0468_DefBetaReduceGrossKnuth = unfold_pass(s0467_PiElim);
+  private s0469_DefBetaReduceGrossKnuth = unfold_pass(s0468_DefBetaReduceGrossKnuth);
+  private s0470_DefBetaReduceGrossKnuth = unfold_pass(s0453_Vble);
+  private s0471_PiElim = apply(s0469_DefBetaReduceGrossKnuth, s0470_DefBetaReduceGrossKnuth);
+  private s0472_DefBetaReduceGrossKnuth = unfold_pass(s0471_PiElim);
+  private s0473_DefBetaReduceGrossKnuth = unfold_pass(s0472_DefBetaReduceGrossKnuth);
+  private s0474_SigmaForm = pair_type(s0451_PiForm, s0473_DefBetaReduceGrossKnuth, s0452_CtxExt);
+  private s0475_DefBetaReduceGrossKnuth = unfold_pass(lib_AreEquiv);
+  private s0476_DefBetaReduceGrossKnuth = unfold_pass(s0475_DefBetaReduceGrossKnuth);
+  private s0477_DefBetaReduceGrossKnuth = unfold_pass(s0476_DefBetaReduceGrossKnuth);
+  private s0478_DefBetaReduceGrossKnuth = unfold_pass(s0477_DefBetaReduceGrossKnuth);
+  private s0479_DefBetaReduceGrossKnuth = unfold_pass(s0478_DefBetaReduceGrossKnuth);
+  private s0480_PiElim = apply(s0479_DefBetaReduceGrossKnuth, s0458_DefBetaReduceGrossKnuth);
+  private s0481_DefBetaReduceGrossKnuth = unfold_pass(s0480_PiElim);
+  private s0482_DefBetaReduceGrossKnuth = unfold_pass(s0481_DefBetaReduceGrossKnuth);
+  private s0483_PiElim = apply(s0482_DefBetaReduceGrossKnuth, s0462_DefBetaReduceGrossKnuth);
+  private s0484_DefBetaReduceGrossKnuth = unfold_pass(s0483_PiElim);
+  private s0485_DefBetaReduceGrossKnuth = unfold_pass(s0484_DefBetaReduceGrossKnuth);
+  private s0486_PiElim = apply(s0485_DefBetaReduceGrossKnuth, s0466_DefBetaReduceGrossKnuth);
+  private s0487_DefBetaReduceGrossKnuth = unfold_pass(s0486_PiElim);
+  private s0488_DefBetaReduceGrossKnuth = unfold_pass(s0487_DefBetaReduceGrossKnuth);
+  private s0489_PiForm = function_type(s0474_SigmaForm, s0450_EqForm, none);
+  private s0490_CtxExt = assume(s0489_PiForm, none);
+  private s0491_Vble = variable(s0490_CtxExt);
+  private s0492_CtxExt = assume(s0450_EqForm, none);
+  private s0493_Vble = variable(s0492_CtxExt);
+  private s0494_DefBetaReduceGrossKnuth = unfold_pass(s0493_Vble);
+  private s0495_PiElim = apply(s0488_DefBetaReduceGrossKnuth, s0494_DefBetaReduceGrossKnuth);
+  private s0496_DefBetaReduceGrossKnuth = unfold_pass(s0495_PiElim);
+  private s0497_DefBetaReduceGrossKnuth = unfold_pass(s0496_DefBetaReduceGrossKnuth);
+  private s0498_DefBetaReduceGrossKnuth = unfold_pass(s0491_Vble);
+  private s0499_PiElim = apply(s0498_DefBetaReduceGrossKnuth, s0497_DefBetaReduceGrossKnuth);
+  private s0500_DefBetaReduceGrossKnuth = unfold_pass(s0499_PiElim);
+  private s0501_EqForm = equality_type(
+    s0450_EqForm, s0500_DefBetaReduceGrossKnuth, s0494_DefBetaReduceGrossKnuth
+  );
+  private s0502_PiForm = function_type(s0450_EqForm, s0501_EqForm, s0492_CtxExt);
+  private s0503_CtxExt = assume(s0502_PiForm, none);
+  private s0504_Vble = variable(s0503_CtxExt);
+  private s0505_CtxExt = assume(s0474_SigmaForm, none);
+  private s0506_Vble = variable(s0505_CtxExt);
+  private s0507_DefBetaReduceGrossKnuth = unfold_pass(s0506_Vble);
+  private s0508_PiElim = apply(s0498_DefBetaReduceGrossKnuth, s0507_DefBetaReduceGrossKnuth);
+  private s0509_DefBetaReduceGrossKnuth = unfold_pass(s0508_PiElim);
+  private s0510_PiElim = apply(s0488_DefBetaReduceGrossKnuth, s0509_DefBetaReduceGrossKnuth);
+  private s0511_DefBetaReduceGrossKnuth = unfold_pass(s0510_PiElim);
+  private s0512_DefBetaReduceGrossKnuth = unfold_pass(s0511_DefBetaReduceGrossKnuth);
+  private s0513_EqForm = equality_type(
+    s0474_SigmaForm, s0512_DefBetaReduceGrossKnuth, s0507_DefBetaReduceGrossKnuth
+  );
+  private s0514_PiForm = function_type(s0474_SigmaForm, s0513_EqForm, s0505_CtxExt);
+  private s0515_CtxExt = assume(s0514_PiForm, none);
+  private s0516_Vble = variable(s0515_CtxExt);
+  private s0517_CtxExt = assume(s0450_EqForm, s0492_CtxExt);
+  private s0518_Vble = variable(s0517_CtxExt);
+  private s0519_DefBetaReduceGrossKnuth = unfold_pass(s0518_Vble);
+  private s0520_PiElim = apply(s0488_DefBetaReduceGrossKnuth, s0519_DefBetaReduceGrossKnuth);
+  private s0521_DefBetaReduceGrossKnuth = unfold_pass(s0520_PiElim);
+  private s0522_DefBetaReduceGrossKnuth = unfold_pass(s0521_DefBetaReduceGrossKnuth);
+  private s0523_PiElim = apply(s0498_DefBetaReduceGrossKnuth, s0522_DefBetaReduceGrossKnuth);
+  private s0524_DefBetaReduceGrossKnuth = unfold_pass(s0523_PiElim);
+  private s0525_PiElim = apply(s0488_DefBetaReduceGrossKnuth, s0524_DefBetaReduceGrossKnuth);
+  private s0526_DefBetaReduceGrossKnuth = unfold_pass(s0525_PiElim);
+  private s0527_DefBetaReduceGrossKnuth = unfold_pass(s0526_DefBetaReduceGrossKnuth);
+  private s0528_EqForm = equality_type(
+    s0474_SigmaForm, s0527_DefBetaReduceGrossKnuth, s0522_DefBetaReduceGrossKnuth
+  );
+  private s0529_DefBetaReduceGrossKnuth = unfold_pass(s0504_Vble);
+  private s0530_PiElim = apply(s0529_DefBetaReduceGrossKnuth, s0519_DefBetaReduceGrossKnuth);
+  private s0531_DefBetaReduceGrossKnuth = unfold_pass(s0530_PiElim);
+  private s0532_CtxExt = assume(s0450_EqForm, s0517_CtxExt);
+  private s0533_Vble = variable(s0532_CtxExt);
+  private s0534_CtxExt = assume(s0450_EqForm, s0532_CtxExt);
+  private s0535_Vble = variable(s0534_CtxExt);
+  private s0536_EqForm = equality_type(s0450_EqForm, s0533_Vble, s0535_Vble);
+  private s0537_CtxExt = assume(s0536_EqForm, none);
+  private s0538_CtxExt = assume(s0450_EqForm, s0534_CtxExt);
+  private s0539_Vble = variable(s0538_CtxExt);
+  private s0540_DefBetaReduceGrossKnuth = unfold_pass(s0533_Vble);
+  private s0541_PiElim = apply(s0488_DefBetaReduceGrossKnuth, s0540_DefBetaReduceGrossKnuth);
+  private s0542_DefBetaReduceGrossKnuth = unfold_pass(s0541_PiElim);
+  private s0543_DefBetaReduceGrossKnuth = unfold_pass(s0542_DefBetaReduceGrossKnuth);
+  private s0544_DefBetaReduceGrossKnuth = unfold_pass(s0535_Vble);
+  private s0545_PiElim = apply(s0488_DefBetaReduceGrossKnuth, s0544_DefBetaReduceGrossKnuth);
+  private s0546_DefBetaReduceGrossKnuth = unfold_pass(s0545_PiElim);
+  private s0547_DefBetaReduceGrossKnuth = unfold_pass(s0546_DefBetaReduceGrossKnuth);
+  private s0548_EqForm = equality_type(
+    s0474_SigmaForm, s0543_DefBetaReduceGrossKnuth, s0547_DefBetaReduceGrossKnuth
+  );
+  private s0549_DefBetaReduceGrossKnuth = unfold_pass(s0539_Vble);
+  private s0550_PiElim = apply(s0488_DefBetaReduceGrossKnuth, s0549_DefBetaReduceGrossKnuth);
+  private s0551_DefBetaReduceGrossKnuth = unfold_pass(s0550_PiElim);
+  private s0552_DefBetaReduceGrossKnuth = unfold_pass(s0551_DefBetaReduceGrossKnuth);
+  private s0553_EqIntro = reflexivity(s0552_DefBetaReduceGrossKnuth);
+  private s0554_DefBetaReduceGrossKnuth = unfold_pass(s0553_EqIntro);
+  private s0555_EqElim = equality_eliminate(
+    s0548_EqForm, s0554_DefBetaReduceGrossKnuth, s0524_DefBetaReduceGrossKnuth,
+    s0519_DefBetaReduceGrossKnuth, s0531_DefBetaReduceGrossKnuth, s0532_CtxExt, s0534_CtxExt,
+    s0537_CtxExt, s0538_CtxExt
+  );
+  private s0556_DefBetaReduceGrossKnuth = unfold_pass(s0555_EqElim);
+  private s0557_DefBetaReduceGrossKnuth = unfold_pass(s0516_Vble);
+  private s0558_PiElim = apply(s0557_DefBetaReduceGrossKnuth, s0522_DefBetaReduceGrossKnuth);
+  private s0559_DefBetaReduceGrossKnuth = unfold_pass(s0558_PiElim);
+  private s0560_EqForm = equality_type(
+    s0528_EqForm, s0556_DefBetaReduceGrossKnuth, s0559_DefBetaReduceGrossKnuth
+  );
+  private s0561_PiForm = function_type(s0450_EqForm, s0560_EqForm, s0517_CtxExt);
+  private s0562_SigmaForm = pair_type(s0514_PiForm, s0561_PiForm, s0515_CtxExt);
+  private s0563_SigmaForm = pair_type(s0502_PiForm, s0562_SigmaForm, s0503_CtxExt);
+  private s0564_SigmaForm = pair_type(s0489_PiForm, s0563_SigmaForm, s0490_CtxExt);
+  private s0565_PiForm = function_type(s0458_DefBetaReduceGrossKnuth, s0564_SigmaForm, s0448_CtxExt);
+  private s0566_PiForm = function_type(s0458_DefBetaReduceGrossKnuth, s0565_PiForm, s0446_CtxExt);
+  private s0567_PiForm = function_type(s0443_UIntroOmega, s0566_PiForm, s0444_CtxExt);
+  export lib_univalence = postulate(s0567_PiForm);
+  private s0569_CtxExt = assume(s0443_UIntroOmega, s0444_CtxExt);
+  private s0570_UVble = universe_variable(s0569_CtxExt);
+  private s0571_CtxExt = assume(s0570_UVble, none);
+  private s0572_Vble = variable(s0571_CtxExt);
+  private s0573_CtxExt = assume(s0570_UVble, s0571_CtxExt);
+  private s0574_Vble = variable(s0573_CtxExt);
+  private s0575_EqForm = equality_type(s0570_UVble, s0572_Vble, s0574_Vble);
+  private s0576_PiForm = function_type(s0572_Vble, s0574_Vble, none);
+  private s0577_CtxExt = assume(s0576_PiForm, none);
+  private s0578_Vble = variable(s0577_CtxExt);
+  private s0579_DefBetaReduceGrossKnuth = unfold_pass(s0570_UVble);
+  private s0580_PiElim = apply(s0457_DefBetaReduceGrossKnuth, s0579_DefBetaReduceGrossKnuth);
+  private s0581_DefBetaReduceGrossKnuth = unfold_pass(s0580_PiElim);
+  private s0582_DefBetaReduceGrossKnuth = unfold_pass(s0581_DefBetaReduceGrossKnuth);
+  private s0583_DefBetaReduceGrossKnuth = unfold_pass(s0572_Vble);
+  private s0584_PiElim = apply(s0582_DefBetaReduceGrossKnuth, s0583_DefBetaReduceGrossKnuth);
+  private s0585_DefBetaReduceGrossKnuth = unfold_pass(s0584_PiElim);
+  private s0586_DefBetaReduceGrossKnuth = unfold_pass(s0585_DefBetaReduceGrossKnuth);
+  private s0587_DefBetaReduceGrossKnuth = unfold_pass(s0574_Vble);
+  private s0588_PiElim = apply(s0586_DefBetaReduceGrossKnuth, s0587_DefBetaReduceGrossKnuth);
+  private s0589_DefBetaReduceGrossKnuth = unfold_pass(s0588_PiElim);
+  private s0590_DefBetaReduceGrossKnuth = unfold_pass(s0589_DefBetaReduceGrossKnuth);
+  private s0591_DefBetaReduceGrossKnuth = unfold_pass(s0578_Vble);
+  private s0592_PiElim = apply(s0590_DefBetaReduceGrossKnuth, s0591_DefBetaReduceGrossKnuth);
+  private s0593_DefBetaReduceGrossKnuth = unfold_pass(s0592_PiElim);
+  private s0594_DefBetaReduceGrossKnuth = unfold_pass(s0593_DefBetaReduceGrossKnuth);
+  private s0595_SigmaForm = pair_type(s0576_PiForm, s0594_DefBetaReduceGrossKnuth, s0577_CtxExt);
+  private s0596_PiElim = apply(s0479_DefBetaReduceGrossKnuth, s0579_DefBetaReduceGrossKnuth);
+  private s0597_DefBetaReduceGrossKnuth = unfold_pass(s0596_PiElim);
+  private s0598_DefBetaReduceGrossKnuth = unfold_pass(s0597_DefBetaReduceGrossKnuth);
+  private s0599_PiElim = apply(s0598_DefBetaReduceGrossKnuth, s0583_DefBetaReduceGrossKnuth);
+  private s0600_DefBetaReduceGrossKnuth = unfold_pass(s0599_PiElim);
+  private s0601_DefBetaReduceGrossKnuth = unfold_pass(s0600_DefBetaReduceGrossKnuth);
+  private s0602_PiElim = apply(s0601_DefBetaReduceGrossKnuth, s0587_DefBetaReduceGrossKnuth);
+  private s0603_DefBetaReduceGrossKnuth = unfold_pass(s0602_PiElim);
+  private s0604_DefBetaReduceGrossKnuth = unfold_pass(s0603_DefBetaReduceGrossKnuth);
+  private s0605_PiForm = function_type(s0595_SigmaForm, s0575_EqForm, none);
+  private s0606_CtxExt = assume(s0605_PiForm, none);
+  private s0607_CtxExt = assume(s0575_EqForm, none);
+  private s0608_CtxExt = assume(s0595_SigmaForm, none);
+  private s0609_CtxExt = assume(s0575_EqForm, s0607_CtxExt);
+  private s0610_CtxExt = assume(s0575_EqForm, s0609_CtxExt);
+  private s0611_CtxExt = assume(s0575_EqForm, s0610_CtxExt);
+  private s0612_CtxExt = assume(s0575_EqForm, s0611_CtxExt);
+  private s0613_DefBetaReduceGrossKnuth = unfold_pass(lib_univalence);
+  private s0614_PiElim = apply(s0613_DefBetaReduceGrossKnuth, s0579_DefBetaReduceGrossKnuth);
+  private s0615_DefBetaReduceGrossKnuth = unfold_pass(s0614_PiElim);
+  private s0616_PiElim = apply(s0615_DefBetaReduceGrossKnuth, s0583_DefBetaReduceGrossKnuth);
+  private s0617_DefBetaReduceGrossKnuth = unfold_pass(s0616_PiElim);
+  private s0618_PiElim = apply(s0617_DefBetaReduceGrossKnuth, s0587_DefBetaReduceGrossKnuth);
+  private s0619_DefBetaReduceGrossKnuth = unfold_pass(s0618_PiElim);
+  private s0620_CtxExt = assume(s0605_PiForm, s0606_CtxExt);
+  private s0621_Vble = variable(s0620_CtxExt);
+  private s0622_CtxExt = assume(s0575_EqForm, s0612_CtxExt);
+  private s0623_Vble = variable(s0622_CtxExt);
+  private s0624_DefBetaReduceGrossKnuth = unfold_pass(s0623_Vble);
+  private s0625_PiElim = apply(s0604_DefBetaReduceGrossKnuth, s0624_DefBetaReduceGrossKnuth);
+  private s0626_DefBetaReduceGrossKnuth = unfold_pass(s0625_PiElim);
+  private s0627_DefBetaReduceGrossKnuth = unfold_pass(s0626_DefBetaReduceGrossKnuth);
+  private s0628_DefBetaReduceGrossKnuth = unfold_pass(s0621_Vble);
+  private s0629_PiElim = apply(s0628_DefBetaReduceGrossKnuth, s0627_DefBetaReduceGrossKnuth);
+  private s0630_DefBetaReduceGrossKnuth = unfold_pass(s0629_PiElim);
+  private s0631_EqForm = equality_type(
+    s0575_EqForm, s0630_DefBetaReduceGrossKnuth, s0624_DefBetaReduceGrossKnuth
+  );
+  private s0632_PiForm = function_type(s0575_EqForm, s0631_EqForm, s0622_CtxExt);
+  private s0633_CtxExt = assume(s0632_PiForm, none);
+  private s0634_Vble = variable(s0633_CtxExt);
+  private s0635_CtxExt = assume(s0595_SigmaForm, s0608_CtxExt);
+  private s0636_Vble = variable(s0635_CtxExt);
+  private s0637_DefBetaReduceGrossKnuth = unfold_pass(s0636_Vble);
+  private s0638_PiElim = apply(s0628_DefBetaReduceGrossKnuth, s0637_DefBetaReduceGrossKnuth);
+  private s0639_DefBetaReduceGrossKnuth = unfold_pass(s0638_PiElim);
+  private s0640_PiElim = apply(s0604_DefBetaReduceGrossKnuth, s0639_DefBetaReduceGrossKnuth);
+  private s0641_DefBetaReduceGrossKnuth = unfold_pass(s0640_PiElim);
+  private s0642_DefBetaReduceGrossKnuth = unfold_pass(s0641_DefBetaReduceGrossKnuth);
+  private s0643_EqForm = equality_type(
+    s0595_SigmaForm, s0642_DefBetaReduceGrossKnuth, s0637_DefBetaReduceGrossKnuth
+  );
+  private s0644_PiForm = function_type(s0595_SigmaForm, s0643_EqForm, s0635_CtxExt);
+  private s0645_CtxExt = assume(s0644_PiForm, none);
+  private s0646_Vble = variable(s0645_CtxExt);
+  private s0647_CtxExt = assume(s0575_EqForm, s0622_CtxExt);
+  private s0648_Vble = variable(s0647_CtxExt);
+  private s0649_DefBetaReduceGrossKnuth = unfold_pass(s0648_Vble);
+  private s0650_PiElim = apply(s0604_DefBetaReduceGrossKnuth, s0649_DefBetaReduceGrossKnuth);
+  private s0651_DefBetaReduceGrossKnuth = unfold_pass(s0650_PiElim);
+  private s0652_DefBetaReduceGrossKnuth = unfold_pass(s0651_DefBetaReduceGrossKnuth);
+  private s0653_PiElim = apply(s0628_DefBetaReduceGrossKnuth, s0652_DefBetaReduceGrossKnuth);
+  private s0654_DefBetaReduceGrossKnuth = unfold_pass(s0653_PiElim);
+  private s0655_PiElim = apply(s0604_DefBetaReduceGrossKnuth, s0654_DefBetaReduceGrossKnuth);
+  private s0656_DefBetaReduceGrossKnuth = unfold_pass(s0655_PiElim);
+  private s0657_DefBetaReduceGrossKnuth = unfold_pass(s0656_DefBetaReduceGrossKnuth);
+  private s0658_EqForm = equality_type(
+    s0595_SigmaForm, s0657_DefBetaReduceGrossKnuth, s0652_DefBetaReduceGrossKnuth
+  );
+  private s0659_DefBetaReduceGrossKnuth = unfold_pass(s0634_Vble);
+  private s0660_PiElim = apply(s0659_DefBetaReduceGrossKnuth, s0649_DefBetaReduceGrossKnuth);
+  private s0661_DefBetaReduceGrossKnuth = unfold_pass(s0660_PiElim);
+  private s0662_CtxExt = assume(s0575_EqForm, s0647_CtxExt);
+  private s0663_Vble = variable(s0662_CtxExt);
+  private s0664_CtxExt = assume(s0575_EqForm, s0662_CtxExt);
+  private s0665_Vble = variable(s0664_CtxExt);
+  private s0666_EqForm = equality_type(s0575_EqForm, s0663_Vble, s0665_Vble);
+  private s0667_CtxExt = assume(s0666_EqForm, none);
+  private s0668_CtxExt = assume(s0575_EqForm, s0664_CtxExt);
+  private s0669_Vble = variable(s0668_CtxExt);
+  private s0670_DefBetaReduceGrossKnuth = unfold_pass(s0663_Vble);
+  private s0671_PiElim = apply(s0604_DefBetaReduceGrossKnuth, s0670_DefBetaReduceGrossKnuth);
+  private s0672_DefBetaReduceGrossKnuth = unfold_pass(s0671_PiElim);
+  private s0673_DefBetaReduceGrossKnuth = unfold_pass(s0672_DefBetaReduceGrossKnuth);
+  private s0674_DefBetaReduceGrossKnuth = unfold_pass(s0665_Vble);
+  private s0675_PiElim = apply(s0604_DefBetaReduceGrossKnuth, s0674_DefBetaReduceGrossKnuth);
+  private s0676_DefBetaReduceGrossKnuth = unfold_pass(s0675_PiElim);
+  private s0677_DefBetaReduceGrossKnuth = unfold_pass(s0676_DefBetaReduceGrossKnuth);
+  private s0678_EqForm = equality_type(
+    s0595_SigmaForm, s0673_DefBetaReduceGrossKnuth, s0677_DefBetaReduceGrossKnuth
+  );
+  private s0679_DefBetaReduceGrossKnuth = unfold_pass(s0669_Vble);
+  private s0680_PiElim = apply(s0604_DefBetaReduceGrossKnuth, s0679_DefBetaReduceGrossKnuth);
+  private s0681_DefBetaReduceGrossKnuth = unfold_pass(s0680_PiElim);
+  private s0682_DefBetaReduceGrossKnuth = unfold_pass(s0681_DefBetaReduceGrossKnuth);
+  private s0683_EqIntro = reflexivity(s0682_DefBetaReduceGrossKnuth);
+  private s0684_DefBetaReduceGrossKnuth = unfold_pass(s0683_EqIntro);
+  private s0685_EqElim = equality_eliminate(
+    s0678_EqForm, s0684_DefBetaReduceGrossKnuth, s0654_DefBetaReduceGrossKnuth,
+    s0649_DefBetaReduceGrossKnuth, s0661_DefBetaReduceGrossKnuth, s0662_CtxExt, s0664_CtxExt,
+    s0667_CtxExt, s0668_CtxExt
+  );
+  private s0686_DefBetaReduceGrossKnuth = unfold_pass(s0685_EqElim);
+  private s0687_DefBetaReduceGrossKnuth = unfold_pass(s0646_Vble);
+  private s0688_PiElim = apply(s0687_DefBetaReduceGrossKnuth, s0652_DefBetaReduceGrossKnuth);
+  private s0689_DefBetaReduceGrossKnuth = unfold_pass(s0688_PiElim);
+  private s0690_EqForm = equality_type(
+    s0658_EqForm, s0686_DefBetaReduceGrossKnuth, s0689_DefBetaReduceGrossKnuth
+  );
+  private s0691_PiForm = function_type(s0575_EqForm, s0690_EqForm, s0647_CtxExt);
+  private s0692_SigmaForm = pair_type(s0644_PiForm, s0691_PiForm, s0645_CtxExt);
+  private s0693_SigmaForm = pair_type(s0632_PiForm, s0692_SigmaForm, s0633_CtxExt);
+  private s0694_CtxExt = assume(s0693_SigmaForm, none);
+  private s0695_SigmaElim = pair_eliminate(
+    s0605_PiForm, s0628_DefBetaReduceGrossKnuth, s0619_DefBetaReduceGrossKnuth, none, s0620_CtxExt,
+    s0694_CtxExt
+  );
+  private s0696_DefBetaReduceGrossKnuth = unfold_pass(s0695_SigmaElim);
+  private s0697_PiIntro = function_intro(
+    s0579_DefBetaReduceGrossKnuth, s0696_DefBetaReduceGrossKnuth, s0573_CtxExt
+  );
+  private s0698_PiIntro = function_intro(s0579_DefBetaReduceGrossKnuth, s0697_PiIntro, s0571_CtxExt);
+  private s0699_PiIntro = function_intro(s0443_UIntroOmega, s0698_PiIntro, s0569_CtxExt);
+  private s0700_DefEqRefl = definition_refl(s0699_PiIntro);
+  export lib_ua = definition_right(s0700_DefEqRefl);
+  private s0702_CtxExt = assume(s0443_UIntroOmega, s0569_CtxExt);
+  private s0703_UVble = universe_variable(s0702_CtxExt);
+  private s0704_CtxExt = assume(s0703_UVble, none);
+  private s0705_Vble = variable(s0704_CtxExt);
+  private s0706_CtxExt = assume(s0703_UVble, s0704_CtxExt);
+  private s0707_Vble = variable(s0706_CtxExt);
+  private s0708_EqForm = equality_type(s0703_UVble, s0705_Vble, s0707_Vble);
+  private s0709_PiForm = function_type(s0705_Vble, s0707_Vble, none);
+  private s0710_CtxExt = assume(s0709_PiForm, none);
+  private s0711_Vble = variable(s0710_CtxExt);
+  private s0712_DefBetaReduceGrossKnuth = unfold_pass(s0703_UVble);
+  private s0713_PiElim = apply(s0457_DefBetaReduceGrossKnuth, s0712_DefBetaReduceGrossKnuth);
+  private s0714_DefBetaReduceGrossKnuth = unfold_pass(s0713_PiElim);
+  private s0715_DefBetaReduceGrossKnuth = unfold_pass(s0714_DefBetaReduceGrossKnuth);
+  private s0716_DefBetaReduceGrossKnuth = unfold_pass(s0705_Vble);
+  private s0717_PiElim = apply(s0715_DefBetaReduceGrossKnuth, s0716_DefBetaReduceGrossKnuth);
+  private s0718_DefBetaReduceGrossKnuth = unfold_pass(s0717_PiElim);
+  private s0719_DefBetaReduceGrossKnuth = unfold_pass(s0718_DefBetaReduceGrossKnuth);
+  private s0720_DefBetaReduceGrossKnuth = unfold_pass(s0707_Vble);
+  private s0721_PiElim = apply(s0719_DefBetaReduceGrossKnuth, s0720_DefBetaReduceGrossKnuth);
+  private s0722_DefBetaReduceGrossKnuth = unfold_pass(s0721_PiElim);
+  private s0723_DefBetaReduceGrossKnuth = unfold_pass(s0722_DefBetaReduceGrossKnuth);
+  private s0724_DefBetaReduceGrossKnuth = unfold_pass(s0711_Vble);
+  private s0725_PiElim = apply(s0723_DefBetaReduceGrossKnuth, s0724_DefBetaReduceGrossKnuth);
+  private s0726_DefBetaReduceGrossKnuth = unfold_pass(s0725_PiElim);
+  private s0727_DefBetaReduceGrossKnuth = unfold_pass(s0726_DefBetaReduceGrossKnuth);
+  private s0728_SigmaForm = pair_type(s0709_PiForm, s0727_DefBetaReduceGrossKnuth, s0710_CtxExt);
+  private s0729_PiElim = apply(s0479_DefBetaReduceGrossKnuth, s0712_DefBetaReduceGrossKnuth);
+  private s0730_DefBetaReduceGrossKnuth = unfold_pass(s0729_PiElim);
+  private s0731_DefBetaReduceGrossKnuth = unfold_pass(s0730_DefBetaReduceGrossKnuth);
+  private s0732_PiElim = apply(s0731_DefBetaReduceGrossKnuth, s0716_DefBetaReduceGrossKnuth);
+  private s0733_DefBetaReduceGrossKnuth = unfold_pass(s0732_PiElim);
+  private s0734_DefBetaReduceGrossKnuth = unfold_pass(s0733_DefBetaReduceGrossKnuth);
+  private s0735_PiElim = apply(s0734_DefBetaReduceGrossKnuth, s0720_DefBetaReduceGrossKnuth);
+  private s0736_DefBetaReduceGrossKnuth = unfold_pass(s0735_PiElim);
+  private s0737_DefBetaReduceGrossKnuth = unfold_pass(s0736_DefBetaReduceGrossKnuth);
+  private s0738_PiForm = function_type(s0728_SigmaForm, s0708_EqForm, none);
+  private s0739_CtxExt = assume(s0738_PiForm, none);
+  private s0740_CtxExt = assume(s0708_EqForm, none);
+  private s0741_CtxExt = assume(s0728_SigmaForm, none);
+  private s0742_CtxExt = assume(s0708_EqForm, s0740_CtxExt);
+  private s0743_CtxExt = assume(s0708_EqForm, s0742_CtxExt);
+  private s0744_CtxExt = assume(s0708_EqForm, s0743_CtxExt);
+  private s0745_CtxExt = assume(s0708_EqForm, s0744_CtxExt);
+  private s0746_PiElim = apply(s0613_DefBetaReduceGrossKnuth, s0712_DefBetaReduceGrossKnuth);
+  private s0747_DefBetaReduceGrossKnuth = unfold_pass(s0746_PiElim);
+  private s0748_PiElim = apply(s0747_DefBetaReduceGrossKnuth, s0716_DefBetaReduceGrossKnuth);
+  private s0749_DefBetaReduceGrossKnuth = unfold_pass(s0748_PiElim);
+  private s0750_PiElim = apply(s0749_DefBetaReduceGrossKnuth, s0720_DefBetaReduceGrossKnuth);
+  private s0751_DefBetaReduceGrossKnuth = unfold_pass(s0750_PiElim);
+  private s0752_CtxExt = assume(s0738_PiForm, s0739_CtxExt);
+  private s0753_Vble = variable(s0752_CtxExt);
+  private s0754_CtxExt = assume(s0708_EqForm, s0745_CtxExt);
+  private s0755_Vble = variable(s0754_CtxExt);
+  private s0756_DefBetaReduceGrossKnuth = unfold_pass(s0755_Vble);
+  private s0757_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0756_DefBetaReduceGrossKnuth);
+  private s0758_DefBetaReduceGrossKnuth = unfold_pass(s0757_PiElim);
+  private s0759_DefBetaReduceGrossKnuth = unfold_pass(s0758_DefBetaReduceGrossKnuth);
+  private s0760_DefBetaReduceGrossKnuth = unfold_pass(s0753_Vble);
+  private s0761_PiElim = apply(s0760_DefBetaReduceGrossKnuth, s0759_DefBetaReduceGrossKnuth);
+  private s0762_DefBetaReduceGrossKnuth = unfold_pass(s0761_PiElim);
+  private s0763_EqForm = equality_type(
+    s0708_EqForm, s0762_DefBetaReduceGrossKnuth, s0756_DefBetaReduceGrossKnuth
+  );
+  private s0764_PiForm = function_type(s0708_EqForm, s0763_EqForm, s0754_CtxExt);
+  private s0765_CtxExt = assume(s0764_PiForm, none);
+  private s0766_Vble = variable(s0765_CtxExt);
+  private s0767_CtxExt = assume(s0728_SigmaForm, s0741_CtxExt);
+  private s0768_Vble = variable(s0767_CtxExt);
+  private s0769_DefBetaReduceGrossKnuth = unfold_pass(s0768_Vble);
+  private s0770_PiElim = apply(s0760_DefBetaReduceGrossKnuth, s0769_DefBetaReduceGrossKnuth);
+  private s0771_DefBetaReduceGrossKnuth = unfold_pass(s0770_PiElim);
+  private s0772_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0771_DefBetaReduceGrossKnuth);
+  private s0773_DefBetaReduceGrossKnuth = unfold_pass(s0772_PiElim);
+  private s0774_DefBetaReduceGrossKnuth = unfold_pass(s0773_DefBetaReduceGrossKnuth);
+  private s0775_EqForm = equality_type(
+    s0728_SigmaForm, s0774_DefBetaReduceGrossKnuth, s0769_DefBetaReduceGrossKnuth
+  );
+  private s0776_PiForm = function_type(s0728_SigmaForm, s0775_EqForm, s0767_CtxExt);
+  private s0777_CtxExt = assume(s0776_PiForm, none);
+  private s0778_Vble = variable(s0777_CtxExt);
+  private s0779_CtxExt = assume(s0708_EqForm, s0754_CtxExt);
+  private s0780_Vble = variable(s0779_CtxExt);
+  private s0781_DefBetaReduceGrossKnuth = unfold_pass(s0780_Vble);
+  private s0782_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0781_DefBetaReduceGrossKnuth);
+  private s0783_DefBetaReduceGrossKnuth = unfold_pass(s0782_PiElim);
+  private s0784_DefBetaReduceGrossKnuth = unfold_pass(s0783_DefBetaReduceGrossKnuth);
+  private s0785_PiElim = apply(s0760_DefBetaReduceGrossKnuth, s0784_DefBetaReduceGrossKnuth);
+  private s0786_DefBetaReduceGrossKnuth = unfold_pass(s0785_PiElim);
+  private s0787_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0786_DefBetaReduceGrossKnuth);
+  private s0788_DefBetaReduceGrossKnuth = unfold_pass(s0787_PiElim);
+  private s0789_DefBetaReduceGrossKnuth = unfold_pass(s0788_DefBetaReduceGrossKnuth);
+  private s0790_EqForm = equality_type(
+    s0728_SigmaForm, s0789_DefBetaReduceGrossKnuth, s0784_DefBetaReduceGrossKnuth
+  );
+  private s0791_DefBetaReduceGrossKnuth = unfold_pass(s0766_Vble);
+  private s0792_PiElim = apply(s0791_DefBetaReduceGrossKnuth, s0781_DefBetaReduceGrossKnuth);
+  private s0793_DefBetaReduceGrossKnuth = unfold_pass(s0792_PiElim);
+  private s0794_CtxExt = assume(s0708_EqForm, s0779_CtxExt);
+  private s0795_Vble = variable(s0794_CtxExt);
+  private s0796_CtxExt = assume(s0708_EqForm, s0794_CtxExt);
+  private s0797_Vble = variable(s0796_CtxExt);
+  private s0798_EqForm = equality_type(s0708_EqForm, s0795_Vble, s0797_Vble);
+  private s0799_CtxExt = assume(s0798_EqForm, none);
+  private s0800_CtxExt = assume(s0708_EqForm, s0796_CtxExt);
+  private s0801_Vble = variable(s0800_CtxExt);
+  private s0802_DefBetaReduceGrossKnuth = unfold_pass(s0795_Vble);
+  private s0803_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0802_DefBetaReduceGrossKnuth);
+  private s0804_DefBetaReduceGrossKnuth = unfold_pass(s0803_PiElim);
+  private s0805_DefBetaReduceGrossKnuth = unfold_pass(s0804_DefBetaReduceGrossKnuth);
+  private s0806_DefBetaReduceGrossKnuth = unfold_pass(s0797_Vble);
+  private s0807_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0806_DefBetaReduceGrossKnuth);
+  private s0808_DefBetaReduceGrossKnuth = unfold_pass(s0807_PiElim);
+  private s0809_DefBetaReduceGrossKnuth = unfold_pass(s0808_DefBetaReduceGrossKnuth);
+  private s0810_EqForm = equality_type(
+    s0728_SigmaForm, s0805_DefBetaReduceGrossKnuth, s0809_DefBetaReduceGrossKnuth
+  );
+  private s0811_DefBetaReduceGrossKnuth = unfold_pass(s0801_Vble);
+  private s0812_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0811_DefBetaReduceGrossKnuth);
+  private s0813_DefBetaReduceGrossKnuth = unfold_pass(s0812_PiElim);
+  private s0814_DefBetaReduceGrossKnuth = unfold_pass(s0813_DefBetaReduceGrossKnuth);
+  private s0815_EqIntro = reflexivity(s0814_DefBetaReduceGrossKnuth);
+  private s0816_DefBetaReduceGrossKnuth = unfold_pass(s0815_EqIntro);
+  private s0817_EqElim = equality_eliminate(
+    s0810_EqForm, s0816_DefBetaReduceGrossKnuth, s0786_DefBetaReduceGrossKnuth,
+    s0781_DefBetaReduceGrossKnuth, s0793_DefBetaReduceGrossKnuth, s0794_CtxExt, s0796_CtxExt,
+    s0799_CtxExt, s0800_CtxExt
+  );
+  private s0818_DefBetaReduceGrossKnuth = unfold_pass(s0817_EqElim);
+  private s0819_DefBetaReduceGrossKnuth = unfold_pass(s0778_Vble);
+  private s0820_PiElim = apply(s0819_DefBetaReduceGrossKnuth, s0784_DefBetaReduceGrossKnuth);
+  private s0821_DefBetaReduceGrossKnuth = unfold_pass(s0820_PiElim);
+  private s0822_EqForm = equality_type(
+    s0790_EqForm, s0818_DefBetaReduceGrossKnuth, s0821_DefBetaReduceGrossKnuth
+  );
+  private s0823_PiForm = function_type(s0708_EqForm, s0822_EqForm, s0779_CtxExt);
+  private s0824_SigmaForm = pair_type(s0776_PiForm, s0823_PiForm, s0777_CtxExt);
+  private s0825_SigmaForm = pair_type(s0764_PiForm, s0824_SigmaForm, s0765_CtxExt);
+  private s0826_CtxExt = assume(s0825_SigmaForm, none);
+  private s0827_SigmaElim = pair_eliminate(
+    s0738_PiForm, s0760_DefBetaReduceGrossKnuth, s0751_DefBetaReduceGrossKnuth, none, s0752_CtxExt,
+    s0826_CtxExt
+  );
+  private s0828_DefBetaReduceGrossKnuth = unfold_pass(s0827_SigmaElim);
+  private s0829_CtxExt = assume(s0738_PiForm, s0752_CtxExt);
+  private s0830_Vble = variable(s0829_CtxExt);
+  private s0831_CtxExt = assume(s0708_EqForm, s0800_CtxExt);
+  private s0832_Vble = variable(s0831_CtxExt);
+  private s0833_DefBetaReduceGrossKnuth = unfold_pass(s0832_Vble);
+  private s0834_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0833_DefBetaReduceGrossKnuth);
+  private s0835_DefBetaReduceGrossKnuth = unfold_pass(s0834_PiElim);
+  private s0836_DefBetaReduceGrossKnuth = unfold_pass(s0835_DefBetaReduceGrossKnuth);
+  private s0837_DefBetaReduceGrossKnuth = unfold_pass(s0830_Vble);
+  private s0838_PiElim = apply(s0837_DefBetaReduceGrossKnuth, s0836_DefBetaReduceGrossKnuth);
+  private s0839_DefBetaReduceGrossKnuth = unfold_pass(s0838_PiElim);
+  private s0840_EqForm = equality_type(
+    s0708_EqForm, s0839_DefBetaReduceGrossKnuth, s0833_DefBetaReduceGrossKnuth
+  );
+  private s0841_PiForm = function_type(s0708_EqForm, s0840_EqForm, s0831_CtxExt);
+  private s0842_CtxExt = assume(s0841_PiForm, none);
+  private s0843_Vble = variable(s0842_CtxExt);
+  private s0844_CtxExt = assume(s0728_SigmaForm, s0767_CtxExt);
+  private s0845_Vble = variable(s0844_CtxExt);
+  private s0846_DefBetaReduceGrossKnuth = unfold_pass(s0845_Vble);
+  private s0847_PiElim = apply(s0837_DefBetaReduceGrossKnuth, s0846_DefBetaReduceGrossKnuth);
+  private s0848_DefBetaReduceGrossKnuth = unfold_pass(s0847_PiElim);
+  private s0849_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0848_DefBetaReduceGrossKnuth);
+  private s0850_DefBetaReduceGrossKnuth = unfold_pass(s0849_PiElim);
+  private s0851_DefBetaReduceGrossKnuth = unfold_pass(s0850_DefBetaReduceGrossKnuth);
+  private s0852_EqForm = equality_type(
+    s0728_SigmaForm, s0851_DefBetaReduceGrossKnuth, s0846_DefBetaReduceGrossKnuth
+  );
+  private s0853_PiForm = function_type(s0728_SigmaForm, s0852_EqForm, s0844_CtxExt);
+  private s0854_CtxExt = assume(s0853_PiForm, none);
+  private s0855_Vble = variable(s0854_CtxExt);
+  private s0856_CtxExt = assume(s0708_EqForm, s0831_CtxExt);
+  private s0857_Vble = variable(s0856_CtxExt);
+  private s0858_DefBetaReduceGrossKnuth = unfold_pass(s0857_Vble);
+  private s0859_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0858_DefBetaReduceGrossKnuth);
+  private s0860_DefBetaReduceGrossKnuth = unfold_pass(s0859_PiElim);
+  private s0861_DefBetaReduceGrossKnuth = unfold_pass(s0860_DefBetaReduceGrossKnuth);
+  private s0862_PiElim = apply(s0837_DefBetaReduceGrossKnuth, s0861_DefBetaReduceGrossKnuth);
+  private s0863_DefBetaReduceGrossKnuth = unfold_pass(s0862_PiElim);
+  private s0864_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0863_DefBetaReduceGrossKnuth);
+  private s0865_DefBetaReduceGrossKnuth = unfold_pass(s0864_PiElim);
+  private s0866_DefBetaReduceGrossKnuth = unfold_pass(s0865_DefBetaReduceGrossKnuth);
+  private s0867_EqForm = equality_type(
+    s0728_SigmaForm, s0866_DefBetaReduceGrossKnuth, s0861_DefBetaReduceGrossKnuth
+  );
+  private s0868_DefBetaReduceGrossKnuth = unfold_pass(s0843_Vble);
+  private s0869_PiElim = apply(s0868_DefBetaReduceGrossKnuth, s0858_DefBetaReduceGrossKnuth);
+  private s0870_DefBetaReduceGrossKnuth = unfold_pass(s0869_PiElim);
+  private s0871_CtxExt = assume(s0708_EqForm, s0856_CtxExt);
+  private s0872_Vble = variable(s0871_CtxExt);
+  private s0873_CtxExt = assume(s0708_EqForm, s0871_CtxExt);
+  private s0874_Vble = variable(s0873_CtxExt);
+  private s0875_EqForm = equality_type(s0708_EqForm, s0872_Vble, s0874_Vble);
+  private s0876_CtxExt = assume(s0875_EqForm, none);
+  private s0877_CtxExt = assume(s0708_EqForm, s0873_CtxExt);
+  private s0878_Vble = variable(s0877_CtxExt);
+  private s0879_DefBetaReduceGrossKnuth = unfold_pass(s0872_Vble);
+  private s0880_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0879_DefBetaReduceGrossKnuth);
+  private s0881_DefBetaReduceGrossKnuth = unfold_pass(s0880_PiElim);
+  private s0882_DefBetaReduceGrossKnuth = unfold_pass(s0881_DefBetaReduceGrossKnuth);
+  private s0883_DefBetaReduceGrossKnuth = unfold_pass(s0874_Vble);
+  private s0884_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0883_DefBetaReduceGrossKnuth);
+  private s0885_DefBetaReduceGrossKnuth = unfold_pass(s0884_PiElim);
+  private s0886_DefBetaReduceGrossKnuth = unfold_pass(s0885_DefBetaReduceGrossKnuth);
+  private s0887_EqForm = equality_type(
+    s0728_SigmaForm, s0882_DefBetaReduceGrossKnuth, s0886_DefBetaReduceGrossKnuth
+  );
+  private s0888_DefBetaReduceGrossKnuth = unfold_pass(s0878_Vble);
+  private s0889_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0888_DefBetaReduceGrossKnuth);
+  private s0890_DefBetaReduceGrossKnuth = unfold_pass(s0889_PiElim);
+  private s0891_DefBetaReduceGrossKnuth = unfold_pass(s0890_DefBetaReduceGrossKnuth);
+  private s0892_EqIntro = reflexivity(s0891_DefBetaReduceGrossKnuth);
+  private s0893_DefBetaReduceGrossKnuth = unfold_pass(s0892_EqIntro);
+  private s0894_EqElim = equality_eliminate(
+    s0887_EqForm, s0893_DefBetaReduceGrossKnuth, s0863_DefBetaReduceGrossKnuth,
+    s0858_DefBetaReduceGrossKnuth, s0870_DefBetaReduceGrossKnuth, s0871_CtxExt, s0873_CtxExt,
+    s0876_CtxExt, s0877_CtxExt
+  );
+  private s0895_DefBetaReduceGrossKnuth = unfold_pass(s0894_EqElim);
+  private s0896_DefBetaReduceGrossKnuth = unfold_pass(s0855_Vble);
+  private s0897_PiElim = apply(s0896_DefBetaReduceGrossKnuth, s0861_DefBetaReduceGrossKnuth);
+  private s0898_DefBetaReduceGrossKnuth = unfold_pass(s0897_PiElim);
+  private s0899_EqForm = equality_type(
+    s0867_EqForm, s0895_DefBetaReduceGrossKnuth, s0898_DefBetaReduceGrossKnuth
+  );
+  private s0900_PiForm = function_type(s0708_EqForm, s0899_EqForm, s0856_CtxExt);
+  private s0901_SigmaForm = pair_type(s0853_PiForm, s0900_PiForm, s0854_CtxExt);
+  private s0902_SigmaForm = pair_type(s0841_PiForm, s0901_SigmaForm, s0842_CtxExt);
+  private s0903_CtxExt = assume(s0902_SigmaForm, none);
+  private s0904_Vble = variable(s0903_CtxExt);
+  private s0905_CtxExt = assume(s0738_PiForm, s0829_CtxExt);
+  private s0906_Vble = variable(s0905_CtxExt);
+  private s0907_CtxExt = assume(s0708_EqForm, s0877_CtxExt);
+  private s0908_Vble = variable(s0907_CtxExt);
+  private s0909_DefBetaReduceGrossKnuth = unfold_pass(s0908_Vble);
+  private s0910_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0909_DefBetaReduceGrossKnuth);
+  private s0911_DefBetaReduceGrossKnuth = unfold_pass(s0910_PiElim);
+  private s0912_DefBetaReduceGrossKnuth = unfold_pass(s0911_DefBetaReduceGrossKnuth);
+  private s0913_DefBetaReduceGrossKnuth = unfold_pass(s0906_Vble);
+  private s0914_PiElim = apply(s0913_DefBetaReduceGrossKnuth, s0912_DefBetaReduceGrossKnuth);
+  private s0915_DefBetaReduceGrossKnuth = unfold_pass(s0914_PiElim);
+  private s0916_EqForm = equality_type(
+    s0708_EqForm, s0915_DefBetaReduceGrossKnuth, s0909_DefBetaReduceGrossKnuth
+  );
+  private s0917_PiForm = function_type(s0708_EqForm, s0916_EqForm, s0907_CtxExt);
+  private s0918_CtxExt = assume(s0917_PiForm, none);
+  private s0919_Vble = variable(s0918_CtxExt);
+  private s0920_CtxExt = assume(s0728_SigmaForm, s0844_CtxExt);
+  private s0921_Vble = variable(s0920_CtxExt);
+  private s0922_DefBetaReduceGrossKnuth = unfold_pass(s0921_Vble);
+  private s0923_PiElim = apply(s0913_DefBetaReduceGrossKnuth, s0922_DefBetaReduceGrossKnuth);
+  private s0924_DefBetaReduceGrossKnuth = unfold_pass(s0923_PiElim);
+  private s0925_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0924_DefBetaReduceGrossKnuth);
+  private s0926_DefBetaReduceGrossKnuth = unfold_pass(s0925_PiElim);
+  private s0927_DefBetaReduceGrossKnuth = unfold_pass(s0926_DefBetaReduceGrossKnuth);
+  private s0928_EqForm = equality_type(
+    s0728_SigmaForm, s0927_DefBetaReduceGrossKnuth, s0922_DefBetaReduceGrossKnuth
+  );
+  private s0929_PiForm = function_type(s0728_SigmaForm, s0928_EqForm, s0920_CtxExt);
+  private s0930_CtxExt = assume(s0929_PiForm, none);
+  private s0931_Vble = variable(s0930_CtxExt);
+  private s0932_CtxExt = assume(s0708_EqForm, s0907_CtxExt);
+  private s0933_Vble = variable(s0932_CtxExt);
+  private s0934_DefBetaReduceGrossKnuth = unfold_pass(s0933_Vble);
+  private s0935_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0934_DefBetaReduceGrossKnuth);
+  private s0936_DefBetaReduceGrossKnuth = unfold_pass(s0935_PiElim);
+  private s0937_DefBetaReduceGrossKnuth = unfold_pass(s0936_DefBetaReduceGrossKnuth);
+  private s0938_PiElim = apply(s0913_DefBetaReduceGrossKnuth, s0937_DefBetaReduceGrossKnuth);
+  private s0939_DefBetaReduceGrossKnuth = unfold_pass(s0938_PiElim);
+  private s0940_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0939_DefBetaReduceGrossKnuth);
+  private s0941_DefBetaReduceGrossKnuth = unfold_pass(s0940_PiElim);
+  private s0942_DefBetaReduceGrossKnuth = unfold_pass(s0941_DefBetaReduceGrossKnuth);
+  private s0943_EqForm = equality_type(
+    s0728_SigmaForm, s0942_DefBetaReduceGrossKnuth, s0937_DefBetaReduceGrossKnuth
+  );
+  private s0944_DefBetaReduceGrossKnuth = unfold_pass(s0919_Vble);
+  private s0945_PiElim = apply(s0944_DefBetaReduceGrossKnuth, s0934_DefBetaReduceGrossKnuth);
+  private s0946_DefBetaReduceGrossKnuth = unfold_pass(s0945_PiElim);
+  private s0947_CtxExt = assume(s0708_EqForm, s0932_CtxExt);
+  private s0948_Vble = variable(s0947_CtxExt);
+  private s0949_CtxExt = assume(s0708_EqForm, s0947_CtxExt);
+  private s0950_Vble = variable(s0949_CtxExt);
+  private s0951_EqForm = equality_type(s0708_EqForm, s0948_Vble, s0950_Vble);
+  private s0952_CtxExt = assume(s0951_EqForm, none);
+  private s0953_CtxExt = assume(s0708_EqForm, s0949_CtxExt);
+  private s0954_Vble = variable(s0953_CtxExt);
+  private s0955_DefBetaReduceGrossKnuth = unfold_pass(s0948_Vble);
+  private s0956_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0955_DefBetaReduceGrossKnuth);
+  private s0957_DefBetaReduceGrossKnuth = unfold_pass(s0956_PiElim);
+  private s0958_DefBetaReduceGrossKnuth = unfold_pass(s0957_DefBetaReduceGrossKnuth);
+  private s0959_DefBetaReduceGrossKnuth = unfold_pass(s0950_Vble);
+  private s0960_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0959_DefBetaReduceGrossKnuth);
+  private s0961_DefBetaReduceGrossKnuth = unfold_pass(s0960_PiElim);
+  private s0962_DefBetaReduceGrossKnuth = unfold_pass(s0961_DefBetaReduceGrossKnuth);
+  private s0963_EqForm = equality_type(
+    s0728_SigmaForm, s0958_DefBetaReduceGrossKnuth, s0962_DefBetaReduceGrossKnuth
+  );
+  private s0964_DefBetaReduceGrossKnuth = unfold_pass(s0954_Vble);
+  private s0965_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0964_DefBetaReduceGrossKnuth);
+  private s0966_DefBetaReduceGrossKnuth = unfold_pass(s0965_PiElim);
+  private s0967_DefBetaReduceGrossKnuth = unfold_pass(s0966_DefBetaReduceGrossKnuth);
+  private s0968_EqIntro = reflexivity(s0967_DefBetaReduceGrossKnuth);
+  private s0969_DefBetaReduceGrossKnuth = unfold_pass(s0968_EqIntro);
+  private s0970_EqElim = equality_eliminate(
+    s0963_EqForm, s0969_DefBetaReduceGrossKnuth, s0939_DefBetaReduceGrossKnuth,
+    s0934_DefBetaReduceGrossKnuth, s0946_DefBetaReduceGrossKnuth, s0947_CtxExt, s0949_CtxExt,
+    s0952_CtxExt, s0953_CtxExt
+  );
+  private s0971_DefBetaReduceGrossKnuth = unfold_pass(s0970_EqElim);
+  private s0972_DefBetaReduceGrossKnuth = unfold_pass(s0931_Vble);
+  private s0973_PiElim = apply(s0972_DefBetaReduceGrossKnuth, s0937_DefBetaReduceGrossKnuth);
+  private s0974_DefBetaReduceGrossKnuth = unfold_pass(s0973_PiElim);
+  private s0975_EqForm = equality_type(
+    s0943_EqForm, s0971_DefBetaReduceGrossKnuth, s0974_DefBetaReduceGrossKnuth
+  );
+  private s0976_PiForm = function_type(s0708_EqForm, s0975_EqForm, s0932_CtxExt);
+  private s0977_SigmaForm = pair_type(s0929_PiForm, s0976_PiForm, s0930_CtxExt);
+  private s0978_SigmaForm = pair_type(s0917_PiForm, s0977_SigmaForm, s0918_CtxExt);
+  private s0979_SigmaForm = pair_type(s0738_PiForm, s0978_SigmaForm, s0905_CtxExt);
+  private s0980_CtxExt = assume(s0979_SigmaForm, none);
+  private s0981_Vble = variable(s0980_CtxExt);
+  private s0982_CtxExt = assume(s0738_PiForm, s0905_CtxExt);
+  private s0983_Vble = variable(s0982_CtxExt);
+  private s0984_CtxExt = assume(s0708_EqForm, s0953_CtxExt);
+  private s0985_Vble = variable(s0984_CtxExt);
+  private s0986_DefBetaReduceGrossKnuth = unfold_pass(s0985_Vble);
+  private s0987_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s0986_DefBetaReduceGrossKnuth);
+  private s0988_DefBetaReduceGrossKnuth = unfold_pass(s0987_PiElim);
+  private s0989_DefBetaReduceGrossKnuth = unfold_pass(s0988_DefBetaReduceGrossKnuth);
+  private s0990_DefBetaReduceGrossKnuth = unfold_pass(s0983_Vble);
+  private s0991_PiElim = apply(s0990_DefBetaReduceGrossKnuth, s0989_DefBetaReduceGrossKnuth);
+  private s0992_DefBetaReduceGrossKnuth = unfold_pass(s0991_PiElim);
+  private s0993_EqForm = equality_type(
+    s0708_EqForm, s0992_DefBetaReduceGrossKnuth, s0986_DefBetaReduceGrossKnuth
+  );
+  private s0994_PiForm = function_type(s0708_EqForm, s0993_EqForm, s0984_CtxExt);
+  private s0995_CtxExt = assume(s0994_PiForm, none);
+  private s0996_Vble = variable(s0995_CtxExt);
+  private s0997_CtxExt = assume(s0728_SigmaForm, s0920_CtxExt);
+  private s0998_Vble = variable(s0997_CtxExt);
+  private s0999_DefBetaReduceGrossKnuth = unfold_pass(s0998_Vble);
+  private s1000_PiElim = apply(s0990_DefBetaReduceGrossKnuth, s0999_DefBetaReduceGrossKnuth);
+  private s1001_DefBetaReduceGrossKnuth = unfold_pass(s1000_PiElim);
+  private s1002_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1001_DefBetaReduceGrossKnuth);
+  private s1003_DefBetaReduceGrossKnuth = unfold_pass(s1002_PiElim);
+  private s1004_DefBetaReduceGrossKnuth = unfold_pass(s1003_DefBetaReduceGrossKnuth);
+  private s1005_EqForm = equality_type(
+    s0728_SigmaForm, s1004_DefBetaReduceGrossKnuth, s0999_DefBetaReduceGrossKnuth
+  );
+  private s1006_PiForm = function_type(s0728_SigmaForm, s1005_EqForm, s0997_CtxExt);
+  private s1007_CtxExt = assume(s1006_PiForm, none);
+  private s1008_Vble = variable(s1007_CtxExt);
+  private s1009_CtxExt = assume(s0708_EqForm, s0984_CtxExt);
+  private s1010_Vble = variable(s1009_CtxExt);
+  private s1011_DefBetaReduceGrossKnuth = unfold_pass(s1010_Vble);
+  private s1012_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1011_DefBetaReduceGrossKnuth);
+  private s1013_DefBetaReduceGrossKnuth = unfold_pass(s1012_PiElim);
+  private s1014_DefBetaReduceGrossKnuth = unfold_pass(s1013_DefBetaReduceGrossKnuth);
+  private s1015_PiElim = apply(s0990_DefBetaReduceGrossKnuth, s1014_DefBetaReduceGrossKnuth);
+  private s1016_DefBetaReduceGrossKnuth = unfold_pass(s1015_PiElim);
+  private s1017_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1016_DefBetaReduceGrossKnuth);
+  private s1018_DefBetaReduceGrossKnuth = unfold_pass(s1017_PiElim);
+  private s1019_DefBetaReduceGrossKnuth = unfold_pass(s1018_DefBetaReduceGrossKnuth);
+  private s1020_EqForm = equality_type(
+    s0728_SigmaForm, s1019_DefBetaReduceGrossKnuth, s1014_DefBetaReduceGrossKnuth
+  );
+  private s1021_DefBetaReduceGrossKnuth = unfold_pass(s0996_Vble);
+  private s1022_PiElim = apply(s1021_DefBetaReduceGrossKnuth, s1011_DefBetaReduceGrossKnuth);
+  private s1023_DefBetaReduceGrossKnuth = unfold_pass(s1022_PiElim);
+  private s1024_CtxExt = assume(s0708_EqForm, s1009_CtxExt);
+  private s1025_Vble = variable(s1024_CtxExt);
+  private s1026_CtxExt = assume(s0708_EqForm, s1024_CtxExt);
+  private s1027_Vble = variable(s1026_CtxExt);
+  private s1028_EqForm = equality_type(s0708_EqForm, s1025_Vble, s1027_Vble);
+  private s1029_CtxExt = assume(s1028_EqForm, none);
+  private s1030_CtxExt = assume(s0708_EqForm, s1026_CtxExt);
+  private s1031_Vble = variable(s1030_CtxExt);
+  private s1032_DefBetaReduceGrossKnuth = unfold_pass(s1025_Vble);
+  private s1033_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1032_DefBetaReduceGrossKnuth);
+  private s1034_DefBetaReduceGrossKnuth = unfold_pass(s1033_PiElim);
+  private s1035_DefBetaReduceGrossKnuth = unfold_pass(s1034_DefBetaReduceGrossKnuth);
+  private s1036_DefBetaReduceGrossKnuth = unfold_pass(s1027_Vble);
+  private s1037_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1036_DefBetaReduceGrossKnuth);
+  private s1038_DefBetaReduceGrossKnuth = unfold_pass(s1037_PiElim);
+  private s1039_DefBetaReduceGrossKnuth = unfold_pass(s1038_DefBetaReduceGrossKnuth);
+  private s1040_EqForm = equality_type(
+    s0728_SigmaForm, s1035_DefBetaReduceGrossKnuth, s1039_DefBetaReduceGrossKnuth
+  );
+  private s1041_DefBetaReduceGrossKnuth = unfold_pass(s1031_Vble);
+  private s1042_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1041_DefBetaReduceGrossKnuth);
+  private s1043_DefBetaReduceGrossKnuth = unfold_pass(s1042_PiElim);
+  private s1044_DefBetaReduceGrossKnuth = unfold_pass(s1043_DefBetaReduceGrossKnuth);
+  private s1045_EqIntro = reflexivity(s1044_DefBetaReduceGrossKnuth);
+  private s1046_DefBetaReduceGrossKnuth = unfold_pass(s1045_EqIntro);
+  private s1047_EqElim = equality_eliminate(
+    s1040_EqForm, s1046_DefBetaReduceGrossKnuth, s1016_DefBetaReduceGrossKnuth,
+    s1011_DefBetaReduceGrossKnuth, s1023_DefBetaReduceGrossKnuth, s1024_CtxExt, s1026_CtxExt,
+    s1029_CtxExt, s1030_CtxExt
+  );
+  private s1048_DefBetaReduceGrossKnuth = unfold_pass(s1047_EqElim);
+  private s1049_DefBetaReduceGrossKnuth = unfold_pass(s1008_Vble);
+  private s1050_PiElim = apply(s1049_DefBetaReduceGrossKnuth, s1014_DefBetaReduceGrossKnuth);
+  private s1051_DefBetaReduceGrossKnuth = unfold_pass(s1050_PiElim);
+  private s1052_EqForm = equality_type(
+    s1020_EqForm, s1048_DefBetaReduceGrossKnuth, s1051_DefBetaReduceGrossKnuth
+  );
+  private s1053_PiForm = function_type(s0708_EqForm, s1052_EqForm, s1009_CtxExt);
+  private s1054_SigmaForm = pair_type(s1006_PiForm, s1053_PiForm, s1007_CtxExt);
+  private s1055_SigmaForm = pair_type(s0994_PiForm, s1054_SigmaForm, s0995_CtxExt);
+  private s1056_CtxExt = assume(s1055_SigmaForm, none);
+  private s1057_SigmaElim = pair_eliminate(
+    s0738_PiForm, s0990_DefBetaReduceGrossKnuth, s0981_Vble, none, s0982_CtxExt, s1056_CtxExt
+  );
+  private s1058_DefBetaReduceGrossKnuth = unfold_pass(s1057_SigmaElim);
+  private s1059_CtxExt = assume(s0708_EqForm, s1030_CtxExt);
+  private s1060_Vble = variable(s1059_CtxExt);
+  private s1061_DefBetaReduceGrossKnuth = unfold_pass(s1060_Vble);
+  private s1062_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1061_DefBetaReduceGrossKnuth);
+  private s1063_DefBetaReduceGrossKnuth = unfold_pass(s1062_PiElim);
+  private s1064_DefBetaReduceGrossKnuth = unfold_pass(s1063_DefBetaReduceGrossKnuth);
+  private s1065_PiElim = apply(s1058_DefBetaReduceGrossKnuth, s1064_DefBetaReduceGrossKnuth);
+  private s1066_DefBetaReduceGrossKnuth = unfold_pass(s1065_PiElim);
+  private s1067_EqForm = equality_type(
+    s0708_EqForm, s1066_DefBetaReduceGrossKnuth, s1061_DefBetaReduceGrossKnuth
+  );
+  private s1068_PiForm = function_type(s0708_EqForm, s1067_EqForm, s1059_CtxExt);
+  private s1069_CtxExt = assume(s1068_PiForm, none);
+  private s1070_Vble = variable(s1069_CtxExt);
+  private s1071_CtxExt = assume(s0728_SigmaForm, s0997_CtxExt);
+  private s1072_Vble = variable(s1071_CtxExt);
+  private s1073_DefBetaReduceGrossKnuth = unfold_pass(s1072_Vble);
+  private s1074_PiElim = apply(s1058_DefBetaReduceGrossKnuth, s1073_DefBetaReduceGrossKnuth);
+  private s1075_DefBetaReduceGrossKnuth = unfold_pass(s1074_PiElim);
+  private s1076_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1075_DefBetaReduceGrossKnuth);
+  private s1077_DefBetaReduceGrossKnuth = unfold_pass(s1076_PiElim);
+  private s1078_DefBetaReduceGrossKnuth = unfold_pass(s1077_DefBetaReduceGrossKnuth);
+  private s1079_EqForm = equality_type(
+    s0728_SigmaForm, s1078_DefBetaReduceGrossKnuth, s1073_DefBetaReduceGrossKnuth
+  );
+  private s1080_PiForm = function_type(s0728_SigmaForm, s1079_EqForm, s1071_CtxExt);
+  private s1081_CtxExt = assume(s1080_PiForm, none);
+  private s1082_Vble = variable(s1081_CtxExt);
+  private s1083_CtxExt = assume(s0708_EqForm, s1059_CtxExt);
+  private s1084_Vble = variable(s1083_CtxExt);
+  private s1085_DefBetaReduceGrossKnuth = unfold_pass(s1084_Vble);
+  private s1086_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1085_DefBetaReduceGrossKnuth);
+  private s1087_DefBetaReduceGrossKnuth = unfold_pass(s1086_PiElim);
+  private s1088_DefBetaReduceGrossKnuth = unfold_pass(s1087_DefBetaReduceGrossKnuth);
+  private s1089_PiElim = apply(s1058_DefBetaReduceGrossKnuth, s1088_DefBetaReduceGrossKnuth);
+  private s1090_DefBetaReduceGrossKnuth = unfold_pass(s1089_PiElim);
+  private s1091_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1090_DefBetaReduceGrossKnuth);
+  private s1092_DefBetaReduceGrossKnuth = unfold_pass(s1091_PiElim);
+  private s1093_DefBetaReduceGrossKnuth = unfold_pass(s1092_DefBetaReduceGrossKnuth);
+  private s1094_EqForm = equality_type(
+    s0728_SigmaForm, s1093_DefBetaReduceGrossKnuth, s1088_DefBetaReduceGrossKnuth
+  );
+  private s1095_DefBetaReduceGrossKnuth = unfold_pass(s1070_Vble);
+  private s1096_PiElim = apply(s1095_DefBetaReduceGrossKnuth, s1085_DefBetaReduceGrossKnuth);
+  private s1097_DefBetaReduceGrossKnuth = unfold_pass(s1096_PiElim);
+  private s1098_CtxExt = assume(s0708_EqForm, s1083_CtxExt);
+  private s1099_Vble = variable(s1098_CtxExt);
+  private s1100_CtxExt = assume(s0708_EqForm, s1098_CtxExt);
+  private s1101_Vble = variable(s1100_CtxExt);
+  private s1102_EqForm = equality_type(s0708_EqForm, s1099_Vble, s1101_Vble);
+  private s1103_CtxExt = assume(s1102_EqForm, none);
+  private s1104_CtxExt = assume(s0708_EqForm, s1100_CtxExt);
+  private s1105_Vble = variable(s1104_CtxExt);
+  private s1106_DefBetaReduceGrossKnuth = unfold_pass(s1099_Vble);
+  private s1107_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1106_DefBetaReduceGrossKnuth);
+  private s1108_DefBetaReduceGrossKnuth = unfold_pass(s1107_PiElim);
+  private s1109_DefBetaReduceGrossKnuth = unfold_pass(s1108_DefBetaReduceGrossKnuth);
+  private s1110_DefBetaReduceGrossKnuth = unfold_pass(s1101_Vble);
+  private s1111_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1110_DefBetaReduceGrossKnuth);
+  private s1112_DefBetaReduceGrossKnuth = unfold_pass(s1111_PiElim);
+  private s1113_DefBetaReduceGrossKnuth = unfold_pass(s1112_DefBetaReduceGrossKnuth);
+  private s1114_EqForm = equality_type(
+    s0728_SigmaForm, s1109_DefBetaReduceGrossKnuth, s1113_DefBetaReduceGrossKnuth
+  );
+  private s1115_DefBetaReduceGrossKnuth = unfold_pass(s1105_Vble);
+  private s1116_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1115_DefBetaReduceGrossKnuth);
+  private s1117_DefBetaReduceGrossKnuth = unfold_pass(s1116_PiElim);
+  private s1118_DefBetaReduceGrossKnuth = unfold_pass(s1117_DefBetaReduceGrossKnuth);
+  private s1119_EqIntro = reflexivity(s1118_DefBetaReduceGrossKnuth);
+  private s1120_DefBetaReduceGrossKnuth = unfold_pass(s1119_EqIntro);
+  private s1121_EqElim = equality_eliminate(
+    s1114_EqForm, s1120_DefBetaReduceGrossKnuth, s1090_DefBetaReduceGrossKnuth,
+    s1085_DefBetaReduceGrossKnuth, s1097_DefBetaReduceGrossKnuth, s1098_CtxExt, s1100_CtxExt,
+    s1103_CtxExt, s1104_CtxExt
+  );
+  private s1122_DefBetaReduceGrossKnuth = unfold_pass(s1121_EqElim);
+  private s1123_DefBetaReduceGrossKnuth = unfold_pass(s1082_Vble);
+  private s1124_PiElim = apply(s1123_DefBetaReduceGrossKnuth, s1088_DefBetaReduceGrossKnuth);
+  private s1125_DefBetaReduceGrossKnuth = unfold_pass(s1124_PiElim);
+  private s1126_EqForm = equality_type(
+    s1094_EqForm, s1122_DefBetaReduceGrossKnuth, s1125_DefBetaReduceGrossKnuth
+  );
+  private s1127_PiForm = function_type(s0708_EqForm, s1126_EqForm, s1083_CtxExt);
+  private s1128_SigmaForm = pair_type(s1080_PiForm, s1127_PiForm, s1081_CtxExt);
+  private s1129_SigmaForm = pair_type(s1068_PiForm, s1128_SigmaForm, s1069_CtxExt);
+  private s1130_CtxExt = assume(s0738_PiForm, s0982_CtxExt);
+  private s1131_Vble = variable(s1130_CtxExt);
+  private s1132_CtxExt = assume(s0708_EqForm, s1104_CtxExt);
+  private s1133_Vble = variable(s1132_CtxExt);
+  private s1134_DefBetaReduceGrossKnuth = unfold_pass(s1133_Vble);
+  private s1135_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1134_DefBetaReduceGrossKnuth);
+  private s1136_DefBetaReduceGrossKnuth = unfold_pass(s1135_PiElim);
+  private s1137_DefBetaReduceGrossKnuth = unfold_pass(s1136_DefBetaReduceGrossKnuth);
+  private s1138_DefBetaReduceGrossKnuth = unfold_pass(s1131_Vble);
+  private s1139_PiElim = apply(s1138_DefBetaReduceGrossKnuth, s1137_DefBetaReduceGrossKnuth);
+  private s1140_DefBetaReduceGrossKnuth = unfold_pass(s1139_PiElim);
+  private s1141_EqForm = equality_type(
+    s0708_EqForm, s1140_DefBetaReduceGrossKnuth, s1134_DefBetaReduceGrossKnuth
+  );
+  private s1142_PiForm = function_type(s0708_EqForm, s1141_EqForm, s1132_CtxExt);
+  private s1143_CtxExt = assume(s1142_PiForm, none);
+  private s1144_Vble = variable(s1143_CtxExt);
+  private s1145_CtxExt = assume(s0728_SigmaForm, s1071_CtxExt);
+  private s1146_Vble = variable(s1145_CtxExt);
+  private s1147_DefBetaReduceGrossKnuth = unfold_pass(s1146_Vble);
+  private s1148_PiElim = apply(s1138_DefBetaReduceGrossKnuth, s1147_DefBetaReduceGrossKnuth);
+  private s1149_DefBetaReduceGrossKnuth = unfold_pass(s1148_PiElim);
+  private s1150_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1149_DefBetaReduceGrossKnuth);
+  private s1151_DefBetaReduceGrossKnuth = unfold_pass(s1150_PiElim);
+  private s1152_DefBetaReduceGrossKnuth = unfold_pass(s1151_DefBetaReduceGrossKnuth);
+  private s1153_EqForm = equality_type(
+    s0728_SigmaForm, s1152_DefBetaReduceGrossKnuth, s1147_DefBetaReduceGrossKnuth
+  );
+  private s1154_PiForm = function_type(s0728_SigmaForm, s1153_EqForm, s1145_CtxExt);
+  private s1155_CtxExt = assume(s1154_PiForm, none);
+  private s1156_Vble = variable(s1155_CtxExt);
+  private s1157_CtxExt = assume(s0708_EqForm, s1132_CtxExt);
+  private s1158_Vble = variable(s1157_CtxExt);
+  private s1159_DefBetaReduceGrossKnuth = unfold_pass(s1158_Vble);
+  private s1160_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1159_DefBetaReduceGrossKnuth);
+  private s1161_DefBetaReduceGrossKnuth = unfold_pass(s1160_PiElim);
+  private s1162_DefBetaReduceGrossKnuth = unfold_pass(s1161_DefBetaReduceGrossKnuth);
+  private s1163_PiElim = apply(s1138_DefBetaReduceGrossKnuth, s1162_DefBetaReduceGrossKnuth);
+  private s1164_DefBetaReduceGrossKnuth = unfold_pass(s1163_PiElim);
+  private s1165_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1164_DefBetaReduceGrossKnuth);
+  private s1166_DefBetaReduceGrossKnuth = unfold_pass(s1165_PiElim);
+  private s1167_DefBetaReduceGrossKnuth = unfold_pass(s1166_DefBetaReduceGrossKnuth);
+  private s1168_EqForm = equality_type(
+    s0728_SigmaForm, s1167_DefBetaReduceGrossKnuth, s1162_DefBetaReduceGrossKnuth
+  );
+  private s1169_DefBetaReduceGrossKnuth = unfold_pass(s1144_Vble);
+  private s1170_PiElim = apply(s1169_DefBetaReduceGrossKnuth, s1159_DefBetaReduceGrossKnuth);
+  private s1171_DefBetaReduceGrossKnuth = unfold_pass(s1170_PiElim);
+  private s1172_CtxExt = assume(s0708_EqForm, s1157_CtxExt);
+  private s1173_Vble = variable(s1172_CtxExt);
+  private s1174_CtxExt = assume(s0708_EqForm, s1172_CtxExt);
+  private s1175_Vble = variable(s1174_CtxExt);
+  private s1176_EqForm = equality_type(s0708_EqForm, s1173_Vble, s1175_Vble);
+  private s1177_CtxExt = assume(s1176_EqForm, none);
+  private s1178_CtxExt = assume(s0708_EqForm, s1174_CtxExt);
+  private s1179_Vble = variable(s1178_CtxExt);
+  private s1180_DefBetaReduceGrossKnuth = unfold_pass(s1173_Vble);
+  private s1181_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1180_DefBetaReduceGrossKnuth);
+  private s1182_DefBetaReduceGrossKnuth = unfold_pass(s1181_PiElim);
+  private s1183_DefBetaReduceGrossKnuth = unfold_pass(s1182_DefBetaReduceGrossKnuth);
+  private s1184_DefBetaReduceGrossKnuth = unfold_pass(s1175_Vble);
+  private s1185_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1184_DefBetaReduceGrossKnuth);
+  private s1186_DefBetaReduceGrossKnuth = unfold_pass(s1185_PiElim);
+  private s1187_DefBetaReduceGrossKnuth = unfold_pass(s1186_DefBetaReduceGrossKnuth);
+  private s1188_EqForm = equality_type(
+    s0728_SigmaForm, s1183_DefBetaReduceGrossKnuth, s1187_DefBetaReduceGrossKnuth
+  );
+  private s1189_DefBetaReduceGrossKnuth = unfold_pass(s1179_Vble);
+  private s1190_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1189_DefBetaReduceGrossKnuth);
+  private s1191_DefBetaReduceGrossKnuth = unfold_pass(s1190_PiElim);
+  private s1192_DefBetaReduceGrossKnuth = unfold_pass(s1191_DefBetaReduceGrossKnuth);
+  private s1193_EqIntro = reflexivity(s1192_DefBetaReduceGrossKnuth);
+  private s1194_DefBetaReduceGrossKnuth = unfold_pass(s1193_EqIntro);
+  private s1195_EqElim = equality_eliminate(
+    s1188_EqForm, s1194_DefBetaReduceGrossKnuth, s1164_DefBetaReduceGrossKnuth,
+    s1159_DefBetaReduceGrossKnuth, s1171_DefBetaReduceGrossKnuth, s1172_CtxExt, s1174_CtxExt,
+    s1177_CtxExt, s1178_CtxExt
+  );
+  private s1196_DefBetaReduceGrossKnuth = unfold_pass(s1195_EqElim);
+  private s1197_DefBetaReduceGrossKnuth = unfold_pass(s1156_Vble);
+  private s1198_PiElim = apply(s1197_DefBetaReduceGrossKnuth, s1162_DefBetaReduceGrossKnuth);
+  private s1199_DefBetaReduceGrossKnuth = unfold_pass(s1198_PiElim);
+  private s1200_EqForm = equality_type(
+    s1168_EqForm, s1196_DefBetaReduceGrossKnuth, s1199_DefBetaReduceGrossKnuth
+  );
+  private s1201_PiForm = function_type(s0708_EqForm, s1200_EqForm, s1157_CtxExt);
+  private s1202_SigmaForm = pair_type(s1154_PiForm, s1201_PiForm, s1155_CtxExt);
+  private s1203_SigmaForm = pair_type(s1142_PiForm, s1202_SigmaForm, s1143_CtxExt);
+  private s1204_SigmaIntro = pair_intro(
+    s0837_DefBetaReduceGrossKnuth, s1203_SigmaForm, s0904_Vble, s1130_CtxExt
+  );
+  private s1205_PiIntro = function_intro(s0979_SigmaForm, s1129_SigmaForm, s0980_CtxExt);
+  private s1206_PiElim = apply(s1205_PiIntro, s1204_SigmaIntro);
+  private s1207_HighExp = select_expression(s1206_PiElim);
+  private s1208_BetaReducePointed = reduce_selected(s1207_HighExp);
+  private s1209_UnHigh = clear_selection(s1208_BetaReducePointed);
+  private s1210_DefBetaReduceGrossKnuth = unfold_pass(s0904_Vble);
+  private s1211_DefEqRefl = definition_refl(s1209_UnHigh);
+  private s1212_HighExp = select_expression(s1211_DefEqRefl);
+  private s1213_High1 = select_second(s1212_HighExp);
+  private s1214_DefBetaReduceGrossKnuth = unfold_pass(s1213_High1);
+  private s1215_DefBetaReduceGrossKnuth = unfold_pass(s1214_DefBetaReduceGrossKnuth);
+  private s1216_DefEqSwp = definition_symmetry(s1215_DefBetaReduceGrossKnuth);
+  private s1217_HighType = select_type(s1210_DefBetaReduceGrossKnuth);
+  private s1218_HighSubs = rewrite_selected(s1217_HighType, s1216_DefEqSwp);
+  private s1219_UnHigh = clear_selection(s1218_HighSubs);
+  private s1220_SigmaElim = pair_eliminate(
+    s1129_SigmaForm, s1219_UnHigh, s0751_DefBetaReduceGrossKnuth, s0980_CtxExt, s0829_CtxExt,
+    s0903_CtxExt
+  );
+  private s1221_DefBetaReduceGrossKnuth = unfold_pass(s1220_SigmaElim);
+  private s1222_CtxExt = assume(s0708_EqForm, s1178_CtxExt);
+  private s1223_Vble = variable(s1222_CtxExt);
+  private s1224_DefBetaReduceGrossKnuth = unfold_pass(s1223_Vble);
+  private s1225_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1224_DefBetaReduceGrossKnuth);
+  private s1226_DefBetaReduceGrossKnuth = unfold_pass(s1225_PiElim);
+  private s1227_DefBetaReduceGrossKnuth = unfold_pass(s1226_DefBetaReduceGrossKnuth);
+  private s1228_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1227_DefBetaReduceGrossKnuth);
+  private s1229_DefBetaReduceGrossKnuth = unfold_pass(s1228_PiElim);
+  private s1230_EqForm = equality_type(
+    s0708_EqForm, s1229_DefBetaReduceGrossKnuth, s1224_DefBetaReduceGrossKnuth
+  );
+  private s1231_PiForm = function_type(s0708_EqForm, s1230_EqForm, s1222_CtxExt);
+  private s1232_CtxExt = assume(s1231_PiForm, none);
+  private s1233_Vble = variable(s1232_CtxExt);
+  private s1234_CtxExt = assume(s0728_SigmaForm, s1145_CtxExt);
+  private s1235_Vble = variable(s1234_CtxExt);
+  private s1236_DefBetaReduceGrossKnuth = unfold_pass(s1235_Vble);
+  private s1237_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1236_DefBetaReduceGrossKnuth);
+  private s1238_DefBetaReduceGrossKnuth = unfold_pass(s1237_PiElim);
+  private s1239_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1238_DefBetaReduceGrossKnuth);
+  private s1240_DefBetaReduceGrossKnuth = unfold_pass(s1239_PiElim);
+  private s1241_DefBetaReduceGrossKnuth = unfold_pass(s1240_DefBetaReduceGrossKnuth);
+  private s1242_EqForm = equality_type(
+    s0728_SigmaForm, s1241_DefBetaReduceGrossKnuth, s1236_DefBetaReduceGrossKnuth
+  );
+  private s1243_PiForm = function_type(s0728_SigmaForm, s1242_EqForm, s1234_CtxExt);
+  private s1244_CtxExt = assume(s1243_PiForm, none);
+  private s1245_Vble = variable(s1244_CtxExt);
+  private s1246_CtxExt = assume(s0708_EqForm, s1222_CtxExt);
+  private s1247_Vble = variable(s1246_CtxExt);
+  private s1248_DefBetaReduceGrossKnuth = unfold_pass(s1247_Vble);
+  private s1249_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1248_DefBetaReduceGrossKnuth);
+  private s1250_DefBetaReduceGrossKnuth = unfold_pass(s1249_PiElim);
+  private s1251_DefBetaReduceGrossKnuth = unfold_pass(s1250_DefBetaReduceGrossKnuth);
+  private s1252_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1251_DefBetaReduceGrossKnuth);
+  private s1253_DefBetaReduceGrossKnuth = unfold_pass(s1252_PiElim);
+  private s1254_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1253_DefBetaReduceGrossKnuth);
+  private s1255_DefBetaReduceGrossKnuth = unfold_pass(s1254_PiElim);
+  private s1256_DefBetaReduceGrossKnuth = unfold_pass(s1255_DefBetaReduceGrossKnuth);
+  private s1257_EqForm = equality_type(
+    s0728_SigmaForm, s1256_DefBetaReduceGrossKnuth, s1251_DefBetaReduceGrossKnuth
+  );
+  private s1258_DefBetaReduceGrossKnuth = unfold_pass(s1233_Vble);
+  private s1259_PiElim = apply(s1258_DefBetaReduceGrossKnuth, s1248_DefBetaReduceGrossKnuth);
+  private s1260_DefBetaReduceGrossKnuth = unfold_pass(s1259_PiElim);
+  private s1261_CtxExt = assume(s0708_EqForm, s1246_CtxExt);
+  private s1262_Vble = variable(s1261_CtxExt);
+  private s1263_CtxExt = assume(s0708_EqForm, s1261_CtxExt);
+  private s1264_Vble = variable(s1263_CtxExt);
+  private s1265_EqForm = equality_type(s0708_EqForm, s1262_Vble, s1264_Vble);
+  private s1266_CtxExt = assume(s1265_EqForm, none);
+  private s1267_CtxExt = assume(s0708_EqForm, s1263_CtxExt);
+  private s1268_Vble = variable(s1267_CtxExt);
+  private s1269_DefBetaReduceGrossKnuth = unfold_pass(s1262_Vble);
+  private s1270_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1269_DefBetaReduceGrossKnuth);
+  private s1271_DefBetaReduceGrossKnuth = unfold_pass(s1270_PiElim);
+  private s1272_DefBetaReduceGrossKnuth = unfold_pass(s1271_DefBetaReduceGrossKnuth);
+  private s1273_DefBetaReduceGrossKnuth = unfold_pass(s1264_Vble);
+  private s1274_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1273_DefBetaReduceGrossKnuth);
+  private s1275_DefBetaReduceGrossKnuth = unfold_pass(s1274_PiElim);
+  private s1276_DefBetaReduceGrossKnuth = unfold_pass(s1275_DefBetaReduceGrossKnuth);
+  private s1277_EqForm = equality_type(
+    s0728_SigmaForm, s1272_DefBetaReduceGrossKnuth, s1276_DefBetaReduceGrossKnuth
+  );
+  private s1278_DefBetaReduceGrossKnuth = unfold_pass(s1268_Vble);
+  private s1279_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1278_DefBetaReduceGrossKnuth);
+  private s1280_DefBetaReduceGrossKnuth = unfold_pass(s1279_PiElim);
+  private s1281_DefBetaReduceGrossKnuth = unfold_pass(s1280_DefBetaReduceGrossKnuth);
+  private s1282_EqIntro = reflexivity(s1281_DefBetaReduceGrossKnuth);
+  private s1283_DefBetaReduceGrossKnuth = unfold_pass(s1282_EqIntro);
+  private s1284_EqElim = equality_eliminate(
+    s1277_EqForm, s1283_DefBetaReduceGrossKnuth, s1253_DefBetaReduceGrossKnuth,
+    s1248_DefBetaReduceGrossKnuth, s1260_DefBetaReduceGrossKnuth, s1261_CtxExt, s1263_CtxExt,
+    s1266_CtxExt, s1267_CtxExt
+  );
+  private s1285_DefBetaReduceGrossKnuth = unfold_pass(s1284_EqElim);
+  private s1286_DefBetaReduceGrossKnuth = unfold_pass(s1245_Vble);
+  private s1287_PiElim = apply(s1286_DefBetaReduceGrossKnuth, s1251_DefBetaReduceGrossKnuth);
+  private s1288_DefBetaReduceGrossKnuth = unfold_pass(s1287_PiElim);
+  private s1289_EqForm = equality_type(
+    s1257_EqForm, s1285_DefBetaReduceGrossKnuth, s1288_DefBetaReduceGrossKnuth
+  );
+  private s1290_PiForm = function_type(s0708_EqForm, s1289_EqForm, s1246_CtxExt);
+  private s1291_SigmaForm = pair_type(s1243_PiForm, s1290_PiForm, s1244_CtxExt);
+  private s1292_CtxExt = assume(s1291_SigmaForm, none);
+  private s1293_SigmaElim = pair_eliminate(
+    s1231_PiForm, s1258_DefBetaReduceGrossKnuth, s1221_DefBetaReduceGrossKnuth, none, s1232_CtxExt,
+    s1292_CtxExt
+  );
+  private s1294_DefBetaReduceGrossKnuth = unfold_pass(s1293_SigmaElim);
+  private s1295_CtxExt = assume(s0708_EqForm, s1267_CtxExt);
+  private s1296_Vble = variable(s1295_CtxExt);
+  private s1297_DefBetaReduceGrossKnuth = unfold_pass(s1296_Vble);
+  private s1298_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1297_DefBetaReduceGrossKnuth);
+  private s1299_DefBetaReduceGrossKnuth = unfold_pass(s1298_PiElim);
+  private s1300_DefBetaReduceGrossKnuth = unfold_pass(s1299_DefBetaReduceGrossKnuth);
+  private s1301_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1300_DefBetaReduceGrossKnuth);
+  private s1302_DefBetaReduceGrossKnuth = unfold_pass(s1301_PiElim);
+  private s1303_EqForm = equality_type(
+    s0708_EqForm, s1302_DefBetaReduceGrossKnuth, s1297_DefBetaReduceGrossKnuth
+  );
+  private s1304_PiForm = function_type(s0708_EqForm, s1303_EqForm, s1295_CtxExt);
+  private s1305_CtxExt = assume(s1304_PiForm, s1232_CtxExt);
+  private s1306_Vble = variable(s1305_CtxExt);
+  private s1307_CtxExt = assume(s0728_SigmaForm, s1234_CtxExt);
+  private s1308_Vble = variable(s1307_CtxExt);
+  private s1309_DefBetaReduceGrossKnuth = unfold_pass(s1308_Vble);
+  private s1310_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1309_DefBetaReduceGrossKnuth);
+  private s1311_DefBetaReduceGrossKnuth = unfold_pass(s1310_PiElim);
+  private s1312_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1311_DefBetaReduceGrossKnuth);
+  private s1313_DefBetaReduceGrossKnuth = unfold_pass(s1312_PiElim);
+  private s1314_DefBetaReduceGrossKnuth = unfold_pass(s1313_DefBetaReduceGrossKnuth);
+  private s1315_EqForm = equality_type(
+    s0728_SigmaForm, s1314_DefBetaReduceGrossKnuth, s1309_DefBetaReduceGrossKnuth
+  );
+  private s1316_PiForm = function_type(s0728_SigmaForm, s1315_EqForm, s1307_CtxExt);
+  private s1317_CtxExt = assume(s1316_PiForm, s1244_CtxExt);
+  private s1318_Vble = variable(s1317_CtxExt);
+  private s1319_CtxExt = assume(s0708_EqForm, s1295_CtxExt);
+  private s1320_Vble = variable(s1319_CtxExt);
+  private s1321_DefBetaReduceGrossKnuth = unfold_pass(s1320_Vble);
+  private s1322_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1321_DefBetaReduceGrossKnuth);
+  private s1323_DefBetaReduceGrossKnuth = unfold_pass(s1322_PiElim);
+  private s1324_DefBetaReduceGrossKnuth = unfold_pass(s1323_DefBetaReduceGrossKnuth);
+  private s1325_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1324_DefBetaReduceGrossKnuth);
+  private s1326_DefBetaReduceGrossKnuth = unfold_pass(s1325_PiElim);
+  private s1327_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1326_DefBetaReduceGrossKnuth);
+  private s1328_DefBetaReduceGrossKnuth = unfold_pass(s1327_PiElim);
+  private s1329_DefBetaReduceGrossKnuth = unfold_pass(s1328_DefBetaReduceGrossKnuth);
+  private s1330_EqForm = equality_type(
+    s0728_SigmaForm, s1329_DefBetaReduceGrossKnuth, s1324_DefBetaReduceGrossKnuth
+  );
+  private s1331_DefBetaReduceGrossKnuth = unfold_pass(s1306_Vble);
+  private s1332_PiElim = apply(s1331_DefBetaReduceGrossKnuth, s1321_DefBetaReduceGrossKnuth);
+  private s1333_DefBetaReduceGrossKnuth = unfold_pass(s1332_PiElim);
+  private s1334_CtxExt = assume(s0708_EqForm, s1319_CtxExt);
+  private s1335_Vble = variable(s1334_CtxExt);
+  private s1336_CtxExt = assume(s0708_EqForm, s1334_CtxExt);
+  private s1337_Vble = variable(s1336_CtxExt);
+  private s1338_EqForm = equality_type(s0708_EqForm, s1335_Vble, s1337_Vble);
+  private s1339_CtxExt = assume(s1338_EqForm, none);
+  private s1340_CtxExt = assume(s0708_EqForm, s1336_CtxExt);
+  private s1341_Vble = variable(s1340_CtxExt);
+  private s1342_DefBetaReduceGrossKnuth = unfold_pass(s1335_Vble);
+  private s1343_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1342_DefBetaReduceGrossKnuth);
+  private s1344_DefBetaReduceGrossKnuth = unfold_pass(s1343_PiElim);
+  private s1345_DefBetaReduceGrossKnuth = unfold_pass(s1344_DefBetaReduceGrossKnuth);
+  private s1346_DefBetaReduceGrossKnuth = unfold_pass(s1337_Vble);
+  private s1347_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1346_DefBetaReduceGrossKnuth);
+  private s1348_DefBetaReduceGrossKnuth = unfold_pass(s1347_PiElim);
+  private s1349_DefBetaReduceGrossKnuth = unfold_pass(s1348_DefBetaReduceGrossKnuth);
+  private s1350_EqForm = equality_type(
+    s0728_SigmaForm, s1345_DefBetaReduceGrossKnuth, s1349_DefBetaReduceGrossKnuth
+  );
+  private s1351_DefBetaReduceGrossKnuth = unfold_pass(s1341_Vble);
+  private s1352_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1351_DefBetaReduceGrossKnuth);
+  private s1353_DefBetaReduceGrossKnuth = unfold_pass(s1352_PiElim);
+  private s1354_DefBetaReduceGrossKnuth = unfold_pass(s1353_DefBetaReduceGrossKnuth);
+  private s1355_EqIntro = reflexivity(s1354_DefBetaReduceGrossKnuth);
+  private s1356_DefBetaReduceGrossKnuth = unfold_pass(s1355_EqIntro);
+  private s1357_EqElim = equality_eliminate(
+    s1350_EqForm, s1356_DefBetaReduceGrossKnuth, s1326_DefBetaReduceGrossKnuth,
+    s1321_DefBetaReduceGrossKnuth, s1333_DefBetaReduceGrossKnuth, s1334_CtxExt, s1336_CtxExt,
+    s1339_CtxExt, s1340_CtxExt
+  );
+  private s1358_DefBetaReduceGrossKnuth = unfold_pass(s1357_EqElim);
+  private s1359_DefBetaReduceGrossKnuth = unfold_pass(s1318_Vble);
+  private s1360_PiElim = apply(s1359_DefBetaReduceGrossKnuth, s1324_DefBetaReduceGrossKnuth);
+  private s1361_DefBetaReduceGrossKnuth = unfold_pass(s1360_PiElim);
+  private s1362_EqForm = equality_type(
+    s1330_EqForm, s1358_DefBetaReduceGrossKnuth, s1361_DefBetaReduceGrossKnuth
+  );
+  private s1363_PiForm = function_type(s0708_EqForm, s1362_EqForm, s1319_CtxExt);
+  private s1364_SigmaForm = pair_type(s1316_PiForm, s1363_PiForm, s1317_CtxExt);
+  private s1365_CtxExt = assume(s1364_SigmaForm, none);
+  private s1366_Vble = variable(s1365_CtxExt);
+  private s1367_CtxExt = assume(s1304_PiForm, s1305_CtxExt);
+  private s1368_Vble = variable(s1367_CtxExt);
+  private s1369_CtxExt = assume(s0728_SigmaForm, s1307_CtxExt);
+  private s1370_Vble = variable(s1369_CtxExt);
+  private s1371_DefBetaReduceGrossKnuth = unfold_pass(s1370_Vble);
+  private s1372_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1371_DefBetaReduceGrossKnuth);
+  private s1373_DefBetaReduceGrossKnuth = unfold_pass(s1372_PiElim);
+  private s1374_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1373_DefBetaReduceGrossKnuth);
+  private s1375_DefBetaReduceGrossKnuth = unfold_pass(s1374_PiElim);
+  private s1376_DefBetaReduceGrossKnuth = unfold_pass(s1375_DefBetaReduceGrossKnuth);
+  private s1377_EqForm = equality_type(
+    s0728_SigmaForm, s1376_DefBetaReduceGrossKnuth, s1371_DefBetaReduceGrossKnuth
+  );
+  private s1378_PiForm = function_type(s0728_SigmaForm, s1377_EqForm, s1369_CtxExt);
+  private s1379_CtxExt = assume(s1378_PiForm, s1317_CtxExt);
+  private s1380_Vble = variable(s1379_CtxExt);
+  private s1381_CtxExt = assume(s0708_EqForm, s1340_CtxExt);
+  private s1382_Vble = variable(s1381_CtxExt);
+  private s1383_DefBetaReduceGrossKnuth = unfold_pass(s1382_Vble);
+  private s1384_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1383_DefBetaReduceGrossKnuth);
+  private s1385_DefBetaReduceGrossKnuth = unfold_pass(s1384_PiElim);
+  private s1386_DefBetaReduceGrossKnuth = unfold_pass(s1385_DefBetaReduceGrossKnuth);
+  private s1387_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1386_DefBetaReduceGrossKnuth);
+  private s1388_DefBetaReduceGrossKnuth = unfold_pass(s1387_PiElim);
+  private s1389_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1388_DefBetaReduceGrossKnuth);
+  private s1390_DefBetaReduceGrossKnuth = unfold_pass(s1389_PiElim);
+  private s1391_DefBetaReduceGrossKnuth = unfold_pass(s1390_DefBetaReduceGrossKnuth);
+  private s1392_EqForm = equality_type(
+    s0728_SigmaForm, s1391_DefBetaReduceGrossKnuth, s1386_DefBetaReduceGrossKnuth
+  );
+  private s1393_DefBetaReduceGrossKnuth = unfold_pass(s1368_Vble);
+  private s1394_PiElim = apply(s1393_DefBetaReduceGrossKnuth, s1383_DefBetaReduceGrossKnuth);
+  private s1395_DefBetaReduceGrossKnuth = unfold_pass(s1394_PiElim);
+  private s1396_CtxExt = assume(s0708_EqForm, s1381_CtxExt);
+  private s1397_Vble = variable(s1396_CtxExt);
+  private s1398_CtxExt = assume(s0708_EqForm, s1396_CtxExt);
+  private s1399_Vble = variable(s1398_CtxExt);
+  private s1400_EqForm = equality_type(s0708_EqForm, s1397_Vble, s1399_Vble);
+  private s1401_CtxExt = assume(s1400_EqForm, none);
+  private s1402_CtxExt = assume(s0708_EqForm, s1398_CtxExt);
+  private s1403_Vble = variable(s1402_CtxExt);
+  private s1404_DefBetaReduceGrossKnuth = unfold_pass(s1397_Vble);
+  private s1405_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1404_DefBetaReduceGrossKnuth);
+  private s1406_DefBetaReduceGrossKnuth = unfold_pass(s1405_PiElim);
+  private s1407_DefBetaReduceGrossKnuth = unfold_pass(s1406_DefBetaReduceGrossKnuth);
+  private s1408_DefBetaReduceGrossKnuth = unfold_pass(s1399_Vble);
+  private s1409_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1408_DefBetaReduceGrossKnuth);
+  private s1410_DefBetaReduceGrossKnuth = unfold_pass(s1409_PiElim);
+  private s1411_DefBetaReduceGrossKnuth = unfold_pass(s1410_DefBetaReduceGrossKnuth);
+  private s1412_EqForm = equality_type(
+    s0728_SigmaForm, s1407_DefBetaReduceGrossKnuth, s1411_DefBetaReduceGrossKnuth
+  );
+  private s1413_DefBetaReduceGrossKnuth = unfold_pass(s1403_Vble);
+  private s1414_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1413_DefBetaReduceGrossKnuth);
+  private s1415_DefBetaReduceGrossKnuth = unfold_pass(s1414_PiElim);
+  private s1416_DefBetaReduceGrossKnuth = unfold_pass(s1415_DefBetaReduceGrossKnuth);
+  private s1417_EqIntro = reflexivity(s1416_DefBetaReduceGrossKnuth);
+  private s1418_DefBetaReduceGrossKnuth = unfold_pass(s1417_EqIntro);
+  private s1419_EqElim = equality_eliminate(
+    s1412_EqForm, s1418_DefBetaReduceGrossKnuth, s1388_DefBetaReduceGrossKnuth,
+    s1383_DefBetaReduceGrossKnuth, s1395_DefBetaReduceGrossKnuth, s1396_CtxExt, s1398_CtxExt,
+    s1401_CtxExt, s1402_CtxExt
+  );
+  private s1420_DefBetaReduceGrossKnuth = unfold_pass(s1419_EqElim);
+  private s1421_DefBetaReduceGrossKnuth = unfold_pass(s1380_Vble);
+  private s1422_PiElim = apply(s1421_DefBetaReduceGrossKnuth, s1386_DefBetaReduceGrossKnuth);
+  private s1423_DefBetaReduceGrossKnuth = unfold_pass(s1422_PiElim);
+  private s1424_EqForm = equality_type(
+    s1392_EqForm, s1420_DefBetaReduceGrossKnuth, s1423_DefBetaReduceGrossKnuth
+  );
+  private s1425_PiForm = function_type(s0708_EqForm, s1424_EqForm, s1381_CtxExt);
+  private s1426_SigmaForm = pair_type(s1378_PiForm, s1425_PiForm, s1379_CtxExt);
+  private s1427_SigmaForm = pair_type(s1304_PiForm, s1426_SigmaForm, s1367_CtxExt);
+  private s1428_CtxExt = assume(s1427_SigmaForm, none);
+  private s1429_Vble = variable(s1428_CtxExt);
+  private s1430_CtxExt = assume(s1304_PiForm, s1367_CtxExt);
+  private s1431_Vble = variable(s1430_CtxExt);
+  private s1432_CtxExt = assume(s0728_SigmaForm, s1369_CtxExt);
+  private s1433_Vble = variable(s1432_CtxExt);
+  private s1434_DefBetaReduceGrossKnuth = unfold_pass(s1433_Vble);
+  private s1435_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1434_DefBetaReduceGrossKnuth);
+  private s1436_DefBetaReduceGrossKnuth = unfold_pass(s1435_PiElim);
+  private s1437_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1436_DefBetaReduceGrossKnuth);
+  private s1438_DefBetaReduceGrossKnuth = unfold_pass(s1437_PiElim);
+  private s1439_DefBetaReduceGrossKnuth = unfold_pass(s1438_DefBetaReduceGrossKnuth);
+  private s1440_EqForm = equality_type(
+    s0728_SigmaForm, s1439_DefBetaReduceGrossKnuth, s1434_DefBetaReduceGrossKnuth
+  );
+  private s1441_PiForm = function_type(s0728_SigmaForm, s1440_EqForm, s1432_CtxExt);
+  private s1442_CtxExt = assume(s1441_PiForm, s1379_CtxExt);
+  private s1443_Vble = variable(s1442_CtxExt);
+  private s1444_CtxExt = assume(s0708_EqForm, s1402_CtxExt);
+  private s1445_Vble = variable(s1444_CtxExt);
+  private s1446_DefBetaReduceGrossKnuth = unfold_pass(s1445_Vble);
+  private s1447_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1446_DefBetaReduceGrossKnuth);
+  private s1448_DefBetaReduceGrossKnuth = unfold_pass(s1447_PiElim);
+  private s1449_DefBetaReduceGrossKnuth = unfold_pass(s1448_DefBetaReduceGrossKnuth);
+  private s1450_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1449_DefBetaReduceGrossKnuth);
+  private s1451_DefBetaReduceGrossKnuth = unfold_pass(s1450_PiElim);
+  private s1452_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1451_DefBetaReduceGrossKnuth);
+  private s1453_DefBetaReduceGrossKnuth = unfold_pass(s1452_PiElim);
+  private s1454_DefBetaReduceGrossKnuth = unfold_pass(s1453_DefBetaReduceGrossKnuth);
+  private s1455_EqForm = equality_type(
+    s0728_SigmaForm, s1454_DefBetaReduceGrossKnuth, s1449_DefBetaReduceGrossKnuth
+  );
+  private s1456_DefBetaReduceGrossKnuth = unfold_pass(s1431_Vble);
+  private s1457_PiElim = apply(s1456_DefBetaReduceGrossKnuth, s1446_DefBetaReduceGrossKnuth);
+  private s1458_DefBetaReduceGrossKnuth = unfold_pass(s1457_PiElim);
+  private s1459_CtxExt = assume(s0708_EqForm, s1444_CtxExt);
+  private s1460_Vble = variable(s1459_CtxExt);
+  private s1461_CtxExt = assume(s0708_EqForm, s1459_CtxExt);
+  private s1462_Vble = variable(s1461_CtxExt);
+  private s1463_EqForm = equality_type(s0708_EqForm, s1460_Vble, s1462_Vble);
+  private s1464_CtxExt = assume(s1463_EqForm, none);
+  private s1465_CtxExt = assume(s0708_EqForm, s1461_CtxExt);
+  private s1466_Vble = variable(s1465_CtxExt);
+  private s1467_DefBetaReduceGrossKnuth = unfold_pass(s1460_Vble);
+  private s1468_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1467_DefBetaReduceGrossKnuth);
+  private s1469_DefBetaReduceGrossKnuth = unfold_pass(s1468_PiElim);
+  private s1470_DefBetaReduceGrossKnuth = unfold_pass(s1469_DefBetaReduceGrossKnuth);
+  private s1471_DefBetaReduceGrossKnuth = unfold_pass(s1462_Vble);
+  private s1472_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1471_DefBetaReduceGrossKnuth);
+  private s1473_DefBetaReduceGrossKnuth = unfold_pass(s1472_PiElim);
+  private s1474_DefBetaReduceGrossKnuth = unfold_pass(s1473_DefBetaReduceGrossKnuth);
+  private s1475_EqForm = equality_type(
+    s0728_SigmaForm, s1470_DefBetaReduceGrossKnuth, s1474_DefBetaReduceGrossKnuth
+  );
+  private s1476_DefBetaReduceGrossKnuth = unfold_pass(s1466_Vble);
+  private s1477_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1476_DefBetaReduceGrossKnuth);
+  private s1478_DefBetaReduceGrossKnuth = unfold_pass(s1477_PiElim);
+  private s1479_DefBetaReduceGrossKnuth = unfold_pass(s1478_DefBetaReduceGrossKnuth);
+  private s1480_EqIntro = reflexivity(s1479_DefBetaReduceGrossKnuth);
+  private s1481_DefBetaReduceGrossKnuth = unfold_pass(s1480_EqIntro);
+  private s1482_EqElim = equality_eliminate(
+    s1475_EqForm, s1481_DefBetaReduceGrossKnuth, s1451_DefBetaReduceGrossKnuth,
+    s1446_DefBetaReduceGrossKnuth, s1458_DefBetaReduceGrossKnuth, s1459_CtxExt, s1461_CtxExt,
+    s1464_CtxExt, s1465_CtxExt
+  );
+  private s1483_DefBetaReduceGrossKnuth = unfold_pass(s1482_EqElim);
+  private s1484_DefBetaReduceGrossKnuth = unfold_pass(s1443_Vble);
+  private s1485_PiElim = apply(s1484_DefBetaReduceGrossKnuth, s1449_DefBetaReduceGrossKnuth);
+  private s1486_DefBetaReduceGrossKnuth = unfold_pass(s1485_PiElim);
+  private s1487_EqForm = equality_type(
+    s1455_EqForm, s1483_DefBetaReduceGrossKnuth, s1486_DefBetaReduceGrossKnuth
+  );
+  private s1488_PiForm = function_type(s0708_EqForm, s1487_EqForm, s1444_CtxExt);
+  private s1489_SigmaForm = pair_type(s1441_PiForm, s1488_PiForm, s1442_CtxExt);
+  private s1490_CtxExt = assume(s1489_SigmaForm, none);
+  private s1491_SigmaElim = pair_eliminate(
+    s1304_PiForm, s1456_DefBetaReduceGrossKnuth, s1429_Vble, none, s1430_CtxExt, s1490_CtxExt
+  );
+  private s1492_DefBetaReduceGrossKnuth = unfold_pass(s1491_SigmaElim);
+  private s1493_CtxExt = assume(s0728_SigmaForm, s1432_CtxExt);
+  private s1494_Vble = variable(s1493_CtxExt);
+  private s1495_DefBetaReduceGrossKnuth = unfold_pass(s1494_Vble);
+  private s1496_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1495_DefBetaReduceGrossKnuth);
+  private s1497_DefBetaReduceGrossKnuth = unfold_pass(s1496_PiElim);
+  private s1498_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1497_DefBetaReduceGrossKnuth);
+  private s1499_DefBetaReduceGrossKnuth = unfold_pass(s1498_PiElim);
+  private s1500_DefBetaReduceGrossKnuth = unfold_pass(s1499_DefBetaReduceGrossKnuth);
+  private s1501_EqForm = equality_type(
+    s0728_SigmaForm, s1500_DefBetaReduceGrossKnuth, s1495_DefBetaReduceGrossKnuth
+  );
+  private s1502_PiForm = function_type(s0728_SigmaForm, s1501_EqForm, s1493_CtxExt);
+  private s1503_CtxExt = assume(s1502_PiForm, s1442_CtxExt);
+  private s1504_Vble = variable(s1503_CtxExt);
+  private s1505_CtxExt = assume(s0708_EqForm, s1465_CtxExt);
+  private s1506_Vble = variable(s1505_CtxExt);
+  private s1507_DefBetaReduceGrossKnuth = unfold_pass(s1506_Vble);
+  private s1508_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1507_DefBetaReduceGrossKnuth);
+  private s1509_DefBetaReduceGrossKnuth = unfold_pass(s1508_PiElim);
+  private s1510_DefBetaReduceGrossKnuth = unfold_pass(s1509_DefBetaReduceGrossKnuth);
+  private s1511_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1510_DefBetaReduceGrossKnuth);
+  private s1512_DefBetaReduceGrossKnuth = unfold_pass(s1511_PiElim);
+  private s1513_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1512_DefBetaReduceGrossKnuth);
+  private s1514_DefBetaReduceGrossKnuth = unfold_pass(s1513_PiElim);
+  private s1515_DefBetaReduceGrossKnuth = unfold_pass(s1514_DefBetaReduceGrossKnuth);
+  private s1516_EqForm = equality_type(
+    s0728_SigmaForm, s1515_DefBetaReduceGrossKnuth, s1510_DefBetaReduceGrossKnuth
+  );
+  private s1517_PiElim = apply(s1492_DefBetaReduceGrossKnuth, s1507_DefBetaReduceGrossKnuth);
+  private s1518_DefBetaReduceGrossKnuth = unfold_pass(s1517_PiElim);
+  private s1519_CtxExt = assume(s0708_EqForm, s1505_CtxExt);
+  private s1520_Vble = variable(s1519_CtxExt);
+  private s1521_CtxExt = assume(s0708_EqForm, s1519_CtxExt);
+  private s1522_Vble = variable(s1521_CtxExt);
+  private s1523_EqForm = equality_type(s0708_EqForm, s1520_Vble, s1522_Vble);
+  private s1524_CtxExt = assume(s1523_EqForm, none);
+  private s1525_CtxExt = assume(s0708_EqForm, s1521_CtxExt);
+  private s1526_Vble = variable(s1525_CtxExt);
+  private s1527_DefBetaReduceGrossKnuth = unfold_pass(s1520_Vble);
+  private s1528_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1527_DefBetaReduceGrossKnuth);
+  private s1529_DefBetaReduceGrossKnuth = unfold_pass(s1528_PiElim);
+  private s1530_DefBetaReduceGrossKnuth = unfold_pass(s1529_DefBetaReduceGrossKnuth);
+  private s1531_DefBetaReduceGrossKnuth = unfold_pass(s1522_Vble);
+  private s1532_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1531_DefBetaReduceGrossKnuth);
+  private s1533_DefBetaReduceGrossKnuth = unfold_pass(s1532_PiElim);
+  private s1534_DefBetaReduceGrossKnuth = unfold_pass(s1533_DefBetaReduceGrossKnuth);
+  private s1535_EqForm = equality_type(
+    s0728_SigmaForm, s1530_DefBetaReduceGrossKnuth, s1534_DefBetaReduceGrossKnuth
+  );
+  private s1536_DefBetaReduceGrossKnuth = unfold_pass(s1526_Vble);
+  private s1537_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1536_DefBetaReduceGrossKnuth);
+  private s1538_DefBetaReduceGrossKnuth = unfold_pass(s1537_PiElim);
+  private s1539_DefBetaReduceGrossKnuth = unfold_pass(s1538_DefBetaReduceGrossKnuth);
+  private s1540_EqIntro = reflexivity(s1539_DefBetaReduceGrossKnuth);
+  private s1541_DefBetaReduceGrossKnuth = unfold_pass(s1540_EqIntro);
+  private s1542_EqElim = equality_eliminate(
+    s1535_EqForm, s1541_DefBetaReduceGrossKnuth, s1512_DefBetaReduceGrossKnuth,
+    s1507_DefBetaReduceGrossKnuth, s1518_DefBetaReduceGrossKnuth, s1519_CtxExt, s1521_CtxExt,
+    s1524_CtxExt, s1525_CtxExt
+  );
+  private s1543_DefBetaReduceGrossKnuth = unfold_pass(s1542_EqElim);
+  private s1544_DefBetaReduceGrossKnuth = unfold_pass(s1504_Vble);
+  private s1545_PiElim = apply(s1544_DefBetaReduceGrossKnuth, s1510_DefBetaReduceGrossKnuth);
+  private s1546_DefBetaReduceGrossKnuth = unfold_pass(s1545_PiElim);
+  private s1547_EqForm = equality_type(
+    s1516_EqForm, s1543_DefBetaReduceGrossKnuth, s1546_DefBetaReduceGrossKnuth
+  );
+  private s1548_PiForm = function_type(s0708_EqForm, s1547_EqForm, s1505_CtxExt);
+  private s1549_SigmaForm = pair_type(s1502_PiForm, s1548_PiForm, s1503_CtxExt);
+  private s1550_CtxExt = assume(s1304_PiForm, s1430_CtxExt);
+  private s1551_Vble = variable(s1550_CtxExt);
+  private s1552_CtxExt = assume(s0728_SigmaForm, s1493_CtxExt);
+  private s1553_Vble = variable(s1552_CtxExt);
+  private s1554_DefBetaReduceGrossKnuth = unfold_pass(s1553_Vble);
+  private s1555_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1554_DefBetaReduceGrossKnuth);
+  private s1556_DefBetaReduceGrossKnuth = unfold_pass(s1555_PiElim);
+  private s1557_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1556_DefBetaReduceGrossKnuth);
+  private s1558_DefBetaReduceGrossKnuth = unfold_pass(s1557_PiElim);
+  private s1559_DefBetaReduceGrossKnuth = unfold_pass(s1558_DefBetaReduceGrossKnuth);
+  private s1560_EqForm = equality_type(
+    s0728_SigmaForm, s1559_DefBetaReduceGrossKnuth, s1554_DefBetaReduceGrossKnuth
+  );
+  private s1561_PiForm = function_type(s0728_SigmaForm, s1560_EqForm, s1552_CtxExt);
+  private s1562_CtxExt = assume(s1561_PiForm, s1503_CtxExt);
+  private s1563_Vble = variable(s1562_CtxExt);
+  private s1564_CtxExt = assume(s0708_EqForm, s1525_CtxExt);
+  private s1565_Vble = variable(s1564_CtxExt);
+  private s1566_DefBetaReduceGrossKnuth = unfold_pass(s1565_Vble);
+  private s1567_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1566_DefBetaReduceGrossKnuth);
+  private s1568_DefBetaReduceGrossKnuth = unfold_pass(s1567_PiElim);
+  private s1569_DefBetaReduceGrossKnuth = unfold_pass(s1568_DefBetaReduceGrossKnuth);
+  private s1570_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1569_DefBetaReduceGrossKnuth);
+  private s1571_DefBetaReduceGrossKnuth = unfold_pass(s1570_PiElim);
+  private s1572_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1571_DefBetaReduceGrossKnuth);
+  private s1573_DefBetaReduceGrossKnuth = unfold_pass(s1572_PiElim);
+  private s1574_DefBetaReduceGrossKnuth = unfold_pass(s1573_DefBetaReduceGrossKnuth);
+  private s1575_EqForm = equality_type(
+    s0728_SigmaForm, s1574_DefBetaReduceGrossKnuth, s1569_DefBetaReduceGrossKnuth
+  );
+  private s1576_DefBetaReduceGrossKnuth = unfold_pass(s1551_Vble);
+  private s1577_PiElim = apply(s1576_DefBetaReduceGrossKnuth, s1566_DefBetaReduceGrossKnuth);
+  private s1578_DefBetaReduceGrossKnuth = unfold_pass(s1577_PiElim);
+  private s1579_CtxExt = assume(s0708_EqForm, s1564_CtxExt);
+  private s1580_Vble = variable(s1579_CtxExt);
+  private s1581_CtxExt = assume(s0708_EqForm, s1579_CtxExt);
+  private s1582_Vble = variable(s1581_CtxExt);
+  private s1583_EqForm = equality_type(s0708_EqForm, s1580_Vble, s1582_Vble);
+  private s1584_CtxExt = assume(s1583_EqForm, none);
+  private s1585_CtxExt = assume(s0708_EqForm, s1581_CtxExt);
+  private s1586_Vble = variable(s1585_CtxExt);
+  private s1587_DefBetaReduceGrossKnuth = unfold_pass(s1580_Vble);
+  private s1588_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1587_DefBetaReduceGrossKnuth);
+  private s1589_DefBetaReduceGrossKnuth = unfold_pass(s1588_PiElim);
+  private s1590_DefBetaReduceGrossKnuth = unfold_pass(s1589_DefBetaReduceGrossKnuth);
+  private s1591_DefBetaReduceGrossKnuth = unfold_pass(s1582_Vble);
+  private s1592_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1591_DefBetaReduceGrossKnuth);
+  private s1593_DefBetaReduceGrossKnuth = unfold_pass(s1592_PiElim);
+  private s1594_DefBetaReduceGrossKnuth = unfold_pass(s1593_DefBetaReduceGrossKnuth);
+  private s1595_EqForm = equality_type(
+    s0728_SigmaForm, s1590_DefBetaReduceGrossKnuth, s1594_DefBetaReduceGrossKnuth
+  );
+  private s1596_DefBetaReduceGrossKnuth = unfold_pass(s1586_Vble);
+  private s1597_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1596_DefBetaReduceGrossKnuth);
+  private s1598_DefBetaReduceGrossKnuth = unfold_pass(s1597_PiElim);
+  private s1599_DefBetaReduceGrossKnuth = unfold_pass(s1598_DefBetaReduceGrossKnuth);
+  private s1600_EqIntro = reflexivity(s1599_DefBetaReduceGrossKnuth);
+  private s1601_DefBetaReduceGrossKnuth = unfold_pass(s1600_EqIntro);
+  private s1602_EqElim = equality_eliminate(
+    s1595_EqForm, s1601_DefBetaReduceGrossKnuth, s1571_DefBetaReduceGrossKnuth,
+    s1566_DefBetaReduceGrossKnuth, s1578_DefBetaReduceGrossKnuth, s1579_CtxExt, s1581_CtxExt,
+    s1584_CtxExt, s1585_CtxExt
+  );
+  private s1603_DefBetaReduceGrossKnuth = unfold_pass(s1602_EqElim);
+  private s1604_DefBetaReduceGrossKnuth = unfold_pass(s1563_Vble);
+  private s1605_PiElim = apply(s1604_DefBetaReduceGrossKnuth, s1569_DefBetaReduceGrossKnuth);
+  private s1606_DefBetaReduceGrossKnuth = unfold_pass(s1605_PiElim);
+  private s1607_EqForm = equality_type(
+    s1575_EqForm, s1603_DefBetaReduceGrossKnuth, s1606_DefBetaReduceGrossKnuth
+  );
+  private s1608_PiForm = function_type(s0708_EqForm, s1607_EqForm, s1564_CtxExt);
+  private s1609_SigmaForm = pair_type(s1561_PiForm, s1608_PiForm, s1562_CtxExt);
+  private s1610_SigmaIntro = pair_intro(
+    s1331_DefBetaReduceGrossKnuth, s1609_SigmaForm, s1366_Vble, s1550_CtxExt
+  );
+  private s1611_PiIntro = function_intro(s1427_SigmaForm, s1549_SigmaForm, s1428_CtxExt);
+  private s1612_PiElim = apply(s1611_PiIntro, s1610_SigmaIntro);
+  private s1613_HighExp = select_expression(s1612_PiElim);
+  private s1614_BetaReducePointed = reduce_selected(s1613_HighExp);
+  private s1615_UnHigh = clear_selection(s1614_BetaReducePointed);
+  private s1616_DefBetaReduceGrossKnuth = unfold_pass(s1366_Vble);
+  private s1617_DefEqRefl = definition_refl(s1615_UnHigh);
+  private s1618_HighExp = select_expression(s1617_DefEqRefl);
+  private s1619_High1 = select_second(s1618_HighExp);
+  private s1620_DefBetaReduceGrossKnuth = unfold_pass(s1619_High1);
+  private s1621_DefBetaReduceGrossKnuth = unfold_pass(s1620_DefBetaReduceGrossKnuth);
+  private s1622_DefEqSwp = definition_symmetry(s1621_DefBetaReduceGrossKnuth);
+  private s1623_HighType = select_type(s1616_DefBetaReduceGrossKnuth);
+  private s1624_HighSubs = rewrite_selected(s1623_HighType, s1622_DefEqSwp);
+  private s1625_UnHigh = clear_selection(s1624_HighSubs);
+  private s1626_SigmaElim = pair_eliminate(
+    s1549_SigmaForm, s1625_UnHigh, s1221_DefBetaReduceGrossKnuth, s1428_CtxExt, s1305_CtxExt,
+    s1365_CtxExt
+  );
+  private s1627_DefBetaReduceGrossKnuth = unfold_pass(s1626_SigmaElim);
+  private s1628_CtxExt = assume(s0728_SigmaForm, s1552_CtxExt);
+  private s1629_Vble = variable(s1628_CtxExt);
+  private s1630_DefBetaReduceGrossKnuth = unfold_pass(s1629_Vble);
+  private s1631_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1630_DefBetaReduceGrossKnuth);
+  private s1632_DefBetaReduceGrossKnuth = unfold_pass(s1631_PiElim);
+  private s1633_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1632_DefBetaReduceGrossKnuth);
+  private s1634_DefBetaReduceGrossKnuth = unfold_pass(s1633_PiElim);
+  private s1635_DefBetaReduceGrossKnuth = unfold_pass(s1634_DefBetaReduceGrossKnuth);
+  private s1636_EqForm = equality_type(
+    s0728_SigmaForm, s1635_DefBetaReduceGrossKnuth, s1630_DefBetaReduceGrossKnuth
+  );
+  private s1637_PiForm = function_type(s0728_SigmaForm, s1636_EqForm, s1628_CtxExt);
+  private s1638_CtxExt = assume(s1637_PiForm, s1562_CtxExt);
+  private s1639_Vble = variable(s1638_CtxExt);
+  private s1640_CtxExt = assume(s0708_EqForm, s1585_CtxExt);
+  private s1641_Vble = variable(s1640_CtxExt);
+  private s1642_DefBetaReduceGrossKnuth = unfold_pass(s1641_Vble);
+  private s1643_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1642_DefBetaReduceGrossKnuth);
+  private s1644_DefBetaReduceGrossKnuth = unfold_pass(s1643_PiElim);
+  private s1645_DefBetaReduceGrossKnuth = unfold_pass(s1644_DefBetaReduceGrossKnuth);
+  private s1646_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1645_DefBetaReduceGrossKnuth);
+  private s1647_DefBetaReduceGrossKnuth = unfold_pass(s1646_PiElim);
+  private s1648_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1647_DefBetaReduceGrossKnuth);
+  private s1649_DefBetaReduceGrossKnuth = unfold_pass(s1648_PiElim);
+  private s1650_DefBetaReduceGrossKnuth = unfold_pass(s1649_DefBetaReduceGrossKnuth);
+  private s1651_EqForm = equality_type(
+    s0728_SigmaForm, s1650_DefBetaReduceGrossKnuth, s1645_DefBetaReduceGrossKnuth
+  );
+  private s1652_PiElim = apply(s1294_DefBetaReduceGrossKnuth, s1642_DefBetaReduceGrossKnuth);
+  private s1653_DefBetaReduceGrossKnuth = unfold_pass(s1652_PiElim);
+  private s1654_CtxExt = assume(s0708_EqForm, s1640_CtxExt);
+  private s1655_Vble = variable(s1654_CtxExt);
+  private s1656_CtxExt = assume(s0708_EqForm, s1654_CtxExt);
+  private s1657_Vble = variable(s1656_CtxExt);
+  private s1658_EqForm = equality_type(s0708_EqForm, s1655_Vble, s1657_Vble);
+  private s1659_CtxExt = assume(s1658_EqForm, none);
+  private s1660_CtxExt = assume(s0708_EqForm, s1656_CtxExt);
+  private s1661_Vble = variable(s1660_CtxExt);
+  private s1662_DefBetaReduceGrossKnuth = unfold_pass(s1655_Vble);
+  private s1663_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1662_DefBetaReduceGrossKnuth);
+  private s1664_DefBetaReduceGrossKnuth = unfold_pass(s1663_PiElim);
+  private s1665_DefBetaReduceGrossKnuth = unfold_pass(s1664_DefBetaReduceGrossKnuth);
+  private s1666_DefBetaReduceGrossKnuth = unfold_pass(s1657_Vble);
+  private s1667_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1666_DefBetaReduceGrossKnuth);
+  private s1668_DefBetaReduceGrossKnuth = unfold_pass(s1667_PiElim);
+  private s1669_DefBetaReduceGrossKnuth = unfold_pass(s1668_DefBetaReduceGrossKnuth);
+  private s1670_EqForm = equality_type(
+    s0728_SigmaForm, s1665_DefBetaReduceGrossKnuth, s1669_DefBetaReduceGrossKnuth
+  );
+  private s1671_DefBetaReduceGrossKnuth = unfold_pass(s1661_Vble);
+  private s1672_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1671_DefBetaReduceGrossKnuth);
+  private s1673_DefBetaReduceGrossKnuth = unfold_pass(s1672_PiElim);
+  private s1674_DefBetaReduceGrossKnuth = unfold_pass(s1673_DefBetaReduceGrossKnuth);
+  private s1675_EqIntro = reflexivity(s1674_DefBetaReduceGrossKnuth);
+  private s1676_DefBetaReduceGrossKnuth = unfold_pass(s1675_EqIntro);
+  private s1677_EqElim = equality_eliminate(
+    s1670_EqForm, s1676_DefBetaReduceGrossKnuth, s1647_DefBetaReduceGrossKnuth,
+    s1642_DefBetaReduceGrossKnuth, s1653_DefBetaReduceGrossKnuth, s1654_CtxExt, s1656_CtxExt,
+    s1659_CtxExt, s1660_CtxExt
+  );
+  private s1678_DefBetaReduceGrossKnuth = unfold_pass(s1677_EqElim);
+  private s1679_DefBetaReduceGrossKnuth = unfold_pass(s1639_Vble);
+  private s1680_PiElim = apply(s1679_DefBetaReduceGrossKnuth, s1645_DefBetaReduceGrossKnuth);
+  private s1681_DefBetaReduceGrossKnuth = unfold_pass(s1680_PiElim);
+  private s1682_EqForm = equality_type(
+    s1651_EqForm, s1678_DefBetaReduceGrossKnuth, s1681_DefBetaReduceGrossKnuth
+  );
+  private s1683_PiForm = function_type(s0708_EqForm, s1682_EqForm, s1640_CtxExt);
+  private s1684_CtxExt = assume(s1683_PiForm, none);
+  private s1685_SigmaElim = pair_eliminate(
+    s1637_PiForm, s1679_DefBetaReduceGrossKnuth, s1627_DefBetaReduceGrossKnuth, none, s1638_CtxExt,
+    s1684_CtxExt
+  );
+  private s1686_DefBetaReduceGrossKnuth = unfold_pass(s1685_SigmaElim);
+  private s1687_CtxExt = assume(s0728_SigmaForm, s1628_CtxExt);
+  private s1688_Vble = variable(s1687_CtxExt);
+  private s1689_CtxExt = assume(s0716_DefBetaReduceGrossKnuth, none);
+  private s1690_Vble = variable(s1689_CtxExt);
+  private s1691_DefBetaReduceGrossKnuth = unfold_pass(s1688_Vble);
+  private s1692_PiElim = apply(s0828_DefBetaReduceGrossKnuth, s1691_DefBetaReduceGrossKnuth);
+  private s1693_DefBetaReduceGrossKnuth = unfold_pass(s1692_PiElim);
+  private s1694_CtxExt = assume(s0712_DefBetaReduceGrossKnuth, s0706_CtxExt);
+  private s1695_Vble = variable(s1694_CtxExt);
+  private s1696_CtxExt = assume(s0712_DefBetaReduceGrossKnuth, s1694_CtxExt);
+  private s1697_Vble = variable(s1696_CtxExt);
+  private s1698_EqForm = equality_type(s0712_DefBetaReduceGrossKnuth, s1695_Vble, s1697_Vble);
+  private s1699_CtxExt = assume(s1698_EqForm, none);
+  private s1700_Vble = variable(s1699_CtxExt);
+  private s1701_CtxExt = assume(s0712_DefBetaReduceGrossKnuth, s1696_CtxExt);
+  private s1702_Vble = variable(s1701_CtxExt);
+  private s1703_CtxExt = assume(s1695_Vble, none);
+  private s1704_Vble = variable(s1703_CtxExt);
+  private s1705_CtxExt = assume(s0712_DefBetaReduceGrossKnuth, s1701_CtxExt);
+  private s1706_Vble = variable(s1705_CtxExt);
+  private s1707_PiIntro = function_intro(s0712_DefBetaReduceGrossKnuth, s1706_Vble, s1705_CtxExt);
+  private s1708_PiElim = apply(s1707_PiIntro, s1695_Vble);
+  private s1709_DefBetaReduceGrossKnuth = unfold_pass(s1704_Vble);
+  private s1710_DefBetaReduceGrossKnuth = unfold_pass(s1708_PiElim);
+  private s1711_DefBetaReduceGrossKnuth = unfold_pass(s1710_DefBetaReduceGrossKnuth);
+  private s1712_DefEqRefl = definition_refl(s1708_PiElim);
+  private s1713_HighExp = select_expression(s1712_DefEqRefl);
+  private s1714_High1 = select_second(s1713_HighExp);
+  private s1715_DefBetaReduceGrossKnuth = unfold_pass(s1714_High1);
+  private s1716_DefBetaReduceGrossKnuth = unfold_pass(s1715_DefBetaReduceGrossKnuth);
+  private s1717_DefEqSwp = definition_symmetry(s1716_DefBetaReduceGrossKnuth);
+  private s1718_HighType = select_type(s1709_DefBetaReduceGrossKnuth);
+  private s1719_HighSubs = rewrite_selected(s1718_HighType, s1717_DefEqSwp);
+  private s1720_UnHigh = clear_selection(s1719_HighSubs);
+  private s1721_Transport = transport(
+    s1707_PiIntro, s1711_DefBetaReduceGrossKnuth, s1697_Vble, s1700_Vble, s1720_UnHigh
+  );
+  private s1722_DefBetaReduceGrossKnuth = unfold_pass(s1721_Transport);
+  private s1723_DefBetaReduceGrossKnuth = unfold_pass(s1722_DefBetaReduceGrossKnuth);
+  private s1724_PiElim = apply(s0731_DefBetaReduceGrossKnuth, s1711_DefBetaReduceGrossKnuth);
+  private s1725_DefBetaReduceGrossKnuth = unfold_pass(s1724_PiElim);
+  private s1726_DefBetaReduceGrossKnuth = unfold_pass(s1725_DefBetaReduceGrossKnuth);
+  private s1727_DefBetaReduceGrossKnuth = unfold_pass(s1697_Vble);
+  private s1728_PiElim = apply(s1726_DefBetaReduceGrossKnuth, s1727_DefBetaReduceGrossKnuth);
+  private s1729_DefBetaReduceGrossKnuth = unfold_pass(s1728_PiElim);
+  private s1730_DefBetaReduceGrossKnuth = unfold_pass(s1729_DefBetaReduceGrossKnuth);
+  private s1731_DefBetaReduceGrossKnuth = unfold_pass(s1700_Vble);
+  private s1732_PiElim = apply(s1730_DefBetaReduceGrossKnuth, s1731_DefBetaReduceGrossKnuth);
+  private s1733_DefBetaReduceGrossKnuth = unfold_pass(s1732_PiElim);
+  private s1734_DefBetaReduceGrossKnuth = unfold_pass(s1733_DefBetaReduceGrossKnuth);
+  private s1735_PiForm = function_type(
+    s1711_DefBetaReduceGrossKnuth, s1727_DefBetaReduceGrossKnuth, none
+  );
+  private s1736_CtxExt = assume(s1735_PiForm, none);
+  private s1737_Vble = variable(s1736_CtxExt);
+  private s1738_PiElim = apply(s0715_DefBetaReduceGrossKnuth, s1711_DefBetaReduceGrossKnuth);
+  private s1739_DefBetaReduceGrossKnuth = unfold_pass(s1738_PiElim);
+  private s1740_DefBetaReduceGrossKnuth = unfold_pass(s1739_DefBetaReduceGrossKnuth);
+  private s1741_PiElim = apply(s1740_DefBetaReduceGrossKnuth, s1727_DefBetaReduceGrossKnuth);
+  private s1742_DefBetaReduceGrossKnuth = unfold_pass(s1741_PiElim);
+  private s1743_DefBetaReduceGrossKnuth = unfold_pass(s1742_DefBetaReduceGrossKnuth);
+  private s1744_DefBetaReduceGrossKnuth = unfold_pass(s1737_Vble);
+  private s1745_PiElim = apply(s1743_DefBetaReduceGrossKnuth, s1744_DefBetaReduceGrossKnuth);
+  private s1746_DefBetaReduceGrossKnuth = unfold_pass(s1745_PiElim);
+  private s1747_DefBetaReduceGrossKnuth = unfold_pass(s1746_DefBetaReduceGrossKnuth);
+  private s1748_CtxExt = assume(s1747_DefBetaReduceGrossKnuth, none);
+  private s1749_SigmaElim = pair_eliminate(
+    s1735_PiForm, s1744_DefBetaReduceGrossKnuth, s1734_DefBetaReduceGrossKnuth, none, s1736_CtxExt,
+    s1748_CtxExt
+  );
+  private s1750_DefBetaReduceGrossKnuth = unfold_pass(s1749_SigmaElim);
+  private s1751_PiElim = apply(s1750_DefBetaReduceGrossKnuth, s1709_DefBetaReduceGrossKnuth);
+  private s1752_DefBetaReduceGrossKnuth = unfold_pass(s1751_PiElim);
+  private s1753_EqForm = equality_type(
+    s1727_DefBetaReduceGrossKnuth, s1723_DefBetaReduceGrossKnuth, s1752_DefBetaReduceGrossKnuth
+  );
+  private s1754_PiForm = function_type(s1711_DefBetaReduceGrossKnuth, s1753_EqForm, s1703_CtxExt);
+  private s1755_CtxExt = assume(s1702_Vble, none);
+  private s1756_Vble = variable(s1755_CtxExt);
+  private s1757_EqIntro = reflexivity(s1756_Vble);
+  private s1758_PiIntro = function_intro(s1702_Vble, s1757_EqIntro, s1755_CtxExt);
+  private s1759_EqIntro = reflexivity(s1702_Vble);
+  private s1760_PiIntro = function_intro(s1698_EqForm, s1754_PiForm, s1699_CtxExt);
+  private s1761_PiIntro = function_intro(s0712_DefBetaReduceGrossKnuth, s1760_PiIntro, s1696_CtxExt);
+  private s1762_PiIntro = function_intro(s0712_DefBetaReduceGrossKnuth, s1761_PiIntro, s1694_CtxExt);
+  private s1763_PiElim = apply(s1762_PiIntro, s1702_Vble);
+  private s1764_HighExp = select_expression(s1763_PiElim);
+  private s1765_BetaReducePointed = reduce_selected(s1764_HighExp);
+  private s1766_UnHigh = clear_selection(s1765_BetaReducePointed);
+  private s1767_PiElim = apply(s1766_UnHigh, s1702_Vble);
+  private s1768_HighExp = select_expression(s1767_PiElim);
+  private s1769_BetaReducePointed = reduce_selected(s1768_HighExp);
+  private s1770_UnHigh = clear_selection(s1769_BetaReducePointed);
+  private s1771_PiElim = apply(s1770_UnHigh, s1759_EqIntro);
+  private s1772_HighExp = select_expression(s1771_PiElim);
+  private s1773_BetaReducePointed = reduce_selected(s1772_HighExp);
+  private s1774_UnHigh = clear_selection(s1773_BetaReducePointed);
+  private s1775_DefBetaReduceGrossKnuth = unfold_pass(s1758_PiIntro);
+  private s1776_DefEqRefl = definition_refl(s1774_UnHigh);
+  private s1777_HighExp = select_expression(s1776_DefEqRefl);
+  private s1778_High1 = select_second(s1777_HighExp);
+  private s1779_DefBetaReduceGrossKnuth = unfold_pass(s1778_High1);
+  private s1780_DefBetaReduceGrossKnuth = unfold_pass(s1779_DefBetaReduceGrossKnuth);
+  private s1781_DefEqSwp = definition_symmetry(s1780_DefBetaReduceGrossKnuth);
+  private s1782_HighType = select_type(s1775_DefBetaReduceGrossKnuth);
+  private s1783_HighSubs = rewrite_selected(s1782_HighType, s1781_DefEqSwp);
+  private s1784_UnHigh = clear_selection(s1783_HighSubs);
+  private s1785_EqElim = equality_eliminate(
+    s1754_PiForm, s1784_UnHigh, s0716_DefBetaReduceGrossKnuth, s0720_DefBetaReduceGrossKnuth,
+    s1693_DefBetaReduceGrossKnuth, s1694_CtxExt, s1696_CtxExt, s1699_CtxExt, s1701_CtxExt
+  );
+  private s1786_DefBetaReduceGrossKnuth = unfold_pass(s1785_EqElim);
+  private s1787_CtxExt = assume(s0728_SigmaForm, s1687_CtxExt);
+  private s1788_Vble = variable(s1787_CtxExt);
+  private s1789_CtxExt = assume(s0709_PiForm, s0710_CtxExt);
+  private s1790_Vble = variable(s1789_CtxExt);
+  private s1791_DefBetaReduceGrossKnuth = unfold_pass(s1790_Vble);
+  private s1792_PiElim = apply(s0723_DefBetaReduceGrossKnuth, s1791_DefBetaReduceGrossKnuth);
+  private s1793_DefBetaReduceGrossKnuth = unfold_pass(s1792_PiElim);
+  private s1794_DefBetaReduceGrossKnuth = unfold_pass(s1793_DefBetaReduceGrossKnuth);
+  private s1795_CtxExt = assume(s1794_DefBetaReduceGrossKnuth, none);
+  private s1796_SigmaElim = pair_eliminate(
+    s0709_PiForm, s1791_DefBetaReduceGrossKnuth, s1788_Vble, none, s1789_CtxExt, s1795_CtxExt
+  );
+  private s1797_DefBetaReduceGrossKnuth = unfold_pass(s1796_SigmaElim);
+  private s1798_DefBetaReduceGrossKnuth = unfold_pass(s1690_Vble);
+  private s1799_PiElim = apply(s1797_DefBetaReduceGrossKnuth, s1798_DefBetaReduceGrossKnuth);
+  private s1800_DefBetaReduceGrossKnuth = unfold_pass(s1799_PiElim);
+  private s1801_PiIntro = function_intro(
+    s0728_SigmaForm, s1800_DefBetaReduceGrossKnuth, s1787_CtxExt
+  );
+  private s1802_PiElim = apply(s0737_DefBetaReduceGrossKnuth, s1693_DefBetaReduceGrossKnuth);
+  private s1803_DefBetaReduceGrossKnuth = unfold_pass(s1802_PiElim);
+  private s1804_DefBetaReduceGrossKnuth = unfold_pass(s1803_DefBetaReduceGrossKnuth);
+  private s1805_PiElim = apply(s1686_DefBetaReduceGrossKnuth, s1691_DefBetaReduceGrossKnuth);
+  private s1806_DefBetaReduceGrossKnuth = unfold_pass(s1805_PiElim);
+  private s1807_CtxExt = assume(s0728_SigmaForm, s1787_CtxExt);
+  private s1808_Vble = variable(s1807_CtxExt);
+  private s1809_CtxExt = assume(s0728_SigmaForm, s1807_CtxExt);
+  private s1810_Vble = variable(s1809_CtxExt);
+  private s1811_EqForm = equality_type(s0728_SigmaForm, s1808_Vble, s1810_Vble);
+  private s1812_CtxExt = assume(s1811_EqForm, none);
+  private s1813_CtxExt = assume(s0728_SigmaForm, s1809_CtxExt);
+  private s1814_Vble = variable(s1813_CtxExt);
+  private s1815_DefBetaReduceGrossKnuth = unfold_pass(s1801_PiIntro);
+  private s1816_DefBetaReduceGrossKnuth = unfold_pass(s1808_Vble);
+  private s1817_PiElim = apply(s1815_DefBetaReduceGrossKnuth, s1816_DefBetaReduceGrossKnuth);
+  private s1818_DefBetaReduceGrossKnuth = unfold_pass(s1817_PiElim);
+  private s1819_DefBetaReduceGrossKnuth = unfold_pass(s1818_DefBetaReduceGrossKnuth);
+  private s1820_DefBetaReduceGrossKnuth = unfold_pass(s1810_Vble);
+  private s1821_PiElim = apply(s1815_DefBetaReduceGrossKnuth, s1820_DefBetaReduceGrossKnuth);
+  private s1822_DefBetaReduceGrossKnuth = unfold_pass(s1821_PiElim);
+  private s1823_DefBetaReduceGrossKnuth = unfold_pass(s1822_DefBetaReduceGrossKnuth);
+  private s1824_EqForm = equality_type(
+    s0720_DefBetaReduceGrossKnuth, s1819_DefBetaReduceGrossKnuth, s1823_DefBetaReduceGrossKnuth
+  );
+  private s1825_DefBetaReduceGrossKnuth = unfold_pass(s1814_Vble);
+  private s1826_PiElim = apply(s1815_DefBetaReduceGrossKnuth, s1825_DefBetaReduceGrossKnuth);
+  private s1827_DefBetaReduceGrossKnuth = unfold_pass(s1826_PiElim);
+  private s1828_DefBetaReduceGrossKnuth = unfold_pass(s1827_DefBetaReduceGrossKnuth);
+  private s1829_EqIntro = reflexivity(s1828_DefBetaReduceGrossKnuth);
+  private s1830_DefBetaReduceGrossKnuth = unfold_pass(s1829_EqIntro);
+  private s1831_EqElim = equality_eliminate(
+    s1824_EqForm, s1830_DefBetaReduceGrossKnuth, s1804_DefBetaReduceGrossKnuth,
+    s1691_DefBetaReduceGrossKnuth, s1806_DefBetaReduceGrossKnuth, s1807_CtxExt, s1809_CtxExt,
+    s1812_CtxExt, s1813_CtxExt
+  );
+  private s1832_DefBetaReduceGrossKnuth = unfold_pass(s1831_EqElim);
+  private s1833_CtxExt = assume(s0712_DefBetaReduceGrossKnuth, s1705_CtxExt);
+  private s1834_Vble = variable(s1833_CtxExt);
+  private s1835_PiIntro = function_intro(s0712_DefBetaReduceGrossKnuth, s1834_Vble, s1833_CtxExt);
+  private s1836_PiElim = apply(s1835_PiIntro, s0716_DefBetaReduceGrossKnuth);
+  private s1837_DefEqRefl = definition_refl(s1836_PiElim);
+  private s1838_HighExp = select_expression(s1837_DefEqRefl);
+  private s1839_High1 = select_second(s1838_HighExp);
+  private s1840_DefBetaReduceGrossKnuth = unfold_pass(s1839_High1);
+  private s1841_DefBetaReduceGrossKnuth = unfold_pass(s1840_DefBetaReduceGrossKnuth);
+  private s1842_DefEqSwp = definition_symmetry(s1841_DefBetaReduceGrossKnuth);
+  private s1843_HighType = select_type(s1798_DefBetaReduceGrossKnuth);
+  private s1844_HighSubs = rewrite_selected(s1843_HighType, s1842_DefEqSwp);
+  private s1845_UnHigh = clear_selection(s1844_HighSubs);
+  private s1846_Transport = transport(
+    s1835_PiIntro, s0716_DefBetaReduceGrossKnuth, s0720_DefBetaReduceGrossKnuth,
+    s1693_DefBetaReduceGrossKnuth, s1845_UnHigh
+  );
+  private s1847_DefBetaReduceGrossKnuth = unfold_pass(s1846_Transport);
+  private s1848_DefBetaReduceGrossKnuth = unfold_pass(s1847_DefBetaReduceGrossKnuth);
+  private s1849_PiElim = apply(s1815_DefBetaReduceGrossKnuth, s1804_DefBetaReduceGrossKnuth);
+  private s1850_DefBetaReduceGrossKnuth = unfold_pass(s1849_PiElim);
+  private s1851_DefBetaReduceGrossKnuth = unfold_pass(s1850_DefBetaReduceGrossKnuth);
+  private s1852_PiElim = apply(s1815_DefBetaReduceGrossKnuth, s1691_DefBetaReduceGrossKnuth);
+  private s1853_DefBetaReduceGrossKnuth = unfold_pass(s1852_PiElim);
+  private s1854_DefBetaReduceGrossKnuth = unfold_pass(s1853_DefBetaReduceGrossKnuth);
+  private s1855_PiElim = apply(s1786_DefBetaReduceGrossKnuth, s1798_DefBetaReduceGrossKnuth);
+  private s1856_DefBetaReduceGrossKnuth = unfold_pass(s1855_PiElim);
+  private s1857_CtxExt = assume(s0720_DefBetaReduceGrossKnuth, none);
+  private s1858_Vble = variable(s1857_CtxExt);
+  private s1859_CtxExt = assume(s0720_DefBetaReduceGrossKnuth, s1857_CtxExt);
+  private s1860_Vble = variable(s1859_CtxExt);
+  private s1861_EqForm = equality_type(s0720_DefBetaReduceGrossKnuth, s1858_Vble, s1860_Vble);
+  private s1862_CtxExt = assume(s1861_EqForm, none);
+  private s1863_Vble = variable(s1862_CtxExt);
+  private s1864_CtxExt = assume(s0720_DefBetaReduceGrossKnuth, s1859_CtxExt);
+  private s1865_Vble = variable(s1864_CtxExt);
+  private s1866_CtxExt = assume(s0720_DefBetaReduceGrossKnuth, s1864_CtxExt);
+  private s1867_Vble = variable(s1866_CtxExt);
+  private s1868_EqForm = equality_type(s0720_DefBetaReduceGrossKnuth, s1865_Vble, s1867_Vble);
+  private s1869_CtxExt = assume(s1868_EqForm, none);
+  private s1870_CtxExt = assume(s0720_DefBetaReduceGrossKnuth, s1866_CtxExt);
+  private s1871_Vble = variable(s1870_CtxExt);
+  private s1872_CtxExt = assume(s0720_DefBetaReduceGrossKnuth, s1870_CtxExt);
+  private s1873_Vble = variable(s1872_CtxExt);
+  private s1874_EqForm = equality_type(s0720_DefBetaReduceGrossKnuth, s1873_Vble, s1865_Vble);
+  private s1875_EqForm = equality_type(s0720_DefBetaReduceGrossKnuth, s1873_Vble, s1867_Vble);
+  private s1876_PiForm = function_type(s1874_EqForm, s1875_EqForm, none);
+  private s1877_PiForm = function_type(s0720_DefBetaReduceGrossKnuth, s1876_PiForm, s1872_CtxExt);
+  private s1878_CtxExt = assume(s0720_DefBetaReduceGrossKnuth, s1872_CtxExt);
+  private s1879_Vble = variable(s1878_CtxExt);
+  private s1880_EqForm = equality_type(s0720_DefBetaReduceGrossKnuth, s1879_Vble, s1871_Vble);
+  private s1881_CtxExt = assume(s1880_EqForm, none);
+  private s1882_Vble = variable(s1881_CtxExt);
+  private s1883_PiIntro = function_intro(s1880_EqForm, s1882_Vble, s1881_CtxExt);
+  private s1884_PiIntro = function_intro(s0720_DefBetaReduceGrossKnuth, s1883_PiIntro, s1878_CtxExt);
+  private s1885_DefBetaReduceGrossKnuth = unfold_pass(s1884_PiIntro);
+  private s1886_EqElim = equality_eliminate(
+    s1877_PiForm, s1885_DefBetaReduceGrossKnuth, s1858_Vble, s1860_Vble, s1863_Vble, s1864_CtxExt,
+    s1866_CtxExt, s1869_CtxExt, s1870_CtxExt
+  );
+  private s1887_DefBetaReduceGrossKnuth = unfold_pass(s1886_EqElim);
+  private s1888_PiIntro = function_intro(s1861_EqForm, s1887_DefBetaReduceGrossKnuth, s1862_CtxExt);
+  private s1889_PiIntro = function_intro(s0720_DefBetaReduceGrossKnuth, s1888_PiIntro, s1859_CtxExt);
+  private s1890_PiIntro = function_intro(s0720_DefBetaReduceGrossKnuth, s1889_PiIntro, s1857_CtxExt);
+  private s1891_DefBetaReduceGrossKnuth = unfold_pass(s1890_PiIntro);
+  private s1892_PiElim = apply(s1891_DefBetaReduceGrossKnuth, s1851_DefBetaReduceGrossKnuth);
+  private s1893_DefBetaReduceGrossKnuth = unfold_pass(s1892_PiElim);
+  private s1894_DefBetaReduceGrossKnuth = unfold_pass(s1893_DefBetaReduceGrossKnuth);
+  private s1895_PiElim = apply(s1894_DefBetaReduceGrossKnuth, s1854_DefBetaReduceGrossKnuth);
+  private s1896_DefBetaReduceGrossKnuth = unfold_pass(s1895_PiElim);
+  private s1897_DefBetaReduceGrossKnuth = unfold_pass(s1896_DefBetaReduceGrossKnuth);
+  private s1898_PiElim = apply(s1897_DefBetaReduceGrossKnuth, s1832_DefBetaReduceGrossKnuth);
+  private s1899_DefBetaReduceGrossKnuth = unfold_pass(s1898_PiElim);
+  private s1900_DefBetaReduceGrossKnuth = unfold_pass(s1899_DefBetaReduceGrossKnuth);
+  private s1901_PiElim = apply(s1900_DefBetaReduceGrossKnuth, s1848_DefBetaReduceGrossKnuth);
+  private s1902_DefBetaReduceGrossKnuth = unfold_pass(s1901_PiElim);
+  private s1903_PiElim = apply(s1902_DefBetaReduceGrossKnuth, s1856_DefBetaReduceGrossKnuth);
+  private s1904_DefBetaReduceGrossKnuth = unfold_pass(s1903_PiElim);
+  private s1905_PiIntro = function_intro(
+    s0716_DefBetaReduceGrossKnuth, s1904_DefBetaReduceGrossKnuth, s1689_CtxExt
+  );
+  private s1906_PiIntro = function_intro(s0728_SigmaForm, s1905_PiIntro, s1687_CtxExt);
+  private s1907_PiIntro = function_intro(s0712_DefBetaReduceGrossKnuth, s1906_PiIntro, s0706_CtxExt);
+  private s1908_PiIntro = function_intro(s0712_DefBetaReduceGrossKnuth, s1907_PiIntro, s0704_CtxExt);
+  private s1909_PiIntro = function_intro(s0443_UIntroOmega, s1908_PiIntro, s0702_CtxExt);
+  private s1910_DefEqRefl = definition_refl(s1909_PiIntro);
+  export lib_ua_elim = definition_right(s1910_DefEqRefl);
+  private s1912_CtxExt = assume(s0443_UIntroOmega, s0702_CtxExt);
+  private s1913_UVble = universe_variable(s1912_CtxExt);
+  private s1914_CtxExt = assume(s1913_UVble, none);
+  private s1915_Vble = variable(s1914_CtxExt);
+  private s1916_CtxExt = assume(s1913_UVble, s1914_CtxExt);
+  private s1917_Vble = variable(s1916_CtxExt);
+  private s1918_EqForm = equality_type(s1913_UVble, s1915_Vble, s1917_Vble);
+  private s1919_PiForm = function_type(s1915_Vble, s1917_Vble, none);
+  private s1920_CtxExt = assume(s1919_PiForm, none);
+  private s1921_Vble = variable(s1920_CtxExt);
+  private s1922_DefBetaReduceGrossKnuth = unfold_pass(s1913_UVble);
+  private s1923_PiElim = apply(s0457_DefBetaReduceGrossKnuth, s1922_DefBetaReduceGrossKnuth);
+  private s1924_DefBetaReduceGrossKnuth = unfold_pass(s1923_PiElim);
+  private s1925_DefBetaReduceGrossKnuth = unfold_pass(s1924_DefBetaReduceGrossKnuth);
+  private s1926_DefBetaReduceGrossKnuth = unfold_pass(s1915_Vble);
+  private s1927_PiElim = apply(s1925_DefBetaReduceGrossKnuth, s1926_DefBetaReduceGrossKnuth);
+  private s1928_DefBetaReduceGrossKnuth = unfold_pass(s1927_PiElim);
+  private s1929_DefBetaReduceGrossKnuth = unfold_pass(s1928_DefBetaReduceGrossKnuth);
+  private s1930_DefBetaReduceGrossKnuth = unfold_pass(s1917_Vble);
+  private s1931_PiElim = apply(s1929_DefBetaReduceGrossKnuth, s1930_DefBetaReduceGrossKnuth);
+  private s1932_DefBetaReduceGrossKnuth = unfold_pass(s1931_PiElim);
+  private s1933_DefBetaReduceGrossKnuth = unfold_pass(s1932_DefBetaReduceGrossKnuth);
+  private s1934_DefBetaReduceGrossKnuth = unfold_pass(s1921_Vble);
+  private s1935_PiElim = apply(s1933_DefBetaReduceGrossKnuth, s1934_DefBetaReduceGrossKnuth);
+  private s1936_DefBetaReduceGrossKnuth = unfold_pass(s1935_PiElim);
+  private s1937_DefBetaReduceGrossKnuth = unfold_pass(s1936_DefBetaReduceGrossKnuth);
+  private s1938_SigmaForm = pair_type(s1919_PiForm, s1937_DefBetaReduceGrossKnuth, s1920_CtxExt);
+  private s1939_PiElim = apply(s0479_DefBetaReduceGrossKnuth, s1922_DefBetaReduceGrossKnuth);
+  private s1940_DefBetaReduceGrossKnuth = unfold_pass(s1939_PiElim);
+  private s1941_DefBetaReduceGrossKnuth = unfold_pass(s1940_DefBetaReduceGrossKnuth);
+  private s1942_PiElim = apply(s1941_DefBetaReduceGrossKnuth, s1926_DefBetaReduceGrossKnuth);
+  private s1943_DefBetaReduceGrossKnuth = unfold_pass(s1942_PiElim);
+  private s1944_DefBetaReduceGrossKnuth = unfold_pass(s1943_DefBetaReduceGrossKnuth);
+  private s1945_PiElim = apply(s1944_DefBetaReduceGrossKnuth, s1930_DefBetaReduceGrossKnuth);
+  private s1946_DefBetaReduceGrossKnuth = unfold_pass(s1945_PiElim);
+  private s1947_DefBetaReduceGrossKnuth = unfold_pass(s1946_DefBetaReduceGrossKnuth);
+  private s1948_PiForm = function_type(s1938_SigmaForm, s1918_EqForm, none);
+  private s1949_CtxExt = assume(s1948_PiForm, none);
+  private s1950_CtxExt = assume(s1918_EqForm, none);
+  private s1951_CtxExt = assume(s1938_SigmaForm, none);
+  private s1952_CtxExt = assume(s1918_EqForm, s1950_CtxExt);
+  private s1953_CtxExt = assume(s1918_EqForm, s1952_CtxExt);
+  private s1954_CtxExt = assume(s1918_EqForm, s1953_CtxExt);
+  private s1955_CtxExt = assume(s1918_EqForm, s1954_CtxExt);
+  private s1956_PiElim = apply(s0613_DefBetaReduceGrossKnuth, s1922_DefBetaReduceGrossKnuth);
+  private s1957_DefBetaReduceGrossKnuth = unfold_pass(s1956_PiElim);
+  private s1958_PiElim = apply(s1957_DefBetaReduceGrossKnuth, s1926_DefBetaReduceGrossKnuth);
+  private s1959_DefBetaReduceGrossKnuth = unfold_pass(s1958_PiElim);
+  private s1960_PiElim = apply(s1959_DefBetaReduceGrossKnuth, s1930_DefBetaReduceGrossKnuth);
+  private s1961_DefBetaReduceGrossKnuth = unfold_pass(s1960_PiElim);
+  private s1962_CtxExt = assume(s1948_PiForm, s1949_CtxExt);
+  private s1963_Vble = variable(s1962_CtxExt);
+  private s1964_CtxExt = assume(s1918_EqForm, s1955_CtxExt);
+  private s1965_Vble = variable(s1964_CtxExt);
+  private s1966_DefBetaReduceGrossKnuth = unfold_pass(s1965_Vble);
+  private s1967_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s1966_DefBetaReduceGrossKnuth);
+  private s1968_DefBetaReduceGrossKnuth = unfold_pass(s1967_PiElim);
+  private s1969_DefBetaReduceGrossKnuth = unfold_pass(s1968_DefBetaReduceGrossKnuth);
+  private s1970_DefBetaReduceGrossKnuth = unfold_pass(s1963_Vble);
+  private s1971_PiElim = apply(s1970_DefBetaReduceGrossKnuth, s1969_DefBetaReduceGrossKnuth);
+  private s1972_DefBetaReduceGrossKnuth = unfold_pass(s1971_PiElim);
+  private s1973_EqForm = equality_type(
+    s1918_EqForm, s1972_DefBetaReduceGrossKnuth, s1966_DefBetaReduceGrossKnuth
+  );
+  private s1974_PiForm = function_type(s1918_EqForm, s1973_EqForm, s1964_CtxExt);
+  private s1975_CtxExt = assume(s1974_PiForm, none);
+  private s1976_Vble = variable(s1975_CtxExt);
+  private s1977_CtxExt = assume(s1938_SigmaForm, s1951_CtxExt);
+  private s1978_Vble = variable(s1977_CtxExt);
+  private s1979_DefBetaReduceGrossKnuth = unfold_pass(s1978_Vble);
+  private s1980_PiElim = apply(s1970_DefBetaReduceGrossKnuth, s1979_DefBetaReduceGrossKnuth);
+  private s1981_DefBetaReduceGrossKnuth = unfold_pass(s1980_PiElim);
+  private s1982_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s1981_DefBetaReduceGrossKnuth);
+  private s1983_DefBetaReduceGrossKnuth = unfold_pass(s1982_PiElim);
+  private s1984_DefBetaReduceGrossKnuth = unfold_pass(s1983_DefBetaReduceGrossKnuth);
+  private s1985_EqForm = equality_type(
+    s1938_SigmaForm, s1984_DefBetaReduceGrossKnuth, s1979_DefBetaReduceGrossKnuth
+  );
+  private s1986_PiForm = function_type(s1938_SigmaForm, s1985_EqForm, s1977_CtxExt);
+  private s1987_CtxExt = assume(s1986_PiForm, none);
+  private s1988_Vble = variable(s1987_CtxExt);
+  private s1989_CtxExt = assume(s1918_EqForm, s1964_CtxExt);
+  private s1990_Vble = variable(s1989_CtxExt);
+  private s1991_DefBetaReduceGrossKnuth = unfold_pass(s1990_Vble);
+  private s1992_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s1991_DefBetaReduceGrossKnuth);
+  private s1993_DefBetaReduceGrossKnuth = unfold_pass(s1992_PiElim);
+  private s1994_DefBetaReduceGrossKnuth = unfold_pass(s1993_DefBetaReduceGrossKnuth);
+  private s1995_PiElim = apply(s1970_DefBetaReduceGrossKnuth, s1994_DefBetaReduceGrossKnuth);
+  private s1996_DefBetaReduceGrossKnuth = unfold_pass(s1995_PiElim);
+  private s1997_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s1996_DefBetaReduceGrossKnuth);
+  private s1998_DefBetaReduceGrossKnuth = unfold_pass(s1997_PiElim);
+  private s1999_DefBetaReduceGrossKnuth = unfold_pass(s1998_DefBetaReduceGrossKnuth);
+  private s2000_EqForm = equality_type(
+    s1938_SigmaForm, s1999_DefBetaReduceGrossKnuth, s1994_DefBetaReduceGrossKnuth
+  );
+  private s2001_DefBetaReduceGrossKnuth = unfold_pass(s1976_Vble);
+  private s2002_PiElim = apply(s2001_DefBetaReduceGrossKnuth, s1991_DefBetaReduceGrossKnuth);
+  private s2003_DefBetaReduceGrossKnuth = unfold_pass(s2002_PiElim);
+  private s2004_CtxExt = assume(s1918_EqForm, s1989_CtxExt);
+  private s2005_Vble = variable(s2004_CtxExt);
+  private s2006_CtxExt = assume(s1918_EqForm, s2004_CtxExt);
+  private s2007_Vble = variable(s2006_CtxExt);
+  private s2008_EqForm = equality_type(s1918_EqForm, s2005_Vble, s2007_Vble);
+  private s2009_CtxExt = assume(s2008_EqForm, none);
+  private s2010_CtxExt = assume(s1918_EqForm, s2006_CtxExt);
+  private s2011_Vble = variable(s2010_CtxExt);
+  private s2012_DefBetaReduceGrossKnuth = unfold_pass(s2005_Vble);
+  private s2013_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2012_DefBetaReduceGrossKnuth);
+  private s2014_DefBetaReduceGrossKnuth = unfold_pass(s2013_PiElim);
+  private s2015_DefBetaReduceGrossKnuth = unfold_pass(s2014_DefBetaReduceGrossKnuth);
+  private s2016_DefBetaReduceGrossKnuth = unfold_pass(s2007_Vble);
+  private s2017_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2016_DefBetaReduceGrossKnuth);
+  private s2018_DefBetaReduceGrossKnuth = unfold_pass(s2017_PiElim);
+  private s2019_DefBetaReduceGrossKnuth = unfold_pass(s2018_DefBetaReduceGrossKnuth);
+  private s2020_EqForm = equality_type(
+    s1938_SigmaForm, s2015_DefBetaReduceGrossKnuth, s2019_DefBetaReduceGrossKnuth
+  );
+  private s2021_DefBetaReduceGrossKnuth = unfold_pass(s2011_Vble);
+  private s2022_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2021_DefBetaReduceGrossKnuth);
+  private s2023_DefBetaReduceGrossKnuth = unfold_pass(s2022_PiElim);
+  private s2024_DefBetaReduceGrossKnuth = unfold_pass(s2023_DefBetaReduceGrossKnuth);
+  private s2025_EqIntro = reflexivity(s2024_DefBetaReduceGrossKnuth);
+  private s2026_DefBetaReduceGrossKnuth = unfold_pass(s2025_EqIntro);
+  private s2027_EqElim = equality_eliminate(
+    s2020_EqForm, s2026_DefBetaReduceGrossKnuth, s1996_DefBetaReduceGrossKnuth,
+    s1991_DefBetaReduceGrossKnuth, s2003_DefBetaReduceGrossKnuth, s2004_CtxExt, s2006_CtxExt,
+    s2009_CtxExt, s2010_CtxExt
+  );
+  private s2028_DefBetaReduceGrossKnuth = unfold_pass(s2027_EqElim);
+  private s2029_DefBetaReduceGrossKnuth = unfold_pass(s1988_Vble);
+  private s2030_PiElim = apply(s2029_DefBetaReduceGrossKnuth, s1994_DefBetaReduceGrossKnuth);
+  private s2031_DefBetaReduceGrossKnuth = unfold_pass(s2030_PiElim);
+  private s2032_EqForm = equality_type(
+    s2000_EqForm, s2028_DefBetaReduceGrossKnuth, s2031_DefBetaReduceGrossKnuth
+  );
+  private s2033_PiForm = function_type(s1918_EqForm, s2032_EqForm, s1989_CtxExt);
+  private s2034_SigmaForm = pair_type(s1986_PiForm, s2033_PiForm, s1987_CtxExt);
+  private s2035_SigmaForm = pair_type(s1974_PiForm, s2034_SigmaForm, s1975_CtxExt);
+  private s2036_CtxExt = assume(s2035_SigmaForm, none);
+  private s2037_SigmaElim = pair_eliminate(
+    s1948_PiForm, s1970_DefBetaReduceGrossKnuth, s1961_DefBetaReduceGrossKnuth, none, s1962_CtxExt,
+    s2036_CtxExt
+  );
+  private s2038_DefBetaReduceGrossKnuth = unfold_pass(s2037_SigmaElim);
+  private s2039_CtxExt = assume(s1948_PiForm, s1962_CtxExt);
+  private s2040_Vble = variable(s2039_CtxExt);
+  private s2041_CtxExt = assume(s1918_EqForm, s2010_CtxExt);
+  private s2042_Vble = variable(s2041_CtxExt);
+  private s2043_DefBetaReduceGrossKnuth = unfold_pass(s2042_Vble);
+  private s2044_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2043_DefBetaReduceGrossKnuth);
+  private s2045_DefBetaReduceGrossKnuth = unfold_pass(s2044_PiElim);
+  private s2046_DefBetaReduceGrossKnuth = unfold_pass(s2045_DefBetaReduceGrossKnuth);
+  private s2047_DefBetaReduceGrossKnuth = unfold_pass(s2040_Vble);
+  private s2048_PiElim = apply(s2047_DefBetaReduceGrossKnuth, s2046_DefBetaReduceGrossKnuth);
+  private s2049_DefBetaReduceGrossKnuth = unfold_pass(s2048_PiElim);
+  private s2050_EqForm = equality_type(
+    s1918_EqForm, s2049_DefBetaReduceGrossKnuth, s2043_DefBetaReduceGrossKnuth
+  );
+  private s2051_PiForm = function_type(s1918_EqForm, s2050_EqForm, s2041_CtxExt);
+  private s2052_CtxExt = assume(s2051_PiForm, none);
+  private s2053_Vble = variable(s2052_CtxExt);
+  private s2054_CtxExt = assume(s1938_SigmaForm, s1977_CtxExt);
+  private s2055_Vble = variable(s2054_CtxExt);
+  private s2056_DefBetaReduceGrossKnuth = unfold_pass(s2055_Vble);
+  private s2057_PiElim = apply(s2047_DefBetaReduceGrossKnuth, s2056_DefBetaReduceGrossKnuth);
+  private s2058_DefBetaReduceGrossKnuth = unfold_pass(s2057_PiElim);
+  private s2059_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2058_DefBetaReduceGrossKnuth);
+  private s2060_DefBetaReduceGrossKnuth = unfold_pass(s2059_PiElim);
+  private s2061_DefBetaReduceGrossKnuth = unfold_pass(s2060_DefBetaReduceGrossKnuth);
+  private s2062_EqForm = equality_type(
+    s1938_SigmaForm, s2061_DefBetaReduceGrossKnuth, s2056_DefBetaReduceGrossKnuth
+  );
+  private s2063_PiForm = function_type(s1938_SigmaForm, s2062_EqForm, s2054_CtxExt);
+  private s2064_CtxExt = assume(s2063_PiForm, none);
+  private s2065_Vble = variable(s2064_CtxExt);
+  private s2066_CtxExt = assume(s1918_EqForm, s2041_CtxExt);
+  private s2067_Vble = variable(s2066_CtxExt);
+  private s2068_DefBetaReduceGrossKnuth = unfold_pass(s2067_Vble);
+  private s2069_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2068_DefBetaReduceGrossKnuth);
+  private s2070_DefBetaReduceGrossKnuth = unfold_pass(s2069_PiElim);
+  private s2071_DefBetaReduceGrossKnuth = unfold_pass(s2070_DefBetaReduceGrossKnuth);
+  private s2072_PiElim = apply(s2047_DefBetaReduceGrossKnuth, s2071_DefBetaReduceGrossKnuth);
+  private s2073_DefBetaReduceGrossKnuth = unfold_pass(s2072_PiElim);
+  private s2074_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2073_DefBetaReduceGrossKnuth);
+  private s2075_DefBetaReduceGrossKnuth = unfold_pass(s2074_PiElim);
+  private s2076_DefBetaReduceGrossKnuth = unfold_pass(s2075_DefBetaReduceGrossKnuth);
+  private s2077_EqForm = equality_type(
+    s1938_SigmaForm, s2076_DefBetaReduceGrossKnuth, s2071_DefBetaReduceGrossKnuth
+  );
+  private s2078_DefBetaReduceGrossKnuth = unfold_pass(s2053_Vble);
+  private s2079_PiElim = apply(s2078_DefBetaReduceGrossKnuth, s2068_DefBetaReduceGrossKnuth);
+  private s2080_DefBetaReduceGrossKnuth = unfold_pass(s2079_PiElim);
+  private s2081_CtxExt = assume(s1918_EqForm, s2066_CtxExt);
+  private s2082_Vble = variable(s2081_CtxExt);
+  private s2083_CtxExt = assume(s1918_EqForm, s2081_CtxExt);
+  private s2084_Vble = variable(s2083_CtxExt);
+  private s2085_EqForm = equality_type(s1918_EqForm, s2082_Vble, s2084_Vble);
+  private s2086_CtxExt = assume(s2085_EqForm, none);
+  private s2087_CtxExt = assume(s1918_EqForm, s2083_CtxExt);
+  private s2088_Vble = variable(s2087_CtxExt);
+  private s2089_DefBetaReduceGrossKnuth = unfold_pass(s2082_Vble);
+  private s2090_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2089_DefBetaReduceGrossKnuth);
+  private s2091_DefBetaReduceGrossKnuth = unfold_pass(s2090_PiElim);
+  private s2092_DefBetaReduceGrossKnuth = unfold_pass(s2091_DefBetaReduceGrossKnuth);
+  private s2093_DefBetaReduceGrossKnuth = unfold_pass(s2084_Vble);
+  private s2094_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2093_DefBetaReduceGrossKnuth);
+  private s2095_DefBetaReduceGrossKnuth = unfold_pass(s2094_PiElim);
+  private s2096_DefBetaReduceGrossKnuth = unfold_pass(s2095_DefBetaReduceGrossKnuth);
+  private s2097_EqForm = equality_type(
+    s1938_SigmaForm, s2092_DefBetaReduceGrossKnuth, s2096_DefBetaReduceGrossKnuth
+  );
+  private s2098_DefBetaReduceGrossKnuth = unfold_pass(s2088_Vble);
+  private s2099_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2098_DefBetaReduceGrossKnuth);
+  private s2100_DefBetaReduceGrossKnuth = unfold_pass(s2099_PiElim);
+  private s2101_DefBetaReduceGrossKnuth = unfold_pass(s2100_DefBetaReduceGrossKnuth);
+  private s2102_EqIntro = reflexivity(s2101_DefBetaReduceGrossKnuth);
+  private s2103_DefBetaReduceGrossKnuth = unfold_pass(s2102_EqIntro);
+  private s2104_EqElim = equality_eliminate(
+    s2097_EqForm, s2103_DefBetaReduceGrossKnuth, s2073_DefBetaReduceGrossKnuth,
+    s2068_DefBetaReduceGrossKnuth, s2080_DefBetaReduceGrossKnuth, s2081_CtxExt, s2083_CtxExt,
+    s2086_CtxExt, s2087_CtxExt
+  );
+  private s2105_DefBetaReduceGrossKnuth = unfold_pass(s2104_EqElim);
+  private s2106_DefBetaReduceGrossKnuth = unfold_pass(s2065_Vble);
+  private s2107_PiElim = apply(s2106_DefBetaReduceGrossKnuth, s2071_DefBetaReduceGrossKnuth);
+  private s2108_DefBetaReduceGrossKnuth = unfold_pass(s2107_PiElim);
+  private s2109_EqForm = equality_type(
+    s2077_EqForm, s2105_DefBetaReduceGrossKnuth, s2108_DefBetaReduceGrossKnuth
+  );
+  private s2110_PiForm = function_type(s1918_EqForm, s2109_EqForm, s2066_CtxExt);
+  private s2111_SigmaForm = pair_type(s2063_PiForm, s2110_PiForm, s2064_CtxExt);
+  private s2112_SigmaForm = pair_type(s2051_PiForm, s2111_SigmaForm, s2052_CtxExt);
+  private s2113_CtxExt = assume(s2112_SigmaForm, none);
+  private s2114_Vble = variable(s2113_CtxExt);
+  private s2115_CtxExt = assume(s1948_PiForm, s2039_CtxExt);
+  private s2116_Vble = variable(s2115_CtxExt);
+  private s2117_CtxExt = assume(s1918_EqForm, s2087_CtxExt);
+  private s2118_Vble = variable(s2117_CtxExt);
+  private s2119_DefBetaReduceGrossKnuth = unfold_pass(s2118_Vble);
+  private s2120_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2119_DefBetaReduceGrossKnuth);
+  private s2121_DefBetaReduceGrossKnuth = unfold_pass(s2120_PiElim);
+  private s2122_DefBetaReduceGrossKnuth = unfold_pass(s2121_DefBetaReduceGrossKnuth);
+  private s2123_DefBetaReduceGrossKnuth = unfold_pass(s2116_Vble);
+  private s2124_PiElim = apply(s2123_DefBetaReduceGrossKnuth, s2122_DefBetaReduceGrossKnuth);
+  private s2125_DefBetaReduceGrossKnuth = unfold_pass(s2124_PiElim);
+  private s2126_EqForm = equality_type(
+    s1918_EqForm, s2125_DefBetaReduceGrossKnuth, s2119_DefBetaReduceGrossKnuth
+  );
+  private s2127_PiForm = function_type(s1918_EqForm, s2126_EqForm, s2117_CtxExt);
+  private s2128_CtxExt = assume(s2127_PiForm, none);
+  private s2129_Vble = variable(s2128_CtxExt);
+  private s2130_CtxExt = assume(s1938_SigmaForm, s2054_CtxExt);
+  private s2131_Vble = variable(s2130_CtxExt);
+  private s2132_DefBetaReduceGrossKnuth = unfold_pass(s2131_Vble);
+  private s2133_PiElim = apply(s2123_DefBetaReduceGrossKnuth, s2132_DefBetaReduceGrossKnuth);
+  private s2134_DefBetaReduceGrossKnuth = unfold_pass(s2133_PiElim);
+  private s2135_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2134_DefBetaReduceGrossKnuth);
+  private s2136_DefBetaReduceGrossKnuth = unfold_pass(s2135_PiElim);
+  private s2137_DefBetaReduceGrossKnuth = unfold_pass(s2136_DefBetaReduceGrossKnuth);
+  private s2138_EqForm = equality_type(
+    s1938_SigmaForm, s2137_DefBetaReduceGrossKnuth, s2132_DefBetaReduceGrossKnuth
+  );
+  private s2139_PiForm = function_type(s1938_SigmaForm, s2138_EqForm, s2130_CtxExt);
+  private s2140_CtxExt = assume(s2139_PiForm, none);
+  private s2141_Vble = variable(s2140_CtxExt);
+  private s2142_CtxExt = assume(s1918_EqForm, s2117_CtxExt);
+  private s2143_Vble = variable(s2142_CtxExt);
+  private s2144_DefBetaReduceGrossKnuth = unfold_pass(s2143_Vble);
+  private s2145_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2144_DefBetaReduceGrossKnuth);
+  private s2146_DefBetaReduceGrossKnuth = unfold_pass(s2145_PiElim);
+  private s2147_DefBetaReduceGrossKnuth = unfold_pass(s2146_DefBetaReduceGrossKnuth);
+  private s2148_PiElim = apply(s2123_DefBetaReduceGrossKnuth, s2147_DefBetaReduceGrossKnuth);
+  private s2149_DefBetaReduceGrossKnuth = unfold_pass(s2148_PiElim);
+  private s2150_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2149_DefBetaReduceGrossKnuth);
+  private s2151_DefBetaReduceGrossKnuth = unfold_pass(s2150_PiElim);
+  private s2152_DefBetaReduceGrossKnuth = unfold_pass(s2151_DefBetaReduceGrossKnuth);
+  private s2153_EqForm = equality_type(
+    s1938_SigmaForm, s2152_DefBetaReduceGrossKnuth, s2147_DefBetaReduceGrossKnuth
+  );
+  private s2154_DefBetaReduceGrossKnuth = unfold_pass(s2129_Vble);
+  private s2155_PiElim = apply(s2154_DefBetaReduceGrossKnuth, s2144_DefBetaReduceGrossKnuth);
+  private s2156_DefBetaReduceGrossKnuth = unfold_pass(s2155_PiElim);
+  private s2157_CtxExt = assume(s1918_EqForm, s2142_CtxExt);
+  private s2158_Vble = variable(s2157_CtxExt);
+  private s2159_CtxExt = assume(s1918_EqForm, s2157_CtxExt);
+  private s2160_Vble = variable(s2159_CtxExt);
+  private s2161_EqForm = equality_type(s1918_EqForm, s2158_Vble, s2160_Vble);
+  private s2162_CtxExt = assume(s2161_EqForm, none);
+  private s2163_CtxExt = assume(s1918_EqForm, s2159_CtxExt);
+  private s2164_Vble = variable(s2163_CtxExt);
+  private s2165_DefBetaReduceGrossKnuth = unfold_pass(s2158_Vble);
+  private s2166_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2165_DefBetaReduceGrossKnuth);
+  private s2167_DefBetaReduceGrossKnuth = unfold_pass(s2166_PiElim);
+  private s2168_DefBetaReduceGrossKnuth = unfold_pass(s2167_DefBetaReduceGrossKnuth);
+  private s2169_DefBetaReduceGrossKnuth = unfold_pass(s2160_Vble);
+  private s2170_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2169_DefBetaReduceGrossKnuth);
+  private s2171_DefBetaReduceGrossKnuth = unfold_pass(s2170_PiElim);
+  private s2172_DefBetaReduceGrossKnuth = unfold_pass(s2171_DefBetaReduceGrossKnuth);
+  private s2173_EqForm = equality_type(
+    s1938_SigmaForm, s2168_DefBetaReduceGrossKnuth, s2172_DefBetaReduceGrossKnuth
+  );
+  private s2174_DefBetaReduceGrossKnuth = unfold_pass(s2164_Vble);
+  private s2175_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2174_DefBetaReduceGrossKnuth);
+  private s2176_DefBetaReduceGrossKnuth = unfold_pass(s2175_PiElim);
+  private s2177_DefBetaReduceGrossKnuth = unfold_pass(s2176_DefBetaReduceGrossKnuth);
+  private s2178_EqIntro = reflexivity(s2177_DefBetaReduceGrossKnuth);
+  private s2179_DefBetaReduceGrossKnuth = unfold_pass(s2178_EqIntro);
+  private s2180_EqElim = equality_eliminate(
+    s2173_EqForm, s2179_DefBetaReduceGrossKnuth, s2149_DefBetaReduceGrossKnuth,
+    s2144_DefBetaReduceGrossKnuth, s2156_DefBetaReduceGrossKnuth, s2157_CtxExt, s2159_CtxExt,
+    s2162_CtxExt, s2163_CtxExt
+  );
+  private s2181_DefBetaReduceGrossKnuth = unfold_pass(s2180_EqElim);
+  private s2182_DefBetaReduceGrossKnuth = unfold_pass(s2141_Vble);
+  private s2183_PiElim = apply(s2182_DefBetaReduceGrossKnuth, s2147_DefBetaReduceGrossKnuth);
+  private s2184_DefBetaReduceGrossKnuth = unfold_pass(s2183_PiElim);
+  private s2185_EqForm = equality_type(
+    s2153_EqForm, s2181_DefBetaReduceGrossKnuth, s2184_DefBetaReduceGrossKnuth
+  );
+  private s2186_PiForm = function_type(s1918_EqForm, s2185_EqForm, s2142_CtxExt);
+  private s2187_SigmaForm = pair_type(s2139_PiForm, s2186_PiForm, s2140_CtxExt);
+  private s2188_SigmaForm = pair_type(s2127_PiForm, s2187_SigmaForm, s2128_CtxExt);
+  private s2189_SigmaForm = pair_type(s1948_PiForm, s2188_SigmaForm, s2115_CtxExt);
+  private s2190_CtxExt = assume(s2189_SigmaForm, none);
+  private s2191_Vble = variable(s2190_CtxExt);
+  private s2192_CtxExt = assume(s1948_PiForm, s2115_CtxExt);
+  private s2193_Vble = variable(s2192_CtxExt);
+  private s2194_CtxExt = assume(s1918_EqForm, s2163_CtxExt);
+  private s2195_Vble = variable(s2194_CtxExt);
+  private s2196_DefBetaReduceGrossKnuth = unfold_pass(s2195_Vble);
+  private s2197_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2196_DefBetaReduceGrossKnuth);
+  private s2198_DefBetaReduceGrossKnuth = unfold_pass(s2197_PiElim);
+  private s2199_DefBetaReduceGrossKnuth = unfold_pass(s2198_DefBetaReduceGrossKnuth);
+  private s2200_DefBetaReduceGrossKnuth = unfold_pass(s2193_Vble);
+  private s2201_PiElim = apply(s2200_DefBetaReduceGrossKnuth, s2199_DefBetaReduceGrossKnuth);
+  private s2202_DefBetaReduceGrossKnuth = unfold_pass(s2201_PiElim);
+  private s2203_EqForm = equality_type(
+    s1918_EqForm, s2202_DefBetaReduceGrossKnuth, s2196_DefBetaReduceGrossKnuth
+  );
+  private s2204_PiForm = function_type(s1918_EqForm, s2203_EqForm, s2194_CtxExt);
+  private s2205_CtxExt = assume(s2204_PiForm, none);
+  private s2206_Vble = variable(s2205_CtxExt);
+  private s2207_CtxExt = assume(s1938_SigmaForm, s2130_CtxExt);
+  private s2208_Vble = variable(s2207_CtxExt);
+  private s2209_DefBetaReduceGrossKnuth = unfold_pass(s2208_Vble);
+  private s2210_PiElim = apply(s2200_DefBetaReduceGrossKnuth, s2209_DefBetaReduceGrossKnuth);
+  private s2211_DefBetaReduceGrossKnuth = unfold_pass(s2210_PiElim);
+  private s2212_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2211_DefBetaReduceGrossKnuth);
+  private s2213_DefBetaReduceGrossKnuth = unfold_pass(s2212_PiElim);
+  private s2214_DefBetaReduceGrossKnuth = unfold_pass(s2213_DefBetaReduceGrossKnuth);
+  private s2215_EqForm = equality_type(
+    s1938_SigmaForm, s2214_DefBetaReduceGrossKnuth, s2209_DefBetaReduceGrossKnuth
+  );
+  private s2216_PiForm = function_type(s1938_SigmaForm, s2215_EqForm, s2207_CtxExt);
+  private s2217_CtxExt = assume(s2216_PiForm, none);
+  private s2218_Vble = variable(s2217_CtxExt);
+  private s2219_CtxExt = assume(s1918_EqForm, s2194_CtxExt);
+  private s2220_Vble = variable(s2219_CtxExt);
+  private s2221_DefBetaReduceGrossKnuth = unfold_pass(s2220_Vble);
+  private s2222_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2221_DefBetaReduceGrossKnuth);
+  private s2223_DefBetaReduceGrossKnuth = unfold_pass(s2222_PiElim);
+  private s2224_DefBetaReduceGrossKnuth = unfold_pass(s2223_DefBetaReduceGrossKnuth);
+  private s2225_PiElim = apply(s2200_DefBetaReduceGrossKnuth, s2224_DefBetaReduceGrossKnuth);
+  private s2226_DefBetaReduceGrossKnuth = unfold_pass(s2225_PiElim);
+  private s2227_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2226_DefBetaReduceGrossKnuth);
+  private s2228_DefBetaReduceGrossKnuth = unfold_pass(s2227_PiElim);
+  private s2229_DefBetaReduceGrossKnuth = unfold_pass(s2228_DefBetaReduceGrossKnuth);
+  private s2230_EqForm = equality_type(
+    s1938_SigmaForm, s2229_DefBetaReduceGrossKnuth, s2224_DefBetaReduceGrossKnuth
+  );
+  private s2231_DefBetaReduceGrossKnuth = unfold_pass(s2206_Vble);
+  private s2232_PiElim = apply(s2231_DefBetaReduceGrossKnuth, s2221_DefBetaReduceGrossKnuth);
+  private s2233_DefBetaReduceGrossKnuth = unfold_pass(s2232_PiElim);
+  private s2234_CtxExt = assume(s1918_EqForm, s2219_CtxExt);
+  private s2235_Vble = variable(s2234_CtxExt);
+  private s2236_CtxExt = assume(s1918_EqForm, s2234_CtxExt);
+  private s2237_Vble = variable(s2236_CtxExt);
+  private s2238_EqForm = equality_type(s1918_EqForm, s2235_Vble, s2237_Vble);
+  private s2239_CtxExt = assume(s2238_EqForm, none);
+  private s2240_CtxExt = assume(s1918_EqForm, s2236_CtxExt);
+  private s2241_Vble = variable(s2240_CtxExt);
+  private s2242_DefBetaReduceGrossKnuth = unfold_pass(s2235_Vble);
+  private s2243_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2242_DefBetaReduceGrossKnuth);
+  private s2244_DefBetaReduceGrossKnuth = unfold_pass(s2243_PiElim);
+  private s2245_DefBetaReduceGrossKnuth = unfold_pass(s2244_DefBetaReduceGrossKnuth);
+  private s2246_DefBetaReduceGrossKnuth = unfold_pass(s2237_Vble);
+  private s2247_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2246_DefBetaReduceGrossKnuth);
+  private s2248_DefBetaReduceGrossKnuth = unfold_pass(s2247_PiElim);
+  private s2249_DefBetaReduceGrossKnuth = unfold_pass(s2248_DefBetaReduceGrossKnuth);
+  private s2250_EqForm = equality_type(
+    s1938_SigmaForm, s2245_DefBetaReduceGrossKnuth, s2249_DefBetaReduceGrossKnuth
+  );
+  private s2251_DefBetaReduceGrossKnuth = unfold_pass(s2241_Vble);
+  private s2252_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2251_DefBetaReduceGrossKnuth);
+  private s2253_DefBetaReduceGrossKnuth = unfold_pass(s2252_PiElim);
+  private s2254_DefBetaReduceGrossKnuth = unfold_pass(s2253_DefBetaReduceGrossKnuth);
+  private s2255_EqIntro = reflexivity(s2254_DefBetaReduceGrossKnuth);
+  private s2256_DefBetaReduceGrossKnuth = unfold_pass(s2255_EqIntro);
+  private s2257_EqElim = equality_eliminate(
+    s2250_EqForm, s2256_DefBetaReduceGrossKnuth, s2226_DefBetaReduceGrossKnuth,
+    s2221_DefBetaReduceGrossKnuth, s2233_DefBetaReduceGrossKnuth, s2234_CtxExt, s2236_CtxExt,
+    s2239_CtxExt, s2240_CtxExt
+  );
+  private s2258_DefBetaReduceGrossKnuth = unfold_pass(s2257_EqElim);
+  private s2259_DefBetaReduceGrossKnuth = unfold_pass(s2218_Vble);
+  private s2260_PiElim = apply(s2259_DefBetaReduceGrossKnuth, s2224_DefBetaReduceGrossKnuth);
+  private s2261_DefBetaReduceGrossKnuth = unfold_pass(s2260_PiElim);
+  private s2262_EqForm = equality_type(
+    s2230_EqForm, s2258_DefBetaReduceGrossKnuth, s2261_DefBetaReduceGrossKnuth
+  );
+  private s2263_PiForm = function_type(s1918_EqForm, s2262_EqForm, s2219_CtxExt);
+  private s2264_SigmaForm = pair_type(s2216_PiForm, s2263_PiForm, s2217_CtxExt);
+  private s2265_SigmaForm = pair_type(s2204_PiForm, s2264_SigmaForm, s2205_CtxExt);
+  private s2266_CtxExt = assume(s2265_SigmaForm, none);
+  private s2267_SigmaElim = pair_eliminate(
+    s1948_PiForm, s2200_DefBetaReduceGrossKnuth, s2191_Vble, none, s2192_CtxExt, s2266_CtxExt
+  );
+  private s2268_DefBetaReduceGrossKnuth = unfold_pass(s2267_SigmaElim);
+  private s2269_CtxExt = assume(s1918_EqForm, s2240_CtxExt);
+  private s2270_Vble = variable(s2269_CtxExt);
+  private s2271_DefBetaReduceGrossKnuth = unfold_pass(s2270_Vble);
+  private s2272_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2271_DefBetaReduceGrossKnuth);
+  private s2273_DefBetaReduceGrossKnuth = unfold_pass(s2272_PiElim);
+  private s2274_DefBetaReduceGrossKnuth = unfold_pass(s2273_DefBetaReduceGrossKnuth);
+  private s2275_PiElim = apply(s2268_DefBetaReduceGrossKnuth, s2274_DefBetaReduceGrossKnuth);
+  private s2276_DefBetaReduceGrossKnuth = unfold_pass(s2275_PiElim);
+  private s2277_EqForm = equality_type(
+    s1918_EqForm, s2276_DefBetaReduceGrossKnuth, s2271_DefBetaReduceGrossKnuth
+  );
+  private s2278_PiForm = function_type(s1918_EqForm, s2277_EqForm, s2269_CtxExt);
+  private s2279_CtxExt = assume(s2278_PiForm, none);
+  private s2280_Vble = variable(s2279_CtxExt);
+  private s2281_CtxExt = assume(s1938_SigmaForm, s2207_CtxExt);
+  private s2282_Vble = variable(s2281_CtxExt);
+  private s2283_DefBetaReduceGrossKnuth = unfold_pass(s2282_Vble);
+  private s2284_PiElim = apply(s2268_DefBetaReduceGrossKnuth, s2283_DefBetaReduceGrossKnuth);
+  private s2285_DefBetaReduceGrossKnuth = unfold_pass(s2284_PiElim);
+  private s2286_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2285_DefBetaReduceGrossKnuth);
+  private s2287_DefBetaReduceGrossKnuth = unfold_pass(s2286_PiElim);
+  private s2288_DefBetaReduceGrossKnuth = unfold_pass(s2287_DefBetaReduceGrossKnuth);
+  private s2289_EqForm = equality_type(
+    s1938_SigmaForm, s2288_DefBetaReduceGrossKnuth, s2283_DefBetaReduceGrossKnuth
+  );
+  private s2290_PiForm = function_type(s1938_SigmaForm, s2289_EqForm, s2281_CtxExt);
+  private s2291_CtxExt = assume(s2290_PiForm, none);
+  private s2292_Vble = variable(s2291_CtxExt);
+  private s2293_CtxExt = assume(s1918_EqForm, s2269_CtxExt);
+  private s2294_Vble = variable(s2293_CtxExt);
+  private s2295_DefBetaReduceGrossKnuth = unfold_pass(s2294_Vble);
+  private s2296_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2295_DefBetaReduceGrossKnuth);
+  private s2297_DefBetaReduceGrossKnuth = unfold_pass(s2296_PiElim);
+  private s2298_DefBetaReduceGrossKnuth = unfold_pass(s2297_DefBetaReduceGrossKnuth);
+  private s2299_PiElim = apply(s2268_DefBetaReduceGrossKnuth, s2298_DefBetaReduceGrossKnuth);
+  private s2300_DefBetaReduceGrossKnuth = unfold_pass(s2299_PiElim);
+  private s2301_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2300_DefBetaReduceGrossKnuth);
+  private s2302_DefBetaReduceGrossKnuth = unfold_pass(s2301_PiElim);
+  private s2303_DefBetaReduceGrossKnuth = unfold_pass(s2302_DefBetaReduceGrossKnuth);
+  private s2304_EqForm = equality_type(
+    s1938_SigmaForm, s2303_DefBetaReduceGrossKnuth, s2298_DefBetaReduceGrossKnuth
+  );
+  private s2305_DefBetaReduceGrossKnuth = unfold_pass(s2280_Vble);
+  private s2306_PiElim = apply(s2305_DefBetaReduceGrossKnuth, s2295_DefBetaReduceGrossKnuth);
+  private s2307_DefBetaReduceGrossKnuth = unfold_pass(s2306_PiElim);
+  private s2308_CtxExt = assume(s1918_EqForm, s2293_CtxExt);
+  private s2309_Vble = variable(s2308_CtxExt);
+  private s2310_CtxExt = assume(s1918_EqForm, s2308_CtxExt);
+  private s2311_Vble = variable(s2310_CtxExt);
+  private s2312_EqForm = equality_type(s1918_EqForm, s2309_Vble, s2311_Vble);
+  private s2313_CtxExt = assume(s2312_EqForm, none);
+  private s2314_CtxExt = assume(s1918_EqForm, s2310_CtxExt);
+  private s2315_Vble = variable(s2314_CtxExt);
+  private s2316_DefBetaReduceGrossKnuth = unfold_pass(s2309_Vble);
+  private s2317_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2316_DefBetaReduceGrossKnuth);
+  private s2318_DefBetaReduceGrossKnuth = unfold_pass(s2317_PiElim);
+  private s2319_DefBetaReduceGrossKnuth = unfold_pass(s2318_DefBetaReduceGrossKnuth);
+  private s2320_DefBetaReduceGrossKnuth = unfold_pass(s2311_Vble);
+  private s2321_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2320_DefBetaReduceGrossKnuth);
+  private s2322_DefBetaReduceGrossKnuth = unfold_pass(s2321_PiElim);
+  private s2323_DefBetaReduceGrossKnuth = unfold_pass(s2322_DefBetaReduceGrossKnuth);
+  private s2324_EqForm = equality_type(
+    s1938_SigmaForm, s2319_DefBetaReduceGrossKnuth, s2323_DefBetaReduceGrossKnuth
+  );
+  private s2325_DefBetaReduceGrossKnuth = unfold_pass(s2315_Vble);
+  private s2326_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2325_DefBetaReduceGrossKnuth);
+  private s2327_DefBetaReduceGrossKnuth = unfold_pass(s2326_PiElim);
+  private s2328_DefBetaReduceGrossKnuth = unfold_pass(s2327_DefBetaReduceGrossKnuth);
+  private s2329_EqIntro = reflexivity(s2328_DefBetaReduceGrossKnuth);
+  private s2330_DefBetaReduceGrossKnuth = unfold_pass(s2329_EqIntro);
+  private s2331_EqElim = equality_eliminate(
+    s2324_EqForm, s2330_DefBetaReduceGrossKnuth, s2300_DefBetaReduceGrossKnuth,
+    s2295_DefBetaReduceGrossKnuth, s2307_DefBetaReduceGrossKnuth, s2308_CtxExt, s2310_CtxExt,
+    s2313_CtxExt, s2314_CtxExt
+  );
+  private s2332_DefBetaReduceGrossKnuth = unfold_pass(s2331_EqElim);
+  private s2333_DefBetaReduceGrossKnuth = unfold_pass(s2292_Vble);
+  private s2334_PiElim = apply(s2333_DefBetaReduceGrossKnuth, s2298_DefBetaReduceGrossKnuth);
+  private s2335_DefBetaReduceGrossKnuth = unfold_pass(s2334_PiElim);
+  private s2336_EqForm = equality_type(
+    s2304_EqForm, s2332_DefBetaReduceGrossKnuth, s2335_DefBetaReduceGrossKnuth
+  );
+  private s2337_PiForm = function_type(s1918_EqForm, s2336_EqForm, s2293_CtxExt);
+  private s2338_SigmaForm = pair_type(s2290_PiForm, s2337_PiForm, s2291_CtxExt);
+  private s2339_SigmaForm = pair_type(s2278_PiForm, s2338_SigmaForm, s2279_CtxExt);
+  private s2340_CtxExt = assume(s1948_PiForm, s2192_CtxExt);
+  private s2341_Vble = variable(s2340_CtxExt);
+  private s2342_CtxExt = assume(s1918_EqForm, s2314_CtxExt);
+  private s2343_Vble = variable(s2342_CtxExt);
+  private s2344_DefBetaReduceGrossKnuth = unfold_pass(s2343_Vble);
+  private s2345_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2344_DefBetaReduceGrossKnuth);
+  private s2346_DefBetaReduceGrossKnuth = unfold_pass(s2345_PiElim);
+  private s2347_DefBetaReduceGrossKnuth = unfold_pass(s2346_DefBetaReduceGrossKnuth);
+  private s2348_DefBetaReduceGrossKnuth = unfold_pass(s2341_Vble);
+  private s2349_PiElim = apply(s2348_DefBetaReduceGrossKnuth, s2347_DefBetaReduceGrossKnuth);
+  private s2350_DefBetaReduceGrossKnuth = unfold_pass(s2349_PiElim);
+  private s2351_EqForm = equality_type(
+    s1918_EqForm, s2350_DefBetaReduceGrossKnuth, s2344_DefBetaReduceGrossKnuth
+  );
+  private s2352_PiForm = function_type(s1918_EqForm, s2351_EqForm, s2342_CtxExt);
+  private s2353_CtxExt = assume(s2352_PiForm, none);
+  private s2354_Vble = variable(s2353_CtxExt);
+  private s2355_CtxExt = assume(s1938_SigmaForm, s2281_CtxExt);
+  private s2356_Vble = variable(s2355_CtxExt);
+  private s2357_DefBetaReduceGrossKnuth = unfold_pass(s2356_Vble);
+  private s2358_PiElim = apply(s2348_DefBetaReduceGrossKnuth, s2357_DefBetaReduceGrossKnuth);
+  private s2359_DefBetaReduceGrossKnuth = unfold_pass(s2358_PiElim);
+  private s2360_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2359_DefBetaReduceGrossKnuth);
+  private s2361_DefBetaReduceGrossKnuth = unfold_pass(s2360_PiElim);
+  private s2362_DefBetaReduceGrossKnuth = unfold_pass(s2361_DefBetaReduceGrossKnuth);
+  private s2363_EqForm = equality_type(
+    s1938_SigmaForm, s2362_DefBetaReduceGrossKnuth, s2357_DefBetaReduceGrossKnuth
+  );
+  private s2364_PiForm = function_type(s1938_SigmaForm, s2363_EqForm, s2355_CtxExt);
+  private s2365_CtxExt = assume(s2364_PiForm, none);
+  private s2366_Vble = variable(s2365_CtxExt);
+  private s2367_CtxExt = assume(s1918_EqForm, s2342_CtxExt);
+  private s2368_Vble = variable(s2367_CtxExt);
+  private s2369_DefBetaReduceGrossKnuth = unfold_pass(s2368_Vble);
+  private s2370_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2369_DefBetaReduceGrossKnuth);
+  private s2371_DefBetaReduceGrossKnuth = unfold_pass(s2370_PiElim);
+  private s2372_DefBetaReduceGrossKnuth = unfold_pass(s2371_DefBetaReduceGrossKnuth);
+  private s2373_PiElim = apply(s2348_DefBetaReduceGrossKnuth, s2372_DefBetaReduceGrossKnuth);
+  private s2374_DefBetaReduceGrossKnuth = unfold_pass(s2373_PiElim);
+  private s2375_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2374_DefBetaReduceGrossKnuth);
+  private s2376_DefBetaReduceGrossKnuth = unfold_pass(s2375_PiElim);
+  private s2377_DefBetaReduceGrossKnuth = unfold_pass(s2376_DefBetaReduceGrossKnuth);
+  private s2378_EqForm = equality_type(
+    s1938_SigmaForm, s2377_DefBetaReduceGrossKnuth, s2372_DefBetaReduceGrossKnuth
+  );
+  private s2379_DefBetaReduceGrossKnuth = unfold_pass(s2354_Vble);
+  private s2380_PiElim = apply(s2379_DefBetaReduceGrossKnuth, s2369_DefBetaReduceGrossKnuth);
+  private s2381_DefBetaReduceGrossKnuth = unfold_pass(s2380_PiElim);
+  private s2382_CtxExt = assume(s1918_EqForm, s2367_CtxExt);
+  private s2383_Vble = variable(s2382_CtxExt);
+  private s2384_CtxExt = assume(s1918_EqForm, s2382_CtxExt);
+  private s2385_Vble = variable(s2384_CtxExt);
+  private s2386_EqForm = equality_type(s1918_EqForm, s2383_Vble, s2385_Vble);
+  private s2387_CtxExt = assume(s2386_EqForm, none);
+  private s2388_CtxExt = assume(s1918_EqForm, s2384_CtxExt);
+  private s2389_Vble = variable(s2388_CtxExt);
+  private s2390_DefBetaReduceGrossKnuth = unfold_pass(s2383_Vble);
+  private s2391_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2390_DefBetaReduceGrossKnuth);
+  private s2392_DefBetaReduceGrossKnuth = unfold_pass(s2391_PiElim);
+  private s2393_DefBetaReduceGrossKnuth = unfold_pass(s2392_DefBetaReduceGrossKnuth);
+  private s2394_DefBetaReduceGrossKnuth = unfold_pass(s2385_Vble);
+  private s2395_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2394_DefBetaReduceGrossKnuth);
+  private s2396_DefBetaReduceGrossKnuth = unfold_pass(s2395_PiElim);
+  private s2397_DefBetaReduceGrossKnuth = unfold_pass(s2396_DefBetaReduceGrossKnuth);
+  private s2398_EqForm = equality_type(
+    s1938_SigmaForm, s2393_DefBetaReduceGrossKnuth, s2397_DefBetaReduceGrossKnuth
+  );
+  private s2399_DefBetaReduceGrossKnuth = unfold_pass(s2389_Vble);
+  private s2400_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2399_DefBetaReduceGrossKnuth);
+  private s2401_DefBetaReduceGrossKnuth = unfold_pass(s2400_PiElim);
+  private s2402_DefBetaReduceGrossKnuth = unfold_pass(s2401_DefBetaReduceGrossKnuth);
+  private s2403_EqIntro = reflexivity(s2402_DefBetaReduceGrossKnuth);
+  private s2404_DefBetaReduceGrossKnuth = unfold_pass(s2403_EqIntro);
+  private s2405_EqElim = equality_eliminate(
+    s2398_EqForm, s2404_DefBetaReduceGrossKnuth, s2374_DefBetaReduceGrossKnuth,
+    s2369_DefBetaReduceGrossKnuth, s2381_DefBetaReduceGrossKnuth, s2382_CtxExt, s2384_CtxExt,
+    s2387_CtxExt, s2388_CtxExt
+  );
+  private s2406_DefBetaReduceGrossKnuth = unfold_pass(s2405_EqElim);
+  private s2407_DefBetaReduceGrossKnuth = unfold_pass(s2366_Vble);
+  private s2408_PiElim = apply(s2407_DefBetaReduceGrossKnuth, s2372_DefBetaReduceGrossKnuth);
+  private s2409_DefBetaReduceGrossKnuth = unfold_pass(s2408_PiElim);
+  private s2410_EqForm = equality_type(
+    s2378_EqForm, s2406_DefBetaReduceGrossKnuth, s2409_DefBetaReduceGrossKnuth
+  );
+  private s2411_PiForm = function_type(s1918_EqForm, s2410_EqForm, s2367_CtxExt);
+  private s2412_SigmaForm = pair_type(s2364_PiForm, s2411_PiForm, s2365_CtxExt);
+  private s2413_SigmaForm = pair_type(s2352_PiForm, s2412_SigmaForm, s2353_CtxExt);
+  private s2414_SigmaIntro = pair_intro(
+    s2047_DefBetaReduceGrossKnuth, s2413_SigmaForm, s2114_Vble, s2340_CtxExt
+  );
+  private s2415_PiIntro = function_intro(s2189_SigmaForm, s2339_SigmaForm, s2190_CtxExt);
+  private s2416_PiElim = apply(s2415_PiIntro, s2414_SigmaIntro);
+  private s2417_HighExp = select_expression(s2416_PiElim);
+  private s2418_BetaReducePointed = reduce_selected(s2417_HighExp);
+  private s2419_UnHigh = clear_selection(s2418_BetaReducePointed);
+  private s2420_DefBetaReduceGrossKnuth = unfold_pass(s2114_Vble);
+  private s2421_DefEqRefl = definition_refl(s2419_UnHigh);
+  private s2422_HighExp = select_expression(s2421_DefEqRefl);
+  private s2423_High1 = select_second(s2422_HighExp);
+  private s2424_DefBetaReduceGrossKnuth = unfold_pass(s2423_High1);
+  private s2425_DefBetaReduceGrossKnuth = unfold_pass(s2424_DefBetaReduceGrossKnuth);
+  private s2426_DefEqSwp = definition_symmetry(s2425_DefBetaReduceGrossKnuth);
+  private s2427_HighType = select_type(s2420_DefBetaReduceGrossKnuth);
+  private s2428_HighSubs = rewrite_selected(s2427_HighType, s2426_DefEqSwp);
+  private s2429_UnHigh = clear_selection(s2428_HighSubs);
+  private s2430_SigmaElim = pair_eliminate(
+    s2339_SigmaForm, s2429_UnHigh, s1961_DefBetaReduceGrossKnuth, s2190_CtxExt, s2039_CtxExt,
+    s2113_CtxExt
+  );
+  private s2431_DefBetaReduceGrossKnuth = unfold_pass(s2430_SigmaElim);
+  private s2432_CtxExt = assume(s1918_EqForm, s2388_CtxExt);
+  private s2433_Vble = variable(s2432_CtxExt);
+  private s2434_DefBetaReduceGrossKnuth = unfold_pass(s2433_Vble);
+  private s2435_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2434_DefBetaReduceGrossKnuth);
+  private s2436_DefBetaReduceGrossKnuth = unfold_pass(s2435_PiElim);
+  private s2437_DefBetaReduceGrossKnuth = unfold_pass(s2436_DefBetaReduceGrossKnuth);
+  private s2438_PiElim = apply(s2038_DefBetaReduceGrossKnuth, s2437_DefBetaReduceGrossKnuth);
+  private s2439_DefBetaReduceGrossKnuth = unfold_pass(s2438_PiElim);
+  private s2440_EqForm = equality_type(
+    s1918_EqForm, s2439_DefBetaReduceGrossKnuth, s2434_DefBetaReduceGrossKnuth
+  );
+  private s2441_PiForm = function_type(s1918_EqForm, s2440_EqForm, s2432_CtxExt);
+  private s2442_CtxExt = assume(s2441_PiForm, none);
+  private s2443_Vble = variable(s2442_CtxExt);
+  private s2444_CtxExt = assume(s1938_SigmaForm, s2355_CtxExt);
+  private s2445_Vble = variable(s2444_CtxExt);
+  private s2446_DefBetaReduceGrossKnuth = unfold_pass(s2445_Vble);
+  private s2447_PiElim = apply(s2038_DefBetaReduceGrossKnuth, s2446_DefBetaReduceGrossKnuth);
+  private s2448_DefBetaReduceGrossKnuth = unfold_pass(s2447_PiElim);
+  private s2449_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2448_DefBetaReduceGrossKnuth);
+  private s2450_DefBetaReduceGrossKnuth = unfold_pass(s2449_PiElim);
+  private s2451_DefBetaReduceGrossKnuth = unfold_pass(s2450_DefBetaReduceGrossKnuth);
+  private s2452_EqForm = equality_type(
+    s1938_SigmaForm, s2451_DefBetaReduceGrossKnuth, s2446_DefBetaReduceGrossKnuth
+  );
+  private s2453_PiForm = function_type(s1938_SigmaForm, s2452_EqForm, s2444_CtxExt);
+  private s2454_CtxExt = assume(s2453_PiForm, none);
+  private s2455_Vble = variable(s2454_CtxExt);
+  private s2456_CtxExt = assume(s1918_EqForm, s2432_CtxExt);
+  private s2457_Vble = variable(s2456_CtxExt);
+  private s2458_DefBetaReduceGrossKnuth = unfold_pass(s2457_Vble);
+  private s2459_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2458_DefBetaReduceGrossKnuth);
+  private s2460_DefBetaReduceGrossKnuth = unfold_pass(s2459_PiElim);
+  private s2461_DefBetaReduceGrossKnuth = unfold_pass(s2460_DefBetaReduceGrossKnuth);
+  private s2462_PiElim = apply(s2038_DefBetaReduceGrossKnuth, s2461_DefBetaReduceGrossKnuth);
+  private s2463_DefBetaReduceGrossKnuth = unfold_pass(s2462_PiElim);
+  private s2464_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2463_DefBetaReduceGrossKnuth);
+  private s2465_DefBetaReduceGrossKnuth = unfold_pass(s2464_PiElim);
+  private s2466_DefBetaReduceGrossKnuth = unfold_pass(s2465_DefBetaReduceGrossKnuth);
+  private s2467_EqForm = equality_type(
+    s1938_SigmaForm, s2466_DefBetaReduceGrossKnuth, s2461_DefBetaReduceGrossKnuth
+  );
+  private s2468_DefBetaReduceGrossKnuth = unfold_pass(s2443_Vble);
+  private s2469_PiElim = apply(s2468_DefBetaReduceGrossKnuth, s2458_DefBetaReduceGrossKnuth);
+  private s2470_DefBetaReduceGrossKnuth = unfold_pass(s2469_PiElim);
+  private s2471_CtxExt = assume(s1918_EqForm, s2456_CtxExt);
+  private s2472_Vble = variable(s2471_CtxExt);
+  private s2473_CtxExt = assume(s1918_EqForm, s2471_CtxExt);
+  private s2474_Vble = variable(s2473_CtxExt);
+  private s2475_EqForm = equality_type(s1918_EqForm, s2472_Vble, s2474_Vble);
+  private s2476_CtxExt = assume(s2475_EqForm, none);
+  private s2477_CtxExt = assume(s1918_EqForm, s2473_CtxExt);
+  private s2478_Vble = variable(s2477_CtxExt);
+  private s2479_DefBetaReduceGrossKnuth = unfold_pass(s2472_Vble);
+  private s2480_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2479_DefBetaReduceGrossKnuth);
+  private s2481_DefBetaReduceGrossKnuth = unfold_pass(s2480_PiElim);
+  private s2482_DefBetaReduceGrossKnuth = unfold_pass(s2481_DefBetaReduceGrossKnuth);
+  private s2483_DefBetaReduceGrossKnuth = unfold_pass(s2474_Vble);
+  private s2484_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2483_DefBetaReduceGrossKnuth);
+  private s2485_DefBetaReduceGrossKnuth = unfold_pass(s2484_PiElim);
+  private s2486_DefBetaReduceGrossKnuth = unfold_pass(s2485_DefBetaReduceGrossKnuth);
+  private s2487_EqForm = equality_type(
+    s1938_SigmaForm, s2482_DefBetaReduceGrossKnuth, s2486_DefBetaReduceGrossKnuth
+  );
+  private s2488_DefBetaReduceGrossKnuth = unfold_pass(s2478_Vble);
+  private s2489_PiElim = apply(s1947_DefBetaReduceGrossKnuth, s2488_DefBetaReduceGrossKnuth);
+  private s2490_DefBetaReduceGrossKnuth = unfold_pass(s2489_PiElim);
+  private s2491_DefBetaReduceGrossKnuth = unfold_pass(s2490_DefBetaReduceGrossKnuth);
+  private s2492_EqIntro = reflexivity(s2491_DefBetaReduceGrossKnuth);
+  private s2493_DefBetaReduceGrossKnuth = unfold_pass(s2492_EqIntro);
+  private s2494_EqElim = equality_eliminate(
+    s2487_EqForm, s2493_DefBetaReduceGrossKnuth, s2463_DefBetaReduceGrossKnuth,
+    s2458_DefBetaReduceGrossKnuth, s2470_DefBetaReduceGrossKnuth, s2471_CtxExt, s2473_CtxExt,
+    s2476_CtxExt, s2477_CtxExt
+  );
+  private s2495_DefBetaReduceGrossKnuth = unfold_pass(s2494_EqElim);
+  private s2496_DefBetaReduceGrossKnuth = unfold_pass(s2455_Vble);
+  private s2497_PiElim = apply(s2496_DefBetaReduceGrossKnuth, s2461_DefBetaReduceGrossKnuth);
+  private s2498_DefBetaReduceGrossKnuth = unfold_pass(s2497_PiElim);
+  private s2499_EqForm = equality_type(
+    s2467_EqForm, s2495_DefBetaReduceGrossKnuth, s2498_DefBetaReduceGrossKnuth
+  );
+  private s2500_PiForm = function_type(s1918_EqForm, s2499_EqForm, s2456_CtxExt);
+  private s2501_SigmaForm = pair_type(s2453_PiForm, s2500_PiForm, s2454_CtxExt);
+  private s2502_CtxExt = assume(s2501_SigmaForm, none);
+  private s2503_SigmaElim = pair_eliminate(
+    s2441_PiForm, s2468_DefBetaReduceGrossKnuth, s2431_DefBetaReduceGrossKnuth, none, s2442_CtxExt,
+    s2502_CtxExt
+  );
+  private s2504_DefBetaReduceGrossKnuth = unfold_pass(s2503_SigmaElim);
+  private s2505_PiIntro = function_intro(
+    s1922_DefBetaReduceGrossKnuth, s2504_DefBetaReduceGrossKnuth, s1916_CtxExt
+  );
+  private s2506_PiIntro = function_intro(s1922_DefBetaReduceGrossKnuth, s2505_PiIntro, s1914_CtxExt);
+  private s2507_PiIntro = function_intro(s0443_UIntroOmega, s2506_PiIntro, s1912_CtxExt);
+  private s2508_DefEqRefl = definition_refl(s2507_PiIntro);
+  export lib_ua_unique = definition_right(s2508_DefEqRefl);
+  private s2510_PiElim = apply(s0052_Vble, s0106_Vble);
+  private s2511_PiForm = function_type(s0055_PiElim, s2510_PiElim, none);
+  private s2512_PiElim = apply(s0423_PiElim, s0055_PiElim);
+  private s2513_EqElim = equality_eliminate(
+    s2511_PiForm, s2512_PiElim, s0054_Vble, s0106_Vble, s0109_Vble, s0053_CtxExt, s0105_CtxExt,
+    none, s0053_CtxExt
+  );
+  private s2514_PiIntro = function_intro(s0107_EqForm, s2513_EqElim, s0108_CtxExt);
+  private s2515_PiIntro = function_intro(s0462_DefBetaReduceGrossKnuth, s2514_PiIntro, s0105_CtxExt);
+  private s2516_PiIntro = function_intro(s0462_DefBetaReduceGrossKnuth, s2515_PiIntro, s0053_CtxExt);
+  private s2517_PiIntro = function_intro(s0050_PiForm, s2516_PiIntro, s0051_CtxExt);
+  private s2518_PiIntro = function_intro(s0458_DefBetaReduceGrossKnuth, s2517_PiIntro, s0446_CtxExt);
+  private s2519_PiIntro = function_intro(s0443_UIntroOmega, s2518_PiIntro, s0444_CtxExt);
+  private s2520_Def = define(s2519_PiIntro);
+  export lib_transport = definition_left(s2520_Def);
 }

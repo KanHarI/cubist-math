@@ -1,0 +1,78 @@
+import field_extensions;
+import subfields;
+
+// Small-valued subsets of the ambient small carrier. This bundle lives in U1;
+// arbitrary large intersections and generated subfields are separate work.
+def IntermediateFieldLaws(K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0) =
+  SubfieldLaws(extension_field(K, E), P)
+  and (forall k : af_carrier(K), P(extension_inclusion(K, E, k)));
+def IntermediateField(K : AlgebraicField, E : FieldExt(K)) =
+  exists P : extension_carrier(K, E) -> U0, IntermediateFieldLaws(K, E, P);
+
+def intermediate_members(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
+  unpack M as (P, laws) return (extension_carrier(K, E) -> U0) {
+    P;
+  };
+
+def intermediate_laws(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) : IntermediateFieldLaws(
+  K, E, intermediate_members(K, E, M)
+) {
+  exact field_second(
+    (extension_carrier(K, E) -> U0),
+    (fun (P : extension_carrier(K, E) -> U0) => typed(U1, IntermediateFieldLaws(K, E, P))), M
+  );
+}
+
+def intermediate_subfield(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) : Subfield(
+  extension_field(K, E)
+) {
+  let P = intermediate_members(K, E, M);
+  let closure =
+    fst(
+      SubfieldLaws(extension_field(K, E), P),
+      (forall k : af_carrier(K), P(extension_inclusion(K, E, k))), intermediate_laws(K, E, M)
+    );
+  exact (P, closure);
+}
+
+theorem intermediate_contains_base(
+  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), k : af_carrier(K)
+) : intermediate_members(K, E, M, extension_inclusion(K, E, k)) {
+  obtain (closure, base) = intermediate_laws(K, E, M);
+  exact base(k);
+}
+
+theorem intermediate_laws_prop(
+  K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0,
+  p : IntermediateFieldLaws(K, E, P), q : IntermediateFieldLaws(K, E, P)
+) : p = q {
+  let F = extension_field(K, E);
+  let baseType = (forall k : af_carrier(K), P(extension_inclusion(K, E, k)));
+  let closure = fst(SubfieldLaws(F, P), baseType, p);
+  exact product_prop(
+    SubfieldLaws(F, P), baseType, subfield_laws_prop(F, P),
+    forall_prop(
+      af_carrier(K), (fun (k : af_carrier(K)) => P(extension_inclusion(K, E, k))),
+      (fun (k : af_carrier(K)) => subfield_prop(F, P, closure, extension_inclusion(K, E, k)))
+    )
+  )(p, q);
+}
+
+// Membership equality determines equality as intermediate fields over K.
+theorem intermediate_ext(
+  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), N : IntermediateField(K, E),
+  same : intermediate_members(K, E, M) = intermediate_members(K, E, N)
+) : M =[IntermediateField(K, E)] N {
+  exact field_subtype_ext(
+    (extension_carrier(K, E) -> U0),
+    (fun (P : extension_carrier(K, E) -> U0) => typed(U1, IntermediateFieldLaws(K, E, P))),
+    intermediate_laws_prop(K, E), M, N, same
+  );
+}
+
+def intermediate_top(K : AlgebraicField, E : FieldExt(K)) : IntermediateField(K, E) {
+  exact (
+    SubfieldTop(extension_field(K, E)), subfield_top_laws(extension_field(K, E)),
+    (fun (k : af_carrier(K)) => tt)
+  );
+}

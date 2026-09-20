@@ -3,100 +3,509 @@ import complex_magnitude;
 import complex_convergence;
 import field_magnitude_close;
 
-def complex_contour_tag_error_sum(F : U1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  f : Complex(F) -> Complex(F), n : Nat) = contour_tag_error_sum(Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), f, n);
+def complex_contour_tag_error_sum(
+  F : U1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  f : Complex(F) -> Complex(F), n : Nat
+) =
+  contour_tag_error_sum(
+    Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
+    complex_neg(F, negF), f, n
+  );
 
-theorem complex_box_zero(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)) : ComplexBoxBound(F, negF, lt, complex_zero(F, zero), zero) {
+theorem complex_box_zero(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)
+) : ComplexBoxBound(F, negF, lt, complex_zero(F, zero), zero) {
   let bound = field_magnitude_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic);
   exact (bound, bound);
 }
 
-theorem complex_box_enlarge(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), value : Complex(F), radius : F, larger : F,
-  bound : ComplexBoxBound(F, negF, lt, value, radius), grows : FieldLe(F, lt, radius, larger)) : ComplexBoxBound(F, negF, lt, value, larger) {
+theorem complex_box_enlarge(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), value : Complex(F), radius : F,
+  larger : F, bound : ComplexBoxBound(F, negF, lt, value, radius),
+  grows : FieldLe(F, lt, radius, larger)
+) : ComplexBoxBound(F, negF, lt, value, larger) {
   obtain (realBound, imagBound) = bound;
-  exact (field_magnitude_enlarge(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, value), radius, larger, realBound, grows),
-    field_magnitude_enlarge(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, value), radius, larger, imagBound, grows));
+  exact (
+    field_magnitude_enlarge(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, value), radius,
+      larger, realBound, grows
+    ),
+    field_magnitude_enlarge(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, value), radius,
+      larger, imagBound, grows
+    )
+  );
 }
 
-theorem complex_box_squeeze(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors : Nat -> Complex(F), radii : Nat -> F,
-  bounds : (forall n : Nat, ComplexBoxBound(F, negF, lt, errors(n), radii(n))),
-  vanishes : FieldConverges(F, zero, addF, lt, radii, zero)) :
-  ComplexConverges(F, zero, addF, lt, errors, complex_zero(F, zero)) {
+theorem complex_box_squeeze(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors : Nat -> Complex(F),
+  radii : Nat -> F, bounds : (forall n : Nat, ComplexBoxBound(F, negF, lt, errors(n), radii(n))),
+  vanishes : FieldConverges(F, zero, addF, lt, radii, zero)
+) : ComplexConverges(F, zero, addF, lt, errors, complex_zero(F, zero)) {
   intro epsilon;
   intro positive;
   obtain (bound, close) = vanishes(epsilon, positive);
-  have tail : forall n : Nat, IndexLE(bound, n) -> ComplexClose(F, addF, lt, errors(n), complex_zero(F, zero), epsilon) {
+  have tail : forall n : Nat, IndexLE(bound, n)
+  -> ComplexClose(F, addF, lt, errors(n), complex_zero(F, zero), epsilon) {
     intro n;
     intro large;
     obtain (upper, lower) = close(n, large);
-    let small = transport(lt(radii(n)), addF(zero, epsilon), epsilon, ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon), upper);
+    let small =
+      transport(
+        lt(radii(n)), addF(zero, epsilon), epsilon,
+        ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon), upper
+      );
     obtain (realBound, imagBound) = bounds(n);
-    exact (field_magnitude_small_close(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, errors(n)), radii(n), epsilon, realBound, small),
-      field_magnitude_small_close(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, errors(n)), radii(n), epsilon, imagBound, small));
+    exact (
+      field_magnitude_small_close(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, errors(n)),
+        radii(n), epsilon, realBound, small
+      ),
+      field_magnitude_small_close(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, errors(n)),
+        radii(n), epsilon, imagBound, small
+      )
+    );
   }
   exact (bound, tail);
 }
 
 // Error and displacement bounds are required only at visited samples.
-def ComplexContourTagBounds(F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  f : Complex(F) -> Complex(F), delta : F, n : Nat) =
-  induction n as k return (SampleVertices(Complex(F), k) -> SampleTags(Complex(F), k) -> SampleTags(Complex(F), k) -> U0) {
+def ComplexContourTagBounds(
+  F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, f : Complex(F) -> Complex(F),
+  delta : F, n : Nat
+) =
+  induction n as k return (
+    SampleVertices(Complex(F), k) -> SampleTags(Complex(F), k) -> SampleTags(Complex(F), k) -> U0
+  ) {
     zero => fun (vertices : Complex(F)) => fun (oldTags : Unit) => fun (newTags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(Complex(F), succ(k))) => fun (oldTags : SampleTags(Complex(F), succ(k))) => fun (newTags : SampleTags(Complex(F), succ(k))) =>
-      ComplexBoxBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), f(field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), f(field_fst(Complex(F), SampleTags(Complex(F), k), newTags))), delta) and previous(field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags), field_snd(Complex(F), SampleTags(Complex(F), k), newTags));
+    succ previous => fun (vertices : SampleVertices(Complex(F), succ(k))) => fun (
+      oldTags : SampleTags(Complex(F), succ(k))
+    ) => fun (newTags : SampleTags(Complex(F), succ(k))) => ComplexBoxBound(
+      F, negF, lt,
+      coordinate_difference(
+        Complex(F), complex_add(F, addF), complex_neg(F, negF),
+        f(field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)),
+        f(field_fst(Complex(F), SampleTags(Complex(F), k), newTags))
+      ), delta
+    )
+    and previous(
+      field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+      field_snd(Complex(F), SampleTags(Complex(F), k), oldTags),
+      field_snd(Complex(F), SampleTags(Complex(F), k), newTags)
+    );
   };
-def ComplexContourIncrementBounds(F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, n : Nat) =
+def ComplexContourIncrementBounds(
+  F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F,
+  imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, n : Nat
+) =
   induction n as k return (SampleVertices(Complex(F), k) -> SampleTags(Complex(F), k) -> U0) {
     zero => fun (vertices : Complex(F)) => fun (oldTags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(Complex(F), succ(k))) => fun (oldTags : SampleTags(Complex(F), succ(k))) =>
-      ComplexRectangleBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices))), realWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), imagWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags))) and previous(field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags));
+    succ previous => fun (vertices : SampleVertices(Complex(F), succ(k))) => fun (
+      oldTags : SampleTags(Complex(F), succ(k))
+    ) => ComplexRectangleBound(
+      F, negF, lt,
+      coordinate_difference(
+        Complex(F), complex_add(F, addF), complex_neg(F, negF),
+        field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+        sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices))
+      ),
+      realWeight(
+        field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+        sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)),
+        field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+      ),
+      imagWeight(
+        field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+        sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)),
+        field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+      )
+    )
+    and previous(
+      field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+      field_snd(Complex(F), SampleTags(Complex(F), k), oldTags)
+    );
   };
 
-theorem complex_contour_tag_error_variation_bound(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),
-  realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, delta : F, n : Nat) :
-  forall vertices : SampleVertices(Complex(F), n), forall oldTags : SampleTags(Complex(F), n), forall newTags : SampleTags(Complex(F), n),
-    ComplexContourTagBounds(F, addF, negF, lt, f, delta, n, vertices, oldTags, newTags) -> ComplexContourIncrementBounds(F, addF, negF, lt, realWeight, imagWeight, n, vertices, oldTags) -> ComplexBoxBound(F, negF, lt, complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags), mulF(delta, sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n, vertices, oldTags))) {
-  exact induction n as k return (forall vertices : SampleVertices(Complex(F), k), forall oldTags : SampleTags(Complex(F), k), forall newTags : SampleTags(Complex(F), k),
-    ComplexContourTagBounds(F, addF, negF, lt, f, delta, k, vertices, oldTags, newTags) -> ComplexContourIncrementBounds(F, addF, negF, lt, realWeight, imagWeight, k, vertices, oldTags) -> ComplexBoxBound(F, negF, lt, complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, k, vertices, oldTags, newTags), mulF(delta, sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), k, vertices, oldTags)))) {
-    zero => fun (vertices : Complex(F)) => fun (oldTags : Unit) => fun (newTags : Unit) => fun (errors : Unit) => fun (increments : Unit) =>
-      transport(ComplexBoxBound(F, negF, lt, complex_zero(F, zero)), zero, mulF(delta, zero), sym(ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta)), complex_box_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic));
-    succ previous => fun (vertices : SampleVertices(Complex(F), succ(k))) => fun (oldTags : SampleTags(Complex(F), succ(k))) => fun (newTags : SampleTags(Complex(F), succ(k))) =>
-      fun (errors : ComplexContourTagBounds(F, addF, negF, lt, f, delta, succ(k), vertices, oldTags, newTags)) => fun (increments : ComplexContourIncrementBounds(F, addF, negF, lt, realWeight, imagWeight, succ(k), vertices, oldTags)) =>
-        transport(ComplexBoxBound(F, negF, lt, complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, succ(k), vertices, oldTags, newTags)),
-          addF(mulF(delta, addF(realWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), imagWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)))), mulF(delta, sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags)))), mulF(delta, sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), succ(k), vertices, oldTags)),
-          sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, addF(realWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), imagWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags))), sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags)))),
-          complex_box_add(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, contour_tag_error(Complex(F), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF), f, field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags), field_fst(Complex(F), SampleTags(Complex(F), k), newTags)), complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags), field_snd(Complex(F), SampleTags(Complex(F), k), newTags)), mulF(delta, addF(realWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), imagWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)))), mulF(delta, sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags))),
-            complex_box_mul_rectangle(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), f(field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), f(field_fst(Complex(F), SampleTags(Complex(F), k), newTags))), coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices))), delta, realWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), imagWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)),
-              field_fst(ComplexBoxBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), f(field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), f(field_fst(Complex(F), SampleTags(Complex(F), k), newTags))), delta), ComplexContourTagBounds(F, addF, negF, lt, f, delta, k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags), field_snd(Complex(F), SampleTags(Complex(F), k), newTags)), errors),
-              field_fst(ComplexRectangleBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices))), realWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), imagWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags))), ComplexContourIncrementBounds(F, addF, negF, lt, realWeight, imagWeight, k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags)), increments)),
-            previous(field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags), field_snd(Complex(F), SampleTags(Complex(F), k), newTags), field_snd(ComplexBoxBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), f(field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), f(field_fst(Complex(F), SampleTags(Complex(F), k), newTags))), delta), ComplexContourTagBounds(F, addF, negF, lt, f, delta, k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags), field_snd(Complex(F), SampleTags(Complex(F), k), newTags)), errors),
-              field_snd(ComplexRectangleBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices))), realWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)), imagWeight(field_fst(Complex(F), SampleVertices(Complex(F), k), vertices), sample_first(Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags))), ComplexContourIncrementBounds(F, addF, negF, lt, realWeight, imagWeight, k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices), field_snd(Complex(F), SampleTags(Complex(F), k), oldTags)), increments))));
+theorem complex_contour_tag_error_variation_bound(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),
+  realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F)
+  -> Complex(F) -> F, delta : F, n : Nat
+) : forall vertices : SampleVertices(Complex(F), n), forall oldTags : SampleTags(Complex(F), n),
+forall newTags : SampleTags(Complex(F), n),
+ComplexContourTagBounds(F, addF, negF, lt, f, delta, n, vertices, oldTags, newTags)
+-> ComplexContourIncrementBounds(F, addF, negF, lt, realWeight, imagWeight, n, vertices, oldTags)
+-> ComplexBoxBound(
+  F, negF, lt,
+  complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags),
+  mulF(
+    delta,
+    sample_sum(
+      Complex(F), F, zero, addF,
+      (
+        fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(
+          realWeight(a, b, t), imagWeight(a, b, t)
+        )
+      ), n, vertices, oldTags
+    )
+  )
+) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(Complex(F), k), forall oldTags : SampleTags(Complex(F), k),
+    forall newTags : SampleTags(Complex(F), k),
+    ComplexContourTagBounds(F, addF, negF, lt, f, delta, k, vertices, oldTags, newTags)
+    -> ComplexContourIncrementBounds(
+      F, addF, negF, lt, realWeight, imagWeight, k, vertices, oldTags
+    )
+    -> ComplexBoxBound(
+      F, negF, lt,
+      complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, k, vertices, oldTags, newTags),
+      mulF(
+        delta,
+        sample_sum(
+          Complex(F), F, zero, addF,
+          (
+            fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(
+              realWeight(a, b, t), imagWeight(a, b, t)
+            )
+          ), k, vertices, oldTags
+        )
+      )
+    )
+  ) {
+    zero => fun (vertices : Complex(F)) => fun (oldTags : Unit) => fun (newTags : Unit) => fun (
+      errors : Unit
+    ) => fun (increments : Unit) => transport(
+      ComplexBoxBound(F, negF, lt, complex_zero(F, zero)), zero, mulF(delta, zero),
+      sym(ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta)),
+      complex_box_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic)
+    );
+    succ previous => fun (vertices : SampleVertices(Complex(F), succ(k))) => fun (
+      oldTags : SampleTags(Complex(F), succ(k))
+    ) => fun (newTags : SampleTags(Complex(F), succ(k))) => fun (
+      errors : ComplexContourTagBounds(
+        F, addF, negF, lt, f, delta, succ(k), vertices, oldTags, newTags
+      )
+    ) => fun (
+      increments : ComplexContourIncrementBounds(
+        F, addF, negF, lt, realWeight, imagWeight, succ(k), vertices, oldTags
+      )
+    ) => transport(
+      ComplexBoxBound(
+        F, negF, lt,
+        complex_contour_tag_error_sum(
+          F, zero, addF, mulF, negF, f, succ(k), vertices, oldTags, newTags
+        )
+      ),
+      addF(
+        mulF(
+          delta,
+          addF(
+            realWeight(
+              field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+              sample_first(
+                Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+              ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+            ),
+            imagWeight(
+              field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+              sample_first(
+                Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+              ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+            )
+          )
+        ),
+        mulF(
+          delta,
+          sample_sum(
+            Complex(F), F, zero, addF,
+            (
+              fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(
+                realWeight(a, b, t), imagWeight(a, b, t)
+              )
+            ), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+            field_snd(Complex(F), SampleTags(Complex(F), k), oldTags)
+          )
+        )
+      ),
+      mulF(
+        delta,
+        sample_sum(
+          Complex(F), F, zero, addF,
+          (
+            fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(
+              realWeight(a, b, t), imagWeight(a, b, t)
+            )
+          ), succ(k), vertices, oldTags
+        )
+      ),
+      sym(
+        ring_distribute(
+          F, zero, one, addF, mulF, negF, ring, delta,
+          addF(
+            realWeight(
+              field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+              sample_first(
+                Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+              ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+            ),
+            imagWeight(
+              field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+              sample_first(
+                Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+              ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+            )
+          ),
+          sample_sum(
+            Complex(F), F, zero, addF,
+            (
+              fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(
+                realWeight(a, b, t), imagWeight(a, b, t)
+              )
+            ), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+            field_snd(Complex(F), SampleTags(Complex(F), k), oldTags)
+          )
+        )
+      ),
+      complex_box_add(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
+        contour_tag_error(
+          Complex(F), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF),
+          f, field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+          sample_first(
+            Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+          ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags),
+          field_fst(Complex(F), SampleTags(Complex(F), k), newTags)
+        ),
+        complex_contour_tag_error_sum(
+          F, zero, addF, mulF, negF, f, k,
+          field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+          field_snd(Complex(F), SampleTags(Complex(F), k), oldTags),
+          field_snd(Complex(F), SampleTags(Complex(F), k), newTags)
+        ),
+        mulF(
+          delta,
+          addF(
+            realWeight(
+              field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+              sample_first(
+                Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+              ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+            ),
+            imagWeight(
+              field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+              sample_first(
+                Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+              ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+            )
+          )
+        ),
+        mulF(
+          delta,
+          sample_sum(
+            Complex(F), F, zero, addF,
+            (
+              fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(
+                realWeight(a, b, t), imagWeight(a, b, t)
+              )
+            ), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+            field_snd(Complex(F), SampleTags(Complex(F), k), oldTags)
+          )
+        ),
+        complex_box_mul_rectangle(
+          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
+          coordinate_difference(
+            Complex(F), complex_add(F, addF), complex_neg(F, negF),
+            f(field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)),
+            f(field_fst(Complex(F), SampleTags(Complex(F), k), newTags))
+          ),
+          coordinate_difference(
+            Complex(F), complex_add(F, addF), complex_neg(F, negF),
+            field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+            sample_first(
+              Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+            )
+          ), delta,
+          realWeight(
+            field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+            sample_first(
+              Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+            ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+          ),
+          imagWeight(
+            field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+            sample_first(
+              Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+            ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+          ),
+          field_fst(
+            ComplexBoxBound(
+              F, negF, lt,
+              coordinate_difference(
+                Complex(F), complex_add(F, addF), complex_neg(F, negF),
+                f(field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)),
+                f(field_fst(Complex(F), SampleTags(Complex(F), k), newTags))
+              ), delta
+            ),
+            ComplexContourTagBounds(
+              F, addF, negF, lt, f, delta, k,
+              field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+              field_snd(Complex(F), SampleTags(Complex(F), k), oldTags),
+              field_snd(Complex(F), SampleTags(Complex(F), k), newTags)
+            ), errors
+          ),
+          field_fst(
+            ComplexRectangleBound(
+              F, negF, lt,
+              coordinate_difference(
+                Complex(F), complex_add(F, addF), complex_neg(F, negF),
+                field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+                sample_first(
+                  Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+                )
+              ),
+              realWeight(
+                field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+                sample_first(
+                  Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+                ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+              ),
+              imagWeight(
+                field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+                sample_first(
+                  Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+                ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+              )
+            ),
+            ComplexContourIncrementBounds(
+              F, addF, negF, lt, realWeight, imagWeight, k,
+              field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+              field_snd(Complex(F), SampleTags(Complex(F), k), oldTags)
+            ), increments
+          )
+        ),
+        previous(
+          field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+          field_snd(Complex(F), SampleTags(Complex(F), k), oldTags),
+          field_snd(Complex(F), SampleTags(Complex(F), k), newTags),
+          field_snd(
+            ComplexBoxBound(
+              F, negF, lt,
+              coordinate_difference(
+                Complex(F), complex_add(F, addF), complex_neg(F, negF),
+                f(field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)),
+                f(field_fst(Complex(F), SampleTags(Complex(F), k), newTags))
+              ), delta
+            ),
+            ComplexContourTagBounds(
+              F, addF, negF, lt, f, delta, k,
+              field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+              field_snd(Complex(F), SampleTags(Complex(F), k), oldTags),
+              field_snd(Complex(F), SampleTags(Complex(F), k), newTags)
+            ), errors
+          ),
+          field_snd(
+            ComplexRectangleBound(
+              F, negF, lt,
+              coordinate_difference(
+                Complex(F), complex_add(F, addF), complex_neg(F, negF),
+                field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+                sample_first(
+                  Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+                )
+              ),
+              realWeight(
+                field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+                sample_first(
+                  Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+                ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+              ),
+              imagWeight(
+                field_fst(Complex(F), SampleVertices(Complex(F), k), vertices),
+                sample_first(
+                  Complex(F), k, field_snd(Complex(F), SampleVertices(Complex(F), k), vertices)
+                ), field_fst(Complex(F), SampleTags(Complex(F), k), oldTags)
+              )
+            ),
+            ComplexContourIncrementBounds(
+              F, addF, negF, lt, realWeight, imagWeight, k,
+              field_snd(Complex(F), SampleVertices(Complex(F), k), vertices),
+              field_snd(Complex(F), SampleTags(Complex(F), k), oldTags)
+            ), increments
+          )
+        )
+      )
+    );
   };
 }
 
-theorem complex_contour_tag_error_length_bound(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),
-  realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F,
-  delta : F, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,
-  vertices : SampleVertices(Complex(F), n), oldTags : SampleTags(Complex(F), n), newTags : SampleTags(Complex(F), n),
-  errors : ComplexContourTagBounds(F, addF, negF, lt, f, delta, n, vertices, oldTags, newTags), increments : ComplexContourIncrementBounds(F, addF, negF, lt, realWeight, imagWeight, n, vertices, oldTags),
-  variation : FieldLe(F, lt, sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n, vertices, oldTags), length)) : ComplexBoxBound(F, negF, lt, complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags), mulF(delta, length)) {
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
-  let totalWeight = sample_sum(Complex(F), F, zero, addF, (fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n, vertices, oldTags);
-  let bound = complex_contour_tag_error_variation_bound(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, realWeight, imagWeight, delta, n, vertices, oldTags, newTags, errors, increments);
+theorem complex_contour_tag_error_length_bound(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),
+  realWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, imagWeight : Complex(F) -> Complex(F)
+  -> Complex(F) -> F, delta : F, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta),
+  n : Nat, vertices : SampleVertices(Complex(F), n), oldTags : SampleTags(Complex(F), n),
+  newTags : SampleTags(Complex(F), n),
+  errors : ComplexContourTagBounds(F, addF, negF, lt, f, delta, n, vertices, oldTags, newTags),
+  increments : ComplexContourIncrementBounds(
+    F, addF, negF, lt, realWeight, imagWeight, n, vertices, oldTags
+  ),
+  variation : FieldLe(
+    F, lt,
+    sample_sum(
+      Complex(F), F, zero, addF,
+      (
+        fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(
+          realWeight(a, b, t), imagWeight(a, b, t)
+        )
+      ), n, vertices, oldTags
+    ), length
+  )
+) : ComplexBoxBound(
+  F, negF, lt,
+  complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags),
+  mulF(delta, length)
+) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
+  let totalWeight =
+    sample_sum(
+      Complex(F), F, zero, addF,
+      (
+        fun (a : Complex(F)) => fun (b : Complex(F)) => fun (t : Complex(F)) => addF(
+          realWeight(a, b, t), imagWeight(a, b, t)
+        )
+      ), n, vertices, oldTags
+    );
+  let bound =
+    complex_contour_tag_error_variation_bound(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, realWeight, imagWeight, delta,
+      n, vertices, oldTags, newTags, errors, increments
+    );
   let rightScaled = weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
-  let leftScaled = transport((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta))), mulF(totalWeight, delta), mulF(delta, totalWeight),
-    ring_mul_comm(F, zero, one, addF, mulF, negF, ring, totalWeight, delta), rightScaled);
-  let grows = transport(FieldLe(F, lt, mulF(delta, totalWeight)), mulF(length, delta), mulF(delta, length), ring_mul_comm(F, zero, one, addF, mulF, negF, ring, length, delta), leftScaled);
-  exact complex_box_enlarge(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags), mulF(delta, totalWeight), mulF(delta, length), bound, grows);
+  let leftScaled =
+    transport(
+      (fun (v : F) => FieldLe(F, lt, v, mulF(length, delta))), mulF(totalWeight, delta),
+      mulF(delta, totalWeight),
+      ring_mul_comm(F, zero, one, addF, mulF, negF, ring, totalWeight, delta), rightScaled
+    );
+  let grows =
+    transport(
+      FieldLe(F, lt, mulF(delta, totalWeight)), mulF(length, delta), mulF(delta, length),
+      ring_mul_comm(F, zero, one, addF, mulF, negF, ring, length, delta), leftScaled
+    );
+  exact complex_box_enlarge(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
+    complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags),
+    mulF(delta, totalWeight), mulF(delta, length), bound, grows
+  );
 }

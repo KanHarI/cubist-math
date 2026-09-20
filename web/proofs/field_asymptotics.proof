@@ -3,31 +3,40 @@ import field_products;
 
 // Mere eventual closeness is enough to identify limits. No selection of a
 // bound for every radius is needed when the conclusion is an equality.
-def FieldAsymptotic(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
-  xs : Nat -> F, ys : Nat -> F) =
-  forall epsilon : F, lt(zero, epsilon) ->
-    FieldExists(exists bound : Nat, forall n : Nat, IndexLE(bound, n) -> FieldClose(F, addF, lt, xs(n), ys(n), epsilon));
+def FieldAsymptotic(
+  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs : Nat -> F, ys : Nat -> F
+) =
+  forall epsilon : F, lt(zero, epsilon)
+  -> FieldExists(
+    exists bound : Nat, forall n : Nat, IndexLE(bound, n)
+    -> FieldClose(F, addF, lt, xs(n), ys(n), epsilon)
+  );
 
-theorem field_close_prop(F : U1, addF : F -> F -> F, lt : F -> F -> U0,
-  order : StrictOrder(F, lt), x : F, y : F, epsilon : F) : FieldProp(FieldClose(F, addF, lt, x, y, epsilon)) {
-  obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
+theorem field_close_prop(
+  F : U1, addF : F -> F -> F, lt : F -> F -> U0, order : StrictOrder(F, lt), x : F, y : F,
+  epsilon : F
+) : FieldProp(FieldClose(F, addF, lt, x, y, epsilon)) {
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
   let upper = lt(x, addF(y, epsilon));
   let lower = lt(y, addF(x, epsilon));
   intro p;
   intro q;
-  exact field_pair_path(upper, lower, p, q,
+  exact field_pair_path(
+    upper, lower, p, q,
     prop(x, addF(y, epsilon), field_fst(upper, lower, p), field_fst(upper, lower, q)),
-    prop(y, addF(x, epsilon), field_snd(upper, lower, p), field_snd(upper, lower, q)));
+    prop(y, addF(x, epsilon), field_snd(upper, lower, p), field_snd(upper, lower, q))
+  );
 }
 
-theorem field_asymptotic_limits_equal(F : U1, zero : F, one : F,
-  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+theorem field_asymptotic_limits_equal(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   halving : Halving(F, zero, addF, lt), xs : Nat -> F, ys : Nat -> F,
   same : FieldAsymptotic(F, zero, addF, lt, xs, ys), x : F, y : F,
-  toX : FieldConverges(F, zero, addF, lt, xs, x), toY : FieldConverges(F, zero, addF, lt, ys, y)) : x = y {
-  obtain (half, (halfSum, halfPositive)) = halving;
+  toX : FieldConverges(F, zero, addF, lt, xs, x), toY : FieldConverges(F, zero, addF, lt, ys, y)
+) : x = y {
+  obtain (half, halfSum, halfPositive) = halving;
   have close : forall epsilon : F, lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon) {
     intro epsilon;
     intro positive;
@@ -37,35 +46,58 @@ theorem field_asymptotic_limits_equal(F : U1, zero : F, one : F,
     let positiveQuarter = halfPositive(delta, positiveDelta);
     obtain (leftBound, leftClose) = toX(delta, positiveDelta);
     obtain (rightBound, rightClose) = toY(quarter, positiveQuarter);
-    let tails = exists bound : Nat, forall n : Nat, IndexLE(bound, n) -> FieldClose(F, addF, lt, xs(n), ys(n), quarter);
+    let tails =
+      exists bound : Nat, forall n : Nat, IndexLE(bound, n)
+      -> FieldClose(F, addF, lt, xs(n), ys(n), quarter);
     have useTail : tails -> FieldClose(F, addF, lt, x, y, epsilon) {
       intro tail;
       obtain (tailBound, tailClose) = tail;
       let convergenceBound = leftBound + rightBound;
       let bound = tailBound + convergenceBound;
       let largeConvergence = index_sum_right(tailBound, convergenceBound);
-      let largeLeft = nat_le_trans(leftBound, convergenceBound, bound, index_sum_left(leftBound, rightBound), largeConvergence);
-      let largeRight = nat_le_trans(rightBound, convergenceBound, bound, index_sum_right(leftBound, rightBound), largeConvergence);
-      let inner = field_close_halved_triangle(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
-        half, halfSum, xs(bound), ys(bound), y, delta,
-        tailClose(bound, index_sum_left(tailBound, convergenceBound)), rightClose(bound, largeRight));
-      exact field_close_halved_triangle(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
-        half, halfSum, x, xs(bound), y, epsilon,
-        field_close_symmetry(F, addF, lt, xs(bound), x, delta, leftClose(bound, largeLeft)), inner);
+      let largeLeft =
+        nat_le_trans(
+          leftBound, convergenceBound, bound, index_sum_left(leftBound, rightBound),
+          largeConvergence
+        );
+      let largeRight =
+        nat_le_trans(
+          rightBound, convergenceBound, bound, index_sum_right(leftBound, rightBound),
+          largeConvergence
+        );
+      let inner =
+        field_close_halved_triangle(
+          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, xs(bound),
+          ys(bound), y, delta, tailClose(bound, index_sum_left(tailBound, convergenceBound)),
+          rightClose(bound, largeRight)
+        );
+      exact field_close_halved_triangle(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, x, xs(bound), y,
+        epsilon,
+        field_close_symmetry(F, addF, lt, xs(bound), x, delta, leftClose(bound, largeLeft)), inner
+      );
     }
-    exact field_exists_elim(tails, FieldClose(F, addF, lt, x, y, epsilon), field_close_prop(F, addF, lt, order, x, y, epsilon),
-      useTail, same(quarter, positiveQuarter));
+    exact field_exists_elim(
+      tails, FieldClose(F, addF, lt, x, y, epsilon),
+      field_close_prop(F, addF, lt, order, x, y, epsilon), useTail, same(quarter, positiveQuarter)
+    );
   }
-  exact field_close_separated(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, close);
+  exact field_close_separated(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, close
+  );
 }
 
 // A complete scalar field supplies a limit together with convergence data.
 // The operator uses that data directly, not an axiom selecting from truncation.
-def field_sequence_limit(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
+def field_sequence_limit(
+  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> F,
-  cauchy : FieldCauchy(F, zero, addF, lt, sequence)) =
+  cauchy : FieldCauchy(F, zero, addF, lt, sequence)
+) =
   field_first(F, FieldConverges(F, zero, addF, lt, sequence), complete(sequence, cauchy));
-def field_sequence_limit_converges(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
+def field_sequence_limit_converges(
+  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> F,
-  cauchy : FieldCauchy(F, zero, addF, lt, sequence)) =
+  cauchy : FieldCauchy(F, zero, addF, lt, sequence)
+) =
   field_second(F, FieldConverges(F, zero, addF, lt, sequence), complete(sequence, cauchy));

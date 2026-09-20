@@ -63,7 +63,7 @@ test("explicit equality retains its requested carrier in checked and folded term
 
 test("generic equivalences work with univalence and higher-universe computation", () => {
   const c = checked(`import prelude; import paths; ${identityEquivalence}
-    def identify(U : Universe, A : U) = Univalence(U)(A, A, identity_equiv(U, A));
+    def identify(U : Universe, A : U) = ua(U)(A, A, identity_equiv(U, A));
     def compute(A : U3, x : A) = UnivalenceBeta(U3)(A, A, identity_equiv(U3, A), x);
     def Two = Unit or Unit;
     def swap(x : Two) = match x return Two { left a => right(a); right b => left(b); };
@@ -79,13 +79,13 @@ test("generic equivalences work with univalence and higher-universe computation"
           })))));
     }
     theorem transport_swaps :
-      transport((fun (T : U1) => T), Two, Two, Univalence(U1)(Two, Two, swapping), typed(Two, left(tt))) = typed(Two, right(tt)) {
+      transport((fun (T : U1) => T), Two, Two, ua(U1)(Two, Two, swapping), typed(Two, left(tt))) = typed(Two, right(tt)) {
       exact UnivalenceBeta(U1)(Two, Two, swapping, typed(Two, left(tt)));
     }
   `);
   try {
     assert.deepEqual(c.kernel.axiomsFor("identify"), ["lib_univalence"]);
-    assert.deepEqual(c.kernel.axiomsFor("transport_swaps").sort(), ["lib_ua_elim", "lib_univalence"]);
+    assert.deepEqual(c.kernel.axiomsFor("transport_swaps").sort(), ["lib_univalence"]);
     assert.ok(!c.kernel.bindings.has("AOC"));
     assert.ok(!c.kernel.bindings.has("LEM"));
   } finally { c.kernel.dispose(); }
@@ -146,4 +146,78 @@ test("LEM specializes excluded middle at an explicit universe", () => {
     assert.ok(!c.kernel.bindings.has("AOC"));
   } finally { c.kernel.dispose(); }
   assert.throws(() => compile(module, `import prelude; def bad = LEM(Nat);`, sources), /Expected a universe/);
+});
+
+test("standard univalence is IsEquiv(idtoequiv); ua and both laws are derived", () => {
+  const c = checked(`import prelude; import paths; ${identityEquivalence}
+    theorem canonical(A : U0, B : U0) :
+      IsEquiv(U1, (A =[U0] B), Equiv(U0, A, B), idtoequiv(U0, A, B)) {
+      exact Univalence(U0, A, B);
+    }
+    theorem higher(A : U2, B : U2) :
+      IsEquiv(U3, (A =[U2] B), Equiv(U2, A, B), idtoequiv(U2, A, B)) {
+      exact Univalence(U2, A, B);
+    }
+    def generic_axiom(U : Universe, A : U, B : U) = Univalence(U, A, B);
+    def generic_beta(U : Universe, A : U, x : A) = UnivalenceBeta(U, A, A, identity_equiv(U, A), x);
+    theorem eta(A : U0, B : U0, p : A =[U0] B) :
+      ua(U0, A, B, idtoequiv(U0, A, B, p)) = p {
+      exact UnivalenceEta(U0, A, B, p);
+    }
+    theorem canonical_reflexivity(A : U0) :
+      idtoequiv(U0, A, A, refl(A)) = identity_equiv(U0, A) {
+      exact refl(identity_equiv(U0, A));
+    }
+  `);
+  try {
+    for (const name of ["canonical", "higher", "generic_axiom", "generic_beta", "eta"])
+      assert.deepEqual(c.kernel.axiomsFor(name), ["lib_univalence"], name);
+    assert.deepEqual(c.kernel.axiomsFor("canonical_reflexivity"), []);
+    for (const name of ["lib_ua", "lib_ua_elim", "lib_ua_unique"])
+      assert.notEqual(c.kernel.steps.find(s => s.name === name).op, "Axiom", name);
+    assert.equal(c.kernel.steps.find(s => s.name === "lib_univalence").op, "Axiom");
+    const f = checkedFoldedView(c, "canonical");
+    assert.ok(f.verified.type, JSON.stringify(f.failures));
+  } finally { c.kernel.dispose(); }
+});
+
+test("based induction has independent carrier and motive universes and computes at reflexivity", () => {
+  const c = checked(`import paths;
+    def induction_at(U : Universe, V : Universe) = based_induction(U, V);
+    def higher_carrier = induction_at(U2, U0);
+    def higher_motive = induction_at(U0, U2);
+    theorem computes_at_refl : based_induction(U2, U0, U1, U0,
+      (fun (b : U1) => fun (p : U0 = b) => Unit), tt, U0, refl(U0)) = tt {
+      exact refl(tt);
+    }
+    theorem computes_large_motive : based_induction(U0, U2, Unit, tt,
+      (fun (b : Unit) => fun (p : tt = b) => typed(U2, Unit)), tt, tt, refl(tt)) = tt {
+      exact refl(tt);
+    }
+  `);
+  try { for (const o of c.outputs) assert.deepEqual(c.kernel.axiomsFor(o.binding), []); }
+  finally { c.kernel.dispose(); }
+});
+
+test("inverse data into a set supplies equivalence coherence at every universe without axioms", () => {
+  const c = checked(`import paths;
+    def SetAt(U : Universe, A : U) = forall x : A, forall y : A,
+      forall p : x = y, forall q : x = y, p = q;
+    def set_identity(U : Universe, A : U, setA : SetAt(U, A)) : Equiv(U, A, A) {
+      exact equiv_from_inverse_into_set(U, A, A, setA,
+        (fun (x : A) => x), (fun (x : A) => x),
+        (fun (x : A) => refl(x)), (fun (x : A) => refl(x)));
+    }
+    def at_small = set_identity(U0);
+    def at_large = set_identity(U2);
+  `);
+  try { for (const o of c.outputs) assert.deepEqual(c.kernel.axiomsFor(o.binding), []); }
+  finally { c.kernel.dispose(); }
+  assert.throws(() => checked(`import paths;
+    def invalid(U : Universe, A : U, B : U, f : A -> B, g : B -> A,
+      setB : (forall x : B, forall y : B, forall p : x = y, forall q : x = y, p = q)) : Equiv(U, A, B) {
+      exact equiv_from_inverse_into_set(U, A, B, setB, f, g,
+        (fun (x : A) => refl(x)), (fun (y : B) => refl(y)));
+    }
+  `), /Expected|differ|equality|type/i);
 });

@@ -3,38 +3,70 @@ import sample_refinement_tags;
 
 // Freezing the value at the coarse tag makes any finite subdivision telescope.
 // No continuity, ordering, or admissibility is needed for this exact identity.
-theorem parameter_constant_tag_sum(C : U1, F : U1, zero : F, one : F,
-  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve : C -> F, values : C -> F,
-  tag : C, n : Nat, vertices : SampleVertices(C, n)) :
-  parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, sample_repeat_tags(C, n, tag)) =
-    parameter_contour_edge(C, F, addF, mulF, negF, curve, values, sample_first(C, n, vertices), sample_last(C, n, vertices), tag) {
+theorem parameter_constant_tag_sum(
+  C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve : C -> F, values : C -> F, tag : C,
+  n : Nat, vertices : SampleVertices(C, n)
+) : parameter_contour_sum(
+  C, F, zero, addF, mulF, negF, curve, values, n, vertices, sample_repeat_tags(C, n, tag)
+) = parameter_contour_edge(
+  C, F, addF, mulF, negF, curve, values, sample_first(C, n, vertices), sample_last(C, n, vertices),
+  tag
+) {
   let edge = parameter_contour_edge(C, F, addF, mulF, negF, curve, values);
   have diagonal : forall a : C, edge(a, a, tag) = zero {
     intro a;
-    exact trans(cong(mulF(values(tag)), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, curve(a))),
-      ring_mul_zero(F, zero, one, addF, mulF, negF, ring, values(tag)));
+    exact trans(
+      cong(
+        mulF(values(tag)), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, curve(a))
+      ), ring_mul_zero(F, zero, one, addF, mulF, negF, ring, values(tag))
+    );
   }
-  have composeEdges : forall a : C, forall b : C, forall c : C, addF(edge(a, b, tag), edge(b, c, tag)) = edge(a, c, tag) {
+  have composeEdges : forall a : C, forall b : C, forall c : C,
+  addF(edge(a, b, tag), edge(b, c, tag)) = edge(a, c, tag) {
     intro a;
     intro b;
     intro c;
-    exact contour_edge_subdivide(F, zero, one, addF, mulF, negF, ring, (fun (v : F) => v), curve(a), curve(b), curve(c), values(tag));
+    exact contour_edge_subdivide(
+      F, zero, one, addF, mulF, negF, ring, (fun (v : F) => v), curve(a), curve(b), curve(c),
+      values(tag)
+    );
   }
-  exact sample_repeat_sum_telescopes(C, F, zero, addF, edge, tag, diagonal, composeEdges, n, vertices);
+  exact sample_repeat_sum_telescopes(
+    C, F, zero, addF, edge, tag, diagonal, composeEdges, n, vertices
+  );
 }
 
 // The old side is one edge; the new side may have any finite number of edges.
 // Refinement error is precisely the accumulated change from its repeated tag.
-theorem parameter_refinement_identity(C : U1, F : U1, zero : F, one : F,
-  addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+theorem parameter_refinement_identity(
+  C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve : C -> F, values : C -> F,
-  coarseTag : C, n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)) :
-  parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, tags) =
-    addF(parameter_contour_edge(C, F, addF, mulF, negF, curve, values, sample_first(C, n, vertices), sample_last(C, n, vertices), coarseTag),
-      parameter_contour_tag_error_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, sample_repeat_tags(C, n, coarseTag), tags)) {
+  coarseTag : C, n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)
+) : parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, tags) = addF(
+  parameter_contour_edge(
+    C, F, addF, mulF, negF, curve, values, sample_first(C, n, vertices),
+    sample_last(C, n, vertices), coarseTag
+  ),
+  parameter_contour_tag_error_sum(
+    C, F, zero, addF, mulF, negF, curve, values, n, vertices, sample_repeat_tags(C, n, coarseTag),
+    tags
+  )
+) {
   let oldTags = sample_repeat_tags(C, n, coarseTag);
-  let error = parameter_contour_tag_error_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags);
-  exact trans(parameter_contour_sum_change_tags(C, F, zero, one, addF, mulF, negF, ring, curve, values, n, vertices, oldTags, tags),
-    cong((fun (v : F) => addF(v, error)), parameter_constant_tag_sum(C, F, zero, one, addF, mulF, negF, ring, curve, values, coarseTag, n, vertices)));
+  let error =
+    parameter_contour_tag_error_sum(
+      C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags
+    );
+  exact trans(
+    parameter_contour_sum_change_tags(
+      C, F, zero, one, addF, mulF, negF, ring, curve, values, n, vertices, oldTags, tags
+    ),
+    cong(
+      (fun (v : F) => addF(v, error)),
+      parameter_constant_tag_sum(
+        C, F, zero, one, addF, mulF, negF, ring, curve, values, coarseTag, n, vertices
+      )
+    )
+  );
 }

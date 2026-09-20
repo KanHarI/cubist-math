@@ -12,42 +12,73 @@ def circle_map_meridians(X : U0, point : X, p : point = point, a : S0) =
 def circle_map_from_loop(X : U0, point : X, p : point = point, x : S1) =
   suspension_rec(S0, X, point, point, circle_map_meridians(X, point, p), x);
 
-theorem circle_map_generator(X : U0, point : X, p : point = point) :
-  ap(U1, S1, X, circle_map_from_loop(X, point, p), base, base, loop) = p {
+theorem circle_map_generator(X : U0, point : X, p : point = point) : ap(
+  U1, S1, X, circle_map_from_loop(X, point, p), base, base, loop
+) = p {
   let f = circle_map_from_loop(X, point, p);
-  let upperLaw = suspension_rec_beta(S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, left(tt)));
-  let lowerLaw = suspension_rec_beta(S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, right(tt)));
-  exact trans(map_concat(S1, X, f, base, south_pole, base, upper, lower_inverse),
-    trans(cong((fun (q : point = point) => concatenate(U1, X, point, point, point, q, ap(U1, S1, X, f, south_pole, base, lower_inverse))), upperLaw),
-      trans(cong((fun (q : point = point) => concatenate(U1, X, point, point, point, p, q)),
-        trans(map_inverse(S1, X, f, base, south_pole, lower), cong(inverse(U1, X, point, point), lowerLaw))),
-        right_unit(X, point, point, p))));
+  let upperLaw =
+    suspension_rec_beta(S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, left(tt)));
+  let lowerLaw =
+    suspension_rec_beta(
+      S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, right(tt))
+    );
+  exact trans(
+    map_concat(S1, X, f, base, south_pole, base, upper, lower_inverse),
+    trans(
+      cong(
+        (
+          fun (q : point = point) => concatenate(
+            U1, X, point, point, point, q, ap(U1, S1, X, f, south_pole, base, lower_inverse)
+          )
+        ), upperLaw
+      ),
+      trans(
+        cong(
+          (fun (q : point = point) => concatenate(U1, X, point, point, point, p, q)),
+          trans(
+            map_inverse(S1, X, f, base, south_pole, lower),
+            cong(inverse(U1, X, point, point), lowerLaw)
+          )
+        ), right_unit(X, point, point, p)
+      )
+    )
+  );
 }
 
 def circle_power_map(n : Nat, x : S1) = circle_map_from_loop(S1, base, positive_loops(n), x);
 def circle_map_degree(f : S1 -> S1, anchor : f(base) = base) =
   winding(rebase_loop(S1, f(base), base, anchor, ap(U1, S1, S1, f, base, base, loop)));
 
-theorem circle_power_degree(n : Nat) :
-  circle_map_degree(circle_power_map(n), refl(base)) = nonnegative(n) {
+theorem circle_power_degree(n : Nat) : circle_map_degree(circle_power_map(n), refl(base)) = nonnegative(
+  n
+) {
   exact trans(cong(winding, circle_map_generator(S1, base, positive_loops(n))), winding_positive(n));
 }
 
-theorem null_homotopic_circle_map_degree_zero(f : S1 -> S1, anchor : f(base) = base,
-  point : S1, homotopy : (forall x : S1, f(x) = point)) : circle_map_degree(f, anchor) = zeroZ {
-  exact cong(winding, rebase_null_loop(S1, f(base), base, anchor,
-    ap(U1, S1, S1, f, base, base, loop), null_homotopy_kills_loops(S1, S1, f, point, homotopy, base, loop)));
+theorem null_homotopic_circle_map_degree_zero(
+  f : S1 -> S1, anchor : f(base) = base, point : S1, homotopy : (forall x : S1, f(x) = point)
+) : circle_map_degree(f, anchor) = zeroZ {
+  exact cong(
+    winding,
+    rebase_null_loop(
+      S1, f(base), base, anchor, ap(U1, S1, S1, f, base, base, loop),
+      null_homotopy_kills_loops(S1, S1, f, point, homotopy, base, loop)
+    )
+  );
 }
 
-theorem nonzero_degree_not_null_homotopic(f : S1 -> S1, anchor : f(base) = base,
-  nonzero : (circle_map_degree(f, anchor) = zeroZ) -> Void,
-  point : S1, homotopy : (forall x : S1, f(x) = point)) : Void {
+theorem nonzero_degree_not_null_homotopic(
+  f : S1 -> S1, anchor : f(base) = base, nonzero : (circle_map_degree(f, anchor) = zeroZ) -> Void,
+  point : S1, homotopy : (forall x : S1, f(x) = point)
+) : Void {
   exact nonzero(null_homotopic_circle_map_degree_zero(f, anchor, point, homotopy));
 }
 
-theorem positive_circle_power_not_null_homotopic(n : Nat, point : S1,
-  homotopy : (forall x : S1, circle_power_map(succ(n), x) = point)) : Void {
-  let zeroDegree = null_homotopic_circle_map_degree_zero(circle_power_map(succ(n)), refl(base), point, homotopy);
+theorem positive_circle_power_not_null_homotopic(
+  n : Nat, point : S1, homotopy : (forall x : S1, circle_power_map(succ(n), x) = point)
+) : Void {
+  let zeroDegree =
+    null_homotopic_circle_map_degree_zero(circle_power_map(succ(n)), refl(base), point, homotopy);
   have impossible : nonnegative(succ(n)) = zeroZ {
     exact trans(sym(circle_power_degree(succ(n))), zeroDegree);
   }
@@ -56,26 +87,32 @@ theorem positive_circle_power_not_null_homotopic(n : Nat, point : S1,
 
 // The homotopy need not fix the basepoint. Its value at base is tracked by
 // naturality, so an arbitrary contraction point is allowed.
-theorem homotopic_to_positive_power_not_null(n : Nat, f : S1 -> S1,
-  comparison : (forall x : S1, f(x) = circle_power_map(succ(n), x)),
-  point : S1, contraction : (forall x : S1, f(x) = point)) : Void {
-  exact positive_circle_power_not_null_homotopic(n, point,
-    (fun (x : S1) => trans(sym(comparison(x)), contraction(x))));
+theorem homotopic_to_positive_power_not_null(
+  n : Nat, f : S1 -> S1, comparison : (forall x : S1, f(x) = circle_power_map(succ(n), x)),
+  point : S1, contraction : (forall x : S1, f(x) = point)
+) : Void {
+  exact positive_circle_power_not_null_homotopic(
+    n, point, (fun (x : S1) => trans(sym(comparison(x)), contraction(x)))
+  );
 }
 
 // No map of positive circle degree can extend through a contractible homotopy
 // type. Applying this to polynomials still needs the geometric circle/disk
 // comparison and the leading-term homotopy; neither is assumed as an axiom.
-theorem positive_degree_no_contractible_extension(n : Nat, X : U1, center : X,
-  contraction : (forall x : X, x = center), boundary : S1 -> X, value : X -> S1,
-  comparison : (forall x : S1, value(boundary(x)) = circle_power_map(succ(n), x))) : Void {
-  exact homotopic_to_positive_power_not_null(n, (fun (x : S1) => value(boundary(x))), comparison,
-    value(center), (fun (x : S1) => ap(U1, X, S1, value, boundary(x), center, contraction(boundary(x)))));
+theorem positive_degree_no_contractible_extension(
+  n : Nat, X : U1, center : X, contraction : (forall x : X, x = center), boundary : S1 -> X,
+  value : X -> S1, comparison : (forall x : S1, value(boundary(x)) = circle_power_map(succ(n), x))
+) : Void {
+  exact homotopic_to_positive_power_not_null(
+    n, (fun (x : S1) => value(boundary(x))), comparison, value(center),
+    (fun (x : S1) => ap(U1, X, S1, value, boundary(x), center, contraction(boundary(x))))
+  );
 }
 
 // The corresponding statements directly about loops and retractions.
-theorem positive_winding_loop_not_null(n : Nat, p : base = base,
-  degree : winding(p) = nonnegative(succ(n)), null : p = refl(base)) : Void {
+theorem positive_winding_loop_not_null(
+  n : Nat, p : base = base, degree : winding(p) = nonnegative(succ(n)), null : p = refl(base)
+) : Void {
   have impossible : nonnegative(succ(n)) = zeroZ {
     exact trans(sym(degree), cong(winding, null));
   }
@@ -90,9 +127,16 @@ theorem circle_not_contractible(point : S1, contraction : (forall x : S1, x = po
   exact positive_loop_not_null(0, contractible_loops_are_null(S1, point, contraction, base, loop));
 }
 
-theorem circle_no_retraction_from_contractible(X : U1, center : X,
-  contraction : (forall x : X, x = center), boundary : S1 -> X, retraction : X -> S1,
-  retracts : (forall x : S1, retraction(boundary(x)) = x)) : Void {
-  exact circle_not_contractible(retraction(center), (fun (x : S1) =>
-    trans(sym(retracts(x)), ap(U1, X, S1, retraction, boundary(x), center, contraction(boundary(x))))));
+theorem circle_no_retraction_from_contractible(
+  X : U1, center : X, contraction : (forall x : X, x = center), boundary : S1 -> X, retraction : X
+  -> S1, retracts : (forall x : S1, retraction(boundary(x)) = x)
+) : Void {
+  exact circle_not_contractible(
+    retraction(center),
+    (
+      fun (x : S1) => trans(
+        sym(retracts(x)), ap(U1, X, S1, retraction, boundary(x), center, contraction(boundary(x)))
+      )
+    )
+  );
 }

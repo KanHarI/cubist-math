@@ -2,61 +2,96 @@ import group_total_identity;
 import identity_systems;
 
 // A homotopy of the underlying functions determines an isomorphism path.
-def group_iso_path_data(G : GroupType, H : GroupType, p : GroupIso(G, H), q : GroupIso(G, H), r : p = q) =
-  fun (x : group_carrier(G)) => cong((fun (iso : GroupIso(G, H)) => group_iso_forward(G, H, iso, x)), r);
-def group_iso_choose_path(G : GroupType, H : GroupType, p : GroupIso(G, H), q : GroupIso(G, H), r : p = q) =
+def group_iso_path_data(G : Group, H : Group, p : GroupIso(G, H), q : GroupIso(G, H), r : p = q) =
+  fun (x : group_carrier(G)) => cong(
+    (fun (iso : GroupIso(G, H)) => group_iso_forward(G, H, iso, x)), r
+  );
+def group_iso_choose_path(G : Group, H : Group, p : GroupIso(G, H), q : GroupIso(G, H), r : p = q) =
   group_iso_ext(G, H, p, q, group_iso_path_data(G, H, p, q, r));
 
-theorem group_iso_is_set(G : GroupType, H : GroupType) : IsSet(GroupIso(G, H)) {
-  let setH = group_set_law(group_carrier(H), group_unit(H), group_multiply(H), group_laws(H));
-  have constant : forall p : GroupIso(G, H), forall q : GroupIso(G, H), forall r : p = q, forall s : p = q,
-    group_iso_choose_path(G, H, p, q, r) = group_iso_choose_path(G, H, p, q, s) {
-    intro p; intro q; intro r; intro s;
+theorem group_iso_is_set(G : Group, H : Group) : IsSet(GroupIso(G, H)) {
+  let setH = group_is_set(H);
+  have constant : forall p : GroupIso(G, H), forall q : GroupIso(G, H), forall r : p = q,
+  forall s : p = q, group_iso_choose_path(G, H, p, q, r) = group_iso_choose_path(G, H, p, q, s) {
+    intro p;
+    intro q;
+    intro r;
+    intro s;
     have sameData : group_iso_path_data(G, H, p, q, r) = group_iso_path_data(G, H, p, q, s) {
-      exact FunExt(U0, group_carrier(G), (fun (x : group_carrier(G)) => group_iso_forward(G, H, p, x) = group_iso_forward(G, H, q, x)),
-        group_iso_path_data(G, H, p, q, r), group_iso_path_data(G, H, p, q, s),
-        (fun (x : group_carrier(G)) => setH(group_iso_forward(G, H, p, x), group_iso_forward(G, H, q, x),
-          group_iso_path_data(G, H, p, q, r, x), group_iso_path_data(G, H, p, q, s, x))));
+      exact FunExt(
+        U0, group_carrier(G),
+        (
+          fun (x : group_carrier(G)) => group_iso_forward(G, H, p, x) = group_iso_forward(
+            G, H, q, x
+          )
+        ), group_iso_path_data(G, H, p, q, r), group_iso_path_data(G, H, p, q, s),
+        (
+          fun (x : group_carrier(G)) => setH(
+            group_iso_forward(G, H, p, x), group_iso_forward(G, H, q, x),
+            group_iso_path_data(G, H, p, q, r, x), group_iso_path_data(G, H, p, q, s, x)
+          )
+        )
+      );
     }
     exact cong(group_iso_ext(G, H, p, q), sameData);
   }
   exact constant_paths_are_set(GroupIso(G, H), group_iso_choose_path(G, H), constant);
 }
 
-def group_total_contraction(G : GroupType, z : GroupIsoTotal(G)) =
-  pair_induction((fun (z : GroupIsoTotal(G)) => group_iso_center(G) = z), group_isomorphism_total_contractible(G), z);
+def group_total_contraction(G : Group, z : GroupIsoTotal(G)) =
+  pair_induction(
+    (fun (z : GroupIsoTotal(G)) => group_iso_center(G) = z),
+    group_isomorphism_total_contractible(G), z
+  );
 
-def group_identity_family(G : GroupType, H : GroupType) = typed(U1, GroupIso(G, H));
-def group_identity_encode(G : GroupType, H : GroupType, iso : GroupIso(G, H)) =
-  identity_system_encode(GroupType, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, iso);
+def group_identity_family(G : Group, H : Group) = typed(U1, GroupIso(G, H));
+// Recover the group path corresponding to this particular isomorphism.
+// The total-space contraction ensures that decoding recovers the same map.
+def group_isotoid(G : Group, H : Group, iso : GroupIso(G, H)) : G =[Group] H {
+  exact identity_system_encode(
+    Group, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, iso
+  );
+}
 
 // Rijke, Introduction to Homotopy Type Theory, Theorem 19.3.6.
 // The forward map is the canonical transport of the identity isomorphism.
 // The carrier, operations and law proofs all belong to the equality on the left.
-theorem group_structure_identity(G : GroupType, H : GroupType) : Equiv(U1, (G = H), GroupIso(G, H)) {
-  exact identity_system_equivalence(GroupType, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, group_iso_is_set(G, H));
+theorem group_structure_identity(G : Group, H : Group) : Equiv(U1, (G = H), GroupIso(G, H)) {
+  exact identity_system_equivalence(
+    Group, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H,
+    group_iso_is_set(G, H)
+  );
 }
 
 // Univalence in U1 identifies the two types themselves. Equality here is
 // equality of full bundled groups, not merely equality of their carriers.
-theorem group_isomorphism_is_equality(G : GroupType, H : GroupType) :
-  GroupIso(G, H) =[U1] (G =[GroupType] H) {
-  exact sym(Univalence(U1, (G =[GroupType] H), GroupIso(G, H), group_structure_identity(G, H)));
+theorem group_isomorphism_is_equality(G : Group, H : Group) : GroupIso(G, H) =[U1](G =[Group] H) {
+  exact sym(ua(U1, (G =[Group] H), GroupIso(G, H), group_structure_identity(G, H)));
 }
 
-theorem group_identity_encode_decode(G : GroupType, H : GroupType, p : G = H) :
-  group_identity_encode(G, H, group_equality_iso(G, H, p)) = p {
-  exact identity_system_retraction(GroupType, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, p);
+theorem group_isotoid_idtoiso(G : Group, H : Group, p : G = H) : group_isotoid(
+  G, H, group_idtoiso(G, H, p)
+) = p {
+  exact identity_system_retraction(
+    Group, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, p
+  );
 }
-theorem group_identity_decode_encode(G : GroupType, H : GroupType, iso : GroupIso(G, H)) :
-  group_equality_iso(G, H, group_identity_encode(G, H, iso)) = iso {
-  exact identity_system_section(GroupType, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, iso);
+
+theorem group_idtoiso_isotoid(G : Group, H : Group, iso : GroupIso(G, H)) : group_idtoiso(
+  G, H, group_isotoid(G, H, iso)
+) = iso {
+  exact identity_system_section(
+    Group, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, iso
+  );
 }
 
 // Different isomorphisms remain different paths: group equality is not truncated.
-theorem group_isomorphism_paths_injective(G : GroupType, H : GroupType,
-  p : GroupIso(G, H), q : GroupIso(G, H),
-  same : group_identity_encode(G, H, p) = group_identity_encode(G, H, q)) : p = q {
-  exact trans(sym(group_identity_decode_encode(G, H, p)),
-    trans(cong(group_equality_iso(G, H), same), group_identity_decode_encode(G, H, q)));
+theorem group_isomorphism_paths_injective(
+  G : Group, H : Group, p : GroupIso(G, H), q : GroupIso(G, H),
+  same : group_isotoid(G, H, p) = group_isotoid(G, H, q)
+) : p = q {
+  exact trans(
+    sym(group_idtoiso_isotoid(G, H, p)),
+    trans(cong(group_idtoiso(G, H), same), group_idtoiso_isotoid(G, H, q))
+  );
 }

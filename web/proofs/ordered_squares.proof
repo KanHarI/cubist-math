@@ -2,110 +2,173 @@ import ring_laws;
 
 // Square and norm estimates proved constructively, without sign decisions.
 
-theorem ordered_lt_implies_le(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, less : lt(x, y)) :
-  FieldLe(F, lt, x, y) {
-  obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
+theorem ordered_lt_implies_le(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, less : lt(x, y)
+) : FieldLe(F, lt, x, y) {
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
   intro backward;
   exact irreflexive(x, transitive(x, y, x, less, backward));
 }
 
-theorem ordered_neg_positive(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, belowZero : lt(x, zero)) :
-  lt(zero, negF(x)) {
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+theorem ordered_neg_positive(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, belowZero : lt(x, zero)
+) : lt(zero, negF(x)) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   obtain (forward, backward) = translate(x, zero, negF(x));
   let shifted = forward(belowZero);
-  let first = transport((fun (v : F) => lt(v, addF(zero, negF(x)))), addF(x, negF(x)), zero,
-    ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x), shifted);
-  exact transport(lt(zero), addF(zero, negF(x)), negF(x), ring_add_zero(F, zero, one, addF, mulF, negF, ring, negF(x)), first);
+  let first =
+    transport(
+      (fun (v : F) => lt(v, addF(zero, negF(x)))), addF(x, negF(x)), zero,
+      ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x), shifted
+    );
+  exact transport(
+    lt(zero), addF(zero, negF(x)), negF(x),
+    ring_add_zero(F, zero, one, addF, mulF, negF, ring, negF(x)), first
+  );
 }
 
-theorem ordered_negative_square(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F) :
-  mulF(negF(x), negF(x)) = mulF(x, x) {
-  exact trans(ring_neg_mul(F, zero, one, addF, mulF, negF, ring, x, negF(x)),
-    trans(cong(negF, ring_mul_neg(F, zero, one, addF, mulF, negF, ring, x, x)), ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(x, x))));
+theorem ordered_negative_square(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F
+) : mulF(negF(x), negF(x)) = mulF(x, x) {
+  exact trans(
+    ring_neg_mul(F, zero, one, addF, mulF, negF, ring, x, negF(x)),
+    trans(
+      cong(negF, ring_mul_neg(F, zero, one, addF, mulF, negF, ring, x, x)),
+      ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(x, x))
+    )
+  );
 }
 
-theorem ordered_square_of_nonnegative(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, aboveZeroWeak : FieldLe(F, lt, zero, x)) :
-  FieldLe(F, lt, zero, mulF(x, x)) {
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+theorem ordered_square_of_nonnegative(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F,
+  aboveZeroWeak : FieldLe(F, lt, zero, x)
+) : FieldLe(F, lt, zero, mulF(x, x)) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   let comparison = weakScale(zero, x, x, aboveZeroWeak, aboveZeroWeak);
-  exact transport((fun (v : F) => FieldLe(F, lt, v, mulF(x, x))), mulF(zero, x), zero,
-    ring_zero_mul(F, zero, one, addF, mulF, negF, ring, x), comparison);
+  exact transport(
+    (fun (v : F) => FieldLe(F, lt, v, mulF(x, x))), mulF(zero, x), zero,
+    ring_zero_mul(F, zero, one, addF, mulF, negF, ring, x), comparison
+  );
 }
 
-theorem ordered_square_of_positive(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, positive : lt(zero, x)) :
-  lt(zero, mulF(x, x)) {
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+theorem ordered_square_of_positive(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, positive : lt(zero, x)
+) : lt(zero, mulF(x, x)) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   obtain (forward, backward) = scale(zero, x, x, positive);
-  exact transport((fun (v : F) => lt(v, mulF(x, x))), mulF(zero, x), zero,
-    ring_zero_mul(F, zero, one, addF, mulF, negF, ring, x), forward(positive));
+  exact transport(
+    (fun (v : F) => lt(v, mulF(x, x))), mulF(zero, x), zero,
+    ring_zero_mul(F, zero, one, addF, mulF, negF, ring, x), forward(positive)
+  );
 }
 
-theorem ordered_square_nonnegative(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F) :
-  FieldLe(F, lt, zero, mulF(x, x)) {
+theorem ordered_square_nonnegative(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F
+) : FieldLe(F, lt, zero, mulF(x, x)) {
   intro negativeSquare;
   have aboveZeroWeak : FieldLe(F, lt, zero, x) {
     intro belowZero;
-    let positiveNeg = ordered_neg_positive(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, belowZero);
-    let nonnegativeNeg = ordered_lt_implies_le(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, negF(x), positiveNeg);
-    let squareNeg = ordered_square_of_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), nonnegativeNeg);
-    let square = transport((fun (v : F) => FieldLe(F, lt, zero, v)), mulF(negF(x), negF(x)), mulF(x, x),
-      ordered_negative_square(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x), squareNeg);
+    let positiveNeg =
+      ordered_neg_positive(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, belowZero
+      );
+    let nonnegativeNeg =
+      ordered_lt_implies_le(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, negF(x), positiveNeg
+      );
+    let squareNeg =
+      ordered_square_of_nonnegative(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), nonnegativeNeg
+      );
+    let square =
+      transport(
+        (fun (v : F) => FieldLe(F, lt, zero, v)), mulF(negF(x), negF(x)), mulF(x, x),
+        ordered_negative_square(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x),
+        squareNeg
+      );
     exact square(negativeSquare);
   }
-  exact ordered_square_of_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, aboveZeroWeak)(negativeSquare);
+  exact ordered_square_of_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, aboveZeroWeak
+  )(negativeSquare);
 }
 
-theorem ordered_square_of_apart(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, apart : FieldApart(F, lt, x, zero)) :
-  lt(zero, mulF(x, x)) {
-  obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
-  exact field_exists_elim((lt(x, zero) or lt(zero, x)), lt(zero, mulF(x, x)), prop(zero, mulF(x, x)),
+theorem ordered_square_of_apart(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F,
+  apart : FieldApart(F, lt, x, zero)
+) : lt(zero, mulF(x, x)) {
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
+  exact field_exists_elim(
+    (lt(x, zero) or lt(zero, x)), lt(zero, mulF(x, x)), prop(zero, mulF(x, x)),
     (fun (side : lt(x, zero) or lt(zero, x)) => match side return lt(zero, mulF(x, x)) {
-      left belowZero => transport(lt(zero), mulF(negF(x), negF(x)), mulF(x, x),
-        ordered_negative_square(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x),
-        ordered_square_of_positive(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), ordered_neg_positive(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, belowZero)));
-      right positive => ordered_square_of_positive(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, positive);
-    }), apart);
+        left belowZero => transport(
+          lt(zero), mulF(negF(x), negF(x)), mulF(x, x),
+          ordered_negative_square(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x),
+          ordered_square_of_positive(
+            F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x),
+            ordered_neg_positive(
+              F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, belowZero
+            )
+          )
+        );
+        right positive => ordered_square_of_positive(
+          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, positive
+        );
+      }), apart
+  );
 }
 
-theorem ordered_positive_plus_nonnegative(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, positive : lt(zero, x), aboveZeroWeak : FieldLe(F, lt, zero, y)) :
-  lt(zero, addF(x, y)) {
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+theorem ordered_positive_plus_nonnegative(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,
+  positive : lt(zero, x), aboveZeroWeak : FieldLe(F, lt, zero, y)
+) : lt(zero, addF(x, y)) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   obtain (forward, backward) = translate(zero, x, y);
-  let shifted = transport((fun (v : F) => lt(v, addF(x, y))), addF(zero, y), y,
-    ring_add_zero(F, zero, one, addF, mulF, negF, ring, y), forward(positive));
+  let shifted =
+    transport(
+      (fun (v : F) => lt(v, addF(x, y))), addF(zero, y), y,
+      ring_add_zero(F, zero, one, addF, mulF, negF, ring, y), forward(positive)
+    );
   exact leLt(zero, y, addF(x, y), aboveZeroWeak, shifted);
 }
 
-theorem ordered_sum_nonnegative(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, nonnegativeX : FieldLe(F, lt, zero, x), nonnegativeY : FieldLe(F, lt, zero, y)) :
-  FieldLe(F, lt, zero, addF(x, y)) {
-  obtain (prop, (irreflexive, (transitive, (cotransitive, antisymmetric)))) = order;
-  obtain (positiveOne, (translate, (scale, (weakScale, (ltLe, (leLt, splitPositive)))))) = arithmetic;
+theorem ordered_sum_nonnegative(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,
+  nonnegativeX : FieldLe(F, lt, zero, x), nonnegativeY : FieldLe(F, lt, zero, y)
+) : FieldLe(F, lt, zero, addF(x, y)) {
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   intro belowZero;
   have nonnegativeSum : FieldLe(F, lt, x, addF(x, y)) {
     intro less;
     obtain (forward, backward) = translate(y, zero, x);
-    let swapped = transport((fun (v : F) => lt(v, addF(zero, x))), addF(x, y), addF(y, x),
-      ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, y),
-      transport(lt(addF(x, y)), x, addF(zero, x), sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, x)), less));
+    let swapped =
+      transport(
+        (fun (v : F) => lt(v, addF(zero, x))), addF(x, y), addF(y, x),
+        ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, y),
+        transport(
+          lt(addF(x, y)), x, addF(zero, x),
+          sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, x)), less
+        )
+      );
     exact nonnegativeY(backward(swapped));
   }
   exact nonnegativeX(leLt(x, addF(x, y), zero, nonnegativeSum, belowZero));

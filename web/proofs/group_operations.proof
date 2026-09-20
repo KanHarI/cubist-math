@@ -1,0 +1,180 @@
+import group_identity;
+
+// The inverse function projects the uniquely determined witness already in
+// the group laws. It does not select from a merely inhabited family.
+def group_inverse(G : Group, x : group_carrier(G)) =
+  sigma_first(
+    group_carrier(G), GroupInverseLaws(group_carrier(G), group_unit(G), group_multiply(G), x),
+    group_inverses_law(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G), x)
+  );
+def group_inverse_laws(G : Group, x : group_carrier(G)) : GroupInverseLaws(
+  group_carrier(G), group_unit(G), group_multiply(G), x, group_inverse(G, x)
+) {
+  exact sigma_second(
+    group_carrier(G), GroupInverseLaws(group_carrier(G), group_unit(G), group_multiply(G), x),
+    group_inverses_law(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G), x)
+  );
+}
+def group_associative(G : Group) =
+  group_associative_law(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G));
+def group_unit_left(G : Group) =
+  group_left_unit_law(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G));
+def group_unit_right(G : Group) =
+  group_right_unit_law(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G));
+theorem group_inverse_left(G : Group, x : group_carrier(G)) : group_multiply(
+  G, group_inverse(G, x), x
+) = group_unit(G) {
+  obtain (leftLaw, rightLaw) = group_inverse_laws(G, x);
+  exact leftLaw;
+}
+theorem group_inverse_right(G : Group, x : group_carrier(G)) : group_multiply(
+  G, x, group_inverse(G, x)
+) = group_unit(G) {
+  obtain (leftLaw, rightLaw) = group_inverse_laws(G, x);
+  exact rightLaw;
+}
+theorem group_inverse_involutive(G : Group, x : group_carrier(G)) : group_inverse(
+  G, group_inverse(G, x)
+) = x {
+  exact group_inverse_unique(
+    group_carrier(G), group_unit(G), group_multiply(G), group_laws(G), group_inverse(G, x),
+    group_inverse(G, group_inverse(G, x)), x, group_inverse_left(G, group_inverse(G, x)),
+    group_inverse_left(G, x)
+  );
+}
+
+theorem group_cancel_left_value(G : Group, a : group_carrier(G), x : group_carrier(G)) : group_multiply(
+  G, group_inverse(G, a), group_multiply(G, a, x)
+) = x {
+  let multiplyLocal = group_multiply(G);
+  exact trans(
+    sym(group_associative(G, group_inverse(G, a), a, x)),
+    trans(
+      cong((fun (z : group_carrier(G)) => multiplyLocal(z, x)), group_inverse_left(G, a)),
+      group_unit_left(G, x)
+    )
+  );
+}
+theorem group_cancel_right_value(G : Group, x : group_carrier(G), a : group_carrier(G)) : group_multiply(
+  G, group_multiply(G, x, a), group_inverse(G, a)
+) = x {
+  exact trans(
+    group_associative(G, x, a, group_inverse(G, a)),
+    trans(cong(group_multiply(G, x), group_inverse_right(G, a)), group_unit_right(G, x))
+  );
+}
+theorem group_cancel_left(
+  G : Group, a : group_carrier(G), x : group_carrier(G), y : group_carrier(G),
+  same : group_multiply(G, a, x) = group_multiply(G, a, y)
+) : x = y {
+  exact trans(
+    sym(group_cancel_left_value(G, a, x)),
+    trans(cong(group_multiply(G, group_inverse(G, a)), same), group_cancel_left_value(G, a, y))
+  );
+}
+theorem group_cancel_right(
+  G : Group, x : group_carrier(G), y : group_carrier(G), a : group_carrier(G),
+  same : group_multiply(G, x, a) = group_multiply(G, y, a)
+) : x = y {
+  exact trans(
+    sym(group_cancel_right_value(G, x, a)),
+    trans(
+      cong((fun (z : group_carrier(G)) => group_multiply(G, z, group_inverse(G, a))), same),
+      group_cancel_right_value(G, y, a)
+    )
+  );
+}
+
+// Conjugation is an actual operation on the group carrier. Its automorphism
+// and path interpretations are derived from these ordinary group laws.
+def group_conjugate(G : Group, g : group_carrier(G), x : group_carrier(G)) =
+  group_multiply(G, group_multiply(G, g, x), group_inverse(G, g));
+
+theorem group_conjugate_unit(G : Group, g : group_carrier(G)) : group_conjugate(G, g, group_unit(G)) = group_unit(
+  G
+) {
+  exact trans(
+    cong(
+      (fun (z : group_carrier(G)) => group_multiply(G, z, group_inverse(G, g))),
+      group_unit_right(G, g)
+    ), group_inverse_right(G, g)
+  );
+}
+
+theorem group_conjugate_multiply(
+  G : Group, g : group_carrier(G), x : group_carrier(G), y : group_carrier(G)
+) : group_conjugate(G, g, group_multiply(G, x, y)) = group_multiply(
+  G, group_conjugate(G, g, x), group_conjugate(G, g, y)
+) {
+  let m = group_multiply(G);
+  let gi = group_inverse(G, g);
+  have cancel : m(gi, m(m(g, y), gi)) = m(y, gi) {
+    exact trans(
+      sym(group_associative(G, gi, m(g, y), gi)),
+      cong((fun (z : group_carrier(G)) => m(z, gi)), group_cancel_left_value(G, g, y))
+    );
+  }
+  exact sym(
+    trans(
+      group_associative(G, m(g, x), gi, m(m(g, y), gi)),
+      trans(
+        cong(m(m(g, x)), cancel),
+        trans(
+          sym(group_associative(G, m(g, x), y, gi)),
+          cong((fun (z : group_carrier(G)) => m(z, gi)), group_associative(G, g, x, y))
+        )
+      )
+    )
+  );
+}
+
+theorem group_conjugate_undo(G : Group, g : group_carrier(G), x : group_carrier(G)) : group_conjugate(
+  G, group_inverse(G, g), group_conjugate(G, g, x)
+) = x {
+  let m = group_multiply(G);
+  let gi = group_inverse(G, g);
+  have cancel : m(gi, m(m(g, x), gi)) = m(x, gi) {
+    exact trans(
+      sym(group_associative(G, gi, m(g, x), gi)),
+      cong((fun (z : group_carrier(G)) => m(z, gi)), group_cancel_left_value(G, g, x))
+    );
+  }
+  exact trans(
+    cong((fun (z : group_carrier(G)) => m(z, group_inverse(G, gi))), cancel),
+    group_cancel_right_value(G, x, gi)
+  );
+}
+
+theorem group_conjugate_redo(G : Group, g : group_carrier(G), x : group_carrier(G)) : group_conjugate(
+  G, g, group_conjugate(G, group_inverse(G, g), x)
+) = x {
+  exact trans(
+    cong(
+      (
+        fun (z : group_carrier(G)) => group_conjugate(
+          G, z, group_conjugate(G, group_inverse(G, g), x)
+        )
+      ), sym(group_inverse_involutive(G, g))
+    ), group_conjugate_undo(G, group_inverse(G, g), x)
+  );
+}
+
+def group_conjugation_iso(G : Group, g : group_carrier(G)) : GroupIso(G, G) {
+  exact (
+    group_conjugate(G, g), group_conjugate(G, group_inverse(G, g)), group_conjugate_undo(G, g),
+    group_conjugate_redo(G, g), group_conjugate_multiply(G, g)
+  );
+}
+
+def IsAbelian(G : Group) =
+  forall x : group_carrier(G), forall y : group_carrier(G),
+  group_multiply(G, x, y) = group_multiply(G, y, x);
+
+theorem abelian_conjugation_trivial(
+  G : Group, abelian : IsAbelian(G), g : group_carrier(G), x : group_carrier(G)
+) : group_conjugate(G, g, x) = x {
+  exact trans(
+    cong((fun (z : group_carrier(G)) => group_multiply(G, z, group_inverse(G, g))), abelian(g, x)),
+    group_cancel_right_value(G, x, g)
+  );
+}

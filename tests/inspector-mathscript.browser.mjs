@@ -6,6 +6,8 @@ import { chromium, webkit } from "playwright";
 
 const server = spawn("python3", [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
   { stdio: ["ignore", "pipe", "pipe"] });
+// Drain request logs: a full stderr pipe blocks the server during long runs.
+server.stderr.resume();
 let browser;
 try {
   const port = await new Promise((resolve, reject) => {
@@ -23,8 +25,18 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1050 } });
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
-  const idle = () => page.waitForFunction(() => !document.querySelector("#check").disabled &&
-    document.querySelector("#check-loader").hidden);
+  const idle = async () => {
+    try {
+      await page.waitForFunction(() => !document.querySelector("#check").disabled &&
+        document.querySelector("#check-loader").hidden);
+    } catch (error) {
+      console.error(await page.evaluate(() => ({ url: location.href,
+        diagnostic: document.querySelector("#diagnostic").textContent,
+        loader: document.querySelector("#check-loader").textContent,
+        status: document.querySelector("#status")?.textContent })), errors);
+      throw error;
+    }
+  };
   const inspect = async name => {
     await page.locator(`#definitions [data-name="${name}"]`).click();
     await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
@@ -32,11 +44,32 @@ try {
   };
   await page.goto(`http://127.0.0.1:${port}/proof.html?proof=euclid`);
   await idle();
-  await page.locator('.source-line[data-line="16"] [data-name="bounded"]').click();
+  await page.locator('.source-line [data-name="prime_divisor_exists"]').first().click();
+  await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+  assert.match(await page.locator("#inspect-description").textContent(),
+    /A least divisor of m greater than one is prime/);
+  await page.locator("#view-source").click();
+  await idle();
+  await inspect("prime_divisor_exists");
+  assert.match(await page.locator("#inspect-description").textContent(),
+    /A least divisor of m greater than one is prime/);
+  const documentedSource = await page.locator("#editor").inputValue();
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(documentedSource.replace(
+    "// Prime divisor.", "// Updated documentation: <em>literal source text</em>."));
+  await page.locator("#check").click();
+  await idle();
+  await inspect("prime_divisor_exists");
+  assert.match(await page.locator("#inspect-description").textContent(),
+    /Updated documentation: <em>literal source text<\/em>\./);
+  assert.equal(await page.locator("#inspect-description em").count(), 0);
+  await page.goto(`http://127.0.0.1:${port}/proof.html?proof=euclid`);
+  await idle();
+  await page.locator('.source-line [data-name="bounded"]').first().click();
   await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
   await page.locator("#kernel-type").scrollIntoViewIfNeeded();
   assert.equal(await page.locator("#kernel-expression").textContent(), "bounded");
-  assert.equal(await page.locator("#kernel-type").textContent(), "le(succ(succ(i)),n)");
+  assert.equal(await page.locator("#kernel-type").textContent(), "le(add(2,i),n)");
   assert.equal(await page.locator('#kernel-type [data-name="le"]').count(), 1);
   assert.match(await page.locator("#kernel-inference").textContent(), /3 open assumptions/);
   assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
@@ -52,18 +85,18 @@ try {
   };
   await checkMathBounds("#kernel-type");
   assert.deepEqual(await page.locator("#kernel-context-list > li").evaluateAll(rows => rows.map(row => row.dataset.name)), ["n", "i", "bounded"]);
-  assert.deepEqual(await page.locator("#kernel-context-list .kernel-context-type").allTextContents(), ["Nat", "Nat", "le(succ(succ(i)),n)"]);
+  assert.deepEqual(await page.locator("#kernel-context-list .kernel-context-type").allTextContents(), ["Nat", "Nat", "le(add(2,i),n)"]);
   await page.locator("#kernel-premises button").first().click();
   await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
   assert.deepEqual(await page.locator("#kernel-context-list > li").evaluateAll(rows => rows.map(row => row.dataset.name)), ["n", "i"]);
   assert.equal(await page.locator("#kernel-expression").textContent(), "Context assumption");
-  await page.locator('.source-line[data-line="16"] [data-name="bounded"]').click();
+  await page.locator('.source-line [data-name="bounded"]').first().click();
   await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
   await page.locator('#kernel-type [data-name="i"]').click();
   await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "i" && !document.querySelector("#kernel-view").disabled);
   await page.locator("#view-source").click();
-  assert.equal(await page.locator('.source-line[data-line="10"]').evaluate(row => row.classList.contains("active")), true);
-  await page.locator('.source-line[data-line="16"] [data-name="bounded"]').click();
+  assert.equal(await page.locator('.source-line').filter({ hasText: 'obtain (i,' }).evaluate(row => row.classList.contains("active")), true);
+  await page.locator('.source-line [data-name="bounded"]').first().click();
   await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
   await page.screenshot({path:"/private/tmp/thth-bounded-folded.png",fullPage:true});
   for (const name of ["nat_le_total", "prime_divisor_exists", "factorial"]) {
@@ -117,8 +150,8 @@ try {
     await page.locator(`#open-kernel-${side}`).click();
     const workbench = await popup;
     workbench.on("pageerror", error => errors.push(error.message));
-    await workbench.waitForURL(/index\.html/);
-    await workbench.waitForFunction(() => document.querySelector("#active-name").textContent.includes("_folded_") &&
+    await workbench.waitForURL(/workbench\.html/);
+    await workbench.waitForFunction(() => document.querySelector("#active-name").dataset.binding?.includes("_folded_") &&
       document.querySelector("#status").textContent === "WASM ready");
     assert.equal(await workbench.locator("#error").isVisible(), false);
     assert.equal(await workbench.locator("#axioms").isChecked(), false);
@@ -126,7 +159,7 @@ try {
     return workbench;
   };
   const workbench = await openWorkbench("expression");
-  assert.equal(await workbench.locator("#active-name").textContent(), "InfinitelyManyPrimes_folded_expression");
+  assert.equal(await workbench.locator("#active-name").textContent(), "InfinitelyManyPrimes");
   await workbench.locator('#expression [data-declaration="Prime"]').click({ modifiers: ["Shift"] });
   await workbench.locator("#result-name").fill("expanded_prime");
   await workbench.locator("#unfold").click();
@@ -143,7 +176,7 @@ try {
   assert.equal(await workbench.locator("#used-axioms").textContent(), "None");
   await workbench.close();
   const typeWorkbench = await openWorkbench("type");
-  assert.equal(await typeWorkbench.locator("#active-name").textContent(), "InfinitelyManyPrimes_folded_type");
+  assert.equal(await typeWorkbench.locator("#active-name").textContent(), "InfinitelyManyPrimes (type)");
   assert.equal(await typeWorkbench.locator("#expression").textContent(), "U0");
   await typeWorkbench.close();
 
@@ -173,7 +206,7 @@ try {
   await inspect("Prime");
   assert.equal(await page.locator("#kernel-expression math").count(), 1);
   await page.locator("#kernel-view").selectOption("mathscript");
-  assert.match(await page.locator("#kernel-expression").innerText(), /^fun \(p : Nat\) => .*Divides/);
+  assert.match(await page.locator("#kernel-expression").innerText(), /^fun \(p : Nat\) => .*Divides/s);
   await page.locator("#edit-mode").click();
   await page.locator("#editor").fill("def InfinitelyManyPrimes : Void { exact tt; }");
   await page.locator("#check").click();
@@ -206,6 +239,8 @@ try {
   await idle();
   await inspect("classical_complex_nonzero_inverse");
   assert.equal(await page.locator("#kernel-type math").count(), 1);
+  assert.equal(await page.locator("#kernel-type mtable > mtr").count(), 14);
+  await page.locator("#kernel-group-binders").check();
   assert.ok(await page.locator("#kernel-type mtable > mtr").count() < 14);
   await page.locator("#kernel-group-binders").uncheck();
   assert.equal(await page.locator("#kernel-type mtable > mtr").count(), 14);
@@ -220,7 +255,7 @@ try {
 
   await page.goto(`http://127.0.0.1:${port}/proof.html?proof=sample_join_conditions`);
   await idle();
-  await page.locator('.source-line[data-line="6"] [data-name="condition"]').first().click();
+  await page.locator('.source-line [data-name="condition"]').first().click();
   await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "condition" && !document.querySelector("#kernel-view").disabled);
   assert.deepEqual(await page.locator("#kernel-context-list > li").evaluateAll(rows => rows.map(row => row.dataset.name)), ["C", "condition"]);
   assert.deepEqual(await page.locator("#kernel-context-list .kernel-context-type").allTextContents(), ["𝒰1", "C→C→C→𝒰0"]);
@@ -232,7 +267,7 @@ try {
   await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "C" && !document.querySelector("#kernel-view").disabled);
   assert.equal(await page.locator("#kernel-type").textContent(), "𝒰1");
   await page.locator("#view-source").click();
-  assert.equal(await page.locator('.source-line[data-line="6"]').evaluate(row => row.classList.contains("active")), true);
+  assert.equal(await page.locator('.source-line').filter({ has: page.locator('[data-name="condition"]') }).first().evaluate(row => row.classList.contains("active")), true);
   await page.locator("#back").click();
   await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "condition" && !document.querySelector("#kernel-view").disabled);
   await page.locator('#kernel-type [data-name="C"]').first().click();
@@ -243,10 +278,10 @@ try {
   await idle();
   await inspect("FieldExists");
   assert.equal(await page.locator("#kernel-truncation-sugar").isChecked(), true);
-  assert.equal(await page.locator("#kernel-expression").textContent(), "λx0.‖x0‖");
+  assert.equal(await page.locator("#kernel-expression").textContent(), "λA.‖A‖");
   const checkedResult = await page.locator("#result").textContent();
   await page.locator("#kernel-truncation-sugar").uncheck();
-  assert.match(await page.locator("#kernel-expression").textContent(), /λx0\.TruncateAtAxiom [0-9]+\(𝒰1,x0\)/);
+  assert.match(await page.locator("#kernel-expression").textContent(), /λA\.TruncateAtAxiom [0-9]+\(𝒰1,A\)/);
   assert.doesNotMatch(await page.locator("#kernel-expression").textContent(), /Axiom\(\)/);
   const truncation = page.locator('#kernel-expression [data-axiom="lib_Trunc"]');
   assert.equal(await truncation.count(), 1);
@@ -261,7 +296,7 @@ try {
   await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "FieldExists" && !document.querySelector("#kernel-view").disabled);
   assert.equal(await page.locator("#kernel-truncation-sugar").isChecked(), false);
   await page.locator("#kernel-truncation-sugar").check();
-  assert.equal(await page.locator("#kernel-expression").textContent(), "λx0.‖x0‖");
+  assert.equal(await page.locator("#kernel-expression").textContent(), "λA.‖A‖");
   assert.equal(await page.locator("#result").textContent(), checkedResult);
   await page.locator('#kernel-expression [data-axiom="lib_Trunc"]').first().click();
   await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "lib_Trunc" && !document.querySelector("#kernel-view").disabled);
@@ -269,7 +304,9 @@ try {
   await page.goto(`http://127.0.0.1:${port}/proof.html?proof=field_interval`);
   await idle();
   await inspect("FieldUnitInterval");
-  assert.equal(await page.locator("#kernel-group-binders").isChecked(), true);
+  assert.equal(await page.locator("#kernel-group-binders").isChecked(), false);
+  assert.equal(await page.locator("#kernel-type [data-binder-group]").count(), 0);
+  await page.locator("#kernel-group-binders").check();
   assert.equal(await page.locator('#kernel-type [data-binder-group="zero,one,lt"]').count(), 1);
   assert.match(await page.locator("#kernel-type").textContent(), /Π\(zero,one:F;lt:F→F→𝒰0\)\./);
   assert.equal(await page.locator("#kernel-type mtable > mtr").count(), 3);
@@ -285,6 +322,19 @@ try {
   assert.equal(await page.locator('#kernel-type [data-binder-group="zero,one,lt"]').count(), 1);
   assert.equal(await page.locator("#kernel-truncation-sugar").isChecked(), false);
   assert.equal(await page.locator("#result").textContent(), groupingResult);
+
+  await page.goto(`http://127.0.0.1:${port}/proof.html?proof=group_univalence`);
+  await idle();
+  await inspect("group_isomorphism_is_equality");
+  assert.deepEqual(await page.locator("#inspect-axioms [data-axiom]")
+    .evaluateAll(nodes => nodes.map(n => n.dataset.axiom).sort()), ["lib_funext", "lib_univalence"]);
+  await page.locator('#read-source [data-name="ua"]').first().click();
+  assert.match(await page.locator("#view-source").getAttribute("href"), /name=lib_ua(?:&|$)/);
+  await page.locator('#read-source [data-name="same"]').first().click();
+  await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+  assert.equal(await page.locator('#kernel-type [data-name="group_isotoid"]').count(), 2);
+  assert.equal(await page.locator('#kernel-type [data-name="Group"]').count(), 1);
+  assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
 
   assert.deepEqual(errors, []);
   console.log("Certified mathematical kernel view, definition/source navigation, workbench export/unfold/reduce, source/raw views, checked snapshots, and full expansion passed.");

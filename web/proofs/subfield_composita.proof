@@ -1,0 +1,169 @@
+import generated_subfields;
+
+// The ambient field and its two actual subfields are explicit. No tensor
+// product, selected embedding, or change of ambient field is hidden here.
+def SubfieldUnion(F : AlgebraicField, S : Subfield(F), T : Subfield(F), x : af_carrier(F)) =
+  subfield_members(F, S, x) or subfield_members(F, T, x);
+def compositum(F : AlgebraicField, S : Subfield(F), T : Subfield(F)) =
+  generated_subfield(F, SubfieldUnion(F, S, T));
+
+theorem compositum_contains_left(F : AlgebraicField, S : Subfield(F), T : Subfield(F)) : SubfieldIncluded(
+  F, S, compositum(F, S, T)
+) {
+  intro x;
+  intro member;
+  exact generated_field_contains(
+    F, SubfieldUnion(F, S, T), x, typed(SubfieldUnion(F, S, T, x), left(member))
+  );
+}
+theorem compositum_contains_right(F : AlgebraicField, S : Subfield(F), T : Subfield(F)) : SubfieldIncluded(
+  F, T, compositum(F, S, T)
+) {
+  intro x;
+  intro member;
+  exact generated_field_contains(
+    F, SubfieldUnion(F, S, T), x, typed(SubfieldUnion(F, S, T, x), right(member))
+  );
+}
+
+// The compositum is the least upper bound of its two subfields.
+theorem compositum_least(
+  F : AlgebraicField, S : Subfield(F), T : Subfield(F), V : Subfield(F),
+  sv : SubfieldIncluded(F, S, V), tv : SubfieldIncluded(F, T, V)
+) : SubfieldIncluded(F, compositum(F, S, T), V) {
+  have includesUnion : PredicateIncluded(
+    af_carrier(F), SubfieldUnion(F, S, T), subfield_members(F, V)
+  ) {
+    intro x;
+    intro member;
+    cases typed(SubfieldUnion(F, S, T, x), member) {
+      left inS => {
+        exact sv(x, inS);
+      }
+      right inT => {
+        exact tv(x, inT);
+      }
+    }
+  }
+  exact generated_subfield_least(F, SubfieldUnion(F, S, T), V, includesUnion);
+}
+
+theorem compositum_monotone(
+  F : AlgebraicField, S : Subfield(F), T : Subfield(F), S2 : Subfield(F), T2 : Subfield(F),
+  ss : SubfieldIncluded(F, S, S2), tt2 : SubfieldIncluded(F, T, T2)
+) : SubfieldIncluded(F, compositum(F, S, T), compositum(F, S2, T2)) {
+  exact compositum_least(
+    F, S, T, compositum(F, S2, T2),
+    subfield_inclusion_trans(
+      F, S, S2, compositum(F, S2, T2), ss, compositum_contains_left(F, S2, T2)
+    ),
+    subfield_inclusion_trans(
+      F, T, T2, compositum(F, S2, T2), tt2, compositum_contains_right(F, S2, T2)
+    )
+  );
+}
+
+// Universal properties identify the resulting bundles via univalent subfield
+// extensionality; the finite derivations themselves need not be identical.
+theorem compositum_commutative(F : AlgebraicField, S : Subfield(F), T : Subfield(F)) : compositum(
+  F, S, T
+) =[Subfield(F)] compositum(F, T, S) {
+  exact subfield_inclusion_antisymmetric(
+    F, compositum(F, S, T), compositum(F, T, S),
+    compositum_least(
+      F, S, T, compositum(F, T, S), compositum_contains_right(F, T, S),
+      compositum_contains_left(F, T, S)
+    ),
+    compositum_least(
+      F, T, S, compositum(F, S, T), compositum_contains_right(F, S, T),
+      compositum_contains_left(F, S, T)
+    )
+  );
+}
+
+theorem compositum_idempotent(F : AlgebraicField, S : Subfield(F)) : compositum(F, S, S) =[
+  Subfield(F)
+] S {
+  exact subfield_inclusion_antisymmetric(
+    F, compositum(F, S, S), S,
+    compositum_least(F, S, S, S, subfield_inclusion_refl(F, S), subfield_inclusion_refl(F, S)),
+    compositum_contains_left(F, S, S)
+  );
+}
+
+theorem compositum_associate_inclusion(
+  F : AlgebraicField, S : Subfield(F), T : Subfield(F), V : Subfield(F)
+) : SubfieldIncluded(
+  F, compositum(F, compositum(F, S, T), V), compositum(F, S, compositum(F, T, V))
+) {
+  let TV = compositum(F, T, V);
+  let target = compositum(F, S, TV);
+  let includesT =
+    subfield_inclusion_trans(
+      F, T, TV, target, compositum_contains_left(F, T, V), compositum_contains_right(F, S, TV)
+    );
+  let includesV =
+    subfield_inclusion_trans(
+      F, V, TV, target, compositum_contains_right(F, T, V), compositum_contains_right(F, S, TV)
+    );
+  exact compositum_least(
+    F, compositum(F, S, T), V, target,
+    compositum_least(F, S, T, target, compositum_contains_left(F, S, TV), includesT), includesV
+  );
+}
+
+theorem compositum_unassociate_inclusion(
+  F : AlgebraicField, S : Subfield(F), T : Subfield(F), V : Subfield(F)
+) : SubfieldIncluded(
+  F, compositum(F, S, compositum(F, T, V)), compositum(F, compositum(F, S, T), V)
+) {
+  let ST = compositum(F, S, T);
+  let target = compositum(F, ST, V);
+  let includesS =
+    subfield_inclusion_trans(
+      F, S, ST, target, compositum_contains_left(F, S, T), compositum_contains_left(F, ST, V)
+    );
+  let includesT =
+    subfield_inclusion_trans(
+      F, T, ST, target, compositum_contains_right(F, S, T), compositum_contains_left(F, ST, V)
+    );
+  exact compositum_least(
+    F, S, compositum(F, T, V), target, includesS,
+    compositum_least(F, T, V, target, includesT, compositum_contains_right(F, ST, V))
+  );
+}
+
+theorem compositum_associative(
+  F : AlgebraicField, S : Subfield(F), T : Subfield(F), V : Subfield(F)
+) : compositum(F, compositum(F, S, T), V) =[Subfield(F)] compositum(F, S, compositum(F, T, V)) {
+  exact subfield_inclusion_antisymmetric(
+    F, compositum(F, compositum(F, S, T), V), compositum(F, S, compositum(F, T, V)),
+    compositum_associate_inclusion(F, S, T, V), compositum_unassociate_inclusion(F, S, T, V)
+  );
+}
+
+// Generating from an already closed predicate recovers the same subfield.
+theorem generated_subfield_of_subfield(F : AlgebraicField, S : Subfield(F)) : generated_subfield(
+  F, subfield_members(F, S)
+) =[Subfield(F)] S {
+  exact subfield_inclusion_antisymmetric(
+    F, generated_subfield(F, subfield_members(F, S)), S,
+    generated_subfield_least(F, subfield_members(F, S), S, subfield_inclusion_refl(F, S)),
+    generated_field_contains(F, subfield_members(F, S))
+  );
+}
+
+// The prime subfield is generated by no additional elements.
+def prime_subfield(F : AlgebraicField) = generated_subfield(F, (fun (x : af_carrier(F)) => Void));
+theorem prime_subfield_least(F : AlgebraicField, S : Subfield(F)) : SubfieldIncluded(
+  F, prime_subfield(F), S
+) {
+  exact generated_subfield_least(
+    F, (fun (x : af_carrier(F)) => Void), S,
+    (
+      fun (x : af_carrier(F)) => fun (impossible : Void) => typed(
+        subfield_members(F, S, x), absurd(impossible)
+      )
+    )
+  );
+}

@@ -3,24 +3,28 @@ import loop_words;
 
 // Transfer unit and composition laws from representatives to identity loops.
 // Mere coverage suffices because each equality of values is a proposition.
-theorem descended_loop_map_laws(C : U1, X : U0, point : X, G : U1,
-  setG : FieldSet(G), unit : G, multiply : G -> G -> G,
-  present : C -> (point = point), covered : (forall p : point = point, FieldExists(exists c : C, present(c) = p)),
-  value : C -> G, period : (point = point) -> G, computes : (forall c : C, period(present(c)) = value(c)),
-  constant : C, constantPath : present(constant) = refl(point), constantValue : value(constant) = unit,
-  join : C -> C -> C,
-  joinPath : (forall c : C, forall d : C, present(join(c, d)) = append_path(X, point, point, point, present(c), present(d))),
-  joinValue : (forall c : C, forall d : C, value(join(c, d)) = multiply(value(c), value(d)))) :
-  LoopMapLaws(X, point, G, unit, multiply, period) {
+theorem descended_loop_map_laws(
+  C : U1, X : U0, point : X, G : U1, setG : FieldSet(G), unit : G, multiply : G -> G -> G,
+  present : C -> (point = point),
+  covered : (forall p : point = point, FieldExists(exists c : C, present(c) = p)), value : C -> G,
+  period : (point = point) -> G, computes : (forall c : C, period(present(c)) = value(c)),
+  constant : C, constantPath : present(constant) = refl(point),
+  constantValue : value(constant) = unit, join : C -> C -> C,
+  joinPath : (
+    forall c : C, forall d : C,
+    present(join(c, d)) = append_path(X, point, point, point, present(c), present(d))
+  ), joinValue : (forall c : C, forall d : C, value(join(c, d)) = multiply(value(c), value(d)))
+) : LoopMapLaws(X, point, G, unit, multiply, period) {
   have unitLaw : period(refl(point)) = unit {
     exact trans(sym(cong(period, constantPath)), trans(computes(constant), constantValue));
   }
   have multiplyLaw : forall p : point = point, forall q : point = point,
-    period(append_path(X, point, point, point, p, q)) = multiply(period(p), period(q)) {
+  period(append_path(X, point, point, point, p, q)) = multiply(period(p), period(q)) {
     intro p;
     intro q;
     let result = period(append_path(X, point, point, point, p, q)) = multiply(period(p), period(q));
-    let resultProp = setG(period(append_path(X, point, point, point, p, q)), multiply(period(p), period(q)));
+    let resultProp =
+      setG(period(append_path(X, point, point, point, p, q)), multiply(period(p), period(q)));
     have useLeft : (exists c : C, present(c) = p) -> result {
       intro leftRepresentative;
       obtain (c, pathC) = leftRepresentative;
@@ -28,16 +32,39 @@ theorem descended_loop_map_laws(C : U1, X : U0, point : X, G : U1,
         intro rightRepresentative;
         obtain (d, pathD) = rightRepresentative;
         have joined : present(join(c, d)) = append_path(X, point, point, point, p, q) {
-          exact trans(joinPath(c, d),
-            trans(cong((fun (r : point = point) => append_path(X, point, point, point, r, present(d))), pathC),
-              cong(append_path(X, point, point, point, p), pathD)));
+          exact trans(
+            joinPath(c, d),
+            trans(
+              cong(
+                (fun (r : point = point) => append_path(X, point, point, point, r, present(d))),
+                pathC
+              ), cong(append_path(X, point, point, point, p), pathD)
+            )
+          );
         }
-        have valueC : value(c) = period(p) { exact trans(sym(computes(c)), cong(period, pathC)); }
-        have valueD : value(d) = period(q) { exact trans(sym(computes(d)), cong(period, pathD)); }
-        exact trans(sym(cong(period, joined)), trans(computes(join(c, d)),
-          trans(joinValue(c, d), trans(cong((fun (v : G) => multiply(v, value(d))), valueC), cong(multiply(period(p)), valueD)))));
+        have valueC : value(c) = period(p) {
+          exact trans(sym(computes(c)), cong(period, pathC));
+        }
+        have valueD : value(d) = period(q) {
+          exact trans(sym(computes(d)), cong(period, pathD));
+        }
+        exact trans(
+          sym(cong(period, joined)),
+          trans(
+            computes(join(c, d)),
+            trans(
+              joinValue(c, d),
+              trans(
+                cong((fun (v : G) => multiply(v, value(d))), valueC),
+                cong(multiply(period(p)), valueD)
+              )
+            )
+          )
+        );
       }
-      exact field_exists_elim((exists d : C, present(d) = q), result, resultProp, useRight, covered(q));
+      exact field_exists_elim(
+        (exists d : C, present(d) = q), result, resultProp, useRight, covered(q)
+      );
     }
     exact field_exists_elim((exists c : C, present(c) = p), result, resultProp, useLeft, covered(p));
   }

@@ -36,6 +36,7 @@ static proof_tuple proof_variables(tt_engine *e, proof_tuple contexts) {
         out.v[i] = proof_variable(e, contexts.v[i]);
     return out;
 }
+#include "univalence_generated.inc"
 #include "proofs_generated.inc"
 
 bool tt_prove_composition(tt_engine *e, tt_id *proposition, tt_id *proof) {
@@ -86,7 +87,7 @@ static bool load_builtins(tt_engine *e, bool full) {
     if (!add_builtin(e, p_define_is_trunc(e)) || !add_builtin(e, p_define_is_set(e)) ||
         !add_tuple(e, p_define_propositional_truncation(e), 4) ||
         !add_builtin(e, p_define_lem(e)) || !add_builtin(e, p_define_aoc(e)) ||
-        !add_tuple(e, p_define_pr(e), 2) || !add_tuple(e, p_define_homotopy(e), 14) ||
+        !add_tuple(e, p_define_pr(e), 2) || !add_tuple(e, p_define_homotopy(e), 15) ||
         !add_builtin(e, p_define_based_path_induction(e)) || !add_tuple(e, p_define_two(e), 6) ||
         !add_builtin(e, p_define_unit_prop_unique(e)) ||
         !add_builtin(e, p_define_pi_void_unique(e)) || !add_tuple(e, p_define_wnat(e), 3) ||
@@ -99,10 +100,15 @@ static bool load_builtins(tt_engine *e, bool full) {
 bool tt_load_builtins(tt_engine *e, bool full) {
     if (!e)
         return false;
-    uint32_t limit = e->conf.max_expression_nodes;
+    /* Library proof assembly uses more temporary binders than a small proof client
+     * search. Restore both caller limits after the checked construction. */
+    uint32_t limit = e->conf.max_expression_nodes, counter_limit = e->conf.max_counter;
     e->conf.max_expression_nodes = 0;
+    if (e->conf.max_counter < 16384)
+        e->conf.max_counter = 16384;
     bool ok = load_builtins(e, full);
     e->conf.max_expression_nodes = limit;
+    e->conf.max_counter = counter_limit;
     return ok;
 }
 bool tt_run_proof_suite(tt_engine *e, FILE *report) {

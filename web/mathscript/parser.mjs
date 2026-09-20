@@ -50,6 +50,24 @@ export function parse(source, typeOnly = false) {
     "+": 5,
     "*": 6,
   };
+  // Tuples are notation for right-associated binary dependent pairs. Preserve
+  // the delimiter locations for macro inspection; elaboration sees only pairs.
+  function tuple(open, first, item) {
+    const items = [first];
+    while (peek() === ",") { take(","); items.push(item()); }
+    const close = take(")");
+    if (items.length === 1) return { ...first, start: open.start, end: close.end };
+    if (items.length === 2)
+      return { kind: "pair", left: items[0], right: items[1], start: open.start, end: close.end };
+    if (depth + items.length > 128)
+      throw Object.assign(new Error("Expanded tuple nesting exceeds 128."), { offset: open.start });
+    let result = items.at(-1);
+    for (let j = items.length - 2; j >= 0; j--)
+      result = { kind: "pair", left: items[j], right: result,
+        start: items[j].start, end: result.end, syntheticTuplePair: j !== 0 };
+    return { ...result, start: open.start, end: close.end,
+      tupleStart: open.start, tupleEnd: close.start };
+  }
   function expr(min = 0) {
     if (++depth > 128)
       throw Object.assign(new Error("Expression nesting exceeds 128."), {
@@ -173,14 +191,7 @@ export function parse(source, typeOnly = false) {
         end: body.end,
       };
     } else if (t.text === "(") {
-      a = expr();
-      if (peek() === ",") {
-        take(",");
-        const right = expr();
-        a = { kind: "pair", left: a, right, start: t.start };
-      }
-      const end = take(")");
-      a = { ...a, start: t.start, end: end.end };
+      a = tuple(t, expr(), () => expr());
     } else if (/^[0-9]+$/.test(t.text)) {
       if (Number(t.text) > 256)
         throw Object.assign(
@@ -240,12 +251,10 @@ export function parse(source, typeOnly = false) {
       });
     let p;
     if (peek() === "(") {
-      const t = take("("),
-        left = pattern();
-      take(",");
-      const right = pattern(),
-        e = take(")");
-      p = { kind: "pair", left, right, start: t.start, end: e.end };
+      const t = take("("), left = pattern();
+      if (peek() !== ",")
+        throw Object.assign(new Error("A pair pattern needs at least two components."), { offset: t.start });
+      p = tuple(t, left, pattern);
     } else {
       const t = name();
       p = { kind: "name", name: t.text, start: t.start, end: t.end };

@@ -73,6 +73,11 @@ the relevant mutation and implementation regressions. Plain `npm test` runs
 the complete regression suite for the final check; `npm run test:browser` runs
 the browser checks separately.
 
+Format all bundled MathScript sources with `npm run format:mathscript`.
+Pass file paths to format selected sources, or add `--check` to report formatting
+differences without writing. The formatter automatically flattens right-nested tuples, verifies equality
+of their expanded ASTs, and preserves comments. All other changes are whitespace.
+
 MathScript offers separate `--reuse-normal-forms` and `--memoize-instructions`
 flags for selected proof checks and `cli/repl.mjs`, with matching proof-viewer
 toggles near the top. Both default on; add `no-` after `--` to disable an option
@@ -104,7 +109,7 @@ extension implements general suspension rules only.
 The [group structure identity development](docs/group_identity.md) proves
 `(G = H) ≃ GroupIso(G, H)` for bundled small groups, with both canonical inverse
 laws. Univalence then gives the equality of types
-`GroupIso(G, H) =[U1] (G =[GroupType] H)`. Applying the structure identity result
+`GroupIso(G, H) =[U1] (G =[Group] H)`. Applying the structure identity result
 to the winding isomorphism gives an actual equality of the
 circle loop group and the integer group. It uses univalence and function
 extensionality, without choice or excluded middle.

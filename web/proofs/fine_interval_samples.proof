@@ -3,31 +3,66 @@ import dyadic_decay;
 
 // Ordinary data for one sufficiently fine dyadic subdivision. The existence
 // theorem below deliberately keeps the Archimedean witness truncated.
-def FineIntervalSamples(F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F, a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt)) =
+def FineIntervalSamples(
+  F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
+  a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt)
+) =
   exists depth : Nat, exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
-    (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth)) and
-    IntervalAdmissibleTags(F, zero, one, lt, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece), subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece), subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, piece)) and
-    IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece), subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece));
+  (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
+  and IntervalAdmissibleTags(
+    F, zero, one, lt, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
+    subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece),
+    subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, piece)
+  )
+  and IntervalMeshBelow(
+    F, zero, one, addF, negF, lt, mesh,
+    subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
+    subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece)
+  );
 
 // Every weakly ordered interval has arbitrarily fine admissible finite
 // samples. Midpoints, tags, counts and widths are all supplied by checked
 // constructions. Neither a partition oracle nor choice/LEM is assumed.
-theorem archimedean_interval_fine_samples(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), archimedean : Archimedean(F, zero, one, addF, lt), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
-  ordered : FieldLe(F, lt, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b)), mesh : F, positiveMesh : lt(zero, mesh)) :
-  FieldExists(FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b)) {
+theorem archimedean_interval_fine_samples(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  inverses : FieldInverses(F, zero, one, mulF, lt),
+  archimedean : Archimedean(F, zero, one, addF, lt), a : FieldUnitInterval(F, zero, one, lt),
+  b : FieldUnitInterval(F, zero, one, lt),
+  ordered : FieldLe(
+    F, lt, field_interval_coordinate(F, zero, one, lt)(a),
+    field_interval_coordinate(F, zero, one, lt)(b)
+  ), mesh : F, positiveMesh : lt(zero, mesh)
+) : FieldExists(FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b)) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let width = interval_difference(F, zero, one, addF, negF, lt, a, b);
-  let nonnegativeWidth = field_difference_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b), ordered);
-  obtain (half, (halfSum, halfPositive)) = ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
-  let smallWidth = dyadic_width_arbitrarily_small(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses, archimedean, width, nonnegativeWidth, mesh, positiveMesh);
+  let nonnegativeWidth =
+    field_difference_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic,
+      field_interval_coordinate(F, zero, one, lt)(a),
+      field_interval_coordinate(F, zero, one, lt)(b), ordered
+    );
+  obtain (half, halfSum, halfPositive) = ordered_field_halving(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
+  );
+  let smallWidth =
+    dyadic_width_arbitrarily_small(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses,
+      archimedean, width, nonnegativeWidth, mesh, positiveMesh
+    );
   let A = (exists depth : Nat, lt(dyadic_width(F, half, depth, width), mesh));
   let B = FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b);
   have mapping : A -> B {
     intro data;
     obtain (depth, small) = data;
-    exact (depth, dyadic_interval_samples_fine(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered, mesh, small));
+    exact (
+      depth,
+      dyadic_interval_samples_fine(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
+        ordered, mesh, small
+      )
+    );
   }
   exact field_exists_map(A, B, mapping, smallWidth);
 }

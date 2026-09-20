@@ -1,7 +1,8 @@
 import { compileConstruction } from "./construction.mjs";
 import { Builder } from "./builder.mjs";
 import { parse } from "./parser.mjs";
-import { declarationNotation, inferredType } from "./notation.mjs";
+import { leadingDocumentation } from "./documentation.mjs";
+import { declarationNotation, inferredType, notationFromSyntax } from "./notation.mjs";
 import { declarations } from "./library.mjs";
 import preludeLibrary from "../proofs/library.mjs";
 import { MAX_STEPS } from "../language.mjs";
@@ -91,7 +92,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
         needed.add(name);
         [...step.args, ...step.free, step.context].forEach(need);
       }
-      ["lib_univalence", "lib_ua_elim", "lib_funext", "lib_isEquiv"].forEach(
+      ["lib_univalence", "lib_ua", "lib_ua_elim", "lib_ua_unique", "lib_AreEquiv", "lib_funext", "lib_isEquiv"].forEach(
         need,
       );
       if (usesTruncation)
@@ -185,6 +186,23 @@ export function compile(module, source, library, { onProgress, optimizations = {
       );
     }
     const instantiated = new Map();
+    const operand = text => {
+      if (/^[A-Za-z_][A-Za-z_0-9]*$/.test(text)) return text;
+      // Names and complete applications are atomic. Check only the outer
+      // delimiters here: reparsing every inferred type is needlessly expensive.
+      const prefix = text.match(/^(?:[A-Za-z_][A-Za-z_0-9]*)?\(/);
+      if (prefix) {
+        let depth = 0, complete = true;
+        for (let i = prefix[0].length - 1; i < text.length; i++) {
+          if (text[i] === "(") depth++;
+          else if (text[i] === ")") depth--;
+          else if (!depth && !/\s/.test(text[i])) { complete = false; break; }
+          if (depth < 0) { complete = false; break; }
+        }
+        if (complete && !depth) return text;
+      }
+      return `(${text})`;
+    };
     function pi(A, body, label = "_") {
       const x = b.fresh(A.j),
         C = body(val(x.v, A, label));
@@ -196,9 +214,9 @@ export function compile(module, source, library, { onProgress, optimizations = {
         template: C,
         body: (a) => instantiateType(C, [{ ...x, label }], [a]),
         pretty:
-          label === "_"
-            ? `${A.pretty} -> ${C.pretty}`
-            : `forall ${label} : ${A.pretty}, ${C.pretty}`,
+          label === "_" && !b.k.list(b.view(C.j, 2), true).includes(b.k.bindings.get(x.c).id)
+            ? `${operand(A.pretty)} -> ${operand(C.pretty)}`
+            : `forall ${label} : ${operand(A.pretty)}, ${C.pretty}`,
       };
     }
     function sigma(A, body, label = "_") {
@@ -212,9 +230,9 @@ export function compile(module, source, library, { onProgress, optimizations = {
         template: C,
         body: (a) => instantiateType(C, [{ ...x, label }], [a]),
         pretty:
-          label === "_"
-            ? `${A.pretty} and ${C.pretty}`
-            : `exists ${label} : ${A.pretty}, ${C.pretty}`,
+          label === "_" && !b.k.list(b.view(C.j, 2), true).includes(b.k.bindings.get(x.c).id)
+            ? `${operand(A.pretty)} and ${operand(C.pretty)}`
+            : `exists ${label} : ${operand(A.pretty)}, ${C.pretty}`,
       };
     }
     const numeralCache = [val(op("NatIntroZ"), nat, "0")];
@@ -245,13 +263,16 @@ export function compile(module, source, library, { onProgress, optimizations = {
           ),
           { offset: token?.start },
         );
+      return localEnvironment(e, name, value);
+    }
+    function localEnvironment(e, name, value) {
       const next = new Map(e);
       next.set(name, { ...value, display: name });
       if (recording && !localViews.has(value.binding)) {
         let type = null;
         try { type = inferredType(value.type, next); } catch {}
         localViews.set(value.binding, { name, binding: value.binding, proposition: value.type.j,
-          mathscript: { foldingPlan: { expression: { kind: "Name", name, binding: value.binding }, type } } });
+          mathscript: { foldingPlan: { expression: value.foldingExpression ?? { kind: "Name", name, binding: value.binding }, type } } });
       }
       return next;
     }
@@ -262,10 +283,23 @@ export function compile(module, source, library, { onProgress, optimizations = {
         return `${describe(n.fn, e)}(${n.args.map((x) => describe(x, e)).join(", ")})`;
       if (n.kind === "binary")
         return `(${describe(n.left, e)} ${n.operator}${n.carrier ? `[${describe(n.carrier, e)}]` : ""} ${describe(n.right, e)})`;
+      if (n.syntheticTuplePair) return `(${describe(n.left, e)}, ${describe(n.right, e)})`;
       return (sources[n.library] ?? source).slice(n.start, n.end);
     }
+    function tupleExpansion(node) {
+      if (node.kind === "pair") return `(${tupleExpansion(node.left)}, ${tupleExpansion(node.right)})`;
+      return (sources[node.library] ?? source).slice(node.start, node.end)
+        .replace(/\/\/[^\n\r]*/g, "").replace(/\s+/g, " ").trim();
+    }
     function record(node, value, role = "expression") {
-      if (recording && !node.library)
+      if (recording && !node.library && node.tupleStart !== undefined) {
+        const expansion = tupleExpansion(node);
+        for (const start of [node.tupleStart, node.tupleEnd])
+          links.push({ start, end: start + 1, name: "Tuple", binding: value.binding,
+            type: value.type.pretty, role: "tuple macro", expansion,
+            description: `Expands to ${expansion}. Components associate to the right; the kernel checks ordinary dependent pairs.` });
+      }
+      else if (recording && !node.library && !node.syntheticTuplePair)
         links.push({
           start: node.start,
           end: node.end,
@@ -339,12 +373,11 @@ export function compile(module, source, library, { onProgress, optimizations = {
                 return b.app(f, a.binding);
               },
               (text) =>
-                replaceWord(
-                  template.prettyTransform
-                    ? template.prettyTransform(text)
-                    : text,
+                substitutePretty(
+                  text,
                   template.binder.label,
                   a.display,
+                  template.prettyTransform,
                 ),
             )
           : {};
@@ -362,7 +395,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
       if (n.kind === "name" && n.name === "Universe") return atom(universeSort, "Universe");
       if (n.kind === "forall" || n.kind === "exists") {
         const A = asType(n.domain, e),
-          body = (x) => asType(n.body, new Map(e).set(n.name.text, x));
+          body = (x) => asType(n.body, localEnvironment(e, n.name.text, x));
         return n.kind === "forall"
           ? pi(A, body, n.name.text)
           : sigma(A, body, n.name.text);
@@ -377,7 +410,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
           j: op("SumForm", [A.j, C.j]),
           left: A,
           right: C,
-          pretty: `${A.pretty} or ${C.pretty}`,
+          pretty: `${operand(A.pretty)} or ${operand(C.pretty)}`,
         };
       }
       const v = infer(n, e),
@@ -453,8 +486,8 @@ export function compile(module, source, library, { onProgress, optimizations = {
           );
         record(n.left, vx, "local");
         record(n.right, vy, "local");
-        const le = new Map(e).set(n.left.text, vx),
-          re = new Map(e).set(n.right.text, vy);
+        const le = localEnvironment(e, n.left.text, vx),
+          re = localEnvironment(e, n.right.text, vy);
         if (n.motiveName) {
           le.set(n.motiveName.text, il);
           re.set(n.motiveName.text, ir);
@@ -491,7 +524,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
         record(n.right, vy, "local");
         const branch = check(
           n.body,
-          new Map(e).set(n.left.text, vx).set(n.right.text, vy),
+          localEnvironment(localEnvironment(e, n.left.text, vx), n.right.text, vy),
           C,
         );
         v = val(
@@ -510,7 +543,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
           x = b.fresh(A.j),
           vx = val(x.v, A, n.name.text);
         record(n.name, vx, "parameter");
-        const body = infer(n.body, new Map(e).set(n.name.text, vx));
+        const body = infer(n.body, localEnvironment(e, n.name.text, vx));
         const T = {
           kind: "pi",
           j: op("PiForm", [A.j, body.type.j], [x.c]),
@@ -519,7 +552,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
           template: body.type,
           body: (a) =>
             instantiateType(body.type, [{ ...x, label: n.name.text }], [a]),
-          pretty: `forall ${n.name.text} : ${A.pretty}, ${body.type.pretty}`,
+          pretty: `forall ${n.name.text} : ${operand(A.pretty)}, ${body.type.pretty}`,
         };
         v = val(op("PiIntro", [A.j, body.binding], [x.c]), T, "function", {
           functionTemplate: {
@@ -545,8 +578,11 @@ export function compile(module, source, library, { onProgress, optimizations = {
             TruncateIntro: ["lib_trunc_intro", "Universe-indexed TruncateIntro"],
             TruncateProp: ["lib_trunc_is_trunc", "Universe-indexed TruncateProp"],
             TruncateElim: ["lib_trunc_elim", "Universe-indexed TruncateElim"],
-            Univalence: ["lib_univalence", "Universe-indexed Univalence"],
-            UnivalenceBeta: ["lib_ua_elim", "Universe-indexed UnivalenceBeta"],
+            Univalence: ["lib_univalence", "The canonical identity-to-equivalence map is an equivalence"],
+            ua: ["lib_ua", "Derived inverse of idtoequiv"],
+            idtoequiv: ["lib_AreEquiv", "Equivalence induced by a type equality"],
+            UnivalenceEta: ["lib_ua_unique", "Derived univalence inverse law"],
+            UnivalenceBeta: ["lib_ua_elim", "Derived univalence transport computation"],
           }[n.fn.name];
           if (principle && recording && !n.library)
             links.push({
@@ -555,7 +591,8 @@ export function compile(module, source, library, { onProgress, optimizations = {
               name: n.fn.name,
               binding: principle[0],
               type: principle[1],
-              role: "existing prelude axiom",
+              role: ["ua", "idtoequiv", "UnivalenceBeta", "UnivalenceEta"].includes(n.fn.name)
+                ? "derived prelude definition/theorem" : "existing prelude axiom",
               sourceModule: "prelude_library_construction",
               sourceName: principle[0],
             });
@@ -581,6 +618,9 @@ export function compile(module, source, library, { onProgress, optimizations = {
           y = infer(n.right, e);
         if (n.operator === "=") {
           const carrier = n.carrier ? asType(n.carrier, e) : x.type;
+          if (!n.carrier) {
+            try { n.inferredCarrier = parse(carrier.pretty, true); } catch {}
+          }
           x = convert(x, carrier);
           y = convert(y, carrier);
           const E = equalityType(carrier, x, y, describe(n, e), !n.carrier);
@@ -650,6 +690,18 @@ export function compile(module, source, library, { onProgress, optimizations = {
       // Obtain its sort from the checked judgement rather than guessing U0.
       const sort = sortType(v.binding);
       if (sort) v = { ...v, type: sort };
+      // Retain checked templates for eliminators and derived built-ins. The
+      // inspector rebinds their variables using public kernel instructions.
+      if (["call", "match", "unpack"].includes(n.kind)) {
+        const needed = new Set(b.k.list(b.view(v.binding, 2), true));
+        const parameters = [];
+        for (const [name, value] of e) {
+          const parameter = b.contextVariables.get(value.binding);
+          if (parameter && needed.has(b.k.bindings.get(parameter.c).id))
+            parameters.push({ name, binding: value.binding, typeBinding: parameter.A, context: parameter.c });
+        }
+        n.checked = { binding: v.binding, parameters };
+      }
       return record(n, { ...v, display: describe(n, e) });
     }
     function check(n, e, T) {
@@ -727,6 +779,14 @@ export function compile(module, source, library, { onProgress, optimizations = {
     function replaceWord(text, name, value) {
       return text.replace(new RegExp(`\\b${name}\\b`, "g"), () => value);
     }
+    let prettySubstitutionSerial = 0;
+    function substitutePretty(text, name, value, previous = x => x) {
+      // Mark the original binder before applying earlier substitutions. A
+      // newly inserted argument may contain the same spelling as a later
+      // formal parameter; replacing it again would corrupt the displayed type.
+      const marker = `\u0000${++prettySubstitutionSerial}\u0000`;
+      return previous(replaceWord(text, name, marker)).replaceAll(marker, value);
+    }
     function mapType(T, transform, prettyTransform = (text) => text) {
       const root = T.originalType ?? T;
       const composed = T.typeTransform
@@ -776,7 +836,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
                 a.binding,
               ),
             (text) =>
-              replaceWord(combinedPretty(text), root.binder.label, a.display),
+              substitutePretty(text, root.binder.label, a.display, combinedPretty),
           );
       if (root.left) out.left = mapType(root.left, composed, combinedPretty);
       if (root.right) out.right = mapType(root.right, composed, combinedPretty);
@@ -791,9 +851,8 @@ export function compile(module, source, library, { onProgress, optimizations = {
         values.map((x) => x.binding).join(",");
       if (instantiated.has(key)) return instantiated.get(key);
       const rename = (text) => {
-        for (let i = 0; i < variables.length; i++)
-          text = replaceWord(text, variables[i].label, values[i].display);
-        return text;
+        const replacements = new Map(variables.map((variable, i) => [variable.label, values[i].display]));
+        return text.replace(/\b[A-Za-z_][A-Za-z_0-9]*\b/g, name => replacements.get(name) ?? name);
       };
       const out = mapType(
         T,
@@ -991,6 +1050,25 @@ export function compile(module, source, library, { onProgress, optimizations = {
         axiomSpecializations.set(key, buildAxiomSpecialization(name, universe));
       return axiomSpecializations.get(key);
     }
+    // Reconstruct the usual half-adjoint IsEquiv with checked binders. This
+    // also supports generic U : Universe, whose successor has no surface name.
+    function halfAdjointType(A, B, f) {
+      return sigma(pi(B, () => A), g => {
+        const eta = pi(A, x => equalityType(A, apply(g, [apply(f, [x])]), x), "x");
+        const epsilon = pi(B, y => equalityType(B, apply(f, [apply(g, [y])]), y), "y");
+        return sigma(eta, h => sigma(epsilon, k => pi(A, x => {
+          const gx = apply(g, [apply(f, [x])]), fx = apply(f, [x]);
+          const motive = lambdaValue(A, "a", a => lambdaValue(A, "b", b =>
+            lambdaValue(equalityType(A, a, b), "p", () => asValue(equalityType(B, apply(f, [a]), apply(f, [b]))))));
+          const base = lambdaValue(A, "a", a => {
+            const fa = apply(f, [a]);
+            return val(b.refl(fa.binding), equalityType(B, fa, fa), `refl(${fa.display})`);
+          });
+          const mapped = pathInduction(A, motive, base, gx, x, apply(h, [x]));
+          return equalityType(equalityType(B, apply(f, [gx]), fx), mapped, apply(k, [fx]));
+        }, "x"), "epsilon"), "eta");
+      }, "inverse");
+    }
     function buildAxiomSpecialization(name, universe) {
       const u = universeArgument(universe), types = atom(universe.j, universe.pretty);
       const prop = T => pi(T, x => pi(T, y => equalityType(T, x, y)), "x");
@@ -1001,7 +1079,8 @@ export function compile(module, source, library, { onProgress, optimizations = {
       const axiomName = { Choice: "AOC", LEM: "LEM", FunExt: "lib_funext",
         Truncate: "lib_Trunc", TruncateIntro: "lib_trunc_intro",
         TruncateProp: "lib_trunc_is_trunc", TruncateElim: "lib_trunc_elim",
-        Univalence: "lib_univalence", UnivalenceBeta: "lib_ua_elim" }[name];
+        Univalence: "lib_univalence", ua: "lib_ua", idtoequiv: "lib_AreEquiv",
+        UnivalenceBeta: "lib_ua_elim", UnivalenceEta: "lib_ua_unique" }[name];
       const axiom = preludeAxiom(axiomName);
       return lam(types, "A", a => {
         const A = represented(a);
@@ -1043,20 +1122,34 @@ export function compile(module, source, library, { onProgress, optimizations = {
           const B = represented(bv), arrow = pi(A, () => B);
           const E = sigma(arrow, f => atom(withPrelude(() => b.app("lib_isEquiv", u, A.j, B.j, f.binding)),
             `IsEquiv(${universe.pretty}, ${A.pretty}, ${B.pretty}, ${f.display})`));
+          E.pretty = `Equiv(${universe.pretty}, ${A.pretty}, ${B.pretty})`;
+          const P = equalityType(types, a, bv, `${A.pretty} =[${universe.pretty}] ${B.pretty}`, false);
+          const idto = result(withPrelude(() => b.app(preludeAxiom("lib_AreEquiv"), u, A.j, B.j)), pi(P, () => E),
+            `idtoequiv(${universe.pretty}, ${A.pretty}, ${B.pretty})`);
+          if (name === "idtoequiv") return idto;
+          const inverse = result(b.app(preludeAxiom("lib_ua"), u, A.j, B.j), pi(E, () => P),
+            `ua(${universe.pretty}, ${A.pretty}, ${B.pretty})`);
+          if (name === "Univalence") {
+            const witness = halfAdjointType(P, E, idto);
+            const parent = sortType(universe.j);
+            if (parent?.pretty !== "Universe")
+              witness.pretty = `IsEquiv(${parent.pretty}, (${P.pretty}), ${E.pretty}, ${idto.display})`;
+            return result(b.app(axiom, u, A.j, B.j), witness, "univalence");
+          }
+          if (name === "UnivalenceEta") return lam(P, "p", p => result(
+            b.app(axiom, u, A.j, B.j, p.binding), equalityType(P, apply(inverse, [apply(idto, [p])]), p),
+            "univalence inverse law"));
           return lam(E, "equivalence", e => {
             const eqv = withPrelude(() => nativeEquivalence(A, B, e, universe));
-            const path = b.app(preludeAxiom("lib_univalence"), u, A.j, B.j, eqv);
-            if (name === "Univalence") return result(path, equalityType(types, a, bv, `${A.pretty} =[${universe.pretty}] ${B.pretty}`, false), "univalence");
+            const path = b.app(preludeAxiom("lib_ua"), u, A.j, B.j, eqv);
+            if (name === "ua") return result(path, P, "univalence path");
             return lam(A, "x", x => {
               const id = b.lam(universe.j, T => T);
               const xAtA = b.coerce(x.binding, op("PiElim", [id, A.j]));
               const moved = norm(op("Transport", [id, A.j, B.j, path, xAtA]));
               const image = b.app(withPrelude(() => forwardEquivalence(A, B, eqv, universe)), x.binding);
               const T = atom(b.eq(B.j, moved, image), "univalence computation");
-              const parent = sortType(universe.j);
-              if (!parent || parent.pretty === "Universe")
-                throw new Error("UnivalenceBeta requires a named universe U0, U1, ... so its successor is available.");
-              return result(b.app(axiom, universeArgument(parent), universe.j, A.j, B.j, eqv, x.binding), T, "univalence computation");
+              return result(b.app(axiom, u, A.j, B.j, eqv, x.binding), T, "univalence computation");
             });
           });
         });
@@ -1100,6 +1193,21 @@ export function compile(module, source, library, { onProgress, optimizations = {
       TruncateElim(args, e) {
         if (!args.length) throw new Error("TruncateElim requires a universe argument.");
         const fn = specializeAxiom("TruncateElim", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      ua(args, e) {
+        if (!args.length) throw new Error("ua requires a universe argument.");
+        const fn = specializeAxiom("ua", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      idtoequiv(args, e) {
+        if (!args.length) throw new Error("idtoequiv requires a universe argument.");
+        const fn = specializeAxiom("idtoequiv", explicitUniverse(args[0], e));
+        return apply(fn, args.slice(1).map(arg => infer(arg, e)));
+      },
+      UnivalenceEta(args, e) {
+        if (!args.length) throw new Error("UnivalenceEta requires a universe argument.");
+        const fn = specializeAxiom("UnivalenceEta", explicitUniverse(args[0], e));
         return apply(fn, args.slice(1).map(arg => infer(arg, e)));
       },
       Univalence(args, e) {
@@ -1511,6 +1619,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
     };
     function bindPattern(pattern, v, e, goal, rest) {
       current = pattern;
+      if (pattern.tupleStart !== undefined) record(pattern, v, "tuple pattern");
       if (pattern.kind === "name") {
         record(pattern, { ...v, display: pattern.name }, "local");
         return rest(extend(e, pattern.name, v, pattern));
@@ -1584,7 +1693,10 @@ export function compile(module, source, library, { onProgress, optimizations = {
         );
       }
       if (s.kind === "let") {
-        const v = infer(s.value, e);
+        const v = { ...infer(s.value, e) };
+        if (recording) {
+          try { v.foldingExpression = notationFromSyntax(s.value, e); } catch {}
+        }
         record(s.target, { ...v, display: s.target.name }, "local");
         return block(rest, extend(e, s.target.name, v, s.target), goal);
       }
@@ -1722,6 +1834,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
         record(decl.name, named, decl.kind);
         (decl.library ? importedOutputs : outputs).push({
           name: decl.name.text,
+          description: leadingDocumentation(sources[decl.library] ?? source, decl.start)?.text ?? "",
           binding,
           proposition,
           type: T.pretty,
@@ -1770,6 +1883,7 @@ export function compile(module, source, library, { onProgress, optimizations = {
       record(decl.name, named, decl.kind);
       (decl.library ? importedOutputs : outputs).push({
         name: decl.name.text,
+        description: leadingDocumentation(sources[decl.library] ?? source, decl.start)?.text ?? "",
         definitionStart: decl.start,
         sourceModule: decl.library || undefined,
         mathscript: mathscriptView(decl, T),

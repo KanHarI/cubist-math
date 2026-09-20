@@ -1,27 +1,186 @@
 import parameter_contour_bounds;
 import sample_magnitude;
 
-def parameter_real_increment(C : U1, F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a : C, b : C, tag : C) =
+def parameter_real_increment(
+  C : U1, F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a : C, b : C, tag : C
+) =
   coordinate_difference(F, addF, negF, complex_real(F, curve(a)), complex_real(F, curve(b)));
-def parameter_imag_increment(C : U1, F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a : C, b : C, tag : C) =
+def parameter_imag_increment(
+  C : U1, F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a : C, b : C, tag : C
+) =
   coordinate_difference(F, addF, negF, complex_imag(F, curve(a)), complex_imag(F, curve(b)));
 
 // Repackage separately proved coordinate bounds for the contour estimate.
-theorem parameter_coordinate_increment_bounds(C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  curve : C -> Complex(F), realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, n : Nat) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-    SampleMagnitudeBounds(C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, n, vertices, tags) -> SampleMagnitudeBounds(C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, n, vertices, tags) ->
-      ComplexParameterIncrementBounds(C, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, tags) {
-  exact induction n as k return (forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
-    SampleMagnitudeBounds(C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, k, vertices, tags) -> SampleMagnitudeBounds(C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, k, vertices, tags) ->
-      ComplexParameterIncrementBounds(C, F, addF, negF, lt, curve, realWeight, imagWeight, k, vertices, tags)) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (realBounds : Unit) => fun (imagBounds : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (tags : SampleTags(C, succ(k))) =>
-      fun (realBounds : SampleMagnitudeBounds(C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, succ(k), vertices, tags)) => fun (imagBounds : SampleMagnitudeBounds(C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, succ(k), vertices, tags)) =>
-        typed((ComplexRectangleBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), curve(field_fst(C, SampleVertices(C, k), vertices)), curve(sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)))), realWeight(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), imagWeight(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))) and ComplexParameterIncrementBounds(C, F, addF, negF, lt, curve, realWeight, imagWeight, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags))),
-          (typed(ComplexRectangleBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), curve(field_fst(C, SampleVertices(C, k), vertices)), curve(sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)))), realWeight(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), imagWeight(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))),
-            (field_fst(FieldMagnitudeBound(F, negF, lt, parameter_real_increment(C, F, addF, negF, curve, field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), realWeight(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), SampleMagnitudeBounds(C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), realBounds),
-              field_fst(FieldMagnitudeBound(F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve, field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), imagWeight(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), SampleMagnitudeBounds(C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), imagBounds))),
-            previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags), field_snd(FieldMagnitudeBound(F, negF, lt, parameter_real_increment(C, F, addF, negF, curve, field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), realWeight(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), SampleMagnitudeBounds(C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), realBounds), field_snd(FieldMagnitudeBound(F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve, field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags)), imagWeight(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), tags))), SampleMagnitudeBounds(C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)), imagBounds))));
+theorem parameter_coordinate_increment_bounds(
+  C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
+  realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, n : Nat
+) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+SampleMagnitudeBounds(
+  C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, n, vertices, tags
+)
+-> SampleMagnitudeBounds(
+  C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, n, vertices, tags
+)
+-> ComplexParameterIncrementBounds(
+  C, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, tags
+) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
+    SampleMagnitudeBounds(
+      C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, k, vertices,
+      tags
+    )
+    -> SampleMagnitudeBounds(
+      C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, k, vertices,
+      tags
+    )
+    -> ComplexParameterIncrementBounds(
+      C, F, addF, negF, lt, curve, realWeight, imagWeight, k, vertices, tags
+    )
+  ) {
+    zero => fun (vertices : C) => fun (tags : Unit) => fun (realBounds : Unit) => fun (
+      imagBounds : Unit
+    ) => tt;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+      tags : SampleTags(C, succ(k))
+    ) => fun (
+      realBounds : SampleMagnitudeBounds(
+        C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, succ(k),
+        vertices, tags
+      )
+    ) => fun (
+      imagBounds : SampleMagnitudeBounds(
+        C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, succ(k),
+        vertices, tags
+      )
+    ) => typed(
+      (
+        ComplexRectangleBound(
+          F, negF, lt,
+          coordinate_difference(
+            Complex(F), complex_add(F, addF), complex_neg(F, negF),
+            curve(field_fst(C, SampleVertices(C, k), vertices)),
+            curve(sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)))
+          ),
+          realWeight(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), tags)
+          ),
+          imagWeight(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), tags)
+          )
+        )
+        and ComplexParameterIncrementBounds(
+          C, F, addF, negF, lt, curve, realWeight, imagWeight, k,
+          field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)
+        )
+      ),
+      (
+        typed(
+          ComplexRectangleBound(
+            F, negF, lt,
+            coordinate_difference(
+              Complex(F), complex_add(F, addF), complex_neg(F, negF),
+              curve(field_fst(C, SampleVertices(C, k), vertices)),
+              curve(sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)))
+            ),
+            realWeight(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), tags)
+            ),
+            imagWeight(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), tags)
+            )
+          ),
+          (
+            field_fst(
+              FieldMagnitudeBound(
+                F, negF, lt,
+                parameter_real_increment(
+                  C, F, addF, negF, curve, field_fst(C, SampleVertices(C, k), vertices),
+                  sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                  field_fst(C, SampleTags(C, k), tags)
+                ),
+                realWeight(
+                  field_fst(C, SampleVertices(C, k), vertices),
+                  sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                  field_fst(C, SampleTags(C, k), tags)
+                )
+              ),
+              SampleMagnitudeBounds(
+                C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, k,
+                field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)
+              ), realBounds
+            ),
+            field_fst(
+              FieldMagnitudeBound(
+                F, negF, lt,
+                parameter_imag_increment(
+                  C, F, addF, negF, curve, field_fst(C, SampleVertices(C, k), vertices),
+                  sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                  field_fst(C, SampleTags(C, k), tags)
+                ),
+                imagWeight(
+                  field_fst(C, SampleVertices(C, k), vertices),
+                  sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                  field_fst(C, SampleTags(C, k), tags)
+                )
+              ),
+              SampleMagnitudeBounds(
+                C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, k,
+                field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)
+              ), imagBounds
+            )
+          )
+        ),
+        previous(
+          field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags),
+          field_snd(
+            FieldMagnitudeBound(
+              F, negF, lt,
+              parameter_real_increment(
+                C, F, addF, negF, curve, field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              ),
+              realWeight(
+                field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              )
+            ),
+            SampleMagnitudeBounds(
+              C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, k,
+              field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)
+            ), realBounds
+          ),
+          field_snd(
+            FieldMagnitudeBound(
+              F, negF, lt,
+              parameter_imag_increment(
+                C, F, addF, negF, curve, field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              ),
+              imagWeight(
+                field_fst(C, SampleVertices(C, k), vertices),
+                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+                field_fst(C, SampleTags(C, k), tags)
+              )
+            ),
+            SampleMagnitudeBounds(
+              C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, k,
+              field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags)
+            ), imagBounds
+          )
+        )
+      )
+    );
   };
 }

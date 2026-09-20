@@ -2,20 +2,120 @@ import parameter_contour_bounds;
 import sample_tagged;
 
 // Lift a bound for two admissible tags in one small edge to all sampled edges.
-theorem parameter_tag_bounds_from_samples(C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  values : C -> Complex(F), delta : F, mesh : C -> C -> U0, valid : C -> C -> C -> U0,
-  localBound : (forall a : C, forall b : C, forall x : C, forall y : C, mesh(a, b) -> valid(a, b, x) -> valid(a, b, y) -> ComplexBoxBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), values(x), values(y)), delta)), n : Nat) :
-  forall vertices : SampleVertices(C, n), forall oldTags : SampleTags(C, n), forall newTags : SampleTags(C, n),
-    SampleAdjacent(C, mesh, n, vertices) -> SampleTagged(C, valid, n, vertices, oldTags) -> SampleTagged(C, valid, n, vertices, newTags) ->
-      ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags) {
-  exact induction n as k return (forall vertices : SampleVertices(C, k), forall oldTags : SampleTags(C, k), forall newTags : SampleTags(C, k),
-    SampleAdjacent(C, mesh, k, vertices) -> SampleTagged(C, valid, k, vertices, oldTags) -> SampleTagged(C, valid, k, vertices, newTags) ->
-      ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, k, vertices, oldTags, newTags)) {
-    zero => fun (vertices : C) => fun (oldTags : Unit) => fun (newTags : Unit) => fun (small : Unit) => fun (oldValid : Unit) => fun (newValid : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (oldTags : SampleTags(C, succ(k))) => fun (newTags : SampleTags(C, succ(k))) =>
-      fun (small : SampleAdjacent(C, mesh, succ(k), vertices)) => fun (oldValid : SampleTagged(C, valid, succ(k), vertices, oldTags)) => fun (newValid : SampleTagged(C, valid, succ(k), vertices, newTags)) =>
-        typed((ComplexBoxBound(F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), values(field_fst(C, SampleTags(C, k), oldTags)), values(field_fst(C, SampleTags(C, k), newTags))), delta) and ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags), field_snd(C, SampleTags(C, k), newTags))),
-          (localBound(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), oldTags), field_fst(C, SampleTags(C, k), newTags), field_fst(mesh(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))), SampleAdjacent(C, mesh, k, field_snd(C, SampleVertices(C, k), vertices)), small), field_fst(valid(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), oldTags)), SampleTagged(C, valid, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags)), oldValid), field_fst(valid(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), newTags)), SampleTagged(C, valid, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), newTags)), newValid)),
-            previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags), field_snd(C, SampleTags(C, k), newTags), field_snd(mesh(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))), SampleAdjacent(C, mesh, k, field_snd(C, SampleVertices(C, k), vertices)), small), field_snd(valid(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), oldTags)), SampleTagged(C, valid, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags)), oldValid), field_snd(valid(field_fst(C, SampleVertices(C, k), vertices), sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)), field_fst(C, SampleTags(C, k), newTags)), SampleTagged(C, valid, k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), newTags)), newValid))));
+theorem parameter_tag_bounds_from_samples(
+  C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, values : C -> Complex(F),
+  delta : F, mesh : C -> C -> U0, valid : C -> C -> C -> U0,
+  localBound : (
+    forall a : C, forall b : C, forall x : C, forall y : C, mesh(a, b) -> valid(a, b, x)
+    -> valid(a, b, y)
+    -> ComplexBoxBound(
+      F, negF, lt,
+      coordinate_difference(
+        Complex(F), complex_add(F, addF), complex_neg(F, negF), values(x), values(y)
+      ), delta
+    )
+  ), n : Nat
+) : forall vertices : SampleVertices(C, n), forall oldTags : SampleTags(C, n),
+forall newTags : SampleTags(C, n), SampleAdjacent(C, mesh, n, vertices)
+-> SampleTagged(C, valid, n, vertices, oldTags) -> SampleTagged(C, valid, n, vertices, newTags)
+-> ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags) {
+  exact induction n as k return (
+    forall vertices : SampleVertices(C, k), forall oldTags : SampleTags(C, k),
+    forall newTags : SampleTags(C, k), SampleAdjacent(C, mesh, k, vertices)
+    -> SampleTagged(C, valid, k, vertices, oldTags) -> SampleTagged(C, valid, k, vertices, newTags)
+    -> ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, k, vertices, oldTags, newTags)
+  ) {
+    zero => fun (vertices : C) => fun (oldTags : Unit) => fun (newTags : Unit) => fun (small : Unit) => fun (
+      oldValid : Unit
+    ) => fun (newValid : Unit) => tt;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+      oldTags : SampleTags(C, succ(k))
+    ) => fun (newTags : SampleTags(C, succ(k))) => fun (
+      small : SampleAdjacent(C, mesh, succ(k), vertices)
+    ) => fun (oldValid : SampleTagged(C, valid, succ(k), vertices, oldTags)) => fun (
+      newValid : SampleTagged(C, valid, succ(k), vertices, newTags)
+    ) => typed(
+      (
+        ComplexBoxBound(
+          F, negF, lt,
+          coordinate_difference(
+            Complex(F), complex_add(F, addF), complex_neg(F, negF),
+            values(field_fst(C, SampleTags(C, k), oldTags)),
+            values(field_fst(C, SampleTags(C, k), newTags))
+          ), delta
+        )
+        and ComplexParameterTagBounds(
+          C, F, addF, negF, lt, values, delta, k, field_snd(C, SampleVertices(C, k), vertices),
+          field_snd(C, SampleTags(C, k), oldTags), field_snd(C, SampleTags(C, k), newTags)
+        )
+      ),
+      (
+        localBound(
+          field_fst(C, SampleVertices(C, k), vertices),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+          field_fst(C, SampleTags(C, k), oldTags), field_fst(C, SampleTags(C, k), newTags),
+          field_fst(
+            mesh(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))
+            ), SampleAdjacent(C, mesh, k, field_snd(C, SampleVertices(C, k), vertices)), small
+          ),
+          field_fst(
+            valid(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), oldTags)
+            ),
+            SampleTagged(
+              C, valid, k, field_snd(C, SampleVertices(C, k), vertices),
+              field_snd(C, SampleTags(C, k), oldTags)
+            ), oldValid
+          ),
+          field_fst(
+            valid(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), newTags)
+            ),
+            SampleTagged(
+              C, valid, k, field_snd(C, SampleVertices(C, k), vertices),
+              field_snd(C, SampleTags(C, k), newTags)
+            ), newValid
+          )
+        ),
+        previous(
+          field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags),
+          field_snd(C, SampleTags(C, k), newTags),
+          field_snd(
+            mesh(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices))
+            ), SampleAdjacent(C, mesh, k, field_snd(C, SampleVertices(C, k), vertices)), small
+          ),
+          field_snd(
+            valid(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), oldTags)
+            ),
+            SampleTagged(
+              C, valid, k, field_snd(C, SampleVertices(C, k), vertices),
+              field_snd(C, SampleTags(C, k), oldTags)
+            ), oldValid
+          ),
+          field_snd(
+            valid(
+              field_fst(C, SampleVertices(C, k), vertices),
+              sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+              field_fst(C, SampleTags(C, k), newTags)
+            ),
+            SampleTagged(
+              C, valid, k, field_snd(C, SampleVertices(C, k), vertices),
+              field_snd(C, SampleTags(C, k), newTags)
+            ), newValid
+          )
+        )
+      )
+    );
   };
 }

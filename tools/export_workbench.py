@@ -23,7 +23,7 @@ GROUPS = {
     'lem': ['LEM'], 'aoc': ['AOC'], 'pr': ['lib_pr1', 'lib_pr2'],
     'homotopy': ['lib_Homotopy', 'lib_happly', 'lib_ap', 'lib_id', 'lib_isEquiv',
                  'lib_funext', 'lib_funext_compute', 'lib_funext_unique', 'lib_id_isEquiv',
-                 'lib_AreEquiv', 'lib_univalence', 'lib_transport', 'lib_ua_elim', 'lib_ua_unique'],
+                 'lib_AreEquiv', 'lib_ua', 'lib_transport', 'lib_ua_elim', 'lib_ua_unique', 'lib_univalence'],
     'based_path_induction': ['lib_basedPathInduction'],
     'two': ['lib_Two', 'lib_zero2', 'lib_one2', 'lib_ind2', 'lib_comp2_zero', 'lib_comp2_one'],
     'unit_prop_unique': ['lib_unit_unique'], 'pi_void_unique': ['lib_pi_void_unique'],
@@ -48,7 +48,7 @@ def main():
     entries = dict(ENTRIES, prelude_library=sum(GROUPS.values(), []))
     for key, names in entries.items():
         code += ['{', 'tt_config conf = tt_default_config();', 'conf.allow_axioms = true;',
-                 'conf.max_expression_nodes = 4096;', 'tt_engine *e = tt_new(&conf);',
+                 'conf.max_expression_nodes = 0;', 'conf.max_counter = 16384;', 'tt_engine *e = tt_new(&conf);',
                  'if (!e) return 1;', f'puts("BEGIN {key}");', 'tt_set_trace(e, stdout);']
         if key == 'prelude_library':
             code += ['if (!tt_load_builtins(e, true)) return 2;',
@@ -82,7 +82,7 @@ def main():
         records = [list(map(int, line.split())) for line in lines if not line.startswith('EXPORT ')]
         names = entries[key]
         assert len(exports) == len(names) and len(set(exports)) == len(exports)
-        js, cs, steps, last = {}, {}, [], {}
+        js, cs, steps, last, axioms = {}, {}, [], {}, {}
         for i, record in enumerate(records):
             op, nj, *tail = record
             args, tail = tail[:nj], tail[nj:]
@@ -99,7 +99,9 @@ def main():
             (cs if is_context else js)[result] = name
             if not is_context:
                 last[result] = name
-        rename = {last[id_]: name for id_, name in zip(exports, names)}
+                if opcodes[op] == 'Axiom':
+                    axioms.setdefault(result, name)
+        rename = {axioms.get(id_, last[id_]): name for id_, name in zip(exports, names)}
         for step in steps:
             step['name'] = rename.get(step['name'], step['name'])
             step['args'] = [rename.get(n, n) for n in step['args']]
@@ -108,7 +110,7 @@ def main():
         policy = any(step['op'] == 'Axiom' for step in steps)
         document = dict(format='thth-workbench', version=1, policy=dict(allowAxioms=policy), steps=steps)
         slug = key.removeprefix('define_').removeprefix('test_')
-        title = {'prelude_library': 'Prelude library (50 exports)', 'comp': 'Function composition',
+        title = {'prelude_library': 'Prelude library (51 exports)', 'comp': 'Function composition',
                  'product_commutes': 'Product commutativity', 'lem': 'Law of excluded middle (LEM)',
                  'aoc': 'Axiom of choice (AOC)'}.get(slug, slug.replace('_', ' ').capitalize())
         source = 'tests/no_driver/manual_library/pr.rs' if key == 'create_pr1_pr2' else (

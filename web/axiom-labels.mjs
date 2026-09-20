@@ -1,6 +1,5 @@
 export const axiomLabels = {
   lib_univalence: "Univalence",
-  lib_ua_elim: "Univalence transport computation",
   lib_funext: "Function extensionality",
   lib_funext_compute: "Function extensionality computation",
   lib_LEM: "Excluded middle",

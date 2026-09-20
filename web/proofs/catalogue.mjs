@@ -142,7 +142,7 @@ export default [
     "title": "Homotopy",
     "file": "homotopy.thth.json",
     "source": "src/builtins/homotopy.rs",
-    "steps": 540,
+    "steps": 2521,
     "allowAxioms": true,
     "exports": [
       "lib_Homotopy",
@@ -155,10 +155,11 @@ export default [
       "lib_funext_unique",
       "lib_id_isEquiv",
       "lib_AreEquiv",
-      "lib_univalence",
+      "lib_ua",
       "lib_transport",
       "lib_ua_elim",
-      "lib_ua_unique"
+      "lib_ua_unique",
+      "lib_univalence"
     ]
   },
   {
@@ -204,7 +205,7 @@ export default [
     "title": "Pi void unique",
     "file": "pi_void_unique.thth.json",
     "source": "src/builtins/pi_void_unique.rs",
-    "steps": 588,
+    "steps": 2569,
     "allowAxioms": true,
     "exports": [
       "lib_pi_void_unique"
@@ -215,7 +216,7 @@ export default [
     "title": "Wnat",
     "file": "wnat.thth.json",
     "source": "src/builtins/wnat.rs",
-    "steps": 683,
+    "steps": 2664,
     "allowAxioms": true,
     "exports": [
       "lib_UNat",
@@ -308,10 +309,10 @@ export default [
   },
   {
     "id": "prelude_library",
-    "title": "Prelude library (50 exports)",
+    "title": "Prelude library (51 exports)",
     "file": "prelude_library.thth.json",
     "source": "src/builtins/create_builtins_vector.rs",
-    "steps": 2453,
+    "steps": 8396,
     "allowAxioms": true,
     "exports": [
       "lib_U0",
@@ -341,10 +342,11 @@ export default [
       "lib_funext_unique",
       "lib_id_isEquiv",
       "lib_AreEquiv",
-      "lib_univalence",
+      "lib_ua",
       "lib_transport",
       "lib_ua_elim",
       "lib_ua_unique",
+      "lib_univalence",
       "lib_basedPathInduction",
       "lib_Two",
       "lib_zero2",

@@ -355,6 +355,7 @@ proof_tuple p_define_eq_ops(tt_engine *e) {
 proof_tuple p_define_homotopy(tt_engine *e) {
     proof_tuple tuple_1 = p_define_pr(e);
     tt_id def_pr1 = tuple_1.v[0];
+    (void)def_pr1;
     tt_id _def_pr2 = tuple_1.v[1];
     (void)_def_pr2;
     tt_id UUOmega_UUKappa_judgement = p_define_uuomega(e);
@@ -1074,23 +1075,7 @@ proof_tuple p_define_homotopy(tt_engine *e) {
     areequiv_judgement = proof_step(e, TT_PiIntro, (tt_id[]){UUOmega_UUKappa_judgement, areequiv_Ux_judgement}, 2, 0, (tt_id[]){Ux_UUOmega_context}, 1, __FILE__, __LINE__);
     tt_id defeq_uEqAreEquiv_judgement = proof_step(e, TT_Def, (tt_id[]){areequiv_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id def_ueqequiv = proof_step(e, TT_DefEqExtL, (tt_id[]){defeq_uEqAreEquiv_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id Ux_R_S_univalence_type_judgement = proof_step(e, TT_PiForm, (tt_id[]){
-            areequiv_Ux_R_S__Ux_judegement,
-            eq_Ux_R_S__UUOmega_judgement,
-        }, 2, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
-    tt_id Ux_R_univalence_type_judgement = proof_step(e, TT_PiForm, (tt_id[]){
-            Ux_UUOmega_judgement,
-            Ux_R_S_univalence_type_judgement,
-        }, 2, 0, (tt_id[]){S_Ux_context}, 1, __FILE__, __LINE__);
-    tt_id Ux_univalence_type_judgement = proof_step(e, TT_PiForm, (tt_id[]){
-            Ux_UUOmega_judgement,
-            Ux_R_univalence_type_judgement,
-        }, 2, 0, (tt_id[]){R_Ux_context}, 1, __FILE__, __LINE__);
-    tt_id univalence_type_judgement = proof_step(e, TT_PiForm, (tt_id[]){
-            UUOmega_UUKappa_judgement,
-            Ux_univalence_type_judgement,
-        }, 2, 0, (tt_id[]){Ux_UUOmega_context}, 1, __FILE__, __LINE__);
-    tt_id univalence_axiom = proof_step(e, TT_Axiom, (tt_id[]){univalence_type_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
+    proof_tuple univalence = standard_univalence_proofs(e, def_isequiv, def_ueqequiv);
     tt_id B_y__Ux_judgement = proof_step(e, TT_PiElim, (tt_id[]){B__pi_A_Ux_judgement, y_A_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id pi__B_x__B_y__Ux_judgement = proof_step(e, TT_PiForm, (tt_id[]){B_x__Ux_judgement, B_y__Ux_judgement}, 2, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
     tt_id id__B_x__B_x__Ux_judgement = proof_step(e, TT_PiElim, (tt_id[]){id_Ux_judgement, B_x__Ux_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
@@ -1120,147 +1105,7 @@ proof_tuple p_define_homotopy(tt_engine *e) {
     tt_id transport_judgement = proof_step(e, TT_PiIntro, (tt_id[]){UUOmega_UUKappa_judgement, Ux_transport_judgement}, 2, 0, (tt_id[]){Ux_UUOmega_context}, 1, __FILE__, __LINE__);
     tt_id transport_defeq_judgement = proof_step(e, TT_Def, (tt_id[]){transport_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
     tt_id def_transport = proof_step(e, TT_DefEqExtL, (tt_id[]){transport_defeq_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id Uy_Ux_context = proof_step(e, TT_CtxExt, (tt_id[]){Ux_UUOmega_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
-    tt_id Uy_Ux_judgement = proof_step(e, TT_UVble, (tt_id[]){0}, 0, Uy_Ux_context, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id id_Ux_Uy_judgement = proof_step(e, TT_PiElim, (tt_id[]){id_Ux_judgement, Uy_Ux_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id transport_Ux_judgement = proof_step(e, TT_PiElim, (tt_id[]){def_transport, Ux_UUOmega_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id transport_Ux_Uy_judgement = proof_step(e, TT_PiElim, (tt_id[]){transport_Ux_judgement, Uy_Ux_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id A_Uy_context = proof_step(e, TT_CtxExt, (tt_id[]){Uy_Ux_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
-    tt_id A_Uy_judgement = proof_step(e, TT_Vble, (tt_id[]){0}, 0, A_Uy_context, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id id_Ux_Uy_A_Ux_judgement = proof_step(e, TT_PiElim, (tt_id[]){id_Ux_Uy_judgement, A_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id id_Ux_Uy_A__is_Ux_judgement = proof_step(e, TT_UCumulContext, (tt_id[]){id_Ux_Uy_A_Ux_judgement, Uy_Ux_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id id_Ux_Uy__is_Ux_judgement = proof_step(e, TT_PiIntro, (tt_id[]){Uy_Ux_judgement, id_Ux_Uy_A__is_Ux_judgement}, 2, 0, (tt_id[]){A_Uy_context}, 1, __FILE__, __LINE__);
-    tt_id transport_Ux_Uy_id_Ux_Uy_judgement = proof_step(e, TT_PiElim, (tt_id[]){
-            transport_Ux_Uy_judgement,
-            id_Ux_Uy__is_Ux_judgement,
-        }, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id B_Uy_context = proof_step(e, TT_CtxExt, (tt_id[]){Uy_Ux_judgement}, 1, 0, (tt_id[]){A_Uy_context}, 1, __FILE__, __LINE__);
-    tt_id B_Uy_judgement = proof_step(e, TT_Vble, (tt_id[]){0}, 0, B_Uy_context, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id Uy_UUOmega_judgement = proof_step(e, TT_UCumulOmega, (tt_id[]){Uy_Ux_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id areequiv_Uy_judgement = proof_step(e, TT_PiElim, (tt_id[]){def_areequiv, Uy_UUOmega_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id areequiv_Uy_A_Uy_judgement = proof_step(e, TT_PiElim, (tt_id[]){areequiv_Uy_judgement, A_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id areequiv_Uy_A_B__Uy_judgement = proof_step(e, TT_PiElim, (tt_id[]){areequiv_Uy_A_Uy_judgement, B_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id e_areequiv_Uy_A_Uy_B_Uy_context = proof_step(e, TT_CtxExt, (tt_id[]){areequiv_Uy_A_B__Uy_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
-    tt_id e_areequiv_Uy_A_Uy_B_Uy_judgement = proof_step(e, TT_Vble, (tt_id[]){0}, 0, e_areequiv_Uy_A_Uy_B_Uy_context, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id ua_Uy_judgement = proof_step(e, TT_PiElim, (tt_id[]){univalence_axiom, Uy_UUOmega_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id ua_Uy_A_judgement = proof_step(e, TT_PiElim, (tt_id[]){ua_Uy_judgement, A_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id ua_Uy_A_B_judgement = proof_step(e, TT_PiElim, (tt_id[]){ua_Uy_A_judgement, B_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id ua_Uy_A_B_e_judgement = proof_step(e, TT_PiElim, (tt_id[]){
-            ua_Uy_A_B_judgement,
-            e_areequiv_Uy_A_Uy_B_Uy_judgement,
-        }, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id transport_Ux_Uy_id_Ux_Uy_A_judgement = proof_step(e, TT_PiElim, (tt_id[]){transport_Ux_Uy_id_Ux_Uy_judgement, A_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id transport_Ux_Uy_id_Ux_Uy_A_B_judgement = proof_step(e, TT_PiElim, (tt_id[]){
-            transport_Ux_Uy_id_Ux_Uy_A_judgement,
-            B_Uy_judgement,
-        }, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id transport_Ux_Uy_id_Ux_Uy_A_B_ua_Uy_A_B_e_judgement = proof_step(e, TT_PiElim, (tt_id[]){
-                transport_Ux_Uy_id_Ux_Uy_A_B_judgement,
-                ua_Uy_A_B_e_judgement,
-            }, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    transport_Ux_Uy_id_Ux_Uy_A_B_ua_Uy_A_B_e_judgement = proof_step(e, TT_Subs, (tt_id[]){
-            transport_Ux_Uy_id_Ux_Uy_A_B_ua_Uy_A_B_e_judgement,
-            transport_defeq_judgement,
-        }, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    transport_Ux_Uy_id_Ux_Uy_A_B_ua_Uy_A_B_e_judgement = proof_step(e, TT_Subs, (tt_id[]){
-            transport_Ux_Uy_id_Ux_Uy_A_B_ua_Uy_A_B_e_judgement,
-            id_defeq_judgement,
-        }, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    for (unsigned loop_13=0; loop_13<3; ++loop_13) {
-    transport_Ux_Uy_id_Ux_Uy_A_B_ua_Uy_A_B_e_judgement = proof_step(e, TT_BetaReduceGrossKnuth, (tt_id[]){transport_Ux_Uy_id_Ux_Uy_A_B_ua_Uy_A_B_e_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-}
-    tt_id e_isequiv_judgement = proof_step(e, TT_Subs, (tt_id[]){
-            e_areequiv_Uy_A_Uy_B_Uy_judgement,
-            areequiv_defeq_judgement,
-        }, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    for (unsigned loop_14=0; loop_14<3; ++loop_14) {
-    e_isequiv_judgement = proof_step(e, TT_BetaReduceGrossKnuth, (tt_id[]){e_isequiv_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-}
-    tt_id pr1_Uy_judgement = proof_step(e, TT_PiElim, (tt_id[]){def_pr1, Uy_UUOmega_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id pi_A_B__Uy_judgement = proof_step(e, TT_PiForm, (tt_id[]){A_Uy_judgement, B_Uy_judgement}, 2, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
-    tt_id pr1_Uy_pi_A_B_judgement = proof_step(e, TT_PiElim, (tt_id[]){pr1_Uy_judgement, pi_A_B__Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id isequiv_Uy = proof_step(e, TT_PiElim, (tt_id[]){def_isequiv, Uy_UUOmega_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id isequiv_Uy_A_judgement = proof_step(e, TT_PiElim, (tt_id[]){isequiv_Uy, A_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id isequiv_Uy_A_B = proof_step(e, TT_PiElim, (tt_id[]){isequiv_Uy_A_judgement, B_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id pr1_Uy_pi_A_B_isequiv_judgement = proof_step(e, TT_PiElim, (tt_id[]){pr1_Uy_pi_A_B_judgement, isequiv_Uy_A_B}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id f_equivalence_judgement = proof_step(e, TT_PiElim, (tt_id[]){
-            pr1_Uy_pi_A_B_isequiv_judgement,
-            e_isequiv_judgement,
-        }, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    f_equivalence_judgement = proof_step(e, TT_HighExp, (tt_id[]){f_equivalence_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    for (unsigned loop_15=0; loop_15<4; ++loop_15) {
-    f_equivalence_judgement = proof_step(e, TT_High0, (tt_id[]){f_equivalence_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-}
-    tt_id pr1_defeq_judgement = proof_step(e, TT_DefLookup, (tt_id[]){f_equivalence_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    f_equivalence_judgement = proof_step(e, TT_UnHigh, (tt_id[]){f_equivalence_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    f_equivalence_judgement = proof_step(e, TT_Subs, (tt_id[]){f_equivalence_judgement, pr1_defeq_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    for (unsigned loop_16=0; loop_16<3; ++loop_16) {
-    f_equivalence_judgement = proof_step(e, TT_BetaReduceGrossKnuth, (tt_id[]){f_equivalence_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-}
-    tt_id x_A_Uy__context = proof_step(e, TT_CtxExt, (tt_id[]){A_Uy_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
-    tt_id x_A_Uy_judgement = proof_step(e, TT_Vble, (tt_id[]){0}, 0, x_A_Uy__context, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id transport_ua_x_judgement = proof_step(e, TT_PiElim, (tt_id[]){
-            transport_Ux_Uy_id_Ux_Uy_A_B_ua_Uy_A_B_e_judgement,
-            x_A_Uy_judgement,
-        }, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id f_equiv_x_judgement = proof_step(e, TT_PiElim, (tt_id[]){f_equivalence_judgement, x_A_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id Ux_Uy_A_B_e_x__eq_B__transport_ua_x__f_equiv_x__Uy_judgement = proof_step(e, TT_EqForm, (tt_id[]){
-                B_Uy_judgement,
-                transport_ua_x_judgement,
-                f_equiv_x_judgement,
-            }, 3, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id Ux_Uy_A_B_e__eq_B__transport_ua_x__f_equiv_x__Uy_judgement = proof_step(e, TT_PiForm, (tt_id[]){
-                A_Uy_judgement,
-                Ux_Uy_A_B_e_x__eq_B__transport_ua_x__f_equiv_x__Uy_judgement,
-            }, 2, 0, (tt_id[]){x_A_Uy__context}, 1, __FILE__, __LINE__);
-    tt_id Ux_Uy_A_B__eq_B__transport_ua_x__f_equiv_x__Uy_judgement = proof_step(e, TT_PiForm, (tt_id[]){
-                areequiv_Uy_A_B__Uy_judgement,
-                Ux_Uy_A_B_e__eq_B__transport_ua_x__f_equiv_x__Uy_judgement,
-            }, 2, 0, (tt_id[]){e_areequiv_Uy_A_Uy_B_Uy_context}, 1, __FILE__, __LINE__);
-    tt_id Ux_Uy_A__eq_B__transport_ua_x__f_equiv_x__Uy_judgement = proof_step(e, TT_PiForm, (tt_id[]){
-                Uy_Ux_judgement,
-                Ux_Uy_A_B__eq_B__transport_ua_x__f_equiv_x__Uy_judgement,
-            }, 2, 0, (tt_id[]){B_Uy_context}, 1, __FILE__, __LINE__);
-    tt_id Ux_Uy__eq_B__transport_ua_x__f_equiv_x__Uy_judgement = proof_step(e, TT_PiForm, (tt_id[]){
-                Uy_Ux_judgement,
-                Ux_Uy_A__eq_B__transport_ua_x__f_equiv_x__Uy_judgement,
-            }, 2, 0, (tt_id[]){A_Uy_context}, 1, __FILE__, __LINE__);
-    tt_id Ux__eq_B__transport_ua_x__f_equiv_x__Uy_judgement = proof_step(e, TT_PiForm, (tt_id[]){
-                Ux_UUOmega_judgement,
-                Ux_Uy__eq_B__transport_ua_x__f_equiv_x__Uy_judgement,
-            }, 2, 0, (tt_id[]){Uy_Ux_context}, 1, __FILE__, __LINE__);
-    tt_id transport_ua_x__f_equiv_x__Uy_judgement = proof_step(e, TT_PiForm, (tt_id[]){
-            UUOmega_UUKappa_judgement,
-            Ux__eq_B__transport_ua_x__f_equiv_x__Uy_judgement,
-        }, 2, 0, (tt_id[]){Ux_UUOmega_context}, 1, __FILE__, __LINE__);
-    tt_id ua_elim_axiom = proof_step(e, TT_Axiom, (tt_id[]){transport_ua_x__f_equiv_x__Uy_judgement}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id eq_Uy_A_B__Ux_judgement = proof_step(e, TT_EqForm, (tt_id[]){
-            Uy_Ux_judgement,
-            A_Uy_judgement,
-            B_Uy_judgement,
-        }, 3, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id p_eq_Uy_A_B_context = proof_step(e, TT_CtxExt, (tt_id[]){eq_Uy_A_B__Ux_judgement}, 1, 0, (tt_id[]){0}, 1, __FILE__, __LINE__);
-    tt_id p_eq_Uy_A_B_judgement = proof_step(e, TT_Vble, (tt_id[]){0}, 0, p_eq_Uy_A_B_context, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id ueqequiv_Uy_judgement = proof_step(e, TT_PiElim, (tt_id[]){def_ueqequiv, Uy_UUOmega_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id ueqequiv_Uy_A_judgement = proof_step(e, TT_PiElim, (tt_id[]){ueqequiv_Uy_judgement, A_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id ueqequiv_Uy_A_B_judgement = proof_step(e, TT_PiElim, (tt_id[]){ueqequiv_Uy_A_judgement, B_Uy_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id ueqequiv_Uy_A_B_p_judgement = proof_step(e, TT_PiElim, (tt_id[]){ueqequiv_Uy_A_B_judgement, p_eq_Uy_A_B_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id ua_ueqequiv_judgement = proof_step(e, TT_PiElim, (tt_id[]){ua_Uy_A_B_judgement, ueqequiv_Uy_A_B_p_judgement}, 2, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id eq__eq_Uy_A_B__p___ua_Uy_A_B__ueqareequiv_Uy_A_B_p_judgement = proof_step(e, TT_EqForm, (tt_id[]){
-                eq_Uy_A_B__Ux_judgement,
-                p_eq_Uy_A_B_judgement,
-                ua_ueqequiv_judgement,
-            }, 3, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    tt_id Ux_Uy_A_B_ua_uniq_expression = proof_step(e, TT_PiForm, (tt_id[]){
-            eq_Uy_A_B__Ux_judgement,
-            eq__eq_Uy_A_B__p___ua_Uy_A_B__ueqareequiv_Uy_A_B_p_judgement,
-        }, 2, 0, (tt_id[]){p_eq_Uy_A_B_context}, 1, __FILE__, __LINE__);
-    tt_id Ux_Uy_A_ua_uniq_expression = proof_step(e, TT_PiForm, (tt_id[]){Uy_Ux_judgement, Ux_Uy_A_B_ua_uniq_expression}, 2, 0, (tt_id[]){B_Uy_context}, 1, __FILE__, __LINE__);
-    tt_id Ux_Uy_ua_uniq_expression = proof_step(e, TT_PiForm, (tt_id[]){Uy_Ux_judgement, Ux_Uy_A_ua_uniq_expression}, 2, 0, (tt_id[]){A_Uy_context}, 1, __FILE__, __LINE__);
-    tt_id Ux_ua_uniq_expression = proof_step(e, TT_PiForm, (tt_id[]){Ux_UUOmega_judgement, Ux_Uy_ua_uniq_expression}, 2, 0, (tt_id[]){Uy_Ux_context}, 1, __FILE__, __LINE__);
-    tt_id ua_uniq_expression = proof_step(e, TT_PiForm, (tt_id[]){UUOmega_UUKappa_judgement, Ux_ua_uniq_expression}, 2, 0, (tt_id[]){Ux_UUOmega_context}, 1, __FILE__, __LINE__);
-    tt_id ua_unique_axiom = proof_step(e, TT_Axiom, (tt_id[]){ua_uniq_expression}, 1, 0, (tt_id[]){0}, 0, __FILE__, __LINE__);
-    return (proof_tuple){{def_homotopy, def_happly, def_ap, def_id, def_isequiv, funext_axiom, funext_compute_axiom, funext_unique_axiom, def_id_isequiv, def_ueqequiv, univalence_axiom, def_transport, ua_elim_axiom, ua_unique_axiom}};
+    return (proof_tuple){{def_homotopy, def_happly, def_ap, def_id, def_isequiv, funext_axiom, funext_compute_axiom, funext_unique_axiom, def_id_isequiv, def_ueqequiv, univalence.v[1], def_transport, univalence.v[2], univalence.v[3], univalence.v[0]}};
 }
 
 tt_id p_define_is_decidable(tt_engine *e) {

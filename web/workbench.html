@@ -13,8 +13,10 @@
         ><span class="muted">Math workbench</span>
       </div>
       <div class="toolbar">
+        <a id="back-mathscript" hidden>← Back to MathScript</a>
         <a href="index.html">Proof highlights</a>
         <a href="proof.html">MathScript editor</a>
+        <a href="https://github.com/KanHarI/thth-c">GitHub repository</a>
         <span id="status" role="status">Loading WASM…</span
         ><button id="save">Save proof</button
         ><button id="load">Open proof</button
@@ -80,6 +82,10 @@
           ></div>
           <div id="inference" class="hint inference"></div>
           <div class="expression-block">
+            <div class="label">CONTEXT</div>
+            <div id="kernel-context" aria-label="Kernel context"></div>
+          </div>
+          <div class="expression-block">
             <div class="label">
               EXPRESSION
               <span>click to select · reference links open declarations</span>
@@ -104,7 +110,7 @@
           <div class="selection-bar">
             <span id="selection-label">No selection</span
             ><button id="parent">Select parent</button
-            ><button id="clear">Clear selection</button>
+            ><button id="clear" title="Clear the selected highlight">Un-highlight</button>
           </div>
           <details>
             <summary>Select by path or parentheses</summary>

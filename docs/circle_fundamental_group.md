@@ -40,8 +40,8 @@ a set. This set of loops represents the fundamental group; a general set-truncat
 constructor is not required or introduced here. The final statement includes
 associativity, units, inverses, setness, and a group isomorphism.
 
-The development imports three existing prelude axioms: univalence, its transport
-computation rule, and function extensionality. Source inspection links these uses
+The development uses two library axioms: univalence and function extensionality.
+Its transport computation rule is [derived from univalence](univalence.md). Source inspection links these uses
 to their original declarations. No circle-specific axiom or theorem is added to C.
 The [kernel extension](../src/kernel/suspension.c) supplies general suspension
 formation, points, meridians, dependent elimination, and propositional meridian
