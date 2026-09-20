@@ -4,7 +4,7 @@
 import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {interval as I,face as F} from "./lattice.mjs";
-const kinds=["","U","Var","Pi","Lam","App","Sigma","Pair","Fst","Snd","Nat","Zero","Succ","NatRec","Unit","Point","Path","PLam","PApp","Comp","Tube","Void","Abort","W","Sup","WRec","Sum","Inl","Inr","SumRec","UnitRec","Glue","GlueSystem","GlueTerm","Unglue"];
+const kinds=["","U","Var","Pi","Lam","App","Sigma","Pair","Fst","Snd","Nat","Zero","Succ","NatRec","Unit","Point","Path","PLam","PApp","Comp","Tube","Void","Abort","W","Sup","WRec","Sum","Inl","Inr","SumRec","UnitRec","Glue","GlueSystem","GlueTerm","Unglue","DefRef","Pushout","PushLeft","PushRight","PushPath","PushElim"];
 const nativeRoot=fileURLToPath(new URL("./c/",import.meta.url));
 
 export function nativeRequest(term,expected=null,assumptions=[],{normalize=true,definitions=[]}={}) {
@@ -51,6 +51,10 @@ export function nativeRequest(term,expected=null,assumptions=[],{normalize=true,
         for(const p of [...t.system].reverse())tubes=node("Tube",formula(1,p.face,dims),[encode(p.term,inner),tubes]);
         return node(t.tag,dim,[family,tubes,child(t.base)]);
       }
+      case "Pushout":return node(t.tag,0,[child(t.center),child(t.left),child(t.right),child(t.maps)]);
+      case "PushLeft":case "PushRight":return node(t.tag,0,[child(t.as),child(t.value)]);
+      case "PushPath":return node(t.tag,formula(0,t.arg,dims),[child(t.as),child(t.value)]);
+      case "PushElim":return node(t.tag,0,[child(t.motive),child(t.left),child(t.right),child(t.bridge)]);
       case "PApp":return node(t.tag,formula(0,t.arg,dims),[child(t.path),0]);
       case "Abort":return node(t.tag,0,[child(t.as),child(t.impossible)]);
       case "Sup":return node(t.tag,0,[child(t.as),child(t.label),child(t.children)]);

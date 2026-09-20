@@ -38,7 +38,7 @@ static void field(cc_kernel *k, const char *name, cc_term t, unsigned depth) {
 static void term(cc_kernel *k, cc_term t, unsigned depth) {
     static const char *tags[] = {"", "U", "Var", "Pi", "Lam", "App", "Sigma", "Pair", "Fst", "Snd",
         "Nat", "Zero", "Succ", "NatRec", "Unit", "Point", "Path", "PLam", "PApp", "Comp", "Tube",
-        "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr", "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "Ref"};
+        "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr", "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "Ref", "Pushout", "PushLeft", "PushRight", "PushPath", "PushElim"};
     cc_term_kind kind;
     uint32_t payload;
     cc_term ch[4];
@@ -85,15 +85,18 @@ static void term(cc_kernel *k, cc_term t, unsigned depth) {
             putchar(']'); field(k, "base", ch[2], depth);
         }
     }
-    if (kind == CC_PAPP) {
-        field(k, "path", ch[0], depth);
+    if (kind == CC_PAPP || kind == CC_PUSH_PATH) {
+        if (kind == CC_PAPP) field(k, "path", ch[0], depth);
         fputs(",\"arg\":", stdout);
         formula(cc_kernel_get_formula(k, payload));
-        if (ch[1]) field(k, "pathType", ch[1], depth);
+        if (kind == CC_PAPP && ch[1]) field(k, "pathType", ch[1], depth);
     }
     if (kind == CC_ABORT) { field(k, "as", ch[0], depth); field(k, "impossible", ch[1], depth); }
     if (kind == CC_SUP) { field(k, "as", ch[0], depth); field(k, "label", ch[1], depth); field(k, "children", ch[2], depth); }
     if (kind == CC_WREC) { field(k, "motive", ch[0], depth); field(k, "step", ch[1], depth); field(k, "value", ch[2], depth); }
+    if (kind == CC_PUSHOUT) { field(k, "center", ch[0], depth); field(k, "left", ch[1], depth); field(k, "right", ch[2], depth); field(k, "maps", ch[3], depth); }
+    if (kind == CC_PUSH_LEFT || kind == CC_PUSH_RIGHT || kind == CC_PUSH_PATH) { field(k, "as", ch[0], depth); field(k, "value", ch[1], depth); }
+    if (kind == CC_PUSH_ELIM) { field(k, "motive", ch[0], depth); field(k, "left", ch[1], depth); field(k, "right", ch[2], depth); field(k, "bridge", ch[3], depth); }
     if (kind == CC_UNGLUE) { field(k, "as", ch[0], depth); field(k, "value", ch[1], depth); }
     if (kind == CC_GLUE || kind == CC_GLUE_TERM) {
         bool type = kind == CC_GLUE;
@@ -176,7 +179,7 @@ int main(void) {
             if ((a && !resolve(&terms, a)) || (b && !resolve(&terms, b)) ||
                 (c && !resolve(&terms, c)) || (d && !resolve(&terms, d)))
                 break;
-            if (kind == CC_PAPP || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) {
+            if (kind == CC_PAPP || kind == CC_PUSH_PATH || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) {
                 payload = resolve(&formulas, payload);
                 if (!payload)
                     break;

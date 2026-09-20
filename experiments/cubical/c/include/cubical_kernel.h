@@ -17,7 +17,8 @@ typedef enum {
     CC_PATH, CC_PLAM, CC_PAPP, CC_COMP, CC_TUBE,
     CC_VOID, CC_ABORT, CC_W, CC_SUP, CC_WREC,
     CC_SUM, CC_INL, CC_INR, CC_SUMREC, CC_UNITREC,
-    CC_GLUE, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_UNGLUE, CC_DEFREF
+    CC_GLUE, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_UNGLUE, CC_DEFREF,
+    CC_PUSHOUT, CC_PUSH_LEFT, CC_PUSH_RIGHT, CC_PUSH_PATH, CC_PUSH_ELIM
 } cc_term_kind;
 
 typedef struct {
@@ -49,6 +50,9 @@ void cc_kernel_clear_error(cc_kernel *);
  * UnitRec(motive,point-case,value).
  * Glue(base,system); GlueSystem(face-formula; partial-type,equivalence,next).
  * GlueTerm(Glue-type,base-value,partial-tubes); Unglue(Glue-type,value).
+ * Pushout(center,left,right,maps), maps : (center -> left) x (center -> right).
+ * PushLeft/PushRight(pushout,value); PushPath(interval-formula; pushout,value).
+ * PushElim(motive,left-case,right-case,bridge-case) is a function on the pushout.
  * DefRef(registry-index) refers only to a previously checked definition.
  * Nat/Zero/Unit/Point/Void have no children. Missing children must be zero.
  * The checker discards an untrusted PApp's optional second child (annotation).
