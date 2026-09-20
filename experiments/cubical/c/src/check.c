@@ -85,9 +85,9 @@ bool ck_infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dims,
     return success && !k->error[0];
 }
 
-bool cc_kernel_check(cc_kernel *k, cc_term raw, cc_term expected,
-                      const cc_assumption *assumptions, size_t count,
-                      cc_checked_result *result) {
+bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
+                              const cc_assumption *assumptions, size_t count,
+                              uint64_t dimensions, cc_checked_result *result) {
     if (!k || !result)
         return false;
     memset(result, 0, sizeof *result);
@@ -111,7 +111,7 @@ bool cc_kernel_check(cc_kernel *k, cc_term raw, cc_term expected,
             break;
         uint32_t level;
         cc_term type;
-        success = ck_type(k, assumptions[i].type, ctx, 0, &type, &level);
+        success = ck_type(k, assumptions[i].type, ctx, dimensions, &type, &level);
         if (!success)
             break;
         if (assumptions[i].symbol >= k->next_symbol) {
@@ -126,11 +126,11 @@ bool cc_kernel_check(cc_kernel *k, cc_term raw, cc_term expected,
     }
     cc_judgement checked;
     if (success)
-        success = ck_infer(k, raw, ctx, 0, &checked);
+        success = ck_infer(k, raw, ctx, dimensions, &checked);
     if (success && expected) {
         uint32_t level;
         cc_term checked_type;
-        success = ck_type(k, expected, ctx, 0, &checked_type, &level) &&
+        success = ck_type(k, expected, ctx, dimensions, &checked_type, &level) &&
                   ck_expect(k, checked.type, checked_type);
     }
     if (success) {
@@ -150,6 +150,12 @@ bool cc_kernel_check(cc_kernel *k, cc_term raw, cc_term expected,
     if (!success)
         memset(result, 0, sizeof *result);
     return success;
+}
+
+bool cc_kernel_check(cc_kernel *k, cc_term raw, cc_term expected,
+                      const cc_assumption *assumptions, size_t count,
+                      cc_checked_result *result) {
+    return cc_kernel_check_in_cube(k, raw, expected, assumptions, count, 0, result);
 }
 
 cc_term cc_kernel_normalize(cc_kernel *k, cc_term term) {

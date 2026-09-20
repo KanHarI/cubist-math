@@ -67,6 +67,14 @@ cc_formula_id cc_kernel_formula(cc_kernel *, const cc_formula *);
 bool cc_kernel_check(cc_kernel *, cc_term, cc_term expected,
                      const cc_assumption *, size_t count, cc_checked_result *);
 
+/* Check under named interval dimensions (bit d enables dimension d).
+ * Assumption types may depend on those dimensions. No endpoints are sampled:
+ * ordinary cubical rules check the whole open cube. The result remains open
+ * in this telescope/cube and is not a closed definition certificate. */
+bool cc_kernel_check_in_cube(cc_kernel *, cc_term, cc_term expected,
+                             const cc_assumption *, size_t count,
+                             uint64_t dimensions, cc_checked_result *);
+
 /* Register a closed definition, checked using only earlier checked references.
  * A symbol may be registered once. On failure no definition is published.
  * The returned expression is a folded DefRef, never an assumed axiom. */
