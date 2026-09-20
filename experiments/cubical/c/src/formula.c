@@ -4,7 +4,9 @@
 #include "internal.h"
 #include <stdlib.h>
 
-bool cc_valid_sort(cc_sort sort) { return sort == CC_INTERVAL || sort == CC_FACE; }
+bool cc_valid_sort(cc_sort sort) {
+    return sort == CC_INTERVAL || sort == CC_FACE;
+}
 
 void cc_init(cc_formula *f, cc_sort sort) {
     *f = (cc_formula){ .sort = sort };
@@ -27,21 +29,26 @@ bool cc_clause_subset(cc_clause a, cc_clause b) {
 }
 
 cc_status cc_insert(cc_formula *f, cc_clause clause) {
-    if (!cc_valid_sort(f->sort)) return CC_BAD_INPUT;
+    if (!cc_valid_sort(f->sort))
+        return CC_BAD_INPUT;
     /* This contradiction rule belongs ONLY to the face lattice. */
-    if (f->sort == CC_FACE && (clause.positive & clause.negative)) return CC_OK;
+    if (f->sort == CC_FACE && (clause.positive & clause.negative))
+        return CC_OK;
     for (size_t i = 0; i < f->length; ++i)
-        if (cc_clause_subset(f->clauses[i], clause)) return CC_OK;
+        if (cc_clause_subset(f->clauses[i], clause))
+            return CC_OK;
 
     size_t kept = 0;
     for (size_t i = 0; i < f->length; ++i)
         if (!cc_clause_subset(clause, f->clauses[i])) f->clauses[kept++] = f->clauses[i];
     f->length = kept;
     if (f->length == f->capacity) {
-        if (f->capacity > SIZE_MAX / (2 * sizeof(cc_clause))) return CC_ALLOCATION_FAILED;
+        if (f->capacity > SIZE_MAX / (2 * sizeof(cc_clause)))
+            return CC_ALLOCATION_FAILED;
         size_t capacity = f->capacity ? 2 * f->capacity : 4;
         cc_clause *grown = realloc(f->clauses, capacity * sizeof(cc_clause));
-        if (!grown) return CC_ALLOCATION_FAILED;
+        if (!grown)
+            return CC_ALLOCATION_FAILED;
         f->clauses = grown;
         f->capacity = capacity;
     }
@@ -50,54 +57,72 @@ cc_status cc_insert(cc_formula *f, cc_clause clause) {
 }
 
 cc_status cc_zero(cc_formula *out) {
-    if (!cc_valid_sort(out->sort)) return CC_BAD_INPUT;
+    if (!cc_valid_sort(out->sort))
+        return CC_BAD_INPUT;
     cc_clear(out);
     return CC_OK;
 }
 
 cc_status cc_one(cc_formula *out) {
-    if (!cc_valid_sort(out->sort)) return CC_BAD_INPUT;
-    cc_formula candidate; cc_init(&candidate, out->sort);
+    if (!cc_valid_sort(out->sort))
+        return CC_BAD_INPUT;
+    cc_formula candidate;
+    cc_init(&candidate, out->sort);
     cc_status status = cc_insert(&candidate, (cc_clause){0, 0});
-    if (status == CC_OK) cc_publish(out, &candidate);
+    if (status == CC_OK)
+        cc_publish(out, &candidate);
     cc_clear(&candidate);
     return status;
 }
 
 cc_status cc_generator(cc_formula *out, unsigned dimension, bool positive) {
-    if (!cc_valid_sort(out->sort) || dimension >= CC_DIMENSIONS) return CC_BAD_INPUT;
+    if (!cc_valid_sort(out->sort) || dimension >= CC_DIMENSIONS)
+        return CC_BAD_INPUT;
     uint64_t bit = UINT64_C(1) << dimension;
-    cc_formula candidate; cc_init(&candidate, out->sort);
+    cc_formula candidate;
+    cc_init(&candidate, out->sort);
     cc_status status = cc_insert(&candidate, (cc_clause){positive ? bit : 0, positive ? 0 : bit});
-    if (status == CC_OK) cc_publish(out, &candidate);
+    if (status == CC_OK)
+        cc_publish(out, &candidate);
     cc_clear(&candidate);
     return status;
 }
 
 cc_status cc_copy(cc_formula *out, const cc_formula *a) {
-    if (out->sort != a->sort || !cc_valid_sort(a->sort)) return CC_BAD_INPUT;
-    cc_formula candidate; cc_init(&candidate, out->sort);
+    if (out->sort != a->sort || !cc_valid_sort(a->sort))
+        return CC_BAD_INPUT;
+    cc_formula candidate;
+    cc_init(&candidate, out->sort);
     cc_status status = CC_OK;
-    for (size_t i = 0; i < a->length && status == CC_OK; ++i) status = cc_insert(&candidate, a->clauses[i]);
-    if (status == CC_OK) cc_publish(out, &candidate);
+    for (size_t i = 0; i < a->length && status == CC_OK; ++i)
+        status = cc_insert(&candidate, a->clauses[i]);
+    if (status == CC_OK)
+        cc_publish(out, &candidate);
     cc_clear(&candidate);
     return status;
 }
 
 cc_status cc_join(cc_formula *out, const cc_formula *a, const cc_formula *b) {
-    if (out->sort != a->sort || a->sort != b->sort || !cc_valid_sort(a->sort)) return CC_BAD_INPUT;
-    cc_formula candidate; cc_init(&candidate, out->sort);
+    if (out->sort != a->sort || a->sort != b->sort || !cc_valid_sort(a->sort))
+        return CC_BAD_INPUT;
+    cc_formula candidate;
+    cc_init(&candidate, out->sort);
     cc_status status = CC_OK;
-    for (size_t i = 0; i < a->length && status == CC_OK; ++i) status = cc_insert(&candidate, a->clauses[i]);
-    for (size_t i = 0; i < b->length && status == CC_OK; ++i) status = cc_insert(&candidate, b->clauses[i]);
-    if (status == CC_OK) cc_publish(out, &candidate);
+    for (size_t i = 0; i < a->length && status == CC_OK; ++i)
+        status = cc_insert(&candidate, a->clauses[i]);
+    for (size_t i = 0; i < b->length && status == CC_OK; ++i)
+        status = cc_insert(&candidate, b->clauses[i]);
+    if (status == CC_OK)
+        cc_publish(out, &candidate);
     cc_clear(&candidate);
     return status;
 }
 
 cc_status cc_meet(cc_formula *out, const cc_formula *a, const cc_formula *b) {
-    if (out->sort != a->sort || a->sort != b->sort || !cc_valid_sort(a->sort)) return CC_BAD_INPUT;
-    cc_formula candidate; cc_init(&candidate, out->sort);
+    if (out->sort != a->sort || a->sort != b->sort || !cc_valid_sort(a->sort))
+        return CC_BAD_INPUT;
+    cc_formula candidate;
+    cc_init(&candidate, out->sort);
     cc_status status = CC_OK;
     for (size_t i = 0; i < a->length && status == CC_OK; ++i)
         for (size_t j = 0; j < b->length && status == CC_OK; ++j) {
@@ -105,19 +130,25 @@ cc_status cc_meet(cc_formula *out, const cc_formula *a, const cc_formula *b) {
                                 a->clauses[i].negative | b->clauses[j].negative};
             status = cc_insert(&candidate, clause);
         }
-    if (status == CC_OK) cc_publish(out, &candidate);
+    if (status == CC_OK)
+        cc_publish(out, &candidate);
     cc_clear(&candidate);
     return status;
 }
 
 bool cc_equal(const cc_formula *a, const cc_formula *b) {
-    if (a->sort != b->sort || !cc_valid_sort(a->sort) || a->length != b->length) return false;
+    if (a->sort != b->sort || !cc_valid_sort(a->sort) || a->length != b->length)
+        return false;
     for (size_t i = 0; i < a->length; ++i) {
         bool found = false;
         for (size_t j = 0; j < b->length; ++j)
             if (a->clauses[i].positive == b->clauses[j].positive &&
-                a->clauses[i].negative == b->clauses[j].negative) { found = true; break; }
-        if (!found) return false;
+                a->clauses[i].negative == b->clauses[j].negative) {
+                found = true;
+                break;
+            }
+        if (!found)
+            return false;
     }
     return true;
 }
