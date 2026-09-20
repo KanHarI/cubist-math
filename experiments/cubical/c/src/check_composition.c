@@ -4,40 +4,6 @@
  * Only these restricted, independently checked tube terms are retained. */
 #include "term_internal.h"
 
-static cc_context *restricted_context(cc_kernel *k, const cc_context *ctx,
-                                       cc_clause clause, size_t *length) {
-    *length = 0;
-    for (const cc_context *entry = ctx; entry; entry = entry->previous)
-        ++*length;
-    if (!*length)
-        return NULL;
-    cc_context *copy = calloc(*length, sizeof *copy);
-    if (!copy) {
-        ck_fail(k, "Restricted context allocation failed.");
-        return NULL;
-    }
-    size_t i = 0;
-    for (const cc_context *entry = ctx; entry; entry = entry->previous, ++i) {
-        copy[i].name = entry->name;
-        copy[i].type = ck_restrict(k, entry->type, clause);
-        copy[i].previous = i + 1 < *length ? &copy[i + 1] : NULL;
-    }
-    return copy;
-}
-
-static cc_formula_id clause_formula(cc_kernel *k, cc_clause clause) {
-    cc_formula phi;
-    cc_init(&phi, CC_FACE);
-    if (cc_insert(&phi, clause) != CC_OK) {
-        cc_clear(&phi);
-        ck_fail(k, "Composition face allocation failed.");
-        return 0;
-    }
-    cc_formula_id id = cc_kernel_formula(k, &phi);
-    cc_clear(&phi);
-    return id;
-}
-
 static cc_term rename_tubes(cc_kernel *k, cc_term system, unsigned dim,
                              const cc_formula *replacement) {
     if (!system)
@@ -97,7 +63,7 @@ bool ck_composition(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dim
                 break;
             }
             size_t length;
-            cc_context *context = restricted_context(k, ctx, clause, &length);
+            cc_context *context = ck_restricted_context(k, ctx, clause, &length);
             if (k->error[0]) {
                 free(context);
                 break;
@@ -126,7 +92,7 @@ bool ck_composition(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dim
                                        ck_restrict(k, other.child[0], overlap)))
                     ck_fail(k, "Composition tubes disagree on an overlap.");
             }
-            cc_formula_id face = clause_formula(k, clause);
+            cc_formula_id face = ck_clause_formula(k, clause);
             reversed = ck_make(k, CC_TUBE, face, checked, reversed, 0, 0);
         }
         cc_clear(&phi);

@@ -1,6 +1,6 @@
 // Small bidirectional reference checker for the structural/path fragment of CCHM.
 // NOT a complete cubical kernel: HITs and a strict Id bridge remain absent.
-// Glue/universe composition are experimental reference rules, not yet native.
+// Glue/universe composition have an independent native implementation.
 // Input is inert JSON syntax; checking never executes user-supplied functions.
 import { interval as I, face as F } from "./lattice.mjs";
 
@@ -74,6 +74,15 @@ function fresh(n, avoid) { while (avoid.has(n)) n += "_"; return n; }
 function substitute(t, n, value, dimension = false) {
   if (!dimension && t.tag === "Var" && t.name === n) return value;
   let result = {...t};
+  // A term argument can contain free dimensions. Avoid capturing them under
+  // Path/PLam/Comp binders even though this substitution targets a term name.
+  if(!dimension&&dimBinder(t)&&free(value,true).has(t.dim)) {
+    const dim=fresh(t.dim,new Set([...free(t,true),...free(value,true),t.dim]));
+    result.family=dsub(result.family,t.dim,I.variable(dim));
+    if(t.tag==="PLam")result.body=dsub(result.body,t.dim,I.variable(dim));
+    if(t.tag==="Comp")result.system=result.system.map(p=>({...p,term:dsub(p.term,t.dim,I.variable(dim))}));
+    result.dim=dim;
+  }
   const isBinder = dimension ? dimBinder(t) : termBinder(t);
   const binderKey = dimension ? "dim" : "name";
   let binder = t[binderKey];

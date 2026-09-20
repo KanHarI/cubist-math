@@ -7,11 +7,11 @@ static cc_term app(cc_kernel *k, cc_term f, cc_term x) {
     return ck_make(k, CC_APP, 0, f, x, 0, 0);
 }
 
-static cc_term append_tube(cc_kernel *k, cc_term system, cc_formula_id face, cc_term value) {
+cc_term ck_append_tube(cc_kernel *k, cc_term system, cc_formula_id face, cc_term value) {
     if (!system)
         return ck_make(k, CC_TUBE, face, value, 0, 0, 0);
     cc_node tube = k->nodes[system];
-    cc_term tail = append_tube(k, tube.child[1], face, value);
+    cc_term tail = ck_append_tube(k, tube.child[1], face, value);
     return ck_make(k, CC_TUBE, tube.payload, tube.child[0], tail, 0, 0);
 }
 
@@ -61,7 +61,7 @@ static cc_term substitute_tubes(cc_kernel *k, cc_term system, unsigned dim,
     return ck_make(k, CC_TUBE, tube.payload, value, tail, 0, 0);
 }
 
-static cc_term fill(cc_kernel *k, unsigned dim, cc_term family, cc_term system,
+cc_term ck_fill(cc_kernel *k, unsigned dim, cc_term family, cc_term system,
                     cc_term base, const cc_formula *r) {
     uint64_t avoid = ck_free_dims(k, family) | ck_free_dims(k, system) |
                      ck_free_dims(k, base) | (UINT64_C(1) << dim);
@@ -82,7 +82,7 @@ static cc_term fill(cc_kernel *k, unsigned dim, cc_term family, cc_term system,
         cc_term moved_family = ck_dimension_substitute(k, family, dim, &along);
         cc_term moved_system = substitute_tubes(k, system, dim, &along);
         cc_formula_id face = cc_kernel_formula(k, &wall);
-        moved_system = append_tube(k, moved_system, face, base);
+        moved_system = ck_append_tube(k, moved_system, face, base);
         result = ck_make(k, CC_COMP, direction, moved_family, moved_system, base, 0);
     } else
         ck_fail(k, "Composition filling formula allocation failed.");
@@ -141,6 +141,10 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
             return ck_make(k, CC_SUCC, 0, recursive, 0, 0, 0);
         }
     }
+    if (type.kind == CC_GLUE)
+        return ck_whnf(k, ck_glue_composition(k, dim, family, system, base));
+    if (type.kind == CC_U)
+        return ck_whnf(k, ck_universe_composition(k, dim, system, base));
     if (type.kind == CC_SIGMA) {
         cc_term first_system = map_tubes(k, system, CC_FST, 0, 0);
         cc_term first_base = ck_make(k, CC_FST, 0, base, 0, 0, 0);
@@ -148,7 +152,7 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
         cc_init(&r, CC_INTERVAL);
         if (cc_generator(&r, dim, true) != CC_OK)
             return ck_fail(k, "Filling direction allocation failed."), 0;
-        cc_term first_line = fill(k, dim, type.child[0], first_system, first_base, &r);
+        cc_term first_line = ck_fill(k, dim, type.child[0], first_system, first_base, &r);
         cc_clear(&r);
         cc_term first = ck_make(k, CC_COMP, dim, type.child[0], first_system, first_base, 0);
         cc_term second_family = ck_substitute(k, type.child[1], type.payload, first_line);
@@ -170,7 +174,7 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
             return ck_fail(k, "Backward filling direction allocation failed."), 0;
         }
         cc_term backwards_domain = ck_dimension_substitute(k, type.child[0], dim, &backwards);
-        cc_term line = fill(k, dim, backwards_domain, 0, argument, &backwards);
+        cc_term line = ck_fill(k, dim, backwards_domain, 0, argument, &backwards);
         cc_clear(&variable);
         cc_clear(&backwards);
         cc_term body_family = ck_substitute(k, type.child[1], type.payload, line);
@@ -195,9 +199,9 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
         cc_clear(&variable);
         cc_term body_system = map_tubes(k, system, CC_PAPP, arg, family);
         cc_formula_id left_face = ck_endpoint_face(k, direction, 0);
-        body_system = append_tube(k, body_system, left_face, type.child[1]);
+        body_system = ck_append_tube(k, body_system, left_face, type.child[1]);
         cc_formula_id right_face = ck_endpoint_face(k, direction, 1);
-        body_system = append_tube(k, body_system, right_face, type.child[2]);
+        body_system = ck_append_tube(k, body_system, right_face, type.child[2]);
         cc_term start_type = ck_endpoint_term(k, family, dim, 0);
         cc_term body_base = ck_make(k, CC_PAPP, arg, base, start_type, 0, 0);
         cc_term body = ck_make(k, CC_COMP, dim, body_family, body_system, body_base, 0);

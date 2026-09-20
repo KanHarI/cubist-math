@@ -4,7 +4,7 @@
 import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {interval as I,face as F} from "./lattice.mjs";
-const kinds=["","U","Var","Pi","Lam","App","Sigma","Pair","Fst","Snd","Nat","Zero","Succ","NatRec","Unit","Point","Path","PLam","PApp","Comp","Tube","Void","Abort","W","Sup","WRec","Sum","Inl","Inr","SumRec","UnitRec"];
+const kinds=["","U","Var","Pi","Lam","App","Sigma","Pair","Fst","Snd","Nat","Zero","Succ","NatRec","Unit","Point","Path","PLam","PApp","Comp","Tube","Void","Abort","W","Sup","WRec","Sum","Inl","Inr","SumRec","UnitRec","Glue","GlueSystem","GlueTerm","Unglue"];
 const nativeRoot=fileURLToPath(new URL("./c/",import.meta.url));
 
 export function nativeRequest(term,expected=null,assumptions=[],{normalize=true}={}) {
@@ -54,6 +54,17 @@ export function nativeRequest(term,expected=null,assumptions=[],{normalize=true}
       case "Inl":case "Inr":return node(t.tag,0,[child(t.as),child(t.value)]);
       case "SumRec":return node(t.tag,0,[child(t.motive),child(t.left),child(t.right),child(t.value)]);
       case "UnitRec":return node(t.tag,0,[child(t.motive),child(t.point),child(t.value)]);
+      case "Glue":{
+        const base=child(t.base);let system=0;
+        for(const p of [...t.system].reverse())system=node("GlueSystem",formula(1,p.face,dims),[child(p.type),child(p.equiv),system]);
+        return node(t.tag,0,[base,system]);
+      }
+      case "GlueTerm":{
+        const as=child(t.as),base=child(t.base);let system=0;
+        for(const p of [...t.system].reverse())system=node("Tube",formula(1,p.face,dims),[child(p.term),system]);
+        return node(t.tag,0,[as,base,system]);
+      }
+      case "Unglue":return node(t.tag,0,[child(t.as),child(t.value)]);
       case "WRec":return node(t.tag,0,[child(t.motive),child(t.step),child(t.value)]);
       default:throw Error(`Unsupported native term ${t.tag}`);
     }

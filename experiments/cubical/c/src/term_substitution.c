@@ -13,7 +13,7 @@ bool ck_dim_binder(cc_term_kind kind) {
 }
 
 bool ck_term_free(cc_kernel *k, cc_term term, uint32_t name) {
-    if (!term || k->error[0])
+    if (!term || !ck_tick(k, false))
         return false;
     cc_node n = k->nodes[term];
     if (n.kind == CC_VAR)
@@ -36,11 +36,11 @@ static uint64_t formula_names(const cc_formula *f) {
 }
 
 uint64_t ck_free_dims(cc_kernel *k, cc_term term) {
-    if (!term || k->error[0])
+    if (!term || !ck_tick(k, false))
         return 0;
     cc_node n = k->nodes[term];
     uint64_t result = 0;
-    if (n.kind == CC_PAPP || n.kind == CC_TUBE)
+    if (n.kind == CC_PAPP || n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM)
         result = formula_names(cc_kernel_get_formula(k, n.payload));
     for (unsigned i = 0; i < ck_arity(n.kind); ++i) {
         uint64_t names = ck_free_dims(k, n.child[i]);
@@ -59,12 +59,38 @@ unsigned ck_fresh_dimension(cc_kernel *k, uint64_t avoid) {
     return CC_DIMENSIONS;
 }
 
+static cc_term tube_substitute(cc_kernel *, cc_term, unsigned,
+                                const cc_formula *, bool, bool);
+
 cc_term ck_substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term value) {
-    if (!term || k->error[0])
-        return term;
+    if (!term)
+        return 0;
+    if (!ck_tick(k, false))
+        return 0;
     cc_node n = k->nodes[term];
     if (n.kind == CC_VAR && n.payload == name)
         return value;
+    /* Substituting a TERM can capture free DIMENSIONS in that term too.
+     * A lambda returning <i> x must rename i before x := p(i). */
+    if (ck_dim_binder(n.kind) && n.payload < CC_DIMENSIONS &&
+        (ck_free_dims(k, value) & (UINT64_C(1) << n.payload))) {
+        uint64_t avoid = ck_free_dims(k, term) | ck_free_dims(k, value) |
+                         (UINT64_C(1) << n.payload);
+        unsigned fresh = ck_fresh_dimension(k, avoid);
+        cc_formula variable;
+        cc_init(&variable, CC_INTERVAL);
+        if (cc_generator(&variable, fresh, true) != CC_OK) {
+            cc_clear(&variable);
+            return ck_fail(k, "Term substitution dimension allocation failed."), 0;
+        }
+        n.child[0] = ck_dimension_substitute(k, n.child[0], n.payload, &variable);
+        if (n.kind == CC_PLAM)
+            n.child[1] = ck_dimension_substitute(k, n.child[1], n.payload, &variable);
+        if (n.kind == CC_COMP)
+            n.child[1] = tube_substitute(k, n.child[1], n.payload, &variable, true, false);
+        n.payload = fresh;
+        cc_clear(&variable);
+    }
     if (ck_term_binder(n.kind) && n.payload != name && ck_term_free(k, value, n.payload)) {
         uint32_t fresh = ck_fresh_symbol(k);
         n.child[1] = ck_substitute(k, n.child[1], n.payload, ck_var(k, fresh));
@@ -83,8 +109,10 @@ cc_term ck_substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term value) 
 
 static cc_term tube_substitute(cc_kernel *k, cc_term term, unsigned dim,
                                const cc_formula *value, bool bodies, bool faces) {
-    if (!term || k->error[0])
-        return term;
+    if (!term)
+        return 0;
+    if (!ck_tick(k, false))
+        return 0;
     cc_node n = k->nodes[term];
     if (n.kind != CC_TUBE)
         return ck_fail(k, "Malformed composition tube list."), 0;
@@ -107,8 +135,10 @@ static cc_term tube_substitute(cc_kernel *k, cc_term term, unsigned dim,
 
 cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
                                 const cc_formula *value) {
-    if (!term || k->error[0])
-        return term;
+    if (!term)
+        return 0;
+    if (!ck_tick(k, false))
+        return 0;
     if (dim >= CC_DIMENSIONS || !value || value->sort != CC_INTERVAL)
         return ck_fail(k, "Invalid dimension substitution."), 0;
     cc_node n = k->nodes[term];
@@ -140,6 +170,17 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
         bool bound = ck_dim_binder(n.kind) && (i == 0 || (n.kind == CC_PLAM && i == 1));
         if (!(bound && n.payload == dim))
             n.child[i] = ck_dimension_substitute(k, n.child[i], dim, value);
+    }
+    if (n.kind == CC_GLUE_SYSTEM) {
+        const cc_formula *face = cc_kernel_get_formula(k, n.payload);
+        cc_formula changed;
+        cc_init(&changed, CC_FACE);
+        if (!face || cc_face_substitute(&changed, face, dim, value) != CC_OK) {
+            cc_clear(&changed);
+            return ck_fail(k, "Invalid Glue face substitution."), 0;
+        }
+        n.payload = cc_kernel_formula(k, &changed);
+        cc_clear(&changed);
     }
     if (n.kind == CC_PAPP) {
         const cc_formula *arg = cc_kernel_get_formula(k, n.payload);

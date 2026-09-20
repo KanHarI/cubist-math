@@ -16,7 +16,8 @@ typedef enum {
     CC_NAT, CC_ZERO, CC_SUCC, CC_NATREC, CC_UNIT, CC_POINT,
     CC_PATH, CC_PLAM, CC_PAPP, CC_COMP, CC_TUBE,
     CC_VOID, CC_ABORT, CC_W, CC_SUP, CC_WREC,
-    CC_SUM, CC_INL, CC_INR, CC_SUMREC, CC_UNITREC
+    CC_SUM, CC_INL, CC_INR, CC_SUMREC, CC_UNITREC,
+    CC_GLUE, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_UNGLUE
 } cc_term_kind;
 
 typedef struct {
@@ -46,6 +47,8 @@ void cc_kernel_clear_error(cc_kernel *);
  * Abort(type,impossible); Sup(W-type,label,children); WRec(motive,step,value).
  * Sum(left,right); Inl/Inr(sum-type,value); SumRec(motive,left,right,value).
  * UnitRec(motive,point-case,value).
+ * Glue(base,system); GlueSystem(face-formula; partial-type,equivalence,next).
+ * GlueTerm(Glue-type,base-value,partial-tubes); Unglue(Glue-type,value).
  * Nat/Zero/Unit/Point/Void have no children. Missing children must be zero.
  * The checker discards an untrusted PApp's optional second child (annotation).
  */

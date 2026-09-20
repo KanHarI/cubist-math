@@ -135,6 +135,8 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
         return alpha(k, left.child[1], right.child[1], terms, dims) &&
                alpha(k, left.child[2], right.child[2], terms, dims);
     }
+    if ((left.kind == CC_GLUE_SYSTEM || left.kind == CC_TUBE) && !formula_equal(k, left.payload, right.payload, dims))
+        return false;
     if (left.kind == CC_PAPP)
         return formula_equal(k, left.payload, right.payload, dims) &&
                alpha(k, left.child[0], right.child[0], terms, dims);

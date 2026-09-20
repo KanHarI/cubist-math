@@ -55,6 +55,9 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
         return ck_paths(k, n, ctx, dims, result);
     case CC_COMP:
         return ck_composition(k, n, ctx, dims, result);
+    case CC_GLUE: case CC_GLUE_TERM: case CC_UNGLUE:
+        return ck_glue(k, n, ctx, dims, result);
+    case CC_GLUE_SYSTEM:
     case CC_TUBE:
         return ck_fail(k, "A partial tube is not a standalone term.");
     }

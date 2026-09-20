@@ -65,4 +65,15 @@ cc_term ck_endpoint_term(cc_kernel *, cc_term, unsigned, unsigned);
 cc_formula_id ck_interval_variable(cc_kernel *, unsigned);
 cc_formula_id ck_endpoint_face(cc_kernel *, unsigned, unsigned);
 
+cc_context *ck_restricted_context(cc_kernel *, const cc_context *, cc_clause, size_t *);
+cc_formula_id ck_clause_formula(cc_kernel *, cc_clause);
+bool ck_glue(cc_kernel *, cc_node, const cc_context *, uint64_t, cc_judgement *);
+cc_term ck_equiv_type(cc_kernel *, cc_term, cc_term);
+cc_term ck_fiber_type(cc_kernel *, cc_term, cc_term, cc_term, cc_term);
+cc_term ck_contractible_type(cc_kernel *, cc_term);
+cc_term ck_identity_equiv(cc_kernel *, cc_term);
+cc_term ck_append_tube(cc_kernel *, cc_term, cc_formula_id, cc_term);
+cc_term ck_fill(cc_kernel *, unsigned, cc_term, cc_term, cc_term, const cc_formula *);
+cc_term ck_glue_composition(cc_kernel *, unsigned, cc_term, cc_term, cc_term);
+cc_term ck_universe_composition(cc_kernel *, unsigned, cc_term, cc_term);
 #endif
