@@ -7,8 +7,24 @@ enum comparison_mode { FOLDED, EXPOSE, COMPUTE, CONGRUENCE };
 
 typedef struct alpha_binding {
     uint32_t left, right;
+    uint64_t scope;
     const struct alpha_binding *previous;
 } alpha_binding;
+
+static alpha_binding bind(cc_kernel *k, uint32_t left, uint32_t right,
+                           const alpha_binding *previous) {
+    if (k->next_alpha_scope == UINT64_MAX)
+        ck_fail(k, "Alpha-comparison scope counter exhausted.");
+    return (alpha_binding){left, right, ++k->next_alpha_scope, previous};
+}
+
+static size_t alpha_slot(cc_term left, cc_term right, uint64_t terms, uint64_t dims) {
+    uint64_t hash = (uint64_t)left * UINT64_C(1099511628211);
+    hash = (hash ^ right) * UINT64_C(1099511628211);
+    hash = (hash ^ terms) * UINT64_C(1099511628211);
+    hash = (hash ^ dims) * UINT64_C(1099511628211);
+    return (size_t)(hash % CC_ALPHA_MEMO_SIZE);
+}
 
 static const alpha_binding *bound(const alpha_binding *env, uint32_t name, bool right) {
     for (; env; env = env->previous)
@@ -160,13 +176,13 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
         if (left.kind == CC_LAM) {
             uint32_t fresh = ck_fresh_symbol(k);
             cc_term applied = ck_make(k, CC_APP, 0, b, ck_var(k, fresh), 0, 0);
-            alpha_binding binding = {left.payload, fresh, terms};
+            alpha_binding binding = bind(k, left.payload, fresh, terms);
             return alpha(k, left.child[1], applied, &binding, dims, children_mode);
         }
         if (right.kind == CC_LAM) {
             uint32_t fresh = ck_fresh_symbol(k);
             cc_term applied = ck_make(k, CC_APP, 0, a, ck_var(k, fresh), 0, 0);
-            alpha_binding binding = {fresh, right.payload, terms};
+            alpha_binding binding = bind(k, fresh, right.payload, terms);
             return alpha(k, applied, right.child[1], &binding, dims, children_mode);
         }
         if (left.kind == CC_PLAM || right.kind == CC_PLAM) {
@@ -190,7 +206,7 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
                 ck_endpoint_term(k, line.child[1], line.payload, 0),
                 ck_endpoint_term(k, line.child[1], line.payload, 1), 0);
             cc_term applied = ck_make(k, CC_PAPP, argument, other, annotation, 0, 0);
-            alpha_binding binding = {direction, direction, dims};
+            alpha_binding binding = bind(k, direction, direction, dims);
             return on_left ? alpha(k, body, applied, terms, &binding, COMPUTE) :
                              alpha(k, applied, body, terms, &binding, COMPUTE);
         }
@@ -216,12 +232,12 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
     if (left.kind == CC_VAR)
         return same_name(left.payload, right.payload, terms);
     if (ck_term_binder(left.kind)) {
-        alpha_binding binding = {left.payload, right.payload, terms};
+        alpha_binding binding = bind(k, left.payload, right.payload, terms);
         return alpha(k, left.child[0], right.child[0], terms, dims, children_mode) &&
                alpha(k, left.child[1], right.child[1], &binding, dims, children_mode);
     }
     if (ck_dim_binder(left.kind)) {
-        alpha_binding binding = {left.payload, right.payload, dims};
+        alpha_binding binding = bind(k, left.payload, right.payload, dims);
         if (!alpha(k, left.child[0], right.child[0], terms, &binding, children_mode))
             return false;
         if (left.kind == CC_PLAM)
@@ -249,9 +265,29 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
         --k->recursion;
         return ck_fail(k, "Native conversion recursion depth exceeded.");
     }
+    uint64_t term_scope = terms ? terms->scope : 0;
+    uint64_t dimension_scope = dims ? dims->scope : 0;
+    size_t slot = alpha_slot(a, b, term_scope, dimension_scope);
+    if (mode == FOLDED && a && b && k->alpha_memo) {
+        cc_alpha_memo entry = k->alpha_memo[slot];
+        if (entry.left == a && entry.right == b && entry.term_scope == term_scope &&
+            entry.dimension_scope == dimension_scope) {
+            --k->recursion;
+            return ck_tick(k, false) && entry.equal;
+        }
+    }
     bool equal = alpha_inner(k, a, b, terms, dims, mode);
+    if (mode == FOLDED && a && b && !k->error[0]) {
+        if (!k->alpha_memo) {
+            k->alpha_memo = calloc(CC_ALPHA_MEMO_SIZE, sizeof *k->alpha_memo);
+            if (!k->alpha_memo)
+                ck_fail(k, "Alpha-comparison memo allocation failed.");
+        }
+        if (k->alpha_memo)
+            k->alpha_memo[slot] = (cc_alpha_memo){a, b, term_scope, dimension_scope, equal};
+    }
     --k->recursion;
-    return equal;
+    return !k->error[0] && equal;
 }
 
 bool ck_convertible(cc_kernel *k, cc_term a, cc_term b) {
