@@ -52,17 +52,25 @@ with induction, cumulative universes, and dependent Path abstraction/application
 Function extensionality is checked as an interval abstraction, with a computing
 pointwise roundtrip, without adding an axiom. The original `basics.proof`
 translates completely (identity, duplication, natural-number copying and the
-proof that copying two gives two). The first whole-library translation pass
-checks **99 of 2,069 declarations** in this fragment; 1,970 remain explicit gaps.
+proof that copying two gives two). The current whole-library translation pass
+checks **116 of 2,069 declarations** in this fragment; 1,953 remain explicit gaps.
 See [the exhaustive results](translation-results.json) and
 [the source inventory](migration-inventory.md). Counts are for declarations,
 not entire modules, and are not an estimate of the remaining effort. The census
 includes 212 MathScript modules and separately lists 28 legacy construction
 artifacts, which the cubical translator does not admit as trusted exports.
 
-No
-existing declaration is claimed translated merely because it parses or because
-the old kernel checks it. Missing composition, Glue or HIT rules are gaps, not
+Composition now checks every tube/base boundary and every overlap of its face
+system. Its computation rules cover Nat, Unit, Pi, Sigma and Path. Pi composition
+uses backward filling in the domain; Sigma composition fills the first component
+before composing the second. Derived Path induction has the expected weak beta
+behavior: a test deliberately rejects a source proof depending on the old
+judgemental J beta rule for an unknown type. Concrete universe-schema uses are
+checked at their supplied level; the schema itself is not counted as a translated
+closed declaration. Downward resizing is rejected.
+
+No existing declaration is claimed translated merely because it parses or because
+the old kernel checks it. Missing universe composition, Glue or HIT rules are gaps, not
 assumptions silently inserted into a new checker.
 
 The production library currently has documented unrelated reference-trace and

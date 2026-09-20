@@ -1,9 +1,9 @@
 {
-  "scope": "Actual translation into the checked CCHM structural/path fragment. Composition, Glue, HITs and the Id bridge are not implemented; this is not full cubical migration.",
-  "elapsedMilliseconds": 612,
-  "peakRssBytes": 254656512,
-  "checked": 99,
-  "untranslated": 1970,
+  "scope": "Actual translation into the checked CCHM structural/path/composition fragment. Glue, universe composition, HITs and the strict Id bridge are not implemented; this is not full cubical migration.",
+  "elapsedMilliseconds": 862,
+  "peakRssBytes": 270467072,
+  "checked": 116,
+  "untranslated": 1953,
   "modules": [
     {
       "module": "affine_dyadic_limits",
@@ -445,7 +445,7 @@
         {
           "name": "dependent_pair_path",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Type mismatch: [\"Pi\",[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"free\",\"b4\"]]],[\"Pi\",[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"free\",\"b4\"]]],[\"Pi\",[\"Path\",[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"free\",\"b4\"]]],[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",1]]],[\"Path\",[\"Sigma\",[\"Var\",[\"free\",\"b1\"]],[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"bound\",3]]]],[\"Pair\",[\"Sigma\",[\"Var\",[\"free\",\"b1\"]],[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"bound\",3]]]],[\"Var\",[\"free\",\"b4\"]],[\"Var\",[\"bound\",0]]],[\"Pair\",[\"Sigma\",[\"Var\",[\"free\",\"b1\"]],[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"bound\",3]]]],[\"Var\",[\"free\",\"b4\"]],[\"Var\",[\"bound\",1]]]]]]] versus [\"Pi\",[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"free\",\"b4\"]]],[\"Pi\",[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"free\",\"b4\"]]],[\"Pi\",[\"Path\",[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"free\",\"b4\"]]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"free\",\"b4\"]]],[\"Var\",[\"bound\",0]],[]],[\"Var\",[\"bound\",1]]],[\"Path\",[\"Sigma\",[\"Var\",[\"free\",\"b1\"]],[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"bound\",3]]]],[\"Pair\",[\"Sigma\",[\"Var\",[\"free\",\"b1\"]],[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"bound\",3]]]],[\"Var\",[\"free\",\"b4\"]],[\"Var\",[\"bound\",0]]],[\"Pair\",[\"Sigma\",[\"Var\",[\"free\",\"b1\"]],[\"App\",[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"bound\",3]]]],[\"Var\",[\"free\",\"b4\"]],[\"Var\",[\"bound\",1]]]]]]]"
         },
         {
           "name": "sigma_eta",
@@ -517,27 +517,27 @@
         {
           "name": "coherence_prop",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Coherence"
+          "reason": "Untranslated dependency: forall_prop"
         },
         {
           "name": "half_adjoint_laws_prop",
           "status": "not-translated",
-          "reason": "Untranslated dependency: HalfAdjointLaws"
+          "reason": "Proof block tactics not yet translated."
         },
         {
           "name": "is_equiv_prop",
           "status": "not-translated",
-          "reason": "Untranslated dependency: IsEquiv"
+          "reason": "Proof block tactics not yet translated."
         },
         {
           "name": "equivalence_ext",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: equivalence_function"
         },
         {
           "name": "equivalences_are_bijections",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Cannot read properties of undefined (reading 'left')"
         },
         {
           "name": "is_prop_prop",
@@ -552,7 +552,7 @@
         {
           "name": "subtype_path_correction",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: subtype_path"
         },
         {
           "name": "subtype_is_set",
@@ -660,7 +660,7 @@
         {
           "name": "finite_binomial_equivalence",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: Binomial"
         },
         {
           "name": "choose_units_five_two",
@@ -879,8 +879,7 @@
         },
         {
           "name": "type_path_bijection",
-          "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "selected_normalize",
@@ -1085,67 +1084,67 @@
         {
           "name": "action_forward",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: equivalence_function"
         },
         {
           "name": "action_backward",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: equivalence_inverse"
         },
         {
           "name": "action_left_law",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: action_backward"
         },
         {
           "name": "action_edges",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated operator: or"
         },
         {
           "name": "action_family",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: suspension_rec"
         },
         {
           "name": "action_univalence",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated name: ua"
         },
         {
           "name": "action_spoke",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: action_family"
         },
         {
           "name": "action_spoke_inverse",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: action_family"
         },
         {
           "name": "action_edge",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: action_family"
         },
         {
           "name": "loop_action",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: BouquetLoops"
         },
         {
           "name": "loop_action_generator",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: loop_action"
         },
         {
           "name": "loop_action_inverse",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: loop_action"
         },
         {
           "name": "loop_action_append",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: BouquetLoops"
         }
       ]
     },
@@ -1205,12 +1204,12 @@
         {
           "name": "bouquet_decoder_spoke",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: bouquet_decoder_family"
         },
         {
           "name": "bouquet_decoder_meridian",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: bouquet_decoder_family"
         },
         {
           "name": "bouquet_decoder_edges",
@@ -1260,12 +1259,12 @@
         {
           "name": "bouquet_generation_spoke",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: bouquet_generation_family"
         },
         {
           "name": "bouquet_generation_edge",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: bouquet_generation_family"
         },
         {
           "name": "bouquet_generation_edges",
@@ -1329,7 +1328,7 @@
         {
           "name": "loop_map_inverse_right",
           "status": "not-translated",
-          "reason": "Untranslated dependency: LoopMapLaws"
+          "reason": "Proof block tactics not yet translated."
         },
         {
           "name": "bouquet_maps_determined_by_generators",
@@ -1483,17 +1482,17 @@
         {
           "name": "lower_inverse",
           "status": "not-translated",
-          "reason": "Untranslated dependency: inverse"
+          "reason": "Untranslated dependency: S1"
         },
         {
           "name": "upper_inverse",
           "status": "not-translated",
-          "reason": "Untranslated dependency: inverse"
+          "reason": "Untranslated dependency: S1"
         },
         {
           "name": "loop_inverse",
           "status": "not-translated",
-          "reason": "Untranslated dependency: inverse"
+          "reason": "Untranslated dependency: S1"
         },
         {
           "name": "code_lower_inverse",
@@ -1578,12 +1577,12 @@
         {
           "name": "decoder_upper",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: decoder_family"
         },
         {
           "name": "decoder_lower",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: decoder_family"
         },
         {
           "name": "decoder_meridians",
@@ -1718,7 +1717,7 @@
         {
           "name": "circle_map_generator",
           "status": "not-translated",
-          "reason": "Untranslated dependency: ap"
+          "reason": "Untranslated dependency: S1"
         },
         {
           "name": "circle_power_map",
@@ -2020,7 +2019,7 @@
         {
           "name": "complex_embedding_injective",
           "status": "not-translated",
-          "reason": "Untranslated name: cong"
+          "reason": "Untranslated dependency: complex_real"
         },
         {
           "name": "complex_zero_not_one",
@@ -2449,7 +2448,7 @@
         {
           "name": "paired_complex_period_laws",
           "status": "not-translated",
-          "reason": "Untranslated dependency: LoopMapLaws"
+          "reason": "Untranslated dependency: complex_add"
         },
         {
           "name": "PeriodApproximationLaws",
@@ -2849,7 +2848,7 @@
         {
           "name": "contour_edge_self_zero",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_add_inverse_right"
         },
         {
           "name": "contour_backtrack_same_tag",
@@ -2888,12 +2887,12 @@
         {
           "name": "contour_edge_subdivide",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_distribute"
         },
         {
           "name": "contour_edge_refinement",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: contour_edge_change_tag"
         },
         {
           "name": "contour_tag_error_sum",
@@ -2926,12 +2925,12 @@
         {
           "name": "difference_add_back",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_add_swap"
         },
         {
           "name": "difference_compose",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_add_comm"
         }
       ]
     },
@@ -3714,47 +3713,47 @@
         {
           "name": "path_right_unit_at",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "path_cancel_right_at",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "path_prepend_inverse_cancel_at",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "homotopy_natural",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "homotopy_self",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "ap_interchange",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "adjoint_counit",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "adjoint_triangle",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "equiv_from_inverse",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         }
       ]
     },
@@ -3836,8 +3835,7 @@
         },
         {
           "name": "product_path",
-          "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "product_map",
@@ -3934,53 +3932,51 @@
         },
         {
           "name": "Coherence",
-          "status": "not-translated",
-          "reason": "Untranslated dependency: ap"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "HalfAdjointLaws",
-          "status": "not-translated",
-          "reason": "Untranslated dependency: Coherence"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "equivalence_function",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: sigma_first"
         },
         {
           "name": "equivalence_inverse_data",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: sigma_second"
         },
         {
           "name": "equivalence_inverse",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: sigma_first"
         },
         {
           "name": "equivalence_laws",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: sigma_second"
         },
         {
           "name": "equivalence_left",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: sigma_first"
         },
         {
           "name": "equivalence_right",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: sigma_first"
         },
         {
           "name": "bijection_equiv",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Cannot read properties of undefined (reading 'left')"
         },
         {
           "name": "equiv_bijection",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: equivalence_function"
         }
       ]
     },
@@ -4245,7 +4241,7 @@
         {
           "name": "f4_loop_exchanges_roots",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: extension_carrier"
         },
         {
           "name": "f4_loop_nontrivial",
@@ -4255,7 +4251,7 @@
         {
           "name": "f4_loop_twice",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: f4_galois_loop"
         }
       ]
     },
@@ -4340,7 +4336,7 @@
         {
           "name": "f4_galois_correspondence",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: DecidableSubgroup"
         },
         {
           "name": "F4DecidableSubgroupIncluded",
@@ -4885,7 +4881,7 @@
         {
           "name": "field_dependent_pair_path",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Type mismatch: [\"Pi\",[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"free\",\"b25\"]]],[\"Pi\",[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"free\",\"b25\"]]],[\"Pi\",[\"Path\",[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"free\",\"b25\"]]],[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",1]]],[\"Path\",[\"Sigma\",[\"Var\",[\"free\",\"b22\"]],[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"bound\",3]]]],[\"Pair\",[\"Sigma\",[\"Var\",[\"free\",\"b22\"]],[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"bound\",3]]]],[\"Var\",[\"free\",\"b25\"]],[\"Var\",[\"bound\",0]]],[\"Pair\",[\"Sigma\",[\"Var\",[\"free\",\"b22\"]],[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"bound\",3]]]],[\"Var\",[\"free\",\"b25\"]],[\"Var\",[\"bound\",1]]]]]]] versus [\"Pi\",[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"free\",\"b25\"]]],[\"Pi\",[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"free\",\"b25\"]]],[\"Pi\",[\"Path\",[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"free\",\"b25\"]]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"free\",\"b25\"]]],[\"Var\",[\"bound\",0]],[]],[\"Var\",[\"bound\",1]]],[\"Path\",[\"Sigma\",[\"Var\",[\"free\",\"b22\"]],[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"bound\",3]]]],[\"Pair\",[\"Sigma\",[\"Var\",[\"free\",\"b22\"]],[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"bound\",3]]]],[\"Var\",[\"free\",\"b25\"]],[\"Var\",[\"bound\",0]]],[\"Pair\",[\"Sigma\",[\"Var\",[\"free\",\"b22\"]],[\"App\",[\"Var\",[\"free\",\"b24\"]],[\"Var\",[\"bound\",3]]]],[\"Var\",[\"free\",\"b25\"]],[\"Var\",[\"bound\",1]]]]]]]"
         },
         {
           "name": "field_sigma_eta",
@@ -5080,7 +5076,7 @@
         {
           "name": "index_sum_left",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: IndexLE"
         },
         {
           "name": "index_sum_right",
@@ -5302,7 +5298,7 @@
         {
           "name": "field_pair_path_decode",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Untranslated dependency: field_pair_path"
         },
         {
           "name": "field_product_is_set",
@@ -5630,8 +5626,7 @@
         },
         {
           "name": "inverse_injective",
-          "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "preserves_tail",
@@ -5974,7 +5969,7 @@
         {
           "name": "finite_function_equivalence",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: Fin"
         }
       ]
     },
@@ -6574,7 +6569,7 @@
         {
           "name": "group_inverse_unique",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: group_right_unit_law"
         },
         {
           "name": "group_inverse_evidence_prop",
@@ -6588,13 +6583,12 @@
         },
         {
           "name": "group_carrier_transport",
-          "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "group_isomorphism_preserves_unit",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: group_right_unit_law"
         }
       ]
     },
@@ -6759,7 +6753,7 @@
         {
           "name": "group_total_transport_path",
           "status": "not-translated",
-          "reason": "Untranslated dependency: group_carrier_transport"
+          "reason": "Untranslated dependency: GroupIso"
         },
         {
           "name": "group_objects_iso_total_path",
@@ -6814,7 +6808,7 @@
         {
           "name": "group_structure_identity",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: GroupIso"
         },
         {
           "name": "group_isomorphism_is_equality",
@@ -7006,47 +7000,46 @@
         {
           "name": "path_map_constant",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b2\"]],[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"free\",\"b3\"]]],[\"PLam\",[\"Var\",[\"free\",\"b2\"]],[\"Var\",[\"free\",\"b3\"]]],[\"PLam\",[\"Var\",[\"free\",\"b2\"]],[\"Var\",[\"free\",\"b3\"]]]] versus [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b2\"]],[\"Var\",[\"free\",\"b3\"]],[\"Var\",[\"free\",\"b3\"]]],[\"PLam\",[\"Var\",[\"free\",\"b2\"]],[\"Comp\",[\"Var\",[\"free\",\"b2\"]],[\"Var\",[\"free\",\"b3\"]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b3\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b3\"]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b2\"]],[\"Var\",[\"free\",\"b3\"]]]]"
         },
         {
           "name": "path_map_identity",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b37\"]],[\"Var\",[\"free\",\"b38\"]],[\"Var\",[\"free\",\"b38\"]]],[\"PLam\",[\"Var\",[\"free\",\"b37\"]],[\"Var\",[\"free\",\"b38\"]]],[\"PLam\",[\"Var\",[\"free\",\"b37\"]],[\"Var\",[\"free\",\"b38\"]]]] versus [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b37\"]],[\"Var\",[\"free\",\"b38\"]],[\"Var\",[\"free\",\"b38\"]]],[\"PLam\",[\"Var\",[\"free\",\"b37\"]],[\"Comp\",[\"Var\",[\"free\",\"b37\"]],[\"Var\",[\"free\",\"b38\"]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b38\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b38\"]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b37\"]],[\"Var\",[\"free\",\"b38\"]]]]"
         },
         {
           "name": "homotopy_naturality",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Untranslated dependency: right_unit"
         },
         {
           "name": "cancel_right_path",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Untranslated dependency: right_unit"
         },
         {
           "name": "null_homotopy_kills_loops",
           "status": "not-translated",
-          "reason": "Untranslated dependency: ap"
+          "reason": "Proof block tactics not yet translated."
         },
         {
           "name": "contractible_loops_are_null",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: path_map_identity"
         },
         {
           "name": "rebase_loop",
-          "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "rebase_constant_loop",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b332\"]],[\"Var\",[\"free\",\"b333\"]],[\"Var\",[\"free\",\"b333\"]]],[\"PLam\",[\"Var\",[\"free\",\"b332\"]],[\"Var\",[\"free\",\"b333\"]]],[\"PLam\",[\"Var\",[\"free\",\"b332\"]],[\"Var\",[\"free\",\"b333\"]]]] versus [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b332\"]],[\"Var\",[\"free\",\"b333\"]],[\"Var\",[\"free\",\"b333\"]]],[\"PLam\",[\"Var\",[\"free\",\"b332\"]],[\"Comp\",[\"Var\",[\"free\",\"b332\"]],[\"Var\",[\"free\",\"b333\"]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b333\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b333\"]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b332\"]],[\"Var\",[\"free\",\"b333\"]]]]"
         },
         {
           "name": "rebase_null_loop",
           "status": "not-translated",
-          "reason": "Untranslated dependency: rebase_loop"
+          "reason": "Untranslated dependency: rebase_constant_loop"
         }
       ]
     },
@@ -7063,23 +7056,22 @@
         },
         {
           "name": "identity_system_decode",
-          "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "identity_system_encode",
           "status": "not-translated",
-          "reason": "Untranslated name: cong"
+          "reason": "Untranslated dependency: field_first"
         },
         {
           "name": "identity_total_second_path",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: field_first"
         },
         {
           "name": "identity_system_section",
           "status": "not-translated",
-          "reason": "Untranslated dependency: identity_system_decode"
+          "reason": "Untranslated dependency: identity_system_encode"
         },
         {
           "name": "identity_system_retraction",
@@ -7089,12 +7081,12 @@
         {
           "name": "identity_system_equivalence",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Proof block tactics not yet translated."
         },
         {
           "name": "constant_path_correction",
           "status": "not-translated",
-          "reason": "Untranslated dependency: concatenate"
+          "reason": "Untranslated dependency: inverse_left"
         },
         {
           "name": "constant_paths_are_set",
@@ -7218,7 +7210,7 @@
         {
           "name": "successor_equivalence",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: Z"
         },
         {
           "name": "add_nonnegative",
@@ -7247,7 +7239,7 @@
         {
           "name": "zero_not_successor",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: zero_fiber"
         },
         {
           "name": "nat_equal_decidable",
@@ -7382,7 +7374,7 @@
         {
           "name": "difference_from_increment",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_add_comm"
         },
         {
           "name": "nonnegative_half_from_sum",
@@ -7686,18 +7678,17 @@
         },
         {
           "name": "LoopMapLaws",
-          "status": "not-translated",
-          "reason": "Untranslated dependency: append_path"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "loop_map_word_of",
           "status": "not-translated",
-          "reason": "Untranslated dependency: LoopMapLaws"
+          "reason": "Untranslated dependency: WordOf"
         },
         {
           "name": "loop_map_word",
           "status": "not-translated",
-          "reason": "Untranslated dependency: LoopMapLaws"
+          "reason": "Untranslated dependency: Word"
         }
       ]
     },
@@ -8245,68 +8236,65 @@
       "declarations": [
         {
           "name": "append_path",
-          "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "append_path_agrees",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Untranslated dependency: right_unit"
         },
         {
           "name": "append_path_left_inverse",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b61\"]],[\"Var\",[\"free\",\"b62\"]],[\"Var\",[\"free\",\"b63\"]]],[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b61\"]],[\"Var\",[\"free\",\"b62\"]],[\"Var\",[\"free\",\"b63\"]]],[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",0]]]] versus [\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b61\"]],[\"Var\",[\"free\",\"b62\"]],[\"Var\",[\"free\",\"b63\"]]],[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b61\"]],[\"Var\",[\"free\",\"b62\"]],[\"Var\",[\"free\",\"b63\"]]],[\"PLam\",[\"Var\",[\"free\",\"b61\"]],[\"Comp\",[\"Var\",[\"free\",\"b61\"]],[\"Comp\",[\"Var\",[\"free\",\"b61\"]],[\"Comp\",[\"Var\",[\"free\",\"b61\"]],[\"Comp\",[\"Var\",[\"free\",\"b61\"]],[\"PApp\",[\"Var\",[\"bound\",0]],[[[[\"bound\",0],\"1\"]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b62\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b63\"]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b62\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b63\"]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b62\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b63\"]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b62\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b61\"]],[\"Var\",[\"free\",\"b63\"]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"free\",\"b63\"]]],[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"free\",\"b63\"]]]]]]]]],[\"Var\",[\"bound\",0]]]]"
         },
         {
           "name": "append_path_right_inverse",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b94\"]],[\"Var\",[\"free\",\"b95\"]],[\"Var\",[\"free\",\"b96\"]]],[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b94\"]],[\"Var\",[\"free\",\"b95\"]],[\"Var\",[\"free\",\"b96\"]]],[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",0]]]] versus [\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b94\"]],[\"Var\",[\"free\",\"b95\"]],[\"Var\",[\"free\",\"b96\"]]],[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b94\"]],[\"Var\",[\"free\",\"b95\"]],[\"Var\",[\"free\",\"b96\"]]],[\"PLam\",[\"Var\",[\"free\",\"b94\"]],[\"Comp\",[\"Var\",[\"free\",\"b94\"]],[\"Comp\",[\"Var\",[\"free\",\"b94\"]],[\"Comp\",[\"Var\",[\"free\",\"b94\"]],[\"Comp\",[\"Var\",[\"free\",\"b94\"]],[\"PApp\",[\"Var\",[\"bound\",0]],[[[[\"bound\",0],\"1\"]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b95\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b96\"]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b95\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b94\"]],[\"Var\",[\"free\",\"b96\"]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"free\",\"b96\"]]],[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"free\",\"b96\"]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b95\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b96\"]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b95\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b96\"]]]]]],[\"Var\",[\"bound\",0]]]]"
         },
         {
           "name": "append_path_triangle",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Untranslated dependency: append_path_left_inverse"
         },
         {
           "name": "append_path_equivalence",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Cannot read properties of undefined (reading 'left')"
         },
         {
           "name": "map_concat",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"Var\",[\"free\",\"b217\"]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b217\"]],[\"Var\",[\"free\",\"b221\"]],[\"Var\",[\"bound\",0]]],[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b218\"]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"bound\",0]]]],[\"PLam\",[\"Var\",[\"free\",\"b218\"]],[\"Comp\",[\"Var\",[\"free\",\"b218\"]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]],[[[[[[\"bound\",0],\"0\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]]],[[[[[\"bound\",0],\"1\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"PApp\",[\"Var\",[\"bound\",1]],[[[[\"bound\",1],\"1\"]]]]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b218\"]],[\"Comp\",[\"Var\",[\"free\",\"b218\"]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]],[[[[[[\"bound\",0],\"0\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]]],[[[[[\"bound\",0],\"1\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"PApp\",[\"Var\",[\"bound\",1]],[[[[\"bound\",1],\"1\"]]]]]]]]]]]] versus [\"Pi\",[\"Var\",[\"free\",\"b217\"]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b217\"]],[\"Var\",[\"free\",\"b221\"]],[\"Var\",[\"bound\",0]]],[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b218\"]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"bound\",0]]]],[\"PLam\",[\"Var\",[\"free\",\"b218\"]],[\"Comp\",[\"Var\",[\"free\",\"b218\"]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]],[[[[[[\"bound\",0],\"0\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]]],[[[[[\"bound\",0],\"1\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Comp\",[\"Var\",[\"free\",\"b217\"]],[\"Comp\",[\"Var\",[\"free\",\"b217\"]],[\"PApp\",[\"Var\",[\"bound\",1]],[[[[\"bound\",1],\"1\"]]]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"free\",\"b221\"]]],[[[[[\"bound\",1],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b217\"]],[\"Var\",[\"bound\",0]],[[[[[[\"bound\",2],\"0\"]]],[\"Var\",[\"bound\",0]]]]]]]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"free\",\"b221\"]]],[[[[[\"bound\",1],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b217\"]],[\"Var\",[\"bound\",0]],[[[[[[\"bound\",2],\"1\"]]],[\"Var\",[\"bound\",0]]]]]]]]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b218\"]],[\"Comp\",[\"Var\",[\"free\",\"b218\"]],[\"Comp\",[\"Var\",[\"free\",\"b218\"]],[\"Comp\",[\"Var\",[\"free\",\"b218\"]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]],[[[[[[\"bound\",0],\"0\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]]],[[[[[\"bound\",0],\"1\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"PApp\",[\"Var\",[\"bound\",1]],[[[[\"bound\",1],\"1\"]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Comp\",[\"Var\",[\"free\",\"b218\"]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]],[[[[[[\"bound\",1],\"1\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]]],[[[[[\"bound\",1],\"0\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]]]]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b218\"]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"bound\",0]]],[[[[[[\"bound\",1],\"0\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"bound\",0]]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"free\",\"b221\"]]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b218\"]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"bound\",0]]],[[[[[[\"bound\",1],\"1\"]]],[\"App\",[\"Var\",[\"free\",\"b220\"]],[\"Var\",[\"bound\",0]]]]]]]]]]]]]"
         },
         {
           "name": "map_inverse",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b356\"]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]]],[\"PLam\",[\"Var\",[\"free\",\"b356\"]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]]],[\"PLam\",[\"Var\",[\"free\",\"b356\"]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]]]] versus [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b356\"]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]]],[\"PLam\",[\"Var\",[\"free\",\"b356\"]],[\"Comp\",[\"Var\",[\"free\",\"b356\"]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]],[[[[[[\"bound\",0],\"0\"]]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]]],[[[[[\"bound\",0],\"1\"]]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Comp\",[\"Var\",[\"free\",\"b355\"]],[\"Var\",[\"free\",\"b359\"]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"free\",\"b359\"]]],[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"free\",\"b359\"]]]]]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b356\"]],[\"Comp\",[\"Var\",[\"free\",\"b356\"]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]],[[[[[[\"bound\",0],\"0\"]]],[\"Comp\",[\"Var\",[\"free\",\"b356\"]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]],[[[[[[\"bound\",1],\"0\"]]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]]],[[[[[\"bound\",1],\"1\"]]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]]]]]],[[[[[\"bound\",0],\"1\"]]],[\"App\",[\"Var\",[\"free\",\"b358\"]],[\"Var\",[\"free\",\"b359\"]]]]]]]]"
         },
         {
           "name": "inverse_twice",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b435\"]],[\"Var\",[\"free\",\"b436\"]],[\"Var\",[\"free\",\"b436\"]]],[\"PLam\",[\"Var\",[\"free\",\"b435\"]],[\"Var\",[\"free\",\"b436\"]]],[\"PLam\",[\"Var\",[\"free\",\"b435\"]],[\"Var\",[\"free\",\"b436\"]]]] versus [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b435\"]],[\"Var\",[\"free\",\"b436\"]],[\"Var\",[\"free\",\"b436\"]]],[\"PLam\",[\"Var\",[\"free\",\"b435\"]],[\"Comp\",[\"Var\",[\"free\",\"b435\"]],[\"Var\",[\"free\",\"b436\"]],[[[[[[\"bound\",0],\"0\"]]],[\"Comp\",[\"Var\",[\"free\",\"b435\"]],[\"Var\",[\"free\",\"b436\"]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"free\",\"b436\"]]],[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"free\",\"b436\"]]]]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b436\"]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b435\"]],[\"Var\",[\"free\",\"b436\"]]]]"
         },
         {
           "name": "transport_predicate",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"Pi\",[\"App\",[\"Var\",[\"free\",\"b480\"]],[\"Var\",[\"free\",\"b481\"]]],[\"U\",0]],[\"Pi\",[\"App\",[\"Var\",[\"free\",\"b480\"]],[\"Var\",[\"free\",\"b481\"]]],[\"Path\",[\"U\",0],[\"App\",[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",1]]],[\"App\",[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",1]]]]]] versus [\"Pi\",[\"Pi\",[\"App\",[\"Var\",[\"free\",\"b480\"]],[\"Var\",[\"free\",\"b481\"]]],[\"U\",0]],[\"Pi\",[\"App\",[\"Var\",[\"free\",\"b480\"]],[\"Var\",[\"free\",\"b481\"]]],[\"Path\",[\"U\",0],[\"Comp\",[\"U\",0],[\"App\",[\"Var\",[\"bound\",0]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b480\"]],[\"Var\",[\"free\",\"b481\"]]],[\"Var\",[\"bound\",1]],[]]],[]],[\"App\",[\"Var\",[\"bound\",0]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b480\"]],[\"Comp\",[\"Var\",[\"free\",\"b478\"]],[\"Var\",[\"free\",\"b481\"]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b481\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b481\"]]]]]],[\"Var\",[\"bound\",1]],[]]]]]]"
         },
         {
           "name": "close_path",
-          "status": "not-translated",
-          "reason": "Untranslated dependency: concatenate"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "reopen_path",
-          "status": "not-translated",
-          "reason": "Untranslated dependency: concatenate"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "reopen_closed_path",
           "status": "not-translated",
-          "reason": "Untranslated dependency: reopen_path"
+          "reason": "Proof block tactics not yet translated."
         }
       ]
     },
@@ -8316,107 +8304,107 @@
         {
           "name": "inverse",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "concatenate",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "ap",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "IsEquiv",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "Equiv",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "equiv_from_inverse_into_set",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         },
         {
           "name": "transport_constant",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"Var\",[\"free\",\"b2\"]],[\"Path\",[\"Var\",[\"free\",\"b2\"]],[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",0]]]] versus [\"Pi\",[\"Var\",[\"free\",\"b2\"]],[\"Path\",[\"Var\",[\"free\",\"b2\"]],[\"Comp\",[\"Var\",[\"free\",\"b2\"]],[\"Var\",[\"bound\",0]],[]],[\"Var\",[\"bound\",0]]]]"
         },
         {
           "name": "apd_constant",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Untranslated name: apd"
         },
         {
           "name": "cancel_left",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"Var\",[\"free\",\"b33\"]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"free\",\"b34\"]],[\"Var\",[\"bound\",0]]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"free\",\"b34\"]],[\"Var\",[\"bound\",0]]],[\"Pi\",[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"free\",\"b34\"]],[\"Var\",[\"bound\",0]]],[\"Var\",[\"bound\",1]],[\"Var\",[\"bound\",2]]],[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"free\",\"b34\"]],[\"Var\",[\"bound\",0]]],[\"Var\",[\"bound\",1]],[\"Var\",[\"bound\",2]]]]]]] versus [\"Pi\",[\"Var\",[\"free\",\"b33\"]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"free\",\"b34\"]],[\"Var\",[\"bound\",0]]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"free\",\"b34\"]],[\"Var\",[\"bound\",0]]],[\"Pi\",[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"free\",\"b34\"]],[\"Var\",[\"bound\",0]]],[\"PLam\",[\"Var\",[\"free\",\"b33\"]],[\"Comp\",[\"Var\",[\"free\",\"b33\"]],[\"Comp\",[\"Var\",[\"free\",\"b33\"]],[\"PApp\",[\"Var\",[\"bound\",1]],[[[[\"bound\",0],\"1\"]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b34\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"bound\",0]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"bound\",0]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b34\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"bound\",0]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"bound\",0]]]]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b33\"]],[\"Comp\",[\"Var\",[\"free\",\"b33\"]],[\"Comp\",[\"Var\",[\"free\",\"b33\"]],[\"PApp\",[\"Var\",[\"bound\",2]],[[[[\"bound\",0],\"1\"]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b34\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"bound\",0]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"bound\",0]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b34\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"bound\",0]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"bound\",0]]]]]]]]]],[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b33\"]],[\"Var\",[\"free\",\"b34\"]],[\"Var\",[\"bound\",0]]],[\"Var\",[\"bound\",1]],[\"Var\",[\"bound\",2]]]]]]]"
         },
         {
           "name": "right_unit",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b104\"]],[\"Var\",[\"free\",\"b105\"]],[\"Var\",[\"free\",\"b105\"]]],[\"PLam\",[\"Var\",[\"free\",\"b104\"]],[\"Var\",[\"free\",\"b105\"]]],[\"PLam\",[\"Var\",[\"free\",\"b104\"]],[\"Var\",[\"free\",\"b105\"]]]] versus [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b104\"]],[\"Var\",[\"free\",\"b105\"]],[\"Var\",[\"free\",\"b105\"]]],[\"PLam\",[\"Var\",[\"free\",\"b104\"]],[\"Comp\",[\"Var\",[\"free\",\"b104\"]],[\"Comp\",[\"Var\",[\"free\",\"b104\"]],[\"Var\",[\"free\",\"b105\"]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b105\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b104\"]],[\"Var\",[\"free\",\"b105\"]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"free\",\"b105\"]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b105\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b104\"]],[\"Var\",[\"free\",\"b105\"]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"free\",\"b105\"]]]]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b104\"]],[\"Var\",[\"free\",\"b105\"]]]]"
         },
         {
           "name": "inverse_left",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b142\"]],[\"Var\",[\"free\",\"b143\"]],[\"Var\",[\"free\",\"b143\"]]],[\"PLam\",[\"Var\",[\"free\",\"b142\"]],[\"Var\",[\"free\",\"b143\"]]],[\"PLam\",[\"Var\",[\"free\",\"b142\"]],[\"Var\",[\"free\",\"b143\"]]]] versus [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b142\"]],[\"Var\",[\"free\",\"b143\"]],[\"Var\",[\"free\",\"b143\"]]],[\"PLam\",[\"Var\",[\"free\",\"b142\"]],[\"Comp\",[\"Var\",[\"free\",\"b142\"]],[\"Comp\",[\"Var\",[\"free\",\"b142\"]],[\"Var\",[\"free\",\"b143\"]],[[[[[[\"bound\",0],\"0\"]]],[\"Comp\",[\"Var\",[\"free\",\"b142\"]],[\"Var\",[\"free\",\"b143\"]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"free\",\"b143\"]]],[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"free\",\"b143\"]]]]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b142\"]],[\"Var\",[\"free\",\"b143\"]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"free\",\"b143\"]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b143\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b142\"]],[\"Var\",[\"free\",\"b143\"]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"free\",\"b143\"]]]]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b142\"]],[\"Var\",[\"free\",\"b143\"]]]]"
         },
         {
           "name": "inverse_right",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b194\"]],[\"Var\",[\"free\",\"b195\"]],[\"Var\",[\"free\",\"b195\"]]],[\"PLam\",[\"Var\",[\"free\",\"b194\"]],[\"Var\",[\"free\",\"b195\"]]],[\"PLam\",[\"Var\",[\"free\",\"b194\"]],[\"Var\",[\"free\",\"b195\"]]]] versus [\"Path\",[\"Path\",[\"Var\",[\"free\",\"b194\"]],[\"Var\",[\"free\",\"b195\"]],[\"Var\",[\"free\",\"b195\"]]],[\"PLam\",[\"Var\",[\"free\",\"b194\"]],[\"Comp\",[\"Var\",[\"free\",\"b194\"]],[\"Comp\",[\"Var\",[\"free\",\"b194\"]],[\"Comp\",[\"Var\",[\"free\",\"b194\"]],[\"Var\",[\"free\",\"b195\"]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b195\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b195\"]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b195\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b194\"]],[\"Var\",[\"free\",\"b195\"]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"free\",\"b195\"]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b195\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b194\"]],[\"Var\",[\"free\",\"b195\"]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"free\",\"b195\"]]]]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b194\"]],[\"Var\",[\"free\",\"b195\"]]]]"
         },
         {
           "name": "path_associative",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"Var\",[\"free\",\"b246\"]],[\"Pi\",[\"Var\",[\"free\",\"b246\"]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"free\",\"b247\"]],[\"Var\",[\"bound\",0]]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",1]]],[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"free\",\"b247\"]],[\"Var\",[\"bound\",1]]],[\"PLam\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"PApp\",[\"Var\",[\"bound\",3]],[[[[\"bound\",0],\"1\"]]]],[[[[[[\"bound\",0],\"0\"]]],[\"PApp\",[\"Var\",[\"bound\",2]],[[[[\"bound\",1],\"0\"]]]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",1]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"bound\",1]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b247\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",1]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"bound\",1]]]]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"PApp\",[\"Var\",[\"bound\",3]],[[[[\"bound\",0],\"1\"]]]],[[[[[[\"bound\",0],\"0\"]]],[\"PApp\",[\"Var\",[\"bound\",2]],[[[[\"bound\",1],\"0\"]]]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",1]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"bound\",1]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b247\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",1]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"bound\",1]]]]]]]]]]]]]] versus [\"Pi\",[\"Var\",[\"free\",\"b246\"]],[\"Pi\",[\"Var\",[\"free\",\"b246\"]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"free\",\"b247\"]],[\"Var\",[\"bound\",0]]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",1]]],[\"Path\",[\"Path\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"free\",\"b247\"]],[\"Var\",[\"bound\",1]]],[\"PLam\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"PApp\",[\"Var\",[\"bound\",3]],[[[[\"bound\",0],\"1\"]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"PApp\",[\"Var\",[\"bound\",2]],[[[[\"bound\",1],\"0\"]]]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"free\",\"b247\"]]],[[[[[\"bound\",1],\"0\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",0]],[[[[[[\"bound\",2],\"0\"]]],[\"Var\",[\"bound\",0]]]]]]]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"free\",\"b247\"]]],[[[[[\"bound\",1],\"0\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",0]],[[[[[[\"bound\",2],\"1\"]]],[\"Var\",[\"bound\",0]]]]]]]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",1]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"bound\",1]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b247\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",1]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"bound\",1]]]]]]]]],[\"PLam\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"PApp\",[\"Var\",[\"bound\",3]],[[[[\"bound\",0],\"1\"]]]],[[[[[[\"bound\",0],\"0\"]]],[\"PApp\",[\"Var\",[\"bound\",2]],[[[[\"bound\",1],\"0\"]]]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",1]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"bound\",1]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b247\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",1]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"bound\",1]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b247\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",1]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"bound\",1]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b247\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b246\"]],[\"Var\",[\"bound\",1]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"bound\",1]]]]]]]]]]]]]]"
         },
         {
           "name": "transport_concat",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"Var\",[\"free\",\"b388\"]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b388\"]],[\"Var\",[\"free\",\"b391\"]],[\"Var\",[\"bound\",0]]],[\"Pi\",[\"App\",[\"Var\",[\"free\",\"b390\"]],[\"Var\",[\"free\",\"b391\"]]],[\"Path\",[\"App\",[\"Var\",[\"free\",\"b390\"]],[\"Var\",[\"bound\",0]]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b390\"]],[\"PApp\",[\"Var\",[\"bound\",1]],[[[[\"bound\",0],\"1\"]]]]],[\"Var\",[\"bound\",2]],[]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b390\"]],[\"PApp\",[\"Var\",[\"bound\",1]],[[[[\"bound\",0],\"1\"]]]]],[\"Var\",[\"bound\",2]],[]]]]]] versus [\"Pi\",[\"Var\",[\"free\",\"b388\"]],[\"Pi\",[\"Path\",[\"Var\",[\"free\",\"b388\"]],[\"Var\",[\"free\",\"b391\"]],[\"Var\",[\"bound\",0]]],[\"Pi\",[\"App\",[\"Var\",[\"free\",\"b390\"]],[\"Var\",[\"free\",\"b391\"]]],[\"Path\",[\"App\",[\"Var\",[\"free\",\"b390\"]],[\"Var\",[\"bound\",0]]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b390\"]],[\"Comp\",[\"Var\",[\"free\",\"b388\"]],[\"Comp\",[\"Var\",[\"free\",\"b388\"]],[\"PApp\",[\"Var\",[\"bound\",1]],[[[[\"bound\",0],\"1\"]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b391\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b388\"]],[\"Var\",[\"bound\",0]],[[[[[[\"bound\",1],\"0\"]]],[\"Var\",[\"bound\",0]]]]]]]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b391\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Comp\",[\"Var\",[\"free\",\"b388\"]],[\"Var\",[\"bound\",0]],[[[[[[\"bound\",1],\"1\"]]],[\"Var\",[\"bound\",0]]]]]]]]],[\"Var\",[\"bound\",2]],[]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b390\"]],[\"PApp\",[\"Var\",[\"bound\",1]],[[[[\"bound\",0],\"1\"]]]]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b390\"]],[\"Var\",[\"free\",\"b391\"]]],[\"Var\",[\"bound\",2]],[]],[]]]]]]"
         },
         {
           "name": "transport_inverse_after",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"App\",[\"Var\",[\"free\",\"b444\"]],[\"Var\",[\"free\",\"b445\"]]],[\"Path\",[\"App\",[\"Var\",[\"free\",\"b444\"]],[\"Var\",[\"free\",\"b445\"]]],[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",0]]]] versus [\"Pi\",[\"App\",[\"Var\",[\"free\",\"b444\"]],[\"Var\",[\"free\",\"b445\"]]],[\"Path\",[\"App\",[\"Var\",[\"free\",\"b444\"]],[\"Var\",[\"free\",\"b445\"]]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b444\"]],[\"Comp\",[\"Var\",[\"free\",\"b442\"]],[\"Var\",[\"free\",\"b445\"]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b445\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b445\"]]]]]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b444\"]],[\"Var\",[\"free\",\"b445\"]]],[\"Var\",[\"bound\",0]],[]],[]],[\"Var\",[\"bound\",0]]]]"
         },
         {
           "name": "transport_after_inverse",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"App\",[\"Var\",[\"free\",\"b479\"]],[\"Var\",[\"free\",\"b480\"]]],[\"Path\",[\"App\",[\"Var\",[\"free\",\"b479\"]],[\"Var\",[\"free\",\"b480\"]]],[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",0]]]] versus [\"Pi\",[\"App\",[\"Var\",[\"free\",\"b479\"]],[\"Var\",[\"free\",\"b480\"]]],[\"Path\",[\"App\",[\"Var\",[\"free\",\"b479\"]],[\"Var\",[\"free\",\"b480\"]]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b479\"]],[\"Var\",[\"free\",\"b480\"]]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b479\"]],[\"Comp\",[\"Var\",[\"free\",\"b477\"]],[\"Var\",[\"free\",\"b480\"]],[[[[[[\"bound\",0],\"0\"]]],[\"Var\",[\"free\",\"b480\"]]],[[[[[\"bound\",0],\"1\"]]],[\"Var\",[\"free\",\"b480\"]]]]]],[\"Var\",[\"bound\",0]],[]],[]],[\"Var\",[\"bound\",0]]]]"
         },
         {
           "name": "transport_ap",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Type mismatch: [\"Pi\",[\"App\",[\"Var\",[\"free\",\"b514\"]],[\"Var\",[\"free\",\"b515\"]]],[\"Path\",[\"App\",[\"Var\",[\"free\",\"b514\"]],[\"Var\",[\"free\",\"b515\"]]],[\"Var\",[\"bound\",0]],[\"Var\",[\"bound\",0]]]] versus [\"Pi\",[\"App\",[\"Var\",[\"free\",\"b514\"]],[\"Var\",[\"free\",\"b515\"]]],[\"Path\",[\"App\",[\"Var\",[\"free\",\"b514\"]],[\"Var\",[\"free\",\"b515\"]]],[\"Comp\",[\"App\",[\"Var\",[\"free\",\"b514\"]],[\"Var\",[\"free\",\"b515\"]]],[\"Var\",[\"bound\",0]],[]],[\"Comp\",[\"Comp\",[\"U\",0],[\"App\",[\"Var\",[\"free\",\"b514\"]],[\"Var\",[\"free\",\"b515\"]]],[[[[[[\"bound\",0],\"0\"]]],[\"App\",[\"Var\",[\"free\",\"b514\"]],[\"Var\",[\"free\",\"b515\"]]]],[[[[[\"bound\",0],\"1\"]]],[\"App\",[\"Var\",[\"free\",\"b514\"]],[\"Var\",[\"free\",\"b515\"]]]]]],[\"Var\",[\"bound\",0]],[]]]]"
         },
         {
           "name": "append_cancel_inverse",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: path_associative"
         },
         {
           "name": "append_inverse_cancel",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: path_associative"
         },
         {
           "name": "transport_decoder",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Untranslated dependency: right_unit"
         },
         {
           "name": "based_induction",
           "status": "not-translated",
-          "reason": "Untranslated name: Universe"
+          "reason": "Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."
         }
       ]
     },
@@ -8525,12 +8513,12 @@
         {
           "name": "finite_equivalence_count",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: Fin"
         },
         {
           "name": "finite_permutation_equivalence",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: Fin"
         }
       ]
     },
@@ -8564,18 +8552,15 @@
       "declarations": [
         {
           "name": "nat_eq_sym",
-          "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "nat_eq_trans",
-          "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "nat_congruence",
-          "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "add",
@@ -8594,12 +8579,11 @@
         {
           "name": "nat_zero_ne_succ",
           "status": "not-translated",
-          "reason": "Untranslated name: path_induction"
+          "reason": "Untranslated name: Void"
         },
         {
           "name": "nat_succ_injective",
-          "status": "not-translated",
-          "reason": "Untranslated dependency: nat_congruence"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "nat_add_zero",
@@ -8674,7 +8658,7 @@
         {
           "name": "nat_add_shuffle",
           "status": "not-translated",
-          "reason": "Untranslated dependency: nat_eq_trans"
+          "reason": "Untranslated operator: +"
         },
         {
           "name": "nat_mul_succ",
@@ -8804,7 +8788,7 @@
         {
           "name": "bouquet_generator",
           "status": "not-translated",
-          "reason": "Untranslated dependency: concatenate"
+          "reason": "Untranslated dependency: Bouquet"
         },
         {
           "name": "BouquetLoops",
@@ -8824,7 +8808,7 @@
         {
           "name": "bouquet_generator_spoke",
           "status": "not-translated",
-          "reason": "Untranslated dependency: concatenate"
+          "reason": "Untranslated dependency: Bouquet"
         },
         {
           "name": "bouquet_map_edges",
@@ -8839,7 +8823,7 @@
         {
           "name": "bouquet_map_generator",
           "status": "not-translated",
-          "reason": "Untranslated dependency: ap"
+          "reason": "Untranslated dependency: Bouquet"
         }
       ]
     },
@@ -9179,17 +9163,17 @@
         {
           "name": "ring_add_zero_right",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_add_comm"
         },
         {
           "name": "ring_mul_one_right",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_mul_comm"
         },
         {
           "name": "ring_add_inverse_right",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_add_comm"
         },
         {
           "name": "ring_neg_unique",
@@ -9209,12 +9193,12 @@
         {
           "name": "ring_add_swap",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_add_assoc"
         },
         {
           "name": "ring_add_shuffle",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_add_assoc"
         },
         {
           "name": "ring_neg_add",
@@ -9229,7 +9213,7 @@
         {
           "name": "ring_zero_mul",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_mul_comm"
         },
         {
           "name": "ring_mul_neg",
@@ -9239,22 +9223,22 @@
         {
           "name": "ring_neg_mul",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_mul_comm"
         },
         {
           "name": "ring_distribute_left",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_mul_comm"
         },
         {
           "name": "ring_mul_swap",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_mul_assoc"
         },
         {
           "name": "ring_add_cancel_prefix",
           "status": "not-translated",
-          "reason": "Untranslated name: trans"
+          "reason": "Untranslated dependency: ring_add_assoc"
         }
       ]
     },
@@ -9773,13 +9757,12 @@
         },
         {
           "name": "CantorSchroederBernstein",
-          "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "status": "checked-cubical-fragment"
         },
         {
           "name": "cantor_schroeder_bernstein",
           "status": "not-translated",
-          "reason": "Untranslated dependency: CantorSchroederBernstein"
+          "reason": "Proof block tactics not yet translated."
         }
       ]
     },
@@ -10056,12 +10039,12 @@
         {
           "name": "structure_identity",
           "status": "not-translated",
-          "reason": "Untranslated dependency: Equiv"
+          "reason": "Untranslated dependency: StructureIso"
         },
         {
           "name": "structure_equality_iso",
           "status": "not-translated",
-          "reason": "Untranslated name: transport"
+          "reason": "Untranslated dependency: structure_identity_family"
         },
         {
           "name": "structure_iso_equality",
@@ -11208,7 +11191,7 @@
         {
           "name": "loop",
           "status": "not-translated",
-          "reason": "Untranslated dependency: concatenate"
+          "reason": "Untranslated dependency: S1"
         },
         {
           "name": "unit_unique",
@@ -11248,7 +11231,7 @@
         {
           "name": "lift_meridian",
           "status": "not-translated",
-          "reason": "Untranslated dependency: concatenate"
+          "reason": "Untranslated name: Suspension"
         },
         {
           "name": "suspension_rec",
@@ -11258,7 +11241,7 @@
         {
           "name": "suspension_rec_beta",
           "status": "not-translated",
-          "reason": "Untranslated dependency: ap"
+          "reason": "Untranslated name: Suspension"
         }
       ]
     },

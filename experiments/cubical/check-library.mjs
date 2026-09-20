@@ -17,7 +17,7 @@ function visit(name) {
 }
 const start=performance.now();
 for(const name of modules.keys())visit(name);
-const report={scope:"Actual translation into the checked CCHM structural/path fragment. Composition, Glue, HITs and the Id bridge are not implemented; this is not full cubical migration.",
+const report={scope:"Actual translation into the checked CCHM structural/path/composition fragment. Glue, universe composition, HITs and the strict Id bridge are not implemented; this is not full cubical migration.",
   elapsedMilliseconds:Math.round(performance.now()-start),peakRssBytes:process.resourceUsage().maxRSS*1024,
   checked:0,untranslated:0,modules:[]};
 for(const [name,result]of [...results].sort(([a],[b])=>a.localeCompare(b))) {

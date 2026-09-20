@@ -1,7 +1,7 @@
 // Small bidirectional reference checker for the structural/path fragment of CCHM.
-// NOT a complete cubical kernel: comp, Glue and HITs are deliberately absent.
+// NOT a complete cubical kernel: Glue, universe composition and HITs are absent.
 // Input is inert JSON syntax; checking never executes user-supplied functions.
-import { interval as I } from "./lattice.mjs";
+import { interval as I, face as F } from "./lattice.mjs";
 
 export const T = {
   universe: level => ({tag:"U",level}), variable: name => ({tag:"Var",name}),
@@ -14,6 +14,7 @@ export const T = {
   path: (dim,family,left,right) => ({tag:"Path",dim,family,left,right}),
   line: (dim,family,body) => ({tag:"PLam",dim,family,body}),
   at: (path,arg) => ({tag:"PApp",path,arg}),
+  comp: (dim,family,system,base) => ({tag:"Comp",dim,family,system,base}),
   nat: {tag:"Nat"}, zero:{tag:"Zero"}, succ: value => ({tag:"Succ",value}),
   natrec: (motive,zero,step,value) => ({tag:"NatRec",motive,zero,step,value}),
   unit: {tag:"Unit"}, point: {tag:"Point"},
@@ -27,13 +28,19 @@ const children = {
   App:["fn","arg"], Pair:["as","first","second"], Fst:["pair"], Snd:["pair"],
   Path:["family","left","right"], PLam:["family","body"], PApp:["path","pathType"],
   NatRec:["motive","zero","step","value"],
+  Comp:["family","base"],
 };
 const termBinder = t => ["Pi","Lam","Sigma"].includes(t.tag);
-const dimBinder = t => ["Path","PLam"].includes(t.tag);
+const dimBinder = t => ["Path","PLam","Comp"].includes(t.tag);
 function free(t, dimension = false, result = new Set()) {
   if (!t || !children[t.tag]) fail("Unknown term constructor.");
   if (dimension && t.tag === "PApp") for (const n of I.names(t.arg)) result.add(n);
   if (!dimension && t.tag === "Var") result.add(t.name);
+  if(t.tag==="Comp")for(const piece of t.system) {
+    const sub=free(piece.term,dimension);if(dimension)sub.delete(t.dim);
+    for(const n of sub)result.add(n);
+    if(dimension)for(const n of I.names(piece.face))result.add(n);
+  }
   for (const key of children[t.tag]) if (t[key]) {
     const sub = free(t[key], dimension);
     if (!dimension && termBinder(t) && key === "body") sub.delete(t.name);
@@ -55,6 +62,7 @@ function substitute(t, n, value, dimension = false) {
     const replacement = fresh(binder, new Set([...free(t,dimension),...valueFree,n,binder]));
     for (const key of boundChildren) if (result[key]) result[key] = substitute(result[key], binder,
       dimension ? I.variable(replacement) : T.variable(replacement), dimension);
+    if(dimension&&t.tag==="Comp")result.system=result.system.map(p=>({...p,term:dsub(p.term,binder,I.variable(replacement))}));
     binder = replacement; result[binderKey] = binder;
   }
   for (const key of children[t.tag]) if (result[key]) {
@@ -62,9 +70,26 @@ function substitute(t, n, value, dimension = false) {
     result[key] = substitute(result[key], n, value, dimension);
   }
   if (dimension && t.tag === "PApp") result.arg = I.substitute(t.arg,n,value);
+  if(t.tag==="Comp")result.system=result.system.map(p=>({
+    face:dimension?F.substitute(p.face,n,value):p.face,
+    term:dimension&&binder===n?p.term:substitute(p.term,n,value,dimension),
+  }));
   return result;
 }
 const dsub = (t,n,r) => substitute(t,n,r,true);
+const restrict = (t,clause) => clause.reduce((term,x)=>dsub(term,x.slice(0,-2),x.endsWith("0")?I.zero:I.one),t);
+
+// Derived filling, CCHM section 4.4. The added r=0 wall keeps the starting lid
+// fixed. This is syntax built from comp, never an additional trusted axiom.
+function fill(dim,family,system,base,r) {
+  const avoid=new Set([...free(family,true),...free(base,true),...I.names(r),dim]);
+  for(const p of system)for(const n of [...free(p.term,true),...I.names(p.face)])avoid.add(n);
+  const j=fresh("fill",avoid),along=I.meet(r,I.variable(j));
+  return T.comp(j,dsub(family,dim,along),[
+    ...system.map(p=>({...p,term:dsub(p.term,dim,along)})),
+    {face:F.equalEndpoint(r,0),term:base},
+  ],base);
+}
 
 // Bound names disappear in comparison; free names remain names. Paths bind a
 // dimension in their family, but their endpoints live in the outer context.
@@ -73,6 +98,8 @@ function alpha(t, vars = [], dims = []) {
   if (t.tag === "Var") return ["Var",vars.includes(t.name) ? ["bound",vars.lastIndexOf(t.name)] : ["free",t.name]];
   if (t.tag === "U") return ["U",t.level];
   if (termBinder(t)) return [t.tag,child("domain"),child("body",[...vars,t.name])];
+  if(t.tag==="Comp")return ["Comp",child("family",vars,[...dims,t.dim]),child("base"),
+    t.system.map(p=>[p.face.map(c=>c.map(x=>[dims.includes(x.slice(0,-2))?["bound",dims.lastIndexOf(x.slice(0,-2))]:["free",x.slice(0,-2)],x.at(-1)]).sort()).sort(),alpha(p.term,vars,[...dims,t.dim])])];
   if (dimBinder(t)) return t.tag === "Path"
     ? ["Path",child("family",vars,[...dims,t.dim]),child("left"),child("right")]
     : ["PLam",child("family",vars,[...dims,t.dim]),child("body",vars,[...dims,t.dim])];
@@ -87,6 +114,41 @@ function normal(t, fuel) {
   if (--fuel.left < 0) fail("Experimental normalization limit reached.");
   let r = {...t};
   for (const key of children[t.tag]) if (t[key]) r[key] = normal(t[key],fuel);
+  if(r.tag==="Comp") {
+    r.system=r.system.filter(p=>!F.equal(p.face,F.bottom)).map(p=>({...p,term:normal(p.term,fuel)}));
+    const whole=r.system.find(p=>F.equal(p.face,F.top));
+    if(whole)return normal(dsub(whole.term,r.dim,I.one),fuel);
+    if(r.family.tag==="Nat") {
+      if(r.base.tag==="Zero"&&r.system.every(p=>p.term.tag==="Zero"))return T.zero;
+      if(r.base.tag==="Succ"&&r.system.every(p=>p.term.tag==="Succ"))return normal(T.succ(T.comp(r.dim,r.family,r.system.map(p=>({...p,term:p.term.value})),r.base.value)),fuel);
+    }
+    if(r.family.tag==="Unit"&&r.base.tag==="Point"&&r.system.every(p=>p.term.tag==="Point"))return T.point;
+    if(r.family.tag==="Sigma") {
+      const firstSystem=r.system.map(p=>({...p,term:T.first(p.term)})),baseFirst=T.first(r.base);
+      const firstLine=fill(r.dim,r.family.domain,firstSystem,baseFirst,I.variable(r.dim));
+      const first=T.comp(r.dim,r.family.domain,firstSystem,baseFirst);
+      const second=T.comp(r.dim,substitute(r.family.body,r.family.name,firstLine),r.system.map(p=>({...p,term:T.second(p.term)})),T.second(r.base));
+      return normal(T.pair(dsub(r.family,r.dim,I.one),first,second),fuel);
+    }
+    if(r.family.tag==="Pi") {
+      const x=fresh("argument",new Set([...free(r),r.family.name])),arg=T.variable(x);
+      // Function domains vary contravariantly: first fill backwards from x:A1.
+      const backwards=dsub(r.family.domain,r.dim,I.reverse(I.variable(r.dim)));
+      const line=fill(r.dim,backwards,[],arg,I.reverse(I.variable(r.dim)));
+      const body=T.comp(r.dim,substitute(r.family.body,r.family.name,line),
+        r.system.map(p=>({...p,term:T.app(p.term,line)})),T.app(r.base,dsub(line,r.dim,I.zero)));
+      return normal(T.lam(x,dsub(r.family.domain,r.dim,I.one),body),fuel);
+    }
+    if(r.family.tag==="Path") {
+      const j=fresh("path",new Set([...free(r,true),r.dim,r.family.dim])),arg=I.variable(j);
+      const pathAt=(p,type)=>({...T.at(p,arg),pathType:type});
+      const family=dsub(r.family.family,r.family.dim,arg);
+      const system=[...r.system.map(p=>({...p,term:pathAt(p.term,r.family)})),
+        {face:F.endpoint(j,0),term:r.family.left},{face:F.endpoint(j,1),term:r.family.right}];
+      const base=pathAt(r.base,dsub(r.family,r.dim,I.zero));
+      return normal(T.line(j,dsub(family,r.dim,I.one),T.comp(r.dim,family,system,base)),fuel);
+    }
+  }
   if (r.tag === "App" && r.fn.tag === "Lam") return normal(substitute(r.fn.body,r.fn.name,r.arg),fuel);
   if (r.tag === "Lam" && r.body.tag === "App" && r.body.arg.tag === "Var" && r.body.arg.name === r.name && !free(r.body.fn).has(r.name)) return r.body.fn;
   if (r.tag === "Fst" && r.pair.tag === "Pair") return r.pair.first;
@@ -177,6 +239,30 @@ export class Checker {
         const path=infer(t.path), pt=this.nf(path.type); if(pt.tag!=="Path") fail("Expected a path.");
         const arg=I.normalize(t.arg); for(const n of I.names(arg)) if(!dims.has(n)) fail(`Unbound dimension ${n}.`);
         return result({...T.at(path.term,arg),pathType:pt},dsub(pt.family,pt.dim,arg));
+      }
+      case "Comp": {
+        named(t.dim);if(!Array.isArray(t.system))fail("Expected a finite composition system.");
+        if(dims.has(t.dim)) {
+          const dim=fresh(t.dim,new Set([...dims,...free(t,true)]));
+          t={...t,dim,family:dsub(t.family,t.dim,I.variable(dim)),system:t.system.map(p=>({...p,term:dsub(p.term,t.dim,I.variable(dim))}))};
+        }
+        const inner=new Set(dims).add(t.dim),family=this.type(t.family,ctx,inner).term;
+        const base=check(t.base,dsub(family,t.dim,I.zero)),system=[];
+        for(const piece of t.system) {
+          const phi=F.normalize(piece.face);
+          for(const n of I.names(phi))if(!dims.has(n))fail(`Composition face uses unbound dimension ${n}.`);
+          // A disjunction is checked separately on each compatible conjunction.
+          // Store only checked restricted terms; impossible faces add no term.
+          for(const clause of phi) {
+            const restrictedContext=new Map([...ctx].map(([n,a])=>[n,restrict(a,clause)]));
+            const term=this.check(restrict(piece.term,clause),restrict(family,clause),restrictedContext,inner);
+            if(!this.equal(dsub(term,t.dim,I.zero),restrict(base,clause)))fail("Composition tube disagrees with its base.");
+            system.push({face:[clause],term});
+          }
+        }
+        for(let i=0;i<system.length;i++)for(let j=0;j<i;j++)for(const clause of F.meet(system[i].face,system[j].face))
+          if(!this.equal(restrict(system[i].term,clause),restrict(system[j].term,clause)))fail("Composition tubes disagree on an overlap.");
+        return result(T.comp(t.dim,family,system,base),dsub(family,t.dim,I.one));
       }
     }
     fail("Unsupported term.");

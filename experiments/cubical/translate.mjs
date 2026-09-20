@@ -2,11 +2,15 @@
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
 import {parse} from "../../web/mathscript/parser.mjs";
 import {Checker,T} from "./core.mjs";
-import {interval as I} from "./lattice.mjs";
+import {interval as I,face as F} from "./lattice.mjs";
 
 export class Translator {
   constructor() { this.checker=new Checker();this.serial=0; }
   fresh(prefix="b") {return `${prefix}${++this.serial}`;}
+  schema(expression,env) {
+    return expression.kind==="lambda"&&expression.domain.kind==="name"&&expression.domain.name==="Universe"
+      ? {tag:"UniverseSchema",parameter:expression.name.text,body:expression.body,env:new Map(env)} : null;
+  }
   translate(source, imported=new Map()) {
     const ast=parse(source),env=new Map(imported),declarations=[];
     for(const d of ast.declarations) {
@@ -16,6 +20,12 @@ export class Translator {
         if(!expression) {
           expression={kind:"proof",type:d.type,statements:d.body};
           for(const p of [...d.params].reverse()) expression={kind:"lambda",name:p.name,domain:p.type,body:expression};
+        }
+        const schema=this.schema(expression,env);
+        if(schema) {
+          env.set(d.name.text,schema);
+          declarations.push({name:d.name.text,status:"not-translated",reason:"Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."});
+          continue;
         }
         const term=this.term(expression,new Map(),env);
         const checked=this.checker.verify(term);
@@ -39,6 +49,7 @@ export class Translator {
         if(env.has(n.name)) {
           const value=env.get(n.name);
           if(value.tag==="Untranslated") throw Error(`Untranslated dependency: ${n.name}`);
+          if(value.tag==="UniverseSchema")throw Error(`Universe arguments required: ${n.name}`);
           return value;
         }
         if(/^U[0-9]+$/.test(n.name))return T.universe(Number(n.name.slice(1)));
@@ -84,11 +95,48 @@ export class Translator {
           // is checked by the core directly, rather than silently approximated).
           const i=this.fresh("i");return T.line(i,type.family,T.at(p,I.reverse(I.variable(i))));
         }
-        let fn=tr(n.fn,null);
+        if(builtin==="trans"&&n.args.length===2) {
+          const p=tr(n.args[0],null),q=tr(n.args[1],null),pt=this.checker.nf(inferred(p).type),qt=this.checker.nf(inferred(q).type);
+          if(pt.tag!=="Path"||qt.tag!=="Path")throw Error("trans requires paths.");
+          this.checker.expect(pt.family,qt.family);
+          if(!this.checker.equal(pt.right,qt.left))throw Error("Path endpoints do not match.");
+          const i=this.fresh("i"),j=this.fresh("j");
+          return T.line(j,pt.family,T.comp(i,pt.family,[
+            {face:F.endpoint(j,0),term:pt.left},{face:F.endpoint(j,1),term:T.at(q,I.variable(i))},
+          ],T.at(p,I.variable(j))));
+        }
+        if(builtin==="cong"&&n.args.length===2) {
+          const fn=tr(n.args[0],null),p=tr(n.args[1],null),pt=this.checker.nf(inferred(p).type);
+          if(pt.tag!=="Path")throw Error("cong requires a path.");
+          const left=T.app(fn,pt.left),type=inferred(left).type,i=this.fresh("i");
+          return T.line(i,type,T.app(fn,T.at(p,I.variable(i))));
+        }
+        if(builtin==="transport"&&n.args.length===5) {
+          const [family,x,y,p,value]=n.args.map(a=>tr(a,null));
+          const pt=this.checker.nf(inferred(p).type);if(pt.tag!=="Path")throw Error("transport requires a path.");
+          if(!this.checker.equal(pt.left,x)||!this.checker.equal(pt.right,y))throw Error("Transport endpoints do not match.");
+          const i=this.fresh("i");return T.comp(i,T.app(family,T.at(p,I.variable(i))),[],value);
+        }
+        if(builtin==="path_induction"&&n.args.length===6) {
+          const [A,C,d,x,y,p]=n.args.map(a=>tr(a,null)),i=this.fresh("i"),j=this.fresh("j");
+          const pt=this.checker.nf(inferred(p).type);
+          if(pt.tag!=="Path"||!this.checker.equal(pt.family,A)||!this.checker.equal(pt.left,x)||!this.checker.equal(pt.right,y))throw Error("Path induction endpoints/carrier do not match.");
+          const segment=T.line(j,A,T.at(p,I.meet(I.variable(i),I.variable(j))));
+          const family=T.app(T.app(T.app(C,x),T.at(p,I.variable(i))),segment);
+          return T.comp(i,family,[],T.app(d,x));
+        }
+        let fn=n.fn.kind==="name"&&env.get(n.fn.name)?.tag==="UniverseSchema"?env.get(n.fn.name):tr(n.fn,null);
         for(const arg of n.args) {
+          if(fn.tag==="UniverseSchema") {
+            const universe=tr(arg,null);if(universe.tag!=="U")throw Error("Schema requires a concrete universe level.");
+            const scope=new Map(fn.env).set(fn.parameter,universe);
+            fn=this.schema(fn.body,scope)??this.term(fn.body,ctx,scope,null);
+            continue;
+          }
           const pi=this.checker.nf(inferred(fn).type);if(pi.tag!=="Pi")throw Error("Source application is not a function.");
           fn=T.app(fn,tr(arg,pi.domain));
         }
+        if(fn.tag==="UniverseSchema")throw Error("Missing universe arguments.");
         return fn;
       }
       case "induction": {
