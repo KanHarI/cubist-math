@@ -1,0 +1,214 @@
+import set_quotients;
+
+// A map out of a quotient must give equal values on related representatives.
+// The target may live in U1, but must be a set, not an arbitrary higher type.
+def RespectsRelation(A : U1, relation : A -> A -> U0, B : U1, f : A -> B) =
+  forall x : A, forall y : A, relation(x, y) -> f(x) = f(y);
+
+// A value of a quotient class is characterized by all of its representatives.
+// Uniqueness of this value will justify eliminating truncation without choice.
+def QuotientValue(
+  A : U1, relation : A -> A -> U0, B : U1, f : A -> B, q : SetQuotient(A, relation), b : B
+) =
+  forall a : A, quotient_predicate(A, relation, q, a) -> f(a) = b;
+
+theorem quotient_predicate_prop(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
+  q : SetQuotient(A, relation), a : A
+) : FieldProp(quotient_predicate(A, relation, q, a)) {
+  obtain (prop, reflexive, symmetric, transitive) = laws;
+  have atRepresentative : (
+    exists b : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(b, x)
+  ) -> FieldProp(quotient_predicate(A, relation, q, a)) {
+    intro witness;
+    obtain (b, same) = witness;
+    exact transport(
+      (fun (P : U0) => FieldProp(P)), relation(b, a), quotient_predicate(A, relation, q, a),
+      sym(same(a)), prop(b, a)
+    );
+  }
+  exact field_exists_elim(
+    (exists b : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(b, x)),
+    FieldProp(quotient_predicate(A, relation, q, a)),
+    is_prop_prop(quotient_predicate(A, relation, q, a)), atRepresentative,
+    quotient_witness(A, relation, q)
+  );
+}
+
+theorem quotient_value_prop(
+  A : U1, relation : A -> A -> U0, B : U1, setB : FieldSet(B), f : A -> B,
+  q : SetQuotient(A, relation), b : B
+) : FieldProp(QuotientValue(A, relation, B, f, q, b)) {
+  exact field_forall_prop(
+    A, (fun (a : A) => typed(U1, quotient_predicate(A, relation, q, a) -> f(a) = b)),
+    (
+      fun (a : A) => field_forall_prop(
+        quotient_predicate(A, relation, q, a),
+        (fun (member : quotient_predicate(A, relation, q, a)) => typed(U1, f(a) = b)),
+        (fun (member : quotient_predicate(A, relation, q, a)) => setB(f(a), b))
+      )
+    )
+  );
+}
+
+// Propositional induction uses only the mere surjectivity of the class map.
+theorem quotient_induction_prop(
+  A : U1, relation : A -> A -> U0, P : SetQuotient(A, relation) -> U1,
+  propP : (forall q : SetQuotient(A, relation), FieldProp(P(q))),
+  atClass : (forall a : A, P(quotient_class(A, relation, a))), q : SetQuotient(A, relation)
+) : P(q) {
+  have descend : (exists a : A, quotient_class(A, relation, a) = q) -> P(q) {
+    intro witness;
+    obtain (a, same) = witness;
+    exact transport(P, quotient_class(A, relation, a), q, same, atClass(a));
+  }
+  exact field_exists_elim(
+    (exists a : A, quotient_class(A, relation, a) = q), P(q), propP(q), descend,
+    quotient_surjective(A, relation, q)
+  );
+}
+
+theorem quotient_value_unique(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> B, q : SetQuotient(A, relation), b : B, c : B,
+  pb : QuotientValue(A, relation, B, f, q, b), pc : QuotientValue(A, relation, B, f, q, c)
+) : b = c {
+  obtain (prop, reflexive, symmetric, transitive) = laws;
+  have atRepresentative : (
+    exists a : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(a, x)
+  ) -> b = c {
+    intro witness;
+    obtain (a, same) = witness;
+    let member =
+      transport(
+        (fun (P : U0) => P), relation(a, a), quotient_predicate(A, relation, q, a), sym(same(a)),
+        reflexive(a)
+      );
+    exact trans(sym(pb(a, member)), pc(a, member));
+  }
+  exact field_exists_elim(
+    (exists a : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(a, x)), (b = c),
+    setB(b, c), atRepresentative, quotient_witness(A, relation, q)
+  );
+}
+
+theorem quotient_value_pair_prop(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> B, q : SetQuotient(A, relation)
+) : FieldProp(exists b : B, QuotientValue(A, relation, B, f, q, b)) {
+  intro u;
+  intro v;
+  let P = QuotientValue(A, relation, B, f, q);
+  exact field_subtype_ext(
+    B, P, quotient_value_prop(A, relation, B, setB, f, q), u, v,
+    quotient_value_unique(
+      A, relation, laws, B, setB, f, q, field_first(B, P, u), field_first(B, P, v),
+      field_second(B, P, u), field_second(B, P, v)
+    )
+  );
+}
+
+def quotient_value(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f),
+  q : SetQuotient(A, relation)
+) : (exists b : B, QuotientValue(A, relation, B, f, q, b)) {
+  have atRepresentative : (
+    exists a : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(a, x)
+  ) -> (exists b : B, QuotientValue(A, relation, B, f, q, b)) {
+    intro witness;
+    obtain (a, same) = witness;
+    exact (
+      f(a),
+      (
+        fun (x : A) => fun (member : quotient_predicate(A, relation, q, x)) => sym(
+          respects(
+            a, x,
+            transport(
+              (fun (P : U0) => P), quotient_predicate(A, relation, q, x), relation(a, x), same(x),
+              member
+            )
+          )
+        )
+      )
+    );
+  }
+  exact field_exists_elim(
+    (exists a : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(a, x)),
+    (exists b : B, QuotientValue(A, relation, B, f, q, b)),
+    quotient_value_pair_prop(A, relation, laws, B, setB, f, q), atRepresentative,
+    quotient_witness(A, relation, q)
+  );
+}
+
+def quotient_rec(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f),
+  q : SetQuotient(A, relation)
+) : B {
+  exact field_first(
+    B, QuotientValue(A, relation, B, f, q),
+    quotient_value(A, relation, laws, B, setB, f, respects, q)
+  );
+}
+
+theorem quotient_rec_member(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f),
+  q : SetQuotient(A, relation), a : A, member : quotient_predicate(A, relation, q, a)
+) : f(a) = quotient_rec(A, relation, laws, B, setB, f, respects, q) {
+  have valueLaw : QuotientValue(
+    A, relation, B, f, q, quotient_rec(A, relation, laws, B, setB, f, respects, q)
+  ) {
+    exact field_second(
+      B, QuotientValue(A, relation, B, f, q),
+      quotient_value(A, relation, laws, B, setB, f, respects, q)
+    );
+  }
+  exact valueLaw(a, member);
+}
+
+// Computation is a checked equality; the truncation axioms do not add a
+// definitional reduction rule or a chosen representative of each class.
+theorem quotient_rec_beta(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f), a : A
+) : quotient_rec(A, relation, laws, B, setB, f, respects, quotient_class(A, relation, a)) = f(a) {
+  obtain (prop, reflexive, symmetric, transitive) = laws;
+  exact sym(
+    quotient_rec_member(
+      A, relation, laws, B, setB, f, respects, quotient_class(A, relation, a), a, reflexive(a)
+    )
+  );
+}
+
+theorem quotient_maps_ext(
+  A : U1, relation : A -> A -> U0, B : U1, setB : FieldSet(B), f : SetQuotient(A, relation) -> B,
+  g : SetQuotient(A, relation) -> B,
+  atClass : (forall a : A, f(quotient_class(A, relation, a)) = g(quotient_class(A, relation, a)))
+) : f = g {
+  exact FunExt(
+    U1, SetQuotient(A, relation), (fun (q : SetQuotient(A, relation)) => B), f, g,
+    quotient_induction_prop(
+      A, relation, (fun (q : SetQuotient(A, relation)) => typed(U1, f(q) = g(q))),
+      (fun (q : SetQuotient(A, relation)) => setB(f(q), g(q))), atClass
+    )
+  );
+}
+
+// The descended map is the unique map whose composite with the class map is f.
+theorem quotient_rec_unique(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f),
+  g : SetQuotient(A, relation) -> B,
+  triangle : (forall a : A, g(quotient_class(A, relation, a)) = f(a))
+) : g = quotient_rec(A, relation, laws, B, setB, f, respects) {
+  exact quotient_maps_ext(
+    A, relation, B, setB, g, quotient_rec(A, relation, laws, B, setB, f, respects),
+    (
+      fun (a : A) => trans(
+        triangle(a), sym(quotient_rec_beta(A, relation, laws, B, setB, f, respects, a))
+      )
+    )
+  );
+}

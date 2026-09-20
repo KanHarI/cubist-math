@@ -1,13 +1,24 @@
 # Galois symmetries as loops
 
 Development resumed on main from the [2026-09-20 checkpoint](galois-handoff.md).
-The latest module, `group_cosets`, establishes coset equivalence, the exact
-role of normality in multiplication, compatibility with inversion, and kernel
-cosets as homomorphism fibers. It connects these relations to quotient equality
-paths. Quotient descent and the bundled quotient group remain to be built;
-the predicate quotient's U1 carrier must be accommodated explicitly.
-It records the checked scope, exact restart point, and repaired integration
-failures; the [roadmap](galois-roadmap.md) retains the complete target.
+The latest modules establish constructive quotient descent and identify the
+kernel quotient with the image of a homomorphism:
+
+```text
+kernel_quotient_image_equiv(G, H, h) :
+  Equiv(U1, KernelQuotient(G, H, h), GroupImageCarrier(G, H, h))
+
+kernel_quotient_image_equality(G, H, h) :
+  KernelQuotient(G, H, h) =[U1] GroupImageCarrier(G, H, h)
+```
+
+The inverse uses the entire fiber predicate, without selecting preimages.
+Univalence identifies the carriers, and setness transports from the image to
+the quotient. This establishes the carrier part of the first isomorphism
+theorem. A bundled quotient `GroupIso` still requires a universe-polymorphic
+group interface and quotient operations. The [checkpoint](galois-handoff.md)
+records validation and the exact next step; the [roadmap](galois-roadmap.md)
+retains the complete target.
 
 For planned work, see [requirements for full Galois theory](galois-roadmap.md),
 including Lang's distinguished classes. That document is a roadmap, not a

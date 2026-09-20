@@ -1,0 +1,103 @@
+import group_cosets;
+import quotient_descent;
+
+// A homomorphism factors through cosets precisely when it kills the subgroup.
+// Normality is not needed for this map of sets; it is needed for quotient multiplication.
+def KillsSubgroup(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G)) =
+  forall n : group_carrier(G), subgroup_members(G, S, n)
+  -> group_hom_map(G, H, h, n) = group_unit(H);
+
+theorem killing_subgroup_respects_cosets(
+  G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
+) : RespectsRelation(
+  group_carrier(G), SameLeftCoset(G, S), group_carrier(H), group_hom_map(G, H, h)
+) {
+  intro x;
+  intro y;
+  intro same;
+  exact kernel_coset_equal_images(
+    G, H, h, x, y, kills(group_multiply(G, group_inverse(G, x), y), same)
+  );
+}
+
+def group_quotient_map(
+  G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
+) =
+  quotient_rec(
+    group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), group_carrier(H),
+    group_is_set(H), group_hom_map(G, H, h), killing_subgroup_respects_cosets(G, H, h, S, kills)
+  );
+
+theorem group_quotient_map_beta(
+  G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
+  x : group_carrier(G)
+) : group_quotient_map(G, H, h, S, kills, left_coset(G, S, x)) = group_hom_map(G, H, h, x) {
+  exact quotient_rec_beta(
+    group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), group_carrier(H),
+    group_is_set(H), group_hom_map(G, H, h), killing_subgroup_respects_cosets(G, H, h, S, kills), x
+  );
+}
+
+theorem group_quotient_map_unique(
+  G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
+  g : LeftCosets(G, S) -> group_carrier(H),
+  triangle : (forall x : group_carrier(G), g(left_coset(G, S, x)) = group_hom_map(G, H, h, x))
+) : g = group_quotient_map(G, H, h, S, kills) {
+  exact quotient_rec_unique(
+    group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), group_carrier(H),
+    group_is_set(H), group_hom_map(G, H, h), killing_subgroup_respects_cosets(G, H, h, S, kills), g,
+    triangle
+  );
+}
+
+theorem group_quotient_map_unit(
+  G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
+) : group_quotient_map(G, H, h, S, kills, left_coset(G, S, group_unit(G))) = group_unit(H) {
+  exact trans(group_quotient_map_beta(G, H, h, S, kills, group_unit(G)), group_hom_unit(G, H, h));
+}
+
+// Multiplicativity on classes of representatives. An operation on arbitrary
+// quotient elements is a separate construction, not implicit in this statement.
+theorem group_quotient_map_multiply(
+  G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
+  x : group_carrier(G), y : group_carrier(G)
+) : group_quotient_map(G, H, h, S, kills, left_coset(G, S, group_multiply(G, x, y))) = group_multiply(
+  H, group_quotient_map(G, H, h, S, kills, left_coset(G, S, x)),
+  group_quotient_map(G, H, h, S, kills, left_coset(G, S, y))
+) {
+  let f = group_hom_map(G, H, h);
+  let out = group_quotient_map(G, H, h, S, kills);
+  exact trans(
+    group_quotient_map_beta(G, H, h, S, kills, group_multiply(G, x, y)),
+    trans(
+      group_hom_multiply(G, H, h, x, y),
+      trans(
+        cong(
+          (fun (a : group_carrier(H)) => group_multiply(H, a, f(y))),
+          sym(group_quotient_map_beta(G, H, h, S, kills, x))
+        ),
+        cong(
+          group_multiply(H, out(left_coset(G, S, x))),
+          sym(group_quotient_map_beta(G, H, h, S, kills, y))
+        )
+      )
+    )
+  );
+}
+
+theorem quotient_factor_kills_subgroup(
+  G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), g : LeftCosets(G, S)
+  -> group_carrier(H),
+  triangle : (forall x : group_carrier(G), g(left_coset(G, S, x)) = group_hom_map(G, H, h, x))
+) : KillsSubgroup(G, H, h, S) {
+  intro n;
+  intro member;
+  let same = same_coset_from_factor(G, S, group_unit(G), n, n, member, group_unit_left(G, n));
+  exact trans(
+    sym(triangle(n)),
+    trans(
+      cong(g, sym(same_coset_path(G, S, group_unit(G), n, same))),
+      trans(triangle(group_unit(G)), group_hom_unit(G, H, h))
+    )
+  );
+}

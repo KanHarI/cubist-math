@@ -21,6 +21,9 @@ export const proofTopics = [
 export const proofChoices = [
   { id: "subgroup_images", topic: "algebra", title: "Subgroups · images, adjunction and surjective factorization" },
   { id: "group_cosets", topic: "algebra", title: "Cosets · normality, quotient paths and homomorphism fibers" },
+  { id: "quotient_descent", topic: "sets-maps", title: "Quotients · constructive descent and unique factorization" },
+  { id: "group_quotient_maps", topic: "algebra", title: "Cosets · unique descent of homomorphisms" },
+  { id: "kernel_quotient_image", topic: "algebra", title: "First isomorphism theorem · kernel quotient and image carriers" },
   { id: "subgroup_carriers", topic: "algebra", title: "Subgroups · realized groups and unique factorization" },
   { id: "equivalence_from_inverse", topic: "homotopy", title: "Equivalences · coherent inverses by path algebra" },
   { id: "finite_decisions", topic: "finite-counting", title: "Finite types · constructive membership decisions" },
