@@ -3,3 +3,5 @@
 #syntax { width: 100%; min-height: 24rem; font-family: monospace; }
 #context .context-entry { display: flex; align-items: baseline; gap: .6rem; }
 #context .context-entry > span { font-family: monospace; }
+.term-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.term-heading [role="group"] { display: flex; flex-wrap: wrap; gap: .4rem; }

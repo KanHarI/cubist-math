@@ -42,7 +42,7 @@ const fail = message => { throw new Error(message); };
 const validName = n => typeof n === "string" && /^[A-Za-z_][A-Za-z_0-9]*$/.test(n);
 const named = n => { if (!validName(n)) fail("Invalid variable name."); };
 const children = {
-  U:[], Var:[], Nat:[], Zero:[], Unit:[], Point:[], Succ:["value"],
+  U:[], Var:[], DefRef:[], Nat:[], Zero:[], Unit:[], Point:[], Succ:["value"],
   Pi:["domain","body"], Lam:["domain","body"], Sigma:["domain","body"],
   App:["fn","arg"], Pair:["as","first","second"], Fst:["pair"], Snd:["pair"],
   Path:["family","left","right"], PLam:["family","body"], PApp:["path","pathType"],
@@ -124,6 +124,9 @@ function substitute(t, n, value, dimension = false) {
 }
 const dsub = (t,n,r) => substitute(t,n,r,true);
 export {dsub as substituteDimension};
+// Syntax manipulation only; callers must independently check the result.
+// DefRef denotes a closed definition, so substitution does not enter its body.
+export {substitute as substituteTerm};
 const restrict = (t,clause) => clause.reduce((term,x)=>dsub(term,x.slice(0,-2),x.endsWith("0")?I.zero:I.one),t);
 
 // Derived filling, CCHM section 4.4. The added r=0 wall keeps the starting lid

@@ -4,8 +4,10 @@ import { CubicalProgram } from "./cubical-program.mjs";
 import { readWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { renderMathNotation } from "./math-notation.mjs";
+import { reduceView, checkReduction } from "./cubical-reduction.mjs";
 const $ = id => document.getElementById(id), history = [];
 let program, view, checked, selected;
+const enableReductions = enabled => document.querySelectorAll("[data-reduction]").forEach(button => { button.disabled = !enabled; });
 const options = () => ({ resolve: binding => view.symbols[binding], inspect: info => inspect(info.binding),
   identitySugar: $("identity-sugar").checked, truncationSugar: $("truncation-sugar").checked });
 function display() {
@@ -33,13 +35,13 @@ function display() {
 }
 function validate(term = view.expression) {
   checked = program.kernel.withUnfoldingHints(view.unfoldingHints ?? [], () => program.checker.syntax.check(term, view.type, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? [])));
-  view.expression = checked.term; view.type = checked.type;
-  $("normalize").disabled = false; $("check").disabled = false;
+  view.expression = checked.term;
+  enableReductions(true); $("check").disabled = false;
   $("status").textContent = `Cubical C checked · ${checked.checkingSteps.toLocaleString()} checking steps · ${checked.arenaNodes.toLocaleString()} nodes`;
   $("diagnostic").hidden = true;
 }
 function failure(error) {
-  checked = null; $("normalize").disabled = true;
+  checked = null; enableReductions(false);
   $("diagnostic").hidden = false; $("diagnostic").textContent = error.message;
   $("status").textContent = "Expression not checked";
 }
@@ -47,12 +49,14 @@ function inspect(binding, remember = true) {
   try {
     if (remember && view) history.push({ view, selected });
     view = program.inspect(binding); selected = binding;
+    $("reduction-status").textContent = "";
     validate(); display();
   } catch (error) { failure(error); }
 }
 $("back").onclick = () => {
   const previous = history.pop(); if (!previous) return;
   ({ view, selected } = previous);
+  $("reduction-status").textContent = "Restored the previous checked view.";
   try { validate(); display(); } catch (error) { failure(error); }
 };
 $("unhighlight").onclick = () => {
@@ -61,17 +65,44 @@ $("unhighlight").onclick = () => {
 };
 for (const id of ["identity-sugar", "truncation-sugar", "fold-names"]) $(id).onchange = () => { if (view) display(); };
 $("syntax").oninput = () => {
-  checked = null; $("normalize").disabled = true;
+  checked = null; enableReductions(false);
   $("status").textContent = "Edited syntax is not checked; displayed terms show the last checked version.";
 };
 $("check").onclick = () => { try { validate(JSON.parse($("syntax").value)); view.folded = null; display(); } catch (error) { failure(error); } };
-$("normalize").onclick = () => {
+function reduce(side, kind) {
   if (!checked) return;
   try {
-    view.expression = program.checker.syntax.decode(program.kernel.normalize(checked.expression), new Map(view.dimensions ?? []));
-    validate(); view.folded = null; display();
+    let result;
+    if (kind === "normalize") {
+      const dimensions = new Map(view.dimensions ?? []);
+      const term = program.kernel.withUnfoldingHints(view.unfoldingHints ?? [], () => {
+        const original = program.checker.syntax.check(view[side], null, view.context.map(x => [x.name, x.type]), dimensions);
+        return program.checker.syntax.decode(program.kernel.normalize(original.expression), dimensions);
+      });
+      result = { ...checkReduction(program, view, side, term), change: { rule: "Normalized", name: side } };
+    } else result = reduceView(program, view, side, kind);
+    if (!result.change) {
+      $("reduction-status").textContent = kind === "delta" ? `No named definitions to unfold in the ${side}.`
+        : `No function/path applications or pair projections to beta-reduce in the ${side}.`;
+      return;
+    }
+    history.push({ view, selected });
+    // Preserve folding elsewhere, but never immediately refold the changed term.
+    const folded = { ...(view.folded ?? foldedInspection(view)), [side]: result.view[side] };
+    if (side === "expression") delete folded.reference;
+    view = { ...result.view, folded }; checked = result.checked;
+    enableReductions(true); $("diagnostic").hidden = true;
+    $("status").textContent = "Cubical C checked · reduction is definitionally equal to the previous term";
+    const name = view.symbols[result.change.name]?.name ?? result.change.name;
+    $("reduction-status").textContent = kind === "normalize" ? `Normalized ${side}.`
+      : `${result.change.rule} ${side}: ${name}. Back undoes this step.`;
+    display();
   } catch (error) { failure(error); }
-};
+}
+for (const side of ["expression", "type"]) {
+  for (const kind of ["beta", "delta"]) $(kind + "-" + side).onclick = () => reduce(side, kind);
+  $(side === "expression" ? "normalize" : "normalize-type").onclick = () => reduce(side, "normalize");
+}
 try {
   const key = new URLSearchParams(location.search).get("transfer");
   if (!key) throw new Error("Open a checked expression from the cubical proof inspector.");

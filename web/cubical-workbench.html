@@ -18,17 +18,34 @@
         <button id="back" disabled>← Back</button>
         <button id="unhighlight">Un-highlight</button>
         <button id="check" disabled>Check edited expression</button>
-        <button id="normalize" disabled>Normalize</button>
         <label><input id="fold-names" type="checkbox" checked /> Fold source names</label>
         <label><input id="truncation-sugar" type="checkbox" checked /> Truncation ‖A‖</label>
         <label><input id="identity-sugar" type="checkbox" checked /> Equality as =<sub>T</sub></label>
       </div>
       <div id="diagnostic" role="alert" hidden></div>
+      <p id="reduction-status" class="hint" role="status"></p>
       <section class="panel cubical-panel">
         <h2 id="name">Expression</h2>
         <h3>Context</h3><div id="context"></div>
-        <h3>Expression</h3><div id="expression" class="kernel-term typeset"></div>
-        <h3>Type</h3><div id="type" class="kernel-term typeset"></div>
+        <div class="term-heading">
+          <h3>Expression</h3>
+          <div role="group" aria-label="Reduce expression">
+            <button id="beta-expression" data-reduction disabled title="Apply one function/path application or pair projection, without unfolding definitions">β step</button>
+            <button id="delta-expression" data-reduction disabled title="Unfold one named definition without beta reduction">δ unfold</button>
+            <button id="normalize" data-reduction disabled title="Fully normalize the expression">Normalize</button>
+          </div>
+        </div>
+        <div id="expression" class="kernel-term typeset"></div>
+        <div class="term-heading">
+          <h3>Type</h3>
+          <div role="group" aria-label="Reduce type">
+            <button id="beta-type" data-reduction disabled title="Apply one function/path application or pair projection, without unfolding definitions">β step</button>
+            <button id="delta-type" data-reduction disabled title="Unfold one named definition without beta reduction">δ unfold</button>
+            <button id="normalize-type" data-reduction disabled title="Fully normalize the type">Normalize</button>
+          </div>
+        </div>
+        <div id="type" class="kernel-term typeset"></div>
+        <p class="hint">β applies one function/path or pair projection; δ unfolds one definition. Each step is checked for definitional equality. Back undoes a step. Reduced terms stay expanded.</p>
         <details><summary>Edit native syntax</summary>
           <p>Definitions refer to the checked source registry by name. Editing does not change that registry.</p>
           <textarea id="syntax" spellcheck="false" aria-label="Native cubical expression"></textarea>
