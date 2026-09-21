@@ -170,7 +170,13 @@ matching definition references. It unfolds definitions only when that comparison
 fails. `cc_kernel_whnf` exposes the demanded head without strongly normalizing
 arguments, and is suitable for an elaborator's type-shape queries. Like the
 normalization inspector, it accepts raw syntax but never certifies it; final
-`cc_kernel_check` must validate all elaborated results.
+`cc_kernel_check` must validate all elaborated results. A raw application of an
+explicit path lambda can beta-reduce without a type annotation, since this is
+just capture-avoiding substitution. Endpoint computation for a neutral path
+still requires the Path annotation reconstructed by checking. Thus a head
+query can simplify `(<i> A) @ 1` during type elaboration without treating an
+unknown neutral path as having arbitrary endpoints. The dedicated
+`test-path-head` target checks this distinction and recovery after rejection.
 
 The native API regression builds 22 checked applications of doubling and checks
 a reflexive path at the compact natural 2^22: **252 arena nodes, 7 checking steps

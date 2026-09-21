@@ -179,8 +179,28 @@ static cc_term weak(cc_kernel *k, cc_term term) {
     }
     if (n.kind == CC_PAPP) {
         const cc_formula *arg = cc_kernel_get_formula(k, n.payload);
-        if (!arg || arg->sort != CC_INTERVAL || !n.child[1] || k->nodes[n.child[1]].kind != CC_PATH)
-            return ck_fail(k, "Unchecked path application reached reduction."), 0;
+        if (!arg || arg->sort != CC_INTERVAL)
+            return ck_fail(k, "Path application requires an interval expression."), 0;
+        if (!n.child[1] || k->nodes[n.child[1]].kind != CC_PATH) {
+            /* A raw head query may see an explicit path lambda before type
+             * elaboration has reconstructed its annotation. Lambda beta is
+             * purely syntactic and needs no endpoint/type assumption. A
+             * neutral path still requires its independently checked type. */
+            cc_formula argument;
+            cc_init(&argument, CC_INTERVAL);
+            if (cc_copy(&argument, arg) != CC_OK)
+                return ck_fail(k, "Interval copy failed."), 0;
+            cc_term path = ck_whnf(k, n.child[0]);
+            cc_term result = 0;
+            if (path && k->nodes[path].kind == CC_PLAM) {
+                cc_node line = k->nodes[path];
+                result = ck_whnf(k, ck_dimension_substitute(k, line.child[1], line.payload, &argument));
+            } else if (path) {
+                ck_fail(k, "Unchecked path application reached reduction.");
+            }
+            cc_clear(&argument);
+            return result;
+        }
         cc_node type = k->nodes[n.child[1]];
         if (!arg->length)
             return ck_whnf(k, type.child[1]);
