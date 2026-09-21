@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { reduceView, reductionStep, checkReduction } from "../web/cubical-reduction.mjs";
+import { reduceView, reductionStep, checkReduction, reductionAt, reductionRule, termAtPath } from "../web/cubical-reduction.mjs";
+import { cubicalMathTree } from "../web/cubical-notation.mjs";
 
 const module = await createCubical(), nat = { tag: "Nat" }, zero = { tag: "Zero" };
 const variable = name => ({ tag: "Var", name });
@@ -81,4 +82,35 @@ test("delta retains explicit assumption arguments rather than opening an unbound
   const reduced = reduceView(program, view, "expression", "delta");
   assert.equal(reduced.view.expression.fn.tag, "Lam");
   assert.deepEqual(reduced.view.context, view.context);
+});
+
+test("selecting a shared occurrence reduces only that occurrence", async t => {
+  const program = await programFor(t), view = program.inspect("demo__value");
+  const ref = { tag: "DefRef", name: "demo__id" };
+  const expression = app(ref, app(ref, zero));
+  const delta = reduceView(program, { ...view, expression }, "expression", "delta", ["arg", "fn"]);
+  assert.equal(delta.view.expression.fn.tag, "DefRef");
+  assert.equal(delta.view.expression.arg.fn.tag, "Lam");
+  const beta = reduceView(program, delta.view, "expression", "beta", ["arg"]);
+  assert.deepEqual(beta.view.expression, app(ref, zero));
+  assert.throws(() => reductionAt(expression, "beta", ["fn"]), /does not support/);
+  assert.throws(() => reductionAt(expression, "delta", ["missing"]), /Invalid reduction location/);
+});
+
+test("selection notation exposes every occurrence, including annotations and inner applications", () => {
+  const shared = app(lambda("x", variable("x")), zero);
+  const pair = { tag: "Pair", as: { tag: "DefRef", name: "PairType" }, first: shared, second: shared };
+  const term = app(lambda("p", variable("p")), pair);
+  const tree = cubicalMathTree(term, {}, 5000, { paths: true });
+  const paths = [];
+  const walk = node => {
+    if (!node || typeof node !== "object") return;
+    if (node.sourcePath && reductionRule(termAtPath(term, node.sourcePath), "beta")) paths.push(node.sourcePath);
+    Object.values(node).forEach(walk);
+  };
+  walk(tree);
+  assert.deepEqual(paths, [[], ["arg", "first"], ["arg", "second"]]);
+  assert.deepEqual(tree.args[0].args[0].sourcePath, ["arg", "as"]);
+  const nested = cubicalMathTree(app(shared, zero), {}, 5000, { paths: true });
+  assert.deepEqual(nested.fn.sourcePath, ["fn"]);
 });

@@ -32,12 +32,19 @@ old folded projection; an invalid edit leaves the last checked display visible
 with an explicit failure and disables normalization.
 
 Each workbench term (expression and type) has independent **β step**, **δ
-unfold**, and **Normalize** controls. Beta contracts one function application,
-path application, or pair projection; it never unfolds named definitions. Delta
-opens one reference using the closed body from the kernel's definition registry,
-including any explicit assumption parameters. Steps visit outer applications
-first, then visible components before their type annotations. Normalize performs
-the kernel's full computation rules.
+unfold**, and **Normalize** controls. Clicking beta or delta enters selection mode
+and highlights all applicable sites in the displayed term without changing it.
+Click a highlight (or focus it and press Enter/Space) to reduce that occurrence.
+Repeated uses of a shared subtree are separate choices. Escape or **Un-highlight**
+cancels the mode. Large terms offer **Show more reduction sites** when the display
+budget hides part of the expression.
+
+Selection mode exposes type annotations and nested applications that ordinary
+notation can hide, so their reduction sites remain selectable. Beta contracts a
+function application, path application, or pair projection; it never unfolds
+named definitions. Delta opens the selected reference using the closed body from
+the kernel's definition registry, including explicit assumption parameters.
+Normalize performs the kernel's full computation rules immediately.
 
 The stepper proposes syntax with capture-avoiding substitution. Before showing a
 change, C checks a constant path from the original term to its proposed reduct,

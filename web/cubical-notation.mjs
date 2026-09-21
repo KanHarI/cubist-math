@@ -1,6 +1,6 @@
 // Display the native checked syntax itself. Definition references stay named;
 // this does not reconstruct an unchecked expression from MathScript source.
-export function cubicalMathTree(term, symbols = {}, limit = 1200) {
+export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false } = {}) {
   let remaining = limit;
   const boundNames = new Map(), freeCache = new WeakMap();
   const free = (term, variable) => {
@@ -21,12 +21,12 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200) {
     sourceNames.get(symbol.name).push(variable);
   }
   const label = value => boundNames.get(value) ?? symbols[value]?.name ?? value;
-  const underBinder = (variable, body) => {
+  const underBinder = (variable, body, renderBody) => {
     let spelling = symbols[variable]?.name ?? variable;
     while ([...boundNames].some(([key, name]) => key !== variable && name === spelling)
       || (sourceNames.get(spelling) ?? []).some(key => key !== variable && !boundNames.has(key) && free(body, key))) spelling += "′";
     const previous = boundNames.get(variable); boundNames.set(variable, spelling);
-    const result = visit(body);
+    const result = renderBody();
     if (previous === undefined) boundNames.delete(variable); else boundNames.set(variable, previous);
     return { name: spelling, body: result };
   };
@@ -35,7 +35,12 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200) {
   const formula = value => name(value.length ? value.map(c => c.length ? c.join(" ∧ ") : "1").join(" ∨ ") : "0");
   const depends = (value, dim) => typeof value === "string" ? value === `${dim}:0` || value === `${dim}:1`
     : value && typeof value === "object" && Object.values(value).some(v => depends(v, dim));
-  function visit(t) {
+  function visit(t, path = []) {
+    const child = (value, ...keys) => visit(value, [...path, ...keys]);
+    const tree = build(t, child);
+    return paths ? { ...tree, sourcePath: path } : tree;
+  }
+  function build(t, child) {
     if (!t || --remaining < 0) return name("…");
     if (t.tag === "DisplayRef") return { ...name(t.name), contextBinding: t.binding, local: true };
     if (t.tag === "DefRef") return { ...name(symbols[t.name]?.name ?? t.name), binding: t.name };
@@ -47,40 +52,45 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200) {
     if (t.tag === "Zero") return { kind: "Number", value: 0 };
     if (t.tag === "Point") return name("⋆");
     if (t.tag === "Succ") {
-      const value = visit(t.value);
+      const value = child(t.value, "value");
       return value.kind === "Number" ? { kind: "Number", value: value.value + 1 } : call("succ", [value]);
     }
     if (["Pi", "Sigma"].includes(t.tag)) {
-      if (!free(t.body, t.name)) return { kind: t.tag === "Pi" ? "Arrow" : "Product", left: visit(t.domain), right: visit(t.body) };
-      const domain = visit(t.domain), binder = underBinder(t.name, t.body);
+      if (!free(t.body, t.name)) return { kind: t.tag === "Pi" ? "Arrow" : "Product", left: child(t.domain, "domain"), right: child(t.body, "body") };
+      const domain = child(t.domain, "domain"), binder = underBinder(t.name, t.body, () => child(t.body, "body"));
       return { kind: t.tag, ...binder, domain, domainDependencies: null, domainKey: null };
     }
-    if (t.tag === "Lam") { const domain = visit(t.domain); return { kind: "Lambda", domain, ...underBinder(t.name, t.body) }; }
+    if (t.tag === "Lam") { const domain = child(t.domain, "domain"); return { kind: "Lambda", domain, ...underBinder(t.name, t.body, () => child(t.body, "body")) }; }
     if (t.tag === "App") {
+      if (paths) return { kind: "Call", fn: child(t.fn, "fn"), args: [child(t.arg, "arg")] };
       const args = []; let fn = t;
       while (fn.tag === "App" && remaining-- > 0) { args.unshift(visit(fn.arg)); fn = fn.fn; }
       const head = visit(fn);
       if (head.axiomNotation === "truncation") head.truncationArgument = 0;
       return { kind: "Call", fn: head, args };
     }
-    if (t.tag === "Pair") return { kind: "Pair", left: visit(t.first), right: visit(t.second) };
-    if (t.tag === "Sum") return { kind: "Sum", left: visit(t.left), right: visit(t.right) };
-    if (["Fst", "Snd"].includes(t.tag)) return call(t.tag.toLowerCase(), [visit(t.pair)]);
+    if (t.tag === "Pair" && paths) return call("pair", [child(t.as, "as"), child(t.first, "first"), child(t.second, "second")]);
+    if (t.tag === "Pair") return { kind: "Pair", left: child(t.first, "first"), right: child(t.second, "second") };
+    if (t.tag === "Sum") return { kind: "Sum", left: child(t.left, "left"), right: child(t.right, "right") };
+    if (["Fst", "Snd"].includes(t.tag)) return call(t.tag.toLowerCase(), [child(t.pair, "pair")]);
     if (t.tag === "Path" && !depends(t.family, t.dim))
-      return { kind: "Identity", carrier: visit(t.family), left: visit(t.left), right: visit(t.right) };
-    if (t.tag === "Path") return call("PathP", [{ kind: "Lambda", name: t.dim, body: visit(t.family) }, visit(t.left), visit(t.right)]);
+      return { kind: "Identity", carrier: child(t.family, "family"), left: child(t.left, "left"), right: child(t.right, "right") };
+    if (t.tag === "Path") return call("PathP", [{ kind: "Lambda", name: t.dim, body: child(t.family, "family") }, child(t.left, "left"), child(t.right, "right")]);
+    if (t.tag === "PLam" && paths) return call("path", [
+      { kind: "Lambda", name: t.dim, body: child(t.family, "family") },
+      { kind: "Lambda", name: t.dim, body: child(t.body, "body") }]);
     if (t.tag === "PLam") return !depends(t.family, t.dim) && !depends(t.body, t.dim)
-      ? call("refl", [visit(t.body)]) : call("path", [{ kind: "Lambda", name: t.dim, body: visit(t.body) }]);
-    if (t.tag === "PApp") return call("at", [visit(t.path), formula(t.arg)]);
-    if (t.tag === "PushPath") return call("push_path_at", [visit(t.as), visit(t.value), formula(t.arg)]);
-    if (t.tag === "W") return call("W", [visit(t.domain), { kind: "Lambda", name: t.name, body: visit(t.body) }]);
-    if (t.tag === "Comp") return { kind: "Scope", names: [t.dim], body: call("comp", [visit(t.family),
-      ...t.system.map(p => call("face", [formula(p.face), visit(p.term)])), visit(t.base)]) };
-    if (t.tag === "HComp") return call("hcomp", [visit(t.family), ...t.system.map(p => call("face", [formula(p.face),
-      { kind: "Lambda", name: t.dim, body: visit(p.term) }])), visit(t.base)]);
-    if (t.tag === "Trans") return call("transp", [{ kind: "Lambda", name: t.dim, body: visit(t.family) }, formula(t.face), visit(t.base)]);
-    if (t.tag === "Glue") return call("Glue", [visit(t.base), ...t.system.map(p => call("face", [formula(p.face), visit(p.type), visit(p.equiv)]))]);
-    if (t.tag === "GlueTerm") return call("glue", [visit(t.as), visit(t.base), ...t.system.map(p => call("face", [formula(p.face), visit(p.term)]))]);
+      ? call("refl", [child(t.body, "body")]) : call("path", [{ kind: "Lambda", name: t.dim, body: child(t.body, "body") }]);
+    if (t.tag === "PApp") return call("at", [child(t.path, "path"), formula(t.arg)]);
+    if (t.tag === "PushPath") return call("push_path_at", [child(t.as, "as"), child(t.value, "value"), formula(t.arg)]);
+    if (t.tag === "W") return call("W", [child(t.domain, "domain"), { kind: "Lambda", name: t.name, body: child(t.body, "body") }]);
+    if (t.tag === "Comp") return { kind: "Scope", names: [t.dim], body: call("comp", [child(t.family, "family"),
+      ...t.system.map((p, index) => call("face", [formula(p.face), child(p.term, "system", index, "term")])), child(t.base, "base")]) };
+    if (t.tag === "HComp") return call("hcomp", [child(t.family, "family"), ...t.system.map((p, index) => call("face", [formula(p.face),
+      { kind: "Lambda", name: t.dim, body: child(p.term, "system", index, "term") }])), child(t.base, "base")]);
+    if (t.tag === "Trans") return call("transp", [{ kind: "Lambda", name: t.dim, body: child(t.family, "family") }, formula(t.face), child(t.base, "base")]);
+    if (t.tag === "Glue") return call("Glue", [child(t.base, "base"), ...t.system.map((p, index) => call("face", [formula(p.face), child(p.type, "system", index, "type"), child(p.equiv, "system", index, "equiv")]))]);
+    if (t.tag === "GlueTerm") return call("glue", [child(t.as, "as"), child(t.base, "base"), ...t.system.map((p, index) => call("face", [formula(p.face), child(p.term, "system", index, "term")]))]);
     const fields = { NatRec: ["motive", "zero", "step", "value"], UnitRec: ["motive", "point", "value"],
       SumRec: ["motive", "left", "right", "value"], WRec: ["motive", "step", "value"],
       Sup: ["as", "label", "children"], Inl: ["as", "value"], Inr: ["as", "value"],
@@ -88,7 +98,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200) {
       Pushout: ["center", "left", "right", "maps"], PushLeft: ["as", "value"],
       PushRight: ["as", "value"], PushElim: ["motive", "left", "right", "bridge"] };
     if (!fields[t.tag]) throw new Error(`Unsupported cubical notation: ${t.tag}`);
-    return call(t.tag, fields[t.tag].map(key => visit(t[key])));
+    return call(t.tag, fields[t.tag].map(key => child(t[key], key)));
   }
   return visit(term);
 }

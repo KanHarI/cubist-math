@@ -117,7 +117,7 @@ export function isTruncationApplication(node) {
 
 // Native MathML provides mathematical typesetting without a CDN, TeX input,
 // HTML interpolation, or a change to the stored proof.
-export function renderMathNotation(container, tree, { resolve = () => null, inspect = () => {}, truncationSugar = false, groupIndependentBinders = false, identitySugar = true } = {}) {
+export function renderMathNotation(container, tree, { resolve = () => null, inspect = () => {}, truncationSugar = false, groupIndependentBinders = false, identitySugar = true, decorateTerm = null } = {}) {
   const doc = container.ownerDocument;
   const element = (tag, ...children) => {
     const node = doc.createElementNS(mathNamespace, tag);
@@ -171,6 +171,10 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
     return prefix;
   }
   function visit(node) {
+    const result = build(node);
+    return decorateTerm ? decorateTerm(node, result) : result;
+  }
+  function build(node) {
     if (node.kind === "Name") {
       const symbol = element("mi", node.name);
       if (!node.local) symbol.setAttribute("mathvariant", "normal");
@@ -233,7 +237,7 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
   }
   let content;
   const { groups, tail } = independentBinderGroups(tree, groupIndependentBinders);
-  if (groups.reduce((count, group) => count + group.length, 0) > 3) {
+  if (!decorateTerm && groups.reduce((count, group) => count + group.length, 0) > 3) {
     content = element("mtable");
     content.setAttribute("columnalign", "left");
     content.setAttribute("rowspacing", "0.35em");

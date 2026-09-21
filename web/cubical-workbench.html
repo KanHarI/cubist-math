@@ -24,14 +24,15 @@
       </div>
       <div id="diagnostic" role="alert" hidden></div>
       <p id="reduction-status" class="hint" role="status"></p>
+      <button id="more-reduction-sites" hidden>Show more reduction sites</button>
       <section class="panel cubical-panel">
         <h2 id="name">Expression</h2>
         <h3>Context</h3><div id="context"></div>
         <div class="term-heading">
           <h3>Expression</h3>
           <div role="group" aria-label="Reduce expression">
-            <button id="beta-expression" data-reduction disabled title="Apply one function/path application or pair projection, without unfolding definitions">β step</button>
-            <button id="delta-expression" data-reduction disabled title="Unfold one named definition without beta reduction">δ unfold</button>
+            <button id="beta-expression" data-reduction disabled aria-pressed="false" title="Highlight function/path applications and pair projections; click one to reduce it">β step</button>
+            <button id="delta-expression" data-reduction disabled aria-pressed="false" title="Highlight named definitions; click one occurrence to unfold it">δ unfold</button>
             <button id="normalize" data-reduction disabled title="Fully normalize the expression">Normalize</button>
           </div>
         </div>
@@ -39,13 +40,13 @@
         <div class="term-heading">
           <h3>Type</h3>
           <div role="group" aria-label="Reduce type">
-            <button id="beta-type" data-reduction disabled title="Apply one function/path application or pair projection, without unfolding definitions">β step</button>
-            <button id="delta-type" data-reduction disabled title="Unfold one named definition without beta reduction">δ unfold</button>
+            <button id="beta-type" data-reduction disabled aria-pressed="false" title="Highlight function/path applications and pair projections; click one to reduce it">β step</button>
+            <button id="delta-type" data-reduction disabled aria-pressed="false" title="Highlight named definitions; click one occurrence to unfold it">δ unfold</button>
             <button id="normalize-type" data-reduction disabled title="Fully normalize the type">Normalize</button>
           </div>
         </div>
         <div id="type" class="kernel-term typeset"></div>
-        <p class="hint">β applies one function/path or pair projection; δ unfolds one definition. Each step is checked for definitional equality. Back undoes a step. Reduced terms stay expanded.</p>
+        <p class="hint">β and δ highlight every applicable site in the displayed term. Click a highlight to reduce that occurrence. Escape or Un-highlight cancels selection. Each step is kernel-checked; Back undoes it. Reduced terms stay expanded.</p>
         <details><summary>Edit native syntax</summary>
           <p>Definitions refer to the checked source registry by name. Editing does not change that registry.</p>
           <textarea id="syntax" spellcheck="false" aria-label="Native cubical expression"></textarea>

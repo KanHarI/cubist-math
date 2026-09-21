@@ -5,3 +5,6 @@
 #context .context-entry > span { font-family: monospace; }
 .term-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
 .term-heading [role="group"] { display: flex; flex-wrap: wrap; gap: .4rem; }
+.reduction-site { background: #fff0b8; outline: 1px dashed #a66a0a; cursor: pointer; border-radius: 3px; }
+.reduction-site:hover, .reduction-site:focus { background: #ffd879; outline: 2px solid #805004; }
+[data-reduction][aria-pressed="true"] { background: #fff0b8; border-color: #a66a0a; }

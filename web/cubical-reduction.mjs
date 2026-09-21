@@ -1,6 +1,38 @@
 // Workbench transformations propose syntax; only the C checker accepts it.
 import { substituteTerm, substituteDimension } from "./dist/cubical-runtime/core.mjs";
 
+export function reductionRule(term, kind) {
+  if (kind === "delta" && term?.tag === "DefRef") return { rule: "δ", name: term.name };
+  if (kind !== "beta") return null;
+  if (term?.tag === "App" && term.fn.tag === "Lam") return { rule: "β", name: "function application" };
+  if (term?.tag === "PApp" && term.path.tag === "PLam") return { rule: "β", name: "path application" };
+  if (["Fst", "Snd"].includes(term?.tag) && term.pair.tag === "Pair") return { rule: "β", name: "pair projection" };
+  return null;
+}
+
+export function termAtPath(term, path) {
+  for (const key of path) {
+    if (!term || typeof term !== "object" || !Object.hasOwn(term, key)) throw new Error("Invalid reduction location.");
+    term = term[key];
+  }
+  return term;
+}
+
+// A path identifies an occurrence, not an object: shared subtrees can appear
+// several times, and selecting one must not change its siblings.
+export function reductionAt(term, kind, path, definition) {
+  const target = termAtPath(term, path);
+  if (!reductionRule(target, kind)) throw new Error("This location does not support the selected reduction.");
+  const reduced = reductionStep(target, kind, definition);
+  const replace = (value, depth) => {
+    if (depth === path.length) return reduced.term;
+    const copy = Array.isArray(value) ? [...value] : { ...value };
+    copy[path[depth]] = replace(value[path[depth]], depth + 1);
+    return copy;
+  };
+  return { ...reduced, term: replace(term, 0) };
+}
+
 export function reductionStep(term, kind, definition) {
   if (!["beta", "delta"].includes(kind)) throw new Error("Unknown reduction operation.");
   let change = null;
@@ -70,14 +102,16 @@ export function checkReduction(program, view, side, term) {
   });
 }
 
-export function reduceView(program, view, side, kind) {
+export function reduceView(program, view, side, kind, path = null) {
   if (!["expression", "type"].includes(side)) throw new Error("Unknown reduction target.");
-  const proposal = reductionStep(view[side], kind, name => {
+  const definition = name => {
     const reference = program.kernel.definitions.get(name);
     if (!reference) throw new Error(`No checked definition for ${name}.`);
     // Read the kernel's closed body, including explicit assumption parameters.
     return program.checker.syntax.decode(program.kernel.definition(reference).value, new Map(view.dimensions ?? []));
-  });
+  };
+  const proposal = path === null ? reductionStep(view[side], kind, definition)
+    : reductionAt(view[side], kind, path, definition);
   if (!proposal.change) return { view, change: null };
   return { ...checkReduction(program, view, side, proposal.term), change: proposal.change };
 }
