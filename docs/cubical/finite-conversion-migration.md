@@ -83,3 +83,33 @@ constructed as `refl(base)` followed by `loop`, is identified with `loop` using
 `left_unit` before applying the contraction argument. The complete circle-degree
 import graph checks 226 declarations within one second, with no slow, blocked,
 or failed declarations and 16 universe templates.
+
+## Embedded fields and analysis estimates
+
+Five further native editions remove conversion or repeated-checking bottlenecks
+without changing any original declaration's statement or assumptions:
+
+- `embedded_composita` selects `AlgebraicField`, `EmbeddedCompositum`, and
+  `embedded_compositum_subfield` in the commutativity proof. The carrier alias
+  matters as well as the endpoints: the inferred congruence family contains
+  `Structure(FieldData)`, whereas the declared family names `AlgebraicField`.
+  Exposing that alias lets the selective pass finish in 4,035 reductions.
+- `f4_embedding_images` selects `embedding_image_field` in the base-field
+  identification. The image construction itself remains folded.
+- `f4_embedded_composita` selects the same field/compositum aliases and
+  `embedding_image_field` in its idempotence identification.
+- `complex_norm_coordinates` divides the existing 55 ring rewrites into seven
+  named, independently checked segments. The final norm-product proof composes
+  these segments. This preserves every original ring rewrite while avoiding
+  repeated checking of a single deeply nested proof; the final declaration
+  took about 439 ms in the isolated run.
+- `affine_partition_refinement` separates the per-piece endpoint conversion
+  from fixed-mesh partition assembly. The continuity theorem supplies the mesh
+  and calls the checked assembly lemma. The two helpers took about 218 ms and
+  281 ms; all 437 declarations in its import graph passed the one-second limit.
+
+These timings are representative observations, not fixed performance bounds.
+The complex-norm import graph passed all 78 declarations. The compositum import
+graph passed its assigned field declarations; four unrelated Galois-path
+bottlenecks and their dependents were still being optimized separately when
+this checkpoint was measured.
