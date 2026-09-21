@@ -1,0 +1,54 @@
+import path_actions;
+
+// These explicit contracts guard the inferred types of the migrated helpers.
+theorem append_agreement_contract(A : U0, x : A, y : A, z : A, p : x = y, q : y = z) : append_path(
+  A, x, y, z, p, q
+) = concatenate(U1, A, x, y, z, p, q) {
+  exact append_path_agrees(A, x, y, z, p, q);
+}
+
+theorem append_left_inverse_contract(A : U0, x : A, y : A, z : A, p : x = y, q : y = z) : append_path(
+  A, x, z, y, append_path(A, x, y, z, p, q), inverse(U1, A, y, z, q)
+) = p {
+  exact append_path_left_inverse(A, x, y, z, q, p);
+}
+
+theorem append_right_inverse_contract(A : U0, x : A, y : A, z : A, p : x = z, q : y = z) : append_path(
+  A, x, y, z, append_path(A, x, z, y, p, inverse(U1, A, y, z, q)), q
+) = p {
+  exact append_path_right_inverse(A, x, y, z, q, p);
+}
+
+theorem append_triangle_contract(A : U0, x : A, y : A, z : A, p : x = y, q : y = z) : ap(
+  U1, (x = y), (x = z), (fun (v : x = y) => append_path(A, x, y, z, v, q)),
+  append_path(A, x, z, y, append_path(A, x, y, z, p, q), inverse(U1, A, y, z, q)), p,
+  append_path_left_inverse(A, x, y, z, q, p)
+) = append_path_right_inverse(A, x, y, z, q, append_path(A, x, y, z, p, q)) {
+  exact append_path_triangle(A, x, y, z, q, p);
+}
+
+theorem append_equivalence_contract(A : U0, x : A, y : A, z : A, q : y = z) : Equiv(
+  U0, (x = y), (x = z)
+) {
+  exact append_path_equivalence(A, x, y, z, q);
+}
+
+theorem map_concatenation_contract(
+  A : U0, B : U0, f : A -> B, x : A, y : A, z : A, p : x = y, q : y = z
+) : ap(U1, A, B, f, x, z, concatenate(U1, A, x, y, z, p, q)) = concatenate(
+  U1, B, f(x), f(y), f(z), ap(U1, A, B, f, x, y, p), ap(U1, A, B, f, y, z, q)
+) {
+  exact map_concat(A, B, f, x, y, z, p, q);
+}
+
+theorem map_inverse_contract(A : U0, B : U0, f : A -> B, x : A, y : A, p : x = y) : ap(
+  U1, A, B, f, y, x, inverse(U1, A, x, y, p)
+) = inverse(U1, B, f(x), f(y), ap(U1, A, B, f, x, y, p)) {
+  exact map_inverse(A, B, f, x, y, p);
+}
+
+theorem inverse_twice_contract(A : U0, x : A, y : A, p : x = y) : inverse(
+  U1, A, y, x, inverse(U1, A, x, y, p)
+) = p {
+  exact inverse_twice(A, x, y, p);
+}
