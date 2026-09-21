@@ -93,11 +93,13 @@ export class CubicalProgram {
               const binding = definition ? head.name : `${name}__local_${item.node.start}`;
               if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
               if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
-                role: item.term.tag === "Var" ? "Local assumption" : "Local definition", verified: true,
+                role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
+                expansion: item.node.expansion, description: item.node.description,
                 definitionStart: source?.start ?? item.node.start,
                 ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
               if (name === main) this.links.push({ name: item.node.name, binding, start: item.node.start,
-                end: item.node.end, definitionStart: source?.start, role: definition ? "definition" : "local" });
+                end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (definition ? "definition" : "local"),
+                expansion: item.node.expansion, description: item.node.description });
             }
           }
           pending = [];

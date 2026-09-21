@@ -16,5 +16,5 @@ test("every proof is reachable through exactly one nonempty browsing topic", asy
   });
   assert.deepEqual(grouped.sort(), proofChoices.map(p => p.id).sort());
   for (const source of sourceModules) assert.ok(proofChoices.some(p => p.id === source), source);
-  await Promise.all(proofChoices.map(p => access(new URL(`../web/proofs/${p.file ?? p.id + ".proof"}`, import.meta.url))));
+  await Promise.all(proofChoices.map(p => access(new URL(`../web/proofs/${p.file ?? p.id + ".cubist"}`, import.meta.url))));
 });

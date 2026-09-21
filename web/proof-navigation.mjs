@@ -16,7 +16,6 @@ export function proofReturnURL(key) {
   const url = new URL("proof.html", location.href);
   url.searchParams.set("proof", saved.proof);
   url.searchParams.set("restore", key);
-  if (["cubical", "legacy"].includes(saved.backend)) url.searchParams.set("backend", saved.backend);
   return url.href;
 }
 export function validatedProofURL(value) {

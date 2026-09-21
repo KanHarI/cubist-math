@@ -3,19 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>MathScript · Proof workspace</title>
+    <title>Cubist · Proof workspace</title>
     <link rel="stylesheet" href="proof.css" />
   </head>
   <body>
     <header>
       <a class="brand" href="index.html"
-        >⊢ MathScript <span>Proof workspace</span></a
+        >⊢ Cubist Math <span>Proof workspace</span></a
       >
       <nav>
         <a href="index.html">Proof highlights</a>
         <a href="workbench.html">Kernel workbench</a
         ><a href="#language-guide" id="guide-link">Language quick reference</a>
-        <a href="https://github.com/KanHarI/thth-c">GitHub repository</a>
+        <a href="https://github.com/KanHarI/cubist-math">GitHub repository</a>
       </nav>
     </header>
     <main>
@@ -38,30 +38,23 @@
           <select id="proof-picker" aria-describedby="proof-count"></select>
           <span id="proof-count" role="status"></span>
         </div>
-        <a id="source-file" href="proofs/euclid.proof">Source file</a>
+        <a id="source-file" href="proofs/euclid.cubist">Source file</a>
         <button id="check" class="primary" disabled>Check proof</button
         ><button id="open">Open source</button
         ><a id="repository-source" href="#">Load repository source</a>
         <button id="previous-draft" hidden>Download previous source</button>
         <button id="save">Save source</button
         ><button id="export" disabled>Export checked proof</button
-        ><input id="file" type="file" accept=".proof,.txt" hidden /><span
+        ><input id="file" type="file" accept=".cubist,.txt" hidden /><span
           id="dirty"
           role="status"
         ></span>
       </div>
       <div class="compiler-options" role="group" aria-label="Compiler optimizations">
-        <label for="kernel-backend">Kernel</label>
-        <select id="kernel-backend">
-          <option value="cubical">Cubical C</option>
-          <option value="legacy">Original Id/J C</option>
-        </select>
         <span>Compiler optimizations</span>
         <label data-cubical-option><input id="share-syntax" type="checkbox" checked /> Share identical syntax</label>
         <label data-cubical-option><input id="reuse-checks" type="checkbox" checked /> Reuse checked terms</label>
         <label data-cubical-option><input id="compact-paths" type="checkbox" checked /> Keep compact path types</label>
-        <label><input id="reuse-normal-forms" type="checkbox" checked /> Reuse normal forms</label>
-        <label><input id="memoize-instructions" type="checkbox" checked /> Reuse checked instructions</label>
       </div>
       <p id="source-notice" class="hint" role="status" hidden></p>
       <p id="development-note" class="hint" hidden>
@@ -107,15 +100,11 @@
             </div>
             <textarea
               id="editor"
-              aria-label="MathScript source"
+              aria-label="Cubist source"
               spellcheck="false"
               hidden
             ></textarea>
             <div class="source-options">
-              <label id="intermediate-label" hidden
-                ><input id="show-intermediate" type="checkbox" /> Show
-                intermediate construction steps</label
-              >
               <p id="source-count" class="hint"></p>
             </div>
             <div id="read-source" aria-label="Checked proof source"></div>
@@ -146,7 +135,6 @@
             <select id="kernel-view">
               <option value="notation">Kernel notation (folded)</option>
               <option value="expanded" hidden>Kernel notation (stored)</option>
-              <option value="mathscript">MathScript (folded)</option>
               <option value="raw">Raw kernel term</option>
             </select>
             <label id="kernel-binder-options" class="hint">
@@ -180,7 +168,6 @@
             </div>
             <div id="kernel-type" class="kernel-term"></div>
             <button id="expand-kernel" hidden>Show full term</button>
-            <button id="export-folding" hidden>Download folding certificate</button>
           </details>
           <p class="hint">
             Inspection never changes the proof. Definitions and local

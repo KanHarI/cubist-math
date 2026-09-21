@@ -61,23 +61,23 @@ comparison with arbitrary fine partitions or homotopy invariance; see the
 
 | Module | Result |
 | --- | --- |
-| [field_products.proof](../web/proofs/field_products.proof) | Equality of pairs is determined by coordinate equalities; a product of sets is a set. |
-| [complex_numbers.proof](../web/proofs/complex_numbers.proof) | Coordinate carrier and operations, separated from the ring proofs so limit arguments can import them directly. |
-| [ring_laws.proof](../web/proofs/ring_laws.proof) | Derived ring identities, including multiplication by zero and negatives, distribution and cancellation. |
-| [complex_coordinates.proof](../web/proofs/complex_coordinates.proof) | Explicit proofs of the coordinate identities for complex multiplication. |
-| [complex_algebra.proof](../web/proofs/complex_algebra.proof) | `Complex(F) = F and F`, its commutative-ring certificate, injective real embedding, `i² = -1`, conjugation, norm square, and the inverse formula given a reciprocal of the norm square. |
-| [ordered_squares.proof](../web/proofs/ordered_squares.proof) | Nonnegative squares and strictly positive squares of apart-from-zero scalars, without deciding signs. |
-| [complex_norm_coordinates.proof](../web/proofs/complex_norm_coordinates.proof) | The polynomial identity proving multiplicativity of the squared norm. |
-| [complex_inverses.proof](../web/proofs/complex_inverses.proof) | Positive squared norm if and only if an inverse exists; failure of positive apartness implies zero. These results are constructive over a supplied ordered field. |
-| [classical_complex_inverses.proof](../web/proofs/classical_complex_inverses.proof) | An inverse from ordinary negated equality with zero, using the existing excluded-middle axiom explicitly. |
-| [complex_polynomials.proof](../web/proofs/complex_polynomials.proof) | Monic coefficient vectors and Horner evaluation; actual linear roots and uniqueness; a precise algebraic-closure property and its exact-square-root consequence. |
-| [polynomial_difference.proof](../web/proofs/polynomial_difference.proof) | A recursive polynomial expression `q` with `p(x) = p(r) + (x-r)q(x)`; hence the factor identity when `p(r) = 0`. |
-| [homotopy_paths.proof](../web/proofs/homotopy_paths.proof) | Naturality with moving basepoints; a null homotopy kills loops; loops in a contractible type are null. All axiom-free. |
-| [circle_degree.proof](../web/proofs/circle_degree.proof) | Circle power maps have their stated degree, positive degree obstructs contraction and extension through a contractible homotopy type, and the circle cannot retract from a contractible type. Uses only the single univalence axiom. |
-| [complex_deformation.proof](../web/proofs/complex_deformation.proof) | A dominating squared norm guarantees `z + t*q != 0` for `0 <= t <= 1`, with the correct endpoints. Uses only the truncation present in the ordered-field interface. |
-| [quadratic_identities.proof](../web/proofs/quadratic_identities.proof) | The scalar parallelogram identity by explicit ring rewrites, without axioms. |
-| [ordered_bounds.proof](../web/proofs/ordered_bounds.proof) | Constructive weak-order addition and multiplication bounds, as prerequisites for the polynomial radius estimate. |
-| [complex_periods.proof](../web/proofs/complex_periods.proof) | Every additive complex-valued period on the puncture homotopy type is the winding-weighted sum of its supplied local contributions. This does not construct contour integration or prove the local residue calculation. |
+| [field_products.cubist](../web/proofs/field_products.cubist) | Equality of pairs is determined by coordinate equalities; a product of sets is a set. |
+| [complex_numbers.cubist](../web/proofs/complex_numbers.cubist) | Coordinate carrier and operations, separated from the ring proofs so limit arguments can import them directly. |
+| [ring_laws.cubist](../web/proofs/ring_laws.cubist) | Derived ring identities, including multiplication by zero and negatives, distribution and cancellation. |
+| [complex_coordinates.cubist](../web/proofs/complex_coordinates.cubist) | Explicit proofs of the coordinate identities for complex multiplication. |
+| [complex_algebra.cubist](../web/proofs/complex_algebra.cubist) | `Complex(F) = F and F`, its commutative-ring certificate, injective real embedding, `i² = -1`, conjugation, norm square, and the inverse formula given a reciprocal of the norm square. |
+| [ordered_squares.cubist](../web/proofs/ordered_squares.cubist) | Nonnegative squares and strictly positive squares of apart-from-zero scalars, without deciding signs. |
+| [complex_norm_coordinates.cubist](../web/proofs/complex_norm_coordinates.cubist) | The polynomial identity proving multiplicativity of the squared norm. |
+| [complex_inverses.cubist](../web/proofs/complex_inverses.cubist) | Positive squared norm if and only if an inverse exists; failure of positive apartness implies zero. These results are constructive over a supplied ordered field. |
+| [classical_complex_inverses.cubist](../web/proofs/classical_complex_inverses.cubist) | An inverse from ordinary negated equality with zero, using the existing excluded-middle axiom explicitly. |
+| [complex_polynomials.cubist](../web/proofs/complex_polynomials.cubist) | Monic coefficient vectors and Horner evaluation; actual linear roots and uniqueness; a precise algebraic-closure property and its exact-square-root consequence. |
+| [polynomial_difference.cubist](../web/proofs/polynomial_difference.cubist) | A recursive polynomial expression `q` with `p(x) = p(r) + (x-r)q(x)`; hence the factor identity when `p(r) = 0`. |
+| [homotopy_paths.cubist](../web/proofs/homotopy_paths.cubist) | Naturality with moving basepoints; a null homotopy kills loops; loops in a contractible type are null. All axiom-free. |
+| [circle_degree.cubist](../web/proofs/circle_degree.cubist) | Circle power maps have their stated degree, positive degree obstructs contraction and extension through a contractible homotopy type, and the circle cannot retract from a contractible type. Uses only the single univalence axiom. |
+| [complex_deformation.cubist](../web/proofs/complex_deformation.cubist) | A dominating squared norm guarantees `z + t*q != 0` for `0 <= t <= 1`, with the correct endpoints. Uses only the truncation present in the ordered-field interface. |
+| [quadratic_identities.cubist](../web/proofs/quadratic_identities.cubist) | The scalar parallelogram identity by explicit ring rewrites, without axioms. |
+| [ordered_bounds.cubist](../web/proofs/ordered_bounds.cubist) | Constructive weak-order addition and multiplication bounds, as prerequisites for the polynomial radius estimate. |
+| [complex_periods.cubist](../web/proofs/complex_periods.cubist) | Every additive complex-valued period on the puncture homotopy type is the winding-weighted sum of its supplied local contributions. This does not construct contour integration or prove the local residue calculation. |
 
 The ring assumptions are ordinary parameters to these theorems. For example,
 `complex_commutative_ring` takes a `CommutativeRing(F, ...)` certificate and
@@ -204,7 +204,7 @@ prove the needed Montel criterion using the modular function and the
 twice-punctured plane, then deduce Great Picard. That gives a route related to
 our puncture project, but requires analytic covering maps and compactness
 arguments in addition to loop generation. There are currently no definitions of holomorphic functions,
-isolated essential singularities, or normal families in MathScript, so there
+isolated essential singularities, or normal families in Cubist, so there
 is no checked Picard theorem yet.
 
 ## Relation to puncture homotopy

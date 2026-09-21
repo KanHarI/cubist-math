@@ -8,7 +8,7 @@ const semantic = value => JSON.parse(JSON.stringify(value, (key, v) =>
   ["start", "end", "operatorStart", "operatorEnd", "definitionStart", "valueStart", "valueEnd", "tupleStart", "tupleEnd"].includes(key) ? undefined : v));
 test("formatting every bundled source preserves tokens, comments, syntax and is idempotent", async () => {
   const directory = new URL("../web/proofs/", import.meta.url);
-  for (const name of (await readdir(directory)).filter(n => n.endsWith(".proof"))) {
+  for (const name of (await readdir(directory)).filter(n => n.endsWith(".cubist"))) {
     const source = await readFile(new URL(name, directory), "utf8");
     const formatted = formatMathScript(source);
     assert.equal(formatMathScript(formatted), formatted, name + " idempotence");

@@ -1,4 +1,0 @@
-# Uuomega
-# Upstream: src/builtins/uuomega.rs
-# Axioms: false
-lib_Uomega = kernel.UIntroOmega()

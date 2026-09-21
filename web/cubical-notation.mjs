@@ -1,5 +1,5 @@
 // Display the native checked syntax itself. Definition references stay named;
-// this does not reconstruct an unchecked expression from MathScript source.
+// this does not reconstruct an unchecked expression from Cubist source.
 export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false } = {}) {
   let remaining = limit;
   const boundNames = new Map(), freeCache = new WeakMap();

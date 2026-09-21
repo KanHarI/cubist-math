@@ -38,7 +38,7 @@ try {
   for (const link of links) {
     const query = new URL(link).searchParams;
     assert.ok(proofChoices.some(p => p.id === query.get("proof")));
-    const source = await page.request.get(`${base}/proofs/${query.get("proof")}.proof`);
+    const source = await page.request.get(`${base}/proofs/${query.get("proof")}.cubist`);
     assert.equal(source.status(), 200);
     assert.ok((await source.text()).includes(`theorem ${query.get("name")}`));
   }
@@ -80,21 +80,21 @@ try {
   }
   if (!groupOnly) {
     await page.getByRole("link", { name: "Kernel workbench", exact: true }).click();
-    await page.waitForFunction(() => document.querySelector("#status").textContent === "WASM ready");
+    await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
     assert.ok(page.url().endsWith("/workbench.html"));
-    assert.equal(await page.locator("#active-name").textContent(), "nested");
+    assert.equal(await page.locator("#name").textContent(), "example");
     await page.getByRole("link", { name: "Proof highlights", exact: true }).click();
     await page.locator('.proof-card[href*="proof=euclid&"]').click();
     await idle();
-    await page.locator('#definitions [data-name="InfinitelyManyPrimes"]').first().click();
+    await page.locator('#read-source [data-name="InfinitelyManyPrimes"]').first().click();
     await page.waitForFunction(() => !document.querySelector("#open-kernel-type").disabled);
     const popupPromise = page.waitForEvent("popup");
     await page.locator("#open-kernel-type").click();
     const popup = await popupPromise;
     await popup.waitForURL("**/workbench.html?transfer=*");
-    await popup.waitForFunction(() => document.querySelector("#status").textContent === "WASM ready");
-    assert.equal(await popup.locator("#error").isVisible(), false);
-    assert.notEqual(await popup.locator("#active-name").textContent(), "nested");
+    await popup.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+    assert.equal(await popup.locator("#diagnostic").isVisible(), false);
+    assert.notEqual(await popup.locator("#name").textContent(), "example");
     await popup.close();
   }
   assert.deepEqual(errors, []);

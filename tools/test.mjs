@@ -7,7 +7,7 @@ try {
   if (selected.help) {
     process.stdout.write(help);
   } else if (!selected.tests.length) {
-    process.stdout.write("No added or modified .proof files to check.\n");
+    process.stdout.write("No added or modified .cubist files to check.\n");
   } else {
     await Promise.all([...selected.tests, ...selected.proofs].map(path => access(path)));
     const environment = { ...process.env, MATHSCRIPT_TEST_PROOFS: JSON.stringify(selected.proofs), MATHSCRIPT_OPTIMIZATIONS: JSON.stringify(selected.optimizations) };

@@ -8,7 +8,7 @@ freshened reused slots, so fixing only the encoder would not suffice.
 
 ## Syntax transport
 
-`experiments/cubical/dimension-slots.mjs` computes free dimension names with
+`lib/cubical/dimension-slots.mjs` computes free dimension names with
 the exact scope of each constructor. `bindDimensions(term,dimensions)` returns
 `{dim,inner}` for a binder, preserving the live outer names in its bound
 children and allocating the first other slot. It does not change typing or
@@ -52,7 +52,7 @@ Root owns `web/cubical-syntax.mjs`; this checkpoint does not modify it.
 Add the import
 
 ```
-import {bindDimensions} from "../experiments/cubical/dimension-slots.mjs";
+import {bindDimensions} from "../lib/cubical/dimension-slots.mjs";
 ```
 
 and replace the allocation block inside its dimension-binder case with
@@ -63,7 +63,7 @@ const {dim,inner} = bindDimensions(term,dimensions);
 
 Keep the existing outer versus inner child encodings unchanged. Rebuild the
 WASM kernel with the native checking changes before using the new allocator.
-`experiments/cubical/native.mjs` already uses it for independent native tests.
+`lib/cubical/native.mjs` already uses it for independent native tests.
 
 ## Tests
 

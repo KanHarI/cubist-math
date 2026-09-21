@@ -1,4 +1,0 @@
-# Singleton
-# Upstream: src/builtins/singleton.rs
-# Axioms: false
-lib_singleton = kernel.UnitIntro()

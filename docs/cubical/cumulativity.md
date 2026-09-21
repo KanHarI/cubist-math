@@ -35,7 +35,7 @@ including after closing the truncation parameter, failed. The complete reported
 fixture now checks: 536,770 arena nodes, 972 checking steps, and 30,016 reduction
 steps, with the existing operation budget.
 
-`experiments/cubical/tests/cumulativity.test.mjs` tests substitution followed by
+`lib/cubical/tests/cumulativity.test.mjs` tests substitution followed by
 rechecking the inferred type, nested result lifting, dependent pairs, and
 rejection of downward lifting, changed domains, and equality between universes.
 The same cases are checked by the independent JS and C implementations. This

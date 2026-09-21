@@ -1,11 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import createKernel from "../web/dist/kernel.mjs";
-import { compile } from "../web/mathscript/compiler.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
 import { formatMathScript } from "../web/mathscript/formatter.mjs";
-
-const module = await createKernel();
 const semantic = node => JSON.parse(JSON.stringify(node, (key, value) =>
   ["start", "end", "operatorStart", "operatorEnd", "tupleStart", "tupleEnd", "syntheticTuplePair", "valueStart", "valueEnd", "definitionStart"].includes(key) ? undefined : value));
 
@@ -21,40 +17,6 @@ test("tuples expand to right-associated pairs without changing comparison syntax
   for (const invalid of ["()", "(a, b,)", "(a, b", "(a b)", "<a,b>"])
     assert.throws(() => parse(invalid, true));
   assert.throws(() => parse(`(${Array(129).fill("a").join(",")})`, true), /nesting/);
-});
-
-test("dependent tuple construction and obtain produce exactly the binary-pair kernel instructions", () => {
-  const source = `
-    def triple(n : Nat) : exists m : Nat, (m = n) and Nat {
-      exact (n, refl(n), succ(n));
-    }
-    theorem unpacked : Nat {
-      obtain (a, same, b) = triple(0);
-      exact b;
-    }
-    theorem nested : (Nat and Nat) and Nat and Nat { exact ((0, 1), 2, 3); }
-  `;
-  const expanded = source.replace("(n, refl(n), succ(n))", "(n, (refl(n), succ(n)))")
-    .replace("(a, same, b)", "(a, (same, b))").replace("((0, 1), 2, 3)", "((0, 1), (2, 3))");
-  const a = compile(module, source), b = compile(module, expanded);
-  try {
-    assert.deepEqual(a.kernel.steps, b.kernel.steps);
-    for (const output of a.outputs) assert.ok(a.kernel.verify(output.proposition, output.binding));
-    const links = a.links.filter(l => l.role === "tuple macro");
-    assert.equal(links.length, 6); // delimiters of each tuple with three or more components
-    for (const link of links) {
-      assert.ok(["(", ")"].includes(source.slice(link.start, link.end)));
-      assert.ok(a.kernel.bindings.has(link.binding));
-      assert.match(link.description, /Expands to/);
-    }
-    assert.ok(links.some(l => l.expansion === "(n, (refl(n), succ(n)))"));
-    assert.ok(links.some(l => l.expansion === "(a, (same, b))"));
-    assert.deepEqual(a.kernel.axiomsFor("triple"), []);
-  } finally { a.kernel.dispose(); b.kernel.dispose(); }
-  for (const source of [
-    "theorem bad : Nat and Nat { exact (0, 1, 2); }",
-    "theorem bad : exists n : Nat, (n = 0) and Nat { exact (1, refl(0), 2); }",
-  ]) assert.throws(() => compile(module, source), /Expected|pair|type|differ/);
 });
 
 test("tuple formatting preserves nested delimiters, comments, comparisons and patterns", () => {
@@ -91,4 +53,19 @@ test("AST linearization preserves comments, grouping, left components and applic
   assert.match(result.source, /f\(a, b, c\)/);
   assert.deepEqual(linearizeTuples(result.source), { source: result.source, count: 0 });
   assert.deepEqual(linearizeTuples("construction Example;"), { source: "construction Example;", count: 0 });
+});
+
+test("native tuple notation exposes its expansion and a checked inspector binding", async t => {
+  const { default: createCubical } = await import("../web/dist/cubical.mjs");
+  const { CubicalProgram } = await import("../web/cubical-program.mjs");
+  const program = new CubicalProgram(await createCubical(), async () => "");
+  t.after(() => program.dispose());
+  const result = await program.check("theorem triple : Nat and Nat and Nat { exact (0, 1, 2); }", "tuples");
+  assert.equal(result.complete, true);
+  const links = result.links.filter(x => x.role === "tuple macro");
+  assert.equal(links.length, 2);
+  assert.equal(links[0].expansion, "(0, (1, 2))");
+  assert.equal(program.inspect(links[0].binding).expression.tag, "Pair");
+  const invalid = await program.check("theorem wrong : Nat and Nat { exact (0, 1, 2); }", "wrong");
+  assert.equal(invalid.complete, false);
 });

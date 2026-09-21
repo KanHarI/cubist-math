@@ -1,6 +1,0 @@
-// Nat
-// Complete checked construction. All intermediate steps are included.
-construction nat {
-  export lib_Nat = natural_type();
-  export lib_zero = zero();
-}

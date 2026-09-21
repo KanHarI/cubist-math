@@ -79,11 +79,11 @@ try {
   await idle();
   assert.equal(await page.locator("#proof-topic").inputValue(), "real-analysis");
   assert.equal(await page.locator("#proof-picker").inputValue(), "complete_fields");
-  await selectProof(page, "unit_construction");
-  await page.waitForURL("**/proof.html?proof=unit_construction");
+  await selectProof(page, "cubical_paths");
+  await page.waitForURL("**/proof.html?proof=cubical_paths");
   await idle();
-  assert.equal(await page.locator("#proof-topic").inputValue(), "kernel-audits");
-  assert.match(await page.locator("#source-file").textContent(), /unit\.construction\.proof/);
+  assert.equal(await page.locator("#proof-topic").inputValue(), "homotopy");
+  assert.match(await page.locator("#source-file").textContent(), /cubical_paths\.cubist/);
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   assert.equal(await page.locator("#proof-topic").isVisible(), true);

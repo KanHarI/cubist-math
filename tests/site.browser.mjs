@@ -36,7 +36,7 @@ try {
   });
   assert.equal((await page.goto(base)).status(), 200);
   assert.match(await page.title(), /Proof highlights/);
-  assert.equal(await page.getByRole("link", { name: "GitHub repository", exact: true }).getAttribute("href"), "https://github.com/KanHarI/thth-c");
+  assert.equal(await page.getByRole("link", { name: "GitHub repository", exact: true }).getAttribute("href"), "https://github.com/KanHarI/cubist-math");
   assert.equal(await page.locator(".proof-card").count(), 8);
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
@@ -47,7 +47,7 @@ try {
   assert.equal(version.status(), 200);
   assert.match((await version.json()).version, /^[a-f0-9]{64}$/);
   console.log("PASS static landing, repository link, mobile layout, build version");
-  for (const [proof, name, backend] of [["euclid", "euclid", "cubical"], ["cubical_paths", "reverse_twice", "cubical"], ["f4_galois_correspondence", "f4_galois_correspondence", "legacy"]]) {
+  for (const [proof, name, backend] of [["euclid", "euclid", "cubical"], ["cubical_paths", "reverse_twice", "cubical"], ["f4_galois_correspondence", "f4_galois_correspondence", "cubical"]]) {
     await page.goto(new URL(`proof.html?proof=${proof}&name=${name}&backend=${backend}`, base).href);
     await page.waitForFunction(() => !document.querySelector("#check").disabled && document.querySelector("#check-loader").hidden);
     assert.equal(await page.locator("#diagnostic").isVisible(), false);
@@ -57,9 +57,9 @@ try {
     console.log(`PASS static worker, WASM, checking and folded inspection: ${proof} (${backend})`);
   }
   await page.goto(new URL("workbench.html", base).href);
-  await page.waitForFunction(() => document.querySelector("#status").textContent === "WASM ready");
-  assert.equal(await page.locator("#error").isVisible(), false);
-  assert.equal(await page.locator("#active-name").textContent(), "nested");
+  await page.waitForFunction(() => document.querySelector("#status").textContent.includes("checked"));
+  assert.equal(await page.locator("#diagnostic").isVisible(), false);
+  assert.equal(await page.locator("#name").textContent(), "example");
   assert.deepEqual(errors, []);
   console.log(`PASS static kernel workbench (${base})`);
 } finally {

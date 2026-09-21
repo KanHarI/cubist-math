@@ -1,7 +1,7 @@
 # Native source edition of path actions
 
-`web/proofs/cubical/path_actions.proof` keeps the public helper names and types
-from `web/proofs/path_actions.proof`. The legacy source remains unchanged.
+`web/proofs/path_actions.cubist` keeps the public helper names and types
+from `web/proofs/path_actions.cubist`. The legacy source remains unchanged.
 The native edition uses explicit checked cubical operations rather than strict
 identity-eliminator computation.
 
@@ -26,7 +26,7 @@ Validation used the current native WASM `CubicalProgram` on main, with an
 absolute temporary loader overriding only `path_actions` to this worktree's
 native edition. Its import graph checked 74 declarations with zero failures
 and zero gaps. The eight explicit public-contract proofs in
-`experiments/cubical/fixtures/path-actions-contracts.proof` then checked too:
+`lib/cubical/fixtures/path-actions-contracts.cubist` then checked too:
 82 declarations, zero failures, zero gaps. No legacy checker was used.
 
 A broader caller check (circle_degree, puncture_graph, loop_words, and
@@ -36,5 +36,5 @@ path_actions. Those remaining source migrations are not claimed complete by
 this checkpoint.
 
 The root agent owns the source registry. Integration requires mapping
-`path_actions` to `cubical/path_actions.proof` in `web/cubical-sources.mjs`.
+`path_actions` to `cubical/path_actions.cubist` in `web/cubical-sources.mjs`.
 This worktree does not change that registry or the frontend translator.

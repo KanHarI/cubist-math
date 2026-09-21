@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { resolve, relative, basename } from "node:path";
@@ -5,20 +6,23 @@ import { fileURLToPath } from "node:url";
 import { parse } from "../web/mathscript/parser.mjs";
 
 export const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-export const defaultTests = ["tests/unfolding-syntax.test.mjs", "tests/cubical-benchmark.test.mjs", "tests/cubical-wasm.test.mjs", "tests/cubical-program.test.mjs", "tests/cubical-transfers.test.mjs", "tests/representation-transfer.test.mjs", "tests/binary-radix.test.mjs", "tests/tuples.test.mjs", "tests/documentation.test.mjs", "tests/formatter.test.mjs", "tests/workbench.test.mjs", "tests/mathscript.test.mjs", "tests/test-runner.test.mjs", "tests/proof-watchdog.test.mjs", "tests/proof-library.test.mjs", "tests/group-identity.test.mjs", "tests/galois.test.mjs", "tests/galois-fixed.test.mjs", "tests/generated-subfields.test.mjs", "tests/field-embeddings.test.mjs", "tests/distinguished-extensions.test.mjs", "tests/normal-subgroups.test.mjs", "tests/galois-correspondence.test.mjs", "tests/subgroup-images.test.mjs", "tests/group-cosets.test.mjs", "tests/quotient-descent.test.mjs", "tests/universes.test.mjs", "tests/compiler-optimizations.test.mjs", "tests/compiler-equivalence.test.mjs", "tests/inspector-mathscript.test.mjs"];
+export const defaultTests = readdirSync(new URL("../tests/", import.meta.url))
+  .filter(name => name.endsWith(".test.mjs") && name !== "cubical-modules.test.mjs")
+  .sort().map(name => `tests/${name}`).concat(
+    readdirSync(new URL("../lib/cubical/tests/", import.meta.url)).filter(name => name.endsWith(".test.mjs"))
+      .sort().map(name => `lib/cubical/tests/${name}`));
 export const help = `Usage: npm test -- [options] [module | file ...]
 
   npm test                              Full regression suite (final check)
   npm test -- --cubical cubical_paths    Check selected sources in native cubical C
   npm test -- complex_inverses           Check one proof and its imports
   npm test -- --module ordered_squares   Same, with an explicit module flag
-  npm test -- web/proofs/circle.proof     Check a proof by path
-  npm test -- --changed                  Check added/modified .proof files
-  npm test -- --reuse-normal-forms complex_inverses  Cache checked normal forms
-  npm test -- --memoize-instructions complex_inverses  Reuse identical instructions
-  All default on; disable separately with --no-reuse-normal-forms,
-  --no-memoize-instructions. Last setting wins.
-  npm test -- tests/workbench.test.mjs    Run one JavaScript test file
+  npm test -- web/proofs/circle.cubist     Check a proof by path
+  npm test -- --changed                  Check added/modified .cubist files
+  npm test -- --no-reuse-checks complex_inverses  Disable checked-term reuse
+  Optimizations default on: --[no-]share-syntax, --[no-]reuse-checks,
+  --[no-]compact-paths. Last setting wins.
+  npm test -- tests/cubical-program.test.mjs   Run one JavaScript test file
   npm test -- --test-name-pattern="complex inverses"  Filter regression tests
 
 Repeat modules/files to select several. Node test flags are forwarded before
@@ -30,18 +34,17 @@ Selected-proof checks validate proofs, not the separate mutation/UI regressions.
 export function changedProofs(root = projectRoot) {
   const tracked = execFileSync("git", ["diff", "--name-only", "-z", "--diff-filter=ACMR", "HEAD", "--"], { cwd: root, encoding: "utf8" });
   const untracked = execFileSync("git", ["ls-files", "--others", "--exclude-standard", "-z"], { cwd: root, encoding: "utf8" });
-  return [...new Set((tracked + untracked).split("\0").filter(p => p.endsWith(".proof")))];
+  return [...new Set((tracked + untracked).split("\0").filter(p => p.endsWith(".cubist")))];
 }
 
 export function selectTests(args, { root = projectRoot, changed = () => changedProofs(root) } = {}) {
   const tests = [], proofs = [], flags = [];
-  const optimizations = { normalForms: true, instructions: true };
+  const optimizations = { shareSyntax: true, reuseChecks: true, compactPaths: true };
   let explicitOptimizations = false;
-  let cubical = false;
   let explicitSelection = false;
   const proof = value => {
-    const path = /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? `web/proofs/${value}.proof` : value;
-    if (!path.endsWith(".proof")) throw new Error(`Expected a proof module or .proof path: ${value}`);
+    const path = /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? `web/proofs/${value}.cubist` : value;
+    if (!path.endsWith(".cubist")) throw new Error(`Expected a proof module or .cubist path: ${value}`);
     proofs.push(resolve(root, path));
   };
   const valueFlags = new Set(["--test-name-pattern", "--test-skip-pattern", "--test-reporter", "--test-reporter-destination", "--test-timeout", "--test-concurrency", "--test-shard"]);
@@ -49,17 +52,18 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
     const arg = args[i];
     if (arg === "--help" || arg === "-h") return { help: true };
     if (arg === "--") continue;
-    if (arg === "--cubical") { cubical = true; continue; }
-    if (["--reuse-normal-forms", "--memoize-instructions", "--no-reuse-normal-forms", "--no-memoize-instructions"].includes(arg)) {
+    if (arg === "--cubical") continue; // Compatibility: cubical is now the only checker.
+    if (/^--(?:no-)?(?:share-syntax|reuse-checks|compact-paths)$/.test(arg)) {
       explicitOptimizations = true;
-      optimizations[arg.endsWith("reuse-normal-forms") ? "normalForms" : "instructions"] = !arg.startsWith("--no-");
+      const key = { "share-syntax": "shareSyntax", "reuse-checks": "reuseChecks", "compact-paths": "compactPaths" }[arg.replace(/^--(?:no-)?/, "")];
+      optimizations[key] = !arg.startsWith("--no-");
     } else if (arg === "--changed") {
       explicitSelection = true;
       changed().forEach(proof);
     } else if (arg === "--module" || arg.startsWith("--module=")) {
       explicitSelection = true;
       const value = arg === "--module" ? args[++i] : arg.slice(9);
-      if (!value || value.startsWith("--")) throw new Error("--module needs a module name or .proof path.");
+      if (!value || value.startsWith("--")) throw new Error("--module needs a module name or .cubist path.");
       proof(value);
     } else if (arg.startsWith("--")) {
       flags.push(arg);
@@ -76,14 +80,12 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
       proof(arg);
     }
   }
-  if (cubical && !proofs.length) throw new Error("--cubical requires selected proof modules.");
-  if (cubical && explicitOptimizations) throw new Error("Id/J compiler optimization flags do not apply to the cubical backend.");
   if (!explicitSelection) tests.push(...defaultTests.map(p => resolve(root, p)));
   if (proofs.length) {
     if (flags.some(flag => /^--test-(?:name|skip)-pattern(?:=|$)/.test(flag))) {
       throw new Error("Use module selection or a test-name filter separately, so proof checks cannot be silently skipped.");
     }
-    tests.push(resolve(root, cubical ? "tests/cubical-modules.test.mjs" : "tests/proof-modules.test.mjs"));
+    tests.push(resolve(root, "tests/cubical-modules.test.mjs"));
   }
   if (explicitOptimizations && !proofs.length)
     throw new Error("Compiler optimization flags require selected proof modules; regression tests choose their own compiler modes.");
@@ -96,11 +98,10 @@ export async function loadProof(path, root = projectRoot) {
   const sources = {}, loading = new Set();
   const source = await readFile(path, "utf8");
   async function visit(text) {
-    if (/^\s*(?:\/\/[^\n]*\n\s*)*construction\b/.test(text)) return;
     for (const name of parse(text).imports) {
-      if (name === "prelude" || loading.has(name)) continue;
+      if (loading.has(name)) continue;
       loading.add(name);
-      const imported = await readFile(resolve(root, "web/proofs", `${name}.proof`), "utf8");
+      const imported = await readFile(resolve(root, "web/proofs", `${name}.cubist`), "utf8");
       sources[name] = imported;
       await visit(imported);
     }

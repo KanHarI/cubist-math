@@ -5,12 +5,12 @@ import { formatMathScript } from "../web/mathscript/formatter.mjs";
 
 const args = process.argv.slice(2), check = args.includes("--check");
 if (args.includes("--help")) {
-  console.log("Usage: npm run linearize:mathscript -- [--check] [file.proof ...]\nWith no files, scan every web/proofs/*.proof source. Flatten right-nested pairs and obtain patterns; preserve comments and expanded ASTs. Construction sources are skipped. --check reports changes without writing.");
+  console.log("Usage: npm run linearize:mathscript -- [--check] [file.cubist ...]\nWith no files, scan every web/proofs/*.cubist source. Flatten right-nested pairs and obtain patterns; preserve comments and expanded ASTs. Construction sources are skipped. --check reports changes without writing.");
 } else {
   const files = args.filter(a => a !== "--check");
   if (files.some(a => a.startsWith("--"))) throw new Error("Unknown tuple linearization option.");
   if (!files.length) files.push(...(await readdir(new URL("../web/proofs/", import.meta.url)))
-    .filter(n => n.endsWith(".proof")).sort().map(n => new URL("../web/proofs/" + n, import.meta.url)));
+    .filter(n => n.endsWith(".cubist")).sort().map(n => new URL("../web/proofs/" + n, import.meta.url)));
   // Validate every rewrite before writing any of the selected sources.
   const changes = [];
   for (const file of files) {

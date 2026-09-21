@@ -5,11 +5,11 @@ Run `make serve`, then open
 The same proof is available in the CLI:
 
 ```text
-prove web/proofs/surjections.proof
+prove web/proofs/surjections.cubist
 check EverySurjectionHasRightInverse every_surjection_has_right_inverse
 ```
 
-The [MathScript source](../web/proofs/surjections.proof) proves the usual
+The [Cubist source](../web/proofs/surjections.cubist) proves the usual
 set-theoretic statement using the existing prelude axiom of choice (`AOC`):
 
 ```text

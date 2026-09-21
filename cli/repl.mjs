@@ -1,417 +1,100 @@
 #!/usr/bin/env node
-import { sourceModules } from "../web/mathscript/modules.mjs";
-import { createInterface } from "node:readline";
-import { readFile, writeFile, stat } from "node:fs/promises";
-import createKernel from "../web/dist/kernel.mjs";
-import { compile } from "../web/mathscript/compiler.mjs";
-const options = process.argv.slice(2);
-if (options.some(option => !["--reuse-normal-forms", "--memoize-instructions", "--no-reuse-normal-forms", "--no-memoize-instructions"].includes(option)))
-  throw new Error("Usage: node cli/repl.mjs [--[no-]reuse-normal-forms] [--[no-]memoize-instructions]");
-const optimizations = { normalForms: true, instructions: true };
-for (const option of options)
-  optimizations[option.endsWith("reuse-normal-forms") ? "normalForms" : "instructions"] = !option.startsWith("--no-");
-import { Session } from "../web/session.mjs";
-import library from "../web/proofs/library.mjs";
-import proofs from "../web/proofs/catalogue.mjs";
-import {
-  layout,
-  selectedText,
-  pathFromNames,
-  pathFromMarked,
-  atPath,
-  roles,
-} from "../web/expressions.mjs";
-const module = await createKernel();
-const session = new Session(module, true);
-session.import(library);
-let active = null,
-  selection = null,
-  token = null;
-const input = createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: !!process.stdin.isTTY,
-  completer: (line) => {
-    const word = line.split(/\s+/).at(-1);
-    const choices = [
-      "help",
-      "proofs",
-      "prove",
-      "open",
-      ...proofs.map((p) => p.id),
-      "demo",
-      "list",
-      "use",
-      "show",
-      "select",
-      "parent",
-      "children",
-      "down",
-      "reduce",
-      "pass",
-      "unfold",
-      "rewrite",
-      "preview",
-      "accept",
-      "reject",
-      "undo",
-      "history",
-      "goto",
-      "check",
-      "source",
-      "stats",
-      "ops",
-      "save",
-      "load",
-      "run",
-      "axioms",
-      "quit",
-      ...session.engine.bindings.keys(),
-      "expr",
-      "type",
-      "expr.argument",
-      "expr.function",
-      "type.domain",
-      "type.codomain",
-    ];
-    return [choices.filter((x) => x.startsWith(word)), word];
-  },
-});
-const say = (s) => process.stdout.write(s + "\n");
-function show(name = active) {
-  if (!name) throw new Error("Choose a judgement with use NAME.");
-  active = name;
-  const v = session.inspect(name);
-  say(`${name} [${v.kind}]`);
-  if (v.expression)
-    say(
-      "  expr: " +
-        (selection?.name === name && selection.side === "expression"
-          ? selectedText(v.expression, selection.path, v.contextNames)
-          : layout(v.expression, v.contextNames).text),
-    );
-  say(
-    "  type: " +
-      (selection?.name === name && selection.side === "type"
-        ? selectedText(v.type, selection.path, v.contextNames)
-        : layout(v.type, v.contextNames).text),
-  );
-  say("  axioms used: " + (v.axioms.join(", ") || "None"));
-  say(
-    "  assumptions: " +
-      (v.assumptions.map((c) => c.names.join("/") || `c${c.id}`).join(", ") ||
-        "none"),
-  );
+// Source is elaborated by JavaScript; all accepted judgements come from C/WASM.
+import { readFile, writeFile } from "node:fs/promises";
+import { basename, resolve, dirname, join } from "node:path";
+import { createInterface } from "node:readline/promises";
+import createCubical from "../web/dist/cubical.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { cubicalText } from "../web/cubical-notation.mjs";
+import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
+import { reduceView } from "../web/cubical-reduction.mjs";
+const help = `Cubist Math — cubical C kernel
+  check MODULE|FILE.cubist  Check source and imports
+  inspect NAME             Show a checked expression, context and type
+  assembly NAME            Show the native kernel opcode graph
+  beta [expression|type]   Perform one checked beta reduction
+  delta [expression|type]  Unfold one named definition, checked by C
+  export FILE.json         Save a replayable source inspection
+  help                     Show this reference
+  quit                     Exit
+
+Noninteractive: node cli/repl.mjs check euclid
+Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths`;
+const args = process.argv.slice(2), optimizations = {};
+const command = [];
+for (const arg of args) {
+  const match = arg.match(/^--(no-)?(share-syntax|reuse-checks|compact-paths)$/);
+  if (match) optimizations[{ "share-syntax": "shareSyntax", "reuse-checks": "reuseChecks", "compact-paths": "compactPaths" }[match[2]]] = !match[1];
+  else command.push(arg);
 }
-function preview(p) {
-  token = p.token;
-  say("PREVIEW (live proof unchanged)");
-  say(p.source);
-  say(
-    "  result: " +
-      layout(p.result.expression || p.result.type, p.result.contextNames).text,
-  );
-  say("  type: " + layout(p.result.type, p.result.contextNames).text);
-  say("accept / reject");
+const module = await createCubical();
+let program, view, binding;
+const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+function show() {
+  const shown = view.folded ?? view;
+  for (const entry of shown.context) console.log(`${entry.label ?? entry.name} : ${cubicalText(entry.type, view.symbols)}`);
+  console.log(`${view.name}\nExpression: ${cubicalText(shown.reference ?? shown.expression, view.symbols)}\nType: ${cubicalText(shown.type, view.symbols)}`);
 }
-const help = `proofs                       List all bundled proofs, definitions, and axioms
-open ID                      Open a bundled proof and its recorded axiom policy
-demo                         Add the identity example
-list all                     Include intermediate library construction steps
-list                         List mathematical objects
-use NAME / show [NAME]        Inspect an object
-select expr.argument         Select by mathematical role or numeric path
-select type.1                Select part of its type
-select expr --paren TEXT     Copy expr, adding ONE extra pair of parentheses
-select type --paren TEXT     The same for the type; [[ ]] also works
-parent / children / down N   Navigate the selected subtree directly
-reduce [RESULT]               Preview one reduction at the selection
-pass [RESULT]                 Preview one recursive reduction pass
-unfold [RESULT]               Preview definition-enabled pointed reduction
-rewrite WITNESS [RESULT]      Preview substitution within the selection
-preview NAME = OP(...)       Preview any named kernel instruction(s)
-accept / reject              Commit or discard the pending preview
-undo / history / goto ID     Replay an earlier revision; branches are retained
-check PROPOSITION PROOF      Check the closed theorem against its proof
-source / stats / ops          Show instructions, metrics, or all 67 operations
-save FILE / load FILE        Save or replay the active proof branch as JSON
-prove FILE.proof            Compile mathematical source and open its checked proof
-                            Optimizations on; CLI flags: --no-reuse-normal-forms, --no-memoize-instructions
-run FILE.math               Preview a source program before accepting it
-axioms on / axioms off       Explicitly change the axiom policy
-help / quit`;
-async function command(line) {
-  const text = line.trim();
-  if (!text || text.startsWith("#")) return;
-  const [cmd, ...words] = text.split(/\s+/);
-  const rest = text.slice(cmd.length).trim();
-  switch (cmd) {
-    case "help":
-      say(help);
-      break;
-    case "demo":
-      if (session.engine.bindings.has("nested"))
-        throw new Error("The demo is already loaded.");
-      session.loadDemo();
-      active = "nested";
-      selection = { name: active, side: "expression", path: [1] };
-      show();
-      break;
-    case "proofs":
-      for (const p of proofs)
-        say(
-          `${p.id.padEnd(25)} ${p.title} (${p.steps} steps; axioms ${p.allowAxioms ? "on" : "off"})`,
-        );
-      break;
-    case "open": {
-      const entry = proofs.find((p) => p.id === rest);
-      if (!entry)
-        throw new Error("Unknown bundled proof. Use proofs to list IDs.");
-      const document = JSON.parse(
-        await readFile(
-          new URL(`../web/proofs/${entry.file}`, import.meta.url),
-          "utf8",
-        ),
-      );
-      session.import(document, true);
-      active = entry.exports.at(-1);
-      selection = null;
-      token = null;
-      say(
-        `Opened ${entry.title}; axioms ${session.allowAxioms ? "on" : "off"}.`,
-      );
-      if (entry.verify)
-        say(session.verify(...entry.verify) ? "VERIFIED" : "NOT VERIFIED");
-      show();
-      break;
-    }
-    case "list":
-      for (const b of session
-        .snapshot()
-        .bindings.filter((b) => rest === "all" || !b.hidden))
-        say(`${b.name.padEnd(20)} ${b.kind}`);
-      break;
-    case "use":
-      active = rest;
-      selection = null;
-      show();
-      break;
-    case "show":
-      show(rest || active);
-      break;
-    case "select": {
-      if (!active) throw new Error("Use a judgement first.");
-      const match = rest.match(
-        /^(expr|expression|type)(?:\s+--paren\s+([\s\S]+)|\.([A-Za-z0-9_.]+))?$/,
-      );
-      if (!match)
-        throw new Error(
-          "Use select expr.argument or select expr --paren TEXT.",
-        );
-      const side = match[1] === "type" ? "type" : "expression",
-        tree = session.inspect(active)[side];
-      if (!tree)
-        throw new Error("Contexts have a type, but no term expression.");
-      let marked = match[2];
-      if (
-        marked &&
-        ((marked.startsWith('"') && marked.endsWith('"')) ||
-          (marked.startsWith("'") && marked.endsWith("'")))
-      )
-        marked = marked.slice(1, -1);
-      const path = marked
-        ? pathFromMarked(tree, marked, session.inspect(active).contextNames)
-        : pathFromNames(tree, match[3]?.split(".") || []);
-      selection = { name: active, side, path };
-      show();
-      break;
-    }
-    case "children": {
-      if (!selection) throw new Error("Select a subtree first.");
-      const tree = session.inspect(active)[selection.side],
-        n = atPath(tree, selection.path);
-      n.children.forEach((child, i) =>
-        say(`${i} ${(roles[n.kind] || [])[i] || ""}: ${layout(child).text}`),
-      );
-      break;
-    }
-    case "down": {
-      if (!selection) throw new Error("Select a subtree first.");
-      const n = atPath(session.inspect(active)[selection.side], selection.path);
-      selection.path = [...selection.path, ...pathFromNames(n, [rest])];
-      show();
-      break;
-    }
-    case "prove": {
-      if ((await stat(rest)).size > 1000000)
-        throw new Error("Source exceeds 1 MB.");
-      const source = await readFile(rest, "utf8"),
-        foundation = Object.fromEntries(
-          await Promise.all(
-            sourceModules.map(async (name) => [
-              name,
-              await readFile(
-                new URL(`../web/proofs/${name}.proof`, import.meta.url),
-                "utf8",
-              ),
-            ]),
-          ),
-        );
-      const compiled = compile(module, source, foundation, { optimizations });
-      try {
-        session.import(
-          {
-            format: "thth-workbench",
-            version: 1,
-            policy: { allowAxioms: compiled.allowAxioms },
-            steps: compiled.kernel.steps,
-          },
-          true,
-        );
-        for (const output of compiled.outputs)
-          say(`CHECKED ${output.name} : ${output.type}`);
-        active = compiled.outputs.at(-1).binding;
-        selection = null;
-        token = null;
-        say(
-          `${compiled.instructionCount} instructions; ${compiled.axiomCount} explicit axioms.`,
-        );
-      } finally {
-        compiled.kernel.dispose();
+async function execute(line) {
+  const [operation, ...parts] = line.trim().split(/\s+/), value = parts.join(" ");
+  if (!operation) return;
+  if (["help", "--help", "-h"].includes(operation)) { console.log(help); return; }
+  if (["quit", "exit"].includes(operation)) return false;
+  if (operation === "check") {
+    if (!value) throw Error("check requires a module or .cubist file.");
+    const source = value.endsWith(".cubist") ? await readFile(resolve(value), "utf8") : await readSource(value);
+    const main = basename(value, ".cubist");
+    program?.dispose(); view = null; binding = null;
+    const localDirectory = value.endsWith(".cubist") ? dirname(resolve(value)) : null;
+    const imports = async name => {
+      if (localDirectory) {
+        try { return await readFile(join(localDirectory, `${name}.cubist`), "utf8"); }
+        catch (error) { if (error.code !== "ENOENT") throw error; }
       }
-      break;
-    }
-    case "run": {
-      if ((await stat(rest)).size > 1000000)
-        throw new Error("Source exceeds 1 MB.");
-      preview(
-        session.previewSource(await readFile(rest, "utf8"), "Source: " + rest),
-      );
-      break;
-    }
-    case "parent":
-      if (!selection?.path.length)
-        throw new Error("Already at the root or nothing selected.");
-      selection.path = selection.path.slice(0, -1);
-      show();
-      break;
-    case "reduce":
-    case "pass":
-    case "unfold":
-    case "rewrite": {
-      if (!selection) throw new Error("Select an expression first.");
-      const operation = {
-        reduce: "BetaReducePointed",
-        pass: "BetaReduceGrossKnuth",
-        unfold: "DefReducePointed",
-        rewrite: "HighSubs",
-      }[cmd];
-      preview(
-        session.previewFocus({
-          ...selection,
-          operation,
-          witness: cmd === "rewrite" ? words[0] : undefined,
-          resultName: cmd === "rewrite" ? words[1] : words[0],
-        }),
-      );
-      break;
-    }
-    case "preview":
-      preview(session.previewSource(rest));
-      break;
-    case "accept": {
-      const name = session.draft?.steps.at(-1).name;
-      session.accept(token);
-      token = null;
-      active = name;
-      selection = null;
-      say("ACCEPTED");
-      show();
-      break;
-    }
-    case "reject":
-      session.discard();
-      token = null;
-      say("Preview discarded.");
-      break;
-    case "undo":
-      session.undo();
-      selection = null;
-      active = null;
-      token = null;
-      say(`Revision ${session.revision}`);
-      break;
-    case "goto":
-      session.checkout(Number(rest));
-      selection = null;
-      active = null;
-      token = null;
-      say(`Revision ${session.revision}`);
-      break;
-    case "history":
-      for (const r of session.snapshot().history)
-        say(
-          `${r.id === session.revision ? "*" : " "} ${r.id} <- ${r.parent ?? "-"} ${r.title}`,
-        );
-      break;
-    case "source":
-      say(session.snapshot().source);
-      break;
-    case "stats":
-      say(JSON.stringify(session.engine.stats(), null, 2));
-      break;
-    case "axioms":
-      if (!["on", "off"].includes(rest))
-        throw new Error("Use axioms on or axioms off.");
-      session.setPolicy(rest === "on");
-      token = null;
-      say("Axioms " + rest);
-      break;
-    case "ops":
-      for (const m of session.metadata)
-        say(
-          `${m.name}: ${m.judgements} judgements, ${Number(m.context)} context, ${m.free} optional context slots -> ${m.returnsContext ? "context" : "judgement"}`,
-        );
-      break;
-    case "check":
-      say(session.verify(words[0], words[1]) ? "VERIFIED" : "NOT VERIFIED");
-      break;
-    case "save":
-      if (!rest) throw new Error("Specify a filename.");
-      await writeFile(rest, JSON.stringify(session.export(), null, 2) + "\n");
-      say("Saved " + rest);
-      break;
-    case "load": {
-      if ((await stat(rest)).size > 32000000)
-        throw new Error("File exceeds 32 MB.");
-      const data = await readFile(rest, "utf8");
-      session.import(JSON.parse(data));
-      active = null;
-      selection = null;
-      token = null;
-      say("Loaded and checked " + rest);
-      break;
-    }
-    case "quit":
-    case "exit":
-      input.close();
-      break;
-    default:
-      if (text.includes("=")) preview(session.previewSource(text));
-      else throw new Error("Unknown command. Type help.");
+      return readSource(name);
+    };
+    program = new CubicalProgram(module, imports, { optimizations });
+    const result = await program.check(source, main);
+    if (!result.complete) throw Error(JSON.stringify(result.gaps, null, 2));
+    console.log(`Checked ${result.outputs.length} declarations · ${result.instructionCount.toLocaleString()} kernel steps`);
+    return;
   }
-}
-say(
-  "THTH Math • checked WASM kernel • prelude library loaded (axioms on) • type proofs, help or demo",
-);
-if (process.stdin.isTTY) (input.setPrompt("math> "), input.prompt());
-for await (const line of input) {
-  try {
-    await command(line);
-  } catch (e) {
-    say("ERROR: " + e.message);
-    if (e.details) say(JSON.stringify(e.details, null, 2));
+  if (!program) throw Error("Check a source first.");
+  if (["inspect", "assembly"].includes(operation)) {
+    const matches = Object.values(program.symbols).filter(item => item.name === value);
+    if (matches.length > 1) throw Error(`Ambiguous name; use a qualified binding: ${matches.map(item => item.binding).join(", ")}`);
+    binding = matches[0]?.binding ?? value;
+    view = program.inspect(binding);
+    if (operation === "inspect") show();
+    else {
+      const checked = program.checker.syntax.check(view.expression, view.type, view.context.map(e => [e.name, e.type]), new Map(view.dimensions ?? []));
+      console.log(assemblyText(kernelAssembly(program, view, checked)));
+    }
+    return;
   }
-  if (process.stdin.isTTY) input.prompt();
+  if (!view) throw Error("Inspect a checked name first.");
+  if (["beta", "delta"].includes(operation)) {
+    const side = value || "expression";
+    if (!["expression", "type"].includes(side)) throw Error("Choose expression or type.");
+    const reduced = reduceView(program, view, side, operation);
+    if (reduced.change) { view = reduced.view; view.folded = null; show(); }
+    else console.log("No applicable reduction.");
+  } else if (operation === "export") {
+    if (!value) throw Error("export requires a filename.");
+    await writeFile(value, JSON.stringify(program.export(binding, "expression"), null, 2) + "\n");
+  } else throw Error(`Unknown command ${operation}. Type help.`);
 }
-session.dispose();
+try {
+  if (command.length) await execute(command.join(" "));
+  else {
+    console.log(help);
+    const input = createInterface({ input: process.stdin, output: process.stdout, terminal: process.stdin.isTTY });
+    try {
+      for await (const line of input) {
+        try { if (await execute(line) === false) break; }
+        catch (error) { console.error(error.message); }
+      }
+    } finally { input.close(); }
+  }
+} catch (error) { console.error(error.message); process.exitCode = 1; }
+finally { program?.dispose(); }

@@ -28,7 +28,7 @@ try {
   };
   await page.goto(`http://127.0.0.1:${port}/proof.html?proof=euclid&name=euclid`);
   await idle();
-  assert.equal(await page.locator("#kernel-backend").inputValue(), "cubical");
+  assert.equal(await page.locator("#kernel-backend").count(), 0);
   assert.match(await page.locator("#check-detail").textContent(), /^[\d,]+ kernel steps\n[\d,]+ of [\d,]+ declarations processed/);
   assert.match(await page.locator("#status").textContent(), /Cubical C · checked/);
   assert.equal(await page.locator("#diagnostic").isVisible(), false);
@@ -52,7 +52,7 @@ try {
   const opened = page.waitForEvent("popup");
   await page.locator("#open-kernel-type").click();
   const workbench = await opened;
-  await workbench.waitForURL(/cubical-workbench\.html/);
+  await workbench.waitForURL(/workbench\.html/);
   await workbench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
   assert.ok(await workbench.locator("#context .context-entry").count());
   assert.match(await workbench.locator("#source-back").getAttribute("href"), /proof\.html/);

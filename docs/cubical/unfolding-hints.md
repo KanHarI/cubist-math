@@ -62,7 +62,7 @@ transactional replacement, clearing after failure, and false-path rejection.
 
 The native test protocol accepts `H count reference-alias...`; `native.mjs`
 exposes `unfoldingHints` on a final query and on individual definition entries.
-The MathScript expression `with unfolding [alias, ...] { expression }`
+The Cubist expression `with unfolding [alias, ...] { expression }`
 scopes these hints in the frontend. A checked helper can retain the selected
 strategy for replay without leaking it into surrounding expressions. The
 parser node is `withUnfolding`, with name-token `hints` and an expression `body`.

@@ -9,12 +9,10 @@ concrete declarations checked, zero slow, blocked, or failed declarations**, and
 2,500 source declarations. See [the benchmark](benchmark.md), the latest
 `web/benchmark-results.json`, or run `/benchmark.html` in the browser.
 
-The explicit legacy backend remains available; it is never used as an automatic
-fallback when native checking rejects a proof. Native interval proofs live under
-`web/proofs/cubical/`. The source registry chooses those editions, and the editor
-shows the actual source being checked. Original public theorem statements and
-logical assumptions are preserved. Extra source declarations factor long proofs
-into reusable lemmas.
+The cubical kernel is now the sole checker. Its C sources live under `kernel/`,
+and its supporting modules under `lib/cubical/`. Canonical sources are
+`web/proofs/*.cubist`; the old parallel editions and Id/J implementation have
+been removed. The public website is https://cubist.kanhar.art.
 
 ## What changed
 

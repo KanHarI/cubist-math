@@ -6,14 +6,14 @@ import { basename, dirname, resolve } from "node:path";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 const selected = JSON.parse(process.env.MATHSCRIPT_TEST_PROOFS ?? "[]");
-if (!selected.length) throw new Error("Select sources with npm test -- --cubical MODULE.");
+if (!selected.length) throw new Error("Select sources with npm test -- MODULE.");
 const module = await createCubical();
 for (const path of selected) {
   test(`cubical proof: ${basename(path)}`, async t => {
     const program = new CubicalProgram(module,
-      name => readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url), "utf8"));
+      name => readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url), "utf8"), { optimizations: JSON.parse(process.env.MATHSCRIPT_OPTIMIZATIONS ?? "{}") });
     t.after(() => program.dispose());
-    const name = basename(path, ".proof");
+    const name = basename(path, ".cubist");
     const sourcePath = resolve(dirname(path)) === resolve("web/proofs")
       ? new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url) : path;
     const result = await program.check(await readFile(sourcePath, "utf8"), name);

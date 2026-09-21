@@ -343,7 +343,7 @@ This is a substantial library project, not a short extension of the F4
 calculation. The current automorphism/loop layer is reusable, but stages
 2–7 remain before the general finite theorem. Stages 8–9 form another
 substantial project. Estimate calendar time only after stage 2 exposes the cost of reusable
-finite-dimensional proofs in MathScript.
+finite-dimensional proofs in Cubist.
 Development is now authorized by the subsequent request to work toward this
 full roadmap. This file retains the complete target; the checked first-stage
 results do not narrow it.

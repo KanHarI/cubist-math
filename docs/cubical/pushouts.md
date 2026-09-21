@@ -21,7 +21,7 @@ Native C and the reference checker support:
 
 The append-only native tags are 36–40 respectively. The raw `T.pushout` builder
 accepts the packed maps as its fourth argument. The five-argument `pushout`
-helper and derived suspension operations live in `experiments/cubical/pushouts.mjs`.
+helper and derived suspension operations live in `lib/cubical/pushouts.mjs`.
 
 ## Composition and transport
 

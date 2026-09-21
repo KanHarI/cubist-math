@@ -210,8 +210,11 @@ try {
   const params = new URLSearchParams(location.search);
   if (params.get("view") === "assembly") $("workbench-view").value = "assembly";
   const key = params.get("transfer");
-  if (!key) throw new Error("Open a checked expression from the cubical proof inspector.");
-  const payload = await readWorkbenchTransfer(key);
+  const payload = key ? await readWorkbenchTransfer(key) : {
+    format: "thth-cubical", version: 1, main: "workbench", sources: {},
+    source: "def identity(n : Nat) = n; def example = identity(2);",
+    binding: "workbench__example", side: "expression",
+  };
   if (payload.format !== "thth-cubical" || payload.version !== 1) throw new Error("Unsupported cubical transfer format.");
   if (payload.proofReturn) {
     const address = new URL(payload.proofReturn, location.href);

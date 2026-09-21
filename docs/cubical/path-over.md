@@ -1,6 +1,6 @@
 # Dependent paths and equality after transport
 
-`experiments/cubical/path-over.mjs` derives the equivalence
+`lib/cubical/path-over.mjs` derives the equivalence
 
 ```
 PathP (i ↦ Aᵢ) a b  ≃  Path A₁ (transport A a) b.

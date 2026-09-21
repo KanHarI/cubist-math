@@ -22,8 +22,8 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.split("?")[0] == "/mathscript-version":
             paths = sorted((ROOT / "mathscript").glob("*.mjs"))
-            paths += sorted((ROOT / "proofs").rglob("*.proof"))
-            paths += [ROOT / "language.mjs", ROOT / "kernel.mjs", ROOT / "dist/kernel.mjs", ROOT / "dist/kernel.wasm", Path(__file__)]
+            paths += sorted((ROOT / "proofs").rglob("*.cubist"))
+            paths += [Path(__file__)]
             paths += sorted(ROOT.glob("cubical-*.mjs"))
             paths += sorted((ROOT / "dist/cubical-runtime").glob("*.mjs"))
             paths += [path for path in (ROOT / "dist/cubical.mjs", ROOT / "dist/cubical.wasm") if path.is_file()]
@@ -72,5 +72,5 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8088)
     args = parser.parse_args()
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"MathScript: http://127.0.0.1:{server.server_address[1]}/", flush=True)
+    print(f"Cubist: http://127.0.0.1:{server.server_address[1]}/", flush=True)
     server.serve_forever()

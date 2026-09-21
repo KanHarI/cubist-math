@@ -1,4 +1,0 @@
-# Unit
-# Upstream: src/builtins/unit.rs
-# Axioms: false
-lib_Unit = kernel.UnitForm()

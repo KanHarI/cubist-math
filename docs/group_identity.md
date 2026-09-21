@@ -33,25 +33,25 @@ representation instead of first developing semigroups.
 ## Homomorphisms and normal subgroups
 
 The subsequent group library uses this identity theorem in
-[`normal_subgroups`](../web/proofs/normal_subgroups.proof).
+[`normal_subgroups`](../web/proofs/normal_subgroups.cubist).
 `group_conjugation_iso(G,g)` constructs the inner automorphism x ↦ gxg⁻¹.
 `group_conjugation_path` turns it into a loop at G in `Group`, and
 `group_conjugation_path_roundtrip` proves that decoding this loop returns that
 same isomorphism. Inner automorphisms are not asserted to be identity maps.
 
-[`group_operations`](../web/proofs/group_operations.proof) projects inverse
+[`group_operations`](../web/proofs/group_operations.cubist) projects inverse
 witnesses already present in the laws and proves cancellation and conjugation
 identities without axioms. The isomorphism constructor is a `def`, so its
 forward map computes to conjugation. This separates computable structure data
 from named proof obligations.
 
-[`group_homomorphisms`](../web/proofs/group_homomorphisms.proof) defines a
+[`group_homomorphisms`](../web/proofs/group_homomorphisms.cubist) defines a
 homomorphism as a multiplication-preserving map. Identity and inverse
 preservation follow from the laws. Composition, identity maps and the trivial
 map are explicit constructions; equality of homomorphisms uses function
 extensionality and proof irrelevance of their preservation evidence.
 
-[`subgroup_constructions`](../web/proofs/subgroup_constructions.proof) supplies
+[`subgroup_constructions`](../web/proofs/subgroup_constructions.cubist) supplies
 the identity and whole subgroups, inclusion, inverse images and small-indexed
 intersections with their universal properties. Inverse images respect
 identity and composition as equalities of subgroup bundles. No global
@@ -65,7 +65,7 @@ extensionality identifies the conjugated subgroup with the original bundle.
 Transporting normality along a group equality uses path induction alone;
 transporting it along an isomorphism first uses `group_isotoid`.
 
-In [`f4_normal_subgroups`](../web/proofs/f4_normal_subgroups.proof), the proof of
+In [`f4_normal_subgroups`](../web/proofs/f4_normal_subgroups.cubist), the proof of
 commutativity for the cyclic group of order two transports along
 `f4_galois_group_equality` to prove `IsAbelian(F4GaloisGroup)`. Consequently all
 subgroups of this Galois group are normal. This application uses univalence
@@ -108,24 +108,24 @@ collapse them. The function used to generate these paths is
 
 ## Checked modules
 
-- [groups.proof](../web/proofs/groups.proof): named laws, bundled groups,
+- [groups.cubist](../web/proofs/groups.cubist): named laws, bundled groups,
   projections, group induction, the identity isomorphism and `group_idtoiso`.
   This entire interface requires no axioms.
-- [group_identity.proof](../web/proofs/group_identity.proof): uniqueness of
+- [group_identity.cubist](../web/proofs/group_identity.cubist): uniqueness of
   inverses and law evidence, and preservation of units. Only uniqueness of
   function-valued law evidence needs function extensionality.
-- [group_isomorphisms.proof](../web/proofs/group_isomorphisms.proof): an
+- [group_isomorphisms.cubist](../web/proofs/group_isomorphisms.cubist): an
   isomorphism is determined by its underlying function.
-- [group_total_identity.proof](../web/proofs/group_total_identity.proof): the
+- [group_total_identity.cubist](../web/proofs/group_total_identity.cubist): the
   total space `exists H : Group, GroupIso(G,H)` is contractible, with center
   `(G, identity)`.
-- [identity_systems.proof](../web/proofs/identity_systems.proof): a reusable
+- [identity_systems.cubist](../web/proofs/identity_systems.cubist): a reusable
   identity-system construction, inverse laws, and an equivalence when the
   relation fibers are sets. These generic results require no axioms.
-- [group_univalence.proof](../web/proofs/group_univalence.proof): isomorphism
+- [group_univalence.cubist](../web/proofs/group_univalence.cubist): isomorphism
   fibers are sets; the full group structure identity equivalence and both
   canonical inverse laws, followed by equality of the isomorphism and identity types.
-- [circle_group_identity.proof](../web/proofs/circle_group_identity.proof): the
+- [circle_group_identity.cubist](../web/proofs/circle_group_identity.cubist): the
   already checked winding isomorphism yields `CircleLoopGroup =[Group] IntegerGroup`.
   The landing page links directly to the concise
   `circle_group_isomorphism : GroupIso(CircleLoopGroup, IntegerGroup)` theorem.
@@ -139,8 +139,8 @@ truncation, or theorem-specific axiom. The kernel implementation is unchanged.
 
 ## Canonical interface and reading order
 
-Start with `groups.proof`, then the law uniqueness arguments in
-`group_identity.proof`, then isomorphism extensionality. The total-space proof
+Start with `groups.cubist`, then the law uniqueness arguments in
+`group_identity.cubist`, then isomorphism extensionality. The total-space proof
 is the only construction of group equality from isomorphism. The circle and
 finite Galois examples both use it.
 
@@ -169,7 +169,7 @@ proofs are propositions, so this presentation has the intended identity type.
 isomorphisms. No inverse witness is selected from a truncation.
 
 For general homotopy types, quasi-inverse data alone is not our equivalence
-representation. `IsEquiv(U, A, B, f)` in `paths.proof` is a half-adjoint
+representation. `IsEquiv(U, A, B, f)` in `paths.cubist` is a half-adjoint
 equivalence with the explicit triangle law
 `ap(U, A, B, f, g(f(x)), x, eta(x)) = epsilon(f(x))`.
 `Equiv` bundles the map with that evidence. Univalence uses exactly this type.
@@ -185,14 +185,14 @@ principle.
 and the motive. It replaces separate small/higher copies, including motives
 above the carrier universe. It is derived solely from path induction.
 `is_set_prop` and `product_prop` are general proposition lemmas in
-`bijection_equality.proof`, shared by the group and field developments.
+`bijection_equality.cubist`, shared by the group and field developments.
 
 ## Verification
 
 Run only this development and its dependencies:
 
 ```
-npm test -- web/proofs/group_univalence.proof web/proofs/circle_group_identity.proof
+npm test -- web/proofs/group_univalence.cubist web/proofs/circle_group_identity.cubist
 npm test -- tests/group-identity.test.mjs
 ```
 

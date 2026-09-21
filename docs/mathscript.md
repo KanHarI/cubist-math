@@ -1,7 +1,10 @@
-# MathScript
+# Cubist
 
-MathScript is a mathematical source language checked by the existing C kernel,
-compiled to WebAssembly. Authoring uses `.proof` text, not JSON. The parser and
+> Historical design notes. The current project uses only the cubical C kernel;
+> see [the project README](../README.md) and the [CLI guide](cli.md). Retired implementation paths below describe the earlier design.
+
+Cubist is a mathematical source language checked by the existing C kernel,
+compiled to WebAssembly. Authoring uses `.cubist` text, not JSON. The parser and
 elaborator are untrusted: they produce ordinary checked kernel instructions.
 
 The [full language reference](../web/language.html) documents the current syntax,
@@ -107,7 +110,7 @@ to see the binary-pair expansion or click to inspect the checked tuple.
 `x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
 
 Blocks support `intro`, `let`, `obtain`, `have`, `cases`, and `exact`. See
-[Euclid](../web/proofs/euclid.proof) for the complete short argument. Induction
+[Euclid](../web/proofs/euclid.cubist) for the complete short argument. Induction
 expressions carry an explicit motive:
 
 ```text
@@ -147,7 +150,7 @@ induction and introduce no axiom. `refl(x)` supplies the reflexive path `x = x`.
 Equality induction is available as
 `path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
 function of two endpoints and their equality proof. The foundational symmetry,
-transitivity, and congruence proofs in [primes.proof](../web/proofs/primes.proof)
+transitivity, and congruence proofs in [primes.cubist](../web/proofs/primes.cubist)
 show its use. The lower-level `induct`, `cases`, and `unpack` function forms remain
 available for proof-producing source tools.
 
@@ -188,7 +191,7 @@ index type and every fiber and returns only a truncated section.
 `A =[U] B`. `UnivalenceBeta` and `UnivalenceEta` are derived theorems,
 not separate axioms. All these operations also accept `U : Universe`.
 
-`Equiv(U, A, B)` and `IsEquiv(U, A, B, f)` in `paths.proof` are ordinary
+`Equiv(U, A, B)` and `IsEquiv(U, A, B, f)` in `paths.cubist` are ordinary
 universe-parameterized definitions. `x =[T] y` explicitly selects the carrier
 of equality; both endpoints are checked against `T`. Plain `x = y` still
 infers the carrier. Neither notation asserts definitional equality.
@@ -210,17 +213,17 @@ the implications and current development status.
 `import primes;` parses and checks the entire mathematical foundation source.
 It does not trust a saved proof snapshot. Human-readable interface signatures are
 also checked against the resulting definitions before use. All 42 declarations
-in that module are axiom-free. `euclid.proof` owns both the proposition
+in that module are axiom-free. `euclid.cubist` owns both the proposition
 `InfinitelyManyPrimes` and its proof `euclid`; neither is imported from `primes`. A regression test checks that the high-level Euclid
 proposition matches the independently saved original proposition after reduction.
 
 The mathematical source backend in `tools/proofs/readable_backend.mjs` migrated
 proof-producing combinators into mathematical syntax. Its output is independently
 checked and can be edited as ordinary source. Kernel instruction histories are
-retained separately as `*.construction.proof`; these are audit artifacts, not
+retained separately as `*.construction.cubist`; these are audit artifacts, not
 claimed mathematical translations of the older catalogue.
 
-The CLI command `prove FILE.proof` checks the source and opens the result in the
+The CLI command `prove FILE.cubist` checks the source and opens the result in the
 existing selection/reduction workbench. JSON remains an optional checked replay
 export. Source is limited to 1 MB, nesting to 128, numerals to 256, and compiled
 programs to 4,194,304 instructions. The WASM kernel allows 16,777,216 nodes
@@ -286,7 +289,7 @@ are skipped. Run it again and it makes no further changes.
 
 ```sh
 npm run linearize:mathscript -- --check
-npm run linearize:mathscript -- web/proofs/circle_group_identity.proof
+npm run linearize:mathscript -- web/proofs/circle_group_identity.cubist
 ```
 
 `--check` reports remaining candidates without writing and exits nonzero if

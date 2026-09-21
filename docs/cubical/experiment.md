@@ -1,5 +1,8 @@
 # Cubical experiment: scope, specification, and migration ledger
 
+> Historical design notes. The current project uses only the cubical C kernel;
+> see [the project README](../../README.md) and the [CLI guide](../cli.md). Retired implementation paths below describe the earlier design.
+
 Branch: `experiment/cubical-hott`, based on `dd3fcc8`. The production kernel and
 website remain unchanged. This experiment was explicitly requested on 2026-09-20.
 
@@ -23,7 +26,7 @@ Conflating these algebras invalidates the model.
 ## Phases and acceptance criteria
 
 1. Canonical interval/face algebra, substitution, entailment and exhaustive
-   small-expression tests. Inventory every MathScript source and its obligations.
+   small-expression tests. Inventory every Cubist source and its obligations.
 2. Checked dependent functions, pairs, naturals, universes and interval paths;
    checked endpoints, substitution, path beta/eta, computational FunExt.
 3. Uniform composition and filling, including dependent families, face systems
@@ -50,14 +53,14 @@ This is an incomplete experiment, not a cubical replacement kernel. The first
 increment implements interval/face normal forms, dependent Pi/Sigma, naturals
 with induction, cumulative universes, and dependent Path abstraction/application.
 Function extensionality is checked as an interval abstraction, with a computing
-pointwise roundtrip, without adding an axiom. The original `basics.proof`
+pointwise roundtrip, without adding an axiom. The original `basics.cubist`
 translates completely (identity, duplication, natural-number copying and the
 proof that copying two gives two). The current whole-library translation pass
 checks **117 of 2,128 declarations** in this fragment; 2,011 remain explicit gaps.
 See [the exhaustive results](translation-results.json) and
 [the source inventory](migration-inventory.md). Counts are for declarations,
 not entire modules, and are not an estimate of the remaining effort. The census
-includes 216 MathScript modules and separately lists 28 legacy construction
+includes 216 Cubist modules and separately lists 28 legacy construction
 artifacts, which the cubical translator does not admit as trusted exports.
 
 Composition now checks every tube/base boundary and every overlap of its face
@@ -103,7 +106,7 @@ preserve the input universe once their computation and elimination are checked.
 ## Native C work
 
 The independent native checker under
-[`experiments/cubical/c`](../../experiments/cubical/c/README.md) now implements
+[`kernel`](../../kernel/README.md) now implements
 interval/face algebra, explicit universe levels, Pi/Sigma, Nat/Unit/Void/sums,
 general dependent W induction, interval paths and checked composition. Its
 files separate inference, substitution, conversion and computation by rule
@@ -131,15 +134,15 @@ falls back to the old kernel.
 
 ## Verification commands
 
-Run `node --test experiments/cubical/tests/*.test.mjs` for the experimental core.
-Run `node experiments/cubical/check-library.mjs` to regenerate actual translation
+Run `node --test lib/cubical/tests/*.test.mjs` for the experimental core.
+Run `node lib/cubical/check-library.mjs` to regenerate actual translation
 results; every successful declaration is checked again from inert term syntax.
-Run `node experiments/cubical/inventory.mjs` for the separate AST-only census.
+Run `node lib/cubical/inventory.mjs` for the separate AST-only census.
 No experiment command changes the production WASM binary or deploys the site.
 
 ## Derived univalence milestone
 
-`experiments/cubical/equivalence.mjs` now builds and independently checks the
+`lib/cubical/equivalence.mjs` now builds and independently checks the
 CCHM theorem that `unglue` is an equivalence (contractible fibers), uniqueness of
 contractibility witnesses, and the total-space formulation of univalence:
 

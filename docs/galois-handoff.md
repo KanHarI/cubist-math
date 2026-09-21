@@ -2,7 +2,7 @@
 
 Updated 2026-09-20 after resuming mathematical development on main.
 The earlier paused checkpoint is commit
-[`5f34197`](https://github.com/KanHarI/thth-c/commit/5f34197).
+[`5f34197`](https://github.com/KanHarI/cubist-math/commit/5f34197).
 There is no unfinished mathematical source file or partial proof to recover.
 
 The current increment adds `quotient_descent`, `group_quotient_maps` and
@@ -38,7 +38,7 @@ theorems do not establish normality of field extensions.
 
 ## Results and where to resume reading
 
-All module names below refer to `web/proofs/<name>.proof` and are exposed in
+All module names below refer to `web/proofs/<name>.cubist` and are exposed in
 the website proof selector.
 
 | Area | Modules and useful entry points |
@@ -160,7 +160,7 @@ C-engine CI** for `5f34197`:
    `tools/proofs/paths.mjs` (`J`/naturality/commutation), reaches
    `Builder.coerce` with `Conversion types differ`.
 
-[Failing CI run](https://github.com/KanHarI/thth-c/actions/runs/35511108966).
+[Failing CI run](https://github.com/KanHarI/cubist-math/actions/runs/35511108966).
 Both failures were reproduced and repaired during resumption:
 
 - WNat's helper was seeding an obsolete private normalization-cache key.
@@ -234,7 +234,7 @@ npm test -- f4_galois_correspondence
 npm test -- tests/subgroup-images.test.mjs tests/normal-subgroups.test.mjs
 npm test -- tests/galois-correspondence.test.mjs tests/galois-fixed.test.mjs
 npm test -- tests/distinguished-extensions.test.mjs
-node tools/format-mathscript.mjs web/proofs/your_module.proof
+node tools/format-mathscript.mjs web/proofs/your_module.cubist
 node tools/format-mathscript.mjs --check
 git diff --check
 ```

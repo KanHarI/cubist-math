@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="MathScript language reference: types, proof blocks, induction, identity paths, universes, and explicit axioms." />
-    <title>MathScript · Language reference</title>
+    <meta name="description" content="Cubist language reference: types, proof blocks, induction, identity paths, universes, and explicit axioms." />
+    <title>Cubist · Language reference</title>
     <link rel="stylesheet" href="language.css" />
   </head>
   <body>
     <a class="skip-link" href="#reference">Skip to reference</a>
     <header>
-      <a class="brand" href="index.html"><span aria-hidden="true">⊢</span> MathScript</a>
+      <a class="brand" href="index.html"><span aria-hidden="true">⊢</span> Cubist</a>
       <nav aria-label="Main navigation">
         <a href="proof.html">Proof workspace</a>
         <a href="workbench.html">Kernel workbench</a>
@@ -21,8 +21,8 @@
       <div class="introduction">
         <p class="eyebrow">SYNTAX, MEANING, AND CHECKED EVIDENCE</p>
         <h1>Language reference</h1>
-        <p class="lead">Write terms and proofs in dependent type theory. MathScript elaborates each declaration into instructions checked by the C kernel.</p>
-        <p>This page describes the mathematical <code>.proof</code> language. The <a href="workbench.html">kernel workbench</a> has a separate, lower-level instruction language.</p>
+        <p class="lead">Write terms and proofs in dependent type theory. Cubist elaborates each declaration into instructions checked by the C kernel.</p>
+        <p>This page describes the mathematical <code>.cubist</code> language. The <a href="workbench.html">kernel workbench</a> shows checked terms, their context, and native opcode assembly.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="On this page">
@@ -282,9 +282,7 @@ theorem reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
           </section>
           <section id="cubical">
             <h2>Cubical paths and pushouts</h2>
-            <p>These forms use the <strong>Cubical C</strong> backend. During migration,
-              the original Id/J backend remains available explicitly; it does not accept
-              interval syntax. A declaration marked “Not checked” has no native certificate.</p>
+            <p>All Cubist proofs use the <strong>Cubical C</strong> kernel. A declaration marked “Not checked” has no native certificate.</p>
             <p><code>Interval</code> introduces a coordinate inside the forms below.
               It is not a type in a universe and cannot be used as an ordinary function domain.
               Coordinates accept <code>0</code>, <code>1</code>, <code>flip(i)</code>,
@@ -398,11 +396,11 @@ theorem identity_zero : identity(0) = 0 {
           <section id="inspection">
             <h2>Checking and inspection</h2>
             <p>Open the <a href="proof.html">proof workspace</a>, choose a topic and proof, then use <strong>Edit</strong> and <strong>Check proof</strong> (Ctrl/Cmd+Enter). Click a name in <strong>Read</strong> mode to inspect its type and source. Click a proof-step line number for its goal and local assumptions. A rejected edit leaves the last checked proof available.</p>
-            <p>The checked kernel details show the expression, its type, and its open context. Folded kernel notation retains names only where their relationship to the stored term is checked. Use the representation selector for MathScript or raw kernel terms; send either term to the workbench to explore reduction and dependencies. Binder grouping, truncation notation, and equality notation change only presentation. Equality notation is enabled by default: <code>(A =[T] B)</code> displays the identity type with endpoints <code>A</code>, <code>B</code> and carrier <code>T</code>. Uncheck it to see <code>Id</code> with the carrier as a subscript instead. Both views retain links to checked definitions.</p>
-            <p>The <a href="https://github.com/KanHarI/thth-c/blob/main/docs/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules, explaining contexts, binding, and what must be trusted when verifying a proof.</p>
+            <p>The checked kernel details show the expression, its type, and its open context. Folded kernel notation retains names only where their relationship to the stored term is checked. Use the representation selector for Cubist or raw kernel terms; send either term to the workbench to explore reduction and dependencies. Binder grouping, truncation notation, and equality notation change only presentation. Equality notation is enabled by default: <code>(A =[T] B)</code> displays the identity type with endpoints <code>A</code>, <code>B</code> and carrier <code>T</code>. Uncheck it to see <code>Id</code> with the carrier as a subscript instead. Both views retain links to checked definitions.</p>
+            <p>The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules, explaining contexts, binding, and what must be trusted when verifying a proof.</p>
             <p>The compiler’s <strong>Reuse normal forms</strong> and <strong>Reuse checked instructions</strong> switches default on. They control reuse during compilation, not the source language or its mathematical assumptions.</p>
-            <p>For local development, <code>make serve</code> serves the workspace. In the CLI, <code>prove FILE.proof</code> checks a source file. A focused project test can be run as <code>npm test -- web/proofs/FILE.proof</code>; this checks the selected mathematical source and its imports.</p>
-            <p>Current parser limits are 1,000,000 source characters, 160,000 tokens, nesting depth 128, and numeral literals up to 256. Larger naturals can be built by expressions. These are implementation limits, not mathematical axioms. See the <a href="https://github.com/KanHarI/thth-c/blob/main/docs/mathscript.md">implementation notes</a> for runtime limits and the source-checking pipeline.</p>
+            <p>For local development, <code>make serve</code> serves the workspace. In the CLI, <code>check FILE.cubist</code> checks a source file. A focused project test can be run as <code>npm test -- web/proofs/FILE.cubist</code>; this checks the selected mathematical source and its imports.</p>
+            <p>Current parser limits are 1,000,000 source characters, 160,000 tokens, nesting depth 128, and numeral literals up to 256. Larger naturals can be built by expressions. These are implementation limits, not mathematical axioms. See the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/mathscript.md">implementation notes</a> for runtime limits and the source-checking pipeline.</p>
           </section>
           <section id="errors">
             <h2>Common errors</h2>
@@ -436,6 +434,6 @@ theorem identity_zero : identity(0) = 0 {
         </article>
       </div>
     </main>
-    <footer>MathScript · Language reference · <a href="proof.html">Return to the proof workspace</a></footer>
+    <footer>Cubist · Language reference · <a href="proof.html">Return to the proof workspace</a></footer>
   </body>
 </html>

@@ -1,5 +1,0 @@
-// Uuomega
-// Complete checked construction. All intermediate steps are included.
-construction uuomega {
-  export lib_Uomega = universe_omega();
-}

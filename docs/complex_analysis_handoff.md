@@ -116,11 +116,11 @@ These five modules are included in this checkpoint and in the web selector:
 
 | Module | Checked result |
 | --- | --- |
-| [field_uniform_radii](../web/proofs/field_uniform_radii.proof) | Enlarge a closeness radius; construct a common positive radius below two given positive radii without comparing them. |
-| [complex_uniform_operations](../web/proofs/complex_uniform_operations.proof) | Add complex error bounds and construct a uniform-continuity witness for a sum of curves. |
-| [complex_scalar_continuity](../web/proofs/complex_scalar_continuity.proof) | Fixed complex multiplication preserves closeness, uniform continuity and convergence; the coefficient may be zero. |
-| [curve_integrand_sums](../web/proofs/curve_integrand_sums.proof) | Finite contour-sum addition, scaling and equality when integrands agree along the curve. |
-| [affine_integral_linearity](../web/proofs/affine_integral_linearity.proof) | `affine_dyadic_integral_add`, `affine_dyadic_integral_scale`, and `affine_dyadic_integral_cong`. |
+| [field_uniform_radii](../web/proofs/field_uniform_radii.cubist) | Enlarge a closeness radius; construct a common positive radius below two given positive radii without comparing them. |
+| [complex_uniform_operations](../web/proofs/complex_uniform_operations.cubist) | Add complex error bounds and construct a uniform-continuity witness for a sum of curves. |
+| [complex_scalar_continuity](../web/proofs/complex_scalar_continuity.cubist) | Fixed complex multiplication preserves closeness, uniform continuity and convergence; the coefficient may be zero. |
+| [curve_integrand_sums](../web/proofs/curve_integrand_sums.cubist) | Finite contour-sum addition, scaling and equality when integrands agree along the curve. |
+| [affine_integral_linearity](../web/proofs/affine_integral_linearity.cubist) | `affine_dyadic_integral_add`, `affine_dyadic_integral_scale`, and `affine_dyadic_integral_cong`. |
 
 Continuity witnesses for sums and scalar multiples are constructed from the
 input witnesses; they are not extra assumptions. Finite-sum identities and
@@ -224,7 +224,7 @@ From the repository root:
 
 ```sh
 # Check one module and its imports.
-npm test -- web/proofs/affine_integral_linearity.proof
+npm test -- web/proofs/affine_integral_linearity.cubist
 
 # Reproduce the latest positive and negative regressions.
 npm test -- --test-name-pattern='constructed affine integrals are complex-linear|common input modulus requires|finite contour linearity cannot' tests/mathscript.test.mjs

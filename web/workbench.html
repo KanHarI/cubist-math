@@ -1,241 +1,71 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>THTH · Math workbench</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Cubical kernel workbench</title>
+    <link rel="stylesheet" href="proof.css" />
+    <link rel="stylesheet" href="cubical-workbench.css" />
   </head>
   <body>
-    <header>
-      <div>
-        <span class="mark">⊢</span><strong>THTH</strong
-        ><span class="muted">Math workbench</span>
-      </div>
-      <div class="toolbar">
-        <a id="back-mathscript" hidden>← Back to MathScript</a>
-        <a href="index.html">Proof highlights</a>
-        <a href="proof.html">MathScript editor</a>
-        <a href="https://github.com/KanHarI/thth-c">GitHub repository</a>
-        <span id="status" role="status">Loading WASM…</span
-        ><button id="save">Save proof</button
-        ><button id="load">Open proof</button
-        ><input id="file" type="file" accept=".json" hidden /><button
-          id="reset"
-        >
-          Reset example
-        </button>
-      </div>
+    <header><a class="brand" href="index.html">⊢ Cubist Math <span>Cubical kernel workbench</span></a>
+      <nav><a href="index.html">Proof highlights</a><a id="source-back" href="proof.html">← Back to Cubist</a></nav>
     </header>
-    <div class="intro">
-      <div>
-        <span class="eyebrow">EXPRESSION WORKSPACE</span>
-        <h1>Explore a proof, one checked step at a time.</h1>
-        <p>
-          Choose an object, select a subexpression, then preview an operation.
-          Your proof changes only when you accept.
-        </p>
-      </div>
-      <label class="badge"
-        ><input type="checkbox" id="axioms" /> Allow explicit axioms</label
-      >
-    </div>
-    <div id="error" role="alert" hidden></div>
     <main>
-      <aside class="objects panel">
-        <div class="section-head">
-          <h2>Objects</h2>
-          <span id="object-count" class="muted"></span>
-        </div>
-        <label for="bundled-proof">Existing proofs &amp; library</label>
-        <select id="bundled-proof" aria-label="Bundled proof"></select>
-        <button id="open-bundled">Open selected proof</button>
-        <p class="hint">
-          Opens a checked program with its displayed axiom policy. Replaces the
-          current proof.
-        </p>
-        <label
-          ><input id="show-intermediate" type="checkbox" /> Show intermediate
-          steps</label
-        >
-        <p id="loaded-steps" class="hint" aria-live="polite"></p>
-        <label class="search-label"
-          >Find a named object<input
-            id="filter"
-            type="search"
-            placeholder="Filter names…"
-        /></label>
-        <div id="objects"></div>
-      </aside>
-      <section class="workspace">
-        <div class="panel inspector">
-          <div class="section-head">
-            <button id="back-reference" hidden>← Back</button>
-            <h2 id="active-name" tabindex="-1">Choose an object</h2>
-            <span id="object-kind" class="badge"></span>
-          </div>
-          <div
-            id="checked-judgement"
-            class="checked-judgement"
-            role="status"
-            hidden
-          ></div>
-          <div id="inference" class="hint inference"></div>
-          <div class="expression-block">
-            <div class="label">CONTEXT</div>
-            <div id="kernel-context" aria-label="Kernel context"></div>
-          </div>
-          <div class="expression-block">
-            <div class="label">
-              EXPRESSION
-              <span>click to select · reference links open declarations</span>
-            </div>
-            <p id="expression-limit" class="hint"></p>
-            <button id="expand-expression" hidden>Show full expression</button>
-            <div id="expression" class="math" aria-label="Expression"></div>
-          </div>
-          <div class="expression-block">
-            <div class="label">TYPE</div>
-            <p id="type-limit" class="hint"></p>
-            <button id="expand-type" hidden>Show full type</button>
-            <div id="type" class="math" aria-label="Type"></div>
-          </div>
-          <div class="assumptions">
-            <strong>Axioms used</strong><span id="used-axioms"></span>
-          </div>
-          <div class="assumptions">
-            <strong>Open assumptions</strong><span id="assumptions"></span>
-          </div>
-          <p class="hint">Shift-click a reference link to select it.</p>
-          <div class="selection-bar">
-            <span id="selection-label">No selection</span
-            ><button id="parent">Select parent</button
-            ><button id="clear" title="Clear the selected highlight">Un-highlight</button>
-          </div>
-          <details>
-            <summary>Select by path or parentheses</summary>
-            <p class="hint">
-              Use <code>expr.argument</code> or <code>type.1</code>.
-              Alternatively copy the displayed expression and wrap a subtree in
-              one extra pair of parentheses or <code>[[ ]]</code>.
-            </p>
-            <div class="row">
-              <input
-                id="path"
-                placeholder="expr.argument"
-                aria-label="Selection path"
-              /><button id="select-path">Select path</button>
-            </div>
-            <div class="row">
-              <select id="mark-side" aria-label="Side to mark">
-                <option value="expression">Expression</option>
-                <option value="type">Type</option></select
-              ><button id="copy-mark">Copy into editor</button>
-            </div>
-            <textarea
-              id="marked"
-              rows="3"
-              aria-label="Expression with selection parentheses"
-            ></textarea
-            ><button id="select-mark">Select marked subtree</button>
-          </details>
-        </div>
-        <div id="preview" class="panel preview" hidden>
-          <div class="section-head">
-            <h2>Preview</h2>
-            <span class="badge">Proof unchanged</span>
-          </div>
-          <div id="preview-result" class="math"></div>
-          <div id="preview-type" class="muted"></div>
-          <pre id="preview-code"></pre>
-          <div class="row">
-            <button class="primary" id="accept">Accept step</button
-            ><button id="reject">Discard</button
-            ><span id="preview-time" class="muted"></span>
+      <h1>Checked cubical terms</h1>
+      <p id="status" role="status">Loading cubical C/WASM…</p>
+      <div class="toolbar">
+        <button id="back" disabled>← Back</button>
+        <button id="unhighlight">Un-highlight</button>
+        <label for="workbench-view">View</label>
+        <select id="workbench-view"><option value="math">Mathematical</option><option value="assembly">Kernel assembly</option></select>
+        <button id="check" data-math-option disabled>Check edited expression</button>
+        <label data-math-option><input id="fold-names" type="checkbox" checked /> Fold source names</label>
+        <label data-math-option><input id="truncation-sugar" type="checkbox" checked /> Truncation ‖A‖</label>
+        <label data-math-option><input id="identity-sugar" type="checkbox" checked /> Equality as =<sub>T</sub></label>
+      </div>
+      <div id="diagnostic" role="alert" hidden></div>
+      <p id="reduction-status" class="hint" role="status"></p>
+      <button id="more-reduction-sites" hidden>Show more reduction sites</button>
+      <section class="panel cubical-panel">
+        <h2 id="name">Expression</h2>
+        <div id="mathematical-view">
+        <h3>Context</h3><div id="context"></div>
+        <div class="term-heading">
+          <h3>Expression</h3>
+          <div role="group" aria-label="Reduce expression">
+            <button id="beta-expression" data-reduction disabled aria-pressed="false" title="Highlight function/path applications and pair projections; click one to reduce it">β step</button>
+            <button id="delta-expression" data-reduction disabled aria-pressed="false" title="Highlight named definitions; click one occurrence to unfold it">δ unfold</button>
+            <button id="normalize" data-reduction disabled title="Fully normalize the expression">Normalize</button>
           </div>
         </div>
-        <div class="panel">
-          <div class="section-head">
-            <h2>History</h2>
-            <button id="undo">Undo</button>
+        <div id="expression" class="kernel-term typeset"></div>
+        <div class="term-heading">
+          <h3>Type</h3>
+          <div role="group" aria-label="Reduce type">
+            <button id="beta-type" data-reduction disabled aria-pressed="false" title="Highlight function/path applications and pair projections; click one to reduce it">β step</button>
+            <button id="delta-type" data-reduction disabled aria-pressed="false" title="Highlight named definitions; click one occurrence to unfold it">δ unfold</button>
+            <button id="normalize-type" data-reduction disabled title="Fully normalize the type">Normalize</button>
           </div>
-          <p class="hint">
-            Returning to an earlier revision keeps later branches available.
-          </p>
-          <div id="history"></div>
         </div>
-        <div class="panel">
-          <details>
-            <summary>Instruction log &amp; source input</summary>
-            <p class="hint">
-              Each binding is exactly one kernel instruction. Selection actions
-              show every generated focus step.
-            </p>
-            <pre id="source"></pre>
-            <label for="code">Preview additional instructions</label
-            ><textarea
-              id="code"
-              rows="4"
-              placeholder="next = apply(identity, one)"
-            ></textarea
-            ><button id="preview-code-button">Preview source</button>
-          </details>
+        <div id="type" class="kernel-term typeset"></div>
+        <p class="hint">β and δ highlight every applicable site in the displayed term. Click a highlight to reduce that occurrence. Escape or Un-highlight cancels selection. Each step is kernel-checked; Back undoes it. Reduced terms stay expanded.</p>
+        <details><summary>Edit native syntax</summary>
+          <p>Definitions refer to the checked source registry by name. Editing does not change that registry.</p>
+          <textarea id="syntax" spellcheck="false" aria-label="Native cubical expression"></textarea>
+        </details>
         </div>
+        <section id="assembly-view" hidden aria-label="Native kernel assembly">
+          <p class="hint">Native C constructor opcodes, payloads, and operands. %n are term handles local to this replay session; each shared node is listed once. Zero marks an unused operand or the end of a list.</p>
+          <p id="assembly-status" role="status"></p>
+          <div id="assembly-listing"></div>
+          <div class="toolbar">
+            <button id="assembly-more" hidden>Show more nodes</button>
+            <button id="assembly-download" disabled>Download shown assembly</button>
+          </div>
+        </section>
       </section>
-      <aside class="operations">
-        <div class="panel">
-          <h2>Selected expression</h2>
-          <p id="selected-kind" class="hint">
-            Select part of an expression or its type.
-          </p>
-          <label for="result-name">Result name</label
-          ><input id="result-name" value="reduced" placeholder="reduced" />
-          <button id="reduce" class="action primary">Reduce here</button
-          ><button id="pass" class="action">Reduction pass in selection</button
-          ><button id="unfold" class="action">Unfold / reduce here</button>
-          <label for="witness">Definitional equality witness</label
-          ><select id="witness">
-            <option value="">Choose a judgement…</option></select
-          ><button id="rewrite" class="action">Rewrite within selection</button>
-          <p class="hint">
-            A rewrite replaces matching occurrences inside the selected region.
-          </p>
-        </div>
-        <div class="panel">
-          <details>
-            <summary>All kernel operations</summary>
-            <p class="hint">
-              All 67 rules are available. Choose named premises; the kernel
-              checks legality in an isolated preview.
-            </p>
-            <label for="opcode">Operation</label
-            ><select id="opcode"></select>
-            <div id="operands"></div>
-            <button id="preview-op" class="action">Preview operation</button>
-          </details>
-        </div>
-        <div class="panel metrics">
-          <h2>Live engine</h2>
-          <dl id="stats"></dl>
-          <p class="hint">Preview allocations belong to a separate engine.</p>
-        </div>
-        <div class="panel">
-          <details>
-            <summary>Check a theorem</summary>
-            <label for="proposition">Proposition (a type judgement)</label
-            ><select id="proposition"></select
-            ><label for="proof">Proof</label
-            ><select id="proof"></select
-            ><button id="verify" class="action">Verify closed proof</button>
-            <p id="verification" role="status"></p>
-          </details>
-        </div>
-      </aside>
     </main>
-    <footer>
-      Checked C kernel → WebAssembly · Selection never edits terms ·
-      <a href="README.md">Workbench &amp; CLI guide</a>
-    </footer>
-    <script type="module" src="app.mjs"></script>
+    <script type="module" src="cubical-workbench.mjs"></script>
   </body>
 </html>

@@ -1,6 +1,9 @@
 # Compiler optimization experiments
 
-MathScript compiler optimizations are independently selectable. They change
+> Historical design notes. The current project uses only the cubical C kernel;
+> see [the project README](../README.md) and the [CLI guide](cli.md). Retired implementation paths below describe the earlier design.
+
+Cubist compiler optimizations are independently selectable. They change
 which checked instructions the compiler emits; the kernel's inference rules
 and axiom policy stay the same. Both options are enabled by default.
 
@@ -155,7 +158,7 @@ each binder separately. This notation does not replace the term with a single
 binder over a product type or change its checked derivation.
 
 This view is an actual kernel term with checked definition references, not
-MathScript text rewritten with mathematical symbols. The successful source
+Cubist text rewritten with mathematical symbols. The successful source
 snapshot proposes a shape for the folded term. A separate kernel replays the
 required premises, constructs the proposed term with ordinary formation and
 application rules, and proves a `DefEq` judgment connecting it to the stored
@@ -184,7 +187,7 @@ indexing, including its depth convention for every constructor child. Omitting
 them previously caused valid bound variables to appear as unexplained `#6`
 or `#3` references. Expression-selection paths still refer to the original AST.
 
-The separate **MathScript (folded)** option retains the successful source
+The separate **Cubist (folded)** option retains the successful source
 snapshot. **Raw kernel term** and **Show full term** retain the stored
 representation without display folding. Imported declarations use the same
 checks, and failed proof checks preserve the previous successful snapshot.

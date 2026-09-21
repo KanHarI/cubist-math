@@ -1,4 +1,3 @@
-import catalogue from "./proofs/catalogue.mjs";
 
 // Every proof has one browsing topic; mathematical dependencies can cross topics.
 export const proofTopics = [
@@ -15,7 +14,6 @@ export const proofTopics = [
   { id: "complex-analysis", title: "Complex Analysis" },
   { id: "curves-sampling", title: "Curves & Sampling" },
   { id: "contour-integration", title: "Contour Integration" },
-  { id: "kernel-audits", title: "Kernel Audits" },
 ];
 
 export const proofChoices = [
@@ -254,13 +252,6 @@ export const proofChoices = [
   { id: "euclid", topic: "arithmetic", title: "Euclid · mathematical proof" },
   { id: "basics", topic: "basic-logic", title: "Functions, pairs & induction · examples" },
   { id: "primes", topic: "arithmetic", title: "Primes · mathematical foundations" },
-  ...catalogue.map((p) => ({
-    ...p,
-    id: p.id + "_construction",
-    topic: "kernel-audits",
-    file: p.id + ".construction.proof",
-    title: p.title + " · kernel audit",
-  })),
 ];
 
 export function proofsInTopic(topic) {

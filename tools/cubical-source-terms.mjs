@@ -1,4 +1,4 @@
-// Print derived cubical syntax as explicit, independently checkable MathScript.
+// Print derived cubical syntax as explicit, independently checkable Cubist.
 // Used only when migrating source proofs, never as a verification shortcut.
 export function cubicalSource(term) {
   const reserved=new Set(), dimensions=new Map();

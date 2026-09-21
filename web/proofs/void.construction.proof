@@ -1,5 +1,0 @@
-// Void
-// Complete checked construction. All intermediate steps are included.
-construction void {
-  export lib_Void = empty_type();
-}

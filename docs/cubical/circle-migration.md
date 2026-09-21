@@ -1,6 +1,6 @@
 # Circle encode–decode in the native cubical checker
 
-`web/proofs/cubical/circle.proof` preserves the original integer cover,
+`web/proofs/circle.cubist` preserves the original integer cover,
 encode–decode construction, winding number, addition compatibility, loop-group
 laws, and final multiplication-preserving integer isomorphism. Its imports use
 the native cubical source loader. The legacy source remains unchanged.
@@ -27,7 +27,7 @@ at the north pole has type `motive(push_left(tt))`. A constant lambda cannot
 provide the branch for an arbitrary dependent motive: neutral `u` is not
 judgmentally `tt`.
 
-The MathScript suspension elaborator must construct each point branch with Unit
+The Cubist suspension elaborator must construct each point branch with Unit
 elimination:
 
 ```js

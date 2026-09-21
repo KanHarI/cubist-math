@@ -1,6 +1,6 @@
 # Finite types and counting
 
-All constructions below are ordinary high-level `.proof` source. The compiler
+All constructions below are ordinary high-level `.cubist` source. The compiler
 emits checked instructions for the same C/WASM kernel used by the workbench;
 there is no counting oracle or theorem-specific kernel rule.
 
@@ -39,7 +39,7 @@ produces an empty type.
 
 ## Natural numbers to types
 
-[finite.proof](../web/proofs/finite.proof) defines `Fin(0) = Void` and
+[finite.cubist](../web/proofs/finite.cubist) defines `Fin(0) = Void` and
 `Fin(succ(n)) = Unit or Fin(n)` by Nat induction. It constructs explicit
 bijections between literal sums `two`, `three`, `four`, `five` and their `Fin`
 counterparts. `choose_units_five_two` counts `Binomial(five, two)` itself,
@@ -66,7 +66,7 @@ orderings of its elements are not counted repeatedly.
 The proof splits subsets by whether they contain the head element, constructs
 inverse maps for the Pascal decomposition, and inducts on the ambient size and
 chosen size. The empty cases prove uniqueness or impossibility. The separate
-`Selections` construction in `binomial.proof` is a recursive subset encoding;
+`Selections` construction in `binomial.cubist` is a recursive subset encoding;
 the final theorem above concerns the actual truncated-equivalence definition,
 not only that encoding.
 
@@ -103,7 +103,7 @@ axioms. None of these results requires excluded middle or the axiom of choice.
 **Truncation interface correction:** the original prelude accidentally required
 `U -> P` instead of `A -> P`, for `A : U`. The Rust construction and the generated
 C/prelude library now use the corrected `lib_trunc_elim` axiom. All bundled copies
-have been regenerated. In [truncation.proof](../web/proofs/truncation.proof),
+have been regenerated. In [truncation.cubist](../web/proofs/truncation.cubist),
 `mere_eliminate` is a checked definition wrapping that prelude axiom; it is no
 longer a separate axiom. The result dependency list links to `lib_trunc_elim`.
 
@@ -111,19 +111,19 @@ longer a separate axiom. The result dependency list links to `lib_trunc_elim`.
 
 | Source | Contents |
 | --- | --- |
-| [equivalences](../web/proofs/equivalences.proof) | Bijections, sums, products, and the full equivalence interface |
-| [finite](../web/proofs/finite.proof) | Iterated Unit sums, finite sums, decidable equality and setness |
-| [function_counting](../web/proofs/function_counting.proof) | Products and function counts |
-| [finite_cancellation](../web/proofs/finite_cancellation.proof) | Swaps, cancellation of one element, uniqueness of cardinality |
-| [bijection_equality](../web/proofs/bijection_equality.proof) | Extensional equality and uniqueness of inverse/coherence data |
-| [permutations](../web/proofs/permutations.proof) | Permutation decomposition and factorial count |
-| [truncation](../web/proofs/truncation.proof) | Explicit propositional truncation interface |
-| [binomial](../web/proofs/binomial.proof) | Numeric Pascal recurrence and structural selections |
-| [binomial_types](../web/proofs/binomial_types.proof) | Rijke predicate construction and true/false fiber maps |
-| [binomial_pascal](../web/proofs/binomial_pascal.proof) | Checked Pascal bijection and its inverse laws |
-| [binomial_counting](../web/proofs/binomial_counting.proof) | Base cases, induction, final equivalences and Unit-sum example |
+| [equivalences](../web/proofs/equivalences.cubist) | Bijections, sums, products, and the full equivalence interface |
+| [finite](../web/proofs/finite.cubist) | Iterated Unit sums, finite sums, decidable equality and setness |
+| [function_counting](../web/proofs/function_counting.cubist) | Products and function counts |
+| [finite_cancellation](../web/proofs/finite_cancellation.cubist) | Swaps, cancellation of one element, uniqueness of cardinality |
+| [bijection_equality](../web/proofs/bijection_equality.cubist) | Extensional equality and uniqueness of inverse/coherence data |
+| [permutations](../web/proofs/permutations.cubist) | Permutation decomposition and factorial count |
+| [truncation](../web/proofs/truncation.cubist) | Explicit propositional truncation interface |
+| [binomial](../web/proofs/binomial.cubist) | Numeric Pascal recurrence and structural selections |
+| [binomial_types](../web/proofs/binomial_types.cubist) | Rijke predicate construction and true/false fiber maps |
+| [binomial_pascal](../web/proofs/binomial_pascal.cubist) | Checked Pascal bijection and its inverse laws |
+| [binomial_counting](../web/proofs/binomial_counting.cubist) | Base cases, induction, final equivalences and Unit-sum example |
 
-In the CLI, run `prove web/proofs/binomial_counting.proof`, then
+In the CLI, run `prove web/proofs/binomial_counting.cubist`, then
 `use finite_binomial_equivalence` and `show`. Selection and reduction commands
 remain available for inspecting the compiled proof.
 

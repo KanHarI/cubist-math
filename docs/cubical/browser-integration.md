@@ -68,7 +68,7 @@ node tests/cubical-inspector.browser.mjs
 
 From a checked proof's inspector, **Open assembly view** opens the cubical
 workbench in its second view. The workbench's **View** selector switches between
-mathematical notation and **Kernel assembly**; **Back to MathScript** restores
+mathematical notation and **Kernel assembly**; **Back to Cubist** restores
 the source inspection.
 
 The assembly listing reads `cc_kernel_node` through the WASM bridge. It exposes
@@ -124,7 +124,7 @@ Current independent WASM tests cover:
 - rejection of invalid endpoints, malformed contexts and forged Glue witnesses;
 - distinct interval and face lattices, including dimension 63;
 - checking a compact expression denoting `2^22` without computing its unary value;
-- all 13 declarations from the actual `binary_naturals.proof` source;
+- all 13 declarations from the actual `binary_naturals.cubist` source;
 - computational transport along the Glue universe path for the identity
   equivalence of `Nat`, without a univalence axiom;
 - every declaration of `binary_arithmetic`, `binary_induction`, `radix_naturals`,
@@ -137,7 +137,7 @@ Current independent WASM tests cover:
   including radix bases 2 and 10, followed by the derived computation law and
   arithmetic compatibility to identify the original target factorial;
 - seven concrete transferred factorial statements in
-  `experiments/cubical/factorial-transfer.proof`, including the existing
+  `lib/cubical/factorial-transfer.cubist`, including the existing
   `Nat` statement `factorial(10) = nat_3628800`.
 
 The source translator now handles W formation/introduction/induction, sums and
@@ -170,7 +170,7 @@ proof folded avoids repeated checking of a large substituted beta body. The
 initial direct-body radix check exhausted the existing work budget; this
 factoring solves it without increasing that budget or changing a kernel rule.
 
-`experiments/cubical/number-transport.mjs` contains the checked-definition
+`lib/cubical/number-transport.mjs` contains the checked-definition
 assembly for this migration. The production half-adjoint `Equiv` declarations
 remain explicitly untranslated: their source inverse laws build the cubical
 contractible-fiber witnesses instead. The generic production `Equiv` API still

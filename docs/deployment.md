@@ -1,7 +1,7 @@
 # Website deployment
 
-The public website is **https://thth.kanhar.art/** and its source is
-**https://github.com/KanHarI/thth-c**.
+The public website is **https://cubist.kanhar.art/** and its source is
+**https://github.com/KanHarI/cubist-math**.
 
 The `Publish website` GitHub Action rebuilds and publishes GitHub Pages on
 pushes to `main`. It also supports manual runs from the Actions tab. Pull
@@ -27,18 +27,18 @@ npm run test:site
 python3 -m http.server 8089 --directory build/site
 ```
 
-To check a deployed site, run `npm run test:site -- https://thth.kanhar.art/`.
+To check a deployed site, run `npm run test:site -- https://cubist.kanhar.art/`.
 The smoke test opens the landing page, Euclid, the F₄ Galois correspondence, and
 the kernel workbench, checking the real worker and WASM checker.
 
 ## Domain
 
 GitHub repository Settings → Pages uses **GitHub Actions** as the build source
-and **thth.kanhar.art** as its custom domain. The DNS record at GoDaddy is:
+and **cubist.kanhar.art** as its custom domain. The DNS record at GoDaddy is:
 
 | Type | Name | Value |
 | --- | --- | --- |
-| CNAME | `thth` | `kanhari.github.io` |
+| CNAME | `cubist` | `kanhari.github.io` |
 
 DNS points at GitHub Pages hosting, not at the Actions runner. GitHub provisions
 the TLS certificate after DNS resolves correctly; HTTPS enforcement can then
