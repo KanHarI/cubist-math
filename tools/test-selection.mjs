@@ -5,10 +5,11 @@ import { fileURLToPath } from "node:url";
 import { parse } from "../web/mathscript/parser.mjs";
 
 export const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-export const defaultTests = ["tests/representation-transfer.test.mjs", "tests/binary-radix.test.mjs", "tests/tuples.test.mjs", "tests/documentation.test.mjs", "tests/formatter.test.mjs", "tests/workbench.test.mjs", "tests/mathscript.test.mjs", "tests/test-runner.test.mjs", "tests/proof-watchdog.test.mjs", "tests/proof-library.test.mjs", "tests/group-identity.test.mjs", "tests/galois.test.mjs", "tests/galois-fixed.test.mjs", "tests/generated-subfields.test.mjs", "tests/field-embeddings.test.mjs", "tests/distinguished-extensions.test.mjs", "tests/normal-subgroups.test.mjs", "tests/galois-correspondence.test.mjs", "tests/subgroup-images.test.mjs", "tests/group-cosets.test.mjs", "tests/quotient-descent.test.mjs", "tests/universes.test.mjs", "tests/compiler-optimizations.test.mjs", "tests/compiler-equivalence.test.mjs", "tests/inspector-mathscript.test.mjs"];
+export const defaultTests = ["tests/cubical-benchmark.test.mjs", "tests/cubical-wasm.test.mjs", "tests/cubical-program.test.mjs", "tests/cubical-transfers.test.mjs", "tests/representation-transfer.test.mjs", "tests/binary-radix.test.mjs", "tests/tuples.test.mjs", "tests/documentation.test.mjs", "tests/formatter.test.mjs", "tests/workbench.test.mjs", "tests/mathscript.test.mjs", "tests/test-runner.test.mjs", "tests/proof-watchdog.test.mjs", "tests/proof-library.test.mjs", "tests/group-identity.test.mjs", "tests/galois.test.mjs", "tests/galois-fixed.test.mjs", "tests/generated-subfields.test.mjs", "tests/field-embeddings.test.mjs", "tests/distinguished-extensions.test.mjs", "tests/normal-subgroups.test.mjs", "tests/galois-correspondence.test.mjs", "tests/subgroup-images.test.mjs", "tests/group-cosets.test.mjs", "tests/quotient-descent.test.mjs", "tests/universes.test.mjs", "tests/compiler-optimizations.test.mjs", "tests/compiler-equivalence.test.mjs", "tests/inspector-mathscript.test.mjs"];
 export const help = `Usage: npm test -- [options] [module | file ...]
 
   npm test                              Full regression suite (final check)
+  npm test -- --cubical cubical_paths    Check selected sources in native cubical C
   npm test -- complex_inverses           Check one proof and its imports
   npm test -- --module ordered_squares   Same, with an explicit module flag
   npm test -- web/proofs/circle.proof     Check a proof by path
@@ -36,6 +37,7 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
   const tests = [], proofs = [], flags = [];
   const optimizations = { normalForms: true, instructions: true };
   let explicitOptimizations = false;
+  let cubical = false;
   let explicitSelection = false;
   const proof = value => {
     const path = /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? `web/proofs/${value}.proof` : value;
@@ -47,6 +49,7 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
     const arg = args[i];
     if (arg === "--help" || arg === "-h") return { help: true };
     if (arg === "--") continue;
+    if (arg === "--cubical") { cubical = true; continue; }
     if (["--reuse-normal-forms", "--memoize-instructions", "--no-reuse-normal-forms", "--no-memoize-instructions"].includes(arg)) {
       explicitOptimizations = true;
       optimizations[arg.endsWith("reuse-normal-forms") ? "normalForms" : "instructions"] = !arg.startsWith("--no-");
@@ -73,12 +76,14 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
       proof(arg);
     }
   }
+  if (cubical && !proofs.length) throw new Error("--cubical requires selected proof modules.");
+  if (cubical && explicitOptimizations) throw new Error("Id/J compiler optimization flags do not apply to the cubical backend.");
   if (!explicitSelection) tests.push(...defaultTests.map(p => resolve(root, p)));
   if (proofs.length) {
     if (flags.some(flag => /^--test-(?:name|skip)-pattern(?:=|$)/.test(flag))) {
       throw new Error("Use module selection or a test-name filter separately, so proof checks cannot be silently skipped.");
     }
-    tests.push(resolve(root, "tests/proof-modules.test.mjs"));
+    tests.push(resolve(root, cubical ? "tests/cubical-modules.test.mjs" : "tests/proof-modules.test.mjs"));
   }
   if (explicitOptimizations && !proofs.length)
     throw new Error("Compiler optimization flags require selected proof modules; regression tests choose their own compiler modes.");

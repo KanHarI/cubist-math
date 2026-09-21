@@ -19,6 +19,7 @@ export const proofTopics = [
 ];
 
 export const proofChoices = [
+  { id: "cubical_paths", topic: "homotopy", title: "Cubical paths · computation, composition and pushouts", backend: "cubical" },
   { id: "radix_uniqueness", topic: "arithmetic", title: "Radix notation · uniqueness of bounded remainders" },
   { id: "radix_equivalence", topic: "arithmetic", title: "Arbitrary radix and Nat · full equivalence" },
   { id: "radix_binary_equivalence", topic: "arithmetic", title: "Binary and arbitrary radix · direct digit equivalence" },

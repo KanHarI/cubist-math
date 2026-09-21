@@ -1,16 +1,72 @@
+import {withNativeReferences} from "./equivalence.mjs";
+import {halfAdjointEquiv,publicUnivalencePath,publicUnivalenceBeta} from "./public-equivalence.mjs";
+import {libraryAssumption} from "../../web/cubical-assumptions.mjs";
 // Partial source translator. Unsupported syntax/foundations are explicit errors;
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
 import {parse} from "../../web/mathscript/parser.mjs";
 import {binaryLiteralSyntax} from "../../web/mathscript/binary-literals.mjs";
-import {Checker,T} from "./core.mjs";
+import {Checker,T,fill} from "./core.mjs";
 import {interval as I,face as F} from "./lattice.mjs";
+import {dependentPathToTransport,transportToDependentPath,dependentPathTransportRetraction} from "./path-over.mjs";
+import {pushout,suspension,north,south,meridian} from "./pushouts.mjs";
 
 export class Translator {
-  constructor({normalize=true,nativeCheck=null,checker=new Checker()}={}) {
+  constructor({normalize=true,nativeCheck=null,checker=new Checker(),onReference=null,onDeclaration=null,onDeclarationStart=null}={}) {
     this.checker=checker;this.serial=0;
     this.normalize=normalize;this.nativeCheck=nativeCheck;
+    this.dimensions=new Map();
+    this.onReference=onReference ? (node,term,context)=>onReference(node,term,context,new Map(this.dimensions)) : null;
+    this.onDeclaration=onDeclaration;
+    this.onDeclarationStart=onDeclarationStart;
   }
-  fresh(prefix="b") {return `${prefix}${++this.serial}`;}
+  fresh(prefix="b") {let name;do{name=`${prefix}${++this.serial}`;}while(this.checker.assumptions?.has(name));return name;}
+  // Interval names are cubical coordinates, never terms of a fabricated type.
+  interval(n,env) {
+    if(n.kind==="number"&&(n.value===0||n.value===1))return n.value===0?I.zero:I.one;
+    if(n.kind==="name"&&env.get(n.name)?.tag==="Dimension")return I.variable(env.get(n.name).name);
+    if(n.kind==="call"&&n.fn.kind==="name") {
+      const args=n.args.map(a=>this.interval(a,env));
+      if(n.fn.name==="flip"&&args.length===1)return I.reverse(args[0]);
+      if(n.fn.name==="meet"&&args.length===2)return I.meet(...args);
+      if(n.fn.name==="join"&&args.length===2)return I.join(...args);
+    }
+    throw Error("Expected an interval coordinate, 0, 1, flip, meet or join.");
+  }
+  cofibration(n,env) {
+    if(n.kind==="number"&&(n.value===0||n.value===1))return n.value===0?F.bottom:F.top;
+    if(n.kind==="binary"&&["and","or"].includes(n.operator))return (n.operator==="and"?F.meet:F.join)(this.cofibration(n.left,env),this.cofibration(n.right,env));
+    if(n.kind==="call"&&n.fn.kind==="name"&&n.fn.name==="on"&&n.args.length===2) {
+      const endpoint=n.args[1];
+      if(endpoint.kind==="number"&&[0,1].includes(endpoint.value))return F.equalEndpoint(this.interval(n.args[0],env),endpoint.value);
+    }
+    throw Error("Expected a face formula: on(i, 0 or 1), and/or, 0 or 1.");
+  }
+  dimensionBody(n,dim,ctx,env,expected=null) {
+    if(n.kind!=="lambda"||n.domain.kind!=="name"||n.domain.name!=="Interval")
+      throw Error("Expected fun (i : Interval) => ... in a cubical binder.");
+    const previous=this.dimensions,checkerDimensions=this.checker.dimensions;
+    let index=0;while([...previous.values()].includes(index))index++;
+    if(index>=64)throw Error("At most 64 simultaneous cubical dimensions are supported.");
+    this.dimensions=new Map(previous).set(dim,index);this.checker.dimensions=this.dimensions;
+    try {return this.term(n.body,ctx,new Map(env).set(n.name.text,{tag:"Dimension",name:dim}),expected);}
+    finally {this.dimensions=previous;this.checker.dimensions=checkerDimensions;}
+  }
+  suspensionData(motive,northValue,southValue,meridians,ctx) {
+    const type=this.checker.nf(this.checker.infer(motive,ctx,new Set(this.dimensions.keys())).type);
+    if(type.tag!=="Pi")throw Error("Suspension induction requires a motive.");
+    const P=this.checker.nf(type.domain);
+    if(P.tag!=="Pushout"||!this.checker.equal(type.domain,suspension(P.center),ctx))
+      throw Error("The motive must be a family over a suspension.");
+    const a=this.fresh("a"),i=this.fresh("i"),u=this.fresh("u");
+    const family=T.app(motive,T.pushPath(type.domain,T.variable(a),I.variable(i)));
+    const bridge=T.lam(a,P.center,T.app(transportToDependentPath(i,family,northValue,southValue),T.app(meridians,T.variable(a))));
+    // Point constructors retain a Unit argument. Eliminate that argument so
+    // a dependent motive sees the exact constructor, including at neutral u.
+    const point=this.fresh("point");
+    const branch=(constructor,value)=>T.lam(u,T.unit,T.unitrec(
+      T.lam(point,T.unit,T.app(motive,constructor(type.domain,T.variable(point)))),value,T.variable(u)));
+    return {carrier:P.center,eliminator:T.pushElim(motive,branch(T.pushLeft,northValue),branch(T.pushRight,southValue),bridge)};
+  }
   schema(expression,env) {
     return expression.kind==="lambda"&&expression.domain.kind==="name"&&expression.domain.name==="Universe"
       ? {tag:"UniverseSchema",parameter:expression.name.text,body:expression.body,env:new Map(env)} : null;
@@ -18,7 +74,28 @@ export class Translator {
   translate(source, imported=new Map()) {
     const ast=parse(source),env=new Map(imported),declarations=[];
     for(const d of ast.declarations) {
+      this.onDeclarationStart?.(d);
+      const previousHints=this.checker.kernel?.unfoldingHints;
       try {
+        // Hints govern the enclosing declaration, including intermediate have
+        // blocks and its final closed check. Install resolvable global names
+        // before elaboration; the actual call still validates every argument
+        // in its lexical scope. Hints never approve a term or an equality.
+        if(this.checker.kernel) {
+          const hints=[];
+          const collect=node=>{
+            if(!node||typeof node!=="object")return;
+            if(node.kind==="call"&&node.fn?.kind==="name"&&node.fn.name==="with_unfolding")
+              for(const arg of node.args.slice(0,-1)) {
+                let value=arg.kind==="name"?env.get(arg.name):null;
+                while(value?.tag==="App")value=value.fn;
+                if(value?.tag==="DefRef")hints.push(value.name);
+              }
+            Object.values(node).forEach(collect);
+          };
+          collect(d);
+          if(hints.length)this.checker.kernel.setUnfoldingHints([...previousHints,...hints]);
+        }
         if(d.kind==="axiom") throw Error("Axiom declarations require an explicit assumption policy; not translated.");
         let expression=d.value;
         if(!expression) {
@@ -27,8 +104,11 @@ export class Translator {
         }
         const schema=this.schema(expression,env);
         if(schema) {
+          schema.binding=this.checker.bindingName?.(d.name.text)??d.name.text;
+          schema.levels=[];
           env.set(d.name.text,schema);
           declarations.push({name:d.name.text,status:"not-translated",reason:"Universe schema: each concrete specialization is checked at its use; no single closed translation claimed."});
+          this.onDeclaration?.(d,declarations.at(-1));
           continue;
         }
         const term=this.term(expression,new Map(),env);
@@ -37,27 +117,43 @@ export class Translator {
         const checked=this.normalize?this.checker.verify(term):this.checker.infer(term);
         const native=this.nativeCheck?.(checked.term,checked.type,[],{normalize:false})??checked.native;
         if(native&&!native.ok)throw Error(`Native cubical check rejected: ${native.error}`);
-        env.set(d.name.text,this.checker.define?.(d.name.text,checked.term,checked.type)??checked.term);
+        const definition=this.checker.define?.(d.name.text,checked.term,checked.type)??checked.term;
+        this.checker.kernel?.checkDeadline();
+        env.set(d.name.text,definition);
         declarations.push({name:d.name.text,status:native?"checked-native-cubical":"checked-cubical-fragment",term:checked.term,type:checked.type,normal:checked.normal,native});
       } catch(error) {
         // Remove a same-named imported symbol: a failed local declaration must
         // never silently refer to that other declaration in subsequent proofs.
-        env.set(d.name.text,{tag:"Untranslated",name:d.name.text,reason:error.message});
-        declarations.push({name:d.name.text,status:"not-translated",reason:error.message});
+        env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:error.message});
+        declarations.push({name:d.name.text,status:"not-translated",reason:error.message,blockedBy:error.blockedBy});
+      } finally {
+        if(previousHints)this.checker.kernel.setUnfoldingHints(previousHints);
       }
+      this.onDeclaration?.(d,declarations.at(-1));
+      // Diagnostic observers may reject a late result after cleanup. Such a
+      // result must not remain available to subsequent declarations.
+      if (declarations.at(-1).status === "not-translated")
+        env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:declarations.at(-1).reason});
     }
     return {declarations,env,normalizationVisits:this.checker.steps};
   }
   term(n,ctx,env,expected=null) {
+    this.checker.kernel?.checkDeadline();
     if(!n) throw Error("Missing source expression.");
     const tr=(x,e=expected)=>this.term(x,ctx,env,e);
-    const inferred=t=>this.checker.infer(t,ctx,new Set());
+    const inferred=t=>this.checker.infer(t,ctx,new Set(this.dimensions.keys()));
     switch(n.kind) {
       case "name": {
         if(env.has(n.name)) {
           const value=env.get(n.name);
-          if(value.tag==="Untranslated") throw Error(`Untranslated dependency: ${n.name}`);
+          if(value.tag==="Untranslated") {
+            const error=Error(`Untranslated dependency: ${n.name}`);
+            error.blockedBy=value.binding??value.name;
+            throw error;
+          }
+          if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
           if(value.tag==="UniverseSchema")throw Error(`Universe arguments required: ${n.name}`);
+          this.onReference?.(n,value,new Map(ctx));
           return value;
         }
         if(/^U[0-9]+$/.test(n.name))return T.universe(Number(n.name.slice(1)));
@@ -66,10 +162,15 @@ export class Translator {
         if(builtin[n.name])return builtin[n.name];
         throw Error(`Untranslated name: ${n.name}`);
       }
-      case "number": {let t=T.zero;for(let i=0;i<n.value;i++)t=T.succ(t);return t;}
-      case "binaryNumber": return tr(binaryLiteralSyntax(n));
+      case "number": {let t=T.zero;for(let i=0;i<n.value;i++)t=T.succ(t);
+        this.onReference?.({...n,name:String(n.value)},t,new Map(ctx));return t;}
+      case "binaryNumber": {
+        const term=tr(binaryLiteralSyntax(n));
+        this.onReference?.({...n,name:`0b${n.digits}`},term,new Map(ctx));return term;
+      }
       case "lambda": case "forall": case "exists": {
-        const domain=tr(n.domain,null),name=this.fresh(),inner=new Map(ctx).set(name,domain),scope=new Map(env).set(n.name.text,T.variable(name));
+        const domain=tr(n.domain,null),name=this.fresh(n.name.text),inner=new Map(ctx).set(name,domain),scope=new Map(env).set(n.name.text,T.variable(name));
+        this.onReference?.({...n.name,name:n.name.text},T.variable(name),inner);
         let bodyExpected=null;
         if(n.kind==="lambda"&&expected) {
           const pi=this.checker.nf(expected);
@@ -101,10 +202,92 @@ export class Translator {
       }
       case "call": {
         const builtin=n.fn.kind==="name"&&!env.has(n.fn.name)?n.fn.name:null;
+        if(["ua","UnivalenceBeta"].includes(builtin)&&n.args.length>=3) {
+          const [universe,A,B]=n.args.slice(0,3).map(a=>tr(a,null));
+          if(universe.tag!=="U")throw Error("Univalence requires a concrete universe.");
+          this.checker.check(A,universe,ctx,new Set(this.dimensions.keys()));
+          this.checker.check(B,universe,ctx,new Set(this.dimensions.keys()));
+          const E=halfAdjointEquiv(A,B),en=this.fresh("equivalence"),x=this.fresh("argument");
+          let fn=builtin==="ua"?T.lam(en,E,publicUnivalencePath(A,B,T.variable(en),universe.level)):
+            T.lam(en,E,T.lam(x,A,publicUnivalenceBeta(A,B,T.variable(en),T.variable(x))));
+          for(const arg of n.args.slice(3)) {
+            const type=this.checker.nf(inferred(fn).type);
+            if(type.tag!=="Pi")throw Error(`Too many arguments to ${builtin}.`);
+            fn=T.app(fn,tr(arg,type.domain));
+          }
+          return fn;
+        }
+        if(["Truncate","TruncateIntro","TruncateProp","TruncateElim","LEM","Choice"].includes(builtin)) {
+          if(!n.args.length)throw Error(`${builtin} needs a universe argument.`);
+          const universe=tr(n.args[0],null);
+          if(universe.tag!=="U"||!this.checker.assume)throw Error("Logical assumptions require a concrete universe and an explicit native context.");
+          let fn=libraryAssumption(this.checker,builtin,universe.level,ctx);
+          for(const arg of n.args.slice(1)) {
+            const type=this.checker.nf(inferred(fn).type);
+            if(type.tag!=="Pi")throw Error(`Too many arguments to ${builtin}.`);
+            fn=T.app(fn,tr(arg,type.domain));
+          }
+          return fn;
+        }
+        if(builtin==="with_unfolding") {
+          if(n.args.length<2)throw Error("with_unfolding needs definition names followed by a proof expression.");
+          const names=n.args.slice(0,-1).map(arg=>{
+            if(arg.kind!=="name")throw Error("An unfolding hint must name a checked definition.");
+            let value=env.get(arg.name);
+            while(value?.tag==="App")value=value.fn;
+            if(value?.tag!=="DefRef")throw Error(`No checked definition to unfold: ${arg.name}`);
+            this.onReference?.(arg,value,new Map(ctx));
+            return value.name;
+          });
+          if(this.checker.kernel)this.checker.kernel.setUnfoldingHints([
+            ...this.checker.kernel.unfoldingHints,...names]);
+          return tr(n.args.at(-1));
+        }
         if(builtin==="typed"&&n.args.length===2) {
           const type=tr(n.args[0],null),term=tr(n.args[1],type);
-          const checked=this.checker.check(term,type,ctx,new Set());
+          const checked=this.checker.check(term,type,ctx,new Set(this.dimensions.keys()));
           return this.checker.ascribe?.(checked,type)??checked;
+        }
+        if(["path","PathP","comp","fill"].includes(builtin)) {
+          const size=n.args.length;
+          if((builtin==="path"&&size!==2)||(builtin==="PathP"&&size!==3)||(builtin==="comp"&&size<2)||(builtin==="fill"&&size<3))
+            throw Error(`Invalid arguments to ${builtin}.`);
+          const dim=this.fresh("i"),family=this.dimensionBody(n.args[0],dim,ctx,env);
+          if(builtin==="path")return T.line(dim,family,this.dimensionBody(n.args[1],dim,ctx,env,family));
+          if(builtin==="PathP")return T.path(dim,family,tr(n.args[1],null),tr(n.args[2],null));
+          const system=n.args.slice(builtin==="fill"?3:2).map(part=>{
+            if(part.kind==="call"&&part.fn.kind==="name"&&part.fn.name==="face_when"&&part.args.length===2)
+              return {face:this.cofibration(part.args[0],env),term:this.dimensionBody(part.args[1],dim,ctx,env,family)};
+            if(part.kind!=="call"||part.fn.kind!=="name"||part.fn.name!=="face"||part.args.length!==3)
+              throw Error("A composition wall has syntax face(i, 0 or 1, fun (j : Interval) => ...).");
+            const [coordinate,endpoint,wall]=part.args;
+            if(coordinate.kind!=="name"||env.get(coordinate.name)?.tag!=="Dimension"||endpoint.kind!=="number"||![0,1].includes(endpoint.value))
+              throw Error("A composition face needs an outer interval coordinate and endpoint 0 or 1.");
+            return {face:F.endpoint(env.get(coordinate.name).name,endpoint.value),term:this.dimensionBody(wall,dim,ctx,env,family)};
+          });
+          const base=tr(n.args[1],null);
+          return builtin==="fill"?withNativeReferences([family,system,base],(family,system,base)=>fill(dim,family,system,base,this.interval(n.args[2],env))):T.comp(dim,family,system,base);
+        }
+        if(["path_from_transport","path_to_transport"].includes(builtin)&&n.args.length===4) {
+          const dim=this.fresh("i"),family=this.dimensionBody(n.args[0],dim,ctx,env);
+          const left=tr(n.args[1],null),right=tr(n.args[2],null),value=tr(n.args[3],null);
+          return T.app((builtin==="path_from_transport"?transportToDependentPath:dependentPathToTransport)(dim,family,left,right),value);
+        }
+        if(builtin==="at"&&n.args.length===2)return T.at(tr(n.args[0],null),this.interval(n.args[1],env));
+        if(builtin==="pushout_induction"&&n.args.length===5) {
+          const [motive,left,right,bridge,value]=n.args.map(a=>tr(a,null));
+          return T.app(T.pushElim(motive,left,right,bridge),value);
+        }
+        if(builtin==="Pushout"&&n.args.length===5) return pushout(...n.args.map(a=>tr(a,null)));
+        if(builtin==="Suspension"&&n.args.length===1) return suspension(tr(n.args[0],null));
+        if(["north","south"].includes(builtin)&&n.args.length===1)
+          return (builtin==="north"?north:south)(tr(n.args[0],null));
+        if(builtin==="meridian"&&n.args.length===2) return meridian(...n.args.map(a=>tr(a,null)));
+        if(["push_left","push_right"].includes(builtin)&&n.args.length===2)
+          return (builtin==="push_left"?T.pushLeft:T.pushRight)(...n.args.map(a=>tr(a,null)));
+        if(builtin==="push_path"&&n.args.length===2) {
+          const [P,a]=n.args.map(a=>tr(a,null)),i=this.fresh("push");
+          return T.line(i,P,T.pushPath(P,a,I.variable(i)));
         }
         if(builtin==="pair_induction"&&n.args.length===3) {
           const [motive,branch,value]=n.args.map(a=>tr(a,null));
@@ -114,11 +297,11 @@ export class Translator {
           const fiber=T.app(T.lam(sigma.name,sigma.domain,sigma.body),first);
           const branchType=T.pi(x,sigma.domain,T.pi(y,fiber,
             T.app(motive,T.pair(sigma,first,second))));
-          this.checker.check(branch,branchType,ctx,new Set());
+          this.checker.check(branch,branchType,ctx,new Set(this.dimensions.keys()));
           // Cubical Sigma eta identifies (fst p, snd p) with p. The native
           // checker verifies the dependent result conversion at the motive.
           const result=T.app(T.app(branch,T.first(value)),T.second(value));
-          const type=T.app(motive,value),checked=this.checker.check(result,type,ctx,new Set());
+          const type=T.app(motive,value),checked=this.checker.check(result,type,ctx,new Set(this.dimensions.keys()));
           return this.checker.ascribe?.(checked,type)??checked;
         }
         if(builtin==="succ"&&n.args.length===1)return T.succ(tr(n.args[0],T.nat));
@@ -134,7 +317,7 @@ export class Translator {
         }
         if(builtin==="wrec"&&n.args.length===4) {
           const [type,motive,step,value]=n.args.map(a=>tr(a,null));
-          this.checker.check(value,type,ctx,new Set());
+          this.checker.check(value,type,ctx,new Set(this.dimensions.keys()));
           return T.wrec(motive,step,value);
         }
         if(builtin==="unit_induction"&&n.args.length===3) {
@@ -144,14 +327,14 @@ export class Translator {
         if(builtin==="FunExt"&&n.args.length===6) {
           const [universe,A,B,f,g,h]=n.args.map(a=>tr(a,null));
           if(universe.tag!=="U")throw Error("FunExt needs a concrete universe.");
-          this.checker.check(A,universe,ctx,new Set());
+          this.checker.check(A,universe,ctx,new Set(this.dimensions.keys()));
           const x=this.fresh(),dim=this.fresh("i"),variable=T.variable(x),fiber=T.app(B,variable);
-          this.checker.check(B,T.pi(x,A,universe),ctx,new Set());
+          this.checker.check(B,T.pi(x,A,universe),ctx,new Set(this.dimensions.keys()));
           const functionType=T.pi(x,A,fiber);
-          this.checker.check(f,functionType,ctx,new Set());
-          this.checker.check(g,functionType,ctx,new Set());
+          this.checker.check(f,functionType,ctx,new Set(this.dimensions.keys()));
+          this.checker.check(g,functionType,ctx,new Set(this.dimensions.keys()));
           const pointwise=T.pi(x,A,T.path(dim,fiber,T.app(f,variable),T.app(g,variable)));
-          this.checker.check(h,pointwise,ctx,new Set());
+          this.checker.check(h,pointwise,ctx,new Set(this.dimensions.keys()));
           return T.line(dim,functionType,T.lam(x,A,T.at(T.app(h,variable),I.variable(dim))));
         }
         if(builtin==="absurd"&&n.args.length===1) {
@@ -190,6 +373,24 @@ export class Translator {
           const left=T.app(fn,pt.left),type=inferred(left).type,i=this.fresh("i");
           return T.line(i,type,T.app(fn,T.at(p,I.variable(i))));
         }
+        if(builtin==="apd"&&n.args.length===4) {
+          const [fn,x,y,p]=n.args.map(a=>tr(a,null));
+          const pt=this.checker.nf(inferred(p).type),ft=this.checker.nf(inferred(fn).type);
+          if(pt.tag!=="Path"||ft.tag!=="Pi"||!this.checker.equal(pt.left,x,ctx)||!this.checker.equal(pt.right,y,ctx))
+            throw Error("Dependent action needs a function and a path with the supplied endpoints.");
+          const i=this.fresh("i"),family=T.app(T.lam(ft.name,ft.domain,ft.body),T.at(p,I.variable(i)));
+          const action=T.line(i,family,T.app(fn,T.at(p,I.variable(i))));
+          return T.app(dependentPathToTransport(i,family,T.app(fn,x),T.app(fn,y)),action);
+        }
+        if(["suspension_induction","suspension_meridian_beta"].includes(builtin)&&n.args.length===5) {
+          const [motive,northValue,southValue,meridians,value]=n.args.map(a=>tr(a,null));
+          const data=this.suspensionData(motive,northValue,southValue,meridians,ctx);
+          inferred(data.eliminator); // Check every branch, including when only the beta theorem is requested.
+          if(builtin==="suspension_induction")return T.app(data.eliminator,value);
+          this.checker.check(value,data.carrier,ctx,new Set(this.dimensions.keys()));
+          const i=this.fresh("i"),family=T.app(motive,T.pushPath(suspension(data.carrier),value,I.variable(i)));
+          return T.app(dependentPathTransportRetraction(i,family,northValue,southValue),T.app(meridians,value));
+        }
         if(builtin==="transport"&&n.args.length===5) {
           const [family,x,y,p,value]=n.args.map(a=>tr(a,null));
           const pt=this.checker.nf(inferred(p).type);if(pt.tag!=="Path")throw Error("transport requires a path.");
@@ -207,13 +408,13 @@ export class Translator {
         if(builtin==="based_induction"&&n.args.length===8) {
           const [universe,motiveUniverse,A,x,C,d,y,p]=n.args.map(a=>tr(a,null));
           if(universe.tag!=="U"||motiveUniverse.tag!=="U")throw Error("Based induction needs concrete universes.");
-          this.checker.check(A,universe,ctx,new Set());
+          this.checker.check(A,universe,ctx,new Set(this.dimensions.keys()));
           const b=this.fresh(),q=this.fresh(),i=this.fresh("i"),j=this.fresh("j");
           const pathType=T.path(j,A,x,T.variable(b));
-          this.checker.check(C,T.pi(b,A,T.pi(q,pathType,motiveUniverse)),ctx,new Set());
-          this.checker.check(p,T.path(j,A,x,y),ctx,new Set());
+          this.checker.check(C,T.pi(b,A,T.pi(q,pathType,motiveUniverse)),ctx,new Set(this.dimensions.keys()));
+          this.checker.check(p,T.path(j,A,x,y),ctx,new Set(this.dimensions.keys()));
           const reflexivity=T.line(j,A,x);
-          this.checker.check(d,T.app(T.app(C,x),reflexivity),ctx,new Set());
+          this.checker.check(d,T.app(T.app(C,x),reflexivity),ctx,new Set(this.dimensions.keys()));
           const segment=T.line(j,A,T.at(p,I.meet(I.variable(i),I.variable(j))));
           return T.comp(i,T.app(T.app(C,T.at(p,I.variable(i))),segment),[],d);
         }
@@ -222,7 +423,14 @@ export class Translator {
           if(fn.tag==="UniverseSchema") {
             const universe=tr(arg,null);if(universe.tag!=="U")throw Error("Schema requires a concrete universe level.");
             const scope=new Map(fn.env).set(fn.parameter,universe);
-            fn=this.schema(fn.body,scope)??this.term(fn.body,ctx,scope,null);
+            const next=this.schema(fn.body,scope),levels=[...(fn.levels??[]),universe.level];
+            if(next) { next.binding=fn.binding;next.levels=levels;fn=next; }
+            else {
+              const schema=fn;
+              fn=this.checker.specializeSchema&&schema.binding
+                ?this.checker.specializeSchema(schema.binding,levels,()=>this.term(schema.body,new Map(),scope,null))
+                :this.term(schema.body,ctx,scope,null);
+            }
             continue;
           }
           const pi=this.checker.nf(inferred(fn).type);if(pi.tag!=="Pi")throw Error("Source application is not a function.");
@@ -260,13 +468,13 @@ export class Translator {
         const goal=tr(n.type,null),scope=new Map(env)
           .set(n.left.text,T.first(value)).set(n.right.text,T.second(value));
         const body=this.term(n.body,ctx,scope,goal);
-        this.checker.check(body,goal,ctx,new Set());
+        this.checker.check(body,goal,ctx,new Set(this.dimensions.keys()));
         return body;
       }
       case "proof": {
         const type=tr(n.type,null);
         const term=this.block(n.statements,type,ctx,env);
-        const checked=this.checker.check(term,type,ctx,new Set());
+        const checked=this.checker.check(term,type,ctx,new Set(this.dimensions.keys()));
         return this.checker.ascribe?.(checked,type)??checked;
       }
       default:throw Error(`Untranslated syntax: ${n.kind}`);
@@ -282,30 +490,31 @@ export class Translator {
     if(first.kind==="intro") {
       const pi=this.checker.nf(goal);
       if(pi.tag!=="Pi")throw Error("intro requires a dependent function goal.");
-      const name=this.fresh(),variable=T.variable(name),inner=new Map(ctx).set(name,pi.domain);
+      const name=this.fresh(first.name.text),variable=T.variable(name),inner=new Map(ctx).set(name,pi.domain);
+      this.onReference?.({...first.name,name:first.name.text},variable,inner);
       const scope=new Map(env).set(first.name.text,variable);
       const bodyGoal=T.app(T.lam(pi.name,pi.domain,pi.body),variable);
       return T.lam(name,pi.domain,this.block(rest,bodyGoal,inner,scope));
     }
     if(first.kind==="let"&&first.target.kind==="name") {
       const value=this.term(first.value,ctx,env,null);
-      this.checker.infer(value,ctx,new Set());
+      this.checker.infer(value,ctx,new Set(this.dimensions.keys()));
       return this.block(rest,goal,ctx,new Map(env).set(first.target.name,value));
     }
     if(first.kind==="obtain") {
       const value=this.term(first.value,ctx,env,null),scope=new Map(env);
       const bind=(pattern,term)=>{
         if(pattern.kind==="name") {scope.set(pattern.name,term);return;}
-        if(pattern.kind!=="pair"||this.checker.nf(this.checker.infer(term,ctx,new Set()).type).tag!=="Sigma")
+        if(pattern.kind!=="pair"||this.checker.nf(this.checker.infer(term,ctx,new Set(this.dimensions.keys())).type).tag!=="Sigma")
           throw Error("obtain requires a dependent pair matching its pattern.");
         bind(pattern.left,T.first(term));bind(pattern.right,T.second(term));
       };
-      this.checker.infer(value,ctx,new Set());bind(first.target,value);
+      this.checker.infer(value,ctx,new Set(this.dimensions.keys()));bind(first.target,value);
       return this.block(rest,goal,ctx,scope);
     }
     if(first.kind==="cases") {
       if(rest.length)throw Error("Statements after cases are not yet translated.");
-      const value=this.term(first.value,ctx,env,null),type=this.checker.infer(value,ctx,new Set()).type;
+      const value=this.term(first.value,ctx,env,null),type=this.checker.infer(value,ctx,new Set(this.dimensions.keys())).type;
       const sum=this.checker.nf(type);
       if(sum.tag!=="Sum")throw Error("cases requires a sum type.");
       const motive=T.lam(this.fresh(),type,goal);
@@ -317,7 +526,7 @@ export class Translator {
     }
     if(first.kind==="have") {
       const type=this.term(first.type,ctx,env,null),value=this.block(first.body,type,ctx,env);
-      this.checker.check(value,type,ctx,new Set());
+      this.checker.check(value,type,ctx,new Set(this.dimensions.keys()));
       return this.block(rest,goal,ctx,new Map(env).set(first.name.text,value));
     }
     throw Error(`Proof tactic not yet translated: ${first.kind}`);

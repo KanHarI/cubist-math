@@ -36,6 +36,7 @@
             <li><a href="#blocks">Proof blocks</a></li>
             <li><a href="#induction">Induction and cases</a></li>
             <li><a href="#paths">Equality and paths</a></li>
+            <li><a href="#cubical">Cubical paths and pushouts</a></li>
             <li><a href="#suspensions">Suspensions</a></li>
             <li><a href="#axioms">Axioms and truncation</a></li>
             <li><a href="#conversion">Conversion and opacity</a></li>
@@ -279,6 +280,43 @@ theorem reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
             <p>For example, univalence applied to the group structure identity equivalence gives <code>(G =[Group] H) =[U1] GroupIso(G, H)</code>. Applying <code>sym</code> gives the orientation used in <a href="proof.html?proof=group_univalence&amp;name=group_isomorphism_is_equality">the highlighted group theorem</a>: <code>GroupIso(G, H) =[U1] (G =[Group] H)</code>.</p>
             <p>Some inferred pair projections do not retain enough equality information for <code>sym</code>, <code>trans</code>, or <code>cong</code>. Introduce an explicitly typed claim with <code>have p : x = y { exact term; }</code> in that case.</p>
           </section>
+          <section id="cubical">
+            <h2>Cubical paths and pushouts</h2>
+            <p>These forms use the <strong>Cubical C</strong> backend. During migration,
+              the original Id/J backend remains available explicitly; it does not accept
+              interval syntax. A declaration marked “Not checked” has no native certificate.</p>
+            <p><code>Interval</code> introduces a coordinate inside the forms below.
+              It is not a type in a universe and cannot be used as an ordinary function domain.
+              Coordinates accept <code>0</code>, <code>1</code>, <code>flip(i)</code>,
+              <code>meet(i, j)</code> and <code>join(i, j)</code>.</p>
+            <pre><code>def reverse_path(A : U0, x : A, y : A, p : x = y) =
+  path(fun (i : Interval) =&gt; A,
+       fun (i : Interval) =&gt; at(p, flip(i)));</code></pre>
+            <p><code>path(family, body)</code> binds a coordinate in both arguments and
+              constructs a path. <code>PathP(family, left, right)</code> states a dependent
+              path type. Each family/body is written <code>fun (i : Interval) =&gt; ...</code>;
+              their binder names need not agree. The kernel checks the actual family and endpoints.</p>
+            <pre><code>comp(fun (j : Interval) =&gt; A, at(p, i),
+  face(i, 0, fun (j : Interval) =&gt; x),
+  face(i, 1, fun (j : Interval) =&gt; at(q, j)))</code></pre>
+            <p><code>comp</code> fills from coordinate 0 to coordinate 1, starting at the
+              supplied base. Optional walls have the displayed <code>face</code> syntax;
+              their coordinate belongs to the outer scope. The kernel checks that the
+              walls match the base and agree on overlaps. With no walls, this is transport.</p>
+            <pre><code>def P = Pushout(S, A, B, f, g);
+// f : S -&gt; A; g : S -&gt; B
+// push_left(P, a) : P
+// push_right(P, b) : P
+// push_path(P, s) : push_left(P, f(s)) =[P] push_right(P, g(s))</code></pre>
+            <p><code>pushout_induction(motive, leftCase, rightCase, bridgeCase, value)</code>
+              eliminates a pushout. The motive is a type family over the pushout;
+              the bridge case supplies a dependent path over each gluing path, with
+              endpoints given by the two point cases. Constructor computations are checked in C.</p>
+            <p><code>Suspension(A)</code> is the pushout of the two constant maps
+              <code>A -&gt; Unit</code>. <code>north(A)</code>, <code>south(A)</code>, and
+              <code>meridian(A, a)</code> use its point and path constructors.
+              <a href="proof.html?proof=cubical_paths">Open the checked examples</a>.</p>
+          </section>
           <section id="suspensions">
             <h2>Suspensions</h2>
             <p>The kernel supports the suspension higher inductive type. <code>Suspension(A)</code> has points <code>north(A)</code> and <code>south(A)</code>, and, for every <code>a : A</code>, a path <code>meridian(A, a) : north(A) = south(A)</code>. The circle and puncture models build on these operations.</p>
@@ -340,6 +378,17 @@ theorem opened_is_two : explicitly_opened = 2 {
   exact refl(2);
 }</code></pre>
             <p><code>unfold(term)</code> explicitly unfolds definitions and normalizes the term and its type. It can expand a large expression substantially. A proof such as commutativity is still a propositional equality; the checker does not use arbitrary theorems as automatic rewrite rules.</p>
+            <p>In the native cubical backend, <code>with_unfolding(name₁, name₂, …, proof)</code>
+              supplies selective conversion hints for the enclosing declaration.
+              Each name must identify an already checked definition. The checker first
+              tries unfolding those wrappers while keeping other definitions folded;
+              ordinary conversion remains available. Hints change the checking strategy,
+              never the type or the proof obligations. Their scope ends at the declaration,
+              and the inspector and workbench retain them when rechecking the proof.</p>
+            <pre><code>def identity(n : Nat) = n;
+theorem identity_zero : identity(0) = 0 {
+  exact with_unfolding(identity, refl(0));
+}</code></pre>
           </section>
           <section id="inspection">
             <h2>Checking and inspection</h2>

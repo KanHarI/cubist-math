@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Declaration benchmark · MathScript</title>
+  <link rel="stylesheet" href="benchmark.css">
+</head>
+<body>
+  <main>
+    <nav><a href="index.html">← Proof library</a></nav>
+    <h1>Declaration benchmark</h1>
+    <p>Temporary cubical migration tracker. The target is to check every concrete declaration within one second.</p>
+    <div class="actions">
+      <button id="run">Run benchmark in this browser</button>
+      <button id="cancel" disabled>Cancel</button>
+      <button id="saved">Show saved benchmark</button>
+      <button id="download" disabled>Download this result</button>
+    </div>
+    <p id="status" role="status">Loading the latest benchmark…</p>
+    <div id="counts" class="counts"></div>
+    <progress id="progress" max="1" value="0" aria-label="Declarations checked within one second"></progress>
+    <p id="comparison"></p>
+    <details><summary>What is measured?</summary>
+      <p>Each declaration is elaborated and checked by the native C kernel compiled to WebAssembly. Dependencies are checked once, in source import order. The timer includes elaboration and the final closed check; it excludes reading source files. Inspection and full normalization are not requested.</p>
+      <p>A one-second deadline is polled cooperatively in JavaScript and C. Cleanup or a long operation between polls can exceed the deadline; anything over one second fails the speed target. Timings vary by machine and cache state. A timeout is a performance result, not a mathematical refutation.</p>
+      <p>Blocked entries record the first unavailable dependency reached, with its root blocker. Failed entries may indicate an elaborator or migration defect, unsupported syntax, or a faulty proof. Universe templates are listed separately: their concrete uses are checked, but the template itself is not a closed kernel judgement.</p>
+      <p>The Run button checks the current corpus locally in a worker, with live progress. Cancel stops the worker. A browser run does not upload results or change the saved benchmark. Keep this tab active for comparable timings. The command-line equivalent is <code>npm run benchmark:cubical</code>.</p>
+      <a href="benchmark-results.json" download>Download the complete report</a>
+    </details>
+    <div class="filters">
+      <label>Find a declaration <input id="search" type="search" placeholder="Module, name, or error"></label>
+      <label>Category <select id="category">
+        <option value="">All declarations</option><option value="checked">1 · Checked within 1s</option>
+        <option value="optimize">2 · Needs optimization</option><option value="blocked">3 · Blocked</option>
+        <option value="failed">4 · Needs fixing</option><option value="template">Universe templates</option>
+      </select></label>
+    </div>
+    <p id="shown"></p>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Declaration</th><th>Category</th><th>Time</th><th>Details / root blocker</th></tr></thead>
+      <tbody id="entries"></tbody>
+    </table></div>
+  </main>
+  <script type="module" src="benchmark.mjs"></script>
+</body>
+</html>

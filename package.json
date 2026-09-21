@@ -3,12 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:site": "make wasm && node tools/build-site.mjs",
+    "build:site": "make wasm cubical-wasm && node tools/build-site.mjs",
     "test:site": "node tests/site.browser.mjs",
     "format:mathscript": "node tools/format-mathscript.mjs",
     "test": "node tools/test.mjs",
     "test:browser": "node tests/browser.test.mjs",
-    "linearize:mathscript": "node tools/linearize-mathscript.mjs"
+    "linearize:mathscript": "node tools/linearize-mathscript.mjs",
+    "benchmark:cubical": "node tools/build-cubical-runtime.mjs && node tools/benchmark-cubical.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"

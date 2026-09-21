@@ -96,3 +96,11 @@ test("targeted CLI checks a small proof and propagates failures without running 
   assert.notEqual(missing.status, 0);
   assert.match(missing.stderr, /ENOENT/);
 });
+
+test("cubical selection chooses the native checker without legacy optimization flags", () => {
+  const selected = selectTests(["--cubical", "cubical_paths"]);
+  assert.deepEqual(selected.tests, [resolve(projectRoot, "tests/cubical-modules.test.mjs")]);
+  assert.deepEqual(selected.flags, []);
+  assert.throws(() => selectTests(["--cubical"]), /requires selected/);
+  assert.throws(() => selectTests(["--cubical", "--reuse-normal-forms", "euclid"]), /do not apply/);
+});

@@ -47,14 +47,14 @@ try {
   assert.equal(version.status(), 200);
   assert.match((await version.json()).version, /^[a-f0-9]{64}$/);
   console.log("PASS static landing, repository link, mobile layout, build version");
-  for (const [proof, name] of [["euclid", "euclid"], ["f4_galois_correspondence", "f4_galois_correspondence"]]) {
-    await page.goto(new URL(`proof.html?proof=${proof}&name=${name}`, base).href);
+  for (const [proof, name, backend] of [["euclid", "euclid", "cubical"], ["cubical_paths", "reverse_twice", "cubical"], ["f4_galois_correspondence", "f4_galois_correspondence", "legacy"]]) {
+    await page.goto(new URL(`proof.html?proof=${proof}&name=${name}&backend=${backend}`, base).href);
     await page.waitForFunction(() => !document.querySelector("#check").disabled && document.querySelector("#check-loader").hidden);
     assert.equal(await page.locator("#diagnostic").isVisible(), false);
     assert.equal(await page.locator("#inspect-name").textContent(), name);
     await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
     assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
-    console.log(`PASS static worker, WASM, checking and folded inspection: ${proof}`);
+    console.log(`PASS static worker, WASM, checking and folded inspection: ${proof} (${backend})`);
   }
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status").textContent === "WASM ready");

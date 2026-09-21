@@ -52,6 +52,7 @@ struct cc_kernel {
     cc_alpha_memo *alpha_memo;
     uint64_t next_alpha_scope;
     size_t count, capacity;
+    size_t checkpoint_count, checkpoint_definitions;
     uint32_t *unfolding_hints;
     size_t unfolding_hint_count;
     cc_definition *definitions;
@@ -60,6 +61,8 @@ struct cc_kernel {
     size_t formula_count, formula_capacity;
     uint32_t next_symbol;
     uint64_t checking_steps, reduction_steps, budget, operation_budget;
+    double deadline_ms;
+    unsigned deadline_ticks;
     unsigned recursion;
     char error[192];
 };
@@ -68,6 +71,7 @@ bool ck_memo_get(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_ter
 void ck_memo_put(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_term value, uint64_t result);
 bool ck_fail(cc_kernel *, const char *);
 bool ck_tick(cc_kernel *, bool checking);
+bool ck_deadline(cc_kernel *);
 unsigned ck_arity(cc_term_kind);
 cc_term ck_make(cc_kernel *, cc_term_kind, uint32_t, cc_term, cc_term, cc_term, cc_term);
 cc_term ck_var(cc_kernel *, uint32_t);

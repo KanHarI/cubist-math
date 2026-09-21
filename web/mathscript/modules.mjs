@@ -232,3 +232,6 @@ export const sourceModules = [
   "group_univalence",
   "circle_group_identity",
 ];
+
+// Native cubical sources use interval binders and computational path syntax.
+export const cubicalSourceModules = ["cubical_paths"];

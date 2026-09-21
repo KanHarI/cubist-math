@@ -1,0 +1,29 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; color: #29382f; background: #f5f7f3; }
+body { margin: 0; }
+main { max-width: 1300px; margin: auto; padding: 32px 24px 80px; }
+a { color: #356544; text-underline-offset: 3px; }
+h1 { margin-bottom: 12px; }
+p { line-height: 1.6; }
+.counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 28px 0 16px; }
+.counts button { background: white; border: 1px solid #ced8ce; border-radius: 12px; padding: 18px; text-align: left; font: inherit; cursor: pointer; color: inherit; }
+.counts strong { display: block; font: 600 2rem ui-monospace, monospace; margin-bottom: 8px; }
+progress { width: 100%; height: 14px; accent-color: #46714c; }
+details { background: white; border: 1px solid #ced8ce; border-radius: 8px; padding: 16px; margin: 24px 0; }
+summary { cursor: pointer; }
+.filters { display: flex; gap: 20px; flex-wrap: wrap; align-items: end; }
+label { display: grid; gap: 8px; }
+input, select { font: inherit; padding: 10px; border: 1px solid #aebdaf; border-radius: 6px; background: white; }
+.table-scroll { overflow: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th { text-align: left; }
+th, td { padding: 12px; border-bottom: 1px solid #d7dfd5; vertical-align: top; }
+td:first-child { overflow-wrap: anywhere; min-width: 220px; }
+td:nth-child(3) { white-space: nowrap; font-family: ui-monospace, monospace; }
+td small { display: block; margin-top: 4px; color: #667368; }
+tr[data-category="failed"] td:nth-child(2) { color: #9e3832; }
+tr[data-category="optimize"] td:nth-child(2) { color: #805615; }
+tr[data-category="checked"] td:nth-child(2) { color: #356544; }
+button:focus-visible, a:focus-visible { outline: 3px solid #769c75; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 22px 0; }
+.actions button { font: inherit; padding: 10px 16px; border-radius: 6px; border: 1px solid #aebdaf; color: inherit; background: white; cursor: pointer; }
+.actions button:disabled { opacity: .5; cursor: default; }

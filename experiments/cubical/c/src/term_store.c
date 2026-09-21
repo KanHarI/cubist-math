@@ -13,6 +13,10 @@ bool ck_fail(cc_kernel *k, const char *message) {
 bool ck_tick(cc_kernel *k, bool checking) {
     if (k->error[0])
         return false;
+    if (k->deadline_ms && (!k->deadline_ticks--)) {
+        k->deadline_ticks = 1023;
+        if (!ck_deadline(k)) return false;
+    }
     if (!k->budget)
         return ck_fail(k, "Experimental checking/reduction budget exhausted.");
     --k->budget;

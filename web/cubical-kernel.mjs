@@ -5,6 +5,8 @@ export const cubicalKinds = [
   "Nat", "Zero", "Succ", "NatRec", "Unit", "Point", "Path", "PLam", "PApp",
   "Comp", "Tube", "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr",
   "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "DefRef",
+  "Pushout", "PushLeft", "PushRight", "PushPath", "PushElim",
+  "HComp", "Trans",
 ];
 
 function uint32(value, label) {
@@ -21,10 +23,52 @@ export class CubicalKernel {
     this.names = new Map();
     this.symbolNames = new Map();
     this.nextSymbol = 1;
+    this.stepBudget = 10000000n;
+    this.unfoldingHints = [];
     this.definitions = new Map();
   }
   assertOpen() {
     if (!this.handle) throw new Error("Cubical kernel session is disposed.");
+  }
+  setDeadline(milliseconds = 0) {
+    this.assertOpen();
+    this.deadline = milliseconds > 0 ? performance.now() + milliseconds : 0;
+    this.module._cb_deadline_ms(this.handle, milliseconds);
+  }
+  checkDeadline() {
+    if (this.deadline && performance.now() >= this.deadline)
+      throw new Error("Declaration time limit exceeded.");
+  }
+  setUnfoldingHints(names = []) {
+    this.assertOpen();
+    const unique = [...new Set(names)];
+    const references = unique.map(name => {
+      const reference = this.definitions.get(name);
+      if (!reference) throw new Error(`An unfolding hint needs a checked definition: ${name}`);
+      return reference;
+    });
+    if (!this.module._cb_unfolding_clear(this.handle)) throw new Error(this.error());
+    this.unfoldingHints = [];
+    for (let i = 0; i < references.length; i++) {
+      if (!this.module._cb_unfolding_add(this.handle, references[i])) throw new Error(this.error());
+      this.unfoldingHints.push(unique[i]);
+    }
+  }
+  withUnfoldingHints(names, operation) {
+    const previous = this.unfoldingHints;
+    this.setUnfoldingHints(names);
+    try { return operation(); } finally { this.setUnfoldingHints(previous); }
+  }
+  withGrowingBudget(operation) {
+    for (;;) {
+      this.checkDeadline();
+      const result = operation();
+      if (result || !this.error().includes("budget exhausted")) return result;
+      const largest = (1n << 64n) - 1n;
+      if (this.stepBudget === largest) return result;
+      this.stepBudget = this.stepBudget > largest / 2n ? largest : this.stepBudget * 2n;
+      this.module._cb_step_budget(this.handle, Number(this.stepBudget & 0xffffffffn), Number(this.stepBudget >> 32n));
+    }
   }
   error() {
     return this.module.UTF8ToString(this.module._cb_error(this.handle));
@@ -82,10 +126,12 @@ export class CubicalKernel {
     if (!id) throw new Error(this.error());
     return id;
   }
-  check(expression, expected = 0, context = []) {
+  check(expression, expected = 0, context = [], dimensions = 0n) {
     this.assertOpen();
     uint32(expression, "Expression handle");
     uint32(expected, "Type handle");
+    if (typeof dimensions !== "bigint" || dimensions < 0n || dimensions >> 64n)
+      throw new TypeError("Dimensions must be an unsigned 64-bit BigInt mask.");
     const m = this.module, h = this.handle;
     m._cb_context_clear(h);
     for (const [symbol, type] of context) {
@@ -93,27 +139,28 @@ export class CubicalKernel {
       uint32(type, "Context type");
       if (!m._cb_context_add(h, symbol, type)) throw new Error(this.error());
     }
-    if (!m._cb_check(h, expression, expected)) throw new Error(this.error());
+    if (!this.withGrowingBudget(() => m._cb_check_in_cube(h, expression, expected,
+      Number(dimensions & 0xffffffffn), Number(dimensions >> 32n)))) throw new Error(this.error());
     const fields = ["expression", "type", "normal", "checkingSteps", "reductionSteps", "arenaNodes", "arenaBytes"];
     return Object.freeze(Object.fromEntries(fields.map((key, i) => [key, m._cb_result(h, i)])));
   }
   normalize(checkedHandle) {
     this.assertOpen();
     uint32(checkedHandle, "Checked handle");
-    const id = this.module._cb_normalize(this.handle, checkedHandle) >>> 0;
+    const id = this.withGrowingBudget(() => this.module._cb_normalize(this.handle, checkedHandle)) >>> 0;
     if (!id) throw new Error(this.error() || "Normalize an expression or type from the most recent successful check.");
     return id;
   }
   head(handle) {
     this.assertOpen();
-    const id = this.module._cb_head(this.handle, uint32(handle, "Term handle")) >>> 0;
+    const id = this.withGrowingBudget(() => this.module._cb_head(this.handle, uint32(handle, "Term handle"))) >>> 0;
     if (!id) throw new Error(this.error());
     return id;
   }
   define(name, value, expected = 0) {
     this.assertOpen();
-    const id = this.module._cb_define(this.handle, this.symbol(name), uint32(value, "Definition body"),
-      uint32(expected, "Definition type")) >>> 0;
+    const id = this.withGrowingBudget(() => this.module._cb_define(this.handle, this.symbol(name), uint32(value, "Definition body"),
+      uint32(expected, "Definition type"))) >>> 0;
     if (!id) throw new Error(this.error());
     this.definitions.set(name, id);
     return id;

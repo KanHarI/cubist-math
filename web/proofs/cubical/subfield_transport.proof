@@ -1,0 +1,43 @@
+import subfield_composita;
+
+// Change presentation by transporting the entire subfield bundle along a
+// field equality. All membership and closure evidence moves together.
+def subfield_transport(
+  F : AlgebraicField, G : AlgebraicField, p : F =[AlgebraicField] G, S : Subfield(F)
+) =
+  transport(Subfield, F, G, p, S);
+
+def compositum_transport(F : AlgebraicField, G : AlgebraicField, p : F =[AlgebraicField] G) =
+  fun (S : Subfield(F)) => fun (T : Subfield(F)) => path_to_transport(
+    fun (i : Interval) => Subfield(at(p, i)), compositum(F, S, T),
+    compositum(G, subfield_transport(F, G, p, S), subfield_transport(F, G, p, T)),
+    path(
+      fun (i : Interval) => Subfield(at(p, i)),
+      fun (i : Interval) => compositum(
+        at(p, i), fill(fun (j : Interval) => Subfield(at(p, j)), S, i),
+        fill(fun (j : Interval) => Subfield(at(p, j)), T, i)
+      )
+    )
+  );
+
+def subfield_transport_member(F : AlgebraicField, G : AlgebraicField, p : F =[AlgebraicField] G) =
+  fun (S : Subfield(F)) => fun (x : af_carrier(F)) => fun (member : subfield_members(F, S, x)) => comp(
+    fun (i : Interval) => subfield_members(
+      at(p, i), fill(fun (j : Interval) => Subfield(at(p, j)), S, i),
+      fill(fun (j : Interval) => af_carrier(at(p, j)), x, i)
+    ), member
+  );
+
+def subfield_along_iso(F : AlgebraicField, G : AlgebraicField, e : FieldIso(F, G), S : Subfield(F)) =
+  subfield_transport(F, G, field_isotoid(F, G, e), S);
+
+// Naturality requires only path induction once the isomorphism is a path.
+// This result covers ambient isomorphisms; arbitrary embeddings need a separate
+// image construction and are not asserted to be paths of fields.
+theorem compositum_along_iso(
+  F : AlgebraicField, G : AlgebraicField, e : FieldIso(F, G), S : Subfield(F), T : Subfield(F)
+) : subfield_along_iso(F, G, e, compositum(F, S, T)) =[Subfield(G)] compositum(
+  G, subfield_along_iso(F, G, e, S), subfield_along_iso(F, G, e, T)
+) {
+  exact compositum_transport(F, G, field_isotoid(F, G, e), S, T);
+}

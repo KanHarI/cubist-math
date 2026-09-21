@@ -293,3 +293,21 @@ npm run linearize:mathscript -- web/proofs/circle_group_identity.proof
 any exist. The ordinary formatter performs this same AST-checked tuple linearization automatically.
 All other formatting changes only whitespace. Programmatic callers can set
 `linearizeTuples: false` for whitespace-only formatting.
+
+
+### Selective conversion hints (native cubical backend)
+
+`with_unfolding(name1, name2, ..., proof)` gives the checker a list of already
+checked definitions to open during a preliminary conversion pass. It leaves
+other definitions folded in that pass; normal conversion remains the fallback.
+The hints apply while checking the enclosing declaration and are retained for
+inspection/replay. They do not add an equality, a rewrite theorem, or an axiom.
+An invalid proof stays invalid. Unlike `unfold(expression)`, this does not ask
+for a fully normalized expression.
+
+```mathscript
+def identity(n : Nat) = n;
+theorem identity_zero : identity(0) = 0 {
+  exact with_unfolding(identity, refl(0));
+}
+```

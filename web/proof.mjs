@@ -1,15 +1,18 @@
+import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { proofChoices as choices, proofTopics, proofsInTopic } from "./proof-library.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 import { renderMathNotation, kernelMathTree } from "./math-notation.mjs";
 import { axiomLabels } from "./axiom-labels.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
+import { cubicalMathTree } from "./cubical-notation.mjs";
 
 const query = new URLSearchParams(location.search);
+const backend = query.get("backend") === "legacy" ? "legacy" : "cubical";
 const proofId = choices.some((p) => p.id === query.get("proof"))
   ? query.get("proof")
   : "euclid";
-const sourceURL = `proofs/${choices.find((p) => p.id === proofId).file ?? proofId + ".proof"}`;
+const sourceURL = `proofs/${choices.find((p) => p.id === proofId).file ?? (backend === "cubical" ? cubicalSourceFile(proofId) : proofId + ".proof")}`;
 const snapshot = readProofNavigation(query.get("restore"));
 let restoring = snapshot?.proof === proofId ? snapshot : null;
 const crossFileBack = restoring?.back ?? query.get("back");
@@ -66,6 +69,13 @@ let worker,
 const pending = new Map(),
   history = [];
 $("editor").value = example;
+$("kernel-backend").value = backend;
+$("kernel-backend").onchange = () => {
+  rememberDraft();
+  const address = new URL(location.href);
+  address.searchParams.set("backend", $("kernel-backend").value);
+  location.href = address.href;
+};
 for (const id of ["reuse-normal-forms", "memoize-instructions"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
@@ -124,7 +134,7 @@ function rememberDraft() {
 $("proof-picker").onchange = () => {
   if (!$("proof-picker").value) return;
   rememberDraft();
-  location.href = `proof.html?proof=${encodeURIComponent($("proof-picker").value)}`;
+  location.href = `proof.html?proof=${encodeURIComponent($("proof-picker").value)}&backend=${backend}`;
 };
 addEventListener("pagehide", rememberDraft);
 
@@ -134,20 +144,23 @@ function showChecking(active, message = "Checking proof…") {
   $("check-message").textContent = message;
   if (active) {
     $("check-progress").removeAttribute("value");
-    $("check-detail").textContent = "0 kernel steps · 0 definitions checked · Loading proof…";
+    $("check-detail").textContent = "0 kernel steps\n0 declarations processed\nLoading proof…";
   }
 }
 function checkingProgress(progress) {
   const { completed, total, current, unit, instructions } = progress;
-  $("check-progress").max = Math.max(1, total);
-  $("check-progress").value = completed;
+  const knownTotal = Number.isFinite(total) && total >= completed;
+  if (knownTotal) {
+    $("check-progress").max = Math.max(1, total);
+    $("check-progress").value = completed;
+  } else $("check-progress").removeAttribute("value");
   $("check-message").textContent = total && completed === total
     ? "Preparing checked results…"
-    : "Checking proof…";
+    : progress.phase === "loading" ? "Reading source imports…" : "Checking proof…";
   $("check-detail").textContent =
-    `${(instructions ?? 0).toLocaleString()} kernel steps · ` +
-    `${completed.toLocaleString()} of ${total.toLocaleString()} ${unit} checked` +
-    (current ? ` · ${current}` : "");
+    `${(instructions ?? 0).toLocaleString()} kernel steps\n` +
+    `${completed.toLocaleString()}${knownTotal ? ` of ${total.toLocaleString()}` : ""} ${unit} ${backend === "cubical" ? "processed" : "checked"}` +
+    (current ? `\n${progress.phase === "checking" ? "Checking " : ""}${current}` : "");
 }
 function diagnostic(e) {
   showChecking(false);
@@ -158,6 +171,7 @@ function dirty() {
   return last && $("editor").value !== last.source;
 }
 function compilerOptimizations() {
+  if (backend === "cubical") return {};
   if (/^\s*(?:\/\/[^\n]*\n\s*)*construction\b/.test($("editor").value)) return {};
   return { normalForms: $("reuse-normal-forms").checked, instructions: $("memoize-instructions").checked };
 }
@@ -172,7 +186,9 @@ function refreshStatus() {
   $("status").textContent = pending.size
     ? "Checking…"
     : last
-      ? `Kernel checked · ${last.axiomCount ? last.axiomCount + " explicit axioms" : "no axioms"}`
+      ? last.backend === "cubical"
+        ? `Cubical C · ${last.complete ? `checked · ${last.axiomCount ? `${last.axiomCount} explicit assumptions` : "no axioms"}` : "migration incomplete"}`
+        : `Id/J C checked · ${last.axiomCount ? last.axiomCount + " explicit axioms" : "no axioms"}`
       : ready
         ? "Ready to check"
         : "Loading kernel…";
@@ -205,7 +221,7 @@ async function check() {
   $("diagnostic").hidden = true;
   const source = $("editor").value;
   try {
-    const result = await request("check", { source, optimizations: compilerOptimizations() });
+    const result = await request("check", { source, module: proofId, optimizations: compilerOptimizations() });
     last = result;
     history.length = 0;
     renderLibrary();
@@ -216,7 +232,7 @@ async function check() {
     const info =
       target &&
       [...(result.declarations ?? []), ...result.outputs].find(
-        (d) => d.binding === target,
+        (d) => d.binding === target || (backend === "cubical" && d.name === target),
       );
     if (restoring) {
       const saved = restoring;
@@ -226,7 +242,8 @@ async function check() {
       $("read-source").scrollTop = saved.sourceScroll ?? 0;
       window.scrollTo(0, saved.scroll ?? 0);
     } else {
-      await inspect(decorate(info ?? result.outputs.at(-1)), false);
+      const fallback = result.outputs.at(-1);
+      if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
       if (info) revealSource(info);
     }
     rememberDraft();
@@ -296,7 +313,7 @@ function sourceLink(info) {
   link.hidden = true;
   link.onclick = null;
   if (info.sourceModule) {
-    link.href = `proof.html?proof=${encodeURIComponent(info.sourceModule)}${info.sourceName ? "&name=" + encodeURIComponent(info.sourceName) : ""}`;
+    link.href = `proof.html?proof=${encodeURIComponent(info.sourceModule)}&backend=${backend}${info.sourceName ? "&name=" + encodeURIComponent(info.sourceName) : ""}`;
     link.textContent =
       info.kind === "module" ? "View module source →" : "View source →";
     link.hidden = false;
@@ -332,7 +349,7 @@ function renderLibrary() {
     button.dataset.name = info.name;
     button.append(document.createTextNode(info.name));
     const small = document.createElement("small");
-    small.textContent = info.title ?? "Checked " + info.kind;
+    small.textContent = info.template ? "Universe template · checked at each use" : info.verified === false ? "Not checked · migration gap" : info.title ?? "Checked " + info.kind;
     button.append(small);
     button.onclick = () => inspect(decorate(info));
     $("definitions").append(button);
@@ -340,7 +357,7 @@ function renderLibrary() {
 }
 
 function axiomInfo(binding) {
-  return decorate({ binding, name: binding, role: "explicit axiom",
+  return decorate({ binding, name: last.assumptionLabels?.[binding] ?? binding, role: "explicit axiom",
     ...[...last.outputs, ...last.imports].find(o => o.binding === binding),
     ...(last.preludeAxioms?.includes(binding)
       ? { sourceModule: "prelude_library_construction", sourceName: binding } : {}),
@@ -357,7 +374,7 @@ function renderAxioms(target, axioms) {
     const button = document.createElement("button");
     button.className = "reference";
     button.dataset.axiom = binding;
-    button.textContent = axiomLabels[binding] ?? binding;
+    button.textContent = last.assumptionLabels?.[binding] ?? axiomLabels[binding] ?? binding;
     button.title = `Inspect ${binding} and its declared type`;
     button.onclick = () => inspect(axiomInfo(binding));
     target.append(button);
@@ -370,7 +387,7 @@ function renderResult() {
   for (const output of last.outputs) {
     const line = document.createElement("div");
     line.append(
-      output.kind === "axiom" ? "Axiom " : last.mode !== "construction" || output.verified
+      output.template ? "Universe template " : output.verified === false && last.backend === "cubical" ? "Not checked " : output.kind === "axiom" ? "Axiom " : last.mode !== "construction" || output.verified
         ? "Verified "
         : "Checked ",
     );
@@ -381,7 +398,8 @@ function renderResult() {
     line.append(button, document.createTextNode(" : " + output.type));
     const dependencies = document.createElement("small");
     dependencies.className = "axiom-dependencies";
-    renderAxioms(dependencies, output.axioms ?? []);
+    if (last.backend === "cubical" && !output.verified) dependencies.textContent = output.reason;
+    else renderAxioms(dependencies, output.axioms ?? []);
     line.append(dependencies);
     $("result").append(line);
   }
@@ -428,8 +446,10 @@ const keywords = new Set([
 // user-defined functions retain the green reference style.
 const builtinForms = new Set([
   "W", "sup", "wrec",
+  "Interval", "path", "PathP", "at", "comp", "face", "flip", "meet", "join",
+  "Pushout", "push_left", "push_right", "push_path", "pushout_induction",
   "Nat", "Unit", "Void", "Universe", "tt", "succ", "refl", "absurd",
-  "sym", "trans", "cong", "transport", "apd", "Eq", "typed", "unfold",
+  "sym", "trans", "cong", "transport", "apd", "Eq", "typed", "unfold", "with_unfolding",
   "induct", "unpack", "pair_induction", "unit_induction", "path_induction",
   "Suspension", "north", "south", "meridian", "suspension_induction",
   "suspension_meridian_beta", "Choice", "LEM", "FunExt", "Truncate",
@@ -508,7 +528,7 @@ function renderSource() {
         link.className = "reference";
         link.textContent = text;
         link.dataset.name = text;
-        link.href = `proof.html?proof=${encodeURIComponent(text === "prelude" ? "prelude_library_construction" : text)}`;
+        link.href = `proof.html?proof=${encodeURIComponent(text === "prelude" ? "prelude_library_construction" : text)}&backend=${backend}`;
         link.title = `Open ${text} module source`;
         link.onclick = () => {
           const address = new URL(link.href);
@@ -606,10 +626,15 @@ async function inspect(info, remember = true) {
       $("locals").append(button);
     }
   } else {
+    if (last.backend === "cubical" && info.verified === false) {
+      $("kernel-details").hidden = true;
+      $("inspect-description").textContent = `Not checked by cubical C: ${info.reason}`;
+      return;
+    }
     try {
       const view = await request("inspect", { binding: info.binding });
       if (sequence !== inspectSerial) return;
-      if (!info.type) renderType(layout(view.type, view.contextNames).text);
+      if (!info.type) renderType(view.typeText ?? layout(view.type, view.contextNames).text);
       renderKernel(view);
     } catch (e) {
       diagnostic(e);
@@ -654,6 +679,7 @@ function renderType(text) {
 let checkedKernelView = null;
 function renderKernel(view) {
   checkedKernelView = view;
+  if (view.backend === "cubical") { renderCubicalKernel(view); return; }
   $("open-kernel-expression").disabled = !view.expression;
   $("open-kernel-type").disabled = !view.type;
   const declaration = [...last.outputs, ...last.imports].find(item => item.binding === view.name);
@@ -753,6 +779,44 @@ function renderKernel(view) {
   $("expand-kernel").hidden =
     !!folded || (!truncated(typeset?.expression ?? view.expression) && !truncated(typeset?.type ?? view.type));
 }
+function renderCubicalKernel(view) {
+  const raw = $("kernel-view").value === "raw";
+  const open = view.context.length || view.dimensions?.length;
+  $("kernel-view").disabled = false;
+  $("kernel-view").querySelector('[value="mathscript"]').disabled = true;
+  $("kernel-view").querySelector('[value="notation"]').disabled = false;
+  $("kernel-view-note").textContent = "Native cubical C checked these terms. Named definitions remain folded; raw view shows the stored syntax.";
+  $("kernel-inference").textContent = `Cubical C. ${view.checkingSteps.toLocaleString()} checking steps. ${open ? "Open judgement." : "Closed judgement."}`;
+  $("kernel-premises").replaceChildren();
+  $("kernel-context-note").textContent = open ? "Checked context" : "Empty context";
+  $("kernel-context-list").replaceChildren();
+  const navigation = { resolve: binding => view.symbols[binding], inspect: info => inspect(decorate(info)),
+    identitySugar: $("kernel-identity-sugar").checked, groupIndependentBinders: false };
+  if (view.dimensions?.length) {
+    const row = document.createElement("li");
+    row.textContent = `Interval coordinates: ${view.dimensions.map(([name]) => name).join(", ")}`;
+    $("kernel-context-list").append(row);
+  }
+  for (const entry of view.context) {
+    const row = document.createElement("li"); row.className = "kernel-context-row";
+    const label = document.createElement("span"); label.textContent = `${entry.label ?? entry.name} : `;
+    const value = document.createElement("div"); value.className = "kernel-term typeset";
+    renderMathNotation(value, cubicalMathTree(entry.type, view.symbols), navigation);
+    row.append(label, value); $("kernel-context-list").append(row);
+  }
+  for (const side of ["expression", "type"]) {
+    $("open-kernel-" + side).disabled = false;
+    const target = $("kernel-" + side); target.classList.toggle("typeset", !raw);
+    if (raw) target.textContent = JSON.stringify(view[side], null, 2);
+    else renderMathNotation(target, cubicalMathTree(view[side], view.symbols), navigation);
+  }
+  $("kernel-truncation-options").hidden = true;
+  $("kernel-binder-options").hidden = true;
+  $("kernel-identity-options").hidden = raw;
+  $("export-folding").hidden = true;
+  $("expand-kernel").hidden = true;
+  renderAxioms($("inspect-axioms"), view.axioms ?? []);
+}
 $("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-truncation-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-group-binders").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
@@ -771,7 +835,8 @@ for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = as
     const payload = await request("export-inspection", { binding, side, folded });
     payload.proofReturn = returnURL;
     const key = await saveWorkbenchTransfer(payload);
-    tab.location.href = new URL(`workbench.html?transfer=${encodeURIComponent(key)}`, location.href).href;
+    const page = payload.format === "thth-cubical" ? "cubical-workbench.html" : "workbench.html";
+    tab.location.href = new URL(`${page}?transfer=${encodeURIComponent(key)}`, location.href).href;
   } catch (error) { tab.close(); diagnostic(error); }
 };
 $("export-folding").onclick = async () => {
@@ -813,7 +878,7 @@ $("editor").onkeydown = (e) => {
 };
 $("search").oninput = renderLibrary;
 function rememberInspection() {
-  return saveProofNavigation({ proof: proofId, source: last.source,
+  return saveProofNavigation({ proof: proofId, backend, source: last.source,
     selected, history, back: crossFileBack, scroll: window.scrollY,
     sourceScroll: $("read-source").scrollTop });
 }
@@ -894,12 +959,12 @@ async function refreshCompiler() {
 }
 async function startWorker(version = undefined) {
   workerVersion = version ?? (await serverVersion());
-  const url = new URL("./mathscript/worker.mjs", import.meta.url);
+  const url = new URL(backend === "cubical" ? "./cubical-worker.mjs" : "./mathscript/worker.mjs", import.meta.url);
   if (workerVersion) url.searchParams.set("version", workerVersion);
   worker = new Worker(url, { type: "module" });
   worker.onmessage = ({ data }) => {
     if (data.ready) {
-      if (data.maxSteps < 4194304) {
+      if (backend === "legacy" && data.maxSteps < 4194304) {
         diagnostic(
           new Error(
             "An outdated compiler was loaded. Reload this page to update the worker.",

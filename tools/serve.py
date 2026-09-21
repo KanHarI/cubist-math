@@ -22,8 +22,11 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.split("?")[0] == "/mathscript-version":
             paths = sorted((ROOT / "mathscript").glob("*.mjs"))
-            paths += sorted((ROOT / "proofs").glob("*.proof"))
+            paths += sorted((ROOT / "proofs").rglob("*.proof"))
             paths += [ROOT / "language.mjs", ROOT / "kernel.mjs", ROOT / "dist/kernel.mjs", ROOT / "dist/kernel.wasm", Path(__file__)]
+            paths += sorted(ROOT.glob("cubical-*.mjs"))
+            paths += sorted((ROOT / "dist/cubical-runtime").glob("*.mjs"))
+            paths += [path for path in (ROOT / "dist/cubical.mjs", ROOT / "dist/cubical.wasm") if path.is_file()]
             digest = hashlib.sha256()
             for path in paths:
                 digest.update(path.read_bytes())

@@ -565,7 +565,7 @@ select {
 }
 
 .check-loader > div { flex: 1; min-width: 0; }
-#check-detail { overflow-wrap: anywhere; }
+#check-detail { overflow-wrap: anywhere; white-space: pre-line; }
 #check-progress { display: block; width: 100%; height: 10px; margin-top: 12px; accent-color: #426c47; }
 
 .compiler-options {

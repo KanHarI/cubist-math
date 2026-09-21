@@ -1,3 +1,4 @@
+import { bindDimensions } from "./dist/cubical-runtime/dimension-slots.mjs";
 // Lossless syntax transport between named cubical ASTs and C arena handles.
 // This layer never decides typing or equality. Every checked result comes
 // from CubicalKernel.check; shared input objects retain shared arena nodes.
@@ -46,15 +47,16 @@ export class CubicalSyntax {
       case "Fst": case "Snd": result = node(0, child(term.pair)); break;
       case "Succ": result = node(0, child(term.value)); break;
       case "NatRec": result = node(0, child(term.motive), child(term.zero), child(term.step), child(term.value)); break;
-      case "Path": case "PLam": case "Comp": {
-        let dim = 0;
-        const occupied = new Set(dimensions.values());
-        while (occupied.has(dim)) dim++;
-        if (dim >= 64) throw new Error("Cubical prototype supports 64 active dimensions.");
-        const inner = new Map(dimensions).set(term.dim, dim), family = this.encode(term.family, inner);
+      case "Path": case "PLam": case "Comp": case "HComp": case "Trans": {
+        const { dim, inner } = bindDimensions(term, dimensions);
+        const family = this.encode(term.family, term.tag === "HComp" ? dimensions : inner);
         if (term.tag === "Path") result = node(dim, family, child(term.left), child(term.right));
         else if (term.tag === "PLam") result = node(dim, family, this.encode(term.body, inner));
-        else {
+        else if (term.tag === "Trans") {
+          const base = child(term.base);
+          const descriptor = k.term("Tube", this.formula(term.face, "face", dimensions), base, 0);
+          result = node(dim, family, descriptor, base);
+        } else {
           let tubes = 0;
           for (const part of [...term.system].reverse())
             tubes = k.term("Tube", this.formula(part.face, "face", dimensions), this.encode(part.term, inner), tubes);
@@ -83,6 +85,10 @@ export class CubicalSyntax {
         result = node(0, child(term.as), child(term.base), system); break;
       }
       case "Unglue": result = node(0, child(term.as), child(term.value)); break;
+      case "Pushout": result = node(0, child(term.center), child(term.left), child(term.right), child(term.maps)); break;
+      case "PushLeft": case "PushRight": result = node(0, child(term.as), child(term.value)); break;
+      case "PushPath": result = node(this.formula(term.arg, "interval", dimensions), child(term.as), child(term.value)); break;
+      case "PushElim": result = node(0, child(term.motive), child(term.left), child(term.right), child(term.bridge)); break;
       default: throw new Error(`Unsupported cubical syntax: ${term.tag}`);
     }
     if (!this.encoded.has(term)) this.encoded.set(term, new Map());
@@ -93,21 +99,27 @@ export class CubicalSyntax {
     Object.freeze(term);
     return result;
   }
-  decodeFormula(id) {
+  decodeFormula(id, dimensions = new Map()) {
+    const names = new Map([...dimensions].map(([name, index]) => [index, name]));
     return this.kernel.inspectFormula(id).clauses.map(([positive, negative]) => {
       const clause = [];
       for (let dim = 0; dim < 64; dim++) {
         const bit = 1n << BigInt(dim);
-        if (positive & bit) clause.push(`d${dim}:1`);
-        if (negative & bit) clause.push(`d${dim}:0`);
+        if (positive & bit) clause.push(`${names.get(dim) ?? `d${dim}`}:1`);
+        if (negative & bit) clause.push(`${names.get(dim) ?? `d${dim}`}:0`);
       }
       return clause;
     });
   }
-  decode(id) {
-    if (this.decoded.has(id)) return this.decoded.get(id);
+  decode(id, dimensions = new Map()) {
+    const cacheKey = JSON.stringify([id, [...dimensions]]);
+    if (this.decoded.has(cacheKey)) return this.decoded.get(cacheKey);
     const { kind: tag, payload, children: c } = this.kernel.node(id);
-    const child = i => this.decode(c[i]);
+    const child = i => this.decode(c[i], dimensions);
+    let dim = `d${payload}`;
+    while (dimensions.has(dim)) dim += "_";
+    const inner = new Map(dimensions).set(dim, payload);
+    const boundChild = i => this.decode(c[i], inner);
     let result = { tag };
     switch (tag) {
       case "DefRef": result.name = this.kernel.definition(id).name; break;
@@ -121,18 +133,24 @@ export class CubicalSyntax {
       case "Fst": case "Snd": result.pair = child(0); break;
       case "Succ": result.value = child(0); break;
       case "NatRec": Object.assign(result, { motive: child(0), zero: child(1), step: child(2), value: child(3) }); break;
-      case "Path": Object.assign(result, { dim: `d${payload}`, family: child(0), left: child(1), right: child(2) }); break;
-      case "PLam": Object.assign(result, { dim: `d${payload}`, family: child(0), body: child(1) }); break;
-      case "PApp": Object.assign(result, { path: child(0), arg: this.decodeFormula(payload) }); break;
-      case "Comp": {
+      case "Path": Object.assign(result, { dim, family: boundChild(0), left: child(1), right: child(2) }); break;
+      case "PLam": Object.assign(result, { dim, family: boundChild(0), body: boundChild(1) }); break;
+      case "PApp": Object.assign(result, { path: child(0), arg: this.decodeFormula(payload, dimensions) }); break;
+      case "Trans": {
+        const descriptor = this.kernel.node(c[1]);
+        if (descriptor.kind !== "Tube" || descriptor.children[1]) throw new Error("Invalid transport face descriptor.");
+        Object.assign(result, { dim, family: boundChild(0), face: this.decodeFormula(descriptor.payload, dimensions), base: child(2) });
+        break;
+      }
+      case "Comp": case "HComp": {
         const system = [];
         for (let tube = c[1]; tube;) {
           const n = this.kernel.node(tube);
           if (n.kind !== "Tube") throw new Error("Invalid cubical tube list.");
-          system.push({ face: this.decodeFormula(n.payload), term: this.decode(n.children[0]) });
+          system.push({ face: this.decodeFormula(n.payload, dimensions), term: this.decode(n.children[0], inner) });
           tube = n.children[1];
         }
-        Object.assign(result, { dim: `d${payload}`, family: child(0), system, base: child(2) }); break;
+        Object.assign(result, { dim, family: tag === "HComp" ? child(0) : boundChild(0), system, base: child(2) }); break;
       }
       case "Abort": Object.assign(result, { as: child(0), impossible: child(1) }); break;
       case "Sup": Object.assign(result, { as: child(0), label: child(1), children: child(2) }); break;
@@ -144,27 +162,50 @@ export class CubicalSyntax {
       case "Glue": case "GlueTerm": {
         const system = [];
         for (let part = c[tag === "Glue" ? 1 : 2]; part;) {
-          const n = this.kernel.node(part), face = this.decodeFormula(n.payload);
+          const n = this.kernel.node(part), face = this.decodeFormula(n.payload, dimensions);
           if (tag === "Glue") {
             if (n.kind !== "GlueSystem") throw new Error("Invalid cubical Glue system.");
-            system.push({ face, type: this.decode(n.children[0]), equiv: this.decode(n.children[1]) });
+            system.push({ face, type: this.decode(n.children[0], dimensions), equiv: this.decode(n.children[1], dimensions) });
             part = n.children[2];
           } else {
             if (n.kind !== "Tube") throw new Error("Invalid cubical Glue element system.");
-            system.push({ face, term: this.decode(n.children[0]) }); part = n.children[1];
+            system.push({ face, term: this.decode(n.children[0], dimensions) }); part = n.children[1];
           }
         }
         Object.assign(result, tag === "Glue" ? { base: child(0), system } : { as: child(0), base: child(1), system }); break;
       }
       case "Unglue": Object.assign(result, { as: child(0), value: child(1) }); break;
+      case "Pushout": Object.assign(result, { center: child(0), left: child(1), right: child(2), maps: child(3) }); break;
+      case "PushLeft": case "PushRight": Object.assign(result, { as: child(0), value: child(1) }); break;
+      case "PushPath": Object.assign(result, { as: child(0), value: child(1), arg: this.decodeFormula(payload, dimensions) }); break;
+      case "PushElim": Object.assign(result, { motive: child(0), left: child(1), right: child(2), bridge: child(3) }); break;
       default: throw new Error(`Unsupported cubical node: ${tag}`);
     }
-    this.decoded.set(id, result);
+    // Preserve the native node on a round trip. In particular a checked PApp
+    // carries a kernel-owned type annotation that JSON deliberately omits.
+    // The immutable object is the cache key; copied or edited syntax is checked
+    // anew and cannot supply such an annotation.
+    const freeze = value => {
+      if (value && typeof value === "object" && !Object.isFrozen(value)) {
+        Object.values(value).forEach(freeze); Object.freeze(value);
+      }
+    };
+    freeze(result);
+    this.encoded.set(result, new Map([[JSON.stringify([...dimensions]), id]]));
+    this.decoded.set(cacheKey, result);
     return result;
   }
-  check(term, expected = null, assumptions = []) {
-    const context = assumptions.map(([name, type]) => [this.kernel.symbol(name), this.encode(type)]);
-    const result = this.kernel.check(this.encode(term), expected ? this.encode(expected) : 0, context);
-    return { ...result, term: this.decode(result.expression), type: this.decode(result.type) };
+  check(term, expected = null, assumptions = [], dimensions = new Map()) {
+    let mask = 0n;
+    for (const [name, index] of dimensions) {
+      if (typeof name !== "string" || !Number.isInteger(index) || index < 0 || index >= 64)
+        throw new Error("Invalid cubical dimension binding.");
+      const bit = 1n << BigInt(index);
+      if (mask & bit) throw new Error("Cubical dimension indices must be distinct.");
+      mask |= bit;
+    }
+    const context = assumptions.map(([name, type]) => [this.kernel.symbol(name), this.encode(type, dimensions)]);
+    const result = this.kernel.check(this.encode(term, dimensions), expected ? this.encode(expected, dimensions) : 0, context, mask);
+    return { ...result, term: this.decode(result.expression, dimensions), type: this.decode(result.type, dimensions) };
   }
 }

@@ -36,10 +36,18 @@ cc_kernel *cc_kernel_new(void);
 void cc_kernel_free(cc_kernel *);
 /* Resource budget per checking/reduction operation; zero leaves it unchanged.
  * Raising it never bypasses a rule or certifies a previously rejected term. */
+/* Optional wall-clock deadline shared by successive operations. Zero disables.
+ * Expiry only rejects work; it can never make a judgement succeed. */
+void cc_kernel_set_deadline_ms(cc_kernel *, double duration_ms);
 void cc_kernel_set_step_budget(cc_kernel *, uint64_t steps);
 const char *cc_kernel_error(const cc_kernel *);
 /* Clear a rejected request before constructing corrected raw syntax. */
 void cc_kernel_clear_error(cc_kernel *);
+/* Diagnostic transactions. Abort invalidates ALL handles made since begin.
+ * Callers must discard their corresponding syntax caches and context handles.
+ * Only one checkpoint is retained; definitions before it remain checked. */
+void cc_kernel_checkpoint(cc_kernel *);
+void cc_kernel_rollback(cc_kernel *);
 
 /* Child order:
  * U(level), Var(symbol); Pi/Lam/Sigma/W(symbol; domain, body).

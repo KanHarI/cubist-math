@@ -211,3 +211,110 @@ test("the existing Nat factorial theorem checks cubically without a million-succ
   assert.equal(type.left.fn.name, "factorial");
   assert.equal(type.right.name, "nat_3628800");
 });
+
+test("open cubes check dependent contexts and preserve dimension names across decoding", t => {
+  const k = session(t), syntax = new CubicalSyntax(k);
+  const dimensions = new Map([["i", 63]]);
+  const family = T.path("j", T.universe(0), T.nat, T.nat);
+  const atI = T.at(T.variable("family"), I.variable("i"));
+  const context = [["family", family], ["x", atI]];
+  const checked = syntax.check(T.variable("x"), atI, context, dimensions);
+  assert.deepEqual(checked.type.arg, I.variable("i"));
+  assert.equal(syntax.check(checked.term, checked.type, context, dimensions).type.tag, "PApp");
+  assert.throws(() => syntax.check(T.variable("x"), atI, context), /Unbound cubical dimension/);
+  const rawContext = context.map(([name, type]) => [k.symbol(name), syntax.encode(type, dimensions)]);
+  assert.throws(() => k.check(syntax.encode(T.variable("x")), syntax.encode(atI, dimensions), rawContext, 1n));
+  assert.throws(() => k.define("escaped", syntax.encode(T.variable("x")), syntax.encode(atI, dimensions)));
+  assert.throws(() => syntax.check(T.zero, null, [], new Map([["i", 0], ["j", 0]])), /distinct/);
+  // A user name resembling the decoder's generated binder must not be captured.
+  const collision = new Map([["d0", 63]]);
+  const line = T.line("j", T.nat, T.at(T.variable("p"), I.variable("d0")));
+  const decoded = syntax.check(line, null, [["p", T.path("k", T.nat, T.zero, T.zero)]], collision).term;
+  assert.notEqual(decoded.dim, "d0");
+  assert.deepEqual(decoded.body.arg, I.variable("d0"));
+  syntax.check(decoded, null, [["p", T.path("k", T.nat, T.zero, T.zero)]], collision);
+});
+
+test("MathScript expresses cubical paths, composition and pushout induction with checked boundaries", async t => {
+  const kernel = session(t), checker = new NativeCubicalElaborator(kernel);
+  const translator = new Translator({ checker, normalize: false });
+  const source = await readFile(new URL("../web/proofs/cubical_paths.proof", import.meta.url), "utf8");
+  const result = translator.translate(source);
+  assert.deepEqual(result.declarations.filter(d => d.status !== "checked-native-cubical"), []);
+  assert.equal(result.declarations.length, 15);
+  const invalid = translator.translate(`
+    def escaped = path(fun (i : Interval) => Nat, fun (i : Interval) => i);
+    theorem wrong : 0 = 1 { exact path(fun (i : Interval) => Nat, fun (i : Interval) => 0); }
+    def malformed = comp(fun (i : Interval) => Nat, 0, face(i, 0, fun (j : Interval) => 0));
+    def bad_bridge = pushout_induction(fun (p : Susp(Unit)) => Nat,
+      fun (a : Unit) => 0, fun (b : Unit) => 1,
+      fun (a : Unit) => refl(0), push_left(Susp(Unit), tt));
+  `, result.env);
+  assert.ok(invalid.declarations.every(d => d.status === "not-translated"), JSON.stringify(invalid.declarations));
+  assert.equal(checker.dimensions.size, 0, "failed elaboration must restore the outer cube");
+});
+
+test("WASM round trips pushout boxes and corrected transport across changing maps", async t => {
+  const { pushout, suspension, north } = await import("../experiments/cubical/pushouts.mjs");
+  const k = session(t), syntax = new CubicalSyntax(k);
+  const C = suspension(T.unit), g = T.lam("x", T.unit, T.point);
+  const family = r => pushout(T.unit, C, T.unit, T.lam("x", T.unit, T.pushPath(C, T.point, r)), g);
+  const old = family(I.zero), last = family(I.one);
+  const source = T.pushPath(old, T.point, I.variable("r"));
+  const moved = T.line("r", last, T.trans("i", family(I.variable("i")), F.bottom, source));
+  const left = T.pushLeft(last, T.comp("i", C, [], north(T.unit))), right = T.pushRight(last, T.point);
+  const expected = T.path("r", last, left, right);
+  const checked = syntax.check(moved, expected);
+  const normal = syntax.decode(k.normalize(checked.expression));
+  assert.equal(normal.body.tag, "HComp");
+  syntax.check(normal, expected);
+  syntax.check(checked.term, checked.type);
+  assert.throws(() => syntax.check(T.line("r", last, T.pushPath(last, T.point, I.variable("r"))), expected));
+  assert.throws(() => syntax.check(T.trans("i", family(I.variable("i")), F.top, T.pushLeft(old, north(T.unit))), last));
+});
+
+test("existing transport-style suspension induction elaborates through a proved PathP bridge", t => {
+  const kernel = session(t), checker = new NativeCubicalElaborator(kernel);
+  const translator = new Translator({ checker, normalize: false });
+  const result = translator.translate(`
+    def C = Suspension(Unit);
+    def family(p : C) = Unit;
+    theorem unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
+    def boundary(a : Unit) = unique(transport(family, north(Unit), south(Unit), meridian(Unit, a), tt));
+    def collapse(p : C) = suspension_induction(family, tt, tt, boundary, p);
+    theorem point_beta : collapse(north(Unit)) = tt { exact refl(tt); }
+    theorem bridge_beta(a : Unit) :
+      apd(collapse, north(Unit), south(Unit), meridian(Unit, a)) = boundary(a) {
+      exact suspension_meridian_beta(family, tt, tt, boundary, a);
+    }
+  `);
+  assert.deepEqual(result.declarations.filter(d => d.status !== "checked-native-cubical"), []);
+  assert.equal(result.declarations.length, 7);
+});
+
+test("native operations grow exhausted budgets without accepting invalid proofs", t => {
+  const k = session(t), syntax = new CubicalSyntax(k);
+  k.stepBudget = 1n; module._cb_step_budget(k.handle, 1, 0);
+  const proof = T.line("i", T.nat, T.zero);
+  syntax.check(proof, T.path("j", T.nat, T.zero, T.zero));
+  assert.ok(k.stepBudget > 1n);
+  const budget = k.stepBudget;
+  assert.throws(() => syntax.check(proof, T.path("j", T.nat, T.zero, T.succ(T.zero))), /mismatch/);
+  assert.ok(k.stepBudget >= budget);
+  syntax.check(proof, T.path("j", T.nat, T.zero, T.zero));
+});
+
+test("browser dimension allocation reuses slots without capturing outer coordinates", t => {
+  const k = session(t), syntax = new CubicalSyntax(k);
+  let type = T.nat, point = T.zero;
+  for (let i = 0; i < 100; i++) {
+    const next = T.path(`constant${i}`, type, point, point);
+    const reference = k.define(`level${i}`, syntax.encode(T.line(`constant${i}`, type, point)));
+    point = syntax.decode(reference); type = next;
+  }
+  syntax.check(point, type);
+  const p = T.variable("p"), P = T.path("i", T.nat, T.zero, T.succ(T.zero));
+  const line = T.line("j", T.nat, T.at(p, I.variable("outside")));
+  const checked = syntax.check(line, null, [["p", P]], new Map([["outside", 0]]));
+  assert.throws(() => syntax.check(checked.term, null, [["p", P]]), /dimension/);
+});

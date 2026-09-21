@@ -10,6 +10,8 @@ typedef struct {
     uint32_t token;
     cc_assumption *context;
     size_t count, capacity;
+    cc_term *unfolding;
+    size_t unfolding_count, unfolding_capacity;
     cc_formula formula;
     bool formula_open;
     const char *error;
@@ -44,6 +46,7 @@ void cb_free(uint32_t token) {
     cc_kernel_free(s->kernel);
     cc_clear(&s->formula);
     free(s->context);
+    free(s->unfolding);
     *s = (browser_session){0};
 }
 
@@ -51,6 +54,58 @@ const char *cb_error(uint32_t token) {
     browser_session *s = lookup(token);
     if (!s) return "Invalid cubical session.";
     return s->error ? s->error : cc_kernel_error(s->kernel);
+}
+
+void cb_checkpoint(uint32_t token) {
+    browser_session *s = lookup(token);
+    if (s) cc_kernel_checkpoint(s->kernel);
+}
+void cb_rollback(uint32_t token) {
+    browser_session *s = lookup(token);
+    if (!s) return;
+    cc_kernel_rollback(s->kernel);
+    s->count = 0; s->unfolding_count = 0; s->error = NULL;
+    memset(&s->checked, 0, sizeof s->checked);
+}
+
+void cb_deadline_ms(uint32_t token, double duration_ms) {
+    browser_session *s = lookup(token);
+    if (s) cc_kernel_set_deadline_ms(s->kernel, duration_ms);
+}
+
+void cb_step_budget(uint32_t token, uint32_t low, uint32_t high) {
+    browser_session *s = lookup(token);
+    if (s) cc_kernel_set_step_budget(s->kernel, ((uint64_t)high << 32) | low);
+}
+
+/* Strategy hints contain only references already checked in this session.
+ * They choose reduction order; every requested conversion is still checked. */
+int cb_unfolding_clear(uint32_t token) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    cc_kernel_clear_error(s->kernel); s->error = NULL;
+    if (!cc_kernel_set_unfolding_hints(s->kernel, NULL, 0)) return 0;
+    s->unfolding_count = 0;
+    return 1;
+}
+
+int cb_unfolding_add(uint32_t token, cc_term reference) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    cc_kernel_clear_error(s->kernel); s->error = NULL;
+    if (s->unfolding_count == s->unfolding_capacity) {
+        size_t capacity = s->unfolding_capacity ? s->unfolding_capacity * 2 : 8;
+        if (capacity < s->unfolding_capacity || capacity > SIZE_MAX / sizeof(cc_term)) {
+            s->error = "Conversion hint capacity overflow."; return 0;
+        }
+        cc_term *grown = realloc(s->unfolding, capacity * sizeof(cc_term));
+        if (!grown) { s->error = "Conversion hint allocation failed."; return 0; }
+        s->unfolding = grown; s->unfolding_capacity = capacity;
+    }
+    s->unfolding[s->unfolding_count] = reference;
+    if (!cc_kernel_set_unfolding_hints(s->kernel, s->unfolding, s->unfolding_count + 1)) return 0;
+    ++s->unfolding_count;
+    return 1;
 }
 
 uint32_t cb_term(uint32_t token, unsigned kind, uint32_t payload,
@@ -115,18 +170,26 @@ int cb_context_add(uint32_t token, uint32_t symbol, uint32_t type) {
     return 1;
 }
 
-int cb_check(uint32_t token, uint32_t term, uint32_t expected) {
+int cb_check_in_cube(uint32_t token, uint32_t term, uint32_t expected,
+                     uint32_t dimensions_low, uint32_t dimensions_high) {
     browser_session *s = lookup(token);
     if (!s) return 0;
     s->error = NULL;
     s->checked = (cc_checked_result){0};
-    return cc_kernel_check(s->kernel, term, expected, s->context, s->count, &s->checked);
+    uint64_t dimensions = ((uint64_t)dimensions_high << 32) | dimensions_low;
+    return cc_kernel_check_in_cube(s->kernel, term, expected, s->context,
+                                   s->count, dimensions, &s->checked);
+}
+
+int cb_check(uint32_t token, uint32_t term, uint32_t expected) {
+    return cb_check_in_cube(token, term, expected, 0, 0);
 }
 
 uint32_t cb_define(uint32_t token, uint32_t symbol, uint32_t value, uint32_t expected) {
     browser_session *s = lookup(token);
     if (!s) return 0;
     s->error = NULL;
+    cc_kernel_clear_error(s->kernel);
     s->checked = (cc_checked_result){0};
     return cc_kernel_define(s->kernel, symbol, value, expected);
 }
@@ -143,6 +206,7 @@ uint32_t cb_head(uint32_t token, uint32_t term) {
     browser_session *s = lookup(token);
     if (!s) return 0;
     s->error = NULL;
+    cc_kernel_clear_error(s->kernel);
     return cc_kernel_whnf(s->kernel, term);
 }
 
@@ -164,6 +228,7 @@ double cb_result(uint32_t token, unsigned field) {
 uint32_t cb_normalize(uint32_t token, uint32_t term) {
     browser_session *s = lookup(token);
     if (!s || !term || (term != s->checked.expression && term != s->checked.type && term != s->checked.normal)) return 0;
+    cc_kernel_clear_error(s->kernel);
     return cc_kernel_normalize(s->kernel, term);
 }
 

@@ -1,0 +1,1891 @@
+import paths;
+
+// Universe-polymorphic path algebra needed for adjointification. These laws
+// are derived by identity elimination, with no extensionality axiom.
+def path_right_unit_at(U : Universe, A : U, x : A, y : A, p : x = y) =
+  path(
+    fun (interval_law : Interval) => PathP(fun (interval_path : Interval) => A, x, y),
+    fun (interval_law : Interval) => path(
+      fun (interval_path : Interval) => A,
+      fun (interval_path : Interval) => comp(
+        fun (interval_compose : Interval) => A, at(p, interval_path),
+        face_when((on(interval_path, 0)), fun (interval_compose : Interval) => x),
+        face_when((on(interval_path, 1)), fun (interval_compose : Interval) => y),
+        face_when((on(interval_law, 1)), fun (interval_compose : Interval) => at(p, interval_path))
+      )
+    )
+  );
+
+theorem path_cancel_right_at(
+  U : Universe, A : U, x : A, y : A, z : A, p : x = y, q : x = y, r : y = z,
+  same : concatenate(U, A, x, y, z, p, r) = concatenate(U, A, x, y, z, q, r)
+) : p = q {
+  exact path(
+    fun (interval_path_____ : Interval) => PathP(fun (interval_equality : Interval) => A, x, y),
+    fun (interval_path_____ : Interval) => comp(
+      fun (interval_compose_____ : Interval) => PathP(fun (interval_equality : Interval) => A, x, y),
+      at(
+        path(
+          fun (interval_inverse_ : Interval) => PathP(fun (interval_equality : Interval) => A, x, y),
+          fun (interval_inverse_ : Interval) => at(
+            path(
+              fun (interval_path___ : Interval) => PathP(fun (interval_path : Interval) => A, x, y),
+              fun (interval_path___ : Interval) => comp(
+                fun (interval_compose___ : Interval) => PathP(
+                  fun (interval_path : Interval) => A, x, y
+                ),
+                at(
+                  path(
+                    fun (interval_law : Interval) => PathP(
+                      fun (interval_path : Interval) => A, x, y
+                    ),
+                    fun (interval_law : Interval) => path(
+                      fun (interval_path : Interval) => A,
+                      fun (interval_path : Interval) => comp(
+                        fun (interval_outer : Interval) => A,
+                        comp(
+                          fun (interval_inner : Interval) => A, at(p, interval_path),
+                          face_when((on(interval_path, 0)), fun (interval_inner : Interval) => x),
+                          face_when(
+                            (on(interval_path, 1)),
+                            fun (interval_inner : Interval) => at(r, interval_inner)
+                          )
+                        ), face_when((on(interval_path, 0)), fun (interval_outer : Interval) => x),
+                        face_when(
+                          (on(interval_path, 1)),
+                          fun (interval_outer : Interval) => at(
+                            path(
+                              fun (interval_inverse : Interval) => A,
+                              fun (interval_inverse : Interval) => at(r, flip(interval_inverse))
+                            ), interval_outer
+                          )
+                        ),
+                        face_when(
+                          (on(interval_law, 1)),
+                          fun (interval_outer : Interval) => comp(
+                            fun (interval_inner : Interval) => A, at(p, interval_path),
+                            face_when((on(interval_path, 0)), fun (interval_inner : Interval) => x),
+                            face_when(
+                              (on(interval_path, 1)),
+                              fun (interval_inner : Interval) => comp(
+                                fun (interval_fill : Interval) => A, at(r, interval_inner),
+                                face_when(
+                                  (on(interval_inner, 0)), fun (interval_fill : Interval) => y
+                                ),
+                                face_when(
+                                  (on(interval_inner, 1)),
+                                  fun (interval_fill : Interval) => at(
+                                    path(
+                                      fun (interval_inverse : Interval) => A,
+                                      fun (interval_inverse : Interval) => at(
+                                        r, flip(interval_inverse)
+                                      )
+                                    ), meet(interval_fill, interval_outer)
+                                  )
+                                ),
+                                face_when(
+                                  (on(interval_outer, 0)),
+                                  fun (interval_fill : Interval) => at(r, interval_inner)
+                                )
+                              )
+                            ),
+                            face_when(
+                              (on(interval_outer, 0)),
+                              fun (interval_inner : Interval) => comp(
+                                fun (interval_fill : Interval) => A, at(p, interval_path),
+                                face_when(
+                                  (on(interval_path, 0)), fun (interval_fill : Interval) => x
+                                ),
+                                face_when(
+                                  (on(interval_path, 1)),
+                                  fun (interval_fill : Interval) => at(
+                                    r, meet(interval_fill, interval_inner)
+                                  )
+                                ),
+                                face_when(
+                                  (on(interval_inner, 0)),
+                                  fun (interval_fill : Interval) => at(p, interval_path)
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  ), interval_path___
+                ),
+                face_when(
+                  (on(interval_path___, 0)),
+                  fun (interval_compose___ : Interval) => path(
+                    fun (interval_path_ : Interval) => A,
+                    fun (interval_path_ : Interval) => comp(
+                      fun (interval_compose_ : Interval) => A,
+                      at(
+                        path(
+                          fun (interval_path : Interval) => A,
+                          fun (interval_path : Interval) => comp(
+                            fun (interval_compose : Interval) => A, at(p, interval_path),
+                            face_when(
+                              (on(interval_path, 0)), fun (interval_compose : Interval) => x
+                            ),
+                            face_when(
+                              (on(interval_path, 1)),
+                              fun (interval_compose : Interval) => at(r, interval_compose)
+                            )
+                          )
+                        ), interval_path_
+                      ),
+                      face_when((on(interval_path_, 0)), fun (interval_compose_ : Interval) => x),
+                      face_when(
+                        (on(interval_path_, 1)),
+                        fun (interval_compose_ : Interval) => at(
+                          path(
+                            fun (interval_inverse : Interval) => A,
+                            fun (interval_inverse : Interval) => at(r, flip(interval_inverse))
+                          ), interval_compose_
+                        )
+                      )
+                    )
+                  )
+                ),
+                face_when(
+                  (on(interval_path___, 1)),
+                  fun (interval_compose___ : Interval) => at(
+                    path(
+                      fun (interval_path__ : Interval) => PathP(
+                        fun (interval_path : Interval) => A, x, y
+                      ),
+                      fun (interval_path__ : Interval) => comp(
+                        fun (interval_compose__ : Interval) => PathP(
+                          fun (interval_path : Interval) => A, x, y
+                        ),
+                        at(
+                          path(
+                            fun (interval_apply : Interval) => PathP(
+                              fun (interval_path : Interval) => A, x, y
+                            ),
+                            fun (interval_apply : Interval) => (
+                              fun (loop : PathP(fun (interval_path : Interval) => A, y, y)) => path(
+                                fun (interval_path : Interval) => A,
+                                fun (interval_path : Interval) => comp(
+                                  fun (interval_compose : Interval) => A, at(p, interval_path),
+                                  face_when(
+                                    (on(interval_path, 0)), fun (interval_compose : Interval) => x
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 1)),
+                                    fun (interval_compose : Interval) => at(loop, interval_compose)
+                                  )
+                                )
+                              )
+                            )(
+                              at(
+                                path(
+                                  fun (interval_law : Interval) => PathP(
+                                    fun (interval_path : Interval) => A, y, y
+                                  ),
+                                  fun (interval_law : Interval) => path(
+                                    fun (interval_path : Interval) => A,
+                                    fun (interval_path : Interval) => comp(
+                                      fun (interval_compose : Interval) => A, at(r, interval_path),
+                                      face_when(
+                                        (on(interval_path, 0)),
+                                        fun (interval_compose : Interval) => y
+                                      ),
+                                      face_when(
+                                        (on(interval_path, 1)),
+                                        fun (interval_compose : Interval) => at(
+                                          r, flip(interval_compose)
+                                        )
+                                      ),
+                                      face_when(
+                                        (on(interval_law, 1)),
+                                        fun (interval_compose : Interval) => at(
+                                          r, meet(flip(interval_compose), interval_path)
+                                        )
+                                      )
+                                    )
+                                  )
+                                ), interval_apply
+                              )
+                            )
+                          ), interval_path__
+                        ),
+                        face_when(
+                          (on(interval_path__, 0)),
+                          fun (interval_compose__ : Interval) => path(
+                            fun (interval_path_ : Interval) => A,
+                            fun (interval_path_ : Interval) => comp(
+                              fun (interval_compose_ : Interval) => A, at(p, interval_path_),
+                              face_when(
+                                (on(interval_path_, 0)), fun (interval_compose_ : Interval) => x
+                              ),
+                              face_when(
+                                (on(interval_path_, 1)),
+                                fun (interval_compose_ : Interval) => at(
+                                  path(
+                                    fun (interval_path : Interval) => A,
+                                    fun (interval_path : Interval) => comp(
+                                      fun (interval_compose : Interval) => A, at(r, interval_path),
+                                      face_when(
+                                        (on(interval_path, 0)),
+                                        fun (interval_compose : Interval) => y
+                                      ),
+                                      face_when(
+                                        (on(interval_path, 1)),
+                                        fun (interval_compose : Interval) => at(
+                                          path(
+                                            fun (interval_inverse : Interval) => A,
+                                            fun (interval_inverse : Interval) => at(
+                                              r, flip(interval_inverse)
+                                            )
+                                          ), interval_compose
+                                        )
+                                      )
+                                    )
+                                  ), interval_compose_
+                                )
+                              )
+                            )
+                          )
+                        ),
+                        face_when(
+                          (on(interval_path__, 1)),
+                          fun (interval_compose__ : Interval) => at(
+                            path(
+                              fun (interval_law : Interval) => PathP(
+                                fun (interval_path : Interval) => A, x, y
+                              ),
+                              fun (interval_law : Interval) => path(
+                                fun (interval_path : Interval) => A,
+                                fun (interval_path : Interval) => comp(
+                                  fun (interval_compose : Interval) => A, at(p, interval_path),
+                                  face_when(
+                                    (on(interval_path, 0)), fun (interval_compose : Interval) => x
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 1)), fun (interval_compose : Interval) => y
+                                  ),
+                                  face_when(
+                                    (on(interval_law, 1)),
+                                    fun (interval_compose : Interval) => at(p, interval_path)
+                                  )
+                                )
+                              )
+                            ), interval_compose__
+                          )
+                        )
+                      )
+                    ), interval_compose___
+                  )
+                )
+              )
+            ), flip(interval_inverse_)
+          )
+        ), interval_path_____
+      ), face_when((on(interval_path_____, 0)), fun (interval_compose_____ : Interval) => p),
+      face_when(
+        (on(interval_path_____, 1)),
+        fun (interval_compose_____ : Interval) => at(
+          path(
+            fun (interval_path____ : Interval) => PathP(
+              fun (interval_equality : Interval) => A, x, y
+            ),
+            fun (interval_path____ : Interval) => comp(
+              fun (interval_compose____ : Interval) => PathP(
+                fun (interval_equality : Interval) => A, x, y
+              ),
+              at(
+                path(
+                  fun (interval_apply : Interval) => PathP(
+                    fun (interval_equality : Interval) => A, x, y
+                  ),
+                  fun (interval_apply : Interval) => (
+                    fun (prefix : PathP(fun (interval_equality : Interval) => A, x, z)) => path(
+                      fun (interval_path : Interval) => A,
+                      fun (interval_path : Interval) => comp(
+                        fun (interval_compose : Interval) => A, at(prefix, interval_path),
+                        face_when((on(interval_path, 0)), fun (interval_compose : Interval) => x),
+                        face_when(
+                          (on(interval_path, 1)),
+                          fun (interval_compose : Interval) => at(
+                            path(
+                              fun (interval_inverse : Interval) => A,
+                              fun (interval_inverse : Interval) => at(r, flip(interval_inverse))
+                            ), interval_compose
+                          )
+                        )
+                      )
+                    )
+                  )(at(same, interval_apply))
+                ), interval_path____
+              ),
+              face_when(
+                (on(interval_path____, 0)),
+                fun (interval_compose____ : Interval) => path(
+                  fun (interval_path_ : Interval) => A,
+                  fun (interval_path_ : Interval) => comp(
+                    fun (interval_compose_ : Interval) => A,
+                    at(
+                      path(
+                        fun (interval_path : Interval) => A,
+                        fun (interval_path : Interval) => comp(
+                          fun (interval_compose : Interval) => A, at(p, interval_path),
+                          face_when((on(interval_path, 0)), fun (interval_compose : Interval) => x),
+                          face_when(
+                            (on(interval_path, 1)),
+                            fun (interval_compose : Interval) => at(r, interval_compose)
+                          )
+                        )
+                      ), interval_path_
+                    ), face_when((on(interval_path_, 0)), fun (interval_compose_ : Interval) => x),
+                    face_when(
+                      (on(interval_path_, 1)),
+                      fun (interval_compose_ : Interval) => at(
+                        path(
+                          fun (interval_inverse : Interval) => A,
+                          fun (interval_inverse : Interval) => at(r, flip(interval_inverse))
+                        ), interval_compose_
+                      )
+                    )
+                  )
+                )
+              ),
+              face_when(
+                (on(interval_path____, 1)),
+                fun (interval_compose____ : Interval) => at(
+                  path(
+                    fun (interval_path___ : Interval) => PathP(
+                      fun (interval_path : Interval) => A, x, y
+                    ),
+                    fun (interval_path___ : Interval) => comp(
+                      fun (interval_compose___ : Interval) => PathP(
+                        fun (interval_path : Interval) => A, x, y
+                      ),
+                      at(
+                        path(
+                          fun (interval_law : Interval) => PathP(
+                            fun (interval_path : Interval) => A, x, y
+                          ),
+                          fun (interval_law : Interval) => path(
+                            fun (interval_path : Interval) => A,
+                            fun (interval_path : Interval) => comp(
+                              fun (interval_outer : Interval) => A,
+                              comp(
+                                fun (interval_inner : Interval) => A, at(q, interval_path),
+                                face_when(
+                                  (on(interval_path, 0)), fun (interval_inner : Interval) => x
+                                ),
+                                face_when(
+                                  (on(interval_path, 1)),
+                                  fun (interval_inner : Interval) => at(r, interval_inner)
+                                )
+                              ),
+                              face_when(
+                                (on(interval_path, 0)), fun (interval_outer : Interval) => x
+                              ),
+                              face_when(
+                                (on(interval_path, 1)),
+                                fun (interval_outer : Interval) => at(
+                                  path(
+                                    fun (interval_inverse : Interval) => A,
+                                    fun (interval_inverse : Interval) => at(
+                                      r, flip(interval_inverse)
+                                    )
+                                  ), interval_outer
+                                )
+                              ),
+                              face_when(
+                                (on(interval_law, 1)),
+                                fun (interval_outer : Interval) => comp(
+                                  fun (interval_inner : Interval) => A, at(q, interval_path),
+                                  face_when(
+                                    (on(interval_path, 0)), fun (interval_inner : Interval) => x
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 1)),
+                                    fun (interval_inner : Interval) => comp(
+                                      fun (interval_fill : Interval) => A, at(r, interval_inner),
+                                      face_when(
+                                        (on(interval_inner, 0)), fun (interval_fill : Interval) => y
+                                      ),
+                                      face_when(
+                                        (on(interval_inner, 1)),
+                                        fun (interval_fill : Interval) => at(
+                                          path(
+                                            fun (interval_inverse : Interval) => A,
+                                            fun (interval_inverse : Interval) => at(
+                                              r, flip(interval_inverse)
+                                            )
+                                          ), meet(interval_fill, interval_outer)
+                                        )
+                                      ),
+                                      face_when(
+                                        (on(interval_outer, 0)),
+                                        fun (interval_fill : Interval) => at(r, interval_inner)
+                                      )
+                                    )
+                                  ),
+                                  face_when(
+                                    (on(interval_outer, 0)),
+                                    fun (interval_inner : Interval) => comp(
+                                      fun (interval_fill : Interval) => A, at(q, interval_path),
+                                      face_when(
+                                        (on(interval_path, 0)), fun (interval_fill : Interval) => x
+                                      ),
+                                      face_when(
+                                        (on(interval_path, 1)),
+                                        fun (interval_fill : Interval) => at(
+                                          r, meet(interval_fill, interval_inner)
+                                        )
+                                      ),
+                                      face_when(
+                                        (on(interval_inner, 0)),
+                                        fun (interval_fill : Interval) => at(q, interval_path)
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        ), interval_path___
+                      ),
+                      face_when(
+                        (on(interval_path___, 0)),
+                        fun (interval_compose___ : Interval) => path(
+                          fun (interval_path_ : Interval) => A,
+                          fun (interval_path_ : Interval) => comp(
+                            fun (interval_compose_ : Interval) => A,
+                            at(
+                              path(
+                                fun (interval_path : Interval) => A,
+                                fun (interval_path : Interval) => comp(
+                                  fun (interval_compose : Interval) => A, at(q, interval_path),
+                                  face_when(
+                                    (on(interval_path, 0)), fun (interval_compose : Interval) => x
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 1)),
+                                    fun (interval_compose : Interval) => at(r, interval_compose)
+                                  )
+                                )
+                              ), interval_path_
+                            ),
+                            face_when(
+                              (on(interval_path_, 0)), fun (interval_compose_ : Interval) => x
+                            ),
+                            face_when(
+                              (on(interval_path_, 1)),
+                              fun (interval_compose_ : Interval) => at(
+                                path(
+                                  fun (interval_inverse : Interval) => A,
+                                  fun (interval_inverse : Interval) => at(r, flip(interval_inverse))
+                                ), interval_compose_
+                              )
+                            )
+                          )
+                        )
+                      ),
+                      face_when(
+                        (on(interval_path___, 1)),
+                        fun (interval_compose___ : Interval) => at(
+                          path(
+                            fun (interval_path__ : Interval) => PathP(
+                              fun (interval_path : Interval) => A, x, y
+                            ),
+                            fun (interval_path__ : Interval) => comp(
+                              fun (interval_compose__ : Interval) => PathP(
+                                fun (interval_path : Interval) => A, x, y
+                              ),
+                              at(
+                                path(
+                                  fun (interval_apply : Interval) => PathP(
+                                    fun (interval_path : Interval) => A, x, y
+                                  ),
+                                  fun (interval_apply : Interval) => (
+                                    fun (loop : PathP(fun (interval_path : Interval) => A, y, y)) => path(
+                                      fun (interval_path : Interval) => A,
+                                      fun (interval_path : Interval) => comp(
+                                        fun (interval_compose : Interval) => A,
+                                        at(q, interval_path),
+                                        face_when(
+                                          (on(interval_path, 0)),
+                                          fun (interval_compose : Interval) => x
+                                        ),
+                                        face_when(
+                                          (on(interval_path, 1)),
+                                          fun (interval_compose : Interval) => at(
+                                            loop, interval_compose
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )(
+                                    at(
+                                      path(
+                                        fun (interval_law : Interval) => PathP(
+                                          fun (interval_path : Interval) => A, y, y
+                                        ),
+                                        fun (interval_law : Interval) => path(
+                                          fun (interval_path : Interval) => A,
+                                          fun (interval_path : Interval) => comp(
+                                            fun (interval_compose : Interval) => A,
+                                            at(r, interval_path),
+                                            face_when(
+                                              (on(interval_path, 0)),
+                                              fun (interval_compose : Interval) => y
+                                            ),
+                                            face_when(
+                                              (on(interval_path, 1)),
+                                              fun (interval_compose : Interval) => at(
+                                                r, flip(interval_compose)
+                                              )
+                                            ),
+                                            face_when(
+                                              (on(interval_law, 1)),
+                                              fun (interval_compose : Interval) => at(
+                                                r, meet(flip(interval_compose), interval_path)
+                                              )
+                                            )
+                                          )
+                                        )
+                                      ), interval_apply
+                                    )
+                                  )
+                                ), interval_path__
+                              ),
+                              face_when(
+                                (on(interval_path__, 0)),
+                                fun (interval_compose__ : Interval) => path(
+                                  fun (interval_path_ : Interval) => A,
+                                  fun (interval_path_ : Interval) => comp(
+                                    fun (interval_compose_ : Interval) => A, at(q, interval_path_),
+                                    face_when(
+                                      (on(interval_path_, 0)),
+                                      fun (interval_compose_ : Interval) => x
+                                    ),
+                                    face_when(
+                                      (on(interval_path_, 1)),
+                                      fun (interval_compose_ : Interval) => at(
+                                        path(
+                                          fun (interval_path : Interval) => A,
+                                          fun (interval_path : Interval) => comp(
+                                            fun (interval_compose : Interval) => A,
+                                            at(r, interval_path),
+                                            face_when(
+                                              (on(interval_path, 0)),
+                                              fun (interval_compose : Interval) => y
+                                            ),
+                                            face_when(
+                                              (on(interval_path, 1)),
+                                              fun (interval_compose : Interval) => at(
+                                                path(
+                                                  fun (interval_inverse : Interval) => A,
+                                                  fun (interval_inverse : Interval) => at(
+                                                    r, flip(interval_inverse)
+                                                  )
+                                                ), interval_compose
+                                              )
+                                            )
+                                          )
+                                        ), interval_compose_
+                                      )
+                                    )
+                                  )
+                                )
+                              ),
+                              face_when(
+                                (on(interval_path__, 1)),
+                                fun (interval_compose__ : Interval) => at(
+                                  path(
+                                    fun (interval_law : Interval) => PathP(
+                                      fun (interval_path : Interval) => A, x, y
+                                    ),
+                                    fun (interval_law : Interval) => path(
+                                      fun (interval_path : Interval) => A,
+                                      fun (interval_path : Interval) => comp(
+                                        fun (interval_compose : Interval) => A,
+                                        at(q, interval_path),
+                                        face_when(
+                                          (on(interval_path, 0)),
+                                          fun (interval_compose : Interval) => x
+                                        ),
+                                        face_when(
+                                          (on(interval_path, 1)),
+                                          fun (interval_compose : Interval) => y
+                                        ),
+                                        face_when(
+                                          (on(interval_law, 1)),
+                                          fun (interval_compose : Interval) => at(q, interval_path)
+                                        )
+                                      )
+                                    )
+                                  ), interval_compose__
+                                )
+                              )
+                            )
+                          ), interval_compose___
+                        )
+                      )
+                    )
+                  ), interval_compose____
+                )
+              )
+            )
+          ), interval_compose_____
+        )
+      )
+    )
+  );
+}
+
+def path_prepend_inverse_cancel_at(U : Universe, A : U, x : A, y : A, z : A, p : x = y, q : y = z) =
+  path(
+    fun (interval_path___ : Interval) => PathP(fun (interval_equality : Interval) => A, y, z),
+    fun (interval_path___ : Interval) => comp(
+      fun (interval_compose___ : Interval) => PathP(fun (interval_equality : Interval) => A, y, z),
+      at(
+        path(
+          fun (interval_inverse_ : Interval) => PathP(fun (interval_equality : Interval) => A, y, z),
+          fun (interval_inverse_ : Interval) => at(
+            path(
+              fun (interval_law : Interval) => PathP(fun (interval_path : Interval) => A, y, z),
+              fun (interval_law : Interval) => path(
+                fun (interval_path : Interval) => A,
+                fun (interval_path : Interval) => comp(
+                  fun (interval_outer : Interval) => A,
+                  comp(
+                    fun (interval_inner : Interval) => A,
+                    at(
+                      path(
+                        fun (interval_inverse : Interval) => A,
+                        fun (interval_inverse : Interval) => at(p, flip(interval_inverse))
+                      ), interval_path
+                    ), face_when((on(interval_path, 0)), fun (interval_inner : Interval) => y),
+                    face_when(
+                      (on(interval_path, 1)),
+                      fun (interval_inner : Interval) => at(p, interval_inner)
+                    )
+                  ), face_when((on(interval_path, 0)), fun (interval_outer : Interval) => y),
+                  face_when(
+                    (on(interval_path, 1)), fun (interval_outer : Interval) => at(q, interval_outer)
+                  ),
+                  face_when(
+                    (on(interval_law, 1)),
+                    fun (interval_outer : Interval) => comp(
+                      fun (interval_inner : Interval) => A,
+                      at(
+                        path(
+                          fun (interval_inverse : Interval) => A,
+                          fun (interval_inverse : Interval) => at(p, flip(interval_inverse))
+                        ), interval_path
+                      ), face_when((on(interval_path, 0)), fun (interval_inner : Interval) => y),
+                      face_when(
+                        (on(interval_path, 1)),
+                        fun (interval_inner : Interval) => comp(
+                          fun (interval_fill : Interval) => A, at(p, interval_inner),
+                          face_when((on(interval_inner, 0)), fun (interval_fill : Interval) => x),
+                          face_when(
+                            (on(interval_inner, 1)),
+                            fun (interval_fill : Interval) => at(
+                              q, meet(interval_fill, interval_outer)
+                            )
+                          ),
+                          face_when(
+                            (on(interval_outer, 0)),
+                            fun (interval_fill : Interval) => at(p, interval_inner)
+                          )
+                        )
+                      ),
+                      face_when(
+                        (on(interval_outer, 0)),
+                        fun (interval_inner : Interval) => comp(
+                          fun (interval_fill : Interval) => A,
+                          at(
+                            path(
+                              fun (interval_inverse : Interval) => A,
+                              fun (interval_inverse : Interval) => at(p, flip(interval_inverse))
+                            ), interval_path
+                          ), face_when((on(interval_path, 0)), fun (interval_fill : Interval) => y),
+                          face_when(
+                            (on(interval_path, 1)),
+                            fun (interval_fill : Interval) => at(
+                              p, meet(interval_fill, interval_inner)
+                            )
+                          ),
+                          face_when(
+                            (on(interval_inner, 0)),
+                            fun (interval_fill : Interval) => at(
+                              path(
+                                fun (interval_inverse : Interval) => A,
+                                fun (interval_inverse : Interval) => at(p, flip(interval_inverse))
+                              ), interval_path
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            ), flip(interval_inverse_)
+          )
+        ), interval_path___
+      ),
+      face_when(
+        (on(interval_path___, 0)),
+        fun (interval_compose___ : Interval) => path(
+          fun (interval_path_ : Interval) => A,
+          fun (interval_path_ : Interval) => comp(
+            fun (interval_compose_ : Interval) => A,
+            at(
+              path(
+                fun (interval_inverse : Interval) => A,
+                fun (interval_inverse : Interval) => at(p, flip(interval_inverse))
+              ), interval_path_
+            ), face_when((on(interval_path_, 0)), fun (interval_compose_ : Interval) => y),
+            face_when(
+              (on(interval_path_, 1)),
+              fun (interval_compose_ : Interval) => at(
+                path(
+                  fun (interval_path : Interval) => A,
+                  fun (interval_path : Interval) => comp(
+                    fun (interval_compose : Interval) => A, at(p, interval_path),
+                    face_when((on(interval_path, 0)), fun (interval_compose : Interval) => x),
+                    face_when(
+                      (on(interval_path, 1)),
+                      fun (interval_compose : Interval) => at(q, interval_compose)
+                    )
+                  )
+                ), interval_compose_
+              )
+            )
+          )
+        )
+      ),
+      face_when(
+        (on(interval_path___, 1)),
+        fun (interval_compose___ : Interval) => at(
+          path(
+            fun (interval_path__ : Interval) => PathP(fun (interval_equality : Interval) => A, y, z),
+            fun (interval_path__ : Interval) => comp(
+              fun (interval_compose__ : Interval) => PathP(
+                fun (interval_equality : Interval) => A, y, z
+              ),
+              at(
+                path(
+                  fun (interval_apply : Interval) => PathP(
+                    fun (interval_equality : Interval) => A, y, z
+                  ),
+                  fun (interval_apply : Interval) => (
+                    fun (loop : PathP(fun (interval_equality : Interval) => A, y, y)) => path(
+                      fun (interval_path : Interval) => A,
+                      fun (interval_path : Interval) => comp(
+                        fun (interval_compose : Interval) => A, at(loop, interval_path),
+                        face_when((on(interval_path, 0)), fun (interval_compose : Interval) => y),
+                        face_when(
+                          (on(interval_path, 1)),
+                          fun (interval_compose : Interval) => at(q, interval_compose)
+                        )
+                      )
+                    )
+                  )(
+                    at(
+                      path(
+                        fun (interval_law : Interval) => PathP(
+                          fun (interval_path : Interval) => A, y, y
+                        ),
+                        fun (interval_law : Interval) => path(
+                          fun (interval_path : Interval) => A,
+                          fun (interval_path : Interval) => comp(
+                            fun (interval_compose : Interval) => A, at(p, flip(interval_path)),
+                            face_when(
+                              (on(interval_path, 0)), fun (interval_compose : Interval) => y
+                            ),
+                            face_when(
+                              (on(interval_path, 1)),
+                              fun (interval_compose : Interval) => at(p, interval_compose)
+                            ),
+                            face_when(
+                              (on(interval_law, 1)),
+                              fun (interval_compose : Interval) => at(
+                                p, join(interval_compose, flip(interval_path))
+                              )
+                            )
+                          )
+                        )
+                      ), interval_apply
+                    )
+                  )
+                ), interval_path__
+              ),
+              face_when(
+                (on(interval_path__, 0)),
+                fun (interval_compose__ : Interval) => path(
+                  fun (interval_path_ : Interval) => A,
+                  fun (interval_path_ : Interval) => comp(
+                    fun (interval_compose_ : Interval) => A,
+                    at(
+                      path(
+                        fun (interval_path : Interval) => A,
+                        fun (interval_path : Interval) => comp(
+                          fun (interval_compose : Interval) => A,
+                          at(
+                            path(
+                              fun (interval_inverse : Interval) => A,
+                              fun (interval_inverse : Interval) => at(p, flip(interval_inverse))
+                            ), interval_path
+                          ),
+                          face_when((on(interval_path, 0)), fun (interval_compose : Interval) => y),
+                          face_when(
+                            (on(interval_path, 1)),
+                            fun (interval_compose : Interval) => at(p, interval_compose)
+                          )
+                        )
+                      ), interval_path_
+                    ), face_when((on(interval_path_, 0)), fun (interval_compose_ : Interval) => y),
+                    face_when(
+                      (on(interval_path_, 1)),
+                      fun (interval_compose_ : Interval) => at(q, interval_compose_)
+                    )
+                  )
+                )
+              ),
+              face_when(
+                (on(interval_path__, 1)),
+                fun (interval_compose__ : Interval) => at(
+                  path(
+                    fun (interval_law : Interval) => PathP(
+                      fun (interval_path : Interval) => A, y, z
+                    ),
+                    fun (interval_law : Interval) => path(
+                      fun (interval_path : Interval) => A,
+                      fun (interval_path : Interval) => comp(
+                        fun (interval_compose : Interval) => A, y,
+                        face_when((on(interval_path, 0)), fun (interval_compose : Interval) => y),
+                        face_when(
+                          (on(interval_path, 1)),
+                          fun (interval_compose : Interval) => at(q, interval_compose)
+                        ),
+                        face_when(
+                          (on(interval_law, 1)),
+                          fun (interval_compose : Interval) => at(
+                            q, meet(interval_compose, interval_path)
+                          )
+                        )
+                      )
+                    )
+                  ), interval_compose__
+                )
+              )
+            )
+          ), interval_compose___
+        )
+      )
+    )
+  );
+
+// Naturality of a homotopy from f to the identity.
+def homotopy_natural(
+  U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x), x : A, y : A, p : x = y
+) =
+  path(
+    fun (interval_path_ : Interval) => PathP(fun (interval_equality : Interval) => A, f(x), y),
+    fun (interval_path_ : Interval) => comp(
+      fun (interval_compose_ : Interval) => PathP(fun (interval_equality : Interval) => A, f(x), y),
+      at(
+        path(
+          fun (interval_triangle : Interval) => PathP(
+            fun (interval_equality : Interval) => A, f(x), y
+          ),
+          fun (interval_triangle : Interval) => path(
+            fun (interval_path : Interval) => A,
+            fun (interval_path : Interval) => comp(
+              fun (interval_compose : Interval) => A, f(at(p, interval_path)),
+              face_when((on(interval_path, 0)), fun (interval_compose : Interval) => f(x)),
+              face_when(
+                (on(interval_path, 1)),
+                fun (interval_compose : Interval) => at(h(y), interval_compose)
+              ),
+              face_when(
+                (on(interval_triangle, 1)),
+                fun (interval_compose : Interval) => at(
+                  h(at(p, interval_path)), meet(interval_compose, interval_path)
+                )
+              )
+            )
+          )
+        ), interval_path_
+      ),
+      face_when(
+        (on(interval_path_, 0)),
+        fun (interval_compose_ : Interval) => path(
+          fun (interval_path : Interval) => A,
+          fun (interval_path : Interval) => comp(
+            fun (interval_compose : Interval) => A,
+            at(
+              path(
+                fun (interval_apply : Interval) => A,
+                fun (interval_apply : Interval) => f(at(p, interval_apply))
+              ), interval_path
+            ), face_when((on(interval_path, 0)), fun (interval_compose : Interval) => f(x)),
+            face_when(
+              (on(interval_path, 1)),
+              fun (interval_compose : Interval) => at(h(y), interval_compose)
+            )
+          )
+        )
+      ),
+      face_when(
+        (on(interval_path_, 1)),
+        fun (interval_compose_ : Interval) => at(
+          path(
+            fun (interval_inverse : Interval) => PathP(
+              fun (interval_equality : Interval) => A, f(x), y
+            ),
+            fun (interval_inverse : Interval) => at(
+              path(
+                fun (interval_triangle : Interval) => PathP(
+                  fun (interval_equality : Interval) => A, f(x), y
+                ),
+                fun (interval_triangle : Interval) => path(
+                  fun (interval_path : Interval) => A,
+                  fun (interval_path : Interval) => comp(
+                    fun (interval_compose : Interval) => A, at(h(x), interval_path),
+                    face_when((on(interval_path, 0)), fun (interval_compose : Interval) => f(x)),
+                    face_when(
+                      (on(interval_path, 1)),
+                      fun (interval_compose : Interval) => at(p, interval_compose)
+                    ),
+                    face_when(
+                      (on(interval_triangle, 1)),
+                      fun (interval_compose : Interval) => at(
+                        h(at(p, meet(interval_compose, interval_path))), interval_path
+                      )
+                    )
+                  )
+                )
+              ), flip(interval_inverse)
+            )
+          ), interval_compose_
+        )
+      )
+    )
+  );
+
+theorem homotopy_self(U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x), x : A) : ap(
+  U, A, A, f, f(x), x, h(x)
+) = h(f(x)) {
+  exact path(
+    fun (interval_path_____ : Interval) => PathP(
+      fun (interval_equality : Interval) => A, f(f(x)), f(x)
+    ),
+    fun (interval_path_____ : Interval) => comp(
+      fun (interval_compose_____ : Interval) => PathP(
+        fun (interval_equality : Interval) => A, f(f(x)), f(x)
+      ),
+      at(
+        path(
+          fun (interval_inverse_ : Interval) => PathP(
+            fun (interval_equality : Interval) => A, f(f(x)), f(x)
+          ),
+          fun (interval_inverse_ : Interval) => at(
+            path(
+              fun (interval_path___ : Interval) => PathP(
+                fun (interval_path : Interval) => A, f(f(x)), f(x)
+              ),
+              fun (interval_path___ : Interval) => comp(
+                fun (interval_compose___ : Interval) => PathP(
+                  fun (interval_path : Interval) => A, f(f(x)), f(x)
+                ),
+                at(
+                  path(
+                    fun (interval_law : Interval) => PathP(
+                      fun (interval_path : Interval) => A, f(f(x)), f(x)
+                    ),
+                    fun (interval_law : Interval) => path(
+                      fun (interval_path : Interval) => A,
+                      fun (interval_path : Interval) => comp(
+                        fun (interval_outer : Interval) => A,
+                        comp(
+                          fun (interval_inner : Interval) => A,
+                          at(
+                            path(
+                              fun (interval_apply : Interval) => A,
+                              fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+                            ), interval_path
+                          ),
+                          face_when(
+                            (on(interval_path, 0)), fun (interval_inner : Interval) => f(f(x))
+                          ),
+                          face_when(
+                            (on(interval_path, 1)),
+                            fun (interval_inner : Interval) => at(h(x), interval_inner)
+                          )
+                        ),
+                        face_when(
+                          (on(interval_path, 0)), fun (interval_outer : Interval) => f(f(x))
+                        ),
+                        face_when(
+                          (on(interval_path, 1)),
+                          fun (interval_outer : Interval) => at(
+                            path(
+                              fun (interval_inverse : Interval) => A,
+                              fun (interval_inverse : Interval) => at(h(x), flip(interval_inverse))
+                            ), interval_outer
+                          )
+                        ),
+                        face_when(
+                          (on(interval_law, 1)),
+                          fun (interval_outer : Interval) => comp(
+                            fun (interval_inner : Interval) => A,
+                            at(
+                              path(
+                                fun (interval_apply : Interval) => A,
+                                fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+                              ), interval_path
+                            ),
+                            face_when(
+                              (on(interval_path, 0)), fun (interval_inner : Interval) => f(f(x))
+                            ),
+                            face_when(
+                              (on(interval_path, 1)),
+                              fun (interval_inner : Interval) => comp(
+                                fun (interval_fill : Interval) => A, at(h(x), interval_inner),
+                                face_when(
+                                  (on(interval_inner, 0)), fun (interval_fill : Interval) => f(x)
+                                ),
+                                face_when(
+                                  (on(interval_inner, 1)),
+                                  fun (interval_fill : Interval) => at(
+                                    path(
+                                      fun (interval_inverse : Interval) => A,
+                                      fun (interval_inverse : Interval) => at(
+                                        h(x), flip(interval_inverse)
+                                      )
+                                    ), meet(interval_fill, interval_outer)
+                                  )
+                                ),
+                                face_when(
+                                  (on(interval_outer, 0)),
+                                  fun (interval_fill : Interval) => at(h(x), interval_inner)
+                                )
+                              )
+                            ),
+                            face_when(
+                              (on(interval_outer, 0)),
+                              fun (interval_inner : Interval) => comp(
+                                fun (interval_fill : Interval) => A,
+                                at(
+                                  path(
+                                    fun (interval_apply : Interval) => A,
+                                    fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+                                  ), interval_path
+                                ),
+                                face_when(
+                                  (on(interval_path, 0)), fun (interval_fill : Interval) => f(f(x))
+                                ),
+                                face_when(
+                                  (on(interval_path, 1)),
+                                  fun (interval_fill : Interval) => at(
+                                    h(x), meet(interval_fill, interval_inner)
+                                  )
+                                ),
+                                face_when(
+                                  (on(interval_inner, 0)),
+                                  fun (interval_fill : Interval) => at(
+                                    path(
+                                      fun (interval_apply : Interval) => A,
+                                      fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+                                    ), interval_path
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  ), interval_path___
+                ),
+                face_when(
+                  (on(interval_path___, 0)),
+                  fun (interval_compose___ : Interval) => path(
+                    fun (interval_path_ : Interval) => A,
+                    fun (interval_path_ : Interval) => comp(
+                      fun (interval_compose_ : Interval) => A,
+                      at(
+                        path(
+                          fun (interval_path : Interval) => A,
+                          fun (interval_path : Interval) => comp(
+                            fun (interval_compose : Interval) => A,
+                            at(
+                              path(
+                                fun (interval_apply : Interval) => A,
+                                fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+                              ), interval_path
+                            ),
+                            face_when(
+                              (on(interval_path, 0)), fun (interval_compose : Interval) => f(f(x))
+                            ),
+                            face_when(
+                              (on(interval_path, 1)),
+                              fun (interval_compose : Interval) => at(h(x), interval_compose)
+                            )
+                          )
+                        ), interval_path_
+                      ),
+                      face_when(
+                        (on(interval_path_, 0)), fun (interval_compose_ : Interval) => f(f(x))
+                      ),
+                      face_when(
+                        (on(interval_path_, 1)),
+                        fun (interval_compose_ : Interval) => at(
+                          path(
+                            fun (interval_inverse : Interval) => A,
+                            fun (interval_inverse : Interval) => at(h(x), flip(interval_inverse))
+                          ), interval_compose_
+                        )
+                      )
+                    )
+                  )
+                ),
+                face_when(
+                  (on(interval_path___, 1)),
+                  fun (interval_compose___ : Interval) => at(
+                    path(
+                      fun (interval_path__ : Interval) => PathP(
+                        fun (interval_path : Interval) => A, f(f(x)), f(x)
+                      ),
+                      fun (interval_path__ : Interval) => comp(
+                        fun (interval_compose__ : Interval) => PathP(
+                          fun (interval_path : Interval) => A, f(f(x)), f(x)
+                        ),
+                        at(
+                          path(
+                            fun (interval_apply_ : Interval) => PathP(
+                              fun (interval_path : Interval) => A, f(f(x)), f(x)
+                            ),
+                            fun (interval_apply_ : Interval) => (
+                              fun (loop : PathP(fun (interval_path : Interval) => A, f(x), f(x))) => path(
+                                fun (interval_path : Interval) => A,
+                                fun (interval_path : Interval) => comp(
+                                  fun (interval_compose : Interval) => A,
+                                  at(
+                                    path(
+                                      fun (interval_apply : Interval) => A,
+                                      fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+                                    ), interval_path
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 0)),
+                                    fun (interval_compose : Interval) => f(f(x))
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 1)),
+                                    fun (interval_compose : Interval) => at(loop, interval_compose)
+                                  )
+                                )
+                              )
+                            )(
+                              at(
+                                path(
+                                  fun (interval_law : Interval) => PathP(
+                                    fun (interval_path : Interval) => A, f(x), f(x)
+                                  ),
+                                  fun (interval_law : Interval) => path(
+                                    fun (interval_path : Interval) => A,
+                                    fun (interval_path : Interval) => comp(
+                                      fun (interval_compose : Interval) => A,
+                                      at(h(x), interval_path),
+                                      face_when(
+                                        (on(interval_path, 0)),
+                                        fun (interval_compose : Interval) => f(x)
+                                      ),
+                                      face_when(
+                                        (on(interval_path, 1)),
+                                        fun (interval_compose : Interval) => at(
+                                          h(x), flip(interval_compose)
+                                        )
+                                      ),
+                                      face_when(
+                                        (on(interval_law, 1)),
+                                        fun (interval_compose : Interval) => at(
+                                          h(x), meet(flip(interval_compose), interval_path)
+                                        )
+                                      )
+                                    )
+                                  )
+                                ), interval_apply_
+                              )
+                            )
+                          ), interval_path__
+                        ),
+                        face_when(
+                          (on(interval_path__, 0)),
+                          fun (interval_compose__ : Interval) => path(
+                            fun (interval_path_ : Interval) => A,
+                            fun (interval_path_ : Interval) => comp(
+                              fun (interval_compose_ : Interval) => A,
+                              at(
+                                path(
+                                  fun (interval_apply : Interval) => A,
+                                  fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+                                ), interval_path_
+                              ),
+                              face_when(
+                                (on(interval_path_, 0)),
+                                fun (interval_compose_ : Interval) => f(f(x))
+                              ),
+                              face_when(
+                                (on(interval_path_, 1)),
+                                fun (interval_compose_ : Interval) => at(
+                                  path(
+                                    fun (interval_path : Interval) => A,
+                                    fun (interval_path : Interval) => comp(
+                                      fun (interval_compose : Interval) => A,
+                                      at(h(x), interval_path),
+                                      face_when(
+                                        (on(interval_path, 0)),
+                                        fun (interval_compose : Interval) => f(x)
+                                      ),
+                                      face_when(
+                                        (on(interval_path, 1)),
+                                        fun (interval_compose : Interval) => at(
+                                          path(
+                                            fun (interval_inverse : Interval) => A,
+                                            fun (interval_inverse : Interval) => at(
+                                              h(x), flip(interval_inverse)
+                                            )
+                                          ), interval_compose
+                                        )
+                                      )
+                                    )
+                                  ), interval_compose_
+                                )
+                              )
+                            )
+                          )
+                        ),
+                        face_when(
+                          (on(interval_path__, 1)),
+                          fun (interval_compose__ : Interval) => at(
+                            path(
+                              fun (interval_law : Interval) => PathP(
+                                fun (interval_path : Interval) => A, f(f(x)), f(x)
+                              ),
+                              fun (interval_law : Interval) => path(
+                                fun (interval_path : Interval) => A,
+                                fun (interval_path : Interval) => comp(
+                                  fun (interval_compose : Interval) => A,
+                                  at(
+                                    path(
+                                      fun (interval_apply : Interval) => A,
+                                      fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+                                    ), interval_path
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 0)),
+                                    fun (interval_compose : Interval) => f(f(x))
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 1)),
+                                    fun (interval_compose : Interval) => f(x)
+                                  ),
+                                  face_when(
+                                    (on(interval_law, 1)),
+                                    fun (interval_compose : Interval) => at(
+                                      path(
+                                        fun (interval_apply : Interval) => A,
+                                        fun (interval_apply : Interval) => f(
+                                          at(h(x), interval_apply)
+                                        )
+                                      ), interval_path
+                                    )
+                                  )
+                                )
+                              )
+                            ), interval_compose__
+                          )
+                        )
+                      )
+                    ), interval_compose___
+                  )
+                )
+              )
+            ), flip(interval_inverse_)
+          )
+        ), interval_path_____
+      ),
+      face_when(
+        (on(interval_path_____, 0)),
+        fun (interval_compose_____ : Interval) => path(
+          fun (interval_apply : Interval) => A,
+          fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+        )
+      ),
+      face_when(
+        (on(interval_path_____, 1)),
+        fun (interval_compose_____ : Interval) => at(
+          path(
+            fun (interval_path____ : Interval) => PathP(
+              fun (interval_equality : Interval) => A, f(f(x)), f(x)
+            ),
+            fun (interval_path____ : Interval) => comp(
+              fun (interval_compose____ : Interval) => PathP(
+                fun (interval_equality : Interval) => A, f(f(x)), f(x)
+              ),
+              at(
+                path(
+                  fun (interval_apply_ : Interval) => PathP(
+                    fun (interval_equality : Interval) => A, f(f(x)), f(x)
+                  ),
+                  fun (interval_apply_ : Interval) => (
+                    fun (prefix : PathP(fun (interval_equality : Interval) => A, f(f(x)), x)) => path(
+                      fun (interval_path : Interval) => A,
+                      fun (interval_path : Interval) => comp(
+                        fun (interval_compose : Interval) => A, at(prefix, interval_path),
+                        face_when(
+                          (on(interval_path, 0)), fun (interval_compose : Interval) => f(f(x))
+                        ),
+                        face_when(
+                          (on(interval_path, 1)),
+                          fun (interval_compose : Interval) => at(
+                            path(
+                              fun (interval_inverse : Interval) => A,
+                              fun (interval_inverse : Interval) => at(h(x), flip(interval_inverse))
+                            ), interval_compose
+                          )
+                        )
+                      )
+                    )
+                  )(
+                    at(
+                      path(
+                        fun (interval_path_ : Interval) => PathP(
+                          fun (interval_equality : Interval) => A, f(f(x)), x
+                        ),
+                        fun (interval_path_ : Interval) => comp(
+                          fun (interval_compose_ : Interval) => PathP(
+                            fun (interval_equality : Interval) => A, f(f(x)), x
+                          ),
+                          at(
+                            path(
+                              fun (interval_triangle : Interval) => PathP(
+                                fun (interval_equality : Interval) => A, f(f(x)), x
+                              ),
+                              fun (interval_triangle : Interval) => path(
+                                fun (interval_path : Interval) => A,
+                                fun (interval_path : Interval) => comp(
+                                  fun (interval_compose : Interval) => A,
+                                  f(at(h(x), interval_path)),
+                                  face_when(
+                                    (on(interval_path, 0)),
+                                    fun (interval_compose : Interval) => f(f(x))
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 1)),
+                                    fun (interval_compose : Interval) => at(h(x), interval_compose)
+                                  ),
+                                  face_when(
+                                    (on(interval_triangle, 1)),
+                                    fun (interval_compose : Interval) => at(
+                                      h(at(h(x), interval_path)),
+                                      meet(interval_compose, interval_path)
+                                    )
+                                  )
+                                )
+                              )
+                            ), interval_path_
+                          ),
+                          face_when(
+                            (on(interval_path_, 0)),
+                            fun (interval_compose_ : Interval) => path(
+                              fun (interval_path : Interval) => A,
+                              fun (interval_path : Interval) => comp(
+                                fun (interval_compose : Interval) => A,
+                                at(
+                                  path(
+                                    fun (interval_apply : Interval) => A,
+                                    fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+                                  ), interval_path
+                                ),
+                                face_when(
+                                  (on(interval_path, 0)),
+                                  fun (interval_compose : Interval) => f(f(x))
+                                ),
+                                face_when(
+                                  (on(interval_path, 1)),
+                                  fun (interval_compose : Interval) => at(h(x), interval_compose)
+                                )
+                              )
+                            )
+                          ),
+                          face_when(
+                            (on(interval_path_, 1)),
+                            fun (interval_compose_ : Interval) => at(
+                              path(
+                                fun (interval_inverse : Interval) => PathP(
+                                  fun (interval_equality : Interval) => A, f(f(x)), x
+                                ),
+                                fun (interval_inverse : Interval) => at(
+                                  path(
+                                    fun (interval_triangle : Interval) => PathP(
+                                      fun (interval_equality : Interval) => A, f(f(x)), x
+                                    ),
+                                    fun (interval_triangle : Interval) => path(
+                                      fun (interval_path : Interval) => A,
+                                      fun (interval_path : Interval) => comp(
+                                        fun (interval_compose : Interval) => A,
+                                        at(h(f(x)), interval_path),
+                                        face_when(
+                                          (on(interval_path, 0)),
+                                          fun (interval_compose : Interval) => f(f(x))
+                                        ),
+                                        face_when(
+                                          (on(interval_path, 1)),
+                                          fun (interval_compose : Interval) => at(
+                                            h(x), interval_compose
+                                          )
+                                        ),
+                                        face_when(
+                                          (on(interval_triangle, 1)),
+                                          fun (interval_compose : Interval) => at(
+                                            h(at(h(x), meet(interval_compose, interval_path))),
+                                            interval_path
+                                          )
+                                        )
+                                      )
+                                    )
+                                  ), flip(interval_inverse)
+                                )
+                              ), interval_compose_
+                            )
+                          )
+                        )
+                      ), interval_apply_
+                    )
+                  )
+                ), interval_path____
+              ),
+              face_when(
+                (on(interval_path____, 0)),
+                fun (interval_compose____ : Interval) => path(
+                  fun (interval_path_ : Interval) => A,
+                  fun (interval_path_ : Interval) => comp(
+                    fun (interval_compose_ : Interval) => A,
+                    at(
+                      path(
+                        fun (interval_path : Interval) => A,
+                        fun (interval_path : Interval) => comp(
+                          fun (interval_compose : Interval) => A,
+                          at(
+                            path(
+                              fun (interval_apply : Interval) => A,
+                              fun (interval_apply : Interval) => f(at(h(x), interval_apply))
+                            ), interval_path
+                          ),
+                          face_when(
+                            (on(interval_path, 0)), fun (interval_compose : Interval) => f(f(x))
+                          ),
+                          face_when(
+                            (on(interval_path, 1)),
+                            fun (interval_compose : Interval) => at(h(x), interval_compose)
+                          )
+                        )
+                      ), interval_path_
+                    ),
+                    face_when(
+                      (on(interval_path_, 0)), fun (interval_compose_ : Interval) => f(f(x))
+                    ),
+                    face_when(
+                      (on(interval_path_, 1)),
+                      fun (interval_compose_ : Interval) => at(
+                        path(
+                          fun (interval_inverse : Interval) => A,
+                          fun (interval_inverse : Interval) => at(h(x), flip(interval_inverse))
+                        ), interval_compose_
+                      )
+                    )
+                  )
+                )
+              ),
+              face_when(
+                (on(interval_path____, 1)),
+                fun (interval_compose____ : Interval) => at(
+                  path(
+                    fun (interval_path___ : Interval) => PathP(
+                      fun (interval_path : Interval) => A, f(f(x)), f(x)
+                    ),
+                    fun (interval_path___ : Interval) => comp(
+                      fun (interval_compose___ : Interval) => PathP(
+                        fun (interval_path : Interval) => A, f(f(x)), f(x)
+                      ),
+                      at(
+                        path(
+                          fun (interval_law : Interval) => PathP(
+                            fun (interval_path : Interval) => A, f(f(x)), f(x)
+                          ),
+                          fun (interval_law : Interval) => path(
+                            fun (interval_path : Interval) => A,
+                            fun (interval_path : Interval) => comp(
+                              fun (interval_outer : Interval) => A,
+                              comp(
+                                fun (interval_inner : Interval) => A, at(h(f(x)), interval_path),
+                                face_when(
+                                  (on(interval_path, 0)), fun (interval_inner : Interval) => f(f(x))
+                                ),
+                                face_when(
+                                  (on(interval_path, 1)),
+                                  fun (interval_inner : Interval) => at(h(x), interval_inner)
+                                )
+                              ),
+                              face_when(
+                                (on(interval_path, 0)), fun (interval_outer : Interval) => f(f(x))
+                              ),
+                              face_when(
+                                (on(interval_path, 1)),
+                                fun (interval_outer : Interval) => at(
+                                  path(
+                                    fun (interval_inverse : Interval) => A,
+                                    fun (interval_inverse : Interval) => at(
+                                      h(x), flip(interval_inverse)
+                                    )
+                                  ), interval_outer
+                                )
+                              ),
+                              face_when(
+                                (on(interval_law, 1)),
+                                fun (interval_outer : Interval) => comp(
+                                  fun (interval_inner : Interval) => A, at(h(f(x)), interval_path),
+                                  face_when(
+                                    (on(interval_path, 0)),
+                                    fun (interval_inner : Interval) => f(f(x))
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 1)),
+                                    fun (interval_inner : Interval) => comp(
+                                      fun (interval_fill : Interval) => A, at(h(x), interval_inner),
+                                      face_when(
+                                        (on(interval_inner, 0)),
+                                        fun (interval_fill : Interval) => f(x)
+                                      ),
+                                      face_when(
+                                        (on(interval_inner, 1)),
+                                        fun (interval_fill : Interval) => at(
+                                          path(
+                                            fun (interval_inverse : Interval) => A,
+                                            fun (interval_inverse : Interval) => at(
+                                              h(x), flip(interval_inverse)
+                                            )
+                                          ), meet(interval_fill, interval_outer)
+                                        )
+                                      ),
+                                      face_when(
+                                        (on(interval_outer, 0)),
+                                        fun (interval_fill : Interval) => at(h(x), interval_inner)
+                                      )
+                                    )
+                                  ),
+                                  face_when(
+                                    (on(interval_outer, 0)),
+                                    fun (interval_inner : Interval) => comp(
+                                      fun (interval_fill : Interval) => A,
+                                      at(h(f(x)), interval_path),
+                                      face_when(
+                                        (on(interval_path, 0)),
+                                        fun (interval_fill : Interval) => f(f(x))
+                                      ),
+                                      face_when(
+                                        (on(interval_path, 1)),
+                                        fun (interval_fill : Interval) => at(
+                                          h(x), meet(interval_fill, interval_inner)
+                                        )
+                                      ),
+                                      face_when(
+                                        (on(interval_inner, 0)),
+                                        fun (interval_fill : Interval) => at(h(f(x)), interval_path)
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        ), interval_path___
+                      ),
+                      face_when(
+                        (on(interval_path___, 0)),
+                        fun (interval_compose___ : Interval) => path(
+                          fun (interval_path_ : Interval) => A,
+                          fun (interval_path_ : Interval) => comp(
+                            fun (interval_compose_ : Interval) => A,
+                            at(
+                              path(
+                                fun (interval_path : Interval) => A,
+                                fun (interval_path : Interval) => comp(
+                                  fun (interval_compose : Interval) => A,
+                                  at(h(f(x)), interval_path),
+                                  face_when(
+                                    (on(interval_path, 0)),
+                                    fun (interval_compose : Interval) => f(f(x))
+                                  ),
+                                  face_when(
+                                    (on(interval_path, 1)),
+                                    fun (interval_compose : Interval) => at(h(x), interval_compose)
+                                  )
+                                )
+                              ), interval_path_
+                            ),
+                            face_when(
+                              (on(interval_path_, 0)), fun (interval_compose_ : Interval) => f(f(x))
+                            ),
+                            face_when(
+                              (on(interval_path_, 1)),
+                              fun (interval_compose_ : Interval) => at(
+                                path(
+                                  fun (interval_inverse : Interval) => A,
+                                  fun (interval_inverse : Interval) => at(
+                                    h(x), flip(interval_inverse)
+                                  )
+                                ), interval_compose_
+                              )
+                            )
+                          )
+                        )
+                      ),
+                      face_when(
+                        (on(interval_path___, 1)),
+                        fun (interval_compose___ : Interval) => at(
+                          path(
+                            fun (interval_path__ : Interval) => PathP(
+                              fun (interval_path : Interval) => A, f(f(x)), f(x)
+                            ),
+                            fun (interval_path__ : Interval) => comp(
+                              fun (interval_compose__ : Interval) => PathP(
+                                fun (interval_path : Interval) => A, f(f(x)), f(x)
+                              ),
+                              at(
+                                path(
+                                  fun (interval_apply : Interval) => PathP(
+                                    fun (interval_path : Interval) => A, f(f(x)), f(x)
+                                  ),
+                                  fun (interval_apply : Interval) => (
+                                    fun (
+                                      loop : PathP(fun (interval_path : Interval) => A, f(x), f(x))
+                                    ) => path(
+                                      fun (interval_path : Interval) => A,
+                                      fun (interval_path : Interval) => comp(
+                                        fun (interval_compose : Interval) => A,
+                                        at(h(f(x)), interval_path),
+                                        face_when(
+                                          (on(interval_path, 0)),
+                                          fun (interval_compose : Interval) => f(f(x))
+                                        ),
+                                        face_when(
+                                          (on(interval_path, 1)),
+                                          fun (interval_compose : Interval) => at(
+                                            loop, interval_compose
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )(
+                                    at(
+                                      path(
+                                        fun (interval_law : Interval) => PathP(
+                                          fun (interval_path : Interval) => A, f(x), f(x)
+                                        ),
+                                        fun (interval_law : Interval) => path(
+                                          fun (interval_path : Interval) => A,
+                                          fun (interval_path : Interval) => comp(
+                                            fun (interval_compose : Interval) => A,
+                                            at(h(x), interval_path),
+                                            face_when(
+                                              (on(interval_path, 0)),
+                                              fun (interval_compose : Interval) => f(x)
+                                            ),
+                                            face_when(
+                                              (on(interval_path, 1)),
+                                              fun (interval_compose : Interval) => at(
+                                                h(x), flip(interval_compose)
+                                              )
+                                            ),
+                                            face_when(
+                                              (on(interval_law, 1)),
+                                              fun (interval_compose : Interval) => at(
+                                                h(x), meet(flip(interval_compose), interval_path)
+                                              )
+                                            )
+                                          )
+                                        )
+                                      ), interval_apply
+                                    )
+                                  )
+                                ), interval_path__
+                              ),
+                              face_when(
+                                (on(interval_path__, 0)),
+                                fun (interval_compose__ : Interval) => path(
+                                  fun (interval_path_ : Interval) => A,
+                                  fun (interval_path_ : Interval) => comp(
+                                    fun (interval_compose_ : Interval) => A,
+                                    at(h(f(x)), interval_path_),
+                                    face_when(
+                                      (on(interval_path_, 0)),
+                                      fun (interval_compose_ : Interval) => f(f(x))
+                                    ),
+                                    face_when(
+                                      (on(interval_path_, 1)),
+                                      fun (interval_compose_ : Interval) => at(
+                                        path(
+                                          fun (interval_path : Interval) => A,
+                                          fun (interval_path : Interval) => comp(
+                                            fun (interval_compose : Interval) => A,
+                                            at(h(x), interval_path),
+                                            face_when(
+                                              (on(interval_path, 0)),
+                                              fun (interval_compose : Interval) => f(x)
+                                            ),
+                                            face_when(
+                                              (on(interval_path, 1)),
+                                              fun (interval_compose : Interval) => at(
+                                                path(
+                                                  fun (interval_inverse : Interval) => A,
+                                                  fun (interval_inverse : Interval) => at(
+                                                    h(x), flip(interval_inverse)
+                                                  )
+                                                ), interval_compose
+                                              )
+                                            )
+                                          )
+                                        ), interval_compose_
+                                      )
+                                    )
+                                  )
+                                )
+                              ),
+                              face_when(
+                                (on(interval_path__, 1)),
+                                fun (interval_compose__ : Interval) => at(
+                                  path(
+                                    fun (interval_law : Interval) => PathP(
+                                      fun (interval_path : Interval) => A, f(f(x)), f(x)
+                                    ),
+                                    fun (interval_law : Interval) => path(
+                                      fun (interval_path : Interval) => A,
+                                      fun (interval_path : Interval) => comp(
+                                        fun (interval_compose : Interval) => A,
+                                        at(h(f(x)), interval_path),
+                                        face_when(
+                                          (on(interval_path, 0)),
+                                          fun (interval_compose : Interval) => f(f(x))
+                                        ),
+                                        face_when(
+                                          (on(interval_path, 1)),
+                                          fun (interval_compose : Interval) => f(x)
+                                        ),
+                                        face_when(
+                                          (on(interval_law, 1)),
+                                          fun (interval_compose : Interval) => at(
+                                            h(f(x)), interval_path
+                                          )
+                                        )
+                                      )
+                                    )
+                                  ), interval_compose__
+                                )
+                              )
+                            )
+                          ), interval_compose___
+                        )
+                      )
+                    )
+                  ), interval_compose____
+                )
+              )
+            )
+          ), interval_compose_____
+        )
+      )
+    )
+  );
+}
+
+// Applying f commutes with the actions of g∘f and f∘g on paths.
+def ap_interchange(U : Universe, A : U, B : U, f : A -> B, g : B -> A, x : A, y : A, p : x = y) =
+  path(
+    fun (interval_refl : Interval) => PathP(
+      fun (interval_equality : Interval) => B, f(g(f(x))), f(g(f(y)))
+    ),
+    fun (interval_refl : Interval) => path(
+      fun (interval_apply_ : Interval) => B,
+      fun (interval_apply_ : Interval) => f(
+        at(
+          path(
+            fun (interval_apply : Interval) => A,
+            fun (interval_apply : Interval) => (fun (argument : A) => g(f(argument)))(
+              at(p, interval_apply)
+            )
+          ), interval_apply_
+        )
+      )
+    )
+  );
+
+// Keep f, g and eta. Correct epsilon so that the half-adjoint triangle holds:
+// epsilon'(y) = epsilon(f(g(y)))⁻¹ · ap(f, eta(g(y))) · epsilon(y).
+def adjoint_counit(
+  U : Universe, A : U, B : U, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
+  epsilon : (forall y : B, f(g(y)) = y), y : B
+) =
+  concatenate(
+    U, B, f(g(y)), f(g(f(g(y)))), y, inverse(U, B, f(g(f(g(y)))), f(g(y)), epsilon(f(g(y)))),
+    concatenate(
+      U, B, f(g(f(g(y)))), f(g(y)), y, ap(U, A, B, f, g(f(g(y))), g(y), eta(g(y))), epsilon(y)
+    )
+  );
+
+theorem adjoint_triangle(
+  U : Universe, A : U, B : U, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
+  epsilon : (forall y : B, f(g(y)) = y), x : A
+) : ap(U, A, B, f, g(f(x)), x, eta(x)) = adjoint_counit(U, A, B, f, g, eta, epsilon, f(x)) {
+  let a = f(g(f(g(f(x)))));
+  let b = f(g(f(x)));
+  let c = f(x);
+  let p = epsilon(b);
+  let q = ap(U, A, B, f, g(f(g(f(x)))), g(f(x)), eta(g(f(x))));
+  let s = ap(U, A, B, f, g(f(x)), x, eta(x));
+  let act = (fun (r : g(f(g(f(x)))) = g(f(x))) => ap(U, A, B, f, g(f(g(f(x)))), g(f(x)), r));
+  have exchange : q = ap(U, B, B, (fun (v : B) => f(g(v))), b, c, s) {
+    exact trans(
+      sym(cong(act, homotopy_self(U, A, (fun (v : A) => g(f(v))), eta, x))),
+      ap_interchange(U, A, B, f, g, g(f(x)), x, eta(x))
+    );
+  }
+  have middle : concatenate(U, B, a, b, c, q, epsilon(c)) = concatenate(U, B, a, b, c, p, s) {
+    exact trans(
+      cong((fun (r : a = b) => concatenate(U, B, a, b, c, r, epsilon(c))), exchange),
+      homotopy_natural(U, B, (fun (v : B) => f(g(v))), epsilon, b, c, s)
+    );
+  }
+  exact sym(
+    trans(
+      cong((fun (r : a = c) => concatenate(U, B, b, a, c, inverse(U, B, a, b, p), r)), middle),
+      path_prepend_inverse_cancel_at(U, B, a, b, c, p, s)
+    )
+  );
+}
+
+// Two inverse homotopies imply the existing full IsEquiv, for arbitrary
+// types and universes. The supplied forward map and inverse remain unchanged.
+def equiv_from_inverse(
+  U : Universe, A : U, B : U, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
+  epsilon : (forall y : B, f(g(y)) = y)
+) : Equiv(U, A, B) {
+  exact (
+    f, g, eta, adjoint_counit(U, A, B, f, g, eta, epsilon),
+    adjoint_triangle(U, A, B, f, g, eta, epsilon)
+  );
+}

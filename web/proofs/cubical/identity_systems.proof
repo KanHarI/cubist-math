@@ -1,0 +1,114 @@
+import field_logic;
+import homotopy_paths;
+
+// A reusable U1 version of the identity-system argument.
+def IdentityTotal(A : U1, R : A -> U1) = exists b : A, R(b);
+def identity_total_point(A : U1, R : A -> U1, b : A, r : R(b)) = typed(IdentityTotal(A, R), (b, r));
+def identity_system_decode(A : U1, a : A, R : A -> U1, r0 : R(a), b : A, p : a = b) =
+  transport(R, a, b, p, r0);
+def identity_system_encode(
+  A : U1, a : A, R : A -> U1, r0 : R(a),
+  contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
+  r : R(b)
+) =
+  cong(field_first(A, R), contraction(identity_total_point(A, R, b, r)));
+
+theorem identity_total_second_path(
+  A : U1, R : A -> U1, x : IdentityTotal(A, R), y : IdentityTotal(A, R), p : x = y
+) : transport(
+  R, field_first(A, R, x), field_first(A, R, y), cong(field_first(A, R), p), field_second(A, R, x)
+) = field_second(A, R, y) {
+  exact apd(field_second(A, R), x, y, p);
+}
+
+theorem identity_system_section(
+  A : U1, a : A, R : A -> U1, r0 : R(a),
+  contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
+  r : R(b)
+) : identity_system_decode(A, a, R, r0, b, identity_system_encode(A, a, R, r0, contraction, b, r)) = r {
+  exact identity_total_second_path(
+    A, R, identity_total_point(A, R, a, r0), identity_total_point(A, R, b, r),
+    contraction(identity_total_point(A, R, b, r))
+  );
+}
+
+theorem identity_system_retraction(
+  A : U1, a : A, R : A -> U1, r0 : R(a),
+  contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
+  p : a = b
+) : identity_system_encode(A, a, R, r0, contraction, b, identity_system_decode(A, a, R, r0, b, p)) = p {
+  let center = identity_total_point(A, R, a, r0);
+  have atCenter : contraction(center) = refl(center) {
+    exact contractible_loops_are_null(
+      IdentityTotal(A, R), center, (fun (z : IdentityTotal(A, R)) => sym(contraction(z))), center,
+      contraction(center)
+    );
+  }
+  exact based_induction(
+    U1, U1, A, a,
+    (
+      fun (b : A) => fun (p : a = b) => identity_system_encode(
+        A, a, R, r0, contraction, b, identity_system_decode(A, a, R, r0, b, p)
+      ) = p
+    ),
+    trans(
+      cong(
+        identity_system_encode(A, a, R, r0, contraction, a),
+        transport_constant(A, R(a), a, a, refl(a), r0)
+      ), cong((fun (q : center = center) => cong(field_first(A, R), q)), atCenter)
+    ), b, p
+  );
+}
+
+// Identity systems with set-valued fibers. The set hypothesis supplies the
+// half-adjoint triangle law; the encode/decode round trips above do not need it.
+theorem identity_system_equivalence(
+  A : U1, a : A, R : A -> U1, r0 : R(a),
+  contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
+  setR : FieldSet(R(b))
+) : Equiv(U1, (a = b), R(b)) {
+  let f = identity_system_decode(A, a, R, r0, b);
+  let g = identity_system_encode(A, a, R, r0, contraction, b);
+  let eta = identity_system_retraction(A, a, R, r0, contraction, b);
+  let eps = identity_system_section(A, a, R, r0, contraction, b);
+  exact equiv_from_inverse_into_set(U1, (a = b), R(b), setR, f, g, eta, eps);
+}
+
+// The weakly constant path-map form of Hedberg's argument.
+theorem constant_path_correction(
+  A : U1, choose : (forall x : A, forall y : A, (x = y) -> (x = y)), x : A, y : A, p : x = y
+) : concatenate(U1, A, x, x, y, inverse(U1, A, x, x, choose(x, x, refl(x))), choose(x, y, p)) = p {
+  exact based_induction(
+    U1, U1, A, x,
+    (
+      fun (y : A) => fun (p : x = y) => concatenate(
+        U1, A, x, x, y, inverse(U1, A, x, x, choose(x, x, refl(x))), choose(x, y, p)
+      ) = p
+    ), inverse_left(A, x, x, choose(x, x, refl(x))), y, p
+  );
+}
+
+theorem constant_paths_are_set(
+  A : U1, choose : (forall x : A, forall y : A, (x = y) -> (x = y)),
+  constant : (
+    forall x : A, forall y : A, forall p : x = y, forall q : x = y,
+    choose(x, y, p) = choose(x, y, q)
+  )
+) : FieldSet(A) {
+  intro x;
+  intro y;
+  intro p;
+  intro q;
+  exact trans(
+    sym(constant_path_correction(A, choose, x, y, p)),
+    trans(
+      cong(
+        (
+          fun (r : x = y) => concatenate(
+            U1, A, x, x, y, inverse(U1, A, x, x, choose(x, x, refl(x))), r
+          )
+        ), constant(x, y, p, q)
+      ), constant_path_correction(A, choose, x, y, q)
+    )
+  );
+}
