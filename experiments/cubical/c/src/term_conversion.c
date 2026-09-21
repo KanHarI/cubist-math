@@ -3,7 +3,7 @@
  * An unbound name must never be identified with a binder on the other side. */
 #include "term_internal.h"
 
-enum comparison_mode { FOLDED, EXPOSE, COMPUTE, CONGRUENCE };
+enum comparison_mode { FOLDED, EXPOSE, COMPUTE, CONGRUENCE, HINTED };
 
 typedef struct alpha_binding {
     uint32_t left, right;
@@ -89,6 +89,116 @@ static bool formula_equal(cc_kernel *k, uint32_t a, uint32_t b, const alpha_bind
 
 static bool alpha(cc_kernel *, cc_term, cc_term, const alpha_binding *, const alpha_binding *, enum comparison_mode);
 
+/* Peel applications without evaluating their arguments or function bodies. */
+static cc_term application_head(cc_kernel *k, cc_term term) {
+    while (k->nodes[term].kind == CC_APP)
+        term = k->nodes[term].child[0];
+    return term;
+}
+
+/* Beta-reduce only explicit lambda heads, without unfolding constants. */
+static cc_term beta_application_head(cc_kernel *k, cc_term term) {
+    if (++k->recursion > 512 || !ck_tick(k, false)) {
+        --k->recursion;
+        ck_fail(k, "Application beta depth exceeded.");
+        return 0;
+    }
+    cc_node n = k->nodes[term];
+    cc_term result = term;
+    if (n.kind == CC_APP) {
+        cc_term fn = beta_application_head(k, n.child[0]);
+        if (!fn) {
+            result = 0;
+        } else if (k->nodes[fn].kind == CC_LAM) {
+            cc_node lambda = k->nodes[fn];
+            cc_term body = ck_substitute(k, lambda.child[1], lambda.payload, n.child[1]);
+            result = body ? beta_application_head(k, body) : 0;
+        } else if (fn != n.child[0]) {
+            result = ck_make(k, CC_APP, 0, fn, n.child[1], 0, 0);
+        }
+    }
+    --k->recursion;
+    return result;
+}
+
+/* Unfold exactly the selected head definition, then discharge the lambdas
+ * already supplied with arguments. Older definitions inside its body stay
+ * folded so a shared head can be recognized before further computation. */
+static cc_term unfold_application_head(cc_kernel *k, cc_term term) {
+    if (++k->recursion > 512) {
+        --k->recursion;
+        ck_fail(k, "Application spine depth exceeded.");
+        return 0;
+    }
+    cc_node n = k->nodes[term];
+    cc_term result = term;
+    if (n.kind == CC_DEFREF) {
+        if (!n.payload || n.payload >= k->definition_count) {
+            ck_fail(k, "Unknown definition in application comparison.");
+            result = 0;
+        } else {
+            result = beta_application_head(k, k->definitions[n.payload].value);
+        }
+    } else if (n.kind == CC_APP) {
+        cc_term fn = unfold_application_head(k, n.child[0]);
+        if (!fn) {
+            result = 0;
+        } else if (k->nodes[fn].kind == CC_LAM) {
+            cc_node lambda = k->nodes[fn];
+            result = ck_substitute(k, lambda.child[1], lambda.payload, n.child[1]);
+        } else {
+            result = ck_make(k, CC_APP, 0, fn, n.child[1], 0, 0);
+        }
+    }
+    --k->recursion;
+    return result;
+}
+
+static bool has_unfolding_hint(const cc_kernel *k, cc_node head) {
+    if (head.kind == CC_DEFREF)
+        for (size_t i = 0; i < k->unfolding_hint_count; ++i)
+            if (k->unfolding_hints[i] == head.payload)
+                return true;
+    return false;
+}
+
+/* A preliminary comparison unfolds only requested definitions. Other heads
+ * remain folded, allowing a wrapper to reveal a common opaque computation. */
+static cc_term hinted_head(cc_kernel *k, cc_term term) {
+    for (unsigned step = 0; step < 128 && term && !k->error[0]; ++step) {
+        cc_term before = term;
+        term = beta_application_head(k, term);
+        if (!term)
+            return 0;
+        cc_term head = application_head(k, term);
+        if (has_unfolding_hint(k, k->nodes[head])) {
+            term = unfold_application_head(k, term);
+        } else {
+            cc_node n = k->nodes[term];
+            if (n.kind == CC_PAPP || n.kind == CC_COMP || n.kind == CC_HCOMP || n.kind == CC_TRANS)
+                term = ck_expose(k, term);
+            else if (n.kind == CC_FST || n.kind == CC_SND) {
+                if (++k->recursion > 512) {
+                    --k->recursion;
+                    ck_fail(k, "Hinted projection depth exceeded.");
+                    return 0;
+                }
+                cc_term pair = hinted_head(k, n.child[0]);
+                --k->recursion;
+                if (!pair)
+                    return 0;
+                if (k->nodes[pair].kind == CC_PAIR)
+                    term = k->nodes[pair].child[n.kind == CC_FST ? 1 : 2];
+                else if (pair != n.child[0])
+                    term = ck_make(k, n.kind, 0, pair, 0, 0, 0);
+            }
+        }
+        if (term == before)
+            break;
+    }
+    return term;
+}
+
 static bool tube_alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms,
                        const alpha_binding *outer_dims, const alpha_binding *inner_dims, enum comparison_mode mode) {
     if (!a || !b)
@@ -111,6 +221,16 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
         return true;
     if (mode != FOLDED && alpha(k, a, b, terms, dims, FOLDED))
         return true;
+    if (mode == COMPUTE && k->unfolding_hint_count && alpha(k, a, b, terms, dims, HINTED))
+        return true;
+    if (mode == HINTED) {
+        cc_term left = hinted_head(k, a);
+        cc_term right = hinted_head(k, b);
+        if (!left || !right)
+            return false;
+        if (left != a || right != b)
+            return alpha(k, left, right, terms, dims, HINTED);
+    }
     if (mode == COMPUTE && alpha(k, a, b, terms, dims, EXPOSE))
         return true;
     if (mode == EXPOSE) {

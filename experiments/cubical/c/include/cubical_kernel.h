@@ -79,8 +79,8 @@ bool cc_kernel_check_in_cube(cc_kernel *, cc_term, cc_term expected,
                              uint64_t dimensions, cc_checked_result *);
 
 /* Optional conversion strategy, never a typing certificate. References must
- * belong to this kernel's checked definition registry. Earlier list entries
- * have higher unfolding priority; count zero clears the strategy. The list
+ * belong to this kernel's checked definition registry. Listed definitions
+ * unfold in a preliminary comparison; count zero clears the strategy. The list
  * applies to check/define operations until replaced. Invalid input preserves
  * the prior list. Clear after a scoped hint even when a check is rejected. */
 bool cc_kernel_set_unfolding_hints(cc_kernel *, const cc_term *references, size_t count);
