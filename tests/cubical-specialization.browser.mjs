@@ -1,0 +1,49 @@
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { chromium } from "playwright";
+const server = spawn("python3", ["tools/serve.py", "--port", "0"], { stdio: ["ignore", "pipe", "pipe"] });
+server.stderr.resume();
+let browser;
+try {
+  const port = await new Promise((resolve, reject) => {
+    let output = "";
+    const timer = setTimeout(() => reject(new Error("Server did not start")), 10000);
+    server.once("error", reject);
+    server.stdout.on("data", data => {
+      output += data;
+      const match = output.match(/127\.0\.0\.1:(\d+)\//);
+      if (match) { clearTimeout(timer); resolve(match[1]); }
+    });
+  });
+  browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  await page.goto(`http://127.0.0.1:${port}/proof.html?proof=surjections&name=every_surjection_has_right_inverse`);
+  await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+  await page.locator('#inspect-axioms [data-axiom="__assumption_Choice_U0"]').click();
+  await page.waitForFunction(() => !document.querySelector("#kernel-specialization").hidden);
+  assert.match(await page.locator("#kernel-specialization .specialization-route").textContent(), /Choice\(U\) → U := U0 → Choice\(U0\)/);
+  assert.match(await page.locator("#kernel-specialization").textContent(), /not an application/);
+  const opened = page.waitForEvent("popup");
+  await page.locator("#open-kernel-assembly").click();
+  const workbench = await opened;
+  workbench.on("pageerror", error => errors.push(error.message));
+  await workbench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+  assert.equal(await workbench.locator("#name").textContent(), "Choice(U0)");
+  assert.equal(await workbench.locator("#specialization").isVisible(), true);
+  assert.match(await workbench.locator("#specialization").textContent(), /axiom instance, not a proved theorem/);
+  const expression = workbench.locator('[data-specialization-handle]').first();
+  const handle = await expression.getAttribute("data-specialization-handle");
+  await expression.click();
+  assert.equal(await workbench.locator(`#assembly-node-${handle}`).getAttribute("data-opcode"), "CC_VAR");
+  assert.equal(await workbench.locator(`#assembly-node-${handle}`).evaluate(node => node.classList.contains("selected")), true);
+  await workbench.locator("#workbench-view").selectOption("math");
+  assert.equal(await workbench.locator("#specialization").isVisible(), true);
+  await workbench.locator("#specialization details").first().locator("summary").click();
+  assert.match(await workbench.locator("#specialization details").first().textContent(), /U is a schema parameter/);
+  assert.equal(await workbench.locator("#specialization a[href*=surjections]").count(), 1);
+  await workbench.locator("#specialization a[href*=surjections]").click();
+  await workbench.waitForFunction(() => document.querySelector("#inspect-name").textContent === "every_surjection_has_right_inverse" && !document.querySelector("#kernel-view").disabled);
+  assert.deepEqual(errors, []);
+  console.log("PASS universe specialization: dependency link, inspector origin, workbench replay, native handles, source navigation");
+} finally { await browser?.close(); server.kill(); }

@@ -14,6 +14,7 @@ export class NativeCubicalElaborator {
     this.assumptions = new Map();
     this.libraryAssumptions = new Map();
     this.assumptionLabels = new Map();
+    this.assumptionOrigins = new Map();
     this.definitionViews = new Map();
     this.schemaSpecializations = new Map();
     this.scopeDefinitions = new Set();

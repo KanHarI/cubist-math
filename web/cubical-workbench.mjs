@@ -1,3 +1,4 @@
+import { renderSpecialization } from "./cubical-specialization.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
@@ -20,6 +21,7 @@ function display(updateSyntax = true) {
   $("name").textContent = view.symbols[selected]?.name ?? selected ?? "Edited expression";
   $("back").disabled = !history.length;
   if (updateSyntax) $("syntax").value = JSON.stringify(view.expression, null, 2);
+  renderSpecialization($("specialization"), view);
   if (assembly) {
     $("more-reduction-sites").hidden = true;
     displayAssembly(); return;
@@ -82,6 +84,7 @@ function displayAssembly() {
     assemblyView = view; assemblyLimit = 400; assemblyFocus = []; expandedDefinitions = new Set();
   }
   listing = kernelAssembly(program, view, checked, { limit: assemblyLimit, focus: assemblyFocus, expanded: expandedDefinitions });
+  renderSpecialization($("specialization"), view, { listing, jump: jumpAssembly });
   renderAssembly($("assembly-listing"), listing, { jump: jumpAssembly,
     expand: (id, body) => { expandedDefinitions.add(id); assemblyFocus.unshift(body); displayAssembly(); jumpAssembly(body); },
     inspect: binding => inspect(binding) });

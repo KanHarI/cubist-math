@@ -74,3 +74,36 @@ test("open interval contexts and full 64-bit formula masks survive assembly insp
   assert.equal(listing.formulas.find(formula => formula.sort === "interval").clauses[0].positive, "0x8000000000000000");
   assert.match(assemblyText(listing), /Interval i: dimension #63/);
 });
+
+test("universe axiom specialization records provenance without inventing a kernel application", async t => {
+  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
+  const result = await program.check(`def choice0 = Choice(U0); def choice1 = Choice(U1);
+    def truncate1 = Truncate(U1); def identity(n : Nat) = n;`, "specialization");
+  assert.equal(result.complete, true);
+  for (const level of [0, 1]) {
+    const binding = `__assumption_Choice_U${level}`;
+    const { view, checked } = checkedView(program, binding);
+    assert.equal(view.expression.tag, "Var");
+    assert.equal(view.specialization.schema, "Choice");
+    assert.equal(view.specialization.universe, `U${level}`);
+    assert.deepEqual(view.specialization.mentions.map(use => use.declaration), [`choice${level}`]);
+    assert.equal(view.specialization.schemaType.domain.tag, "Var");
+    assert.equal(view.specialization.schemaType.domain.name, "U");
+    assert.equal(view.type.domain.tag, "U");
+    assert.equal(view.type.domain.level, level);
+    const listing = kernelAssembly(program, view, checked);
+    assert.equal(program.kernel.node(listing.roots[0].handle).kind, "Var");
+    assert.match(assemblyText(listing), new RegExp(`Elaborator specialization: Choice\\(U\\), U := U${level}`));
+    assert.match(assemblyText(listing), /No universe-generic kernel term or CC_APP/);
+    assert.equal(program.kernel.node(listing.roots.find(root => root.label === "Checked type").handle).kind, "Pi");
+  }
+  const truncation = program.inspect("__assumption_Truncate_U1");
+  assert.equal(truncation.specialization.schemaType.body.tag, "U");
+  assert.equal(truncation.specialization.schemaType.body.level, 0, "schema display preserves fixed codomain");
+  assert.equal(truncation.type.body.level, 0);
+  assert.equal(program.inspect("specialization__identity").specialization, undefined);
+  const { view, checked } = checkedView(program, "__assumption_Choice_U0");
+  const edited = { ...view, expression: { tag: "Nat" } };
+  const editedCheck = program.checker.syntax.check(edited.expression);
+  assert.equal(kernelAssembly(program, edited, editedCheck).specialization, null, "edits must not inherit stale axiom origin");
+});

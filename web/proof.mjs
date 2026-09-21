@@ -1,3 +1,4 @@
+import { renderSpecialization } from "./cubical-specialization.mjs";
 import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { proofChoices as choices, proofTopics, proofsInTopic } from "./proof-library.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
@@ -634,6 +635,7 @@ function renderKernel(view) {
   renderCubicalKernel(view);
 }
 function renderCubicalKernel(view) {
+  renderSpecialization($("kernel-specialization"), view);
   $("open-kernel-assembly").hidden = false;
   $("open-kernel-assembly").disabled = false;
   const mode = $("kernel-view").value, raw = mode === "raw", folded = mode === "notation";

@@ -62,7 +62,7 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
     }
     nodes.push(node); queue.push(...native.children.filter(Boolean));
   }
-  return { roots, context, dimensions: [...dimensions], nodes, formulas: [...formulas.values()],
+  return { roots, context, specialization: view.expression.tag === "Var" && view.expression.name === view.specialization?.binding ? view.specialization : null, dimensions: [...dimensions], nodes, formulas: [...formulas.values()],
     pending: new Set(queue.filter(id => id && !seen.has(id))).size };
 }
 
@@ -71,6 +71,12 @@ export function assemblyText(listing) {
     ...listing.roots.map(root => `; ${root.label}: %${root.handle}`),
     ...listing.context.map(entry => `; Context #${entry.symbol} ${entry.label} (${entry.name}) : %${entry.handle}`),
     ...listing.dimensions.map(([name, slot]) => `; Interval ${name}: dimension #${slot}`), ""];
+  if (listing.specialization) {
+    const origin = listing.specialization;
+    lines.push(`; Elaborator specialization: ${origin.schema}(U), U := ${origin.universe}.`,
+      `; The resulting ${origin.schema}(${origin.universe}) is an explicit context assumption (CC_VAR).`,
+      "; No universe-generic kernel term or CC_APP for the universe argument is claimed.", "");
+  }
   for (const node of listing.nodes) {
     lines.push(`%${node.id} = ${node.mnemonic} [${node.opcode}] payload=${node.payload} `
       + node.operands.map(operand => `${operand.slot}=${operand.handle ? "%" + operand.handle : "0"}`).join(" ")

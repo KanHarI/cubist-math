@@ -601,3 +601,8 @@ select {
   .workspace { grid-template-columns: minmax(0, 1fr) minmax(350px, 30vw); }
   .workspace.inspector-wide { grid-template-columns: minmax(0, 1fr) minmax(480px, 48vw); }
 }
+
+.specialization { border: 1px solid #ccd8cc; border-radius: .5rem; padding: 1rem; margin: 1rem 0; overflow-wrap: anywhere; }
+.specialization-route { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.specialization details { margin: .75rem 0; }
+.specialization .kernel-term { overflow-x: auto; }

@@ -19,6 +19,7 @@ export class CubicalProgram {
     this.collectReferences = collectReferences;
     this.localSymbols = {}; this.declarationBindings = new Map();
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
+    this.sourceAsts = new Map();
     this.gaps = []; this.links = []; this.sources = {}; this.completed = 0;
   }
   dispose() { this.kernel.dispose(); }
@@ -27,6 +28,7 @@ export class CubicalProgram {
       binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
       verified: true, type: cubicalText(type, this.symbols), axioms: [binding],
       description: "An explicit logical assumption from the library. Its full signature is shown in the checked context.",
+      specialization: this.checker.assumptionOrigins.get(binding),
     }]));
   }
   async check(source, main = "current", onProgress = () => {}) {
@@ -66,6 +68,7 @@ export class CubicalProgram {
         visiting.delete(name); return new Map();
       }
       this.sources[name] = text;
+      this.sourceAsts.set(name, ast);
       let env = new Map();
       for (const dependency of ast.imports) env = new Map([...env, ...await load(dependency)]);
       const define = this.checker.define.bind(this.checker);
@@ -174,6 +177,32 @@ export class CubicalProgram {
         label: variableNames[name]?.name ?? this.checker.assumptionLabels.get(name) ?? name,
         binding: variableNames[name]?.binding ?? (this.checker.assumptions.has(name) ? name : null), type })), symbols,
       checkingSteps: checked.checkingSteps, reductionSteps: checked.reductionSteps, axioms: [...assumptions.keys()] };
+    // Origin is explanatory metadata, kept separate from checked term syntax.
+    // Record only literal calls in parsed source; these links do not claim to
+    // represent the kernel's dependency graph or every generic instantiation.
+    const origin = this.checker.assumptionOrigins.get(binding);
+    if (origin) {
+      const mentions = [];
+      for (const [module, source] of Object.entries(this.sources)) {
+        for (const declaration of this.sourceAsts.get(module).declarations) {
+          const seen = new WeakSet();
+          const visit = node => {
+            if (!node || typeof node !== "object" || seen.has(node)) return;
+            seen.add(node);
+            if (node.kind === "call" && node.fn?.kind === "name" && node.fn.name === origin.schema
+              && node.args.length && source.slice(node.args[0].start, node.args[0].end) === origin.universe) {
+              mentions.push({ module, declaration: declaration.name.text,
+                expression: source.slice(node.start, node.end),
+                universe: source.slice(node.args[0]?.start, node.args[0]?.end) });
+              return;
+            }
+            Object.values(node).forEach(visit);
+          };
+          visit(declaration);
+        }
+      }
+      view.specialization = { ...origin, binding, mentions };
+    }
     view.sourceBinding = aliases.find(alias => alias.term === local?.term)?.binding;
     view.folded = foldedInspection(view, aliases);
     view.expressionText = cubicalText(view.folded.expression, symbols);
