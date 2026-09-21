@@ -63,8 +63,77 @@ Generic conversions check with both JS and native C at U0 and U2. The public
 native round-trip law. A closed product-swap example computes actual
 nonidentity transport, and a false beta endpoint is rejected.
 
-This checkpoint deliberately does not claim the full public `Univalence`
-statement, an `idtoequiv` definition, or `UnivalenceEta`. It also does not yet
-prove the round trip beginning with arbitrary public half-adjoint data.
-Those coherence obligations remain separate from the checked maps and beta
-law provided here. No missing result is replaced by an axiom.
+The full **public** `Univalence` statement still requires the round trip
+beginning with arbitrary public half-adjoint data, or equivalently the relevant
+half-adjoint witness uniqueness theorem. This obligation remains separate
+from the native univalence equivalence and the public eta law below. No
+missing result is replaced by an axiom.
+
+
+## Equality-to-equivalence and eta
+
+`nativeIdentityToEquivalence(A,B,p,identity)` is the explicit weak-elimination
+construction
+
+```
+comp j Equiv_native(p(~j), B) [] identityEquivalence(B).
+```
+
+The optional `identity` argument allows sharing the actual checked identity
+equivalence definition. It is not an additional hypothesis. This definition
+has the standard meaning of `idtoequiv`, but does not assert strict computation
+at reflexivity. Its forward map can contain constant-transport correction
+compared with the literal term `transport(p)`.
+
+`nativeUnivalenceEta(A,B,p,level,identity)` proves `ua(idtoequiv(p))=p`.
+Fill the preceding equivalence transport to get `E(i):Equiv_native(p(i),B)`,
+with endpoints `idtoequiv(p)` and identity. The Glue square
+
+```
+Glue B [i=0 ↦ (A,idtoequiv(p)), i=1 ↦ (B,identity), k=1 ↦ (p(i),E(i))]
+```
+
+has at `k=0` the standard `ua` line and at `k=1` the original path.
+
+`publicIdentityToEquivalence(A,B,p,identity)` converts the result to public
+half-adjoint form. `publicUnivalenceEta(A,B,p,level,identity,roundTripLemma)`
+proves its public eta law by applying `ua` to the native representation
+round-trip proof, then composing with native eta.
+
+The final parameter is a shared, checked function
+
+```
+(e : Equiv_native(A,B)) →
+  halfAdjointToNative(nativeToHalfAdjoint(e)) = e.
+```
+
+Register the generic theorem with an explicit type ascription before applying
+it to `A` and `B`; the tests give a complete example. The construction requires
+this shared lemma instead of inlining its filling proof repeatedly. Native
+checking verifies the supplied function and every application. This is proof
+sharing, not a new axiom or unchecked dependency.
+
+## Full native univalence
+
+`nativeUnivalenceCounit(A,B,e,level,identity)` proves
+`idtoequiv(ua(e))=e`. Over the Glue line, `unglueEquivalence` supplies a dependent
+line of equivalences to `B`. Its endpoint forward maps are already correct;
+uniqueness of native equivalence witnesses repairs the endpoint witnesses.
+Reverse this dependent line and use the path-over bridge to obtain the counit.
+
+`nativeUnivalenceEquivalence(A,B,{level,identity,eta,counit})` packages the two
+checked inverse laws into
+
+```
+Equiv_native(Path U_level A B, Equiv_native(A,B)).
+```
+
+Its forward map is the concrete `nativeIdentityToEquivalence` above. Pass
+named checked eta and counit functions specialized to `A,B`. The generic
+quasi-inverse construction is checked under lambda-bound maps before those
+maps and laws are applied, keeping the proof compact.
+
+Native eta and counit check at U0 and U2. The complete native equivalence and
+public eta also check against closed checked lemma registries. No universe
+composition, Glue behavior, or path computation rule has been added or
+relaxed for these results.
