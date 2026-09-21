@@ -100,3 +100,16 @@ export function pathAssociative(A,x,y,z,w,p,q,r) {
     ],pq)));
   });
 }
+
+// Applying f to the filling of p·q gives a second filling of the square
+// defining ap(f,p)·ap(f,q). A comparison cube relates their top edges.
+export function pathApplyConcat(A,B,f,x,y,z,p,q) {
+  return build([A,B,f,x,y,z,p,q],(fresh,A,B,f,x,y,z,p,q)=>{
+    const i=fresh('path'),j=fresh('compose'),k=fresh('naturality');
+    const square=fill(j,A,[wall(i,0,x),wall(i,1,at(q,j))],at(p,i),I.variable(j));
+    const family=T.path(i,B,T.app(f,x),T.app(f,z));
+    return T.line(k,family,T.line(i,B,T.comp(j,B,[
+      wall(i,0,T.app(f,x)),wall(i,1,T.app(f,at(q,j))),wall(k,0,T.app(f,square)),
+    ],T.app(f,at(p,i)))));
+  });
+}
