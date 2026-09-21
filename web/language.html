@@ -240,7 +240,7 @@ theorem third : Nat {
   exact b;
 }</code></pre>
             <p>Tuples with three or more components are macros for right-associated dependent pairs; no extra kernel rule is involved. The same notation works in <code>obtain</code> patterns. Their parentheses are styled as macros: hover to see the binary expansion, or click to inspect the checked expression and type. A tuple needs an expected product or dependent-pair type, just like a binary pair.</p>
-            <p><code>npm run linearize:mathscript</code> scans the source ASTs and flattens right-nested tuples, preserving comments and explicit left-nesting. It checks that each rewritten source has the identical expanded AST before saving. Use <code>-- --check</code> to report candidates without changing files. The ordinary <code>npm run format:mathscript</code> formatter also linearizes tuples automatically.</p>
+            <p><code>npm run linearize:cubist</code> scans the source ASTs and flattens right-nested tuples, preserving comments and explicit left-nesting. It checks that each rewritten source has the identical expanded AST before saving. Use <code>-- --check</code> to report candidates without changing files. The ordinary <code>npm run format:cubist</code> formatter also linearizes tuples automatically.</p>
             <pre><code data-check="core">def first_nat(pair : Nat and Nat) =
   unpack pair as (a, b) return Nat { a; };</code></pre>
             <p><code>unpack</code> has a result type formed outside the new pair variables. Its function form is <code>unpack(pair, resultType, branch)</code>, where <code>branch</code> takes both components. <code>obtain</code> provides the corresponding block form.</p>
@@ -399,8 +399,8 @@ theorem identity_zero : identity(0) = 0 {
             <p>The checked kernel details show the expression, its type, and its open context. Folded kernel notation retains names only where their relationship to the stored term is checked. Use the representation selector for Cubist or raw kernel terms; send either term to the workbench to explore reduction and dependencies. Binder grouping, truncation notation, and equality notation change only presentation. Equality notation is enabled by default: <code>(A =[T] B)</code> displays the identity type with endpoints <code>A</code>, <code>B</code> and carrier <code>T</code>. Uncheck it to see <code>Id</code> with the carrier as a subscript instead. Both views retain links to checked definitions.</p>
             <p>The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules, explaining contexts, binding, and what must be trusted when verifying a proof.</p>
             <p>The compiler’s <strong>Reuse normal forms</strong> and <strong>Reuse checked instructions</strong> switches default on. They control reuse during compilation, not the source language or its mathematical assumptions.</p>
-            <p>For local development, <code>make serve</code> serves the workspace. In the CLI, <code>check FILE.cubist</code> checks a source file. A focused project test can be run as <code>npm test -- web/proofs/FILE.cubist</code>; this checks the selected mathematical source and its imports.</p>
-            <p>Current parser limits are 1,000,000 source characters, 160,000 tokens, nesting depth 128, and numeral literals up to 256. Larger naturals can be built by expressions. These are implementation limits, not mathematical axioms. See the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/mathscript.md">implementation notes</a> for runtime limits and the source-checking pipeline.</p>
+            <p>For local development, <code>make serve</code> serves the workspace. In the CLI, <code>check FILE.cubist</code> checks a source file. A focused project test can be run as <code>npm test -- web/proofs/FILE.cubist</code>; this checks the selected mathematical source and its imports. See the <a href="docs/cli.md">CLI guide</a> for custom files, local imports, inspection, and limitations.</p>
+            <p>Current parser limits are 1,000,000 source characters, 160,000 tokens, nesting depth 128, and numeral literals up to 256. Larger naturals can be built by expressions. These are implementation limits, not mathematical axioms. See the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/kernel.md">implementation notes</a> for runtime limits and the source-checking pipeline.</p>
           </section>
           <section id="errors">
             <h2>Common errors</h2>
@@ -429,7 +429,7 @@ theorem identity_zero : identity(0) = 0 {
               <li><a href="proof.html?proof=circle">The circle’s fundamental group</a>: suspension paths, equivalences, and univalence.</li>
               <li><a href="proof.html?proof=complete_fields">Complete ordered field interface</a>: explicit universes and constructive hypotheses.</li>
             </ul>
-            <p>For the exact accepted grammar and elaboration, see <a href="mathscript/parser.mjs">parser.mjs</a> and <a href="mathscript/compiler.mjs">compiler.mjs</a>. Library definitions are ordinary checked source; their signatures remain the authority for their particular arguments and universes.</p>
+            <p>For the exact accepted grammar and elaboration, see <a href="mathscript/parser.mjs">parser.mjs</a> and <a href="cubical-elaborator.mjs">cubical-elaborator.mjs</a>. Library definitions are ordinary checked source; their signatures remain the authority for their particular arguments and universes.</p>
           </section>
         </article>
       </div>
