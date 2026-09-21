@@ -86,6 +86,13 @@ try {
     assert.match(await page.locator("#result").textContent(), /Verified group_first_isomorphism/);
     assert.match(await page.locator("#kernel-type").textContent(), /KernelQuotientGroup/);
     assert.match(await page.locator("#kernel-type").textContent(), /ImageGroup/);
+    await page.goto(`${base}/proof.html?proof=quotient_group_universal&name=quotient_group_universal`);
+    await idle();
+    await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+    assert.equal(await page.locator("#diagnostic").isVisible(), false);
+    assert.match(await page.locator("#result").textContent(), /Verified quotient_group_universal/);
+    assert.match(await page.locator("#kernel-type").textContent(), /QuotientGroup/);
+    assert.match(await page.locator("#kernel-type").textContent(), /GroupHomAt/);
     await page.getByRole("link", { name: "Proof highlights", exact: true }).click();
     await page.getByRole("link", { name: "Kernel workbench", exact: true }).click();
     await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));

@@ -42,6 +42,8 @@ export const proofChoices = [
   { id: "quotient_operations", topic: "sets-maps", title: "Quotients · descending binary operations" },
   { id: "quotient_groups", topic: "algebra", title: "Groups · quotient by a normal subgroup" },
   { id: "group_first_isomorphism", topic: "algebra", title: "Groups · the first isomorphism theorem" },
+  { id: "group_hom_universes", topic: "algebra", title: "Groups · homomorphisms across universes" },
+  { id: "quotient_group_universal", topic: "algebra", title: "Groups · quotient universal property" },
   { id: "group_quotient_maps", topic: "algebra", title: "Cosets · unique descent of homomorphisms" },
   { id: "kernel_quotient_image", topic: "algebra", title: "First isomorphism theorem · kernel quotient and image carriers" },
   { id: "subgroup_carriers", topic: "algebra", title: "Subgroups · realized groups and unique factorization" },

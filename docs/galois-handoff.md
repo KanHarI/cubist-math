@@ -8,6 +8,35 @@ historical validation, not the current development workflow.
 
 ## Current increment
 
+The bundled quotient universal property is now checked. For a small group
+G, a normal subgroup S, any H : GroupAt(U1), and a homomorphism
+h : GroupHomAt(U1, group_lift(G), H) killing S, there is a unique
+factor : GroupHomAt(U1, QuotientGroup(G,S,normal), H). Its composite with
+`quotient_projection` equals h as a complete homomorphism record.
+
+`quotient_group_universal.cubist` contains:
+
+- `quotient_projection`, `quotient_projection_kills`;
+- `quotient_descend_map`, its beta and arbitrary-coset multiplication laws;
+- `quotient_descend_hom`, `quotient_descend_triangle`, `quotient_descend_unique`;
+- `quotient_group_universal`, packaging existence and uniqueness;
+- `quotient_projection_epimorphism`;
+- `quotient_descend_agrees_with_map`, compatibility with the earlier small-target recursor.
+
+`group_hom_universes.cubist` supplies `GroupHomAt(U)`, projections,
+composition, identity, and homomorphism extensionality. The original
+`GroupHom` / `GroupHomLaws` now specialize this family at U0. Extensionality
+constructs a cubical dependent pair path, using the proposition-valued law
+field; it does not postulate proof irrelevance. Templates are tested at
+U0, U1, U2, and U3.
+
+The universal property needs only `Truncate(U1)`, `TruncateIntro(U1)`,
+`TruncateElim(U1)`, and `TruncateProp(U1)`. No LEM, choice, new axiom, or
+kernel change was introduced. Regression checks that descending the
+projection to its own (genuinely U1) quotient gives the identity homomorphism.
+
+## Previous increment
+
 The general first group isomorphism theorem is checked:
 
 ```text
@@ -79,35 +108,40 @@ name does not assert that an extension is algebraic.
 
 ## Next work
 
-1. Bundle quotient projection and descended maps as universe-polymorphic
-   homomorphisms, and state the group universal property. Reuse
-   `group_quotient_map_unique`; arbitrary-coset multiplication is now available.
-2. Add a concrete non-normal subgroup example. The existing negative test
-   rejects missing normality evidence syntactically; it is not that example.
-3. Generalize structure identity to larger bundled groups where useful, so
+1. Add a concrete non-normal subgroup example. The negative test rejects
+   missing normality evidence syntactically; it is not that example.
+2. Generalize structure identity to larger bundled groups where useful, so
    first-isomorphism results can be used as paths of complete structures.
    Preserve the coherent equivalence and its roundtrips.
-4. Begin explicit finite linear algebra and degree as specified in stage 2.
+3. Begin explicit finite linear algebra and degree as specified in stage 2.
    Keep constructive hypotheses visible; a finite carrier alone does not
    decide arbitrary proposition-valued subobject membership.
 
+The quotient construction still starts from a small source group and small
+subgroup predicates. The universal-property target may be any group in U1.
+No quotient universe lowering has been proved.
+
 ## Validation and workflow
 
-Final validation of this increment: **248 tests passed**. The complete corpus
-checked **2,522 concrete declarations and 32 universe templates**, with no
-failed, blocked, or over-budget declarations at the regression deadline.
-The browser landing regression also passed, including the new first
-isomorphism theorem and its folded `KernelQuotientGroup` / `ImageGroup` names.
-All seven changed mathematical sources pass the formatter. The all-source
-formatter check still reports four pre-existing files (`bouquet_actions`,
-`bouquet_cover`, `bouquet_generation`, and `primes`); they were not changed
-in this increment.
+Current final validation: **255 tests passed**. The complete corpus checked
+**2,537 concrete declarations and 44 universe templates**, with no failed,
+blocked, or over-budget declarations at the regression deadline. The browser
+landing regression passes, including the quotient universal-property page
+and folded `QuotientGroup` / `GroupHomAt` names.
 
-Selected checks for this increment:
+All 415 concrete declarations in the quotient universal-property import
+graph passed the focused 100ms benchmark, with 35 templates counted
+separately. The U0–U3 schema checks, quotient-as-target identity test,
+small-homomorphism compatibility, and rejection of a missing killing
+hypothesis pass. All four changed mathematical sources pass the formatter.
+The previously known all-source formatter issues in `bouquet_actions`,
+`bouquet_cover`, `bouquet_generation`, and `primes` were not changed here.
+
+Selected checks for the current increment:
 
 ```sh
-npm test -- quotient_groups group_first_isomorphism circle_group_identity
-npm test -- tests/quotient-groups.test.mjs tests/proof-library.test.mjs
+npm test -- quotient_group_universal group_first_isomorphism circle_group_identity
+npm test -- tests/quotient-universal.test.mjs tests/quotient-groups.test.mjs tests/proof-library.test.mjs
 node tests/landing.browser.mjs
 node tools/format-mathscript.mjs --check
 ```
@@ -135,3 +169,9 @@ Register new modules in `web/mathscript/modules.mjs` and
 usable during development. Source comments supply inspector documentation.
 Pushes to main publish the website; deployment checks are separate from
 mathematical validation.
+
+For a concrete quotient target, prefer proving that the descended projection
+is the identity by `quotient_projection_epimorphism` and the bundled triangle.
+Inlining propositional induction into homomorphism extensionality caused
+expensive conversion of the nested quotient. The epimorphism proof checks
+under the 1,000,000-step diagnostic budget without new conversion hints.

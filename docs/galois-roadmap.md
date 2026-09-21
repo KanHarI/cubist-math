@@ -4,7 +4,7 @@ Status: resumed on main (2026-09-21). Start with the
 [resumption checkpoint](galois-handoff.md), including validation results and
 the current cubical kernel and validation commands. The listed stage-1 constructions
 and its Galois-connection completion criterion are checked; stages 2–9 remain
-requirements. Quotient group operations and the first group isomorphism theorem are now checked; their bundled universal property remains.
+requirements. Quotient group operations, the first group isomorphism theorem, and the bundled quotient universal property are now checked.
 Checked results and their assumptions are described in
 [Galois symmetries as loops](galois.md).
 
@@ -252,8 +252,16 @@ small image groups are explicitly repackaged there with `group_lift`.
 is proved by a pointwise square of paths. Only the existing truncation
 assumptions are needed; no LEM, choice, or new kernel rules were added.
 
-Next: bundle the existing unique descent as the group universal property,
-and add a non-normal subgroup example. Extending the structure identity
+`quotient_group_universal` now supplies the bundled projection, its
+subgroup-killing law, descent, the commuting triangle, and uniqueness as an
+equality of homomorphisms. The target is an arbitrary `GroupAt(U1)`, so the
+result applies to quotient targets themselves. `GroupHomAt(U)` is the single
+homomorphism family, with the existing `GroupHom` its U0 specialization.
+Projection is also proved epimorphic. On small targets the descended map
+agrees with the earlier `group_quotient_map`. Only the four existing
+truncation families at U1 occur in the universal-property theorem.
+
+Next: add a concrete non-normal subgroup example. Extending the structure identity
 equivalence to `GroupAt(U1)` will let this large-group isomorphism become
 an equality of bundled groups, beyond the already checked carrier equality.
 Then proceed to explicit finite linear algebra and degree, preserving the
@@ -267,8 +275,9 @@ Implementation constraints for the remaining group layer:
 - For a normal subgroup N, reuse the checked `SameLeftCoset(G, N)` relation
   and `normal_coset_multiply` / `normal_coset_inverse` to descend
   the operations. Reuse the checked unique descent in `group_quotient_maps`
-  for the group universal property, and bundle the carrier equivalence from
-  `kernel_quotient_image` as the first group isomorphism theorem.
+  and its bundled extension in `quotient_group_universal`. The carrier
+  equivalence from `kernel_quotient_image` is already bundled by
+  `group_first_isomorphism`; reuse it for later quotient statements.
 - Keep the resolved universe discipline: `SetQuotient` represents classes by
   predicates in U1, `Group = GroupAt(U0)`, and `QuotientGroup` belongs to
   `GroupAt(U1)`. Cumulativity allows repackaging a small carrier; it does not

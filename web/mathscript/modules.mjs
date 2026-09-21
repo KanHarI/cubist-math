@@ -48,6 +48,8 @@ export const sourceModules = [
   "quotient_operations",
   "quotient_groups",
   "group_first_isomorphism",
+  "group_hom_universes",
+  "quotient_group_universal",
   "group_quotient_maps",
   "kernel_quotient_image",
   "normal_subgroups",

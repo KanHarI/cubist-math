@@ -70,3 +70,10 @@ def group_iso_object_at(
 ) : GroupIsoAt(U, group_object_at(U, A, oneA, mA, lawsA), group_object_at(U, B, oneB, mB, lawsB)) {
   exact (f, g, left, right, multiply);
 }
+
+def group_unit_right_at(U : Universe, G : GroupAt(U)) : GroupRightUnitAt(
+  U, group_carrier_at(U, G), group_unit_at(U, G), group_multiply_at(U, G)
+) {
+  obtain (set, associative, left, right, inverses) = group_laws_at(U, G);
+  exact right;
+}

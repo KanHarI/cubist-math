@@ -1,11 +1,10 @@
 import group_operations;
+import group_hom_universes;
 
 // A homomorphism preserves multiplication. Preservation of the identity and
 // inverse follows from the group laws, so it is not stored redundantly.
-def GroupHomLaws(G : Group, H : Group, f : group_carrier(G) -> group_carrier(H)) =
-  GroupMultiplicative(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H), f);
-def GroupHom(G : Group, H : Group) =
-  exists f : group_carrier(G) -> group_carrier(H), GroupHomLaws(G, H, f);
+def GroupHomLaws = GroupHomLawsAt(U0);
+def GroupHom = GroupHomAt(U0);
 def group_hom_map(G : Group, H : Group, h : GroupHom(G, H)) : group_carrier(G) -> group_carrier(H) {
   exact sigma_first((group_carrier(G) -> group_carrier(H)), GroupHomLaws(G, H), h);
 }
