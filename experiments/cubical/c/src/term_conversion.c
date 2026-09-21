@@ -300,13 +300,47 @@ bool ck_convertible(cc_kernel *k, cc_term a, cc_term b) {
     return !k->error[0] && alpha(k, a, b, NULL, NULL, COMPUTE);
 }
 
+/* Cumulativity is directed typing, not definitional equality. A function or
+ * dependent pair over the same domain remains valid when its result universe
+ * is raised. Closing this rule under Pi/Sigma is necessary for substitution:
+ * instantiating B : U1 with B : U0 can turn a checked family A -> U1 into a
+ * lambda whose most precise inferred type is A -> U0.
+ *
+ * Domains must be definitionally equal. In particular this rule cannot widen
+ * a function's accepted arguments, identify universes, or resize downward. */
+static bool cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
+    if (++k->recursion > 512) {
+        --k->recursion;
+        return ck_fail(k, "Cumulative comparison recursion depth exceeded.");
+    }
+    bool accepted = ck_convertible(k, actual, expected);
+    if (!accepted && !k->error[0]) {
+        actual = ck_whnf(k, actual);
+        expected = ck_whnf(k, expected);
+        if (actual && expected) {
+            cc_node left = k->nodes[actual];
+            cc_node right = k->nodes[expected];
+            if (left.kind == CC_U && right.kind == CC_U) {
+                accepted = left.payload <= right.payload;
+            } else if ((left.kind == CC_PI || left.kind == CC_SIGMA) &&
+                       left.kind == right.kind &&
+                       ck_convertible(k, left.child[0], right.child[0])) {
+                /* Compare codomains under one common fresh variable. Both
+                 * types have already been checked; no new assumption is
+                 * approved by this comparison. */
+                cc_term variable = ck_var(k, ck_fresh_symbol(k));
+                cc_term left_body = ck_substitute(k, left.child[1], left.payload, variable);
+                cc_term right_body = ck_substitute(k, right.child[1], right.payload, variable);
+                accepted = cumulative(k, left_body, right_body);
+            }
+        }
+    }
+    --k->recursion;
+    return accepted && !k->error[0];
+}
+
 bool ck_expect(cc_kernel *k, cc_term actual, cc_term expected) {
-    if (ck_convertible(k, actual, expected))
-        return true;
-    actual = ck_whnf(k, actual);
-    expected = ck_whnf(k, expected);
-    if (actual && expected && k->nodes[actual].kind == CC_U && k->nodes[expected].kind == CC_U &&
-        k->nodes[actual].payload <= k->nodes[expected].payload)
+    if (cumulative(k, actual, expected))
         return true;
     return ck_fail(k, "Type mismatch.");
 }

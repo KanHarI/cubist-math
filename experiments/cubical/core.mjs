@@ -449,11 +449,20 @@ export class Checker {
   constructor({fuel=100000} = {}) { this.limit = fuel; this.steps = 0; }
   nf(t) { const budget={left:this.limit}; const result=normal(t,budget); this.steps += this.limit-budget.left; return result; }
   equal(a,b) { return JSON.stringify(alpha(this.nf(a))) === JSON.stringify(alpha(this.nf(b))); }
-  expect(actual,expected) {
-    if (this.equal(actual,expected)) return;
+  cumulative(actual,expected) {
+    if (this.equal(actual,expected)) return true;
     const a=this.nf(actual), b=this.nf(expected);
-    if (a.tag === "U" && b.tag === "U" && a.level <= b.level) return;
-    fail(`Type mismatch: ${JSON.stringify(alpha(a))} versus ${JSON.stringify(alpha(b))}`);
+    if (a.tag === "U" && b.tag === "U") return a.level <= b.level;
+    if (["Pi","Sigma"].includes(a.tag) && a.tag === b.tag && this.equal(a.domain,b.domain)) {
+      const name=fresh("cumulative",new Set([...free(a),...free(b)]));
+      return this.cumulative(substitute(a.body,a.name,T.variable(name)),
+        substitute(b.body,b.name,T.variable(name)));
+    }
+    return false;
+  }
+  expect(actual,expected) {
+    if (this.cumulative(actual,expected)) return;
+    fail(`Type mismatch: ${JSON.stringify(alpha(this.nf(actual)))} versus ${JSON.stringify(alpha(this.nf(expected)))}`);
   }
   type(t,ctx,dims) { const checked=this.infer(t,ctx,dims), u=this.nf(checked.type); if(u.tag!=="U") fail("Expected a universe-valued type."); return {...checked,level:u.level}; }
   check(t,expected,ctx,dims) { const checked=this.infer(t,ctx,dims); this.expect(checked.type,expected); return checked.term; }
