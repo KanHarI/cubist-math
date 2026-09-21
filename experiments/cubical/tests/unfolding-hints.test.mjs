@@ -56,3 +56,26 @@ test('unfolding hints never identify unequal definitions or fabricate path endpo
     assert.equal(checkNative(proof,falseType,[],{definitions,normalize:false,unfoldingHints:hints}).ok,false);
   assert.throws(()=>checkNative(proof,null,[],{definitions,unfoldingHints:['not_a_definition']}),/Unknown unfolding hint/);
 });
+
+test('selective conversion retains pair eta without expanding the permutation bijection',()=>{
+  const data=referenceSyntax(JSON.parse(gunzipSync(readFileSync(
+    new URL('../fixtures/permutation-pair-eta.json.gz',import.meta.url)))));
+  const definitions=data.definitions.map(d=>({name:d.name,value:d.term,type:d.type}));
+  const unfoldingHints=['equivalences__sigma_first','equivalences__sigma_second',
+    'equivalences__fst','equivalences__snd','permutations__permutation_split',
+    'permutations__permutation_join'];
+  const result=checkNative(data.term,data.expected,data.assumptions,
+    {definitions,unfoldingHints,normalize:false});
+  assert(result.ok,result.error);
+  assert(result.reductionSteps<10000,`${result.reductionSteps} reductions`);
+});
+
+test('hinted pair eta still compares both components',()=>{
+  const type=T.sigma('n',T.nat,T.nat),p=T.variable('p');
+  const zero={tag:'Ref',name:'zero'};
+  const definitions=[{name:'zero',value:T.zero,type:T.nat}];
+  const wrong=T.pair(type,T.first(p),zero);
+  const result=checkNative(T.line('i',type,wrong),T.path('i',type,p,p),[['p',type]],
+    {definitions,unfoldingHints:['zero'],normalize:false});
+  assert.equal(result.ok,false);
+});
