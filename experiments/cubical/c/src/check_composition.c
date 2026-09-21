@@ -2,7 +2,7 @@
  * Each face is split into consistent conjunctions of endpoint equations.
  * The tube must equal a0 at i=0 and other tubes on EVERY overlap.
  * Only these restricted, independently checked tube terms are retained. */
-#include "term_internal.h"
+#include "dimension_scope.h"
 
 static cc_term rename_tubes(cc_kernel *k, cc_term system, unsigned dim,
                              const cc_formula *replacement) {
@@ -20,6 +20,7 @@ bool ck_composition(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dim
                       cc_judgement *out) {
     if (n.payload >= CC_DIMENSIONS)
         return ck_fail(k, "Composition dimension outside native range.");
+    dims = ck_live_dimensions(k, n, ctx, dims);
     unsigned dim = n.payload;
     if (dims & (UINT64_C(1) << dim)) {
         uint64_t avoid = dims | ck_free_dims(k, n.child[0]) | ck_free_dims(k, n.child[1]);

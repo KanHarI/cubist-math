@@ -1,10 +1,11 @@
 // Bridge the public half-adjoint presentation with CCHM contractible fibers.
 // These are derived terms, not additional equivalence or univalence axioms.
-import {T} from './core.mjs';
+import {T,fill} from './core.mjs';
 import {interval as I,face as F} from './lattice.mjs';
 import {equiv,fiber,contractible,equivalenceFromInverse,equivalenceWitnessPath,withNativeReferences,
-  univalencePath,univalenceTransportBeta} from './equivalence.mjs';
-import {pathRefl,pathInverse,pathApply} from './path-algebra.mjs';
+  identityEquivalence,unglueEquivalence,univalencePath,univalenceTransportBeta} from './equivalence.mjs';
+import {pathRefl,pathInverse,pathApply,pathConcat} from './path-algebra.mjs';
+import {dependentPathToTransport} from './path-over.mjs';
 const v=T.variable,app=T.app,fst=T.first,snd=T.second;
 const at=(p,i)=>T.at(p,I.variable(i));
 const eq=(i,A,x,y)=>T.path(i,A,x,y);
@@ -102,5 +103,103 @@ export function nativeEquivalenceRoundTrip(A,B,e) {
     const converted=halfAdjointToNative(A,B,nativeToHalfAdjoint(A,B,e));
     const term=equivalenceWitnessPath(A,B,T.pair(equiv(A,B),f,v(name)),e);
     return app(T.lam(name,witnessType,term),snd(converted));
+  });
+}
+
+
+// Equality-to-equivalence by weak identity elimination: transport the identity
+// equivalence of B backwards through X ↦ Equiv(X,B). This concrete definition
+// deliberately does not assert a strict reflexivity computation rule.
+export function nativeIdentityToEquivalence(A,B,p,identity=identityEquivalence(B)) {
+  return build([A,B,p,identity],(fresh,A,B,p,identity)=>{
+    const j=fresh('identity_transport');
+    return T.comp(j,equiv(T.at(p,I.reverse(I.variable(j))),B),[],identity);
+  });
+}
+export function nativeUnivalenceEta(A,B,p,level=0,identity=identityEquivalence(B)) {
+  return build([A,B,p,identity],(fresh,A,B,p,identity)=>{
+    const i=fresh('path'),j=fresh('identity_transport'),k=fresh('eta');
+    const E=fill(j,equiv(T.at(p,I.reverse(I.variable(j))),B),[],identity,
+      I.reverse(I.variable(i)));
+    const initial=nativeIdentityToEquivalence(A,B,p,identity);
+    const G=T.glueType(B,[
+      {face:F.endpoint(i,0),type:A,equiv:initial},
+      {face:F.endpoint(i,1),type:B,equiv:identity},
+      {face:F.endpoint(k,1),type:at(p,i),equiv:E},
+    ]);
+    return T.line(k,eq(i,T.universe(level),A,B),T.line(i,T.universe(level),G));
+  });
+}
+export function publicIdentityToEquivalence(A,B,p,identity=identityEquivalence(B)) {
+  return build([A,B,p,identity],(fresh,A,B,p,identity)=>{
+    const name=fresh('native_equivalence');
+    return app(T.lam(name,equiv(A,B),nativeToHalfAdjoint(A,B,v(name))),
+      nativeIdentityToEquivalence(A,B,p,identity));
+  });
+}
+export function publicUnivalenceEta(A,B,p,level=0,identity=identityEquivalence(B),roundTripLemma=null) {
+  if(!roundTripLemma)throw Error('Supply the checked generic native-equivalence round-trip lemma.');
+  return build([A,B,p,identity,roundTripLemma],(fresh,A,B,p,identity,roundTripLemma)=>{
+    const name=fresh('native_equivalence'),i=fresh('path');
+    const P=eq(i,T.universe(level),A,B),E=equiv(A,B);
+    const input=nativeIdentityToEquivalence(A,B,p,identity);
+    const applyUA=T.lam(name,E,univalencePath(A,B,v(name),level));
+    const roundTrip=app(roundTripLemma,input);
+    const first=pathApply(P,applyUA,roundTrip);
+    const initial=publicUnivalencePath(A,B,publicIdentityToEquivalence(A,B,p,identity),level);
+    return pathConcat(P,initial,first,nativeUnivalenceEta(A,B,p,level,identity));
+  });
+}
+
+
+// The equivalence over the Glue line is unglue. Repair its endpoint witnesses
+// at their unchanged forward maps, then apply the dependent-path bridge.
+export function nativeUnivalenceCounit(A,B,e,level=0,identity=identityEquivalence(B)) {
+  return build([A,B,e,identity],(fresh,A,B,e,identity)=>{
+    const i=fresh('path'),j=fresh('repair'),r=fresh('reverse'),w=fresh('witness');
+    const G=T.glueType(B,[
+      {face:F.endpoint(i,0),type:A,equiv:e},
+      {face:F.endpoint(i,1),type:B,equiv:identity},
+    ]);
+    const b=fresh('argument'),y=fresh('target');
+    const forward=T.lam(b,G,T.unglue(G,v(b)));
+    const witnessType=T.pi(y,B,contractible(fiber(G,B,forward,v(y))));
+    const current=T.pair(equiv(G,B),forward,v(w));
+    const initial=at(equivalenceWitnessPath(A,B,current,e),j);
+    const final=at(equivalenceWitnessPath(B,B,current,identity),j);
+    const repaired=T.comp(j,equiv(G,B),[
+      {face:F.endpoint(i,0),term:initial},
+      {face:F.endpoint(i,1),term:final},
+    ],current);
+    const shared=app(T.lam(w,witnessType,repaired),snd(unglueEquivalence(G)));
+    const dependent=T.line(i,equiv(G,B),shared);
+    const ua=univalencePath(A,B,e,level);
+    const backwards=I.reverse(I.variable(r));
+    const family=equiv(T.at(ua,backwards),B);
+    const reverse=T.line(r,family,T.at(dependent,backwards));
+    return app(dependentPathToTransport(r,family,identity,e),reverse);
+  });
+}
+
+// Assemble full univalence for the native presentation from its independently
+// checked inverse laws. Passing named checked lemmas keeps this theorem small.
+export function nativeUnivalenceEquivalence(A,B,{level=0,identity=identityEquivalence(B),eta,counit}={}) {
+  if(!eta||!counit)throw Error('Supply the checked generic native univalence inverse laws.');
+  return build([A,B,identity,eta,counit],(fresh,A,B,identity,eta,counit)=>{
+    const p=fresh('equality'),e=fresh('equivalence'),i=fresh('path');
+    const P=eq(i,T.universe(level),A,B),E=equiv(A,B);
+    const forward=T.lam(p,P,nativeIdentityToEquivalence(A,B,v(p),identity));
+    const backward=T.lam(e,E,univalencePath(A,B,v(e),level));
+    const f=fresh('forward'),g=fresh('backward'),a=fresh('eta'),b=fresh('counit');
+    const bindings=[
+      [f,T.pi(p,P,E),forward],
+      [g,T.pi(e,E,P),backward],
+      [a,T.pi(p,P,eq(i,P,app(v(g),app(v(f),v(p))),v(p))),eta],
+      [b,T.pi(e,E,eq(i,E,app(v(f),app(v(g),v(e))),v(e))),counit],
+    ];
+    let result=equivalenceFromInverse(P,E,v(f),v(g),v(a),v(b));
+    for(const [name,type]of [...bindings].reverse())result=T.lam(name,type,result);
+    for(const [,,value]of bindings)result=app(result,value);
+    return result;
   });
 }

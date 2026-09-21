@@ -2,7 +2,7 @@
  * Application computes at endpoints even when the path itself is neutral.
  * The annotation used for that computation is reconstructed by this checker;
  * an input annotation is never accepted as evidence. */
-#include "term_internal.h"
+#include "dimension_scope.h"
 
 bool ck_paths(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims,
                cc_judgement *out) {
@@ -33,6 +33,7 @@ bool ck_paths(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims,
     }
     if (n.payload >= CC_DIMENSIONS)
         return ck_fail(k, "Dimension binder outside native range.");
+    dims = ck_live_dimensions(k, n, ctx, dims);
     unsigned dim = n.payload;
     if (dims & (UINT64_C(1) << dim)) {
         uint64_t avoid = dims | ck_free_dims(k, n.child[0]);
