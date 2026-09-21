@@ -226,7 +226,7 @@ function inverseEquivalenceTerm(A,B,f,g,eta,epsilon) {
 // them by fresh free names while using the reference fill/substitution helpers,
 // then restore the exact native reference nodes. Only the native registry can
 // certify these references; no global definition is treated as an assumption.
-function withNativeReferences(inputs,build) {
+export function withNativeReferences(inputs,build) {
   const references=new Map(),reserved=[...inputs];
   const rewrite=(node,restore=false)=>{
     if(Array.isArray(node))return node.map(value=>rewrite(value,restore));

@@ -123,6 +123,7 @@ function substitute(t, n, value, dimension = false) {
   return result;
 }
 const dsub = (t,n,r) => substitute(t,n,r,true);
+export {dsub as substituteDimension};
 const restrict = (t,clause) => clause.reduce((term,x)=>dsub(term,x.slice(0,-2),x.endsWith("0")?I.zero:I.one),t);
 
 // Derived filling, CCHM section 4.4. The added r=0 wall keeps the starting lid
