@@ -1,5 +1,45 @@
 # Native cubical browser integration
 
+## Inspecting checked terms
+
+The proof workspace puts source beside the inspector, with verification results
+below the source. “Widen” gives the inspector more room for long types.
+Source names, context assumptions, local definitions, axioms, and generated
+cubical helpers are clickable. “Show body” expands a named proof or local
+definition; “Show more of the term” increases the display budget without
+normalizing the expression.
+
+The default folded view preserves kernel definition references and uses source
+labels for bound variables. Local `let`, `have`, and `obtain` names abbreviate
+their elaborated expressions, including occurrences in context types. These
+abbreviations are selected by exact syntax matching, modulo removal of typed
+identity applications. Matching is restricted to the occurrence's lexical
+environment and does not cross internal term or interval binders. Ambiguous
+binder labels are distinguished with primes. No heuristic unfolding or proof
+search is performed to obtain a nicer name.
+
+`web/cubical-inspection.mjs` creates presentation annotations separately from the
+checked AST. “Kernel notation (stored)” exposes the underlying constructors;
+“Raw kernel term” also exposes internal names and annotations. Numeral,
+nondependent arrow/product, and reflexivity notation are structural display
+conventions. Truncation and equality notation have separate switches. Dependent
+paths retain their varying family instead of being printed as ordinary equality.
+
+Workbench transfers replay source and reconstruct the selected checked term.
+They never submit display aliases as evidence. Source folding applies to context
+types there too and can be switched off. Editing or normalization discards the
+old folded projection; an invalid edit leaves the last checked display visible
+with an explicit failure and disables normalization.
+
+Focused checks:
+
+```
+node --test tests/cubical-inspection.test.mjs tests/cubical-program.test.mjs
+node tests/cubical-inspector.browser.mjs
+```
+
+## Native interface
+
 The new C checker builds independently to `web/dist/cubical.mjs` and
 `web/dist/cubical.wasm`:
 

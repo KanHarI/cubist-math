@@ -230,7 +230,6 @@ async function check() {
     const result = await request("check", { source, module: proofId, optimizations: compilerOptimizations() });
     last = result;
     history.length = 0;
-    renderLibrary();
     renderSource();
     renderResult();
     setMode("read");
@@ -273,6 +272,7 @@ function setMode(mode) {
   $("source-hint").textContent =
     mode === "edit"
       ? "Edit the source, then Check proof. A failed check preserves your last checked proof."
+      : last?.backend === "cubical" ? "Click a name or numeral to inspect its checked type, context, and definition."
       : "Click a name to inspect it. Click a line number to see its goal and assumptions.";
 }
 function decorate(info) {
@@ -305,7 +305,6 @@ function revealSource(info) {
   if (last.mode === "construction" && !$("show-intermediate").checked) {
     $("show-intermediate").checked = true;
     renderSource();
-    renderLibrary();
   }
   setMode("read");
   for (const row of document.querySelectorAll(".source-line.active"))
@@ -336,29 +335,6 @@ function sourceLink(info) {
       e.preventDefault();
       revealSource(info);
     };
-  }
-}
-function renderLibrary() {
-  $("definitions").replaceChildren();
-  if (!last) return;
-  const query = $("search").value.toLowerCase();
-  const visible = [...last.outputs, ...last.imports];
-  if ($("show-intermediate").checked)
-    visible.push(...(last.declarations ?? []).filter((d) => d.private));
-  for (const info of visible.filter((d) =>
-    `${d.name} ${d.title ?? ""} ${d.description ?? ""}`
-      .toLowerCase()
-      .includes(query),
-  )) {
-    const button = document.createElement("button");
-    button.className = "definition";
-    button.dataset.name = info.name;
-    button.append(document.createTextNode(info.name));
-    const small = document.createElement("small");
-    small.textContent = info.template ? "Universe template · checked at each use" : info.verified === false ? "Not checked · migration gap" : info.title ?? "Checked " + info.kind;
-    button.append(small);
-    button.onclick = () => inspect(decorate(info));
-    $("definitions").append(button);
   }
 }
 
@@ -485,7 +461,7 @@ function renderSource() {
   $("source-count").textContent =
     last.mode === "construction"
       ? `All ${total.toLocaleString()} steps checked. ${hidden.toLocaleString()} intermediate steps hidden; use the checkbox to show them.`
-      : `${last.source.split("\n").length} lines · click a name, numeral, or line number`;
+      : `${last.source.split("\n").length} lines · click a name or numeral${last.backend === "cubical" ? "" : ", or a line number"}`;
   let offset = 0;
   for (const [index, line] of last.source.split("\n").entries()) {
     if (hidden && /^\s*private\b/.test(line)) {
@@ -602,7 +578,9 @@ async function inspect(info, remember = true) {
   $("kernel-inference").textContent = "";
   $("kernel-context-list").replaceChildren();
   $("kernel-context-note").textContent = "";
-  checkedKernelView = null;
+  checkedKernelView = null; showKernelBody = false; kernelDisplayLimit = 1200;
+  $("toggle-kernel-body").hidden = true;
+  $("kernel-local-definitions").hidden = true;
   $("kernel-view").value = "notation";
   $("kernel-view").disabled = true;
   $("kernel-view-note").textContent = "";
@@ -641,7 +619,8 @@ async function inspect(info, remember = true) {
     try {
       const view = await request("inspect", { binding: info.binding });
       if (sequence !== inspectSerial) return;
-      if (!info.type) renderType(view.typeText ?? layout(view.type, view.contextNames).text);
+      if (view.backend === "cubical") renderType(view.typeText, Object.values(view.symbols));
+      else if (!info.type) renderType(view.typeText ?? layout(view.type, view.contextNames).text);
       renderKernel(view);
     } catch (e) {
       diagnostic(e);
@@ -650,13 +629,14 @@ async function inspect(info, remember = true) {
   if (matchMedia("(max-width:1150px)").matches)
     $("inspect-name").scrollIntoView({ block: "center" });
 }
-function renderType(text) {
+function renderType(text, extraSymbols = []) {
   $("inspect-type").replaceChildren();
   const symbols = new Map(
     [
       ...(last?.symbols ?? []),
       ...(last?.imports ?? []),
       ...(last?.outputs ?? []),
+      ...extraSymbols,
     ].map((v) => [v.name, v]),
   );
   for (const token of text.matchAll(
@@ -683,10 +663,13 @@ function renderType(text) {
     } else $("inspect-type").append(document.createTextNode(word));
   }
 }
-let checkedKernelView = null;
+let checkedKernelView = null, showKernelBody = false, kernelDisplayLimit = 1200;
 function renderKernel(view) {
   checkedKernelView = view;
   if (view.backend === "cubical") { renderCubicalKernel(view); return; }
+  $("expand-kernel").textContent = "Show full term";
+  $("kernel-view").querySelector('[value="expanded"]').hidden = true;
+  $("kernel-view").querySelector('[value="mathscript"]').hidden = false;
   $("open-kernel-expression").disabled = !view.expression;
   $("open-kernel-type").disabled = !view.type;
   const declaration = [...last.outputs, ...last.imports].find(item => item.binding === view.name);
@@ -787,43 +770,72 @@ function renderKernel(view) {
     !!folded || (!truncated(typeset?.expression ?? view.expression) && !truncated(typeset?.type ?? view.type));
 }
 function renderCubicalKernel(view) {
-  const raw = $("kernel-view").value === "raw";
+  const mode = $("kernel-view").value, raw = mode === "raw", folded = mode === "notation";
+  const display = folded ? view.folded ?? view : view;
   const open = view.context.length || view.dimensions?.length;
   $("kernel-view").disabled = false;
-  $("kernel-view").querySelector('[value="mathscript"]').disabled = true;
-  $("kernel-view").querySelector('[value="notation"]').disabled = false;
-  $("kernel-view-note").textContent = "Native cubical C checked these terms. Named definitions remain folded; raw view shows the stored syntax.";
-  $("kernel-inference").textContent = `Cubical C. ${view.checkingSteps.toLocaleString()} checking steps. ${open ? "Open judgement." : "Closed judgement."}`;
+  $("kernel-view").querySelector('[value="mathscript"]').hidden = true;
+  $("kernel-view").querySelector('[value="expanded"]').hidden = false;
+  $("kernel-view-note").textContent = folded
+    ? "Checked cubical terms with source names. Local names abbreviate their checked expressions; typed identity wrappers are hidden. Select stored notation or raw syntax to inspect every constructor."
+    : raw ? "Raw checked syntax, including annotations and internal names."
+    : "Stored checked syntax in mathematical notation, with source labels for bound variables.";
+  $("kernel-inference").textContent = `Cubical C · ${open ? "Open judgement" : "Closed judgement"}`;
   $("kernel-premises").replaceChildren();
-  $("kernel-context-note").textContent = open ? "Checked context" : "Empty context";
+  $("kernel-context-note").textContent = open ? "Checked assumptions · click a name to inspect it" : "Empty context";
   $("kernel-context-list").replaceChildren();
   const navigation = { resolve: binding => view.symbols[binding], inspect: info => inspect(decorate(info)),
-    identitySugar: $("kernel-identity-sugar").checked, groupIndependentBinders: false };
+    identitySugar: $("kernel-identity-sugar").checked, truncationSugar: $("kernel-truncation-sugar").checked,
+    groupIndependentBinders: false };
   if (view.dimensions?.length) {
     const row = document.createElement("li");
     row.textContent = `Interval coordinates: ${view.dimensions.map(([name]) => name).join(", ")}`;
     $("kernel-context-list").append(row);
   }
-  for (const entry of view.context) {
-    const row = document.createElement("li"); row.className = "kernel-context-row";
-    const label = document.createElement("span"); label.textContent = `${entry.label ?? entry.name} : `;
-    const value = document.createElement("div"); value.className = "kernel-term typeset";
-    renderMathNotation(value, cubicalMathTree(entry.type, view.symbols), navigation);
-    row.append(label, value); $("kernel-context-list").append(row);
+  const render = (target, term) => {
+    target.classList.toggle("typeset", !raw);
+    if (raw) target.textContent = JSON.stringify(term, null, 2);
+    else renderMathNotation(target, cubicalMathTree(term, view.symbols, kernelDisplayLimit), navigation);
+  };
+  for (const entry of display.context) {
+    const row = document.createElement("li"); row.className = "kernel-context-row"; row.dataset.name = entry.label;
+    const label = document.createElement("span"), button = document.createElement("button");
+    button.className = "reference"; button.textContent = entry.label; button.dataset.name = entry.label;
+    button.disabled = !entry.binding;
+    button.onclick = () => navigation.inspect(view.symbols[entry.binding]);
+    label.append(button, " : ");
+    const value = document.createElement("div"); value.className = "kernel-term kernel-context-type";
+    render(value, entry.type); row.append(label, value); $("kernel-context-list").append(row);
   }
+  const locals = view.locals ?? [];
+  $("kernel-local-definitions").hidden = !locals.length;
+  $("kernel-local-links").replaceChildren(...locals.map(local => {
+    const button = document.createElement("button"); button.className = "reference";
+    button.textContent = local.name; button.dataset.name = local.name;
+    button.onclick = () => navigation.inspect(view.symbols[local.binding]); return button;
+  }));
+  $("toggle-kernel-body").hidden = !folded || !display.reference;
+  $("toggle-kernel-body").textContent = showKernelBody ? "Fold expression" : "Show body";
+  $("toggle-kernel-body").setAttribute("aria-expanded", String(showKernelBody));
   for (const side of ["expression", "type"]) {
     $("open-kernel-" + side).disabled = false;
-    const target = $("kernel-" + side); target.classList.toggle("typeset", !raw);
-    if (raw) target.textContent = JSON.stringify(view[side], null, 2);
-    else renderMathNotation(target, cubicalMathTree(view[side], view.symbols), navigation);
+    render($("kernel-" + side), side === "expression" && folded && display.reference && !showKernelBody ? display.reference : display[side]);
   }
-  $("kernel-truncation-options").hidden = true;
+  $("kernel-truncation-options").hidden = raw;
   $("kernel-binder-options").hidden = true;
   $("kernel-identity-options").hidden = raw;
   $("export-folding").hidden = true;
-  $("expand-kernel").hidden = true;
+  $("expand-kernel").textContent = "Show more of the term";
+  $("expand-kernel").hidden = raw || !["kernel-expression", "kernel-type", "kernel-context-list"].some(id => $(id).textContent.includes("…"));
   renderAxioms($("inspect-axioms"), view.axioms ?? []);
 }
+$("toggle-kernel-body").onclick = () => { showKernelBody = !showKernelBody; renderKernel(checkedKernelView); };
+$("widen-inspector").onclick = () => {
+  const wide = document.querySelector(".workspace").classList.toggle("inspector-wide");
+  $("widen-inspector").textContent = wide ? "Narrow" : "Widen";
+  $("widen-inspector").setAttribute("aria-pressed", String(wide));
+};
+
 $("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-truncation-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-group-binders").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
@@ -831,7 +843,7 @@ $("kernel-identity-sugar").onchange = () => { if (checkedKernelView) renderKerne
 for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = async () => {
   if (!checkedKernelView) return;
   const binding = checkedKernelView.name;
-  const folded = $("kernel-view").value === "notation" && !!checkedKernelView.folded?.verified[side];
+  const folded = $("kernel-view").value === "notation" && !!checkedKernelView.folded?.verified?.[side];
   // Save before opening the tab, so its sessionStorage clone includes the
   // return selection even if the workbench transfer is prepared asynchronously.
   const returnURL = proofReturnURL(rememberInspection());
@@ -875,7 +887,6 @@ $("editor").oninput = () => {
 };
 $("show-intermediate").onchange = () => {
   renderSource();
-  renderLibrary();
 };
 $("editor").onkeydown = (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -883,7 +894,6 @@ $("editor").onkeydown = (e) => {
     if (ready && !pending.size) check();
   }
 };
-$("search").oninput = renderLibrary;
 function rememberInspection() {
   return saveProofNavigation({ proof: proofId, backend, source: last.source,
     selected, history, back: crossFileBack, scroll: window.scrollY,
@@ -925,6 +935,7 @@ $("file").onchange = async () => {
   }
 };
 $("expand-kernel").onclick = async () => {
+  if (checkedKernelView?.backend === "cubical") { kernelDisplayLimit *= 4; renderKernel(checkedKernelView); return; }
   try {
     const item = selected,
       view = await request("inspect", {

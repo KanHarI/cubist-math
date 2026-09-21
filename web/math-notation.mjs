@@ -111,7 +111,8 @@ export function independentBinderGroups(tree, enabled = true) {
 
 export function isTruncationApplication(node) {
   return node.kind === "Call" && node.fn.kind === "Name" && node.fn.axiomNotation === "truncation"
-    && node.fn.axiomParameter !== undefined && node.args.length === 2;
+    && ((node.fn.axiomParameter !== undefined && node.args.length === 2)
+      || (node.fn.truncationArgument === 0 && node.args.length === 1));
 }
 
 // Native MathML provides mathematical typesetting without a CDN, TeX input,
@@ -186,7 +187,8 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
     if (node.kind === "Scope") return row(operator("["), element("mtext", node.names.join(", ")), operator("]"), operator("."), visit(node.body));
     if (node.kind === "Number") return element("mn", String(node.value));
     if (["Pi", "Sigma", "Lambda"].includes(node.kind)) {
-      if (node.kind === "Lambda") return row(operator("λ"), element("mi", node.name), operator("."), visit(node.body));
+      if (node.kind === "Lambda") return row(operator("λ"), node.domain
+        ? fenced(row(element("mi", node.name), operator(":"), visit(node.domain))) : element("mi", node.name), operator("."), visit(node.body));
       const group = independentBinderGroups(node, groupIndependentBinders).groups[0];
       const tail = group.at(-1).body, body = visit(tail);
       const space = element("mspace"); space.setAttribute("width", "0.3em");
@@ -195,7 +197,7 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
     }
     if (node.kind === "Call") {
       if (truncationSugar && isTruncationApplication(node)) {
-        const formula = row(reference(operator("‖"), node.fn), visit(node.args[1]), reference(operator("‖"), node.fn));
+        const formula = row(reference(operator("‖"), node.fn), visit(node.args[node.fn.truncationArgument ?? 1]), reference(operator("‖"), node.fn));
         formula.dataset.truncationSugar = "true";
         return formula;
       }

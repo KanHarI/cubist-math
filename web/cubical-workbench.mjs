@@ -1,3 +1,4 @@
+import { foldedInspection } from "./cubical-inspection.mjs";
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { readWorkbenchTransfer } from "./workbench-transfer.mjs";
@@ -5,10 +6,11 @@ import { cubicalMathTree } from "./cubical-notation.mjs";
 import { renderMathNotation } from "./math-notation.mjs";
 const $ = id => document.getElementById(id), history = [];
 let program, view, checked, selected;
-const options = () => ({ resolve: binding => program.symbols[binding], inspect: info => inspect(info.binding),
-  identitySugar: $("identity-sugar").checked });
+const options = () => ({ resolve: binding => view.symbols[binding], inspect: info => inspect(info.binding),
+  identitySugar: $("identity-sugar").checked, truncationSugar: $("truncation-sugar").checked });
 function display() {
-  $("name").textContent = program.symbols[selected]?.name ?? selected ?? "Edited expression";
+  const display = $("fold-names").checked ? view.folded ?? foldedInspection(view) : view;
+  $("name").textContent = view.symbols[selected]?.name ?? selected ?? "Edited expression";
   $("context").replaceChildren();
   if (!view.context.length && !view.dimensions?.length) $("context").textContent = "Empty context";
   if (view.dimensions?.length) {
@@ -16,14 +18,16 @@ function display() {
     row.textContent = `Interval coordinates: ${view.dimensions.map(([name]) => name).join(", ")}`;
     $("context").append(row);
   }
-  for (const entry of view.context) {
+  for (const entry of display.context) {
     const row = document.createElement("div"); row.className = "context-entry";
-    const label = document.createElement("span"); label.textContent = `${entry.label ?? entry.name} :`;
+    const label = document.createElement("span"), button = document.createElement("button");
+    button.className = "reference"; button.textContent = entry.label ?? entry.name; button.disabled = !entry.binding;
+    button.onclick = () => inspect(entry.binding); label.append(button, " :");
     const type = document.createElement("div"); renderMathNotation(type, cubicalMathTree(entry.type, view.symbols), options());
     row.append(label, type); $("context").append(row);
   }
   for (const side of ["expression", "type"])
-    renderMathNotation($(side), cubicalMathTree(view[side], view.symbols), options());
+    renderMathNotation($(side), cubicalMathTree(display[side], view.symbols), options());
   $("syntax").value = JSON.stringify(view.expression, null, 2);
   $("back").disabled = !history.length;
 }
@@ -55,17 +59,17 @@ $("unhighlight").onclick = () => {
   getSelection()?.removeAllRanges();
   document.querySelectorAll(".highlight,.selected").forEach(node => node.classList.remove("highlight", "selected"));
 };
-$("identity-sugar").onchange = () => { if (view) display(); };
+for (const id of ["identity-sugar", "truncation-sugar", "fold-names"]) $(id).onchange = () => { if (view) display(); };
 $("syntax").oninput = () => {
   checked = null; $("normalize").disabled = true;
   $("status").textContent = "Edited syntax is not checked; displayed terms show the last checked version.";
 };
-$("check").onclick = () => { try { validate(JSON.parse($("syntax").value)); display(); } catch (error) { failure(error); } };
+$("check").onclick = () => { try { validate(JSON.parse($("syntax").value)); view.folded = null; display(); } catch (error) { failure(error); } };
 $("normalize").onclick = () => {
   if (!checked) return;
   try {
     view.expression = program.checker.syntax.decode(program.kernel.normalize(checked.expression), new Map(view.dimensions ?? []));
-    validate(); display();
+    validate(); view.folded = null; display();
   } catch (error) { failure(error); }
 };
 try {
@@ -86,7 +90,7 @@ try {
   view = program.inspect(payload.binding); selected = payload.binding;
   if (payload.side === "type") {
     const type = program.checker.syntax.check(view.type, null, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));
-    view = { ...view, expression: type.term, type: type.type };
+    view = { ...view, expression: type.term, type: type.type, folded: view.folded ? { ...view.folded, expression: view.folded.type, type: type.type } : null };
   }
   validate(); display();
 } catch (error) { failure(error); }

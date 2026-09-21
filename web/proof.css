@@ -129,7 +129,7 @@ p {
 }
 .workspace {
   display: grid;
-  grid-template-columns: 210px minmax(350px, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr) minmax(350px, 30vw);
   gap: 16px;
   align-items: start;
 }
@@ -151,45 +151,13 @@ p {
   padding: 4px 9px;
   font-size: 12px;
 }
-.library,
 .inspector {
   position: sticky;
   top: 12px;
   max-height: calc(100vh - 24px);
   overflow: auto;
 }
-.library label {
-  display: block;
-  font-size: 12px;
-  margin: 14px 0 4px;
-}
-.library input {
-  width: 100%;
-  min-width: 0;
-  padding: 7px;
-  border: 1px solid #ccd5ce;
-  border-radius: 5px;
-}
-#definitions {
-  margin: 12px -6px;
-}
-.definition {
-  display: block;
-  width: 100%;
-  border: 0;
-  text-align: left;
-  padding: 9px 6px;
-  background: transparent;
-  overflow-wrap: anywhere;
-}
-.definition small {
-  display: block;
-  color: #69816f;
-  font-size: 11px;
-}
-.definition.active {
-  background: #eaf4e8;
-}
+.source-column { min-width: 0; }
 pre,
 code,
 textarea,
@@ -213,7 +181,7 @@ pre {
   font-size: 13px;
 }
 .result {
-  margin-bottom: 18px;
+  margin-top: 16px;
   padding: 14px 18px;
   background: #edf5e9;
   border: 1px solid #c6dccb;
@@ -409,17 +377,14 @@ summary {
 [hidden] {
   display: none !important;
 }
-@media (max-width: 1150px) {
+@media (max-width: 950px) {
   .workspace {
-    grid-template-columns: 170px minmax(320px, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
   .inspector {
     grid-column: 1/-1;
     position: static;
     max-height: none;
-  }
-  .library {
-    max-height: 80vh;
   }
 }
 @media (max-width: 650px) {
@@ -439,15 +404,9 @@ summary {
     display: flex;
     flex-direction: column;
   }
-  .workspace > .panel {
+  .workspace > .panel,
+  .source-column {
     width: 100%;
-  }
-  .library {
-    position: static;
-    max-height: 240px;
-  }
-  .source {
-    order: -1;
   }
   .inspector {
     position: static;
@@ -630,4 +589,15 @@ select {
 }
 @media (max-width: 650px) {
   .proof-navigation select { width: 100%; min-width: 0; }
+}
+
+/* Keep local contexts compact and make long judgements readable on demand. */
+.inspector .panel-head h2 { overflow-wrap: anywhere; margin-right: auto; }
+#kernel-local-definitions { margin: 12px 0 20px; }
+#kernel-local-links { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 10px 0; }
+#kernel-identity-options { display: block; margin-top: 10px; }
+#kernel-identity-options[hidden] { display: none; }
+@media (min-width: 951px) {
+  .workspace { grid-template-columns: minmax(0, 1fr) minmax(350px, 30vw); }
+  .workspace.inspector-wide { grid-template-columns: minmax(0, 1fr) minmax(480px, 48vw); }
 }

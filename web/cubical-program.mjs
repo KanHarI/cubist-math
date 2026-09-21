@@ -3,6 +3,7 @@ import { NativeCubicalElaborator } from "./cubical-elaborator.mjs";
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
 import { parse } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
+import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 
 // Imports are source, loaded on demand. Every module has its own environment;
@@ -16,6 +17,7 @@ export class CubicalProgram {
     this.readSource = readSource;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
+    this.localSymbols = {}; this.declarationBindings = new Map();
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
     this.gaps = []; this.links = []; this.sources = {}; this.completed = 0;
   }
@@ -77,19 +79,25 @@ export class CubicalProgram {
           onProgress({ completed: this.completed, total,
           current: `${name}.${declaration.name.text}`, phase: "checking", unit: "declarations", instructions: checker.steps });
         },
-        onReference: this.collectReferences ? (node, term, context, dimensions) => pending.push({ node, term, context, dimensions, unfoldingHints: [...this.kernel.unfoldingHints] }) : null,
+        onReference: this.collectReferences ? (node, term, context, dimensions, aliases) => pending.push({ node, term, context, dimensions, aliases, unfoldingHints: [...this.kernel.unfoldingHints] }) : null,
         onDeclaration: (declaration, result) => {
           this.onDeclaration?.(name, declaration, result);
           this.completed++;
           if (result.status === "checked-native-cubical") {
+            this.declarationBindings.set(`${name}__${result.name}`, pending.filter(item => item.node.isBinding));
             for (const item of pending) {
               if (!Number.isInteger(item.node.start)) continue;
               let head = item.term; while (head.tag === "App") head = head.fn;
-              const definition = head.tag === "DefRef";
+              const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
+              const definition = head.tag === "DefRef" && !source;
               const binding = definition ? head.name : `${name}__local_${item.node.start}`;
-              if (!definition) this.views.set(binding, item);
+              if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
+              if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
+                role: item.term.tag === "Var" ? "Local assumption" : "Local definition", verified: true,
+                definitionStart: source?.start ?? item.node.start,
+                ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
               if (name === main) this.links.push({ name: item.node.name, binding, start: item.node.start,
-                end: item.node.end, role: definition ? "definition" : "local" });
+                end: item.node.end, definitionStart: source?.start, role: definition ? "definition" : "local" });
             }
           }
           pending = [];
@@ -108,7 +116,9 @@ export class CubicalProgram {
           status: d.status, reason: d.reason, unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [], start: syntax.start, end: syntax.end,
           definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
           ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),
-          type: verified ? cubicalText(d.type, this.symbols) : d.reason };
+          type: verified ? cubicalText(d.type, { ...this.symbols, ...Object.fromEntries(
+            (this.declarationBindings.get(binding) ?? []).filter(item => item.term.tag === "Var")
+              .map(item => [item.term.name, { name: item.node.name }])) }) : d.reason };
         this.symbols[binding] = info;
         if (!verified && !template) this.gaps.push({ module: name, name: d.name, reason: d.reason });
         if (name === main) this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
@@ -123,6 +133,13 @@ export class CubicalProgram {
       imports: all.filter(d => d.sourceModule), symbols: [...all, ...Object.values(this.assumptionSymbols())], assumptionLabels: Object.fromEntries(this.checker.assumptionLabels), declarations: outputs, links: this.links,
       steps: [], declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
       complete: outputs.length > 0 && outputs.every(d => d.verified || d.template), sources: this.sources };
+  }
+  generatedSymbols() {
+    return Object.fromEntries([...this.kernel.definitions.keys()].filter(binding => !this.symbols[binding]).map(binding => [binding, {
+      binding, name: binding.replace(/^builtin__(.*?)__(U\d+)$/, "$1[$2]"),
+      role: "Derived kernel definition", verified: true,
+      description: "An ordinary definition checked by cubical C. Its body is available below; it introduces no axiom.",
+    }]));
   }
   inspect(binding, { normalize = false } = {}) {
     const info = this.symbols[binding], local = this.views.get(binding);
@@ -141,10 +158,31 @@ export class CubicalProgram {
     context = [...assumptions, ...context];
     const checked = this.kernel.withUnfoldingHints(unfoldingHints, () => this.checker.syntax.check(term, expected, context, dimensions));
     if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalize(checked.expression), dimensions);
-    return { backend: "cubical", name: binding, unfoldingHints, expression: checked.term, type: checked.type,
+    const bindings = this.declarationBindings.get(binding) ?? [];
+    const aliases = (local?.aliases ?? []).map(alias => ({ ...alias, binding: `${local.module}__local_${alias.start}` }));
+    const symbols = { ...this.symbols, ...this.localSymbols, ...this.generatedSymbols(), ...this.assumptionSymbols() };
+    const variableNames = Object.fromEntries([
+      ...bindings.map(item => ({ term: item.term, name: item.node.name, binding: `${info?.sourceModule ?? this.main}__local_${item.node.start}` })),
+      ...aliases,
+    ].filter(alias => alias.term.tag === "Var").reverse().map(alias => [alias.term.name, { name: alias.name, binding: alias.binding }]));
+    for (const [name, value] of Object.entries(variableNames)) symbols[name] = { ...value, local: true };
+    const view = { backend: "cubical", name: binding, unfoldingHints, expression: checked.term, type: checked.type,
       expressionText: cubicalText(checked.term, this.symbols), typeText: cubicalText(checked.type, this.symbols),
-      dimensions: [...dimensions], context: context.map(([name, type]) => ({ name, label: this.checker.assumptionLabels.get(name) ?? name, type })), symbols: { ...this.symbols, ...this.assumptionSymbols() },
+      dimensions: [...dimensions], context: context.map(([name, type]) => ({ name,
+        label: variableNames[name]?.name ?? this.checker.assumptionLabels.get(name) ?? name,
+        binding: variableNames[name]?.binding ?? (this.checker.assumptions.has(name) ? name : null), type })), symbols,
       checkingSteps: checked.checkingSteps, reductionSteps: checked.reductionSteps, axioms: [...assumptions.keys()] };
+    view.sourceBinding = aliases.find(alias => alias.term === local?.term)?.binding;
+    view.folded = foldedInspection(view, aliases);
+    view.expressionText = cubicalText(view.folded.expression, symbols);
+    view.typeText = cubicalText(view.folded.type, symbols);
+    if (local && view.sourceBinding && local.term.tag !== "Var") view.folded.reference = {
+      tag: "DisplayRef", name: this.localSymbols[binding]?.name, binding: view.sourceBinding,
+    };
+    if (info?.kind === "theorem") view.folded.reference = { tag: "DefRef", name: binding };
+    view.locals = aliases.filter(alias => alias.term.tag !== "Var" && alias.binding !== binding && alias.binding !== view.sourceBinding)
+      .map(({ name, binding }) => ({ name, binding }));
+    return view;
   }
   export(binding = null, side = "expression") {
     const view = binding ? this.inspect(binding) : null;

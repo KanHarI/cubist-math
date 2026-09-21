@@ -15,9 +15,23 @@ export class Translator {
     this.checker=checker;this.serial=0;
     this.normalize=normalize;this.nativeCheck=nativeCheck;
     this.dimensions=new Map();
-    this.onReference=onReference ? (node,term,context)=>onReference(node,term,context,new Map(this.dimensions)) : null;
+    this.localSources=new WeakMap();
+    this.onReference=onReference ? (node,term,context,env)=>onReference(node,term,context,new Map(this.dimensions),
+      [...(env??[])].flatMap(([name,value])=>{
+        const source=this.localSources.get(value);
+        return source?.name===name ? [{...source,term:value}] : [];
+      })) : null;
     this.onDeclaration=onDeclaration;
     this.onDeclarationStart=onDeclarationStart;
+  }
+  sourceBinding(node,term,context,env) {
+    if(!this.onReference)return;
+    const name=node.text??node.name;
+    // A source alias gets its own syntax object, even for `let y = x`.
+    // This keeps lexical labels from overwriting x or leaking into siblings.
+    term={...term};env.set(name,term);
+    this.localSources.set(term,{name,start:node.start,end:node.end});
+    this.onReference({...node,name,isBinding:true},term,new Map(context),env);
   }
   fresh(prefix="b") {let name;do{name=`${prefix}${++this.serial}`;}while(this.checker.assumptions?.has(name));return name;}
   // Interval names are cubical coordinates, never terms of a fabricated type.
@@ -145,7 +159,7 @@ export class Translator {
           }
           if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
           if(value.tag==="UniverseSchema")throw Error(`Universe arguments required: ${n.name}`);
-          this.onReference?.(n,value,new Map(ctx));
+          this.onReference?.(n,value,new Map(ctx),env);
           return value;
         }
         if(/^U[0-9]+$/.test(n.name))return T.universe(Number(n.name.slice(1)));
@@ -155,14 +169,14 @@ export class Translator {
         throw Error(`Untranslated name: ${n.name}`);
       }
       case "number": {let t=T.zero;for(let i=0;i<n.value;i++)t=T.succ(t);
-        this.onReference?.({...n,name:String(n.value)},t,new Map(ctx));return t;}
+        this.onReference?.({...n,name:String(n.value)},t,new Map(ctx),env);return t;}
       case "binaryNumber": {
         const term=tr(binaryLiteralSyntax(n));
-        this.onReference?.({...n,name:`0b${n.digits}`},term,new Map(ctx));return term;
+        this.onReference?.({...n,name:`0b${n.digits}`},term,new Map(ctx),env);return term;
       }
       case "lambda": case "forall": case "exists": {
         const domain=tr(n.domain,null),name=this.fresh(n.name.text),inner=new Map(ctx).set(name,domain),scope=new Map(env).set(n.name.text,T.variable(name));
-        this.onReference?.({...n.name,name:n.name.text},T.variable(name),inner);
+        this.sourceBinding(n.name,scope.get(n.name.text),inner,scope);
         let bodyExpected=null;
         if(n.kind==="lambda"&&expected) {
           const pi=this.checker.nf(expected);
@@ -486,20 +500,22 @@ export class Translator {
       const pi=this.checker.nf(goal);
       if(pi.tag!=="Pi")throw Error("intro requires a dependent function goal.");
       const name=this.fresh(first.name.text),variable=T.variable(name),inner=new Map(ctx).set(name,pi.domain);
-      this.onReference?.({...first.name,name:first.name.text},variable,inner);
       const scope=new Map(env).set(first.name.text,variable);
+      this.sourceBinding(first.name,variable,inner,scope);
       const bodyGoal=T.app(T.lam(pi.name,pi.domain,pi.body),variable);
       return T.lam(name,pi.domain,this.block(rest,bodyGoal,inner,scope));
     }
     if(first.kind==="let"&&first.target.kind==="name") {
       const value=this.term(first.value,ctx,env,null);
       this.checker.infer(value,ctx,new Set(this.dimensions.keys()));
-      return this.block(rest,goal,ctx,new Map(env).set(first.target.name,value));
+      const scope=new Map(env).set(first.target.name,value);
+      this.sourceBinding(first.target,value,ctx,scope);
+      return this.block(rest,goal,ctx,scope);
     }
     if(first.kind==="obtain") {
       const value=this.term(first.value,ctx,env,null),scope=new Map(env);
       const bind=(pattern,term)=>{
-        if(pattern.kind==="name") {scope.set(pattern.name,term);return;}
+        if(pattern.kind==="name") {scope.set(pattern.name,term);this.sourceBinding(pattern,term,ctx,scope);return;}
         if(pattern.kind!=="pair"||this.checker.nf(this.checker.infer(term,ctx,new Set(this.dimensions.keys())).type).tag!=="Sigma")
           throw Error("obtain requires a dependent pair matching its pattern.");
         bind(pattern.left,T.first(term));bind(pattern.right,T.second(term));
@@ -515,7 +531,9 @@ export class Translator {
       const motive=T.lam(this.fresh(),type,goal);
       const branch=side=>{
         const name=this.fresh(),domain=sum[side],scope=new Map(env).set(first[side].text,T.variable(name));
-        return T.lam(name,domain,this.block(first[side+"Body"],goal,new Map(ctx).set(name,domain),scope));
+        const inner=new Map(ctx).set(name,domain);
+        this.sourceBinding(first[side],scope.get(first[side].text),inner,scope);
+        return T.lam(name,domain,this.block(first[side+"Body"],goal,inner,scope));
       };
       return T.sumrec(motive,branch("left"),branch("right"),value);
     }
@@ -524,7 +542,9 @@ export class Translator {
       const checked=this.checker.check(value,type,ctx,new Set(this.dimensions.keys()));
       // A local lemma keeps its declared signature just like a top-level proof.
       const named=this.checker.ascribe?.(checked,type)??checked;
-      return this.block(rest,goal,ctx,new Map(env).set(first.name.text,named));
+      const scope=new Map(env).set(first.name.text,named);
+      this.sourceBinding(first.name,named,ctx,scope);
+      return this.block(rest,goal,ctx,scope);
     }
     throw Error(`Proof tactic not yet translated: ${first.kind}`);
   }
