@@ -36,6 +36,7 @@ The following builders return proof terms directly:
 | `pathInverseRight(A,x,y,p)` | `p · inverse(p) = refl(x)` |
 | `pathInverseLeft(A,x,y,p)` | `inverse(p) · p = refl(y)` |
 | `pathAssociative(A,x,y,z,w,p,q,r)` | `(p · q) · r = p · (q · r)` |
+| `pathApplyConcat(A,B,f,x,y,z,p,q)` | `ap(f,p · q) = ap(f,p) · ap(f,q)` |
 
 These are paths, not new judgmental computation rules. In particular constant
 transport in a neutral type is not assumed to reduce definitionally to its
@@ -59,6 +60,12 @@ Its base is `(p · q)(i)`, endpoint walls are `x` and `r(k)`, and its top is
 `((p · q) · r)(i)`. Varying `s` proves associativity. Each intersection and
 endpoint is checked by the ordinary native composition rule.
 
+For preservation of concatenation, apply `f` to the filling square for
+`p · q`. This is a filling with exactly the base and sides of the square for
+`ap(f,p) · ap(f,q)`. Add it as the `k=0` wall to that composition; varying
+`k` gives the claimed path between its two possible top edges. Mixed universe
+levels are supported and independently checked.
+
 ## Validation and remaining work
 
 `tests/path-algebra.test.mjs` independently checks the generic laws with the
@@ -68,7 +75,7 @@ apply the laws to the loop formed by the two different meridians of
 below 10,000 arena nodes. A malformed concatenation with mismatched endpoints
 is rejected. Name-collision and browser-reference cases are included.
 
-There are no new axioms or kernel rules. These helpers do not yet port the
-remaining source lemmas about dependent transport, decoder transport,
-`apd_constant`, or cancellation. Those must be proved for the same explicit
-operations when the source development is migrated.
+There are no new axioms or kernel rules. The dependent transport, decoder, `apd_constant`, and cancellation laws for
+these operations are provided in
+[dependent-transport.md](dependent-transport.md). Existing source definitions
+still need explicit migration and native checking.

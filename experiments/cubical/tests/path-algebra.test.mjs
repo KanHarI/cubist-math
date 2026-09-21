@@ -4,7 +4,7 @@ import {T,Checker} from '../core.mjs';
 import {checkNative} from '../native.mjs';
 import {suspension,north,south,meridian} from '../pushouts.mjs';
 import {pathRefl,pathInverse,pathApply,pathConcat,transportConstant,
-  pathRightUnit,pathLeftUnit,pathInverseLeft,pathInverseRight,pathAssociative} from '../path-algebra.mjs';
+  pathRightUnit,pathLeftUnit,pathInverseLeft,pathInverseRight,pathAssociative,pathApplyConcat} from '../path-algebra.mjs';
 const v=T.variable;
 const equality=(A,x,y)=>T.path('i',A,x,y);
 function close(term,context,kind) {
@@ -88,4 +88,13 @@ test('path algebra builders freshen colliding binder names',()=>{
     pathConcat(A,x,p,pathInverse(A,p)),pathRefl(A,x)),context);
   const ref={tag:'DefRef',name:'checked_path'};
   assert(JSON.stringify(pathInverse(A,ref)).includes('"tag":"DefRef"'));
+});
+
+for(const [a,b]of [[0,0],[0,2],[2,0]])test(`ap preserves concatenation from U${a} to U${b}`,()=>{
+  const A=v('A'),B=v('B'),f=v('f'),x=v('x'),y=v('y'),z=v('z'),p=v('p'),q=v('q');
+  const context=[['A',T.universe(a)],['B',T.universe(b)],['f',T.pi('a',A,B)],
+    ['x',A],['y',A],['z',A],['p',equality(A,x,y)],['q',equality(A,y,z)]];
+  const lhs=pathApply(B,f,pathConcat(A,x,p,q));
+  const rhs=pathConcat(B,T.app(f,x),pathApply(B,f,p),pathApply(B,f,q));
+  checked(pathApplyConcat(A,B,f,x,y,z,p,q),equality(equality(B,T.app(f,x),T.app(f,z)),lhs,rhs),context);
 });
