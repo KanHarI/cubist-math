@@ -152,38 +152,31 @@ theorem galois_composition_is_concatenation(
   let p = extension_iso_path(K, E, E, e);
   let q = extension_iso_path(K, E, E, d);
   have decoded : extension_path_iso(K, E, E, trans(p, q)) = extension_iso_compose(K, E, E, E, e, d) {
-    exact trans(
-      extension_paths_compose(K, E, E, E, p, q),
+    exact with unfolding [extension_iso_path, extension_path_iso] {
       trans(
-        cong(
-          (
-            fun (v : Galois(K, E)) => extension_iso_compose(
-              K, E, E, E, v, extension_path_iso(K, E, E, q)
-            )
-          ), extension_iso_roundtrip(K, E, E, e)
-        ), cong(extension_iso_compose(K, E, E, E, e), extension_iso_roundtrip(K, E, E, d))
-      )
-    );
-  }
-  exact with_unfolding(extension_iso_path, extension_path_iso, galois_compose, galois_inverse,
-trans(
-    sym(cong(extension_iso_path(K, E, E), decoded)), extension_path_roundtrip(K, E, E, trans(p, q))
-  ));
-}
-
-theorem galois_identity_is_reflexivity(K : AlgebraicField, E : FieldExt(K)) : extension_iso_path(
-  K, E, E, extension_identity_iso(K, E)
-) = refl(E) {
-  exact trans(
-    sym(
-      cong(
-        extension_iso_path(K, E, E),
-        transport_constant(
-          FieldExt(K), ExtensionIso(K, E, E), E, E, refl(E), extension_identity_iso(K, E)
+        extension_paths_compose(K, E, E, E, p, q),
+        trans(
+          cong(
+            (
+              fun (v : Galois(K, E)) => extension_iso_compose(
+                K, E, E, E, v, extension_path_iso(K, E, E, q)
+              )
+            ), extension_iso_roundtrip(K, E, E, e)
+          ), cong(extension_iso_compose(K, E, E, E, e), extension_iso_roundtrip(K, E, E, d))
         )
       )
-    ), extension_path_roundtrip(K, E, E, refl(E))
-  );
+    };
+  }
+  exact with unfolding [
+    field_first, identity_total_point, identity_system_decode, structure_iso_point,
+    structure_iso_center, structure_equality_iso, structure_iso_equality, structure_identity_family,
+    FieldExt, extension_iso_path, extension_path_iso
+  ] {
+    trans(
+      sym(cong(extension_iso_path(K, E, E), decoded)),
+      extension_path_roundtrip(K, E, E, trans(p, q))
+    )
+  };
 }
 
 theorem extension_path_iso_refl(K : AlgebraicField, E : FieldExt(K)) : extension_path_iso(
@@ -192,6 +185,17 @@ theorem extension_path_iso_refl(K : AlgebraicField, E : FieldExt(K)) : extension
   exact transport_constant(
     FieldExt(K), ExtensionIso(K, E, E), E, E, refl(E), extension_identity_iso(K, E)
   );
+}
+
+theorem galois_identity_is_reflexivity(K : AlgebraicField, E : FieldExt(K)) : extension_iso_path(
+  K, E, E, extension_identity_iso(K, E)
+) = refl(E) {
+  exact with unfolding [extension_path_iso_refl] {
+    trans(
+      sym(cong(extension_iso_path(K, E, E), extension_path_iso_refl(K, E))),
+      extension_path_roundtrip(K, E, E, refl(E))
+    )
+  };
 }
 
 // A symmetry that moves an element cannot become the reflexive loop.
@@ -221,37 +225,39 @@ theorem galois_left_inverse(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E
   K, E, galois_inverse(K, E, e), e
 ) = extension_identity_iso(K, E) {
   let p = extension_iso_path(K, E, E, e);
-  exact with_unfolding(extension_iso_path, extension_path_iso, galois_compose, galois_inverse,
-trans(
-    cong(galois_compose(K, E, galois_inverse(K, E, e)), sym(extension_iso_roundtrip(K, E, E, e))),
+  exact with unfolding [galois_compose, galois_inverse] {
     trans(
-      sym(extension_paths_compose(K, E, E, E, sym(p), p)),
+      cong(galois_compose(K, E, galois_inverse(K, E, e)), sym(extension_iso_roundtrip(K, E, E, e))),
       trans(
-        cong(extension_path_iso(K, E, E), inverse_left(FieldExt(K), E, E, p)),
-        extension_path_iso_refl(K, E)
+        sym(extension_paths_compose(K, E, E, E, sym(p), p)),
+        trans(
+          cong(extension_path_iso(K, E, E), inverse_left(FieldExt(K), E, E, p)),
+          extension_path_iso_refl(K, E)
+        )
       )
     )
-  ));
+  };
 }
 
 theorem galois_right_inverse(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)) : galois_compose(
   K, E, e, galois_inverse(K, E, e)
 ) = extension_identity_iso(K, E) {
   let p = extension_iso_path(K, E, E, e);
-  exact with_unfolding(extension_iso_path, extension_path_iso, galois_compose, galois_inverse,
-trans(
-    cong(
-      (fun (d : Galois(K, E)) => galois_compose(K, E, d, galois_inverse(K, E, e))),
-      sym(extension_iso_roundtrip(K, E, E, e))
-    ),
+  exact with unfolding [galois_compose, galois_inverse] {
     trans(
-      sym(extension_paths_compose(K, E, E, E, p, sym(p))),
+      cong(
+        (fun (d : Galois(K, E)) => galois_compose(K, E, d, galois_inverse(K, E, e))),
+        sym(extension_iso_roundtrip(K, E, E, e))
+      ),
       trans(
-        cong(extension_path_iso(K, E, E), inverse_right(FieldExt(K), E, E, p)),
-        extension_path_iso_refl(K, E)
+        sym(extension_paths_compose(K, E, E, E, p, sym(p))),
+        trans(
+          cong(extension_path_iso(K, E, E), inverse_right(FieldExt(K), E, E, p)),
+          extension_path_iso_refl(K, E)
+        )
       )
     )
-  ));
+  };
 }
 
 def galois_group_laws(K : AlgebraicField, E : FieldExt(K)) : GroupLaws(

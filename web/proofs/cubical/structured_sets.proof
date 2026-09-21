@@ -485,17 +485,27 @@ theorem structure_identity(
 def structure_equality_iso(
   S : U0 -> U0, R : StructureRelation(S), identity : RelationIdentity(S, R), X : Structure(S),
   Y : Structure(S), p : X = Y
-) =
-  transport(structure_identity_family(S, R, X), X, Y, p, structure_identity_iso(S, R, identity, X));
+) : StructureIso(S, R, X, Y) {
+  exact transport(
+    structure_identity_family(S, R, X), X, Y, p, structure_identity_iso(S, R, identity, X)
+  );
+}
 def structure_iso_equality(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), X : Structure(S),
   Y : Structure(S), e : StructureIso(S, R, X, Y)
-) =
-  identity_system_encode(
-    Structure(S), X, structure_identity_family(S, R, X), structure_identity_iso(S, R, identity, X),
-    structure_total_contraction(S, R, prop, identity, reflects, X), Y, e
-  );
+) : X =[Structure(S)] Y {
+  exact with unfolding [
+    field_first, identity_total_point, structure_iso_point, structure_iso_center
+  ] {
+    identity_system_encode(
+      Structure(S), X, structure_identity_family(S, R, X),
+      structure_identity_iso(S, R, identity, X),
+      structure_total_contraction(S, R, prop, identity, reflects, X), Y, e
+    )
+  };
+}
+
 theorem structure_iso_roundtrip(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), X : Structure(S),

@@ -22,7 +22,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     },
   });
   Object.assign(report, { revision, dirty, runtime: process.version, cpu: cpus()[0]?.model,
-    complete: true, method: "One session; source order with imports checked once. Warm dependencies; no normalization request. Deadline polled cooperatively in JS and C. Universe templates counted separately." });
+    complete: true, method: "One session; source order with imports checked once. Warm dependencies; transient arena terms compacted between declarations; no normalization request. Deadline polled cooperatively in JS and C. Universe templates counted separately." });
   await mkdir(new URL("../build/", import.meta.url), { recursive: true });
   await writeFile(new URL("../build/cubical-benchmark.json", import.meta.url), JSON.stringify(report, null, 2) + "\n");
   if (!selected.length || args.includes("--publish")) {

@@ -1,6 +1,14 @@
 // Native path proofs use interval computation; the Id/J edition remains
 // available for the explicit legacy backend. The UI shows the actual file.
 export const cubicalSourceFiles = Object.freeze({
+  f4_galois: "cubical/f4_galois.proof",
+  quadratic_identities: "cubical/quadratic_identities.proof",
+  embedded_composita: "cubical/embedded_composita.proof",
+  f4_embedding_images: "cubical/f4_embedding_images.proof",
+  f4_embedded_composita: "cubical/f4_embedded_composita.proof",
+  complex_norm_coordinates: "cubical/complex_norm_coordinates.proof",
+  affine_partition_refinement: "cubical/affine_partition_refinement.proof",
+
   circle_degree: "cubical/circle_degree.proof",
   permutations: "cubical/permutations.proof",
   binomial_pascal: "cubical/binomial_pascal.proof",

@@ -109,18 +109,19 @@ test("source unfolding hints name checked definitions, remain scoped, and cannot
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const source = `
     def id(n : Nat) = n;
-    theorem hinted : id(0) = 0 { exact with_unfolding(id, refl(0)); }
+    theorem hinted : id(0) = 0 { exact with unfolding [id] { refl(0) }; }
     theorem ordinary : 0 = 0 { exact refl(0); }
-    theorem false_hint : id(0) = 1 { exact with_unfolding(id, refl(0)); }
-    theorem missing : 0 = 0 { exact with_unfolding(unknown, refl(0)); }
+    theorem false_hint : id(0) = 1 { exact with unfolding [id] { refl(0) }; }
+    theorem missing : 0 = 0 { exact with unfolding [unknown] { refl(0) }; }
   `;
   const result = await program.check(source, "hints");
   assert.deepEqual(result.outputs.map(d => d.verified), [true, true, true, false, false]);
-  assert.deepEqual(result.outputs[1].unfoldingHints, ["hints__id"]);
+  assert.deepEqual(result.outputs[1].unfoldingHints, []);
+  assert.deepEqual(program.checker.definitionViews.get("hints__unfolding_1").unfoldingHints, ["hints__id"]);
   assert.deepEqual(result.outputs[2].unfoldingHints, []);
   assert.deepEqual(program.kernel.unfoldingHints, []);
   const view = program.inspect("hints__hinted");
-  assert.deepEqual(view.unfoldingHints, ["hints__id"]);
+  assert.deepEqual(view.unfoldingHints, []);
   assert.deepEqual(program.kernel.unfoldingHints, []);
   const payload = program.export("hints__hinted");
   const replay = new CubicalProgram(module, async name => payload.sources[name]); t.after(() => replay.dispose());
@@ -138,6 +139,22 @@ test("native progress identifies the active declaration before it is checked", a
     ["progress.first", "checking", 0], ["progress.first", "checked", 1],
     ["progress.second", "checking", 1], ["progress.second", "checked", 2],
   ]);
+});
+
+test("unfolding scopes close local variables and interval coordinates without leaking hints", async t => {
+  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
+  const result = await program.check(`
+    def id(n : Nat) = n;
+    theorem local(n : Nat) : id(n) = n { exact with unfolding [id] { refl(n) }; }
+    def scoped_path(n : Nat, p : n = n) = path(
+      fun (i : Interval) => Nat,
+      fun (i : Interval) => with unfolding [id] { at(p, i) }
+    );
+    theorem endpoint(n : Nat, p : n = n) : at(scoped_path(n, p), 0) = n { exact refl(n); }
+  `, "scope");
+  assert.deepEqual(result.outputs.map(d => [d.name, d.reason]).filter(([, reason]) => reason), []);
+  assert.equal(result.complete, true);
+  assert.deepEqual(program.kernel.unfoldingHints, []);
 });
 
 test("progress totals count a shared import once, including universe templates", async t => {

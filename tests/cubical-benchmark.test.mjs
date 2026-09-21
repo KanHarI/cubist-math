@@ -48,3 +48,23 @@ test("a timeout remains a speed failure and templates are not counted as checked
   assert.equal(category({ reason: "Declaration time limit exceeded." }, 1000, 1000), "optimize");
   assert.equal(category({ reason: "Universe schema: checked at uses" }, 0, 1000), "template");
 });
+
+test("successful compaction retains definitions and translates references while clearing stale results", async t => {
+  const module = await createCubical(), kernel = new CubicalKernel(module);
+  t.after(() => kernel.dispose());
+  const nat = kernel.term("Nat"), zero = kernel.term("Zero");
+  module._cb_checkpoint(kernel.handle);
+  for (let i = 0; i < 300; i++) kernel.term("Succ", 0, zero);
+  const reference = kernel.define("retained", kernel.term("Succ", 0, zero), nat);
+  kernel.head(reference);
+  assert.equal(module._cb_commit_checkpoint(kernel.handle), 1);
+  const moved = module._cb_relocated(kernel.handle, reference);
+  assert.ok(moved < reference);
+  kernel.definitions.set("retained", moved);
+  assert.equal(kernel.node(kernel.head(moved)).kind, "Succ");
+  assert.equal(kernel.node(kernel.check(moved, nat).type).kind, "Nat");
+  assert.throws(() => kernel.check(moved, kernel.term("Unit")));
+  module._cb_checkpoint(kernel.handle);
+  const later = kernel.define("later", moved, nat);
+  assert.equal(kernel.node(kernel.check(later, nat).type).kind, "Nat");
+});

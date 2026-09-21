@@ -88,6 +88,10 @@ try {
   assert.ok(await page.locator("#entries tr").count() > 2000);
   assert.equal(await page.locator("#run").isDisabled(), false);
   assert.equal(await page.locator("#download").isDisabled(), false);
+  await page.locator("#category").selectOption("checked");
+  const times = await page.locator("#entries tr td:nth-child(3)").allTextContents();
+  const milliseconds = times.map(text => Number.parseFloat(text.replaceAll(",", "")));
+  assert.ok(milliseconds.every((time, index) => index === 0 || milliseconds[index - 1] >= time));
   await page.locator("#category").selectOption("failed");
   assert.equal(await page.locator('#entries tr:not([data-category="failed"])').count(), 0);
   assert.deepEqual(errors, []);

@@ -85,31 +85,33 @@ def right_unit(A : U1, x : A, y : A, p : x = y) =
     )
   );
 
-def inverse_left(A : U1, x : A, y : A, p : x = y) =
-  path(
-    fun (k : Interval) => y = y,
-    fun (k : Interval) => path(
-      fun (i : Interval) => A,
-      fun (i : Interval) => comp(
-        fun (j : Interval) => A, at(p, flip(i)), face(i, 0, fun (j : Interval) => y),
-        face(i, 1, fun (j : Interval) => at(p, j)),
-        face(k, 1, fun (j : Interval) => at(p, join(flip(i), j)))
+def inverse_left(A : U1, x : A, y : A, p : x = y) : trans(sym(p), p) = refl(y) {
+    exact path(
+      fun (k : Interval) => y = y,
+      fun (k : Interval) => path(
+        fun (i : Interval) => A,
+        fun (i : Interval) => comp(
+          fun (j : Interval) => A, at(p, flip(i)), face(i, 0, fun (j : Interval) => y),
+          face(i, 1, fun (j : Interval) => at(p, j)),
+          face(k, 1, fun (j : Interval) => at(p, join(flip(i), j)))
+        )
       )
-    )
-  );
+    );
+  }
 
-def inverse_right(A : U1, x : A, y : A, p : x = y) =
-  path(
-    fun (k : Interval) => x = x,
-    fun (k : Interval) => path(
-      fun (i : Interval) => A,
-      fun (i : Interval) => comp(
-        fun (j : Interval) => A, at(p, i), face(i, 0, fun (j : Interval) => x),
-        face(i, 1, fun (j : Interval) => at(p, flip(j))),
-        face(k, 1, fun (j : Interval) => at(p, meet(i, flip(j))))
+def inverse_right(A : U1, x : A, y : A, p : x = y) : trans(p, sym(p)) = refl(x) {
+    exact path(
+      fun (k : Interval) => x = x,
+      fun (k : Interval) => path(
+        fun (i : Interval) => A,
+        fun (i : Interval) => comp(
+          fun (j : Interval) => A, at(p, i), face(i, 0, fun (j : Interval) => x),
+          face(i, 1, fun (j : Interval) => at(p, flip(j))),
+          face(k, 1, fun (j : Interval) => at(p, meet(i, flip(j))))
+        )
       )
-    )
-  );
+    );
+  }
 
 def path_associative(A : U1, x : A, y : A, z : A, w : A, p : x = y, q : y = z, r : z = w) =
   path(

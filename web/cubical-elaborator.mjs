@@ -1,4 +1,6 @@
 import { CubicalSyntax } from "./cubical-syntax.mjs";
+import { T } from "./dist/cubical-runtime/core.mjs";
+import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
 
 // Elaboration queries use the native checker and demand only a type's outer
 // constructor. JavaScript neither normalizes proofs nor approves conversions.
@@ -14,6 +16,7 @@ export class NativeCubicalElaborator {
     this.assumptionLabels = new Map();
     this.definitionViews = new Map();
     this.schemaSpecializations = new Map();
+    this.scopeDefinitions = new Set();
   }
   context(local = new Map()) { return new Map([...this.assumptions, ...local]); }
   assume(name, type, avoid = new Set()) {
@@ -105,6 +108,46 @@ export class NativeCubicalElaborator {
     const value = NativeCubicalElaborator.prototype.define.call(this, key, checked.term, checked.type);
     this.schemaSpecializations.set(key, value);
     return value;
+  }
+  scopedUnfolding(names, elaborate, context, expected = null) {
+    const expanded = new Set(names), visited = new Set(), syntaxSeen = new WeakSet();
+    const visitTerm = term => {
+      if (!term || typeof term !== "object" || syntaxSeen.has(term)) return;
+      syntaxSeen.add(term);
+      if (term.tag === "DefRef" && this.scopeDefinitions.has(term.name)) visitDefinition(term.name);
+      Object.values(term).forEach(visitTerm);
+    };
+    const visitDefinition = name => {
+      if (visited.has(name)) return;
+      visited.add(name); expanded.add(name);
+      visitTerm(this.definitionViews.get(name)?.term);
+    };
+    // A selected source definition includes its compiler-created blocks.
+    // Otherwise that implementation detail would obstruct unfolding its body.
+    // Other user definitions remain folded, and all references are checked.
+    names.forEach(visitDefinition);
+    return this.kernel.withUnfoldingHints([...this.kernel.unfoldingHints, ...expanded], () => {
+      const raw = elaborate();
+      const checked = expected ? { term: this.check(raw, expected, context), type: expected } : this.infer(raw, context);
+      let term = checked.term, type = checked.type;
+      // Close over local variables before interval coordinates: a variable's
+      // type may itself depend on a coordinate. The helper is then checked as
+      // an ordinary closed definition, not installed as an unchecked promise.
+      for (const [name, domain] of [...context].reverse()) {
+        term = T.lam(name, domain, term); type = T.pi(name, domain, type);
+      }
+      for (const dim of [...this.dimensions.keys()].reverse()) {
+        term = T.line(dim, type, term);
+        type = T.path(dim, type, T.at(term, I.zero), T.at(term, I.one));
+      }
+      this.kernel.unfoldingSerial = (this.kernel.unfoldingSerial ?? 0) + 1;
+      const name = `${this.bindingName?.("unfolding") ?? "unfolding"}_${this.kernel.unfoldingSerial}`;
+      let result = NativeCubicalElaborator.prototype.define.call(this, name, this.ascribe(term, type), type);
+      this.scopeDefinitions.add(name);
+      for (const dim of this.dimensions.keys()) result = T.at(result, I.variable(dim));
+      for (const name of context.keys()) result = T.app(result, T.variable(name));
+      return result;
+    });
   }
 
   verify(term, expected = null, assumptions = []) {

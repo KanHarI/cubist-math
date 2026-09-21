@@ -77,25 +77,6 @@ export class Translator {
       this.onDeclarationStart?.(d);
       const previousHints=this.checker.kernel?.unfoldingHints;
       try {
-        // Hints govern the enclosing declaration, including intermediate have
-        // blocks and its final closed check. Install resolvable global names
-        // before elaboration; the actual call still validates every argument
-        // in its lexical scope. Hints never approve a term or an equality.
-        if(this.checker.kernel) {
-          const hints=[];
-          const collect=node=>{
-            if(!node||typeof node!=="object")return;
-            if(node.kind==="call"&&node.fn?.kind==="name"&&node.fn.name==="with_unfolding")
-              for(const arg of node.args.slice(0,-1)) {
-                let value=arg.kind==="name"?env.get(arg.name):null;
-                while(value?.tag==="App")value=value.fn;
-                if(value?.tag==="DefRef")hints.push(value.name);
-              }
-            Object.values(node).forEach(collect);
-          };
-          collect(d);
-          if(hints.length)this.checker.kernel.setUnfoldingHints([...previousHints,...hints]);
-        }
         if(d.kind==="axiom") throw Error("Axiom declarations require an explicit assumption policy; not translated.");
         let expression=d.value;
         if(!expression) {
@@ -143,6 +124,17 @@ export class Translator {
     const tr=(x,e=expected)=>this.term(x,ctx,env,e);
     const inferred=t=>this.checker.infer(t,ctx,new Set(this.dimensions.keys()));
     switch(n.kind) {
+      case "withUnfolding": {
+        if (!this.checker.scopedUnfolding) throw Error("Unfolding blocks require the native cubical backend.");
+        const names=n.hints.map(hint=>{
+          let value=env.get(hint.text);
+          while(value?.tag==="App")value=value.fn;
+          if(value?.tag!=="DefRef")throw Error(`No checked definition to unfold: ${hint.text}`);
+          this.onReference?.({...hint,name:hint.text},value,new Map(ctx));
+          return value.name;
+        });
+        return this.checker.scopedUnfolding(names,()=>tr(n.body),ctx,expected);
+      }
       case "name": {
         if(env.has(n.name)) {
           const value=env.get(n.name);
@@ -228,20 +220,6 @@ export class Translator {
             fn=T.app(fn,tr(arg,type.domain));
           }
           return fn;
-        }
-        if(builtin==="with_unfolding") {
-          if(n.args.length<2)throw Error("with_unfolding needs definition names followed by a proof expression.");
-          const names=n.args.slice(0,-1).map(arg=>{
-            if(arg.kind!=="name")throw Error("An unfolding hint must name a checked definition.");
-            let value=env.get(arg.name);
-            while(value?.tag==="App")value=value.fn;
-            if(value?.tag!=="DefRef")throw Error(`No checked definition to unfold: ${arg.name}`);
-            this.onReference?.(arg,value,new Map(ctx));
-            return value.name;
-          });
-          if(this.checker.kernel)this.checker.kernel.setUnfoldingHints([
-            ...this.checker.kernel.unfoldingHints,...names]);
-          return tr(n.args.at(-1));
         }
         if(builtin==="typed"&&n.args.length===2) {
           const type=tr(n.args[0],null),term=tr(n.args[1],type);

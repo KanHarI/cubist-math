@@ -44,11 +44,21 @@ export async function benchmark({ modules = [...sourceModules, ...cubicalSourceM
         program.kernel.unfoldingHints = [];
         for (const name of program.kernel.definitions.keys()) if (!definitionsBefore.has(name)) {
           program.kernel.definitions.delete(name); program.checker.definitionViews.delete(name);
+          program.checker.scopeDefinitions.delete(name);
         }
         for (const key of program.checker.schemaSpecializations.keys())
           if (!program.kernel.definitions.has(key)) program.checker.schemaSpecializations.delete(key);
         // Handle reuse is confined to rejected attempts. Never reuse a JS
         // cache entry whose native node may have been discarded.
+        program.checker.syntax.encoded = new WeakMap();
+        program.checker.syntax.decoded.clear();
+      }
+      if (row.category === "checked") {
+        if (!program.kernel.module._cb_commit_checkpoint(program.kernel.handle))
+          throw Error(program.kernel.error());
+        for (const [name, handle] of program.kernel.definitions)
+          if (!definitionsBefore.has(name)) program.kernel.definitions.set(name,
+            program.kernel.module._cb_relocated(program.kernel.handle, handle));
         program.checker.syntax.encoded = new WeakMap();
         program.checker.syntax.decoded.clear();
       }

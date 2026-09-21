@@ -67,6 +67,7 @@ void cc_kernel_free(cc_kernel *k) {
         return;
     for (size_t i = 1; i < k->formula_count; ++i)
         cc_clear(&k->formulas[i]);
+    free(k->relocation);
     free(k->definitions);
     free(k->unfolding_hints);
     free(k->formulas);

@@ -32,14 +32,22 @@ individual times. No full normalization or inspector rendering is requested.
 Warm dependencies and machine load affect timings; this is an optimization
 tracker, not a cross-machine performance score.
 
-Rejected attempts roll back temporary arena nodes and definitions. Native
+Rejected attempts roll back temporary arena nodes and definitions. Successful
+attempts compact their new arena segment, retaining the checked definitions and
+all reachable syntax while discarding temporary checking terms. Native
 reduction caches, the previous result certificate, and JS handle caches are
-invalidated together. Earlier checked definitions remain immutable and valid.
+invalidated together. The host translates newly retained definition handles after
+compaction. Earlier checked definitions remain immutable and valid.
 This prevents a slow attempt's temporary allocations from producing misleading
 allocation failures in independent later declarations. The initial unisolated
 scan was discarded as a baseline for precisely that reason.
 
 The corrected September 21 baseline contains 2,479 source declarations in
 232 modules: 2,322 checked, 20 slow, 119 blocked, 2 failed, 16 templates.
-It took 38.08 seconds on an Apple M3 Pro in Node 24.13.0. The current saved
-report records changes relative to that baseline; optimization is ongoing.
+It took 38.08 seconds on an Apple M3 Pro in Node 24.13.0.
+
+The completed migration scan checks all 2,484 concrete declarations within one
+second each: zero slow, blocked, or failed declarations, plus 16 universe
+templates, across 232 modules. The source total is now 2,500 because several
+long proofs were factored into reusable checked lemmas. The saved report
+retains the baseline counts; timings depend on the runtime and machine load.

@@ -160,17 +160,26 @@ def extension_identity_iso(K : AlgebraicField, E : FieldExt(K)) =
   structure_identity_iso(
     ExtensionData(K), ExtensionPreserved(K), extension_preserved_identity(K), E
   );
-def extension_path_iso(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) =
-  structure_equality_iso(
+def extension_path_iso(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) : ExtensionIso(
+  K, E, F
+) {
+  exact structure_equality_iso(
     ExtensionData(K), ExtensionPreserved(K), extension_preserved_identity(K), E, F, p
   );
+}
 def extension_iso_path(
   K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), e : ExtensionIso(K, E, F)
-) =
-  structure_iso_equality(
-    ExtensionData(K), ExtensionPreserved(K), extension_preserved_prop(K),
-    extension_preserved_identity(K), extension_preserved_reflect(K), E, F, e
-  );
+) : E =[FieldExt(K)] F {
+  exact with unfolding [
+    field_first, identity_total_point, identity_system_decode, structure_iso_point,
+    structure_iso_center, structure_equality_iso, structure_iso_equality
+  ] {
+    structure_iso_equality(
+      ExtensionData(K), ExtensionPreserved(K), extension_preserved_prop(K),
+      extension_preserved_identity(K), extension_preserved_reflect(K), E, F, e
+    )
+  };
+}
 theorem extension_structure_identity(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K)) : Equiv(
   U1, (E =[FieldExt(K)] F), ExtensionIso(K, E, F)
 ) {
@@ -192,11 +201,16 @@ theorem extension_iso_roundtrip(
 theorem extension_path_roundtrip(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) : extension_iso_path(
   K, E, F, extension_path_iso(K, E, F, p)
 ) = p {
-  exact with_unfolding(extension_iso_path, extension_path_iso,
-structure_path_roundtrip(
-    ExtensionData(K), ExtensionPreserved(K), extension_preserved_prop(K),
-    extension_preserved_identity(K), extension_preserved_reflect(K), E, F, p
-  ));
+  exact with unfolding [
+    field_first, identity_total_point, identity_system_decode, structure_iso_point,
+    structure_iso_center, structure_equality_iso, structure_iso_equality, structure_identity_family,
+    FieldExt, extension_iso_path, extension_path_iso
+  ] {
+    structure_path_roundtrip(
+      ExtensionData(K), ExtensionPreserved(K), extension_preserved_prop(K),
+      extension_preserved_identity(K), extension_preserved_reflect(K), E, F, p
+    )
+  };
 }
 
 // The automorphisms are defined algebraically, independently of paths.

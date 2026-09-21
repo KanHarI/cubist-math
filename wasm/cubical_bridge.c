@@ -68,6 +68,20 @@ void cb_rollback(uint32_t token) {
     memset(&s->checked, 0, sizeof s->checked);
 }
 
+int cb_commit_checkpoint(uint32_t token) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    s->count = 0; memset(&s->checked, 0, sizeof s->checked);
+    if (!cc_kernel_commit_checkpoint(s->kernel)) return 0;
+    for (size_t i = 0; i < s->unfolding_count; ++i)
+        s->unfolding[i] = cc_kernel_relocated(s->kernel, s->unfolding[i]);
+    return 1;
+}
+cc_term cb_relocated(uint32_t token, cc_term term) {
+    browser_session *s = lookup(token);
+    return s ? cc_kernel_relocated(s->kernel, term) : 0;
+}
+
 void cb_deadline_ms(uint32_t token, double duration_ms) {
     browser_session *s = lookup(token);
     if (s) cc_kernel_set_deadline_ms(s->kernel, duration_ms);

@@ -12,9 +12,9 @@ function renderRows() {
   const query = $("search").value.toLowerCase(), category = $("category").value;
   const rows = report.declarations.filter(row => (!category || row.category === category)
     && `${row.module}.${row.name} ${row.reason ?? ""} ${row.rootBlocker ?? ""}`.toLowerCase().includes(query));
-  // Put actionable failures and timeouts first; retain source order within categories.
+  // Put actionable failures and timeouts first, then the slowest entries in each category.
   const rank = { optimize: 0, failed: 1, blocked: 2, checked: 3, template: 4 };
-  rows.sort((a, b) => rank[a.category] - rank[b.category]);
+  rows.sort((a, b) => rank[a.category] - rank[b.category] || b.elapsedMs - a.elapsedMs);
   const fragment = document.createDocumentFragment();
   const bindings = new Map(report.declarations.map(row => [row.binding, row]));
   for (const row of rows) {

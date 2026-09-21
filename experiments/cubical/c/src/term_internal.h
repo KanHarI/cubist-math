@@ -53,6 +53,8 @@ struct cc_kernel {
     uint64_t next_alpha_scope;
     size_t count, capacity;
     size_t checkpoint_count, checkpoint_definitions;
+    cc_term *relocation;
+    size_t relocation_base, relocation_count;
     uint32_t *unfolding_hints;
     size_t unfolding_hint_count;
     cc_definition *definitions;
