@@ -1,0 +1,419 @@
+import affine_refinement;
+import interval_subdivisions;
+import complex_subdivision_estimates;
+
+// A piece's contribution uses the same mapped contour sum as the original
+// sampling interface, with its stored count, vertices, and tags.
+def curve_subdivision_samples(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
+  integrand : Complex(F) -> Complex(F), a : FieldUnitInterval(F, zero, one, lt),
+  b : FieldUnitInterval(F, zero, one, lt),
+  piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
+) =
+  curve_contour_samples(
+    F, zero, one, addF, mulF, negF, lt, curve, integrand,
+    subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
+    subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece),
+    subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, piece)
+  );
+
+// Preserve both the supplied subdivisions' total and the error certificate.
+def CurvePartitionEstimate(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  lt : F -> F -> U0, curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
+  integrand : Complex(F) -> Complex(F), n : Nat,
+  vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+  tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+  pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices), radius : F
+) =
+  exists flat : SampleSubdivision(
+    FieldUnitInterval(F, zero, one, lt),
+    sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+    sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
+  ),
+  (
+    curve_subdivision_samples(
+      F, zero, one, addF, mulF, negF, lt, curve, integrand,
+      sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), flat
+    ) = subdivision_total(
+      FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF),
+      parameter_contour_edge(
+        FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF),
+        complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve,
+        (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t)))
+      ), n, vertices, pieces
+    )
+  )
+  and ComplexPerturbation(
+    F, addF, negF, lt,
+    curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, tags),
+    curve_subdivision_samples(
+      F, zero, one, addF, mulF, negF, lt, curve, integrand,
+      sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), flat
+    ), radius
+  );
+
+// Uniform continuity supplies a single positive mesh for an arbitrary coarse
+// partition and all its admissible finite per-edge refinements. The actual
+// flattened contour sum is certified equal to the sum of the supplied pieces.
+// Its error is bounded by delta * outer width * affine coordinate length.
+// Assemble a partition estimate from fixed-mesh local estimates.
+// Checking this generic step once keeps the continuity witness folded.
+// Move a fixed-mesh estimate to the stored endpoints of one piece.
+theorem affine_partition_piece_estimate(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
+  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F),
+  integrand : Complex(F) -> Complex(F),
+  uniform : ComplexUniformCurve(
+    F, zero, one, addF, lt,
+    (
+      fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
+      )
+    )
+  ), delta : F, positiveDelta : lt(zero, delta), mesh : F,
+  localEstimates : (
+    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall coarseTag : FieldUnitInterval(F, zero, one, lt),
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
+    -> IntervalTagWithin(
+      F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
+    ) -> lt(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), mesh)
+    -> (
+      exists errorSum : Complex(F),
+      (
+        curve_contour_samples(
+          F, zero, one, addF, mulF, negF, lt,
+          complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n,
+          vertices, tags
+        ) = complex_add(
+          F, addF,
+          curve_coarse_contribution(
+            F, zero, one, addF, mulF, negF, lt,
+            complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n,
+            vertices, coarseTag
+          ), errorSum
+        )
+      )
+      and ComplexBoxBound(
+        F, negF, lt, errorSum,
+        mulF(
+          delta,
+          mulF(
+            sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
+            affine_coordinate_length(F, addF, negF, maxF, slope)
+          )
+        )
+      )
+    )
+  )
+) : forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
+forall tag : FieldUnitInterval(F, zero, one, lt),
+forall piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+(IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh))(a, b, tag, piece)
+-> (
+  ComplexSubdivisionEstimate(
+    FieldUnitInterval(F, zero, one, lt), F, zero, addF, negF, lt,
+    (
+      parameter_contour_edge(
+        FieldUnitInterval(F, zero, one, lt), Complex(F), (complex_add(F, addF)),
+        (complex_mul(F, addF, mulF, negF)), (complex_neg(F, negF)),
+        (complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)),
+        (
+          (
+            fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
+              (complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope))(t)
+            )
+          )
+        )
+      )
+    ),
+    (
+      interval_refinement_radius(
+        F, zero, one, addF, mulF, negF, lt, delta,
+        (affine_coordinate_length(F, addF, negF, maxF, slope))
+      )
+    )
+  )
+)(a, b, tag, piece) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
+  let addC = complex_add(F, addF);
+  let zeroC = complex_zero(F, zero);
+  let mulC = complex_mul(F, addF, mulF, negF);
+  let negC = complex_neg(F, negF);
+  let values = (fun (t : I) => integrand(curve(t)));
+  let edge = parameter_contour_edge(I, Complex(F), addC, mulC, negC, curve, values);
+  let length = affine_coordinate_length(F, addF, negF, maxF, slope);
+  let width = interval_difference(F, zero, one, addF, negF, lt);
+  let radius = interval_refinement_radius(F, zero, one, addF, mulF, negF, lt, delta, length);
+  let condition = IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
+  let other = ComplexSubdivisionEstimate(I, F, zero, addF, negF, lt, edge, radius);
+  have mapEstimates : forall a : I, forall b : I, forall tag : I,
+  forall piece : SampleSubdivision(I, a, b), condition(a, b, tag, piece)
+  -> other(a, b, tag, piece) {
+    intro a;
+    intro b;
+    intro tag;
+    intro piece;
+    intro valid;
+    obtain (within, small, fineValid) = valid;
+    let count = subdivision_count(I, a, b, piece);
+    let samples = subdivision_vertices(I, a, b, piece);
+    let fineTags = subdivision_tags(I, a, b, piece);
+    let first = sample_first(I, count, samples);
+    let last = sample_last(I, count, samples);
+    have firstPath : first = a {
+      exact field_fst((first = a), (last = b), subdivision_endpoints(I, a, b, piece));
+    }
+    have lastPath : last = b {
+      exact field_snd((first = a), (last = b), subdivision_endpoints(I, a, b, piece));
+    }
+    let withinFirst =
+      transport(
+        (fun (v : I) => IntervalTagWithin(F, zero, one, lt, v, b, tag)), a, first, sym(firstPath),
+        within
+      );
+    let withinSamples =
+      transport(
+        (fun (v : I) => IntervalTagWithin(F, zero, one, lt, first, v, tag)), b, last, sym(lastPath),
+        withinFirst
+      );
+    let widthPath =
+      trans(cong((fun (v : I) => width(v, last)), firstPath), cong(width(a), lastPath));
+    let smallSamples =
+      transport(
+        (fun (v : F) => lt(v, mesh)), width(a, b), width(first, last), sym(widthPath), small
+      );
+    obtain (error, identity, bounded) = localEstimates(
+      count, samples, tag, fineTags, fineValid, withinSamples, smallSamples
+    );
+    let mapped =
+      parameter_contour_sum_is_mapped(
+        I, Complex(F), zeroC, addC, mulC, negC, curve, integrand, count, samples, fineTags
+      );
+    let edgePath =
+      trans(
+        cong((fun (v : I) => edge(v, last, tag)), firstPath),
+        cong((fun (v : I) => edge(a, v, tag)), lastPath)
+      );
+    let radiusPath = cong((fun (v : F) => mulF(delta, mulF(v, length))), widthPath);
+    exact (
+      error,
+      trans(mapped, trans(identity, cong((fun (v : Complex(F)) => addC(v, error)), edgePath))),
+      transport(
+        ComplexBoxBound(F, negF, lt, error), mulF(delta, mulF(width(first, last), length)),
+        radius(a, b, tag), radiusPath, bounded
+      )
+    );
+  }
+  exact mapEstimates;
+}
+
+theorem affine_partition_from_local_estimates(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
+  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F),
+  integrand : Complex(F) -> Complex(F),
+  uniform : ComplexUniformCurve(
+    F, zero, one, addF, lt,
+    (
+      fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
+      )
+    )
+  ), delta : F, positiveDelta : lt(zero, delta), mesh : F,
+  localEstimates : (
+    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall coarseTag : FieldUnitInterval(F, zero, one, lt),
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
+    -> IntervalTagWithin(
+      F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
+    ) -> lt(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), mesh)
+    -> (
+      exists errorSum : Complex(F),
+      (
+        curve_contour_samples(
+          F, zero, one, addF, mulF, negF, lt,
+          complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n,
+          vertices, tags
+        ) = complex_add(
+          F, addF,
+          curve_coarse_contribution(
+            F, zero, one, addF, mulF, negF, lt,
+            complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n,
+            vertices, coarseTag
+          ), errorSum
+        )
+      )
+      and ComplexBoxBound(
+        F, negF, lt, errorSum,
+        mulF(
+          delta,
+          mulF(
+            sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
+            affine_coordinate_length(F, addF, negF, maxF, slope)
+          )
+        )
+      )
+    )
+  )
+) : forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
+SubdivisionTagged(
+  FieldUnitInterval(F, zero, one, lt), IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh),
+  n, vertices, tags, pieces
+)
+-> CurvePartitionEstimate(
+  F, zero, one, addF, mulF, negF, lt,
+  complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n, vertices,
+  tags, pieces,
+  mulF(
+    delta,
+    mulF(
+      sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
+      affine_coordinate_length(F, addF, negF, maxF, slope)
+    )
+  )
+) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
+  let addC = complex_add(F, addF);
+  let zeroC = complex_zero(F, zero);
+  let mulC = complex_mul(F, addF, mulF, negF);
+  let negC = complex_neg(F, negF);
+  let values = (fun (t : I) => integrand(curve(t)));
+  let edge = parameter_contour_edge(I, Complex(F), addC, mulC, negC, curve, values);
+  let length = affine_coordinate_length(F, addF, negF, maxF, slope);
+  let width = interval_difference(F, zero, one, addF, negF, lt);
+  let radius = interval_refinement_radius(F, zero, one, addF, mulF, negF, lt, delta, length);
+  let condition = IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
+  let other = ComplexSubdivisionEstimate(I, F, zero, addF, negF, lt, edge, radius);
+  let mapEstimates =
+    affine_partition_piece_estimate(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
+      integrand, uniform, delta, positiveDelta, mesh, localEstimates
+    );
+  have estimates : forall n : Nat,
+  forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+  forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
+  SubdivisionTagged(
+    FieldUnitInterval(F, zero, one, lt),
+    IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), n, vertices, tags, pieces
+  )
+  -> CurvePartitionEstimate(
+    F, zero, one, addF, mulF, negF, lt,
+    complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n, vertices,
+    tags, pieces,
+    mulF(
+      delta,
+      mulF(
+        sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
+        affine_coordinate_length(F, addF, negF, maxF, slope)
+      )
+    )
+  ) {
+    intro n;
+    intro vertices;
+    intro tags;
+    intro pieces;
+    intro valid;
+    let localBounds =
+      subdivision_tagged_map(I, condition, other, mapEstimates, n, vertices, tags, pieces, valid);
+    obtain (flat, computes, error, identity, bounded) = complex_subdivision_flat_estimate(
+      I, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, edge, radius, n, vertices,
+      tags, pieces, localBounds
+    );
+    let a = sample_first(I, n, vertices);
+    let b = sample_last(I, n, vertices);
+    let count = subdivision_count(I, a, b, flat);
+    let samples = subdivision_vertices(I, a, b, flat);
+    let fineTags = subdivision_tags(I, a, b, flat);
+    let mappedFine =
+      parameter_contour_sum_is_mapped(
+        I, Complex(F), zeroC, addC, mulC, negC, curve, integrand, count, samples, fineTags
+      );
+    let mappedCoarse =
+      parameter_contour_sum_is_mapped(
+        I, Complex(F), zeroC, addC, mulC, negC, curve, integrand, n, vertices, tags
+      );
+    let radiusPath =
+      interval_refinement_radius_sum(
+        F, zero, one, addF, mulF, negF, lt, ring, delta, length, n, vertices, tags
+      );
+    exact (
+      flat, trans(sym(mappedFine), computes), error,
+      trans(
+        sym(mappedFine),
+        trans(identity, cong((fun (v : Complex(F)) => addC(v, error)), mappedCoarse))
+      ),
+      transport(
+        ComplexBoxBound(F, negF, lt, error),
+        sample_sum(I, F, zero, addF, radius, n, vertices, tags),
+        mulF(delta, mulF(width(a, b), length)), radiusPath, bounded
+      )
+    );
+  }
+  exact estimates;
+}
+
+theorem affine_partition_uniform_estimate(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
+  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
+  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F),
+  integrand : Complex(F) -> Complex(F),
+  uniform : ComplexUniformCurve(
+    F, zero, one, addF, lt,
+    (
+      fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
+      )
+    )
+  ), delta : F, positiveDelta : lt(zero, delta)
+) : exists mesh : F, lt(zero, mesh)
+and (
+  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+  forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
+  SubdivisionTagged(
+    FieldUnitInterval(F, zero, one, lt),
+    IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), n, vertices, tags, pieces
+  )
+  -> CurvePartitionEstimate(
+    F, zero, one, addF, mulF, negF, lt,
+    complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n, vertices,
+    tags, pieces,
+    mulF(
+      delta,
+      mulF(
+        sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
+        affine_coordinate_length(F, addF, negF, maxF, slope)
+      )
+    )
+  )
+) {
+  obtain (mesh, positiveMesh, localEstimates) = affine_refinement_uniform_estimate(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
+    integrand, uniform, delta, positiveDelta
+  );
+  exact (
+    mesh, positiveMesh,
+    affine_partition_from_local_estimates(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
+      integrand, uniform, delta, positiveDelta, mesh, localEstimates
+    )
+  );
+}

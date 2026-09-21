@@ -1,0 +1,1281 @@
+import ring_laws;
+
+// Multiplicativity of the sum-of-squares norm, by proved ring identities.
+
+// A checked segment of the polynomial expansion.
+def complex_norm_expansion_1(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
+) =
+  trans(
+    (
+      cong(
+        (
+          fun (value : F) => addF(
+            value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+          )
+        ),
+        ring_distribute_left(
+          F, zero, one, addF, mulF, negF, ring, mulF(a, c), negF(mulF(b, d)),
+          addF(mulF(a, c), negF(mulF(b, d)))
+        )
+      )
+    ),
+    trans(
+      (
+        cong(
+          (
+            fun (value : F) => addF(
+              value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+            )
+          ),
+          cong(
+            (
+              fun (value : F) => addF(
+                value, mulF(negF(mulF(b, d)), addF(mulF(a, c), negF(mulF(b, d))))
+              )
+            ),
+            ring_distribute(
+              F, zero, one, addF, mulF, negF, ring, mulF(a, c), mulF(a, c), negF(mulF(b, d))
+            )
+          )
+        )
+      ),
+      trans(
+        (
+          cong(
+            (
+              fun (value : F) => addF(
+                value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+              )
+            ),
+            cong(
+              (
+                fun (value : F) => addF(
+                  value, mulF(negF(mulF(b, d)), addF(mulF(a, c), negF(mulF(b, d))))
+                )
+              ),
+              cong(
+                (fun (value : F) => addF(value, mulF(mulF(a, c), negF(mulF(b, d))))),
+                ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, a, c, mulF(a, c))
+              )
+            )
+          )
+        ),
+        trans(
+          (
+            cong(
+              (
+                fun (value : F) => addF(
+                  value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+                )
+              ),
+              cong(
+                (
+                  fun (value : F) => addF(
+                    value, mulF(negF(mulF(b, d)), addF(mulF(a, c), negF(mulF(b, d))))
+                  )
+                ),
+                cong(
+                  (fun (value : F) => addF(value, mulF(mulF(a, c), negF(mulF(b, d))))),
+                  cong(
+                    (fun (value : F) => mulF(a, value)),
+                    ring_mul_swap(F, zero, one, addF, mulF, negF, ring, c, a, c)
+                  )
+                )
+              )
+            )
+          ),
+          trans(
+            (
+              cong(
+                (
+                  fun (value : F) => addF(
+                    value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+                  )
+                ),
+                cong(
+                  (
+                    fun (value : F) => addF(
+                      value, mulF(negF(mulF(b, d)), addF(mulF(a, c), negF(mulF(b, d))))
+                    )
+                  ),
+                  cong(
+                    (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                    ring_mul_neg(F, zero, one, addF, mulF, negF, ring, mulF(a, c), mulF(b, d))
+                  )
+                )
+              )
+            ),
+            trans(
+              (
+                cong(
+                  (
+                    fun (value : F) => addF(
+                      value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+                    )
+                  ),
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        value, mulF(negF(mulF(b, d)), addF(mulF(a, c), negF(mulF(b, d))))
+                      )
+                    ),
+                    cong(
+                      (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                      cong(
+                        (fun (value : F) => negF(value)),
+                        ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, a, c, mulF(b, d))
+                      )
+                    )
+                  )
+                )
+              ),
+              trans(
+                (
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+                      )
+                    ),
+                    cong(
+                      (
+                        fun (value : F) => addF(
+                          value, mulF(negF(mulF(b, d)), addF(mulF(a, c), negF(mulF(b, d))))
+                        )
+                      ),
+                      cong(
+                        (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                        cong(
+                          (fun (value : F) => negF(value)),
+                          cong(
+                            (fun (value : F) => mulF(a, value)),
+                            ring_mul_swap(F, zero, one, addF, mulF, negF, ring, c, b, d)
+                          )
+                        )
+                      )
+                    )
+                  )
+                ),
+                (
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+                      )
+                    ),
+                    cong(
+                      (
+                        fun (value : F) => addF(
+                          addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))),
+                          value
+                        )
+                      ),
+                      ring_neg_mul(
+                        F, zero, one, addF, mulF, negF, ring, mulF(b, d),
+                        addF(mulF(a, c), negF(mulF(b, d)))
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+// A checked segment of the polynomial expansion.
+def complex_norm_expansion_2(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
+) =
+  trans(
+    (
+      cong(
+        (
+          fun (value : F) => addF(
+            value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+          )
+        ),
+        cong(
+          (
+            fun (value : F) => addF(
+              addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))), value
+            )
+          ),
+          cong(
+            (fun (value : F) => negF(value)),
+            ring_distribute(
+              F, zero, one, addF, mulF, negF, ring, mulF(b, d), mulF(a, c), negF(mulF(b, d))
+            )
+          )
+        )
+      )
+    ),
+    trans(
+      (
+        cong(
+          (
+            fun (value : F) => addF(
+              value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+            )
+          ),
+          cong(
+            (
+              fun (value : F) => addF(
+                addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))), value
+              )
+            ),
+            cong(
+              (fun (value : F) => negF(value)),
+              cong(
+                (fun (value : F) => addF(value, mulF(mulF(b, d), negF(mulF(b, d))))),
+                ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, b, d, mulF(a, c))
+              )
+            )
+          )
+        )
+      ),
+      trans(
+        (
+          cong(
+            (
+              fun (value : F) => addF(
+                value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+              )
+            ),
+            cong(
+              (
+                fun (value : F) => addF(
+                  addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))), value
+                )
+              ),
+              cong(
+                (fun (value : F) => negF(value)),
+                cong(
+                  (fun (value : F) => addF(value, mulF(mulF(b, d), negF(mulF(b, d))))),
+                  cong(
+                    (fun (value : F) => mulF(b, value)),
+                    ring_mul_swap(F, zero, one, addF, mulF, negF, ring, d, a, c)
+                  )
+                )
+              )
+            )
+          )
+        ),
+        trans(
+          (
+            cong(
+              (
+                fun (value : F) => addF(
+                  value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+                )
+              ),
+              cong(
+                (
+                  fun (value : F) => addF(
+                    addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))), value
+                  )
+                ),
+                cong(
+                  (fun (value : F) => negF(value)),
+                  cong(
+                    (fun (value : F) => addF(value, mulF(mulF(b, d), negF(mulF(b, d))))),
+                    cong(
+                      (fun (value : F) => mulF(b, value)),
+                      cong(
+                        (fun (value : F) => mulF(a, value)),
+                        ring_mul_comm(F, zero, one, addF, mulF, negF, ring, d, c)
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          ),
+          trans(
+            (
+              cong(
+                (
+                  fun (value : F) => addF(
+                    value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+                  )
+                ),
+                cong(
+                  (
+                    fun (value : F) => addF(
+                      addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))), value
+                    )
+                  ),
+                  cong(
+                    (fun (value : F) => negF(value)),
+                    cong(
+                      (fun (value : F) => addF(value, mulF(mulF(b, d), negF(mulF(b, d))))),
+                      ring_mul_swap(F, zero, one, addF, mulF, negF, ring, b, a, mulF(c, d))
+                    )
+                  )
+                )
+              )
+            ),
+            trans(
+              (
+                cong(
+                  (
+                    fun (value : F) => addF(
+                      value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+                    )
+                  ),
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))),
+                        value
+                      )
+                    ),
+                    cong(
+                      (fun (value : F) => negF(value)),
+                      cong(
+                        (fun (value : F) => addF(mulF(a, mulF(b, mulF(c, d))), value)),
+                        ring_mul_neg(F, zero, one, addF, mulF, negF, ring, mulF(b, d), mulF(b, d))
+                      )
+                    )
+                  )
+                )
+              ),
+              trans(
+                (
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+                      )
+                    ),
+                    cong(
+                      (
+                        fun (value : F) => addF(
+                          addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))),
+                          value
+                        )
+                      ),
+                      cong(
+                        (fun (value : F) => negF(value)),
+                        cong(
+                          (fun (value : F) => addF(mulF(a, mulF(b, mulF(c, d))), value)),
+                          cong(
+                            (fun (value : F) => negF(value)),
+                            ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, b, d, mulF(b, d))
+                          )
+                        )
+                      )
+                    )
+                  )
+                ),
+                (
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+                      )
+                    ),
+                    cong(
+                      (
+                        fun (value : F) => addF(
+                          addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))),
+                          value
+                        )
+                      ),
+                      cong(
+                        (fun (value : F) => negF(value)),
+                        cong(
+                          (fun (value : F) => addF(mulF(a, mulF(b, mulF(c, d))), value)),
+                          cong(
+                            (fun (value : F) => negF(value)),
+                            cong(
+                              (fun (value : F) => mulF(b, value)),
+                              ring_mul_swap(F, zero, one, addF, mulF, negF, ring, d, b, d)
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+// A checked segment of the polynomial expansion.
+def complex_norm_expansion_3(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
+) =
+  trans(
+    (
+      cong(
+        (
+          fun (value : F) => addF(
+            value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+          )
+        ),
+        cong(
+          (
+            fun (value : F) => addF(
+              addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))), value
+            )
+          ),
+          ring_neg_add(
+            F, zero, one, addF, mulF, negF, ring, mulF(a, mulF(b, mulF(c, d))),
+            negF(mulF(b, mulF(b, mulF(d, d))))
+          )
+        )
+      )
+    ),
+    trans(
+      (
+        cong(
+          (
+            fun (value : F) => addF(
+              value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+            )
+          ),
+          cong(
+            (
+              fun (value : F) => addF(
+                addF(mulF(a, mulF(a, mulF(c, c))), negF(mulF(a, mulF(b, mulF(c, d))))), value
+              )
+            ),
+            cong(
+              (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+              ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(b, mulF(b, mulF(d, d))))
+            )
+          )
+        )
+      ),
+      trans(
+        (
+          cong(
+            (
+              fun (value : F) => addF(
+                value, mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+              )
+            ),
+            ring_add_assoc(
+              F, zero, one, addF, mulF, negF, ring, mulF(a, mulF(a, mulF(c, c))),
+              negF(mulF(a, mulF(b, mulF(c, d)))),
+              addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+            )
+          )
+        ),
+        trans(
+          (
+            cong(
+              (
+                fun (value : F) => addF(
+                  addF(
+                    mulF(a, mulF(a, mulF(c, c))),
+                    addF(
+                      negF(mulF(a, mulF(b, mulF(c, d)))),
+                      addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                    )
+                  ), value
+                )
+              ),
+              ring_distribute_left(
+                F, zero, one, addF, mulF, negF, ring, mulF(a, d), mulF(b, c),
+                addF(mulF(a, d), mulF(b, c))
+              )
+            )
+          ),
+          trans(
+            (
+              cong(
+                (
+                  fun (value : F) => addF(
+                    addF(
+                      mulF(a, mulF(a, mulF(c, c))),
+                      addF(
+                        negF(mulF(a, mulF(b, mulF(c, d)))),
+                        addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                      )
+                    ), value
+                  )
+                ),
+                cong(
+                  (fun (value : F) => addF(value, mulF(mulF(b, c), addF(mulF(a, d), mulF(b, c))))),
+                  ring_distribute(
+                    F, zero, one, addF, mulF, negF, ring, mulF(a, d), mulF(a, d), mulF(b, c)
+                  )
+                )
+              )
+            ),
+            trans(
+              (
+                cong(
+                  (
+                    fun (value : F) => addF(
+                      addF(
+                        mulF(a, mulF(a, mulF(c, c))),
+                        addF(
+                          negF(mulF(a, mulF(b, mulF(c, d)))),
+                          addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                        )
+                      ), value
+                    )
+                  ),
+                  cong(
+                    (fun (value : F) => addF(value, mulF(mulF(b, c), addF(mulF(a, d), mulF(b, c))))),
+                    cong(
+                      (fun (value : F) => addF(value, mulF(mulF(a, d), mulF(b, c)))),
+                      ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, a, d, mulF(a, d))
+                    )
+                  )
+                )
+              ),
+              trans(
+                (
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        addF(
+                          mulF(a, mulF(a, mulF(c, c))),
+                          addF(
+                            negF(mulF(a, mulF(b, mulF(c, d)))),
+                            addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                          )
+                        ), value
+                      )
+                    ),
+                    cong(
+                      (
+                        fun (value : F) => addF(
+                          value, mulF(mulF(b, c), addF(mulF(a, d), mulF(b, c)))
+                        )
+                      ),
+                      cong(
+                        (fun (value : F) => addF(value, mulF(mulF(a, d), mulF(b, c)))),
+                        cong(
+                          (fun (value : F) => mulF(a, value)),
+                          ring_mul_swap(F, zero, one, addF, mulF, negF, ring, d, a, d)
+                        )
+                      )
+                    )
+                  )
+                ),
+                (
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        addF(
+                          mulF(a, mulF(a, mulF(c, c))),
+                          addF(
+                            negF(mulF(a, mulF(b, mulF(c, d)))),
+                            addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                          )
+                        ), value
+                      )
+                    ),
+                    cong(
+                      (
+                        fun (value : F) => addF(
+                          value, mulF(mulF(b, c), addF(mulF(a, d), mulF(b, c)))
+                        )
+                      ),
+                      cong(
+                        (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+                        ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, a, d, mulF(b, c))
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+// A checked segment of the polynomial expansion.
+def complex_norm_expansion_4(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
+) =
+  trans(
+    (
+      cong(
+        (
+          fun (value : F) => addF(
+            addF(
+              mulF(a, mulF(a, mulF(c, c))),
+              addF(
+                negF(mulF(a, mulF(b, mulF(c, d)))),
+                addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+              )
+            ), value
+          )
+        ),
+        cong(
+          (fun (value : F) => addF(value, mulF(mulF(b, c), addF(mulF(a, d), mulF(b, c))))),
+          cong(
+            (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+            cong(
+              (fun (value : F) => mulF(a, value)),
+              ring_mul_swap(F, zero, one, addF, mulF, negF, ring, d, b, c)
+            )
+          )
+        )
+      )
+    ),
+    trans(
+      (
+        cong(
+          (
+            fun (value : F) => addF(
+              addF(
+                mulF(a, mulF(a, mulF(c, c))),
+                addF(
+                  negF(mulF(a, mulF(b, mulF(c, d)))),
+                  addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                )
+              ), value
+            )
+          ),
+          cong(
+            (fun (value : F) => addF(value, mulF(mulF(b, c), addF(mulF(a, d), mulF(b, c))))),
+            cong(
+              (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+              cong(
+                (fun (value : F) => mulF(a, value)),
+                cong(
+                  (fun (value : F) => mulF(b, value)),
+                  ring_mul_comm(F, zero, one, addF, mulF, negF, ring, d, c)
+                )
+              )
+            )
+          )
+        )
+      ),
+      trans(
+        (
+          cong(
+            (
+              fun (value : F) => addF(
+                addF(
+                  mulF(a, mulF(a, mulF(c, c))),
+                  addF(
+                    negF(mulF(a, mulF(b, mulF(c, d)))),
+                    addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                  )
+                ), value
+              )
+            ),
+            cong(
+              (
+                fun (value : F) => addF(
+                  addF(mulF(a, mulF(a, mulF(d, d))), mulF(a, mulF(b, mulF(c, d)))), value
+                )
+              ),
+              ring_distribute(
+                F, zero, one, addF, mulF, negF, ring, mulF(b, c), mulF(a, d), mulF(b, c)
+              )
+            )
+          )
+        ),
+        trans(
+          (
+            cong(
+              (
+                fun (value : F) => addF(
+                  addF(
+                    mulF(a, mulF(a, mulF(c, c))),
+                    addF(
+                      negF(mulF(a, mulF(b, mulF(c, d)))),
+                      addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                    )
+                  ), value
+                )
+              ),
+              cong(
+                (
+                  fun (value : F) => addF(
+                    addF(mulF(a, mulF(a, mulF(d, d))), mulF(a, mulF(b, mulF(c, d)))), value
+                  )
+                ),
+                cong(
+                  (fun (value : F) => addF(value, mulF(mulF(b, c), mulF(b, c)))),
+                  ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, b, c, mulF(a, d))
+                )
+              )
+            )
+          ),
+          trans(
+            (
+              cong(
+                (
+                  fun (value : F) => addF(
+                    addF(
+                      mulF(a, mulF(a, mulF(c, c))),
+                      addF(
+                        negF(mulF(a, mulF(b, mulF(c, d)))),
+                        addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                      )
+                    ), value
+                  )
+                ),
+                cong(
+                  (
+                    fun (value : F) => addF(
+                      addF(mulF(a, mulF(a, mulF(d, d))), mulF(a, mulF(b, mulF(c, d)))), value
+                    )
+                  ),
+                  cong(
+                    (fun (value : F) => addF(value, mulF(mulF(b, c), mulF(b, c)))),
+                    cong(
+                      (fun (value : F) => mulF(b, value)),
+                      ring_mul_swap(F, zero, one, addF, mulF, negF, ring, c, a, d)
+                    )
+                  )
+                )
+              )
+            ),
+            trans(
+              (
+                cong(
+                  (
+                    fun (value : F) => addF(
+                      addF(
+                        mulF(a, mulF(a, mulF(c, c))),
+                        addF(
+                          negF(mulF(a, mulF(b, mulF(c, d)))),
+                          addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                        )
+                      ), value
+                    )
+                  ),
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        addF(mulF(a, mulF(a, mulF(d, d))), mulF(a, mulF(b, mulF(c, d)))), value
+                      )
+                    ),
+                    cong(
+                      (fun (value : F) => addF(value, mulF(mulF(b, c), mulF(b, c)))),
+                      ring_mul_swap(F, zero, one, addF, mulF, negF, ring, b, a, mulF(c, d))
+                    )
+                  )
+                )
+              ),
+              trans(
+                (
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        addF(
+                          mulF(a, mulF(a, mulF(c, c))),
+                          addF(
+                            negF(mulF(a, mulF(b, mulF(c, d)))),
+                            addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                          )
+                        ), value
+                      )
+                    ),
+                    cong(
+                      (
+                        fun (value : F) => addF(
+                          addF(mulF(a, mulF(a, mulF(d, d))), mulF(a, mulF(b, mulF(c, d)))), value
+                        )
+                      ),
+                      cong(
+                        (fun (value : F) => addF(mulF(a, mulF(b, mulF(c, d))), value)),
+                        ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, b, c, mulF(b, c))
+                      )
+                    )
+                  )
+                ),
+                (
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        addF(
+                          mulF(a, mulF(a, mulF(c, c))),
+                          addF(
+                            negF(mulF(a, mulF(b, mulF(c, d)))),
+                            addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+                          )
+                        ), value
+                      )
+                    ),
+                    cong(
+                      (
+                        fun (value : F) => addF(
+                          addF(mulF(a, mulF(a, mulF(d, d))), mulF(a, mulF(b, mulF(c, d)))), value
+                        )
+                      ),
+                      cong(
+                        (fun (value : F) => addF(mulF(a, mulF(b, mulF(c, d))), value)),
+                        cong(
+                          (fun (value : F) => mulF(b, value)),
+                          ring_mul_swap(F, zero, one, addF, mulF, negF, ring, c, b, c)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+// A checked segment of the polynomial expansion.
+def complex_norm_expansion_5(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
+) =
+  trans(
+    (
+      cong(
+        (
+          fun (value : F) => addF(
+            addF(
+              mulF(a, mulF(a, mulF(c, c))),
+              addF(
+                negF(mulF(a, mulF(b, mulF(c, d)))),
+                addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+              )
+            ), value
+          )
+        ),
+        ring_add_assoc(
+          F, zero, one, addF, mulF, negF, ring, mulF(a, mulF(a, mulF(d, d))),
+          mulF(a, mulF(b, mulF(c, d))),
+          addF(mulF(a, mulF(b, mulF(c, d))), mulF(b, mulF(b, mulF(c, c))))
+        )
+      )
+    ),
+    trans(
+      (
+        ring_add_assoc(
+          F, zero, one, addF, mulF, negF, ring, mulF(a, mulF(a, mulF(c, c))),
+          addF(
+            negF(mulF(a, mulF(b, mulF(c, d)))),
+            addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d))))
+          ),
+          addF(
+            mulF(a, mulF(a, mulF(d, d))),
+            addF(
+              mulF(a, mulF(b, mulF(c, d))),
+              addF(mulF(a, mulF(b, mulF(c, d))), mulF(b, mulF(b, mulF(c, c))))
+            )
+          )
+        )
+      ),
+      trans(
+        (
+          cong(
+            (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+            ring_add_assoc(
+              F, zero, one, addF, mulF, negF, ring, negF(mulF(a, mulF(b, mulF(c, d)))),
+              addF(negF(mulF(a, mulF(b, mulF(c, d)))), mulF(b, mulF(b, mulF(d, d)))),
+              addF(
+                mulF(a, mulF(a, mulF(d, d))),
+                addF(
+                  mulF(a, mulF(b, mulF(c, d))),
+                  addF(mulF(a, mulF(b, mulF(c, d))), mulF(b, mulF(b, mulF(c, c))))
+                )
+              )
+            )
+          )
+        ),
+        trans(
+          (
+            cong(
+              (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+              cong(
+                (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+                ring_add_assoc(
+                  F, zero, one, addF, mulF, negF, ring, negF(mulF(a, mulF(b, mulF(c, d)))),
+                  mulF(b, mulF(b, mulF(d, d))),
+                  addF(
+                    mulF(a, mulF(a, mulF(d, d))),
+                    addF(
+                      mulF(a, mulF(b, mulF(c, d))),
+                      addF(mulF(a, mulF(b, mulF(c, d))), mulF(b, mulF(b, mulF(c, c))))
+                    )
+                  )
+                )
+              )
+            )
+          ),
+          trans(
+            (
+              cong(
+                (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                cong(
+                  (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+                  cong(
+                    (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+                    ring_add_swap(
+                      F, zero, one, addF, mulF, negF, ring, mulF(b, mulF(b, mulF(d, d))),
+                      mulF(a, mulF(a, mulF(d, d))),
+                      addF(
+                        mulF(a, mulF(b, mulF(c, d))),
+                        addF(mulF(a, mulF(b, mulF(c, d))), mulF(b, mulF(b, mulF(c, c))))
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+            trans(
+              (
+                cong(
+                  (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                  cong(
+                    (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+                    cong(
+                      (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+                      cong(
+                        (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+                        ring_add_swap(
+                          F, zero, one, addF, mulF, negF, ring, mulF(b, mulF(b, mulF(d, d))),
+                          mulF(a, mulF(b, mulF(c, d))),
+                          addF(mulF(a, mulF(b, mulF(c, d))), mulF(b, mulF(b, mulF(c, c))))
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+              trans(
+                (
+                  cong(
+                    (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                    cong(
+                      (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+                      cong(
+                        (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+                        cong(
+                          (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+                          cong(
+                            (fun (value : F) => addF(mulF(a, mulF(b, mulF(c, d))), value)),
+                            ring_add_swap(
+                              F, zero, one, addF, mulF, negF, ring, mulF(b, mulF(b, mulF(d, d))),
+                              mulF(a, mulF(b, mulF(c, d))), mulF(b, mulF(b, mulF(c, c)))
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                ),
+                (
+                  cong(
+                    (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                    cong(
+                      (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+                      cong(
+                        (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+                        cong(
+                          (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+                          cong(
+                            (fun (value : F) => addF(mulF(a, mulF(b, mulF(c, d))), value)),
+                            cong(
+                              (fun (value : F) => addF(mulF(a, mulF(b, mulF(c, d))), value)),
+                              ring_add_comm(
+                                F, zero, one, addF, mulF, negF, ring, mulF(b, mulF(b, mulF(d, d))),
+                                mulF(b, mulF(b, mulF(c, c)))
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+// A checked segment of the polynomial expansion.
+def complex_norm_expansion_6(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
+) =
+  trans(
+    (
+      cong(
+        (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+        cong(
+          (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+          ring_add_swap(
+            F, zero, one, addF, mulF, negF, ring, negF(mulF(a, mulF(b, mulF(c, d)))),
+            mulF(a, mulF(a, mulF(d, d))),
+            addF(
+              mulF(a, mulF(b, mulF(c, d))),
+              addF(
+                mulF(a, mulF(b, mulF(c, d))),
+                addF(mulF(b, mulF(b, mulF(c, c))), mulF(b, mulF(b, mulF(d, d))))
+              )
+            )
+          )
+        )
+      )
+    ),
+    trans(
+      (
+        cong(
+          (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+          cong(
+            (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+            cong(
+              (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+              ring_add_swap(
+                F, zero, one, addF, mulF, negF, ring, negF(mulF(a, mulF(b, mulF(c, d)))),
+                mulF(a, mulF(b, mulF(c, d))),
+                addF(
+                  mulF(a, mulF(b, mulF(c, d))),
+                  addF(mulF(b, mulF(b, mulF(c, c))), mulF(b, mulF(b, mulF(d, d))))
+                )
+              )
+            )
+          )
+        )
+      ),
+      trans(
+        (
+          cong(
+            (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+            cong(
+              (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+              cong(
+                (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+                cong(
+                  (fun (value : F) => addF(mulF(a, mulF(b, mulF(c, d))), value)),
+                  ring_add_swap(
+                    F, zero, one, addF, mulF, negF, ring, negF(mulF(a, mulF(b, mulF(c, d)))),
+                    mulF(a, mulF(b, mulF(c, d))),
+                    addF(mulF(b, mulF(b, mulF(c, c))), mulF(b, mulF(b, mulF(d, d))))
+                  )
+                )
+              )
+            )
+          )
+        ),
+        trans(
+          (
+            cong(
+              (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+              cong(
+                (fun (value : F) => addF(negF(mulF(a, mulF(b, mulF(c, d)))), value)),
+                cong(
+                  (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+                  cong(
+                    (fun (value : F) => addF(mulF(a, mulF(b, mulF(c, d))), value)),
+                    ring_add_cancel_prefix(
+                      F, zero, one, addF, mulF, negF, ring, mulF(a, mulF(b, mulF(c, d))),
+                      addF(mulF(b, mulF(b, mulF(c, c))), mulF(b, mulF(b, mulF(d, d))))
+                    )
+                  )
+                )
+              )
+            )
+          ),
+          trans(
+            (
+              cong(
+                (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                ring_add_swap(
+                  F, zero, one, addF, mulF, negF, ring, negF(mulF(a, mulF(b, mulF(c, d)))),
+                  mulF(a, mulF(a, mulF(d, d))),
+                  addF(
+                    mulF(a, mulF(b, mulF(c, d))),
+                    addF(mulF(b, mulF(b, mulF(c, c))), mulF(b, mulF(b, mulF(d, d))))
+                  )
+                )
+              )
+            ),
+            trans(
+              (
+                cong(
+                  (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                  cong(
+                    (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+                    ring_add_swap(
+                      F, zero, one, addF, mulF, negF, ring, negF(mulF(a, mulF(b, mulF(c, d)))),
+                      mulF(a, mulF(b, mulF(c, d))),
+                      addF(mulF(b, mulF(b, mulF(c, c))), mulF(b, mulF(b, mulF(d, d))))
+                    )
+                  )
+                )
+              ),
+              (
+                cong(
+                  (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                  cong(
+                    (fun (value : F) => addF(mulF(a, mulF(a, mulF(d, d))), value)),
+                    ring_add_cancel_prefix(
+                      F, zero, one, addF, mulF, negF, ring, mulF(a, mulF(b, mulF(c, d))),
+                      addF(mulF(b, mulF(b, mulF(c, c))), mulF(b, mulF(b, mulF(d, d))))
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+// A checked segment of the polynomial expansion.
+def complex_norm_right_expansion(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
+) =
+  trans(
+    (
+      ring_distribute_left(
+        F, zero, one, addF, mulF, negF, ring, mulF(a, a), mulF(b, b), addF(mulF(c, c), mulF(d, d))
+      )
+    ),
+    trans(
+      (
+        cong(
+          (fun (value : F) => addF(value, mulF(mulF(b, b), addF(mulF(c, c), mulF(d, d))))),
+          ring_distribute(F, zero, one, addF, mulF, negF, ring, mulF(a, a), mulF(c, c), mulF(d, d))
+        )
+      ),
+      trans(
+        (
+          cong(
+            (fun (value : F) => addF(value, mulF(mulF(b, b), addF(mulF(c, c), mulF(d, d))))),
+            cong(
+              (fun (value : F) => addF(value, mulF(mulF(a, a), mulF(d, d)))),
+              ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, a, a, mulF(c, c))
+            )
+          )
+        ),
+        trans(
+          (
+            cong(
+              (fun (value : F) => addF(value, mulF(mulF(b, b), addF(mulF(c, c), mulF(d, d))))),
+              cong(
+                (fun (value : F) => addF(mulF(a, mulF(a, mulF(c, c))), value)),
+                ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, a, a, mulF(d, d))
+              )
+            )
+          ),
+          trans(
+            (
+              cong(
+                (
+                  fun (value : F) => addF(
+                    addF(mulF(a, mulF(a, mulF(c, c))), mulF(a, mulF(a, mulF(d, d)))), value
+                  )
+                ),
+                ring_distribute(
+                  F, zero, one, addF, mulF, negF, ring, mulF(b, b), mulF(c, c), mulF(d, d)
+                )
+              )
+            ),
+            trans(
+              (
+                cong(
+                  (
+                    fun (value : F) => addF(
+                      addF(mulF(a, mulF(a, mulF(c, c))), mulF(a, mulF(a, mulF(d, d)))), value
+                    )
+                  ),
+                  cong(
+                    (fun (value : F) => addF(value, mulF(mulF(b, b), mulF(d, d)))),
+                    ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, b, b, mulF(c, c))
+                  )
+                )
+              ),
+              trans(
+                (
+                  cong(
+                    (
+                      fun (value : F) => addF(
+                        addF(mulF(a, mulF(a, mulF(c, c))), mulF(a, mulF(a, mulF(d, d)))), value
+                      )
+                    ),
+                    cong(
+                      (fun (value : F) => addF(mulF(b, mulF(b, mulF(c, c))), value)),
+                      ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, b, b, mulF(d, d))
+                    )
+                  )
+                ),
+                (
+                  ring_add_assoc(
+                    F, zero, one, addF, mulF, negF, ring, mulF(a, mulF(a, mulF(c, c))),
+                    mulF(a, mulF(a, mulF(d, d))),
+                    addF(mulF(b, mulF(b, mulF(c, c))), mulF(b, mulF(b, mulF(d, d))))
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+theorem complex_coordinate_norm_product(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
+) : addF(
+  mulF(addF(mulF(a, c), negF(mulF(b, d))), addF(mulF(a, c), negF(mulF(b, d)))),
+  mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+) = mulF(addF(mulF(a, a), mulF(b, b)), addF(mulF(c, c), mulF(d, d))) {
+  exact trans(
+    trans(
+      complex_norm_expansion_1(F, zero, one, addF, mulF, negF, ring, a, b, c, d),
+      trans(
+        complex_norm_expansion_2(F, zero, one, addF, mulF, negF, ring, a, b, c, d),
+        trans(
+          complex_norm_expansion_3(F, zero, one, addF, mulF, negF, ring, a, b, c, d),
+          trans(
+            complex_norm_expansion_4(F, zero, one, addF, mulF, negF, ring, a, b, c, d),
+            trans(
+              complex_norm_expansion_5(F, zero, one, addF, mulF, negF, ring, a, b, c, d),
+              complex_norm_expansion_6(F, zero, one, addF, mulF, negF, ring, a, b, c, d)
+            )
+          )
+        )
+      )
+    ), sym(complex_norm_right_expansion(F, zero, one, addF, mulF, negF, ring, a, b, c, d))
+  );
+}
+
+theorem complex_coordinate_norm_one(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF)
+) : addF(mulF(one, one), mulF(zero, zero)) = one {
+  let leftStep1 =
+    cong(
+      (fun (value : F) => addF(value, mulF(zero, zero))),
+      ring_mul_one(F, zero, one, addF, mulF, negF, ring, one)
+    );
+  let leftStep2 =
+    cong(
+      (fun (value : F) => addF(one, value)),
+      ring_zero_mul(F, zero, one, addF, mulF, negF, ring, zero)
+    );
+  let leftStep3 = ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, one);
+  exact trans(trans(leftStep1, trans(leftStep2, leftStep3)), sym(refl(one)));
+}
