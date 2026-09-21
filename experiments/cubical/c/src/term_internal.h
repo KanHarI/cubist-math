@@ -52,6 +52,8 @@ struct cc_kernel {
     cc_alpha_memo *alpha_memo;
     uint64_t next_alpha_scope;
     size_t count, capacity;
+    uint32_t *unfolding_hints;
+    size_t unfolding_hint_count;
     cc_definition *definitions;
     size_t definition_count, definition_capacity;
     cc_formula *formulas;

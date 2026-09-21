@@ -78,6 +78,13 @@ bool cc_kernel_check_in_cube(cc_kernel *, cc_term, cc_term expected,
                              const cc_assumption *, size_t count,
                              uint64_t dimensions, cc_checked_result *);
 
+/* Optional conversion strategy, never a typing certificate. References must
+ * belong to this kernel's checked definition registry. Earlier list entries
+ * have higher unfolding priority; count zero clears the strategy. The list
+ * applies to check/define operations until replaced. Invalid input preserves
+ * the prior list. Clear after a scoped hint even when a check is rejected. */
+bool cc_kernel_set_unfolding_hints(cc_kernel *, const cc_term *references, size_t count);
+
 /* Register a closed definition, checked using only earlier checked references.
  * A symbol may be registered once. On failure no definition is published.
  * The returned expression is a folded DefRef, never an assumed axiom. */

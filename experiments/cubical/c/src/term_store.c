@@ -60,6 +60,7 @@ void cc_kernel_free(cc_kernel *k) {
     for (size_t i = 1; i < k->formula_count; ++i)
         cc_clear(&k->formulas[i]);
     free(k->definitions);
+    free(k->unfolding_hints);
     free(k->formulas);
     free(k->syntax_memo);
     free(k->alpha_memo);
