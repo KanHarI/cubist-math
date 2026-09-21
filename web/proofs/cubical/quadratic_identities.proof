@@ -1,0 +1,378 @@
+import ring_laws;
+
+// Explicit ring rewrites for the parallelogram identity.
+
+// A checked segment of the ring expansion.
+def parallelogram_expansion_1(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+) =
+  trans(
+    cong(
+      (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
+      ring_distribute_left(F, zero, one, addF, mulF, negF, ring, a, b, addF(a, b))
+    ),
+    trans(
+      cong(
+        (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
+        cong(
+          (fun (value : F) => addF(value, mulF(b, addF(a, b)))),
+          ring_distribute(F, zero, one, addF, mulF, negF, ring, a, a, b)
+        )
+      ),
+      trans(
+        cong(
+          (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
+          cong(
+            (fun (value : F) => addF(addF(mulF(a, a), mulF(a, b)), value)),
+            ring_distribute(F, zero, one, addF, mulF, negF, ring, b, a, b)
+          )
+        ),
+        trans(
+          cong(
+            (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
+            cong(
+              (fun (value : F) => addF(addF(mulF(a, a), mulF(a, b)), value)),
+              cong(
+                (fun (value : F) => addF(value, mulF(b, b))),
+                ring_mul_comm(F, zero, one, addF, mulF, negF, ring, b, a)
+              )
+            )
+          ),
+          trans(
+            cong(
+              (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
+              ring_add_assoc(
+                F, zero, one, addF, mulF, negF, ring, mulF(a, a), mulF(a, b),
+                addF(mulF(a, b), mulF(b, b))
+              )
+            ),
+            trans(
+              cong(
+                (
+                  fun (value : F) => addF(
+                    addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+                  )
+                ),
+                ring_distribute_left(
+                  F, zero, one, addF, mulF, negF, ring, a, negF(b), addF(a, negF(b))
+                )
+              ),
+              cong(
+                (
+                  fun (value : F) => addF(
+                    addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+                  )
+                ),
+                cong(
+                  (fun (value : F) => addF(value, mulF(negF(b), addF(a, negF(b))))),
+                  ring_distribute(F, zero, one, addF, mulF, negF, ring, a, a, negF(b))
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+// A checked segment of the ring expansion.
+def parallelogram_expansion_2(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+) =
+  trans(
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      cong(
+        (fun (value : F) => addF(value, mulF(negF(b), addF(a, negF(b))))),
+        cong(
+          (fun (value : F) => addF(mulF(a, a), value)),
+          ring_mul_neg(F, zero, one, addF, mulF, negF, ring, a, b)
+        )
+      )
+    ),
+    trans(
+      cong(
+        (
+          fun (value : F) => addF(
+            addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+          )
+        ),
+        cong(
+          (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+          ring_neg_mul(F, zero, one, addF, mulF, negF, ring, b, addF(a, negF(b)))
+        )
+      ),
+      trans(
+        cong(
+          (
+            fun (value : F) => addF(
+              addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+            )
+          ),
+          cong(
+            (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+            cong(
+              (fun (value : F) => negF(value)),
+              ring_distribute(F, zero, one, addF, mulF, negF, ring, b, a, negF(b))
+            )
+          )
+        ),
+        trans(
+          cong(
+            (
+              fun (value : F) => addF(
+                addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+              )
+            ),
+            cong(
+              (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+              cong(
+                (fun (value : F) => negF(value)),
+                cong(
+                  (fun (value : F) => addF(value, mulF(b, negF(b)))),
+                  ring_mul_comm(F, zero, one, addF, mulF, negF, ring, b, a)
+                )
+              )
+            )
+          ),
+          trans(
+            cong(
+              (
+                fun (value : F) => addF(
+                  addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+                )
+              ),
+              cong(
+                (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+                cong(
+                  (fun (value : F) => negF(value)),
+                  cong(
+                    (fun (value : F) => addF(mulF(a, b), value)),
+                    ring_mul_neg(F, zero, one, addF, mulF, negF, ring, b, b)
+                  )
+                )
+              )
+            ),
+            trans(
+              cong(
+                (
+                  fun (value : F) => addF(
+                    addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+                  )
+                ),
+                cong(
+                  (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+                  ring_neg_add(F, zero, one, addF, mulF, negF, ring, mulF(a, b), negF(mulF(b, b)))
+                )
+              ),
+              cong(
+                (
+                  fun (value : F) => addF(
+                    addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+                  )
+                ),
+                cong(
+                  (fun (value : F) => addF(addF(mulF(a, a), negF(mulF(a, b))), value)),
+                  cong(
+                    (fun (value : F) => addF(negF(mulF(a, b)), value)),
+                    ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(b, b))
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+// A checked segment of the ring expansion.
+def parallelogram_expansion_3(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+) =
+  trans(
+    cong(
+      (
+        fun (value : F) => addF(
+          addF(mulF(a, a), addF(mulF(a, b), addF(mulF(a, b), mulF(b, b)))), value
+        )
+      ),
+      ring_add_assoc(
+        F, zero, one, addF, mulF, negF, ring, mulF(a, a), negF(mulF(a, b)),
+        addF(negF(mulF(a, b)), mulF(b, b))
+      )
+    ),
+    trans(
+      ring_add_assoc(
+        F, zero, one, addF, mulF, negF, ring, mulF(a, a),
+        addF(mulF(a, b), addF(mulF(a, b), mulF(b, b))),
+        addF(mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b))))
+      ),
+      trans(
+        cong(
+          (fun (value : F) => addF(mulF(a, a), value)),
+          ring_add_assoc(
+            F, zero, one, addF, mulF, negF, ring, mulF(a, b), addF(mulF(a, b), mulF(b, b)),
+            addF(mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b))))
+          )
+        ),
+        trans(
+          cong(
+            (fun (value : F) => addF(mulF(a, a), value)),
+            cong(
+              (fun (value : F) => addF(mulF(a, b), value)),
+              ring_add_assoc(
+                F, zero, one, addF, mulF, negF, ring, mulF(a, b), mulF(b, b),
+                addF(mulF(a, a), addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b))))
+              )
+            )
+          ),
+          trans(
+            cong(
+              (fun (value : F) => addF(mulF(a, a), value)),
+              cong(
+                (fun (value : F) => addF(mulF(a, b), value)),
+                cong(
+                  (fun (value : F) => addF(mulF(a, b), value)),
+                  ring_add_swap(
+                    F, zero, one, addF, mulF, negF, ring, mulF(b, b), mulF(a, a),
+                    addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), mulF(b, b)))
+                  )
+                )
+              )
+            ),
+            trans(
+              cong(
+                (fun (value : F) => addF(mulF(a, a), value)),
+                cong(
+                  (fun (value : F) => addF(mulF(a, b), value)),
+                  cong(
+                    (fun (value : F) => addF(mulF(a, b), value)),
+                    cong(
+                      (fun (value : F) => addF(mulF(a, a), value)),
+                      ring_add_swap(
+                        F, zero, one, addF, mulF, negF, ring, mulF(b, b), negF(mulF(a, b)),
+                        addF(negF(mulF(a, b)), mulF(b, b))
+                      )
+                    )
+                  )
+                )
+              ),
+              cong(
+                (fun (value : F) => addF(mulF(a, a), value)),
+                cong(
+                  (fun (value : F) => addF(mulF(a, b), value)),
+                  cong(
+                    (fun (value : F) => addF(mulF(a, b), value)),
+                    cong(
+                      (fun (value : F) => addF(mulF(a, a), value)),
+                      cong(
+                        (fun (value : F) => addF(negF(mulF(a, b)), value)),
+                        ring_add_swap(
+                          F, zero, one, addF, mulF, negF, ring, mulF(b, b), negF(mulF(a, b)),
+                          mulF(b, b)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+// A checked segment of the ring expansion.
+def parallelogram_expansion_4(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+) =
+  trans(
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      cong(
+        (fun (value : F) => addF(mulF(a, b), value)),
+        ring_add_swap(
+          F, zero, one, addF, mulF, negF, ring, mulF(a, b), mulF(a, a),
+          addF(negF(mulF(a, b)), addF(negF(mulF(a, b)), addF(mulF(b, b), mulF(b, b))))
+        )
+      )
+    ),
+    trans(
+      cong(
+        (fun (value : F) => addF(mulF(a, a), value)),
+        cong(
+          (fun (value : F) => addF(mulF(a, b), value)),
+          cong(
+            (fun (value : F) => addF(mulF(a, a), value)),
+            ring_add_cancel_prefix(
+              F, zero, one, addF, mulF, negF, ring, mulF(a, b),
+              addF(negF(mulF(a, b)), addF(mulF(b, b), mulF(b, b)))
+            )
+          )
+        )
+      ),
+      trans(
+        cong(
+          (fun (value : F) => addF(mulF(a, a), value)),
+          ring_add_swap(
+            F, zero, one, addF, mulF, negF, ring, mulF(a, b), mulF(a, a),
+            addF(negF(mulF(a, b)), addF(mulF(b, b), mulF(b, b)))
+          )
+        ),
+        cong(
+          (fun (value : F) => addF(mulF(a, a), value)),
+          cong(
+            (fun (value : F) => addF(mulF(a, a), value)),
+            ring_add_cancel_prefix(
+              F, zero, one, addF, mulF, negF, ring, mulF(a, b), addF(mulF(b, b), mulF(b, b))
+            )
+          )
+        )
+      )
+    )
+  );
+
+// A checked segment of the ring expansion.
+def parallelogram_right_expansion(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+) =
+  trans(
+    ring_add_assoc(
+      F, zero, one, addF, mulF, negF, ring, mulF(a, a), mulF(b, b), addF(mulF(a, a), mulF(b, b))
+    ),
+    cong(
+      (fun (value : F) => addF(mulF(a, a), value)),
+      ring_add_swap(F, zero, one, addF, mulF, negF, ring, mulF(b, b), mulF(a, a), mulF(b, b))
+    )
+  );
+
+theorem complex_coordinate_parallelogram(
+  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+) : addF(mulF(addF(a, b), addF(a, b)), mulF(addF(a, negF(b)), addF(a, negF(b)))) = addF(
+  addF(mulF(a, a), mulF(b, b)), addF(mulF(a, a), mulF(b, b))
+) {
+  exact trans(
+    trans(
+      parallelogram_expansion_1(F, zero, one, addF, mulF, negF, ring, a, b),
+      trans(
+        parallelogram_expansion_2(F, zero, one, addF, mulF, negF, ring, a, b),
+        trans(
+          parallelogram_expansion_3(F, zero, one, addF, mulF, negF, ring, a, b),
+          parallelogram_expansion_4(F, zero, one, addF, mulF, negF, ring, a, b)
+        )
+      )
+    ), sym(parallelogram_right_expansion(F, zero, one, addF, mulF, negF, ring, a, b))
+  );
+}
