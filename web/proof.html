@@ -123,6 +123,7 @@
           <p id="inspect-kind" class="eyebrow"></p>
           <pre id="inspect-type"></pre>
           <p id="inspect-description" class="description"></p>
+          <div id="inspect-universes" hidden></div>
           <a id="view-source" class="source-link" hidden>View source →</a>
           <div id="inspect-axioms" class="axiom-dependencies"></div>
           <div id="locals"></div>
@@ -205,6 +206,7 @@
           <code>U0</code>, <code>U1</code>, <code>U2</code> and <code>U3</code>
           name universes, with <code>U0 : U1</code>. A parameter
           <code>U : Universe</code> accepts a universe argument.
+          Inspect a template and select U0–U3 to see its checked specialization.
           <code>Equiv(U, A, B)</code> and <code>IsEquiv(U, A, B, f)</code>
           work at that universe. <code>Choice(U0)</code>, <code>LEM(U0)</code>
           (excluded middle), <code>FunExt(U1)</code>,

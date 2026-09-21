@@ -219,3 +219,64 @@ test("universe-template calls link to checked specializations and their library 
     }
   }
 });
+
+test("inspect checks unused templates at selected universes and replays local context", async t => {
+  const source = `def identity(U : Universe, A : U, x : A) = x;
+    def constant(U : Universe, V : Universe, A : U, B : V, x : A, y : B) = x;
+    def invalid(U : Universe, A : U, x : A) : Void { exact x; }`;
+  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
+  const result = await program.check(source, "templates");
+  assert.equal(result.complete, true);
+  const identity = "templates__identity";
+  for (let level = 0; level <= 3; level++) {
+    const view = program.inspect(identity, { universes: [level] });
+    assert.equal(view.type.domain.tag, "U");
+    assert.equal(view.type.domain.level, level);
+    assert.equal(view.symbols[view.name].name, `identity_U${level}`);
+    assert.deepEqual(view.templateInspection, { binding: identity, universes: [level] });
+    const local = result.links.find(link => link.name === "x" && source.slice(link.end, link.end + 1) === ";");
+    const localView = program.inspect(local.binding, { universes: [level] });
+    assert.equal(localView.expression.tag, "Var");
+    assert.ok(localView.context.some(entry => entry.label === "A" && entry.type.level === level));
+    const payload = program.export(localView.name);
+    const replay = new CubicalProgram(module, async () => ""); t.after(() => replay.dispose());
+    await replay.check(payload.source, payload.main);
+    const restored = replay.inspect(payload.templateInspection.binding, payload.templateInspection);
+    assert.deepEqual(restored.expression, localView.expression);
+    assert.deepEqual(restored.type, localView.type);
+    assert.deepEqual(restored.context, localView.context);
+  }
+  assert.equal(program.symbols[identity].template, true);
+  assert.equal(program.symbols[identity].verified, false, "inspection must not claim the generic template is checked");
+  const mixed = program.inspect("templates__constant", { universes: [0, 3] });
+  assert.equal(mixed.type.domain.level, 0);
+  assert.equal(mixed.type.body.domain.level, 3);
+  for (const universes of [[4], [-1], [0.5], [], [0, 1], ["U0"]])
+    assert.throws(() => program.inspect(identity, { universes }));
+  assert.throws(() => program.inspect("templates__invalid", { universes: [1] }));
+});
+
+test("every named reference in group universe templates is inspectable with source labels", async t => {
+  const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+  const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
+  const result = await program.check(await readSource("group_universes"), "group_universes");
+  const references = result.links.filter(link => link.role === "template reference");
+  assert.ok(references.length > 300);
+  for (const level of [0, 3]) {
+    for (const reference of references) {
+      const view = program.inspect(reference.binding, { universes: [level] });
+      assert.equal(view.symbols[view.name].name, reference.name);
+    }
+    const view = program.inspect("group_universes__GroupAssociativeAt", { universes: [level] });
+    assert.equal(view.symbols[view.name].name, `GroupAssociativeAt_U${level}`);
+    const notation = JSON.stringify(cubicalMathTree(view.expression, view.symbols));
+    for (const name of ["A", "multiply", "x", "y", "z"]) assert.ok(notation.includes(`"name":"${name}"`));
+    assert.doesNotMatch(notation, /"name":"(?:A|multiply|x|y|z)[0-9]+"/);
+  }
+  // The stored specialization used by an ordinary checked source also retains
+  // source binder names; this path does not rely on the inspector's re-elaboration.
+  await program.check("import groups; def associativity = GroupAssociative;", "ordinary");
+  const stored = program.inspect("group_universes__GroupAssociativeAt__U0");
+  assert.equal(stored.symbols[stored.name].name, "GroupAssociativeAt_U0");
+  assert.doesNotMatch(JSON.stringify(cubicalMathTree(stored.expression, stored.symbols)), /"name":"(?:A|multiply|x|y|z)[0-9]+"/);
+});

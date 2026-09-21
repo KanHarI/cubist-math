@@ -229,7 +229,11 @@ try {
   });
   await program.check(payload.source, payload.main, progress => { $("status").textContent = `Rechecking source · ${progress.completed} declarations`; });
   // Ignore supplied expression/type claims. Reconstruct from replayed source.
-  view = program.inspect(payload.binding); selected = payload.binding;
+  view = payload.templateInspection
+    ? program.inspect(payload.templateInspection.binding, { universes: payload.templateInspection.universes,
+        offset: payload.templateInspection.offset })
+    : program.inspect(payload.binding);
+  selected = view.name;
   if (payload.side === "type") {
     const type = program.checker.syntax.check(view.type, null, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));
     view = { ...view, expression: type.term, type: type.type, folded: view.folded ? { ...view.folded, expression: view.folded.type, type: type.type } : null };

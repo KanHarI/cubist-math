@@ -518,6 +518,7 @@ function renderSource() {
   }
 }
 async function inspect(info, remember = true) {
+  const previousUniverses = selected?.universes;
   if (remember && selected) {
     history.push(selected);
     if (history.length > 60) history.shift();
@@ -532,6 +533,26 @@ async function inspect(info, remember = true) {
       : (info.role ?? info.kind ?? "Definition");
   renderType(info.kind === "goal" ? info.step.goal : (info.type ?? ""));
   $("inspect-description").textContent = info.description ?? "";
+  const templateBinding = info.template ? info.binding : info.templateBinding;
+  const universeControls = $("inspect-universes");
+  universeControls.replaceChildren(); universeControls.hidden = !templateBinding;
+  if (templateBinding) {
+    const parameters = info.templateParameters ?? ["U"];
+    info.universes ??= parameters.map((_, index) => previousUniverses?.[index] ?? 0);
+    for (const [index, parameter] of parameters.entries()) {
+      const label = document.createElement("label"), select = document.createElement("select");
+      label.textContent = `Universe ${parameter} `;
+      select.setAttribute("aria-label", `Universe ${parameter}`);
+      for (let level = 0; level <= 3; level++) select.add(new Option(`U${level}`, String(level)));
+      select.value = String(info.universes[index]);
+      select.onchange = () => {
+        const universes = [...info.universes]; universes[index] = Number(select.value);
+        inspect({ ...info, universes }, false);
+      };
+      label.append(select); universeControls.append(label);
+    }
+    $("inspect-description").textContent = `Inspecting ${info.name} at ${info.universes.map(level => `U${level}`).join(", ")}. This specialization is checked by cubical C; the generic definition remains a template.`;
+  }
   sourceLink(info);
   $("inspect-axioms").replaceChildren();
   $("locals").replaceChildren();
@@ -578,7 +599,7 @@ async function inspect(info, remember = true) {
       $("locals").append(button);
     }
   } else {
-    if (last.backend === "cubical" && info.verified === false) {
+    if (last.backend === "cubical" && info.verified === false && !templateBinding) {
       $("kernel-details").hidden = true;
       $("inspect-description").textContent = info.template
         ? `Library universe template. Each concrete specialization is checked by cubical C when used. ${info.description ?? ""}`
@@ -586,12 +607,17 @@ async function inspect(info, remember = true) {
       return;
     }
     try {
-      const view = await request("inspect", { binding: info.binding });
+      const view = await request("inspect", { binding: templateBinding ?? info.binding,
+        ...(templateBinding ? { universes: info.universes, offset: info.templateOffset } : {}) });
       if (sequence !== inspectSerial) return;
+      if (templateBinding) {
+        const checkedInfo = view.symbols[view.name];
+        if (checkedInfo) sourceLink(checkedInfo);
+      }
       renderType(view.typeText, Object.values(view.symbols));
       renderKernel(view);
     } catch (e) {
-      diagnostic(e);
+      if (sequence === inspectSerial) diagnostic(e);
     }
   }
   if (matchMedia("(max-width:1150px)").matches)
