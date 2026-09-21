@@ -75,7 +75,20 @@ export function parse(source, typeOnly = false) {
       });
     let a;
     const t = take();
-    if (t.text === "induction") {
+    if (t.text === "with") {
+      take("unfolding");
+      take("[");
+      const hints = [];
+      if (peek() !== "]") {
+        hints.push(name());
+        while (peek() === ",") { take(","); hints.push(name()); }
+      }
+      take("]");
+      take("{");
+      const body = expr();
+      const end = take("}").end;
+      a = { kind: "withUnfolding", hints, body, start: t.start, end };
+    } else if (t.text === "induction") {
       const value = expr();
       take("as");
       const index = name();

@@ -124,7 +124,7 @@ See [the runnable benchmark](benchmark.md) and `/benchmark.html`. The current
 corpus is now measurable with a one-second per-declaration wall deadline and
 isolated rejected attempts. The page can run the corpus locally in a worker.
 
-Selective `with_unfolding` source hints now preserve folding through the
+Selective `with unfolding [...] { expression }` source hints now preserve folding through the
 structure and group identity conversion bottlenecks. These are conversion
 strategies, not equality assumptions. Concrete Universe schema specializations
 are checked once as named native functions and reused at later applications;

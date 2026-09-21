@@ -7,13 +7,14 @@ theorem f2_embedded_compositum_is_f2 : EmbeddedCompositum(
   F2, F2, F4, f2_f4_embedding, f2_f4_embedding
 ) =[AlgebraicField] F2 {
   let S = subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2));
-  exact with_unfolding(
-    AlgebraicField, EmbeddedCompositum, embedded_compositum_subfield, embedding_image_field,
+  exact with unfolding [
+    AlgebraicField, EmbeddedCompositum, embedded_compositum_subfield, embedding_image_field
+  ] {
     trans(
       cong(subfield_as_field(F4), compositum_idempotent(F4, S)),
       sym(field_embedding_image_equality(F2, F4, f2_f4_embedding))
     )
-  );
+  };
 }
 
 theorem f2_embedded_compositum_triangle : FieldTower(

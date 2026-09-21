@@ -225,12 +225,12 @@ theorem pascal_right_omitted(n : Nat, k : Nat, s : FiniteBinomial(n, succ(k))) :
 }
 
 def pascal_right(n : Nat, k : Nat, s : FiniteBinomial(n, k) or FiniteBinomial(n, succ(k))) =
-  with_unfolding(
-    pascal_right_omitted, match s as z return (pascal_forward(n, k, pascal_backward(n, k, z)) = z) {
+  with unfolding [pascal_right_omitted] {
+    match s as z return (pascal_forward(n, k, pascal_backward(n, k, z)) = z) {
       left u => pascal_right_selected(n, k, u);
       right v => pascal_right_omitted(n, k, v);
     }
-  );
+  };
 theorem binomial_pascal(n : Nat, k : Nat) : Bijection(
   FiniteBinomial(succ(n), succ(k)), FiniteBinomial(n, k) or FiniteBinomial(n, succ(k))
 ) {

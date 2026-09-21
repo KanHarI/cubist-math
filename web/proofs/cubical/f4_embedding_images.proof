@@ -32,13 +32,12 @@ theorem f2_embedding_image_is_base : subfield_image(F2, F4, f2_f4_embedding, sub
 // The realized base subfield is equal to F2 as a field, by the canonical
 // isomorphism from an embedding's source onto its image and univalence.
 theorem f4_base_field_is_f2 : F2 =[AlgebraicField] subfield_as_field(F4, f4_base_subfield) {
-  exact with_unfolding(
-    embedding_image_field,
+  exact with unfolding [embedding_image_field] {
     trans(
       field_embedding_image_equality(F2, F4, f2_f4_embedding),
       cong(subfield_as_field(F4), f2_embedding_image_is_base)
     )
-  );
+  };
 }
 
 theorem f4_base_tower : FieldTower(

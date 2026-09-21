@@ -34,15 +34,14 @@ theorem kernel_quotient_to_image_beta(
 ) : kernel_quotient_to_image(G, H, h, left_coset(G, group_kernel(G, H, h), x)) = group_image_map(
   G, H, h, x
 ) {
-  exact with_unfolding(
-    kernel_quotient_to_image, left_coset,
+  exact with unfolding [kernel_quotient_to_image, left_coset] {
     quotient_rec_beta(
       group_carrier(G), SameLeftCoset(G, group_kernel(G, H, h)),
       same_coset_equivalence(G, group_kernel(G, H, h)), GroupImageCarrier(G, H, h),
       subgroup_carrier_is_set(H, group_image(G, H, h)), group_image_map(G, H, h),
       image_map_respects_kernel(G, H, h), x
     )
-  );
+  };
 }
 
 // The inverse is the fiber predicate itself, not a selected preimage of y.

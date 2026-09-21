@@ -68,8 +68,10 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
   // A binder's short domain is one phrase: `forall f : A -> B,` must not
   // split the arrow merely because the surrounding theorem is long.
   const domains = [];
+  const expressionBlockEnds = new Set();
   function visit(node) {
     if (!node || typeof node !== "object") return;
+    if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
     if (node.domain && source.slice(node.domain.start, node.domain.end).replace(/\s+/g, " ").length < printWidth / 2)
       domains.push([node.domain.start, node.domain.end]);
     for (const value of Object.values(node)) {
@@ -123,7 +125,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         flush(); docs.push(hard, hard); previous = null;
       }
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
-        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text)))
+        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && expressionBlockEnds.has(previous.end)))
         && !(text === "[" && previous.text === "=");
       if (space && previous.text !== ",") {
         if (previous.text === "=" && text !== "[" && assignment < 0
@@ -137,7 +139,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         statement.push(text === "{" ? ["{", indent([hard, body]), hard, "}"]
           : group([text, indent([soft, body]), soft, end]));
         previous = { text: end, end: all[position - 1].end };
-        if (text === "{" && all[position] && ![";", ",", ")", "]", "}"].includes(all[position].text) && !all[position].comment) {
+        if (text === "{" && !expressionBlockEnds.has(previous.end) && all[position] && ![";", ",", ")", "]", "}"].includes(all[position].text) && !all[position].comment) {
           flush(); docs.push(hard); previous = null;
         }
       } else if (text === ";") {

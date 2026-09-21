@@ -352,8 +352,10 @@ theorem pair_first : Nat {
           <code>def</code> is transparent; <code>theorem</code> and
           <code>opaque def</code> keep checked bodies named in ordinary
           computation. <code>unfold(term)</code> explicitly unfolds them. In the native cubical backend,
-          <code>with_unfolding(alias, another_alias, proof)</code> suggests which
-          checked definitions to unfold while checking the enclosing declaration.
+          <code>with unfolding [alias, another_alias] { expression }</code> suggests which
+          checked definitions to unfold while elaborating the enclosed expression.
+          The compiler can retain a checked helper for this block so the enclosing
+          proof can reuse it without expanding it again.
           It does not assume an equality or normalize the whole proof.
           <code>axiom name : T;</code> declares an assumption, displayed in
           dependencies. Truncation, function extensionality, univalence, choice,

@@ -72,19 +72,27 @@ theorem group_isomorphism_is_equality(G : Group, H : Group) : GroupIso(G, H) =[U
 theorem group_isotoid_idtoiso(G : Group, H : Group, p : G = H) : group_isotoid(
   G, H, group_idtoiso(G, H, p)
 ) = p {
-  exact with_unfolding(group_identity_family, field_first, identity_total_point, identity_system_decode, group_iso_point, group_iso_center, group_idtoiso, group_isotoid,
-identity_system_retraction(
-    Group, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, p
-  ));
+  exact with unfolding [
+    group_identity_family, field_first, identity_total_point, identity_system_decode,
+    group_iso_point, group_iso_center, group_idtoiso, group_isotoid
+  ] {
+    identity_system_retraction(
+      Group, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, p
+    )
+  };
 }
 
 theorem group_idtoiso_isotoid(G : Group, H : Group, iso : GroupIso(G, H)) : group_idtoiso(
   G, H, group_isotoid(G, H, iso)
 ) = iso {
-  exact with_unfolding(group_identity_family, field_first, identity_total_point, identity_system_decode, group_iso_point, group_iso_center, group_idtoiso, group_isotoid,
-identity_system_section(
-    Group, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, iso
-  ));
+  exact with unfolding [
+    group_identity_family, field_first, identity_total_point, identity_system_decode,
+    group_iso_point, group_iso_center, group_idtoiso, group_isotoid
+  ] {
+    identity_system_section(
+      Group, G, group_identity_family(G), group_identity_iso(G), group_total_contraction(G), H, iso
+    )
+  };
 }
 
 // Different isomorphisms remain different paths: group equality is not truncated.
@@ -92,9 +100,13 @@ theorem group_isomorphism_paths_injective(
   G : Group, H : Group, p : GroupIso(G, H), q : GroupIso(G, H),
   same : group_isotoid(G, H, p) = group_isotoid(G, H, q)
 ) : p = q {
-  exact with_unfolding(group_identity_family, field_first, identity_total_point, identity_system_decode, group_iso_point, group_iso_center, group_idtoiso, group_isotoid,
-trans(
-    sym(group_idtoiso_isotoid(G, H, p)),
-    trans(cong(group_idtoiso(G, H), same), group_idtoiso_isotoid(G, H, q))
-  ));
+  exact with unfolding [
+    group_identity_family, field_first, identity_total_point, identity_system_decode,
+    group_iso_point, group_iso_center, group_idtoiso, group_isotoid
+  ] {
+    trans(
+      sym(group_idtoiso_isotoid(G, H, p)),
+      trans(cong(group_idtoiso(G, H), same), group_idtoiso_isotoid(G, H, q))
+    )
+  };
 }

@@ -297,17 +297,23 @@ All other formatting changes only whitespace. Programmatic callers can set
 
 ### Selective conversion hints (native cubical backend)
 
-`with_unfolding(name1, name2, ..., proof)` gives the checker a list of already
-checked definitions to open during a preliminary conversion pass. It leaves
-other definitions folded in that pass; normal conversion remains the fallback.
-The hints apply while checking the enclosing declaration and are retained for
-inspection/replay. They do not add an equality, a rewrite theorem, or an axiom.
-An invalid proof stays invalid. Unlike `unfold(expression)`, this does not ask
-for a fully normalized expression.
+`with unfolding [name1, name2] { expression }` gives the checker a list of
+already checked definitions to open during a preliminary conversion pass.
+The bracketed list accepts definition names only. The braces contain one
+expression, without a trailing semicolon; scopes can nest, and an empty list
+is allowed. Other definitions remain folded in that pass; ordinary conversion
+remains the fallback.
+
+Hints apply inside the block. The compiler may retain its result as a checked
+helper definition so the surrounding proof can reuse it without expansion;
+rechecking that helper replays its selected strategy. Hints do not leak into
+surrounding expressions. They do not add an equality, a rewrite theorem, or an
+axiom. An invalid proof stays invalid. Unlike `unfold(expression)`, this does
+not ask for a fully normalized expression.
 
 ```mathscript
 def identity(n : Nat) = n;
 theorem identity_zero : identity(0) = 0 {
-  exact with_unfolding(identity, refl(0));
+  exact with unfolding [identity] { refl(0) };
 }
 ```

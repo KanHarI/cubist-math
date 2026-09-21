@@ -516,9 +516,14 @@ theorem structure_path_roundtrip(
 ) : structure_iso_equality(
   S, R, prop, identity, reflects, X, Y, structure_equality_iso(S, R, identity, X, Y, p)
 ) = p {
-  exact with_unfolding(field_first, identity_total_point, identity_system_decode, structure_iso_point, structure_iso_center, structure_equality_iso, structure_iso_equality,
-identity_system_retraction(
-    Structure(S), X, structure_identity_family(S, R, X), structure_identity_iso(S, R, identity, X),
-    structure_total_contraction(S, R, prop, identity, reflects, X), Y, p
-  ));
+  exact with unfolding [
+    field_first, identity_total_point, identity_system_decode, structure_iso_point,
+    structure_iso_center, structure_equality_iso, structure_iso_equality
+  ] {
+    identity_system_retraction(
+      Structure(S), X, structure_identity_family(S, R, X),
+      structure_identity_iso(S, R, identity, X),
+      structure_total_contraction(S, R, prop, identity, reflects, X), Y, p
+    )
+  };
 }

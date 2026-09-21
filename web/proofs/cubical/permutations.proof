@@ -127,8 +127,7 @@ theorem permutation_join_tail(n : Nat, y : Fin(succ(n)), d : Permutations(n)) : 
 theorem permutation_split_join(n : Nat, p : Fin(succ(n)) and Permutations(n)) : permutation_split(
   n, permutation_join(n, p)
 ) = p {
-  exact with_unfolding(
-    sigma_first, sigma_second, fst, snd, permutation_split, permutation_join,
+  exact with unfolding [sigma_first, sigma_second, fst, snd, permutation_split, permutation_join] {
     pair_induction(
       (
         fun (q : Fin(succ(n)) and Permutations(n)) => permutation_split(n, permutation_join(n, q)) = q
@@ -141,7 +140,7 @@ theorem permutation_split_join(n : Nat, p : Fin(succ(n)) and Permutations(n)) : 
         )
       ), p
     )
-  );
+  };
 }
 
 theorem permutation_successor(n : Nat) : Bijection(

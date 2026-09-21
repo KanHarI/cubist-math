@@ -217,13 +217,12 @@ theorem embedded_compositum_commutative(
   K : AlgebraicField, L : AlgebraicField, O : AlgebraicField, ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O)
 ) : EmbeddedCompositum(K, L, O, ko, lo) =[AlgebraicField] EmbeddedCompositum(L, K, O, lo, ko) {
-  exact with_unfolding(
-    AlgebraicField, EmbeddedCompositum, embedded_compositum_subfield,
+  exact with unfolding [AlgebraicField, EmbeddedCompositum, embedded_compositum_subfield] {
     cong(
       subfield_as_field(O),
       compositum_commutative(
         O, subfield_image(K, O, ko, subfield_top(K)), subfield_image(L, O, lo, subfield_top(L))
       )
     )
-  );
+  };
 }

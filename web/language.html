@@ -378,17 +378,22 @@ theorem opened_is_two : explicitly_opened = 2 {
   exact refl(2);
 }</code></pre>
             <p><code>unfold(term)</code> explicitly unfolds definitions and normalizes the term and its type. It can expand a large expression substantially. A proof such as commutativity is still a propositional equality; the checker does not use arbitrary theorems as automatic rewrite rules.</p>
-            <p>In the native cubical backend, <code>with_unfolding(name₁, name₂, …, proof)</code>
-              supplies selective conversion hints for the enclosing declaration.
-              Each name must identify an already checked definition. The checker first
-              tries unfolding those wrappers while keeping other definitions folded;
-              ordinary conversion remains available. Hints change the checking strategy,
-              never the type or the proof obligations. Their scope ends at the declaration,
-              and the inspector and workbench retain them when rechecking the proof.</p>
+            <p>In the native cubical backend, <code>with unfolding [name₁, name₂] { expression }</code>
+              scopes selective conversion hints around an expression. The bracketed list contains
+              names of already checked definitions; the braces contain one expression, without a
+              trailing semicolon. Empty lists and nested scopes are allowed. For example:</p>
             <pre><code>def identity(n : Nat) = n;
 theorem identity_zero : identity(0) = 0 {
-  exact with_unfolding(identity, refl(0));
+  exact with unfolding [identity] { refl(0) };
 }</code></pre>
+            <p>The checker first tries unfolding the selected wrappers while keeping other
+              definitions folded; ordinary conversion remains available. During elaboration,
+              the hints apply only inside the braces. The compiler may retain the result as a
+              checked helper definition, so the enclosing proof can reuse it without re-expanding
+              it. Rechecking that helper replays its selected strategy; the hints do not leak into
+              surrounding expressions. Hints change reduction order, never the type,
+              assumptions, or proof obligations. They are performance guidance, not evidence of
+              an equality, and do not normalize the whole expression.</p>
           </section>
           <section id="inspection">
             <h2>Checking and inspection</h2>
