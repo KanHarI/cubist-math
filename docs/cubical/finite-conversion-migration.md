@@ -72,3 +72,14 @@ passes against the UBSan native build.
 Captured fixtures must preserve each prior definition's `unfoldingHints` from
 `definitionViews` when replayed. Otherwise an earlier hinted theorem can exhaust
 the replay budget before the reported target is even reached.
+
+## Circle degree
+
+The native `circle_degree` edition retains its public statements and supplies
+two propositional computation paths that the legacy edition treated as
+judgmental equalities. Rebasing a loop along reflexivity is identified with the
+original loop using `transport_constant`. The single positive generating loop,
+constructed as `refl(base)` followed by `loop`, is identified with `loop` using
+`left_unit` before applying the contraction argument. The complete circle-degree
+import graph checks 226 declarations within one second, with no slow, blocked,
+or failed declarations and 16 universe templates.
