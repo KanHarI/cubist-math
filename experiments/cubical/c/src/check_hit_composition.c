@@ -3,7 +3,7 @@
  * in the type family; its face and starting value live in the outer cube.
  * General composition checking certifies the box. Transport additionally
  * requires its family to be constant on the supplied face. */
-#include "term_internal.h"
+#include "dimension_scope.h"
 
 static cc_term rename_tubes(cc_kernel *k, cc_term system, unsigned dim,
                              const cc_formula *variable) {
@@ -21,6 +21,7 @@ bool ck_hit_composition(cc_kernel *k, cc_node n, const cc_context *ctx,
                          uint64_t dims, cc_judgement *out) {
     if (n.payload >= CC_DIMENSIONS)
         return ck_fail(k, "HIT composition dimension outside native range.");
+    dims = ck_live_dimensions(k, n, ctx, dims);
     uint64_t avoid = dims | ck_free_dims(k, n.child[0]) | ck_free_dims(k, n.child[1]) |
                      ck_free_dims(k, n.child[2]) | (UINT64_C(1) << n.payload);
     unsigned dim = ck_fresh_dimension(k, avoid);

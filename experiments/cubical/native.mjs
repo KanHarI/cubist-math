@@ -4,6 +4,7 @@
 import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {interval as I,face as F} from "./lattice.mjs";
+import {bindDimensions} from "./dimension-slots.mjs";
 const kinds=["","U","Var","Pi","Lam","App","Sigma","Pair","Fst","Snd","Nat","Zero","Succ","NatRec","Unit","Point","Path","PLam","PApp","Comp","Tube","Void","Abort","W","Sup","WRec","Sum","Inl","Inr","SumRec","UnitRec","Glue","GlueSystem","GlueTerm","Unglue","DefRef","Pushout","PushLeft","PushRight","PushPath","PushElim","HComp","Trans"];
 const nativeRoot=fileURLToPath(new URL("./c/",import.meta.url));
 
@@ -43,9 +44,7 @@ export function nativeRequest(term,expected=null,assumptions=[],{normalize=true,
       case "Succ":return node(t.tag,0,[child(t.value)]);
       case "NatRec":return node(t.tag,0,[child(t.motive),child(t.zero),child(t.step),child(t.value)]);
       case "HComp":case "Trans": {
-        let dim=0;while([...dims.values()].includes(dim))dim++;
-        if(dim>=64)throw Error("Native prototype supports 64 active dimensions.");
-        const inner=new Map(dims).set(t.dim,dim);
+        const {dim,inner}=bindDimensions(t,dims);
         const family=encode(t.family,t.tag==="HComp"?dims:inner),base=child(t.base);
         if(t.tag==="Trans")return node(t.tag,dim,[family,node("Tube",formula(1,t.face,dims),[base,0]),base]);
         let tubes=0;
@@ -53,8 +52,7 @@ export function nativeRequest(term,expected=null,assumptions=[],{normalize=true,
         return node(t.tag,dim,[family,tubes,base]);
       }
       case "Path":case "PLam":case "Comp":{
-        let dim=0;while([...dims.values()].includes(dim))dim++;if(dim>=64)throw Error("Native prototype supports 64 active dimensions.");
-        const inner=new Map(dims).set(t.dim,dim),family=encode(t.family,inner);
+        const {dim,inner}=bindDimensions(t,dims),family=encode(t.family,inner);
         if(t.tag==="Path")return node(t.tag,dim,[family,child(t.left),child(t.right)]);
         if(t.tag==="PLam")return node(t.tag,dim,[family,encode(t.body,inner)]);
         let tubes=0;

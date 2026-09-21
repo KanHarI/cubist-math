@@ -5,7 +5,7 @@ BUILD ?= build
 SRC = $(wildcard src/*.c)
 HEADERS = $(wildcard include/*.h src/*.h)
 .PHONY: all test sanitize
-all: $(BUILD)/lattice-cli $(BUILD)/test-lattice $(BUILD)/bench-lattice $(BUILD)/kernel-cli $(BUILD)/test-kernel-api $(BUILD)/test-conversion
+all: $(BUILD)/lattice-cli $(BUILD)/test-lattice $(BUILD)/bench-lattice $(BUILD)/kernel-cli $(BUILD)/test-kernel-api $(BUILD)/test-conversion $(BUILD)/test-dimension-scope
 $(BUILD):
 	mkdir -p $@
 $(BUILD)/lattice-cli: tests/lattice_cli.c $(SRC) $(HEADERS) | $(BUILD)
@@ -18,6 +18,7 @@ test: all
 	$(BUILD)/test-lattice
 	$(BUILD)/test-kernel-api
 	$(BUILD)/test-conversion
+	$(BUILD)/test-dimension-scope
 sanitize:
 	$(MAKE) BUILD=build-sanitize CFLAGS='-O1 -g -std=c11 -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer' test
 
@@ -28,4 +29,7 @@ $(BUILD)/test-kernel-api: tests/test_kernel_api.c $(SRC) $(HEADERS) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $< -o $@
 
 $(BUILD)/test-conversion: tests/test_conversion.c $(SRC) $(HEADERS) | $(BUILD)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $< -o $@
+
+$(BUILD)/test-dimension-scope: tests/test_dimension_scope.c $(SRC) $(HEADERS) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $< -o $@
