@@ -96,7 +96,7 @@ bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
     k->error[0] = '\0';
     k->checking_steps = 0;
     k->reduction_steps = 0;
-    k->budget = UINT64_C(10000000);
+    k->budget = k->operation_budget;
     k->recursion = 0;
     if ((count && !assumptions) || count > SIZE_MAX / sizeof(cc_context))
         return ck_fail(k, "Invalid assumption telescope.");
@@ -163,6 +163,6 @@ bool cc_kernel_check(cc_kernel *k, cc_term raw, cc_term expected,
 cc_term cc_kernel_normalize(cc_kernel *k, cc_term term) {
     if (!k || !term || term >= k->count || k->error[0])
         return 0;
-    k->budget = UINT64_C(10000000);
+    k->budget = k->operation_budget;
     return ck_normal(k, term);
 }

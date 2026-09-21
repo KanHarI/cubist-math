@@ -55,7 +55,7 @@ bool cc_kernel_definition(const cc_kernel *k, cc_term reference, uint32_t *symbo
 cc_term cc_kernel_whnf(cc_kernel *k, cc_term term) {
     if (!k || !term || term >= k->count || k->error[0])
         return 0;
-    k->budget = UINT64_C(10000000);
+    k->budget = k->operation_budget;
     k->recursion = 0;
     return ck_whnf(k, term);
 }

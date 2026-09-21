@@ -34,6 +34,9 @@ typedef struct {
 
 cc_kernel *cc_kernel_new(void);
 void cc_kernel_free(cc_kernel *);
+/* Resource budget per checking/reduction operation; zero leaves it unchanged.
+ * Raising it never bypasses a rule or certifies a previously rejected term. */
+void cc_kernel_set_step_budget(cc_kernel *, uint64_t steps);
 const char *cc_kernel_error(const cc_kernel *);
 /* Clear a rejected request before constructing corrected raw syntax. */
 void cc_kernel_clear_error(cc_kernel *);

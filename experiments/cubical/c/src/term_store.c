@@ -49,9 +49,13 @@ cc_kernel *cc_kernel_new(void) {
         k->formula_count = 1;
         k->definition_count = 1;
         k->next_symbol = 1;
-        k->budget = UINT64_C(10000000);
+        k->budget = k->operation_budget = UINT64_C(10000000);
     }
     return k;
+}
+
+void cc_kernel_set_step_budget(cc_kernel *k, uint64_t steps) {
+    if (k && steps) k->operation_budget = steps;
 }
 
 void cc_kernel_free(cc_kernel *k) {

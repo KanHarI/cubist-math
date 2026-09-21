@@ -57,7 +57,7 @@ struct cc_kernel {
     cc_formula *formulas;
     size_t formula_count, formula_capacity;
     uint32_t next_symbol;
-    uint64_t checking_steps, reduction_steps, budget;
+    uint64_t checking_steps, reduction_steps, budget, operation_budget;
     unsigned recursion;
     char error[192];
 };
