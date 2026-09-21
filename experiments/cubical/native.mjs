@@ -8,7 +8,7 @@ import {bindDimensions} from "./dimension-slots.mjs";
 const kinds=["","U","Var","Pi","Lam","App","Sigma","Pair","Fst","Snd","Nat","Zero","Succ","NatRec","Unit","Point","Path","PLam","PApp","Comp","Tube","Void","Abort","W","Sup","WRec","Sum","Inl","Inr","SumRec","UnitRec","Glue","GlueSystem","GlueTerm","Unglue","DefRef","Pushout","PushLeft","PushRight","PushPath","PushElim","HComp","Trans"];
 const nativeRoot=fileURLToPath(new URL("./c/",import.meta.url));
 
-export function nativeRequest(term,expected=null,assumptions=[],{normalize=true,definitions=[]}={}) {
+export function nativeRequest(term,expected=null,assumptions=[],{normalize=true,definitions=[],unfoldingHints=[]}={}) {
   const lines=[],names=new Map(),reverse=new Map(),formulas=new Map(),references=new Map();let terms=0;
   const name=n=>{if(!names.has(n)){names.set(n,names.size+1);reverse.set(names.get(n),n);}return names.get(n);};
   const node=(tag,payload=0,children=[])=>{
@@ -85,12 +85,18 @@ export function nativeRequest(term,expected=null,assumptions=[],{normalize=true,
       default:throw Error(`Unsupported native term ${t.tag}`);
     }
   };
+  const hintLine=names=>`H ${names.length} ${names.map(n=>{
+    if(!references.has(n))throw Error(`Unknown unfolding hint ${n}`);return references.get(n);
+  }).join(" ")}`;
   for(const definition of definitions){
     const symbol=name(definition.name),body=encode(definition.value),type=definition.type?encode(definition.type):0;
+    if(definition.unfoldingHints)lines.push(hintLine(definition.unfoldingHints));
     lines.push(`D ${symbol} ${body} ${type}`);
     references.set(definition.name,++terms);
+    if(definition.unfoldingHints)lines.push(hintLine([]));
   }
   for(const [n,type]of assumptions){const symbol=name(n),handle=encode(type);lines.push(`A ${symbol} ${handle}`);}
+  if(unfoldingHints.length)lines.push(hintLine(unfoldingHints));
   const value=encode(term),type=expected?encode(expected):0;lines.push(`Q ${value} ${type} ${normalize?1:0}`);
   const decode=t=>{
     if(!t||typeof t!=="object")return t;
@@ -102,9 +108,9 @@ export function nativeRequest(term,expected=null,assumptions=[],{normalize=true,
   return {input:lines.join("\n")+"\n",decode};
 }
 
-export function checkNative(term,expected=null,assumptions=[],{build=process.env.CUBICAL_NATIVE_BUILD??"build",normalize=true,definitions=[]}={}) {
+export function checkNative(term,expected=null,assumptions=[],{build=process.env.CUBICAL_NATIVE_BUILD??"build",normalize=true,definitions=[],unfoldingHints=[]}={}) {
   if(!["build","build-ubsan","build-sanitize"].includes(build))throw Error("Unknown native build.");
-  const {input,decode}=nativeRequest(term,expected,assumptions,{normalize,definitions});
+  const {input,decode}=nativeRequest(term,expected,assumptions,{normalize,definitions,unfoldingHints});
   const run=spawnSync(`${nativeRoot}${build}/kernel-cli`,[],{input,encoding:"utf8",maxBuffer:32*1024*1024,timeout:20000,killSignal:"SIGKILL"});
   if(run.status!==0)throw Error(`Native checker process failed (${run.status}): ${run.stderr}`);
   return decode(JSON.parse(run.stdout));

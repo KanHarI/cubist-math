@@ -4,6 +4,7 @@
  * N kind payload child0 child1 child2 child3
  * D symbol value-handle expected-type-handle (appends a term alias)
  * A symbol type-handle
+ * H length definition-reference-handles... (replace conversion hint list)
  * Q term-handle expected-type-handle normalize-flag
  * Formula and term handles are logical 1-based aliases, independent of nodes
  * allocated internally while checking definitions. */
@@ -234,6 +235,25 @@ int main(void) {
             if (!resolve(&terms, type))
                 break;
             assumptions[count++] = (cc_assumption){symbol, resolve(&terms, type)};
+        } else if (command == 'H') {
+            size_t length;
+            if (scanf(" %zu", &length) != 1 || length > 100000)
+                break;
+            cc_term *references = length ? calloc(length, sizeof *references) : NULL;
+            if (length && !references)
+                break;
+            bool valid = true;
+            for (size_t i = 0; i < length; ++i) {
+                unsigned alias;
+                if (scanf(" %u", &alias) != 1 || !(references[i] = resolve(&terms, alias))) {
+                    valid = false;
+                    break;
+                }
+            }
+            bool accepted = valid && cc_kernel_set_unfolding_hints(k, references, length);
+            free(references);
+            if (!accepted)
+                break;
         } else if (command == 'Q') {
             unsigned value, expected, normalize;
             if (scanf(" %u %u %u", &value, &expected, &normalize) != 3) break;
