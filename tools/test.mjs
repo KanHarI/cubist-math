@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { access } from "node:fs/promises";
 import { selectTests, projectRoot, help } from "./test-selection.mjs";
 
@@ -10,6 +10,10 @@ try {
     process.stdout.write("No added or modified .cubist files to check.\n");
   } else {
     await Promise.all([...selected.tests, ...selected.proofs].map(path => access(path)));
+    // Native protocol tests share executables. Build before Node launches test
+    // files concurrently: a clean checkout must not race missing/half-built files.
+    if (selected.tests.some(path => path.startsWith(projectRoot + "lib/cubical/tests/")))
+      execFileSync("make", ["-C", "kernel", "all"], { cwd: projectRoot, stdio: "inherit" });
     const environment = { ...process.env, MATHSCRIPT_TEST_PROOFS: JSON.stringify(selected.proofs), MATHSCRIPT_OPTIMIZATIONS: JSON.stringify(selected.optimizations) };
     // A nested invocation must start its own Node test run, not inherit the
     // parent runner's internal child-process protocol.
