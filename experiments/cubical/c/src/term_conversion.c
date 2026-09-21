@@ -289,7 +289,11 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
     cc_node left = k->nodes[a], right = k->nodes[b];
     enum comparison_mode children_mode = mode == CONGRUENCE ? COMPUTE : mode;
     if (left.kind != right.kind) {
-        if (mode != COMPUTE)
+        /* Pair eta also belongs to the selective pass: otherwise a folded
+         * (fst p, snd p) versus p comparison would force unrelated definitions
+         * to unfold before reaching the existing eta rule below. */
+        bool hinted_pair = mode == HINTED && (left.kind == CC_PAIR || right.kind == CC_PAIR);
+        if (mode != COMPUTE && !hinted_pair)
             return false;
         /* Function eta is checked here, without reducing lambda bodies merely
          * to discover their shape during weak-head inspection. */
