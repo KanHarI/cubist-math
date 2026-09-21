@@ -1,0 +1,244 @@
+import field_vector_spaces;
+import linear_maps;
+import quotient_sets;
+
+// Functions to an additive group form an additive group pointwise. This
+// construction needs no enumeration, decidability, or choice of the index set.
+def pointwise_add(I : U0, G : Group, f : I -> group_carrier(G), g : I -> group_carrier(G)) =
+  fun (i : I) => group_multiply(G, f(i), g(i));
+def pointwise_group_laws(I : U0, G : Group) : GroupLaws(
+  (I -> group_carrier(G)), (fun (i : I) => group_unit(G)), pointwise_add(I, G)
+) {
+  let A = group_carrier(G);
+  let zero = fun (i : I) => group_unit(G);
+  exact (
+    dependent_functions_are_set(I, (fun (i : I) => typed(U1, A)), (fun (i : I) => group_is_set(G))),
+    (
+      fun (f : I -> A) => fun (g : I -> A) => fun (h : I -> A) => FunExt(
+        U0, I, (fun (i : I) => A), pointwise_add(I, G, pointwise_add(I, G, f, g), h),
+        pointwise_add(I, G, f, pointwise_add(I, G, g, h)),
+        (fun (i : I) => group_associative(G, f(i), g(i), h(i)))
+      )
+    ),
+    (
+      fun (f : I -> A) => FunExt(
+        U0, I, (fun (i : I) => A), pointwise_add(I, G, zero, f), f,
+        (fun (i : I) => group_unit_left(G, f(i)))
+      )
+    ),
+    (
+      fun (f : I -> A) => FunExt(
+        U0, I, (fun (i : I) => A), pointwise_add(I, G, f, zero), f,
+        (fun (i : I) => group_unit_right(G, f(i)))
+      )
+    ),
+    (
+      fun (f : I -> A) => typed(
+        (exists g : I -> A, GroupInverseLaws((I -> A), zero, pointwise_add(I, G), f, g)),
+        (
+          (fun (i : I) => group_inverse(G, f(i))),
+          FunExt(
+            U0, I, (fun (i : I) => A),
+            pointwise_add(I, G, (fun (i : I) => group_inverse(G, f(i))), f), zero,
+            (fun (i : I) => group_inverse_left(G, f(i)))
+          ),
+          FunExt(
+            U0, I, (fun (i : I) => A),
+            pointwise_add(I, G, f, (fun (i : I) => group_inverse(G, f(i)))), zero,
+            (fun (i : I) => group_inverse_right(G, f(i)))
+          )
+        )
+      )
+    )
+  );
+}
+def PointwiseGroup(I : U0, G : Group) =
+  group_object(
+    (I -> group_carrier(G)), (fun (i : I) => group_unit(G)), pointwise_add(I, G),
+    pointwise_group_laws(I, G)
+  );
+def pointwise_abelian(I : U0, G : Group, comm : IsAbelian(G)) : IsAbelian(PointwiseGroup(I, G)) {
+  intro f;
+  intro g;
+  exact FunExt(
+    U0, I, (fun (i : I) => group_carrier(G)), pointwise_add(I, G, f, g), pointwise_add(I, G, g, f),
+    (fun (i : I) => comm(f(i), g(i)))
+  );
+}
+def pointwise_scale(
+  K : AlgebraicField, I : U0, V : VectorSpace(K), a : af_carrier(K), f : I -> vector_carrier(K, V)
+) =
+  fun (i : I) => vector_scale(K, V, a, f(i));
+def pointwise_scalar_laws(K : AlgebraicField, I : U0, V : VectorSpace(K)) : ScalarLaws(
+  K, PointwiseGroup(I, vector_group(K, V)), pointwise_scale(K, I, V)
+) {
+  let A = vector_carrier(K, V);
+  let G = vector_group(K, V);
+  let scale = pointwise_scale(K, I, V);
+  exact (
+    (
+      fun (f : I -> A) => FunExt(
+        U0, I, (fun (i : I) => A), scale(af_one(af_carrier(K), af_operations(K)), f), f,
+        (fun (i : I) => vector_scale_one(K, V, f(i)))
+      )
+    ),
+    (
+      fun (a : af_carrier(K)) => fun (b : af_carrier(K)) => fun (f : I -> A) => FunExt(
+        U0, I, (fun (i : I) => A), scale(af_mul(af_carrier(K), af_operations(K), a, b), f),
+        scale(a, scale(b, f)), (fun (i : I) => vector_scale_associative(K, V, a, b, f(i)))
+      )
+    ),
+    (
+      fun (a : af_carrier(K)) => fun (f : I -> A) => fun (g : I -> A) => FunExt(
+        U0, I, (fun (i : I) => A), scale(a, pointwise_add(I, G, f, g)),
+        pointwise_add(I, G, scale(a, f), scale(a, g)),
+        (fun (i : I) => vector_scale_add_vectors(K, V, a, f(i), g(i)))
+      )
+    ),
+    (
+      fun (a : af_carrier(K)) => fun (b : af_carrier(K)) => fun (f : I -> A) => FunExt(
+        U0, I, (fun (i : I) => A), scale(af_add(af_carrier(K), af_operations(K), a, b), f),
+        pointwise_add(I, G, scale(a, f), scale(b, f)),
+        (fun (i : I) => vector_scale_add_scalars(K, V, a, b, f(i)))
+      )
+    )
+  );
+}
+def FunctionSpace(K : AlgebraicField, I : U0, V : VectorSpace(K)) =
+  vector_space(
+    K, PointwiseGroup(I, vector_group(K, V)), pointwise_scale(K, I, V),
+    pointwise_abelian(I, vector_group(K, V), vector_abelian(K, V)), pointwise_scalar_laws(K, I, V)
+  );
+
+// Finite coordinates use a specified enumeration. A basis supplies a linear
+// isomorphism K^n -> V, hence actual and unique coordinates for every vector.
+// This is data, not an assertion that an arbitrary vector space has a basis.
+def CoordinateSpace(K : AlgebraicField, n : Nat) = FunctionSpace(K, Fin(n), ScalarSpace(K));
+def FiniteBasis(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+  LinearIso(K, CoordinateSpace(K, n), V);
+def standard_basis(K : AlgebraicField, n : Nat) : FiniteBasis(K, CoordinateSpace(K, n), n) {
+  exact linear_identity_iso(K, CoordinateSpace(K, n));
+}
+def basis_expansion(K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)) : LinearMap(
+  K, CoordinateSpace(K, n), V
+) {
+  obtain (expand, coordinates, left, right) = basis;
+  exact expand;
+}
+def basis_coordinates(K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)) : LinearMap(
+  K, V, CoordinateSpace(K, n)
+) {
+  obtain (expand, coordinates, left, right) = basis;
+  exact coordinates;
+}
+theorem basis_expansion_coordinates(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n),
+  x : vector_carrier(K, V)
+) : linear_map(
+  K, CoordinateSpace(K, n), V, basis_expansion(K, V, n, basis),
+  linear_map(K, V, CoordinateSpace(K, n), basis_coordinates(K, V, n, basis), x)
+) = x {
+  obtain (expand, coordinates, left, right) = basis;
+  exact right(x);
+}
+theorem basis_coordinates_expansion(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n),
+  c : vector_carrier(K, CoordinateSpace(K, n))
+) : linear_map(
+  K, V, CoordinateSpace(K, n), basis_coordinates(K, V, n, basis),
+  linear_map(K, CoordinateSpace(K, n), V, basis_expansion(K, V, n, basis), c)
+) = c {
+  obtain (expand, coordinates, left, right) = basis;
+  exact left(c);
+}
+theorem basis_coordinates_unique(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n),
+  c : vector_carrier(K, CoordinateSpace(K, n)), x : vector_carrier(K, V),
+  expands : linear_map(K, CoordinateSpace(K, n), V, basis_expansion(K, V, n, basis), c) = x
+) : c = linear_map(K, V, CoordinateSpace(K, n), basis_coordinates(K, V, n, basis), x) {
+  exact trans(
+    sym(basis_coordinates_expansion(K, V, n, basis, c)),
+    cong(linear_map(K, V, CoordinateSpace(K, n), basis_coordinates(K, V, n, basis)), expands)
+  );
+}
+theorem basis_carrier_path(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)
+) : (Fin(n) -> af_carrier(K)) =[U0] vector_carrier(K, V) {
+  exact linear_iso_carrier_path(K, CoordinateSpace(K, n), V, basis);
+}
+
+// Degree witnesses retain their basis. Dimension invariance and the tower
+// law are subsequent theorems, not built into this definition.
+def ExtensionDegreeWitness(K : AlgebraicField, E : FieldExt(K), n : Nat) =
+  FiniteBasis(K, ExtensionVectorSpace(K, E), n);
+
+// Evaluation and constant functions are linear for any index set.
+def evaluation_linear(K : AlgebraicField, I : U0, V : VectorSpace(K), i : I) : LinearMap(
+  K, FunctionSpace(K, I, V), V
+) {
+  exact (
+    (fun (f : I -> vector_carrier(K, V)) => f(i)),
+    (
+      fun (f : I -> vector_carrier(K, V)) => fun (g : I -> vector_carrier(K, V)) => refl(
+        vector_add(K, V, f(i), g(i))
+      )
+    ),
+    (
+      fun (a : af_carrier(K)) => fun (f : I -> vector_carrier(K, V)) => refl(
+        vector_scale(K, V, a, f(i))
+      )
+    )
+  );
+}
+def constant_linear(K : AlgebraicField, I : U0, V : VectorSpace(K)) : LinearMap(
+  K, V, FunctionSpace(K, I, V)
+) {
+  exact (
+    (fun (x : vector_carrier(K, V)) => fun (i : I) => x),
+    (
+      fun (x : vector_carrier(K, V)) => fun (y : vector_carrier(K, V)) => refl(
+        (fun (i : I) => vector_add(K, V, x, y))
+      )
+    ),
+    (
+      fun (a : af_carrier(K)) => fun (x : vector_carrier(K, V)) => refl(
+        (fun (i : I) => vector_scale(K, V, a, x))
+      )
+    )
+  );
+}
+def fin_one_center = typed(Fin(1), left(tt));
+theorem fin_one_unique(i : Fin(1)) : fin_one_center = i {
+  exact trans(
+    cong((fun (u : Unit) => typed(Fin(1), left(u))), unit_equal(one_out(i))), one_roundtrip(i)
+  );
+}
+theorem one_coordinate_roundtrip(
+  K : AlgebraicField, V : VectorSpace(K), f : Fin(1) -> vector_carrier(K, V)
+) : (fun (i : Fin(1)) => f(fin_one_center)) = f {
+  exact FunExt(
+    U0, Fin(1), (fun (i : Fin(1)) => vector_carrier(K, V)), (fun (i : Fin(1)) => f(fin_one_center)),
+    f, (fun (i : Fin(1)) => cong(f, fin_one_unique(i)))
+  );
+}
+theorem one_coordinate_iso(K : AlgebraicField, V : VectorSpace(K)) : LinearIso(
+  K, FunctionSpace(K, Fin(1), V), V
+) {
+  exact (
+    evaluation_linear(K, Fin(1), V, fin_one_center), constant_linear(K, Fin(1), V),
+    one_coordinate_roundtrip(K, V), (fun (x : vector_carrier(K, V)) => refl(x))
+  );
+}
+// The field as a vector space over itself has the explicit one-element basis.
+theorem scalar_space_basis(K : AlgebraicField) : FiniteBasis(K, ScalarSpace(K), 1) {
+  exact one_coordinate_iso(K, ScalarSpace(K));
+}
+
+// A path of vector spaces transports the entire basis, including its linear
+// maps and both roundtrips. No basis is chosen afresh at the destination.
+def transport_finite_basis(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), p : V = W, n : Nat,
+  basis : FiniteBasis(K, V, n)
+) : FiniteBasis(K, W, n) {
+  exact transport((fun (X : VectorSpace(K)) => FiniteBasis(K, X, n)), V, W, p, basis);
+}

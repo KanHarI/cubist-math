@@ -3,8 +3,9 @@
 Status: resumed on main (2026-09-21). Start with the
 [resumption checkpoint](galois-handoff.md), including validation results and
 the current cubical kernel and validation commands. The listed stage-1 constructions
-and its Galois-connection completion criterion are checked; stages 2–9 remain
-requirements. Quotient group operations, the first group isomorphism theorem, and the bundled quotient universal property are now checked.
+and its Galois-connection completion criterion are checked. Stage 2 has
+initial checked vector-space and basis foundations; its completion criterion
+and stages 3–9 remain requirements. Quotient group operations, the first group isomorphism theorem, and the bundled quotient universal property are now checked.
 Checked results and their assumptions are described in
 [Galois symmetries as loops](galois.md).
 
@@ -261,11 +262,30 @@ Projection is also proved epimorphic. On small targets the descended map
 agrees with the earlier `group_quotient_map`. Only the four existing
 truncation families at U1 occur in the universal-property theorem.
 
-Next: add a concrete non-normal subgroup example. Extending the structure identity
-equivalence to `GroupAt(U1)` will let this large-group isomorphism become
-an equality of bundled groups, beyond the already checked carrier equality.
-Then proceed to explicit finite linear algebra and degree, preserving the
-separate algebraic and infinite-theory milestones below.
+The concrete non-normal example is now checked in `non_normal_subgroup`:
+S3 has six elements, its point stabilizer contains the transposition (1 2),
+and conjugation by (0 1) moves that transposition outside the stabilizer.
+`permutation_groups` supplies the reusable group and stabilizer constructions.
+
+Stage 2 is now started. `vector_spaces`, `field_vector_spaces`, `linear_maps`,
+`finite_bases`, and `linear_span` check bundled spaces over the existing
+unordered fields, scalar restriction along a field embedding, linear maps
+and isomorphisms, finite coordinate spaces, explicit bases and unique
+coordinates, finite linear combinations, span and independence interfaces.
+The field over itself has an explicit one-element basis. Univalence gives
+carrier paths for linear isomorphisms, and paths of spaces transport bases.
+These are not yet full structure-identity theorems for vector spaces.
+
+The requested general basis theorem has its own
+[development plan](basis-theorem.md). Zorn must be derived from `Choice(U)`,
+not added as an axiom. Its proof and general basis existence remain open.
+Span closure/finite character and independent-subset extension are the next
+linear-algebra lemmas. Finite dimension invariance and the degree tower law
+also remain open; the general basis theorem does not supply them automatically.
+
+The larger-group structure identity equivalence also remains useful future
+work: `GroupAt(U1)` first-isomorphism results currently supply group
+isomorphisms and carrier equality, not equality of complete bundled groups.
 
 Implementation constraints for the remaining group layer:
 

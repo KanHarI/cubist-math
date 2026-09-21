@@ -6,7 +6,37 @@ kernel and `.cubist` sources. The old Id/J engine, its proof exporters and
 its reference-comparison commands are retired; older checkpoints describe
 historical validation, not the current development workflow.
 
-## Current increment
+## Current increment: linear algebra begins
+
+Checked modules added:
+
+| Module | Contribution |
+| --- | --- |
+| `permutation_groups` | Bijection group on a set, group laws, point stabilizers, conjugation action |
+| `non_normal_subgroup` | S3 has six elements; a point stabilizer is not normal, with an explicit conjugation counterexample |
+| `vector_spaces` | Bundled abelian additive group with scalar action and the four scalar laws |
+| `field_vector_spaces` | Additive field group; a field embedding K -> L makes L a K-vector space; extension instance |
+| `linear_maps` | Bundled linear maps, composition, extensionality, linear isomorphisms, coherent carrier equivalences and univalence |
+| `finite_bases` | Pointwise function spaces, K^n, explicit finite bases, coordinate roundtrips/uniqueness, one-element scalar basis, basis transport |
+| `linear_span` | Finite combinations, proposition-valued span, empty independence, exclusion of zero, and `VectorBasis` for arbitrary subset bases |
+
+The permutation/group results, vector-space constructions and finite-basis
+results use no axioms. Span membership uses existing small propositional
+truncation. No choice or LEM was added to this increment.
+
+The user specifically requests **general basis existence**, with **Zorn
+derived from the existing axiom of choice**, not a new Zorn axiom. See
+[basis-theorem.md](basis-theorem.md) for the exact interfaces, mathematical
+proof route and outstanding formal lemmas. General basis existence and
+Zorn are not yet checked. The finite-coordinate basis interface has not yet
+been related to the independent-subset basis interface.
+
+Alongside the mathematics, the inspector now separates axioms from local
+context, including in the workbench. Annotated declarations show their
+source conclusion first, with named parameters and hypotheses expandable;
+the precise elaborated type remains in kernel details.
+
+## Previous increment: quotient universal property
 
 The bundled quotient universal property is now checked. For a small group
 G, a normal subgroup S, any H : GroupAt(U1), and a homomorphism
@@ -35,7 +65,7 @@ The universal property needs only `Truncate(U1)`, `TruncateIntro(U1)`,
 kernel change was introduced. Regression checks that descending the
 projection to its own (genuinely U1) quotient gives the identity homomorphism.
 
-## Previous increment
+## Earlier increment: first isomorphism theorem
 
 The general first group isomorphism theorem is checked:
 
@@ -99,8 +129,8 @@ Useful modules: `galois_paths`, `galois_orders`, `f4_galois_correspondence`,
 `group_cosets`, `group_quotient_maps`, and `kernel_quotient_image`.
 See [the development guide](galois.md) for the earlier constructions.
 
-The general fundamental theorem of Galois theory is **not proved**. Finite
-linear algebra and extension degree, polynomial theory, algebraic extensions,
+The general fundamental theorem of Galois theory is **not proved**. Completion
+of finite linear algebra and extension degree, polynomial theory, algebraic extensions,
 separability, normal field extensions, and Artin's fixed-field theorem remain.
 Algebraic closures and the infinite correspondence with Krull topology are
 separate later stages. `AlgebraicField` is the unordered field interface; its
@@ -108,22 +138,24 @@ name does not assert that an extension is algebraic.
 
 ## Next work
 
-1. Add a concrete non-normal subgroup example. The negative test rejects
-   missing normality evidence syntactically; it is not that example.
-2. Generalize structure identity to larger bundled groups where useful, so
-   first-isomorphism results can be used as paths of complete structures.
-   Preserve the coherent equivalence and its roundtrips.
-3. Begin explicit finite linear algebra and degree as specified in stage 2.
-   Keep constructive hypotheses visible; a finite carrier alone does not
-   decide arbitrary proposition-valued subobject membership.
+1. Continue [the general basis development](basis-theorem.md): finite
+   combination laws, span closure and finite character, independent-set
+   extension, chain unions, and Zorn derived from choice. Keep all classical
+   and universe assumptions explicit.
+2. Prove finite dimension invariance and the extension-degree tower law.
+   Do not treat `ExtensionDegreeWitness` as a proved numeric degree function.
+3. Generalize structure identity to larger bundled groups when needed for
+   quotient isomorphisms as paths of structures; coherent roundtrips matter.
+4. Continue polynomial theory, algebraic/separable/normal extensions, and
+   Artin's theorem before asserting the full finite Galois correspondence.
 
 The quotient construction still starts from a small source group and small
-subgroup predicates. The universal-property target may be any group in U1.
+subgroup predicates. Its universal-property target may be any group in U1.
 No quotient universe lowering has been proved.
 
 ## Validation and workflow
 
-Current final validation: **255 tests passed**. The complete corpus checked
+Previous batch validation: **255 tests passed**. The complete corpus checked
 **2,537 concrete declarations and 44 universe templates**, with no failed,
 blocked, or over-budget declarations at the regression deadline. The browser
 landing regression passes, including the quotient universal-property page
@@ -175,3 +207,23 @@ is the identity by `quotient_projection_epimorphism` and the bundled triangle.
 Inlining propositional induction into homomorphism extensionality caused
 expensive conversion of the nested quotient. The epimorphism proof checks
 under the 1,000,000-step diagnostic budget without new conversion hints.
+
+Current focused benchmark: **662 checked declarations**, 35 templates,
+no slow/failed/blocked entries at a 100ms limit for `linear_span` and
+`non_normal_subgroup`. Regression checks include actual cubical computation
+of transport along the one-dimensional coordinate equivalence, rejection of
+a nonlinear constant map and a changed basis length, and axiom-free S3 laws.
+The new statement browser regression verifies both reported inspector issues
+and the S3 / scalar-basis proof pages. Final `npm test`: **262 tests passed**,
+including **2,641 checked corpus declarations and 44 templates**, with no
+failed, blocked, or over-budget entries at the regression deadline. Landing,
+statement, and universe-specialization browser regressions pass.
+
+Current focused commands:
+
+```sh
+npm test -- tests/linear-algebra.test.mjs tests/cubical-context.test.mjs tests/cubical-statement.test.mjs
+node tools/benchmark-cubical.mjs linear_span non_normal_subgroup --limit-ms=100
+node tests/statement.browser.mjs
+node tests/cubical-specialization.browser.mjs
+```

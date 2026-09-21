@@ -1,0 +1,84 @@
+import vector_spaces;
+import field_embeddings;
+
+// The additive group comes directly from the existing unordered-field laws.
+def field_additive_laws(F : AlgebraicField) : GroupLaws(
+  af_carrier(F), af_zero(af_carrier(F), af_operations(F)), af_add(af_carrier(F), af_operations(F))
+) {
+  let A = af_carrier(F);
+  let ops = af_operations(F);
+  let add = af_add(A, ops);
+  let zero = af_zero(A, ops);
+  obtain (addLaws, mulLaws) = field_ring_data(A, ops, af_laws(F));
+  obtain (assoc, comm, unit, inverseLaw) = addLaws;
+  exact (
+    af_set(F), assoc, unit, (fun (x : A) => trans(comm(x, zero), unit(x))),
+    (
+      fun (x : A) => typed(
+        (exists y : A, GroupInverseLaws(A, zero, add, x, y)),
+        (af_neg(A, ops, x), inverseLaw(x), trans(comm(x, af_neg(A, ops, x)), inverseLaw(x)))
+      )
+    )
+  );
+}
+def FieldAdditiveGroup(F : AlgebraicField) =
+  group_object(
+    af_carrier(F), af_zero(af_carrier(F), af_operations(F)),
+    af_add(af_carrier(F), af_operations(F)), field_additive_laws(F)
+  );
+def field_additive_abelian(F : AlgebraicField) : IsAbelian(FieldAdditiveGroup(F)) {
+  obtain (addLaws, mulLaws) = field_ring_data(af_carrier(F), af_operations(F), af_laws(F));
+  obtain (assoc, comm, unit, inverseLaw) = addLaws;
+  exact comm;
+}
+
+// Scalars act through the specified embedding K -> L. This is the action
+// used for L as a vector space over K in extension-degree calculations.
+def field_scalar_action(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K),
+  x : af_carrier(L)
+) =
+  af_mul(af_carrier(L), af_operations(L), field_embedding_map(K, L, e, a), x);
+theorem field_scalar_laws(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) : ScalarLaws(
+  K, FieldAdditiveGroup(L), field_scalar_action(K, L, e)
+) {
+  let A = af_carrier(L);
+  let ops = af_operations(L);
+  let mul = af_mul(A, ops);
+  let add = af_add(A, ops);
+  let f = field_embedding_map(K, L, e);
+  obtain (addLaws, mulLaws) = field_ring_data(A, ops, af_laws(L));
+  obtain (assoc, comm, one, distribute) = mulLaws;
+  obtain (zeroPres, onePres, negPres, addPres, mulPres) = field_embedding_preserves(K, L, e);
+  exact (
+    (fun (x : A) => trans(cong((fun (z : A) => mul(z, x)), onePres), one(x))),
+    (
+      fun (a : af_carrier(K)) => fun (b : af_carrier(K)) => fun (x : A) => trans(
+        cong((fun (z : A) => mul(z, x)), mulPres(a, b)), assoc(f(a), f(b), x)
+      )
+    ), (fun (a : af_carrier(K)) => distribute(f(a))),
+    (
+      fun (a : af_carrier(K)) => fun (b : af_carrier(K)) => fun (x : A) => trans(
+        cong((fun (z : A) => mul(z, x)), addPres(a, b)),
+        trans(
+          comm(add(f(a), f(b)), x),
+          trans(
+            distribute(x, f(a), f(b)),
+            trans(
+              cong((fun (z : A) => add(z, mul(x, f(b)))), comm(x, f(a))),
+              cong(add(mul(f(a), x)), comm(x, f(b)))
+            )
+          )
+        )
+      )
+    )
+  );
+}
+def field_vector_space(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
+  vector_space(
+    K, FieldAdditiveGroup(L), field_scalar_action(K, L, e), field_additive_abelian(L),
+    field_scalar_laws(K, L, e)
+  );
+def ScalarSpace(K : AlgebraicField) = field_vector_space(K, K, field_embedding_identity(K));
+def ExtensionVectorSpace(K : AlgebraicField, E : FieldExt(K)) =
+  field_vector_space(K, extension_field(K, E), extension_inclusion_embedding(K, E));
