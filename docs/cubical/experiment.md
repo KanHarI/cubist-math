@@ -120,7 +120,8 @@ the factorial-through-univalence acceptance test.
 
 Native composition covers Nat, Unit, Pi, Sigma, Path, Glue and universes,
 including dependent filling and varying function domains. Constructor composition
-for W/sums is now implemented. HITs and the strict Id bridge remain explicit gaps.
+for W/sums is now implemented. Computational pushouts now support derived suspension;
+propositional truncation, the strict Id bridge, and the remaining source migration are gaps.
 The main branch is integrating the WASM API and a native-only source frontend;
 its manual binary and radix factorial source proofs now pass the new checker.
 Those integration changes are coordinated separately from this kernel branch.
@@ -166,3 +167,12 @@ the checked product-swap equivalence `(Nat × Unit) ≃ (Unit × Nat)` and obtai
 `(point, succ(0))`. Both independent checkers compute and recheck that output.
 The strict-isomorphism helper used for this test is only an inert term builder:
 an incorrect inverse fails ordinary type checking.
+
+### Computational pushout checkpoint
+
+The native and reference kernels now implement the CHM pushout rules, including
+canonical homogeneous composition, dependent elimination on boxes, and
+transport with endpoint correction when span maps or carrier types vary.
+Suspension is derived at the library level. See [pushouts.md](pushouts.md) for
+the trusted rules, append-only ABI, focused cross-checks, and remaining
+source-language and circle migration work.

@@ -238,11 +238,11 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
     }
     if (ck_dim_binder(left.kind)) {
         alpha_binding binding = bind(k, left.payload, right.payload, dims);
-        if (!alpha(k, left.child[0], right.child[0], terms, &binding, children_mode))
+        if (!alpha(k, left.child[0], right.child[0], terms, left.kind == CC_HCOMP ? dims : &binding, children_mode))
             return false;
         if (left.kind == CC_PLAM)
             return alpha(k, left.child[1], right.child[1], terms, &binding, children_mode);
-        if (left.kind == CC_COMP)
+        if (left.kind == CC_COMP || left.kind == CC_HCOMP)
             return tube_alpha(k, left.child[1], right.child[1], terms, dims, &binding, children_mode) &&
                    alpha(k, left.child[2], right.child[2], terms, dims, children_mode);
         return alpha(k, left.child[1], right.child[1], terms, dims, children_mode) &&

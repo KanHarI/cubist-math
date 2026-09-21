@@ -1,5 +1,5 @@
 // Small bidirectional reference checker for the structural/path fragment of CCHM.
-// NOT a complete cubical kernel: HITs and a strict Id bridge remain absent.
+// Computational pushouts are supported; a strict Id bridge remains absent.
 // Glue/universe composition have an independent native implementation.
 // Input is inert JSON syntax; checking never executes user-supplied functions.
 import { interval as I, face as F } from "./lattice.mjs";
@@ -16,6 +16,8 @@ export const T = {
   line: (dim,family,body) => ({tag:"PLam",dim,family,body}),
   at: (path,arg) => ({tag:"PApp",path,arg}),
   comp: (dim,family,system,base) => ({tag:"Comp",dim,family,system,base}),
+  hcomp: (dim,family,system,base) => ({tag:"HComp",dim,family,system,base}),
+  trans: (dim,family,face,base) => ({tag:"Trans",dim,family,face,base}),
   nat: {tag:"Nat"}, zero:{tag:"Zero"}, succ: value => ({tag:"Succ",value}),
   natrec: (motive,zero,step,value) => ({tag:"NatRec",motive,zero,step,value}),
   unit: {tag:"Unit"}, point: {tag:"Point"}, void: {tag:"Void"},
@@ -45,7 +47,7 @@ const children = {
   App:["fn","arg"], Pair:["as","first","second"], Fst:["pair"], Snd:["pair"],
   Path:["family","left","right"], PLam:["family","body"], PApp:["path","pathType"],
   NatRec:["motive","zero","step","value"],
-  Comp:["family","base"], Void:[], Abort:["as","impossible"],
+  Comp:["family","base"], HComp:["family","base"], Trans:["family","base"], Void:[], Abort:["as","impossible"],
   W:["domain","body"], Sup:["as","label","children"], WRec:["motive","step","value"],
   Sum:["left","right"], Inl:["as","value"], Inr:["as","value"],
   SumRec:["motive","left","right","value"], UnitRec:["motive","point","value"],
@@ -54,17 +56,18 @@ const children = {
   PushRight:["as","value"], PushPath:["as","value"], PushElim:["motive","left","right","bridge"],
 };
 const termBinder = t => ["Pi","Lam","Sigma","W"].includes(t.tag);
-const dimBinder = t => ["Path","PLam","Comp"].includes(t.tag);
+const dimBinder = t => ["Path","PLam","Comp","HComp","Trans"].includes(t.tag);
 function free(t, dimension = false, result = new Set()) {
   if (!t || !children[t.tag]) fail("Unknown term constructor.");
   if (dimension && ["PApp","PushPath"].includes(t.tag)) for (const n of I.names(t.arg)) result.add(n);
+  if(dimension&&t.tag==="Trans")for(const n of I.names(t.face))result.add(n);
   if (!dimension && t.tag === "Var") result.add(t.name);
   if(["Glue","GlueTerm"].includes(t.tag))for(const piece of t.system) {
     for(const key of t.tag==="Glue"?["type","equiv"]:["term"])
       for(const n of free(piece[key],dimension))result.add(n);
     if(dimension)for(const n of I.names(piece.face))result.add(n);
   }
-  if(t.tag==="Comp")for(const piece of t.system) {
+  if(["Comp","HComp"].includes(t.tag))for(const piece of t.system) {
     const sub=free(piece.term,dimension);if(dimension)sub.delete(t.dim);
     for(const n of sub)result.add(n);
     if(dimension)for(const n of I.names(piece.face))result.add(n);
@@ -72,7 +75,7 @@ function free(t, dimension = false, result = new Set()) {
   for (const key of children[t.tag]) if (t[key]) {
     const sub = free(t[key], dimension);
     if (!dimension && termBinder(t) && key === "body") sub.delete(t.name);
-    if (dimension && dimBinder(t) && ["family","body"].includes(key)) sub.delete(t.dim);
+    if (dimension && dimBinder(t) && t.tag!=="HComp" && ["family","body"].includes(key)) sub.delete(t.dim);
     for (const n of sub) result.add(n);
   }
   return result;
@@ -85,29 +88,30 @@ function substitute(t, n, value, dimension = false) {
   // Path/PLam/Comp binders even though this substitution targets a term name.
   if(!dimension&&dimBinder(t)&&free(value,true).has(t.dim)) {
     const dim=fresh(t.dim,new Set([...free(t,true),...free(value,true),t.dim]));
-    result.family=dsub(result.family,t.dim,I.variable(dim));
+    if(t.tag!=="HComp")result.family=dsub(result.family,t.dim,I.variable(dim));
     if(t.tag==="PLam")result.body=dsub(result.body,t.dim,I.variable(dim));
-    if(t.tag==="Comp")result.system=result.system.map(p=>({...p,term:dsub(p.term,t.dim,I.variable(dim))}));
+    if(["Comp","HComp"].includes(t.tag))result.system=result.system.map(p=>({...p,term:dsub(p.term,t.dim,I.variable(dim))}));
     result.dim=dim;
   }
   const isBinder = dimension ? dimBinder(t) : termBinder(t);
   const binderKey = dimension ? "dim" : "name";
   let binder = t[binderKey];
-  const boundChildren = dimension ? ["family","body"] : ["body"];
+  const boundChildren = dimension ? (t.tag==="HComp"?[]:["family","body"]) : ["body"];
   const valueFree = new Set(dimension ? I.names(value) : free(value));
   if (isBinder && binder !== n && valueFree.has(binder)) {
     const replacement = fresh(binder, new Set([...free(t,dimension),...valueFree,n,binder]));
     for (const key of boundChildren) if (result[key]) result[key] = substitute(result[key], binder,
       dimension ? I.variable(replacement) : T.variable(replacement), dimension);
-    if(dimension&&t.tag==="Comp")result.system=result.system.map(p=>({...p,term:dsub(p.term,binder,I.variable(replacement))}));
+    if(dimension&&["Comp","HComp"].includes(t.tag))result.system=result.system.map(p=>({...p,term:dsub(p.term,binder,I.variable(replacement))}));
     binder = replacement; result[binderKey] = binder;
   }
   for (const key of children[t.tag]) if (result[key]) {
     if (isBinder && binder === n && boundChildren.includes(key)) continue;
     result[key] = substitute(result[key], n, value, dimension);
   }
+  if(dimension&&t.tag==="Trans")result.face=F.substitute(t.face,n,value);
   if (dimension && ["PApp","PushPath"].includes(t.tag)) result.arg = I.substitute(t.arg,n,value);
-  if(t.tag==="Comp")result.system=result.system.map(p=>({
+  if(["Comp","HComp"].includes(t.tag))result.system=result.system.map(p=>({
     face:dimension?F.substitute(p.face,n,value):p.face,
     term:dimension&&binder===n?p.term:substitute(p.term,n,value,dimension),
   }));
@@ -204,8 +208,10 @@ function alpha(t, vars = [], dims = []) {
       ...(t.tag==="Glue"?["type","equiv"]:["term"]).map(key=>alpha(p[key],vars,dims))])];
   if(t.tag==="PushPath")return ["PushPath",child("as"),child("value"),
     t.arg.map(c=>c.map(x=>[dims.includes(x.slice(0,-2))?["bound",dims.lastIndexOf(x.slice(0,-2))]:["free",x.slice(0,-2)],x.at(-1)]).sort()).sort()];
-  if(t.tag==="Comp")return ["Comp",child("family",vars,[...dims,t.dim]),child("base"),
+  if(["Comp","HComp"].includes(t.tag))return [t.tag,child("family",vars,t.tag==="HComp"?dims:[...dims,t.dim]),child("base"),
     t.system.map(p=>[p.face.map(c=>c.map(x=>[dims.includes(x.slice(0,-2))?["bound",dims.lastIndexOf(x.slice(0,-2))]:["free",x.slice(0,-2)],x.at(-1)]).sort()).sort(),alpha(p.term,vars,[...dims,t.dim])])];
+  if(t.tag==="Trans")return ["Trans",child("family",vars,[...dims,t.dim]),child("base"),
+    t.face.map(c=>c.map(x=>[dims.includes(x.slice(0,-2))?["bound",dims.lastIndexOf(x.slice(0,-2))]:["free",x.slice(0,-2)],x.at(-1)]).sort()).sort()];
   if (dimBinder(t)) return t.tag === "Path"
     ? ["Path",child("family",vars,[...dims,t.dim]),child("left"),child("right")]
     : ["PLam",child("family",vars,[...dims,t.dim]),child("body",vars,[...dims,t.dim])];
@@ -227,6 +233,7 @@ function normal(t, fuel) {
     if(value.tag==="GlueTerm")return normal(value.base,fuel);
     return {...t,value};
   }
+  if(t.tag==="Trans"&&F.equal(t.face,F.top))return normal(t.base,fuel);
   let r = {...t};
   for (const key of children[t.tag]) if (t[key]) r[key] = normal(t[key],fuel);
   if(["Glue","GlueTerm"].includes(r.tag)) {
@@ -243,6 +250,16 @@ function normal(t, fuel) {
         return r.base.value;
     }
   }
+  if(r.tag==="HComp") {
+    r.system=t.system.filter(p=>!F.equal(p.face,F.bottom)).map(p=>({...p,term:normal(p.term,fuel)}));
+    const whole=r.system.find(p=>F.equal(p.face,F.top));
+    if(whole)return normal(dsub(whole.term,r.dim,I.one),fuel);
+    return r;
+  }
+  if(r.tag==="Trans") {
+    const moved=pushoutTransport(r);
+    return moved===r?r:normal(moved,fuel);
+  }
   if(r.tag==="PushPath") {
     if(I.equal(r.arg,I.zero))return normal(T.pushLeft(r.as,T.app(T.first(r.as.maps),r.value)),fuel);
     if(I.equal(r.arg,I.one))return normal(T.pushRight(r.as,T.app(T.second(r.as.maps),r.value)),fuel);
@@ -251,6 +268,7 @@ function normal(t, fuel) {
     const e=r.fn,z=r.arg;
     if(z.tag==="PushLeft")return normal(T.app(e.left,z.value),fuel);
     if(z.tag==="PushRight")return normal(T.app(e.right,z.value),fuel);
+    if(z.tag==="HComp")return normal(pushoutEliminateComposition(e,z),fuel);
     if(z.tag==="PushPath")return normal({...T.at(T.app(e.bridge,z.value),z.arg),
       pathType:pushoutBridgeType(z.as,e.motive,e.left,e.right,z.value)},fuel);
   }
@@ -277,6 +295,7 @@ function normal(t, fuel) {
       const children=T.comp(r.dim,childFamily,r.system.map(p=>({...p,term:p.term.children})),r.base.children);
       return normal(T.sup(dsub(r.family,r.dim,I.one),label,children),fuel);
     }
+    if(r.family.tag==="Pushout")return normal(pushoutComposition(r),fuel);
     if(r.family.tag==="U")return normal(universeComposition(r),fuel);
     if(r.family.tag==="Glue")return normal(glueComposition(r),fuel);
     if(r.family.tag==="Sigma") {
@@ -368,6 +387,61 @@ function pushoutBridgeType(P,motive,left,right,c) {
   const d=fresh("push_bridge",new Set([P,motive,left,right,c].flatMap(t=>[...free(t,true)])));
   return T.path(d,T.app(motive,T.pushPath(P,c,I.variable(d))),
     T.app(left,T.app(T.first(P.maps),c)),T.app(right,T.app(T.second(P.maps),c)));
+}
+
+function hitDirection(stem,...terms) {
+  return fresh(stem,new Set(terms.flatMap(t=>typeof t==="string"?[t]:[...free(t,true)])));
+}
+function homogeneousFill(dim,P,system,base,r) {
+  const j=hitDirection("hfill",P,base,dim,...system.map(p=>p.term),
+    ...I.names(r),...system.flatMap(p=>I.names(p.face)));
+  const along=I.meet(r,I.variable(j));
+  return T.hcomp(j,P,[...system.map(p=>({...p,term:dsub(p.term,dim,along)})),
+    {face:F.equalEndpoint(r,0),term:base}],base);
+}
+function pushoutEliminateComposition(e,z) {
+  const i=hitDirection("eliminate_fill",e,z,z.dim);
+  const system=z.system.map(p=>({...p,term:dsub(p.term,z.dim,I.variable(i))}));
+  const filled=homogeneousFill(i,z.family,system,z.base,I.variable(i));
+  return T.comp(i,T.app(e.motive,filled),system.map(p=>({...p,term:T.app(e,p.term)})),T.app(e,z.base));
+}
+function constantTransport(i,A,phi,a) {
+  return T.comp(i,A,[{face:phi,term:a}],a);
+}
+function constantTransportFill(i,A,phi,a,r) {
+  const j=hitDirection("parameter_fill",A,a,i,...I.names(r),...I.names(phi));
+  return constantTransport(j,dsub(A,i,I.meet(r,I.variable(j))),F.join(phi,F.equalEndpoint(r,0)),a);
+}
+function squeeze(i,P,phi,u) {
+  const j=hitDirection("squeeze",P,u,i,...I.names(phi));
+  return T.trans(j,dsub(P,i,I.join(I.variable(i),I.variable(j))),F.join(phi,F.endpoint(i,1)),u);
+}
+export function pushoutComposition(r) {
+  const system=r.system.map(p=>({...p,term:squeeze(r.dim,r.family,F.bottom,p.term)}));
+  return T.hcomp(r.dim,dsub(r.family,r.dim,I.one),system,T.trans(r.dim,r.family,F.bottom,r.base));
+}
+export function pushoutTransport(r) {
+  const P=r.family,i=r.dim,phi=r.face,z=r.base,P1=dsub(P,i,I.one);
+  if(P.tag!=="Pushout")return r;
+  if(z.tag==="PushLeft"||z.tag==="PushRight") {
+    const A=z.tag==="PushLeft"?P.left:P.right;
+    return {...z,as:P1,value:constantTransport(i,A,phi,z.value)};
+  }
+  if(z.tag==="HComp") {
+    const j=hitDirection("transport_hcomp",r,z.dim);
+    const system=z.system.map(p=>({...p,term:T.trans(i,P,phi,dsub(p.term,z.dim,I.variable(j)))}));
+    return T.hcomp(j,P1,system,T.trans(i,P,phi,z.base));
+  }
+  if(z.tag!=="PushPath")return r;
+  const h=hitDirection("transport_bridge",r,i),s=I.variable(i);
+  const c=constantTransportFill(i,P.center,phi,z.value,s);
+  const l=T.pushLeft(P,T.app(T.first(P.maps),c));
+  const rr=T.pushRight(P,T.app(T.second(P.maps),c));
+  const leftCorrection=dsub(squeeze(i,P,phi,l),i,I.reverse(I.variable(h)));
+  const rightCorrection=dsub(squeeze(i,P,phi,rr),i,I.reverse(I.variable(h)));
+  const moved=T.pushPath(P1,constantTransport(i,P.center,phi,z.value),z.arg);
+  return T.hcomp(h,P1,[{face:F.equalEndpoint(z.arg,0),term:leftCorrection},
+    {face:F.equalEndpoint(z.arg,1),term:rightCorrection},{face:phi,term:z}],moved);
 }
 
 export class Checker {
@@ -553,6 +627,20 @@ export class Checker {
         const as=type(t.as).term;
         if(as.tag!=="Glue")fail("Unglue requires an explicit checked Glue type.");
         return result(T.unglue(as,check(t.value,as)),as.base);
+      }
+      case "HComp": case "Trans": {
+        named(t.dim);
+        const avoid=new Set([...dims,...free(t,true),t.dim]);
+        const dim=fresh(t.dim,avoid);
+        const family=t.tag==="Trans"?dsub(t.family,t.dim,I.variable(dim)):t.family;
+        const system=t.tag==="HComp"?t.system.map(p=>({...p,term:dsub(p.term,t.dim,I.variable(dim))})):
+          [{face:F.normalize(t.face),term:t.base}];
+        const checked=this.infer(T.comp(dim,family,system,t.base),ctx,dims);
+        if(this.nf(checked.term.family).tag!=="Pushout")fail("HComp/Trans currently require a pushout family.");
+        if(t.tag==="HComp")return result({...checked.term,tag:"HComp"},checked.type);
+        for(const clause of F.normalize(t.face))if(!this.equal(restrict(checked.term.family,clause),
+          restrict(dsub(checked.term.family,dim,I.zero),clause)))fail("Transport family is not constant on its specified face.");
+        return result(T.trans(dim,checked.term.family,F.normalize(t.face),checked.term.base),checked.type);
       }
       case "Comp": {
         named(t.dim);if(!Array.isArray(t.system))fail("Expected a finite composition system.");

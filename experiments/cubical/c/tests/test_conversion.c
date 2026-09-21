@@ -43,6 +43,25 @@ int main(void) {
     assert(ck_convertible(k, line_i, line_j));
     assert(ck_convertible(k, free_i, free_i));
 
+    /* Homogeneous composition does not bind its type; transport does not
+     * bind its face. A composition direction never binds a tube FACE. */
+    cc_term hcomp = ck_make(k, CC_HCOMP, 0, pi, 0, zero, 0);
+    assert(ck_free_dims(k, hcomp) & UINT64_C(1));
+    cc_term side = ck_make(k, CC_TUBE, ck_endpoint_face(k, 0, 0), zero, 0, 0, 0);
+    cc_term comp = ck_make(k, CC_COMP, 0, nat, side, zero, 0);
+    cc_term trans = ck_make(k, CC_TRANS, 0, pi, side, zero, 0);
+    assert(ck_free_dims(k, comp) & UINT64_C(1));
+    assert(ck_free_dims(k, trans) & UINT64_C(1));
+    cc_formula one;
+    cc_init(&one, CC_INTERVAL);
+    assert(cc_one(&one) == CC_OK);
+    cc_term specialized = ck_dimension_substitute(k, hcomp, 0, &one);
+    assert(!(ck_free_dims(k, specialized) & UINT64_C(1)));
+    specialized = ck_dimension_substitute(k, comp, 0, &one);
+    cc_node tube = k->nodes[k->nodes[specialized].child[1]];
+    assert(cc_kernel_get_formula(k, tube.payload)->length == 0);
+    cc_clear(&one);
+
     /* A closed shared arithmetic DAG has 2^24 unfolded branches. Beneath
      * differently named lambdas, its nodes are compared once per scope. */
     cc_term motive = lambda(k, 20, nat);

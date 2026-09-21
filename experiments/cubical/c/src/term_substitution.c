@@ -9,7 +9,7 @@ bool ck_term_binder(cc_term_kind kind) {
 }
 
 bool ck_dim_binder(cc_term_kind kind) {
-    return kind == CC_PATH || kind == CC_PLAM || kind == CC_COMP;
+    return kind == CC_PATH || kind == CC_PLAM || kind == CC_COMP || kind == CC_HCOMP || kind == CC_TRANS;
 }
 
 static bool term_free(cc_kernel *k, cc_term term, uint32_t name) {
@@ -52,9 +52,22 @@ static uint64_t free_dims(cc_kernel *k, cc_term term) {
     if (n.kind == CC_PAPP || n.kind == CC_PUSH_PATH || n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM)
         result = formula_names(cc_kernel_get_formula(k, n.payload));
     for (unsigned i = 0; i < ck_arity(n.kind); ++i) {
-        uint64_t names = ck_free_dims(k, n.child[i]);
-        if (ck_dim_binder(n.kind) && (i == 0 || (i == 1 && n.kind != CC_PATH)) && n.payload < CC_DIMENSIONS)
-            names &= ~(UINT64_C(1) << n.payload);
+        uint64_t names = 0;
+        if (i == 1 && (n.kind == CC_COMP || n.kind == CC_HCOMP) && n.payload < CC_DIMENSIONS) {
+            /* The direction binds tube TERMS, never their face formulas. */
+            for (cc_term cursor = n.child[i]; cursor;) {
+                cc_node tube = k->nodes[cursor];
+                names |= ck_free_dims(k, tube.child[0]) & ~(UINT64_C(1) << n.payload);
+                names |= formula_names(cc_kernel_get_formula(k, tube.payload));
+                cursor = tube.child[1];
+            }
+        } else {
+            names = ck_free_dims(k, n.child[i]);
+            bool bound = (i == 0 && ck_dim_binder(n.kind) && n.kind != CC_HCOMP) ||
+                         (i == 1 && n.kind == CC_PLAM);
+            if (bound && n.payload < CC_DIMENSIONS)
+                names &= ~(UINT64_C(1) << n.payload);
+        }
         result |= names;
     }
     return result;
@@ -103,10 +116,11 @@ static cc_term substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term val
             cc_clear(&variable);
             return ck_fail(k, "Term substitution dimension allocation failed."), 0;
         }
-        n.child[0] = ck_dimension_substitute(k, n.child[0], n.payload, &variable);
+        if (n.kind != CC_HCOMP)
+            n.child[0] = ck_dimension_substitute(k, n.child[0], n.payload, &variable);
         if (n.kind == CC_PLAM)
             n.child[1] = ck_dimension_substitute(k, n.child[1], n.payload, &variable);
-        if (n.kind == CC_COMP)
+        if (n.kind == CC_COMP || n.kind == CC_HCOMP)
             n.child[1] = tube_substitute(k, n.child[1], n.payload, &variable, true, false);
         n.payload = fresh;
         cc_clear(&variable);
@@ -184,10 +198,11 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
         cc_init(&variable, CC_INTERVAL);
         if (cc_generator(&variable, fresh, true) != CC_OK)
             return ck_fail(k, "Fresh dimension allocation failed."), 0;
-        n.child[0] = ck_dimension_substitute(k, n.child[0], n.payload, &variable);
+        if (n.kind != CC_HCOMP)
+            n.child[0] = ck_dimension_substitute(k, n.child[0], n.payload, &variable);
         if (n.kind == CC_PLAM)
             n.child[1] = ck_dimension_substitute(k, n.child[1], n.payload, &variable);
-        if (n.kind == CC_COMP)
+        if (n.kind == CC_COMP || n.kind == CC_HCOMP)
             n.child[1] = tube_substitute(k, n.child[1], n.payload, &variable, true, false);
         n.payload = fresh;
         cc_clear(&variable);
@@ -195,11 +210,11 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
     if (n.kind == CC_TUBE)
         return tube_substitute(k, term, dim, value, true, true);
     for (unsigned i = 0; i < ck_arity(n.kind); ++i) {
-        if (n.kind == CC_COMP && i == 1) {
+        if ((n.kind == CC_COMP || n.kind == CC_HCOMP) && i == 1) {
             n.child[i] = tube_substitute(k, n.child[i], dim, value, n.payload != dim, true);
             continue;
         }
-        bool bound = ck_dim_binder(n.kind) && (i == 0 || (n.kind == CC_PLAM && i == 1));
+        bool bound = ck_dim_binder(n.kind) && ((i == 0 && n.kind != CC_HCOMP) || (n.kind == CC_PLAM && i == 1));
         if (!(bound && n.payload == dim))
             n.child[i] = ck_dimension_substitute(k, n.child[i], dim, value);
     }

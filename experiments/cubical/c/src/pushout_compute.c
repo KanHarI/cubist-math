@@ -31,6 +31,8 @@ cc_term ck_pushout_reduce(cc_kernel *k, cc_term term) {
     cc_node z = k->nodes[value];
     if (z.kind == CC_PUSH_LEFT || z.kind == CC_PUSH_RIGHT)
         return ck_whnf(k, app(k, e.child[z.kind == CC_PUSH_LEFT ? 1 : 2], z.child[1]));
+    if (z.kind == CC_HCOMP)
+        return ck_whnf(k, ck_pushout_eliminate_hcomp(k, n.child[0], value));
     if (z.kind == CC_PUSH_PATH) {
         cc_term path = ck_pushout_bridge_type(k, z.child[0], e.child[0], e.child[1], e.child[2], z.child[1]);
         cc_term at = ck_make(k, CC_PAPP, z.payload, app(k, e.child[3], z.child[1]), path, 0, 0);
