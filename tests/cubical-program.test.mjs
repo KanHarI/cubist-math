@@ -173,3 +173,22 @@ test("progress totals count a shared import once, including universe templates",
   assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.total === 5));
   assert.equal(progress.at(-1).completed, 5);
 });
+
+test("native optimization switches preserve path proofs and rejection independently", async () => {
+  for (let flags = 0; flags < 8; flags++) {
+    const optimizations = { shareSyntax: !!(flags & 1), reuseChecks: !!(flags & 2), compactPaths: !!(flags & 4) };
+    const program = new CubicalProgram(module, async () => "", { optimizations });
+    try {
+      const result = await program.check(`
+        theorem compose(x : Nat, y : Nat, z : Nat, p : x = y, q : y = z) : succ(x) = succ(z) {
+          exact cong(succ, trans(p, q));
+        }
+        theorem reverse(x : Nat, y : Nat, p : x = y) : y = x { exact sym(p); }
+        theorem wrong : 0 = 1 { exact trans(refl(0), refl(0)); }
+        theorem disconnected : 0 = 1 { exact trans(refl(0), refl(1)); }
+      `, "options");
+      assert.deepEqual(result.outputs.map(d => d.verified), [true, true, false, false], JSON.stringify(optimizations));
+      assert.deepEqual(program.kernel.optimizations, optimizations);
+    } finally { program.dispose(); }
+  }
+});

@@ -10,9 +10,13 @@ bool ck_functions(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims,
         uint32_t domain_level, body_level;
         if (!ck_type(k, n.child[0], ctx, dims, &domain, &domain_level))
             return false;
-        uint32_t name = ck_fresh_symbol(k);
-        cc_term raw_body = ck_substitute(k, n.child[1], n.payload, ck_var(k, name));
-        cc_context extended = {name, domain, ctx};
+        /* Preserve an already fresh binder: renaming it on every recheck
+         * copies the whole body and destroys sharing. Rename on shadowing. */
+        uint32_t name = n.payload;
+        for (const cc_context *entry = ctx; entry; entry = entry->previous)
+            if (entry->name == name) { name = ck_fresh_symbol(k); break; }
+        cc_term raw_body = name == n.payload ? n.child[1] : ck_substitute(k, n.child[1], n.payload, ck_var(k, name));
+        cc_context extended = ck_extend(k, name, domain, ctx);
         if (n.kind == CC_LAM) {
             cc_judgement checked;
             if (!ck_infer(k, raw_body, &extended, dims, &checked))

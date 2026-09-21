@@ -51,7 +51,7 @@ wasm-test: wasm
 # passes its checker; the production site must not silently fall back to Id/J.
 CUBICAL_DIR = experiments/cubical/c
 CUBICAL_SRC = $(wildcard $(CUBICAL_DIR)/src/*.c)
-CUBICAL_EXPORTS = '["_cb_new","_cb_step_budget","_cb_deadline_ms","_cb_checkpoint","_cb_rollback","_cb_commit_checkpoint","_cb_relocated","_cb_unfolding_clear","_cb_unfolding_add","_cb_free","_cb_error","_cb_term","_cb_formula_begin","_cb_formula_clause","_cb_formula_end","_cb_context_clear","_cb_context_add","_cb_check","_cb_check_in_cube","_cb_result","_cb_normalize","_cb_node","_cb_formula_view","_cb_define","_cb_definition","_cb_head"]'
+CUBICAL_EXPORTS = '["_cb_new","_cb_optimizations","_cb_step_budget","_cb_deadline_ms","_cb_checkpoint","_cb_rollback","_cb_commit_checkpoint","_cb_relocated","_cb_unfolding_clear","_cb_unfolding_add","_cb_free","_cb_error","_cb_term","_cb_formula_begin","_cb_formula_clause","_cb_formula_end","_cb_context_clear","_cb_context_add","_cb_check","_cb_check_in_cube","_cb_result","_cb_normalize","_cb_node","_cb_formula_view","_cb_define","_cb_definition","_cb_head"]'
 .PHONY: cubical-wasm
 cubical-wasm: web/dist/cubical.mjs
 	node tools/build-cubical-runtime.mjs

@@ -32,6 +32,13 @@ try {
   assert.match(await page.locator("#check-detail").textContent(), /^[\d,]+ kernel steps\n[\d,]+ of [\d,]+ declarations processed/);
   assert.match(await page.locator("#status").textContent(), /Cubical C · checked/);
   assert.equal(await page.locator("#diagnostic").isVisible(), false);
+  for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
+    assert.equal(await page.locator(`#${id}`).isVisible(), true);
+    assert.equal(await page.locator(`#${id}`).isChecked(), true);
+  }
+  await page.locator("#reuse-checks").uncheck(); await idle();
+  assert.match(await page.locator("#status").textContent(), /Cubical C · checked/);
+  await page.locator("#reuse-checks").check(); await idle();
   assert.match(await page.locator("#kernel-view-note").textContent(), /Native cubical C/);
   await page.locator('.source-line [data-name="prime_divisor_exists"]').first().click();
   await idle();
@@ -78,6 +85,7 @@ try {
   await page.goto(`http://127.0.0.1:${port}/benchmark.html`);
   await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Completed"));
   assert.ok(await page.locator("#entries tr").count() > 2000);
+  assert.equal(await page.locator("#limit-ms").inputValue(), "100");
   await page.locator("#run").click();
   await page.waitForFunction(() => document.querySelectorAll("#entries tr").length > 10);
   assert.equal(await page.locator("#cancel").isDisabled(), false);
@@ -88,6 +96,8 @@ try {
   assert.ok(await page.locator("#entries tr").count() > 2000);
   assert.equal(await page.locator("#run").isDisabled(), false);
   assert.equal(await page.locator("#download").isDisabled(), false);
+  console.log("Browser benchmark:", await page.locator("#counts").innerText());
+  assert.match(await page.locator("#counts").innerText(), /within 100 ms/);
   await page.locator("#category").selectOption("checked");
   const times = await page.locator("#entries tr td:nth-child(3)").allTextContents();
   const milliseconds = times.map(text => Number.parseFloat(text.replaceAll(",", "")));

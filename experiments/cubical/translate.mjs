@@ -199,9 +199,21 @@ export class Translator {
           if(universe.tag!=="U")throw Error("Univalence requires a concrete universe.");
           this.checker.check(A,universe,ctx,new Set(this.dimensions.keys()));
           this.checker.check(B,universe,ctx,new Set(this.dimensions.keys()));
-          const E=halfAdjointEquiv(A,B),en=this.fresh("equivalence"),x=this.fresh("argument");
-          let fn=builtin==="ua"?T.lam(en,E,publicUnivalencePath(A,B,T.variable(en),universe.level)):
-            T.lam(en,E,T.lam(x,A,publicUnivalenceBeta(A,B,T.variable(en),T.variable(x))));
+          const build=(A,B)=>{
+            const E=halfAdjointEquiv(A,B),en=this.fresh("equivalence"),x=this.fresh("argument");
+            return builtin==="ua"?T.lam(en,E,publicUnivalencePath(A,B,T.variable(en),universe.level)):
+              T.lam(en,E,T.lam(x,A,publicUnivalenceBeta(A,B,T.variable(en),T.variable(x))));
+          };
+          let fn;
+          if(this.checker.specializeSchema && this.checker.kernel?.optimizations?.reuseChecks !== false) {
+            // The computational derivation is generic in A and B. Check that
+            // closed function once per universe, then check ordinary applications.
+            const generic=this.checker.specializeSchema(`builtin__${builtin}`,[universe.level],()=>{
+              const a=this.fresh("sourceType"),b=this.fresh("targetType");
+              return T.lam(a,universe,T.lam(b,universe,build(T.variable(a),T.variable(b))));
+            });
+            fn=T.app(T.app(generic,A),B);
+          } else fn=build(A,B);
           for(const arg of n.args.slice(3)) {
             const type=this.checker.nf(inferred(fn).type);
             if(type.tag!=="Pi")throw Error(`Too many arguments to ${builtin}.`);
@@ -333,7 +345,8 @@ export class Translator {
           if(type.tag!=="Path")throw Error("sym requires a path.");
           // MathScript equality has a constant carrier (dependent Path reversal
           // is checked by the core directly, rather than silently approximated).
-          const i=this.fresh("i");return T.line(i,type.family,T.at(p,I.reverse(I.variable(i))));
+          const i=this.fresh("i"),result=T.line(i,type.family,T.at(p,I.reverse(I.variable(i))));
+          return this.checker.ascribe && this.checker.kernel?.optimizations?.compactPaths !== false ? this.checker.ascribe(result,T.path(i,type.family,type.right,type.left)) : result;
         }
         if(builtin==="trans"&&n.args.length===2) {
           const p=tr(n.args[0],null),q=tr(n.args[1],null),pt=this.checker.nf(inferred(p).type),qt=this.checker.nf(inferred(q).type);
@@ -341,15 +354,19 @@ export class Translator {
           this.checker.expect(pt.family,qt.family,ctx);
           if(!this.checker.equal(pt.right,qt.left,ctx))throw Error("Path endpoints do not match.");
           const i=this.fresh("i"),j=this.fresh("j");
-          return T.line(j,pt.family,T.comp(i,pt.family,[
+          const result=T.line(j,pt.family,T.comp(i,pt.family,[
             {face:F.endpoint(j,0),term:pt.left},{face:F.endpoint(j,1),term:T.at(q,I.variable(i))},
           ],T.at(p,I.variable(j))));
+          // Retain the mathematical endpoints in the inferred signature.
+          // The native checker still verifies the composition and conversion.
+          return this.checker.ascribe && this.checker.kernel?.optimizations?.compactPaths !== false ? this.checker.ascribe(result,T.path(j,pt.family,pt.left,qt.right)) : result;
         }
         if(builtin==="cong"&&n.args.length===2) {
           const fn=tr(n.args[0],null),p=tr(n.args[1],null),pt=this.checker.nf(inferred(p).type);
           if(pt.tag!=="Path")throw Error("cong requires a path.");
           const left=T.app(fn,pt.left),type=inferred(left).type,i=this.fresh("i");
-          return T.line(i,type,T.app(fn,T.at(p,I.variable(i))));
+          const result=T.line(i,type,T.app(fn,T.at(p,I.variable(i))));
+          return this.checker.ascribe && this.checker.kernel?.optimizations?.compactPaths !== false ? this.checker.ascribe(result,T.path(i,type,left,T.app(fn,pt.right))) : result;
         }
         if(builtin==="apd"&&n.args.length===4) {
           const [fn,x,y,p]=n.args.map(a=>tr(a,null));
@@ -504,8 +521,10 @@ export class Translator {
     }
     if(first.kind==="have") {
       const type=this.term(first.type,ctx,env,null),value=this.block(first.body,type,ctx,env);
-      this.checker.check(value,type,ctx,new Set(this.dimensions.keys()));
-      return this.block(rest,goal,ctx,new Map(env).set(first.name.text,value));
+      const checked=this.checker.check(value,type,ctx,new Set(this.dimensions.keys()));
+      // A local lemma keeps its declared signature just like a top-level proof.
+      const named=this.checker.ascribe?.(checked,type)??checked;
+      return this.block(rest,goal,ctx,new Map(env).set(first.name.text,named));
     }
     throw Error(`Proof tactic not yet translated: ${first.kind}`);
   }

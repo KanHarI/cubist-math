@@ -49,6 +49,7 @@ unsigned ck_arity(cc_term_kind kind) {
 cc_kernel *cc_kernel_new(void) {
     cc_kernel *k = calloc(1, sizeof *k);
     if (k) {
+        k->optimizations = CC_SHARE_SYNTAX | CC_REUSE_CHECKS;
         k->count = 1;
         k->formula_count = 1;
         k->definition_count = 1;
@@ -56,6 +57,13 @@ cc_kernel *cc_kernel_new(void) {
         k->budget = k->operation_budget = UINT64_C(10000000);
     }
     return k;
+}
+
+void cc_kernel_set_optimizations(cc_kernel *k, unsigned flags) {
+    if (!k) return;
+    k->optimizations = flags & (CC_SHARE_SYNTAX | CC_REUSE_CHECKS);
+    if (!(flags & CC_SHARE_SYNTAX)) { free(k->interned); k->interned = NULL; }
+    if (!(flags & CC_REUSE_CHECKS)) ck_clear_check_cache(k);
 }
 
 void cc_kernel_set_step_budget(cc_kernel *k, uint64_t steps) {
@@ -74,6 +82,9 @@ void cc_kernel_free(cc_kernel *k) {
     free(k->syntax_memo);
     free(k->alpha_memo);
     free(k->weak_cache);
+    free(k->interned);
+    free(k->contexts);
+    free(k->inferred);
     free(k->nodes);
     free(k);
 }
@@ -99,6 +110,19 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
             return ck_fail(k, "Missing syntax child."), 0;
         if (children[i] >= k->count || (i >= arity && children[i]))
             return ck_fail(k, "Invalid syntax child handle."), 0;
+    }
+    /* Intern only identical syntax. Every child and payload is compared after
+     * hashing, so collisions affect performance, never term identity. */
+    if ((k->optimizations & CC_SHARE_SYNTAX) && !k->interned) k->interned = calloc(CC_INTERN_SIZE, sizeof *k->interned);
+    uint32_t hash = (uint32_t)kind;
+    hash = (hash ^ payload) * UINT32_C(16777619);
+    for (unsigned i = 0; i < 4; ++i) hash = (hash ^ children[i]) * UINT32_C(16777619);
+    size_t slot = hash % CC_INTERN_SIZE;
+    if (k->interned && k->interned[slot]) {
+        cc_term existing = k->interned[slot];
+        cc_node node = k->nodes[existing];
+        if (node.kind == kind && node.payload == payload &&
+            !memcmp(node.child, children, sizeof children)) return existing;
     }
     unsigned depth = 1;
     for (unsigned i = 0; i < arity; ++i)
@@ -130,6 +154,7 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
             return ck_fail(k, "Term symbol space exhausted."), 0;
         k->next_symbol = payload + 1;
     }
+    if (k->interned) k->interned[slot] = result;
     return result;
 }
 

@@ -56,6 +56,11 @@ const char *cb_error(uint32_t token) {
     return s->error ? s->error : cc_kernel_error(s->kernel);
 }
 
+void cb_optimizations(uint32_t token, unsigned flags) {
+    browser_session *s = lookup(token);
+    if (s) cc_kernel_set_optimizations(s->kernel, flags);
+}
+
 void cb_checkpoint(uint32_t token) {
     browser_session *s = lookup(token);
     if (s) cc_kernel_checkpoint(s->kernel);

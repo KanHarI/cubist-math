@@ -13,7 +13,7 @@ int main(void) {
     assert(old);
     cc_kernel_checkpoint(k);
     for (unsigned i = 0; i < 1000; ++i)
-        assert(cc_kernel_term(k, CC_SUCC, 0, zero, 0, 0, 0));
+        assert(cc_kernel_term(k, CC_VAR, 100 + i, 0, 0, 0, 0));
     cc_term one = cc_kernel_term(k, CC_SUCC, 0, old, 0, 0, 0);
     cc_term ref = cc_kernel_define(k, 2, one, nat);
     assert(ref && cc_kernel_whnf(k, ref));

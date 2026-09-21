@@ -11,6 +11,8 @@ void cc_kernel_checkpoint(cc_kernel *k) {
 }
 void cc_kernel_rollback(cc_kernel *k) {
     if (!k || !k->checkpoint_count) return;
+    ck_clear_check_cache(k);
+    if (k->interned) memset(k->interned, 0, CC_INTERN_SIZE * sizeof *k->interned);
     if (k->weak_cache) memset(k->weak_cache, 0, k->count * sizeof *k->weak_cache);
     if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
     if (k->alpha_memo) memset(k->alpha_memo, 0, CC_ALPHA_MEMO_SIZE * sizeof *k->alpha_memo);
@@ -51,6 +53,8 @@ bool cc_kernel_commit_checkpoint(cc_kernel *k) {
                 cc_term child = k->nodes[i].child[j];
                 if (child >= base) map[child - base] = 1;
             }
+    ck_clear_check_cache(k);
+    if (k->interned) memset(k->interned, 0, CC_INTERN_SIZE * sizeof *k->interned);
     if (k->weak_cache) memset(k->weak_cache, 0, k->count * sizeof *k->weak_cache);
     if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
     if (k->alpha_memo) memset(k->alpha_memo, 0, CC_ALPHA_MEMO_SIZE * sizeof *k->alpha_memo);

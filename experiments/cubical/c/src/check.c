@@ -82,7 +82,11 @@ bool ck_infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dims,
         --k->recursion;
         return ck_fail(k, "Native reference recursion depth exceeded.");
     }
-    bool success = infer(k, raw, ctx, dims, result);
+    bool success = ck_inference_get(k, raw, ctx, dims, result) || infer(k, raw, ctx, dims, result);
+    if (success && !k->error[0]) {
+        ck_inference_put(k, raw, ctx, dims, *result);
+        ck_inference_put(k, result->expression, ctx, dims, *result);
+    }
     --k->recursion;
     return success && !k->error[0];
 }
@@ -123,7 +127,7 @@ bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
             }
             k->next_symbol = assumptions[i].symbol + 1;
         }
-        entries[i] = (cc_context){assumptions[i].symbol, type, ctx};
+        entries[i] = ck_extend(k, assumptions[i].symbol, type, ctx);
         ctx = &entries[i];
     }
     cc_judgement checked;
@@ -143,7 +147,10 @@ bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
         result->arena_bytes = k->capacity * (sizeof(cc_node) + sizeof(cc_term)) +
                               k->definition_capacity * sizeof(cc_definition) +
                               (k->syntax_memo ? CC_SYNTAX_MEMO_SIZE * sizeof(cc_syntax_memo) : 0) +
-                              (k->alpha_memo ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_memo) : 0);
+                              (k->alpha_memo ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_memo) : 0) +
+                              (k->interned ? CC_INTERN_SIZE * sizeof(cc_term) : 0) +
+                              (k->contexts ? CC_CHECK_MEMO_SIZE * sizeof(cc_context_memo) : 0) +
+                              (k->inferred ? CC_CHECK_MEMO_SIZE * sizeof(cc_infer_memo) : 0);
         result->checking_steps = k->checking_steps;
         result->reduction_steps = k->reduction_steps;
         success = !k->error[0];

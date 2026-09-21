@@ -19,6 +19,8 @@ cc_context *ck_restricted_context(cc_kernel *k, const cc_context *ctx,
         copy[i].type = ck_restrict(k, entry->type, clause);
         copy[i].previous = i + 1 < *length ? &copy[i + 1] : NULL;
     }
+    for (size_t j = *length; j-- > 0;)
+        copy[j] = ck_extend(k, copy[j].name, copy[j].type, copy[j].previous);
     return copy;
 }
 

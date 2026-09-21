@@ -5,7 +5,7 @@
 
 /* Raw syntax constructors are deliberately NOT proof certificates. Only
  * cc_kernel_check publishes a checked result. Names are numeric symbols whose
- * readable spelling is maintained by the caller; bound names are alpha-renamed.
+ * readable spelling is maintained by the caller; bound names are renamed when necessary to avoid shadowing.
  * A dimension name is separate from a term name and is currently 0..63. */
 typedef uint32_t cc_term;
 typedef uint32_t cc_formula_id;
@@ -37,6 +37,10 @@ void cc_kernel_free(cc_kernel *);
 /* Resource budget per checking/reduction operation; zero leaves it unchanged.
  * Raising it never bypasses a rule or certifies a previously rejected term. */
 void cc_kernel_set_step_budget(cc_kernel *, uint64_t steps);
+/* Independent performance switches, enabled by default. Neither changes the
+ * judgement rules. Disabling a cache discards its entries immediately. */
+enum { CC_SHARE_SYNTAX = 1, CC_REUSE_CHECKS = 2 };
+void cc_kernel_set_optimizations(cc_kernel *, unsigned flags);
 /* Optional wall-clock deadline shared by successive operations. Zero disables.
  * Expiry only rejects work; it can never make a judgement succeed. */
 void cc_kernel_set_deadline_ms(cc_kernel *, double duration_ms);

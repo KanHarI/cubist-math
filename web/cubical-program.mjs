@@ -9,8 +9,9 @@ import { cubicalText } from "./cubical-notation.mjs";
 // closed native definitions have qualified names so shadowing cannot retarget
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
-  constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true } = {}) {
+  constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {} } = {}) {
     this.kernel = new CubicalKernel(module);
+    this.kernel.setOptimizations(optimizations);
     this.checker = new NativeCubicalElaborator(this.kernel);
     this.readSource = readSource;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;

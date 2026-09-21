@@ -10,11 +10,17 @@ import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = process.argv.slice(2), selected = args.filter(a => !a.startsWith("--"));
+  const limitArg = args.find(a => a.startsWith("--limit-ms="));
+  const limitMs = limitArg ? Number(limitArg.slice("--limit-ms=".length)) : 100;
+  const optimizations = { shareSyntax: !args.includes("--no-share-syntax"),
+    reuseChecks: !args.includes("--no-reuse-checks"), compactPaths: !args.includes("--no-compact-paths") };
+  const known = /^(--verbose|--publish|--limit-ms=.+|--no-share-syntax|--no-reuse-checks|--no-compact-paths)$/;
+  for (const arg of args) if (arg.startsWith("--") && !known.test(arg)) throw Error(`Unknown option: ${arg}`);
   const output = new URL("../web/benchmark-results.json", import.meta.url);
   const verbose = args.includes("--verbose");
   const revision = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const dirty = !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim();
-  const report = await benchmark({ ...(selected.length ? { modules: selected } : {}),
+  const report = await benchmark({ limitMs, optimizations, ...(selected.length ? { modules: selected } : {}),
     readSource: name => readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url), "utf8"),
     onResult: row => {
       if (verbose || row.category === "optimize" || row.category === "failed")
@@ -28,7 +34,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (!selected.length || args.includes("--publish")) {
     let previous = null;
     try { previous = JSON.parse(await readFile(output, "utf8")); } catch {}
-    report.baseline = previous?.baseline ?? (previous?.complete ? { generatedAt: previous.generatedAt, counts: previous.counts } : null);
+    report.baseline = previous?.baseline ?? (previous?.complete ? { generatedAt: previous.generatedAt, counts: previous.counts, limitMs: previous.limitMs, optimizations: previous.optimizations } : null);
     await writeFile(output, JSON.stringify(report, null, 2) + "\n");
   }
   console.log(JSON.stringify({ ...report, declarations: report.declarations.length }, null, 2));

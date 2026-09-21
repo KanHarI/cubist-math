@@ -8,426 +8,50 @@ theorem polynomial_difference_step(
 ) : addF(a, mulF(x, addF(q, mulF(addF(x, negF(r)), d)))) = addF(
   addF(a, mulF(r, q)), mulF(addF(x, negF(r)), addF(q, mulF(x, d)))
 ) {
-  let leftStep1 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => mulF(x, value)),
-        cong(
-          (fun (value : F) => addF(q, value)),
-          cong(
-            (fun (value : F) => mulF(value, d)),
-            ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, negF(r))
-          )
-        )
-      )
+  let difference = addF(x, negF(r));
+  // First write x = r + (x-r), so xq = rq + (x-r)q.
+  have recombine : addF(r, difference) = x {
+    exact trans(
+      cong(addF(r), ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, negF(r))),
+      ring_add_cancel_prefix(F, zero, one, addF, mulF, negF, ring, r, x)
     );
-  let leftStep2 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => mulF(x, value)),
-        cong(
-          (fun (value : F) => addF(q, value)),
-          ring_distribute_left(F, zero, one, addF, mulF, negF, ring, negF(r), x, d)
-        )
-      )
+  }
+  have split : mulF(x, q) = addF(mulF(r, q), mulF(difference, q)) {
+    exact trans(
+      cong((fun (v : F) => mulF(v, q)), sym(recombine)),
+      ring_distribute_left(F, zero, one, addF, mulF, negF, ring, r, difference, q)
     );
-  let leftStep3 =
+  }
+  // Distribute once, move x past (x-r), then factor (x-r) back out.
+  let distribute =
+    cong(addF(a), ring_distribute(F, zero, one, addF, mulF, negF, ring, x, q, mulF(difference, d)));
+  let splitFirst = cong((fun (v : F) => addF(a, addF(v, mulF(x, mulF(difference, d))))), split);
+  let swapProduct =
     cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => mulF(x, value)),
-        cong(
-          (fun (value : F) => addF(q, value)),
-          cong(
-            (fun (value : F) => addF(value, mulF(x, d))),
-            ring_neg_mul(F, zero, one, addF, mulF, negF, ring, r, d)
-          )
-        )
-      )
+      (fun (v : F) => addF(a, addF(addF(mulF(r, q), mulF(difference, q)), v))),
+      ring_mul_swap(F, zero, one, addF, mulF, negF, ring, x, difference, d)
     );
-  let leftStep4 =
+  let regroup =
     cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => mulF(x, value)),
-        cong(
-          (fun (value : F) => addF(q, value)),
-          cong(
-            (fun (value : F) => addF(value, mulF(x, d))),
-            cong(
-              (fun (value : F) => negF(value)),
-              ring_mul_comm(F, zero, one, addF, mulF, negF, ring, r, d)
-            )
-          )
-        )
-      )
-    );
-  let leftStep5 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => mulF(x, value)),
-        cong(
-          (fun (value : F) => addF(q, value)),
-          cong(
-            (fun (value : F) => addF(negF(mulF(d, r)), value)),
-            ring_mul_comm(F, zero, one, addF, mulF, negF, ring, x, d)
-          )
-        )
-      )
-    );
-  let leftStep6 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => mulF(x, value)),
-        ring_add_swap(F, zero, one, addF, mulF, negF, ring, q, negF(mulF(d, r)), mulF(d, x))
-      )
-    );
-  let leftStep7 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => mulF(x, value)),
-        cong(
-          (fun (value : F) => addF(negF(mulF(d, r)), value)),
-          ring_add_comm(F, zero, one, addF, mulF, negF, ring, q, mulF(d, x))
-        )
-      )
-    );
-  let leftStep8 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      ring_distribute(
-        F, zero, one, addF, mulF, negF, ring, x, negF(mulF(d, r)), addF(mulF(d, x), q)
-      )
-    );
-  let leftStep9 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => addF(value, mulF(x, addF(mulF(d, x), q)))),
-        ring_mul_neg(F, zero, one, addF, mulF, negF, ring, x, mulF(d, r))
-      )
-    );
-  let leftStep10 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => addF(value, mulF(x, addF(mulF(d, x), q)))),
-        cong(
-          (fun (value : F) => negF(value)),
-          ring_mul_swap(F, zero, one, addF, mulF, negF, ring, x, d, r)
-        )
-      )
-    );
-  let leftStep11 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => addF(value, mulF(x, addF(mulF(d, x), q)))),
-        cong(
-          (fun (value : F) => negF(value)),
-          cong(
-            (fun (value : F) => mulF(d, value)),
-            ring_mul_comm(F, zero, one, addF, mulF, negF, ring, x, r)
-          )
-        )
-      )
-    );
-  let leftStep12 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => addF(negF(mulF(d, mulF(r, x))), value)),
-        ring_distribute(F, zero, one, addF, mulF, negF, ring, x, mulF(d, x), q)
-      )
-    );
-  let leftStep13 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => addF(negF(mulF(d, mulF(r, x))), value)),
-        cong(
-          (fun (value : F) => addF(value, mulF(x, q))),
-          ring_mul_swap(F, zero, one, addF, mulF, negF, ring, x, d, x)
-        )
-      )
-    );
-  let leftStep14 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => addF(negF(mulF(d, mulF(r, x))), value)),
-        cong(
-          (fun (value : F) => addF(mulF(d, mulF(x, x)), value)),
-          ring_mul_comm(F, zero, one, addF, mulF, negF, ring, x, q)
-        )
-      )
-    );
-  let rightStep1 =
-    cong(
-      (fun (value : F) => addF(value, mulF(addF(x, negF(r)), addF(q, mulF(x, d))))),
-      cong(
-        (fun (value : F) => addF(a, value)),
-        ring_mul_comm(F, zero, one, addF, mulF, negF, ring, r, q)
-      )
-    );
-  let rightStep2 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => mulF(value, addF(q, mulF(x, d)))),
-        ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, negF(r))
-      )
-    );
-  let rightStep3 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => mulF(addF(negF(r), x), value)),
-        cong(
-          (fun (value : F) => addF(q, value)),
-          ring_mul_comm(F, zero, one, addF, mulF, negF, ring, x, d)
-        )
-      )
-    );
-  let rightStep4 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => mulF(addF(negF(r), x), value)),
-        ring_add_comm(F, zero, one, addF, mulF, negF, ring, q, mulF(d, x))
-      )
-    );
-  let rightStep5 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      ring_distribute_left(F, zero, one, addF, mulF, negF, ring, negF(r), x, addF(mulF(d, x), q))
-    );
-  let rightStep6 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => addF(value, mulF(x, addF(mulF(d, x), q)))),
-        ring_neg_mul(F, zero, one, addF, mulF, negF, ring, r, addF(mulF(d, x), q))
-      )
-    );
-  let rightStep7 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => addF(value, mulF(x, addF(mulF(d, x), q)))),
-        cong(
-          (fun (value : F) => negF(value)),
-          ring_distribute(F, zero, one, addF, mulF, negF, ring, r, mulF(d, x), q)
-        )
-      )
-    );
-  let rightStep8 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => addF(value, mulF(x, addF(mulF(d, x), q)))),
-        cong(
-          (fun (value : F) => negF(value)),
-          cong(
-            (fun (value : F) => addF(value, mulF(r, q))),
-            ring_mul_swap(F, zero, one, addF, mulF, negF, ring, r, d, x)
-          )
-        )
-      )
-    );
-  let rightStep9 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => addF(value, mulF(x, addF(mulF(d, x), q)))),
-        cong(
-          (fun (value : F) => negF(value)),
-          cong(
-            (fun (value : F) => addF(mulF(d, mulF(r, x)), value)),
-            ring_mul_comm(F, zero, one, addF, mulF, negF, ring, r, q)
-          )
-        )
-      )
-    );
-  let rightStep10 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => addF(value, mulF(x, addF(mulF(d, x), q)))),
-        ring_neg_add(F, zero, one, addF, mulF, negF, ring, mulF(d, mulF(r, x)), mulF(q, r))
-      )
-    );
-  let rightStep11 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => addF(addF(negF(mulF(d, mulF(r, x))), negF(mulF(q, r))), value)),
-        ring_distribute(F, zero, one, addF, mulF, negF, ring, x, mulF(d, x), q)
-      )
-    );
-  let rightStep12 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => addF(addF(negF(mulF(d, mulF(r, x))), negF(mulF(q, r))), value)),
-        cong(
-          (fun (value : F) => addF(value, mulF(x, q))),
-          ring_mul_swap(F, zero, one, addF, mulF, negF, ring, x, d, x)
-        )
-      )
-    );
-  let rightStep13 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => addF(addF(negF(mulF(d, mulF(r, x))), negF(mulF(q, r))), value)),
-        cong(
-          (fun (value : F) => addF(mulF(d, mulF(x, x)), value)),
-          ring_mul_comm(F, zero, one, addF, mulF, negF, ring, x, q)
-        )
-      )
-    );
-  let rightStep14 =
-    cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
+      addF(a),
       ring_add_assoc(
-        F, zero, one, addF, mulF, negF, ring, negF(mulF(d, mulF(r, x))), negF(mulF(q, r)),
-        addF(mulF(d, mulF(x, x)), mulF(q, x))
+        F, zero, one, addF, mulF, negF, ring, mulF(r, q), mulF(difference, q),
+        mulF(difference, mulF(x, d))
       )
     );
-  let rightStep15 =
+  let factor =
     cong(
-      (fun (value : F) => addF(addF(a, mulF(q, r)), value)),
-      cong(
-        (fun (value : F) => addF(negF(mulF(d, mulF(r, x))), value)),
-        ring_add_swap(
-          F, zero, one, addF, mulF, negF, ring, negF(mulF(q, r)), mulF(d, mulF(x, x)), mulF(q, x)
-        )
-      )
+      (fun (v : F) => addF(a, addF(mulF(r, q), v))),
+      sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, difference, q, mulF(x, d)))
     );
-  let rightStep16 =
-    ring_add_assoc(
-      F, zero, one, addF, mulF, negF, ring, a, mulF(q, r),
-      addF(negF(mulF(d, mulF(r, x))), addF(mulF(d, mulF(x, x)), addF(negF(mulF(q, r)), mulF(q, x))))
-    );
-  let rightStep17 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      ring_add_swap(
-        F, zero, one, addF, mulF, negF, ring, mulF(q, r), negF(mulF(d, mulF(r, x))),
-        addF(mulF(d, mulF(x, x)), addF(negF(mulF(q, r)), mulF(q, x)))
-      )
-    );
-  let rightStep18 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => addF(negF(mulF(d, mulF(r, x))), value)),
-        ring_add_swap(
-          F, zero, one, addF, mulF, negF, ring, mulF(q, r), mulF(d, mulF(x, x)),
-          addF(negF(mulF(q, r)), mulF(q, x))
-        )
-      )
-    );
-  let rightStep19 =
-    cong(
-      (fun (value : F) => addF(a, value)),
-      cong(
-        (fun (value : F) => addF(negF(mulF(d, mulF(r, x))), value)),
-        cong(
-          (fun (value : F) => addF(mulF(d, mulF(x, x)), value)),
-          ring_add_cancel_prefix(F, zero, one, addF, mulF, negF, ring, mulF(q, r), mulF(q, x))
-        )
+  let finish =
+    sym(
+      ring_add_assoc(
+        F, zero, one, addF, mulF, negF, ring, a, mulF(r, q), mulF(difference, addF(q, mulF(x, d)))
       )
     );
   exact trans(
-    trans(
-      leftStep1,
-      trans(
-        leftStep2,
-        trans(
-          leftStep3,
-          trans(
-            leftStep4,
-            trans(
-              leftStep5,
-              trans(
-                leftStep6,
-                trans(
-                  leftStep7,
-                  trans(
-                    leftStep8,
-                    trans(
-                      leftStep9,
-                      trans(
-                        leftStep10,
-                        trans(leftStep11, trans(leftStep12, trans(leftStep13, leftStep14)))
-                      )
-                    )
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-    ),
-    sym(
-      trans(
-        rightStep1,
-        trans(
-          rightStep2,
-          trans(
-            rightStep3,
-            trans(
-              rightStep4,
-              trans(
-                rightStep5,
-                trans(
-                  rightStep6,
-                  trans(
-                    rightStep7,
-                    trans(
-                      rightStep8,
-                      trans(
-                        rightStep9,
-                        trans(
-                          rightStep10,
-                          trans(
-                            rightStep11,
-                            trans(
-                              rightStep12,
-                              trans(
-                                rightStep13,
-                                trans(
-                                  rightStep14,
-                                  trans(
-                                    rightStep15,
-                                    trans(
-                                      rightStep16,
-                                      trans(rightStep17, trans(rightStep18, rightStep19))
-                                    )
-                                  )
-                                )
-                              )
-                            )
-                          )
-                        )
-                      )
-                    )
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-    )
+    distribute, trans(splitFirst, trans(swapProduct, trans(regroup, trans(factor, finish))))
   );
 }
 

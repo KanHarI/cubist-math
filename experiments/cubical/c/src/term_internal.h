@@ -17,6 +17,7 @@ typedef struct cc_context {
     uint32_t name;
     cc_term type;
     const struct cc_context *previous;
+    uint64_t identity; /* Exact telescope identity, never a pointer or hash. */
 } cc_context;
 
 typedef struct {
@@ -35,6 +36,7 @@ typedef struct {
     uint64_t result;
 } cc_syntax_memo;
 #define CC_SYNTAX_MEMO_SIZE 8192
+#define CC_INTERN_SIZE 65536
 
 /* Folded alpha-comparison keys include exact, never-reused binder scopes.
  * This memoizes a syntactic comparison, never a typing judgement. */
@@ -45,9 +47,26 @@ typedef struct {
 } cc_alpha_memo;
 #define CC_ALPHA_MEMO_SIZE 8192
 
+typedef struct {
+    uint32_t name;
+    cc_term type;
+    uint64_t parent, identity;
+} cc_context_memo;
+typedef struct {
+    cc_term raw;
+    uint64_t context, dimensions;
+    cc_judgement checked;
+} cc_infer_memo;
+#define CC_CHECK_MEMO_SIZE 16384
+
 struct cc_kernel {
+    unsigned optimizations;
     cc_node *nodes;
     cc_term *weak_cache;
+    cc_context_memo *contexts;
+    cc_infer_memo *inferred;
+    uint64_t next_context;
+    cc_term *interned; /* Exact syntax sharing; never a typing certificate. */
     cc_syntax_memo *syntax_memo;
     cc_alpha_memo *alpha_memo;
     uint64_t next_alpha_scope;
@@ -68,6 +87,11 @@ struct cc_kernel {
     unsigned recursion;
     char error[192];
 };
+
+cc_context ck_extend(cc_kernel *, uint32_t, cc_term, const cc_context *);
+void ck_clear_check_cache(cc_kernel *);
+bool ck_inference_get(cc_kernel *, cc_term, const cc_context *, uint64_t, cc_judgement *);
+void ck_inference_put(cc_kernel *, cc_term, const cc_context *, uint64_t, cc_judgement);
 
 bool ck_memo_get(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_term value, uint64_t *result);
 void ck_memo_put(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_term value, uint64_t result);

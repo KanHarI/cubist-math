@@ -76,7 +76,7 @@ $("kernel-backend").onchange = () => {
   address.searchParams.set("backend", $("kernel-backend").value);
   location.href = address.href;
 };
-for (const id of ["reuse-normal-forms", "memoize-instructions"]) {
+for (const id of ["reuse-normal-forms", "memoize-instructions", "share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
@@ -171,14 +171,20 @@ function dirty() {
   return last && $("editor").value !== last.source;
 }
 function compilerOptimizations() {
-  if (backend === "cubical") return {};
+  if (backend === "cubical") return {
+    shareSyntax: $("share-syntax").checked, reuseChecks: $("reuse-checks").checked,
+    compactPaths: $("compact-paths").checked,
+  };
   if (/^\s*(?:\/\/[^\n]*\n\s*)*construction\b/.test($("editor").value)) return {};
   return { normalForms: $("reuse-normal-forms").checked, instructions: $("memoize-instructions").checked };
 }
 function refreshStatus() {
   $("check").disabled = !ready || pending.size > 0;
-  for (const id of ["reuse-normal-forms", "memoize-instructions"])
+  for (const id of ["reuse-normal-forms", "memoize-instructions", "share-syntax", "reuse-checks", "compact-paths"])
     $(id).disabled = !ready || pending.size > 0 || !Object.keys(compilerOptimizations()).length;
+  for (const id of ["reuse-normal-forms", "memoize-instructions"])
+    $(id).closest("label").hidden = backend === "cubical";
+  for (const option of document.querySelectorAll("[data-cubical-option]")) option.hidden = backend !== "cubical";
   $("export").disabled = !last || pending.size > 0;
   $("dirty").textContent = dirty()
     ? "Edited — changes are not checked. Read shows the last checked version."
@@ -857,7 +863,7 @@ function download(text, name, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 $("check").onclick = check;
-for (const id of ["reuse-normal-forms", "memoize-instructions"]) $(id).onchange = () => {
+for (const id of ["reuse-normal-forms", "memoize-instructions", "share-syntax", "reuse-checks", "compact-paths"]) $(id).onchange = () => {
   try { localStorage.setItem("mathscript:" + id, String($(id).checked)); } catch {}
   check();
 };

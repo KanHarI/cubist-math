@@ -30,6 +30,11 @@ export class CubicalKernel {
   assertOpen() {
     if (!this.handle) throw new Error("Cubical kernel session is disposed.");
   }
+  setOptimizations({ shareSyntax = true, reuseChecks = true, compactPaths = true } = {}) {
+    this.assertOpen();
+    this.optimizations = { shareSyntax, reuseChecks, compactPaths };
+    this.module._cb_optimizations(this.handle, (shareSyntax ? 1 : 0) | (reuseChecks ? 2 : 0));
+  }
   setDeadline(milliseconds = 0) {
     this.assertOpen();
     this.deadline = milliseconds > 0 ? performance.now() + milliseconds : 0;

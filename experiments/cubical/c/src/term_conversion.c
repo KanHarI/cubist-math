@@ -8,6 +8,7 @@ enum comparison_mode { FOLDED, EXPOSE, COMPUTE, CONGRUENCE, HINTED };
 typedef struct alpha_binding {
     uint32_t left, right;
     uint64_t scope;
+    bool identity;
     const struct alpha_binding *previous;
 } alpha_binding;
 
@@ -15,7 +16,8 @@ static alpha_binding bind(cc_kernel *k, uint32_t left, uint32_t right,
                            const alpha_binding *previous) {
     if (k->next_alpha_scope == UINT64_MAX)
         ck_fail(k, "Alpha-comparison scope counter exhausted.");
-    return (alpha_binding){left, right, ++k->next_alpha_scope, previous};
+    return (alpha_binding){left, right, ++k->next_alpha_scope,
+        left == right && (!previous || previous->identity), previous};
 }
 
 static size_t alpha_slot(cc_term left, cc_term right, uint64_t terms, uint64_t dims) {
@@ -217,7 +219,7 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
         return false;
     if (!a || !b)
         return a == b;
-    if (a == b && !terms && !dims)
+    if (a == b && (!terms || terms->identity) && (!dims || dims->identity))
         return true;
     if (mode != FOLDED && alpha(k, a, b, terms, dims, FOLDED))
         return true;

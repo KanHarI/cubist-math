@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const labels = { checked: "1 · Checked within 1s", optimize: "2 · Needs optimization",
+const labels = { checked: "1 · Checked within deadline", optimize: "2 · Needs optimization",
   blocked: "3 · Blocked", failed: "4 · Needs fixing", template: "Universe template" };
 let report, lastText, worker, localRun = false;
 function link(row) {
@@ -31,6 +31,8 @@ function renderRows() {
   $("shown").textContent = `${rows.length.toLocaleString()} of ${report.declarations.length.toLocaleString()} declarations shown`;
 }
 function renderReport() {
+    labels.checked = `1 · Checked within ${report.limitMs ?? 1000} ms`;
+    $("category").querySelector('[value="checked"]').textContent = labels.checked;
     const counts = report.counts ?? Object.fromEntries(Object.keys(labels).map(c => [c, report.declarations.filter(d => d.category === c).length]));
     const total = report.total ?? report.declarations.length;
     $("status").textContent = `${report.complete ? "Completed" : "Running"} · ${new Date(report.generatedAt).toLocaleString()} · ${report.modules ?? "…"} modules · ${total} declarations${report.elapsedSeconds ? ` · ${report.elapsedSeconds}s elapsed` : ""}${report.revision ? ` · ${report.revision.slice(0, 8)}${report.dirty ? " + working changes" : ""}` : ""}`;
@@ -40,7 +42,7 @@ function renderReport() {
       number.textContent = (counts[key] ?? 0).toLocaleString(); button.append(number, label);
       button.onclick = () => { $("category").value = key; renderRows(); }; return button;
     }));
-    $("comparison").textContent = report.baseline ? `Checked since baseline: ${counts.checked - report.baseline.counts.checked >= 0 ? "+" : ""}${counts.checked - report.baseline.counts.checked}. Baseline recorded ${new Date(report.baseline.generatedAt).toLocaleString()}.` : "This run establishes the baseline.";
+    $("comparison").textContent = report.baseline && report.baseline.limitMs === report.limitMs && JSON.stringify(report.baseline.optimizations) === JSON.stringify(report.optimizations) ? `Checked since baseline: ${counts.checked - report.baseline.counts.checked >= 0 ? "+" : ""}${counts.checked - report.baseline.counts.checked}. Baseline recorded ${new Date(report.baseline.generatedAt).toLocaleString()}.` : `Deadline: ${report.limitMs ?? 1000} ms. Comparisons require the same deadline and optimization settings.`;
     renderRows();
     $("download").disabled = false;
 }
@@ -63,8 +65,10 @@ function stop() {
 }
 $("run").onclick = () => {
   stop(); localRun = true;
-  const baseline = report?.complete ? { generatedAt: report.generatedAt, counts: report.counts } : report?.baseline;
-  report = { declarations: [], generatedAt: new Date().toISOString(), complete: false, baseline };
+  const baseline = report?.complete ? { generatedAt: report.generatedAt, counts: report.counts, limitMs: report.limitMs, optimizations: report.optimizations } : report?.baseline;
+  const limitMs = Number($("limit-ms").value);
+  const optimizations = { shareSyntax: $("share-syntax").checked, reuseChecks: $("reuse-checks").checked, compactPaths: $("compact-paths").checked };
+  report = { limitMs, optimizations, declarations: [], generatedAt: new Date().toISOString(), complete: false, baseline };
   renderReport(); $("status").textContent = "Reading the corpus and starting the native kernel…";
   $("run").disabled = true; $("cancel").disabled = false;
   worker = new Worker(new URL("./benchmark-worker.mjs", import.meta.url), { type: "module" });
@@ -74,7 +78,7 @@ $("run").onclick = () => {
     if (data.type === "complete") stop();
   };
   worker.onerror = event => { stop(); $("status").textContent = `Benchmark stopped: ${event.message}`; };
-  worker.postMessage({ type: "run" });
+  worker.postMessage({ type: "run", limitMs, optimizations });
 };
 $("cancel").onclick = () => { stop(); $("status").textContent = "Cancelled. Partial results remain below."; };
 $("saved").onclick = () => { stop(); localRun = false; lastText = null; refresh(); };

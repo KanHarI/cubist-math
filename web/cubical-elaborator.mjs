@@ -32,15 +32,22 @@ export class NativeCubicalElaborator {
   }
   requiredAssumptions(...terms) {
     const names = new Set();
-    const visit = (term, bound = new Set()) => {
-      if (!term || typeof term !== "object") return;
-      if (term.tag === "Var") { if (!bound.has(term.name)) names.add(term.name); return; }
-      if (["Pi", "Lam", "Sigma", "W"].includes(term.tag)) {
-        visit(term.domain, bound); visit(term.body, new Set(bound).add(term.name)); return;
-      }
-      Object.values(term).forEach(value => visit(value, bound));
+    // Compute free names once per shared subtree. Removing the local binder
+    // after visiting its body keeps this independent of the surrounding scope.
+    const memo = new WeakMap();
+    const free = term => {
+      if (!term || typeof term !== "object") return new Set();
+      if (memo.has(term)) return memo.get(term);
+      const result = new Set();
+      if (term.tag === "Var") result.add(term.name);
+      else if (["Pi", "Lam", "Sigma", "W"].includes(term.tag)) {
+        for (const name of free(term.domain)) result.add(name);
+        for (const name of free(term.body)) if (name !== term.name) result.add(name);
+      } else for (const child of Object.values(term)) for (const name of free(child)) result.add(name);
+      memo.set(term, result); return result;
     };
-    terms.forEach(term => visit(term));
+    const visit = term => { for (const name of free(term)) names.add(name); };
+    terms.forEach(visit);
     // Context types can depend on earlier assumptions; close that dependency set.
     for (const [name, type] of [...this.assumptions].reverse()) if (names.has(name)) visit(type);
     return new Map([...this.assumptions].filter(([name]) => names.has(name)));

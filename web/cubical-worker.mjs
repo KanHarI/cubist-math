@@ -17,7 +17,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
   try {
     let result;
     if (command === "check") {
-      const next = new CubicalProgram(module, readSource);
+      const next = new CubicalProgram(module, readSource, { optimizations: args.optimizations });
       try { result = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
       catch (error) { next.dispose(); throw error; }
       program?.dispose(); program = next;

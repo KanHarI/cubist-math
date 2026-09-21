@@ -54,7 +54,7 @@ test("successful compaction retains definitions and translates references while 
   t.after(() => kernel.dispose());
   const nat = kernel.term("Nat"), zero = kernel.term("Zero");
   module._cb_checkpoint(kernel.handle);
-  for (let i = 0; i < 300; i++) kernel.term("Succ", 0, zero);
+  for (let i = 0; i < 300; i++) kernel.term("Var", kernel.symbol(`unused${i}`));
   const reference = kernel.define("retained", kernel.term("Succ", 0, zero), nat);
   kernel.head(reference);
   assert.equal(module._cb_commit_checkpoint(kernel.handle), 1);
@@ -67,4 +67,13 @@ test("successful compaction retains definitions and translates references while 
   module._cb_checkpoint(kernel.handle);
   const later = kernel.define("later", moved, nat);
   assert.equal(kernel.node(kernel.check(later, nat).type).kind, "Nat");
+});
+
+test("benchmark reports the selected deadline and optimizations and rejects invalid deadlines", async () => {
+  const optimizations = { shareSyntax: false, reuseChecks: false, compactPaths: false };
+  const report = await benchmark({ modules: ["sample"], limitMs: 250, optimizations, readSource: async () => "def one = 1;" });
+  assert.equal(report.limitMs, 250);
+  assert.deepEqual(report.optimizations, optimizations);
+  assert.equal(report.counts.checked, 1);
+  for (const limitMs of [0, -1, NaN, Infinity]) await assert.rejects(benchmark({ limitMs }), /positive number/);
 });

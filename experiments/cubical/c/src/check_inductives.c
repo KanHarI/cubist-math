@@ -139,9 +139,13 @@ bool ck_inductives(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims
         uint32_t label_level, arity_level;
         if (!ck_type(k, n.child[0], ctx, dims, &labels, &label_level))
             return false;
-        uint32_t name = ck_fresh_symbol(k);
-        cc_term body = ck_substitute(k, n.child[1], n.payload, ck_var(k, name));
-        cc_context extended = {name, labels, ctx};
+        /* Preserve an already fresh binder: renaming it on every recheck
+         * copies the whole body and destroys sharing. Rename on shadowing. */
+        uint32_t name = n.payload;
+        for (const cc_context *entry = ctx; entry; entry = entry->previous)
+            if (entry->name == name) { name = ck_fresh_symbol(k); break; }
+        cc_term body = name == n.payload ? n.child[1] : ck_substitute(k, n.child[1], n.payload, ck_var(k, name));
+        cc_context extended = ck_extend(k, name, labels, ctx);
         if (!ck_type(k, body, &extended, dims, &arities, &arity_level))
             return false;
         out->expression = ck_make(k, CC_W, name, labels, arities, 0, 0);

@@ -11,17 +11,18 @@ export function category(result, elapsedMs, limitMs) {
   return result.status === "checked-native-cubical" ? "checked" : "failed";
 }
 
-export async function benchmark({ modules = [...sourceModules, ...cubicalSourceModules], limitMs = 1000,
+export async function benchmark({ modules = [...sourceModules, ...cubicalSourceModules], limitMs = 100, optimizations = {},
   readSource = async name => {
     const response = await fetch(new URL(`./proofs/${cubicalSourceFile(name)}`, import.meta.url));
     if (!response.ok) throw Error(`Could not load ${name}: HTTP ${response.status}`);
     return response.text();
   },
   onResult = () => {}, onSnapshot = () => {} } = {}) {
+  if (!Number.isFinite(limitMs) || limitMs <= 0) throw new Error("The declaration limit must be a positive number of milliseconds.");
   const started = performance.now(), declarations = [];
   let declarationStart, definitionsBefore;
   const program = new CubicalProgram(await createCubical(), readSource, {
-    collectReferences: false,
+    collectReferences: false, optimizations,
     onDeclarationStart() {
       definitionsBefore = new Set(program.kernel.definitions.keys());
       program.kernel.module._cb_checkpoint(program.kernel.handle);
@@ -76,7 +77,7 @@ export async function benchmark({ modules = [...sourceModules, ...cubicalSourceM
       }
       if (row.blockedBy) row.rootBlocker = next.binding;
     }
-    return { version: 1, generatedAt: new Date().toISOString(), limitMs,
+    return { version: 1, generatedAt: new Date().toISOString(), limitMs, optimizations: program.kernel.optimizations,
       elapsedSeconds: +((performance.now() - started) / 1000).toFixed(2),
       modules: Object.keys(program.sources).length - 1, declarations,
       counts: Object.fromEntries(["checked", "optimize", "blocked", "failed", "template"].map(c =>

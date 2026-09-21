@@ -8,10 +8,10 @@ const v=T.variable,ap=T.app,fst=T.first,snd=T.second;
 // Reserve even bound spellings, making these syntax builders hygienic without
 // depending on the checker's later alpha-renaming. Dimensions are reserved too.
 function fresh(base,...terms) {
-  const used=new Set();
+  const used=new Set(),seen=new WeakSet();
   const visit=x=>{
     if(typeof x==='string')used.add(x.replace(/:[01]$/,''));
-    else if(x&&typeof x==='object')for(const value of Object.values(x))visit(value);
+    else if(x&&typeof x==='object'&&!seen.has(x)){seen.add(x);for(const value of Object.values(x))visit(value);}
   };
   terms.forEach(visit);
   while(used.has(base))base+='_';
