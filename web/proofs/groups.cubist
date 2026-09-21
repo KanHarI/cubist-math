@@ -1,28 +1,17 @@
 import sets;
+import group_universes;
 import equivalences;
 
-// Group structure on a fixed small carrier. Keeping the law types named makes
-// both the proofs and the checked kernel presentation readable.
-def GroupAssociative(A : U0, multiply : A -> A -> A) =
-  forall x : A, forall y : A, forall z : A,
-  multiply(multiply(x, y), z) = multiply(x, multiply(y, z));
-def GroupLeftUnit(A : U0, unit : A, multiply : A -> A -> A) = forall x : A, multiply(unit, x) = x;
-def GroupRightUnit(A : U0, unit : A, multiply : A -> A -> A) = forall x : A, multiply(x, unit) = x;
-def GroupInverseLaws(A : U0, unit : A, multiply : A -> A -> A, x : A, y : A) =
-  (multiply(y, x) = unit) and (multiply(x, y) = unit);
-def GroupInverses(A : U0, unit : A, multiply : A -> A -> A) =
-  forall x : A, exists y : A, GroupInverseLaws(A, unit, multiply, x, y);
-
-// Group laws are propositions: associativity, units and the uniquely determined
-// inverse witnesses. Inverses are actual data; no choice principle is used.
-def GroupLaws(A : U0, unit : A, multiply : A -> A -> A) =
-  IsSet(A) and GroupAssociative(A, multiply) and GroupLeftUnit(A, unit, multiply)
-  and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply);
-
-// Small carriers, bundled in U1. This is equality of complete group records.
-def GroupStructure(A : U0) =
-  exists unit : A, exists multiply : A -> A -> A, GroupLaws(A, unit, multiply);
-def Group = exists A : U0, GroupStructure(A);
+// The traditional small-group names specialize the single universe family.
+// All previous record fields and their computation rules are preserved.
+def GroupAssociative = GroupAssociativeAt(U0);
+def GroupLeftUnit = GroupLeftUnitAt(U0);
+def GroupRightUnit = GroupRightUnitAt(U0);
+def GroupInverseLaws = GroupInverseLawsAt(U0);
+def GroupInverses = GroupInversesAt(U0);
+def GroupLaws = GroupLawsAt(U0);
+def GroupStructure = GroupStructureAt(U0);
+def Group = GroupAt(U0);
 def group_object(A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)) =
   typed(Group, (A, unit, multiply, laws));
 def group_carrier(G : Group) = unpack G as (A, structure) return U0 {

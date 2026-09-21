@@ -205,7 +205,7 @@ theorem kernel_quotient_image_left(
 
 // The carrier equivalence underlying the first isomorphism theorem.
 // The quotient remains in U1; the image supplies a proved small presentation.
-// Bundling a quotient group still requires the universe-polymorphic group API.
+// group_first_isomorphism equips these carriers with their group structures.
 // Check the universe specialization once with abstract carriers. Concrete
 // quotient terms then remain named arguments to this checked constructor.
 def kernel_image_adjoint_counit = adjoint_counit(U1);

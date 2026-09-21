@@ -79,6 +79,14 @@ try {
     assert.match(await page.title(), /Proof highlights/);
   }
   if (!groupOnly) {
+    await page.goto(`${base}/proof.html?proof=group_first_isomorphism&name=group_first_isomorphism`);
+    await idle();
+    await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+    assert.equal(await page.locator("#diagnostic").isVisible(), false);
+    assert.match(await page.locator("#result").textContent(), /Verified group_first_isomorphism/);
+    assert.match(await page.locator("#kernel-type").textContent(), /KernelQuotientGroup/);
+    assert.match(await page.locator("#kernel-type").textContent(), /ImageGroup/);
+    await page.getByRole("link", { name: "Proof highlights", exact: true }).click();
     await page.getByRole("link", { name: "Kernel workbench", exact: true }).click();
     await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
     assert.ok(page.url().endsWith("/workbench.html"));

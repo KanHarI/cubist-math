@@ -1,0 +1,164 @@
+import quotient_sets;
+
+// Binary operations must respect the relation in both arguments.
+def RespectsBinaryRelation(A : U1, relation : A -> A -> U0, B : U1, f : A -> A -> B) =
+  forall x : A, forall x2 : A, forall y : A, forall y2 : A, relation(x, x2) -> relation(y, y2)
+  -> f(x, y) = f(x2, y2);
+
+def quotient_binary_right(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a : A
+) =
+  unpack laws as (prop, rest) return (SetQuotient(A, relation) -> B) {
+    unpack rest as (reflexive, rest2) return (SetQuotient(A, relation) -> B) {
+      quotient_rec(
+        A, relation, laws, B, setB, f(a),
+        (fun (y : A) => fun (y2 : A) => respects(a, a, y, y2, reflexive(a)))
+      );
+    };
+  };
+
+theorem quotient_binary_right_beta(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a : A,
+  b : A
+) : quotient_binary_right(
+  A, relation, laws, B, setB, f, respects, a, quotient_class(A, relation, b)
+) = f(a, b) {
+  obtain (prop, reflexive, symmetric, transitive) = laws;
+  exact quotient_rec_beta(
+    A, relation, laws, B, setB, f(a),
+    (fun (y : A) => fun (y2 : A) => respects(a, a, y, y2, reflexive(a))), b
+  );
+}
+
+theorem quotient_binary_left_respects(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f)
+) : RespectsRelation(
+  A, relation, (SetQuotient(A, relation) -> B),
+  quotient_binary_right(A, relation, laws, B, setB, f, respects)
+) {
+  intro a;
+  intro a2;
+  intro same;
+  obtain (prop, reflexive, symmetric, transitive) = laws;
+  exact quotient_maps_ext(
+    A, relation, B, setB, quotient_binary_right(A, relation, laws, B, setB, f, respects, a),
+    quotient_binary_right(A, relation, laws, B, setB, f, respects, a2),
+    (
+      fun (b : A) => trans(
+        quotient_binary_right_beta(A, relation, laws, B, setB, f, respects, a, b),
+        trans(
+          respects(a, a2, b, b, same, reflexive(b)),
+          sym(quotient_binary_right_beta(A, relation, laws, B, setB, f, respects, a2, b))
+        )
+      )
+    )
+  );
+}
+
+// Two applications of unique descent; neither selects representatives.
+def quotient_binary_rec(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f)
+) =
+  quotient_rec(
+    A, relation, laws, (SetQuotient(A, relation) -> B),
+    dependent_functions_are_set(
+      SetQuotient(A, relation), (fun (q : SetQuotient(A, relation)) => B),
+      (fun (q : SetQuotient(A, relation)) => setB)
+    ), quotient_binary_right(A, relation, laws, B, setB, f, respects),
+    quotient_binary_left_respects(A, relation, laws, B, setB, f, respects)
+  );
+
+theorem quotient_binary_rec_beta(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
+  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a : A,
+  b : A
+) : quotient_binary_rec(
+  A, relation, laws, B, setB, f, respects, quotient_class(A, relation, a),
+  quotient_class(A, relation, b)
+) = f(a, b) {
+  let qb = quotient_class(A, relation, b);
+  exact trans(
+    cong(
+      (fun (g : SetQuotient(A, relation) -> B) => g(qb)),
+      quotient_rec_beta(
+        A, relation, laws, (SetQuotient(A, relation) -> B),
+        dependent_functions_are_set(
+          SetQuotient(A, relation), (fun (q : SetQuotient(A, relation)) => B),
+          (fun (q : SetQuotient(A, relation)) => setB)
+        ), quotient_binary_right(A, relation, laws, B, setB, f, respects),
+        quotient_binary_left_respects(A, relation, laws, B, setB, f, respects), a
+      )
+    ), quotient_binary_right_beta(A, relation, laws, B, setB, f, respects, a, b)
+  );
+}
+
+// Convenient propositional induction on two or three independent classes.
+theorem quotient_induction_prop2(
+  A : U1, relation : A -> A -> U0, P : SetQuotient(A, relation) -> SetQuotient(A, relation) -> U1,
+  propP : (
+    forall q : SetQuotient(A, relation), forall r : SetQuotient(A, relation), FieldProp(P(q, r))
+  ),
+  atClass : (
+    forall a : A, forall b : A, P(quotient_class(A, relation, a), quotient_class(A, relation, b))
+  ), q : SetQuotient(A, relation), r : SetQuotient(A, relation)
+) : P(q, r) {
+  exact quotient_induction_prop(
+    A, relation,
+    (fun (q : SetQuotient(A, relation)) => forall r : SetQuotient(A, relation), P(q, r)),
+    (
+      fun (q : SetQuotient(A, relation)) => field_forall_prop(
+        SetQuotient(A, relation), P(q), propP(q)
+      )
+    ),
+    (
+      fun (a : A) => quotient_induction_prop(
+        A, relation, P(quotient_class(A, relation, a)), propP(quotient_class(A, relation, a)),
+        atClass(a)
+      )
+    ), q, r
+  );
+}
+
+theorem quotient_induction_prop3(
+  A : U1, relation : A -> A -> U0, P : SetQuotient(A, relation) -> SetQuotient(A, relation)
+  -> SetQuotient(A, relation) -> U1,
+  propP : (
+    forall q : SetQuotient(A, relation), forall r : SetQuotient(A, relation),
+    forall s : SetQuotient(A, relation), FieldProp(P(q, r, s))
+  ),
+  atClass : (
+    forall a : A, forall b : A, forall c : A,
+    P(
+      quotient_class(A, relation, a), quotient_class(A, relation, b), quotient_class(A, relation, c)
+    )
+  ), q : SetQuotient(A, relation), r : SetQuotient(A, relation), s : SetQuotient(A, relation)
+) : P(q, r, s) {
+  exact quotient_induction_prop(
+    A, relation,
+    (
+      fun (q : SetQuotient(A, relation)) => forall r : SetQuotient(A, relation),
+      forall s : SetQuotient(A, relation), P(q, r, s)
+    ),
+    (
+      fun (q : SetQuotient(A, relation)) => field_forall_prop(
+        SetQuotient(A, relation),
+        (fun (r : SetQuotient(A, relation)) => forall s : SetQuotient(A, relation), P(q, r, s)),
+        (
+          fun (r : SetQuotient(A, relation)) => field_forall_prop(
+            SetQuotient(A, relation), P(q, r), propP(q, r)
+          )
+        )
+      )
+    ),
+    (
+      fun (a : A) => quotient_induction_prop2(
+        A, relation, P(quotient_class(A, relation, a)), propP(quotient_class(A, relation, a)),
+        atClass(a)
+      )
+    ), q, r, s
+  );
+}

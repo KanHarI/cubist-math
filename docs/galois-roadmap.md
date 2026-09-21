@@ -1,10 +1,10 @@
 # Requirements for a full Galois theory development
 
-Status: resumed on main (2026-09-20). Start with the
+Status: resumed on main (2026-09-21). Start with the
 [resumption checkpoint](galois-handoff.md), including validation results and
-the repaired exporter/reference CI failures. The listed stage-1 constructions
+the current cubical kernel and validation commands. The listed stage-1 constructions
 and its Galois-connection completion criterion are checked; stages 2–9 remain
-requirements. The quotient-group layer is still needed for the later stages.
+requirements. Quotient group operations and the first group isomorphism theorem are now checked; their bundled universal property remains.
 Checked results and their assumptions are described in
 [Galois symmetries as loops](galois.md).
 
@@ -140,7 +140,7 @@ commutative towers. Images and inverse images are subfields, with their order
 adjunction, and every embedding is an isomorphism onto its image. Normal
 subgroups, inverse images, kernels and realized subgroup carriers are now
 checked. Subgroup images and their surjective factorization are also checked;
-the quotient-group layer remains to be developed.
+the quotient-group layer now includes arbitrary-coset operations and the first isomorphism theorem.
 The F4 example has a packaged correspondence of decidable-subobject types;
 a classical all-subobject theorem is not yet exposed.
 
@@ -223,8 +223,8 @@ Kernel cosets are exactly homomorphism fibers. These relation-level results
 require no axioms. The module also identifies related representatives with
 equality paths in the existing U1 predicate quotient and proves representative
 independence of products, using the existing quotient dependencies.
-It does not yet descend multiplication to arbitrary quotient elements or
-construct a bundled quotient group.
+The subsequent `quotient_operations` and `quotient_groups` modules descend
+these operations to arbitrary quotient elements and bundle the resulting group.
 
 `quotient_descent` constructs the unique map from the predicate quotient to a
 U1 set from a map respecting the relation. Its value is characterized by all
@@ -241,15 +241,25 @@ proves the carrier equivalence `G/ker(h) ≃ im(h)`: the inverse sends an image
 element to its whole fiber predicate. Both inverse homotopies are checked.
 Univalence gives equality of these carriers in U1, and transporting setness
 shows the kernel quotient is a set. No preimage choice or universe lowering
-is used. This is the carrier part of the first isomorphism theorem, not yet
-a `GroupIso` between bundled quotient and image groups.
+is used. `group_first_isomorphism` now packages the same maps and inverse laws
+as `GroupIsoAt(U1, KernelQuotientGroup(G,H,h), group_lift(ImageGroup(G,H,h)))`,
+with multiplicativity proved for arbitrary cosets.
 
-Next: a universe-polymorphic group interface, quotient groups and a non-normal subgroup example for the later
-normality and quotient statements.
+The group interface is now the universe schema `GroupAt(U)`, with the
+existing `Group` definition its U0 specialization. Quotients remain in U1;
+small image groups are explicitly repackaged there with `group_lift`.
+`quotient_is_set` uses the constant-path argument, and function-space setness
+is proved by a pointwise square of paths. Only the existing truncation
+assumptions are needed; no LEM, choice, or new kernel rules were added.
+
+Next: bundle the existing unique descent as the group universal property,
+and add a non-normal subgroup example. Extending the structure identity
+equivalence to `GroupAt(U1)` will let this large-group isomorphism become
+an equality of bundled groups, beyond the already checked carrier equality.
 Then proceed to explicit finite linear algebra and degree, preserving the
 separate algebraic and infinite-theory milestones below.
 
-Implementation constraints for the next group layer:
+Implementation constraints for the remaining group layer:
 
 - The checked image construction uses propositional truncation, unlike the
   actual unique preimages used for field-embedding images. Continue to use
@@ -259,15 +269,11 @@ Implementation constraints for the next group layer:
   the operations. Reuse the checked unique descent in `group_quotient_maps`
   for the group universal property, and bundle the carrier equivalence from
   `kernel_quotient_image` as the first group isomorphism theorem.
-- Resolve universe size explicitly before constructing a general quotient
-  as a bundled group. The existing `SetQuotient` represents classes by
-  predicates and lives in U1 even for a U0 carrier; the current `Group`
-  bundle requires a U0 carrier. Do not silently resize the quotient or add
-  a separate incompatible notion of group. Options are a universe-polymorphic
-  group interface, a proved small presentation under additional hypotheses,
-  or an explicit small-quotient construction if supported by the foundations.
-  Finite quotients with decidable membership can have a separate small
-  presentation, but do not settle the size of arbitrary quotients.
+- Keep the resolved universe discipline: `SetQuotient` represents classes by
+  predicates in U1, `Group = GroupAt(U0)`, and `QuotientGroup` belongs to
+  `GroupAt(U1)`. Cumulativity allows repackaging a small carrier; it does not
+  justify lowering the quotient to U0. Finite decidable quotients may later
+  have separate small presentations.
 
 ## Precise finite target
 

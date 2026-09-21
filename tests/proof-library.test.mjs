@@ -1,8 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { access } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { proofChoices, proofTopics, proofsInTopic } from "../web/proof-library.mjs";
-import { sourceModules } from "../web/mathscript/modules.mjs";
+import { sourceModules, cubicalSourceModules } from "../web/mathscript/modules.mjs";
+import { parse } from "../web/mathscript/parser.mjs";
+
+test("every bundled import is available to the browser worker", async () => {
+  const available = new Set([...sourceModules, ...cubicalSourceModules]);
+  await Promise.all([...available].map(async name => {
+    const source = await readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+    for (const dependency of parse(source).imports) {
+      assert.ok(dependency === "prelude" || available.has(dependency), `${name} imports unregistered module ${dependency}`);
+    }
+  }));
+});
 
 test("every proof is reachable through exactly one nonempty browsing topic", async () => {
   assert.equal(new Set(proofChoices.map(p => p.id)).size, proofChoices.length);
