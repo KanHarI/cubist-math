@@ -1,0 +1,102 @@
+// Canonical cubical path operations and their groupoid laws. These builders
+// emit ordinary checked syntax; no strict computation law for J is assumed.
+import {T,fill} from './core.mjs';
+import {interval as I,face as F} from './lattice.mjs';
+import {withNativeReferences} from './equivalence.mjs';
+
+function build(inputs,body) {
+  return withNativeReferences(inputs,(...terms)=>{
+    const used=new Set();
+    const reserve=value=>{
+      if(typeof value==='string')used.add(value.replace(/:[01]$/,''));
+      else if(value&&typeof value==='object')Object.values(value).forEach(reserve);
+    };
+    terms.forEach(reserve);
+    const fresh=stem=>{while(used.has(stem))stem+='_';used.add(stem);return stem;};
+    return body(fresh,...terms);
+  });
+}
+const at=(p,i)=>T.at(p,I.variable(i));
+const wall=(i,n,term)=>({face:F.endpoint(i,n),term});
+const refl=(i,A,x)=>T.line(i,A,x);
+
+export function pathRefl(A,x) {
+  return build([A,x],(fresh,A,x)=>refl(fresh('refl'),A,x));
+}
+export function pathInverse(A,p) {
+  return build([A,p],(fresh,A,p)=>{
+    const i=fresh('inverse');
+    return T.line(i,A,T.at(p,I.reverse(I.variable(i))));
+  });
+}
+export function pathApply(B,f,p) {
+  return build([B,f,p],(fresh,B,f,p)=>{
+    const i=fresh('apply');
+    return T.line(i,B,T.app(f,at(p,i)));
+  });
+}
+export function pathConcat(A,x,p,q) {
+  return build([A,x,p,q],(fresh,A,x,p,q)=>{
+    const i=fresh('path'),j=fresh('compose');
+    return T.line(i,A,T.comp(j,A,[wall(i,0,x),wall(i,1,at(q,j))],at(p,i)));
+  });
+}
+
+// Constant transport need not reduce judgmentally when A is a neutral type.
+export function transportConstant(A,x) {
+  return build([A,x],(fresh,A,x)=>{
+    const i=fresh('law'),j=fresh('transport');
+    return T.line(i,A,T.comp(j,A,[wall(i,1,x)],x));
+  });
+}
+export function pathRightUnit(A,x,y,p) {
+  return build([A,x,y,p],(fresh,A,x,y,p)=>{
+    const i=fresh('path'),j=fresh('compose'),k=fresh('law');
+    return T.line(k,T.path(i,A,x,y),T.line(i,A,T.comp(j,A,[
+      wall(i,0,x),wall(i,1,y),wall(k,1,at(p,i)),
+    ],at(p,i))));
+  });
+}
+export function pathLeftUnit(A,x,y,p) {
+  return build([A,x,y,p],(fresh,A,x,y,p)=>{
+    const i=fresh('path'),j=fresh('compose'),k=fresh('law');
+    const square=T.at(p,I.meet(I.variable(i),I.variable(j)));
+    return T.line(k,T.path(i,A,x,y),T.line(i,A,T.comp(j,A,[
+      wall(i,0,x),wall(i,1,at(p,j)),wall(k,1,square),
+    ],x)));
+  });
+}
+export function pathInverseRight(A,x,y,p) {
+  return build([A,x,y,p],(fresh,A,x,y,p)=>{
+    const i=fresh('path'),j=fresh('compose'),k=fresh('law');
+    const backwards=I.reverse(I.variable(j));
+    const square=T.at(p,I.meet(I.variable(i),backwards));
+    return T.line(k,T.path(i,A,x,x),T.line(i,A,T.comp(j,A,[
+      wall(i,0,x),wall(i,1,T.at(p,backwards)),wall(k,1,square),
+    ],at(p,i))));
+  });
+}
+export function pathInverseLeft(A,x,y,p) {
+  return build([A,x,y,p],(fresh,A,x,y,p)=>{
+    const i=fresh('path'),j=fresh('compose'),k=fresh('law');
+    const backwards=I.reverse(I.variable(i));
+    const square=T.at(p,I.join(backwards,I.variable(j)));
+    return T.line(k,T.path(i,A,y,y),T.line(i,A,T.comp(j,A,[
+      wall(i,0,y),wall(i,1,at(p,j)),wall(k,1,square),
+    ],T.at(p,backwards))));
+  });
+}
+export function pathAssociative(A,x,y,z,w,p,q,r) {
+  return build([A,x,y,z,w,p,q,r],(fresh,A,x,y,z,w,p,q,r)=>{
+    const i=fresh('path'),j=fresh('inner'),k=fresh('outer'),s=fresh('law');
+    // L fills p followed by q; Q fills q followed by r.
+    const L=fill(j,A,[wall(i,0,x),wall(i,1,at(q,j))],at(p,i),I.variable(j));
+    const Q=fill(k,A,[wall(j,0,y),wall(j,1,at(r,k))],at(q,j),I.variable(k));
+    const pq=T.comp(j,A,[wall(i,0,x),wall(i,1,at(q,j))],at(p,i));
+    // H has base pq, endpoint walls x and r, and top p followed by qr.
+    const H=T.comp(j,A,[wall(i,0,x),wall(i,1,Q),wall(k,0,L)],at(p,i));
+    return T.line(s,T.path(i,A,x,w),T.line(i,A,T.comp(k,A,[
+      wall(i,0,x),wall(i,1,at(r,k)),wall(s,1,H),
+    ],pq)));
+  });
+}
