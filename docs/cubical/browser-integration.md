@@ -64,6 +64,42 @@ node tests/cubical-inspector.browser.mjs
 
 ## Native interface
 
+### Kernel assembly view
+
+From a checked proof's inspector, **Open assembly view** opens the cubical
+workbench in its second view. The workbench's **View** selector switches between
+mathematical notation and **Kernel assembly**; **Back to MathScript** restores
+the source inspection.
+
+The assembly listing reads `cc_kernel_node` through the WASM bridge. It exposes
+the actual `cc_term_kind` opcode number and C enum name, the unsigned payload,
+and all four operand slots (`a` through `d`). `%n` identifies an arena term;
+`@n` identifies an interval/face formula. Zero is an unused operand or list
+terminator. Source names supplement the numeric data without replacing it.
+These are native syntax constructors, not a trace of checking instructions or
+CPU/WASM instructions. They retain the shared graph and do not normalize it.
+
+The roots identify the checked expression, its chosen checked type, and the
+inferred type when the two use different handles. Context entries preserve their
+order and show numeric symbols and type handles. Open interval dimensions and
+formula clauses retain all 64 mask bits. A `CC_DEFREF` keeps its registry index;
+**Show body and type** follows its separately registered, checked definition.
+Operand links jump to their nodes, including nodes outside the current page.
+**Show more nodes** extends the listing. **Download shown assembly** exports the
+visible portion and labels incomplete listings explicitly.
+
+Handles belong to the reconstructed native session and may differ on another
+replay. The transfer still reconstructs and checks source; it does not trust a
+supplied listing as a proof. The assembly view is read-only. Editing and checked
+reductions remain available in the mathematical view.
+
+```
+node --test tests/cubical-assembly.test.mjs
+node tests/cubical-inspector.browser.mjs
+```
+
+### WASM boundary
+
 The new C checker builds independently to `web/dist/cubical.mjs` and
 `web/dist/cubical.wasm`:
 

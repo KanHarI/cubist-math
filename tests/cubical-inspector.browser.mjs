@@ -84,6 +84,33 @@ try {
   assert.equal(await workbench.locator("#normalize").isDisabled(), true);
   await workbench.close();
 
+  const assemblyPopup = page.waitForEvent("popup");
+  await page.locator("#open-kernel-assembly").click();
+  const assemblyBench = await assemblyPopup;
+  assemblyBench.on("pageerror", error => errors.push(error.message));
+  await assemblyBench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+  assert.equal(await assemblyBench.locator("#workbench-view").inputValue(), "assembly");
+  assert.equal(await assemblyBench.locator("#mathematical-view").isVisible(), false);
+  assert.ok(await assemblyBench.locator(".assembly-table tbody tr").count() > 0);
+  assert.match(await assemblyBench.locator(".assembly-roots").textContent(), /Context/);
+  const reference = assemblyBench.locator('.assembly-table tr[data-opcode="CC_DEFREF"]').first();
+  await reference.locator("[data-expand-definition]").click();
+  assert.equal(await assemblyBench.locator(".assembly-table tr.selected").count(), 1);
+  const operand = assemblyBench.locator(".assembly-table .assembly-reference").first();
+  const handle = await operand.getAttribute("data-handle"); await operand.click();
+  assert.equal(await assemblyBench.locator(".assembly-table tr.selected").getAttribute("id"), `assembly-node-${handle}`);
+  const downloaded = assemblyBench.waitForEvent("download");
+  await assemblyBench.locator("#assembly-download").click();
+  assert.match((await downloaded).suggestedFilename(), /\.assembly\.txt$/);
+  await assemblyBench.locator("#workbench-view").selectOption("math");
+  assert.equal(await assemblyBench.locator("#mathematical-view").isVisible(), true);
+  assert.equal(await assemblyBench.locator("#type").textContent(), "Divides(succ(succ(i)),m)");
+  assert.ok((await assemblyBench.locator("#syntax").inputValue()).length > 0);
+  await assemblyBench.locator("#workbench-view").selectOption("assembly");
+  await assemblyBench.locator("#source-back").click();
+  await assemblyBench.waitForFunction(() => document.querySelector("#inspect-name").textContent === "hd" && !document.querySelector("#kernel-view").disabled);
+  await assemblyBench.close();
+
   await page.locator('.source-line [data-name="prime_divisor_exists"]').first().click();
   await inspected("prime_divisor_exists"); await page.locator("#view-source").click(); await idle();
   assert.match(page.url(), /proof=primes/);

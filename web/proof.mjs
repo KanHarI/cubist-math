@@ -573,6 +573,8 @@ async function inspect(info, remember = true) {
   $("kernel-details").open = true;
   $("open-kernel-expression").disabled = true;
   $("open-kernel-type").disabled = true;
+  $("open-kernel-assembly").hidden = true;
+  $("open-kernel-assembly").disabled = true;
   $("kernel-expression").textContent = "";
   $("kernel-type").textContent = "";
   $("kernel-inference").textContent = "";
@@ -667,6 +669,7 @@ let checkedKernelView = null, showKernelBody = false, kernelDisplayLimit = 1200;
 function renderKernel(view) {
   checkedKernelView = view;
   if (view.backend === "cubical") { renderCubicalKernel(view); return; }
+  $("open-kernel-assembly").hidden = true;
   $("expand-kernel").textContent = "Show full term";
   $("kernel-view").querySelector('[value="expanded"]').hidden = true;
   $("kernel-view").querySelector('[value="mathscript"]').hidden = false;
@@ -770,6 +773,8 @@ function renderKernel(view) {
     !!folded || (!truncated(typeset?.expression ?? view.expression) && !truncated(typeset?.type ?? view.type));
 }
 function renderCubicalKernel(view) {
+  $("open-kernel-assembly").hidden = false;
+  $("open-kernel-assembly").disabled = false;
   const mode = $("kernel-view").value, raw = mode === "raw", folded = mode === "notation";
   const display = folded ? view.folded ?? view : view;
   const open = view.context.length || view.dimensions?.length;
@@ -840,7 +845,7 @@ $("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedK
 $("kernel-truncation-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-group-binders").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-identity-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
-for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = async () => {
+async function openKernelWorkbench(side, representation = "math") {
   if (!checkedKernelView) return;
   const binding = checkedKernelView.name;
   const folded = $("kernel-view").value === "notation" && !!checkedKernelView.folded?.verified?.[side];
@@ -855,9 +860,11 @@ for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = as
     payload.proofReturn = returnURL;
     const key = await saveWorkbenchTransfer(payload);
     const page = payload.format === "thth-cubical" ? "cubical-workbench.html" : "workbench.html";
-    tab.location.href = new URL(`${page}?transfer=${encodeURIComponent(key)}`, location.href).href;
+    tab.location.href = new URL(`${page}?transfer=${encodeURIComponent(key)}&view=${representation}`, location.href).href;
   } catch (error) { tab.close(); diagnostic(error); }
-};
+}
+for (const side of ["expression", "type"]) $("open-kernel-" + side).onclick = () => openKernelWorkbench(side);
+$("open-kernel-assembly").onclick = () => openKernelWorkbench("expression", "assembly");
 $("export-folding").onclick = async () => {
   if (!checkedKernelView) return;
   const binding = checkedKernelView.name;

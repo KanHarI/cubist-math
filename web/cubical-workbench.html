@@ -17,16 +17,19 @@
       <div class="toolbar">
         <button id="back" disabled>← Back</button>
         <button id="unhighlight">Un-highlight</button>
-        <button id="check" disabled>Check edited expression</button>
-        <label><input id="fold-names" type="checkbox" checked /> Fold source names</label>
-        <label><input id="truncation-sugar" type="checkbox" checked /> Truncation ‖A‖</label>
-        <label><input id="identity-sugar" type="checkbox" checked /> Equality as =<sub>T</sub></label>
+        <label for="workbench-view">View</label>
+        <select id="workbench-view"><option value="math">Mathematical</option><option value="assembly">Kernel assembly</option></select>
+        <button id="check" data-math-option disabled>Check edited expression</button>
+        <label data-math-option><input id="fold-names" type="checkbox" checked /> Fold source names</label>
+        <label data-math-option><input id="truncation-sugar" type="checkbox" checked /> Truncation ‖A‖</label>
+        <label data-math-option><input id="identity-sugar" type="checkbox" checked /> Equality as =<sub>T</sub></label>
       </div>
       <div id="diagnostic" role="alert" hidden></div>
       <p id="reduction-status" class="hint" role="status"></p>
       <button id="more-reduction-sites" hidden>Show more reduction sites</button>
       <section class="panel cubical-panel">
         <h2 id="name">Expression</h2>
+        <div id="mathematical-view">
         <h3>Context</h3><div id="context"></div>
         <div class="term-heading">
           <h3>Expression</h3>
@@ -51,6 +54,16 @@
           <p>Definitions refer to the checked source registry by name. Editing does not change that registry.</p>
           <textarea id="syntax" spellcheck="false" aria-label="Native cubical expression"></textarea>
         </details>
+        </div>
+        <section id="assembly-view" hidden aria-label="Native kernel assembly">
+          <p class="hint">Native C constructor opcodes, payloads, and operands. %n are term handles local to this replay session; each shared node is listed once. Zero marks an unused operand or the end of a list.</p>
+          <p id="assembly-status" role="status"></p>
+          <div id="assembly-listing"></div>
+          <div class="toolbar">
+            <button id="assembly-more" hidden>Show more nodes</button>
+            <button id="assembly-download" disabled>Download shown assembly</button>
+          </div>
+        </section>
       </section>
     </main>
     <script type="module" src="cubical-workbench.mjs"></script>
