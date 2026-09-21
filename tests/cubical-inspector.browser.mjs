@@ -64,7 +64,7 @@ try {
   await page.locator("#open-kernel-type").click();
   const workbench = await popup;
   workbench.on("pageerror", error => errors.push(error.message));
-  await workbench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+  await workbench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
   assert.equal(await workbench.locator("#expression").textContent(), "Divides(succ(succ(i)),m)");
   assert.match(await workbench.locator("#context").textContent(), /n :Nat/);
   await workbench.locator("#fold-names").uncheck();
@@ -88,7 +88,7 @@ try {
   await page.locator("#open-kernel-assembly").click();
   const assemblyBench = await assemblyPopup;
   assemblyBench.on("pageerror", error => errors.push(error.message));
-  await assemblyBench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+  await assemblyBench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
   assert.equal(await assemblyBench.locator("#workbench-view").inputValue(), "assembly");
   assert.equal(await assemblyBench.locator("#mathematical-view").isVisible(), false);
   assert.ok(await assemblyBench.locator(".assembly-table tbody tr").count() > 0);
@@ -151,7 +151,7 @@ try {
   await page.locator("#open-kernel-expression").click();
   const reductionBench = await reductionPopup;
   reductionBench.on("pageerror", error => errors.push(error.message));
-  await reductionBench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+  await reductionBench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
   const chooseReduction = async (side, kind, path = []) => {
     const before = await reductionBench.locator("#syntax").inputValue();
     await reductionBench.locator(`#${kind}-${side}`).click();

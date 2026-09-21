@@ -121,7 +121,12 @@
             <button id="back" hidden>← Back</button>
           </div>
           <p id="inspect-kind" class="eyebrow"></p>
+          <p id="inspect-statement-label" class="hint" hidden>Conclusion</p>
           <pre id="inspect-type"></pre>
+          <details id="inspect-parameters" hidden>
+            <summary id="inspect-parameters-label">Parameters and hypotheses</summary>
+            <div id="inspect-parameters-list"></div>
+          </details>
           <p id="inspect-description" class="description"></p>
           <div id="inspect-universes" hidden></div>
           <a id="view-source" class="source-link" hidden>View source →</a>
@@ -156,6 +161,11 @@
               <strong id="kernel-context-label">Context</strong>
               <p id="kernel-context-note" class="hint"></p>
               <ol id="kernel-context-list"></ol>
+            </section>
+            <section id="kernel-axioms" aria-labelledby="kernel-axioms-label" hidden>
+              <strong id="kernel-axioms-label">Axioms</strong>
+              <p class="hint">Axioms used · click a name to inspect it</p>
+              <ol id="kernel-axioms-list"></ol>
             </section>
             <details id="kernel-local-definitions" hidden><summary>Local definitions</summary><div id="kernel-local-links"></div></details>
             <div class="kernel-term-label">

@@ -1,3 +1,4 @@
+import { splitInspectionContext } from "./cubical-context.mjs";
 import { renderSpecialization } from "./cubical-specialization.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import createCubical from "./dist/cubical.mjs";
@@ -28,20 +29,23 @@ function display(updateSyntax = true) {
   }
   const display = $("fold-names").checked ? view.folded ?? foldedInspection(view) : view;
   $("name").textContent = view.symbols[selected]?.name ?? selected ?? "Edited expression";
+  const { context, axioms } = splitInspectionContext(view, display.context);
   $("context").replaceChildren();
-  if (!view.context.length && !view.dimensions?.length) $("context").textContent = "Empty context";
+  $("axioms").replaceChildren();
+  $("axioms-section").hidden = !axioms.length;
+  if (!context.length && !view.dimensions?.length) $("context").textContent = "Empty context";
   if (view.dimensions?.length) {
     const row = document.createElement("div");
     row.textContent = `Interval coordinates: ${view.dimensions.map(([name]) => name).join(", ")}`;
     $("context").append(row);
   }
-  for (const entry of display.context) {
+  for (const [target, entries] of [["context", context], ["axioms", axioms]]) for (const entry of entries) {
     const row = document.createElement("div"); row.className = "context-entry";
     const label = document.createElement("span"), button = document.createElement("button");
     button.className = "reference"; button.textContent = entry.label ?? entry.name; button.disabled = !entry.binding;
     button.onclick = () => inspect(entry.binding); label.append(button, " :");
     const type = document.createElement("div"); renderMathNotation(type, cubicalMathTree(entry.type, view.symbols), options());
-    row.append(label, type); $("context").append(row);
+    row.append(label, type); $(target).append(row);
   }
   for (const side of ["expression", "type"]) {
     const active = reductionMode?.side === side;

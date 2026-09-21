@@ -541,10 +541,10 @@ select {
   gap: 6px;
 }
 
-#kernel-context {
+#kernel-context, #kernel-axioms {
   margin: 16px 0 24px;
 }
-#kernel-context-list {
+#kernel-context-list, #kernel-axioms-list {
   padding: 0;
   margin: 8px 0;
   list-style: none;
@@ -609,3 +609,17 @@ select {
 #inspect-universes:not([hidden]) { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
 #inspect-universes label { flex: 1; min-width: 100px; }
 #inspect-universes select { display: block; width: 100%; margin-top: 6px; }
+
+#inspect-parameters {
+  margin: 0 0 16px;
+}
+#inspect-parameters summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.statement-parameter {
+  margin: 8px 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}

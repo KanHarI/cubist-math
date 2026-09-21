@@ -1,3 +1,4 @@
+import { splitInspectionContext } from "./cubical-context.mjs";
 import { renderSpecialization } from "./cubical-specialization.mjs";
 import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { proofChoices as choices, proofTopics, proofsInTopic } from "./proof-library.mjs";
@@ -531,6 +532,10 @@ async function inspect(info, remember = true) {
     info.kind === "goal"
       ? "Goal & local assumptions"
       : (info.role ?? info.kind ?? "Definition");
+  $("inspect-statement-label").hidden = true;
+  $("inspect-parameters").hidden = true;
+  $("inspect-parameters").open = false;
+  $("inspect-parameters-list").replaceChildren();
   renderType(info.kind === "goal" ? info.step.goal : (info.type ?? ""));
   $("inspect-description").textContent = info.description ?? "";
   const templateBinding = info.template ? info.binding : info.templateBinding;
@@ -567,6 +572,8 @@ async function inspect(info, remember = true) {
   $("kernel-inference").textContent = "";
   $("kernel-context-list").replaceChildren();
   $("kernel-context-note").textContent = "";
+  $("kernel-axioms-list").replaceChildren();
+  $("kernel-axioms").hidden = true;
   checkedKernelView = null; showKernelBody = false; kernelDisplayLimit = 1200;
   $("toggle-kernel-body").hidden = true;
   $("kernel-local-definitions").hidden = true;
@@ -614,7 +621,8 @@ async function inspect(info, remember = true) {
         const checkedInfo = view.symbols[view.name];
         if (checkedInfo) sourceLink(checkedInfo);
       }
-      renderType(view.typeText, Object.values(view.symbols));
+      if (view.statement) renderStatement(view);
+      else renderType(view.typeText, Object.values(view.symbols));
       renderKernel(view);
     } catch (e) {
       if (sequence === inspectSerial) diagnostic(e);
@@ -622,6 +630,28 @@ async function inspect(info, remember = true) {
   }
   if (matchMedia("(max-width:1150px)").matches)
     $("inspect-name").scrollIntoView({ block: "center" });
+}
+function renderStatement(view) {
+  const append = (target, parts) => {
+    for (const part of parts) {
+      const info = part.binding && view.symbols[part.binding];
+      if (!info) { target.append(document.createTextNode(part.text)); continue; }
+      const button = document.createElement("button"); button.className = "reference";
+      button.textContent = part.text; button.dataset.name = part.text;
+      button.onclick = () => inspect(decorate(info)); target.append(button);
+    }
+  };
+  const { conclusion, parameters } = view.statement;
+  $("inspect-type").replaceChildren(); append($("inspect-type"), conclusion);
+  $("inspect-statement-label").hidden = !parameters.length;
+  $("inspect-parameters").hidden = !parameters.length;
+  $("inspect-parameters-label").textContent = `Parameters and hypotheses (${parameters.length})`;
+  $("inspect-parameters-list").replaceChildren();
+  for (const parameter of parameters) {
+    const row = document.createElement("div"); row.className = "statement-parameter";
+    append(row, parameter.name); row.append(document.createTextNode(" : ")); append(row, parameter.type);
+    $("inspect-parameters-list").append(row);
+  }
 }
 function renderType(text, extraSymbols = []) {
   $("inspect-type").replaceChildren();
@@ -668,7 +698,9 @@ function renderCubicalKernel(view) {
   $("open-kernel-assembly").disabled = false;
   const mode = $("kernel-view").value, raw = mode === "raw", folded = mode === "notation";
   const display = folded ? view.folded ?? view : view;
+  const { context, axioms } = splitInspectionContext(view, display.context);
   const open = view.context.length || view.dimensions?.length;
+  const localContext = context.length || view.dimensions?.length;
   $("kernel-view").disabled = false;
   $("kernel-view").querySelector('[value="expanded"]').hidden = false;
   $("kernel-view-note").textContent = folded
@@ -677,7 +709,9 @@ function renderCubicalKernel(view) {
     : "Stored checked syntax in mathematical notation, with source labels for bound variables.";
   $("kernel-inference").textContent = `Cubical C · ${open ? "Open judgement" : "Closed judgement"}`;
   $("kernel-premises").replaceChildren();
-  $("kernel-context-note").textContent = open ? "Checked assumptions · click a name to inspect it" : "Empty context";
+  $("kernel-context-note").textContent = localContext ? "Local assumptions · click a name to inspect it" : "Empty context";
+  $("kernel-axioms").hidden = !axioms.length;
+  $("kernel-axioms-list").replaceChildren();
   $("kernel-context-list").replaceChildren();
   const navigation = { resolve: binding => view.symbols[binding], inspect: info => inspect(decorate(info)),
     identitySugar: $("kernel-identity-sugar").checked, truncationSugar: $("kernel-truncation-sugar").checked,
@@ -692,7 +726,7 @@ function renderCubicalKernel(view) {
     if (raw) target.textContent = JSON.stringify(term, null, 2);
     else renderMathNotation(target, cubicalMathTree(term, view.symbols, kernelDisplayLimit), navigation);
   };
-  for (const entry of display.context) {
+  for (const [list, entries] of [["kernel-context-list", context], ["kernel-axioms-list", axioms]]) for (const entry of entries) {
     const row = document.createElement("li"); row.className = "kernel-context-row"; row.dataset.name = entry.label;
     const label = document.createElement("span"), button = document.createElement("button");
     button.className = "reference"; button.textContent = entry.label; button.dataset.name = entry.label;
@@ -700,7 +734,7 @@ function renderCubicalKernel(view) {
     button.onclick = () => navigation.inspect(view.symbols[entry.binding]);
     label.append(button, " : ");
     const value = document.createElement("div"); value.className = "kernel-term kernel-context-type";
-    render(value, entry.type); row.append(label, value); $("kernel-context-list").append(row);
+    render(value, entry.type); row.append(label, value); $(list).append(row);
   }
   const locals = view.locals ?? [];
   $("kernel-local-definitions").hidden = !locals.length;
@@ -720,7 +754,7 @@ function renderCubicalKernel(view) {
   $("kernel-binder-options").hidden = true;
   $("kernel-identity-options").hidden = raw;
   $("expand-kernel").textContent = "Show more of the term";
-  $("expand-kernel").hidden = raw || !["kernel-expression", "kernel-type", "kernel-context-list"].some(id => $(id).textContent.includes("…"));
+  $("expand-kernel").hidden = raw || !["kernel-expression", "kernel-type", "kernel-context-list", "kernel-axioms-list"].some(id => $(id).textContent.includes("…"));
   renderAxioms($("inspect-axioms"), view.axioms ?? []);
 }
 $("toggle-kernel-body").onclick = () => { showKernelBody = !showKernelBody; renderKernel(checkedKernelView); };

@@ -1,3 +1,4 @@
+import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator } from "./cubical-elaborator.mjs";
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
@@ -18,6 +19,7 @@ export class CubicalProgram {
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
     this.localSymbols = {}; this.declarationBindings = new Map();
+    this.declarationReferences = new Map();
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
     this.sourceAsts = new Map();
     this.templates = new Map();
@@ -29,7 +31,7 @@ export class CubicalProgram {
     return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => [binding, {
       binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
       verified: true, type: cubicalText(type, this.symbols), axioms: [binding],
-      description: "An explicit logical assumption from the library. Its full signature is shown in the checked context.",
+      description: "An explicit logical assumption from the library. Its full signature is shown in the Axioms section.",
       specialization: this.checker.assumptionOrigins.get(binding),
     }]));
   }
@@ -90,12 +92,15 @@ export class CubicalProgram {
           this.completed++;
           if (result.status === "checked-native-cubical") {
             this.declarationBindings.set(`${name}__${result.name}`, pending.filter(item => item.node.isBinding));
+            const references = [];
+            this.declarationReferences.set(`${name}__${result.name}`, references);
             for (const item of pending) {
               if (!Number.isInteger(item.node.start)) continue;
               let head = item.term; while (head.tag === "App") head = head.fn;
               const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
               const definition = head.tag === "DefRef" && !source && !item.node.schemaBinding;
               const binding = definition ? head.name : `${name}__local_${item.node.start}`;
+              references.push({ start: item.node.start, binding });
               if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
               if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
                 role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
@@ -334,6 +339,11 @@ export class CubicalProgram {
     view.folded = foldedInspection(view, aliases);
     view.expressionText = cubicalText(view.folded.expression, symbols);
     view.typeText = cubicalText(view.folded.type, symbols);
+    if (info?.verified && !local) {
+      const module = info.sourceModule ?? this.main;
+      const declaration = this.sourceAsts.get(module)?.declarations.find(d => d.name.text === info.name);
+      if (declaration) view.statement = sourceStatement(this.sources[module], declaration, this.declarationReferences.get(binding));
+    }
     if (local && view.sourceBinding && local.term.tag !== "Var") view.folded.reference = {
       tag: "DisplayRef", name: this.localSymbols[binding]?.name, binding: view.sourceBinding,
     };
