@@ -59,6 +59,8 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
         return ck_inductives(k, n, ctx, dims, result);
     case CC_PATH: case CC_PLAM: case CC_PAPP:
         return ck_paths(k, n, ctx, dims, result);
+    case CC_HCOMP: case CC_TRANS:
+        return ck_hit_composition(k, n, ctx, dims, result);
     case CC_COMP:
         return ck_composition(k, n, ctx, dims, result);
     case CC_GLUE: case CC_GLUE_TERM: case CC_UNGLUE:

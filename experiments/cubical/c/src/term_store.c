@@ -34,7 +34,7 @@ unsigned ck_arity(cc_term_kind kind) {
     case CC_GLUE: case CC_UNGLUE: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH:
         return 2;
     case CC_PAIR: case CC_PATH: case CC_COMP: case CC_SUP: case CC_WREC: case CC_UNITREC:
-    case CC_GLUE_SYSTEM: case CC_GLUE_TERM:
+    case CC_GLUE_SYSTEM: case CC_GLUE_TERM: case CC_HCOMP: case CC_TRANS:
         return 3;
     case CC_NATREC: case CC_SUMREC: case CC_PUSHOUT: case CC_PUSH_ELIM:
         return 4;
@@ -83,7 +83,7 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     for (unsigned i = 0; i < 4; ++i) {
         bool optional = (kind == CC_PAPP && i == 1) ||
                         (kind == CC_TUBE && i == 1) ||
-                        (kind == CC_COMP && i == 1) || (kind == CC_GLUE && i == 1) ||
+                        ((kind == CC_COMP || kind == CC_HCOMP) && i == 1) || (kind == CC_GLUE && i == 1) ||
                         (kind == CC_GLUE_SYSTEM && i == 2) || (kind == CC_GLUE_TERM && i == 2);
         if (i < arity && !children[i] && !optional)
             return ck_fail(k, "Missing syntax child."), 0;

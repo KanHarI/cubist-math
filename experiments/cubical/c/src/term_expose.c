@@ -6,12 +6,12 @@
 
 cc_term ck_expose(cc_kernel *k, cc_term term) {
     cc_node n = k->nodes[term];
-    if (n.kind == CC_COMP) {
+    if (n.kind == CC_COMP || n.kind == CC_HCOMP || n.kind == CC_TRANS) {
         for (cc_term cursor = n.child[1]; cursor;) {
             cc_node tube = k->nodes[cursor];
             const cc_formula *face = cc_kernel_get_formula(k, tube.payload);
             if (face && face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative)
-                return ck_endpoint_term(k, tube.child[0], n.payload, 1);
+                return n.kind == CC_TRANS ? n.child[2] : ck_endpoint_term(k, tube.child[0], n.payload, 1);
             cursor = tube.child[1];
         }
     }

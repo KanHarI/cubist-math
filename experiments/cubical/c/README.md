@@ -9,8 +9,10 @@ and overlap, with native Nat/Unit/Pi/Sigma/Path computation matching the JS
 reference.
 Native Glue and universe composition now match the independently checked
 reference rules. The full theorem that `idtoequiv` is an equivalence, the
-strict Id bridge and higher inductive types remain incomplete.
-This is not yet the website kernel or a full cubical/library migration.
+strict Id bridge and remaining higher inductive constructions remain incomplete.
+Computational pushouts now include dependent elimination, homogeneous composition,
+and transport with endpoint corrections; suspension is derived from pushouts.
+This is not yet a full cubical/library migration.
 
 ## Reading the mathematics in the code
 
@@ -28,6 +30,10 @@ This is not yet the website kernel or a full cubical/library migration.
 | `src/check.c` | Checked telescopes, dispatch and result publication |
 | `src/check_functions.c` | Pi/Sigma formation, introduction and elimination |
 | `src/check_inductives.c` | Nat, Unit, Void, sums and general W rules |
+| `src/check_pushout.c` | Pushout span, point and dependent bridge premises |
+| `src/pushout_compute.c` | Point/bridge computation of the dependent eliminator |
+| `src/check_hit_composition.c` | Homogeneous boxes and constant-face transport premises |
+| `src/hit_composition.c` | Pushout composition, elimination on boxes, transport corrections |
 | `src/check_paths.c` | Dependent paths and reconstructed endpoint annotations |
 | `src/face_context.c` | Shared restriction of checked telescopes and face clauses |
 | `src/equivalence_terms.c` | Derived contractible-fiber types and identity equivalence |
@@ -243,3 +249,12 @@ univalence beta proof previously exhausted the unchanged ten-million-operation
 budget; it now checks in 480 checking and 1,242,556 reduction steps, with 423,468
 arena nodes. The source frontend separately avoids duplicating this concrete
 proof by checking a generic beta lemma and applying it to the endpoint.
+
+### Cubical higher inductive structure
+
+See [the pushout rule and ABI notes](../../../docs/cubical/pushouts.md).
+Append-only tags 36–42 cover the pushout and its computational structure;
+no suspension-specific tags are needed. The existing open-cube checking API
+`cc_kernel_check_in_cube` accepts an explicit dimension bitmask and checks all
+telescope types under that cube. The original API keeps its closed-cube
+behavior, and checked-definition publication remains closed.

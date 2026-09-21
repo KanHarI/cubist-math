@@ -38,7 +38,7 @@ static void field(cc_kernel *k, const char *name, cc_term t, unsigned depth) {
 static void term(cc_kernel *k, cc_term t, unsigned depth) {
     static const char *tags[] = {"", "U", "Var", "Pi", "Lam", "App", "Sigma", "Pair", "Fst", "Snd",
         "Nat", "Zero", "Succ", "NatRec", "Unit", "Point", "Path", "PLam", "PApp", "Comp", "Tube",
-        "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr", "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "Ref", "Pushout", "PushLeft", "PushRight", "PushPath", "PushElim"};
+        "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr", "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "Ref", "Pushout", "PushLeft", "PushRight", "PushPath", "PushElim", "HComp", "Trans"};
     cc_term_kind kind;
     uint32_t payload;
     cc_term ch[4];
@@ -64,12 +64,12 @@ static void term(cc_kernel *k, cc_term t, unsigned depth) {
     if (kind == CC_FST || kind == CC_SND) field(k, "pair", ch[0], depth);
     if (kind == CC_SUCC) field(k, "value", ch[0], depth);
     if (kind == CC_NATREC) { field(k, "motive", ch[0], depth); field(k, "zero", ch[1], depth); field(k, "step", ch[2], depth); field(k, "value", ch[3], depth); }
-    if (kind == CC_PATH || kind == CC_PLAM || kind == CC_COMP) {
+    if (kind == CC_PATH || kind == CC_PLAM || kind == CC_COMP || kind == CC_HCOMP || kind == CC_TRANS) {
         printf(",\"dim\":\"d%u\"", payload);
         field(k, "family", ch[0], depth);
         if (kind == CC_PATH) { field(k, "left", ch[1], depth); field(k, "right", ch[2], depth); }
         if (kind == CC_PLAM) field(k, "body", ch[1], depth);
-        if (kind == CC_COMP) {
+        if (kind == CC_COMP || kind == CC_HCOMP) {
             fputs(",\"system\":[", stdout);
             bool comma = false;
             for (cc_term tube = ch[1]; tube;) {
@@ -84,6 +84,16 @@ static void term(cc_kernel *k, cc_term t, unsigned depth) {
             }
             putchar(']'); field(k, "base", ch[2], depth);
         }
+    }
+    if (kind == CC_TRANS) {
+        cc_term_kind tube_kind;
+        uint32_t phi;
+        cc_term data[4];
+        if (cc_kernel_node(k, ch[1], &tube_kind, &phi, data)) {
+            fputs(",\"face\":", stdout);
+            formula(cc_kernel_get_formula(k, phi));
+        }
+        field(k, "base", ch[2], depth);
     }
     if (kind == CC_PAPP || kind == CC_PUSH_PATH) {
         if (kind == CC_PAPP) field(k, "path", ch[0], depth);
