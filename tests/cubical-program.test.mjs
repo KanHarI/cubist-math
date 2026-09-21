@@ -192,3 +192,30 @@ test("native optimization switches preserve path proofs and rejection independen
     } finally { program.dispose(); }
   }
 });
+
+test("universe-template calls link to checked specializations and their library source", async t => {
+  const sources = { generic: "def identity(U : Universe, A : U, x : A) = x;" };
+  for (const reuseChecks of [true, false]) {
+    const program = new CubicalProgram(module, async name => sources[name], { optimizations: { reuseChecks } });
+    t.after(() => program.dispose());
+    const source = "import generic; def zero = identity(U0, Nat, 0); def identity1 = identity(U1);";
+    const result = await program.check(source, "caller");
+    assert.equal(result.complete, true, JSON.stringify(result.gaps));
+    const references = result.links.filter(link => link.role === "universe specialization");
+    assert.equal(references.length, 2);
+    for (const link of references) {
+      assert.equal(source.slice(link.start, link.end), "identity");
+      assert.equal(link.sourceModule, "generic");
+      assert.equal(link.sourceName, "identity");
+      assert.match(link.description, /Checked specialization identity\(U[01]\)/);
+      const view = program.inspect(link.binding);
+      assert.equal(view.type.tag, "Pi");
+      assert.ok(["DefRef", "Lam"].includes(view.expression.tag));
+      assert.equal(view.symbols[link.binding].sourceModule, "generic");
+      assert.deepEqual(view.axioms, []);
+    }
+    for (const link of result.links) {
+      assert.equal(source.slice(link.start, link.end), link.name, "imported schema offsets must not leak into the caller");
+    }
+  }
+});

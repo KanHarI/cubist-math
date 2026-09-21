@@ -580,7 +580,9 @@ async function inspect(info, remember = true) {
   } else {
     if (last.backend === "cubical" && info.verified === false) {
       $("kernel-details").hidden = true;
-      $("inspect-description").textContent = `Not checked by cubical C: ${info.reason}`;
+      $("inspect-description").textContent = info.template
+        ? `Library universe template. Each concrete specialization is checked by cubical C when used. ${info.description ?? ""}`
+        : `Not checked by cubical C: ${info.reason}`;
       return;
     }
     try {

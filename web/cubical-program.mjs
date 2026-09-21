@@ -92,12 +92,13 @@ export class CubicalProgram {
               if (!Number.isInteger(item.node.start)) continue;
               let head = item.term; while (head.tag === "App") head = head.fn;
               const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
-              const definition = head.tag === "DefRef" && !source;
+              const definition = head.tag === "DefRef" && !source && !item.node.schemaBinding;
               const binding = definition ? head.name : `${name}__local_${item.node.start}`;
               if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
               if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
                 role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
                 expansion: item.node.expansion, description: item.node.description,
+                schemaBinding: item.node.schemaBinding,
                 definitionStart: source?.start ?? item.node.start,
                 ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
               if (name === main) this.links.push({ name: item.node.name, binding, start: item.node.start,
@@ -132,6 +133,17 @@ export class CubicalProgram {
       return result.env;
     };
     await load(main, source);
+    for (const info of Object.values(this.localSymbols)) {
+      const schema = this.symbols[info.schemaBinding];
+      if (!schema) continue;
+      info.definitionStart = schema.definitionStart;
+      info.sourceName = schema.name;
+      info.sourceModule = schema.sourceModule;
+      for (const link of this.links) if (link.binding === info.binding) Object.assign(link, {
+        sourceName: info.sourceName, sourceModule: info.sourceModule,
+        definitionStart: info.definitionStart, description: info.description,
+      });
+    }
     const all = Object.values(this.symbols), outputs = all.filter(d => !d.sourceModule);
     this.main = main;
     return this.metadata = { backend: "cubical", mode: "mathematical", source, outputs,

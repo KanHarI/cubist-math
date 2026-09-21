@@ -17,7 +17,7 @@ try {
   });
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  const errors = []; page.on("pageerror", error => errors.push(error.stack ?? error.message));
   await page.goto(`http://127.0.0.1:${port}/proof.html?proof=surjections&name=every_surjection_has_right_inverse`);
   await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
   await page.locator('#inspect-axioms [data-axiom="__assumption_Choice_U0"]').click();
@@ -27,7 +27,7 @@ try {
   const opened = page.waitForEvent("popup");
   await page.locator("#open-kernel-assembly").click();
   const workbench = await opened;
-  workbench.on("pageerror", error => errors.push(error.message));
+  workbench.on("pageerror", error => errors.push(error.stack ?? error.message));
   await workbench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
   assert.equal(await workbench.locator("#name").textContent(), "Choice(U0)");
   assert.equal(await workbench.locator("#specialization").isVisible(), true);
@@ -44,6 +44,24 @@ try {
   assert.equal(await workbench.locator("#specialization a[href*=surjections]").count(), 1);
   await workbench.locator("#specialization a[href*=surjections]").click();
   await workbench.waitForFunction(() => document.querySelector("#inspect-name").textContent === "every_surjection_has_right_inverse" && !document.querySelector("#kernel-view").disabled);
+  await page.goto(`http://127.0.0.1:${port}/proof.html?proof=groups&name=Group`);
+  await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+  for (const name of ["GroupAssociativeAt", "GroupAt"]) {
+    await page.locator(`#read-source .reference[data-name="${name}"]`).click();
+    await page.waitForFunction(name => document.querySelector("#inspect-name").textContent === name &&
+      !document.querySelector("#kernel-view").disabled, name);
+    assert.equal(await page.locator("#inspect-kind").textContent(), "universe specialization");
+    assert.match(await page.locator("#inspect-description").textContent(), /Checked specialization.*U0/);
+    assert.match(await page.locator("#view-source").getAttribute("href"), new RegExp(`proof=group_universes&name=${name}`));
+  }
+  await page.locator("#view-source").click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "GroupAt");
+  assert.match(await page.locator("#inspect-description").textContent(), /Library universe template/);
+  assert.equal(await page.locator("#kernel-details").isVisible(), false);
+  await page.locator("#back").click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "GroupAt" &&
+    !document.querySelector("#kernel-view").disabled);
+  assert.match(page.url(), /proof=groups/);
   assert.deepEqual(errors, []);
   console.log("PASS universe specialization: dependency link, inspector origin, workbench replay, native handles, source navigation");
 } finally { await browser?.close(); server.kill(); }
