@@ -106,6 +106,41 @@ theorem embedding_tower_count(
   );
 }
 
+// Count a finite tower using extension degrees. Keep this transport generic:
+// specializing the fields should not recheck the entire product-count proof.
+theorem embedding_tower_degree_count(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
+  triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),
+  lower : FiniteExtension(K, embedding_as_extension(K, R, i)),
+  upper : FiniteExtension(R, embedding_as_extension(R, L, h)),
+  whole : FiniteExtension(K, embedding_as_extension(K, L, e)),
+  countR : HasCardinality(
+    EmbeddingsOver(K, R, i, T, j), extension_degree(K, embedding_as_extension(K, R, i), lower)
+  ),
+  countL : (
+    forall d : EmbeddingsOver(K, R, i, T, j),
+    HasCardinality(
+      EmbeddingTowerFiber(K, R, L, T, i, h, j, d),
+      extension_degree(R, embedding_as_extension(R, L, h), upper)
+    )
+  )
+) :
+  HasCardinality(
+    EmbeddingsOver(K, L, e, T, j), extension_degree(K, embedding_as_extension(K, L, e), whole)
+  ) {
+  let degreeR = extension_degree(K, embedding_as_extension(K, R, i), lower);
+  let degreeL = extension_degree(R, embedding_as_extension(R, L, h), upper);
+  let degree = extension_degree(K, embedding_as_extension(K, L, e), whole);
+  let tower = field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle);
+  let count =
+    embedding_tower_count(K, R, L, T, i, h, e, triangle, j, degreeR, degreeL, countR, countL);
+  exact transport(
+    HasCardinality(EmbeddingsOver(K, L, e, T, j)), multiply_count(degreeL, degreeR), degree,
+    sym(tower_law(K, R, L, i, h, e, tower, lower, upper, whole)), count
+  );
+}
+
 def FiniteSeparableEmbeddingCount(n : Nat) =
   forall K : AlgebraicField, forall L : AlgebraicField, forall e : FieldEmbedding(K, L),
   forall finite : FiniteExtension(K, embedding_as_extension(K, L, e)),
@@ -170,27 +205,25 @@ def finite_separable_count_step(n : Nat, previous : FiniteSeparableEmbeddingCoun
       K, R, L, i, h, e, triangle, n, generators, generates, adjoined_root(K, M),
       residue_evaluate_generator(K, M, L, e, x, root)
     );
-  let degreeR = extension_degree(K, embedding_as_extension(K, R, i), lower);
-  let degreeL = extension_degree(R, embedding_as_extension(R, L, h), upper);
-  let degree = extension_degree(K, embedding_as_extension(K, L, e), finite);
-  let countR =
-    transport(
-      HasCardinality(EmbeddingsOver(K, R, i, T, j)), modulus_degree(K, M), degreeR,
-      sym(adjoined_extension_degree(K, M, irr, lower)),
-      separable_adjoined_embedding_count(K, M, irr, T, j, separable(j, x, alg))
-    );
+  let degreeR = extension_degree(K, adjoined_extension(K, M, irr), lower);
+  let countR = with unfolding [AdjoinedEmbeddings] {
+      transport(
+        HasCardinality(EmbeddingsOver(K, R, i, T, j)), modulus_degree(K, M), degreeR,
+        sym(adjoined_extension_degree(K, M, irr, lower)),
+        separable_adjoined_embedding_count(K, M, irr, T, j, separable(j, x, alg))
+      )
+    };
   let countL =
     (
       fun (d : EmbeddingsOver(K, R, i, T, j)) => previous(
         R, L, h, upper, tail, genR, T, closed, sepR, embedding_over(K, R, i, T, j, d)
       )
     );
-  let count =
-    embedding_tower_count(K, R, L, T, i, h, e, triangle, j, degreeR, degreeL, countR, countL);
-  exact transport(
-    HasCardinality(EmbeddingsOver(K, L, e, T, j)), multiply_count(degreeL, degreeR), degree,
-    sym(tower_law(K, R, L, i, h, e, tower, lower, upper, finite)), count
-  );
+  exact with unfolding [adjoined_extension] {
+    embedding_tower_degree_count(
+      K, R, L, T, i, h, e, triangle, j, lower, upper, finite, countR, countL
+    )
+  };
 }
 
 theorem finitely_generated_separable_embedding_count(n : Nat) =

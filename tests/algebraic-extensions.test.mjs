@@ -95,3 +95,24 @@ test("embedding roundtrip stays within the conversion budget with inspector refe
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   assert.equal(p.symbols.simple_extension_embeddings__embedding_root_roundtrip.verified, true);
 });
+
+test("finite separable count step keeps tower and root-count conversions bounded", async t => {
+  // Use a deterministic native work budget rather than a CI wall-clock limit.
+  // The standalone corpus benchmark separately checks the one-second target.
+  const bounded = new Set(["embedding_tower_degree_count", "finite_separable_count_step"]);
+  const p = new CubicalProgram(module, readSource, {
+    collectReferences: true,
+    onDeclarationStart: (moduleName, declaration) => {
+      const budget = moduleName === "embedding_counts" && bounded.has(declaration.name.text)
+        ? 10000000n : 100000000n;
+      p.kernel.stepBudget = budget;
+      p.kernel.module._cb_step_budget(p.kernel.handle, Number(budget), 0);
+    },
+  });
+  t.after(() => p.dispose());
+  p.kernel.withGrowingBudget = operation => operation();
+  const result = await p.check("import embedding_counts; theorem checked : Unit { exact tt; }", "count_step_budget");
+  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  for (const name of [...bounded, "finite_separable_embedding_count"])
+    assert.equal(p.symbols[`embedding_counts__${name}`]?.verified, true, name);
+});

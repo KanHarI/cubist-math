@@ -48,13 +48,20 @@ Final validation: `npm test` passes all **282 tests**; the formatter checks
 348 sources with no changes needed; the browser module/topic registry tests
 pass; `git diff --check` is clean. No kernel or language changes were needed.
 
-The focused one-second benchmark covers 1,857 entries: 1,819 checked,
-35 templates, one optimization candidate, two downstream blocked declarations,
-and zero proof failures. `embedding_root_roundtrip` takes 6 ms in this run.
-`embedding_counts.finite_separable_count_step` still exceeds that wall-clock
-limit; it and its two dependents pass the separate bounded correctness audit.
-Optimize that count step next; do not describe the corpus as entirely below
-100 ms or confuse the timed benchmark with mathematical rejection.
+Performance follow-up: `embedding_counts.finite_separable_count_step` now checks
+in **476–478 ms** in the standalone and broader one-second benchmarks (Apple M3
+Pro). The broader run covers 1,858 entries: **1,823 checked, 35 templates, zero
+optimization candidates, blocked declarations, or failures**. These are focused
+Galois graphs, not a claim that every declaration in the full corpus is below
+100 ms.
+
+The proof now uses `embedding_tower_degree_count` to check the generic tower
+transport once (about 5 ms). It keeps the lower degree in its named
+`adjoined_extension` form, then selectively unfolds that alias and
+`AdjoinedEmbeddings` at the conversion boundaries. No kernel changes or new
+assumptions are involved. All four algebraic-extension tests pass, including
+a new 10-million-step budget regression for the count step and its helper with
+inspector references enabled. Formatting and whitespace checks pass.
 
 Next mathematical work: normality's polynomial characterization and the
 finite Galois characterizations, splitting-target embedding counts, Artin's
