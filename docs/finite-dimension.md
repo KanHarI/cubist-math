@@ -22,6 +22,21 @@ axioms and changes no kernel or language code.
 The current field and vector carriers lie in U0, as in the existing bundled
 interfaces. Infinite extensions have no default natural-number degree.
 
+## Finite spanning and the converse tower criterion
+
+The subsequent development checks `finite_spanning_subfamily_basis`: every
+finite spanning family contains an indexed, independent spanning subfamily.
+`family_basis_coordinates` turns that data into a coordinate basis.
+`finite_subspace_basis` supplies a mere finite basis for any predicate subspace
+of a finite-dimensional vector space. The proofs use LEM(U0) and small
+truncation, not Choice.
+
+`finite_extension_tower_converse` derives finiteness of L/K and M/L from
+finiteness of M/K in a commuting tower. `finite_extension_tower_iff` combines
+both directions. These results have focused regression coverage in
+`tests/finite-spanning.test.mjs`. They also support the finite field-generator
+and embedding-count proofs described in [polynomial algebra](polynomial-algebra.md).
+
 ## Coordinate data versus dimension
 
 `FiniteBasis(K,V,n)` is a linear isomorphism K^n → V. It contains expansion,

@@ -1,0 +1,227 @@
+import embedding_tower_types;
+import separability_base_change;
+import finite_towers;
+
+// A surjective base embedding leaves exactly one embedding over that base.
+theorem embeddings_over_surjective_prop(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
+  onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e)), T : AlgebraicField,
+  j : FieldEmbedding(K, T)
+) :
+  Proposition(EmbeddingsOver(K, L, e, T, j)) {
+  intro first;
+  intro second;
+  obtain (f, overF) = first;
+  obtain (g, overG) = second;
+  have same :
+    forall y : af_carrier(L), field_embedding_map(L, T, f, y) = field_embedding_map(L, T, g, y) {
+    intro y;
+    obtain (x, eq) = field_embedding_preimage(K, L, e, onto, y);
+    exact trans(
+      cong(field_embedding_map(L, T, f), sym(eq)),
+      trans(overF(x), trans(sym(overG(x)), cong(field_embedding_map(L, T, g), eq)))
+    );
+  }
+  exact embeddings_over_ext(K, L, e, T, j, first, second, field_embedding_ext(L, T, f, g, same));
+}
+
+def embeddings_over_surjective_count(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
+  onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e)), T : AlgebraicField,
+  j : FieldEmbedding(K, T)
+) :
+  HasCardinality(EmbeddingsOver(K, L, e, T, j), 1) {
+  let H = EmbeddingsOver(K, L, e, T, j);
+  let center =
+    embedding_over_surjective_source(
+      K, K, L, field_embedding_identity(K), e, e,
+      (fun (a : af_carrier(K)) => refl(field_embedding_map(K, L, e, a))), onto, T, j,
+      typed(
+        EmbeddingsOver(K, K, field_embedding_identity(K), T, j),
+        (j, (fun (a : af_carrier(K)) => refl(field_embedding_map(K, T, j, a))))
+      )
+    );
+  exact merely(
+    Bijection(Fin(1), H),
+    typed(
+      Bijection(Fin(1), H),
+      (
+        (fun (i : Fin(1)) => center), (fun (h : H) => fin_one_center), fin_one_unique,
+        (fun (h : H) => embeddings_over_surjective_prop(K, L, e, onto, T, j, center, h))
+      )
+    )
+  );
+}
+
+theorem surjective_embedding_degree(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
+  onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e)),
+  finite : FiniteExtension(K, embedding_as_extension(K, L, e))
+) :
+  extension_degree(K, embedding_as_extension(K, L, e), finite) = 1 {
+  let V = field_vector_space(K, L, e);
+  let iso =
+    linear_bijective_iso(
+      K, ScalarSpace(K), V, field_embedding_linear(K, L, e), field_embedding_injective(K, L, e),
+      onto
+    );
+  let basis =
+    linear_iso_compose(K, CoordinateSpace(K, 1), ScalarSpace(K), V, scalar_space_basis(K), iso);
+  exact extension_degree_of_basis(K, embedding_as_extension(K, L, e), finite, 1, basis);
+}
+
+// Cardinal multiplication is independent of whether the tower is read bottom
+// first or top first. It agrees with the multiplication in the degree theorem.
+theorem count_multiply_comm(n : Nat, m : Nat) : multiply_count(n, m) = multiply_count(m, n) {
+  exact nat_mul_comm(n, m);
+}
+
+theorem embedding_tower_count(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
+  triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T), n : Nat, m : Nat,
+  lower : HasCardinality(EmbeddingsOver(K, R, i, T, j), n),
+  upper : (
+    forall d : EmbeddingsOver(K, R, i, T, j),
+    HasCardinality(EmbeddingTowerFiber(K, R, L, T, i, h, j, d), m)
+  )
+) :
+  HasCardinality(EmbeddingsOver(K, L, e, T, j), multiply_count(m, n)) {
+  let A = EmbeddingsOver(K, R, i, T, j);
+  let B = EmbeddingTowerFiber(K, R, L, T, i, h, j);
+  let S = EmbeddingTower(K, R, L, T, i, h, j);
+  let H = EmbeddingsOver(K, L, e, T, j);
+  let count =
+    uniform_fiber_count(
+      A, embeddings_over_are_set(K, R, i, T, j), n, m, lower, B,
+      (fun (d : A) => embeddings_over_are_set(R, L, h, T, embedding_over(K, R, i, T, j, d))), upper
+    );
+  let mapped =
+    cardinality_path(
+      S, H, embedding_tower_type_equality(K, R, L, T, i, h, e, triangle, j), multiply_count(n, m),
+      count
+    );
+  exact transport(
+    HasCardinality(H), multiply_count(n, m), multiply_count(m, n), count_multiply_comm(n, m), mapped
+  );
+}
+
+def FiniteSeparableEmbeddingCount(n : Nat) =
+  forall K : AlgebraicField, forall L : AlgebraicField, forall e : FieldEmbedding(K, L),
+  forall finite : FiniteExtension(K, embedding_as_extension(K, L, e)),
+  forall generators : Fin(n) -> af_carrier(L), FieldGeneratedBy(K, L, e, n, generators)
+  -> forall T : AlgebraicField, AlgebraicallyClosed(T) -> SeparableElementsIn(K, L, e, T)
+  -> forall j : FieldEmbedding(K, T),
+  HasCardinality(
+    EmbeddingsOver(K, L, e, T, j), extension_degree(K, embedding_as_extension(K, L, e), finite)
+  );
+
+def finite_separable_count_zero : FiniteSeparableEmbeddingCount(0) {
+  intro K;
+  intro L;
+  intro e;
+  intro finite;
+  intro generators;
+  intro generates;
+  intro T;
+  intro closed;
+  intro separable;
+  intro j;
+  let onto = field_generated_empty_surjective(K, L, e, generators, generates);
+  let H = EmbeddingsOver(K, L, e, T, j);
+  let d = extension_degree(K, embedding_as_extension(K, L, e), finite);
+  exact transport(
+    HasCardinality(H), 1, d, sym(surjective_embedding_degree(K, L, e, onto, finite)),
+    embeddings_over_surjective_count(K, L, e, onto, T, j)
+  );
+}
+
+def finite_separable_count_step(n : Nat, previous : FiniteSeparableEmbeddingCount(n)) :
+  FiniteSeparableEmbeddingCount(succ(n)) {
+  intro K;
+  intro L;
+  intro e;
+  intro finite;
+  intro generators;
+  intro generates;
+  intro T;
+  intro closed;
+  intro separable;
+  intro j;
+  let algebraic = finite_extension_algebraic(K, L, e, finite);
+  let x = finite_head(af_carrier(L), n, generators);
+  let alg = algebraic(x);
+  let p = minimal_polynomial(K, L, e, x, alg);
+  let M = minimal_polynomial_modulus(K, L, e, x, alg);
+  let irr = minimal_polynomial_irreducible(K, L, e, x, alg);
+  obtain (nonzero, monic, root, divides) = minimal_polynomial_spec(K, L, e, x, alg);
+  let R = PolynomialResidueField(K, M, irr);
+  let i = residue_embedding(K, M, irr);
+  let h = adjoin_root_embedding(K, M, irr, L, e, x, root);
+  let triangle = residue_evaluate_constant(K, M, L, e, x, root);
+  let tower = field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle);
+  let lower = adjoined_extension_finite(K, M, irr);
+  obtain (lowerFinite, upper) = finite_extension_tower_converse(K, R, L, i, h, e, tower, finite);
+  let sepR =
+    separable_elements_enlarge_base(K, R, L, i, h, e, tower, algebraic, T, closed, separable);
+  let tail = finite_tail(af_carrier(L), n, generators);
+  let genR =
+    field_generated_adjoin_tail(
+      K, R, L, i, h, e, triangle, n, generators, generates, adjoined_root(K, M),
+      residue_evaluate_generator(K, M, L, e, x, root)
+    );
+  let degreeR = extension_degree(K, embedding_as_extension(K, R, i), lower);
+  let degreeL = extension_degree(R, embedding_as_extension(R, L, h), upper);
+  let degree = extension_degree(K, embedding_as_extension(K, L, e), finite);
+  let countR =
+    transport(
+      HasCardinality(EmbeddingsOver(K, R, i, T, j)), modulus_degree(K, M), degreeR,
+      sym(adjoined_extension_degree(K, M, irr, lower)),
+      separable_adjoined_embedding_count(K, M, irr, T, j, separable(j, x, alg))
+    );
+  let countL =
+    (
+      fun (d : EmbeddingsOver(K, R, i, T, j)) => previous(
+        R, L, h, upper, tail, genR, T, closed, sepR, embedding_over(K, R, i, T, j, d)
+      )
+    );
+  let count =
+    embedding_tower_count(K, R, L, T, i, h, e, triangle, j, degreeR, degreeL, countR, countL);
+  exact transport(
+    HasCardinality(EmbeddingsOver(K, L, e, T, j)), multiply_count(degreeL, degreeR), degree,
+    sym(tower_law(K, R, L, i, h, e, tower, lower, upper, finite)), count
+  );
+}
+
+theorem finitely_generated_separable_embedding_count(n : Nat) =
+  induction n as k return FiniteSeparableEmbeddingCount(k) {
+    zero => finite_separable_count_zero;
+    succ previous => finite_separable_count_step(k, previous);
+  };
+
+// A finite separable extension has exactly [L:K] embeddings extending any
+// specified embedding of K into an algebraically closed field.
+theorem finite_separable_embedding_count(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
+  finite : FiniteExtension(K, embedding_as_extension(K, L, e)),
+  separable : SeparableExtension(K, L, e), T : AlgebraicField, closed : AlgebraicallyClosed(T),
+  j : FieldEmbedding(K, T)
+) :
+  HasCardinality(
+    EmbeddingsOver(K, L, e, T, j), extension_degree(K, embedding_as_extension(K, L, e), finite)
+  ) {
+  let V = field_vector_space(K, L, e);
+  let H = EmbeddingsOver(K, L, e, T, j);
+  let d = extension_degree(K, embedding_as_extension(K, L, e), finite);
+  let sep = separable_extension_in_closed(K, L, e, separable, T, closed);
+  obtain (n, basis) = finite;
+  exact mere_eliminate(
+    FiniteBasis(K, V, n), HasCardinality(H, d), has_cardinality_prop(H, d),
+    (
+      fun (b : FiniteBasis(K, V, n)) => finitely_generated_separable_embedding_count(
+        n, K, L, e, finite, basis_columns(K, V, n, b), finite_basis_generates_field(K, L, e, n, b),
+        T, closed, sep, j
+      )
+    ), basis
+  );
+}

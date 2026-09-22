@@ -1,0 +1,143 @@
+import splitting_fields;
+import polynomial_root_enumeration;
+import finite_algebraic_extensions;
+
+// Embedding formulation of normality: two embeddings into a common overfield
+// agreeing on K have the same image. The displayed inclusion suffices because
+// the universally quantified embeddings may be interchanged.
+def NormalEmbeddingLaw(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
+  forall T : AlgebraicField, forall j : FieldEmbedding(L, T), forall h : FieldEmbedding(L, T),
+  (field_embedding_compose(K, L, T, e, h) = field_embedding_compose(K, L, T, e, j))
+  -> forall y : af_carrier(L), exists z : af_carrier(L),
+  field_embedding_map(L, T, j, z) = field_embedding_map(L, T, h, y);
+
+def NormalExtension(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
+  AlgebraicExtension(K, L, e) and NormalEmbeddingLaw(K, L, e);
+
+theorem splitting_root_image(
+  K : AlgebraicField, L : AlgebraicField, T : AlgebraicField, e : FieldEmbedding(K, L),
+  j : FieldEmbedding(L, T), h : FieldEmbedding(L, T),
+  triangle : field_embedding_compose(K, L, T, e, h) = field_embedding_compose(K, L, T, e, j),
+  p : Polynomial(K), nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L),
+  a : af_carrier(L),
+  equation : polynomial_map(K, L, e, p) = polynomial_mul(
+    L, polynomial_constant(L, a), linear_factor_product(L, n, roots)
+  ), i : Fin(n)
+) :
+  SubfieldImage(L, T, j, subfield_top(L), field_embedding_map(L, T, h, roots(i))) {
+  let f = field_embedding_map(L, T, j);
+  let g = field_embedding_map(L, T, h);
+  let y = g(roots(i));
+  let q = polynomial_map(K, L, e, p);
+  let s = polynomial_map(L, T, j, q);
+  let rootsT = fun (k : Fin(n)) => f(roots(k));
+  let scalar = f(a);
+  let cj = field_embedding_compose(K, L, T, e, j);
+  let ch = field_embedding_compose(K, L, T, e, h);
+  have factor :
+    s = polynomial_mul(T, polynomial_constant(T, scalar), linear_factor_product(T, n, rootsT)) {
+    obtain (rs, b, equality) = polynomial_splitting_map(
+      L, T, j, q, n, typed(PolynomialSplitting(L, q, n), (roots, a, equation))
+    );
+    exact equality;
+  }
+  let rootLocal = splitting_listed_root(L, q, n, roots, a, equation, i);
+  let rootBase = trans(sym(polynomial_eval_mapped(K, L, e, p, roots(i))), rootLocal);
+  let rootH = polynomial_root_image(K, L, T, e, h, p, roots(i), rootBase);
+  let rootJ =
+    transport(
+      (fun (d : FieldEmbedding(K, T)) => PolynomialRoot(K, T, d, p, y)), ch, cj, triangle, rootH
+    );
+  have rootS : PolynomialRoot(T, T, field_embedding_identity(T), s, y) {
+    exact with unfolding [] {
+      trans(
+        cong(
+          (fun (v : Polynomial(T)) => polynomial_eval(T, T, field_embedding_identity(T), v, y)),
+          polynomial_map_composition(K, L, T, e, j, p)
+        ), trans(polynomial_eval_mapped(K, T, cj, p, y), rootJ)
+      )
+    };
+  }
+  let nonzeroS = polynomial_map_nonzero(L, T, j, q, polynomial_map_nonzero(K, L, e, p, nonzero));
+  let located = splitting_root_index(T, s, n, rootsT, scalar, factor, nonzeroS, y, rootS);
+  have include : (exists k : Fin(n), rootsT(k) = y) -> SubfieldImage(L, T, j, subfield_top(L), y) {
+    intro witness;
+    obtain (k, same) = witness;
+    exact (roots(k), tt, same);
+  }
+  exact mere_eliminate(
+    (exists k : Fin(n), rootsT(k) = y), SubfieldImage(L, T, j, subfield_top(L), y),
+    subfield_image_prop(L, T, j, subfield_top(L), y), include, located
+  );
+}
+
+// A splitting field is stable under every embedding over the base. The proof
+// first locates the images of the roots, then uses generated-field leastness.
+theorem splitting_field_embedding_normal(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
+  equation : polynomial_map(K, L, e, p) = polynomial_mul(
+    L, polynomial_constant(L, a), linear_factor_product(L, n, roots)
+  ),
+  generates : (
+    forall y : af_carrier(L), GeneratedField(L, RootFieldGenerators(K, L, e, n, roots), y)
+  )
+) :
+  NormalEmbeddingLaw(K, L, e) {
+  intro T;
+  intro j;
+  intro h;
+  intro triangle;
+  intro y;
+  let f = field_embedding_map(L, T, j);
+  let g = field_embedding_map(L, T, h);
+  let S = subfield_image(L, T, j, subfield_top(L));
+  let Q = SubfieldPreimage(L, T, h, S);
+  let P = RootFieldGenerators(K, L, e, n, roots);
+  have included : forall z : af_carrier(L), P(z) -> Q(z) {
+    intro z;
+    intro member;
+    have base : (exists a : af_carrier(K), field_embedding_map(K, L, e, a) = z) -> Q(z) {
+      intro witness;
+      obtain (c, same) = witness;
+      let u = field_embedding_map(K, L, e, c);
+      let commutes =
+        cong((fun (d : FieldEmbedding(K, T)) => field_embedding_map(K, T, d, c)), triangle);
+      exact (u, tt, trans(sym(commutes), cong(g, same)));
+    }
+    have root : (exists i : Fin(n), roots(i) = z) -> Q(z) {
+      intro witness;
+      obtain (i, same) = witness;
+      exact transport(
+        Q, roots(i), z, same,
+        splitting_root_image(K, L, T, e, j, h, triangle, p, nonzero, n, roots, a, equation, i)
+      );
+    }
+    exact match member as which return Q(z) {
+      left fromBase => base(fromBase);
+      right fromRoot => root(fromRoot);
+    };
+  }
+  obtain (z, member, same) = generated_field_least(
+    L, P, Q, subfield_preimage_laws(L, T, h, S), included, y, generates(y)
+  );
+  exact (z, same);
+}
+
+theorem finite_splitting_field_normal(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
+  finite : FiniteExtension(K, embedding_as_extension(K, L, e)), p : Polynomial(K),
+  nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
+  equation : polynomial_map(K, L, e, p) = polynomial_mul(
+    L, polynomial_constant(L, a), linear_factor_product(L, n, roots)
+  ),
+  generates : (
+    forall y : af_carrier(L), GeneratedField(L, RootFieldGenerators(K, L, e, n, roots), y)
+  )
+) :
+  NormalExtension(K, L, e) {
+  exact (
+    finite_extension_algebraic(K, L, e, finite),
+    splitting_field_embedding_normal(K, L, e, p, nonzero, n, roots, a, equation, generates)
+  );
+}

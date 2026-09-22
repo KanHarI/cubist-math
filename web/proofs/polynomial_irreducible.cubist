@@ -1,0 +1,158 @@
+import polynomial_bezout;
+
+// The usual factorization definition, with existence and disjunction truncated.
+// Being nonzero and a nonunit excludes zero and the invertible constants.
+def PolynomialIrreducible(K : AlgebraicField, p : Polynomial(K)) =
+  PolynomialNonzero(K, p) and (PolynomialUnit(K, p) -> Void)
+  and (
+    forall a : Polynomial(K), forall b : Polynomial(K), p = polynomial_mul(K, a, b)
+    -> Mere(PolynomialUnit(K, a) or PolynomialUnit(K, b))
+  );
+
+def polynomial_irreducible_nonzero(
+  K : AlgebraicField, p : Polynomial(K), irreducible : PolynomialIrreducible(K, p)
+) :
+  PolynomialNonzero(K, p) {
+  obtain (nz, nu, factors) = irreducible;
+  exact nz;
+}
+
+def polynomial_irreducible_nonunit(
+  K : AlgebraicField, p : Polynomial(K), irreducible : PolynomialIrreducible(K, p)
+) :
+  PolynomialUnit(K, p) -> Void {
+  obtain (nz, nu, factors) = irreducible;
+  exact nu;
+}
+
+def polynomial_irreducible_factors(
+  K : AlgebraicField, p : Polynomial(K), irreducible : PolynomialIrreducible(K, p)
+) :
+  forall a : Polynomial(K), forall b : Polynomial(K), p = polynomial_mul(K, a, b)
+  -> Mere(PolynomialUnit(K, a) or PolynomialUnit(K, b)) {
+  obtain (nz, nu, factors) = irreducible;
+  exact factors;
+}
+
+def polynomial_divides_refl(K : AlgebraicField, p : Polynomial(K)) : PolynomialDivides(K, p, p) {
+  exact merely(
+    (exists q : Polynomial(K), p = polynomial_mul(K, p, q)),
+    typed(
+      (exists q : Polynomial(K), p = polynomial_mul(K, p, q)),
+      (polynomial_one(K), sym(polynomial_mul_one_right(K, p)))
+    )
+  );
+}
+
+theorem polynomial_divides_trans(
+  K : AlgebraicField, a : Polynomial(K), b : Polynomial(K), c : Polynomial(K),
+  ab : PolynomialDivides(K, a, b), bc : PolynomialDivides(K, b, c)
+) :
+  PolynomialDivides(K, a, c) {
+  let Result = PolynomialDivides(K, a, c);
+  have first : (exists u : Polynomial(K), b = polynomial_mul(K, a, u)) -> Result {
+    intro witness;
+    obtain (u, eu) = witness;
+    have second :
+      (exists v : Polynomial(K), c = polynomial_mul(K, b, v))
+      -> (exists w : Polynomial(K), c = polynomial_mul(K, a, w)) {
+      intro other;
+      obtain (v, ev) = other;
+      exact (
+        polynomial_mul(K, u, v),
+        trans(
+          ev,
+          trans(
+            cong((fun (p : Polynomial(K)) => polynomial_mul(K, p, v)), eu),
+            polynomial_mul_assoc(K, a, u, v)
+          )
+        )
+      );
+    }
+    exact mere_map(
+      (exists v : Polynomial(K), c = polynomial_mul(K, b, v)),
+      (exists w : Polynomial(K), c = polynomial_mul(K, a, w)), second, bc
+    );
+  }
+  exact mere_eliminate(
+    (exists u : Polynomial(K), b = polynomial_mul(K, a, u)), Result,
+    polynomial_divides_prop(K, a, c), first, ab
+  );
+}
+
+theorem polynomial_unit_factor_reverse(
+  K : AlgebraicField, p : Polynomial(K), a : Polynomial(K), b : Polynomial(K),
+  equation : p = polynomial_mul(K, a, b), unit : PolynomialUnit(K, b)
+) :
+  PolynomialDivides(K, p, a) {
+  have useInverse :
+    (exists u : Polynomial(K), polynomial_mul(K, b, u) = polynomial_one(K))
+    -> (exists u : Polynomial(K), a = polynomial_mul(K, p, u)) {
+    intro witness;
+    obtain (u, inverse) = witness;
+    exact (
+      u,
+      sym(
+        trans(
+          cong((fun (q : Polynomial(K)) => polynomial_mul(K, q, u)), equation),
+          trans(
+            polynomial_mul_assoc(K, a, b, u),
+            trans(cong(polynomial_mul(K, a), inverse), polynomial_mul_one_right(K, a))
+          )
+        )
+      )
+    );
+  }
+  exact mere_map(
+    (exists u : Polynomial(K), polynomial_mul(K, b, u) = polynomial_one(K)),
+    (exists u : Polynomial(K), a = polynomial_mul(K, p, u)), useInverse, unit
+  );
+}
+
+// An irreducible polynomial is coprime to every polynomial it does not divide.
+theorem irreducible_coprime(
+  K : AlgebraicField, p : Polynomial(K), irreducible : PolynomialIrreducible(K, p),
+  q : Polynomial(K), notDivides : PolynomialDivides(K, p, q) -> Void
+) :
+  PolynomialCoprime(K, p, q) {
+  intro g;
+  intro gp;
+  intro gq;
+  have useFactor : (exists h : Polynomial(K), p = polynomial_mul(K, g, h)) -> PolynomialUnit(K, g) {
+    intro witness;
+    obtain (h, equation) = witness;
+    have alternative : (PolynomialUnit(K, g) or PolynomialUnit(K, h)) -> PolynomialUnit(K, g) {
+      intro which;
+      exact match which as z return PolynomialUnit(K, g) {
+        left unit => unit;
+        right unit => absurd(
+          notDivides(
+            polynomial_divides_trans(
+              K, p, g, q, polynomial_unit_factor_reverse(K, p, g, h, equation, unit), gq
+            )
+          )
+        );
+      };
+    }
+    exact mere_eliminate(
+      (PolynomialUnit(K, g) or PolynomialUnit(K, h)), PolynomialUnit(K, g),
+      polynomial_unit_prop(K, g), alternative,
+      polynomial_irreducible_factors(K, p, irreducible, g, h, equation)
+    );
+  }
+  exact mere_eliminate(
+    (exists h : Polynomial(K), p = polynomial_mul(K, g, h)), PolynomialUnit(K, g),
+    polynomial_unit_prop(K, g), useFactor, gp
+  );
+}
+
+theorem irreducible_bezout(
+  K : AlgebraicField, p : Polynomial(K), irreducible : PolynomialIrreducible(K, p),
+  q : Polynomial(K), notDivides : PolynomialDivides(K, p, q) -> Void
+) :
+  GeneratedPair(K, p, q, polynomial_one(K)) {
+  exact polynomial_bezout(
+    K, p, q, polynomial_irreducible_nonzero(K, p, irreducible),
+    irreducible_coprime(K, p, irreducible, q, notDivides)
+  );
+}

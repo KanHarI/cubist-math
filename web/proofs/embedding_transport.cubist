@@ -1,0 +1,46 @@
+import bijective_field_embeddings;
+import field_embedding_spaces;
+
+// Move an embedding across an isomorphic presentation of the source field.
+// The commuting triangles are retained, rather than only the carrier maps.
+def embedding_over_surjective_source(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, i : FieldEmbedding(K, R),
+  e : FieldEmbedding(K, L), h : FieldEmbedding(R, L), over : EmbeddingOverLaw(K, R, i, L, e, h),
+  onto : Surjective(af_carrier(R), af_carrier(L), field_embedding_map(R, L, h)), T : AlgebraicField,
+  j : FieldEmbedding(K, T), d : EmbeddingsOver(K, R, i, T, j)
+) :
+  EmbeddingsOver(K, L, e, T, j) {
+  obtain (map, triangle) = d;
+  let inverse = field_embedding_inverse(R, L, h, onto);
+  let g = field_inverse_map(R, L, h, onto);
+  let f = field_embedding_map(R, T, map);
+  have commutes :
+    forall a : af_carrier(K),
+    f(g(field_embedding_map(K, L, e, a))) = field_embedding_map(K, T, j, a) {
+    intro a;
+    let c = field_embedding_map(K, R, i, a);
+    let back = trans(cong(g, sym(over(a))), field_inverse_left(R, L, h, onto, c));
+    exact trans(cong(f, back), triangle(a));
+  }
+  exact (field_embedding_compose(L, R, T, inverse, map), commutes);
+}
+
+// Restriction composes the two commuting triangles in a tower.
+def embedding_over_restrict_base(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
+  triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T), d : FieldEmbedding(R, T),
+  base : EmbeddingOverLaw(K, R, i, T, j, d), extension : EmbeddingsOver(R, L, h, T, d)
+) :
+  EmbeddingsOver(K, L, e, T, j) {
+  obtain (map, over) = extension;
+  let f = field_embedding_map(L, T, map);
+  exact (
+    map,
+    (
+      fun (a : af_carrier(K)) => trans(
+        cong(f, sym(triangle(a))), trans(over(field_embedding_map(K, R, i, a)), base(a))
+      )
+    )
+  );
+}

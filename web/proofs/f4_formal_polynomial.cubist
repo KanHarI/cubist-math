@@ -1,0 +1,64 @@
+import polynomial_roots;
+import f4_embedding_images;
+
+// The earlier F4 calculation is now connected to formal coefficient
+// polynomials, not just a function having the desired values on four points.
+def f2_quadratic =
+  polynomial_add(
+    F2,
+    polynomial_add(
+      F2, polynomial_mul(F2, polynomial_variable(F2), polynomial_variable(F2)),
+      polynomial_variable(F2)
+    ), polynomial_one(F2)
+  );
+
+theorem f2_quadratic_evaluation(x : F4Carrier) :
+  polynomial_eval(F2, F4, f2_f4_embedding, f2_quadratic, x) = f4_root_polynomial(x) {
+  let X = polynomial_variable(F2);
+  let S = polynomial_mul(F2, X, X);
+  let e = f2_f4_embedding;
+  let E = (fun (p : Polynomial(F2)) => polynomial_eval(F2, F4, e, p, x));
+  let variable = polynomial_eval_variable(F2, F4, e, x);
+  let square =
+    trans(
+      polynomial_eval_mul(F2, F4, e, X, X, x),
+      trans(cong((fun (a : F4Carrier) => f4_mul(a, E(X))), variable), cong(f4_mul(x), variable))
+    );
+  let linear =
+    trans(
+      polynomial_eval_add(F2, F4, e, S, X, x),
+      trans(
+        cong((fun (a : F4Carrier) => f4_add(a, E(X))), square), cong(f4_add(f4_mul(x, x)), variable)
+      )
+    );
+  exact trans(
+    polynomial_eval_add(F2, F4, e, polynomial_add(F2, S, X), polynomial_one(F2), x),
+    trans(
+      cong((fun (a : F4Carrier) => f4_add(a, E(polynomial_one(F2)))), linear),
+      cong(f4_add(f4_add(f4_mul(x, x), x)), polynomial_eval_one(F2, F4, e, x))
+    )
+  );
+}
+
+theorem f2_quadratic_alpha_root : PolynomialRoot(F2, F4, f2_f4_embedding, f2_quadratic, f4_2) {
+  exact trans(f2_quadratic_evaluation(f4_2), f4_alpha_root);
+}
+
+theorem f2_quadratic_other_root : PolynomialRoot(F2, F4, f2_f4_embedding, f2_quadratic, f4_3) {
+  exact trans(f2_quadratic_evaluation(f4_3), f4_other_root);
+}
+
+theorem f2_quadratic_nonzero(zero : f2_quadratic = polynomial_zero(F2)) : Void {
+  let E = (fun (p : Polynomial(F2)) => polynomial_eval(F2, F4, f2_f4_embedding, p, f4_0));
+  exact f4_nontrivial(
+    trans(
+      sym(f2_quadratic_evaluation(f4_0)),
+      trans(cong(E, zero), polynomial_eval_zero(F2, F4, f2_f4_embedding, f4_0))
+    )
+  );
+}
+
+// The two roots in the original example are distinct in the formal root type.
+theorem f2_quadratic_roots_distinct(same : f4_3 = f4_2) : Void {
+  exact f4_3_not_2(same);
+}

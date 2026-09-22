@@ -1,0 +1,103 @@
+import polynomial_irreducible;
+
+theorem polynomial_cancel_nonzero(
+  K : AlgebraicField, a : Polynomial(K), b : Polynomial(K), c : Polynomial(K),
+  nonzero : PolynomialNonzero(K, a), same : polynomial_mul(K, a, b) = polynomial_mul(K, a, c)
+) :
+  b = c {
+  let difference = polynomial_subtract(K, b, c);
+  have product : polynomial_mul(K, a, difference) = polynomial_zero(K) {
+    exact trans(
+      polynomial_mul_comm(K, a, difference),
+      trans(
+        polynomial_subtract_mul(K, b, c, a),
+        trans(
+          cong(
+            (fun (p : Polynomial(K)) => polynomial_subtract(K, p, polynomial_mul(K, c, a))),
+            trans(polynomial_mul_comm(K, b, a), trans(same, polynomial_mul_comm(K, a, c)))
+          ), polynomial_add_inverse_right(K, polynomial_mul(K, c, a))
+        )
+      )
+    );
+  }
+  have zero : difference = polynomial_zero(K) {
+    exact double_negation(
+      difference = polynomial_zero(K), polynomial_set(K, difference, polynomial_zero(K)),
+      (
+        fun (nz : PolynomialNonzero(K, difference)) => polynomial_product_nonzero(
+          K, a, difference, nonzero, nz, product
+        )
+      )
+    );
+  }
+  exact polynomial_subtract_zero_equal(K, b, c, zero);
+}
+
+theorem polynomial_multiple_factor_unit(
+  K : AlgebraicField, p : Polynomial(K), a : Polynomial(K), b : Polynomial(K),
+  nonzero : PolynomialNonzero(K, p), equation : p = polynomial_mul(K, a, b),
+  divides : PolynomialDivides(K, p, a)
+) :
+  PolynomialUnit(K, b) {
+  have invert :
+    (exists q : Polynomial(K), a = polynomial_mul(K, p, q))
+    -> (exists q : Polynomial(K), polynomial_mul(K, b, q) = polynomial_one(K)) {
+    intro witness;
+    obtain (q, factor) = witness;
+    have product :
+      polynomial_mul(K, p, polynomial_mul(K, q, b)) = polynomial_mul(K, p, polynomial_one(K)) {
+      exact trans(
+        sym(polynomial_mul_assoc(K, p, q, b)),
+        trans(
+          cong((fun (s : Polynomial(K)) => polynomial_mul(K, s, b)), sym(factor)),
+          trans(sym(equation), sym(polynomial_mul_one_right(K, p)))
+        )
+      );
+    }
+    exact (
+      q,
+      trans(
+        polynomial_mul_comm(K, b, q),
+        polynomial_cancel_nonzero(
+          K, p, polynomial_mul(K, q, b), polynomial_one(K), nonzero, product
+        )
+      )
+    );
+  }
+  exact mere_map(
+    (exists q : Polynomial(K), a = polynomial_mul(K, p, q)),
+    (exists q : Polynomial(K), polynomial_mul(K, b, q) = polynomial_one(K)), invert, divides
+  );
+}
+
+theorem polynomial_small_divisible_zero(
+  K : AlgebraicField, p : Polynomial(K), divisor : Polynomial(K), d : Nat,
+  degree : polynomial_cutoff(K, divisor) = succ(d),
+  support : SeriesSupport(K, polynomial_coefficients(K, p), d),
+  divides : PolynomialDivides(K, divisor, p)
+) :
+  p = polynomial_zero(K) {
+  have useQuotient :
+    (exists q : Polynomial(K), p = polynomial_mul(K, divisor, q)) -> p = polynomial_zero(K) {
+    intro witness;
+    obtain (q, equation) = witness;
+    let product = trans(equation, polynomial_mul_comm(K, divisor, q));
+    let productSupport =
+      transport(
+        (fun (s : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, s), d)), p,
+        polynomial_mul(K, q, divisor), product, support
+      );
+    let zero = polynomial_small_multiple_zero(K, q, divisor, d, degree, productSupport);
+    exact trans(
+      product,
+      trans(
+        cong((fun (s : Polynomial(K)) => polynomial_mul(K, s, divisor)), zero),
+        polynomial_zero_mul(K, divisor)
+      )
+    );
+  }
+  exact mere_eliminate(
+    (exists q : Polynomial(K), p = polynomial_mul(K, divisor, q)), (p = polynomial_zero(K)),
+    polynomial_set(K, p, polynomial_zero(K)), useQuotient, divides
+  );
+}

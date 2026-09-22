@@ -1,0 +1,194 @@
+import finite_family_images;
+
+// A basis extracted from a finite family retains its original indices.
+// Distinct chosen indices and both linear inverse laws are checked.
+def FamilyBasis(K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V)) =
+  LinearInjective(K, CoordinateSpace(K, n), V, family_linear(K, V, n, v))
+  and LinearSurjective(K, CoordinateSpace(K, n), V, family_linear(K, V, n, v));
+
+def SubfamilyBasis(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V)
+) =
+  exists m : Nat, exists chosen : Fin(m) -> Fin(n), Injective(Fin(m), Fin(n), chosen)
+  and FamilyBasis(K, V, m, (fun (i : Fin(m)) => v(chosen(i))));
+
+def family_basis_coordinates(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
+  basis : FamilyBasis(K, V, n, v)
+) :
+  FiniteBasis(K, V, n) {
+  obtain (injective, onto) = basis;
+  exact linear_bijective_iso(
+    K, CoordinateSpace(K, n), V, family_linear(K, V, n, v), injective, onto
+  );
+}
+
+def fin_prepend(A : U0, n : Nat, first : A, rest : Fin(n) -> A, i : Fin(succ(n))) =
+  match i return A {
+    left u => first;
+    right j => rest(j);
+  };
+
+theorem fin_prepend_injective(
+  A : U0, n : Nat, first : A, rest : Fin(n) -> A, injective : Injective(Fin(n), A, rest),
+  fresh : (forall j : Fin(n), first = rest(j) -> Void)
+) :
+  Injective(Fin(succ(n)), A, fin_prepend(A, n, first, rest)) {
+  let f = fin_prepend(A, n, first, rest);
+  intro i;
+  intro j;
+  exact match i as x return (f(x) = f(j) -> x = j) {
+    left u => match j as y return (
+      f(typed(Fin(succ(n)), left(u))) = f(y) -> typed(Fin(succ(n)), left(u)) = y
+    ) {
+      left w => fun (same : first = first) => cong(
+        (fun (z : Unit) => typed(Fin(succ(n)), left(z))), trans(sym(unit_equal(u)), unit_equal(w))
+      );
+      right k => fun (same : first = rest(k)) => typed(
+        (typed(Fin(succ(n)), left(u)) = typed(Fin(succ(n)), right(k))), absurd(fresh(k, same))
+      );
+    };
+    right h => match j as y return (
+      f(typed(Fin(succ(n)), right(h))) = f(y) -> typed(Fin(succ(n)), right(h)) = y
+    ) {
+      left w => fun (same : rest(h) = first) => typed(
+        (typed(Fin(succ(n)), right(h)) = typed(Fin(succ(n)), left(w))), absurd(fresh(h, sym(same)))
+      );
+      right k => fun (same : rest(h) = rest(k)) => cong(
+        (fun (z : Fin(n)) => typed(Fin(succ(n)), right(z))), injective(h, k, same)
+      );
+    };
+  };
+}
+
+theorem outside_generator_fresh(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V), m : Nat,
+  chosen : Fin(m) -> Fin(n), i : Fin(n),
+  outside : Mere(
+    Fiber(
+      (Fin(m) -> af_carrier(K)), vector_carrier(K, V),
+      linear_map(
+        K, CoordinateSpace(K, m), V, family_linear(K, V, m, (fun (j : Fin(m)) => v(chosen(j))))
+      ), v(i)
+    )
+  ) -> Void
+) :
+  forall j : Fin(m), i = chosen(j) -> Void {
+  intro j;
+  intro same;
+  let w = fun (k : Fin(m)) => v(chosen(k));
+  let F = linear_map(K, CoordinateSpace(K, m), V, family_linear(K, V, m, w));
+  let FiberF = Fiber((Fin(m) -> af_carrier(K)), vector_carrier(K, V), F);
+  exact outside(
+    merely(
+      FiberF(v(i)),
+      typed(
+        FiberF(v(i)),
+        (coordinate_unit(K, m, j), trans(family_unit_value(K, V, m, w, j), sym(cong(v, same))))
+      )
+    )
+  );
+}
+
+theorem spanning_subfamily_step(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
+  spanning : FiniteSpanningFamily(K, V, n, v), fuel : Nat,
+  previous : (
+    forall m : Nat, forall chosen : Fin(m) -> Fin(n), Injective(Fin(m), Fin(n), chosen)
+    -> LinearInjective(
+      K, CoordinateSpace(K, m), V, family_linear(K, V, m, (fun (i : Fin(m)) => v(chosen(i))))
+    ) -> NoIndependent(K, V, add_count(fuel, m)) -> Mere(SubfamilyBasis(K, V, n, v))
+  ), m : Nat, chosen : Fin(m) -> Fin(n), distinct : Injective(Fin(m), Fin(n), chosen),
+  independent : LinearInjective(
+    K, CoordinateSpace(K, m), V, family_linear(K, V, m, (fun (i : Fin(m)) => v(chosen(i))))
+  ), bound : NoIndependent(K, V, succ(add_count(fuel, m)))
+) :
+  Mere(SubfamilyBasis(K, V, n, v)) {
+  let C = CoordinateSpace(K, m);
+  let X = vector_carrier(K, V);
+  let w = fun (i : Fin(m)) => v(chosen(i));
+  let f = family_linear(K, V, m, w);
+  let F = linear_map(K, C, V, f);
+  let Member = fun (i : Fin(n)) => Mere(Fiber((Fin(m) -> af_carrier(K)), X, F, v(i)));
+  let Result = SubfamilyBasis(K, V, n, v);
+  have extend : (exists i : Fin(n), Member(i) -> Void) -> Mere(Result) {
+    intro witness;
+    obtain (i, outside) = witness;
+    let selected = fin_prepend(Fin(n), m, i, chosen);
+    exact previous(
+      succ(m), selected,
+      fin_prepend_injective(
+        Fin(n), m, i, chosen, distinct, outside_generator_fresh(K, V, n, v, m, chosen, i, outside)
+      ), adjoin_linear_injective(K, V, m, f, independent, v(i), outside),
+      transport(
+        NoIndependent(K, V), succ(add_count(fuel, m)), add_count(fuel, succ(m)),
+        sym(nat_add_succ(fuel, m)), bound
+      )
+    );
+  }
+  exact match excluded_middle(LinearSurjective(K, C, V, f), linear_surjective_prop(K, C, V, f)) return Mere(
+    Result
+  ) {
+    left onto => merely(Result, typed(Result, (m, chosen, distinct, independent, onto)));
+    right notOnto => mere_eliminate(
+      (exists i : Fin(n), Member(i) -> Void), Mere(Result), mere_is_prop(Result), extend,
+      classical_counterexample(
+        Fin(n), Member,
+        (fun (i : Fin(n)) => mere_is_prop(Fiber((Fin(m) -> af_carrier(K)), X, F, v(i)))),
+        (
+          fun (members : (forall i : Fin(n), Member(i))) => notOnto(
+            spanning_family_in_image(K, C, V, f, n, v, spanning, members)
+          )
+        )
+      )
+    );
+  };
+}
+
+def spanning_subfamily_search(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
+  spanning : FiniteSpanningFamily(K, V, n, v), fuel : Nat
+) =
+  induction fuel as k return (
+    forall m : Nat, forall chosen : Fin(m) -> Fin(n), Injective(Fin(m), Fin(n), chosen)
+    -> LinearInjective(
+      K, CoordinateSpace(K, m), V, family_linear(K, V, m, (fun (i : Fin(m)) => v(chosen(i))))
+    ) -> NoIndependent(K, V, add_count(k, m)) -> Mere(SubfamilyBasis(K, V, n, v))
+  ) {
+    zero => fun (m : Nat) => fun (chosen : Fin(m) -> Fin(n)) => fun (
+      distinct : Injective(Fin(m), Fin(n), chosen)
+    ) => fun (
+      independent : LinearInjective(
+        K, CoordinateSpace(K, m), V, family_linear(K, V, m, (fun (i : Fin(m)) => v(chosen(i))))
+      )
+    ) => fun (bound : NoIndependent(K, V, add_count(0, m))) => typed(
+      Mere(SubfamilyBasis(K, V, n, v)),
+      absurd(bound(family_linear(K, V, m, (fun (i : Fin(m)) => v(chosen(i)))), independent))
+    );
+    succ previous => spanning_subfamily_step(K, V, n, v, spanning, k, previous);
+  };
+
+// A finite spanning family contains a basis. Chosen indices are distinct,
+// so duplicate entries or zero generators are never silently kept in a basis.
+theorem finite_spanning_subfamily_basis(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
+  spanning : FiniteSpanningFamily(K, V, n, v)
+) :
+  Mere(SubfamilyBasis(K, V, n, v)) {
+  let empty = fun (i : Fin(0)) => typed(Fin(n), absurd(i));
+  let bound =
+    coordinate_surjection_bound(
+      K, V, n, family_linear(K, V, n, v), family_linear_surjective(K, V, n, v, spanning)
+    );
+  exact spanning_subfamily_search(
+    K, V, n, v, spanning, succ(n), 0, empty,
+    (
+      fun (i : Fin(0)) => fun (j : Fin(0)) => fun (same : empty(i) = empty(j)) => typed(
+        (i = j), absurd(i)
+      )
+    ), linear_empty_injective(K, V),
+    transport(
+      NoIndependent(K, V), succ(n), add_count(succ(n), 0), sym(nat_add_zero(succ(n))), bound
+    )
+  );
+}

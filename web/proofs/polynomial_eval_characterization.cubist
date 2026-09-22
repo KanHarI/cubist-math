@@ -1,0 +1,76 @@
+import polynomial_evaluation;
+
+// The Horner equations characterize evaluation. This abstract lemma is also
+// useful when comparing maps into two different representations of a field.
+def PolynomialHornerLaw(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  F : Polynomial(K) -> af_carrier(L)
+) =
+  forall p : Polynomial(K),
+  F(p) = field_add(
+    L, field_embedding_map(K, L, e, polynomial_coefficients(K, p, 0)),
+    field_mul(L, x, F(polynomial_tail(K, p)))
+  );
+
+theorem polynomial_eval_characterization_step(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  F : Polynomial(K) -> af_carrier(L), step : PolynomialHornerLaw(K, L, e, x, F), n : Nat,
+  p : Polynomial(K), support : SeriesSupport(K, polynomial_coefficients(K, p), succ(n)),
+  previous : polynomial_eval(K, L, e, polynomial_tail(K, p), x) = F(polynomial_tail(K, p))
+) :
+  polynomial_eval(K, L, e, p, x) = F(p) {
+  let tail = polynomial_tail(K, p);
+  let f = polynomial_coefficients(K, p);
+  let tailSupport = fun (j : Nat) => fun (above : le(n, j)) => support(succ(j), above);
+  let mappedTail = trans(sym(polynomial_eval_bound(K, L, e, tail, x, n, tailSupport)), previous);
+  exact with unfolding [] {
+    trans(
+      polynomial_eval_bound(K, L, e, p, x, succ(n), support),
+      trans(
+        cong(
+          (
+            fun (y : af_carrier(L)) => field_add(
+              L, field_embedding_map(K, L, e, f(0)), field_mul(L, x, y)
+            )
+          ), mappedTail
+        ), sym(step(p))
+      )
+    )
+  };
+}
+
+theorem polynomial_eval_characterization_bounded(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  F : Polynomial(K) -> af_carrier(L), zero : F(polynomial_zero(K)) = field_zero(L),
+  step : PolynomialHornerLaw(K, L, e, x, F), n : Nat
+) =
+  induction n as k return (
+    forall p : Polynomial(K), SeriesSupport(K, polynomial_coefficients(K, p), k)
+    -> polynomial_eval(K, L, e, p, x) = F(p)
+  ) {
+    zero => fun (p : Polynomial(K)) => fun (
+      support : SeriesSupport(K, polynomial_coefficients(K, p), 0)
+    ) => trans(
+      polynomial_eval_bound(K, L, e, p, x, 0, support),
+      sym(trans(cong(F, support_zero_polynomial(K, p, support)), zero))
+    );
+    succ previous => fun (p : Polynomial(K)) => fun (
+      support : SeriesSupport(K, polynomial_coefficients(K, p), succ(k))
+    ) => polynomial_eval_characterization_step(
+      K, L, e, x, F, step, k, p, support,
+      previous(
+        polynomial_tail(K, p), (fun (j : Nat) => fun (above : le(k, j)) => support(succ(j), above))
+      )
+    );
+  };
+
+theorem polynomial_eval_characterization(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  F : Polynomial(K) -> af_carrier(L), zero : F(polynomial_zero(K)) = field_zero(L),
+  step : PolynomialHornerLaw(K, L, e, x, F), p : Polynomial(K)
+) :
+  polynomial_eval(K, L, e, p, x) = F(p) {
+  exact polynomial_eval_characterization_bounded(
+    K, L, e, x, F, zero, step, polynomial_cutoff(K, p), p, polynomial_cutoff_support(K, p)
+  );
+}

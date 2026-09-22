@@ -1,0 +1,115 @@
+import polynomial_ring;
+import natural_minimum;
+
+// The cutoff is the least support bound. It is zero for the zero polynomial
+// and degree+1 otherwise; this avoids giving zero a misleading leading term.
+def polynomial_minimum(K : AlgebraicField, p : Polynomial(K)) =
+  natural_minimum(
+    SeriesSupport(K, polynomial_coefficients(K, p)),
+    series_support_prop(K, polynomial_coefficients(K, p)), polynomial_support(K, p)
+  );
+
+def polynomial_cutoff(K : AlgebraicField, p : Polynomial(K)) =
+  sigma_first(
+    Nat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
+  );
+
+def polynomial_cutoff_data(K : AlgebraicField, p : Polynomial(K)) =
+  sigma_second(
+    Nat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
+  );
+
+def polynomial_cutoff_support(K : AlgebraicField, p : Polynomial(K)) :
+  SeriesSupport(K, polynomial_coefficients(K, p), polynomial_cutoff(K, p)) {
+  obtain (support, least) = polynomial_cutoff_data(K, p);
+  exact support;
+}
+
+def polynomial_cutoff_least(K : AlgebraicField, p : Polynomial(K)) :
+  forall n : Nat, SeriesSupport(K, polynomial_coefficients(K, p), n)
+  -> le(polynomial_cutoff(K, p), n) {
+  obtain (support, least) = polynomial_cutoff_data(K, p);
+  exact least;
+}
+
+theorem support_zero_polynomial(
+  K : AlgebraicField, p : Polynomial(K),
+  support : SeriesSupport(K, polynomial_coefficients(K, p), 0)
+) :
+  p = polynomial_zero(K) {
+  exact polynomial_coefficient_ext(K, p, polynomial_zero(K), (fun (k : Nat) => support(k, tt)));
+}
+
+theorem polynomial_cutoff_zero(
+  K : AlgebraicField, p : Polynomial(K), zero : polynomial_cutoff(K, p) = 0
+) :
+  p = polynomial_zero(K) {
+  exact support_zero_polynomial(
+    K, p,
+    transport(
+      SeriesSupport(K, polynomial_coefficients(K, p)), polynomial_cutoff(K, p), 0, zero,
+      polynomial_cutoff_support(K, p)
+    )
+  );
+}
+
+theorem polynomial_zero_cutoff(K : AlgebraicField) : polynomial_cutoff(K, polynomial_zero(K)) = 0 {
+  exact nat_le_zero(
+    polynomial_cutoff(K, polynomial_zero(K)),
+    polynomial_cutoff_least(
+      K, polynomial_zero(K), 0, (fun (k : Nat) => fun (above : le(0, k)) => refl(field_zero(K)))
+    )
+  );
+}
+
+theorem support_predecessor(
+  K : AlgebraicField, f : FormalSeries(K), n : Nat, support : SeriesSupport(K, f, succ(n)),
+  last : f(n) = field_zero(K)
+) :
+  SeriesSupport(K, f, n) {
+  intro k;
+  intro above;
+  exact match nat_le_total(succ(n), k) return f(k) = field_zero(K) {
+    left beyond => support(k, beyond);
+    right below => trans(cong(f, sym(dimension_order_antisymmetric(n, k, above, below))), last);
+  };
+}
+
+theorem polynomial_leading_nonzero(
+  K : AlgebraicField, p : Polynomial(K), n : Nat, degree : polynomial_cutoff(K, p) = succ(n)
+) :
+  FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, p, n)) {
+  intro zero;
+  let support =
+    transport(
+      SeriesSupport(K, polynomial_coefficients(K, p)), polynomial_cutoff(K, p), succ(n), degree,
+      polynomial_cutoff_support(K, p)
+    );
+  let lowered = support_predecessor(K, polynomial_coefficients(K, p), n, support, zero);
+  exact successor_not_le_self(
+    n,
+    transport(
+      (fun (k : Nat) => le(k, n)), polynomial_cutoff(K, p), succ(n), degree,
+      polynomial_cutoff_least(K, p, n, lowered)
+    )
+  );
+}
+
+// A known top nonzero coefficient determines the canonical cutoff.
+theorem polynomial_cutoff_exact(
+  K : AlgebraicField, p : Polynomial(K), n : Nat,
+  support : SeriesSupport(K, polynomial_coefficients(K, p), succ(n)),
+  nonzero : FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, p, n))
+) :
+  polynomial_cutoff(K, p) = succ(n) {
+  let c = polynomial_cutoff(K, p);
+  have lower : le(succ(n), c) {
+    exact match nat_le_total(succ(n), c) return le(succ(n), c) {
+      left yes => yes;
+      right below => absurd(nonzero(polynomial_cutoff_support(K, p, n, below)));
+    };
+  }
+  exact dimension_order_antisymmetric(
+    c, succ(n), polynomial_cutoff_least(K, p, succ(n), support), lower
+  );
+}

@@ -1,0 +1,247 @@
+import dimension;
+import surjections;
+
+// Injectivity and surjectivity refer to the underlying map of a checked
+// linear map. Surjectivity promises only truncated preimages.
+def LinearInjective(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W)
+) =
+  Injective(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
+
+def LinearSurjective(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W)
+) =
+  Surjective(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
+
+def linear_unique_preimage(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  injective : LinearInjective(K, V, W, f), onto : LinearSurjective(K, V, W, f),
+  y : vector_carrier(K, W)
+) :
+  Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y) {
+  let X = vector_carrier(K, V);
+  let Y = vector_carrier(K, W);
+  let F = linear_map(K, V, W, f);
+  exact mere_eliminate(
+    Fiber(X, Y, F, y), Fiber(X, Y, F, y),
+    injection_is_embedding(X, Y, group_is_set(vector_group(K, W)), F, injective, y),
+    (fun (p : Fiber(X, Y, F, y)) => p), onto(y)
+  );
+}
+
+def linear_bijective_iso(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  injective : LinearInjective(K, V, W, f), onto : LinearSurjective(K, V, W, f)
+) :
+  LinearIso(K, V, W) {
+  let X = vector_carrier(K, V);
+  let Y = vector_carrier(K, W);
+  let F = linear_map(K, V, W, f);
+  let g =
+    fun (y : Y) => sigma_first(
+      X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
+    );
+  let right =
+    fun (y : Y) => sigma_second(
+      X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
+    );
+  have additive :
+    forall y : Y, forall z : Y, g(vector_add(K, W, y, z)) = vector_add(K, V, g(y), g(z)) {
+    intro y;
+    intro z;
+    exact injective(
+      g(vector_add(K, W, y, z)), vector_add(K, V, g(y), g(z)),
+      trans(
+        right(vector_add(K, W, y, z)),
+        sym(
+          trans(
+            linear_add(K, V, W, f, g(y), g(z)),
+            trans(
+              cong((fun (a : Y) => vector_add(K, W, a, F(g(z)))), right(y)),
+              cong(vector_add(K, W, y), right(z))
+            )
+          )
+        )
+      )
+    );
+  }
+  have scalar :
+    forall a : af_carrier(K), forall y : Y,
+    g(vector_scale(K, W, a, y)) = vector_scale(K, V, a, g(y)) {
+    intro a;
+    intro y;
+    exact injective(
+      g(vector_scale(K, W, a, y)), vector_scale(K, V, a, g(y)),
+      trans(
+        right(vector_scale(K, W, a, y)),
+        sym(trans(linear_scale(K, V, W, f, a, g(y)), cong(vector_scale(K, W, a), right(y))))
+      )
+    );
+  }
+  exact (f, (g, additive, scalar), (fun (x : X) => injective(g(F(x)), x, right(F(x)))), right);
+}
+
+def linear_empty(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, CoordinateSpace(K, 0), V) {
+  exact (
+    (fun (v : Fin(0) -> af_carrier(K)) => vector_zero(K, V)),
+    (
+      fun (v : Fin(0) -> af_carrier(K)) => fun (w : Fin(0) -> af_carrier(K)) => sym(
+        group_unit_left(vector_group(K, V), vector_zero(K, V))
+      )
+    ),
+    (
+      fun (a : af_carrier(K)) => fun (v : Fin(0) -> af_carrier(K)) => sym(
+        vector_scale_zero(K, V, a)
+      )
+    )
+  );
+}
+
+theorem linear_empty_injective(K : AlgebraicField, V : VectorSpace(K)) :
+  LinearInjective(K, CoordinateSpace(K, 0), V, linear_empty(K, V)) {
+  intro v;
+  intro w;
+  intro same;
+  exact FunExt(
+    U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)), v, w,
+    (fun (i : Fin(0)) => typed((v(i) = w(i)), absurd(i)))
+  );
+}
+
+// Add one generator to an already independent coordinate family.
+def adjoin_linear(
+  K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
+  x : vector_carrier(K, V)
+) =
+  linear_sum(
+    K, CoordinateSpace(K, succ(m)), V,
+    linear_compose(
+      K, CoordinateSpace(K, succ(m)), ScalarSpace(K), V,
+      evaluation_linear(K, Fin(succ(m)), ScalarSpace(K), typed(Fin(succ(m)), left(tt))),
+      scalar_vector_linear(K, V, x)
+    ),
+    linear_compose(
+      K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, m), V, coordinate_tail_linear(K, m), f
+    )
+  );
+
+theorem adjoin_nonzero_impossible(
+  K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
+  x : vector_carrier(K, V),
+  outside : Mere(
+    Fiber(
+      vector_carrier(K, CoordinateSpace(K, m)), vector_carrier(K, V),
+      linear_map(K, CoordinateSpace(K, m), V, f), x
+    )
+  ) -> Void, a : af_carrier(K), rest : Fin(m) -> af_carrier(K),
+  vanishes : vector_add(
+    K, V, vector_scale(K, V, a, x), linear_map(K, CoordinateSpace(K, m), V, f, rest)
+  ) = vector_zero(K, V), nonzero : FieldNonzero(af_carrier(K), af_operations(K), a)
+) :
+  Void {
+  let A = af_carrier(K);
+  let ops = af_operations(K);
+  let C = CoordinateSpace(K, m);
+  let F = linear_map(K, C, V, f);
+  let y = F(rest);
+  let G = vector_group(K, V);
+  obtain (ring, nontrivial, inverses) = af_laws(K);
+  obtain (addLaws, assoc, comm, one, distribute) = ring;
+  obtain (b, inverse) = inverses(a, nonzero);
+  let leftInverse = trans(comm(b, a), inverse);
+  have solve : vector_scale(K, V, a, x) = vector_neg(K, V, y) {
+    exact group_inverse_unique(
+      vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), group_laws(G), y,
+      vector_scale(K, V, a, x), vector_neg(K, V, y), vanishes, group_inverse_right(G, y)
+    );
+  }
+  let preimage = vector_scale(K, C, b, vector_neg(K, C, rest));
+  have image : F(preimage) = x {
+    exact trans(
+      linear_scale(K, C, V, f, b, vector_neg(K, C, rest)),
+      trans(
+        cong(vector_scale(K, V, b), linear_neg(K, C, V, f, rest)),
+        trans(
+          sym(cong(vector_scale(K, V, b), solve)), vector_scale_undo(K, V, a, b, leftInverse, x)
+        )
+      )
+    );
+  }
+  exact outside(
+    merely(
+      Fiber(vector_carrier(K, C), vector_carrier(K, V), F, x),
+      typed(Fiber(vector_carrier(K, C), vector_carrier(K, V), F, x), (preimage, image))
+    )
+  );
+}
+
+theorem adjoin_linear_kernel(
+  K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
+  injective : LinearInjective(K, CoordinateSpace(K, m), V, f), x : vector_carrier(K, V),
+  outside : Mere(
+    Fiber(
+      vector_carrier(K, CoordinateSpace(K, m)), vector_carrier(K, V),
+      linear_map(K, CoordinateSpace(K, m), V, f), x
+    )
+  ) -> Void, v : Fin(succ(m)) -> af_carrier(K),
+  vanishes : linear_map(K, CoordinateSpace(K, succ(m)), V, adjoin_linear(K, V, m, f, x), v) = vector_zero(
+    K, V
+  )
+) :
+  v = vector_zero(K, CoordinateSpace(K, succ(m))) {
+  let A = af_carrier(K);
+  let ops = af_operations(K);
+  let X = vector_carrier(K, V);
+  let C = CoordinateSpace(K, m);
+  let F = linear_map(K, C, V, f);
+  let a = finite_head(A, m, v);
+  let rest = finite_tail(A, m, v);
+  let y = F(rest);
+  let G = vector_group(K, V);
+  have coefficient_zero : a = af_zero(A, ops) {
+    exact double_negation(
+      a = af_zero(A, ops), af_set(K, a, af_zero(A, ops)),
+      (
+        fun (nonzero : (a = af_zero(A, ops)) -> Void) => adjoin_nonzero_impossible(
+          K, V, m, f, x, outside, a, rest, vanishes, nonzero
+        )
+      )
+    );
+  }
+  have rest_zero : rest = vector_zero(K, C) {
+    have image_zero : y = vector_zero(K, V) {
+      exact trans(
+        sym(group_unit_left(G, y)),
+        trans(
+          cong((fun (z : X) => vector_add(K, V, z, y)), sym(vector_zero_scale(K, V, x))),
+          trans(
+            cong(
+              (fun (b : A) => vector_add(K, V, vector_scale(K, V, b, x), y)), sym(coefficient_zero)
+            ), vanishes
+          )
+        )
+      );
+    }
+    exact injective(rest, vector_zero(K, C), trans(image_zero, sym(linear_zero(K, C, V, f))));
+  }
+  exact finite_function_ext(
+    A, m, v, vector_zero(K, CoordinateSpace(K, succ(m))), coefficient_zero, rest_zero
+  );
+}
+
+theorem adjoin_linear_injective(
+  K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
+  injective : LinearInjective(K, CoordinateSpace(K, m), V, f), x : vector_carrier(K, V),
+  outside : Mere(
+    Fiber(
+      vector_carrier(K, CoordinateSpace(K, m)), vector_carrier(K, V),
+      linear_map(K, CoordinateSpace(K, m), V, f), x
+    )
+  ) -> Void
+) :
+  LinearInjective(K, CoordinateSpace(K, succ(m)), V, adjoin_linear(K, V, m, f, x)) {
+  exact linear_kernel_injective(
+    K, CoordinateSpace(K, succ(m)), V, adjoin_linear(K, V, m, f, x),
+    adjoin_linear_kernel(K, V, m, f, injective, x, outside)
+  );
+}

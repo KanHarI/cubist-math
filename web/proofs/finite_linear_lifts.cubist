@@ -1,0 +1,201 @@
+import finite_basis_search;
+
+// A finite free vector space is projective: lift its generators through a
+// surjection and extend linearly. The result is truncated; finite recursion
+// needs no axiom of choice.
+def FiniteLinearLift(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
+  h : LinearMap(K, CoordinateSpace(K, m), W)
+) =
+  exists lift : LinearMap(K, CoordinateSpace(K, m), V), forall v : Fin(m) -> af_carrier(K),
+  linear_map(K, V, W, f, linear_map(K, CoordinateSpace(K, m), V, lift, v)) = linear_map(
+    K, CoordinateSpace(K, m), W, h, v
+  );
+
+theorem linear_first_tail(
+  K : AlgebraicField, W : VectorSpace(K), m : Nat, h : LinearMap(K, CoordinateSpace(K, succ(m)), W),
+  v : Fin(succ(m)) -> af_carrier(K)
+) :
+  linear_map(K, CoordinateSpace(K, succ(m)), W, h, v) = vector_add(
+    K, W,
+    vector_scale(
+      K, W, finite_head(af_carrier(K), m, v),
+      linear_map(K, CoordinateSpace(K, succ(m)), W, h, coordinate_first(K, m))
+    ),
+    linear_map(
+      K, CoordinateSpace(K, succ(m)), W, h,
+      coordinate_insert(K, m, finite_tail(af_carrier(K), m, v))
+    )
+  ) {
+  let A = af_carrier(K);
+  let C = CoordinateSpace(K, succ(m));
+  let H = linear_map(K, C, W, h);
+  let a = finite_head(A, m, v);
+  let t = coordinate_insert(K, m, finite_tail(A, m, v));
+  exact trans(
+    sym(cong(H, coordinate_decompose(K, m, v))),
+    trans(
+      linear_add(K, C, W, h, vector_scale(K, C, a, coordinate_first(K, m)), t),
+      cong(
+        (fun (z : vector_carrier(K, W)) => vector_add(K, W, z, H(t))),
+        linear_scale(K, C, W, h, a, coordinate_first(K, m))
+      )
+    )
+  );
+}
+
+def finite_linear_lift_assemble(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
+  h : LinearMap(K, CoordinateSpace(K, succ(m)), W), x : vector_carrier(K, V),
+  first : linear_map(K, V, W, f, x) = linear_map(
+    K, CoordinateSpace(K, succ(m)), W, h, coordinate_first(K, m)
+  ),
+  rest : FiniteLinearLift(
+    K, V, W, f, m,
+    linear_compose(
+      K, CoordinateSpace(K, m), CoordinateSpace(K, succ(m)), W, coordinate_insert_linear(K, m), h
+    )
+  )
+) :
+  FiniteLinearLift(K, V, W, f, succ(m), h) {
+  obtain (l, commute) = rest;
+  let A = af_carrier(K);
+  let F = linear_map(K, V, W, f);
+  let L = linear_map(K, CoordinateSpace(K, m), V, l);
+  let H = linear_map(K, CoordinateSpace(K, succ(m)), W, h);
+  have square :
+    forall v : Fin(succ(m)) -> A,
+    F(linear_map(K, CoordinateSpace(K, succ(m)), V, adjoin_linear(K, V, m, l, x), v)) = H(v) {
+    intro v;
+    let a = finite_head(A, m, v);
+    let t = finite_tail(A, m, v);
+    exact trans(
+      linear_add(K, V, W, f, vector_scale(K, V, a, x), L(t)),
+      trans(
+        cong(
+          (fun (z : vector_carrier(K, W)) => vector_add(K, W, z, F(L(t)))),
+          linear_scale(K, V, W, f, a, x)
+        ),
+        trans(
+          cong(
+            (fun (z : vector_carrier(K, W)) => vector_add(K, W, vector_scale(K, W, a, z), F(L(t)))),
+            first
+          ),
+          trans(
+            cong(vector_add(K, W, vector_scale(K, W, a, H(coordinate_first(K, m)))), commute(t)),
+            sym(linear_first_tail(K, W, m, h, v))
+          )
+        )
+      )
+    );
+  }
+  exact (adjoin_linear(K, V, m, l, x), square);
+}
+
+def finite_linear_lift_zero(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  h : LinearMap(K, CoordinateSpace(K, 0), W)
+) :
+  FiniteLinearLift(K, V, W, f, 0, h) {
+  let A = af_carrier(K);
+  let C = CoordinateSpace(K, 0);
+  let H = linear_map(K, C, W, h);
+  have square : forall v : Fin(0) -> A, linear_map(K, V, W, f, vector_zero(K, V)) = H(v) {
+    intro v;
+    exact trans(
+      linear_zero(K, V, W, f),
+      trans(
+        sym(linear_zero(K, C, W, h)),
+        cong(
+          H,
+          FunExt(
+            U0, Fin(0), (fun (i : Fin(0)) => A), vector_zero(K, C), v,
+            (fun (i : Fin(0)) => typed((af_zero(A, af_operations(K)) = v(i)), absurd(i)))
+          )
+        )
+      )
+    );
+  }
+  exact (linear_empty(K, V), square);
+}
+
+def finite_linear_lift_step(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  onto : LinearSurjective(K, V, W, f), m : Nat,
+  previous : (
+    forall h : LinearMap(K, CoordinateSpace(K, m), W), Mere(FiniteLinearLift(K, V, W, f, m, h))
+  ), h : LinearMap(K, CoordinateSpace(K, succ(m)), W)
+) :
+  Mere(FiniteLinearLift(K, V, W, f, succ(m), h)) {
+  let X = vector_carrier(K, V);
+  let Y = vector_carrier(K, W);
+  let F = linear_map(K, V, W, f);
+  let first = linear_map(K, CoordinateSpace(K, succ(m)), W, h, coordinate_first(K, m));
+  let tailMap =
+    linear_compose(
+      K, CoordinateSpace(K, m), CoordinateSpace(K, succ(m)), W, coordinate_insert_linear(K, m), h
+    );
+  let Result = FiniteLinearLift(K, V, W, f, succ(m), h);
+  have withFirst : Fiber(X, Y, F, first) -> Mere(Result) {
+    intro witness;
+    obtain (x, same) = witness;
+    exact mere_map(
+      FiniteLinearLift(K, V, W, f, m, tailMap), Result,
+      finite_linear_lift_assemble(K, V, W, f, m, h, x, same), previous(tailMap)
+    );
+  }
+  exact mere_eliminate(
+    Fiber(X, Y, F, first), Mere(Result), mere_is_prop(Result), withFirst, onto(first)
+  );
+}
+
+def finite_linear_lift(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  onto : LinearSurjective(K, V, W, f), m : Nat
+) =
+  induction m as k return (
+    forall h : LinearMap(K, CoordinateSpace(K, k), W), Mere(FiniteLinearLift(K, V, W, f, k, h))
+  ) {
+    zero => fun (h : LinearMap(K, CoordinateSpace(K, 0), W)) => merely(
+      FiniteLinearLift(K, V, W, f, 0, h), finite_linear_lift_zero(K, V, W, f, h)
+    );
+    succ previous => finite_linear_lift_step(K, V, W, f, onto, k, previous);
+  };
+
+theorem coordinate_surjection_bound(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
+  onto : LinearSurjective(K, CoordinateSpace(K, n), V, f)
+) :
+  NoIndependent(K, V, succ(n)) {
+  intro h;
+  intro independent;
+  let N = CoordinateSpace(K, n);
+  let C = CoordinateSpace(K, succ(n));
+  let F = linear_map(K, N, V, f);
+  let H = linear_map(K, C, V, h);
+  have noLift : FiniteLinearLift(K, N, V, f, succ(n), h) -> Void {
+    intro witness;
+    obtain (l, square) = witness;
+    let L = linear_map(K, C, N, l);
+    have injective : CoordinateInjection(K, succ(n), n, l) {
+      intro x;
+      intro y;
+      intro same;
+      exact independent(x, y, trans(sym(square(x)), trans(cong(F, same), square(y))));
+    }
+    exact successor_not_le_self(n, coordinate_injection_bound(K, n, succ(n), l, injective));
+  }
+  exact mere_eliminate(
+    FiniteLinearLift(K, N, V, f, succ(n), h), Void,
+    (fun (x : Void) => fun (y : Void) => typed((x = y), absurd(x))), noLift,
+    finite_linear_lift(K, N, V, f, onto, succ(n), h)
+  );
+}
+
+theorem finite_dimensional_coordinate_surjection(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
+  onto : LinearSurjective(K, CoordinateSpace(K, n), V, f)
+) :
+  FiniteDimensional(K, V) {
+  exact finite_dimensional_from_bound(K, V, succ(n), coordinate_surjection_bound(K, V, n, f, onto));
+}

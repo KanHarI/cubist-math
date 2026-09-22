@@ -1,0 +1,95 @@
+import polynomial_root_embeddings;
+import polynomial_eval_embeddings;
+
+// A residue-ring map is determined by its action on constants and X.
+// Stating this with the raw ring operations avoids imposing field hypotheses.
+theorem residue_hom_evaluation(
+  K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  x : af_carrier(L), f : PolynomialResidue(K, M) -> af_carrier(L),
+  f0 : f(residue_zero(K, M)) = field_zero(L),
+  fa : (
+    forall r : PolynomialResidue(K, M), forall s : PolynomialResidue(K, M),
+    f(residue_add(K, M, r, s)) = field_add(L, f(r), f(s))
+  ),
+  fm : (
+    forall r : PolynomialResidue(K, M), forall s : PolynomialResidue(K, M),
+    f(residue_mul(K, M, r, s)) = field_mul(L, f(r), f(s))
+  ),
+  constants : (
+    forall a : af_carrier(K), f(residue_constant(K, M, a)) = field_embedding_map(K, L, e, a)
+  ), generator : f(adjoined_root(K, M)) = x, p : Polynomial(K)
+) :
+  f(residue_reduce(K, M, p)) = polynomial_eval(K, L, e, p, x) {
+  let F = fun (q : Polynomial(K)) => f(residue_reduce(K, M, q));
+  have step : PolynomialHornerLaw(K, L, e, x, F) {
+    intro q;
+    let a = polynomial_coefficients(K, q, 0);
+    let c = residue_constant(K, M, a);
+    let t = residue_reduce(K, M, polynomial_tail(K, q));
+    let z = adjoined_root(K, M);
+    exact with unfolding [] {
+      trans(
+        cong(f, residue_reduce_horner(K, M, q)),
+        trans(
+          fa(c, residue_mul(K, M, z, t)),
+          trans(
+            cong(
+              (fun (v : af_carrier(L)) => field_add(L, v, f(residue_mul(K, M, z, t)))), constants(a)
+            ),
+            trans(
+              cong(field_add(L, field_embedding_map(K, L, e, a)), fm(z, t)),
+              cong(
+                (
+                  fun (v : af_carrier(L)) => field_add(
+                    L, field_embedding_map(K, L, e, a), field_mul(L, v, f(t))
+                  )
+                ), generator
+              )
+            )
+          )
+        )
+      )
+    };
+  }
+  exact with unfolding [] {
+    sym(
+      polynomial_eval_characterization(
+        K, L, e, x, F, trans(cong(f, residue_reduce_zero(K, M)), f0), step, p
+      )
+    )
+  };
+}
+
+theorem adjoin_root_embedding_unique(
+  K : AlgebraicField, M : PolynomialModulus(K),
+  irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
+  e : FieldEmbedding(K, L), x : af_carrier(L),
+  root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x),
+  h : FieldEmbedding(PolynomialResidueField(K, M, irreducible), L),
+  constants : (
+    forall a : af_carrier(K),
+    field_embedding_map(PolynomialResidueField(K, M, irreducible), L, h, residue_constant(K, M, a)) = field_embedding_map(
+      K, L, e, a
+    )
+  ),
+  generator : field_embedding_map(
+    PolynomialResidueField(K, M, irreducible), L, h, adjoined_root(K, M)
+  ) = x
+) :
+  h = adjoin_root_embedding(K, M, irreducible, L, e, x, root) {
+  let R = PolynomialResidueField(K, M, irreducible);
+  let f = field_embedding_map(R, L, h);
+  obtain (f0, f1, fn, fa, fm) = field_embedding_preserves(R, L, h);
+  have same : forall r : PolynomialResidue(K, M), f(r) = residue_evaluate(K, M, L, e, x, r) {
+    intro r;
+    exact with unfolding [] {
+      trans(
+        cong(f, sym(residue_reduce_value(K, M, r))),
+        residue_hom_evaluation(
+          K, M, L, e, x, f, f0, fa, fm, constants, generator, residue_polynomial(K, M, r)
+        )
+      )
+    };
+  }
+  exact field_embedding_ext(R, L, h, adjoin_root_embedding(K, M, irreducible, L, e, x, root), same);
+}

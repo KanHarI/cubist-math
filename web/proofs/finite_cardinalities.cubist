@@ -1,0 +1,51 @@
+import finite_cancellation;
+import surjections;
+import primes;
+
+// Cardinality forgets the enumeration, retaining only its finite size.
+def HasCardinality(A : U0, n : Nat) = Mere(Bijection(Fin(n), A));
+
+def has_cardinality_prop(A : U0, n : Nat) = mere_is_prop(Bijection(Fin(n), A));
+
+def bijective_map_bijection(
+  A : U0, B : U0, setB : IsSet(B), f : A -> B, injective : Injective(A, B, f),
+  onto : Surjective(A, B, f)
+) :
+  Bijection(A, B) {
+  let fiber = Fiber(A, B, f);
+  let preimage =
+    fun (y : B) => mere_eliminate(
+      fiber(y), fiber(y), injection_is_embedding(A, B, setB, f, injective, y),
+      (fun (w : fiber(y)) => w), onto(y)
+    );
+  let g = fun (y : B) => sigma_first(A, (fun (x : A) => f(x) = y), preimage(y));
+  let right = fun (y : B) => sigma_second(A, (fun (x : A) => f(x) = y), preimage(y));
+  exact (f, g, (fun (x : A) => injective(g(f(x)), x, right(f(x)))), right);
+}
+
+theorem cardinality_unique(
+  A : U0, n : Nat, m : Nat, hn : HasCardinality(A, n), hm : HasCardinality(A, m)
+) :
+  n = m {
+  have first : Bijection(Fin(n), A) -> n = m {
+    intro e;
+    exact mere_eliminate(
+      Bijection(Fin(m), A), (n = m), hedberg(Nat, nat_eq_decidable, n, m),
+      (
+        fun (d : Bijection(Fin(m), A)) => finite_cardinality_unique(
+          n, m, compose_bijection(Fin(n), A, Fin(m), e, reverse_bijection(Fin(m), A, d))
+        )
+      ), hm
+    );
+  }
+  exact mere_eliminate(
+    Bijection(Fin(n), A), (n = m), hedberg(Nat, nat_eq_decidable, n, m), first, hn
+  );
+}
+
+// Transport finite counts along a type equality, including one built by ua.
+def cardinality_path(A : U0, B : U0, same : A =[U0] B, n : Nat, count : HasCardinality(A, n)) =
+  transport((fun (X : U0) => HasCardinality(X, n)), A, B, same, count);
+
+// An indexed family of pairwise different elements, without an exhaustion claim.
+def DistinctFamily(A : U0, n : Nat) = exists f : Fin(n) -> A, Injective(Fin(n), A, f);

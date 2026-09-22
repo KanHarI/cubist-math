@@ -1,13 +1,14 @@
 # Requirements for a full Galois theory development
 
-Status: resumed on main (2026-09-21). Start with the
-[resumption checkpoint](galois-handoff.md), including validation results and
-the current cubical kernel and validation commands. The listed stage-1 constructions
-and its Galois-connection completion criterion are checked. Stage 2 has
-initial checked vector-space and basis foundations; its completion criterion
-and stages 3–9 remain requirements. Quotient group operations, the first group isomorphism theorem, and the bundled quotient universal property are now checked.
-Checked results and their assumptions are described in
-[Galois symmetries as loops](galois.md).
+Status: finite algebraic-extension development on main (2026-09-22).
+Start with the [resumption checkpoint](galois-handoff.md) for validation and
+[polynomial algebra](polynomial-algebra.md) for the new checked statements.
+Finite basis extraction, finite subspace bases, both directions of tower
+finiteness, polynomial division and root adjunction, minimal polynomials,
+finite splitting fields, embedding normality, and finite separable embedding
+counts are now proved. The full roadmap below remains broader: equivalent
+Galois characterizations, Artin's fixed-field degree theorem, distinguished
+instances, and the general correspondence are still required.
 
 ## Existing foundation and remaining scope
 
@@ -46,11 +47,20 @@ and consequently all its subgroups are normal, without a decidability
 assumption. This is not yet the normal-subgroup/normal-extension criterion of
 the general correspondence.
 
-The first general target is the finite fundamental theorem, including degrees,
-normal subgroups, and quotient groups. Full scope also includes algebraic
-closures, infinite Galois extensions with their profinite topology, and the
-correspondence with closed subgroups. These are separate milestones; completing
-the finite theorem must not be presented as completing the infinite theory.
+The initial development is **finite Galois theory only**: the finite fundamental
+theorem, degree/index formulas, normal subgroups, and quotient groups.
+**Infinite extensions and infinite Galois theory are out of scope for this
+initial development**, as requested on 2026-09-22. Do not start arbitrary
+infinite extension-of-embeddings proofs, algebraic/separable-closure existence,
+Krull topology, profinite groups, or the infinite correspondence as part of
+this increment. Retain them below only as deferred future work requiring a
+separate request.
+
+General interfaces may still quantify over arbitrary ambient fields when that
+simplifies finite arguments. Existing theorems conditional on a supplied
+algebraically closed target may be used, but constructing such an infinite
+target is not a completion requirement. Build the particular finite splitting
+fields needed for the initial theorem instead.
 
 ## Lang's distinguished classes of extensions
 
@@ -92,8 +102,8 @@ Formalization requirements:
 - Keep class membership propositional. A selected basis, polynomial or
   splitting witness belongs in a separate data type; differing choices must
   not make two mathematical class-membership assertions different.
-- Establish distinguished-class instances for finite extensions, algebraic
-  extensions, separable algebraic extensions, and finite separable extensions,
+- Establish distinguished-class instances for finite extensions and finite separable extensions,
+  retaining general algebraic/separability interfaces only where useful for finite arguments,
   under the precise assumptions proved for each instance.
 - Do not register normal or Galois extensions as distinguished by analogy:
   normality, and therefore being Galois, is not generally transitive in towers.
@@ -102,25 +112,33 @@ This is a useful HoTT interface: paths transport extension properties and
 their theorems across equivalent presentations. It does not remove the need
 to prove the algebraic tower and compositum laws.
 
-## Development milestones
+## Initial development milestones: finite Galois theory
 
 | Stage | Required constructions and results | Completion criterion |
 |---|---|---|
 | 1. Subobjects and fixed elements | Subgroups, normal subgroups, subfields, intermediate fields, generated subfields, intersections and composita; fixed subfield of an automorphism subgroup; subgroup fixing an intermediate field | The two assignments are defined and form an order-reversing Galois connection for arbitrary extensions |
 | 2. Finite linear algebra | Vector spaces over bundled fields, spans, independence, explicit finite bases, dimension invariance, extension degree and the tower law | Degree calculations have checked hypotheses and no hidden choice of basis |
 | 3. Polynomial algebra | Finite-support polynomials, evaluation, division over fields, root bound, ideals or a sufficient principal-ideal API, irreducibility and quotient fields | Adjoining a root of an irreducible polynomial constructs a field with its universal property |
-| 4. Algebraic extensions | Minimal polynomials, finite versus finitely generated algebraic extensions, simple extensions, embedding extension lemmas and composita | Finite and algebraic extensions satisfy the distinguished interface |
+| 4. Algebraic extensions | Minimal polynomials, finite versus finitely generated algebraic extensions, simple extensions, embedding extension lemmas and composita | Finite extensions satisfy the distinguished interface; finitely generated algebraic extensions are proved finite |
 | 5. Separability and normality | Repeated roots, formal derivative, separable polynomials/elements/extensions, splitting fields, normal extensions, embedding criteria, counts of embeddings | Separable distinguished-class instances and the finite Galois characterizations are proved |
 | 6. Fixed-field theorem | Linear independence of distinct field homomorphisms; Artin's theorem for a finite group H of field automorphisms | The degree of L over its H-fixed field is the cardinality of H, and all automorphisms fixing that field are classified |
 | 7. Finite correspondence | Mutual inverse assignments, order reversal, degree/index formulas, normality criterion, restriction maps and quotient group isomorphisms | The complete finite fundamental theorem stated below is checked |
-| 8. Algebraic and separable closures | Existence under explicit assumptions, extension of embeddings, uniqueness up to isomorphism, normal and separable closures | Closure existence and any choices of embeddings are separately tracked |
-| 9. Infinite correspondence | Finite Galois subextensions, inverse systems of finite groups, Krull topology, closed subgroups and fixed fields | The infinite fundamental theorem, with closed-subgroup hypotheses and topological quotient statements, is checked |
 
 Stage 6 can proceed alongside parts of stages 3–5 once the linear-algebra
 foundation is ready. The final finite correspondence uses both branches.
 General algebraic closures are not a prerequisite for every possible proof
 of the finite theorem: constructing the particular finite splitting fields
 needed is a smaller initial target.
+
+## Deferred: outside the initial scope
+
+These are recorded for a possible later project, not requirements or blockers
+for completing the initial finite Galois development.
+
+| Future stage | Deferred constructions and results | Future completion criterion |
+|---|---|---|
+| 8. Algebraic and separable closures | Existence under explicit assumptions, extension of embeddings, uniqueness up to isomorphism, normal and separable closures | Closure existence and any choices of embeddings are separately tracked |
+| 9. Infinite correspondence | Finite Galois subextensions, inverse systems of finite groups, Krull topology, closed subgroups and fixed fields | The infinite fundamental theorem, with closed-subgroup hypotheses and topological quotient statements, is checked |
 
 ## Current implementation and next work
 
@@ -294,8 +312,9 @@ propositional degree interface uses the existing small truncation. Choice and
 U1 resizing are not used in this increment. Extension-isomorphism invariance
 uses the existing univalent equality of complete extensions.
 
-The converse finiteness criterion, finite spanning-family reduction, and the
-bridge to enumerated independent subset bases remain open.
+The converse finiteness criterion and finite spanning subfamily basis extraction
+now check, including indexed independent subsets. See [polynomial algebra](polynomial-algebra.md)
+for the subsequent finite algebraic-extension and embedding-count development.
 
 The larger-group structure identity equivalence also remains useful future
 work: `GroupAt(U1)` first-isomorphism results currently supply group
@@ -389,9 +408,8 @@ planned requirements on the website.
 ## Effort assessment
 
 This is a substantial library project, not a short extension of the F4
-calculation. The current automorphism/loop layer is reusable, but stages
-2–7 remain before the general finite theorem. Stages 8–9 form another
-substantial project. Estimate calendar time only after stage 2 exposes the cost of reusable
+calculation. The current automorphism/loop layer is reusable, but the remaining characterizations and fixed-field/correspondence results in
+stages 4–7 are still required before the general finite theorem. Stages 8–9 are deferred and explicitly out of scope for this initial development. Estimate calendar time only after stage 2 exposes the cost of reusable
 finite-dimensional proofs in Cubist.
 Development is now authorized by the subsequent request to work toward this
 full roadmap. This file retains the complete target; the checked first-stage

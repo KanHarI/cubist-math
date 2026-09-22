@@ -1,0 +1,117 @@
+import separable_polynomials;
+import finite_omission;
+
+// Move any chosen linear factor to the front, leaving the other indices in
+// their original order. The index map records exactly which factor was removed.
+theorem linear_factor_product_omit(K : AlgebraicField, n : Nat) =
+  induction n as k return (
+    forall roots : Fin(succ(k)) -> af_carrier(K), forall i : Fin(succ(k)),
+    linear_factor_product(K, succ(k), roots) = polynomial_mul(
+      K, polynomial_linear_factor(K, roots(i)),
+      linear_factor_product(K, k, (fun (j : Fin(k)) => roots(fin_omit(k, i, j))))
+    )
+  ) {
+    zero => fun (roots : Fin(1) -> af_carrier(K)) => fun (i : Fin(1)) => match i as index return (
+      linear_factor_product(K, 1, roots) = polynomial_mul(
+        K, polynomial_linear_factor(K, roots(index)), polynomial_one(K)
+      )
+    ) {
+      left u => cong(
+        (
+          fun (x : af_carrier(K)) => polynomial_mul(
+            K, polynomial_linear_factor(K, x), polynomial_one(K)
+          )
+        ), cong((fun (v : Unit) => roots(typed(Fin(1), left(v)))), unit_equal(u))
+      );
+      right impossible => absurd(impossible);
+    };
+    succ previous => fun (roots : Fin(succ(succ(k))) -> af_carrier(K)) => fun (
+      i : Fin(succ(succ(k)))
+    ) => match i as index return (
+      linear_factor_product(K, succ(succ(k)), roots) = polynomial_mul(
+        K, polynomial_linear_factor(K, roots(index)),
+        linear_factor_product(
+          K, succ(k), (fun (j : Fin(succ(k))) => roots(fin_omit(succ(k), index, j)))
+        )
+      )
+    ) {
+      left u => cong(
+        (
+          fun (x : af_carrier(K)) => polynomial_mul(
+            K, polynomial_linear_factor(K, x),
+            linear_factor_product(K, succ(k), finite_tail(af_carrier(K), succ(k), roots))
+          )
+        ), cong((fun (v : Unit) => roots(typed(Fin(succ(succ(k))), left(v)))), unit_equal(u))
+      );
+      right tail => trans(
+        cong(
+          polynomial_mul(K, polynomial_linear_factor(K, finite_head(af_carrier(K), succ(k), roots))),
+          previous(finite_tail(af_carrier(K), succ(k), roots), tail)
+        ),
+        polynomial_mul_swap(
+          K, polynomial_linear_factor(K, finite_head(af_carrier(K), succ(k), roots)),
+          polynomial_linear_factor(K, roots(typed(Fin(succ(succ(k))), right(tail)))),
+          linear_factor_product(
+            K, k,
+            (fun (j : Fin(k)) => roots(typed(Fin(succ(succ(k))), right(fin_omit(k, tail, j)))))
+          )
+        )
+      );
+    };
+  };
+
+def distinct_roots_omit(
+  K : AlgebraicField, n : Nat, roots : Fin(succ(n)) -> af_carrier(K),
+  distinct : Injective(Fin(succ(n)), af_carrier(K), roots), i : Fin(succ(n))
+) :
+  Injective(Fin(n), af_carrier(K), (fun (j : Fin(n)) => roots(fin_omit(n, i, j)))) {
+  intro j;
+  intro k;
+  intro same;
+  exact fin_omit_injective(n, i, j, k, distinct(fin_omit(n, i, j), fin_omit(n, i, k), same));
+}
+
+theorem distinct_roots_omit_avoid(
+  K : AlgebraicField, n : Nat, roots : Fin(succ(n)) -> af_carrier(K),
+  distinct : Injective(Fin(succ(n)), af_carrier(K), roots), i : Fin(succ(n)), j : Fin(n),
+  same : roots(fin_omit(n, i, j)) = roots(i)
+) :
+  Void {
+  exact fin_omit_avoids(n, i, j, distinct(fin_omit(n, i, j), i, same));
+}
+
+def distinct_roots_prepend(
+  K : AlgebraicField, n : Nat, x : af_carrier(K), roots : Fin(n) -> af_carrier(K),
+  distinct : Injective(Fin(n), af_carrier(K), roots),
+  avoids : (forall i : Fin(n), (roots(i) = x) -> Void)
+) :
+  Injective(Fin(succ(n)), af_carrier(K), coordinate_cons(K, n, x, roots)) {
+  intro i;
+  intro j;
+  intro same;
+  exact match i as a return (
+    coordinate_cons(K, n, x, roots, a) = coordinate_cons(K, n, x, roots, j) -> a = j
+  ) {
+    left u => match j as b return (
+      x = coordinate_cons(K, n, x, roots, b) -> typed(Fin(succ(n)), left(u)) = b
+    ) {
+      left v => fun (eq : x = x) => cong(
+        (fun (w : Unit) => typed(Fin(succ(n)), left(w))), trans(sym(unit_equal(u)), unit_equal(v))
+      );
+      right k => fun (eq : x = roots(k)) => typed(
+        (typed(Fin(succ(n)), left(u)) = typed(Fin(succ(n)), right(k))), absurd(avoids(k, sym(eq)))
+      );
+    };
+    right k => match j as b return (
+      roots(k) = coordinate_cons(K, n, x, roots, b) -> typed(Fin(succ(n)), right(k)) = b
+    ) {
+      left u => fun (eq : roots(k) = x) => typed(
+        (typed(Fin(succ(n)), right(k)) = typed(Fin(succ(n)), left(u))), absurd(avoids(k, eq))
+      );
+      right l => fun (eq : roots(k) = roots(l)) => cong(
+        (fun (v : Fin(n)) => typed(Fin(succ(n)), right(v))), distinct(k, l, eq)
+      );
+    };
+  }
+  (same);
+}

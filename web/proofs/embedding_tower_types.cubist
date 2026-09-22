@@ -1,0 +1,158 @@
+import embedding_transport;
+import finite_dependent_counts;
+
+// Transport in a family of subtypes changes its evidence, retaining its value.
+theorem transported_subtype_value(
+  I : U0, A : U0, P : I -> A -> U0, i : I, j : I, same : i = j, u : (exists a : A, P(i, a))
+) :
+  sigma_first(A, P(j), transport((fun (k : I) => (exists a : A, P(k, a))), i, j, same, u)) = sigma_first(
+    A, P(i), u
+  ) {
+  exact transport_constant(I, A, i, j, same, sigma_first(A, P(i), u));
+}
+
+def embedding_tower_restrict(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
+  triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),
+  extension : EmbeddingsOver(K, L, e, T, j)
+) :
+  EmbeddingsOver(K, R, i, T, j) {
+  obtain (f, over) = extension;
+  exact (
+    field_embedding_compose(R, L, T, h, f),
+    (fun (a : af_carrier(K)) => trans(cong(field_embedding_map(L, T, f), triangle(a)), over(a)))
+  );
+}
+
+def EmbeddingTowerFiber(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), j : FieldEmbedding(K, T),
+  d : EmbeddingsOver(K, R, i, T, j)
+) =
+  EmbeddingsOver(R, L, h, T, embedding_over(K, R, i, T, j, d));
+
+def EmbeddingTower(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), j : FieldEmbedding(K, T)
+) =
+  exists d : EmbeddingsOver(K, R, i, T, j), EmbeddingTowerFiber(K, R, L, T, i, h, j, d);
+
+def embedding_tower_decompose(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
+  triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),
+  extension : EmbeddingsOver(K, L, e, T, j)
+) :
+  EmbeddingTower(K, R, L, T, i, h, j) {
+  let f = embedding_over(K, L, e, T, j, extension);
+  exact (
+    embedding_tower_restrict(K, R, L, T, i, h, e, triangle, j, extension), f,
+    (fun (x : af_carrier(R)) => refl(field_embedding_map(L, T, f, field_embedding_map(R, L, h, x))))
+  );
+}
+
+def embedding_tower_compose(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
+  triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),
+  tower : EmbeddingTower(K, R, L, T, i, h, j)
+) :
+  EmbeddingsOver(K, L, e, T, j) {
+  obtain (d, extension) = tower;
+  exact embedding_over_restrict_base(
+    K, R, L, T, i, h, e, triangle, j, embedding_over(K, R, i, T, j, d),
+    embedding_over_law(K, R, i, T, j, d), extension
+  );
+}
+
+theorem embedding_tower_whole_roundtrip(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
+  triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),
+  extension : EmbeddingsOver(K, L, e, T, j)
+) :
+  embedding_tower_compose(
+    K, R, L, T, i, h, e, triangle, j,
+    embedding_tower_decompose(K, R, L, T, i, h, e, triangle, j, extension)
+  ) = extension {
+  exact embeddings_over_ext(
+    K, L, e, T, j,
+    embedding_tower_compose(
+      K, R, L, T, i, h, e, triangle, j,
+      embedding_tower_decompose(K, R, L, T, i, h, e, triangle, j, extension)
+    ), extension, refl(embedding_over(K, L, e, T, j, extension))
+  );
+}
+
+theorem embedding_tower_pair_roundtrip(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
+  triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),
+  tower : EmbeddingTower(K, R, L, T, i, h, j)
+) :
+  embedding_tower_decompose(
+    K, R, L, T, i, h, e, triangle, j,
+    embedding_tower_compose(K, R, L, T, i, h, e, triangle, j, tower)
+  ) = tower {
+  let A = EmbeddingsOver(K, R, i, T, j);
+  let B = EmbeddingTowerFiber(K, R, L, T, i, h, j);
+  let back =
+    embedding_tower_decompose(
+      K, R, L, T, i, h, e, triangle, j,
+      embedding_tower_compose(K, R, L, T, i, h, e, triangle, j, tower)
+    );
+  let d = sigma_first(A, B, tower);
+  let d2 = sigma_first(A, B, back);
+  let u = sigma_second(A, B, back);
+  let v = sigma_second(A, B, tower);
+  let map = embedding_over(R, L, h, T, embedding_over(K, R, i, T, j, d), v);
+  let over = embedding_over_law(R, L, h, T, embedding_over(K, R, i, T, j, d), v);
+  let same =
+    embeddings_over_ext(
+      K, R, i, T, j, d2, d,
+      field_embedding_ext(
+        R, T, embedding_over(K, R, i, T, j, d2), embedding_over(K, R, i, T, j, d), over
+      )
+    );
+  let P = fun (d : A) => EmbeddingOverLaw(R, L, h, T, embedding_over(K, R, i, T, j, d));
+  let value = transported_subtype_value(A, FieldEmbedding(L, T), P, d2, d, same, u);
+  let tail =
+    embeddings_over_ext(
+      R, L, h, T, embedding_over(K, R, i, T, j, d), transport(B, d2, d, same, u), v, value
+    );
+  exact trans(
+    sym(sigma_eta(A, B, back)),
+    trans(dependent_pair_path(A, B, d2, d, same, u, v, tail), sigma_eta(A, B, tower))
+  );
+}
+
+def embedding_tower_bijection(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
+  triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T)
+) :
+  Bijection(EmbeddingTower(K, R, L, T, i, h, j), EmbeddingsOver(K, L, e, T, j)) {
+  exact (
+    embedding_tower_compose(K, R, L, T, i, h, e, triangle, j),
+    embedding_tower_decompose(K, R, L, T, i, h, e, triangle, j),
+    embedding_tower_pair_roundtrip(K, R, L, T, i, h, e, triangle, j),
+    embedding_tower_whole_roundtrip(K, R, L, T, i, h, e, triangle, j)
+  );
+}
+
+// Equality of these types lets finite counting move across the tower while
+// retaining every base-compatibility proof in the checked representation.
+def embedding_tower_type_equality(
+  K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
+  i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
+  triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T)
+) =
+  ua(
+    U0, EmbeddingTower(K, R, L, T, i, h, j), EmbeddingsOver(K, L, e, T, j),
+    bijection_equiv(
+      EmbeddingTower(K, R, L, T, i, h, j), EmbeddingsOver(K, L, e, T, j),
+      embeddings_over_are_set(K, L, e, T, j),
+      embedding_tower_bijection(K, R, L, T, i, h, e, triangle, j)
+    )
+  );

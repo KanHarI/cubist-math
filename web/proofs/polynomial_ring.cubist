@@ -1,0 +1,149 @@
+import polynomial_support;
+
+// Equality is coefficientwise equality of formal polynomials, with support
+// evidence removed by subtype extensionality.
+theorem polynomial_coefficient_ext(
+  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K),
+  same : (forall n : Nat, polynomial_coefficients(K, p, n) = polynomial_coefficients(K, q, n))
+) :
+  p = q {
+  exact polynomial_ext(
+    K, p, q,
+    FunExt(
+      U0, Nat, (fun (n : Nat) => af_carrier(K)), polynomial_coefficients(K, p),
+      polynomial_coefficients(K, q), same
+    )
+  );
+}
+
+theorem polynomial_add_assoc(
+  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), r : Polynomial(K)
+) :
+  polynomial_add(K, polynomial_add(K, p, q), r) = polynomial_add(K, p, polynomial_add(K, q, r)) {
+  exact polynomial_coefficient_ext(
+    K, polynomial_add(K, polynomial_add(K, p, q), r), polynomial_add(K, p, polynomial_add(K, q, r)),
+    (
+      fun (n : Nat) => scalar_add_assoc(
+        K, polynomial_coefficients(K, p, n), polynomial_coefficients(K, q, n),
+        polynomial_coefficients(K, r, n)
+      )
+    )
+  );
+}
+
+theorem polynomial_add_comm(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
+  polynomial_add(K, p, q) = polynomial_add(K, q, p) {
+  exact polynomial_coefficient_ext(
+    K, polynomial_add(K, p, q), polynomial_add(K, q, p),
+    (
+      fun (n : Nat) => scalar_add_comm(
+        K, polynomial_coefficients(K, p, n), polynomial_coefficients(K, q, n)
+      )
+    )
+  );
+}
+
+theorem polynomial_add_zero(K : AlgebraicField, p : Polynomial(K)) :
+  polynomial_add(K, polynomial_zero(K), p) = p {
+  exact polynomial_coefficient_ext(
+    K, polynomial_add(K, polynomial_zero(K), p), p,
+    (fun (n : Nat) => scalar_add_zero(K, polynomial_coefficients(K, p, n)))
+  );
+}
+
+theorem polynomial_add_inverse(K : AlgebraicField, p : Polynomial(K)) :
+  polynomial_add(K, polynomial_neg(K, p), p) = polynomial_zero(K) {
+  exact polynomial_coefficient_ext(
+    K, polynomial_add(K, polynomial_neg(K, p), p), polynomial_zero(K),
+    (fun (n : Nat) => scalar_add_inverse(K, polynomial_coefficients(K, p, n)))
+  );
+}
+
+theorem polynomial_mul_assoc(
+  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), r : Polynomial(K)
+) :
+  polynomial_mul(K, polynomial_mul(K, p, q), r) = polynomial_mul(K, p, polynomial_mul(K, q, r)) {
+  exact polynomial_coefficient_ext(
+    K, polynomial_mul(K, polynomial_mul(K, p, q), r), polynomial_mul(K, p, polynomial_mul(K, q, r)),
+    (
+      fun (n : Nat) => convolution_assoc(
+        K, n, polynomial_coefficients(K, p), polynomial_coefficients(K, q),
+        polynomial_coefficients(K, r)
+      )
+    )
+  );
+}
+
+theorem polynomial_mul_comm(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
+  polynomial_mul(K, p, q) = polynomial_mul(K, q, p) {
+  exact polynomial_coefficient_ext(
+    K, polynomial_mul(K, p, q), polynomial_mul(K, q, p),
+    (
+      fun (n : Nat) => convolution_comm(
+        K, n, polynomial_coefficients(K, p), polynomial_coefficients(K, q)
+      )
+    )
+  );
+}
+
+theorem polynomial_mul_one(K : AlgebraicField, p : Polynomial(K)) :
+  polynomial_mul(K, polynomial_one(K), p) = p {
+  let f = polynomial_coefficients(K, p);
+  exact polynomial_coefficient_ext(
+    K, polynomial_mul(K, polynomial_one(K), p), p,
+    (
+      fun (n : Nat) => trans(
+        convolution_comm(K, n, series_constant(K, field_one(K)), f),
+        trans(convolution_constant_right(K, field_one(K), n, f), scalar_mul_one_right(K, f(n)))
+      )
+    )
+  );
+}
+
+theorem polynomial_distribute(
+  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), r : Polynomial(K)
+) :
+  polynomial_mul(K, p, polynomial_add(K, q, r)) = polynomial_add(
+    K, polynomial_mul(K, p, q), polynomial_mul(K, p, r)
+  ) {
+  exact polynomial_coefficient_ext(
+    K, polynomial_mul(K, p, polynomial_add(K, q, r)),
+    polynomial_add(K, polynomial_mul(K, p, q), polynomial_mul(K, p, r)),
+    (
+      fun (n : Nat) => convolution_add_right(
+        K, n, polynomial_coefficients(K, p), polynomial_coefficients(K, q),
+        polynomial_coefficients(K, r)
+      )
+    )
+  );
+}
+
+// The full commutative-ring structure is proved from finite convolution.
+def polynomial_ring(K : AlgebraicField) :
+  CommutativeRing(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K)
+  ) {
+  exact (
+    polynomial_set(K),
+    (
+      polynomial_add_assoc(K), polynomial_add_comm(K), polynomial_add_zero(K),
+      polynomial_add_inverse(K)
+    ), polynomial_mul_assoc(K), polynomial_mul_comm(K), polynomial_mul_one(K),
+    polynomial_distribute(K)
+  );
+}
+
+theorem polynomial_constant_injective(
+  K : AlgebraicField, a : af_carrier(K), b : af_carrier(K),
+  same : polynomial_constant(K, a) = polynomial_constant(K, b)
+) :
+  a = b {
+  exact cong((fun (p : Polynomial(K)) => polynomial_coefficients(K, p, 0)), same);
+}
+
+theorem polynomial_one_not_zero(K : AlgebraicField, same : polynomial_one(K) = polynomial_zero(K)) :
+  Void {
+  obtain (ring, nontrivial, inverses) = af_laws(K);
+  exact nontrivial(cong((fun (p : Polynomial(K)) => polynomial_coefficients(K, p, 0)), same));
+}

@@ -1,0 +1,82 @@
+import finite_linear_lifts;
+
+// The linear map associated with a finite family is constructed by adjoining
+// generators. Its evaluation is the existing finite linear combination.
+def family_linear(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+  induction n as k return (
+    (Fin(k) -> vector_carrier(K, V)) -> LinearMap(K, CoordinateSpace(K, k), V)
+  ) {
+    zero => fun (vectors : Fin(0) -> vector_carrier(K, V)) => linear_empty(K, V);
+    succ previous => fun (vectors : Fin(succ(k)) -> vector_carrier(K, V)) => adjoin_linear(
+      K, V, k, previous(finite_tail(vector_carrier(K, V), k, vectors)),
+      finite_head(vector_carrier(K, V), k, vectors)
+    );
+  };
+
+theorem family_linear_evaluation(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+  induction n as k return (
+    forall vectors : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
+    linear_map(K, CoordinateSpace(K, k), V, family_linear(K, V, k, vectors), a) = linear_combination(
+      K, V, k, vectors, a
+    )
+  ) {
+    zero => fun (vectors : Fin(0) -> vector_carrier(K, V)) => fun (a : Fin(0) -> af_carrier(K)) => refl(
+      vector_zero(K, V)
+    );
+    succ previous => fun (vectors : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
+      a : Fin(succ(k)) -> af_carrier(K)
+    ) => cong(
+      vector_add(
+        K, V,
+        vector_scale(
+          K, V, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, vectors)
+        )
+      ), previous(finite_tail(vector_carrier(K, V), k, vectors), finite_tail(af_carrier(K), k, a))
+    );
+  };
+
+def FiniteSpanningFamily(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V)
+) =
+  forall x : vector_carrier(K, V),
+  Mere(exists a : Fin(n) -> af_carrier(K), linear_combination(K, V, n, vectors, a) = x);
+
+theorem family_linear_surjective(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
+  spanning : FiniteSpanningFamily(K, V, n, vectors)
+) :
+  LinearSurjective(K, CoordinateSpace(K, n), V, family_linear(K, V, n, vectors)) {
+  intro x;
+  let C = Fin(n) -> af_carrier(K);
+  let X = vector_carrier(K, V);
+  let f = linear_map(K, CoordinateSpace(K, n), V, family_linear(K, V, n, vectors));
+  have convert : (exists a : C, linear_combination(K, V, n, vectors, a) = x) -> Fiber(C, X, f, x) {
+    intro witness;
+    obtain (a, sum) = witness;
+    exact (a, trans(family_linear_evaluation(K, V, n, vectors, a), sum));
+  }
+  exact mere_map(
+    (exists a : C, linear_combination(K, V, n, vectors, a) = x), Fiber(C, X, f, x), convert,
+    spanning(x)
+  );
+}
+
+theorem finite_spanning_dimension(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
+  spanning : FiniteSpanningFamily(K, V, n, vectors)
+) :
+  FiniteDimensional(K, V) {
+  exact finite_dimensional_coordinate_surjection(
+    K, V, n, family_linear(K, V, n, vectors), family_linear_surjective(K, V, n, vectors, spanning)
+  );
+}
+
+// Existence of coordinates for a spanning family is sufficient. No particular
+// preimage of each vector and no global choice of basis is assumed.
+theorem finite_spanning_basis(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
+  spanning : FiniteSpanningFamily(K, V, n, vectors)
+) :
+  Mere(exists m : Nat, FiniteBasis(K, V, m)) {
+  exact finite_basis_exists(K, V, finite_spanning_dimension(K, V, n, vectors, spanning));
+}

@@ -1,0 +1,36 @@
+import polynomial_remainders;
+import polynomial_roots;
+
+// Evaluation at a root of the modulus is unchanged by taking the remainder.
+theorem polynomial_eval_remainder(
+  K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x), p : Polynomial(K)
+) :
+  polynomial_eval(K, L, e, polynomial_remainder(K, M, p), x) = polynomial_eval(K, L, e, p, x) {
+  let D = modulus_polynomial(K, M);
+  let q = polynomial_quotient(K, M, p);
+  let r = polynomial_remainder(K, M, p);
+  let E = fun (s : Polynomial(K)) => polynomial_eval(K, L, e, s, x);
+  have product : E(polynomial_mul(K, q, D)) = field_zero(L) {
+    exact with unfolding [] {
+      trans(
+        polynomial_eval_mul(K, L, e, q, D, x),
+        trans(cong(field_mul(L, E(q)), root), scalar_mul_zero(L, E(q)))
+      )
+    };
+  }
+  exact with unfolding [] {
+    sym(
+      trans(
+        cong(E, polynomial_remainder_equation(K, M, p)),
+        trans(
+          polynomial_eval_add(K, L, e, polynomial_mul(K, q, D), r, x),
+          trans(
+            cong((fun (a : af_carrier(L)) => field_add(L, a, E(r))), product),
+            scalar_add_zero(L, E(r))
+          )
+        )
+      )
+    )
+  };
+}

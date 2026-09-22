@@ -1,0 +1,169 @@
+import polynomial_leading;
+
+// Additive cancellation is reused through the ordinary bundled group API.
+def PolynomialAdditiveGroup(K : AlgebraicField) =
+  group_object(
+    Polynomial(K), polynomial_zero(K), polynomial_add(K),
+    typed(
+      GroupLaws(Polynomial(K), polynomial_zero(K), polynomial_add(K)),
+      (
+        polynomial_set(K), polynomial_add_assoc(K), polynomial_add_zero(K),
+        polynomial_add_zero_right(K),
+        (
+          fun (p : Polynomial(K)) => typed(
+            (
+              exists q : Polynomial(K),
+              GroupInverseLaws(Polynomial(K), polynomial_zero(K), polynomial_add(K), p, q)
+            ),
+            (polynomial_neg(K, p), polynomial_add_inverse(K, p), polynomial_add_inverse_right(K, p))
+          )
+        )
+      )
+    )
+  );
+
+def polynomial_subtract(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) =
+  polynomial_add(K, p, polynomial_neg(K, q));
+
+theorem polynomial_subtract_zero_equal(
+  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K),
+  zero : polynomial_subtract(K, p, q) = polynomial_zero(K)
+) :
+  p = q {
+  exact group_cancel_right(
+    PolynomialAdditiveGroup(K), p, q, polynomial_neg(K, q),
+    trans(zero, sym(polynomial_add_inverse_right(K, q)))
+  );
+}
+
+theorem polynomial_difference_of_sums(
+  K : AlgebraicField, a : Polynomial(K), b : Polynomial(K), c : Polynomial(K), d : Polynomial(K),
+  same : polynomial_add(K, a, b) = polynomial_add(K, c, d)
+) :
+  polynomial_subtract(K, a, c) = polynomial_subtract(K, d, b) {
+  let tail = polynomial_add(K, polynomial_neg(K, c), polynomial_neg(K, b));
+  have left : polynomial_add(K, polynomial_add(K, a, b), tail) = polynomial_subtract(K, a, c) {
+    exact trans(
+      polynomial_add_shuffle(K, a, b, polynomial_neg(K, c), polynomial_neg(K, b)),
+      trans(
+        cong(polynomial_add(K, polynomial_subtract(K, a, c)), polynomial_add_inverse_right(K, b)),
+        polynomial_add_zero_right(K, polynomial_subtract(K, a, c))
+      )
+    );
+  }
+  have right : polynomial_add(K, polynomial_add(K, c, d), tail) = polynomial_subtract(K, d, b) {
+    exact trans(
+      polynomial_add_shuffle(K, c, d, polynomial_neg(K, c), polynomial_neg(K, b)),
+      trans(
+        cong(
+          (fun (p : Polynomial(K)) => polynomial_add(K, p, polynomial_subtract(K, d, b))),
+          polynomial_add_inverse_right(K, c)
+        ), polynomial_add_zero(K, polynomial_subtract(K, d, b))
+      )
+    );
+  }
+  exact trans(
+    sym(left), trans(cong((fun (p : Polynomial(K)) => polynomial_add(K, p, tail)), same), right)
+  );
+}
+
+theorem polynomial_neg_mul(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
+  polynomial_mul(K, polynomial_neg(K, p), q) = polynomial_neg(K, polynomial_mul(K, p, q)) {
+  exact trans(
+    polynomial_mul_comm(K, polynomial_neg(K, p), q),
+    trans(polynomial_mul_neg(K, q, p), cong(polynomial_neg(K), polynomial_mul_comm(K, q, p)))
+  );
+}
+
+theorem polynomial_subtract_mul(
+  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), r : Polynomial(K)
+) :
+  polynomial_mul(K, polynomial_subtract(K, p, q), r) = polynomial_subtract(
+    K, polynomial_mul(K, p, r), polynomial_mul(K, q, r)
+  ) {
+  exact trans(
+    polynomial_distribute_left(K, p, polynomial_neg(K, q), r),
+    cong(polynomial_add(K, polynomial_mul(K, p, r)), polynomial_neg_mul(K, q, r))
+  );
+}
+
+theorem polynomial_small_multiple_zero(
+  K : AlgebraicField, q : Polynomial(K), divisor : Polynomial(K), d : Nat,
+  degree : polynomial_cutoff(K, divisor) = succ(d),
+  support : SeriesSupport(K, polynomial_coefficients(K, polynomial_mul(K, q, divisor)), d)
+) :
+  q = polynomial_zero(K) {
+  have impossible : ((q = polynomial_zero(K)) -> Void) -> Void {
+    intro nonzero;
+    obtain (m, dq) = polynomial_nonzero_degree(K, q, nonzero);
+    let productDegree = polynomial_product_degree(K, q, divisor, m, d, dq, degree);
+    let tooSmall =
+      transport(
+        (fun (k : Nat) => le(k, d)), polynomial_cutoff(K, polynomial_mul(K, q, divisor)),
+        succ(add_count(m, d)), productDegree,
+        polynomial_cutoff_least(K, polynomial_mul(K, q, divisor), d, support)
+      );
+    exact successor_not_le_self(
+      d, nat_le_trans(succ(d), succ(add_count(m, d)), d, nat_le_add(m, d), tooSmall)
+    );
+  }
+  exact double_negation(
+    q = polynomial_zero(K), polynomial_set(K, q, polynomial_zero(K)), impossible
+  );
+}
+
+// Uniqueness uses formal degree and the integral-domain property; equality
+// of evaluations on the field would not be sufficient here.
+theorem polynomial_division_unique(
+  K : AlgebraicField, p : Polynomial(K), divisor : Polynomial(K), d : Nat,
+  degree : polynomial_cutoff(K, divisor) = succ(d), q : Polynomial(K), r : Polynomial(K),
+  equation : p = polynomial_add(K, polynomial_mul(K, q, divisor), r),
+  support : SeriesSupport(K, polynomial_coefficients(K, r), d), otherQ : Polynomial(K),
+  otherR : Polynomial(K),
+  otherEquation : p = polynomial_add(K, polynomial_mul(K, otherQ, divisor), otherR),
+  otherSupport : SeriesSupport(K, polynomial_coefficients(K, otherR), d)
+) :
+  (q = otherQ) and (r = otherR) {
+  let difference = polynomial_subtract(K, q, otherQ);
+  let remainderDifference = polynomial_subtract(K, otherR, r);
+  have product : polynomial_mul(K, difference, divisor) = remainderDifference {
+    exact trans(
+      polynomial_subtract_mul(K, q, otherQ, divisor),
+      polynomial_difference_of_sums(
+        K, polynomial_mul(K, q, divisor), r, polynomial_mul(K, otherQ, divisor), otherR,
+        trans(sym(equation), otherEquation)
+      )
+    );
+  }
+  let remainderSupport =
+    support_add_same(
+      K, polynomial_coefficients(K, otherR), polynomial_coefficients(K, polynomial_neg(K, r)), d,
+      otherSupport, polynomial_neg_support(K, r, d, support)
+    );
+  let productSupport =
+    transport(
+      (fun (s : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, s), d)),
+      remainderDifference, polynomial_mul(K, difference, divisor), sym(product), remainderSupport
+    );
+  let sameQ =
+    polynomial_subtract_zero_equal(
+      K, q, otherQ,
+      polynomial_small_multiple_zero(K, difference, divisor, d, degree, productSupport)
+    );
+  have sameR : r = otherR {
+    exact group_cancel_left(
+      PolynomialAdditiveGroup(K), polynomial_mul(K, q, divisor), r, otherR,
+      trans(
+        sym(equation),
+        trans(
+          otherEquation,
+          cong(
+            (fun (s : Polynomial(K)) => polynomial_add(K, polynomial_mul(K, s, divisor), otherR)),
+            sym(sameQ)
+          )
+        )
+      )
+    );
+  }
+  exact (sameQ, sameR);
+}

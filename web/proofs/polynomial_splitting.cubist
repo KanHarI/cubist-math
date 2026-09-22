@@ -1,0 +1,169 @@
+import polynomial_extension_roots;
+import polynomial_constants;
+import coordinate_splitting;
+
+// A factorization lists roots with multiplicity. Separability will impose
+// distinctness; ordinary splitting must allow repeated roots.
+def linear_factor_product(K : AlgebraicField, n : Nat) =
+  induction n as k return ((Fin(k) -> af_carrier(K)) -> Polynomial(K)) {
+    zero => fun (roots : Fin(0) -> af_carrier(K)) => polynomial_one(K);
+    succ previous => fun (roots : Fin(succ(k)) -> af_carrier(K)) => polynomial_mul(
+      K, polynomial_linear_factor(K, finite_head(af_carrier(K), k, roots)),
+      previous(finite_tail(af_carrier(K), k, roots))
+    );
+  };
+
+def PolynomialSplitting(K : AlgebraicField, p : Polynomial(K), n : Nat) =
+  exists roots : Fin(n) -> af_carrier(K), exists a : af_carrier(K),
+  p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots));
+
+def PolynomialSplits(K : AlgebraicField, p : Polynomial(K)) =
+  Mere(exists n : Nat, PolynomialSplitting(K, p, n));
+
+theorem polynomial_map_one(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+  polynomial_map(K, L, e, polynomial_one(K)) = polynomial_one(L) {
+  obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
+  exact trans(polynomial_map_constant(K, L, e, field_one(K)), cong(polynomial_constant(L), one));
+}
+
+theorem polynomial_map_variable(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+  polynomial_map(K, L, e, polynomial_variable(K)) = polynomial_variable(L) {
+  exact trans(
+    polynomial_map_shift(K, L, e, polynomial_one(K)),
+    cong(polynomial_shift(L), polynomial_map_one(K, L, e))
+  );
+}
+
+theorem polynomial_map_linear_factor(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K)
+) :
+  polynomial_map(K, L, e, polynomial_linear_factor(K, x)) = polynomial_linear_factor(
+    L, field_embedding_map(K, L, e, x)
+  ) {
+  let f = field_embedding_map(K, L, e);
+  obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
+  exact trans(
+    polynomial_map_add(K, L, e, polynomial_variable(K), polynomial_constant(K, field_neg(K, x))),
+    trans(
+      cong(
+        (
+          fun (p : Polynomial(L)) => polynomial_add(
+            L, p, polynomial_map(K, L, e, polynomial_constant(K, field_neg(K, x)))
+          )
+        ), polynomial_map_variable(K, L, e)
+      ),
+      cong(
+        polynomial_add(L, polynomial_variable(L)),
+        trans(
+          polynomial_map_constant(K, L, e, field_neg(K, x)), cong(polynomial_constant(L), neg(x))
+        )
+      )
+    )
+  );
+}
+
+theorem linear_factor_product_map(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat
+) =
+  induction n as k return (
+    forall roots : Fin(k) -> af_carrier(K),
+    polynomial_map(K, L, e, linear_factor_product(K, k, roots)) = linear_factor_product(
+      L, k, (fun (i : Fin(k)) => field_embedding_map(K, L, e, roots(i)))
+    )
+  ) {
+    zero => fun (roots : Fin(0) -> af_carrier(K)) => polynomial_map_one(K, L, e);
+    succ previous => fun (roots : Fin(succ(k)) -> af_carrier(K)) => trans(
+      polynomial_map_mul(
+        K, L, e, polynomial_linear_factor(K, finite_head(af_carrier(K), k, roots)),
+        linear_factor_product(K, k, finite_tail(af_carrier(K), k, roots))
+      ),
+      trans(
+        cong(
+          (
+            fun (p : Polynomial(L)) => polynomial_mul(
+              L, p,
+              polynomial_map(
+                K, L, e, linear_factor_product(K, k, finite_tail(af_carrier(K), k, roots))
+              )
+            )
+          ), polynomial_map_linear_factor(K, L, e, finite_head(af_carrier(K), k, roots))
+        ),
+        cong(
+          polynomial_mul(
+            L,
+            polynomial_linear_factor(
+              L, field_embedding_map(K, L, e, finite_head(af_carrier(K), k, roots))
+            )
+          ), previous(finite_tail(af_carrier(K), k, roots))
+        )
+      )
+    );
+  };
+
+def polynomial_splitting_map(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat,
+  splitting : PolynomialSplitting(K, p, n)
+) :
+  PolynomialSplitting(L, polynomial_map(K, L, e, p), n) {
+  obtain (roots, a, equation) = splitting;
+  let f = field_embedding_map(K, L, e);
+  exact (
+    (fun (i : Fin(n)) => f(roots(i))), f(a),
+    trans(
+      cong(polynomial_map(K, L, e), equation),
+      trans(
+        polynomial_map_mul(K, L, e, polynomial_constant(K, a), linear_factor_product(K, n, roots)),
+        trans(
+          cong(
+            (
+              fun (q : Polynomial(L)) => polynomial_mul(
+                L, q, polynomial_map(K, L, e, linear_factor_product(K, n, roots))
+              )
+            ), polynomial_map_constant(K, L, e, a)
+          ),
+          cong(
+            polynomial_mul(L, polynomial_constant(L, f(a))),
+            linear_factor_product_map(K, L, e, n, roots)
+          )
+        )
+      )
+    )
+  );
+}
+
+def polynomial_splitting_zero_degree(
+  K : AlgebraicField, p : Polynomial(K), degree : polynomial_cutoff(K, p) = 1
+) :
+  PolynomialSplitting(K, p, 0) {
+  let f = polynomial_coefficients(K, p);
+  let a = f(0);
+  let support =
+    transport(
+      SeriesSupport(K, f), polynomial_cutoff(K, p), 1, degree, polynomial_cutoff_support(K, p)
+    );
+  exact (
+    (fun (i : Fin(0)) => typed(af_carrier(K), absurd(i))), a,
+    trans(
+      polynomial_ext(K, p, polynomial_constant(K, a), series_support_one(K, f, support)),
+      sym(polynomial_mul_one_right(K, polynomial_constant(K, a)))
+    )
+  );
+}
+
+def polynomial_splitting_prepend(
+  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), x : af_carrier(K),
+  equation : p = polynomial_mul(K, polynomial_linear_factor(K, x), q), n : Nat,
+  splitting : PolynomialSplitting(K, q, n)
+) :
+  PolynomialSplitting(K, p, succ(n)) {
+  obtain (roots, a, factorization) = splitting;
+  let F = polynomial_linear_factor(K, x);
+  let C = polynomial_constant(K, a);
+  let P = linear_factor_product(K, n, roots);
+  exact (
+    coordinate_cons(K, n, x, roots), a,
+    trans(
+      equation, trans(cong(polynomial_mul(K, F), factorization), polynomial_mul_swap(K, F, C, P))
+    )
+  );
+}

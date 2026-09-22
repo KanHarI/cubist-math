@@ -1,0 +1,73 @@
+import polynomial_roots;
+import polynomial_irreducible_factors;
+import polynomial_residue_basis;
+
+// A root of a divisor is a root of the original polynomial, in any extension.
+theorem polynomial_divisor_root(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  g : Polynomial(K), divides : PolynomialDivides(K, g, p), x : af_carrier(L),
+  root : PolynomialRoot(K, L, e, g, x)
+) :
+  PolynomialRoot(K, L, e, p, x) {
+  let E = fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
+  have useFactor :
+    (exists q : Polynomial(K), p = polynomial_mul(K, g, q)) -> PolynomialRoot(K, L, e, p, x) {
+    intro witness;
+    obtain (q, equation) = witness;
+    exact with unfolding [] {
+      trans(
+        cong(E, equation),
+        trans(
+          polynomial_eval_mul(K, L, e, g, q, x),
+          trans(
+            cong((fun (a : af_carrier(L)) => field_mul(L, a, E(q))), root), scalar_zero_mul(L, E(q))
+          )
+        )
+      )
+    };
+  }
+  exact mere_eliminate(
+    (exists q : Polynomial(K), p = polynomial_mul(K, g, q)), PolynomialRoot(K, L, e, p, x),
+    polynomial_root_prop(K, L, e, p, x), useFactor, divides
+  );
+}
+
+def RootAdjunction(K : AlgebraicField, p : Polynomial(K)) =
+  exists L : AlgebraicField, exists e : FieldEmbedding(K, L), exists x : af_carrier(L),
+  FiniteExtension(K, embedding_as_extension(K, L, e)) and PolynomialRoot(K, L, e, p, x);
+
+def root_adjunction_from_factor(
+  K : AlgebraicField, p : Polynomial(K), factor : IrreducibleFactor(K, p)
+) :
+  RootAdjunction(K, p) {
+  obtain (g, irreducible, divides) = factor;
+  obtain (d, degree) = polynomial_nonzero_degree(
+    K, g, polynomial_irreducible_nonzero(K, g, irreducible)
+  );
+  let M = typed(PolynomialModulus(K), (g, d, degree));
+  let L = PolynomialResidueField(K, M, irreducible);
+  let e = residue_embedding(K, M, irreducible);
+  let x = adjoined_root(K, M);
+  exact (
+    L, e, x, adjoined_extension_finite(K, M, irreducible),
+    polynomial_divisor_root(K, L, e, p, g, divides, x, adjoined_root_is_root(K, M, irreducible))
+  );
+}
+
+// The witness includes an actual finite field extension and a root. The
+// existential is in U1 because it quantifies over bundled small fields.
+theorem polynomial_root_extension_exists(
+  K : AlgebraicField, p : Polynomial(K), nonzero : PolynomialNonzero(K, p),
+  nonunit : PolynomialUnit(K, p) -> Void
+) :
+  FieldExists(RootAdjunction(K, p)) {
+  exact small_mere_eliminate(
+    IrreducibleFactor(K, p), FieldExists(RootAdjunction(K, p)),
+    field_exists_prop(RootAdjunction(K, p)),
+    (
+      fun (factor : IrreducibleFactor(K, p)) => field_exists_intro(
+        RootAdjunction(K, p), root_adjunction_from_factor(K, p, factor)
+      )
+    ), polynomial_irreducible_factor(K, p, nonzero, nonunit)
+  );
+}

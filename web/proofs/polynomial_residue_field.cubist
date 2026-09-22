@@ -1,0 +1,122 @@
+import polynomial_residue_ring;
+
+// Nontriviality needs precisely that the modulus is not invertible.
+theorem residue_one_not_zero(
+  K : AlgebraicField, M : PolynomialModulus(K),
+  nonunit : PolynomialUnit(K, modulus_polynomial(K, M)) -> Void,
+  same : residue_one(K, M) = residue_zero(K, M)
+) :
+  Void {
+  let D = modulus_polynomial(K, M);
+  let divides =
+    polynomial_remainder_zero_divides(K, M, polynomial_one(K), cong(residue_polynomial(K, M), same));
+  have invert :
+    (exists q : Polynomial(K), polynomial_one(K) = polynomial_mul(K, D, q))
+    -> (exists q : Polynomial(K), polynomial_mul(K, D, q) = polynomial_one(K)) {
+    intro witness;
+    obtain (q, equation) = witness;
+    exact (q, sym(equation));
+  }
+  exact nonunit(
+    mere_map(
+      (exists q : Polynomial(K), polynomial_one(K) = polynomial_mul(K, D, q)),
+      (exists q : Polynomial(K), polynomial_mul(K, D, q) = polynomial_one(K)), invert, divides
+    )
+  );
+}
+
+theorem residue_nonzero_not_divisible(
+  K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M),
+  nonzero : (x = residue_zero(K, M)) -> Void,
+  divides : PolynomialDivides(K, modulus_polynomial(K, M), residue_polynomial(K, M, x))
+) :
+  Void {
+  let p = residue_polynomial(K, M, x);
+  exact nonzero(
+    residue_ext(
+      K, M, x, residue_zero(K, M),
+      trans(
+        sym(polynomial_remainder_small(K, M, p, residue_support(K, M, x))),
+        polynomial_divides_remainder_zero(K, M, p, divides)
+      )
+    )
+  );
+}
+
+def residue_bezout_inverse(
+  K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M),
+  combination : BezoutCombination(
+    K, modulus_polynomial(K, M), residue_polynomial(K, M, x), polynomial_one(K)
+  )
+) :
+  exists y : PolynomialResidue(K, M), residue_mul(K, M, x, y) = residue_one(K, M) {
+  obtain (a, b, equation) = combination;
+  let D = modulus_polynomial(K, M);
+  let p = residue_polynomial(K, M, x);
+  let reduce = polynomial_remainder(K, M);
+  have inverse : reduce(polynomial_mul(K, p, b)) = reduce(polynomial_one(K)) {
+    exact with unfolding [] {
+      trans(
+        cong(reduce, polynomial_mul_comm(K, p, b)),
+        sym(
+          trans(
+            cong(reduce, equation),
+            trans(
+              polynomial_remainder_add(K, M, polynomial_mul(K, a, D), polynomial_mul(K, b, p)),
+              trans(
+                cong(
+                  (fun (s : Polynomial(K)) => polynomial_add(K, s, reduce(polynomial_mul(K, b, p)))),
+                  polynomial_remainder_multiple(K, M, a)
+                ), polynomial_add_zero(K, reduce(polynomial_mul(K, b, p)))
+              )
+            )
+          )
+        )
+      )
+    };
+  }
+  let y = residue_reduce(K, M, b);
+  exact with unfolding [] {
+    (
+      y,
+      residue_ext(
+        K, M, residue_mul(K, M, x, y), residue_one(K, M),
+        trans(sym(polynomial_remainder_mul_right(K, M, p, b)), inverse)
+      )
+    )
+  };
+}
+
+// Inverses are unique, so their mere existence from Bezout eliminates into
+// an actual inverse without invoking any form of choice.
+theorem residue_field_inverse(
+  K : AlgebraicField, M : PolynomialModulus(K),
+  irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), x : PolynomialResidue(K, M),
+  nonzero : (x = residue_zero(K, M)) -> Void
+) :
+  exists y : PolynomialResidue(K, M), residue_mul(K, M, x, y) = residue_one(K, M) {
+  let D = modulus_polynomial(K, M);
+  let p = residue_polynomial(K, M, x);
+  let Result = exists y : PolynomialResidue(K, M), residue_mul(K, M, x, y) = residue_one(K, M);
+  exact mere_eliminate(
+    BezoutCombination(K, D, p, polynomial_one(K)), Result,
+    commutative_ring_inverse_prop(
+      PolynomialResidue(K, M), residue_zero(K, M), residue_one(K, M), residue_neg(K, M),
+      residue_add(K, M), residue_mul(K, M), residue_ring(K, M), x
+    ), residue_bezout_inverse(K, M, x),
+    irreducible_bezout(K, D, irreducible, p, residue_nonzero_not_divisible(K, M, x, nonzero))
+  );
+}
+
+// The field K[X]/(p), constructed from ordinary polynomials and division.
+def PolynomialResidueField(
+  K : AlgebraicField, M : PolynomialModulus(K),
+  irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M))
+) =
+  field_from_commutative_ring(
+    PolynomialResidue(K, M), residue_zero(K, M), residue_one(K, M), residue_neg(K, M),
+    residue_add(K, M), residue_mul(K, M), residue_ring(K, M),
+    residue_one_not_zero(
+      K, M, polynomial_irreducible_nonunit(K, modulus_polynomial(K, M), irreducible)
+    ), residue_field_inverse(K, M, irreducible)
+  );

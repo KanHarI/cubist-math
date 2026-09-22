@@ -1,0 +1,40 @@
+import generated_subfields;
+import subfield_images;
+import subfield_carriers;
+
+// Leastness is retained when a generated predicate subfield is realized as
+// an actual field. This lemma bridges the external and internal carriers.
+def generated_carrier_generator(
+  F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), member : P(x)
+) :
+  SubfieldCarrier(F, generated_subfield(F, P)) {
+  exact (x, generated_field_contains(F, P, x, member));
+}
+
+theorem generated_carrier_least(
+  F : AlgebraicField, P : af_carrier(F) -> U0,
+  H : Subfield(subfield_as_field(F, generated_subfield(F, P))),
+  contains : (
+    forall x : af_carrier(F), forall member : P(x),
+    subfield_members(
+      subfield_as_field(F, generated_subfield(F, P)), H,
+      generated_carrier_generator(F, P, x, member)
+    )
+  ), z : SubfieldCarrier(F, generated_subfield(F, P))
+) :
+  subfield_members(subfield_as_field(F, generated_subfield(F, P)), H, z) {
+  let S = generated_subfield(F, P);
+  let T = subfield_as_field(F, S);
+  let j = subfield_inclusion(F, S);
+  let Q = SubfieldImage(T, F, j, H);
+  have containsImage : forall x : af_carrier(F), P(x) -> Q(x) {
+    intro x;
+    intro member;
+    exact (generated_carrier_generator(F, P, x, member), contains(x, member), refl(x));
+  }
+  obtain (y, hy, same) = generated_field_least(
+    F, P, Q, subfield_image_laws(T, F, j, H), containsImage, subfield_value(F, S, z),
+    subfield_evidence(F, S, z)
+  );
+  exact transport(subfield_members(T, H), y, z, subfield_value_ext(F, S, y, z, same), hy);
+}

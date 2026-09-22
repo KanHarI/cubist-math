@@ -1,0 +1,145 @@
+import finite_embedding_extensions;
+import separable_polynomials;
+import splitting_fields;
+
+// Embeddings preserve both the coefficient factorization and distinctness.
+def distinct_polynomial_splitting_map(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat,
+  splitting : DistinctPolynomialSplitting(K, p, n)
+) :
+  DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n) {
+  obtain (roots, a, equation, distinct) = splitting;
+  obtain (mappedRoots, b, mappedEquation) = polynomial_splitting_map(
+    K, L, e, p, n, typed(PolynomialSplitting(K, p, n), (roots, a, equation))
+  );
+  exact (
+    mappedRoots, b, mappedEquation,
+    (
+      fun (i : Fin(n)) => fun (j : Fin(n)) => fun (same : mappedRoots(i) = mappedRoots(j)) => distinct(
+        i, j, field_embedding_injective(K, L, e, roots(i), roots(j), same)
+      )
+    )
+  );
+}
+
+def generated_splitting_roots_algebraic(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
+  equation : polynomial_map(K, L, e, p) = polynomial_mul(
+    L, polynomial_constant(L, a), linear_factor_product(L, n, roots)
+  ), index : Fin(n)
+) :
+  AlgebraicElement(
+    K, RootGeneratedField(K, L, e, n, roots), root_generated_embedding(K, L, e, n, roots),
+    root_generated_root(K, L, e, n, roots, index)
+  ) {
+  let R = RootGeneratedField(K, L, e, n, roots);
+  let S = RootGeneratedSubfield(K, L, e, n, roots);
+  let d = root_generated_embedding(K, L, e, n, roots);
+  let h = subfield_inclusion(L, S);
+  let x = root_generated_root(K, L, e, n, roots, index);
+  let root =
+    trans(
+      sym(polynomial_eval_mapped(K, L, e, p, roots(index))),
+      splitting_listed_root(L, polynomial_map(K, L, e, p), n, roots, a, equation, index)
+    );
+  let triangle =
+    field_embedding_factor_triangle(K, L, e, S, root_generated_contains_base(K, L, e, n, roots));
+  exact merely(
+    (exists q : Polynomial(K), PolynomialNonzero(K, q) and PolynomialRoot(K, R, d, q, x)),
+    typed(
+      (exists q : Polynomial(K), PolynomialNonzero(K, q) and PolynomialRoot(K, R, d, q, x)),
+      (p, nonzero, polynomial_root_reflect(K, R, L, d, h, e, triangle, p, x, root))
+    )
+  );
+}
+
+// Only the finitely generated root field must be embedded in T; the originally
+// supplied splitting field may be arbitrarily large.
+theorem distinct_splitting_to_closed(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  nonzero : PolynomialNonzero(K, p), n : Nat,
+  splitting : DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n), T : AlgebraicField,
+  closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
+) :
+  Mere(DistinctPolynomialSplitting(T, polynomial_map(K, T, j, p), n)) {
+  obtain (roots, a, equation, distinct) = splitting;
+  let R = RootGeneratedField(K, L, e, n, roots);
+  let S = RootGeneratedSubfield(K, L, e, n, roots);
+  let d = root_generated_embedding(K, L, e, n, roots);
+  let rs = root_generated_root(K, L, e, n, roots);
+  let q = polynomial_map(K, R, d, p);
+  let generates =
+    generated_field_generators(K, R, d, n, rs, root_generated_generates(K, L, e, n, roots));
+  let algebraic = generated_splitting_roots_algebraic(K, L, e, p, nonzero, n, roots, a, equation);
+  have distinctR : Injective(Fin(n), af_carrier(R), rs) {
+    intro i;
+    intro k;
+    intro same;
+    exact distinct(i, k, cong(subfield_value(L, S), same));
+  }
+  let b = field_embedding_map(K, R, d, polynomial_coefficients(K, p, n));
+  let factor =
+    typed(
+      DistinctPolynomialSplitting(R, q, n),
+      (rs, b, root_generated_factorization(K, L, e, p, n, roots, a, equation), distinctR)
+    );
+  have send :
+    EmbeddingsOver(K, R, d, T, j) -> DistinctPolynomialSplitting(T, polynomial_map(K, T, j, p), n) {
+    intro extension;
+    obtain (h, over) = extension;
+    let tower = field_embedding_ext(K, T, field_embedding_compose(K, R, T, d, h), j, over);
+    let same =
+      trans(
+        polynomial_map_composition(K, R, T, d, h, p),
+        cong((fun (i : FieldEmbedding(K, T)) => polynomial_map(K, T, i, p)), tower)
+      );
+    exact transport(
+      (fun (s : Polynomial(T)) => DistinctPolynomialSplitting(T, s, n)), polynomial_map(R, T, h, q),
+      polynomial_map(K, T, j, p), same, distinct_polynomial_splitting_map(R, T, h, q, n, factor)
+    );
+  }
+  exact mere_map(
+    EmbeddingsOver(K, R, d, T, j), DistinctPolynomialSplitting(T, polynomial_map(K, T, j, p), n),
+    send, finitely_generated_embedding_extension(n, K, R, d, rs, algebraic, generates, T, closed, j)
+  );
+}
+
+theorem separable_polynomial_splits_in_closed(
+  K : AlgebraicField, p : Polynomial(K), separable : SeparablePolynomial(K, p), T : AlgebraicField,
+  closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
+) :
+  SeparableIn(K, T, j, p) {
+  obtain (nonzero, witness) = separable;
+  let n = polynomial_degree(K, p);
+  let Goal = SeparableIn(K, T, j, p);
+  let W = (exists L : AlgebraicField, exists e : FieldEmbedding(K, L), SeparableIn(K, L, e, p));
+  have send : W -> Goal {
+    intro w;
+    obtain (L, e, splitting) = w;
+    exact mere_eliminate(
+      DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n), Goal,
+      mere_is_prop(DistinctPolynomialSplitting(T, polynomial_map(K, T, j, p), n)),
+      (
+        fun (s : DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n)) => distinct_splitting_to_closed(
+          K, L, e, p, nonzero, n, s, T, closed, j
+        )
+      ), splitting
+    );
+  }
+  exact field_exists_elim(
+    W, Goal, mere_is_prop(DistinctPolynomialSplitting(T, polynomial_map(K, T, j, p), n)), send,
+    witness
+  );
+}
+
+theorem separable_polynomial_closed_root_count(
+  K : AlgebraicField, p : Polynomial(K), separable : SeparablePolynomial(K, p), T : AlgebraicField,
+  closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
+) :
+  HasCardinality(PolynomialRoots(K, T, j, p), polynomial_degree(K, p)) {
+  obtain (nonzero, witness) = separable;
+  exact separable_root_count(
+    K, T, j, p, nonzero, separable_polynomial_splits_in_closed(K, p, separable, T, closed, j)
+  );
+}

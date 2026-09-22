@@ -1,0 +1,122 @@
+import embedding_transport;
+import simple_extension_embeddings;
+import minimal_polynomials;
+import root_generated_fields;
+
+// Least-subfield formulation of L = K(x), independent of any presentation.
+def SimpleGenerated(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)
+) =
+  forall S : Subfield(L),
+  (forall a : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, a)))
+  -> subfield_members(L, S, x) -> forall y : af_carrier(L), subfield_members(L, S, y);
+
+theorem simple_root_embedding_surjective(
+  K : AlgebraicField, M : PolynomialModulus(K),
+  irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
+  e : FieldEmbedding(K, L), x : af_carrier(L),
+  root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x),
+  generates : SimpleGenerated(K, L, e, x)
+) :
+  Surjective(
+    PolynomialResidue(K, M), af_carrier(L),
+    field_embedding_map(
+      PolynomialResidueField(K, M, irreducible), L,
+      adjoin_root_embedding(K, M, irreducible, L, e, x, root)
+    )
+  ) {
+  let R = PolynomialResidueField(K, M, irreducible);
+  let h = adjoin_root_embedding(K, M, irreducible, L, e, x, root);
+  let f = field_embedding_map(R, L, h);
+  let S = subfield_image(R, L, h, subfield_top(R));
+  have base : forall a : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, a)) {
+    intro a;
+    exact (residue_constant(K, M, a), tt, residue_evaluate_constant(K, M, L, e, x, root, a));
+  }
+  have generator : subfield_members(L, S, x) {
+    exact (adjoined_root(K, M), tt, residue_evaluate_generator(K, M, L, e, x, root));
+  }
+  intro y;
+  obtain (r, unit, same) = generates(S, base, generator, y);
+  exact merely(
+    Fiber(PolynomialResidue(K, M), af_carrier(L), f, y),
+    typed(Fiber(PolynomialResidue(K, M), af_carrier(L), f, y), (r, same))
+  );
+}
+
+def simple_root_field_iso(
+  K : AlgebraicField, M : PolynomialModulus(K),
+  irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
+  e : FieldEmbedding(K, L), x : af_carrier(L),
+  root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x),
+  generates : SimpleGenerated(K, L, e, x)
+) =
+  field_embedding_surjective_iso(
+    PolynomialResidueField(K, M, irreducible), L,
+    adjoin_root_embedding(K, M, irreducible, L, e, x, root),
+    simple_root_embedding_surjective(K, M, irreducible, L, e, x, root, generates)
+  );
+
+// Univalence identifies the complete fields, including their operations.
+def simple_root_field_equality(
+  K : AlgebraicField, M : PolynomialModulus(K),
+  irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
+  e : FieldEmbedding(K, L), x : af_carrier(L),
+  root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x),
+  generates : SimpleGenerated(K, L, e, x)
+) =
+  field_isotoid(
+    PolynomialResidueField(K, M, irreducible), L,
+    simple_root_field_iso(K, M, irreducible, L, e, x, root, generates)
+  );
+
+// The modulus is the canonical monic minimal polynomial; its degree evidence
+// is recovered from its nonzeroness, rather than supplied by the caller.
+def minimal_polynomial_modulus(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  algebraic : AlgebraicElement(K, L, e, x)
+) :
+  PolynomialModulus(K) {
+  let p = minimal_polynomial(K, L, e, x, algebraic);
+  obtain (nonzero, monic, root, divides) = minimal_polynomial_spec(K, L, e, x, algebraic);
+  obtain (d, degree) = polynomial_nonzero_degree(K, p, nonzero);
+  exact (p, d, degree);
+}
+
+def simple_algebraic_residue_iso(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  algebraic : AlgebraicElement(K, L, e, x), generates : SimpleGenerated(K, L, e, x)
+) :
+  FieldIso(
+    PolynomialResidueField(
+      K, minimal_polynomial_modulus(K, L, e, x, algebraic),
+      minimal_polynomial_irreducible(K, L, e, x, algebraic)
+    ), L
+  ) {
+  let M = minimal_polynomial_modulus(K, L, e, x, algebraic);
+  obtain (nonzero, monic, root, divides) = minimal_polynomial_spec(K, L, e, x, algebraic);
+  exact simple_root_field_iso(
+    K, M, minimal_polynomial_irreducible(K, L, e, x, algebraic), L, e, x, root, generates
+  );
+}
+
+// A root in T extends the specified base embedding to this simple extension.
+def simple_embedding_at_root(
+  K : AlgebraicField, M : PolynomialModulus(K),
+  irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
+  e : FieldEmbedding(K, L), x : af_carrier(L),
+  root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x),
+  generates : SimpleGenerated(K, L, e, x), T : AlgebraicField, j : FieldEmbedding(K, T),
+  y : af_carrier(T), rootY : PolynomialRoot(K, T, j, modulus_polynomial(K, M), y)
+) :
+  EmbeddingsOver(K, L, e, T, j) {
+  exact embedding_over_surjective_source(
+    K, PolynomialResidueField(K, M, irreducible), L, residue_embedding(K, M, irreducible), e,
+    adjoin_root_embedding(K, M, irreducible, L, e, x, root),
+    residue_evaluate_constant(K, M, L, e, x, root),
+    simple_root_embedding_surjective(K, M, irreducible, L, e, x, root, generates), T, j,
+    root_to_embedding(
+      K, M, irreducible, T, j, typed(PolynomialRoots(K, T, j, modulus_polynomial(K, M)), (y, rootY))
+    )
+  );
+}

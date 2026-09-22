@@ -1,0 +1,109 @@
+import polynomial_adjoin;
+import polynomial_root_evaluation;
+
+def residue_evaluate(
+  K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  x : af_carrier(L), r : PolynomialResidue(K, M)
+) =
+  polynomial_eval(K, L, e, residue_polynomial(K, M, r), x);
+
+theorem residue_evaluate_one(
+  K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x)
+) :
+  residue_evaluate(K, M, L, e, x, residue_one(K, M)) = field_one(L) {
+  exact with unfolding [] {
+    trans(
+      polynomial_eval_remainder(K, M, L, e, x, root, polynomial_one(K)),
+      polynomial_eval_one(K, L, e, x)
+    )
+  };
+}
+
+theorem residue_evaluate_neg(
+  K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  x : af_carrier(L), r : PolynomialResidue(K, M)
+) :
+  residue_evaluate(K, M, L, e, x, residue_neg(K, M, r)) = field_neg(
+    L, residue_evaluate(K, M, L, e, x, r)
+  ) {
+  exact polynomial_eval_neg(K, L, e, residue_polynomial(K, M, r), x);
+}
+
+theorem residue_evaluate_add(
+  K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  x : af_carrier(L), r : PolynomialResidue(K, M), s : PolynomialResidue(K, M)
+) :
+  residue_evaluate(K, M, L, e, x, residue_add(K, M, r, s)) = field_add(
+    L, residue_evaluate(K, M, L, e, x, r), residue_evaluate(K, M, L, e, x, s)
+  ) {
+  exact polynomial_eval_add(K, L, e, residue_polynomial(K, M, r), residue_polynomial(K, M, s), x);
+}
+
+theorem residue_evaluate_mul(
+  K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x),
+  r : PolynomialResidue(K, M), s : PolynomialResidue(K, M)
+) :
+  residue_evaluate(K, M, L, e, x, residue_mul(K, M, r, s)) = field_mul(
+    L, residue_evaluate(K, M, L, e, x, r), residue_evaluate(K, M, L, e, x, s)
+  ) {
+  let p = residue_polynomial(K, M, r);
+  let q = residue_polynomial(K, M, s);
+  exact with unfolding [] {
+    trans(
+      polynomial_eval_remainder(K, M, L, e, x, root, polynomial_mul(K, p, q)),
+      polynomial_eval_mul(K, L, e, p, q, x)
+    )
+  };
+}
+
+opaque def residue_evaluate_preserves(
+  K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x)
+) =
+  field_ops_map_from_laws(
+    PolynomialResidue(K, M), residue_zero(K, M), residue_one(K, M), residue_neg(K, M),
+    residue_add(K, M), residue_mul(K, M), af_carrier(L), af_operations(L),
+    residue_evaluate(K, M, L, e, x), polynomial_eval_zero(K, L, e, x),
+    residue_evaluate_one(K, M, L, e, x, root), residue_evaluate_neg(K, M, L, e, x),
+    residue_evaluate_add(K, M, L, e, x), residue_evaluate_mul(K, M, L, e, x, root)
+  );
+
+// Every root in an extension determines an embedding of the adjoined field.
+def adjoin_root_embedding(
+  K : AlgebraicField, M : PolynomialModulus(K),
+  irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
+  e : FieldEmbedding(K, L), x : af_carrier(L),
+  root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x)
+) =
+  field_embedding_from_hom(
+    PolynomialResidueField(K, M, irreducible), L, residue_evaluate(K, M, L, e, x),
+    residue_evaluate_preserves(K, M, L, e, x, root)
+  );
+
+theorem residue_evaluate_constant(
+  K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x), a : af_carrier(K)
+) :
+  residue_evaluate(K, M, L, e, x, residue_constant(K, M, a)) = field_embedding_map(K, L, e, a) {
+  exact with unfolding [] {
+    trans(
+      polynomial_eval_remainder(K, M, L, e, x, root, polynomial_constant(K, a)),
+      polynomial_eval_constant(K, L, e, a, x)
+    )
+  };
+}
+
+theorem residue_evaluate_generator(
+  K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x)
+) :
+  residue_evaluate(K, M, L, e, x, adjoined_root(K, M)) = x {
+  exact with unfolding [] {
+    trans(
+      polynomial_eval_remainder(K, M, L, e, x, root, polynomial_variable(K)),
+      polynomial_eval_variable(K, L, e, x)
+    )
+  };
+}

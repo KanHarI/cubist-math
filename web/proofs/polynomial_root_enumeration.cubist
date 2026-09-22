@@ -1,0 +1,238 @@
+import polynomial_splitting;
+import simple_extension_embeddings;
+import finite_cardinalities;
+
+// A zero product of linear factors locates a root in the finite list.
+theorem linear_factor_product_root_step(
+  K : AlgebraicField, n : Nat,
+  previous : (
+    forall roots : Fin(n) -> af_carrier(K), forall x : af_carrier(K),
+    PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, n, roots), x)
+    -> Mere(exists i : Fin(n), roots(i) = x)
+  ), roots : Fin(succ(n)) -> af_carrier(K), x : af_carrier(K),
+  root : PolynomialRoot(
+    K, K, field_embedding_identity(K), linear_factor_product(K, succ(n), roots), x
+  )
+) :
+  Mere(exists i : Fin(succ(n)), roots(i) = x) {
+  let h = finite_head(af_carrier(K), n, roots);
+  let tail = finite_tail(af_carrier(K), n, roots);
+  let q = linear_factor_product(K, n, tail);
+  let P = linear_factor_product(K, succ(n), roots);
+  let Result = exists i : Fin(succ(n)), roots(i) = x;
+  have unequal : ((x = h) -> Void) -> Mere(Result) {
+    intro different;
+    let rq = root_descends_to_factor_quotient(K, P, h, q, refl(P), x, different, root);
+    have lift : (exists i : Fin(n), tail(i) = x) -> Result {
+      intro witness;
+      obtain (i, same) = witness;
+      exact (typed(Fin(succ(n)), right(i)), same);
+    }
+    exact mere_map((exists i : Fin(n), tail(i) = x), Result, lift, previous(tail, x, rq));
+  }
+  exact match excluded_middle((x = h), af_set(K, x, h)) as which return Mere(Result) {
+    left same => merely(Result, typed(Result, (typed(Fin(succ(n)), left(tt)), sym(same))));
+    right different => unequal(different);
+  };
+}
+
+theorem linear_factor_product_root_index(K : AlgebraicField, n : Nat) :
+  forall roots : Fin(n) -> af_carrier(K), forall x : af_carrier(K),
+  PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, n, roots), x)
+  -> Mere(exists i : Fin(n), roots(i) = x) {
+  obtain (ring, nontrivial, inverses) = af_laws(K);
+  exact induction n as k return (
+    forall roots : Fin(k) -> af_carrier(K), forall x : af_carrier(K),
+    PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, k, roots), x)
+    -> Mere(exists i : Fin(k), roots(i) = x)
+  ) {
+    zero => fun (roots : Fin(0) -> af_carrier(K)) => fun (x : af_carrier(K)) => fun (
+      root : PolynomialRoot(K, K, field_embedding_identity(K), polynomial_one(K), x)
+    ) => typed(
+      Mere(exists i : Fin(0), roots(i) = x),
+      absurd(
+        nontrivial(trans(sym(polynomial_eval_one(K, K, field_embedding_identity(K), x)), root))
+      )
+    );
+    succ previous => linear_factor_product_root_step(K, k, previous);
+  };
+}
+
+theorem linear_factor_product_listed_step(
+  K : AlgebraicField, n : Nat,
+  previous : (
+    forall roots : Fin(n) -> af_carrier(K), forall i : Fin(n),
+    PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, n, roots), roots(i))
+  ), roots : Fin(succ(n)) -> af_carrier(K), i : Fin(succ(n))
+) :
+  PolynomialRoot(
+    K, K, field_embedding_identity(K), linear_factor_product(K, succ(n), roots), roots(i)
+  ) {
+  let h = finite_head(af_carrier(K), n, roots);
+  let tail = finite_tail(af_carrier(K), n, roots);
+  let q = linear_factor_product(K, n, tail);
+  let P = linear_factor_product(K, succ(n), roots);
+  let e = field_embedding_identity(K);
+  have headRoot : PolynomialRoot(K, K, e, P, h) {
+    exact polynomial_factor_root(K, P, h, q, refl(P));
+  }
+  have tailRoot : forall j : Fin(n), PolynomialRoot(K, K, e, P, tail(j)) {
+    intro j;
+    let x = tail(j);
+    exact with unfolding [] {
+      trans(
+        polynomial_eval_mul(K, K, e, polynomial_linear_factor(K, h), q, x),
+        trans(
+          cong(
+            field_mul(K, polynomial_eval(K, K, e, polynomial_linear_factor(K, h), x)),
+            previous(tail, j)
+          ), scalar_mul_zero(K, polynomial_eval(K, K, e, polynomial_linear_factor(K, h), x))
+        )
+      )
+    };
+  }
+  exact match i as index return PolynomialRoot(K, K, e, P, roots(index)) {
+    left u => transport(
+      PolynomialRoot(K, K, e, P), h, roots(typed(Fin(succ(n)), left(u))),
+      cong((fun (v : Unit) => roots(typed(Fin(succ(n)), left(v)))), unit_equal(u)), headRoot
+    );
+    right j => tailRoot(j);
+  };
+}
+
+theorem linear_factor_product_listed_root(K : AlgebraicField, n : Nat) =
+  induction n as k return (
+    forall roots : Fin(k) -> af_carrier(K), forall i : Fin(k),
+    PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, k, roots), roots(i))
+  ) {
+    zero => fun (roots : Fin(0) -> af_carrier(K)) => fun (i : Fin(0)) => typed(
+      PolynomialRoot(
+        K, K, field_embedding_identity(K), linear_factor_product(K, 0, roots), roots(i)
+      ), absurd(i)
+    );
+    succ previous => linear_factor_product_listed_step(K, k, previous);
+  };
+
+theorem splitting_listed_root(
+  K : AlgebraicField, p : Polynomial(K), n : Nat, roots : Fin(n) -> af_carrier(K),
+  a : af_carrier(K),
+  equation : p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots)),
+  i : Fin(n)
+) :
+  PolynomialRoot(K, K, field_embedding_identity(K), p, roots(i)) {
+  let x = roots(i);
+  let q = linear_factor_product(K, n, roots);
+  let e = field_embedding_identity(K);
+  let E = fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, x);
+  exact with unfolding [] {
+    trans(
+      cong(E, equation),
+      trans(
+        polynomial_eval_mul(K, K, e, polynomial_constant(K, a), q, x),
+        trans(
+          cong(
+            field_mul(K, E(polynomial_constant(K, a))),
+            linear_factor_product_listed_root(K, n, roots, i)
+          ), scalar_mul_zero(K, E(polynomial_constant(K, a)))
+        )
+      )
+    )
+  };
+}
+
+theorem splitting_root_index(
+  K : AlgebraicField, p : Polynomial(K), n : Nat, roots : Fin(n) -> af_carrier(K),
+  a : af_carrier(K),
+  equation : p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots)),
+  nonzero : PolynomialNonzero(K, p), x : af_carrier(K),
+  root : PolynomialRoot(K, K, field_embedding_identity(K), p, x)
+) :
+  Mere(exists i : Fin(n), roots(i) = x) {
+  let q = linear_factor_product(K, n, roots);
+  let e = field_embedding_identity(K);
+  let E = fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, x);
+  have na : FieldNonzero(af_carrier(K), af_operations(K), a) {
+    intro zero;
+    exact nonzero(
+      trans(
+        equation,
+        trans(
+          cong(
+            (fun (s : Polynomial(K)) => polynomial_mul(K, s, q)),
+            trans(cong(polynomial_constant(K), zero), polynomial_constant_zero(K))
+          ), polynomial_zero_mul(K, q)
+        )
+      )
+    );
+  }
+  have product : field_mul(K, a, E(q)) = field_zero(K) {
+    exact with unfolding [] {
+      trans(
+        cong(
+          (fun (b : af_carrier(K)) => field_mul(K, b, E(q))),
+          sym(polynomial_eval_constant(K, K, e, a, x))
+        ),
+        trans(
+          sym(polynomial_eval_mul(K, K, e, polynomial_constant(K, a), q, x)),
+          trans(cong(E, sym(equation)), root)
+        )
+      )
+    };
+  }
+  let rq =
+    vector_scale_injective(
+      K, ScalarSpace(K), a, na, E(q), field_zero(K), trans(product, sym(scalar_mul_zero(K, a)))
+    );
+  exact linear_factor_product_root_index(K, n, roots, x, rq);
+}
+
+def splitting_root_map(
+  K : AlgebraicField, p : Polynomial(K), n : Nat, roots : Fin(n) -> af_carrier(K),
+  a : af_carrier(K),
+  equation : p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots)),
+  i : Fin(n)
+) :
+  PolynomialRoots(K, K, field_embedding_identity(K), p) {
+  exact (roots(i), splitting_listed_root(K, p, n, roots, a, equation, i));
+}
+
+// A distinct splitting list enumerates every root exactly once.
+def distinct_splitting_roots_bijection(
+  K : AlgebraicField, p : Polynomial(K), n : Nat, roots : Fin(n) -> af_carrier(K),
+  a : af_carrier(K),
+  equation : p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots)),
+  nonzero : PolynomialNonzero(K, p), distinct : Injective(Fin(n), af_carrier(K), roots)
+) :
+  Bijection(Fin(n), PolynomialRoots(K, K, field_embedding_identity(K), p)) {
+  let R = PolynomialRoots(K, K, field_embedding_identity(K), p);
+  let P = PolynomialRoot(K, K, field_embedding_identity(K), p);
+  let f = splitting_root_map(K, p, n, roots, a, equation);
+  have injective : Injective(Fin(n), R, f) {
+    intro i;
+    intro j;
+    intro same;
+    exact distinct(i, j, cong(sigma_first(af_carrier(K), P), same));
+  }
+  have onto : Surjective(Fin(n), R, f) {
+    intro r;
+    obtain (x, rx) = r;
+    have locate : (exists i : Fin(n), roots(i) = x) -> Fiber(Fin(n), R, f, r) {
+      intro witness;
+      obtain (i, same) = witness;
+      exact (
+        i,
+        subtype_ext(
+          af_carrier(K), P, polynomial_root_prop(K, K, field_embedding_identity(K), p), f(i), r,
+          same
+        )
+      );
+    }
+    exact mere_map(
+      (exists i : Fin(n), roots(i) = x), Fiber(Fin(n), R, f, r), locate,
+      splitting_root_index(K, p, n, roots, a, equation, nonzero, x, rx)
+    );
+  }
+  exact bijective_map_bijection(
+    Fin(n), R, polynomial_roots_set(K, K, field_embedding_identity(K), p), f, injective, onto
+  );
+}

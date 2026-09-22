@@ -1,0 +1,86 @@
+import extension_degree;
+import scalar_extension_finiteness;
+
+// The middle field includes linearly in the top field when both are viewed
+// over K through the composite embedding.
+def tower_middle_linear(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
+  d : FieldEmbedding(L, M)
+) :
+  LinearMap(
+    K, field_vector_space(K, L, e), field_vector_space(K, M, field_embedding_compose(K, L, M, e, d))
+  ) {
+  obtain (zero, one, neg, add, mul) = field_embedding_preserves(L, M, d);
+  exact (
+    field_embedding_map(L, M, d), add,
+    (fun (a : af_carrier(K)) => mul(field_embedding_map(K, L, e, a)))
+  );
+}
+
+theorem finite_tower_lower(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
+  d : FieldEmbedding(L, M),
+  whole : FiniteExtension(K, embedding_as_extension(K, M, field_embedding_compose(K, L, M, e, d)))
+) :
+  FiniteExtension(K, embedding_as_extension(K, L, e)) {
+  exact finite_dimensional_injection(
+    K, field_vector_space(K, L, e),
+    field_vector_space(K, M, field_embedding_compose(K, L, M, e, d)),
+    tower_middle_linear(K, L, M, e, d), field_embedding_injective(L, M, d), whole
+  );
+}
+
+theorem finite_tower_upper(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
+  d : FieldEmbedding(L, M),
+  whole : FiniteExtension(K, embedding_as_extension(K, M, field_embedding_compose(K, L, M, e, d)))
+) :
+  FiniteExtension(L, embedding_as_extension(L, M, d)) {
+  let V = field_vector_space(L, M, d);
+  let R = RestrictScalars(K, L, e, V);
+  let W = field_vector_space(K, M, field_embedding_compose(K, L, M, e, d));
+  let comparison = linear_iso_inverse(K, R, W, restrict_field_tower_iso(K, L, M, e, d));
+  exact finite_dimensional_of_restriction(
+    K, L, e, V, finite_dimensional_iso(K, W, R, comparison, whole)
+  );
+}
+
+// Finiteness of the whole tower implies finiteness of both steps. The
+// commuting triangle is used by transport, so the base embedding is retained.
+theorem finite_extension_tower_converse(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
+  d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c),
+  whole : FiniteExtension(K, embedding_as_extension(K, M, c))
+) :
+  FiniteExtension(K, embedding_as_extension(K, L, e))
+  and FiniteExtension(L, embedding_as_extension(L, M, d)) {
+  let composite = field_embedding_compose(K, L, M, e, d);
+  let finite =
+    transport(
+      (fun (f : FieldEmbedding(K, M)) => FiniteExtension(K, embedding_as_extension(K, M, f))), c,
+      composite, sym(triangle), whole
+    );
+  exact (finite_tower_lower(K, L, M, e, d, finite), finite_tower_upper(K, L, M, e, d, finite));
+}
+
+// The finiteness part of Lang's tower criterion, in both directions.
+theorem finite_extension_tower_iff(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
+  d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c)
+) :
+  FieldIff(
+    FiniteExtension(K, embedding_as_extension(K, M, c)),
+    FiniteExtension(K, embedding_as_extension(K, L, e))
+    and FiniteExtension(L, embedding_as_extension(L, M, d))
+  ) {
+  let Lower = FiniteExtension(K, embedding_as_extension(K, L, e));
+  let Upper = FiniteExtension(L, embedding_as_extension(L, M, d));
+  exact (
+    finite_extension_tower_converse(K, L, M, e, d, c, triangle),
+    (
+      fun (steps : Lower and Upper) => finite_extension_tower(
+        K, L, M, e, d, c, triangle, fst(Lower, Upper, steps), snd(Lower, Upper, steps)
+      )
+    )
+  );
+}

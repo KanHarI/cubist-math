@@ -1,0 +1,211 @@
+import finite_spanning;
+
+// Individual generators have explicit unit-coordinate preimages.
+def coordinate_unit(K : AlgebraicField, n : Nat) =
+  induction n as k return (Fin(k) -> Fin(k) -> af_carrier(K)) {
+    zero => fun (i : Fin(0)) => typed((Fin(0) -> af_carrier(K)), absurd(i));
+    succ previous => fun (i : Fin(succ(k))) => match i return (Fin(succ(k)) -> af_carrier(K)) {
+      left u => coordinate_first(K, k);
+      right j => coordinate_insert(K, k, previous(j));
+    };
+  };
+
+theorem adjoin_first_value(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
+  x : vector_carrier(K, V)
+) :
+  linear_map(
+    K, CoordinateSpace(K, succ(n)), V, adjoin_linear(K, V, n, f, x), coordinate_first(K, n)
+  ) = x {
+  exact trans(
+    cong(
+      (
+        fun (y : vector_carrier(K, V)) => vector_add(
+          K, V, y, linear_map(K, CoordinateSpace(K, n), V, f, vector_zero(K, CoordinateSpace(K, n)))
+        )
+      ), vector_scale_one(K, V, x)
+    ),
+    trans(
+      cong(vector_add(K, V, x), linear_zero(K, CoordinateSpace(K, n), V, f)),
+      group_unit_right(vector_group(K, V), x)
+    )
+  );
+}
+
+theorem adjoin_tail_value(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
+  x : vector_carrier(K, V), a : Fin(n) -> af_carrier(K)
+) :
+  linear_map(
+    K, CoordinateSpace(K, succ(n)), V, adjoin_linear(K, V, n, f, x), coordinate_insert(K, n, a)
+  ) = linear_map(K, CoordinateSpace(K, n), V, f, a) {
+  let y = linear_map(K, CoordinateSpace(K, n), V, f, a);
+  exact trans(
+    cong((fun (z : vector_carrier(K, V)) => vector_add(K, V, z, y)), vector_zero_scale(K, V, x)),
+    group_unit_left(vector_group(K, V), y)
+  );
+}
+
+theorem family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+  induction n as k return (
+    forall v : Fin(k) -> vector_carrier(K, V), forall i : Fin(k),
+    linear_map(K, CoordinateSpace(K, k), V, family_linear(K, V, k, v), coordinate_unit(K, k, i)) = v(
+      i
+    )
+  ) {
+    zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (i : Fin(0)) => typed(
+      (
+        linear_map(K, CoordinateSpace(K, 0), V, family_linear(K, V, 0, v), coordinate_unit(K, 0, i)) = v(
+          i
+        )
+      ), absurd(i)
+    );
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (i : Fin(succ(k))) => match i as j return (
+      linear_map(
+        K, CoordinateSpace(K, succ(k)), V, family_linear(K, V, succ(k), v),
+        coordinate_unit(K, succ(k), j)
+      ) = v(j)
+    ) {
+      left u => trans(
+        adjoin_first_value(
+          K, V, k, family_linear(K, V, k, finite_tail(vector_carrier(K, V), k, v)),
+          finite_head(vector_carrier(K, V), k, v)
+        ), cong((fun (w : Unit) => v(typed(Fin(succ(k)), left(w)))), unit_equal(u))
+      );
+      right j => trans(
+        adjoin_tail_value(
+          K, V, k, family_linear(K, V, k, finite_tail(vector_carrier(K, V), k, v)),
+          finite_head(vector_carrier(K, V), k, v), coordinate_unit(K, k, j)
+        ), previous(finite_tail(vector_carrier(K, V), k, v), j)
+      );
+    };
+  };
+
+def linear_image_combine(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  a : af_carrier(K), x : vector_carrier(K, W), y : vector_carrier(K, W),
+  px : Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), x),
+  py : Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y)
+) :
+  Fiber(
+    vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f),
+    vector_add(K, W, vector_scale(K, W, a, x), y)
+  ) {
+  obtain (u, hu) = px;
+  obtain (v, hv) = py;
+  let F = linear_map(K, V, W, f);
+  exact (
+    vector_add(K, V, vector_scale(K, V, a, u), v),
+    trans(
+      linear_add(K, V, W, f, vector_scale(K, V, a, u), v),
+      trans(
+        cong(
+          (fun (z : vector_carrier(K, W)) => vector_add(K, W, z, F(v))),
+          linear_scale(K, V, W, f, a, u)
+        ),
+        trans(
+          cong(
+            (fun (z : vector_carrier(K, W)) => vector_add(K, W, vector_scale(K, W, a, z), F(v))), hu
+          ), cong(vector_add(K, W, vector_scale(K, W, a, x)), hv)
+        )
+      )
+    )
+  );
+}
+
+def linear_image_combine_mere(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  a : af_carrier(K), x : vector_carrier(K, W), y : vector_carrier(K, W),
+  px : Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), x)),
+  py : Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y))
+) :
+  Mere(
+    Fiber(
+      vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f),
+      vector_add(K, W, vector_scale(K, W, a, x), y)
+    )
+  ) {
+  let FiberF = Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
+  let z = vector_add(K, W, vector_scale(K, W, a, x), y);
+  exact mere_eliminate(
+    FiberF(x), Mere(FiberF(z)), mere_is_prop(FiberF(z)),
+    (
+      fun (u : FiberF(x)) => mere_map(
+        FiberF(y), FiberF(z), linear_image_combine(K, V, W, f, a, x, y, u), py
+      )
+    ), px
+  );
+}
+
+theorem family_combination_in_image(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat
+) =
+  induction n as k return (
+    forall v : Fin(k) -> vector_carrier(K, W), forall a : Fin(k) -> af_carrier(K),
+    (
+      forall i : Fin(k),
+      Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), v(i)))
+    )
+    -> Mere(
+      Fiber(
+        vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f),
+        linear_combination(K, W, k, v, a)
+      )
+    )
+  ) {
+    zero => fun (v : Fin(0) -> vector_carrier(K, W)) => fun (a : Fin(0) -> af_carrier(K)) => fun (
+      members : (
+        forall i : Fin(0),
+        Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), v(i)))
+      )
+    ) => merely(
+      Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), vector_zero(K, W)),
+      typed(
+        Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), vector_zero(K, W)),
+        (vector_zero(K, V), linear_zero(K, V, W, f))
+      )
+    );
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, W)) => fun (
+      a : Fin(succ(k)) -> af_carrier(K)
+    ) => fun (
+      members : (
+        forall i : Fin(succ(k)),
+        Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), v(i)))
+      )
+    ) => linear_image_combine_mere(
+      K, V, W, f, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, W), k, v),
+      linear_combination(
+        K, W, k, finite_tail(vector_carrier(K, W), k, v), finite_tail(af_carrier(K), k, a)
+      ), members(typed(Fin(succ(k)), left(tt))),
+      previous(
+        finite_tail(vector_carrier(K, W), k, v), finite_tail(af_carrier(K), k, a),
+        (fun (i : Fin(k)) => members(typed(Fin(succ(k)), right(i))))
+      )
+    );
+  };
+
+theorem spanning_family_in_image(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat,
+  v : Fin(n) -> vector_carrier(K, W), spanning : FiniteSpanningFamily(K, W, n, v),
+  members : (
+    forall i : Fin(n),
+    Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), v(i)))
+  )
+) :
+  LinearSurjective(K, V, W, f) {
+  intro x;
+  let FiberF = Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
+  let C = Fin(n) -> af_carrier(K);
+  have descend : (exists a : C, linear_combination(K, W, n, v, a) = x) -> Mere(FiberF(x)) {
+    intro witness;
+    obtain (a, same) = witness;
+    exact transport(
+      (fun (z : vector_carrier(K, W)) => Mere(FiberF(z))), linear_combination(K, W, n, v, a), x,
+      same, family_combination_in_image(K, V, W, f, n, v, a, members)
+    );
+  }
+  exact mere_eliminate(
+    (exists a : C, linear_combination(K, W, n, v, a) = x), Mere(FiberF(x)), mere_is_prop(FiberF(x)),
+    descend, spanning(x)
+  );
+}

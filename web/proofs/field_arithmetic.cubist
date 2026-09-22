@@ -1,0 +1,137 @@
+import linear_constructions;
+
+// Readable specializations of the existing ring laws to a bundled field.
+def field_zero(K : AlgebraicField) = af_zero(af_carrier(K), af_operations(K));
+
+def field_one(K : AlgebraicField) = af_one(af_carrier(K), af_operations(K));
+
+def field_add(K : AlgebraicField) = af_add(af_carrier(K), af_operations(K));
+
+def field_mul(K : AlgebraicField) = af_mul(af_carrier(K), af_operations(K));
+
+def field_neg(K : AlgebraicField) = af_neg(af_carrier(K), af_operations(K));
+
+def scalar_ring(K : AlgebraicField) =
+  algebraic_field_ring(
+    af_carrier(K), af_operations(K), af_set(K),
+    field_ring_data(af_carrier(K), af_operations(K), af_laws(K))
+  );
+
+def scalar_add_assoc(K : AlgebraicField) =
+  ring_add_assoc(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_add_comm(K : AlgebraicField) =
+  ring_add_comm(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_add_zero(K : AlgebraicField) =
+  ring_add_zero(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_add_inverse(K : AlgebraicField) =
+  ring_add_inverse(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_mul_assoc(K : AlgebraicField) =
+  ring_mul_assoc(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_mul_comm(K : AlgebraicField) =
+  ring_mul_comm(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_mul_one(K : AlgebraicField) =
+  ring_mul_one(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_distribute(K : AlgebraicField) =
+  ring_distribute(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_add_zero_right(K : AlgebraicField) =
+  ring_add_zero_right(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_mul_one_right(K : AlgebraicField) =
+  ring_mul_one_right(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_add_inverse_right(K : AlgebraicField) =
+  ring_add_inverse_right(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_add_swap(K : AlgebraicField) =
+  ring_add_swap(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_add_shuffle(K : AlgebraicField) =
+  ring_add_shuffle(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_mul_zero(K : AlgebraicField) =
+  ring_mul_zero(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_mul_neg(K : AlgebraicField) =
+  ring_mul_neg(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_distribute_left(K : AlgebraicField) =
+  ring_distribute_left(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_mul_swap(K : AlgebraicField) =
+  ring_mul_swap(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+def scalar_add_cancel_prefix(K : AlgebraicField) =
+  ring_add_cancel_prefix(
+    af_carrier(K), field_zero(K), field_one(K), field_add(K), field_mul(K), field_neg(K),
+    scalar_ring(K)
+  );
+
+theorem scalar_zero_mul(K : AlgebraicField, x : af_carrier(K)) :
+  field_mul(K, field_zero(K), x) = field_zero(K) {
+  exact trans(scalar_mul_comm(K, field_zero(K), x), scalar_mul_zero(K, x));
+}
+
+theorem scalar_neg_zero(K : AlgebraicField) : field_neg(K, field_zero(K)) = field_zero(K) {
+  exact trans(
+    sym(scalar_add_zero_right(K, field_neg(K, field_zero(K)))), scalar_add_inverse(K, field_zero(K))
+  );
+}

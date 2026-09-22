@@ -1,0 +1,138 @@
+import finite_spanning;
+import scalar_restriction;
+
+// Regard the same finite generating vectors as an L-linear family. The
+// coefficients are extended along K -> L; vectors themselves do not move.
+def extend_coordinate_linear(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat
+) =
+  induction n as k return (
+    LinearMap(K, CoordinateSpace(K, k), RestrictScalars(K, L, e, V))
+    -> LinearMap(L, CoordinateSpace(L, k), V)
+  ) {
+    zero => fun (h : LinearMap(K, CoordinateSpace(K, 0), RestrictScalars(K, L, e, V))) => linear_empty(
+      L, V
+    );
+    succ previous => fun (
+      h : LinearMap(K, CoordinateSpace(K, succ(k)), RestrictScalars(K, L, e, V))
+    ) => adjoin_linear(
+      L, V, k,
+      previous(
+        linear_compose(
+          K, CoordinateSpace(K, k), CoordinateSpace(K, succ(k)), RestrictScalars(K, L, e, V),
+          coordinate_insert_linear(K, k), h
+        )
+      ),
+      linear_map(
+        K, CoordinateSpace(K, succ(k)), RestrictScalars(K, L, e, V), h, coordinate_first(K, k)
+      )
+    );
+  };
+
+def extend_coefficients(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
+  a : Fin(n) -> af_carrier(K)
+) =
+  fun (i : Fin(n)) => field_embedding_map(K, L, e, a(i));
+
+theorem extend_coordinate_zero(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L),
+  h : LinearMap(K, CoordinateSpace(K, 0), RestrictScalars(K, L, e, V)), a : Fin(0) -> af_carrier(K)
+) :
+  vector_zero(L, V) = linear_map(K, CoordinateSpace(K, 0), RestrictScalars(K, L, e, V), h, a) {
+  let C = CoordinateSpace(K, 0);
+  let R = RestrictScalars(K, L, e, V);
+  let H = linear_map(K, C, R, h);
+  exact trans(
+    sym(linear_zero(K, C, R, h)),
+    cong(
+      H,
+      FunExt(
+        U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)), vector_zero(K, C), a,
+        (fun (i : Fin(0)) => typed((af_zero(af_carrier(K), af_operations(K)) = a(i)), absurd(i)))
+      )
+    )
+  );
+}
+
+theorem extend_coordinate_square(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat
+) =
+  induction n as k return (
+    forall h : LinearMap(K, CoordinateSpace(K, k), RestrictScalars(K, L, e, V)),
+    forall a : Fin(k) -> af_carrier(K),
+    linear_map(
+      L, CoordinateSpace(L, k), V, extend_coordinate_linear(K, L, e, V, k, h),
+      extend_coefficients(K, L, e, k, a)
+    ) = linear_map(K, CoordinateSpace(K, k), RestrictScalars(K, L, e, V), h, a)
+  ) {
+    zero => extend_coordinate_zero(K, L, e, V);
+    succ previous => fun (
+      h : LinearMap(K, CoordinateSpace(K, succ(k)), RestrictScalars(K, L, e, V))
+    ) => fun (a : Fin(succ(k)) -> af_carrier(K)) => trans(
+      cong(
+        vector_add(
+          L, V,
+          vector_scale(
+            L, V, field_embedding_map(K, L, e, finite_head(af_carrier(K), k, a)),
+            linear_map(
+              K, CoordinateSpace(K, succ(k)), RestrictScalars(K, L, e, V), h, coordinate_first(K, k)
+            )
+          )
+        ),
+        previous(
+          linear_compose(
+            K, CoordinateSpace(K, k), CoordinateSpace(K, succ(k)), RestrictScalars(K, L, e, V),
+            coordinate_insert_linear(K, k), h
+          ), finite_tail(af_carrier(K), k, a)
+        )
+      ), sym(linear_first_tail(K, RestrictScalars(K, L, e, V), k, h, a))
+    );
+  };
+
+theorem scalar_extension_basis_finite(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat,
+  basis : FiniteBasis(K, RestrictScalars(K, L, e, V), n)
+) :
+  FiniteDimensional(L, V) {
+  let R = RestrictScalars(K, L, e, V);
+  let h = basis_expansion(K, R, n, basis);
+  let extended = extend_coordinate_linear(K, L, e, V, n, h);
+  have onto : LinearSurjective(L, CoordinateSpace(L, n), V, extended) {
+    intro x;
+    let a = linear_map(K, R, CoordinateSpace(K, n), basis_coordinates(K, R, n, basis), x);
+    exact merely(
+      Fiber(
+        (Fin(n) -> af_carrier(L)), vector_carrier(L, V),
+        linear_map(L, CoordinateSpace(L, n), V, extended), x
+      ),
+      typed(
+        Fiber(
+          (Fin(n) -> af_carrier(L)), vector_carrier(L, V),
+          linear_map(L, CoordinateSpace(L, n), V, extended), x
+        ),
+        (
+          extend_coefficients(K, L, e, n, a),
+          trans(
+            extend_coordinate_square(K, L, e, V, n, h, a),
+            basis_expansion_coordinates(K, R, n, basis, x)
+          )
+        )
+      )
+    );
+  }
+  exact finite_dimensional_coordinate_surjection(L, V, n, extended, onto);
+}
+
+theorem finite_dimensional_of_restriction(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L),
+  finite : FiniteDimensional(K, RestrictScalars(K, L, e, V))
+) :
+  FiniteDimensional(L, V) {
+  let R = RestrictScalars(K, L, e, V);
+  let n = dimension(K, R, finite);
+  exact mere_eliminate(
+    FiniteBasis(K, R, n), FiniteDimensional(L, V), finite_dimensional_prop(L, V),
+    scalar_extension_basis_finite(K, L, e, V, n), dimension_specification(K, R, finite)
+  );
+}

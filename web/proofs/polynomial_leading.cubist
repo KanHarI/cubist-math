@@ -1,0 +1,220 @@
+import polynomial_division;
+
+// A polynomial with support below 1 is a constant coefficient function.
+theorem series_support_one(
+  K : AlgebraicField, f : FormalSeries(K), support : SeriesSupport(K, f, 1)
+) :
+  f = series_constant(K, f(0)) {
+  exact FunExt(
+    U0, Nat, (fun (n : Nat) => af_carrier(K)), f, series_constant(K, f(0)),
+    (fun (n : Nat) => induction n as k return (f(k) = series_constant(K, f(0), k)) {
+        zero => refl(f(0));
+        succ ignored => support(succ(k), tt);
+      })
+  );
+}
+
+theorem convolution_constant_left(
+  K : AlgebraicField, a : af_carrier(K), n : Nat, f : FormalSeries(K)
+) :
+  convolution(K, n, series_constant(K, a), f) = field_mul(K, a, f(n)) {
+  exact trans(
+    convolution_comm(K, n, series_constant(K, a), f),
+    trans(convolution_constant_right(K, a, n, f), scalar_mul_comm(K, f(n), a))
+  );
+}
+
+theorem convolution_top(K : AlgebraicField, m : Nat) =
+  induction m as k return (
+    forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat,
+    SeriesSupport(K, f, succ(k)) -> SeriesSupport(K, g, succ(n))
+    -> convolution(K, add_count(k, n), f, g) = field_mul(K, f(k), g(n))
+  ) {
+    zero => fun (f : FormalSeries(K)) => fun (g : FormalSeries(K)) => fun (n : Nat) => fun (
+      sf : SeriesSupport(K, f, 1)
+    ) => fun (sg : SeriesSupport(K, g, succ(n))) => trans(
+      cong((fun (s : FormalSeries(K)) => convolution(K, n, s, g)), series_support_one(K, f, sf)),
+      convolution_constant_left(K, f(0), n, g)
+    );
+    succ previous => fun (f : FormalSeries(K)) => fun (g : FormalSeries(K)) => fun (n : Nat) => fun (
+      sf : SeriesSupport(K, f, succ(succ(k)))
+    ) => fun (sg : SeriesSupport(K, g, succ(n))) => trans(
+      cong(
+        (
+          fun (a : af_carrier(K)) => field_add(
+            K, field_mul(K, f(0), a), convolution(K, add_count(k, n), series_tail(K, f), g)
+          )
+        ), sg(succ(add_count(k, n)), nat_le_add(k, n))
+      ),
+      trans(
+        cong(
+          (
+            fun (a : af_carrier(K)) => field_add(
+              K, a, convolution(K, add_count(k, n), series_tail(K, f), g)
+            )
+          ), scalar_mul_zero(K, f(0))
+        ),
+        trans(
+          scalar_add_zero(K, convolution(K, add_count(k, n), series_tail(K, f), g)),
+          previous(
+            series_tail(K, f), g, n,
+            (fun (j : Nat) => fun (above : le(succ(k), j)) => sf(succ(j), above)), sg
+          )
+        )
+      )
+    );
+  };
+
+theorem support_product_degrees_zero(
+  K : AlgebraicField, f : FormalSeries(K), g : FormalSeries(K), n : Nat,
+  sf : SeriesSupport(K, f, 1), sg : SeriesSupport(K, g, succ(n))
+) :
+  SeriesSupport(K, series_mul(K, f, g), succ(n)) {
+  intro k;
+  intro above;
+  exact trans(
+    cong((fun (s : FormalSeries(K)) => convolution(K, k, s, g)), series_support_one(K, f, sf)),
+    trans(
+      convolution_constant_left(K, f(0), k, g),
+      trans(cong(field_mul(K, f(0)), sg(k, above)), scalar_mul_zero(K, f(0)))
+    )
+  );
+}
+
+theorem support_product_degrees_step(
+  K : AlgebraicField, m : Nat,
+  previous : (
+    forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat,
+    SeriesSupport(K, f, succ(m)) -> SeriesSupport(K, g, succ(n))
+    -> SeriesSupport(K, series_mul(K, f, g), succ(add_count(m, n)))
+  ), f : FormalSeries(K), g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, succ(succ(m))),
+  sg : SeriesSupport(K, g, succ(n))
+) :
+  SeriesSupport(K, series_mul(K, f, g), succ(succ(add_count(m, n)))) {
+  intro k;
+  exact induction k as j return (
+    le(succ(succ(add_count(m, n))), j) -> convolution(K, j, f, g) = field_zero(K)
+  ) {
+    zero => fun (impossible : le(succ(succ(add_count(m, n))), 0)) => typed(
+      (convolution(K, 0, f, g) = field_zero(K)), absurd(impossible)
+    );
+    succ ignored => fun (above : le(succ(succ(add_count(m, n))), succ(j))) => trans(
+      cong(
+        (
+          fun (a : af_carrier(K)) => field_add(
+            K, field_mul(K, f(0), a), convolution(K, j, series_tail(K, f), g)
+          )
+        ),
+        sg(
+          succ(j),
+          nat_le_trans(
+            n, succ(add_count(m, n)), j, nat_le_step(n, add_count(m, n), nat_le_add(m, n)), above
+          )
+        )
+      ),
+      trans(
+        cong(
+          (fun (a : af_carrier(K)) => field_add(K, a, convolution(K, j, series_tail(K, f), g))),
+          scalar_mul_zero(K, f(0))
+        ),
+        trans(
+          cong(
+            field_add(K, field_zero(K)),
+            previous(
+              series_tail(K, f), g, n,
+              (fun (i : Nat) => fun (bound : le(succ(m), i)) => sf(succ(i), bound)), sg, j, above
+            )
+          ), scalar_add_zero(K, field_zero(K))
+        )
+      )
+    );
+  };
+}
+
+theorem support_product_degrees(K : AlgebraicField, m : Nat) =
+  induction m as k return (
+    forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat,
+    SeriesSupport(K, f, succ(k)) -> SeriesSupport(K, g, succ(n))
+    -> SeriesSupport(K, series_mul(K, f, g), succ(add_count(k, n)))
+  ) {
+    zero => support_product_degrees_zero(K);
+    succ previous => support_product_degrees_step(K, k, previous);
+  };
+
+theorem scalar_product_nonzero(
+  K : AlgebraicField, a : af_carrier(K), b : af_carrier(K),
+  na : FieldNonzero(af_carrier(K), af_operations(K), a),
+  nb : FieldNonzero(af_carrier(K), af_operations(K), b)
+) :
+  FieldNonzero(af_carrier(K), af_operations(K), field_mul(K, a, b)) {
+  intro zero;
+  exact nb(
+    vector_scale_injective(
+      K, ScalarSpace(K), a, na, b, field_zero(K), trans(zero, sym(scalar_mul_zero(K, a)))
+    )
+  );
+}
+
+theorem polynomial_product_degree(
+  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), m : Nat, n : Nat,
+  dp : polynomial_cutoff(K, p) = succ(m), dq : polynomial_cutoff(K, q) = succ(n)
+) :
+  polynomial_cutoff(K, polynomial_mul(K, p, q)) = succ(add_count(m, n)) {
+  let f = polynomial_coefficients(K, p);
+  let g = polynomial_coefficients(K, q);
+  let sf =
+    transport(
+      SeriesSupport(K, f), polynomial_cutoff(K, p), succ(m), dp, polynomial_cutoff_support(K, p)
+    );
+  let sg =
+    transport(
+      SeriesSupport(K, g), polynomial_cutoff(K, q), succ(n), dq, polynomial_cutoff_support(K, q)
+    );
+  have nonzero :
+    FieldNonzero(af_carrier(K), af_operations(K), convolution(K, add_count(m, n), f, g)) {
+    intro zero;
+    exact scalar_product_nonzero(
+      K, f(m), g(n), polynomial_leading_nonzero(K, p, m, dp),
+      polynomial_leading_nonzero(K, q, n, dq),
+      trans(sym(convolution_top(K, m, f, g, n, sf, sg)), zero)
+    );
+  }
+  exact polynomial_cutoff_exact(
+    K, polynomial_mul(K, p, q), add_count(m, n), support_product_degrees(K, m, f, g, n, sf, sg),
+    nonzero
+  );
+}
+
+def polynomial_nonzero_degree(
+  K : AlgebraicField, p : Polynomial(K), nonzero : (p = polynomial_zero(K)) -> Void
+) :
+  exists n : Nat, polynomial_cutoff(K, p) = succ(n) {
+  exact (
+    induction polynomial_cutoff(K, p) as k return (
+      (polynomial_cutoff(K, p) = k) -> exists n : Nat, polynomial_cutoff(K, p) = succ(n)
+    ) {
+      zero => fun (same : polynomial_cutoff(K, p) = 0) => typed(
+        (exists n : Nat, polynomial_cutoff(K, p) = succ(n)),
+        absurd(nonzero(polynomial_cutoff_zero(K, p, same)))
+      );
+      succ ignored => fun (same : polynomial_cutoff(K, p) = succ(k)) => typed(
+        (exists n : Nat, polynomial_cutoff(K, p) = succ(n)), (k, same)
+      );
+    }
+  )(refl(polynomial_cutoff(K, p)));
+}
+
+theorem polynomial_product_nonzero(
+  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), np : (p = polynomial_zero(K)) -> Void,
+  nq : (q = polynomial_zero(K)) -> Void, zero : polynomial_mul(K, p, q) = polynomial_zero(K)
+) :
+  Void {
+  obtain (m, dp) = polynomial_nonzero_degree(K, p, np);
+  obtain (n, dq) = polynomial_nonzero_degree(K, q, nq);
+  let same =
+    trans(
+      sym(polynomial_product_degree(K, p, q, m, n, dp, dq)),
+      trans(cong(polynomial_cutoff(K), zero), polynomial_zero_cutoff(K))
+    );
+  exact nat_zero_ne_succ(add_count(m, n), sym(same));
+}

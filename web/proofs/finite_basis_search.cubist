@@ -1,0 +1,205 @@
+import linear_bijections;
+
+// Classical counterexamples are produced only under propositional truncation.
+// No global selection function or axiom of choice is required.
+theorem classical_counterexample(
+  A : U0, P : A -> U0, prop : (forall x : A, Proposition(P(x))), notAll : (forall x : A, P(x))
+  -> Void
+) :
+  Mere(exists x : A, P(x) -> Void) {
+  let Witness = exists x : A, P(x) -> Void;
+  exact double_negation(
+    Mere(Witness), mere_is_prop(Witness),
+    (
+      fun (none : Mere(Witness) -> Void) => notAll(
+        (
+          fun (x : A) => double_negation(
+            P(x), prop(x),
+            (fun (no : P(x) -> Void) => none(merely(Witness, typed(Witness, (x, no)))))
+          )
+        )
+      )
+    )
+  );
+}
+
+def linear_surjective_prop(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W)
+) =
+  forall_prop(
+    vector_carrier(K, W),
+    (
+      fun (y : vector_carrier(K, W)) => Mere(
+        Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y)
+      )
+    ),
+    (
+      fun (y : vector_carrier(K, W)) => mere_is_prop(
+        Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y)
+      )
+    )
+  );
+
+// No independent coordinate family of this size exists in V.
+def NoIndependent(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+  forall f : LinearMap(K, CoordinateSpace(K, n), V), LinearInjective(K, CoordinateSpace(K, n), V, f)
+  -> Void;
+
+theorem finite_basis_search_step(
+  K : AlgebraicField, V : VectorSpace(K), fuel : Nat, m : Nat,
+  previous : (
+    forall k : Nat, forall f : LinearMap(K, CoordinateSpace(K, k), V),
+    LinearInjective(K, CoordinateSpace(K, k), V, f) -> NoIndependent(K, V, add_count(fuel, k))
+    -> FiniteDimensional(K, V)
+  ), f : LinearMap(K, CoordinateSpace(K, m), V),
+  injective : LinearInjective(K, CoordinateSpace(K, m), V, f),
+  bound : NoIndependent(K, V, succ(add_count(fuel, m)))
+) :
+  FiniteDimensional(K, V) {
+  let C = CoordinateSpace(K, m);
+  let X = vector_carrier(K, V);
+  let F = linear_map(K, C, V, f);
+  let Image = fun (x : X) => Mere(Fiber(vector_carrier(K, C), X, F, x));
+  have extend : (exists x : X, Image(x) -> Void) -> FiniteDimensional(K, V) {
+    intro witness;
+    obtain (x, outside) = witness;
+    exact previous(
+      succ(m), adjoin_linear(K, V, m, f, x),
+      adjoin_linear_injective(K, V, m, f, injective, x, outside),
+      transport(
+        NoIndependent(K, V), succ(add_count(fuel, m)), add_count(fuel, succ(m)),
+        sym(nat_add_succ(fuel, m)), bound
+      )
+    );
+  }
+  exact match excluded_middle(
+    LinearSurjective(K, C, V, f),
+    forall_prop(X, Image, (fun (x : X) => mere_is_prop(Fiber(vector_carrier(K, C), X, F, x))))
+  ) return FiniteDimensional(K, V) {
+    left onto => finite_dimensional_basis(
+      K, V, m, linear_bijective_iso(K, C, V, f, injective, onto)
+    );
+    right notOnto => mere_eliminate(
+      (exists x : X, Image(x) -> Void), FiniteDimensional(K, V), finite_dimensional_prop(K, V),
+      extend,
+      classical_counterexample(
+        X, Image, (fun (x : X) => mere_is_prop(Fiber(vector_carrier(K, C), X, F, x))), notOnto
+      )
+    );
+  };
+}
+
+def finite_basis_search(K : AlgebraicField, V : VectorSpace(K), fuel : Nat) =
+  induction fuel as k return (
+    forall m : Nat, forall f : LinearMap(K, CoordinateSpace(K, m), V),
+    LinearInjective(K, CoordinateSpace(K, m), V, f) -> NoIndependent(K, V, add_count(k, m))
+    -> FiniteDimensional(K, V)
+  ) {
+    zero => fun (m : Nat) => fun (f : LinearMap(K, CoordinateSpace(K, m), V)) => fun (
+      injective : LinearInjective(K, CoordinateSpace(K, m), V, f)
+    ) => fun (bound : NoIndependent(K, V, add_count(0, m))) => typed(
+      FiniteDimensional(K, V), absurd(bound(f, injective))
+    );
+    succ previous => fun (m : Nat) => fun (f : LinearMap(K, CoordinateSpace(K, m), V)) => fun (
+      injective : LinearInjective(K, CoordinateSpace(K, m), V, f)
+    ) => fun (bound : NoIndependent(K, V, add_count(succ(k), m))) => finite_basis_search_step(
+      K, V, k, m, previous, f, injective, bound
+    );
+  };
+
+theorem finite_dimensional_from_bound(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, bound : NoIndependent(K, V, n)
+) :
+  FiniteDimensional(K, V) {
+  exact finite_basis_search(
+    K, V, n, 0, linear_empty(K, V), linear_empty_injective(K, V),
+    transport(NoIndependent(K, V), n, add_count(n, 0), sym(nat_add_zero(n)), bound)
+  );
+}
+
+theorem successor_not_le_self(n : Nat) = induction n as k return (le(succ(k), k) -> Void) {
+    zero => fun (impossible : le(1, 0)) => impossible;
+    succ previous => fun (impossible : le(succ(succ(k)), succ(k))) => previous(impossible);
+  };
+
+theorem coordinate_embedding_bound(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, h : LinearMap(K, V, CoordinateSpace(K, n)),
+  injective : LinearInjective(K, V, CoordinateSpace(K, n), h)
+) :
+  NoIndependent(K, V, succ(n)) {
+  intro f;
+  intro independent;
+  let C = CoordinateSpace(K, succ(n));
+  let N = CoordinateSpace(K, n);
+  have composite : CoordinateInjection(K, succ(n), n, linear_compose(K, C, V, N, f, h)) {
+    intro x;
+    intro y;
+    intro same;
+    exact independent(x, y, injective(linear_map(K, C, V, f, x), linear_map(K, C, V, f, y), same));
+  }
+  exact successor_not_le_self(
+    n, coordinate_injection_bound(K, n, succ(n), linear_compose(K, C, V, N, f, h), composite)
+  );
+}
+
+theorem finite_dimensional_coordinates_injection(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, h : LinearMap(K, V, CoordinateSpace(K, n)),
+  injective : LinearInjective(K, V, CoordinateSpace(K, n), h)
+) :
+  FiniteDimensional(K, V) {
+  exact finite_dimensional_from_bound(
+    K, V, succ(n), coordinate_embedding_bound(K, V, n, h, injective)
+  );
+}
+
+theorem finite_dimensional_injection_basis(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
+  injective : LinearInjective(K, V, W, h), n : Nat, basis : FiniteBasis(K, W, n)
+) :
+  FiniteDimensional(K, V) {
+  let N = CoordinateSpace(K, n);
+  let inverse = linear_iso_inverse(K, N, W, basis);
+  let coordinates = linear_iso_forward(K, W, N, inverse);
+  have composite : LinearInjective(K, V, N, linear_compose(K, V, W, N, h, coordinates)) {
+    intro x;
+    intro y;
+    intro same;
+    exact injective(
+      x, y,
+      linear_iso_injective(
+        K, W, N, inverse, linear_map(K, V, W, h, x), linear_map(K, V, W, h, y), same
+      )
+    );
+  }
+  exact finite_dimensional_coordinates_injection(
+    K, V, n, linear_compose(K, V, W, N, h, coordinates), composite
+  );
+}
+
+// Subobjects of finite-dimensional vector spaces are finite-dimensional.
+// The injective-map form applies without a chosen subtype presentation.
+theorem finite_dimensional_injection(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
+  injective : LinearInjective(K, V, W, h), finite : FiniteDimensional(K, W)
+) :
+  FiniteDimensional(K, V) {
+  let n = dimension(K, W, finite);
+  exact mere_eliminate(
+    FiniteBasis(K, W, n), FiniteDimensional(K, V), finite_dimensional_prop(K, V),
+    finite_dimensional_injection_basis(K, V, W, h, injective, n),
+    dimension_specification(K, W, finite)
+  );
+}
+
+def finite_basis_exists(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V)) :
+  Mere(exists n : Nat, FiniteBasis(K, V, n)) {
+  let n = dimension(K, V, finite);
+  exact mere_map(
+    FiniteBasis(K, V, n), (exists m : Nat, FiniteBasis(K, V, m)),
+    (
+      fun (basis : FiniteBasis(K, V, n)) => typed(
+        (exists m : Nat, FiniteBasis(K, V, m)), (n, basis)
+      )
+    ), dimension_specification(K, V, finite)
+  );
+}

@@ -1,0 +1,83 @@
+import polynomial_eval_characterization;
+
+theorem polynomial_eval_horner(
+  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  p : Polynomial(K)
+) :
+  polynomial_eval(K, L, e, p, x) = field_add(
+    L, field_embedding_map(K, L, e, polynomial_coefficients(K, p, 0)),
+    field_mul(L, x, polynomial_eval(K, L, e, polynomial_tail(K, p), x))
+  ) {
+  let c = polynomial_constant(K, polynomial_coefficients(K, p, 0));
+  let t = polynomial_tail(K, p);
+  let E = fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
+  exact with unfolding [] {
+    trans(
+      cong(E, polynomial_decompose(K, p)),
+      trans(
+        polynomial_eval_add(K, L, e, c, polynomial_shift(K, t), x),
+        trans(
+          cong(
+            (fun (a : af_carrier(L)) => field_add(L, a, E(polynomial_shift(K, t)))),
+            polynomial_eval_constant(K, L, e, polynomial_coefficients(K, p, 0), x)
+          ),
+          cong(
+            field_add(L, field_embedding_map(K, L, e, polynomial_coefficients(K, p, 0))),
+            polynomial_eval_shift(K, L, e, t, x)
+          )
+        )
+      )
+    )
+  };
+}
+
+// Evaluation commutes with a field embedding, with its coefficient embedding
+// explicitly composed. This supplies the commuting squares for root transport.
+theorem polynomial_eval_embedding(
+  K : AlgebraicField, L : AlgebraicField, T : AlgebraicField, e : FieldEmbedding(K, L),
+  h : FieldEmbedding(L, T), p : Polynomial(K), x : af_carrier(L)
+) :
+  field_embedding_map(L, T, h, polynomial_eval(K, L, e, p, x)) = polynomial_eval(
+    K, T, field_embedding_compose(K, L, T, e, h), p, field_embedding_map(L, T, h, x)
+  ) {
+  let f = field_embedding_map(L, T, h);
+  let c = field_embedding_compose(K, L, T, e, h);
+  let E = fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
+  let F = fun (q : Polynomial(K)) => f(E(q));
+  obtain (f0, f1, fn, fa, fm) = field_embedding_preserves(L, T, h);
+  have step : PolynomialHornerLaw(K, T, c, f(x), F) {
+    intro q;
+    let a = field_embedding_map(K, L, e, polynomial_coefficients(K, q, 0));
+    let tail = E(polynomial_tail(K, q));
+    exact with unfolding [] {
+      trans(
+        cong(f, polynomial_eval_horner(K, L, e, x, q)),
+        trans(fa(a, field_mul(L, x, tail)), cong(field_add(T, f(a)), fm(x, tail)))
+      )
+    };
+  }
+  exact with unfolding [] {
+    sym(
+      polynomial_eval_characterization(
+        K, T, c, f(x), F, trans(cong(f, polynomial_eval_zero(K, L, e, x)), f0), step, p
+      )
+    )
+  };
+}
+
+theorem polynomial_root_image(
+  K : AlgebraicField, L : AlgebraicField, T : AlgebraicField, e : FieldEmbedding(K, L),
+  h : FieldEmbedding(L, T), p : Polynomial(K), x : af_carrier(L),
+  root : polynomial_eval(K, L, e, p, x) = field_zero(L)
+) :
+  polynomial_eval(K, T, field_embedding_compose(K, L, T, e, h), p, field_embedding_map(L, T, h, x)) = field_zero(
+    T
+  ) {
+  obtain (zero, one, neg, add, mul) = field_embedding_preserves(L, T, h);
+  exact with unfolding [] {
+    trans(
+      sym(polynomial_eval_embedding(K, L, T, e, h, p, x)),
+      trans(cong(field_embedding_map(L, T, h), root), zero)
+    )
+  };
+}

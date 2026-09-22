@@ -1,0 +1,234 @@
+import polynomial_degree;
+
+// Ring identities specialized to the checked coefficient representation.
+
+def polynomial_add_zero_right(K : AlgebraicField) =
+  ring_add_zero_right(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K), polynomial_ring(K)
+  );
+
+def polynomial_mul_one_right(K : AlgebraicField) =
+  ring_mul_one_right(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K), polynomial_ring(K)
+  );
+
+def polynomial_add_inverse_right(K : AlgebraicField) =
+  ring_add_inverse_right(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K), polynomial_ring(K)
+  );
+
+def polynomial_add_swap(K : AlgebraicField) =
+  ring_add_swap(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K), polynomial_ring(K)
+  );
+
+def polynomial_add_shuffle(K : AlgebraicField) =
+  ring_add_shuffle(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K), polynomial_ring(K)
+  );
+
+def polynomial_mul_zero(K : AlgebraicField) =
+  ring_mul_zero(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K), polynomial_ring(K)
+  );
+
+def polynomial_mul_neg(K : AlgebraicField) =
+  ring_mul_neg(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K), polynomial_ring(K)
+  );
+
+def polynomial_distribute_left(K : AlgebraicField) =
+  ring_distribute_left(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K), polynomial_ring(K)
+  );
+
+def polynomial_mul_swap(K : AlgebraicField) =
+  ring_mul_swap(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K), polynomial_ring(K)
+  );
+
+def polynomial_add_cancel_prefix(K : AlgebraicField) =
+  ring_add_cancel_prefix(
+    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+    polynomial_neg(K), polynomial_ring(K)
+  );
+
+def polynomial_scale(K : AlgebraicField, a : af_carrier(K), p : Polynomial(K)) =
+  polynomial_mul(K, polynomial_constant(K, a), p);
+
+theorem polynomial_scale_coefficient(
+  K : AlgebraicField, a : af_carrier(K), p : Polynomial(K), n : Nat
+) :
+  polynomial_coefficients(K, polynomial_scale(K, a, p), n) = field_mul(
+    K, a, polynomial_coefficients(K, p, n)
+  ) {
+  let f = polynomial_coefficients(K, p);
+  exact trans(
+    convolution_comm(K, n, series_constant(K, a), f),
+    trans(convolution_constant_right(K, a, n, f), scalar_mul_comm(K, f(n), a))
+  );
+}
+
+def polynomial_tail(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
+  let f = polynomial_coefficients(K, p);
+  let Result = exists k : Nat, SeriesSupport(K, series_tail(K, f), k);
+  have convert : (exists n : Nat, SeriesSupport(K, f, n)) -> Result {
+    intro witness;
+    obtain (n, support) = witness;
+    exact (
+      n, (fun (k : Nat) => fun (above : le(n, k)) => support(succ(k), nat_le_step(n, k, above)))
+    );
+  }
+  exact (
+    series_tail(K, f),
+    mere_map((exists n : Nat, SeriesSupport(K, f, n)), Result, convert, polynomial_support(K, p))
+  );
+}
+
+theorem polynomial_decompose(K : AlgebraicField, p : Polynomial(K)) :
+  p = polynomial_add(
+    K, polynomial_constant(K, polynomial_coefficients(K, p, 0)),
+    polynomial_shift(K, polynomial_tail(K, p))
+  ) {
+  exact polynomial_ext(
+    K, p,
+    polynomial_add(
+      K, polynomial_constant(K, polynomial_coefficients(K, p, 0)),
+      polynomial_shift(K, polynomial_tail(K, p))
+    ), series_decompose(K, polynomial_coefficients(K, p))
+  );
+}
+
+theorem polynomial_shift_add(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
+  polynomial_shift(K, polynomial_add(K, p, q)) = polynomial_add(
+    K, polynomial_shift(K, p), polynomial_shift(K, q)
+  ) {
+  let f = polynomial_coefficients(K, p);
+  let g = polynomial_coefficients(K, q);
+  exact polynomial_coefficient_ext(
+    K, polynomial_shift(K, polynomial_add(K, p, q)),
+    polynomial_add(K, polynomial_shift(K, p), polynomial_shift(K, q)),
+    (
+      fun (n : Nat) => induction n as k return (
+        series_shift(K, series_add(K, f, g), k) = field_add(
+          K, series_shift(K, f, k), series_shift(K, g, k)
+        )
+      ) {
+        zero => sym(scalar_add_zero(K, field_zero(K)));
+        succ ignored => refl(field_add(K, f(k), g(k)));
+      }
+    )
+  );
+}
+
+theorem polynomial_shift_mul(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
+  polynomial_shift(K, polynomial_mul(K, p, q)) = polynomial_mul(K, polynomial_shift(K, p), q) {
+  let f = polynomial_coefficients(K, p);
+  let g = polynomial_coefficients(K, q);
+  exact polynomial_coefficient_ext(
+    K, polynomial_shift(K, polynomial_mul(K, p, q)), polynomial_mul(K, polynomial_shift(K, p), q),
+    (
+      fun (n : Nat) => induction n as k return (
+        series_shift(K, series_mul(K, f, g), k) = convolution(K, k, series_shift(K, f), g)
+      ) {
+        zero => sym(scalar_zero_mul(K, g(0)));
+        succ ignored => sym(
+          trans(
+            cong(
+              (fun (a : af_carrier(K)) => field_add(K, a, convolution(K, k, f, g))),
+              scalar_zero_mul(K, g(succ(k)))
+            ), scalar_add_zero(K, convolution(K, k, f, g))
+          )
+        );
+      }
+    )
+  );
+}
+
+theorem polynomial_variable_mul(K : AlgebraicField, p : Polynomial(K)) :
+  polynomial_mul(K, polynomial_variable(K), p) = polynomial_shift(K, p) {
+  exact trans(
+    sym(polynomial_shift_mul(K, polynomial_one(K), p)),
+    cong(polynomial_shift(K), polynomial_mul_one(K, p))
+  );
+}
+
+theorem polynomial_constant_add(K : AlgebraicField, a : af_carrier(K), b : af_carrier(K)) :
+  polynomial_constant(K, field_add(K, a, b)) = polynomial_add(
+    K, polynomial_constant(K, a), polynomial_constant(K, b)
+  ) {
+  exact polynomial_coefficient_ext(
+    K, polynomial_constant(K, field_add(K, a, b)),
+    polynomial_add(K, polynomial_constant(K, a), polynomial_constant(K, b)),
+    (
+      fun (n : Nat) => induction n as k return (
+        series_constant(K, field_add(K, a, b), k) = field_add(
+          K, series_constant(K, a, k), series_constant(K, b, k)
+        )
+      ) {
+        zero => refl(field_add(K, a, b));
+        succ ignored => sym(scalar_add_zero(K, field_zero(K)));
+      }
+    )
+  );
+}
+
+theorem polynomial_constant_zero(K : AlgebraicField) :
+  polynomial_constant(K, field_zero(K)) = polynomial_zero(K) {
+  exact polynomial_coefficient_ext(
+    K, polynomial_constant(K, field_zero(K)), polynomial_zero(K),
+    (
+      fun (n : Nat) => induction n as k return (
+        series_constant(K, field_zero(K), k) = field_zero(K)
+      ) {
+        zero => refl(field_zero(K));
+        succ ignored => refl(field_zero(K));
+      }
+    )
+  );
+}
+
+theorem support_add_same(
+  K : AlgebraicField, f : FormalSeries(K), g : FormalSeries(K), n : Nat,
+  sf : SeriesSupport(K, f, n), sg : SeriesSupport(K, g, n)
+) :
+  SeriesSupport(K, series_add(K, f, g), n) {
+  intro k;
+  intro above;
+  exact trans(
+    cong((fun (a : af_carrier(K)) => field_add(K, a, g(k))), sf(k, above)),
+    trans(cong(field_add(K, field_zero(K)), sg(k, above)), scalar_add_zero(K, field_zero(K)))
+  );
+}
+
+theorem polynomial_scale_support(
+  K : AlgebraicField, a : af_carrier(K), p : Polynomial(K), n : Nat,
+  support : SeriesSupport(K, polynomial_coefficients(K, p), n)
+) :
+  SeriesSupport(K, polynomial_coefficients(K, polynomial_scale(K, a, p)), n) {
+  intro k;
+  intro above;
+  exact trans(
+    polynomial_scale_coefficient(K, a, p, k),
+    trans(cong(field_mul(K, a), support(k, above)), scalar_mul_zero(K, a))
+  );
+}
+
+theorem polynomial_neg_support(
+  K : AlgebraicField, p : Polynomial(K), n : Nat,
+  support : SeriesSupport(K, polynomial_coefficients(K, p), n)
+) :
+  SeriesSupport(K, polynomial_coefficients(K, polynomial_neg(K, p)), n) {
+  intro k;
+  intro above;
+  exact trans(cong(field_neg(K), support(k, above)), scalar_neg_zero(K));
+}

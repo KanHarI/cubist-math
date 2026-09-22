@@ -1,0 +1,121 @@
+import polynomial_splitting;
+import polynomial_root_existence;
+
+// This first construction gives a finite extension where the polynomial
+// splits. The splitting-field construction then restricts to the roots' field.
+def FiniteSplittingExtension(K : AlgebraicField, p : Polynomial(K), n : Nat) =
+  exists L : AlgebraicField, exists e : FieldEmbedding(K, L),
+  FiniteExtension(K, embedding_as_extension(K, L, e))
+  and PolynomialSplitting(L, polynomial_map(K, L, e, p), n);
+
+def finite_splitting_zero(
+  K : AlgebraicField, p : Polynomial(K), degree : polynomial_cutoff(K, p) = 1
+) :
+  FiniteSplittingExtension(K, p, 0) {
+  let e = field_embedding_identity(K);
+  exact (
+    K, e, identity_extension_finite(K),
+    transport(
+      (fun (q : Polynomial(K)) => PolynomialSplitting(K, q, 0)), p, polynomial_map(K, K, e, p),
+      sym(polynomial_map_identity(K, p)), polynomial_splitting_zero_degree(K, p, degree)
+    )
+  );
+}
+
+def splitting_extension_compose(
+  K : AlgebraicField, p : Polynomial(K), L : AlgebraicField, e : FieldEmbedding(K, L),
+  finite : FiniteExtension(K, embedding_as_extension(K, L, e)), x : af_carrier(L),
+  q : Polynomial(L),
+  factor : polynomial_map(K, L, e, p) = polynomial_mul(L, polynomial_linear_factor(L, x), q),
+  n : Nat, upper : FiniteSplittingExtension(L, q, n)
+) :
+  FiniteSplittingExtension(K, p, succ(n)) {
+  obtain (T, h, finiteT, splitting) = upper;
+  let c = field_embedding_compose(K, L, T, e, h);
+  let y = field_embedding_map(L, T, h, x);
+  let mappedP = polynomial_map(K, T, c, p);
+  let mappedQ = polynomial_map(L, T, h, q);
+  have equation : mappedP = polynomial_mul(T, polynomial_linear_factor(T, y), mappedQ) {
+    exact trans(
+      sym(polynomial_map_composition(K, L, T, e, h, p)),
+      trans(
+        cong(polynomial_map(L, T, h), factor),
+        trans(
+          polynomial_map_mul(L, T, h, polynomial_linear_factor(L, x), q),
+          cong(
+            (fun (r : Polynomial(T)) => polynomial_mul(T, r, mappedQ)),
+            polynomial_map_linear_factor(L, T, h, x)
+          )
+        )
+      )
+    );
+  }
+  exact (
+    T, c, finite_extension_tower(K, L, T, e, h, c, refl(c), finite, finiteT),
+    polynomial_splitting_prepend(T, mappedP, mappedQ, y, equation, n, splitting)
+  );
+}
+
+theorem finite_splitting_step(
+  n : Nat,
+  previous : (
+    forall L : AlgebraicField, forall q : Polynomial(L), polynomial_cutoff(L, q) = succ(n)
+    -> FieldExists(FiniteSplittingExtension(L, q, n))
+  ), K : AlgebraicField, p : Polynomial(K), degree : polynomial_cutoff(K, p) = succ(succ(n))
+) :
+  FieldExists(FiniteSplittingExtension(K, p, succ(n))) {
+  have nonzero : PolynomialNonzero(K, p) {
+    intro zero;
+    exact nat_zero_ne_succ(
+      succ(n),
+      trans(sym(polynomial_zero_cutoff(K)), trans(cong(polynomial_cutoff(K), sym(zero)), degree))
+    );
+  }
+  have fromRoot : RootAdjunction(K, p) -> FieldExists(FiniteSplittingExtension(K, p, succ(n))) {
+    intro witness;
+    obtain (L, e, x, finite, root) = witness;
+    let mapped = polynomial_map(K, L, e, p);
+    let mappedDegree = trans(polynomial_map_cutoff(K, L, e, p), degree);
+    let mappedNonzero = polynomial_map_nonzero(K, L, e, p, nonzero);
+    let localRoot = trans(polynomial_eval_mapped(K, L, e, p, x), root);
+    obtain (q, factor) = polynomial_factor_theorem(L, mapped, x, localRoot);
+    let nonzeroQ =
+      factor_quotient_nonzero(L, mapped, polynomial_linear_factor(L, x), q, factor, mappedNonzero);
+    let degreeQ = linear_factor_quotient_degree(L, mapped, x, q, factor, n, mappedDegree, nonzeroQ);
+    exact field_exists_map(
+      FiniteSplittingExtension(L, q, n), FiniteSplittingExtension(K, p, succ(n)),
+      splitting_extension_compose(K, p, L, e, finite, x, q, factor, n), previous(L, q, degreeQ)
+    );
+  }
+  exact field_exists_elim(
+    RootAdjunction(K, p), FieldExists(FiniteSplittingExtension(K, p, succ(n))),
+    field_exists_prop(FiniteSplittingExtension(K, p, succ(n))), fromRoot,
+    polynomial_root_extension_exists(
+      K, p, nonzero, polynomial_positive_degree_nonunit(K, p, n, degree, nonzero)
+    )
+  );
+}
+
+// Each step adjoins one root and recurses on the quotient of smaller degree.
+// Finiteness is composed using the proved tower theorem.
+theorem finite_splitting_by_degree(n : Nat) =
+  induction n as k return (
+    forall K : AlgebraicField, forall p : Polynomial(K), polynomial_cutoff(K, p) = succ(k)
+    -> FieldExists(FiniteSplittingExtension(K, p, k))
+  ) {
+    zero => fun (K : AlgebraicField) => fun (p : Polynomial(K)) => fun (
+      degree : polynomial_cutoff(K, p) = 1
+    ) => field_exists_intro(FiniteSplittingExtension(K, p, 0), finite_splitting_zero(K, p, degree));
+    succ previous => finite_splitting_step(k, previous);
+  };
+
+theorem finite_splitting_extension_exists(
+  K : AlgebraicField, p : Polynomial(K), nonzero : PolynomialNonzero(K, p)
+) :
+  FieldExists(FiniteSplittingExtension(K, p, polynomial_degree(K, p))) {
+  obtain (n, degree) = polynomial_nonzero_degree(K, p, nonzero);
+  exact transport(
+    (fun (d : Nat) => FieldExists(FiniteSplittingExtension(K, p, d))), n, polynomial_degree(K, p),
+    sym(cong(natural_predecessor, degree)), finite_splitting_by_degree(n, K, p, degree)
+  );
+}

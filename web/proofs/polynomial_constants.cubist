@@ -1,0 +1,46 @@
+import polynomial_leading;
+
+theorem polynomial_constant_mul(K : AlgebraicField, a : af_carrier(K), b : af_carrier(K)) :
+  polynomial_constant(K, field_mul(K, a, b)) = polynomial_mul(
+    K, polynomial_constant(K, a), polynomial_constant(K, b)
+  ) {
+  have coefficient :
+    forall n : Nat,
+    polynomial_coefficients(K, polynomial_constant(K, field_mul(K, a, b)), n) = polynomial_coefficients(
+      K, polynomial_mul(K, polynomial_constant(K, a), polynomial_constant(K, b)), n
+    ) {
+    intro n;
+    have scaled :
+      series_constant(K, field_mul(K, a, b), n) = field_mul(K, a, series_constant(K, b, n)) {
+      exact induction n as k return (
+        series_constant(K, field_mul(K, a, b), k) = field_mul(K, a, series_constant(K, b, k))
+      ) {
+        zero => refl(field_mul(K, a, b));
+        succ ignored => sym(scalar_mul_zero(K, a));
+      };
+    }
+    exact trans(scaled, sym(convolution_constant_left(K, a, n, series_constant(K, b))));
+  }
+  exact polynomial_coefficient_ext(
+    K, polynomial_constant(K, field_mul(K, a, b)),
+    polynomial_mul(K, polynomial_constant(K, a), polynomial_constant(K, b)), coefficient
+  );
+}
+
+theorem polynomial_constant_neg(K : AlgebraicField, a : af_carrier(K)) :
+  polynomial_constant(K, field_neg(K, a)) = polynomial_neg(K, polynomial_constant(K, a)) {
+  have coefficient :
+    forall n : Nat, series_constant(K, field_neg(K, a), n) = field_neg(K, series_constant(K, a, n)) {
+    intro n;
+    exact induction n as k return (
+      series_constant(K, field_neg(K, a), k) = field_neg(K, series_constant(K, a, k))
+    ) {
+      zero => refl(field_neg(K, a));
+      succ ignored => sym(scalar_neg_zero(K));
+    };
+  }
+  exact polynomial_coefficient_ext(
+    K, polynomial_constant(K, field_neg(K, a)), polynomial_neg(K, polynomial_constant(K, a)),
+    coefficient
+  );
+}

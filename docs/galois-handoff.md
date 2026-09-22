@@ -6,7 +6,63 @@ kernel and `.cubist` sources. The old Id/J engine, its proof exporters and
 its reference-comparison commands are retired; older checkpoints describe
 historical validation, not the current development workflow.
 
-## Current increment: finite dimension and extension degree
+## Scope decision: finite theory first
+
+The user explicitly deferred infinite extensions on 2026-09-22. Initial completion
+means finite Galois theory; infinite embedding extension, algebraic/separable
+closure construction, profinite topology, and infinite correspondence are out of
+scope. See the roadmap's deferred section. Do not treat them as initial blockers.
+
+## Current increment: finite algebraic extensions and embedding counts
+
+The four requested finite milestones now have checked source proofs. See
+[polynomial-algebra.md](polynomial-algebra.md) for statements, representation,
+universe assumptions, and the boundaries of the results.
+
+- Finite spanning subfamily bases, finite subspace bases, converse tower finiteness.
+- Formal polynomials, division/uniqueness, extension root bounds, Bézout,
+  irreducible factors, root adjunction, and residue-field degree.
+- Canonical monic minimal polynomials; finite ⇔ finitely generated algebraic
+  extensions; extension of embeddings into an explicitly algebraically closed target.
+- Finite splitting-field existence with generation, embedding normality,
+  separability under intermediate base change, and the general finite separable
+  embedding count by extension degree.
+
+The final count is `embedding_counts.finite_separable_embedding_count`.
+It uses a tower of root adjunctions obtained from finite basis generators,
+not a primitive-element assumption. `embedding_tower_type_equality` and
+`adjoined_embeddings_are_roots` transport counts along univalent equalities.
+`f4_formal_polynomial` connects the new formal polynomial API to the existing
+F4 roots.
+
+Validation: the full bounded diagnostic audit checks **3,572 declarations and
+44 universe templates, with zero failures** (347 imported modules). The former
+`embedding_root_roundtrip` conversion-budget failure is fixed by selectively
+unfolding the two root/embedding maps and their pair projections, including
+`sigma_first` and `sigma_second`. The reproducer now checks that declaration in
+about 13 ms; timings vary by machine and import context. A regression test
+collects inspector references and caps this declaration at 10 million steps,
+below the 100 million steps previously exhausted.
+
+Final validation: `npm test` passes all **282 tests**; the formatter checks
+348 sources with no changes needed; the browser module/topic registry tests
+pass; `git diff --check` is clean. No kernel or language changes were needed.
+
+The focused one-second benchmark covers 1,857 entries: 1,819 checked,
+35 templates, one optimization candidate, two downstream blocked declarations,
+and zero proof failures. `embedding_root_roundtrip` takes 6 ms in this run.
+`embedding_counts.finite_separable_count_step` still exceeds that wall-clock
+limit; it and its two dependents pass the separate bounded correctness audit.
+Optimize that count step next; do not describe the corpus as entirely below
+100 ms or confuse the timed benchmark with mathematical rejection.
+
+Next mathematical work: normality's polynomial characterization and the
+finite Galois characterizations, splitting-target embedding counts, Artin's
+fixed-field degree theorem, and the general correspondence. Derivative criteria
+and distinguished-class instances remain roadmap work. Algebraic closure
+existence and arbitrary infinite extension of embeddings are separately scoped.
+
+## Previous increment: finite dimension and extension degree
 
 All three requested milestones now check: finite dimension invariance,
 basis-independent extension degree, and the finite tower law. See
@@ -28,10 +84,8 @@ from uniqueness of the natural number and truncated basis evidence.
 Infinite extensions are not assigned zero. The identity extension has degree
 one, and zero degree is ruled out.
 
-This increment proves the finite tower formula given finite lower and upper
-steps, not yet the converse criterion deriving both from finite M/K.
-Finite-coordinate/subset-basis comparison and finite spanning-family reduction
-also remain open.
+The current increment supplies the converse tower criterion,
+finite subspace bases, and indexed subfamily extraction from spanning families.
 
 ## Previous increment: the general basis theorem
 
