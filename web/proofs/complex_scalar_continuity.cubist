@@ -9,10 +9,11 @@ theorem complex_scaled_close(
   s : F, bounded : ComplexRectangleBound(F, negF, lt, coefficient, r, s), x : Complex(F),
   y : Complex(F), delta : F, epsilon : F, close : ComplexClose(F, addF, lt, x, y, delta),
   small : lt(mulF(delta, addF(r, s)), epsilon)
-) : ComplexClose(
-  F, addF, lt, complex_mul(F, addF, mulF, negF, x, coefficient),
-  complex_mul(F, addF, mulF, negF, y, coefficient), epsilon
-) {
+) :
+  ComplexClose(
+    F, addF, lt, complex_mul(F, addF, mulF, negF, x, coefficient),
+    complex_mul(F, addF, mulF, negF, y, coefficient), epsilon
+  ) {
   let addC = complex_add(F, addF);
   let mulC = complex_mul(F, addF, mulF, negF);
   let negC = complex_neg(F, negF);
@@ -83,14 +84,15 @@ theorem complex_scalar_uniform_radius(
   inverses : FieldInverses(F, zero, one, mulF, lt), minF : F -> F -> F, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F), epsilon : F,
   positive : lt(zero, epsilon)
-) : exists delta : F, lt(zero, delta)
-and (
-  forall x : Complex(F), forall y : Complex(F), ComplexClose(F, addF, lt, x, y, delta)
-  -> ComplexClose(
-    F, addF, lt, complex_mul(F, addF, mulF, negF, x, coefficient),
-    complex_mul(F, addF, mulF, negF, y, coefficient), epsilon
-  )
-) {
+) :
+  exists delta : F, lt(zero, delta)
+  and (
+    forall x : Complex(F), forall y : Complex(F), ComplexClose(F, addF, lt, x, y, delta)
+    -> ComplexClose(
+      F, addF, lt, complex_mul(F, addF, mulF, negF, x, coefficient),
+      complex_mul(F, addF, mulF, negF, y, coefficient), epsilon
+    )
+  ) {
   let real = complex_real(F, coefficient);
   let imag = complex_imag(F, coefficient);
   let r = maxF(real, negF(real));
@@ -141,14 +143,15 @@ theorem complex_uniform_curve_scale(
   lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F),
   f : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, f)
-) : ComplexUniformCurve(
-  F, zero, one, addF, lt,
-  (
-    fun (t : FieldUnitInterval(F, zero, one, lt)) => complex_mul(
-      F, addF, mulF, negF, f(t), coefficient
+) :
+  ComplexUniformCurve(
+    F, zero, one, addF, lt,
+    (
+      fun (t : FieldUnitInterval(F, zero, one, lt)) => complex_mul(
+        F, addF, mulF, negF, f(t), coefficient
+      )
     )
-  )
-) {
+  ) {
   intro epsilon;
   intro positive;
   obtain (delta, positiveDelta, scaleClose) = complex_scalar_uniform_radius(
@@ -176,10 +179,12 @@ theorem complex_converges_scale(
   inverses : FieldInverses(F, zero, one, mulF, lt), minF : F -> F -> F, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F), sequence : Nat -> Complex(F),
   value : Complex(F), converges : ComplexConverges(F, zero, addF, lt, sequence, value)
-) : ComplexConverges(
-  F, zero, addF, lt, (fun (n : Nat) => complex_mul(F, addF, mulF, negF, sequence(n), coefficient)),
-  complex_mul(F, addF, mulF, negF, value, coefficient)
-) {
+) :
+  ComplexConverges(
+    F, zero, addF, lt,
+    (fun (n : Nat) => complex_mul(F, addF, mulF, negF, sequence(n), coefficient)),
+    complex_mul(F, addF, mulF, negF, value, coefficient)
+  ) {
   intro epsilon;
   intro positive;
   obtain (delta, positiveDelta, scaleClose) = complex_scalar_uniform_radius(

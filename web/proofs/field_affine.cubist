@@ -4,7 +4,8 @@ import field_scale_limits;
 theorem field_lattice_magnitude(
   F : U1, negF : F -> F, lt : F -> F -> U0, minF : F -> F -> F, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), x : F
-) : FieldMagnitudeBound(F, negF, lt, x, maxF(x, negF(x))) {
+) :
+  FieldMagnitudeBound(F, negF, lt, x, maxF(x, negF(x))) {
   obtain (minLeft, minRight, minGreatest, maxLeft, maxRight, maxLeast) = lattice;
   exact (maxLeft(x, negF(x)), maxRight(x, negF(x)));
 }
@@ -14,7 +15,8 @@ theorem field_close_difference_bound(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s : F, t : F, delta : F,
   close : FieldClose(F, addF, lt, s, t, delta)
-) : FieldMagnitudeBound(F, negF, lt, addF(negF(t), s), delta) {
+) :
+  FieldMagnitudeBound(F, negF, lt, addF(negF(t), s), delta) {
   let shifted =
     field_close_translate(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, s, t, delta, negF(t), close
@@ -33,7 +35,8 @@ theorem field_close_difference_bound(
 theorem field_affine_increment(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, d : F, s : F, t : F
-) : addF(a, mulF(s, d)) = addF(addF(a, mulF(t, d)), mulF(addF(negF(t), s), d)) {
+) :
+  addF(a, mulF(s, d)) = addF(addF(a, mulF(t, d)), mulF(addF(negF(t), s), d)) {
   have recover : addF(t, addF(negF(t), s)) = s {
     exact trans(
       sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, t, negF(t), s)),
@@ -66,7 +69,8 @@ theorem field_affine_close(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a : F, d : F, length : F,
   bounded : FieldMagnitudeBound(F, negF, lt, d, length), s : F, t : F, delta : F, epsilon : F,
   close : FieldClose(F, addF, lt, s, t, delta), small : lt(mulF(delta, length), epsilon)
-) : FieldClose(F, addF, lt, addF(a, mulF(s, d)), addF(a, mulF(t, d)), epsilon) {
+) :
+  FieldClose(F, addF, lt, addF(a, mulF(s, d)), addF(a, mulF(t, d)), epsilon) {
   let difference = addF(negF(t), s);
   let bound =
     field_close_difference_bound(

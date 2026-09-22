@@ -6,7 +6,8 @@ theorem nonnegative_half_le(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), width : F, halfWidth : F,
   sum : addF(halfWidth, halfWidth) = width, nonnegativeWidth : FieldLe(F, lt, zero, width)
-) : FieldLe(F, lt, halfWidth, width) {
+) :
+  FieldLe(F, lt, halfWidth, width) {
   let nonnegativeHalf =
     nonnegative_half_from_sum(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, halfWidth, sum,
@@ -27,8 +28,9 @@ theorem dyadic_width_step_le(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
   halfSum : (forall x : F, addF(half(x), half(x)) = x), depth : Nat
-) : forall width : F, FieldLe(F, lt, zero, width)
--> FieldLe(F, lt, dyadic_width(F, half, succ(depth), width), dyadic_width(F, half, depth, width)) {
+) :
+  forall width : F, FieldLe(F, lt, zero, width)
+  -> FieldLe(F, lt, dyadic_width(F, half, succ(depth), width), dyadic_width(F, half, depth, width)) {
   exact induction depth as k return (
     forall width : F, FieldLe(F, lt, zero, width)
     -> FieldLe(F, lt, dyadic_width(F, half, succ(k), width), dyadic_width(F, half, k, width))
@@ -56,7 +58,8 @@ theorem field_sequence_antitone_step(
   decreasing : (forall k : Nat, FieldLe(F, lt, sequence(succ(k)), sequence(k))), n : Nat,
   previous : (forall m : Nat, IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m))), m : Nat,
   ordered : IndexLE(m, succ(n))
-) : FieldLe(F, lt, sequence(succ(n)), sequence(m)) {
+) :
+  FieldLe(F, lt, sequence(succ(n)), sequence(m)) {
   cases nat_le_succ_split(m, n, ordered) {
     left earlier => {
       exact order_le_trans(
@@ -78,7 +81,8 @@ theorem field_sequence_antitone(
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   sequence : Nat -> F,
   decreasing : (forall k : Nat, FieldLe(F, lt, sequence(succ(k)), sequence(k))), n : Nat
-) : forall m : Nat, IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m)) {
+) :
+  forall m : Nat, IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m)) {
   have base : forall m : Nat, IndexLE(m, 0) -> FieldLe(F, lt, sequence(0), sequence(m)) {
     intro m;
     intro ordered;
@@ -103,7 +107,8 @@ theorem dyadic_width_antitone(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
   halfSum : (forall x : F, addF(half(x), half(x)) = x), width : F,
   nonnegativeWidth : FieldLe(F, lt, zero, width), bound : Nat, n : Nat, later : IndexLE(bound, n)
-) : FieldLe(F, lt, dyadic_width(F, half, n, width), dyadic_width(F, half, bound, width)) {
+) :
+  FieldLe(F, lt, dyadic_width(F, half, n, width), dyadic_width(F, half, bound, width)) {
   exact field_sequence_antitone(
     F, zero, one, addF, mulF, lt, order, arithmetic,
     (fun (k : Nat) => dyadic_width(F, half, k, width)),
@@ -123,7 +128,8 @@ theorem dyadic_width_small_tail(
   halfSum : (forall x : F, addF(half(x), half(x)) = x), width : F,
   nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, bound : Nat,
   small : lt(dyadic_width(F, half, bound, width), epsilon)
-) : forall n : Nat, IndexLE(bound, n) -> lt(dyadic_width(F, half, n, width), epsilon) {
+) :
+  forall n : Nat, IndexLE(bound, n) -> lt(dyadic_width(F, half, n, width), epsilon) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   intro n;
   intro later;
@@ -146,10 +152,11 @@ theorem dyadic_width_eventually_small(
   inverses : FieldInverses(F, zero, one, mulF, lt),
   archimedean : Archimedean(F, zero, one, addF, lt), width : F,
   nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon)
-) : FieldExists(
-  exists bound : Nat, forall n : Nat, IndexLE(bound, n)
-  -> lt(dyadic_width(F, half, n, width), epsilon)
-) {
+) :
+  FieldExists(
+    exists bound : Nat, forall n : Nat, IndexLE(bound, n)
+    -> lt(dyadic_width(F, half, n, width), epsilon)
+  ) {
   let A = (exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon));
   let B =
     (

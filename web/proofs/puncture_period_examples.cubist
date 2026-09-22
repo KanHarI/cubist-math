@@ -7,8 +7,9 @@ theorem nontrivial_loop_with_zero_period(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(2)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(2), bouquet_base(Fin(2)), G, zero, addG, period)
-) : (period(puncture_commutator) = zero)
-and ((puncture_commutator = refl(bouquet_base(Fin(2)))) -> Void) {
+) :
+  (period(puncture_commutator) = zero)
+  and ((puncture_commutator = refl(bouquet_base(Fin(2)))) -> Void) {
   exact (
     puncture_period_zero_windings(
       2, G, zero, addG, negG, setG, laws, period, periodLaws, puncture_commutator,
@@ -23,9 +24,10 @@ theorem puncture_period_reversed_generator(
   period : BouquetLoops(Fin(n)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
   i : Fin(n)
-) : period(
-  inverse(U1, PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), puncture_loop(n, i))
-) = negG(period(puncture_loop(n, i))) {
+) :
+  period(
+    inverse(U1, PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), puncture_loop(n, i))
+  ) = negG(period(puncture_loop(n, i))) {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   let positive = period(puncture_loop(n, i));
   let reversed =

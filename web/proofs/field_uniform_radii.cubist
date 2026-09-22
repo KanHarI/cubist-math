@@ -7,7 +7,8 @@ theorem field_close_enlarge(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, delta : F,
   epsilon : F, smaller : FieldLe(F, lt, delta, epsilon),
   close : FieldClose(F, addF, lt, x, y, delta)
-) : FieldClose(F, addF, lt, x, y, epsilon) {
+) :
+  FieldClose(F, addF, lt, x, y, epsilon) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, rest) = arithmetic;
   obtain (upper, lower) = close;
   let upperRadius =
@@ -34,7 +35,8 @@ theorem field_common_positive_radius(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), r : F, s : F, positiveR : lt(zero, r),
   positiveS : lt(zero, s)
-) : exists delta : F, lt(zero, delta) and FieldLe(F, lt, delta, r) and FieldLe(F, lt, delta, s) {
+) :
+  exists delta : F, lt(zero, delta) and FieldLe(F, lt, delta, r) and FieldLe(F, lt, delta, s) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, rest) = arithmetic;
   let nonnegativeR =
     ordered_lt_implies_le(

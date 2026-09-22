@@ -13,7 +13,8 @@ theorem bouquet_maps_determined_by_letters(
       letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter)
     )
   ), p : BouquetLoops(A)
-) : h(p) = k(p) {
+) :
+  h(p) = k(p) {
   let valuesH =
     fun (letter : Signed(A)) => h(
       letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter)
@@ -66,10 +67,12 @@ theorem bouquet_maps_determined_by_letters(
 
 def RightCancellation(G : U1, multiply : G -> G -> G) =
   forall a : G, forall b : G, forall c : G, (multiply(a, c) = multiply(b, c)) -> a = b;
+
 theorem loop_map_inverse_right(
   X : U0, point : X, G : U1, unit : G, multiply : G -> G -> G, h : (point = point) -> G,
   laws : LoopMapLaws(X, point, G, unit, multiply, h), p : point = point
-) : multiply(h(inverse(U1, X, point, point, p)), h(p)) = unit {
+) :
+  multiply(h(inverse(U1, X, point, point, p)), h(p)) = unit {
   obtain (unitLaw, multiplyLaw) = laws;
   exact trans(
     sym(multiplyLaw(inverse(U1, X, point, point, p), p)),
@@ -92,7 +95,8 @@ theorem bouquet_maps_determined_by_generators(
   lawsK : LoopMapLaws(Bouquet(A), bouquet_base(A), G, unit, multiply, k),
   same : (forall a : A, h(bouquet_generator(A, a)) = k(bouquet_generator(A, a))),
   p : BouquetLoops(A)
-) : h(p) = k(p) {
+) :
+  h(p) = k(p) {
   exact bouquet_maps_determined_by_letters(
     A, G, setG, unit, multiply, h, k, lawsH, lawsK,
     (

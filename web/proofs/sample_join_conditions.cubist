@@ -20,18 +20,19 @@ theorem sample_tagged_join_step(
   same : sample_last(C, succ(n), vertices) = sample_first(C, m, rightVertices),
   valid : SampleTagged(C, condition, succ(n), vertices, tags),
   rightValid : SampleTagged(C, condition, m, rightVertices, rightTags)
-) : SampleTagged(
-  C, condition, succ(n) + m, join_vertices(C, succ(n), vertices, m, rightVertices),
-  join_tags(C, succ(n), tags, m, rightTags)
-) {
+) :
+  SampleTagged(
+    C, condition, succ(n) + m, join_vertices(C, succ(n), vertices, m, rightVertices),
+    join_tags(C, succ(n), tags, m, rightTags)
+  ) {
   let a = field_fst(C, SampleVertices(C, n), vertices);
   let tail = field_snd(C, SampleVertices(C, n), vertices);
   let tag = field_fst(C, SampleTags(C, n), tags);
   let tailTags = field_snd(C, SampleTags(C, n), tags);
   let joined = join_vertices(C, n, tail, m, rightVertices);
   let joinedTags = join_tags(C, n, tailTags, m, rightTags);
-  have data : condition(a, sample_first(C, n, tail), tag)
-  and SampleTagged(C, condition, n, tail, tailTags) {
+  have data :
+    condition(a, sample_first(C, n, tail), tag) and SampleTagged(C, condition, n, tail, tailTags) {
     exact valid;
   }
   obtain (headValid, tailValid) = data;
@@ -50,17 +51,16 @@ theorem sample_tagged_join_step(
   );
 }
 
-theorem sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) : forall vertices : SampleVertices(
-  C, n
-), forall tags : SampleTags(C, n), forall m : Nat, forall rightVertices : SampleVertices(C, m),
-forall rightTags : SampleTags(C, m),
-(sample_last(C, n, vertices) = sample_first(C, m, rightVertices))
--> SampleTagged(C, condition, n, vertices, tags)
--> SampleTagged(C, condition, m, rightVertices, rightTags)
--> SampleTagged(
-  C, condition, n + m, join_vertices(C, n, vertices, m, rightVertices),
-  join_tags(C, n, tags, m, rightTags)
-) {
+theorem sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall m : Nat,
+  forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m),
+  (sample_last(C, n, vertices) = sample_first(C, m, rightVertices))
+  -> SampleTagged(C, condition, n, vertices, tags)
+  -> SampleTagged(C, condition, m, rightVertices, rightTags)
+  -> SampleTagged(
+    C, condition, n + m, join_vertices(C, n, vertices, m, rightVertices),
+    join_tags(C, n, tags, m, rightTags)
+  ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), forall m : Nat,
     forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m),
@@ -95,7 +95,8 @@ theorem subdivision_tagged_valid_join(
   C : U1, condition : C -> C -> C -> U0, a : C, b : C, c : C, left : SampleSubdivision(C, a, b),
   right : SampleSubdivision(C, b, c), validLeft : SubdivisionTaggedValid(C, condition, a, b, left),
   validRight : SubdivisionTaggedValid(C, condition, b, c, right)
-) : SubdivisionTaggedValid(C, condition, a, c, join_subdivisions(C, a, b, c, left, right)) {
+) :
+  SubdivisionTaggedValid(C, condition, a, c, join_subdivisions(C, a, b, c, left, right)) {
   let n = subdivision_count(C, a, b, left);
   let vertices = subdivision_vertices(C, a, b, left);
   let m = subdivision_count(C, b, c, right);

@@ -8,9 +8,10 @@ theorem complex_close_add(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : Complex(F), y : Complex(F),
   u : Complex(F), v : Complex(F), epsilon : F, delta : F,
   xy : ComplexClose(F, addF, lt, x, y, epsilon), uv : ComplexClose(F, addF, lt, u, v, delta)
-) : ComplexClose(
-  F, addF, lt, complex_add(F, addF, x, u), complex_add(F, addF, y, v), addF(epsilon, delta)
-) {
+) :
+  ComplexClose(
+    F, addF, lt, complex_add(F, addF, x, u), complex_add(F, addF, y, v), addF(epsilon, delta)
+  ) {
   obtain (realXY, imagXY) = xy;
   obtain (realUV, imagUV) = uv;
   exact (
@@ -35,10 +36,11 @@ theorem complex_uniform_curve_add(
   -> Complex(F), g : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
   uniformF : ComplexUniformCurve(F, zero, one, addF, lt, f),
   uniformG : ComplexUniformCurve(F, zero, one, addF, lt, g)
-) : ComplexUniformCurve(
-  F, zero, one, addF, lt,
-  (fun (t : FieldUnitInterval(F, zero, one, lt)) => complex_add(F, addF, f(t), g(t)))
-) {
+) :
+  ComplexUniformCurve(
+    F, zero, one, addF, lt,
+    (fun (t : FieldUnitInterval(F, zero, one, lt)) => complex_add(F, addF, f(t), g(t)))
+  ) {
   obtain (half, halfSum, halfPositive) = ordered_field_halving(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
   );
@@ -52,15 +54,15 @@ theorem complex_uniform_curve_add(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, r, s, positiveR,
     positiveS
   );
-  have close : forall a : FieldUnitInterval(F, zero, one, lt),
-  forall b : FieldUnitInterval(F, zero, one, lt),
-  FieldClose(
-    F, addF, lt, field_interval_coordinate(F, zero, one, lt)(a),
-    field_interval_coordinate(F, zero, one, lt)(b), delta
-  )
-  -> ComplexClose(
-    F, addF, lt, complex_add(F, addF, f(a), g(a)), complex_add(F, addF, f(b), g(b)), epsilon
-  ) {
+  have close :
+    forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
+    FieldClose(
+      F, addF, lt, field_interval_coordinate(F, zero, one, lt)(a),
+      field_interval_coordinate(F, zero, one, lt)(b), delta
+    )
+    -> ComplexClose(
+      F, addF, lt, complex_add(F, addF, f(a), g(a)), complex_add(F, addF, f(b), g(b)), epsilon
+    ) {
     intro a;
     intro b;
     intro nearby;

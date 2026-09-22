@@ -3,8 +3,11 @@ import field_products;
 // Complexification of an arbitrary commutative ring. Real-number models can
 // instantiate this once their own ring laws have been proved.
 def Complex(F : U1) = F and F;
+
 def complex_real(F : U1, z : Complex(F)) = field_fst(F, F, z);
+
 def complex_imag(F : U1, z : Complex(F)) = field_snd(F, F, z);
+
 def complex_zero(F : U1, zero : F) : Complex(F) {
   exact (zero, zero);
 }
@@ -31,7 +34,8 @@ def complex_neg(F : U1, negF : F -> F, z : Complex(F)) : Complex(F) {
 
 def complex_mul(
   F : U1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, z : Complex(F), w : Complex(F)
-) : Complex(F) {
+) :
+  Complex(F) {
   exact (
     addF(
       mulF(complex_real(F, z), complex_real(F, w)),

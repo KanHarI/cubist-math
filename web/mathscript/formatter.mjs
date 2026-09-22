@@ -65,13 +65,27 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
   const tokens = tokenize(source).slice(0, -1);
   const construction = tokens[0]?.text === "construction";
   const syntax = construction ? null : parse(source);
+  const declarationEnds = new Set(syntax?.declarations.map(node => node.end) ?? []);
   // A binder's short domain is one phrase: `forall f : A -> B,` must not
   // split the arrow merely because the surrounding theorem is long.
   const domains = [];
   const expressionBlockEnds = new Set();
+  const assignmentTokens = new Set(), annotationStarts = new Set(), proofBodyStarts = new Set();
+  const tokenBefore = new Map(tokens.map((token, index) => [token.start, tokens[index - 1]]));
+  const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
   function visit(node) {
     if (!node || typeof node !== "object") return;
     if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
+    // Only declaration/let assignments introduce an indented right-hand side.
+    // An equality inside an annotated definition's type is not an assignment.
+    const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
+    if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === "=")
+      assignmentTokens.add(tokenBefore.get(valueStart).start);
+    if (node.type && ["def", "theorem", "axiom", "have"].includes(node.kind)) {
+      annotationStarts.add(node.type.start);
+      const next = tokenAfter.get(node.type.end);
+      if (next?.text === "{") proofBodyStarts.add(next.start);
+    }
     if (node.domain && source.slice(node.domain.start, node.domain.end).replace(/\s+/g, " ").length < printWidth / 2)
       domains.push([node.domain.start, node.domain.end]);
     for (const value of Object.values(node)) {
@@ -87,14 +101,20 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
     const docs = [], statement = [];
     let previous = null;
     let assignment = -1;
+    let annotation = -1, proofBody = -1;
     function flush() {
       if (statement.length) {
         const parts = statement.splice(0);
         // Keep the whole right-hand side indented, not just its first token.
-        docs.push(group(assignment < 0 ? flow(parts)
+        if (annotation >= 0) {
+          const signature = parts.slice(0, proofBody < 0 ? parts.length : proofBody);
+          docs.push(group([signature.slice(0, annotation), indent([line, flow(signature.slice(annotation))])]));
+          if (proofBody >= 0) docs.push(" ", parts.slice(proofBody));
+        } else docs.push(group(assignment < 0 ? flow(parts)
           : [parts.slice(0, assignment), indent([line, flow(parts.slice(assignment))])]));
       }
       assignment = -1;
+      annotation = -1; proofBody = -1;
     }
     while (position < all.length) {
       const token = all[position];
@@ -119,7 +139,9 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
           statement.push(" ");
         }
         else { flush(); if (docs.length && docs.at(-1) !== hard) docs.push(hard); }
-        statement.push(text); flush(); docs.push(hard); previous = null; continue;
+        statement.push(text); flush(); docs.push(hard);
+        if (!close && trailing && preceding && declarationEnds.has(preceding.end)) docs.push(hard);
+        previous = null; continue;
       }
       if (!close && ["def", "theorem", "axiom", "opaque", "construction"].includes(text) && previous && previous.text !== "opaque") {
         flush(); docs.push(hard, hard); previous = null;
@@ -128,8 +150,9 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && expressionBlockEnds.has(previous.end)))
         && !(text === "[" && previous.text === "=");
       if (space && previous.text !== ",") {
-        if (previous.text === "=" && text !== "[" && assignment < 0
-          && ["def", "let"].includes(statement[0])) assignment = statement.length;
+        if (annotationStarts.has(token.start)) annotation = statement.length;
+        else if (proofBodyStarts.has(token.start)) proofBody = statement.length;
+        else if (assignmentTokens.has(previous.start) && assignment < 0) assignment = statement.length;
         else statement.push(operators.has(text) && ["->", "and", "or"].includes(text)
           && !domains.some(([start, end]) => start <= token.start && token.end <= end) ? line : " ");
       }
@@ -139,7 +162,13 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         statement.push(text === "{" ? ["{", indent([hard, body]), hard, "}"]
           : group([text, indent([soft, body]), soft, end]));
         previous = { text: end, end: all[position - 1].end };
-        if (text === "{" && !expressionBlockEnds.has(previous.end) && all[position] && ![";", ",", ")", "]", "}"].includes(all[position].text) && !all[position].comment) {
+        if (!close && declarationEnds.has(previous.end)) {
+          // A trailing comment stays beside its declaration; separate the
+          // next declaration (and its documentation) with one empty line.
+          if (!(all[position]?.comment && !source.slice(previous.end, all[position].start).includes("\n"))) {
+            flush(); docs.push(hard, hard); previous = null;
+          }
+        } else if (text === "{" && !expressionBlockEnds.has(previous.end) && all[position] && ![";", ",", ")", "]", "}"].includes(all[position].text) && !all[position].comment) {
           flush(); docs.push(hard); previous = null;
         }
       } else if (text === ";") {
@@ -147,6 +176,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         // A following line comment belongs to this statement.
         if (!(all[position]?.comment && !source.slice(token.end, all[position].start).includes("\n"))) {
           flush(); docs.push(hard);
+          if (!close && declarationEnds.has(token.end)) docs.push(hard);
           previous = null;
         } else {
           previous = token;

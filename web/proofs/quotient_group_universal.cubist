@@ -10,9 +10,8 @@ def KillsSubgroupAt(
   forall n : group_carrier(G), subgroup_members(G, S, n)
   -> group_hom_map_at(U1, group_lift(G), H, h, n) = group_unit_at(U1, H);
 
-def group_hom_lift(G : Group, H : Group, h : GroupHom(G, H)) : GroupHomAt(
-  U1, group_lift(G), group_lift(H)
-) {
+def group_hom_lift(G : Group, H : Group, h : GroupHom(G, H)) :
+  GroupHomAt(U1, group_lift(G), group_lift(H)) {
   exact with unfolding [group_lift] {
     group_hom_object_at(
       U1, group_carrier(G), group_unit(G), group_multiply(G), group_laws(G), group_carrier(H),
@@ -21,15 +20,17 @@ def group_hom_lift(G : Group, H : Group, h : GroupHom(G, H)) : GroupHomAt(
     )
   };
 }
+
 // Equal cosets have equal images: x * (x^-1 * y) = y, and the second
 // factor maps to the identity. This avoids selecting coset representatives.
 theorem killing_subgroup_respects_cosets_at(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   kills : KillsSubgroupAt(G, H, h, S)
-) : RespectsRelation(
-  group_carrier(G), SameLeftCoset(G, S), group_carrier_at(U1, H),
-  group_hom_map_at(U1, group_lift(G), H, h)
-) {
+) :
+  RespectsRelation(
+    group_carrier(G), SameLeftCoset(G, S), group_carrier_at(U1, H),
+    group_hom_map_at(U1, group_lift(G), H, h)
+  ) {
   intro x;
   intro y;
   intro same;
@@ -53,6 +54,7 @@ theorem killing_subgroup_respects_cosets_at(
     )
   );
 }
+
 def quotient_descend_map(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   kills : KillsSubgroupAt(G, H, h, S)
@@ -62,12 +64,14 @@ def quotient_descend_map(
     group_is_set_at(U1, H), group_hom_map_at(U1, group_lift(G), H, h),
     killing_subgroup_respects_cosets_at(G, H, h, S, kills)
   );
+
 theorem quotient_descend_beta(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   kills : KillsSubgroupAt(G, H, h, S), x : group_carrier(G)
-) : quotient_descend_map(G, H, h, S, kills, left_coset(G, S, x)) = group_hom_map_at(
-  U1, group_lift(G), H, h, x
-) {
+) :
+  quotient_descend_map(G, H, h, S, kills, left_coset(G, S, x)) = group_hom_map_at(
+    U1, group_lift(G), H, h, x
+  ) {
   exact with unfolding [quotient_descend_map, left_coset] {
     quotient_rec_beta(
       group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), group_carrier_at(U1, H),
@@ -76,16 +80,18 @@ theorem quotient_descend_beta(
     )
   };
 }
+
 theorem quotient_descend_multiply_classes(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S), x : group_carrier(G),
   y : group_carrier(G)
-) : quotient_descend_map(
-  G, H, h, S, kills, quotient_multiply(G, S, normal, left_coset(G, S, x), left_coset(G, S, y))
-) = group_multiply_at(
-  U1, H, quotient_descend_map(G, H, h, S, kills, left_coset(G, S, x)),
-  quotient_descend_map(G, H, h, S, kills, left_coset(G, S, y))
-) {
+) :
+  quotient_descend_map(
+    G, H, h, S, kills, quotient_multiply(G, S, normal, left_coset(G, S, x), left_coset(G, S, y))
+  ) = group_multiply_at(
+    U1, H, quotient_descend_map(G, H, h, S, kills, left_coset(G, S, x)),
+    quotient_descend_map(G, H, h, S, kills, left_coset(G, S, y))
+  ) {
   let out = quotient_descend_map(G, H, h, S, kills);
   let f = group_hom_map_at(U1, group_lift(G), H, h);
   let m = group_multiply_at(U1, H);
@@ -105,13 +111,15 @@ theorem quotient_descend_multiply_classes(
     )
   );
 }
+
 theorem quotient_descend_multiply(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S), q : LeftCosets(G, S),
   r : LeftCosets(G, S)
-) : quotient_descend_map(G, H, h, S, kills, quotient_multiply(G, S, normal, q, r)) = group_multiply_at(
-  U1, H, quotient_descend_map(G, H, h, S, kills, q), quotient_descend_map(G, H, h, S, kills, r)
-) {
+) :
+  quotient_descend_map(G, H, h, S, kills, quotient_multiply(G, S, normal, q, r)) = group_multiply_at(
+    U1, H, quotient_descend_map(G, H, h, S, kills, q), quotient_descend_map(G, H, h, S, kills, r)
+  ) {
   let Q = LeftCosets(G, S);
   let out = quotient_descend_map(G, H, h, S, kills);
   let m = quotient_multiply(G, S, normal);
@@ -127,9 +135,8 @@ theorem quotient_descend_multiply(
 }
 
 // The projection is a homomorphism to the actual quotient group in U1.
-def quotient_projection(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) : GroupHomAt(
-  U1, group_lift(G), QuotientGroup(G, S, normal)
-) {
+def quotient_projection(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
+  GroupHomAt(U1, group_lift(G), QuotientGroup(G, S, normal)) {
   exact with unfolding [group_lift, QuotientGroup] {
     group_hom_object_at(
       U1, group_carrier(G), group_unit(G), group_multiply(G), group_laws(G), LeftCosets(G, S),
@@ -143,10 +150,12 @@ def quotient_projection(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) : G
     )
   };
 }
+
 def quotient_descend_hom(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S)
-) : GroupHomAt(U1, QuotientGroup(G, S, normal), H) {
+) :
+  GroupHomAt(U1, QuotientGroup(G, S, normal), H) {
   exact (
     quotient_descend_map(G, H, h, S, kills), quotient_descend_multiply(G, H, h, S, normal, kills)
   );
@@ -156,10 +165,11 @@ def quotient_descend_hom(
 theorem quotient_descend_triangle(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S)
-) : group_hom_compose_at(
-  U1, group_lift(G), QuotientGroup(G, S, normal), H, quotient_projection(G, S, normal),
-  quotient_descend_hom(G, H, h, S, normal, kills)
-) = h {
+) :
+  group_hom_compose_at(
+    U1, group_lift(G), QuotientGroup(G, S, normal), H, quotient_projection(G, S, normal),
+    quotient_descend_hom(G, H, h, S, normal, kills)
+  ) = h {
   exact group_hom_ext_at(
     U1, group_lift(G), H,
     group_hom_compose_at(
@@ -178,7 +188,8 @@ theorem quotient_descend_unique(
   triangle : group_hom_compose_at(
     U1, group_lift(G), QuotientGroup(G, S, normal), H, quotient_projection(G, S, normal), k
   ) = h
-) : k = quotient_descend_hom(G, H, h, S, normal, kills) {
+) :
+  k = quotient_descend_hom(G, H, h, S, normal, kills) {
   let out = group_hom_map_at(U1, QuotientGroup(G, S, normal), H, k);
   let same =
     fun (x : group_carrier(G)) => cong(
@@ -206,18 +217,19 @@ theorem quotient_descend_unique(
 theorem quotient_group_universal(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S)
-) : exists factor : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
-(
-  group_hom_compose_at(
-    U1, group_lift(G), QuotientGroup(G, S, normal), H, quotient_projection(G, S, normal), factor
-  ) = h
-)
-and (
-  forall other : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
-  group_hom_compose_at(
-    U1, group_lift(G), QuotientGroup(G, S, normal), H, quotient_projection(G, S, normal), other
-  ) = h -> other = factor
-) {
+) :
+  exists factor : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
+  (
+    group_hom_compose_at(
+      U1, group_lift(G), QuotientGroup(G, S, normal), H, quotient_projection(G, S, normal), factor
+    ) = h
+  )
+  and (
+    forall other : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
+    group_hom_compose_at(
+      U1, group_lift(G), QuotientGroup(G, S, normal), H, quotient_projection(G, S, normal), other
+    ) = h -> other = factor
+  ) {
   exact (
     quotient_descend_hom(G, H, h, S, normal, kills),
     quotient_descend_triangle(G, H, h, S, normal, kills),
@@ -228,9 +240,10 @@ and (
 // On small targets this recovers the earlier unique map of sets.
 theorem quotient_descend_agrees_with_map(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
-) : quotient_descend_map(G, group_lift(H), group_hom_lift(G, H, h), S, kills) = group_quotient_map(
-  G, H, h, S, kills
-) {
+) :
+  quotient_descend_map(G, group_lift(H), group_hom_lift(G, H, h), S, kills) = group_quotient_map(
+    G, H, h, S, kills
+  ) {
   exact group_quotient_map_unique(
     G, H, h, S, kills, quotient_descend_map(G, group_lift(H), group_hom_lift(G, H, h), S, kills),
     quotient_descend_beta(G, group_lift(H), group_hom_lift(G, H, h), S, kills)
@@ -238,9 +251,8 @@ theorem quotient_descend_agrees_with_map(
 }
 
 // Every subgroup element becomes the identity under the quotient projection.
-theorem quotient_projection_kills(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) : KillsSubgroupAt(
-  G, QuotientGroup(G, S, normal), quotient_projection(G, S, normal), S
-) {
+theorem quotient_projection_kills(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
+  KillsSubgroupAt(G, QuotientGroup(G, S, normal), quotient_projection(G, S, normal), S) {
   intro n;
   intro member;
   exact sym(
@@ -262,7 +274,8 @@ theorem quotient_projection_epimorphism(
   ) = group_hom_compose_at(
     U1, group_lift(G), QuotientGroup(G, S, normal), H, quotient_projection(G, S, normal), g
   )
-) : f = g {
+) :
+  f = g {
   let fMap = group_hom_map_at(U1, QuotientGroup(G, S, normal), H, f);
   let gMap = group_hom_map_at(U1, QuotientGroup(G, S, normal), H, g);
   let onClasses =

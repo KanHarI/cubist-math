@@ -40,15 +40,16 @@ theorem complex_subdivision_total_estimate_step(
     C, ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius), succ(n), vertices,
     tags, pieces
   )
-) : ComplexPerturbation(
-  F, addF, negF, lt,
-  sample_sum(
-    C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, succ(n), vertices, tags
-  ),
-  subdivision_total(
-    C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, succ(n), vertices, pieces
-  ), sample_sum(C, F, zero, addF, radius, succ(n), vertices, tags)
-) {
+) :
+  ComplexPerturbation(
+    F, addF, negF, lt,
+    sample_sum(
+      C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, succ(n), vertices, tags
+    ),
+    subdivision_total(
+      C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, succ(n), vertices, pieces
+    ), sample_sum(C, F, zero, addF, radius, succ(n), vertices, tags)
+  ) {
   let a = field_fst(C, SampleVertices(C, n), vertices);
   let tail = field_snd(C, SampleVertices(C, n), vertices);
   let b = sample_first(C, n, tail);
@@ -56,13 +57,12 @@ theorem complex_subdivision_total_estimate_step(
   let tailTags = field_snd(C, SampleTags(C, n), tags);
   let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
   let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  have data : ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius)(
-    a, b, tag, headPiece
-  )
-  and SubdivisionTagged(
-    C, ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius), n, tail, tailTags,
-    tailPieces
-  ) {
+  have data :
+    ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius)(a, b, tag, headPiece)
+    and SubdivisionTagged(
+      C, ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius), n, tail, tailTags,
+      tailPieces
+    ) {
     exact estimates;
   }
   obtain (headEstimate, tailEstimates) = data;
@@ -85,18 +85,20 @@ theorem complex_subdivision_total_estimate(
   -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> Complex(F),
   radius : C -> C -> C -> F, n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-forall pieces : SampleSubdivisions(C, n, vertices),
-SubdivisionTagged(
-  C, ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius), n, vertices, tags, pieces
-)
--> ComplexPerturbation(
-  F, addF, negF, lt,
-  sample_sum(C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, n, vertices, tags),
-  subdivision_total(
-    C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, n, vertices, pieces
-  ), sample_sum(C, F, zero, addF, radius, n, vertices, tags)
-) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  forall pieces : SampleSubdivisions(C, n, vertices),
+  SubdivisionTagged(
+    C, ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius), n, vertices, tags,
+    pieces
+  )
+  -> ComplexPerturbation(
+    F, addF, negF, lt,
+    sample_sum(C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, n, vertices, tags),
+    subdivision_total(
+      C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, n, vertices, pieces
+    ), sample_sum(C, F, zero, addF, radius, n, vertices, tags)
+  ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     forall pieces : SampleSubdivisions(C, k, vertices),
@@ -135,23 +137,24 @@ theorem complex_subdivision_flat_estimate(
     C, ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius), n, vertices, tags,
     pieces
   )
-) : exists flat : SampleSubdivision(C, sample_first(C, n, vertices), sample_last(C, n, vertices)),
-(
-  subdivision_sum(
-    C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, sample_first(C, n, vertices),
-    sample_last(C, n, vertices), flat
-  ) = subdivision_total(
-    C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, n, vertices, pieces
+) :
+  exists flat : SampleSubdivision(C, sample_first(C, n, vertices), sample_last(C, n, vertices)),
+  (
+    subdivision_sum(
+      C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge,
+      sample_first(C, n, vertices), sample_last(C, n, vertices), flat
+    ) = subdivision_total(
+      C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, n, vertices, pieces
+    )
   )
-)
-and ComplexPerturbation(
-  F, addF, negF, lt,
-  sample_sum(C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, n, vertices, tags),
-  subdivision_sum(
-    C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, sample_first(C, n, vertices),
-    sample_last(C, n, vertices), flat
-  ), sample_sum(C, F, zero, addF, radius, n, vertices, tags)
-) {
+  and ComplexPerturbation(
+    F, addF, negF, lt,
+    sample_sum(C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge, n, vertices, tags),
+    subdivision_sum(
+      C, Complex(F), complex_zero(F, zero), complex_add(F, addF), edge,
+      sample_first(C, n, vertices), sample_last(C, n, vertices), flat
+    ), sample_sum(C, F, zero, addF, radius, n, vertices, tags)
+  ) {
   let bound =
     complex_subdivision_total_estimate(
       C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, edge, radius, n, vertices,

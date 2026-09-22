@@ -17,10 +17,11 @@ theorem complex_puncture_period_formula(
     forall i : Fin(n),
     period(puncture_loop(n, i)) = complex_mul(F, addF, mulF, negF, normalization, residues(i))
   ), p : BouquetLoops(Fin(n))
-) : period(p) = weighted_winding_sum(
-  n, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_neg(F, negF),
-  (fun (i : Fin(n)) => complex_mul(F, addF, mulF, negF, normalization, residues(i))), p
-) {
+) :
+  period(p) = weighted_winding_sum(
+    n, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_neg(F, negF),
+    (fun (i : Fin(n)) => complex_mul(F, addF, mulF, negF, normalization, residues(i))), p
+  ) {
   obtain (setC, additive, multiplicative) = complex_commutative_ring(
     F, zero, one, addF, mulF, negF, ring
   );

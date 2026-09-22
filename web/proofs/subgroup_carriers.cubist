@@ -4,22 +4,26 @@ import subgroup_constructions;
 // their ambient values; membership evidence does not distinguish elements.
 def SubgroupCarrier(G : Group, S : Subgroup(G)) =
   exists x : group_carrier(G), subgroup_members(G, S, x);
+
 def subgroup_value(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S)) =
   sigma_first(group_carrier(G), subgroup_members(G, S), x);
-def subgroup_evidence(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S)) : subgroup_members(
-  G, S, subgroup_value(G, S, x)
-) {
+
+def subgroup_evidence(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S)) :
+  subgroup_members(G, S, subgroup_value(G, S, x)) {
   exact sigma_second(group_carrier(G), subgroup_members(G, S), x);
 }
+
 theorem subgroup_value_ext(
   G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S), y : SubgroupCarrier(G, S),
   same : subgroup_value(G, S, x) = subgroup_value(G, S, y)
-) : x = y {
+) :
+  x = y {
   exact subtype_ext(
     group_carrier(G), subgroup_members(G, S),
     subgroup_prop(G, subgroup_members(G, S), subgroup_laws(G, S)), x, y, same
   );
 }
+
 theorem subgroup_carrier_is_set(G : Group, S : Subgroup(G)) : IsSet(SubgroupCarrier(G, S)) {
   exact subtype_is_set(
     group_carrier(G), subgroup_members(G, S), group_is_set(G),
@@ -30,9 +34,11 @@ theorem subgroup_carrier_is_set(G : Group, S : Subgroup(G)) : IsSet(SubgroupCarr
 def subgroup_carrier_unit(G : Group, S : Subgroup(G)) : SubgroupCarrier(G, S) {
   exact (group_unit(G), subgroup_unit(G, subgroup_members(G, S), subgroup_laws(G, S)));
 }
+
 def subgroup_carrier_multiply(
   G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S), y : SubgroupCarrier(G, S)
-) : SubgroupCarrier(G, S) {
+) :
+  SubgroupCarrier(G, S) {
   exact (
     group_multiply(G, subgroup_value(G, S, x), subgroup_value(G, S, y)),
     subgroup_multiply(
@@ -41,9 +47,9 @@ def subgroup_carrier_multiply(
     )
   );
 }
-def subgroup_carrier_inverse(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S)) : SubgroupCarrier(
-  G, S
-) {
+
+def subgroup_carrier_inverse(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S)) :
+  SubgroupCarrier(G, S) {
   let a = subgroup_value(G, S, x);
   exact (
     group_inverse(G, a),
@@ -54,9 +60,8 @@ def subgroup_carrier_inverse(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, 
   );
 }
 
-theorem subgroup_carrier_group_laws(G : Group, S : Subgroup(G)) : GroupLaws(
-  SubgroupCarrier(G, S), subgroup_carrier_unit(G, S), subgroup_carrier_multiply(G, S)
-) {
+theorem subgroup_carrier_group_laws(G : Group, S : Subgroup(G)) :
+  GroupLaws(SubgroupCarrier(G, S), subgroup_carrier_unit(G, S), subgroup_carrier_multiply(G, S)) {
   let A = SubgroupCarrier(G, S);
   let value = subgroup_value(G, S);
   let one = subgroup_carrier_unit(G, S);
@@ -87,6 +92,7 @@ def subgroup_as_group(G : Group, S : Subgroup(G)) =
     SubgroupCarrier(G, S), subgroup_carrier_unit(G, S), subgroup_carrier_multiply(G, S),
     subgroup_carrier_group_laws(G, S)
   );
+
 def subgroup_inclusion(G : Group, S : Subgroup(G)) : GroupHom(subgroup_as_group(G, S), G) {
   exact (
     subgroup_value(G, S),
@@ -97,12 +103,14 @@ def subgroup_inclusion(G : Group, S : Subgroup(G)) : GroupHom(subgroup_as_group(
     )
   );
 }
+
 theorem subgroup_inclusion_injective(
   G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S), y : SubgroupCarrier(G, S),
   same : group_hom_map(subgroup_as_group(G, S), G, subgroup_inclusion(G, S), x) = group_hom_map(
     subgroup_as_group(G, S), G, subgroup_inclusion(G, S), y
   )
-) : x = y {
+) :
+  x = y {
   exact subgroup_value_ext(G, S, x, y, same);
 }
 
@@ -111,13 +119,16 @@ def subgroup_factor_map(
   K : Group, G : Group, h : GroupHom(K, G), S : Subgroup(G),
   lands : (forall x : group_carrier(K), subgroup_members(G, S, group_hom_map(K, G, h, x))),
   x : group_carrier(K)
-) : SubgroupCarrier(G, S) {
+) :
+  SubgroupCarrier(G, S) {
   exact (group_hom_map(K, G, h, x), lands(x));
 }
+
 def subgroup_factor(
   K : Group, G : Group, h : GroupHom(K, G), S : Subgroup(G),
   lands : (forall x : group_carrier(K), subgroup_members(G, S, group_hom_map(K, G, h, x)))
-) : GroupHom(K, subgroup_as_group(G, S)) {
+) :
+  GroupHom(K, subgroup_as_group(G, S)) {
   let lift = subgroup_factor_map(K, G, h, S, lands);
   exact (
     lift,
@@ -129,12 +140,14 @@ def subgroup_factor(
     )
   );
 }
+
 theorem subgroup_factor_triangle(
   K : Group, G : Group, h : GroupHom(K, G), S : Subgroup(G),
   lands : (forall x : group_carrier(K), subgroup_members(G, S, group_hom_map(K, G, h, x)))
-) : group_hom_compose(
-  K, subgroup_as_group(G, S), G, subgroup_factor(K, G, h, S, lands), subgroup_inclusion(G, S)
-) = h {
+) :
+  group_hom_compose(
+    K, subgroup_as_group(G, S), G, subgroup_factor(K, G, h, S, lands), subgroup_inclusion(G, S)
+  ) = h {
   exact group_hom_ext(
     K, G,
     group_hom_compose(
@@ -142,12 +155,14 @@ theorem subgroup_factor_triangle(
     ), h, (fun (x : group_carrier(K)) => refl(group_hom_map(K, G, h, x)))
   );
 }
+
 theorem subgroup_factor_unique(
   K : Group, G : Group, h : GroupHom(K, G), S : Subgroup(G),
   lands : (forall x : group_carrier(K), subgroup_members(G, S, group_hom_map(K, G, h, x))),
   d : GroupHom(K, subgroup_as_group(G, S)),
   triangle : group_hom_compose(K, subgroup_as_group(G, S), G, d, subgroup_inclusion(G, S)) = h
-) : d = subgroup_factor(K, G, h, S, lands) {
+) :
+  d = subgroup_factor(K, G, h, S, lands) {
   exact group_hom_ext(
     K, subgroup_as_group(G, S), d, subgroup_factor(K, G, h, S, lands),
     (

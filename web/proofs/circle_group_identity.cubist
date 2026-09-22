@@ -3,7 +3,9 @@ import group_univalence;
 
 // The existing winding isomorphism now gives a path in the type of groups.
 def CircleLoopGroup = group_object(LoopsS1, refl(base), loop_multiply, loop_group);
+
 def IntegerGroup = group_object(Z, zeroZ, addZ, integer_group);
+
 // Winding number is a group isomorphism from the circle's loops to the integers.
 // Its inverse sends an integer to that many turns around the circle.
 theorem circle_group_isomorphism : GroupIso(CircleLoopGroup, IntegerGroup) {
@@ -21,8 +23,7 @@ theorem circle_loop_group_equals_integers : CircleLoopGroup =[Group] IntegerGrou
 }
 
 // Reading that equality as an isomorphism recovers the original winding map.
-theorem circle_group_identification_recovers_winding : group_idtoiso(
-  CircleLoopGroup, IntegerGroup, circle_group_identification
-) = circle_group_isomorphism {
+theorem circle_group_identification_recovers_winding :
+  group_idtoiso(CircleLoopGroup, IntegerGroup, circle_group_identification) = circle_group_isomorphism {
   exact group_idtoiso_isotoid(CircleLoopGroup, IntegerGroup, circle_group_isomorphism);
 }

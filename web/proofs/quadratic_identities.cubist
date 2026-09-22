@@ -360,9 +360,10 @@ def parallelogram_right_expansion(
 theorem complex_coordinate_parallelogram(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
-) : addF(mulF(addF(a, b), addF(a, b)), mulF(addF(a, negF(b)), addF(a, negF(b)))) = addF(
-  addF(mulF(a, a), mulF(b, b)), addF(mulF(a, a), mulF(b, b))
-) {
+) :
+  addF(mulF(addF(a, b), addF(a, b)), mulF(addF(a, negF(b)), addF(a, negF(b)))) = addF(
+    addF(mulF(a, a), mulF(b, b)), addF(mulF(a, a), mulF(b, b))
+  ) {
   exact trans(
     trans(
       parallelogram_expansion_1(F, zero, one, addF, mulF, negF, ring, a, b),

@@ -14,12 +14,14 @@ theorem descended_loop_map_laws(
     forall c : C, forall d : C,
     present(join(c, d)) = append_path(X, point, point, point, present(c), present(d))
   ), joinValue : (forall c : C, forall d : C, value(join(c, d)) = multiply(value(c), value(d)))
-) : LoopMapLaws(X, point, G, unit, multiply, period) {
+) :
+  LoopMapLaws(X, point, G, unit, multiply, period) {
   have unitLaw : period(refl(point)) = unit {
     exact trans(sym(cong(period, constantPath)), trans(computes(constant), constantValue));
   }
-  have multiplyLaw : forall p : point = point, forall q : point = point,
-  period(append_path(X, point, point, point, p, q)) = multiply(period(p), period(q)) {
+  have multiplyLaw :
+    forall p : point = point, forall q : point = point,
+    period(append_path(X, point, point, point, p, q)) = multiply(period(p), period(q)) {
     intro p;
     intro q;
     let result = period(append_path(X, point, point, point, p, q)) = multiply(period(p), period(q));

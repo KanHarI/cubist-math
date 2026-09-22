@@ -8,9 +8,8 @@ def f2_f4_embedding : FieldEmbedding(F2, F4) {
   exact extension_inclusion_embedding(F2, F4OverF2);
 }
 
-theorem f2_embedding_image_is_base : subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2)) =[
-  Subfield(F4)
-] f4_base_subfield {
+theorem f2_embedding_image_is_base :
+  subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2)) =[Subfield(F4)] f4_base_subfield {
   let image = subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2));
   have intoBase : SubfieldIncluded(F4, image, f4_base_subfield) {
     intro y;
@@ -40,20 +39,22 @@ theorem f4_base_field_is_f2 : F2 =[AlgebraicField] subfield_as_field(F4, f4_base
   };
 }
 
-theorem f4_base_tower : FieldTower(
-  F2, intermediate_as_field(F2, F4OverF2, f4_base_intermediate), F4,
-  intermediate_base_embedding(F2, F4OverF2, f4_base_intermediate),
-  intermediate_ambient_embedding(F2, F4OverF2, f4_base_intermediate), f2_f4_embedding
-) {
+theorem f4_base_tower :
+  FieldTower(
+    F2, intermediate_as_field(F2, F4OverF2, f4_base_intermediate), F4,
+    intermediate_base_embedding(F2, F4OverF2, f4_base_intermediate),
+    intermediate_ambient_embedding(F2, F4OverF2, f4_base_intermediate), f2_f4_embedding
+  ) {
   exact intermediate_tower(F2, F4OverF2, f4_base_intermediate);
 }
 
 // A genuine non-surjective embedding exercises change of ambient composita.
-theorem f2_compositum_in_f4 : subfield_image(
-  F2, F4, f2_f4_embedding, compositum(F2, subfield_top(F2), subfield_top(F2))
-) =[Subfield(F4)] compositum(
-  F4, subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2)),
-  subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2))
-) {
+theorem f2_compositum_in_f4 :
+  subfield_image(F2, F4, f2_f4_embedding, compositum(F2, subfield_top(F2), subfield_top(F2))) =[
+    Subfield(F4)
+  ] compositum(
+    F4, subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2)),
+    subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2))
+  ) {
   exact compositum_image(F2, F4, f2_f4_embedding, subfield_top(F2), subfield_top(F2));
 }

@@ -114,35 +114,36 @@ theorem affine_partition_piece_estimate(
       )
     )
   )
-) : forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
-forall tag : FieldUnitInterval(F, zero, one, lt),
-forall piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
-(IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh))(a, b, tag, piece)
--> (
-  ComplexSubdivisionEstimate(
-    FieldUnitInterval(F, zero, one, lt), F, zero, addF, negF, lt,
-    (
-      parameter_contour_edge(
-        FieldUnitInterval(F, zero, one, lt), Complex(F), (complex_add(F, addF)),
-        (complex_mul(F, addF, mulF, negF)), (complex_neg(F, negF)),
-        (complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)),
-        (
+) :
+  forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
+  forall tag : FieldUnitInterval(F, zero, one, lt),
+  forall piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+  (IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh))(a, b, tag, piece)
+  -> (
+    ComplexSubdivisionEstimate(
+      FieldUnitInterval(F, zero, one, lt), F, zero, addF, negF, lt,
+      (
+        parameter_contour_edge(
+          FieldUnitInterval(F, zero, one, lt), Complex(F), (complex_add(F, addF)),
+          (complex_mul(F, addF, mulF, negF)), (complex_neg(F, negF)),
+          (complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)),
           (
-            fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
-              (complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope))(t)
+            (
+              fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
+                (complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope))(t)
+              )
             )
           )
         )
-      )
-    ),
-    (
-      interval_refinement_radius(
-        F, zero, one, addF, mulF, negF, lt, delta,
-        (affine_coordinate_length(F, addF, negF, maxF, slope))
+      ),
+      (
+        interval_refinement_radius(
+          F, zero, one, addF, mulF, negF, lt, delta,
+          (affine_coordinate_length(F, addF, negF, maxF, slope))
+        )
       )
     )
-  )
-)(a, b, tag, piece) {
+  )(a, b, tag, piece) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let addC = complex_add(F, addF);
@@ -156,9 +157,9 @@ forall piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
   let radius = interval_refinement_radius(F, zero, one, addF, mulF, negF, lt, delta, length);
   let condition = IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
   let other = ComplexSubdivisionEstimate(I, F, zero, addF, negF, lt, edge, radius);
-  have mapEstimates : forall a : I, forall b : I, forall tag : I,
-  forall piece : SampleSubdivision(I, a, b), condition(a, b, tag, piece)
-  -> other(a, b, tag, piece) {
+  have mapEstimates :
+    forall a : I, forall b : I, forall tag : I, forall piece : SampleSubdivision(I, a, b),
+    condition(a, b, tag, piece) -> other(a, b, tag, piece) {
     intro a;
     intro b;
     intro tag;
@@ -268,45 +269,8 @@ theorem affine_partition_from_local_estimates(
       )
     )
   )
-) : forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
-SubdivisionTagged(
-  FieldUnitInterval(F, zero, one, lt), IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh),
-  n, vertices, tags, pieces
-)
--> CurvePartitionEstimate(
-  F, zero, one, addF, mulF, negF, lt,
-  complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n, vertices,
-  tags, pieces,
-  mulF(
-    delta,
-    mulF(
-      sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
-      affine_coordinate_length(F, addF, negF, maxF, slope)
-    )
-  )
-) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
-  let addC = complex_add(F, addF);
-  let zeroC = complex_zero(F, zero);
-  let mulC = complex_mul(F, addF, mulF, negF);
-  let negC = complex_neg(F, negF);
-  let values = (fun (t : I) => integrand(curve(t)));
-  let edge = parameter_contour_edge(I, Complex(F), addC, mulC, negC, curve, values);
-  let length = affine_coordinate_length(F, addF, negF, maxF, slope);
-  let width = interval_difference(F, zero, one, addF, negF, lt);
-  let radius = interval_refinement_radius(F, zero, one, addF, mulF, negF, lt, delta, length);
-  let condition = IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
-  let other = ComplexSubdivisionEstimate(I, F, zero, addF, negF, lt, edge, radius);
-  let mapEstimates =
-    affine_partition_piece_estimate(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
-      integrand, uniform, delta, positiveDelta, mesh, localEstimates
-    );
-  have estimates : forall n : Nat,
-  forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+) :
+  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
   SubdivisionTagged(
@@ -325,6 +289,44 @@ SubdivisionTagged(
       )
     )
   ) {
+  let I = FieldUnitInterval(F, zero, one, lt);
+  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
+  let addC = complex_add(F, addF);
+  let zeroC = complex_zero(F, zero);
+  let mulC = complex_mul(F, addF, mulF, negF);
+  let negC = complex_neg(F, negF);
+  let values = (fun (t : I) => integrand(curve(t)));
+  let edge = parameter_contour_edge(I, Complex(F), addC, mulC, negC, curve, values);
+  let length = affine_coordinate_length(F, addF, negF, maxF, slope);
+  let width = interval_difference(F, zero, one, addF, negF, lt);
+  let radius = interval_refinement_radius(F, zero, one, addF, mulF, negF, lt, delta, length);
+  let condition = IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
+  let other = ComplexSubdivisionEstimate(I, F, zero, addF, negF, lt, edge, radius);
+  let mapEstimates =
+    affine_partition_piece_estimate(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
+      integrand, uniform, delta, positiveDelta, mesh, localEstimates
+    );
+  have estimates :
+    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
+    SubdivisionTagged(
+      FieldUnitInterval(F, zero, one, lt),
+      IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), n, vertices, tags, pieces
+    )
+    -> CurvePartitionEstimate(
+      F, zero, one, addF, mulF, negF, lt,
+      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n, vertices,
+      tags, pieces,
+      mulF(
+        delta,
+        mulF(
+          sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
+          affine_coordinate_length(F, addF, negF, maxF, slope)
+        )
+      )
+    ) {
     intro n;
     intro vertices;
     intro tags;
@@ -383,28 +385,29 @@ theorem affine_partition_uniform_estimate(
       )
     )
   ), delta : F, positiveDelta : lt(zero, delta)
-) : exists mesh : F, lt(zero, mesh)
-and (
-  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-  forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
-  SubdivisionTagged(
-    FieldUnitInterval(F, zero, one, lt),
-    IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), n, vertices, tags, pieces
-  )
-  -> CurvePartitionEstimate(
-    F, zero, one, addF, mulF, negF, lt,
-    complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n, vertices,
-    tags, pieces,
-    mulF(
-      delta,
+) :
+  exists mesh : F, lt(zero, mesh)
+  and (
+    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
+    SubdivisionTagged(
+      FieldUnitInterval(F, zero, one, lt),
+      IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), n, vertices, tags, pieces
+    )
+    -> CurvePartitionEstimate(
+      F, zero, one, addF, mulF, negF, lt,
+      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n, vertices,
+      tags, pieces,
       mulF(
-        sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
-        affine_coordinate_length(F, addF, negF, maxF, slope)
+        delta,
+        mulF(
+          sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
+          affine_coordinate_length(F, addF, negF, maxF, slope)
+        )
       )
     )
-  )
-) {
+  ) {
   obtain (mesh, positiveMesh, localEstimates) = affine_refinement_uniform_estimate(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
     integrand, uniform, delta, positiveDelta

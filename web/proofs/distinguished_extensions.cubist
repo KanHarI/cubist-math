@@ -4,8 +4,10 @@ import embedded_composita;
 // extensions lie in U1. Membership may be a proposition in U1. This leaves
 // room for algebraic properties without asserting propositional resizing.
 def ExtensionClass = forall K : AlgebraicField, FieldExt(K) -> U1;
+
 def ExtensionClassProp(C : ExtensionClass) =
   forall K : AlgebraicField, forall E : FieldExt(K), FieldProp(C(K, E));
+
 def ExtensionMember(
   C : ExtensionClass, K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
 ) =
@@ -16,14 +18,16 @@ def ExtensionMember(
 theorem extension_class_iso(
   C : ExtensionClass, K : AlgebraicField, E : FieldExt(K), F : FieldExt(K),
   e : ExtensionIso(K, E, F), member : C(K, E)
-) : C(K, F) {
+) :
+  C(K, F) {
   exact transport(C(K), E, F, extension_iso_path(K, E, F, e), member);
 }
 
 theorem extension_class_iso_iff(
   C : ExtensionClass, K : AlgebraicField, E : FieldExt(K), F : FieldExt(K),
   e : ExtensionIso(K, E, F)
-) : FieldIff(C(K, E), C(K, F)) {
+) :
+  FieldIff(C(K, E), C(K, F)) {
   let path = extension_iso_path(K, E, F, e);
   exact (
     (fun (member : C(K, E)) => transport(C(K), E, F, path, member)),
@@ -73,7 +77,8 @@ def Distinguished(C : ExtensionClass) =
 // is essential when applying the tower criterion through the right factor.
 theorem distinguished_composita_from_tower_base_change(
   C : ExtensionClass, towerLaw : DistinguishedTower(C), baseChange : DistinguishedBaseChange(C)
-) : DistinguishedComposita(C) {
+) :
+  DistinguishedComposita(C) {
   intro B;
   intro K;
   intro L;
@@ -104,7 +109,8 @@ theorem distinguished_composita_from_tower_base_change(
 theorem distinguished_from_tower_base_change(
   C : ExtensionClass, prop : ExtensionClassProp(C), towerLaw : DistinguishedTower(C),
   baseChange : DistinguishedBaseChange(C)
-) : Distinguished(C) {
+) :
+  Distinguished(C) {
   exact (
     prop, towerLaw, baseChange,
     distinguished_composita_from_tower_base_change(C, towerLaw, baseChange)

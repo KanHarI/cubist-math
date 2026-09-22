@@ -67,12 +67,13 @@ def interval_midpoint_within(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : IntervalTagWithin(
-  F, zero, one, lt, a, b,
-  interval_midpoint_point(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
-  )
-) {
+) :
+  IntervalTagWithin(
+    F, zero, one, lt, a, b,
+    interval_midpoint_point(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    )
+  ) {
   let midpoint =
     interval_midpoint_point(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
@@ -173,21 +174,22 @@ def interval_midpoint_widths(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : (
-  interval_difference(F, zero, one, addF, negF, lt)(
-    a,
-    interval_midpoint_point(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
-    )
-  ) = half(interval_difference(F, zero, one, addF, negF, lt)(a, b))
-)
-and (
-  interval_difference(F, zero, one, addF, negF, lt)(
-    interval_midpoint_point(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
-    ), b
-  ) = half(interval_difference(F, zero, one, addF, negF, lt)(a, b))
-) {
+) :
+  (
+    interval_difference(F, zero, one, addF, negF, lt)(
+      a,
+      interval_midpoint_point(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+      )
+    ) = half(interval_difference(F, zero, one, addF, negF, lt)(a, b))
+  )
+  and (
+    interval_difference(F, zero, one, addF, negF, lt)(
+      interval_midpoint_point(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+      ), b
+    ) = half(interval_difference(F, zero, one, addF, negF, lt)(a, b))
+  ) {
   let midpoint =
     interval_midpoint_point(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered

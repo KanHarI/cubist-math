@@ -20,7 +20,8 @@ theorem subdivision_tagged_zip_step(
   pieces : SampleSubdivisions(C, succ(n), vertices),
   coarseValid : SampleTagged(C, coarse, succ(n), vertices, tags),
   fineValid : SubdivisionTagged(C, fine, succ(n), vertices, tags, pieces)
-) : SubdivisionTagged(C, other, succ(n), vertices, tags, pieces) {
+) :
+  SubdivisionTagged(C, other, succ(n), vertices, tags, pieces) {
   let a = field_fst(C, SampleVertices(C, n), vertices);
   let tail = field_snd(C, SampleVertices(C, n), vertices);
   let b = sample_first(C, n, tail);
@@ -31,8 +32,8 @@ theorem subdivision_tagged_zip_step(
   have coarseData : coarse(a, b, tag) and SampleTagged(C, coarse, n, tail, tailTags) {
     exact coarseValid;
   }
-  have fineData : fine(a, b, tag, headPiece)
-  and SubdivisionTagged(C, fine, n, tail, tailTags, tailPieces) {
+  have fineData :
+    fine(a, b, tag, headPiece) and SubdivisionTagged(C, fine, n, tail, tailTags, tailPieces) {
     exact fineValid;
   }
   obtain (headCoarse, tailCoarse) = coarseData;
@@ -54,10 +55,11 @@ theorem subdivision_tagged_zip(
     forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b),
     coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)
   ), n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-forall pieces : SampleSubdivisions(C, n, vertices), SampleTagged(C, coarse, n, vertices, tags)
--> SubdivisionTagged(C, fine, n, vertices, tags, pieces)
--> SubdivisionTagged(C, other, n, vertices, tags, pieces) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  forall pieces : SampleSubdivisions(C, n, vertices), SampleTagged(C, coarse, n, vertices, tags)
+  -> SubdivisionTagged(C, fine, n, vertices, tags, pieces)
+  -> SubdivisionTagged(C, other, n, vertices, tags, pieces) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     forall pieces : SampleSubdivisions(C, k, vertices), SampleTagged(C, coarse, k, vertices, tags)

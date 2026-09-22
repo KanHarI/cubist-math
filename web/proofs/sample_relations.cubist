@@ -17,9 +17,10 @@ theorem sample_adjacent_magnitude(
     forall a : C, forall b : C, forall tag : C, related(a, b)
     -> FieldMagnitudeBound(F, negF, lt, edge(a, b, tag), radius(a, b, tag))
   ), n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-SampleAdjacent(C, related, n, vertices)
--> SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  SampleAdjacent(C, related, n, vertices)
+  -> SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     SampleAdjacent(C, related, k, vertices)

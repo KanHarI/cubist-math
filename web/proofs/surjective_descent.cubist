@@ -5,12 +5,14 @@ import field_extensionality;
 // representative. The presented type B need not be a set.
 def DescentValue(A : U1, B : U1, G : U1, present : A -> B, value : A -> G, b : B, v : G) =
   forall a : A, (present(a) = b) -> value(a) = v;
+
 def DescentData(A : U1, B : U1, G : U1, present : A -> B, value : A -> G, b : B) =
   exists v : G, DescentValue(A, B, G, present, value, b, v);
 
 theorem descent_value_prop(
   A : U1, B : U1, G : U1, setG : FieldSet(G), present : A -> B, value : A -> G, b : B, v : G
-) : FieldProp(DescentValue(A, B, G, present, value, b, v)) {
+) :
+  FieldProp(DescentValue(A, B, G, present, value, b, v)) {
   exact field_forall_prop(
     A, (fun (a : A) => typed(U1, (present(a) = b) -> value(a) = v)),
     (
@@ -25,7 +27,8 @@ theorem descent_value_prop(
 theorem descent_data_prop(
   A : U1, B : U1, G : U1, setG : FieldSet(G), present : A -> B, value : A -> G, b : B,
   covered : FieldExists(exists a : A, present(a) = b)
-) : FieldProp(DescentData(A, B, G, present, value, b)) {
+) :
+  FieldProp(DescentData(A, B, G, present, value, b)) {
   intro u;
   intro v;
   let family = DescentValue(A, B, G, present, value, b);
@@ -59,7 +62,8 @@ def surjective_descent_data(
   covered : (forall b : B, FieldExists(exists a : A, present(a) = b)),
   consistent : (forall a : A, forall a2 : A, (present(a) = present(a2)) -> value(a) = value(a2)),
   b : B
-) : DescentData(A, B, G, present, value, b) {
+) :
+  DescentData(A, B, G, present, value, b) {
   exact field_exists_elim(
     (exists a : A, present(a) = b), DescentData(A, B, G, present, value, b),
     descent_data_prop(A, B, G, setG, present, value, b, covered(b)),
@@ -96,11 +100,13 @@ theorem surjective_descent_beta(
   covered : (forall b : B, FieldExists(exists a : A, present(a) = b)),
   consistent : (forall a : A, forall a2 : A, (present(a) = present(a2)) -> value(a) = value(a2)),
   a : A
-) : surjective_descent(A, B, G, setG, present, value, covered, consistent, present(a)) = value(a) {
+) :
+  surjective_descent(A, B, G, setG, present, value, covered, consistent, present(a)) = value(a) {
   let data =
     surjective_descent_data(A, B, G, setG, present, value, covered, consistent, present(a));
-  have law : forall a2 : A, (present(a2) = present(a))
-  -> value(a2) = field_first(G, DescentValue(A, B, G, present, value, present(a)), data) {
+  have law :
+    forall a2 : A, (present(a2) = present(a))
+    -> value(a2) = field_first(G, DescentValue(A, B, G, present, value, present(a)), data) {
     exact field_second(G, DescentValue(A, B, G, present, value, present(a)), data);
   }
   exact sym(law(a, refl(present(a))));

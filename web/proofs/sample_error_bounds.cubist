@@ -38,14 +38,15 @@ theorem sample_sum_error_bound(
   -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> F, other : C
   -> C -> C -> F, radius : C -> C -> C -> F, n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-SampleCloseBounds(C, F, addF, lt, edge, other, radius, n, vertices, tags) -> forall epsilon : F,
-lt(zero, epsilon)
--> FieldClose(
-  F, addF, lt, sample_sum(C, F, zero, addF, edge, n, vertices, tags),
-  sample_sum(C, F, zero, addF, other, n, vertices, tags),
-  addF(sample_sum(C, F, zero, addF, radius, n, vertices, tags), epsilon)
-) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  SampleCloseBounds(C, F, addF, lt, edge, other, radius, n, vertices, tags) -> forall epsilon : F,
+  lt(zero, epsilon)
+  -> FieldClose(
+    F, addF, lt, sample_sum(C, F, zero, addF, edge, n, vertices, tags),
+    sample_sum(C, F, zero, addF, other, n, vertices, tags),
+    addF(sample_sum(C, F, zero, addF, radius, n, vertices, tags), epsilon)
+  ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     SampleCloseBounds(C, F, addF, lt, edge, other, radius, k, vertices, tags) -> forall epsilon : F,

@@ -18,8 +18,11 @@ theorem homotopy_limit_descent(
     forall c : C, forall d : C, (present(c) = present(d))
     -> FieldAsymptotic(F, zero, addF, lt, approximations(c), approximations(d))
   )
-) : exists period : (point = point) -> F, forall c : C,
-period(present(c)) = field_sequence_limit(F, zero, addF, lt, complete, approximations(c), cauchy(c)) {
+) :
+  exists period : (point = point) -> F, forall c : C,
+  period(present(c)) = field_sequence_limit(
+    F, zero, addF, lt, complete, approximations(c), cauchy(c)
+  ) {
   obtain (setF, additive, multiplicative) = ring;
   let halving =
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
@@ -69,13 +72,14 @@ theorem homotopy_limit_period(
       (fun (n : Nat) => addF(approximations(c, n), approximations(d, n)))
     )
   )
-) : exists period : (point = point) -> F, LoopMapLaws(X, point, F, zero, addF, period)
-and (
-  forall c : C,
-  period(present(c)) = field_sequence_limit(
-    F, zero, addF, lt, complete, approximations(c), cauchy(c)
-  )
-) {
+) :
+  exists period : (point = point) -> F, LoopMapLaws(X, point, F, zero, addF, period)
+  and (
+    forall c : C,
+    period(present(c)) = field_sequence_limit(
+      F, zero, addF, lt, complete, approximations(c), cauchy(c)
+    )
+  ) {
   obtain (setF, additive, multiplicative) = ring;
   let halving =
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);

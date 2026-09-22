@@ -15,7 +15,8 @@ def FieldAsymptotic(
 theorem field_close_prop(
   F : U1, addF : F -> F -> F, lt : F -> F -> U0, order : StrictOrder(F, lt), x : F, y : F,
   epsilon : F
-) : FieldProp(FieldClose(F, addF, lt, x, y, epsilon)) {
+) :
+  FieldProp(FieldClose(F, addF, lt, x, y, epsilon)) {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
   let upper = lt(x, addF(y, epsilon));
   let lower = lt(y, addF(x, epsilon));
@@ -35,7 +36,8 @@ theorem field_asymptotic_limits_equal(
   halving : Halving(F, zero, addF, lt), xs : Nat -> F, ys : Nat -> F,
   same : FieldAsymptotic(F, zero, addF, lt, xs, ys), x : F, y : F,
   toX : FieldConverges(F, zero, addF, lt, xs, x), toY : FieldConverges(F, zero, addF, lt, ys, y)
-) : x = y {
+) :
+  x = y {
   obtain (half, halfSum, halfPositive) = halving;
   have close : forall epsilon : F, lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon) {
     intro epsilon;
@@ -95,6 +97,7 @@ def field_sequence_limit(
   cauchy : FieldCauchy(F, zero, addF, lt, sequence)
 ) =
   field_first(F, FieldConverges(F, zero, addF, lt, sequence), complete(sequence, cauchy));
+
 def field_sequence_limit_converges(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> F,

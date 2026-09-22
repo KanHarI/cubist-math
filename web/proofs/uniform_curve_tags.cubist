@@ -7,10 +7,11 @@ theorem complex_close_difference_bound(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F),
   radius : F, close : ComplexClose(F, addF, lt, w, z, radius)
-) : ComplexBoxBound(
-  F, negF, lt, coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), z, w),
-  radius
-) {
+) :
+  ComplexBoxBound(
+    F, negF, lt,
+    coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), z, w), radius
+  ) {
   obtain (realClose, imagClose) = close;
   let zr = complex_real(F, z);
   let zi = complex_imag(F, z);
@@ -43,19 +44,20 @@ theorem uniform_curve_tag_bounds(
   values : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, values), epsilon : F,
   positive : lt(zero, epsilon)
-) : exists mesh : F, lt(zero, mesh)
-and (
-  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-  forall oldTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-  forall newTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-  IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)
-  -> IntervalAdmissibleTags(F, zero, one, lt, n, vertices, oldTags)
-  -> IntervalAdmissibleTags(F, zero, one, lt, n, vertices, newTags)
-  -> ComplexParameterTagBounds(
-    FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, values, epsilon, n, vertices, oldTags,
-    newTags
-  )
-) {
+) :
+  exists mesh : F, lt(zero, mesh)
+  and (
+    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall oldTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    forall newTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)
+    -> IntervalAdmissibleTags(F, zero, one, lt, n, vertices, oldTags)
+    -> IntervalAdmissibleTags(F, zero, one, lt, n, vertices, newTags)
+    -> ComplexParameterTagBounds(
+      FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, values, epsilon, n, vertices, oldTags,
+      newTags
+    )
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   obtain (mesh, positiveMesh, closeValues) = uniform(epsilon, positive);
   let smallEdge =
@@ -64,14 +66,15 @@ and (
         interval_difference(F, zero, one, addF, negF, lt, a, b), mesh
       )
     );
-  have localBound : forall a : I, forall b : I, forall x : I, forall y : I, smallEdge(a, b)
-  -> IntervalTagWithin(F, zero, one, lt, a, b, x) -> IntervalTagWithin(F, zero, one, lt, a, b, y)
-  -> ComplexBoxBound(
-    F, negF, lt,
-    coordinate_difference(
-      Complex(F), complex_add(F, addF), complex_neg(F, negF), values(x), values(y)
-    ), epsilon
-  ) {
+  have localBound :
+    forall a : I, forall b : I, forall x : I, forall y : I, smallEdge(a, b)
+    -> IntervalTagWithin(F, zero, one, lt, a, b, x) -> IntervalTagWithin(F, zero, one, lt, a, b, y)
+    -> ComplexBoxBound(
+      F, negF, lt,
+      coordinate_difference(
+        Complex(F), complex_add(F, addF), complex_neg(F, negF), values(x), values(y)
+      ), epsilon
+    ) {
     intro a;
     intro b;
     intro x;

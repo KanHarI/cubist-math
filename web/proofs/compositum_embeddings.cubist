@@ -5,10 +5,11 @@ import subfield_image_orders;
 // isomorphism. The image of a compositum is the compositum of the two images.
 theorem compositum_image_forward(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), T : Subfield(K)
-) : SubfieldIncluded(
-  L, subfield_image(K, L, e, compositum(K, S, T)),
-  compositum(L, subfield_image(K, L, e, S), subfield_image(K, L, e, T))
-) {
+) :
+  SubfieldIncluded(
+    L, subfield_image(K, L, e, compositum(K, S, T)),
+    compositum(L, subfield_image(K, L, e, S), subfield_image(K, L, e, T))
+  ) {
   let imageS = subfield_image(K, L, e, S);
   let imageT = subfield_image(K, L, e, T);
   let target = compositum(L, imageS, imageT);
@@ -28,10 +29,11 @@ theorem compositum_image_forward(
 
 theorem compositum_image_backward(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), T : Subfield(K)
-) : SubfieldIncluded(
-  L, compositum(L, subfield_image(K, L, e, S), subfield_image(K, L, e, T)),
-  subfield_image(K, L, e, compositum(K, S, T))
-) {
+) :
+  SubfieldIncluded(
+    L, compositum(L, subfield_image(K, L, e, S), subfield_image(K, L, e, T)),
+    subfield_image(K, L, e, compositum(K, S, T))
+  ) {
   exact compositum_least(
     L, subfield_image(K, L, e, S), subfield_image(K, L, e, T),
     subfield_image(K, L, e, compositum(K, S, T)),
@@ -42,9 +44,10 @@ theorem compositum_image_backward(
 
 theorem compositum_image(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), T : Subfield(K)
-) : subfield_image(K, L, e, compositum(K, S, T)) =[Subfield(L)] compositum(
-  L, subfield_image(K, L, e, S), subfield_image(K, L, e, T)
-) {
+) :
+  subfield_image(K, L, e, compositum(K, S, T)) =[Subfield(L)] compositum(
+    L, subfield_image(K, L, e, S), subfield_image(K, L, e, T)
+  ) {
   exact subfield_inclusion_antisymmetric(
     L, subfield_image(K, L, e, compositum(K, S, T)),
     compositum(L, subfield_image(K, L, e, S), subfield_image(K, L, e, T)),

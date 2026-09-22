@@ -6,7 +6,8 @@ import complex_numbers;
 def paired_complex_period(
   F : U1, X : U0, point : X, realPeriod : (point = point) -> F, imagPeriod : (point = point) -> F,
   p : point = point
-) : Complex(F) {
+) :
+  Complex(F) {
   exact (realPeriod(p), imagPeriod(p));
 }
 
@@ -14,10 +15,11 @@ theorem paired_complex_period_laws(
   F : U1, zero : F, addF : F -> F -> F, X : U0, point : X, realPeriod : (point = point) -> F,
   imagPeriod : (point = point) -> F, realLaws : LoopMapLaws(X, point, F, zero, addF, realPeriod),
   imagLaws : LoopMapLaws(X, point, F, zero, addF, imagPeriod)
-) : LoopMapLaws(
-  X, point, Complex(F), complex_zero(F, zero), complex_add(F, addF),
-  paired_complex_period(F, X, point, realPeriod, imagPeriod)
-) {
+) :
+  LoopMapLaws(
+    X, point, Complex(F), complex_zero(F, zero), complex_add(F, addF),
+    paired_complex_period(F, X, point, realPeriod, imagPeriod)
+  ) {
   obtain (realZero, realAppend) = realLaws;
   obtain (imagZero, imagAppend) = imagLaws;
   let period = paired_complex_period(F, X, point, realPeriod, imagPeriod);
@@ -57,14 +59,15 @@ theorem complex_cauchy_approximation_period_laws(
   imagCauchy : (forall p : point = point, FieldCauchy(F, zero, addF, lt, imagApproximations(p))),
   realEstimates : PeriodApproximationLaws(F, zero, addF, lt, X, point, realApproximations),
   imagEstimates : PeriodApproximationLaws(F, zero, addF, lt, X, point, imagApproximations)
-) : LoopMapLaws(
-  X, point, Complex(F), complex_zero(F, zero), complex_add(F, addF),
-  paired_complex_period(
-    F, X, point,
-    limit_period(F, zero, addF, lt, complete, X, point, realApproximations, realCauchy),
-    limit_period(F, zero, addF, lt, complete, X, point, imagApproximations, imagCauchy)
-  )
-) {
+) :
+  LoopMapLaws(
+    X, point, Complex(F), complex_zero(F, zero), complex_add(F, addF),
+    paired_complex_period(
+      F, X, point,
+      limit_period(F, zero, addF, lt, complete, X, point, realApproximations, realCauchy),
+      limit_period(F, zero, addF, lt, complete, X, point, imagApproximations, imagCauchy)
+    )
+  ) {
   obtain (realConstant, realAppend) = realEstimates;
   obtain (imagConstant, imagAppend) = imagEstimates;
   exact paired_complex_period_laws(

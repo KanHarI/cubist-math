@@ -6,7 +6,8 @@ theorem difference_from_increment(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, increment : F,
   sums : addF(a, increment) = b
-) : coordinate_difference(F, addF, negF, a, b) = increment {
+) :
+  coordinate_difference(F, addF, negF, a, b) = increment {
   exact trans(
     cong((fun (v : F) => addF(v, negF(a))), sym(sums)),
     trans(
@@ -32,7 +33,8 @@ theorem nonnegative_half_from_sum(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), epsilon : F, half : F,
   sum : addF(half, half) = epsilon, nonnegativeEpsilon : FieldLe(F, lt, zero, epsilon)
-) : FieldLe(F, lt, zero, half) {
+) :
+  FieldLe(F, lt, zero, half) {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   intro belowZero;
@@ -60,18 +62,19 @@ theorem interval_midpoint(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : exists midpoint : FieldUnitInterval(F, zero, one, lt),
-IntervalTagWithin(F, zero, one, lt, a, b, midpoint)
-and (
-  interval_difference(F, zero, one, addF, negF, lt)(a, midpoint) = half(
-    interval_difference(F, zero, one, addF, negF, lt)(a, b)
+) :
+  exists midpoint : FieldUnitInterval(F, zero, one, lt),
+  IntervalTagWithin(F, zero, one, lt, a, b, midpoint)
+  and (
+    interval_difference(F, zero, one, addF, negF, lt)(a, midpoint) = half(
+      interval_difference(F, zero, one, addF, negF, lt)(a, b)
+    )
   )
-)
-and (
-  interval_difference(F, zero, one, addF, negF, lt)(midpoint, b) = half(
-    interval_difference(F, zero, one, addF, negF, lt)(a, b)
-  )
-) {
+  and (
+    interval_difference(F, zero, one, addF, negF, lt)(midpoint, b) = half(
+      interval_difference(F, zero, one, addF, negF, lt)(a, b)
+    )
+  ) {
   let coordinate = field_interval_coordinate(F, zero, one, lt);
   let x = coordinate(a);
   let y = coordinate(b);
@@ -135,17 +138,18 @@ theorem two_edge_subdivision_admissible(
   a : FieldUnitInterval(F, zero, one, lt), midpoint : FieldUnitInterval(F, zero, one, lt),
   b : FieldUnitInterval(F, zero, one, lt),
   within : IntervalTagWithin(F, zero, one, lt, a, b, midpoint)
-) : IntervalAdmissibleTags(
-  F, zero, one, lt, 2,
-  subdivision_vertices(
-    FieldUnitInterval(F, zero, one, lt), a, b,
-    two_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, midpoint, b)
-  ),
-  subdivision_tags(
-    FieldUnitInterval(F, zero, one, lt), a, b,
-    two_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, midpoint, b)
-  )
-) {
+) :
+  IntervalAdmissibleTags(
+    F, zero, one, lt, 2,
+    subdivision_vertices(
+      FieldUnitInterval(F, zero, one, lt), a, b,
+      two_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, midpoint, b)
+    ),
+    subdivision_tags(
+      FieldUnitInterval(F, zero, one, lt), a, b,
+      two_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, midpoint, b)
+    )
+  ) {
   obtain (leftBound, rightBound) = within;
   exact typed(
     (
@@ -174,24 +178,25 @@ theorem ordered_interval_bisection(
     F, lt, field_interval_coordinate(F, zero, one, lt, a),
     field_interval_coordinate(F, zero, one, lt, b)
   )
-) : exists midpoint : FieldUnitInterval(F, zero, one, lt),
-IntervalTagWithin(F, zero, one, lt, a, b, midpoint)
-and (
-  interval_difference(F, zero, one, addF, negF, lt, a, midpoint) = interval_difference(
-    F, zero, one, addF, negF, lt, midpoint, b
+) :
+  exists midpoint : FieldUnitInterval(F, zero, one, lt),
+  IntervalTagWithin(F, zero, one, lt, a, b, midpoint)
+  and (
+    interval_difference(F, zero, one, addF, negF, lt, a, midpoint) = interval_difference(
+      F, zero, one, addF, negF, lt, midpoint, b
+    )
   )
-)
-and IntervalAdmissibleTags(
-  F, zero, one, lt, 2,
-  subdivision_vertices(
-    FieldUnitInterval(F, zero, one, lt), a, b,
-    two_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, midpoint, b)
-  ),
-  subdivision_tags(
-    FieldUnitInterval(F, zero, one, lt), a, b,
-    two_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, midpoint, b)
-  )
-) {
+  and IntervalAdmissibleTags(
+    F, zero, one, lt, 2,
+    subdivision_vertices(
+      FieldUnitInterval(F, zero, one, lt), a, b,
+      two_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, midpoint, b)
+    ),
+    subdivision_tags(
+      FieldUnitInterval(F, zero, one, lt), a, b,
+      two_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, midpoint, b)
+    )
+  ) {
   obtain (half, halfSum, halfPositive) = ordered_field_halving(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
   );

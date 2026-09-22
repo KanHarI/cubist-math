@@ -26,30 +26,29 @@ def Selections(n : Nat) = induction n as row return (Nat -> U0) {
   };
 
 // Every branch is a bijection with explicit inverse laws, for arbitrary n,k.
-theorem selections_count(n : Nat) = induction n as row return (
-  forall k : Nat, Bijection(Selections(row, k), Fin(choose(row, k)))
-) {
-  zero => fun (k : Nat) => induction k as column return Bijection(
-    Selections(0, column), Fin(choose(0, column))
-  ) {
-    zero => unit_to_fin_one;
-    succ previous => identity_bijection(Void);
+theorem selections_count(n : Nat) =
+  induction n as row return (forall k : Nat, Bijection(Selections(row, k), Fin(choose(row, k)))) {
+    zero => fun (k : Nat) => induction k as column return Bijection(
+      Selections(0, column), Fin(choose(0, column))
+    ) {
+      zero => unit_to_fin_one;
+      succ previous => identity_bijection(Void);
+    };
+    succ previous_row => fun (k : Nat) => induction k as column return Bijection(
+      Selections(succ(row), column), Fin(choose(succ(row), column))
+    ) {
+      zero => unit_to_fin_one;
+      succ previous => compose_bijection(
+        Selections(row, column) or Selections(row, succ(column)), Fin(choose(row, column))
+        or Fin(choose(row, succ(column))),
+        Fin(add_count(choose(row, column), choose(row, succ(column)))),
+        sum_bijection(
+          Selections(row, column), Selections(row, succ(column)), Fin(choose(row, column)),
+          Fin(choose(row, succ(column))), previous_row(column), previous_row(succ(column))
+        ), fin_sum(choose(row, column), choose(row, succ(column)))
+      );
+    };
   };
-  succ previous_row => fun (k : Nat) => induction k as column return Bijection(
-    Selections(succ(row), column), Fin(choose(succ(row), column))
-  ) {
-    zero => unit_to_fin_one;
-    succ previous => compose_bijection(
-      Selections(row, column) or Selections(row, succ(column)), Fin(choose(row, column))
-      or Fin(choose(row, succ(column))),
-      Fin(add_count(choose(row, column), choose(row, succ(column)))),
-      sum_bijection(
-        Selections(row, column), Selections(row, succ(column)), Fin(choose(row, column)),
-        Fin(choose(row, succ(column))), previous_row(column), previous_row(succ(column))
-      ), fin_sum(choose(row, column), choose(row, succ(column)))
-    );
-  };
-};
 
 theorem five_choose_two : choose(5, 2) = 10 {
   exact refl(10);

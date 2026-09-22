@@ -7,12 +7,13 @@ theorem parameter_constant_tag_sum(
   C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve : C -> F, values : C -> F, tag : C,
   n : Nat, vertices : SampleVertices(C, n)
-) : parameter_contour_sum(
-  C, F, zero, addF, mulF, negF, curve, values, n, vertices, sample_repeat_tags(C, n, tag)
-) = parameter_contour_edge(
-  C, F, addF, mulF, negF, curve, values, sample_first(C, n, vertices), sample_last(C, n, vertices),
-  tag
-) {
+) :
+  parameter_contour_sum(
+    C, F, zero, addF, mulF, negF, curve, values, n, vertices, sample_repeat_tags(C, n, tag)
+  ) = parameter_contour_edge(
+    C, F, addF, mulF, negF, curve, values, sample_first(C, n, vertices),
+    sample_last(C, n, vertices), tag
+  ) {
   let edge = parameter_contour_edge(C, F, addF, mulF, negF, curve, values);
   have diagonal : forall a : C, edge(a, a, tag) = zero {
     intro a;
@@ -22,8 +23,9 @@ theorem parameter_constant_tag_sum(
       ), ring_mul_zero(F, zero, one, addF, mulF, negF, ring, values(tag))
     );
   }
-  have composeEdges : forall a : C, forall b : C, forall c : C,
-  addF(edge(a, b, tag), edge(b, c, tag)) = edge(a, c, tag) {
+  have composeEdges :
+    forall a : C, forall b : C, forall c : C,
+    addF(edge(a, b, tag), edge(b, c, tag)) = edge(a, c, tag) {
     intro a;
     intro b;
     intro c;
@@ -43,16 +45,17 @@ theorem parameter_refinement_identity(
   C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve : C -> F, values : C -> F,
   coarseTag : C, n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)
-) : parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, tags) = addF(
-  parameter_contour_edge(
-    C, F, addF, mulF, negF, curve, values, sample_first(C, n, vertices),
-    sample_last(C, n, vertices), coarseTag
-  ),
-  parameter_contour_tag_error_sum(
-    C, F, zero, addF, mulF, negF, curve, values, n, vertices, sample_repeat_tags(C, n, coarseTag),
-    tags
-  )
-) {
+) :
+  parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, tags) = addF(
+    parameter_contour_edge(
+      C, F, addF, mulF, negF, curve, values, sample_first(C, n, vertices),
+      sample_last(C, n, vertices), coarseTag
+    ),
+    parameter_contour_tag_error_sum(
+      C, F, zero, addF, mulF, negF, curve, values, n, vertices, sample_repeat_tags(C, n, coarseTag),
+      tags
+    )
+  ) {
   let oldTags = sample_repeat_tags(C, n, coarseTag);
   let error =
     parameter_contour_tag_error_sum(

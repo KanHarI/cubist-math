@@ -4,8 +4,11 @@ import field_extensions;
 // the four entries are 0, 1, alpha, alpha+1. Every algebraic law below is
 // checked by elimination of the finite carrier and computation in each case.
 def F2Carrier = Fin(2);
+
 def f2_0 = typed((Unit or Fin(1)), left(tt));
+
 def f2_1 = typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt))));
+
 def f2_induction(C : F2Carrier -> U0, c0 : C(f2_0), c1 : C(f2_1), x : F2Carrier) : C(x) {
   exact match typed(Unit or Fin(1), x) as point0 return C(point0) {
     left u0 => unit_induction((fun (u : Unit) => C(typed((Unit or Fin(1)), left(u)))), c0, u0);
@@ -29,16 +32,18 @@ def f2_add(x : F2Carrier, y : F2Carrier) =
     f2_induction((fun (y : F2Carrier) => F2Carrier), f2_0, f2_1, y),
     f2_induction((fun (y : F2Carrier) => F2Carrier), f2_1, f2_0, y), x
   );
+
 def f2_mul(x : F2Carrier, y : F2Carrier) =
   f2_induction(
     (fun (x : F2Carrier) => F2Carrier),
     f2_induction((fun (y : F2Carrier) => F2Carrier), f2_0, f2_0, y),
     f2_induction((fun (y : F2Carrier) => F2Carrier), f2_0, f2_1, y), x
   );
+
 def f2_ops = field_ops(F2Carrier, f2_0, f2_1, (fun (x : F2Carrier) => x), f2_add, f2_mul);
-theorem f2_add_assoc(x : F2Carrier, y : F2Carrier, z : F2Carrier) : f2_add(f2_add(x, y), z) = f2_add(
-  x, f2_add(y, z)
-) {
+
+theorem f2_add_assoc(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
+  f2_add(f2_add(x, y), z) = f2_add(x, f2_add(y, z)) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_add(f2_add(x, y), z) = f2_add(x, f2_add(y, z))),
     f2_induction(
@@ -94,9 +99,8 @@ theorem f2_add_neg(x : F2Carrier) : f2_add(x, x) = f2_0 {
   );
 }
 
-theorem f2_mul_assoc(x : F2Carrier, y : F2Carrier, z : F2Carrier) : f2_mul(f2_mul(x, y), z) = f2_mul(
-  x, f2_mul(y, z)
-) {
+theorem f2_mul_assoc(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
+  f2_mul(f2_mul(x, y), z) = f2_mul(x, f2_mul(y, z)) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_mul(f2_mul(x, y), z) = f2_mul(x, f2_mul(y, z))),
     f2_induction(
@@ -145,9 +149,8 @@ theorem f2_mul_one(x : F2Carrier) : f2_mul(f2_1, x) = x {
   );
 }
 
-theorem f2_distribute(x : F2Carrier, y : F2Carrier, z : F2Carrier) : f2_mul(x, f2_add(y, z)) = f2_add(
-  f2_mul(x, y), f2_mul(x, z)
-) {
+theorem f2_distribute(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
+  f2_mul(x, f2_add(y, z)) = f2_add(f2_mul(x, y), f2_mul(x, z)) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_mul(x, f2_add(y, z)) = f2_add(f2_mul(x, y), f2_mul(x, z))),
     f2_induction(
@@ -189,6 +192,7 @@ theorem f2_distribute(x : F2Carrier, y : F2Carrier, z : F2Carrier) : f2_mul(x, f
 
 def f2_nontrivial(p : f2_1 = f2_0) =
   sum_disjoint(Fin(1), tt, typed((Unit or Fin(0)), left(tt)), sym(p));
+
 def f2_inverses(x : F2Carrier) =
   f2_induction(
     (
@@ -206,6 +210,7 @@ def f2_inverses(x : F2Carrier) =
       )
     ), x
   );
+
 def f2_laws : AlgebraicFieldLaws(F2Carrier, f2_ops) {
   exact (
     (
@@ -216,11 +221,16 @@ def f2_laws : AlgebraicFieldLaws(F2Carrier, f2_ops) {
 }
 
 def F2 = algebraic_field(F2Carrier, f2_ops, fin_is_set(2), f2_laws);
+
 def F4Carrier = Fin(4);
+
 def f4_0 = typed((Unit or Fin(3)), left(tt));
+
 def f4_1 = typed((Unit or Fin(3)), right(typed((Unit or Fin(2)), left(tt))));
+
 def f4_2 =
   typed((Unit or Fin(3)), right(typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt))))));
+
 def f4_3 =
   typed(
     (Unit or Fin(3)),
@@ -230,9 +240,11 @@ def f4_3 =
       )
     )
   );
+
 def f4_induction(
   C : F4Carrier -> U0, c0 : C(f4_0), c1 : C(f4_1), c2 : C(f4_2), c3 : C(f4_3), x : F4Carrier
-) : C(x) {
+) :
+  C(x) {
   exact match typed(Unit or Fin(3), x) as point0 return C(point0) {
     left u0 => unit_induction((fun (u : Unit) => C(typed((Unit or Fin(3)), left(u)))), c0, u0);
     right tail1 => match typed(Unit or Fin(2), tail1) as point1 return C(
@@ -303,6 +315,7 @@ def f4_add(x : F4Carrier, y : F4Carrier) =
     f4_induction((fun (y : F4Carrier) => F4Carrier), f4_2, f4_3, f4_0, f4_1, y),
     f4_induction((fun (y : F4Carrier) => F4Carrier), f4_3, f4_2, f4_1, f4_0, y), x
   );
+
 def f4_mul(x : F4Carrier, y : F4Carrier) =
   f4_induction(
     (fun (x : F4Carrier) => F4Carrier),
@@ -311,10 +324,11 @@ def f4_mul(x : F4Carrier, y : F4Carrier) =
     f4_induction((fun (y : F4Carrier) => F4Carrier), f4_0, f4_2, f4_3, f4_1, y),
     f4_induction((fun (y : F4Carrier) => F4Carrier), f4_0, f4_3, f4_1, f4_2, y), x
   );
+
 def f4_ops = field_ops(F4Carrier, f4_0, f4_1, (fun (x : F4Carrier) => x), f4_add, f4_mul);
-theorem f4_add_assoc(x : F4Carrier, y : F4Carrier, z : F4Carrier) : f4_add(f4_add(x, y), z) = f4_add(
-  x, f4_add(y, z)
-) {
+
+theorem f4_add_assoc(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
+  f4_add(f4_add(x, y), z) = f4_add(x, f4_add(y, z)) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_add(f4_add(x, y), z) = f4_add(x, f4_add(y, z))),
     f4_induction(
@@ -448,9 +462,8 @@ theorem f4_add_neg(x : F4Carrier) : f4_add(x, x) = f4_0 {
   );
 }
 
-theorem f4_mul_assoc(x : F4Carrier, y : F4Carrier, z : F4Carrier) : f4_mul(f4_mul(x, y), z) = f4_mul(
-  x, f4_mul(y, z)
-) {
+theorem f4_mul_assoc(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
+  f4_mul(f4_mul(x, y), z) = f4_mul(x, f4_mul(y, z)) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_mul(f4_mul(x, y), z) = f4_mul(x, f4_mul(y, z))),
     f4_induction(
@@ -577,9 +590,8 @@ theorem f4_mul_one(x : F4Carrier) : f4_mul(f4_1, x) = x {
   );
 }
 
-theorem f4_distribute(x : F4Carrier, y : F4Carrier, z : F4Carrier) : f4_mul(x, f4_add(y, z)) = f4_add(
-  f4_mul(x, y), f4_mul(x, z)
-) {
+theorem f4_distribute(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
+  f4_mul(x, f4_add(y, z)) = f4_add(f4_mul(x, y), f4_mul(x, z)) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_mul(x, f4_add(y, z)) = f4_add(f4_mul(x, y), f4_mul(x, z))),
     f4_induction(
@@ -727,6 +739,7 @@ theorem f4_distribute(x : F4Carrier, y : F4Carrier, z : F4Carrier) : f4_mul(x, f
 
 def f4_nontrivial(p : f4_1 = f4_0) =
   sum_disjoint(Fin(3), tt, typed((Unit or Fin(2)), left(tt)), sym(p));
+
 def f4_inverses(x : F4Carrier) =
   f4_induction(
     (
@@ -754,6 +767,7 @@ def f4_inverses(x : F4Carrier) =
       )
     ), x
   );
+
 def f4_laws : AlgebraicFieldLaws(F4Carrier, f4_ops) {
   exact (
     (

@@ -18,6 +18,7 @@ def radix_positive_succ(extra : Nat, p : RadixPositive(extra)) =
       right carry => radix_append(extra, radix_digit_zero(succ(extra)), ih);
     }, p
   );
+
 def radix_succ(extra : Nat, n : RadixNat(extra)) = match n return RadixNat(extra) {
     left zero => radix_positive(extra, radix_one(extra));
     right p => radix_positive(extra, radix_positive_succ(extra, p));
@@ -29,8 +30,9 @@ def radix_add_small(extra : Nat, count : Nat, p : RadixPositive(extra)) =
     zero => p;
     succ previous => radix_positive_succ(extra, previous);
   };
-def radix_positive_add(extra : Nat, a : RadixPositive(extra)) : RadixPositive(extra)
--> RadixPositive(extra) {
+
+def radix_positive_add(extra : Nat, a : RadixPositive(extra)) :
+  RadixPositive(extra) -> RadixPositive(extra) {
   exact radix_positive_rec(
     extra, (RadixPositive(extra) -> RadixPositive(extra)),
     fun (first : RadixDigit(succ(extra))) => fun (other : RadixPositive(extra)) => radix_add_small(
@@ -49,6 +51,7 @@ def radix_positive_add(extra : Nat, a : RadixPositive(extra)) : RadixPositive(ex
     ), a
   );
 }
+
 def radix_add(extra : Nat, a : RadixNat(extra), b : RadixNat(extra)) =
   match a return RadixNat(extra) {
     left zero => b;
@@ -57,13 +60,15 @@ def radix_add(extra : Nat, a : RadixNat(extra), b : RadixNat(extra)) =
       right q => radix_positive(extra, radix_positive_add(extra, p, q));
     };
   };
+
 def radix_add_copies(extra : Nat, count : Nat, a : RadixPositive(extra), b : RadixPositive(extra)) =
   induction count as k return RadixPositive(extra) {
     zero => a;
     succ previous => radix_positive_add(extra, previous, b);
   };
-def radix_positive_mul(extra : Nat, a : RadixPositive(extra)) : RadixPositive(extra)
--> RadixPositive(extra) {
+
+def radix_positive_mul(extra : Nat, a : RadixPositive(extra)) :
+  RadixPositive(extra) -> RadixPositive(extra) {
   exact radix_positive_rec(
     extra, (RadixPositive(extra) -> RadixPositive(extra)),
     fun (first : RadixDigit(succ(extra))) => fun (other : RadixPositive(extra)) => radix_add_copies(
@@ -77,6 +82,7 @@ def radix_positive_mul(extra : Nat, a : RadixPositive(extra)) : RadixPositive(ex
     ), a
   );
 }
+
 def radix_mul(extra : Nat, a : RadixNat(extra), b : RadixNat(extra)) =
   match a return RadixNat(extra) {
     left zero => radix_zero(extra);
@@ -85,29 +91,35 @@ def radix_mul(extra : Nat, a : RadixNat(extra), b : RadixNat(extra)) =
       right q => radix_positive(extra, radix_positive_mul(extra, p, q));
     };
   };
+
 def radix_of_nat(extra : Nat, n : Nat) = induction n as k return RadixNat(extra) {
     zero => radix_zero(extra);
     succ previous => radix_succ(extra, previous);
   };
+
 opaque def radix_factorial(extra : Nat, n : Nat) = induction n as k return RadixNat(extra) {
-  zero => radix_positive(extra, radix_one(extra));
-  succ previous => radix_mul(extra, radix_of_nat(extra, succ(k)), previous);
-};
-theorem radix_factorial_step(extra : Nat, n : Nat) : radix_factorial(extra, succ(n)) = radix_mul(
-  extra, radix_of_nat(extra, succ(n)), radix_factorial(extra, n)
-) {
+    zero => radix_positive(extra, radix_one(extra));
+    succ previous => radix_mul(extra, radix_of_nat(extra, succ(k)), previous);
+  };
+
+theorem radix_factorial_step(extra : Nat, n : Nat) :
+  radix_factorial(extra, succ(n)) = radix_mul(
+    extra, radix_of_nat(extra, succ(n)), radix_factorial(extra, n)
+  ) {
   exact refl(radix_mul(extra, radix_of_nat(extra, succ(n)), radix_factorial(extra, n)));
 }
+
 theorem radix_factorial_value_step(
   extra : Nat, n : Nat, value : RadixNat(extra), previous : radix_factorial(extra, n) = value
-) : radix_factorial(extra, succ(n)) = radix_mul(extra, radix_of_nat(extra, succ(n)), value) {
+) :
+  radix_factorial(extra, succ(n)) = radix_mul(extra, radix_of_nat(extra, succ(n)), value) {
   exact trans(
     radix_factorial_step(extra, n),
     cong((fun (v : RadixNat(extra)) => radix_mul(extra, radix_of_nat(extra, succ(n)), v)), previous)
   );
 }
-theorem radix_factorial_zero(extra : Nat) : radix_factorial(extra, 0) = radix_positive(
-  extra, radix_one(extra)
-) {
+
+theorem radix_factorial_zero(extra : Nat) :
+  radix_factorial(extra, 0) = radix_positive(extra, radix_one(extra)) {
   exact refl(radix_positive(extra, radix_one(extra)));
 }

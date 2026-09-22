@@ -14,8 +14,9 @@ def finite_sum(G : U1, zero : G, addG : G -> G -> G, n : Nat) =
 
 theorem finite_sum_zero(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat
-) : forall values : Fin(n) -> G, (forall i : Fin(n), values(i) = zero)
--> finite_sum(G, zero, addG, n, values) = zero {
+) :
+  forall values : Fin(n) -> G, (forall i : Fin(n), values(i) = zero)
+  -> finite_sum(G, zero, addG, n, values) = zero {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   exact induction n as k return (
     forall values : Fin(k) -> G, (forall i : Fin(k), values(i) = zero)
@@ -52,10 +53,11 @@ theorem finite_sum_zero(
 
 theorem finite_sum_add(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat
-) : forall values : Fin(n) -> G, forall other : Fin(n) -> G,
-finite_sum(G, zero, addG, n, (fun (i : Fin(n)) => addG(values(i), other(i)))) = addG(
-  finite_sum(G, zero, addG, n, values), finite_sum(G, zero, addG, n, other)
-) {
+) :
+  forall values : Fin(n) -> G, forall other : Fin(n) -> G,
+  finite_sum(G, zero, addG, n, (fun (i : Fin(n)) => addG(values(i), other(i)))) = addG(
+    finite_sum(G, zero, addG, n, values), finite_sum(G, zero, addG, n, other)
+  ) {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   exact induction n as k return (
     forall values : Fin(k) -> G, forall other : Fin(k) -> G,
@@ -84,9 +86,9 @@ finite_sum(G, zero, addG, n, (fun (i : Fin(n)) => addG(values(i), other(i)))) = 
 
 theorem finite_sum_cong(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat
-) : forall values : Fin(n) -> G, forall other : Fin(n) -> G,
-(forall i : Fin(n), values(i) = other(i))
--> finite_sum(G, zero, addG, n, values) = finite_sum(G, zero, addG, n, other) {
+) :
+  forall values : Fin(n) -> G, forall other : Fin(n) -> G, (forall i : Fin(n), values(i) = other(i))
+  -> finite_sum(G, zero, addG, n, values) = finite_sum(G, zero, addG, n, other) {
   exact induction n as k return (
     forall values : Fin(k) -> G, forall other : Fin(k) -> G,
     (forall i : Fin(k), values(i) = other(i))
@@ -122,9 +124,10 @@ theorem finite_sum_cong(
 
 theorem finite_sum_single(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat
-) : forall values : Fin(n) -> G, forall selected : Fin(n), forall v : G, (values(selected) = v)
--> (forall i : Fin(n), ((selected = i) -> Void) -> values(i) = zero)
--> finite_sum(G, zero, addG, n, values) = v {
+) :
+  forall values : Fin(n) -> G, forall selected : Fin(n), forall v : G, (values(selected) = v)
+  -> (forall i : Fin(n), ((selected = i) -> Void) -> values(i) = zero)
+  -> finite_sum(G, zero, addG, n, values) = v {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   exact induction n as k return (
     forall values : Fin(k) -> G, forall selected : Fin(k), forall v : G, (values(selected) = v)

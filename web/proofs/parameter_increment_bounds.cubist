@@ -5,6 +5,7 @@ def parameter_real_increment(
   C : U1, F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a : C, b : C, tag : C
 ) =
   coordinate_difference(F, addF, negF, complex_real(F, curve(a)), complex_real(F, curve(b)));
+
 def parameter_imag_increment(
   C : U1, F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a : C, b : C, tag : C
 ) =
@@ -14,16 +15,17 @@ def parameter_imag_increment(
 theorem parameter_coordinate_increment_bounds(
   C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
   realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-SampleMagnitudeBounds(
-  C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, n, vertices, tags
-)
--> SampleMagnitudeBounds(
-  C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, n, vertices, tags
-)
--> ComplexParameterIncrementBounds(
-  C, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, tags
-) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  SampleMagnitudeBounds(
+    C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, n, vertices, tags
+  )
+  -> SampleMagnitudeBounds(
+    C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, n, vertices, tags
+  )
+  -> ComplexParameterIncrementBounds(
+    C, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, tags
+  ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     SampleMagnitudeBounds(

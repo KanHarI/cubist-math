@@ -8,15 +8,16 @@ theorem interval_refinement_tags_global(
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   valid : IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
-) : SampleTagged(
-  FieldUnitInterval(F, zero, one, lt),
-  (
-    fun (x : FieldUnitInterval(F, zero, one, lt)) => fun (y : FieldUnitInterval(F, zero, one, lt)) => IntervalTagWithin(
-      F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
-      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
-    )
-  ), n, vertices, tags
-) {
+) :
+  SampleTagged(
+    FieldUnitInterval(F, zero, one, lt),
+    (
+      fun (x : FieldUnitInterval(F, zero, one, lt)) => fun (y : FieldUnitInterval(F, zero, one, lt)) => IntervalTagWithin(
+        F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+        sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
+      )
+    ), n, vertices, tags
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let coordinate = field_interval_coordinate(F, zero, one, lt);
   let related = (fun (a : I) => fun (b : I) => FieldLe(F, lt, coordinate(a), coordinate(b)));
@@ -41,48 +42,51 @@ theorem uniform_refinement_tag_bounds(
   values : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, values), epsilon : F,
   positive : lt(zero, epsilon)
-) : exists mesh : F, lt(zero, mesh)
-and (
-  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-  forall coarseTag : FieldUnitInterval(F, zero, one, lt),
-  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-  IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
-  -> IntervalTagWithin(
-    F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
-    sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
-  )
-  -> lt(
-    interval_difference(
-      F, zero, one, addF, negF, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
-      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
-    ), mesh
-  )
-  -> ComplexParameterTagBounds(
-    FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, values, epsilon, n, vertices,
-    sample_repeat_tags(FieldUnitInterval(F, zero, one, lt), n, coarseTag), tags
-  )
-) {
+) :
+  exists mesh : F, lt(zero, mesh)
+  and (
+    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall coarseTag : FieldUnitInterval(F, zero, one, lt),
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
+    -> IntervalTagWithin(
+      F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
+    )
+    -> lt(
+      interval_difference(
+        F, zero, one, addF, negF, lt,
+        sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+        sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
+      ), mesh
+    )
+    -> ComplexParameterTagBounds(
+      FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, values, epsilon, n, vertices,
+      sample_repeat_tags(FieldUnitInterval(F, zero, one, lt), n, coarseTag), tags
+    )
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   obtain (mesh, positiveMesh, closeValues) = uniform(epsilon, positive);
-  have estimates : forall n : Nat,
-  forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-  forall coarseTag : FieldUnitInterval(F, zero, one, lt),
-  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-  IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
-  -> IntervalTagWithin(
-    F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
-    sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
-  )
-  -> lt(
-    interval_difference(
-      F, zero, one, addF, negF, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
-      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
-    ), mesh
-  )
-  -> ComplexParameterTagBounds(
-    FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, values, epsilon, n, vertices,
-    sample_repeat_tags(FieldUnitInterval(F, zero, one, lt), n, coarseTag), tags
-  ) {
+  have estimates :
+    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall coarseTag : FieldUnitInterval(F, zero, one, lt),
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
+    -> IntervalTagWithin(
+      F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
+    )
+    -> lt(
+      interval_difference(
+        F, zero, one, addF, negF, lt,
+        sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+        sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
+      ), mesh
+    )
+    -> ComplexParameterTagBounds(
+      FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, values, epsilon, n, vertices,
+      sample_repeat_tags(FieldUnitInterval(F, zero, one, lt), n, coarseTag), tags
+    ) {
     intro n;
     intro vertices;
     intro coarseTag;
@@ -94,14 +98,15 @@ and (
     let b = sample_last(I, n, vertices);
     let within = IntervalTagWithin(F, zero, one, lt, a, b);
     let constantCondition = (fun (x : I) => fun (y : I) => within);
-    have localBound : forall x : I, forall y : I, forall oldTag : I, forall newTag : I, Unit
-    -> within(oldTag) -> within(newTag)
-    -> ComplexBoxBound(
-      F, negF, lt,
-      coordinate_difference(
-        Complex(F), complex_add(F, addF), complex_neg(F, negF), values(oldTag), values(newTag)
-      ), epsilon
-    ) {
+    have localBound :
+      forall x : I, forall y : I, forall oldTag : I, forall newTag : I, Unit -> within(oldTag)
+      -> within(newTag)
+      -> ComplexBoxBound(
+        F, negF, lt,
+        coordinate_difference(
+          Complex(F), complex_add(F, addF), complex_neg(F, negF), values(oldTag), values(newTag)
+        ), epsilon
+      ) {
       intro x;
       intro y;
       intro oldTag;

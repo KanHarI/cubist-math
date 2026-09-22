@@ -10,6 +10,7 @@ def sample_interval_width(
     F, zero, one, addF, negF, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
     sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
   );
+
 def affine_coordinate_length(
   F : U1, addF : F -> F -> F, negF : F -> F, maxF : F -> F -> F, slope : Complex(F)
 ) =
@@ -25,17 +26,18 @@ theorem affine_sample_variation_sum(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), r : F, s : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
-) : sample_sum(
-  FieldUnitInterval(F, zero, one, lt), F, zero, addF,
-  (
-    fun (a : FieldUnitInterval(F, zero, one, lt)) => fun (b : FieldUnitInterval(F, zero, one, lt)) => fun (
-      tag : FieldUnitInterval(F, zero, one, lt)
-    ) => addF(
-      interval_weight(F, zero, one, addF, mulF, negF, lt, r, a, b, tag),
-      interval_weight(F, zero, one, addF, mulF, negF, lt, s, a, b, tag)
-    )
-  ), n, vertices, tags
-) = mulF(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), addF(r, s)) {
+) :
+  sample_sum(
+    FieldUnitInterval(F, zero, one, lt), F, zero, addF,
+    (
+      fun (a : FieldUnitInterval(F, zero, one, lt)) => fun (b : FieldUnitInterval(F, zero, one, lt)) => fun (
+        tag : FieldUnitInterval(F, zero, one, lt)
+      ) => addF(
+        interval_weight(F, zero, one, addF, mulF, negF, lt, r, a, b, tag),
+        interval_weight(F, zero, one, addF, mulF, negF, lt, s, a, b, tag)
+      )
+    ), n, vertices, tags
+  ) = mulF(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), addF(r, s)) {
   obtain (setF, addLaws, mulLaws) = ring;
   let I = FieldUnitInterval(F, zero, one, lt);
   let realWeight = interval_weight(F, zero, one, addF, mulF, negF, lt, r);
@@ -74,21 +76,22 @@ theorem affine_refinement_error_bound(
     FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, values, delta, n, vertices,
     sample_repeat_tags(FieldUnitInterval(F, zero, one, lt), n, coarseTag), tags
   )
-) : ComplexBoxBound(
-  F, negF, lt,
-  complex_parameter_tag_error_sum(
-    FieldUnitInterval(F, zero, one, lt), F, zero, addF, mulF, negF,
-    complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), values, n, vertices,
-    sample_repeat_tags(FieldUnitInterval(F, zero, one, lt), n, coarseTag), tags
-  ),
-  mulF(
-    delta,
+) :
+  ComplexBoxBound(
+    F, negF, lt,
+    complex_parameter_tag_error_sum(
+      FieldUnitInterval(F, zero, one, lt), F, zero, addF, mulF, negF,
+      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), values, n, vertices,
+      sample_repeat_tags(FieldUnitInterval(F, zero, one, lt), n, coarseTag), tags
+    ),
     mulF(
-      sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
-      affine_coordinate_length(F, addF, negF, maxF, slope)
+      delta,
+      mulF(
+        sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
+        affine_coordinate_length(F, addF, negF, maxF, slope)
+      )
     )
-  )
-) {
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let oldTags = sample_repeat_tags(I, n, coarseTag);
@@ -172,44 +175,45 @@ theorem affine_refinement_uniform_estimate(
       )
     )
   ), delta : F, positiveDelta : lt(zero, delta)
-) : exists mesh : F, lt(zero, mesh)
-and (
-  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-  forall coarseTag : FieldUnitInterval(F, zero, one, lt),
-  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-  IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
-  -> IntervalTagWithin(
-    F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
-    sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
-  ) -> lt(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), mesh)
-  -> (
-    exists errorSum : Complex(F),
-    (
-      curve_contour_samples(
-        F, zero, one, addF, mulF, negF, lt,
-        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n,
-        vertices, tags
-      ) = complex_add(
-        F, addF,
-        curve_coarse_contribution(
+) :
+  exists mesh : F, lt(zero, mesh)
+  and (
+    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall coarseTag : FieldUnitInterval(F, zero, one, lt),
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
+    -> IntervalTagWithin(
+      F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
+    ) -> lt(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), mesh)
+    -> (
+      exists errorSum : Complex(F),
+      (
+        curve_contour_samples(
           F, zero, one, addF, mulF, negF, lt,
           complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n,
-          vertices, coarseTag
-        ), errorSum
+          vertices, tags
+        ) = complex_add(
+          F, addF,
+          curve_coarse_contribution(
+            F, zero, one, addF, mulF, negF, lt,
+            complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n,
+            vertices, coarseTag
+          ), errorSum
+        )
       )
-    )
-    and ComplexBoxBound(
-      F, negF, lt, errorSum,
-      mulF(
-        delta,
+      and ComplexBoxBound(
+        F, negF, lt, errorSum,
         mulF(
-          sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
-          affine_coordinate_length(F, addF, negF, maxF, slope)
+          delta,
+          mulF(
+            sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
+            affine_coordinate_length(F, addF, negF, maxF, slope)
+          )
         )
       )
     )
-  )
-) {
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let values = (fun (t : I) => integrand(curve(t)));
@@ -217,42 +221,42 @@ and (
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, values, uniform, delta,
     positiveDelta
   );
-  have estimates : forall n : Nat,
-  forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-  forall coarseTag : FieldUnitInterval(F, zero, one, lt),
-  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-  IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
-  -> IntervalTagWithin(
-    F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
-    sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
-  ) -> lt(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), mesh)
-  -> (
-    exists errorSum : Complex(F),
-    (
-      curve_contour_samples(
-        F, zero, one, addF, mulF, negF, lt,
-        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n,
-        vertices, tags
-      ) = complex_add(
-        F, addF,
-        curve_coarse_contribution(
+  have estimates :
+    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall coarseTag : FieldUnitInterval(F, zero, one, lt),
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
+    -> IntervalTagWithin(
+      F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
+    ) -> lt(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), mesh)
+    -> (
+      exists errorSum : Complex(F),
+      (
+        curve_contour_samples(
           F, zero, one, addF, mulF, negF, lt,
           complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n,
-          vertices, coarseTag
-        ), errorSum
-      )
-    )
-    and ComplexBoxBound(
-      F, negF, lt, errorSum,
-      mulF(
-        delta,
-        mulF(
-          sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
-          affine_coordinate_length(F, addF, negF, maxF, slope)
+          vertices, tags
+        ) = complex_add(
+          F, addF,
+          curve_coarse_contribution(
+            F, zero, one, addF, mulF, negF, lt,
+            complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, n,
+            vertices, coarseTag
+          ), errorSum
         )
       )
-    )
-  ) {
+      and ComplexBoxBound(
+        F, negF, lt, errorSum,
+        mulF(
+          delta,
+          mulF(
+            sample_interval_width(F, zero, one, addF, negF, lt, n, vertices),
+            affine_coordinate_length(F, addF, negF, maxF, slope)
+          )
+        )
+      )
+    ) {
     intro n;
     intro vertices;
     intro coarseTag;

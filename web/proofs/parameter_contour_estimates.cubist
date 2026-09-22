@@ -35,12 +35,13 @@ theorem complex_parameter_tag_change_close(
       n, vertices, oldTags
     ), length
   ), epsilon : F, small : lt(mulF(delta, length), epsilon)
-) : ComplexClose(
-  F, addF, lt,
-  complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, newTags),
-  complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags),
-  epsilon
-) {
+) :
+  ComplexClose(
+    F, addF, lt,
+    complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, newTags),
+    complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags),
+    epsilon
+  ) {
   let bound =
     complex_parameter_tag_error_length_bound(
       C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight,

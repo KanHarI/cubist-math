@@ -1238,10 +1238,11 @@ def complex_norm_right_expansion(
 theorem complex_coordinate_norm_product(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
-) : addF(
-  mulF(addF(mulF(a, c), negF(mulF(b, d))), addF(mulF(a, c), negF(mulF(b, d)))),
-  mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
-) = mulF(addF(mulF(a, a), mulF(b, b)), addF(mulF(c, c), mulF(d, d))) {
+) :
+  addF(
+    mulF(addF(mulF(a, c), negF(mulF(b, d))), addF(mulF(a, c), negF(mulF(b, d)))),
+    mulF(addF(mulF(a, d), mulF(b, c)), addF(mulF(a, d), mulF(b, c)))
+  ) = mulF(addF(mulF(a, a), mulF(b, b)), addF(mulF(c, c), mulF(d, d))) {
   exact trans(
     trans(
       complex_norm_expansion_1(F, zero, one, addF, mulF, negF, ring, a, b, c, d),
@@ -1265,7 +1266,8 @@ theorem complex_coordinate_norm_product(
 theorem complex_coordinate_norm_one(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
-) : addF(mulF(one, one), mulF(zero, zero)) = one {
+) :
+  addF(mulF(one, one), mulF(zero, zero)) = one {
   let leftStep1 =
     cong(
       (fun (value : F) => addF(value, mulF(zero, zero))),

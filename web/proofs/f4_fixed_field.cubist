@@ -3,7 +3,9 @@ import galois_fixing_subgroups;
 
 // The whole automorphism group; no decision about an arbitrary subgroup occurs.
 def F4AllAutomorphisms(e : F4Automorphism) = Unit;
+
 def F4Fixed(x : F4Carrier) = GaloisFixed(F2, F4OverF2, F4AllAutomorphisms, x);
+
 def F2Image(x : F4Carrier) = exists k : F2Carrier, f2_into_f4(k) = x;
 
 // Frobenius exchanges alpha and alpha+1. A point fixed by Frobenius
@@ -35,8 +37,8 @@ theorem f4_base_is_fixed(x : F4Carrier, member : F2Image(x)) : F4Fixed(x) {
 
 // The fixed elements of Gal(F4/F2) are exactly the embedded base field.
 // Both implications are constructive, without LEM, choice, or univalence.
-theorem f4_fixed_field_is_base(x : F4Carrier) : (F4Fixed(x) -> F2Image(x))
-and (F2Image(x) -> F4Fixed(x)) {
+theorem f4_fixed_field_is_base(x : F4Carrier) :
+  (F4Fixed(x) -> F2Image(x)) and (F2Image(x) -> F4Fixed(x)) {
   exact (f4_fixed_in_base(x), f4_base_is_fixed(x));
 }
 
@@ -78,9 +80,8 @@ def f4_base_intermediate : IntermediateField(F2, F4OverF2) {
   );
 }
 
-theorem f4_fixed_intermediate_is_base : galois_fixed_field(F2, F4OverF2, F4AllAutomorphisms) =[
-  IntermediateField(F2, F4OverF2)
-] f4_base_intermediate {
+theorem f4_fixed_intermediate_is_base :
+  galois_fixed_field(F2, F4OverF2, F4AllAutomorphisms) =[IntermediateField(F2, F4OverF2)] f4_base_intermediate {
   exact intermediate_ext(
     F2, F4OverF2, galois_fixed_field(F2, F4OverF2, F4AllAutomorphisms), f4_base_intermediate,
     f4_fixed_predicate_is_base

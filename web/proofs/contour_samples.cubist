@@ -5,10 +5,12 @@ import ring_laws;
 // Tag admissibility, mesh size and geometric curves are separate data.
 def coordinate_difference(F : U1, addF : F -> F -> F, negF : F -> F, a : F, b : F) =
   addF(b, negF(a));
+
 def contour_edge(
   F : U1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, f : F -> F, a : F, b : F, tag : F
 ) =
   mulF(f(tag), coordinate_difference(F, addF, negF, a, b));
+
 def contour_sum(
   F : U1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, f : F -> F, n : Nat
 ) =
@@ -17,7 +19,8 @@ def contour_sum(
 theorem difference_add_back(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
-) : addF(a, coordinate_difference(F, addF, negF, a, b)) = b {
+) :
+  addF(a, coordinate_difference(F, addF, negF, a, b)) = b {
   exact trans(
     ring_add_swap(F, zero, one, addF, mulF, negF, ring, a, b, negF(a)),
     trans(
@@ -30,9 +33,10 @@ theorem difference_add_back(
 theorem difference_compose(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F
-) : addF(coordinate_difference(F, addF, negF, a, b), coordinate_difference(F, addF, negF, b, c)) = coordinate_difference(
-  F, addF, negF, a, c
-) {
+) :
+  addF(coordinate_difference(F, addF, negF, a, b), coordinate_difference(F, addF, negF, b, c)) = coordinate_difference(
+    F, addF, negF, a, c
+  ) {
   exact trans(
     cong(
       (fun (v : F) => addF(v, addF(c, negF(b)))),

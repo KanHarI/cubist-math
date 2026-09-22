@@ -5,7 +5,8 @@ import group_identity;
 theorem group_map_laws_prop(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(A),
   setB : IsSet(B), f : A -> B, g : B -> A
-) : Proposition(GroupMapLaws(A, multiplyA, B, multiplyB, f, g)) {
+) :
+  Proposition(GroupMapLaws(A, multiplyA, B, multiplyB, f, g)) {
   exact product_prop(
     LeftLaw(A, B, f, g),
     (RightLaw(A, B, f, g) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)),
@@ -30,7 +31,8 @@ theorem group_map_evidence_prop(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(A),
   setB : IsSet(B), f : A -> B, p : GroupMapEvidence(A, multiplyA, B, multiplyB, f),
   q : GroupMapEvidence(A, multiplyA, B, multiplyB, f)
-) : p = q {
+) :
+  p = q {
   let g = typed((B -> A), sigma_first((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), p));
   let h = typed((B -> A), sigma_first((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), q));
   let pg = sigma_second((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), p);
@@ -64,7 +66,8 @@ theorem group_map_evidence_prop(
 theorem group_iso_ext(
   G : Group, H : Group, p : GroupIso(G, H), q : GroupIso(G, H), same : forall x : group_carrier(G),
   group_iso_forward(G, H, p, x) = group_iso_forward(G, H, q, x)
-) : p = q {
+) :
+  p = q {
   exact subtype_ext(
     (group_carrier(G) -> group_carrier(H)),
     GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H)),

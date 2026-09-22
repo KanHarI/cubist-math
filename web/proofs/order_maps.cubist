@@ -3,19 +3,27 @@ import field_logic;
 // U1 carriers include types of small subobjects; their order relations are
 // U0-valued. These interfaces require no categorical infrastructure or LEM.
 def OrderRelation(A : U1) = A -> A -> U0;
+
 def OrderReflexive(A : U1, le : OrderRelation(A)) = forall a : A, le(a, a);
+
 def OrderTransitive(A : U1, le : OrderRelation(A)) =
   forall a : A, forall b : A, forall c : A, le(a, b) -> le(b, c) -> le(a, c);
+
 def PreorderLaws(A : U1, le : OrderRelation(A)) =
   (forall a : A, forall b : A, FieldProp(le(a, b))) and OrderReflexive(A, le)
   and OrderTransitive(A, le);
+
 def OrderAntisymmetric(A : U1, le : OrderRelation(A)) =
   forall a : A, forall b : A, le(a, b) -> le(b, a) -> (a =[A] b);
+
 def PartialOrderLaws(A : U1, le : OrderRelation(A)) =
   PreorderLaws(A, le) and OrderAntisymmetric(A, le);
+
 def order_dual(A : U1, le : OrderRelation(A), a : A, b : A) = le(b, a);
+
 def Monotone(A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B) =
   forall a : A, forall b : A, leA(a, b) -> leB(f(a), f(b));
+
 def Antitone(A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B) =
   Monotone(A, B, leA, order_dual(B, leB), f);
 
@@ -30,7 +38,8 @@ theorem antitone_compose(
   A : U1, B : U1, C : U1, leA : OrderRelation(A), leB : OrderRelation(B), leC : OrderRelation(C),
   f : A -> B, g : B -> C, reversesF : Antitone(A, B, leA, leB, f),
   reversesG : Antitone(B, C, leB, leC, g)
-) : Monotone(A, C, leA, leC, (fun (a : A) => g(f(a)))) {
+) :
+  Monotone(A, C, leA, leC, (fun (a : A) => g(f(a)))) {
   intro a;
   intro b;
   intro included;
@@ -41,7 +50,8 @@ theorem antitone_compose(
 theorem antitone_connection_extensive(
   A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g), reflexiveB : OrderReflexive(B, leB), a : A
-) : leA(a, g(f(a))) {
+) :
+  leA(a, g(f(a))) {
   obtain (toA, toB) = connection(a, f(a));
   exact toA(reflexiveB(f(a)));
 }
@@ -50,7 +60,8 @@ theorem antitone_connection_reverses(
   A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g), transitiveA : OrderTransitive(A, leA),
   reflexiveB : OrderReflexive(B, leB)
-) : Antitone(A, B, leA, leB, f) {
+) :
+  Antitone(A, B, leA, leB, f) {
   intro a;
   intro b;
   intro included;
@@ -67,7 +78,8 @@ theorem antitone_connection_reverses(
 theorem antitone_connection_swap(
   A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g)
-) : AntitoneConnection(B, A, leB, leA, g, f) {
+) :
+  AntitoneConnection(B, A, leB, leA, g, f) {
   intro b;
   intro a;
   obtain (toA, toB) = connection(a, b);
@@ -80,7 +92,8 @@ theorem antitone_connection_closure_idempotent(
   connection : AntitoneConnection(A, B, leA, leB, f, g), reflexiveA : OrderReflexive(A, leA),
   reflexiveB : OrderReflexive(B, leB), transitiveB : OrderTransitive(B, leB),
   antisymmetricA : OrderAntisymmetric(A, leA), a : A
-) : g(f(g(f(a)))) =[A] g(f(a)) {
+) :
+  g(f(g(f(a)))) =[A] g(f(a)) {
   let swapped = antitone_connection_swap(A, B, leA, leB, f, g, connection);
   let reversesG =
     antitone_connection_reverses(B, A, leB, leA, g, f, swapped, transitiveB, reflexiveA);

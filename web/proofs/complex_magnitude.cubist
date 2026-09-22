@@ -7,6 +7,7 @@ def ComplexRectangleBound(
 ) =
   FieldMagnitudeBound(F, negF, lt, complex_real(F, z), realRadius)
   and FieldMagnitudeBound(F, negF, lt, complex_imag(F, z), imagRadius);
+
 def ComplexBoxBound(F : U1, negF : F -> F, lt : F -> F -> U0, z : Complex(F), radius : F) =
   ComplexRectangleBound(F, negF, lt, z, radius, radius);
 
@@ -16,7 +17,8 @@ theorem complex_box_add(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F),
   r : F, s : F, boundZ : ComplexBoxBound(F, negF, lt, z, r),
   boundW : ComplexBoxBound(F, negF, lt, w, s)
-) : ComplexBoxBound(F, negF, lt, complex_add(F, addF, z, w), addF(r, s)) {
+) :
+  ComplexBoxBound(F, negF, lt, complex_add(F, addF, z, w), addF(r, s)) {
   obtain (zr, zi) = boundZ;
   obtain (wr, wi) = boundW;
   exact (
@@ -37,7 +39,8 @@ theorem complex_box_mul_rectangle(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F),
   delta : F, r : F, s : F, boundZ : ComplexBoxBound(F, negF, lt, z, delta),
   boundW : ComplexRectangleBound(F, negF, lt, w, r, s)
-) : ComplexBoxBound(F, negF, lt, complex_mul(F, addF, mulF, negF, z, w), mulF(delta, addF(r, s))) {
+) :
+  ComplexBoxBound(F, negF, lt, complex_mul(F, addF, mulF, negF, z, w), mulF(delta, addF(r, s))) {
   obtain (zr, zi) = boundZ;
   obtain (wr, wi) = boundW;
   let a = complex_real(F, z);

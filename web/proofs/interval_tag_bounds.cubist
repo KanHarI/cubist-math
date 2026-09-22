@@ -22,7 +22,8 @@ theorem field_between_close(
   lowerX : FieldLe(F, lt, a, x), upperX : FieldLe(F, lt, x, b), lowerY : FieldLe(F, lt, a, y),
   upperY : FieldLe(F, lt, y, b), radius : F,
   small : lt(coordinate_difference(F, addF, negF, a, b), radius)
-) : FieldClose(F, addF, lt, x, y, radius) {
+) :
+  FieldClose(F, addF, lt, x, y, radius) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   let delta = coordinate_difference(F, addF, negF, a, b);
   obtain (forward, backward) = translate(delta, radius, a);
@@ -63,10 +64,11 @@ theorem interval_tags_close(
   withinX : IntervalTagWithin(F, zero, one, lt, a, b, x),
   withinY : IntervalTagWithin(F, zero, one, lt, a, b, y), radius : F,
   small : lt(interval_difference(F, zero, one, addF, negF, lt, a, b), radius)
-) : FieldClose(
-  F, addF, lt, field_interval_coordinate(F, zero, one, lt, x),
-  field_interval_coordinate(F, zero, one, lt, y), radius
-) {
+) :
+  FieldClose(
+    F, addF, lt, field_interval_coordinate(F, zero, one, lt, x),
+    field_interval_coordinate(F, zero, one, lt, y), radius
+  ) {
   obtain (lowerX, upperX) = withinX;
   obtain (lowerY, upperY) = withinY;
   let coordinate = field_interval_coordinate(F, zero, one, lt);

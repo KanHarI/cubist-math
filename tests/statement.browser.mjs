@@ -50,6 +50,15 @@ try {
   assert.match(await page.locator("#kernel-type").textContent(), /λ.*i/);
   await page.screenshot({ path: "/tmp/cubist-linear-scale-inspector.png" });
   assert.equal(await page.locator("#diagnostic").isVisible(), false);
+  await page.goto(`${base}/proof.html?proof=vector_basis_existence&name=vector_space_has_basis`);
+  await page.waitForFunction(() => document.querySelector("#inspect-type").textContent === "FieldExists(VectorBasis(K, V))");
+  assert.equal(await page.locator("#inspect-parameters-label").textContent(), "Parameters and hypotheses (2)");
+  assert.equal(await page.locator("#diagnostic").isVisible(), false);
+  assert.match(await page.locator("#kernel-axioms").textContent(), /Choice/);
+  await page.screenshot({ path: "/tmp/cubist-general-basis.png" });
+  await page.goto(`${base}/proof.html?proof=vector_spaces&name=vector_scale_add_vectors`);
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "vector_scale_add_vectors");
+  await page.screenshot({ path: "/tmp/cubist-vector-spaces-formatted.png" });
   assert.deepEqual(errors, []);
-  console.log("PASS source statements: conclusion, named hypotheses, binder navigation, mobile, S3 and finite basis");
+  console.log("PASS source statements: conclusion, named hypotheses, binder navigation, mobile, S3, finite and general bases");
 } finally { await browser?.close(); server.kill(); }

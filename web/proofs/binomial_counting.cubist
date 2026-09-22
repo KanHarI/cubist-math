@@ -3,8 +3,10 @@ import binomial;
 
 // There is exactly one empty subset, for any finite ambient type.
 def empty_predicate(A : U0, x : A) = no;
+
 def empty_selected_is_empty(A : U0, s : Selected(A, empty_predicate(A))) =
   selected_witness(A, empty_predicate(A), s);
+
 def empty_binomial(n : Nat) =
   bin_pair(
     n, 0, empty_predicate(Fin(n)),
@@ -18,6 +20,7 @@ def empty_binomial(n : Nat) =
       )
     )
   );
+
 def empty_cardinality_excludes(
   A : U0, p : A -> Bool, h : Mere(Bijection(Void, Selected(A, p))), a : A, witness : Truth(p(a))
 ) =
@@ -29,12 +32,14 @@ def empty_cardinality_excludes(
       )
     ), h
   );
+
 def false_when_empty(b : Bool) = match b as c return ((Truth(c) -> Void) -> (c = no)) {
     left u => fun (empty : Unit -> Void) => typed((typed(Bool, left(u)) = no), absurd(empty(tt)));
     right u => fun (empty : Void -> Void) => cong(
       (fun (v : Unit) => typed(Bool, right(v))), sym(unit_equal(u))
     );
   };
+
 theorem empty_binomial_unique(n : Nat, s : FiniteBinomial(n, 0)) : empty_binomial(n) = s {
   let p = bin_predicate(n, 0, s);
   let h = bin_cardinality(n, 0, s);
@@ -71,45 +76,47 @@ def empty_ambient_impossible(k : Nat, s : FiniteBinomial(0, succ(k))) =
       )
     ), bin_cardinality(0, succ(k), s)
   );
+
 def binomial_empty_ambient(k : Nat) =
   impossible_bijection(FiniteBinomial(0, succ(k)), empty_ambient_impossible(k));
 
 // Pascal's bijection and its boundary cases agree with the Nat recurrence.
-theorem finite_binomial_cardinality(n : Nat) = induction n as row return (
-  forall k : Nat, Bijection(FiniteBinomial(row, k), Fin(choose(row, k)))
-) {
-  zero => fun (k : Nat) => induction k as column return Bijection(
-    FiniteBinomial(0, column), Fin(choose(0, column))
-  ) {
-    zero => compose_bijection(FiniteBinomial(0, 0), Unit, Fin(1), binomial_zero(0), unit_to_fin_one);
-    succ previous => binomial_empty_ambient(column);
+theorem finite_binomial_cardinality(n : Nat) =
+  induction n as row return (forall k : Nat, Bijection(FiniteBinomial(row, k), Fin(choose(row, k)))) {
+    zero => fun (k : Nat) => induction k as column return Bijection(
+      FiniteBinomial(0, column), Fin(choose(0, column))
+    ) {
+      zero => compose_bijection(
+        FiniteBinomial(0, 0), Unit, Fin(1), binomial_zero(0), unit_to_fin_one
+      );
+      succ previous => binomial_empty_ambient(column);
+    };
+    succ previous_row => fun (k : Nat) => induction k as column return Bijection(
+      FiniteBinomial(succ(row), column), Fin(choose(succ(row), column))
+    ) {
+      zero => compose_bijection(
+        FiniteBinomial(succ(row), 0), Unit, Fin(1), binomial_zero(succ(row)), unit_to_fin_one
+      );
+      succ previous => compose_bijection(
+        FiniteBinomial(succ(row), succ(column)), FiniteBinomial(row, column)
+        or FiniteBinomial(row, succ(column)), Fin(choose(succ(row), succ(column))),
+        binomial_pascal(row, column),
+        compose_bijection(
+          FiniteBinomial(row, column) or FiniteBinomial(row, succ(column)), Fin(choose(row, column))
+          or Fin(choose(row, succ(column))), Fin(choose(succ(row), succ(column))),
+          sum_bijection(
+            FiniteBinomial(row, column), FiniteBinomial(row, succ(column)),
+            Fin(choose(row, column)), Fin(choose(row, succ(column))), previous_row(column),
+            previous_row(succ(column))
+          ), fin_sum(choose(row, column), choose(row, succ(column)))
+        )
+      );
+    };
   };
-  succ previous_row => fun (k : Nat) => induction k as column return Bijection(
-    FiniteBinomial(succ(row), column), Fin(choose(succ(row), column))
-  ) {
-    zero => compose_bijection(
-      FiniteBinomial(succ(row), 0), Unit, Fin(1), binomial_zero(succ(row)), unit_to_fin_one
-    );
-    succ previous => compose_bijection(
-      FiniteBinomial(succ(row), succ(column)), FiniteBinomial(row, column)
-      or FiniteBinomial(row, succ(column)), Fin(choose(succ(row), succ(column))),
-      binomial_pascal(row, column),
-      compose_bijection(
-        FiniteBinomial(row, column) or FiniteBinomial(row, succ(column)), Fin(choose(row, column))
-        or Fin(choose(row, succ(column))), Fin(choose(succ(row), succ(column))),
-        sum_bijection(
-          FiniteBinomial(row, column), FiniteBinomial(row, succ(column)), Fin(choose(row, column)),
-          Fin(choose(row, succ(column))), previous_row(column), previous_row(succ(column))
-        ), fin_sum(choose(row, column), choose(row, succ(column)))
-      )
-    );
-  };
-};
 
 // The requested theorem for Rijke's actual binomial type.
-theorem finite_binomial_count(n : Nat, k : Nat) : Bijection(
-  Binomial(Fin(n), Fin(k)), Fin(choose(n, k))
-) {
+theorem finite_binomial_count(n : Nat, k : Nat) :
+  Bijection(Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) {
   exact compose_bijection(
     Binomial(Fin(n), Fin(k)), FiniteBinomial(n, k), Fin(choose(n, k)),
     finite_binomial_presentation(n, k), finite_binomial_cardinality(n, k)
@@ -124,9 +131,8 @@ theorem choose_too_many : Bijection(Binomial(Fin(2), Fin(3)), Fin(0)) {
   exact finite_binomial_count(2, 3);
 }
 
-theorem finite_binomial_equivalence(n : Nat, k : Nat) : Equiv(
-  U0, Binomial(Fin(n), Fin(k)), Fin(choose(n, k))
-) {
+theorem finite_binomial_equivalence(n : Nat, k : Nat) :
+  Equiv(U0, Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) {
   exact bijection_equiv(
     Binomial(Fin(n), Fin(k)), Fin(choose(n, k)), fin_is_set(choose(n, k)),
     finite_binomial_count(n, k)

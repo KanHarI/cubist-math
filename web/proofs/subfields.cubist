@@ -21,6 +21,7 @@ def SubfieldLaws(F : AlgebraicField, P : af_carrier(F) -> U0) =
     -> (af_mul(af_carrier(F), af_operations(F), x, y) = af_one(af_carrier(F), af_operations(F)))
     -> P(y)
   );
+
 def Subfield(F : AlgebraicField) = exists P : af_carrier(F) -> U0, SubfieldLaws(F, P);
 
 // Membership remains U0-valued; the type of subfields itself is in U1.
@@ -28,6 +29,7 @@ def subfield_members(F : AlgebraicField, S : Subfield(F)) =
   unpack S as (P, laws) return (af_carrier(F) -> U0) {
     P;
   };
+
 def subfield_laws(F : AlgebraicField, S : Subfield(F)) : SubfieldLaws(F, subfield_members(F, S)) {
   exact field_second(
     (af_carrier(F) -> U0), (fun (P : af_carrier(F) -> U0) => typed(U1, SubfieldLaws(F, P))), S
@@ -38,21 +40,20 @@ def subfield_laws(F : AlgebraicField, S : Subfield(F)) : SubfieldLaws(F, subfiel
 
 theorem subfield_prop(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F)
-) : Proposition(P(x)) {
+) :
+  Proposition(P(x)) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
   exact prop(x);
 }
 
-theorem subfield_zero(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) : P(
-  af_zero(af_carrier(F), af_operations(F))
-) {
+theorem subfield_zero(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) :
+  P(af_zero(af_carrier(F), af_operations(F))) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
   exact zero;
 }
 
-theorem subfield_one(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) : P(
-  af_one(af_carrier(F), af_operations(F))
-) {
+theorem subfield_one(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) :
+  P(af_one(af_carrier(F), af_operations(F))) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
   exact one;
 }
@@ -60,7 +61,8 @@ theorem subfield_one(F : AlgebraicField, P : af_carrier(F) -> U0, laws : Subfiel
 theorem subfield_neg(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F),
   member : P(x)
-) : P(af_neg(af_carrier(F), af_operations(F), x)) {
+) :
+  P(af_neg(af_carrier(F), af_operations(F), x)) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
   exact negateLocal(x, member);
 }
@@ -68,7 +70,8 @@ theorem subfield_neg(
 theorem subfield_add(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F),
   y : af_carrier(F), px : P(x), py : P(y)
-) : P(af_add(af_carrier(F), af_operations(F), x, y)) {
+) :
+  P(af_add(af_carrier(F), af_operations(F), x, y)) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
   exact addLocal(x, y, px, py);
 }
@@ -76,7 +79,8 @@ theorem subfield_add(
 theorem subfield_mul(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F),
   y : af_carrier(F), px : P(x), py : P(y)
-) : P(af_mul(af_carrier(F), af_operations(F), x, y)) {
+) :
+  P(af_mul(af_carrier(F), af_operations(F), x, y)) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
   exact multiplyLocal(x, y, px, py);
 }
@@ -87,7 +91,8 @@ theorem subfield_inverse(
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
   )
-) : P(y) {
+) :
+  P(y) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
   exact invClosed(x, y, px, inverseLaw);
 }
@@ -95,7 +100,8 @@ theorem subfield_inverse(
 // Closure laws and membership proposition evidence are properties, not extra data.
 theorem subfield_laws_prop(
   F : AlgebraicField, P : af_carrier(F) -> U0, p : SubfieldLaws(F, P), q : SubfieldLaws(F, P)
-) : p = q {
+) :
+  p = q {
   let A = af_carrier(F);
   let ops = af_operations(F);
   let known = subfield_prop(F, P, p);
@@ -238,7 +244,8 @@ theorem subfield_ext(
     forall x : af_carrier(F), (subfield_members(F, S, x) -> subfield_members(F, T, x))
     and (subfield_members(F, T, x) -> subfield_members(F, S, x))
   )
-) : S =[Subfield(F)] T {
+) :
+  S =[Subfield(F)] T {
   let P = subfield_members(F, S);
   let Q = subfield_members(F, T);
   have membership : P = Q {
@@ -255,6 +262,7 @@ theorem subfield_ext(
 
 // The whole ambient field is the greatest subfield.
 def SubfieldTop(F : AlgebraicField, x : af_carrier(F)) = Unit;
+
 theorem subfield_top_laws(F : AlgebraicField) : SubfieldLaws(F, SubfieldTop(F)) {
   let A = af_carrier(F);
   let ops = af_operations(F);
@@ -270,6 +278,7 @@ theorem subfield_top_laws(F : AlgebraicField) : SubfieldLaws(F, SubfieldTop(F)) 
     )
   );
 }
+
 def subfield_top(F : AlgebraicField) : Subfield(F) {
   exact (SubfieldTop(F), subfield_top_laws(F));
 }
@@ -281,7 +290,8 @@ def SubfieldIncluded(F : AlgebraicField, S : Subfield(F), T : Subfield(F)) =
 theorem subfield_inclusion_antisymmetric(
   F : AlgebraicField, S : Subfield(F), T : Subfield(F), includedST : SubfieldIncluded(F, S, T),
   includedTS : SubfieldIncluded(F, T, S)
-) : S =[Subfield(F)] T {
+) :
+  S =[Subfield(F)] T {
   exact subfield_ext(
     F, S, T,
     (
@@ -300,10 +310,12 @@ theorem subfield_inclusion_refl(F : AlgebraicField, S : Subfield(F)) : SubfieldI
   intro member;
   exact member;
 }
+
 theorem subfield_inclusion_trans(
   F : AlgebraicField, S : Subfield(F), T : Subfield(F), V : Subfield(F),
   st : SubfieldIncluded(F, S, T), tv : SubfieldIncluded(F, T, V)
-) : SubfieldIncluded(F, S, V) {
+) :
+  SubfieldIncluded(F, S, V) {
   intro x;
   intro member;
   exact tv(x, st(x, member));

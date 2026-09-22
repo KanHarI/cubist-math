@@ -11,7 +11,8 @@ def SubfieldPreimage(
 
 theorem subfield_preimage_laws(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L)
-) : SubfieldLaws(K, SubfieldPreimage(K, L, e, S)) {
+) :
+  SubfieldLaws(K, SubfieldPreimage(K, L, e, S)) {
   let A = af_carrier(K);
   let B = af_carrier(L);
   let opsA = af_operations(K);
@@ -51,16 +52,17 @@ theorem subfield_preimage_laws(
     )
   );
 }
+
 def subfield_preimage(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L)
-) : Subfield(K) {
+) :
+  Subfield(K) {
   exact (SubfieldPreimage(K, L, e, S), subfield_preimage_laws(K, L, e, S));
 }
 
 // The laws of a contravariant operation are equalities of subfield bundles.
-theorem subfield_preimage_identity(K : AlgebraicField, S : Subfield(K)) : subfield_preimage(
-  K, K, field_embedding_identity(K), S
-) =[Subfield(K)] S {
+theorem subfield_preimage_identity(K : AlgebraicField, S : Subfield(K)) :
+  subfield_preimage(K, K, field_embedding_identity(K), S) =[Subfield(K)] S {
   let P = subfield_members(K, S);
   exact subfield_ext(
     K, subfield_preimage(K, K, field_embedding_identity(K), S), S,
@@ -72,12 +74,14 @@ theorem subfield_preimage_identity(K : AlgebraicField, S : Subfield(K)) : subfie
     )
   );
 }
+
 theorem subfield_preimage_composite(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
   d : FieldEmbedding(L, M), S : Subfield(M)
-) : subfield_preimage(K, M, field_embedding_compose(K, L, M, e, d), S) =[Subfield(K)] subfield_preimage(
-  K, L, e, subfield_preimage(L, M, d, S)
-) {
+) :
+  subfield_preimage(K, M, field_embedding_compose(K, L, M, e, d), S) =[Subfield(K)] subfield_preimage(
+    K, L, e, subfield_preimage(L, M, d, S)
+  ) {
   let P =
     (
       fun (x : af_carrier(K)) => subfield_members(

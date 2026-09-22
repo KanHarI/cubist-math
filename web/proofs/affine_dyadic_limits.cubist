@@ -30,7 +30,8 @@ theorem affine_coordinate_length_nonnegative(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
   -> F, lattice : FieldLattice(F, lt, minF, maxF), slope : Complex(F)
-) : FieldLe(F, lt, zero, affine_coordinate_length(F, addF, negF, maxF, slope)) {
+) :
+  FieldLe(F, lt, zero, affine_coordinate_length(F, addF, negF, maxF, slope)) {
   let real = complex_real(F, slope);
   let imag = complex_imag(F, slope);
   let r = maxF(real, negF(real));
@@ -77,13 +78,14 @@ theorem affine_dyadic_cauchy(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : ComplexCauchy(
-  F, zero, addF, lt,
-  affine_dyadic_sum(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand,
-    a, b, ordered
-  )
-) {
+) :
+  ComplexCauchy(
+    F, zero, addF, lt,
+    affine_dyadic_sum(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
+      integrand, a, b, ordered
+    )
+  ) {
   let sequence =
     affine_dyadic_sum(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
@@ -112,9 +114,9 @@ theorem affine_dyadic_cauchy(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses, bounds,
       width, nonnegativeWidth
     );
-  have refines : forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat, forall n : Nat,
-  forall extra : Nat, IndexLE(bound, n)
-  -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
+  have refines :
+    forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat, forall n : Nat, forall extra : Nat,
+    IndexLE(bound, n) -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
     intro epsilon;
     intro positive;
     obtain (delta, positiveDelta, smallRadius) = field_small_scaled_radius(
@@ -126,8 +128,9 @@ theorem affine_dyadic_cauchy(
       integrand, uniform, delta, positiveDelta, half, halfSum
     );
     obtain (bound, closeWidths) = widthsVanish(mesh, positiveMesh);
-    have tail : forall n : Nat, forall extra : Nat, IndexLE(bound, n)
-    -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
+    have tail :
+      forall n : Nat, forall extra : Nat, IndexLE(bound, n)
+      -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
       intro n;
       intro extra;
       intro later;

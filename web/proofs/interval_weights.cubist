@@ -10,6 +10,7 @@ def interval_difference(
     F, addF, negF, field_interval_coordinate(F, zero, one, lt, s),
     field_interval_coordinate(F, zero, one, lt, t)
   );
+
 def interval_weight(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   lt : F -> F -> U0, length : F, s : FieldUnitInterval(F, zero, one, lt),
@@ -22,7 +23,8 @@ theorem field_difference_nonnegative(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s : F, t : F,
   ordered : FieldLe(F, lt, s, t)
-) : FieldLe(F, lt, zero, coordinate_difference(F, addF, negF, s, t)) {
+) :
+  FieldLe(F, lt, zero, coordinate_difference(F, addF, negF, s, t)) {
   exact transport(
     (fun (v : F) => FieldLe(F, lt, v, coordinate_difference(F, addF, negF, s, t))),
     addF(s, negF(s)), zero, ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, s),
@@ -35,7 +37,8 @@ theorem interval_difference_le_one(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   s : FieldUnitInterval(F, zero, one, lt), t : FieldUnitInterval(F, zero, one, lt)
-) : FieldLe(F, lt, interval_difference(F, zero, one, addF, negF, lt, s, t), one) {
+) :
+  FieldLe(F, lt, interval_difference(F, zero, one, addF, negF, lt, s, t), one) {
   let x = field_interval_coordinate(F, zero, one, lt, s);
   let y = field_interval_coordinate(F, zero, one, lt, t);
   obtain (lowerS, upperS) = field_interval_bounds(F, zero, one, lt, s);
@@ -69,15 +72,16 @@ theorem interval_weight_sum(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), length : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
-) : sample_sum(
-  FieldUnitInterval(F, zero, one, lt), F, zero, addF,
-  interval_weight(F, zero, one, addF, mulF, negF, lt, length), n, vertices, tags
-) = mulF(
-  interval_difference(
-    F, zero, one, addF, negF, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
-    sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
-  ), length
-) {
+) :
+  sample_sum(
+    FieldUnitInterval(F, zero, one, lt), F, zero, addF,
+    interval_weight(F, zero, one, addF, mulF, negF, lt, length), n, vertices, tags
+  ) = mulF(
+    interval_difference(
+      F, zero, one, addF, negF, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
+    ), length
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let coordinate = field_interval_coordinate(F, zero, one, lt);
   let delta = interval_difference(F, zero, one, addF, negF, lt);
@@ -115,13 +119,14 @@ theorem interval_weight_sum_bound(
   nonnegativeLength : FieldLe(F, lt, zero, length), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
-) : FieldLe(
-  F, lt,
-  sample_sum(
-    FieldUnitInterval(F, zero, one, lt), F, zero, addF,
-    interval_weight(F, zero, one, addF, mulF, negF, lt, length), n, vertices, tags
-  ), length
-) {
+) :
+  FieldLe(
+    F, lt,
+    sample_sum(
+      FieldUnitInterval(F, zero, one, lt), F, zero, addF,
+      interval_weight(F, zero, one, addF, mulF, negF, lt, length), n, vertices, tags
+    ), length
+  ) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   let I = FieldUnitInterval(F, zero, one, lt);
   let first = sample_first(I, n, vertices);

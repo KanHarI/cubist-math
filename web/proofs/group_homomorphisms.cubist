@@ -4,19 +4,20 @@ import group_hom_universes;
 // A homomorphism preserves multiplication. Preservation of the identity and
 // inverse follows from the group laws, so it is not stored redundantly.
 def GroupHomLaws = GroupHomLawsAt(U0);
+
 def GroupHom = GroupHomAt(U0);
+
 def group_hom_map(G : Group, H : Group, h : GroupHom(G, H)) : group_carrier(G) -> group_carrier(H) {
   exact sigma_first((group_carrier(G) -> group_carrier(H)), GroupHomLaws(G, H), h);
 }
-def group_hom_multiply(G : Group, H : Group, h : GroupHom(G, H)) : GroupHomLaws(
-  G, H, group_hom_map(G, H, h)
-) {
+
+def group_hom_multiply(G : Group, H : Group, h : GroupHom(G, H)) :
+  GroupHomLaws(G, H, group_hom_map(G, H, h)) {
   exact sigma_second((group_carrier(G) -> group_carrier(H)), GroupHomLaws(G, H), h);
 }
 
-theorem group_hom_unit(G : Group, H : Group, h : GroupHom(G, H)) : group_hom_map(
-  G, H, h, group_unit(G)
-) = group_unit(H) {
+theorem group_hom_unit(G : Group, H : Group, h : GroupHom(G, H)) :
+  group_hom_map(G, H, h, group_unit(G)) = group_unit(H) {
   let f = group_hom_map(G, H, h);
   let one = group_unit(G);
   exact group_cancel_left(
@@ -27,9 +28,9 @@ theorem group_hom_unit(G : Group, H : Group, h : GroupHom(G, H)) : group_hom_map
     )
   );
 }
-theorem group_hom_inverse(G : Group, H : Group, h : GroupHom(G, H), x : group_carrier(G)) : group_hom_map(
-  G, H, h, group_inverse(G, x)
-) = group_inverse(H, group_hom_map(G, H, h, x)) {
+
+theorem group_hom_inverse(G : Group, H : Group, h : GroupHom(G, H), x : group_carrier(G)) :
+  group_hom_map(G, H, h, group_inverse(G, x)) = group_inverse(H, group_hom_map(G, H, h, x)) {
   let f = group_hom_map(G, H, h);
   exact group_inverse_unique(
     group_carrier(H), group_unit(H), group_multiply(H), group_laws(H), f(x), f(group_inverse(G, x)),
@@ -40,11 +41,13 @@ theorem group_hom_inverse(G : Group, H : Group, h : GroupHom(G, H), x : group_ca
     ), group_inverse_right(H, f(x))
   );
 }
+
 theorem group_hom_conjugate(
   G : Group, H : Group, h : GroupHom(G, H), g : group_carrier(G), x : group_carrier(G)
-) : group_hom_map(G, H, h, group_conjugate(G, g, x)) = group_conjugate(
-  H, group_hom_map(G, H, h, g), group_hom_map(G, H, h, x)
-) {
+) :
+  group_hom_map(G, H, h, group_conjugate(G, g, x)) = group_conjugate(
+    H, group_hom_map(G, H, h, g), group_hom_map(G, H, h, x)
+  ) {
   let f = group_hom_map(G, H, h);
   let m = group_multiply(H);
   exact trans(
@@ -77,9 +80,8 @@ def group_hom_trivial(G : Group, H : Group) : GroupHom(G, H) {
 }
 
 // As for field embeddings, composition is in traversal order: h then k.
-def group_hom_compose(G : Group, H : Group, K : Group, h : GroupHom(G, H), k : GroupHom(H, K)) : GroupHom(
-  G, K
-) {
+def group_hom_compose(G : Group, H : Group, K : Group, h : GroupHom(G, H), k : GroupHom(H, K)) :
+  GroupHom(G, K) {
   let f = group_hom_map(G, H, h);
   let g = group_hom_map(H, K, k);
   exact (
@@ -92,9 +94,8 @@ def group_hom_compose(G : Group, H : Group, K : Group, h : GroupHom(G, H), k : G
   );
 }
 
-theorem group_hom_laws_prop(G : Group, H : Group, f : group_carrier(G) -> group_carrier(H)) : Proposition(
-  GroupHomLaws(G, H, f)
-) {
+theorem group_hom_laws_prop(G : Group, H : Group, f : group_carrier(G) -> group_carrier(H)) :
+  Proposition(GroupHomLaws(G, H, f)) {
   exact forall_prop(
     group_carrier(G),
     (
@@ -114,10 +115,12 @@ theorem group_hom_laws_prop(G : Group, H : Group, f : group_carrier(G) -> group_
     )
   );
 }
+
 theorem group_hom_ext(
   G : Group, H : Group, h : GroupHom(G, H), k : GroupHom(G, H),
   same : (forall x : group_carrier(G), group_hom_map(G, H, h, x) = group_hom_map(G, H, k, x))
-) : h = k {
+) :
+  h = k {
   exact subtype_ext(
     (group_carrier(G) -> group_carrier(H)), GroupHomLaws(G, H), group_hom_laws_prop(G, H), h, k,
     FunExt(
@@ -126,28 +129,30 @@ theorem group_hom_ext(
     )
   );
 }
-theorem group_hom_left_identity(G : Group, H : Group, h : GroupHom(G, H)) : group_hom_compose(
-  G, G, H, group_hom_identity(G), h
-) = h {
+
+theorem group_hom_left_identity(G : Group, H : Group, h : GroupHom(G, H)) :
+  group_hom_compose(G, G, H, group_hom_identity(G), h) = h {
   exact group_hom_ext(
     G, H, group_hom_compose(G, G, H, group_hom_identity(G), h), h,
     (fun (x : group_carrier(G)) => refl(group_hom_map(G, H, h, x)))
   );
 }
-theorem group_hom_right_identity(G : Group, H : Group, h : GroupHom(G, H)) : group_hom_compose(
-  G, H, H, h, group_hom_identity(H)
-) = h {
+
+theorem group_hom_right_identity(G : Group, H : Group, h : GroupHom(G, H)) :
+  group_hom_compose(G, H, H, h, group_hom_identity(H)) = h {
   exact group_hom_ext(
     G, H, group_hom_compose(G, H, H, h, group_hom_identity(H)), h,
     (fun (x : group_carrier(G)) => refl(group_hom_map(G, H, h, x)))
   );
 }
+
 theorem group_hom_associative(
   G : Group, H : Group, K : Group, L : Group, h : GroupHom(G, H), k : GroupHom(H, K),
   l : GroupHom(K, L)
-) : group_hom_compose(G, K, L, group_hom_compose(G, H, K, h, k), l) = group_hom_compose(
-  G, H, L, h, group_hom_compose(H, K, L, k, l)
-) {
+) :
+  group_hom_compose(G, K, L, group_hom_compose(G, H, K, h, k), l) = group_hom_compose(
+    G, H, L, h, group_hom_compose(H, K, L, k, l)
+  ) {
   exact group_hom_ext(
     G, L, group_hom_compose(G, K, L, group_hom_compose(G, H, K, h, k), l),
     group_hom_compose(G, H, L, h, group_hom_compose(H, K, L, k, l)),
@@ -159,9 +164,8 @@ theorem group_hom_associative(
   );
 }
 
-def group_iso_multiply(G : Group, H : Group, iso : GroupIso(G, H)) : GroupHomLaws(
-  G, H, group_iso_forward(G, H, iso)
-) {
+def group_iso_multiply(G : Group, H : Group, iso : GroupIso(G, H)) :
+  GroupHomLaws(G, H, group_iso_forward(G, H, iso)) {
   let f = group_iso_forward(G, H, iso);
   let evidence =
     sigma_second(

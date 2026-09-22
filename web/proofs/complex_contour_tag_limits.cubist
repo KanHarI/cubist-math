@@ -27,10 +27,11 @@ theorem complex_contour_tag_change_close(
       ), n, vertices, oldTags
     ), length
   ), epsilon : F, small : lt(mulF(delta, length), epsilon)
-) : ComplexClose(
-  F, addF, lt, complex_contour_sum(F, zero, addF, mulF, negF, f, n, vertices, newTags),
-  complex_contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags), epsilon
-) {
+) :
+  ComplexClose(
+    F, addF, lt, complex_contour_sum(F, zero, addF, mulF, negF, f, n, vertices, newTags),
+    complex_contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags), epsilon
+  ) {
   let bound =
     complex_contour_tag_error_length_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, realWeight, imagWeight, delta,
@@ -101,14 +102,15 @@ theorem complex_contour_tag_errors_converge(
       ), length
     )
   ), vanishes : FieldConverges(F, zero, addF, lt, delta, zero)
-) : ComplexConverges(
-  F, zero, addF, lt,
-  (
-    fun (n : Nat) => complex_contour_tag_error_sum(
-      F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n)
-    )
-  ), complex_zero(F, zero)
-) {
+) :
+  ComplexConverges(
+    F, zero, addF, lt,
+    (
+      fun (n : Nat) => complex_contour_tag_error_sum(
+        F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n)
+      )
+    ), complex_zero(F, zero)
+  ) {
   let scaledVanishes =
     field_nonnegative_scale_zero_converges(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
@@ -179,14 +181,15 @@ theorem complex_contour_tag_independent_limit(
       )
     ), value
   )
-) : ComplexConverges(
-  F, zero, addF, lt,
-  (
-    fun (n : Nat) => complex_contour_sum(
-      F, zero, addF, mulF, negF, f, count(n), vertices(n), newTags(n)
-    )
-  ), value
-) {
+) :
+  ComplexConverges(
+    F, zero, addF, lt,
+    (
+      fun (n : Nat) => complex_contour_sum(
+        F, zero, addF, mulF, negF, f, count(n), vertices(n), newTags(n)
+      )
+    ), value
+  ) {
   let oldSums =
     (
       fun (n : Nat) => complex_contour_sum(

@@ -8,6 +8,7 @@ def curve_real_increment(
   tag : FieldUnitInterval(F, zero, one, lt)
 ) =
   coordinate_difference(F, addF, negF, complex_real(F, curve(s)), complex_real(F, curve(t)));
+
 def curve_imag_increment(
   F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
@@ -56,20 +57,21 @@ theorem complex_interval_deformation_variation(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
   -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F)
-) : ComplexCurveVariation(
-  F, zero, one, addF, negF, lt,
-  complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error),
-  interval_weight(
-    F, zero, one, addF, mulF, negF, lt, maxF(complex_real(F, error), negF(complex_real(F, error)))
-  ),
-  interval_weight(
-    F, zero, one, addF, mulF, negF, lt, maxF(complex_imag(F, error), negF(complex_imag(F, error)))
-  ),
-  addF(
-    maxF(complex_real(F, error), negF(complex_real(F, error))),
-    maxF(complex_imag(F, error), negF(complex_imag(F, error)))
-  )
-) {
+) :
+  ComplexCurveVariation(
+    F, zero, one, addF, negF, lt,
+    complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error),
+    interval_weight(
+      F, zero, one, addF, mulF, negF, lt, maxF(complex_real(F, error), negF(complex_real(F, error)))
+    ),
+    interval_weight(
+      F, zero, one, addF, mulF, negF, lt, maxF(complex_imag(F, error), negF(complex_imag(F, error)))
+    ),
+    addF(
+      maxF(complex_real(F, error), negF(complex_real(F, error))),
+      maxF(complex_imag(F, error), negF(complex_imag(F, error)))
+    )
+  ) {
   intro n;
   intro vertices;
   intro tags;
@@ -113,9 +115,8 @@ theorem complex_interval_deformation_variation(
         realWeight(a, b, tag), imagWeight(a, b, tag)
       )
     );
-  have combined : FieldLe(
-    F, lt, sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags), addF(r, s)
-  ) {
+  have combined :
+    FieldLe(F, lt, sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags), addF(r, s)) {
     exact transport(
       (fun (v : F) => FieldLe(F, lt, v, addF(r, s))), addF(realSum, imagSum),
       sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags),

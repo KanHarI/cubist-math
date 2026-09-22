@@ -5,70 +5,74 @@ import quotient_sets;
 // composition: (f * g)(a) = f(g(a)), with the right factor acting first.
 def permutation_multiply(A : U0, f : Bijection(A, A), g : Bijection(A, A)) =
   compose_bijection(A, A, A, g, f);
-theorem bijections_are_set(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B)) : IsSet(
-  Bijection(A, B)
-) {
+
+theorem bijections_are_set(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B)) :
+  IsSet(Bijection(A, B)) {
   exact subtype_is_set(
     A -> B, InverseData(A, B),
     dependent_functions_are_set(A, (fun (a : A) => typed(U1, B)), (fun (a : A) => setB)),
     inverse_data_prop(A, B, setA, setB)
   );
 }
+
 theorem permutation_ext(
   A : U0, setA : IsSet(A), f : Bijection(A, A), g : Bijection(A, A),
   same : (forall a : A, forward(A, A, f, a) = forward(A, A, g, a))
-) : f = g {
+) :
+  f = g {
   exact bijection_ext(
     A, A, setA, setA, f, g,
     FunExt(U0, A, (fun (a : A) => A), forward(A, A, f), forward(A, A, g), same)
   );
 }
+
 theorem permutation_associative(
   A : U0, setA : IsSet(A), f : Bijection(A, A), g : Bijection(A, A), h : Bijection(A, A)
-) : permutation_multiply(A, permutation_multiply(A, f, g), h) = permutation_multiply(
-  A, f, permutation_multiply(A, g, h)
-) {
+) :
+  permutation_multiply(A, permutation_multiply(A, f, g), h) = permutation_multiply(
+    A, f, permutation_multiply(A, g, h)
+  ) {
   exact permutation_ext(
     A, setA, permutation_multiply(A, permutation_multiply(A, f, g), h),
     permutation_multiply(A, f, permutation_multiply(A, g, h)),
     (fun (a : A) => refl(forward(A, A, f, forward(A, A, g, forward(A, A, h, a)))))
   );
 }
-theorem permutation_unit_left(A : U0, setA : IsSet(A), f : Bijection(A, A)) : permutation_multiply(
-  A, identity_bijection(A), f
-) = f {
+
+theorem permutation_unit_left(A : U0, setA : IsSet(A), f : Bijection(A, A)) :
+  permutation_multiply(A, identity_bijection(A), f) = f {
   exact permutation_ext(
     A, setA, permutation_multiply(A, identity_bijection(A), f), f,
     (fun (a : A) => refl(forward(A, A, f, a)))
   );
 }
-theorem permutation_unit_right(A : U0, setA : IsSet(A), f : Bijection(A, A)) : permutation_multiply(
-  A, f, identity_bijection(A)
-) = f {
+
+theorem permutation_unit_right(A : U0, setA : IsSet(A), f : Bijection(A, A)) :
+  permutation_multiply(A, f, identity_bijection(A)) = f {
   exact permutation_ext(
     A, setA, permutation_multiply(A, f, identity_bijection(A)), f,
     (fun (a : A) => refl(forward(A, A, f, a)))
   );
 }
-theorem permutation_inverse_left(A : U0, setA : IsSet(A), f : Bijection(A, A)) : permutation_multiply(
-  A, reverse_bijection(A, A, f), f
-) = identity_bijection(A) {
+
+theorem permutation_inverse_left(A : U0, setA : IsSet(A), f : Bijection(A, A)) :
+  permutation_multiply(A, reverse_bijection(A, A, f), f) = identity_bijection(A) {
   exact permutation_ext(
     A, setA, permutation_multiply(A, reverse_bijection(A, A, f), f), identity_bijection(A),
     left_inverse(A, A, f)
   );
 }
-theorem permutation_inverse_right(A : U0, setA : IsSet(A), f : Bijection(A, A)) : permutation_multiply(
-  A, f, reverse_bijection(A, A, f)
-) = identity_bijection(A) {
+
+theorem permutation_inverse_right(A : U0, setA : IsSet(A), f : Bijection(A, A)) :
+  permutation_multiply(A, f, reverse_bijection(A, A, f)) = identity_bijection(A) {
   exact permutation_ext(
     A, setA, permutation_multiply(A, f, reverse_bijection(A, A, f)), identity_bijection(A),
     right_inverse(A, A, f)
   );
 }
-def permutation_group_laws(A : U0, setA : IsSet(A)) : GroupLaws(
-  Bijection(A, A), identity_bijection(A), permutation_multiply(A)
-) {
+
+def permutation_group_laws(A : U0, setA : IsSet(A)) :
+  GroupLaws(Bijection(A, A), identity_bijection(A), permutation_multiply(A)) {
   exact (
     bijections_are_set(A, A, setA, setA), permutation_associative(A, setA),
     permutation_unit_left(A, setA), permutation_unit_right(A, setA),
@@ -86,6 +90,7 @@ def permutation_group_laws(A : U0, setA : IsSet(A)) : GroupLaws(
     )
   );
 }
+
 def PermutationGroup(A : U0, setA : IsSet(A)) =
   group_object(
     Bijection(A, A), identity_bijection(A), permutation_multiply(A), permutation_group_laws(A, setA)
@@ -94,9 +99,9 @@ def PermutationGroup(A : U0, setA : IsSet(A)) =
 // Fixing a specified point is a subgroup condition. Membership is a
 // proposition because A is a set; inverse closure uses the supplied inverse law.
 def FixesPoint(A : U0, a : A, f : Bijection(A, A)) = forward(A, A, f, a) = a;
-theorem point_stabilizer_laws(A : U0, setA : IsSet(A), a : A) : SubgroupLaws(
-  PermutationGroup(A, setA), FixesPoint(A, a)
-) {
+
+theorem point_stabilizer_laws(A : U0, setA : IsSet(A), a : A) :
+  SubgroupLaws(PermutationGroup(A, setA), FixesPoint(A, a)) {
   exact (
     (fun (f : Bijection(A, A)) => setA(forward(A, A, f, a), a)), refl(a),
     (
@@ -114,14 +119,16 @@ theorem point_stabilizer_laws(A : U0, setA : IsSet(A), a : A) : SubgroupLaws(
     )
   );
 }
+
 def PointStabilizer(A : U0, setA : IsSet(A), a : A) =
   typed(Subgroup(PermutationGroup(A, setA)), (FixesPoint(A, a), point_stabilizer_laws(A, setA, a)));
 
 // Conjugation in this group really is the usual permutation action.
 theorem permutation_conjugate_apply(
   A : U0, setA : IsSet(A), g : Bijection(A, A), f : Bijection(A, A), a : A
-) : forward(A, A, group_conjugate(PermutationGroup(A, setA), g, f), a) = forward(
-  A, A, g, forward(A, A, f, backward(A, A, g, a))
-) {
+) :
+  forward(A, A, group_conjugate(PermutationGroup(A, setA), g, f), a) = forward(
+    A, A, g, forward(A, A, f, backward(A, A, g, a))
+  ) {
   exact refl(forward(A, A, g, forward(A, A, f, backward(A, A, g, a))));
 }

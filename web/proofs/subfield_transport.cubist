@@ -36,8 +36,9 @@ def subfield_along_iso(F : AlgebraicField, G : AlgebraicField, e : FieldIso(F, G
 // image construction and are not asserted to be paths of fields.
 theorem compositum_along_iso(
   F : AlgebraicField, G : AlgebraicField, e : FieldIso(F, G), S : Subfield(F), T : Subfield(F)
-) : subfield_along_iso(F, G, e, compositum(F, S, T)) =[Subfield(G)] compositum(
-  G, subfield_along_iso(F, G, e, S), subfield_along_iso(F, G, e, T)
-) {
+) :
+  subfield_along_iso(F, G, e, compositum(F, S, T)) =[Subfield(G)] compositum(
+    G, subfield_along_iso(F, G, e, S), subfield_along_iso(F, G, e, T)
+  ) {
   exact compositum_transport(F, G, field_isotoid(F, G, e), S, T);
 }

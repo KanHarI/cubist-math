@@ -4,13 +4,13 @@ import group_univalence;
 // Every automorphism is determined by the image of alpha. The only possible
 // images are alpha and alpha+1, so the Galois group has exactly two elements.
 def F4Automorphism = Galois(F2, F4OverF2);
+
 def f4_auto_apply(e : F4Automorphism) : F4Carrier -> F4Carrier {
   exact extension_iso_forward(F2, F4OverF2, F4OverF2, e);
 }
 
-def f4_auto_field_map(e : F4Automorphism) : FieldOpsPreserved(
-  F4Carrier, F4Carrier, f4_auto_apply(e), f4_ops, f4_ops
-) {
+def f4_auto_field_map(e : F4Automorphism) :
+  FieldOpsPreserved(F4Carrier, F4Carrier, f4_auto_apply(e), f4_ops, f4_ops) {
   exact fst(
     FieldOpsPreserved(F4Carrier, F4Carrier, f4_auto_apply(e), f4_ops, f4_ops),
     (forall k : F2Carrier, f4_auto_apply(e, f2_into_f4(k)) = f2_into_f4(k)),
@@ -20,7 +20,8 @@ def f4_auto_field_map(e : F4Automorphism) : FieldOpsPreserved(
 
 theorem f4_auto_ext(
   e : F4Automorphism, d : F4Automorphism, alpha : f4_auto_apply(e, f4_2) = f4_auto_apply(d, f4_2)
-) : e = d {
+) :
+  e = d {
   obtain (e0, e1, en, ea, em) = f4_auto_field_map(e);
   obtain (d0, d1, dn, da, dm) = f4_auto_field_map(d);
   let onePath = trans(e1, sym(d1));
@@ -47,7 +48,8 @@ theorem f4_auto_ext(
 
 theorem f4_auto_injective(
   e : F4Automorphism, x : F4Carrier, y : F4Carrier, p : f4_auto_apply(e, x) = f4_auto_apply(e, y)
-) : x = y {
+) :
+  x = y {
   let bijection =
     structure_iso_bijection(ExtensionData(F2), ExtensionPreserved(F2), F4OverF2, F4OverF2, e);
   exact trans(
@@ -63,9 +65,12 @@ def f4_symmetry(b : F2Carrier) =
   f2_induction(
     (fun (b : F2Carrier) => F4Automorphism), f4_identity_automorphism, f4_frobenius_automorphism, b
   );
+
 def f4_root_bit(x : F4Carrier) =
   f4_induction((fun (x : F4Carrier) => F2Carrier), f2_0, f2_0, f2_0, f2_1, x);
+
 def f4_symmetry_bit(e : F4Automorphism) = f4_root_bit(f4_auto_apply(e, f4_2));
+
 theorem f4_symmetry_bit_roundtrip(b : F2Carrier) : f4_symmetry_bit(f4_symmetry(b)) = b {
   exact f2_induction(
     (fun (b : F2Carrier) => f4_symmetry_bit(f4_symmetry(b)) = b), refl(f2_0), refl(f2_1), b
@@ -102,9 +107,9 @@ theorem f4_galois_has_two_elements : Bijection(F2Carrier, F4Automorphism) {
 
 def f4_auto_compose(e : F4Automorphism, d : F4Automorphism) =
   extension_iso_compose(F2, F4OverF2, F4OverF2, F4OverF2, e, d);
-theorem f4_symmetry_add(a : F2Carrier, b : F2Carrier) : f4_symmetry(f2_add(a, b)) = f4_auto_compose(
-  f4_symmetry(a), f4_symmetry(b)
-) {
+
+theorem f4_symmetry_add(a : F2Carrier, b : F2Carrier) :
+  f4_symmetry(f2_add(a, b)) = f4_auto_compose(f4_symmetry(a), f4_symmetry(b)) {
   exact f2_induction(
     (
       fun (a : F2Carrier) => f4_symmetry(f2_add(a, b)) = f4_auto_compose(
@@ -151,6 +156,7 @@ theorem f4_auto_square(e : F4Automorphism) : f4_auto_compose(e, e) = f4_identity
 }
 
 def F4GaloisGroup = GaloisGroup(F2, F4OverF2);
+
 def cyclic_two_laws : GroupLaws(F2Carrier, f2_0, f2_add) {
   exact (
     fin_is_set(2), f2_add_assoc, f2_add_zero,
@@ -165,6 +171,7 @@ def cyclic_two_laws : GroupLaws(F2Carrier, f2_0, f2_add) {
 }
 
 def CyclicTwo = group_object(F2Carrier, f2_0, f2_add, cyclic_two_laws);
+
 theorem f4_galois_is_cyclic_two : GroupIso(CyclicTwo, F4GaloisGroup) {
   exact (
     f4_symmetry, f4_symmetry_bit, f4_symmetry_bit_roundtrip, f4_symmetry_classify, f4_symmetry_add

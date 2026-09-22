@@ -276,15 +276,15 @@ The field over itself has an explicit one-element basis. Univalence gives
 carrier paths for linear isomorphisms, and paths of spaces transport bases.
 These are not yet full structure-identity theorems for vector spaces.
 
-The requested general basis theorem has its own
-[development plan](basis-theorem.md). Zorn must be derived from `Choice(U)`,
-not added as an axiom. Its proof and general basis existence remain open.
-Span is now a checked least subspace, with univalent idempotence. Directed
-unions satisfy the finite-covering lemma, chain unions of independent subsets
-are independent, and these subsets form a partial order with chain least
-upper bounds. Independent-subset extension is still open, along with the
-choice-to-Zorn derivation. Finite dimension invariance and the degree tower law
-also remain open; the general basis theorem does not supply them automatically.
+The requested [general basis theorem](basis-theorem.md) is now checked:
+`vector_space_has_basis(K,V) : FieldExists(VectorBasis(K,V))`.
+Span is a checked least subspace, with univalent idempotence. Independent
+subsets have chain least upper bounds, and adjoining a vector outside the
+span preserves independence. The needed chain-complete form of Zorn is
+proved from `Choice(U1)` and `LEM(U0)` using Bourbaki–Witt; no Zorn axiom was
+introduced. The existing U1 truncation's resizing strength is recorded.
+Finite dimension invariance and the degree tower law remain open; general
+basis existence does not supply them automatically.
 
 The larger-group structure identity equivalence also remains useful future
 work: `GroupAt(U1)` first-isomorphism results currently supply group

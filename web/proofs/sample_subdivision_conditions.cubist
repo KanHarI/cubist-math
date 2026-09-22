@@ -50,7 +50,8 @@ theorem subdivision_tagged_map_step(
   ), vertices : SampleVertices(C, succ(n)), tags : SampleTags(C, succ(n)),
   pieces : SampleSubdivisions(C, succ(n), vertices),
   valid : SubdivisionTagged(C, condition, succ(n), vertices, tags, pieces)
-) : SubdivisionTagged(C, other, succ(n), vertices, tags, pieces) {
+) :
+  SubdivisionTagged(C, other, succ(n), vertices, tags, pieces) {
   let a = field_fst(C, SampleVertices(C, n), vertices);
   let tail = field_snd(C, SampleVertices(C, n), vertices);
   let b = sample_first(C, n, tail);
@@ -58,8 +59,9 @@ theorem subdivision_tagged_map_step(
   let tailTags = field_snd(C, SampleTags(C, n), tags);
   let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
   let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  have data : condition(a, b, tag, headPiece)
-  and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) {
+  have data :
+    condition(a, b, tag, headPiece)
+    and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) {
     exact valid;
   }
   obtain (headValid, tailValid) = data;
@@ -76,10 +78,11 @@ theorem subdivision_tagged_map(
     forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b),
     condition(a, b, tag, piece) -> other(a, b, tag, piece)
   ), n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-forall pieces : SampleSubdivisions(C, n, vertices),
-SubdivisionTagged(C, condition, n, vertices, tags, pieces)
--> SubdivisionTagged(C, other, n, vertices, tags, pieces) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  forall pieces : SampleSubdivisions(C, n, vertices),
+  SubdivisionTagged(C, condition, n, vertices, tags, pieces)
+  -> SubdivisionTagged(C, other, n, vertices, tags, pieces) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     forall pieces : SampleSubdivisions(C, k, vertices),

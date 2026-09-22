@@ -8,7 +8,8 @@ theorem ordered_close_composition(
   -> U0, ring : CommutativeRing(Q, zero, one, addQ, mulQ, negQ), order : StrictOrder(Q, ltQ),
   arithmetic : OrderedArithmetic(Q, zero, one, addQ, mulQ, ltQ),
   inverses : FieldInverses(Q, zero, one, mulQ, ltQ)
-) : CloseComposition(Q, zero, addQ, ltQ) {
+) :
+  CloseComposition(Q, zero, addQ, ltQ) {
   obtain (half, halfSum, halfPositive) = ordered_field_halving(
     Q, zero, one, addQ, mulQ, negQ, ltQ, ring, order, arithmetic, inverses
   );
@@ -30,7 +31,8 @@ theorem ordered_cauchy_same_equivalence(
   -> U0, ring : CommutativeRing(Q, zero, one, addQ, mulQ, negQ), order : StrictOrder(Q, ltQ),
   arithmetic : OrderedArithmetic(Q, zero, one, addQ, mulQ, ltQ),
   inverses : FieldInverses(Q, zero, one, mulQ, ltQ)
-) : EquivalenceRelation(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ)) {
+) :
+  EquivalenceRelation(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ)) {
   exact cauchy_same_equivalence(
     Q, zero, addQ, ltQ,
     field_close_self(Q, zero, one, addQ, mulQ, negQ, ltQ, ring, order, arithmetic),

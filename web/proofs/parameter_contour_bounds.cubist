@@ -33,6 +33,7 @@ def ComplexParameterTagBounds(
       field_snd(C, SampleTags(C, k), newTags)
     );
   };
+
 def ComplexParameterIncrementBounds(
   C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
   realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, n : Nat
@@ -69,26 +70,30 @@ theorem complex_parameter_tag_error_variation_bound(
   -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve : C -> Complex(F), values : C
   -> Complex(F), realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, delta : F, n : Nat
-) : forall vertices : SampleVertices(C, n), forall oldTags : SampleTags(C, n),
-forall newTags : SampleTags(C, n),
-ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags)
--> ComplexParameterIncrementBounds(
-  C, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, oldTags
-)
--> ComplexBoxBound(
-  F, negF, lt,
-  complex_parameter_tag_error_sum(
-    C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, newTags
-  ),
-  mulF(
-    delta,
-    sample_sum(
-      C, F, zero, addF,
-      (fun (a : C) => fun (b : C) => fun (t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))),
-      n, vertices, oldTags
-    )
+) :
+  forall vertices : SampleVertices(C, n), forall oldTags : SampleTags(C, n),
+  forall newTags : SampleTags(C, n),
+  ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags)
+  -> ComplexParameterIncrementBounds(
+    C, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, oldTags
   )
-) {
+  -> ComplexBoxBound(
+    F, negF, lt,
+    complex_parameter_tag_error_sum(
+      C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, newTags
+    ),
+    mulF(
+      delta,
+      sample_sum(
+        C, F, zero, addF,
+        (
+          fun (a : C) => fun (b : C) => fun (t : C) => addF(
+            realWeight(a, b, t), imagWeight(a, b, t)
+          )
+        ), n, vertices, oldTags
+      )
+    )
+  ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall oldTags : SampleTags(C, k),
     forall newTags : SampleTags(C, k),
@@ -373,12 +378,13 @@ theorem complex_parameter_tag_error_length_bound(
       n, vertices, oldTags
     ), length
   )
-) : ComplexBoxBound(
-  F, negF, lt,
-  complex_parameter_tag_error_sum(
-    C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, newTags
-  ), mulF(delta, length)
-) {
+) :
+  ComplexBoxBound(
+    F, negF, lt,
+    complex_parameter_tag_error_sum(
+      C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, newTags
+    ), mulF(delta, length)
+  ) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   let totalWeight =
     sample_sum(

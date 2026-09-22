@@ -2,9 +2,10 @@ import vector_spaces;
 import field_embeddings;
 
 // The additive group comes directly from the existing unordered-field laws.
-def field_additive_laws(F : AlgebraicField) : GroupLaws(
-  af_carrier(F), af_zero(af_carrier(F), af_operations(F)), af_add(af_carrier(F), af_operations(F))
-) {
+def field_additive_laws(F : AlgebraicField) :
+  GroupLaws(
+    af_carrier(F), af_zero(af_carrier(F), af_operations(F)), af_add(af_carrier(F), af_operations(F))
+  ) {
   let A = af_carrier(F);
   let ops = af_operations(F);
   let add = af_add(A, ops);
@@ -21,11 +22,13 @@ def field_additive_laws(F : AlgebraicField) : GroupLaws(
     )
   );
 }
+
 def FieldAdditiveGroup(F : AlgebraicField) =
   group_object(
     af_carrier(F), af_zero(af_carrier(F), af_operations(F)),
     af_add(af_carrier(F), af_operations(F)), field_additive_laws(F)
   );
+
 def field_additive_abelian(F : AlgebraicField) : IsAbelian(FieldAdditiveGroup(F)) {
   obtain (addLaws, mulLaws) = field_ring_data(af_carrier(F), af_operations(F), af_laws(F));
   obtain (assoc, comm, unit, inverseLaw) = addLaws;
@@ -39,9 +42,9 @@ def field_scalar_action(
   x : af_carrier(L)
 ) =
   af_mul(af_carrier(L), af_operations(L), field_embedding_map(K, L, e, a), x);
-theorem field_scalar_laws(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) : ScalarLaws(
-  K, FieldAdditiveGroup(L), field_scalar_action(K, L, e)
-) {
+
+theorem field_scalar_laws(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+  ScalarLaws(K, FieldAdditiveGroup(L), field_scalar_action(K, L, e)) {
   let A = af_carrier(L);
   let ops = af_operations(L);
   let mul = af_mul(A, ops);
@@ -74,11 +77,14 @@ theorem field_scalar_laws(K : AlgebraicField, L : AlgebraicField, e : FieldEmbed
     )
   );
 }
+
 def field_vector_space(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
   vector_space(
     K, FieldAdditiveGroup(L), field_scalar_action(K, L, e), field_additive_abelian(L),
     field_scalar_laws(K, L, e)
   );
+
 def ScalarSpace(K : AlgebraicField) = field_vector_space(K, K, field_embedding_identity(K));
+
 def ExtensionVectorSpace(K : AlgebraicField, E : FieldExt(K)) =
   field_vector_space(K, extension_field(K, E), extension_inclusion_embedding(K, E));

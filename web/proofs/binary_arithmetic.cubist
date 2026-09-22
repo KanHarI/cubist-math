@@ -70,34 +70,38 @@ def binary_of_nat(n : Nat) = induction n as k return BinaryNat {
 
 // The recursion index is small; all intermediate products are binary W trees.
 opaque def binary_factorial(n : Nat) = induction n as k return BinaryNat {
-  zero => 0b1;
-  succ previous => binary_mul(binary_of_nat(succ(k)), previous);
-};
+    zero => 0b1;
+    succ previous => binary_mul(binary_of_nat(succ(k)), previous);
+  };
 
 theorem binary_carry_example : binary_succ(0b11111111) = 0b100000000 {
   exact refl(0b100000000);
 }
+
 theorem binary_add_example : binary_add(0b1101, 0b1011) = 0b11000 {
   exact refl(0b11000);
 }
+
 theorem binary_mul_example : binary_mul(0b1101, 0b1011) = 0b10001111 {
   exact refl(0b10001111);
 }
 
 // The factorial step remains folded until its previous value is supplied.
-theorem binary_factorial_step(n : Nat) : binary_factorial(succ(n)) = binary_mul(
-  binary_of_nat(succ(n)), binary_factorial(n)
-) {
+theorem binary_factorial_step(n : Nat) :
+  binary_factorial(succ(n)) = binary_mul(binary_of_nat(succ(n)), binary_factorial(n)) {
   exact refl(binary_mul(binary_of_nat(succ(n)), binary_factorial(n)));
 }
+
 theorem binary_factorial_value_step(
   n : Nat, value : BinaryNat, previous : binary_factorial(n) = value
-) : binary_factorial(succ(n)) = binary_mul(binary_of_nat(succ(n)), value) {
+) :
+  binary_factorial(succ(n)) = binary_mul(binary_of_nat(succ(n)), value) {
   exact trans(
     binary_factorial_step(n),
     cong((fun (v : BinaryNat) => binary_mul(binary_of_nat(succ(n)), v)), previous)
   );
 }
+
 theorem binary_factorial_zero : binary_factorial(0) = 0b1 {
   exact refl(0b1);
 }

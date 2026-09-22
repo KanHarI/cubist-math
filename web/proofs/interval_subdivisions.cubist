@@ -33,18 +33,20 @@ theorem interval_refinement_radius_sum(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), delta : F, length : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
-) : sample_sum(
-  FieldUnitInterval(F, zero, one, lt), F, zero, addF,
-  interval_refinement_radius(F, zero, one, addF, mulF, negF, lt, delta, length), n, vertices, tags
-) = mulF(
-  delta,
-  mulF(
-    interval_difference(
-      F, zero, one, addF, negF, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
-      sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
-    ), length
-  )
-) {
+) :
+  sample_sum(
+    FieldUnitInterval(F, zero, one, lt), F, zero, addF,
+    interval_refinement_radius(F, zero, one, addF, mulF, negF, lt, delta, length), n, vertices, tags
+  ) = mulF(
+    delta,
+    mulF(
+      interval_difference(
+        F, zero, one, addF, negF, lt,
+        sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
+        sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
+      ), length
+    )
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let weight = interval_weight(F, zero, one, addF, mulF, negF, lt, length);
   let mapping = mulF(delta);

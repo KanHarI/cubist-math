@@ -9,12 +9,14 @@ def ComplexClose(
 ) =
   FieldClose(F, addF, lt, complex_real(F, z), complex_real(F, w), epsilon)
   and FieldClose(F, addF, lt, complex_imag(F, z), complex_imag(F, w), epsilon);
+
 def ComplexConverges(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F),
   limit : Complex(F)
 ) =
   forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat, forall n : Nat, IndexLE(bound, n)
   -> ComplexClose(F, addF, lt, sequence(n), limit, epsilon);
+
 def ComplexCauchy(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F)
 ) =

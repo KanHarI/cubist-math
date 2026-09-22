@@ -30,16 +30,18 @@ theorem dyadic_refinement_zero(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : SubdivisionRefinementSum(
-  FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
-  IntervalRefinementAdmissible(F, zero, one, lt), a, b,
-  dyadic_piece(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, 0, a, b, ordered
-  ),
-  dyadic_piece(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, extra, a, b, ordered
-  )
-) {
+) :
+  SubdivisionRefinementSum(
+    FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
+    IntervalRefinementAdmissible(F, zero, one, lt), a, b,
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, 0, a, b, ordered
+    ),
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, extra, a, b,
+      ordered
+    )
+  ) {
   let fine =
     dyadic_piece(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, extra, a, b,
@@ -106,18 +108,19 @@ theorem dyadic_refinement_step(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : SubdivisionRefinementSum(
-  FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
-  IntervalRefinementAdmissible(F, zero, one, lt), a, b,
-  dyadic_piece(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, succ(depth), a, b,
-    ordered
-  ),
-  dyadic_piece(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, succ(depth) + extra,
-    a, b, ordered
-  )
-) {
+) :
+  SubdivisionRefinementSum(
+    FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
+    IntervalRefinementAdmissible(F, zero, one, lt), a, b,
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, succ(depth), a, b,
+      ordered
+    ),
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum,
+      succ(depth) + extra, a, b, ordered
+    )
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let midpoint =
     interval_midpoint_point(
@@ -218,23 +221,25 @@ theorem dyadic_samples_refine(
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
   -> FieldUnitInterval(F, zero, one, lt) -> G, depth : Nat
-) : forall extra : Nat, forall a : FieldUnitInterval(F, zero, one, lt),
-forall b : FieldUnitInterval(F, zero, one, lt),
-forall ordered : FieldLe(
-  F, lt, field_interval_coordinate(F, zero, one, lt)(a),
-  field_interval_coordinate(F, zero, one, lt)(b)
-),
-SubdivisionRefinementSum(
-  FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
-  IntervalRefinementAdmissible(F, zero, one, lt), a, b,
-  dyadic_piece(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered
+) :
+  forall extra : Nat, forall a : FieldUnitInterval(F, zero, one, lt),
+  forall b : FieldUnitInterval(F, zero, one, lt),
+  forall ordered : FieldLe(
+    F, lt, field_interval_coordinate(F, zero, one, lt)(a),
+    field_interval_coordinate(F, zero, one, lt)(b)
   ),
-  dyadic_piece(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth + extra, a, b,
-    ordered
-  )
-) {
+  SubdivisionRefinementSum(
+    FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
+    IntervalRefinementAdmissible(F, zero, one, lt), a, b,
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
+      ordered
+    ),
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth + extra, a,
+      b, ordered
+    )
+  ) {
   exact induction depth as k return (
     forall extra : Nat, forall a : FieldUnitInterval(F, zero, one, lt),
     forall b : FieldUnitInterval(F, zero, one, lt),

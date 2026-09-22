@@ -5,46 +5,57 @@ import paths;
 def GroupAssociativeAt(U : Universe, A : U, multiply : A -> A -> A) =
   forall x : A, forall y : A, forall z : A,
   multiply(multiply(x, y), z) = multiply(x, multiply(y, z));
+
 def GroupLeftUnitAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) =
   forall x : A, multiply(unit, x) = x;
+
 def GroupRightUnitAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) =
   forall x : A, multiply(x, unit) = x;
+
 def GroupInverseLawsAt(U : Universe, A : U, unit : A, multiply : A -> A -> A, x : A, y : A) =
   (multiply(y, x) = unit) and (multiply(x, y) = unit);
+
 def GroupInversesAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) =
   forall x : A, exists y : A, GroupInverseLawsAt(U, A, unit, multiply, x, y);
+
 def GroupLawsAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) =
   (forall x : A, forall y : A, forall p : x = y, forall q : x = y, p = q)
   and GroupAssociativeAt(U, A, multiply) and GroupLeftUnitAt(U, A, unit, multiply)
   and GroupRightUnitAt(U, A, unit, multiply) and GroupInversesAt(U, A, unit, multiply);
+
 def GroupStructureAt(U : Universe, A : U) =
   exists unit : A, exists multiply : A -> A -> A, GroupLawsAt(U, A, unit, multiply);
+
 def GroupAt(U : Universe) = exists A : U, GroupStructureAt(U, A);
 
 def group_object_at(
   U : Universe, A : U, unit : A, multiply : A -> A -> A, laws : GroupLawsAt(U, A, unit, multiply)
 ) =
   typed(GroupAt(U), (A, unit, multiply, laws));
+
 def group_carrier_at(U : Universe, G : GroupAt(U)) = unpack G as (A, structure) return U {
     A;
   };
+
 def group_structure_at(U : Universe, G : GroupAt(U)) =
   pair_induction(
     (fun (H : GroupAt(U)) => GroupStructureAt(U, group_carrier_at(U, H))),
     (fun (A : U) => fun (structure : GroupStructureAt(U, A)) => structure), G
   );
+
 def group_unit_at(U : Universe, G : GroupAt(U)) : group_carrier_at(U, G) {
   obtain (unit, multiply, laws) = group_structure_at(U, G);
   exact unit;
 }
-def group_multiply_at(U : Universe, G : GroupAt(U)) : group_carrier_at(U, G)
--> group_carrier_at(U, G) -> group_carrier_at(U, G) {
+
+def group_multiply_at(U : Universe, G : GroupAt(U)) :
+  group_carrier_at(U, G) -> group_carrier_at(U, G) -> group_carrier_at(U, G) {
   obtain (unit, multiply, laws) = group_structure_at(U, G);
   exact multiply;
 }
-def group_laws_at(U : Universe, G : GroupAt(U)) : GroupLawsAt(
-  U, group_carrier_at(U, G), group_unit_at(U, G), group_multiply_at(U, G)
-) {
+
+def group_laws_at(U : Universe, G : GroupAt(U)) :
+  GroupLawsAt(U, group_carrier_at(U, G), group_unit_at(U, G), group_multiply_at(U, G)) {
   obtain (unit, multiply, laws) = group_structure_at(U, G);
   exact laws;
 }
@@ -67,13 +78,13 @@ def group_iso_object_at(
   oneB : B, mB : B -> B -> B, lawsB : GroupLawsAt(U, B, oneB, mB), f : A -> B, g : B -> A,
   left : (forall x : A, g(f(x)) = x), right : (forall y : B, f(g(y)) = y),
   multiply : (forall x : A, forall y : A, f(mA(x, y)) = mB(f(x), f(y)))
-) : GroupIsoAt(U, group_object_at(U, A, oneA, mA, lawsA), group_object_at(U, B, oneB, mB, lawsB)) {
+) :
+  GroupIsoAt(U, group_object_at(U, A, oneA, mA, lawsA), group_object_at(U, B, oneB, mB, lawsB)) {
   exact (f, g, left, right, multiply);
 }
 
-def group_unit_right_at(U : Universe, G : GroupAt(U)) : GroupRightUnitAt(
-  U, group_carrier_at(U, G), group_unit_at(U, G), group_multiply_at(U, G)
-) {
+def group_unit_right_at(U : Universe, G : GroupAt(U)) :
+  GroupRightUnitAt(U, group_carrier_at(U, G), group_unit_at(U, G), group_multiply_at(U, G)) {
   obtain (set, associative, left, right, inverses) = group_laws_at(U, G);
   exact right;
 }

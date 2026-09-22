@@ -1,0 +1,247 @@
+import bourbaki_tower;
+
+def TowerSeparation(A : U1, le : OrderRelation(A), f : A -> A, a : A, b : A) =
+  FieldOr(le(b, a), le(f(a), b));
+
+theorem tower_separation_step(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
+  f : A -> A, progressive : Progressive(A, le, f), a : A,
+  stable : TowerStable(A, le, complete, f, a), b : A, tb : TowerMember(A, le, complete, f, b),
+  separated : TowerSeparation(A, le, f, a, b)
+) :
+  TowerSeparation(A, le, f, a, f(b)) {
+  have lower : le(b, a) -> TowerSeparation(A, le, f, a, f(b)) {
+    intro ba;
+    cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
+      left ab => {
+        let same = order_antisym(A, le, laws, b, a, ba, ab);
+        exact field_exists_intro(
+          le(f(b), a) or le(f(a), f(b)),
+          right(
+            transport(
+              (fun (y : A) => le(f(a), f(y))), a, b, sym(same), order_refl(A, le, laws, f(a))
+            )
+          )
+        );
+      }
+      right strict => {
+        exact field_exists_intro(le(f(b), a) or le(f(a), f(b)), left(stable(b, tb, ba, strict)));
+      }
+    }
+  }
+  exact field_or_elim(
+    le(b, a), le(f(a), b), TowerSeparation(A, le, f, a, f(b)),
+    field_exists_prop(le(f(b), a) or le(f(a), f(b))), lower,
+    (
+      fun (upper : le(f(a), b)) => field_exists_intro(
+        le(f(b), a) or le(f(a), f(b)),
+        right(order_trans(A, le, laws, f(a), b, f(b), upper, progressive(b)))
+      )
+    ), separated
+  );
+}
+
+theorem tower_separation_sup(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
+  f : A -> A, a : A, C : A -> U0, chain : OrderChain(A, le, C),
+  separated : (forall b : A, C(b) -> TowerSeparation(A, le, f, a, b))
+) :
+  TowerSeparation(A, le, f, a, chain_sup(A, le, complete, C, chain)) {
+  let s = chain_sup(A, le, complete, C, chain);
+  cases excluded_middle(le(s, a), order_prop(A, le, laws, s, a)) {
+    left sa => {
+      exact field_exists_intro(le(s, a) or le(f(a), s), left(sa));
+    }
+    right notsa => {
+      have contradiction : (le(f(a), s) -> Void) -> Void {
+        intro notAbove;
+        have bounded : forall b : A, C(b) -> le(b, a) {
+          intro b;
+          intro cb;
+          exact field_or_elim(
+            le(b, a), le(f(a), b), le(b, a), order_prop(A, le, laws, b, a),
+            (fun (ba : le(b, a)) => ba),
+            (
+              fun (above : le(f(a), b)) => typed(
+                le(b, a),
+                absurd(
+                  notAbove(
+                    order_trans(
+                      A, le, laws, f(a), b, s, above,
+                      chain_sup_upper(A, le, complete, C, chain, b, cb)
+                    )
+                  )
+                )
+              )
+            ), separated(b, cb)
+          );
+        }
+        exact notsa(chain_sup_least(A, le, complete, C, chain, a, bounded));
+      }
+      exact field_exists_intro(
+        le(s, a) or le(f(a), s),
+        right(double_negation(le(f(a), s), order_prop(A, le, laws, f(a), s), contradiction))
+      );
+    }
+  }
+}
+
+// Stable points separate the tower: a tower point b is below a, or above f(a).
+theorem tower_separation(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
+  f : A -> A, progressive : Progressive(A, le, f), a : A,
+  stable : TowerStable(A, le, complete, f, a), b : A, tb : TowerMember(A, le, complete, f, b)
+) :
+  TowerSeparation(A, le, f, a, b) {
+  exact tower_relative_induction(
+    A, le, complete, f, (fun (y : A) => typed(U1, TowerSeparation(A, le, f, a, y))),
+    (fun (y : A) => field_exists_prop(le(y, a) or le(f(a), y))),
+    tower_separation_step(A, le, laws, complete, f, progressive, a, stable),
+    (
+      fun (C : A -> U0) => fun (chain : OrderChain(A, le, C)) => fun (
+        members : (forall y : A, C(y) -> TowerMember(A, le, complete, f, y))
+      ) => tower_separation_sup(A, le, laws, complete, f, a, C, chain)
+    ), b, tb
+  );
+}
+
+theorem tower_stable_step(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
+  f : A -> A, progressive : Progressive(A, le, f), a : A,
+  stable : TowerStable(A, le, complete, f, a)
+) :
+  TowerStable(A, le, complete, f, f(a)) {
+  intro b;
+  intro tb;
+  intro below;
+  intro strict;
+  have lower : le(b, a) -> le(f(b), f(a)) {
+    intro ba;
+    cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
+      left ab => {
+        let same = order_antisym(A, le, laws, b, a, ba, ab);
+        exact transport(
+          (fun (y : A) => le(f(y), f(a))), a, b, sym(same), order_refl(A, le, laws, f(a))
+        );
+      }
+      right notab => {
+        exact order_trans(A, le, laws, f(b), a, f(a), stable(b, tb, ba, notab), progressive(a));
+      }
+    }
+  }
+  exact field_or_elim(
+    le(b, a), le(f(a), b), le(f(b), f(a)), order_prop(A, le, laws, f(b), f(a)), lower,
+    (fun (above : le(f(a), b)) => typed(le(f(b), f(a)), absurd(strict(above)))),
+    tower_separation(A, le, laws, complete, f, progressive, a, stable, b, tb)
+  );
+}
+
+theorem tower_stable_sup(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
+  f : A -> A, progressive : Progressive(A, le, f), C : A -> U0, chain : OrderChain(A, le, C),
+  stable : (forall a : A, C(a) -> TowerStable(A, le, complete, f, a))
+) :
+  TowerStable(A, le, complete, f, chain_sup(A, le, complete, C, chain)) {
+  let s = chain_sup(A, le, complete, C, chain);
+  intro b;
+  intro tb;
+  intro below;
+  intro strict;
+  have contradiction : (le(f(b), s) -> Void) -> Void {
+    intro notBelow;
+    have bounded : forall a : A, C(a) -> le(a, b) {
+      intro a;
+      intro ca;
+      have lower : le(b, a) -> le(a, b) {
+        intro ba;
+        cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
+          left ab => {
+            exact ab;
+          }
+          right notab => {
+            exact absurd(
+              notBelow(
+                order_trans(
+                  A, le, laws, f(b), a, s, stable(a, ca, b, tb, ba, notab),
+                  chain_sup_upper(A, le, complete, C, chain, a, ca)
+                )
+              )
+            );
+          }
+        }
+      }
+      exact field_or_elim(
+        le(b, a), le(f(a), b), le(a, b), order_prop(A, le, laws, a, b), lower,
+        (fun (above : le(f(a), b)) => order_trans(A, le, laws, a, f(a), b, progressive(a), above)),
+        tower_separation(A, le, laws, complete, f, progressive, a, stable(a, ca), b, tb)
+      );
+    }
+    exact strict(chain_sup_least(A, le, complete, C, chain, b, bounded));
+  }
+  exact double_negation(le(f(b), s), order_prop(A, le, laws, f(b), s), contradiction);
+}
+
+theorem tower_is_stable(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
+  f : A -> A, progressive : Progressive(A, le, f), a : A, ta : TowerMember(A, le, complete, f, a)
+) :
+  TowerStable(A, le, complete, f, a) {
+  exact tower_relative_induction(
+    A, le, complete, f, TowerStable(A, le, complete, f),
+    tower_stable_prop(A, le, laws, complete, f),
+    (
+      fun (x : A) => fun (tx : TowerMember(A, le, complete, f, x)) => tower_stable_step(
+        A, le, laws, complete, f, progressive, x
+      )
+    ),
+    (
+      fun (C : A -> U0) => fun (chain : OrderChain(A, le, C)) => fun (
+        members : (forall x : A, C(x) -> TowerMember(A, le, complete, f, x))
+      ) => tower_stable_sup(A, le, laws, complete, f, progressive, C, chain)
+    ), a, ta
+  );
+}
+
+theorem tower_is_chain(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
+  f : A -> A, progressive : Progressive(A, le, f)
+) :
+  OrderChain(A, le, TowerMember(A, le, complete, f)) {
+  intro x;
+  intro y;
+  intro tx;
+  intro ty;
+  exact field_or_elim(
+    le(x, y), le(f(y), x), FieldOr(le(x, y), le(y, x)), field_exists_prop(le(x, y) or le(y, x)),
+    (fun (xy : le(x, y)) => field_exists_intro(le(x, y) or le(y, x), left(xy))),
+    (
+      fun (above : le(f(y), x)) => field_exists_intro(
+        le(x, y) or le(y, x), right(order_trans(A, le, laws, y, f(y), x, progressive(y), above))
+      )
+    ),
+    tower_separation(
+      A, le, laws, complete, f, progressive, y,
+      tower_is_stable(A, le, laws, complete, f, progressive, y, ty), x, tx
+    )
+  );
+}
+
+// The supremum of the entire tower is fixed. The empty-chain case supplies
+// its initial point; no ordinal type or transfinite-recursion axiom is used.
+theorem bourbaki_witt(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
+  f : A -> A, progressive : Progressive(A, le, f)
+) :
+  exists x : A, f(x) = x {
+  let T = TowerMember(A, le, complete, f);
+  let chain = tower_is_chain(A, le, laws, complete, f, progressive);
+  let s = chain_sup(A, le, complete, T, chain);
+  let member = tower_sup(A, le, complete, f, T, chain, (fun (x : A) => fun (tx : T(x)) => tx));
+  let next = tower_step(A, le, complete, f, s, member);
+  exact (
+    s,
+    order_antisym(
+      A, le, laws, f(s), s, chain_sup_upper(A, le, complete, T, chain, f(s), next), progressive(s)
+    )
+  );
+}

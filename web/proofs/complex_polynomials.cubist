@@ -6,6 +6,7 @@ def MonicCoefficients(F : U1, n : Nat) = induction n as k return U1 {
     zero => Unit;
     succ previous => F and previous;
   };
+
 def monic_eval(F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F, n : Nat) =
   induction n as k return (MonicCoefficients(F, k) -> F -> F) {
     zero => fun (u : Unit) => fun (z : F) => one;
@@ -15,6 +16,7 @@ def monic_eval(F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F, n : Nat)
       addF(constant, mulF(z, previous(tail, z)));
     };
   };
+
 def MonicRoot(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, n : Nat,
   coefficients : MonicCoefficients(F, n)
@@ -39,14 +41,16 @@ def square_root_coefficients(F : U1, zero : F, negF : F -> F, a : F) : MonicCoef
 theorem monic_linear_eval(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F
-) : monic_eval(F, one, addF, mulF, 1, linear_coefficients(F, a), z) = addF(a, z) {
+) :
+  monic_eval(F, one, addF, mulF, 1, linear_coefficients(F, a), z) = addF(a, z) {
   exact cong(addF(a), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, z));
 }
 
 theorem monic_linear_root(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F
-) : MonicRoot(F, zero, one, addF, mulF, 1, linear_coefficients(F, a)) {
+) :
+  MonicRoot(F, zero, one, addF, mulF, 1, linear_coefficients(F, a)) {
   exact (
     negF(a),
     trans(
@@ -60,7 +64,8 @@ theorem monic_linear_root_unique(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F,
   root : monic_eval(F, one, addF, mulF, 1, linear_coefficients(F, a), z) = zero
-) : z = negF(a) {
+) :
+  z = negF(a) {
   exact ring_neg_unique(
     F, zero, one, addF, mulF, negF, ring, a, z,
     trans(sym(monic_linear_eval(F, zero, one, addF, mulF, negF, ring, a, z)), root)
@@ -70,9 +75,10 @@ theorem monic_linear_root_unique(
 theorem monic_square_eval(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F
-) : monic_eval(F, one, addF, mulF, 2, square_root_coefficients(F, zero, negF, a), z) = addF(
-  negF(a), mulF(z, z)
-) {
+) :
+  monic_eval(F, one, addF, mulF, 2, square_root_coefficients(F, zero, negF, a), z) = addF(
+    negF(a), mulF(z, z)
+  ) {
   exact cong(
     (fun (v : F) => addF(negF(a), mulF(z, v))),
     trans(
@@ -86,7 +92,8 @@ theorem monic_square_root_equation(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F,
   root : monic_eval(F, one, addF, mulF, 2, square_root_coefficients(F, zero, negF, a), z) = zero
-) : mulF(z, z) = a {
+) :
+  mulF(z, z) = a {
   obtain (setF, additive, multiplicative) = ring;
   exact field_add_cancel(
     F, zero, addF, negF, additive, negF(a), mulF(z, z), a,
@@ -103,7 +110,8 @@ theorem algebraic_closure_implies_square_roots(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   closed : MonicAlgebraicClosure(F, zero, one, addF, mulF), a : F
-) : FieldExists(exists z : F, mulF(z, z) = a) {
+) :
+  FieldExists(exists z : F, mulF(z, z) = a) {
   let coefficients = square_root_coefficients(F, zero, negF, a);
   exact field_exists_map(
     MonicRoot(F, zero, one, addF, mulF, 2, coefficients), (exists z : F, mulF(z, z) = a),

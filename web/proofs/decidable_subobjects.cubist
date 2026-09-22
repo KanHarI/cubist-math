@@ -6,14 +6,17 @@ import intermediate_fields;
 // the ambient carrier being finite. Its proof is unique for a proposition.
 def SubgroupDecisions(G : Group, S : Subgroup(G)) =
   forall x : group_carrier(G), Decidable(subgroup_members(G, S, x));
+
 def DecidableSubgroup(G : Group) = exists S : Subgroup(G), SubgroupDecisions(G, S);
+
 def decidable_subgroup(G : Group, D : DecidableSubgroup(G)) =
   field_first(Subgroup(G), (fun (S : Subgroup(G)) => typed(U1, SubgroupDecisions(G, S))), D);
-def subgroup_decisions(G : Group, D : DecidableSubgroup(G)) : SubgroupDecisions(
-  G, decidable_subgroup(G, D)
-) {
+
+def subgroup_decisions(G : Group, D : DecidableSubgroup(G)) :
+  SubgroupDecisions(G, decidable_subgroup(G, D)) {
   exact field_second(Subgroup(G), (fun (S : Subgroup(G)) => typed(U1, SubgroupDecisions(G, S))), D);
 }
+
 theorem subgroup_decisions_prop(G : Group, S : Subgroup(G)) : Proposition(SubgroupDecisions(G, S)) {
   exact forall_prop(
     group_carrier(G), (fun (x : group_carrier(G)) => Decidable(subgroup_members(G, S, x))),
@@ -24,10 +27,12 @@ theorem subgroup_decisions_prop(G : Group, S : Subgroup(G)) : Proposition(Subgro
     )
   );
 }
+
 theorem decidable_subgroup_ext(
   G : Group, D : DecidableSubgroup(G), E : DecidableSubgroup(G),
   same : decidable_subgroup(G, D) =[Subgroup(G)] decidable_subgroup(G, E)
-) : D = E {
+) :
+  D = E {
   exact field_subtype_ext(
     Subgroup(G), (fun (S : Subgroup(G)) => typed(U1, SubgroupDecisions(G, S))),
     subgroup_decisions_prop(G), D, E, same
@@ -36,8 +41,10 @@ theorem decidable_subgroup_ext(
 
 def IntermediateDecisions(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
   forall x : extension_carrier(K, E), Decidable(intermediate_members(K, E, M, x));
+
 def DecidableIntermediateField(K : AlgebraicField, E : FieldExt(K)) =
   exists M : IntermediateField(K, E), IntermediateDecisions(K, E, M);
+
 def decidable_intermediate(
   K : AlgebraicField, E : FieldExt(K), D : DecidableIntermediateField(K, E)
 ) =
@@ -45,17 +52,21 @@ def decidable_intermediate(
     IntermediateField(K, E),
     (fun (M : IntermediateField(K, E)) => typed(U1, IntermediateDecisions(K, E, M))), D
   );
+
 def intermediate_decisions(
   K : AlgebraicField, E : FieldExt(K), D : DecidableIntermediateField(K, E)
-) : IntermediateDecisions(K, E, decidable_intermediate(K, E, D)) {
+) :
+  IntermediateDecisions(K, E, decidable_intermediate(K, E, D)) {
   exact field_second(
     IntermediateField(K, E),
     (fun (M : IntermediateField(K, E)) => typed(U1, IntermediateDecisions(K, E, M))), D
   );
 }
+
 theorem intermediate_decisions_prop(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)
-) : Proposition(IntermediateDecisions(K, E, M)) {
+) :
+  Proposition(IntermediateDecisions(K, E, M)) {
   obtain (closure, base) = intermediate_laws(K, E, M);
   exact forall_prop(
     extension_carrier(K, E),
@@ -68,11 +79,13 @@ theorem intermediate_decisions_prop(
     )
   );
 }
+
 theorem decidable_intermediate_ext(
   K : AlgebraicField, E : FieldExt(K), D : DecidableIntermediateField(K, E),
   F : DecidableIntermediateField(K, E),
   same : decidable_intermediate(K, E, D) =[IntermediateField(K, E)] decidable_intermediate(K, E, F)
-) : D = F {
+) :
+  D = F {
   exact field_subtype_ext(
     IntermediateField(K, E),
     (fun (M : IntermediateField(K, E)) => typed(U1, IntermediateDecisions(K, E, M))),

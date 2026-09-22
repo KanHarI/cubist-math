@@ -5,9 +5,10 @@ import complex_polynomials;
 theorem polynomial_difference_step(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, x : F, r : F, q : F, d : F
-) : addF(a, mulF(x, addF(q, mulF(addF(x, negF(r)), d)))) = addF(
-  addF(a, mulF(r, q)), mulF(addF(x, negF(r)), addF(q, mulF(x, d)))
-) {
+) :
+  addF(a, mulF(x, addF(q, mulF(addF(x, negF(r)), d)))) = addF(
+    addF(a, mulF(r, q)), mulF(addF(x, negF(r)), addF(q, mulF(x, d)))
+  ) {
   let difference = addF(x, negF(r));
   // First write x = r + (x-r), so xq = rq + (x-r)q.
   have recombine : addF(r, difference) = x {
@@ -71,11 +72,14 @@ def monic_divided_difference(
 theorem monic_difference_identity(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, r : F, n : Nat
-) : forall coefficients : MonicCoefficients(F, n),
-monic_eval(F, one, addF, mulF, n, coefficients, x) = addF(
-  monic_eval(F, one, addF, mulF, n, coefficients, r),
-  mulF(addF(x, negF(r)), monic_divided_difference(F, zero, one, addF, mulF, x, r, n, coefficients))
-) {
+) :
+  forall coefficients : MonicCoefficients(F, n),
+  monic_eval(F, one, addF, mulF, n, coefficients, x) = addF(
+    monic_eval(F, one, addF, mulF, n, coefficients, r),
+    mulF(
+      addF(x, negF(r)), monic_divided_difference(F, zero, one, addF, mulF, x, r, n, coefficients)
+    )
+  ) {
   exact induction n as k return (
     forall coefficients : MonicCoefficients(F, k),
     monic_eval(F, one, addF, mulF, k, coefficients, x) = addF(
@@ -121,9 +125,10 @@ theorem monic_factor_at_root(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : Nat,
   coefficients : MonicCoefficients(F, n), r : F,
   root : monic_eval(F, one, addF, mulF, n, coefficients, r) = zero, x : F
-) : monic_eval(F, one, addF, mulF, n, coefficients, x) = mulF(
-  addF(x, negF(r)), monic_divided_difference(F, zero, one, addF, mulF, x, r, n, coefficients)
-) {
+) :
+  monic_eval(F, one, addF, mulF, n, coefficients, x) = mulF(
+    addF(x, negF(r)), monic_divided_difference(F, zero, one, addF, mulF, x, r, n, coefficients)
+  ) {
   let product =
     mulF(
       addF(x, negF(r)), monic_divided_difference(F, zero, one, addF, mulF, x, r, n, coefficients)

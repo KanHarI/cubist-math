@@ -10,7 +10,8 @@ theorem sample_tagged_map_step(
     SampleTagged(C, condition, n, vertices, tags) -> SampleTagged(C, other, n, vertices, tags)
   ), vertices : SampleVertices(C, succ(n)), tags : SampleTags(C, succ(n)),
   valid : SampleTagged(C, condition, succ(n), vertices, tags)
-) : SampleTagged(C, other, succ(n), vertices, tags) {
+) :
+  SampleTagged(C, other, succ(n), vertices, tags) {
   let a = field_fst(C, SampleVertices(C, n), vertices);
   let tail = field_snd(C, SampleVertices(C, n), vertices);
   let b = sample_first(C, n, tail);
@@ -30,8 +31,9 @@ theorem sample_tagged_map(
   C : U1, condition : C -> C -> C -> U0, other : C -> C -> C -> U0,
   mapping : (forall a : C, forall b : C, forall tag : C, condition(a, b, tag) -> other(a, b, tag)),
   n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-SampleTagged(C, condition, n, vertices, tags) -> SampleTagged(C, other, n, vertices, tags) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  SampleTagged(C, condition, n, vertices, tags) -> SampleTagged(C, other, n, vertices, tags) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     SampleTagged(C, condition, k, vertices, tags) -> SampleTagged(C, other, k, vertices, tags)

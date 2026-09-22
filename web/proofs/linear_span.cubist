@@ -22,25 +22,28 @@ def linear_combination(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
       )
     );
   };
+
 def SpanWitness(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
 ) =
   exists n : Nat, exists vectors : Fin(n) -> vector_carrier(K, V),
   exists coefficients : Fin(n) -> af_carrier(K), (forall i : Fin(n), P(vectors(i)))
   and (linear_combination(K, V, n, vectors, coefficients) = x);
+
 // Span asserts mere existence of a finite combination. It does not choose
 // coordinates and cannot be eliminated into an arbitrary data type.
 def Span(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
 ) =
   Truncate(U0, SpanWitness(K, V, P, x));
+
 def span_prop(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
 ) =
   TruncateProp(U0, SpanWitness(K, V, P, x));
-theorem span_zero(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) : Span(
-  K, V, P, vector_zero(K, V)
-) {
+
+theorem span_zero(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :
+  Span(K, V, P, vector_zero(K, V)) {
   exact TruncateIntro(
     U0, SpanWitness(K, V, P, vector_zero(K, V)),
     typed(
@@ -54,10 +57,12 @@ theorem span_zero(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, 
     )
   );
 }
+
 theorem span_generator(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
   member : P(x)
-) : Span(K, V, P, x) {
+) :
+  Span(K, V, P, x) {
   exact TruncateIntro(
     U0, SpanWitness(K, V, P, x),
     typed(
@@ -75,11 +80,13 @@ theorem span_generator(
     )
   );
 }
+
 theorem span_included(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, Q : vector_carrier(K, V)
   -> U0, included : (forall x : vector_carrier(K, V), P(x) -> Q(x)), x : vector_carrier(K, V),
   member : Span(K, V, P, x)
-) : Span(K, V, Q, x) {
+) :
+  Span(K, V, Q, x) {
   have mapWitness : SpanWitness(K, V, P, x) -> Span(K, V, Q, x) {
     intro witness;
     obtain (n, vectors, coefficients, members, sum) = witness;
@@ -104,8 +111,10 @@ def LinearlyIndependent(K : AlgebraicField, V : VectorSpace(K), P : vector_carri
   -> (forall i : Fin(n), P(vectors(i))) -> forall coefficients : Fin(n) -> af_carrier(K),
   linear_combination(K, V, n, vectors, coefficients) = vector_zero(K, V) -> forall i : Fin(n),
   coefficients(i) = af_zero(af_carrier(K), af_operations(K));
+
 def Spans(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) =
   forall x : vector_carrier(K, V), Span(K, V, P, x);
+
 // A general basis is a proposition-valued subset, not necessarily finite.
 // This is the target interface for the proof via Zorn derived from choice.
 def VectorBasis(K : AlgebraicField, V : VectorSpace(K)) =
@@ -113,9 +122,8 @@ def VectorBasis(K : AlgebraicField, V : VectorSpace(K)) =
   and LinearlyIndependent(K, V, P) and Spans(K, V, P);
 
 // The empty subset is independent, constructively.
-theorem empty_linearly_independent(K : AlgebraicField, V : VectorSpace(K)) : LinearlyIndependent(
-  K, V, (fun (x : vector_carrier(K, V)) => Void)
-) {
+theorem empty_linearly_independent(K : AlgebraicField, V : VectorSpace(K)) :
+  LinearlyIndependent(K, V, (fun (x : vector_carrier(K, V)) => Void)) {
   intro n;
   intro vectors;
   intro distinct;
@@ -125,18 +133,19 @@ theorem empty_linearly_independent(K : AlgebraicField, V : VectorSpace(K)) : Lin
   intro i;
   exact absurd(members(i));
 }
+
 // Independence excludes the zero vector: its coefficient 1 would vanish.
 theorem independent_excludes_zero(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   independent : LinearlyIndependent(K, V, P), member : P(vector_zero(K, V))
-) : Void {
+) :
+  Void {
   let A = af_carrier(K);
   let ops = af_operations(K);
   let zero = vector_zero(K, V);
   obtain (ring, nontrivial, inverses) = af_laws(K);
-  have vanishes : linear_combination(
-    K, V, 1, (fun (i : Fin(1)) => zero), (fun (i : Fin(1)) => af_one(A, ops))
-  ) = zero {
+  have vanishes :
+    linear_combination(K, V, 1, (fun (i : Fin(1)) => zero), (fun (i : Fin(1)) => af_one(A, ops))) = zero {
     exact trans(
       cong(
         (fun (x : vector_carrier(K, V)) => vector_add(K, V, x, zero)), vector_scale_one(K, V, zero)

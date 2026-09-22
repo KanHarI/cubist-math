@@ -1,20 +1,23 @@
 // Constructive arithmetic and prime numbers. Every definition below is checked from source.
 // No axioms and no imported instruction snapshots.
 
-theorem nat_eq_sym(x : Nat, y : Nat, p : (x = y)) = path_induction(
-  Nat, (fun (x2 : Nat) => (fun (y2 : Nat) => (fun (path : (x2 = y2)) => (y2 = x2)))),
-  (fun (x2 : Nat) => refl(x2)), x, y, p
-);
+theorem nat_eq_sym(x : Nat, y : Nat, p : (x = y)) =
+  path_induction(
+    Nat, (fun (x2 : Nat) => (fun (y2 : Nat) => (fun (path : (x2 = y2)) => (y2 = x2)))),
+    (fun (x2 : Nat) => refl(x2)), x, y, p
+  );
 
-theorem nat_eq_trans(x : Nat, y : Nat, z : Nat, p : (x = y), q : (y = z)) = path_induction(
-  Nat, (fun (x2 : Nat) => (fun (y2 : Nat) => (fun (path : (x2 = y2)) => ((x = x2) -> (x = y2))))),
-  (fun (x2 : Nat) => (fun (t : (x = x2)) => t)), y, z, q
-)(p);
+theorem nat_eq_trans(x : Nat, y : Nat, z : Nat, p : (x = y), q : (y = z)) =
+  path_induction(
+    Nat, (fun (x2 : Nat) => (fun (y2 : Nat) => (fun (path : (x2 = y2)) => ((x = x2) -> (x = y2))))),
+    (fun (x2 : Nat) => (fun (t : (x = x2)) => t)), y, z, q
+  )(p);
 
-theorem nat_congruence(f : (Nat -> Nat), x : Nat, y : Nat, p : (x = y)) = path_induction(
-  Nat, (fun (x2 : Nat) => (fun (y2 : Nat) => (fun (path : (x2 = y2)) => (f(x2) = f(y2))))),
-  (fun (x2 : Nat) => refl(f(x2))), x, y, p
-);
+theorem nat_congruence(f : (Nat -> Nat), x : Nat, y : Nat, p : (x = y)) =
+  path_induction(
+    Nat, (fun (x2 : Nat) => (fun (y2 : Nat) => (fun (path : (x2 = y2)) => (f(x2) = f(y2))))),
+    (fun (x2 : Nat) => refl(f(x2))), x, y, p
+  );
 
 // Addition.
 // 0 + b = b; succ(a) + b = succ(a + b).
@@ -40,449 +43,328 @@ def le(x : Nat) = induction x as k return (Nat -> U0) {
       });
   };
 
-theorem nat_zero_ne_succ(n : Nat, p : (0 = succ(n))) = path_induction(
-  Nat,
-  (
-    fun (x : Nat) => (
-      fun (y : Nat) => (fun (path : (x = y)) => ((fun (n2 : Nat) => induction n2 as k return U0 {
+theorem nat_zero_ne_succ(n : Nat, p : (0 = succ(n))) =
+  path_induction(
+    Nat,
+    (
+      fun (x : Nat) => (
+        fun (y : Nat) => (fun (path : (x = y)) => ((fun (n2 : Nat) => induction n2 as k return U0 {
+                zero => Unit;
+                succ h => Void;
+              })(x) -> (fun (n2 : Nat) => induction n2 as k return U0 {
+                zero => Unit;
+                succ h => Void;
+              })(y)))
+      )
+    ), (fun (x : Nat) => (fun (t : (fun (n2 : Nat) => induction n2 as k return U0 {
               zero => Unit;
               succ h => Void;
-            })(x) -> (fun (n2 : Nat) => induction n2 as k return U0 {
-              zero => Unit;
-              succ h => Void;
-            })(y)))
-    )
-  ), (fun (x : Nat) => (fun (t : (fun (n2 : Nat) => induction n2 as k return U0 {
-            zero => Unit;
-            succ h => Void;
-          })(x)) => t)), 0, succ(n), p
-)(tt);
+            })(x)) => t)), 0, succ(n), p
+  )(tt);
 
-theorem nat_succ_injective(x : Nat, y : Nat, p : (succ(x) = succ(y))) = nat_congruence(
-  (fun (n : Nat) => induction n as k return Nat {
-      zero => 0;
-      succ ignored => k;
-    }), succ(x), succ(y), p
-);
+theorem nat_succ_injective(x : Nat, y : Nat, p : (succ(x) = succ(y))) =
+  nat_congruence((fun (n : Nat) => induction n as k return Nat {
+        zero => 0;
+        succ ignored => k;
+      }), succ(x), succ(y), p);
 
 theorem nat_add_zero(x : Nat) = induction x as k return ((k + 0) = k) {
-  zero => refl(0);
-  succ h => nat_congruence((fun (n : Nat) => succ(n)), (k + 0), k, h);
-};
+    zero => refl(0);
+    succ h => nat_congruence((fun (n : Nat) => succ(n)), (k + 0), k, h);
+  };
 
-theorem nat_add_succ(x : Nat) = induction x as k return (
-  forall y : Nat, ((k + succ(y)) = succ((k + y)))
-) {
-  zero => (fun (y : Nat) => refl(succ(y)));
-  succ h => (
-    fun (y : Nat) => nat_congruence((fun (n : Nat) => succ(n)), (k + succ(y)), succ((k + y)), h(y))
-  );
-};
-
-theorem nat_add_assoc(x : Nat) = induction x as k return (
-  forall y : Nat, (forall z : Nat, (((k + y) + z) = (k + (y + z))))
-) {
-  zero => (fun (y : Nat) => (fun (z : Nat) => refl((y + z))));
-  succ h => (
-    fun (y : Nat) => (
-      fun (z : Nat) => nat_congruence(
-        (fun (n : Nat) => succ(n)), ((k + y) + z), (k + (y + z)), h(y, z)
+theorem nat_add_succ(x : Nat) =
+  induction x as k return (forall y : Nat, ((k + succ(y)) = succ((k + y)))) {
+    zero => (fun (y : Nat) => refl(succ(y)));
+    succ h => (
+      fun (y : Nat) => nat_congruence(
+        (fun (n : Nat) => succ(n)), (k + succ(y)), succ((k + y)), h(y)
       )
-    )
-  );
-};
+    );
+  };
 
-theorem nat_add_comm(x : Nat) = induction x as k return (forall y : Nat, ((k + y) = (y + k))) {
-  zero => (fun (y : Nat) => nat_eq_sym((y + 0), y, nat_add_zero(y)));
-  succ h => (
-    fun (y : Nat) => nat_eq_trans(
-      succ((k + y)), succ((y + k)), (y + succ(k)),
-      nat_congruence((fun (n : Nat) => succ(n)), (k + y), (y + k), h(y)),
-      nat_eq_sym((y + succ(k)), succ((y + k)), nat_add_succ(y, k))
-    )
-  );
-};
-
-theorem nat_le_refl(n : Nat) = induction n as k return (k <= k) {
-  zero => tt;
-  succ h => h;
-};
-
-theorem nat_le_zero(n : Nat) = induction n as k return ((k <= 0) -> (k = 0)) {
-  zero => (fun (x : Unit) => refl(0));
-  succ ignored => (fun (h : Void) => typed((succ(k) = 0), absurd(h)));
-};
-
-theorem nat_le_step(a : Nat) = induction a as a2 return (
-  forall c : Nat, ((a2 <= c) -> (a2 <= succ(c)))
-) {
-  zero => (fun (c : Nat) => (fun (x : Unit) => tt));
-  succ h => (fun (c : Nat) => induction c as k return ((succ(a2) <= k) -> (succ(a2) <= succ(k))) {
-      zero => (fun (v : Void) => typed((succ(a2) <= 1), absurd(v)));
-      succ ignored => (fun (v : (a2 <= k)) => h(k, v));
-    });
-};
-
-theorem nat_le_trans(a : Nat) = induction a as a2 return (
-  forall c : Nat, (forall d : Nat, ((a2 <= c) -> ((c <= d) -> (a2 <= d))))
-) {
-  zero => (fun (c : Nat) => (fun (d : Nat) => (fun (x : Unit) => (fun (x2 : (c <= d)) => tt))));
-  succ h => (
-    fun (c : Nat) => induction c as k return (
-      forall d : Nat, ((succ(a2) <= k) -> ((k <= d) -> (succ(a2) <= d)))
-    ) {
-      zero => (
-        fun (d : Nat) => (fun (v : Void) => (fun (x : Unit) => typed((succ(a2) <= d), absurd(v))))
-      );
-      succ ignored => (
-        fun (d : Nat) => induction d as k2 return (
-          (a2 <= k) -> ((succ(k) <= k2) -> (succ(a2) <= k2))
-        ) {
-          zero => (fun (x : (a2 <= k)) => (fun (v : Void) => typed((succ(a2) <= 0), absurd(v))));
-          succ ignored2 => (fun (ac : (a2 <= k)) => (fun (cd : (k <= k2)) => h(k, k2, ac, cd)));
-        }
-      );
-    }
-  );
-};
-
-// Compare two naturals.
-// Either a <= b or b < a, with evidence for the selected case.
-theorem nat_le_total(a : Nat) = induction a as a2 return (
-  forall c : Nat, ((a2 <= c) or (succ(c) <= a2))
-) {
-  zero => (fun (c : Nat) => typed(((0 <= c) or (succ(c) <= 0)), left(tt)));
-  succ h => (fun (c : Nat) => induction c as k return ((succ(a2) <= k) or (succ(k) <= succ(a2))) {
-      zero => typed(((succ(a2) <= 0) or (1 <= succ(a2))), right(tt));
-      succ ignored => h(k);
-    });
-};
-
-theorem nat_le_succ_split(a : Nat) = induction a as a2 return (
-  forall c : Nat, ((a2 <= succ(c)) -> ((a2 <= c) or (a2 = succ(c))))
-) {
-  zero => (fun (c : Nat) => (fun (x : Unit) => typed(((0 <= c) or (0 = succ(c))), left(tt))));
-  succ h => (
-    fun (c : Nat) => induction c as k return (
-      (succ(a2) <= succ(k)) -> ((succ(a2) <= k) or (succ(a2) = succ(k)))
-    ) {
-      zero => (
-        fun (v : (a2 <= 0)) => typed(
-          ((succ(a2) <= 0) or (succ(a2) = 1)),
-          right(nat_congruence((fun (n : Nat) => succ(n)), a2, 0, nat_le_zero(a2, v)))
-        )
-      );
-      succ ignored => (
-        fun (v : (a2 <= succ(k))) => match h(k, v) return (
-          (succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))
-        ) {
-          left ac => typed(((succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))), left(ac));
-          right ac => typed(
-            ((succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))),
-            right(nat_congruence((fun (n : Nat) => succ(n)), a2, succ(k), ac))
-          );
-        }
-      );
-    }
-  );
-};
-
-theorem nat_le_add(a : Nat) = induction a as a2 return (forall c : Nat, (c <= (a2 + c))) {
-  zero => (fun (c : Nat) => nat_le_refl(c));
-  succ h => (fun (c : Nat) => nat_le_step(c, (a2 + c), h(c)));
-};
-
-theorem nat_eq_decidable(a : Nat) = induction a as a2 return (
-  forall c : Nat, ((a2 = c) or ((a2 = c) -> Void))
-) {
-  zero => (fun (c : Nat) => induction c as k return ((0 = k) or ((0 = k) -> Void)) {
-      zero => typed(((0 = 0) or ((0 = 0) -> Void)), left(refl(0)));
-      succ ignored => typed(((0 = succ(k)) or ((0 = succ(k)) -> Void)), right(nat_zero_ne_succ(k)));
-    });
-  succ h => (fun (c : Nat) => induction c as k return ((succ(a2) = k) or ((succ(a2) = k) -> Void)) {
-      zero => typed(
-        ((succ(a2) = 0) or ((succ(a2) = 0) -> Void)),
-        right((fun (p : (succ(a2) = 0)) => nat_zero_ne_succ(a2, nat_eq_sym(succ(a2), 0, p))))
-      );
-      succ ignored => match h(k) return ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)) {
-        left p => typed(
-          ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)),
-          left(nat_congruence((fun (n : Nat) => succ(n)), a2, k, p))
-        );
-        right np => typed(
-          ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)),
-          right((fun (p : (succ(a2) = succ(k))) => np(nat_succ_injective(a2, k, p))))
-        );
-      };
-    });
-};
-
-theorem nat_add_cancel(a : Nat) = induction a as a2 return (
-  forall c : Nat, (forall d : Nat, (((a2 + c) = (a2 + d)) -> (c = d)))
-) {
-  zero => (fun (c : Nat) => (fun (d : Nat) => (fun (p : (c = d)) => p)));
-  succ h => (
-    fun (c : Nat) => (
-      fun (d : Nat) => (
-        fun (p : (succ((a2 + c)) = succ((a2 + d)))) => h(
-          c, d, nat_succ_injective((a2 + c), (a2 + d), p)
-        )
-      )
-    )
-  );
-};
-
-theorem nat_mul_zero(a : Nat) = induction a as a2 return ((a2 * 0) = 0) {
-  zero => refl(0);
-  succ h => h;
-};
-
-theorem nat_add_shuffle(a : Nat, c : Nat, d : Nat) = nat_eq_trans(
-  (a + (c + d)), ((a + c) + d), (c + (a + d)),
-  nat_eq_sym(((a + c) + d), (a + (c + d)), nat_add_assoc(a, c, d)),
-  nat_eq_trans(
-    ((a + c) + d), ((c + a) + d), (c + (a + d)),
-    nat_congruence((fun (x : Nat) => (x + d)), (a + c), (c + a), nat_add_comm(a, c)),
-    nat_add_assoc(c, a, d)
-  )
-);
-
-theorem nat_mul_succ(a : Nat) = induction a as a2 return (
-  forall c : Nat, ((a2 * succ(c)) = (a2 + (a2 * c)))
-) {
-  zero => (fun (c : Nat) => refl(0));
-  succ h => (
-    fun (c : Nat) => nat_congruence(
-      (fun (n : Nat) => succ(n)), (c + (a2 * succ(c))), (a2 + (c + (a2 * c))),
-      nat_eq_trans(
-        (c + (a2 * succ(c))), (c + (a2 + (a2 * c))), (a2 + (c + (a2 * c))),
-        nat_congruence((fun (x : Nat) => (c + x)), (a2 * succ(c)), (a2 + (a2 * c)), h(c)),
-        nat_add_shuffle(c, a2, (a2 * c))
-      )
-    )
-  );
-};
-
-theorem nat_mul_comm(a : Nat) = induction a as a2 return (forall c : Nat, ((a2 * c) = (c * a2))) {
-  zero => (fun (c : Nat) => nat_eq_sym((c * 0), 0, nat_mul_zero(c)));
-  succ h => (
-    fun (c : Nat) => nat_eq_trans(
-      (c + (a2 * c)), (c + (c * a2)), (c * succ(a2)),
-      nat_congruence((fun (x : Nat) => (c + x)), (a2 * c), (c * a2), h(c)),
-      nat_eq_sym((c * succ(a2)), (c + (c * a2)), nat_mul_succ(c, a2))
-    )
-  );
-};
-
-theorem nat_mul_add(a : Nat) = induction a as a2 return (
-  forall c : Nat, (forall d : Nat, (((a2 + c) * d) = ((a2 * d) + (c * d))))
-) {
-  zero => (fun (c : Nat) => (fun (d : Nat) => refl((c * d))));
-  succ h => (
-    fun (c : Nat) => (
-      fun (d : Nat) => nat_eq_trans(
-        (d + ((a2 + c) * d)), (d + ((a2 * d) + (c * d))), ((d + (a2 * d)) + (c * d)),
-        nat_congruence((fun (x : Nat) => (d + x)), ((a2 + c) * d), ((a2 * d) + (c * d)), h(c, d)),
-        nat_eq_sym(
-          ((d + (a2 * d)) + (c * d)), (d + ((a2 * d) + (c * d))),
-          nat_add_assoc(d, (a2 * d), (c * d))
-        )
-      )
-    )
-  );
-};
-
-theorem nat_mul_assoc(a : Nat) = induction a as a2 return (
-  forall c : Nat, (forall d : Nat, (((a2 * c) * d) = (a2 * (c * d))))
-) {
-  zero => (fun (c : Nat) => (fun (d : Nat) => refl(0)));
-  succ h => (
-    fun (c : Nat) => (
-      fun (d : Nat) => nat_eq_trans(
-        ((c + (a2 * c)) * d), ((c * d) + ((a2 * c) * d)), ((c * d) + (a2 * (c * d))),
-        nat_mul_add(c, (a2 * c), d),
-        nat_congruence((fun (x : Nat) => ((c * d) + x)), ((a2 * c) * d), (a2 * (c * d)), h(c, d))
-      )
-    )
-  );
-};
-
-theorem nat_quotient_bound(d : Nat, q : Nat) = induction q as q2 return (q2 <= (q2 * succ(succ(d)))) {
-  zero => tt;
-  succ h => nat_le_trans(
-    q2, (q2 * succ(succ(d))), succ((d + (q2 * succ(succ(d))))), h,
-    nat_le_step(
-      (q2 * succ(succ(d))), (d + (q2 * succ(succ(d)))), nat_le_add(d, (q2 * succ(succ(d))))
-    )
-  );
-};
-
-theorem bounded_least_search(
-  P : (Nat -> U0), dec : (forall n : Nat, (P(n) or (P(n) -> Void))), n : Nat
-) = induction n as n2 return (
-  (exists i : Nat, ((i <= n2) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void))))))
-  or (forall j : Nat, ((j <= n2) -> (P(j) -> Void)))
-) {
-  zero => match dec(0) return (
-    (exists i : Nat, ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void))))))
-    or (forall j : Nat, ((j <= 0) -> (P(j) -> Void)))
-  ) {
-    left p => typed(
-      (
-        (
-          exists i : Nat,
-          ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
-        ) or (forall j : Nat, ((j <= 0) -> (P(j) -> Void)))
-      ),
-      left(
-        typed(
-          (
-            exists i : Nat,
-            ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
-          ),
-          (
-            0,
-            typed(
-              ((0 <= 0) and (P(0) and (forall j : Nat, ((succ(j) <= 0) -> (P(j) -> Void))))),
-              (
-                tt,
-                typed(
-                  (P(0) and (forall j : Nat, ((succ(j) <= 0) -> (P(j) -> Void)))),
-                  (
-                    p,
-                    (
-                      fun (j : Nat) => (
-                        fun (impossible : (succ(j) <= 0)) => (fun (x : P(j)) => impossible)
-                      )
-                    )
-                  )
-                )
-              )
-            )
-          )
+theorem nat_add_assoc(x : Nat) =
+  induction x as k return (forall y : Nat, (forall z : Nat, (((k + y) + z) = (k + (y + z))))) {
+    zero => (fun (y : Nat) => (fun (z : Nat) => refl((y + z))));
+    succ h => (
+      fun (y : Nat) => (
+        fun (z : Nat) => nat_congruence(
+          (fun (n : Nat) => succ(n)), ((k + y) + z), (k + (y + z)), h(y, z)
         )
       )
     );
-    right np => typed(
-      (
-        (
-          exists i : Nat,
-          ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
-        ) or (forall j : Nat, ((j <= 0) -> (P(j) -> Void)))
-      ),
-      right(
-        (
-          fun (j : Nat) => (
-            fun (bound : (j <= 0)) => (
-              fun (p : P(j)) => np(
-                path_induction(
-                  Nat,
-                  (fun (x : Nat) => (fun (y : Nat) => (fun (path : (x = y)) => (P(x) -> P(y))))),
-                  (fun (x : Nat) => (fun (t : P(x)) => t)), j, 0, nat_le_zero(j, bound)
-                )(p)
-              )
-            )
+  };
+
+theorem nat_add_comm(x : Nat) = induction x as k return (forall y : Nat, ((k + y) = (y + k))) {
+    zero => (fun (y : Nat) => nat_eq_sym((y + 0), y, nat_add_zero(y)));
+    succ h => (
+      fun (y : Nat) => nat_eq_trans(
+        succ((k + y)), succ((y + k)), (y + succ(k)),
+        nat_congruence((fun (n : Nat) => succ(n)), (k + y), (y + k), h(y)),
+        nat_eq_sym((y + succ(k)), succ((y + k)), nat_add_succ(y, k))
+      )
+    );
+  };
+
+theorem nat_le_refl(n : Nat) = induction n as k return (k <= k) {
+    zero => tt;
+    succ h => h;
+  };
+
+theorem nat_le_zero(n : Nat) = induction n as k return ((k <= 0) -> (k = 0)) {
+    zero => (fun (x : Unit) => refl(0));
+    succ ignored => (fun (h : Void) => typed((succ(k) = 0), absurd(h)));
+  };
+
+theorem nat_le_step(a : Nat) =
+  induction a as a2 return (forall c : Nat, ((a2 <= c) -> (a2 <= succ(c)))) {
+    zero => (fun (c : Nat) => (fun (x : Unit) => tt));
+    succ h => (fun (c : Nat) => induction c as k return ((succ(a2) <= k) -> (succ(a2) <= succ(k))) {
+        zero => (fun (v : Void) => typed((succ(a2) <= 1), absurd(v)));
+        succ ignored => (fun (v : (a2 <= k)) => h(k, v));
+      });
+  };
+
+theorem nat_le_trans(a : Nat) =
+  induction a as a2 return (
+    forall c : Nat, (forall d : Nat, ((a2 <= c) -> ((c <= d) -> (a2 <= d))))
+  ) {
+    zero => (fun (c : Nat) => (fun (d : Nat) => (fun (x : Unit) => (fun (x2 : (c <= d)) => tt))));
+    succ h => (
+      fun (c : Nat) => induction c as k return (
+        forall d : Nat, ((succ(a2) <= k) -> ((k <= d) -> (succ(a2) <= d)))
+      ) {
+        zero => (
+          fun (d : Nat) => (fun (v : Void) => (fun (x : Unit) => typed((succ(a2) <= d), absurd(v))))
+        );
+        succ ignored => (
+          fun (d : Nat) => induction d as k2 return (
+            (a2 <= k) -> ((succ(k) <= k2) -> (succ(a2) <= k2))
+          ) {
+            zero => (fun (x : (a2 <= k)) => (fun (v : Void) => typed((succ(a2) <= 0), absurd(v))));
+            succ ignored2 => (fun (ac : (a2 <= k)) => (fun (cd : (k <= k2)) => h(k, k2, ac, cd)));
+          }
+        );
+      }
+    );
+  };
+
+// Compare two naturals.
+// Either a <= b or b < a, with evidence for the selected case.
+theorem nat_le_total(a : Nat) =
+  induction a as a2 return (forall c : Nat, ((a2 <= c) or (succ(c) <= a2))) {
+    zero => (fun (c : Nat) => typed(((0 <= c) or (succ(c) <= 0)), left(tt)));
+    succ h => (fun (c : Nat) => induction c as k return ((succ(a2) <= k) or (succ(k) <= succ(a2))) {
+        zero => typed(((succ(a2) <= 0) or (1 <= succ(a2))), right(tt));
+        succ ignored => h(k);
+      });
+  };
+
+theorem nat_le_succ_split(a : Nat) =
+  induction a as a2 return (forall c : Nat, ((a2 <= succ(c)) -> ((a2 <= c) or (a2 = succ(c))))) {
+    zero => (fun (c : Nat) => (fun (x : Unit) => typed(((0 <= c) or (0 = succ(c))), left(tt))));
+    succ h => (
+      fun (c : Nat) => induction c as k return (
+        (succ(a2) <= succ(k)) -> ((succ(a2) <= k) or (succ(a2) = succ(k)))
+      ) {
+        zero => (
+          fun (v : (a2 <= 0)) => typed(
+            ((succ(a2) <= 0) or (succ(a2) = 1)),
+            right(nat_congruence((fun (n : Nat) => succ(n)), a2, 0, nat_le_zero(a2, v)))
+          )
+        );
+        succ ignored => (
+          fun (v : (a2 <= succ(k))) => match h(k, v) return (
+            (succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))
+          ) {
+            left ac => typed(((succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))), left(ac));
+            right ac => typed(
+              ((succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))),
+              right(nat_congruence((fun (n : Nat) => succ(n)), a2, succ(k), ac))
+            );
+          }
+        );
+      }
+    );
+  };
+
+theorem nat_le_add(a : Nat) = induction a as a2 return (forall c : Nat, (c <= (a2 + c))) {
+    zero => (fun (c : Nat) => nat_le_refl(c));
+    succ h => (fun (c : Nat) => nat_le_step(c, (a2 + c), h(c)));
+  };
+
+theorem nat_eq_decidable(a : Nat) =
+  induction a as a2 return (forall c : Nat, ((a2 = c) or ((a2 = c) -> Void))) {
+    zero => (fun (c : Nat) => induction c as k return ((0 = k) or ((0 = k) -> Void)) {
+        zero => typed(((0 = 0) or ((0 = 0) -> Void)), left(refl(0)));
+        succ ignored => typed(
+          ((0 = succ(k)) or ((0 = succ(k)) -> Void)), right(nat_zero_ne_succ(k))
+        );
+      });
+    succ h => (
+      fun (c : Nat) => induction c as k return ((succ(a2) = k) or ((succ(a2) = k) -> Void)) {
+        zero => typed(
+          ((succ(a2) = 0) or ((succ(a2) = 0) -> Void)),
+          right((fun (p : (succ(a2) = 0)) => nat_zero_ne_succ(a2, nat_eq_sym(succ(a2), 0, p))))
+        );
+        succ ignored => match h(k) return ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)) {
+          left p => typed(
+            ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)),
+            left(nat_congruence((fun (n : Nat) => succ(n)), a2, k, p))
+          );
+          right np => typed(
+            ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)),
+            right((fun (p : (succ(a2) = succ(k))) => np(nat_succ_injective(a2, k, p))))
+          );
+        };
+      }
+    );
+  };
+
+theorem nat_add_cancel(a : Nat) =
+  induction a as a2 return (forall c : Nat, (forall d : Nat, (((a2 + c) = (a2 + d)) -> (c = d)))) {
+    zero => (fun (c : Nat) => (fun (d : Nat) => (fun (p : (c = d)) => p)));
+    succ h => (
+      fun (c : Nat) => (
+        fun (d : Nat) => (
+          fun (p : (succ((a2 + c)) = succ((a2 + d)))) => h(
+            c, d, nat_succ_injective((a2 + c), (a2 + d), p)
           )
         )
       )
     );
   };
-  succ ih => match ih return (
+
+theorem nat_mul_zero(a : Nat) = induction a as a2 return ((a2 * 0) = 0) {
+    zero => refl(0);
+    succ h => h;
+  };
+
+theorem nat_add_shuffle(a : Nat, c : Nat, d : Nat) =
+  nat_eq_trans(
+    (a + (c + d)), ((a + c) + d), (c + (a + d)),
+    nat_eq_sym(((a + c) + d), (a + (c + d)), nat_add_assoc(a, c, d)),
+    nat_eq_trans(
+      ((a + c) + d), ((c + a) + d), (c + (a + d)),
+      nat_congruence((fun (x : Nat) => (x + d)), (a + c), (c + a), nat_add_comm(a, c)),
+      nat_add_assoc(c, a, d)
+    )
+  );
+
+theorem nat_mul_succ(a : Nat) =
+  induction a as a2 return (forall c : Nat, ((a2 * succ(c)) = (a2 + (a2 * c)))) {
+    zero => (fun (c : Nat) => refl(0));
+    succ h => (
+      fun (c : Nat) => nat_congruence(
+        (fun (n : Nat) => succ(n)), (c + (a2 * succ(c))), (a2 + (c + (a2 * c))),
+        nat_eq_trans(
+          (c + (a2 * succ(c))), (c + (a2 + (a2 * c))), (a2 + (c + (a2 * c))),
+          nat_congruence((fun (x : Nat) => (c + x)), (a2 * succ(c)), (a2 + (a2 * c)), h(c)),
+          nat_add_shuffle(c, a2, (a2 * c))
+        )
+      )
+    );
+  };
+
+theorem nat_mul_comm(a : Nat) = induction a as a2 return (forall c : Nat, ((a2 * c) = (c * a2))) {
+    zero => (fun (c : Nat) => nat_eq_sym((c * 0), 0, nat_mul_zero(c)));
+    succ h => (
+      fun (c : Nat) => nat_eq_trans(
+        (c + (a2 * c)), (c + (c * a2)), (c * succ(a2)),
+        nat_congruence((fun (x : Nat) => (c + x)), (a2 * c), (c * a2), h(c)),
+        nat_eq_sym((c * succ(a2)), (c + (c * a2)), nat_mul_succ(c, a2))
+      )
+    );
+  };
+
+theorem nat_mul_add(a : Nat) =
+  induction a as a2 return (
+    forall c : Nat, (forall d : Nat, (((a2 + c) * d) = ((a2 * d) + (c * d))))
+  ) {
+    zero => (fun (c : Nat) => (fun (d : Nat) => refl((c * d))));
+    succ h => (
+      fun (c : Nat) => (
+        fun (d : Nat) => nat_eq_trans(
+          (d + ((a2 + c) * d)), (d + ((a2 * d) + (c * d))), ((d + (a2 * d)) + (c * d)),
+          nat_congruence((fun (x : Nat) => (d + x)), ((a2 + c) * d), ((a2 * d) + (c * d)), h(c, d)),
+          nat_eq_sym(
+            ((d + (a2 * d)) + (c * d)), (d + ((a2 * d) + (c * d))),
+            nat_add_assoc(d, (a2 * d), (c * d))
+          )
+        )
+      )
+    );
+  };
+
+theorem nat_mul_assoc(a : Nat) =
+  induction a as a2 return (forall c : Nat, (forall d : Nat, (((a2 * c) * d) = (a2 * (c * d))))) {
+    zero => (fun (c : Nat) => (fun (d : Nat) => refl(0)));
+    succ h => (
+      fun (c : Nat) => (
+        fun (d : Nat) => nat_eq_trans(
+          ((c + (a2 * c)) * d), ((c * d) + ((a2 * c) * d)), ((c * d) + (a2 * (c * d))),
+          nat_mul_add(c, (a2 * c), d),
+          nat_congruence((fun (x : Nat) => ((c * d) + x)), ((a2 * c) * d), (a2 * (c * d)), h(c, d))
+        )
+      )
+    );
+  };
+
+theorem nat_quotient_bound(d : Nat, q : Nat) =
+  induction q as q2 return (q2 <= (q2 * succ(succ(d)))) {
+    zero => tt;
+    succ h => nat_le_trans(
+      q2, (q2 * succ(succ(d))), succ((d + (q2 * succ(succ(d))))), h,
+      nat_le_step(
+        (q2 * succ(succ(d))), (d + (q2 * succ(succ(d)))), nat_le_add(d, (q2 * succ(succ(d))))
+      )
+    );
+  };
+
+theorem bounded_least_search(
+  P : (Nat -> U0), dec : (forall n : Nat, (P(n) or (P(n) -> Void))), n : Nat
+) =
+  induction n as n2 return (
     (
       exists i : Nat,
-      ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
-    ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+      ((i <= n2) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+    ) or (forall j : Nat, ((j <= n2) -> (P(j) -> Void)))
   ) {
-    left witness => unpack witness as (i, data) return (
+    zero => match dec(0) return (
       (
         exists i : Nat,
-        ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
-      ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
-    ) {
-      unpack data as (bound, rest) return (
-        (
-          exists i2 : Nat,
-          ((i2 <= succ(n2)) and (P(i2) and (forall j : Nat, ((succ(j) <= i2) -> (P(j) -> Void)))))
-        ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
-      ) {
-        unpack rest as (proof, minimal) return (
-          (
-            exists i2 : Nat,
-            ((i2 <= succ(n2)) and (P(i2) and (forall j : Nat, ((succ(j) <= i2) -> (P(j) -> Void)))))
-          ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
-        ) {
-          typed(
-            (
-              (
-                exists i2 : Nat,
-                (
-                  (i2 <= succ(n2))
-                  and (P(i2) and (forall j : Nat, ((succ(j) <= i2) -> (P(j) -> Void))))
-                )
-              ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
-            ),
-            left(
-              typed(
-                (
-                  exists i2 : Nat,
-                  (
-                    (i2 <= succ(n2))
-                    and (P(i2) and (forall j : Nat, ((succ(j) <= i2) -> (P(j) -> Void))))
-                  )
-                ),
-                (
-                  i,
-                  typed(
-                    (
-                      (i <= succ(n2))
-                      and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void))))
-                    ),
-                    (
-                      nat_le_step(i, n2, bound),
-                      typed(
-                        (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))),
-                        (proof, minimal)
-                      )
-                    )
-                  )
-                )
-              )
-            )
-          );
-        };
-      };
-    };
-    right oldNone => match dec(succ(n2)) return (
-      (
-        exists i : Nat,
-        ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
-      ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+        ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+      ) or (forall j : Nat, ((j <= 0) -> (P(j) -> Void)))
     ) {
       left p => typed(
         (
           (
             exists i : Nat,
-            ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
-          ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+            ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+          ) or (forall j : Nat, ((j <= 0) -> (P(j) -> Void)))
         ),
         left(
           typed(
             (
               exists i : Nat,
-              ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+              ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
             ),
             (
-              succ(n2),
+              0,
               typed(
+                ((0 <= 0) and (P(0) and (forall j : Nat, ((succ(j) <= 0) -> (P(j) -> Void))))),
                 (
-                  (succ(n2) <= succ(n2))
-                  and (P(succ(n2)) and (forall j : Nat, ((succ(j) <= succ(n2)) -> (P(j) -> Void))))
-                ),
-                (
-                  nat_le_refl(succ(n2)),
+                  tt,
                   typed(
-                    (P(succ(n2)) and (forall j : Nat, ((succ(j) <= succ(n2)) -> (P(j) -> Void)))),
-                    (p, oldNone)
+                    (P(0) and (forall j : Nat, ((succ(j) <= 0) -> (P(j) -> Void)))),
+                    (
+                      p,
+                      (
+                        fun (j : Nat) => (
+                          fun (impossible : (succ(j) <= 0)) => (fun (x : P(j)) => impossible)
+                        )
+                      )
+                    )
                   )
                 )
               )
@@ -494,166 +376,313 @@ theorem bounded_least_search(
         (
           (
             exists i : Nat,
-            ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
-          ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+            ((i <= 0) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+          ) or (forall j : Nat, ((j <= 0) -> (P(j) -> Void)))
         ),
         right(
           (
             fun (j : Nat) => (
-              fun (bound : (j <= succ(n2))) => (
-                fun (p : P(j)) => match nat_le_succ_split(j, n2, bound) return Void {
-                  left small => oldNone(j, small, p);
-                  right same => np(
-                    path_induction(
-                      Nat,
-                      (fun (x : Nat) => (fun (y : Nat) => (fun (path : (x = y)) => (P(x) -> P(y))))),
-                      (fun (x : Nat) => (fun (t : P(x)) => t)), j, succ(n2), same
-                    )(p)
-                  );
-                }
+              fun (bound : (j <= 0)) => (
+                fun (p : P(j)) => np(
+                  path_induction(
+                    Nat,
+                    (fun (x : Nat) => (fun (y : Nat) => (fun (path : (x = y)) => (P(x) -> P(y))))),
+                    (fun (x : Nat) => (fun (t : P(x)) => t)), j, 0, nat_le_zero(j, bound)
+                  )(p)
+                )
               )
             )
           )
         )
       );
     };
+    succ ih => match ih return (
+      (
+        exists i : Nat,
+        ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+      ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+    ) {
+      left witness => unpack witness as (i, data) return (
+        (
+          exists i : Nat,
+          ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+        ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+      ) {
+        unpack data as (bound, rest) return (
+          (
+            exists i2 : Nat,
+            ((i2 <= succ(n2)) and (P(i2) and (forall j : Nat, ((succ(j) <= i2) -> (P(j) -> Void)))))
+          ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+        ) {
+          unpack rest as (proof, minimal) return (
+            (
+              exists i2 : Nat,
+              (
+                (i2 <= succ(n2))
+                and (P(i2) and (forall j : Nat, ((succ(j) <= i2) -> (P(j) -> Void))))
+              )
+            ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+          ) {
+            typed(
+              (
+                (
+                  exists i2 : Nat,
+                  (
+                    (i2 <= succ(n2))
+                    and (P(i2) and (forall j : Nat, ((succ(j) <= i2) -> (P(j) -> Void))))
+                  )
+                ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+              ),
+              left(
+                typed(
+                  (
+                    exists i2 : Nat,
+                    (
+                      (i2 <= succ(n2))
+                      and (P(i2) and (forall j : Nat, ((succ(j) <= i2) -> (P(j) -> Void))))
+                    )
+                  ),
+                  (
+                    i,
+                    typed(
+                      (
+                        (i <= succ(n2))
+                        and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void))))
+                      ),
+                      (
+                        nat_le_step(i, n2, bound),
+                        typed(
+                          (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))),
+                          (proof, minimal)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            );
+          };
+        };
+      };
+      right oldNone => match dec(succ(n2)) return (
+        (
+          exists i : Nat,
+          ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+        ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+      ) {
+        left p => typed(
+          (
+            (
+              exists i : Nat,
+              ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+            ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+          ),
+          left(
+            typed(
+              (
+                exists i : Nat,
+                (
+                  (i <= succ(n2))
+                  and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void))))
+                )
+              ),
+              (
+                succ(n2),
+                typed(
+                  (
+                    (succ(n2) <= succ(n2))
+                    and (
+                      P(succ(n2)) and (forall j : Nat, ((succ(j) <= succ(n2)) -> (P(j) -> Void)))
+                    )
+                  ),
+                  (
+                    nat_le_refl(succ(n2)),
+                    typed(
+                      (P(succ(n2)) and (forall j : Nat, ((succ(j) <= succ(n2)) -> (P(j) -> Void)))),
+                      (p, oldNone)
+                    )
+                  )
+                )
+              )
+            )
+          )
+        );
+        right np => typed(
+          (
+            (
+              exists i : Nat,
+              ((i <= succ(n2)) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+            ) or (forall j : Nat, ((j <= succ(n2)) -> (P(j) -> Void)))
+          ),
+          right(
+            (
+              fun (j : Nat) => (
+                fun (bound : (j <= succ(n2))) => (
+                  fun (p : P(j)) => match nat_le_succ_split(j, n2, bound) return Void {
+                    left small => oldNone(j, small, p);
+                    right same => np(
+                      path_induction(
+                        Nat,
+                        (
+                          fun (x : Nat) => (
+                            fun (y : Nat) => (fun (path : (x = y)) => (P(x) -> P(y)))
+                          )
+                        ), (fun (x : Nat) => (fun (t : P(x)) => t)), j, succ(n2), same
+                      )(p)
+                    );
+                  }
+                )
+              )
+            )
+          )
+        );
+      };
+    };
   };
-};
 
 theorem least_bounded_witness(
   P : (Nat -> U0), dec : (forall n : Nat, (P(n) or (P(n) -> Void))), n : Nat, pn : P(n)
-) = match bounded_least_search(P, dec, n) return (
-  exists i : Nat, ((i <= n) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
-) {
-  left witness => witness;
-  right empty => typed(
-    (exists i : Nat, ((i <= n) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))),
-    absurd(empty(n, nat_le_refl(n), pn))
-  );
-};
+) =
+  match bounded_least_search(P, dec, n) return (
+    exists i : Nat, ((i <= n) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+  ) {
+    left witness => witness;
+    right empty => typed(
+      (
+        exists i : Nat,
+        ((i <= n) and (P(i) and (forall j : Nat, ((succ(j) <= i) -> (P(j) -> Void)))))
+      ), absurd(empty(n, nat_le_refl(n), pn))
+    );
+  };
 
 // Divisibility.
 // Divides(d, n) means exists k : Nat, k * d = n.
 def Divides(d : Nat, n : Nat) = (exists q : Nat, ((q * d) = n));
 
-theorem nontrivial_divisibility_decidable(d : Nat, n : Nat) = match bounded_least_search(
-  (fun (q : Nat) => ((q * succ(succ(d))) = n)),
-  (fun (q : Nat) => nat_eq_decidable((q * succ(succ(d))), n)), n
-) return (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)) {
-  left witness => unpack witness as (i, data) return (
-    Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)
-  ) {
-    unpack data as (bound, rest) return (
+theorem nontrivial_divisibility_decidable(d : Nat, n : Nat) =
+  match bounded_least_search(
+    (fun (q : Nat) => ((q * succ(succ(d))) = n)),
+    (fun (q : Nat) => nat_eq_decidable((q * succ(succ(d))), n)), n
+  ) return (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)) {
+    left witness => unpack witness as (i, data) return (
       Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)
     ) {
-      unpack rest as (proof, minimal) return (
+      unpack data as (bound, rest) return (
         Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)
       ) {
-        typed(
-          (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)),
-          left(typed(Divides(succ(succ(d)), n), (i, proof)))
-        );
+        unpack rest as (proof, minimal) return (
+          Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)
+        ) {
+          typed(
+            (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)),
+            left(typed(Divides(succ(succ(d)), n), (i, proof)))
+          );
+        };
       };
     };
-  };
-  right empty => typed(
-    (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)),
-    right((fun (w : Divides(succ(succ(d)), n)) => unpack w as (q, p) return Void {
-          empty(
-            q,
-            path_induction(
-              Nat,
-              (fun (x : Nat) => (fun (y : Nat) => (fun (path : (x = y)) => ((q <= x) -> (q <= y))))),
-              (fun (x : Nat) => (fun (t : (q <= x)) => t)), (q * succ(succ(d))), n, p
-            )(nat_quotient_bound(d, q)), p
-          );
-        }))
-  );
-};
-
-theorem divides_transitive(d : Nat, m : Nat, n : Nat, dm : Divides(d, m), mn : Divides(m, n)) = unpack dm as (
-  k, pk
-) return Divides(d, n) {
-  unpack mn as (l, pl) return Divides(d, n) {
-    typed(
-      Divides(d, n),
-      (
-        (l * k),
-        nat_eq_trans(
-          ((l * k) * d), (l * (k * d)), n, nat_mul_assoc(l, k, d),
-          nat_eq_trans(
-            (l * (k * d)), (l * m), n, nat_congruence((fun (x : Nat) => (l * x)), (k * d), m, pk),
-            pl
-          )
-        )
-      )
+    right empty => typed(
+      (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)),
+      right((fun (w : Divides(succ(succ(d)), n)) => unpack w as (q, p) return Void {
+            empty(
+              q,
+              path_induction(
+                Nat,
+                (
+                  fun (x : Nat) => (
+                    fun (y : Nat) => (fun (path : (x = y)) => ((q <= x) -> (q <= y)))
+                  )
+                ), (fun (x : Nat) => (fun (t : (q <= x)) => t)), (q * succ(succ(d))), n, p
+              )(nat_quotient_bound(d, q)), p
+            );
+          }))
     );
   };
-};
 
-theorem multiples_not_adjacent(d : Nat, k : Nat) = induction k as k2 return (
-  forall l : Nat, (((l * succ(succ(d))) = succ((k2 * succ(succ(d))))) -> Void)
-) {
-  zero => (
-    fun (l : Nat) => induction l as k2 return (
-      ((k2 * succ(succ(d))) = succ((0 * succ(succ(d))))) -> Void
-    ) {
-      zero => nat_zero_ne_succ(0);
-      succ ignored => (
-        fun (p : ((succ(k2) * succ(succ(d))) = 1)) => nat_zero_ne_succ(
-          (d + (k2 * succ(succ(d)))),
-          nat_eq_sym(
-            succ((d + (k2 * succ(succ(d))))), 0,
-            nat_succ_injective(succ((d + (k2 * succ(succ(d))))), 0, p)
-          )
-        )
-      );
-    }
-  );
-  succ ih => (
-    fun (l : Nat) => induction l as k3 return (
-      ((k3 * succ(succ(d))) = succ((succ(k2) * succ(succ(d))))) -> Void
-    ) {
-      zero => nat_zero_ne_succ((succ(k2) * succ(succ(d))));
-      succ ignored => (
-        fun (p : ((succ(k3) * succ(succ(d))) = succ((succ(k2) * succ(succ(d)))))) => ih(
-          k3,
-          nat_add_cancel(
-            succ(succ(d)), (k3 * succ(succ(d))), succ((k2 * succ(succ(d)))),
+theorem divides_transitive(d : Nat, m : Nat, n : Nat, dm : Divides(d, m), mn : Divides(m, n)) =
+  unpack dm as (k, pk) return Divides(d, n) {
+    unpack mn as (l, pl) return Divides(d, n) {
+      typed(
+        Divides(d, n),
+        (
+          (l * k),
+          nat_eq_trans(
+            ((l * k) * d), (l * (k * d)), n, nat_mul_assoc(l, k, d),
             nat_eq_trans(
-              (succ(succ(d)) + (k3 * succ(succ(d)))), succ((succ(succ(d)) + (k2 * succ(succ(d))))),
-              (succ(succ(d)) + succ((k2 * succ(succ(d))))), p,
-              nat_eq_sym(
-                (succ(succ(d)) + succ((k2 * succ(succ(d))))),
-                succ((succ(succ(d)) + (k2 * succ(succ(d))))),
-                nat_add_succ(succ(succ(d)), (k2 * succ(succ(d))))
-              )
+              (l * (k * d)), (l * m), n, nat_congruence((fun (x : Nat) => (l * x)), (k * d), m, pk),
+              pl
             )
           )
         )
       );
-    }
-  );
-};
+    };
+  };
+
+theorem multiples_not_adjacent(d : Nat, k : Nat) =
+  induction k as k2 return (
+    forall l : Nat, (((l * succ(succ(d))) = succ((k2 * succ(succ(d))))) -> Void)
+  ) {
+    zero => (
+      fun (l : Nat) => induction l as k2 return (
+        ((k2 * succ(succ(d))) = succ((0 * succ(succ(d))))) -> Void
+      ) {
+        zero => nat_zero_ne_succ(0);
+        succ ignored => (
+          fun (p : ((succ(k2) * succ(succ(d))) = 1)) => nat_zero_ne_succ(
+            (d + (k2 * succ(succ(d)))),
+            nat_eq_sym(
+              succ((d + (k2 * succ(succ(d))))), 0,
+              nat_succ_injective(succ((d + (k2 * succ(succ(d))))), 0, p)
+            )
+          )
+        );
+      }
+    );
+    succ ih => (
+      fun (l : Nat) => induction l as k3 return (
+        ((k3 * succ(succ(d))) = succ((succ(k2) * succ(succ(d))))) -> Void
+      ) {
+        zero => nat_zero_ne_succ((succ(k2) * succ(succ(d))));
+        succ ignored => (
+          fun (p : ((succ(k3) * succ(succ(d))) = succ((succ(k2) * succ(succ(d)))))) => ih(
+            k3,
+            nat_add_cancel(
+              succ(succ(d)), (k3 * succ(succ(d))), succ((k2 * succ(succ(d)))),
+              nat_eq_trans(
+                (succ(succ(d)) + (k3 * succ(succ(d)))),
+                succ((succ(succ(d)) + (k2 * succ(succ(d))))),
+                (succ(succ(d)) + succ((k2 * succ(succ(d))))), p,
+                nat_eq_sym(
+                  (succ(succ(d)) + succ((k2 * succ(succ(d))))),
+                  succ((succ(succ(d)) + (k2 * succ(succ(d))))),
+                  nat_add_succ(succ(succ(d)), (k2 * succ(succ(d))))
+                )
+              )
+            )
+          )
+        );
+      }
+    );
+  };
 
 // No consecutive multiples.
 // A number at least two cannot divide both n and n+1.
 theorem nontrivial_divisor_not_consecutive(
   d : Nat, n : Nat, dn : Divides(succ(succ(d)), n), dsn : Divides(succ(succ(d)), succ(n))
-) = unpack dn as (k, pk) return Void {
-  unpack dsn as (l, pl) return Void {
-    multiples_not_adjacent(
-      d, k, l,
-      nat_eq_trans(
-        (l * succ(succ(d))), succ(n), succ((k * succ(succ(d)))), pl,
-        nat_eq_sym(
-          succ((k * succ(succ(d)))), succ(n),
-          nat_congruence((fun (n2 : Nat) => succ(n2)), (k * succ(succ(d))), n, pk)
+) =
+  unpack dn as (k, pk) return Void {
+    unpack dsn as (l, pl) return Void {
+      multiples_not_adjacent(
+        d, k, l,
+        nat_eq_trans(
+          (l * succ(succ(d))), succ(n), succ((k * succ(succ(d)))), pl,
+          nat_eq_sym(
+            succ((k * succ(succ(d)))), succ(n),
+            nat_congruence((fun (n2 : Nat) => succ(n2)), (k * succ(succ(d))), n, pk)
+          )
         )
-      )
-    );
+      );
+    };
   };
-};
 
 // Factorial.
 // factorial(0) = 1; factorial(succ(n)) = succ(n) * factorial(n).
@@ -664,48 +693,46 @@ opaque def factorial(n : Nat) = induction n as k return Nat {
     succ h => (succ(k) * h);
   };
 
-theorem nat_add_positive(x : Nat) = induction x as k return (
-  forall y : Nat, ((1 <= k) -> (1 <= (k + y)))
-) {
-  zero => (fun (y : Nat) => (fun (v : Void) => typed((1 <= y), absurd(v))));
-  succ ignored => (fun (y : Nat) => (fun (x2 : Unit) => tt));
-};
+theorem nat_add_positive(x : Nat) =
+  induction x as k return (forall y : Nat, ((1 <= k) -> (1 <= (k + y)))) {
+    zero => (fun (y : Nat) => (fun (v : Void) => typed((1 <= y), absurd(v))));
+    succ ignored => (fun (y : Nat) => (fun (x2 : Unit) => tt));
+  };
 
 // Positive factorial.
 // Every factorial is at least one.
 theorem factorial_positive(n : Nat) = induction n as n2 return (1 <= factorial(n2)) {
-  zero => tt;
-  succ h => nat_add_positive(factorial(n2), (n2 * factorial(n2)), h);
-};
+    zero => tt;
+    succ h => nat_add_positive(factorial(n2), (n2 * factorial(n2)), h);
+  };
 
 // Divisor of a factorial.
 // Every number from 2 through n divides factorial(n).
-theorem bounded_divisor_of_factorial(d : Nat, n : Nat) = induction n as n2 return (
-  (succ(succ(d)) <= n2) -> Divides(succ(succ(d)), factorial(n2))
-) {
-  zero => (fun (v : Void) => typed(Divides(succ(succ(d)), 1), absurd(v)));
-  succ ih => (
-    fun (bound : (succ(succ(d)) <= succ(n2))) => match nat_le_succ_split(succ(succ(d)), n2, bound) return Divides(
-      succ(succ(d)), factorial(succ(n2))
-    ) {
-      left small => divides_transitive(
-        succ(succ(d)), factorial(n2), factorial(succ(n2)), ih(small),
-        typed(Divides(factorial(n2), factorial(succ(n2))), (succ(n2), refl(factorial(succ(n2)))))
-      );
-      right same => typed(
-        Divides(succ(succ(d)), factorial(succ(n2))),
-        (
-          factorial(n2),
-          nat_eq_trans(
-            (factorial(n2) * succ(succ(d))), (factorial(n2) * succ(n2)), factorial(succ(n2)),
-            nat_congruence((fun (x : Nat) => (factorial(n2) * x)), succ(succ(d)), succ(n2), same),
-            nat_mul_comm(factorial(n2), succ(n2))
+theorem bounded_divisor_of_factorial(d : Nat, n : Nat) =
+  induction n as n2 return ((succ(succ(d)) <= n2) -> Divides(succ(succ(d)), factorial(n2))) {
+    zero => (fun (v : Void) => typed(Divides(succ(succ(d)), 1), absurd(v)));
+    succ ih => (
+      fun (bound : (succ(succ(d)) <= succ(n2))) => match nat_le_succ_split(succ(succ(d)), n2, bound) return Divides(
+        succ(succ(d)), factorial(succ(n2))
+      ) {
+        left small => divides_transitive(
+          succ(succ(d)), factorial(n2), factorial(succ(n2)), ih(small),
+          typed(Divides(factorial(n2), factorial(succ(n2))), (succ(n2), refl(factorial(succ(n2)))))
+        );
+        right same => typed(
+          Divides(succ(succ(d)), factorial(succ(n2))),
+          (
+            factorial(n2),
+            nat_eq_trans(
+              (factorial(n2) * succ(succ(d))), (factorial(n2) * succ(n2)), factorial(succ(n2)),
+              nat_congruence((fun (x : Nat) => (factorial(n2) * x)), succ(succ(d)), succ(n2), same),
+              nat_mul_comm(factorial(n2), succ(n2))
+            )
           )
-        )
-      );
-    }
-  );
-};
+        );
+      }
+    );
+  };
 
 // Prime number.
 // Prime(p) means exists i : Nat, (p = 2 + i) and forall j : Nat, j < i -> Divides(2 + j, p) ->
@@ -721,64 +748,70 @@ def Prime(p : Nat) =
 
 // Prime divisor.
 // A least divisor of m greater than one is prime. The returned i names p = 2+i.
-theorem prime_divisor_exists(n : Nat) = induction n as k return (
-  (2 <= k) -> (exists i : Nat, (Prime(succ(succ(i))) and Divides(succ(succ(i)), k)))
-) {
-  zero => (
-    fun (v : Void) => typed(
-      (exists i : Nat, (Prime(succ(succ(i))) and Divides(succ(succ(i)), 0))), absurd(v)
-    )
-  );
-  succ ignored => induction k as k2 return (
-    (2 <= succ(k2)) -> (exists i : Nat, (Prime(succ(succ(i))) and Divides(succ(succ(i)), succ(k2))))
+theorem prime_divisor_exists(n : Nat) =
+  induction n as k return (
+    (2 <= k) -> (exists i : Nat, (Prime(succ(succ(i))) and Divides(succ(succ(i)), k)))
   ) {
     zero => (
       fun (v : Void) => typed(
-        (exists i : Nat, (Prime(succ(succ(i))) and Divides(succ(succ(i)), 1))), absurd(v)
+        (exists i : Nat, (Prime(succ(succ(i))) and Divides(succ(succ(i)), 0))), absurd(v)
       )
     );
-    succ ignored2 => (
-      fun (x : Unit) => unpack least_bounded_witness(
-        (fun (i : Nat) => Divides(succ(succ(i)), succ(succ(k2)))),
-        (fun (i : Nat) => nontrivial_divisibility_decidable(i, succ(succ(k2)))), k2,
-        typed(Divides(succ(succ(k2)), succ(succ(k2))), (1, nat_add_zero(succ(succ(k2)))))
-      ) as (i, data) return (
-        exists i : Nat, (Prime(succ(succ(i))) and Divides(succ(succ(i)), succ(succ(k2))))
-      ) {
-        unpack data as (bound, rest) return (
-          exists i2 : Nat, (Prime(succ(succ(i2))) and Divides(succ(succ(i2)), succ(succ(k2))))
+    succ ignored => induction k as k2 return (
+      (2 <= succ(k2))
+      -> (exists i : Nat, (Prime(succ(succ(i))) and Divides(succ(succ(i)), succ(k2))))
+    ) {
+      zero => (
+        fun (v : Void) => typed(
+          (exists i : Nat, (Prime(succ(succ(i))) and Divides(succ(succ(i)), 1))), absurd(v)
+        )
+      );
+      succ ignored2 => (
+        fun (x : Unit) => unpack least_bounded_witness(
+          (fun (i : Nat) => Divides(succ(succ(i)), succ(succ(k2)))),
+          (fun (i : Nat) => nontrivial_divisibility_decidable(i, succ(succ(k2)))), k2,
+          typed(Divides(succ(succ(k2)), succ(succ(k2))), (1, nat_add_zero(succ(succ(k2)))))
+        ) as (i, data) return (
+          exists i : Nat, (Prime(succ(succ(i))) and Divides(succ(succ(i)), succ(succ(k2))))
         ) {
-          unpack rest as (proof, minimal) return (
+          unpack data as (bound, rest) return (
             exists i2 : Nat, (Prime(succ(succ(i2))) and Divides(succ(succ(i2)), succ(succ(k2))))
           ) {
-            typed(
-              (exists i2 : Nat, (Prime(succ(succ(i2))) and Divides(succ(succ(i2)), succ(succ(k2))))),
-              (
-                i,
-                typed(
-                  (Prime(succ(succ(i))) and Divides(succ(succ(i)), succ(succ(k2)))),
-                  (
-                    typed(
-                      Prime(succ(succ(i))),
-                      (
-                        i,
-                        typed(
-                          (
-                            (succ(succ(i)) = succ(succ(i)))
-                            and (
-                              forall j : Nat,
-                              ((succ(j) <= i) -> (Divides(succ(succ(j)), succ(succ(i))) -> Void))
-                            )
-                          ),
-                          (
-                            refl(succ(succ(i))),
+            unpack rest as (proof, minimal) return (
+              exists i2 : Nat, (Prime(succ(succ(i2))) and Divides(succ(succ(i2)), succ(succ(k2))))
+            ) {
+              typed(
+                (
+                  exists i2 : Nat,
+                  (Prime(succ(succ(i2))) and Divides(succ(succ(i2)), succ(succ(k2))))
+                ),
+                (
+                  i,
+                  typed(
+                    (Prime(succ(succ(i))) and Divides(succ(succ(i)), succ(succ(k2)))),
+                    (
+                      typed(
+                        Prime(succ(succ(i))),
+                        (
+                          i,
+                          typed(
                             (
-                              fun (j : Nat) => (
-                                fun (smaller : (succ(j) <= i)) => (
-                                  fun (dp : Divides(succ(succ(j)), succ(succ(i)))) => minimal(
-                                    j, smaller,
-                                    divides_transitive(
-                                      succ(succ(j)), succ(succ(i)), succ(succ(k2)), dp, proof
+                              (succ(succ(i)) = succ(succ(i)))
+                              and (
+                                forall j : Nat,
+                                ((succ(j) <= i) -> (Divides(succ(succ(j)), succ(succ(i))) -> Void))
+                              )
+                            ),
+                            (
+                              refl(succ(succ(i))),
+                              (
+                                fun (j : Nat) => (
+                                  fun (smaller : (succ(j) <= i)) => (
+                                    fun (dp : Divides(succ(succ(j)), succ(succ(i)))) => minimal(
+                                      j, smaller,
+                                      divides_transitive(
+                                        succ(succ(j)), succ(succ(i)), succ(succ(k2)), dp, proof
+                                      )
                                     )
                                   )
                                 )
@@ -786,17 +819,16 @@ theorem prime_divisor_exists(n : Nat) = induction n as k return (
                             )
                           )
                         )
-                      )
-                    ), proof
+                      ), proof
+                    )
                   )
                 )
-              )
-            );
+              );
+            };
           };
-        };
-      }
-    );
+        }
+      );
+    };
   };
-};
 
 def isLt(n : Nat, p : Nat) = le(succ(n), p);

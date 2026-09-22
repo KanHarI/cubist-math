@@ -18,18 +18,19 @@ theorem interval_refinement_mesh(
     FieldUnitInterval(F, zero, one, lt), IntervalRefinementAdmissible(F, zero, one, lt), n,
     vertices, tags, pieces
   )
-) : SubdivisionTagged(
-  FieldUnitInterval(F, zero, one, lt), IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh),
-  n, vertices, tags, pieces
-) {
+) :
+  SubdivisionTagged(
+    FieldUnitInterval(F, zero, one, lt),
+    IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), n, vertices, tags, pieces
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let coarse = IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
   let fine = IntervalRefinementAdmissible(F, zero, one, lt);
   let other = IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  have combine : forall a : I, forall b : I, forall tag : I,
-  forall piece : SampleSubdivision(I, a, b), coarse(a, b, tag) -> fine(a, b, tag, piece)
-  -> other(a, b, tag, piece) {
+  have combine :
+    forall a : I, forall b : I, forall tag : I, forall piece : SampleSubdivision(I, a, b),
+    coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece) {
     intro a;
     intro b;
     intro tag;
@@ -67,17 +68,19 @@ theorem dyadic_samples_refine_below_mesh(
   small : lt(
     dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b)), mesh
   )
-) : SubdivisionRefinementSum(
-  FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
-  IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b,
-  dyadic_piece(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered
-  ),
-  dyadic_piece(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth + extra, a, b,
-    ordered
-  )
-) {
+) :
+  SubdivisionRefinementSum(
+    FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
+    IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b,
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
+      ordered
+    ),
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth + extra, a,
+      b, ordered
+    )
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let coarse =
     dyadic_piece(

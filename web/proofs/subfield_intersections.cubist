@@ -6,9 +6,8 @@ import subfields;
 def SubfieldIntersection(F : AlgebraicField, I : U0, family : I -> Subfield(F), x : af_carrier(F)) =
   forall i : I, subfield_members(F, family(i), x);
 
-theorem subfield_intersection_laws(F : AlgebraicField, I : U0, family : I -> Subfield(F)) : SubfieldLaws(
-  F, SubfieldIntersection(F, I, family)
-) {
+theorem subfield_intersection_laws(F : AlgebraicField, I : U0, family : I -> Subfield(F)) :
+  SubfieldLaws(F, SubfieldIntersection(F, I, family)) {
   let A = af_carrier(F);
   let ops = af_operations(F);
   have prop : forall x : A, Proposition(SubfieldIntersection(F, I, family, x)) {
@@ -58,9 +57,9 @@ theorem subfield_intersection_laws(F : AlgebraicField, I : U0, family : I -> Sub
 def subfield_intersection(F : AlgebraicField, I : U0, family : I -> Subfield(F)) : Subfield(F) {
   exact (SubfieldIntersection(F, I, family), subfield_intersection_laws(F, I, family));
 }
-theorem subfield_intersection_lower(F : AlgebraicField, I : U0, family : I -> Subfield(F), i : I) : SubfieldIncluded(
-  F, subfield_intersection(F, I, family), family(i)
-) {
+
+theorem subfield_intersection_lower(F : AlgebraicField, I : U0, family : I -> Subfield(F), i : I) :
+  SubfieldIncluded(F, subfield_intersection(F, I, family), family(i)) {
   exact (
     fun (x : af_carrier(F)) => fun (member : SubfieldIntersection(F, I, family, x)) => member(i)
   );
@@ -69,7 +68,8 @@ theorem subfield_intersection_lower(F : AlgebraicField, I : U0, family : I -> Su
 theorem subfield_intersection_greatest(
   F : AlgebraicField, I : U0, family : I -> Subfield(F), S : Subfield(F),
   lower : (forall i : I, SubfieldIncluded(F, S, family(i)))
-) : SubfieldIncluded(F, S, subfield_intersection(F, I, family)) {
+) :
+  SubfieldIncluded(F, S, subfield_intersection(F, I, family)) {
   exact (
     fun (x : af_carrier(F)) => fun (member : subfield_members(F, S, x)) => fun (i : I) => lower(
       i, x, member

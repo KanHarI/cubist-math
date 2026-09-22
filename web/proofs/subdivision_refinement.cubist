@@ -34,10 +34,11 @@ theorem subdivision_refinement_sum_join(
   fineLeft : SampleSubdivision(C, a, b), fineRight : SampleSubdivision(C, b, c),
   left : SubdivisionRefinementSum(C, G, zero, addG, edge, condition, a, b, coarseLeft, fineLeft),
   right : SubdivisionRefinementSum(C, G, zero, addG, edge, condition, b, c, coarseRight, fineRight)
-) : SubdivisionRefinementSum(
-  C, G, zero, addG, edge, condition, a, c, join_subdivisions(C, a, b, c, coarseLeft, coarseRight),
-  join_subdivisions(C, a, b, c, fineLeft, fineRight)
-) {
+) :
+  SubdivisionRefinementSum(
+    C, G, zero, addG, edge, condition, a, c, join_subdivisions(C, a, b, c, coarseLeft, coarseRight),
+    join_subdivisions(C, a, b, c, fineLeft, fineRight)
+  ) {
   let n = subdivision_count(C, a, b, coarseLeft);
   let vertices = subdivision_vertices(C, a, b, coarseLeft);
   let tags = subdivision_tags(C, a, b, coarseLeft);
@@ -94,9 +95,10 @@ theorem subdivision_refinement_sum_single(
   edge : C -> C -> C -> G,
   condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), a : C, b : C,
   fine : SampleSubdivision(C, a, b), valid : condition(a, b, a, fine)
-) : SubdivisionRefinementSum(
-  C, G, zero, addG, edge, condition, a, b, single_edge_subdivision(C, a, b), fine
-) {
+) :
+  SubdivisionRefinementSum(
+    C, G, zero, addG, edge, condition, a, b, single_edge_subdivision(C, a, b), fine
+  ) {
   let pieces = typed((SampleSubdivision(C, a, b) and Unit), (fine, tt));
   exact (
     pieces, typed((condition(a, b, a, fine) and Unit), (valid, tt)),

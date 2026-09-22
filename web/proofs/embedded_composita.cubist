@@ -10,6 +10,7 @@ def embedded_compositum_subfield(
   compositum(
     O, subfield_image(K, O, ko, subfield_top(K)), subfield_image(L, O, lo, subfield_top(L))
   );
+
 def EmbeddedCompositum(
   K : AlgebraicField, L : AlgebraicField, O : AlgebraicField, ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O)
@@ -19,25 +20,29 @@ def EmbeddedCompositum(
 theorem embedded_compositum_left_lands(
   K : AlgebraicField, L : AlgebraicField, O : AlgebraicField, ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O), x : af_carrier(K)
-) : subfield_members(
-  O, embedded_compositum_subfield(K, L, O, ko, lo), field_embedding_map(K, O, ko, x)
-) {
+) :
+  subfield_members(
+    O, embedded_compositum_subfield(K, L, O, ko, lo), field_embedding_map(K, O, ko, x)
+  ) {
   exact compositum_contains_left(
     O, subfield_image(K, O, ko, subfield_top(K)), subfield_image(L, O, lo, subfield_top(L)),
     field_embedding_map(K, O, ko, x), field_embedding_lands_in_image(K, O, ko, x)
   );
 }
+
 theorem embedded_compositum_right_lands(
   K : AlgebraicField, L : AlgebraicField, O : AlgebraicField, ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O), x : af_carrier(L)
-) : subfield_members(
-  O, embedded_compositum_subfield(K, L, O, ko, lo), field_embedding_map(L, O, lo, x)
-) {
+) :
+  subfield_members(
+    O, embedded_compositum_subfield(K, L, O, ko, lo), field_embedding_map(L, O, lo, x)
+  ) {
   exact compositum_contains_right(
     O, subfield_image(K, O, ko, subfield_top(K)), subfield_image(L, O, lo, subfield_top(L)),
     field_embedding_map(L, O, lo, x), field_embedding_lands_in_image(L, O, lo, x)
   );
 }
+
 def embedded_compositum_left(
   K : AlgebraicField, L : AlgebraicField, O : AlgebraicField, ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O)
@@ -46,6 +51,7 @@ def embedded_compositum_left(
     K, O, ko, embedded_compositum_subfield(K, L, O, ko, lo),
     embedded_compositum_left_lands(K, L, O, ko, lo)
   );
+
 def embedded_compositum_right(
   K : AlgebraicField, L : AlgebraicField, O : AlgebraicField, ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O)
@@ -54,6 +60,7 @@ def embedded_compositum_right(
     L, O, lo, embedded_compositum_subfield(K, L, O, ko, lo),
     embedded_compositum_right_lands(K, L, O, ko, lo)
   );
+
 def embedded_compositum_inclusion(
   K : AlgebraicField, L : AlgebraicField, O : AlgebraicField, ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O)
@@ -63,22 +70,25 @@ def embedded_compositum_inclusion(
 theorem embedded_compositum_left_triangle(
   K : AlgebraicField, L : AlgebraicField, O : AlgebraicField, ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O)
-) : FieldTower(
-  K, EmbeddedCompositum(K, L, O, ko, lo), O, embedded_compositum_left(K, L, O, ko, lo),
-  embedded_compositum_inclusion(K, L, O, ko, lo), ko
-) {
+) :
+  FieldTower(
+    K, EmbeddedCompositum(K, L, O, ko, lo), O, embedded_compositum_left(K, L, O, ko, lo),
+    embedded_compositum_inclusion(K, L, O, ko, lo), ko
+  ) {
   exact field_embedding_factor_triangle(
     K, O, ko, embedded_compositum_subfield(K, L, O, ko, lo),
     embedded_compositum_left_lands(K, L, O, ko, lo)
   );
 }
+
 theorem embedded_compositum_right_triangle(
   K : AlgebraicField, L : AlgebraicField, O : AlgebraicField, ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O)
-) : FieldTower(
-  L, EmbeddedCompositum(K, L, O, ko, lo), O, embedded_compositum_right(K, L, O, ko, lo),
-  embedded_compositum_inclusion(K, L, O, ko, lo), lo
-) {
+) :
+  FieldTower(
+    L, EmbeddedCompositum(K, L, O, ko, lo), O, embedded_compositum_right(K, L, O, ko, lo),
+    embedded_compositum_inclusion(K, L, O, ko, lo), lo
+  ) {
   exact field_embedding_factor_triangle(
     L, O, lo, embedded_compositum_subfield(K, L, O, ko, lo),
     embedded_compositum_right_lands(K, L, O, ko, lo)
@@ -92,11 +102,12 @@ theorem embedded_compositum_base_agreement(
   bk : FieldEmbedding(B, K), bl : FieldEmbedding(B, L), bo : FieldEmbedding(B, O),
   ko : FieldEmbedding(K, O), lo : FieldEmbedding(L, O), leftTower : FieldTower(B, K, O, bk, ko, bo),
   rightTower : FieldTower(B, L, O, bl, lo, bo)
-) : field_embedding_compose(
-  B, K, EmbeddedCompositum(K, L, O, ko, lo), bk, embedded_compositum_left(K, L, O, ko, lo)
-) =[FieldEmbedding(B, EmbeddedCompositum(K, L, O, ko, lo))] field_embedding_compose(
-  B, L, EmbeddedCompositum(K, L, O, ko, lo), bl, embedded_compositum_right(K, L, O, ko, lo)
-) {
+) :
+  field_embedding_compose(
+    B, K, EmbeddedCompositum(K, L, O, ko, lo), bk, embedded_compositum_left(K, L, O, ko, lo)
+  ) =[FieldEmbedding(B, EmbeddedCompositum(K, L, O, ko, lo))] field_embedding_compose(
+    B, L, EmbeddedCompositum(K, L, O, ko, lo), bl, embedded_compositum_right(K, L, O, ko, lo)
+  ) {
   let C = EmbeddedCompositum(K, L, O, ko, lo);
   let S = embedded_compositum_subfield(K, L, O, ko, lo);
   let viaK = field_embedding_compose(B, K, C, bk, embedded_compositum_left(K, L, O, ko, lo));
@@ -129,10 +140,11 @@ theorem embedded_compositum_base_triangle(
   B : AlgebraicField, K : AlgebraicField, L : AlgebraicField, O : AlgebraicField,
   bk : FieldEmbedding(B, K), bo : FieldEmbedding(B, O), ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O), commute : FieldTower(B, K, O, bk, ko, bo)
-) : FieldTower(
-  B, EmbeddedCompositum(K, L, O, ko, lo), O, embedded_compositum_base(B, K, L, O, bk, ko, lo),
-  embedded_compositum_inclusion(K, L, O, ko, lo), bo
-) {
+) :
+  FieldTower(
+    B, EmbeddedCompositum(K, L, O, ko, lo), O, embedded_compositum_base(B, K, L, O, bk, ko, lo),
+    embedded_compositum_inclusion(K, L, O, ko, lo), bo
+  ) {
   let M = EmbeddedCompositum(K, L, O, ko, lo);
   let bm = embedded_compositum_base(B, K, L, O, bk, ko, lo);
   let mo = embedded_compositum_inclusion(K, L, O, ko, lo);
@@ -151,7 +163,8 @@ theorem embedded_compositum_least(
   lo : FieldEmbedding(L, O), S : Subfield(O),
   containsK : (forall x : af_carrier(K), subfield_members(O, S, field_embedding_map(K, O, ko, x))),
   containsL : (forall x : af_carrier(L), subfield_members(O, S, field_embedding_map(L, O, lo, x)))
-) : SubfieldIncluded(O, embedded_compositum_subfield(K, L, O, ko, lo), S) {
+) :
+  SubfieldIncluded(O, embedded_compositum_subfield(K, L, O, ko, lo), S) {
   have imageK : SubfieldIncluded(O, subfield_image(K, O, ko, subfield_top(K)), S) {
     intro y;
     intro member;
@@ -194,11 +207,12 @@ theorem embedded_compositum_factor_triangle(
   lo : FieldEmbedding(L, O), S : Subfield(O),
   containsK : (forall x : af_carrier(K), subfield_members(O, S, field_embedding_map(K, O, ko, x))),
   containsL : (forall x : af_carrier(L), subfield_members(O, S, field_embedding_map(L, O, lo, x)))
-) : FieldTower(
-  EmbeddedCompositum(K, L, O, ko, lo), subfield_as_field(O, S), O,
-  embedded_compositum_factor(K, L, O, ko, lo, S, containsK, containsL), subfield_inclusion(O, S),
-  embedded_compositum_inclusion(K, L, O, ko, lo)
-) {
+) :
+  FieldTower(
+    EmbeddedCompositum(K, L, O, ko, lo), subfield_as_field(O, S), O,
+    embedded_compositum_factor(K, L, O, ko, lo, S, containsK, containsL), subfield_inclusion(O, S),
+    embedded_compositum_inclusion(K, L, O, ko, lo)
+  ) {
   exact field_embedding_factor_triangle(
     EmbeddedCompositum(K, L, O, ko, lo), O, embedded_compositum_inclusion(K, L, O, ko, lo), S,
     (
@@ -216,7 +230,8 @@ theorem embedded_compositum_factor_triangle(
 theorem embedded_compositum_commutative(
   K : AlgebraicField, L : AlgebraicField, O : AlgebraicField, ko : FieldEmbedding(K, O),
   lo : FieldEmbedding(L, O)
-) : EmbeddedCompositum(K, L, O, ko, lo) =[AlgebraicField] EmbeddedCompositum(L, K, O, lo, ko) {
+) :
+  EmbeddedCompositum(K, L, O, ko, lo) =[AlgebraicField] EmbeddedCompositum(L, K, O, lo, ko) {
   exact with unfolding [AlgebraicField, EmbeddedCompositum, embedded_compositum_subfield] {
     cong(
       subfield_as_field(O),

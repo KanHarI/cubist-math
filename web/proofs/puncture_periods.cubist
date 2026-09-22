@@ -22,27 +22,30 @@ def weighted_winding_sum(
 theorem weighted_winding_laws(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
   values : Fin(n) -> G
-) : LoopMapLaws(
-  PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG,
-  weighted_winding_sum(n, G, zero, addG, negG, values)
-) {
-  have constant : weighted_winding_sum(n, G, zero, addG, negG, values, refl(bouquet_base(Fin(n)))) = zero {
+) :
+  LoopMapLaws(
+    PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG,
+    weighted_winding_sum(n, G, zero, addG, negG, values)
+  ) {
+  have constant :
+    weighted_winding_sum(n, G, zero, addG, negG, values, refl(bouquet_base(Fin(n)))) = zero {
     exact finite_sum_zero(
       G, zero, addG, negG, laws, n,
       (fun (i : Fin(n)) => integer_multiple(G, zero, addG, negG, values(i), zeroZ)),
       (fun (i : Fin(n)) => refl(zero))
     );
   }
-  have append : forall p : BouquetLoops(Fin(n)), forall q : BouquetLoops(Fin(n)),
-  weighted_winding_sum(
-    n, G, zero, addG, negG, values,
-    append_path(
-      PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p, q
-    )
-  ) = addG(
-    weighted_winding_sum(n, G, zero, addG, negG, values, p),
-    weighted_winding_sum(n, G, zero, addG, negG, values, q)
-  ) {
+  have append :
+    forall p : BouquetLoops(Fin(n)), forall q : BouquetLoops(Fin(n)),
+    weighted_winding_sum(
+      n, G, zero, addG, negG, values,
+      append_path(
+        PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p, q
+      )
+    ) = addG(
+      weighted_winding_sum(n, G, zero, addG, negG, values, p),
+      weighted_winding_sum(n, G, zero, addG, negG, values, q)
+    ) {
     intro p;
     intro q;
     let first =
@@ -86,9 +89,10 @@ theorem weighted_winding_laws(
 theorem weighted_winding_generator(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
   values : Fin(n) -> G, selected : Fin(n)
-) : weighted_winding_sum(n, G, zero, addG, negG, values, puncture_loop(n, selected)) = values(
-  selected
-) {
+) :
+  weighted_winding_sum(n, G, zero, addG, negG, values, puncture_loop(n, selected)) = values(
+    selected
+  ) {
   let terms =
     fun (i : Fin(n)) => integer_multiple(
       G, zero, addG, negG, values(i), puncture_winding(n, i, puncture_loop(n, selected))
@@ -111,7 +115,8 @@ theorem weighted_winding_generator(
 
 theorem additive_right_cancellation(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG)
-) : RightCancellation(G, addG) {
+) :
+  RightCancellation(G, addG) {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   intro x;
   intro y;
@@ -131,7 +136,8 @@ theorem puncture_period_formula(
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
   values : Fin(n) -> G, localValues : (forall i : Fin(n), period(puncture_loop(n, i)) = values(i)),
   p : BouquetLoops(Fin(n))
-) : period(p) = weighted_winding_sum(n, G, zero, addG, negG, values, p) {
+) :
+  period(p) = weighted_winding_sum(n, G, zero, addG, negG, values, p) {
   exact bouquet_maps_determined_by_generators(
     Fin(n), G, setG, zero, addG, additive_right_cancellation(G, zero, addG, negG, laws), period,
     weighted_winding_sum(n, G, zero, addG, negG, values), periodLaws,
@@ -150,7 +156,8 @@ theorem puncture_period_same_windings(
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
   p : BouquetLoops(Fin(n)), q : BouquetLoops(Fin(n)),
   same : (forall i : Fin(n), puncture_winding(n, i, p) = puncture_winding(n, i, q))
-) : period(p) = period(q) {
+) :
+  period(p) = period(q) {
   let values = fun (i : Fin(n)) => period(puncture_loop(n, i));
   let local = fun (i : Fin(n)) => refl(values(i));
   exact trans(
@@ -185,7 +192,8 @@ theorem puncture_period_zero_windings(
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(n)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
   p : BouquetLoops(Fin(n)), noWinding : (forall i : Fin(n), puncture_winding(n, i, p) = zeroZ)
-) : period(p) = zero {
+) :
+  period(p) = zero {
   obtain (unitLaw, appendLaw) = periodLaws;
   exact trans(
     puncture_period_same_windings(

@@ -10,7 +10,8 @@ theorem half_sum_from_inverse_two(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), reciprocal : F,
   inverseTwo : mulF(addF(one, one), reciprocal) = one, epsilon : F
-) : addF(mulF(epsilon, reciprocal), mulF(epsilon, reciprocal)) = epsilon {
+) :
+  addF(mulF(epsilon, reciprocal), mulF(epsilon, reciprocal)) = epsilon {
   have twiceReciprocal : addF(reciprocal, reciprocal) = one {
     exact trans(
       sym(
@@ -40,7 +41,8 @@ theorem positive_half_from_sum(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   epsilon : F, half : F, sum : addF(half, half) = epsilon, positive : lt(zero, epsilon)
-) : lt(zero, half) {
+) :
+  lt(zero, half) {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   let alternatives =
@@ -59,7 +61,8 @@ theorem ordered_field_halving(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt)
-) : Halving(F, zero, addF, lt) {
+) :
+  Halving(F, zero, addF, lt) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   let two = addF(one, one);
   let positiveTwo =

@@ -14,11 +14,14 @@ def SubgroupLaws(G : Group, H : group_carrier(G) -> U0) =
     forall x : group_carrier(G), forall y : group_carrier(G), H(x)
     -> (group_multiply(G, y, x) = group_unit(G)) -> H(y)
   );
+
 def Subgroup(G : Group) = exists H : group_carrier(G) -> U0, SubgroupLaws(G, H);
+
 def subgroup_members(G : Group, S : Subgroup(G)) =
   unpack S as (H, laws) return (group_carrier(G) -> U0) {
     H;
   };
+
 def subgroup_laws(G : Group, S : Subgroup(G)) : SubgroupLaws(G, subgroup_members(G, S)) {
   exact field_second(
     (group_carrier(G) -> U0), (fun (H : group_carrier(G) -> U0) => typed(U1, SubgroupLaws(G, H))), S
@@ -27,27 +30,32 @@ def subgroup_laws(G : Group, S : Subgroup(G)) : SubgroupLaws(G, subgroup_members
 
 theorem subgroup_prop(
   G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G)
-) : Proposition(H(x)) {
+) :
+  Proposition(H(x)) {
   obtain (prop, unit, multiplyLocal, invClosed) = laws;
   exact prop(x);
 }
-theorem subgroup_unit(G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H)) : H(
-  group_unit(G)
-) {
+
+theorem subgroup_unit(G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H)) :
+  H(group_unit(G)) {
   obtain (prop, unit, multiplyLocal, invClosed) = laws;
   exact unit;
 }
+
 theorem subgroup_multiply(
   G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G),
   y : group_carrier(G), hx : H(x), hy : H(y)
-) : H(group_multiply(G, x, y)) {
+) :
+  H(group_multiply(G, x, y)) {
   obtain (prop, unit, multiplyLocal, invClosed) = laws;
   exact multiplyLocal(x, y, hx, hy);
 }
+
 theorem subgroup_inverse(
   G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G),
   y : group_carrier(G), hx : H(x), inverseLaw : group_multiply(G, y, x) = group_unit(G)
-) : H(y) {
+) :
+  H(y) {
   obtain (prop, unit, multiplyLocal, invClosed) = laws;
   exact invClosed(x, y, hx, inverseLaw);
 }
@@ -55,7 +63,8 @@ theorem subgroup_inverse(
 // The entire law bundle is a proposition; subgroups retain only membership data.
 theorem subgroup_laws_prop(
   G : Group, H : group_carrier(G) -> U0, p : SubgroupLaws(G, H), q : SubgroupLaws(G, H)
-) : p = q {
+) :
+  p = q {
   let A = group_carrier(G);
   let unit = group_unit(G);
   let multiplyLocal = group_multiply(G);
@@ -143,7 +152,8 @@ theorem subgroup_laws_prop(
 theorem subgroup_ext(
   G : Group, S : Subgroup(G), T : Subgroup(G),
   same : subgroup_members(G, S) = subgroup_members(G, T)
-) : S =[Subgroup(G)] T {
+) :
+  S =[Subgroup(G)] T {
   exact field_subtype_ext(
     (group_carrier(G) -> U0), (fun (H : group_carrier(G) -> U0) => typed(U1, SubgroupLaws(G, H))),
     subgroup_laws_prop(G), S, T, same

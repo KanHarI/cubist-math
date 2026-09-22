@@ -9,9 +9,8 @@ def KillsSubgroup(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G)) =
 
 theorem killing_subgroup_respects_cosets(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
-) : RespectsRelation(
-  group_carrier(G), SameLeftCoset(G, S), group_carrier(H), group_hom_map(G, H, h)
-) {
+) :
+  RespectsRelation(group_carrier(G), SameLeftCoset(G, S), group_carrier(H), group_hom_map(G, H, h)) {
   intro x;
   intro y;
   intro same;
@@ -31,7 +30,8 @@ def group_quotient_map(
 theorem group_quotient_map_beta(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
   x : group_carrier(G)
-) : group_quotient_map(G, H, h, S, kills, left_coset(G, S, x)) = group_hom_map(G, H, h, x) {
+) :
+  group_quotient_map(G, H, h, S, kills, left_coset(G, S, x)) = group_hom_map(G, H, h, x) {
   exact quotient_rec_beta(
     group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), group_carrier(H),
     group_is_set(H), group_hom_map(G, H, h), killing_subgroup_respects_cosets(G, H, h, S, kills), x
@@ -42,7 +42,8 @@ theorem group_quotient_map_unique(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
   g : LeftCosets(G, S) -> group_carrier(H),
   triangle : (forall x : group_carrier(G), g(left_coset(G, S, x)) = group_hom_map(G, H, h, x))
-) : g = group_quotient_map(G, H, h, S, kills) {
+) :
+  g = group_quotient_map(G, H, h, S, kills) {
   exact quotient_rec_unique(
     group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), group_carrier(H),
     group_is_set(H), group_hom_map(G, H, h), killing_subgroup_respects_cosets(G, H, h, S, kills), g,
@@ -52,7 +53,8 @@ theorem group_quotient_map_unique(
 
 theorem group_quotient_map_unit(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
-) : group_quotient_map(G, H, h, S, kills, left_coset(G, S, group_unit(G))) = group_unit(H) {
+) :
+  group_quotient_map(G, H, h, S, kills, left_coset(G, S, group_unit(G))) = group_unit(H) {
   exact trans(group_quotient_map_beta(G, H, h, S, kills, group_unit(G)), group_hom_unit(G, H, h));
 }
 
@@ -61,10 +63,11 @@ theorem group_quotient_map_unit(
 theorem group_quotient_map_multiply(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
   x : group_carrier(G), y : group_carrier(G)
-) : group_quotient_map(G, H, h, S, kills, left_coset(G, S, group_multiply(G, x, y))) = group_multiply(
-  H, group_quotient_map(G, H, h, S, kills, left_coset(G, S, x)),
-  group_quotient_map(G, H, h, S, kills, left_coset(G, S, y))
-) {
+) :
+  group_quotient_map(G, H, h, S, kills, left_coset(G, S, group_multiply(G, x, y))) = group_multiply(
+    H, group_quotient_map(G, H, h, S, kills, left_coset(G, S, x)),
+    group_quotient_map(G, H, h, S, kills, left_coset(G, S, y))
+  ) {
   let f = group_hom_map(G, H, h);
   let out = group_quotient_map(G, H, h, S, kills);
   exact trans(
@@ -89,7 +92,8 @@ theorem quotient_factor_kills_subgroup(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), g : LeftCosets(G, S)
   -> group_carrier(H),
   triangle : (forall x : group_carrier(G), g(left_coset(G, S, x)) = group_hom_map(G, H, h, x))
-) : KillsSubgroup(G, H, h, S) {
+) :
+  KillsSubgroup(G, H, h, S) {
   intro n;
   intro member;
   let same = same_coset_from_factor(G, S, group_unit(G), n, n, member, group_unit_left(G, n));

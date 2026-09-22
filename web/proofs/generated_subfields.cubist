@@ -5,28 +5,32 @@ import truncation;
 // retained as membership; no intersection over the U1 type of all subfields.
 def FieldDerivation(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) =
   exists n : Nat, FieldClosureStage(F, P, n, x);
+
 def GeneratedField(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) =
   Mere(FieldDerivation(F, P, x));
 
 def field_derivation_generator(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), member : P(x)
-) : FieldDerivation(F, P, x) {
+) :
+  FieldDerivation(F, P, x) {
   exact (0, member);
 }
-def field_derivation_zero(F : AlgebraicField, P : af_carrier(F) -> U0) : FieldDerivation(
-  F, P, af_zero(af_carrier(F), af_operations(F))
-) {
+
+def field_derivation_zero(F : AlgebraicField, P : af_carrier(F) -> U0) :
+  FieldDerivation(F, P, af_zero(af_carrier(F), af_operations(F))) {
   exact (1, field_closure_step_zero(F, P));
 }
-def field_derivation_one(F : AlgebraicField, P : af_carrier(F) -> U0) : FieldDerivation(
-  F, P, af_one(af_carrier(F), af_operations(F))
-) {
+
+def field_derivation_one(F : AlgebraicField, P : af_carrier(F) -> U0) :
+  FieldDerivation(F, P, af_one(af_carrier(F), af_operations(F))) {
   exact (1, field_closure_step_one(F, P));
 }
+
 def field_derivation_neg(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F),
   derivation : FieldDerivation(F, P, x)
-) : FieldDerivation(F, P, af_neg(af_carrier(F), af_operations(F), x)) {
+) :
+  FieldDerivation(F, P, af_neg(af_carrier(F), af_operations(F), x)) {
   obtain (n, member) = derivation;
   exact (succ(n), field_closure_step_neg(F, FieldClosureStage(F, P, n), x, member));
 }
@@ -36,7 +40,8 @@ def field_derivation_neg(
 def field_derivation_add(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
   dx : FieldDerivation(F, P, x), dy : FieldDerivation(F, P, y)
-) : FieldDerivation(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
+) :
+  FieldDerivation(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
   obtain (n, px) = dx;
   obtain (m, py) = dy;
   exact (
@@ -47,10 +52,12 @@ def field_derivation_add(
     )
   );
 }
+
 def field_derivation_mul(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
   dx : FieldDerivation(F, P, x), dy : FieldDerivation(F, P, y)
-) : FieldDerivation(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
+) :
+  FieldDerivation(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
   obtain (n, px) = dx;
   obtain (m, py) = dy;
   exact (
@@ -61,44 +68,49 @@ def field_derivation_mul(
     )
   );
 }
+
 def field_derivation_inverse(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
   dx : FieldDerivation(F, P, x),
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
   )
-) : FieldDerivation(F, P, y) {
+) :
+  FieldDerivation(F, P, y) {
   obtain (n, px) = dx;
   exact (succ(n), field_closure_step_inverse(F, FieldClosureStage(F, P, n), x, y, px, inverseLaw));
 }
 
-theorem generated_field_prop(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) : Proposition(
-  GeneratedField(F, P, x)
-) {
+theorem generated_field_prop(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) :
+  Proposition(GeneratedField(F, P, x)) {
   exact mere_is_prop(FieldDerivation(F, P, x));
 }
+
 theorem generated_field_contains(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), member : P(x)
-) : GeneratedField(F, P, x) {
+) :
+  GeneratedField(F, P, x) {
   exact merely(FieldDerivation(F, P, x), field_derivation_generator(F, P, x, member));
 }
-theorem generated_field_zero(F : AlgebraicField, P : af_carrier(F) -> U0) : GeneratedField(
-  F, P, af_zero(af_carrier(F), af_operations(F))
-) {
+
+theorem generated_field_zero(F : AlgebraicField, P : af_carrier(F) -> U0) :
+  GeneratedField(F, P, af_zero(af_carrier(F), af_operations(F))) {
   exact merely(
     FieldDerivation(F, P, af_zero(af_carrier(F), af_operations(F))), field_derivation_zero(F, P)
   );
 }
-theorem generated_field_one(F : AlgebraicField, P : af_carrier(F) -> U0) : GeneratedField(
-  F, P, af_one(af_carrier(F), af_operations(F))
-) {
+
+theorem generated_field_one(F : AlgebraicField, P : af_carrier(F) -> U0) :
+  GeneratedField(F, P, af_one(af_carrier(F), af_operations(F))) {
   exact merely(
     FieldDerivation(F, P, af_one(af_carrier(F), af_operations(F))), field_derivation_one(F, P)
   );
 }
+
 theorem generated_field_neg(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), member : GeneratedField(F, P, x)
-) : GeneratedField(F, P, af_neg(af_carrier(F), af_operations(F), x)) {
+) :
+  GeneratedField(F, P, af_neg(af_carrier(F), af_operations(F), x)) {
   exact mere_map(
     FieldDerivation(F, P, x), FieldDerivation(F, P, af_neg(af_carrier(F), af_operations(F), x)),
     field_derivation_neg(F, P, x), member
@@ -108,7 +120,8 @@ theorem generated_field_neg(
 theorem generated_field_add(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
   px : GeneratedField(F, P, x), py : GeneratedField(F, P, y)
-) : GeneratedField(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
+) :
+  GeneratedField(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
   let target = af_add(af_carrier(F), af_operations(F), x, y);
   exact mere_eliminate(
     FieldDerivation(F, P, x), GeneratedField(F, P, target), generated_field_prop(F, P, target),
@@ -120,10 +133,12 @@ theorem generated_field_add(
     ), px
   );
 }
+
 theorem generated_field_mul(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
   px : GeneratedField(F, P, x), py : GeneratedField(F, P, y)
-) : GeneratedField(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
+) :
+  GeneratedField(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
   let target = af_mul(af_carrier(F), af_operations(F), x, y);
   exact mere_eliminate(
     FieldDerivation(F, P, x), GeneratedField(F, P, target), generated_field_prop(F, P, target),
@@ -135,13 +150,15 @@ theorem generated_field_mul(
     ), px
   );
 }
+
 theorem generated_field_inverse(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
   px : GeneratedField(F, P, x),
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
   )
-) : GeneratedField(F, P, y) {
+) :
+  GeneratedField(F, P, y) {
   exact mere_map(
     FieldDerivation(F, P, x), FieldDerivation(F, P, y),
     (fun (dx : FieldDerivation(F, P, x)) => field_derivation_inverse(F, P, x, y, dx, inverseLaw)),
@@ -149,15 +166,15 @@ theorem generated_field_inverse(
   );
 }
 
-theorem generated_field_laws(F : AlgebraicField, P : af_carrier(F) -> U0) : SubfieldLaws(
-  F, GeneratedField(F, P)
-) {
+theorem generated_field_laws(F : AlgebraicField, P : af_carrier(F) -> U0) :
+  SubfieldLaws(F, GeneratedField(F, P)) {
   exact (
     generated_field_prop(F, P), generated_field_zero(F, P), generated_field_one(F, P),
     generated_field_neg(F, P), generated_field_add(F, P), generated_field_mul(F, P),
     generated_field_inverse(F, P)
   );
 }
+
 def generated_subfield(F : AlgebraicField, P : af_carrier(F) -> U0) : Subfield(F) {
   exact (GeneratedField(F, P), generated_field_laws(F, P));
 }
@@ -168,7 +185,8 @@ theorem generated_field_least(
   F : AlgebraicField, P : af_carrier(F) -> U0, Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
   included : PredicateIncluded(af_carrier(F), P, Q), x : af_carrier(F),
   member : GeneratedField(F, P, x)
-) : Q(x) {
+) :
+  Q(x) {
   have evaluate : FieldDerivation(F, P, x) -> Q(x) {
     intro derivation;
     obtain (n, raw) = derivation;
@@ -182,6 +200,7 @@ theorem generated_field_least(
 theorem generated_subfield_least(
   F : AlgebraicField, P : af_carrier(F) -> U0, S : Subfield(F),
   included : PredicateIncluded(af_carrier(F), P, subfield_members(F, S))
-) : SubfieldIncluded(F, generated_subfield(F, P), S) {
+) :
+  SubfieldIncluded(F, generated_subfield(F, P), S) {
   exact generated_field_least(F, P, subfield_members(F, S), subfield_laws(F, S), included);
 }

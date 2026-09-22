@@ -5,11 +5,13 @@ import subgroups;
 // The Galois case uses the same subgroup type as every other bundled group.
 def GaloisSubgroupLaws(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) =
   SubgroupLaws(GaloisGroup(K, E), H);
+
 def GaloisSubgroup(K : AlgebraicField, E : FieldExt(K)) = Subgroup(GaloisGroup(K, E));
 
 theorem galois_fixing_prop(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E)
-) : Proposition(GaloisFixing(K, E, P, e)) {
+) :
+  Proposition(GaloisFixing(K, E, P, e)) {
   exact forall_prop(
     extension_carrier(K, E),
     (fun (x : extension_carrier(K, E)) => P(x) -> (extension_iso_forward(K, E, E, e, x) = x)),
@@ -28,7 +30,8 @@ theorem galois_fixing_prop(
 
 theorem galois_fixing_identity(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0
-) : GaloisFixing(K, E, P, extension_identity_iso(K, E)) {
+) :
+  GaloisFixing(K, E, P, extension_identity_iso(K, E)) {
   intro x;
   intro member;
   exact refl(x);
@@ -37,7 +40,8 @@ theorem galois_fixing_identity(
 theorem galois_fixing_compose(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E),
   d : Galois(K, E), fixesE : GaloisFixing(K, E, P, e), fixesD : GaloisFixing(K, E, P, d)
-) : GaloisFixing(K, E, P, galois_compose(K, E, e, d)) {
+) :
+  GaloisFixing(K, E, P, galois_compose(K, E, e, d)) {
   intro x;
   intro member;
   exact trans(cong(extension_iso_forward(K, E, E, d), fixesE(x, member)), fixesD(x, member));
@@ -48,7 +52,8 @@ theorem galois_fixing_compose(
 theorem galois_fixing_inverse(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E),
   fixes : GaloisFixing(K, E, P, e)
-) : GaloisFixing(K, E, P, galois_inverse(K, E, e)) {
+) :
+  GaloisFixing(K, E, P, galois_inverse(K, E, e)) {
   intro x;
   intro member;
   let inverseMap = extension_iso_forward(K, E, E, galois_inverse(K, E, e));
@@ -66,7 +71,8 @@ theorem galois_fixing_witnessed_inverse(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E),
   d : Galois(K, E), fixes : GaloisFixing(K, E, P, e),
   inverseLaw : galois_compose(K, E, d, e) = extension_identity_iso(K, E)
-) : GaloisFixing(K, E, P, d) {
+) :
+  GaloisFixing(K, E, P, d) {
   have same : d = galois_inverse(K, E, e) {
     exact group_inverse_unique(
       Galois(K, E), extension_identity_iso(K, E), galois_compose(K, E), galois_group_laws(K, E), e,
@@ -82,16 +88,16 @@ theorem galois_fixing_witnessed_inverse(
 // No closure property of P is required to obtain a subgroup of symmetries.
 theorem galois_fixing_subgroup_laws(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0
-) : GaloisSubgroupLaws(K, E, GaloisFixing(K, E, P)) {
+) :
+  GaloisSubgroupLaws(K, E, GaloisFixing(K, E, P)) {
   exact (
     galois_fixing_prop(K, E, P), galois_fixing_identity(K, E, P), galois_fixing_compose(K, E, P),
     galois_fixing_witnessed_inverse(K, E, P)
   );
 }
 
-def galois_fixing_subgroup(K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0) : GaloisSubgroup(
-  K, E
-) {
+def galois_fixing_subgroup(K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0) :
+  GaloisSubgroup(K, E) {
   exact (GaloisFixing(K, E, P), galois_fixing_subgroup_laws(K, E, P));
 }
 
@@ -102,6 +108,7 @@ def galois_subgroup_members(K : AlgebraicField, E : FieldExt(K), H : GaloisSubgr
 
 def fixed_intermediate_field(K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E)) =
   galois_fixed_field(K, E, galois_subgroup_members(K, E, H));
+
 def fixing_galois_subgroup(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
   galois_fixing_subgroup(K, E, intermediate_members(K, E, M));
 
@@ -110,6 +117,7 @@ def fixing_galois_subgroup(K : AlgebraicField, E : FieldExt(K), M : Intermediate
 // inverse equalities require the finite normal separable hypotheses and proofs.
 theorem intermediate_galois_connection(
   K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), M : IntermediateField(K, E)
-) : GaloisConnection(K, E, galois_subgroup_members(K, E, H), intermediate_members(K, E, M)) {
+) :
+  GaloisConnection(K, E, galois_subgroup_members(K, E, H), intermediate_members(K, E, M)) {
   exact galois_connection(K, E, galois_subgroup_members(K, E, H), intermediate_members(K, E, M));
 }

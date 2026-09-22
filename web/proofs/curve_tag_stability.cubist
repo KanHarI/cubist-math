@@ -39,8 +39,9 @@ theorem curve_contour_uniform_tag_stability(
   variation : ComplexCurveVariation(
     F, zero, one, addF, negF, lt, curve, realWeight, imagWeight, length
   ), epsilon : F, positive : lt(zero, epsilon)
-) : exists mesh : F, lt(zero, mesh)
-and CurveFineTagsClose(F, zero, one, addF, mulF, negF, lt, curve, integrand, epsilon, mesh) {
+) :
+  exists mesh : F, lt(zero, mesh)
+  and CurveFineTagsClose(F, zero, one, addF, mulF, negF, lt, curve, integrand, epsilon, mesh) {
   let I = FieldUnitInterval(F, zero, one, lt);
   obtain (delta, positiveDelta, smallError) = field_small_scaled_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
@@ -54,9 +55,8 @@ and CurveFineTagsClose(F, zero, one, addF, mulF, negF, lt, curve, integrand, eps
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     (fun (t : I) => integrand(curve(t))), uniform, delta, positiveDelta
   );
-  have stable : CurveFineTagsClose(
-    F, zero, one, addF, mulF, negF, lt, curve, integrand, epsilon, mesh
-  ) {
+  have stable :
+    CurveFineTagsClose(F, zero, one, addF, mulF, negF, lt, curve, integrand, epsilon, mesh) {
     intro n;
     intro vertices;
     intro oldTags;
@@ -92,11 +92,12 @@ theorem affine_contour_uniform_tag_stability(
       )
     )
   ), epsilon : F, positive : lt(zero, epsilon)
-) : exists mesh : F, lt(zero, mesh)
-and CurveFineTagsClose(
-  F, zero, one, addF, mulF, negF, lt,
-  complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, epsilon, mesh
-) {
+) :
+  exists mesh : F, lt(zero, mesh)
+  and CurveFineTagsClose(
+    F, zero, one, addF, mulF, negF, lt,
+    complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, epsilon, mesh
+  ) {
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error);
   let r = maxF(complex_real(F, error), negF(complex_real(F, error)));
   let s = maxF(complex_imag(F, error), negF(complex_imag(F, error)));
@@ -143,46 +144,48 @@ theorem affine_contour_endpoint_sums_close(
       )
     )
   ), epsilon : F, positive : lt(zero, epsilon)
-) : exists mesh : F, lt(zero, mesh)
-and (
-  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-  IntervalOrderedSamples(F, zero, one, lt, n, vertices)
-  -> IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)
-  -> ComplexClose(
-    F, addF, lt,
-    curve_contour_samples(
-      F, zero, one, addF, mulF, negF, lt,
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, n, vertices,
-      sample_right_tags(FieldUnitInterval(F, zero, one, lt), n, vertices)
-    ),
-    curve_contour_samples(
-      F, zero, one, addF, mulF, negF, lt,
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, n, vertices,
-      sample_left_tags(FieldUnitInterval(F, zero, one, lt), n, vertices)
-    ), epsilon
-  )
-) {
+) :
+  exists mesh : F, lt(zero, mesh)
+  and (
+    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    IntervalOrderedSamples(F, zero, one, lt, n, vertices)
+    -> IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)
+    -> ComplexClose(
+      F, addF, lt,
+      curve_contour_samples(
+        F, zero, one, addF, mulF, negF, lt,
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, n,
+        vertices, sample_right_tags(FieldUnitInterval(F, zero, one, lt), n, vertices)
+      ),
+      curve_contour_samples(
+        F, zero, one, addF, mulF, negF, lt,
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, n,
+        vertices, sample_left_tags(FieldUnitInterval(F, zero, one, lt), n, vertices)
+      ), epsilon
+    )
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   obtain (mesh, positiveMesh, stable) = affine_contour_uniform_tag_stability(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice, z,
     error, integrand, uniform, epsilon, positive
   );
-  have close : forall n : Nat, forall vertices : SampleVertices(I, n),
-  IntervalOrderedSamples(F, zero, one, lt, n, vertices)
-  -> IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)
-  -> ComplexClose(
-    F, addF, lt,
-    curve_contour_samples(
-      F, zero, one, addF, mulF, negF, lt,
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, n, vertices,
-      sample_right_tags(I, n, vertices)
-    ),
-    curve_contour_samples(
-      F, zero, one, addF, mulF, negF, lt,
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, n, vertices,
-      sample_left_tags(I, n, vertices)
-    ), epsilon
-  ) {
+  have close :
+    forall n : Nat, forall vertices : SampleVertices(I, n),
+    IntervalOrderedSamples(F, zero, one, lt, n, vertices)
+    -> IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)
+    -> ComplexClose(
+      F, addF, lt,
+      curve_contour_samples(
+        F, zero, one, addF, mulF, negF, lt,
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, n,
+        vertices, sample_right_tags(I, n, vertices)
+      ),
+      curve_contour_samples(
+        F, zero, one, addF, mulF, negF, lt,
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, n,
+        vertices, sample_left_tags(I, n, vertices)
+      ), epsilon
+    ) {
     intro n;
     intro vertices;
     intro ordered;

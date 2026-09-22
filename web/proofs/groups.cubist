@@ -5,23 +5,34 @@ import equivalences;
 // The traditional small-group names specialize the single universe family.
 // All previous record fields and their computation rules are preserved.
 def GroupAssociative = GroupAssociativeAt(U0);
+
 def GroupLeftUnit = GroupLeftUnitAt(U0);
+
 def GroupRightUnit = GroupRightUnitAt(U0);
+
 def GroupInverseLaws = GroupInverseLawsAt(U0);
+
 def GroupInverses = GroupInversesAt(U0);
+
 def GroupLaws = GroupLawsAt(U0);
+
 def GroupStructure = GroupStructureAt(U0);
+
 def Group = GroupAt(U0);
+
 def group_object(A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)) =
   typed(Group, (A, unit, multiply, laws));
+
 def group_carrier(G : Group) = unpack G as (A, structure) return U0 {
     A;
   };
+
 def group_structure(G : Group) =
   pair_induction(
     (fun (H : Group) => GroupStructure(group_carrier(H))),
     (fun (A : U0) => fun (structure : GroupStructure(A)) => structure), G
   );
+
 def group_unit(G : Group) =
   sigma_first(
     group_carrier(G),
@@ -30,6 +41,7 @@ def group_unit(G : Group) =
       -> group_carrier(G), GroupLaws(group_carrier(G), unit, multiply)
     ), group_structure(G)
   );
+
 def group_multiplication_data(G : Group) =
   sigma_second(
     group_carrier(G),
@@ -38,6 +50,7 @@ def group_multiplication_data(G : Group) =
       -> group_carrier(G), GroupLaws(group_carrier(G), unit, multiply)
     ), group_structure(G)
   );
+
 def group_multiply(G : Group) : group_carrier(G) -> group_carrier(G) -> group_carrier(G) {
   exact sigma_first(
     group_carrier(G) -> group_carrier(G) -> group_carrier(G),
@@ -55,13 +68,16 @@ def GroupMultiplicative(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, f : A -> B
 ) =
   forall x : A, forall y : A, f(multiplyA(x, y)) = multiplyB(f(x), f(y));
+
 def GroupMapLaws(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, f : A -> B, g : B -> A
 ) =
   LeftLaw(A, B, f, g) and RightLaw(A, B, f, g)
   and GroupMultiplicative(A, multiplyA, B, multiplyB, f);
+
 def GroupMapEvidence(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, f : A -> B) =
   exists g : B -> A, GroupMapLaws(A, multiplyA, B, multiplyB, f, g);
+
 // An isomorphism is a multiplication-preserving map with a specified inverse.
 // On group carriers (sets), inverse evidence is a proposition. Unit preservation
 // follows from the laws and is proved later, rather than stored twice.
@@ -72,8 +88,8 @@ def GroupIsomorphism(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B
 def GroupIso(G : Group, H : Group) =
   GroupIsomorphism(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H));
 
-def group_iso_forward(G : Group, H : Group, iso : GroupIso(G, H)) : group_carrier(G)
--> group_carrier(H) {
+def group_iso_forward(G : Group, H : Group, iso : GroupIso(G, H)) :
+  group_carrier(G) -> group_carrier(H) {
   exact sigma_first(
     (group_carrier(G) -> group_carrier(H)),
     GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H)), iso
@@ -81,37 +97,40 @@ def group_iso_forward(G : Group, H : Group, iso : GroupIso(G, H)) : group_carrie
 }
 
 // Access the laws by naming the fields, instead of repeating nested projections.
-def group_set_law(A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)) : IsSet(
-  A
-) {
+def group_set_law(A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)) :
+  IsSet(A) {
   obtain (setA, associative, leftUnit, rightUnit, inverses) = laws;
   exact setA;
 }
 
 def group_associative_law(
   A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)
-) : GroupAssociative(A, multiply) {
+) :
+  GroupAssociative(A, multiply) {
   obtain (setA, associative, leftUnit, rightUnit, inverses) = laws;
   exact associative;
 }
 
 def group_left_unit_law(
   A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)
-) : GroupLeftUnit(A, unit, multiply) {
+) :
+  GroupLeftUnit(A, unit, multiply) {
   obtain (setA, associative, leftUnit, rightUnit, inverses) = laws;
   exact leftUnit;
 }
 
 def group_right_unit_law(
   A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)
-) : GroupRightUnit(A, unit, multiply) {
+) :
+  GroupRightUnit(A, unit, multiply) {
   obtain (setA, associative, leftUnit, rightUnit, inverses) = laws;
   exact rightUnit;
 }
 
 def group_inverses_law(
   A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)
-) : GroupInverses(A, unit, multiply) {
+) :
+  GroupInverses(A, unit, multiply) {
   obtain (setA, associative, leftUnit, rightUnit, inverses) = laws;
   exact inverses;
 }
@@ -128,7 +147,8 @@ def group_induction(
     forall A : U0, forall unit : A, forall multiply : A -> A -> A,
     forall laws : GroupLaws(A, unit, multiply), P(group_object(A, unit, multiply, laws))
   ), G : Group
-) : P(G) {
+) :
+  P(G) {
   exact pair_induction(
     P,
     (
@@ -156,9 +176,8 @@ def group_induction(
 }
 
 // Rebuilding a bundled group from its fields gives back the same group.
-theorem group_object_eta(G : Group) : group_object(
-  group_carrier(G), group_unit(G), group_multiply(G), group_laws(G)
-) = G {
+theorem group_object_eta(G : Group) :
+  group_object(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G)) = G {
   exact group_induction(
     (
       fun (H : Group) => group_object(

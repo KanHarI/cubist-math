@@ -30,10 +30,11 @@ theorem cauchy_approximation_period_laws(
       (fun (n : Nat) => addF(approximations(p, n), approximations(q, n)))
     )
   )
-) : LoopMapLaws(
-  X, point, F, zero, addF,
-  limit_period(F, zero, addF, lt, complete, X, point, approximations, cauchy)
-) {
+) :
+  LoopMapLaws(
+    X, point, F, zero, addF,
+    limit_period(F, zero, addF, lt, complete, X, point, approximations, cauchy)
+  ) {
   let halving =
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
   let period = limit_period(F, zero, addF, lt, complete, X, point, approximations, cauchy);
@@ -49,8 +50,9 @@ theorem cauchy_approximation_period_laws(
       field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
     );
   }
-  have appendLaw : forall p : point = point, forall q : point = point,
-  period(append_path(X, point, point, point, p, q)) = addF(period(p), period(q)) {
+  have appendLaw :
+    forall p : point = point, forall q : point = point,
+    period(append_path(X, point, point, point, p, q)) = addF(period(p), period(q)) {
     intro p;
     intro q;
     let joined = append_path(X, point, point, point, p, q);
@@ -78,9 +80,10 @@ theorem limit_period_independent_of_approximation(
   cauchySecond : (forall p : point = point, FieldCauchy(F, zero, addF, lt, second(p))),
   same : (forall p : point = point, FieldAsymptotic(F, zero, addF, lt, first(p), second(p))),
   p : point = point
-) : limit_period(F, zero, addF, lt, complete, X, point, first, cauchyFirst, p) = limit_period(
-  F, zero, addF, lt, complete, X, point, second, cauchySecond, p
-) {
+) :
+  limit_period(F, zero, addF, lt, complete, X, point, first, cauchyFirst, p) = limit_period(
+    F, zero, addF, lt, complete, X, point, second, cauchySecond, p
+  ) {
   exact field_asymptotic_limits_equal(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses),

@@ -14,7 +14,8 @@ theorem complex_perturbation_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)
-) : ComplexPerturbation(F, addF, negF, lt, complex_zero(F, zero), complex_zero(F, zero), zero) {
+) :
+  ComplexPerturbation(F, addF, negF, lt, complex_zero(F, zero), complex_zero(F, zero), zero) {
   let bounded = field_magnitude_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic);
   exact (
     complex_zero(F, zero),
@@ -30,10 +31,11 @@ theorem complex_perturbation_add(
   freshLeft : Complex(F), oldRight : Complex(F), freshRight : Complex(F), r : F, s : F,
   left : ComplexPerturbation(F, addF, negF, lt, oldLeft, freshLeft, r),
   right : ComplexPerturbation(F, addF, negF, lt, oldRight, freshRight, s)
-) : ComplexPerturbation(
-  F, addF, negF, lt, complex_add(F, addF, oldLeft, oldRight),
-  complex_add(F, addF, freshLeft, freshRight), addF(r, s)
-) {
+) :
+  ComplexPerturbation(
+    F, addF, negF, lt, complex_add(F, addF, oldLeft, oldRight),
+    complex_add(F, addF, freshLeft, freshRight), addF(r, s)
+  ) {
   obtain (e, leftPath, leftBound) = left;
   obtain (f, rightPath, rightBound) = right;
   let addC = complex_add(F, addF);

@@ -19,7 +19,8 @@ def path_right_unit_at(U : Universe, A : U, x : A, y : A, p : x = y) =
 theorem path_cancel_right_at(
   U : Universe, A : U, x : A, y : A, z : A, p : x = y, q : x = y, r : y = z,
   same : concatenate(U, A, x, y, z, p, r) = concatenate(U, A, x, y, z, q, r)
-) : p = q {
+) :
+  p = q {
   exact path(
     fun (interval_path_____ : Interval) => PathP(fun (interval_equality : Interval) => A, x, y),
     fun (interval_path_____ : Interval) => comp(
@@ -974,9 +975,8 @@ def homotopy_natural(
     )
   );
 
-theorem homotopy_self(U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x), x : A) : ap(
-  U, A, A, f, f(x), x, h(x)
-) = h(f(x)) {
+theorem homotopy_self(U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x), x : A) :
+  ap(U, A, A, f, f(x), x, h(x)) = h(f(x)) {
   exact path(
     fun (interval_path_____ : Interval) => PathP(
       fun (interval_equality : Interval) => A, f(f(x)), f(x)
@@ -1850,7 +1850,8 @@ def adjoint_counit(
 theorem adjoint_triangle(
   U : Universe, A : U, B : U, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
   epsilon : (forall y : B, f(g(y)) = y), x : A
-) : ap(U, A, B, f, g(f(x)), x, eta(x)) = adjoint_counit(U, A, B, f, g, eta, epsilon, f(x)) {
+) :
+  ap(U, A, B, f, g(f(x)), x, eta(x)) = adjoint_counit(U, A, B, f, g, eta, epsilon, f(x)) {
   let a = f(g(f(g(f(x)))));
   let b = f(g(f(x)));
   let c = f(x);
@@ -1883,7 +1884,8 @@ theorem adjoint_triangle(
 def equiv_from_inverse(
   U : Universe, A : U, B : U, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
   epsilon : (forall y : B, f(g(y)) = y)
-) : Equiv(U, A, B) {
+) :
+  Equiv(U, A, B) {
   exact (
     f, g, eta, adjoint_counit(U, A, B, f, g, eta, epsilon),
     adjoint_triangle(U, A, B, f, g, eta, epsilon)

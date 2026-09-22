@@ -9,12 +9,13 @@ theorem interval_tagged_width_admissible(
     FieldUnitInterval(F, zero, one, lt), IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius),
     n, vertices, tags
   )
-) : IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags) {
+) :
+  IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let condition = IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
   let other = IntervalTagWithin(F, zero, one, lt);
-  have mapping : forall a : I, forall b : I, forall tag : I, condition(a, b, tag)
-  -> other(a, b, tag) {
+  have mapping :
+    forall a : I, forall b : I, forall tag : I, condition(a, b, tag) -> other(a, b, tag) {
     intro a;
     intro b;
     intro tag;
@@ -37,7 +38,8 @@ theorem interval_tagged_width_mesh(
     FieldUnitInterval(F, zero, one, lt), IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius),
     n, vertices, tags
   )
-) : IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices) {
+) :
+  IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let condition = IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
   let width = interval_difference(F, zero, one, addF, negF, lt);
@@ -70,18 +72,19 @@ theorem dyadic_interval_samples_fine(
   small : lt(
     dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b)), mesh
   )
-) : exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
-(subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
-and IntervalAdmissibleTags(
-  F, zero, one, lt, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
-  subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece),
-  subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, piece)
-)
-and IntervalMeshBelow(
-  F, zero, one, addF, negF, lt, mesh,
-  subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
-  subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece)
-) {
+) :
+  exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+  (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
+  and IntervalAdmissibleTags(
+    F, zero, one, lt, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
+    subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece),
+    subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, piece)
+  )
+  and IntervalMeshBelow(
+    F, zero, one, addF, negF, lt, mesh,
+    subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
+    subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece)
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   obtain (piece, count, valid) = dyadic_interval_samples(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered

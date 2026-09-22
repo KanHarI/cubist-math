@@ -19,8 +19,9 @@ theorem f4_galois_subgroups_normal(S : Subgroup(F4GaloisGroup)) : IsNormal(F4Gal
 }
 
 // The kernel of the identity homomorphism is exactly the identity subgroup.
-theorem f4_identity_kernel : group_kernel(
-  F4GaloisGroup, F4GaloisGroup, group_hom_identity(F4GaloisGroup)
-) =[Subgroup(F4GaloisGroup)] subgroup_bottom(F4GaloisGroup) {
+theorem f4_identity_kernel :
+  group_kernel(F4GaloisGroup, F4GaloisGroup, group_hom_identity(F4GaloisGroup)) =[
+    Subgroup(F4GaloisGroup)
+  ] subgroup_bottom(F4GaloisGroup) {
   exact group_kernel_identity(F4GaloisGroup);
 }

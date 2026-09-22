@@ -1,0 +1,174 @@
+import chain_complete_orders;
+
+// The least family closed under a progressive map and chain suprema is
+// represented by its universal property. The existing U1 truncation makes
+// membership small; elimination is always into a proved proposition.
+def TowerLaws(
+  A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, P : A -> U0
+) =
+  (forall x : A, FieldProp(P(x))) and (forall x : A, P(x) -> P(f(x)))
+  and (
+    forall C : A -> U0, forall chain : OrderChain(A, le, C), (forall x : A, C(x) -> P(x))
+    -> P(chain_sup(A, le, complete, C, chain))
+  );
+
+def TowerMember(A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, x : A) =
+  FieldExists(forall P : A -> U0, TowerLaws(A, le, complete, f, P) -> P(x));
+
+def tower_member_prop(
+  A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, x : A
+) =
+  field_exists_prop(forall P : A -> U0, TowerLaws(A, le, complete, f, P) -> P(x));
+
+theorem tower_contains(
+  A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, P : A -> U0,
+  laws : TowerLaws(A, le, complete, f, P), x : A, member : TowerMember(A, le, complete, f, x)
+) :
+  P(x) {
+  obtain (prop, step, supremum) = laws;
+  exact field_exists_elim(
+    (forall Q : A -> U0, TowerLaws(A, le, complete, f, Q) -> Q(x)), P(x), prop(x),
+    (
+      fun (universal : (forall Q : A -> U0, TowerLaws(A, le, complete, f, Q) -> Q(x))) => universal(
+        P, laws
+      )
+    ), member
+  );
+}
+
+theorem tower_step(
+  A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, x : A,
+  member : TowerMember(A, le, complete, f, x)
+) :
+  TowerMember(A, le, complete, f, f(x)) {
+  have universal : forall P : A -> U0, TowerLaws(A, le, complete, f, P) -> P(f(x)) {
+    intro P;
+    intro laws;
+    obtain (prop, step, supremum) = laws;
+    exact step(x, tower_contains(A, le, complete, f, P, laws, x, member));
+  }
+  exact field_exists_intro(
+    (forall P : A -> U0, TowerLaws(A, le, complete, f, P) -> P(f(x))), universal
+  );
+}
+
+theorem tower_sup(
+  A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, C : A -> U0,
+  chain : OrderChain(A, le, C), members : (forall x : A, C(x) -> TowerMember(A, le, complete, f, x))
+) :
+  TowerMember(A, le, complete, f, chain_sup(A, le, complete, C, chain)) {
+  have universal :
+    forall P : A -> U0, TowerLaws(A, le, complete, f, P) -> P(chain_sup(A, le, complete, C, chain)) {
+    intro P;
+    intro laws;
+    obtain (prop, step, supremum) = laws;
+    exact supremum(
+      C, chain,
+      (
+        fun (x : A) => fun (cx : C(x)) => tower_contains(
+          A, le, complete, f, P, laws, x, members(x, cx)
+        )
+      )
+    );
+  }
+  exact field_exists_intro(
+    (
+      forall P : A -> U0, TowerLaws(A, le, complete, f, P)
+      -> P(chain_sup(A, le, complete, C, chain))
+    ), universal
+  );
+}
+
+// Lift the universal property to U1-valued propositions by the same existing
+// truncation interface. This is not elimination into untruncated data.
+theorem tower_induction_large(
+  A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, P : A -> U1,
+  prop : (forall x : A, FieldProp(P(x))), step : (forall x : A, P(x) -> P(f(x))),
+  supremum : (
+    forall C : A -> U0, forall chain : OrderChain(A, le, C), (forall x : A, C(x) -> P(x))
+    -> P(chain_sup(A, le, complete, C, chain))
+  ), x : A, member : TowerMember(A, le, complete, f, x)
+) :
+  P(x) {
+  let Q = fun (y : A) => FieldExists(P(y));
+  let unwrap = fun (y : A) => field_exists_elim(P(y), P(y), prop(y), (fun (p : P(y)) => p));
+  have laws : TowerLaws(A, le, complete, f, Q) {
+    exact (
+      (fun (y : A) => field_exists_prop(P(y))),
+      (fun (y : A) => field_exists_map(P(y), P(f(y)), step(y))),
+      (
+        fun (C : A -> U0) => fun (chain : OrderChain(A, le, C)) => fun (
+          members : (forall y : A, C(y) -> Q(y))
+        ) => field_exists_intro(
+          P(chain_sup(A, le, complete, C, chain)),
+          supremum(C, chain, (fun (y : A) => fun (cy : C(y)) => unwrap(y, members(y, cy))))
+        )
+      )
+    );
+  }
+  exact unwrap(x, tower_contains(A, le, complete, f, Q, laws, x, member));
+}
+
+// In the step and supremum cases, keep access to membership in the tower.
+theorem tower_relative_induction(
+  A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, P : A -> U1,
+  prop : (forall x : A, FieldProp(P(x))),
+  step : (forall x : A, TowerMember(A, le, complete, f, x) -> P(x) -> P(f(x))),
+  supremum : (
+    forall C : A -> U0, forall chain : OrderChain(A, le, C),
+    (forall x : A, C(x) -> TowerMember(A, le, complete, f, x)) -> (forall x : A, C(x) -> P(x))
+    -> P(chain_sup(A, le, complete, C, chain))
+  ), x : A, member : TowerMember(A, le, complete, f, x)
+) :
+  P(x) {
+  let T = TowerMember(A, le, complete, f);
+  let Q = fun (y : A) => T(y) and P(y);
+  have next : forall y : A, Q(y) -> Q(f(y)) {
+    intro y;
+    intro pair;
+    obtain (ty, py) = pair;
+    exact (tower_step(A, le, complete, f, y, ty), step(y, ty, py));
+  }
+  have limit :
+    forall C : A -> U0, forall chain : OrderChain(A, le, C), (forall y : A, C(y) -> Q(y))
+    -> Q(chain_sup(A, le, complete, C, chain)) {
+    intro C;
+    intro chain;
+    intro members;
+    let inTower = fun (y : A) => fun (cy : C(y)) => field_fst(T(y), P(y), members(y, cy));
+    let inP = fun (y : A) => fun (cy : C(y)) => field_snd(T(y), P(y), members(y, cy));
+    exact (tower_sup(A, le, complete, f, C, chain, inTower), supremum(C, chain, inTower, inP));
+  }
+  exact field_snd(
+    T(x), P(x),
+    tower_induction_large(
+      A, le, complete, f, Q,
+      (fun (y : A) => field_and_prop(T(y), P(y), tower_member_prop(A, le, complete, f, y), prop(y))),
+      next, limit, x, member
+    )
+  );
+}
+
+// An element is stable from below if every earlier tower point advances
+// no further than it. Strictness is expressed using the reverse inequality.
+def TowerStable(A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, a : A) =
+  forall b : A, TowerMember(A, le, complete, f, b) -> le(b, a) -> (le(a, b) -> Void) -> le(f(b), a);
+
+theorem tower_stable_prop(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
+  f : A -> A, a : A
+) :
+  FieldProp(TowerStable(A, le, complete, f, a)) {
+  intro p;
+  intro q;
+  exact path(
+    (fun (t : Interval) => TowerStable(A, le, complete, f, a)),
+    (
+      fun (t : Interval) => fun (b : A) => fun (tb : TowerMember(A, le, complete, f, b)) => fun (
+        ba : le(b, a)
+      ) => fun (strict : le(a, b) -> Void) => at(
+        order_prop(A, le, laws, f(b), a, p(b, tb, ba, strict), q(b, tb, ba, strict)), t
+      )
+    )
+  );
+}

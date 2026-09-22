@@ -16,10 +16,11 @@ theorem contour_tag_change_close(
     weight, n, vertices, oldTags
   ), variation : FieldLe(F, lt, sample_sum(F, F, zero, addF, weight, n, vertices, oldTags), length),
   epsilon : F, small : lt(mulF(delta, length), epsilon)
-) : FieldClose(
-  F, addF, lt, contour_sum(F, zero, addF, mulF, negF, f, n, vertices, newTags),
-  contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags), epsilon
-) {
+) :
+  FieldClose(
+    F, addF, lt, contour_sum(F, zero, addF, mulF, negF, f, n, vertices, newTags),
+    contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags), epsilon
+  ) {
   let error = contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags);
   let bound =
     contour_tag_error_length_bound(
@@ -62,14 +63,15 @@ theorem contour_tag_errors_converge(
     forall n : Nat,
     FieldLe(F, lt, sample_sum(F, F, zero, addF, weight, count(n), vertices(n), oldTags(n)), length)
   ), vanishes : FieldConverges(F, zero, addF, lt, (fun (n : Nat) => mulF(delta(n), length)), zero)
-) : FieldConverges(
-  F, zero, addF, lt,
-  (
-    fun (n : Nat) => contour_tag_error_sum(
-      F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n)
-    )
-  ), zero
-) {
+) :
+  FieldConverges(
+    F, zero, addF, lt,
+    (
+      fun (n : Nat) => contour_tag_error_sum(
+        F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n)
+      )
+    ), zero
+  ) {
   exact field_magnitude_squeeze(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     (
@@ -114,14 +116,15 @@ theorem contour_tag_errors_from_vanishing_values(
     forall n : Nat,
     FieldLe(F, lt, sample_sum(F, F, zero, addF, weight, count(n), vertices(n), oldTags(n)), length)
   ), vanishes : FieldConverges(F, zero, addF, lt, delta, zero)
-) : FieldConverges(
-  F, zero, addF, lt,
-  (
-    fun (n : Nat) => contour_tag_error_sum(
-      F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n)
-    )
-  ), zero
-) {
+) :
+  FieldConverges(
+    F, zero, addF, lt,
+    (
+      fun (n : Nat) => contour_tag_error_sum(
+        F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n)
+      )
+    ), zero
+  ) {
   let scaled =
     field_nonnegative_scale_zero_converges(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,

@@ -15,10 +15,11 @@ theorem parameter_tag_bounds_from_samples(
       ), delta
     )
   ), n : Nat
-) : forall vertices : SampleVertices(C, n), forall oldTags : SampleTags(C, n),
-forall newTags : SampleTags(C, n), SampleAdjacent(C, mesh, n, vertices)
--> SampleTagged(C, valid, n, vertices, oldTags) -> SampleTagged(C, valid, n, vertices, newTags)
--> ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags) {
+) :
+  forall vertices : SampleVertices(C, n), forall oldTags : SampleTags(C, n),
+  forall newTags : SampleTags(C, n), SampleAdjacent(C, mesh, n, vertices)
+  -> SampleTagged(C, valid, n, vertices, oldTags) -> SampleTagged(C, valid, n, vertices, newTags)
+  -> ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall oldTags : SampleTags(C, k),
     forall newTags : SampleTags(C, k), SampleAdjacent(C, mesh, k, vertices)

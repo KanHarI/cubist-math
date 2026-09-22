@@ -6,12 +6,13 @@ theorem sample_sum_magnitude_bound(
   -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> F, radius : C
   -> C -> C -> F, n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags)
--> FieldMagnitudeBound(
-  F, negF, lt, sample_sum(C, F, zero, addF, edge, n, vertices, tags),
-  sample_sum(C, F, zero, addF, radius, n, vertices, tags)
-) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags)
+  -> FieldMagnitudeBound(
+    F, negF, lt, sample_sum(C, F, zero, addF, edge, n, vertices, tags),
+    sample_sum(C, F, zero, addF, radius, n, vertices, tags)
+  ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, vertices, tags)
@@ -95,15 +96,16 @@ theorem sample_magnitude_product(
   -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> F, other : C
   -> C -> C -> F, radius : C -> C -> C -> F, otherRadius : C -> C -> C -> F, n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags)
--> SampleMagnitudeBounds(C, F, negF, lt, other, otherRadius, n, vertices, tags)
--> SampleMagnitudeBounds(
-  C, F, negF, lt,
-  (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))),
-  (fun (a : C) => fun (b : C) => fun (t : C) => mulF(radius(a, b, t), otherRadius(a, b, t))), n,
-  vertices, tags
-) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags)
+  -> SampleMagnitudeBounds(C, F, negF, lt, other, otherRadius, n, vertices, tags)
+  -> SampleMagnitudeBounds(
+    C, F, negF, lt,
+    (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))),
+    (fun (a : C) => fun (b : C) => fun (t : C) => mulF(radius(a, b, t), otherRadius(a, b, t))), n,
+    vertices, tags
+  ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, vertices, tags)
@@ -282,14 +284,15 @@ theorem sample_weighted_sum_bound(
     C, F, negF, lt, edge, (fun (a : C) => fun (b : C) => fun (t : C) => delta), n, vertices, tags
   ), increments : SampleMagnitudeBounds(C, F, negF, lt, other, weight, n, vertices, tags),
   variation : FieldLe(F, lt, sample_sum(C, F, zero, addF, weight, n, vertices, tags), length)
-) : FieldMagnitudeBound(
-  F, negF, lt,
-  sample_sum(
-    C, F, zero, addF,
-    (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))), n, vertices,
-    tags
-  ), mulF(delta, length)
-) {
+) :
+  FieldMagnitudeBound(
+    F, negF, lt,
+    sample_sum(
+      C, F, zero, addF,
+      (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t))), n,
+      vertices, tags
+    ), mulF(delta, length)
+  ) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   let radii = (fun (a : C) => fun (b : C) => fun (t : C) => mulF(delta, weight(a, b, t)));
   let products = (fun (a : C) => fun (b : C) => fun (t : C) => mulF(edge(a, b, t), other(a, b, t)));

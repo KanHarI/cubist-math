@@ -7,13 +7,14 @@ theorem contour_sum_join(
   vertices : SampleVertices(F, n), tags : SampleTags(F, n), m : Nat,
   rightVertices : SampleVertices(F, m), rightTags : SampleTags(F, m),
   meets : sample_last(F, n, vertices) = sample_first(F, m, rightVertices)
-) : contour_sum(
-  F, zero, addF, mulF, negF, f, n + m, join_vertices(F, n, vertices, m, rightVertices),
-  join_tags(F, n, tags, m, rightTags)
-) = addF(
-  contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags),
-  contour_sum(F, zero, addF, mulF, negF, f, m, rightVertices, rightTags)
-) {
+) :
+  contour_sum(
+    F, zero, addF, mulF, negF, f, n + m, join_vertices(F, n, vertices, m, rightVertices),
+    join_tags(F, n, tags, m, rightTags)
+  ) = addF(
+    contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags),
+    contour_sum(F, zero, addF, mulF, negF, f, m, rightVertices, rightTags)
+  ) {
   exact sample_sum_join(
     F, F, zero, addF, ring_add_zero(F, zero, one, addF, mulF, negF, ring),
     ring_add_assoc(F, zero, one, addF, mulF, negF, ring), contour_edge(F, addF, mulF, negF, f), n,
@@ -25,10 +26,11 @@ theorem contour_sum_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, g : F -> F, n : Nat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n)
-) : contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => addF(f(x), g(x))), n, vertices, tags) = addF(
-  contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags),
-  contour_sum(F, zero, addF, mulF, negF, g, n, vertices, tags)
-) {
+) :
+  contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => addF(f(x), g(x))), n, vertices, tags) = addF(
+    contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags),
+    contour_sum(F, zero, addF, mulF, negF, g, n, vertices, tags)
+  ) {
   obtain (setF, additive, multiplicative) = ring;
   let edgeF = contour_edge(F, addF, mulF, negF, f);
   let edgeG = contour_edge(F, addF, mulF, negF, g);
@@ -54,16 +56,17 @@ theorem potential_sample_sum(
   C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), potential : C -> F, n : Nat,
   vertices : SampleVertices(C, n), tags : SampleTags(C, n)
-) : sample_sum(
-  C, F, zero, addF,
-  (
-    fun (a : C) => fun (b : C) => fun (tag : C) => coordinate_difference(
-      F, addF, negF, potential(a), potential(b)
-    )
-  ), n, vertices, tags
-) = coordinate_difference(
-  F, addF, negF, potential(sample_first(C, n, vertices)), potential(sample_last(C, n, vertices))
-) {
+) :
+  sample_sum(
+    C, F, zero, addF,
+    (
+      fun (a : C) => fun (b : C) => fun (tag : C) => coordinate_difference(
+        F, addF, negF, potential(a), potential(b)
+      )
+    ), n, vertices, tags
+  ) = coordinate_difference(
+    F, addF, negF, potential(sample_first(C, n, vertices)), potential(sample_last(C, n, vertices))
+  ) {
   exact sample_sum_telescopes(
     C, F, zero, addF,
     (fun (a : C) => fun (b : C) => coordinate_difference(F, addF, negF, potential(a), potential(b))),
@@ -80,10 +83,11 @@ theorem contour_sum_constant(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : F, n : Nat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n)
-) : contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => coefficient), n, vertices, tags) = mulF(
-  coefficient,
-  coordinate_difference(F, addF, negF, sample_first(F, n, vertices), sample_last(F, n, vertices))
-) {
+) :
+  contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => coefficient), n, vertices, tags) = mulF(
+    coefficient,
+    coordinate_difference(F, addF, negF, sample_first(F, n, vertices), sample_last(F, n, vertices))
+  ) {
   let deltaEdge =
     fun (a : F) => fun (b : F) => fun (tag : F) => coordinate_difference(F, addF, negF, a, b);
   exact trans(
@@ -109,7 +113,8 @@ theorem contour_sum_constant_closed(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : F, n : Nat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n),
   closed : sample_last(F, n, vertices) = sample_first(F, n, vertices)
-) : contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => coefficient), n, vertices, tags) = zero {
+) :
+  contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => coefficient), n, vertices, tags) = zero {
   let first = sample_first(F, n, vertices);
   exact trans(
     contour_sum_constant(F, zero, one, addF, mulF, negF, ring, coefficient, n, vertices, tags),

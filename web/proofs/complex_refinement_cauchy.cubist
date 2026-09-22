@@ -6,7 +6,8 @@ import field_magnitude_close;
 theorem complex_converges_successor(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F),
   value : Complex(F), converges : ComplexConverges(F, zero, addF, lt, sequence, value)
-) : ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => sequence(succ(n))), value) {
+) :
+  ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => sequence(succ(n))), value) {
   intro epsilon;
   intro positive;
   obtain (bound, close) = converges(epsilon, positive);
@@ -24,7 +25,8 @@ theorem complex_converges_successor(
 theorem complex_close_symmetry(
   F : U1, addF : F -> F -> F, lt : F -> F -> U0, x : Complex(F), y : Complex(F), epsilon : F,
   close : ComplexClose(F, addF, lt, x, y, epsilon)
-) : ComplexClose(F, addF, lt, y, x, epsilon) {
+) :
+  ComplexClose(F, addF, lt, y, x, epsilon) {
   obtain (realClose, imagClose) = close;
   exact (
     field_close_symmetry(F, addF, lt, complex_real(F, x), complex_real(F, y), epsilon, realClose),
@@ -38,7 +40,8 @@ theorem complex_close_triangle(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : Complex(F), y : Complex(F),
   z : Complex(F), epsilon : F, delta : F, xy : ComplexClose(F, addF, lt, x, y, epsilon),
   yz : ComplexClose(F, addF, lt, y, z, delta)
-) : ComplexClose(F, addF, lt, x, z, addF(epsilon, delta)) {
+) :
+  ComplexClose(F, addF, lt, x, z, addF(epsilon, delta)) {
   obtain (realXY, imagXY) = xy;
   obtain (realYZ, imagYZ) = yz;
   exact (
@@ -62,7 +65,8 @@ theorem complex_perturbation_close(
   fresh : Complex(F), radius : F, epsilon : F,
   perturbation : ComplexPerturbation(F, addF, negF, lt, old, fresh, radius),
   small : lt(radius, epsilon)
-) : ComplexClose(F, addF, lt, old, fresh, epsilon) {
+) :
+  ComplexClose(F, addF, lt, old, fresh, epsilon) {
   obtain (error, computes, realBound, imagBound) = perturbation;
   let close =
     typed(
@@ -94,13 +98,15 @@ theorem complex_cauchy_from_refinements(
     forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat, forall n : Nat, forall extra : Nat,
     IndexLE(bound, n) -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon)
   )
-) : ComplexCauchy(F, zero, addF, lt, sequence) {
+) :
+  ComplexCauchy(F, zero, addF, lt, sequence) {
   obtain (half, halfSum, positiveHalf) = halving;
   intro epsilon;
   intro positive;
   obtain (bound, close) = refines(half(epsilon), positiveHalf(epsilon, positive));
-  have tail : forall m : Nat, forall n : Nat, IndexLE(bound, m) -> IndexLE(bound, n)
-  -> ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon) {
+  have tail :
+    forall m : Nat, forall n : Nat, IndexLE(bound, m) -> IndexLE(bound, n)
+    -> ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon) {
     intro m;
     intro n;
     intro largeM;

@@ -42,12 +42,13 @@ theorem curve_refinement_partition_estimate(
       subdivision_tags(FieldUnitInterval(F, zero, one, lt), a, b, coarse), pieces, radius
     )
   )
-) : ComplexPerturbation(
-  F, addF, negF, lt,
-  curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, coarse),
-  curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, fine),
-  radius
-) {
+) :
+  ComplexPerturbation(
+    F, addF, negF, lt,
+    curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, coarse),
+    curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, fine),
+    radius
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let n = subdivision_count(I, a, b, coarse);
   let vertices = subdivision_vertices(I, a, b, coarse);
@@ -95,43 +96,45 @@ theorem affine_refinement_sum_estimate(
       )
     )
   ), delta : F, positiveDelta : lt(zero, delta)
-) : exists mesh : F, lt(zero, mesh)
-and (
-  forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
-  forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
-  forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
-  SubdivisionRefinementSum(
-    FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF),
-    parameter_contour_edge(
-      FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF),
-      complex_mul(F, addF, mulF, negF), complex_neg(F, negF),
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope),
-      (
-        fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
-          complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
+) :
+  exists mesh : F, lt(zero, mesh)
+  and (
+    forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
+    forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+    forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+    SubdivisionRefinementSum(
+      FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF),
+      parameter_contour_edge(
+        FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF),
+        complex_mul(F, addF, mulF, negF), complex_neg(F, negF),
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope),
+        (
+          fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
+            complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
+          )
+        )
+      ), IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine
+    )
+    -> ComplexPerturbation(
+      F, addF, negF, lt,
+      curve_subdivision_samples(
+        F, zero, one, addF, mulF, negF, lt,
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b,
+        coarse
+      ),
+      curve_subdivision_samples(
+        F, zero, one, addF, mulF, negF, lt,
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, fine
+      ),
+      mulF(
+        delta,
+        mulF(
+          interval_difference(F, zero, one, addF, negF, lt)(a, b),
+          affine_coordinate_length(F, addF, negF, maxF, slope)
         )
       )
-    ), IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine
-  )
-  -> ComplexPerturbation(
-    F, addF, negF, lt,
-    curve_subdivision_samples(
-      F, zero, one, addF, mulF, negF, lt,
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, coarse
-    ),
-    curve_subdivision_samples(
-      F, zero, one, addF, mulF, negF, lt,
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, fine
-    ),
-    mulF(
-      delta,
-      mulF(
-        interval_difference(F, zero, one, addF, negF, lt)(a, b),
-        affine_coordinate_length(F, addF, negF, maxF, slope)
-      )
     )
-  )
-) {
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let length = affine_coordinate_length(F, addF, negF, maxF, slope);
@@ -140,41 +143,42 @@ and (
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
     integrand, uniform, delta, positiveDelta
   );
-  have actual : forall a : FieldUnitInterval(F, zero, one, lt),
-  forall b : FieldUnitInterval(F, zero, one, lt),
-  forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
-  forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
-  SubdivisionRefinementSum(
-    FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF),
-    parameter_contour_edge(
-      FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF),
-      complex_mul(F, addF, mulF, negF), complex_neg(F, negF),
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope),
-      (
-        fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
-          complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
+  have actual :
+    forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
+    forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+    forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+    SubdivisionRefinementSum(
+      FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF),
+      parameter_contour_edge(
+        FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF),
+        complex_mul(F, addF, mulF, negF), complex_neg(F, negF),
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope),
+        (
+          fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(
+            complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
+          )
+        )
+      ), IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine
+    )
+    -> ComplexPerturbation(
+      F, addF, negF, lt,
+      curve_subdivision_samples(
+        F, zero, one, addF, mulF, negF, lt,
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b,
+        coarse
+      ),
+      curve_subdivision_samples(
+        F, zero, one, addF, mulF, negF, lt,
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, fine
+      ),
+      mulF(
+        delta,
+        mulF(
+          interval_difference(F, zero, one, addF, negF, lt)(a, b),
+          affine_coordinate_length(F, addF, negF, maxF, slope)
         )
       )
-    ), IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine
-  )
-  -> ComplexPerturbation(
-    F, addF, negF, lt,
-    curve_subdivision_samples(
-      F, zero, one, addF, mulF, negF, lt,
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, coarse
-    ),
-    curve_subdivision_samples(
-      F, zero, one, addF, mulF, negF, lt,
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b, fine
-    ),
-    mulF(
-      delta,
-      mulF(
-        interval_difference(F, zero, one, addF, negF, lt)(a, b),
-        affine_coordinate_length(F, addF, negF, maxF, slope)
-      )
-    )
-  ) {
+    ) {
     intro a;
     intro b;
     intro coarse;

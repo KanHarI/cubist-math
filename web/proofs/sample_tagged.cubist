@@ -17,8 +17,9 @@ theorem sample_tagged_adjacent(
   C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
   orders : (forall a : C, forall b : C, forall tag : C, condition(a, b, tag) -> related(a, b)),
   n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-SampleTagged(C, condition, n, vertices, tags) -> SampleAdjacent(C, related, n, vertices) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  SampleTagged(C, condition, n, vertices, tags) -> SampleAdjacent(C, related, n, vertices) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     SampleTagged(C, condition, k, vertices, tags) -> SampleAdjacent(C, related, k, vertices)
@@ -84,8 +85,9 @@ def sample_left_tags(C : U1, n : Nat) =
 theorem sample_left_tags_valid(
   C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
   admits : (forall a : C, forall b : C, related(a, b) -> condition(a, b, a)), n : Nat
-) : forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices)
--> SampleTagged(C, condition, n, vertices, sample_left_tags(C, n, vertices)) {
+) :
+  forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices)
+  -> SampleTagged(C, condition, n, vertices, sample_left_tags(C, n, vertices)) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices)
     -> SampleTagged(C, condition, k, vertices, sample_left_tags(C, k, vertices))
@@ -145,8 +147,9 @@ def sample_right_tags(C : U1, n : Nat) =
 theorem sample_right_tags_valid(
   C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
   admits : (forall a : C, forall b : C, related(a, b) -> condition(a, b, b)), n : Nat
-) : forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices)
--> SampleTagged(C, condition, n, vertices, sample_right_tags(C, n, vertices)) {
+) :
+  forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices)
+  -> SampleTagged(C, condition, n, vertices, sample_right_tags(C, n, vertices)) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices)
     -> SampleTagged(C, condition, k, vertices, sample_right_tags(C, k, vertices))

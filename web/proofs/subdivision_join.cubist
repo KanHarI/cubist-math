@@ -14,7 +14,8 @@ def join_subdivision_families_step(
   m : Nat, rightVertices : SampleVertices(C, m),
   rightPieces : SampleSubdivisions(C, m, rightVertices),
   same : sample_last(C, succ(n), vertices) = sample_first(C, m, rightVertices)
-) : SampleSubdivisions(C, succ(n) + m, join_vertices(C, succ(n), vertices, m, rightVertices)) {
+) :
+  SampleSubdivisions(C, succ(n) + m, join_vertices(C, succ(n), vertices, m, rightVertices)) {
   let a = field_fst(C, SampleVertices(C, n), vertices);
   let tail = field_snd(C, SampleVertices(C, n), vertices);
   let b = sample_first(C, n, tail);
@@ -68,13 +69,14 @@ theorem subdivision_total_join_step(
   m : Nat, rightVertices : SampleVertices(C, m),
   rightPieces : SampleSubdivisions(C, m, rightVertices),
   same : sample_last(C, succ(n), vertices) = sample_first(C, m, rightVertices)
-) : subdivision_total(
-  C, G, zero, addG, edge, succ(n) + m, join_vertices(C, succ(n), vertices, m, rightVertices),
-  join_subdivision_families(C, succ(n), vertices, pieces, m, rightVertices, rightPieces, same)
-) = addG(
-  subdivision_total(C, G, zero, addG, edge, succ(n), vertices, pieces),
-  subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)
-) {
+) :
+  subdivision_total(
+    C, G, zero, addG, edge, succ(n) + m, join_vertices(C, succ(n), vertices, m, rightVertices),
+    join_subdivision_families(C, succ(n), vertices, pieces, m, rightVertices, rightPieces, same)
+  ) = addG(
+    subdivision_total(C, G, zero, addG, edge, succ(n), vertices, pieces),
+    subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)
+  ) {
   let a = field_fst(C, SampleVertices(C, n), vertices);
   let tail = field_snd(C, SampleVertices(C, n), vertices);
   let b = sample_first(C, n, tail);
@@ -108,17 +110,18 @@ theorem subdivision_total_join(
   C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat
-) : forall vertices : SampleVertices(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
-forall m : Nat, forall rightVertices : SampleVertices(C, m),
-forall rightPieces : SampleSubdivisions(C, m, rightVertices),
-forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices),
-subdivision_total(
-  C, G, zero, addG, edge, n + m, join_vertices(C, n, vertices, m, rightVertices),
-  join_subdivision_families(C, n, vertices, pieces, m, rightVertices, rightPieces, same)
-) = addG(
-  subdivision_total(C, G, zero, addG, edge, n, vertices, pieces),
-  subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)
-) {
+) :
+  forall vertices : SampleVertices(C, n), forall pieces : SampleSubdivisions(C, n, vertices),
+  forall m : Nat, forall rightVertices : SampleVertices(C, m),
+  forall rightPieces : SampleSubdivisions(C, m, rightVertices),
+  forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices),
+  subdivision_total(
+    C, G, zero, addG, edge, n + m, join_vertices(C, n, vertices, m, rightVertices),
+    join_subdivision_families(C, n, vertices, pieces, m, rightVertices, rightPieces, same)
+  ) = addG(
+    subdivision_total(C, G, zero, addG, edge, n, vertices, pieces),
+    subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)
+  ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall pieces : SampleSubdivisions(C, k, vertices),
     forall m : Nat, forall rightVertices : SampleVertices(C, m),

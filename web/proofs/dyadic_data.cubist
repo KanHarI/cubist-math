@@ -30,7 +30,8 @@ def dyadic_children_join(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b) {
+) :
+  SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b) {
   let midpoint =
     interval_midpoint_point(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
@@ -67,9 +68,10 @@ theorem dyadic_piece_zero(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : dyadic_piece(
-  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, 0, a, b, ordered
-) = single_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, b) {
+) :
+  dyadic_piece(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, 0, a, b, ordered
+  ) = single_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, b) {
   exact refl(single_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, b));
 }
 
@@ -83,12 +85,13 @@ theorem dyadic_piece_succ(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : dyadic_piece(
-  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, succ(depth), a, b,
-  ordered
-) = dyadic_children_join(
-  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered
-) {
+) :
+  dyadic_piece(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, succ(depth), a, b,
+    ordered
+  ) = dyadic_children_join(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered
+  ) {
   exact refl(
     dyadic_children_join(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
@@ -107,12 +110,14 @@ theorem dyadic_piece_count(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : subdivision_count(
-  FieldUnitInterval(F, zero, one, lt), a, b,
-  dyadic_piece(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered
-  )
-) = dyadic_count(depth) {
+) :
+  subdivision_count(
+    FieldUnitInterval(F, zero, one, lt), a, b,
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
+      ordered
+    )
+  ) = dyadic_count(depth) {
   exact dyadic_samples_count(
     F, zero, one, addF, negF, lt, half, depth, a, b,
     dyadic_interval_samples(
@@ -132,16 +137,18 @@ theorem dyadic_piece_valid(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : SubdivisionTaggedValid(
-  FieldUnitInterval(F, zero, one, lt),
-  IntervalTaggedWidth(
-    F, zero, one, addF, negF, lt,
-    dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b))
-  ), a, b,
-  dyadic_piece(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered
-  )
-) {
+) :
+  SubdivisionTaggedValid(
+    FieldUnitInterval(F, zero, one, lt),
+    IntervalTaggedWidth(
+      F, zero, one, addF, negF, lt,
+      dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b))
+    ), a, b,
+    dyadic_piece(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
+      ordered
+    )
+  ) {
   exact dyadic_samples_valid(
     F, zero, one, addF, negF, lt, half, depth, a, b,
     dyadic_interval_samples(
@@ -161,30 +168,31 @@ theorem dyadic_piece_admissible(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) : IntervalAdmissibleTags(
-  F, zero, one, lt,
-  subdivision_count(
-    FieldUnitInterval(F, zero, one, lt), a, b,
-    dyadic_piece(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
-      ordered
+) :
+  IntervalAdmissibleTags(
+    F, zero, one, lt,
+    subdivision_count(
+      FieldUnitInterval(F, zero, one, lt), a, b,
+      dyadic_piece(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
+        ordered
+      )
+    ),
+    subdivision_vertices(
+      FieldUnitInterval(F, zero, one, lt), a, b,
+      dyadic_piece(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
+        ordered
+      )
+    ),
+    subdivision_tags(
+      FieldUnitInterval(F, zero, one, lt), a, b,
+      dyadic_piece(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
+        ordered
+      )
     )
-  ),
-  subdivision_vertices(
-    FieldUnitInterval(F, zero, one, lt), a, b,
-    dyadic_piece(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
-      ordered
-    )
-  ),
-  subdivision_tags(
-    FieldUnitInterval(F, zero, one, lt), a, b,
-    dyadic_piece(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
-      ordered
-    )
-  )
-) {
+  ) {
   let piece =
     dyadic_piece(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,

@@ -5,7 +5,8 @@ import f4_intermediate_fields;
 def f4_automorphism_induction(
   C : F4Automorphism -> U0, identityCase : C(f4_identity_automorphism),
   frobeniusCase : C(f4_frobenius_automorphism), e : F4Automorphism
-) : C(e) {
+) :
+  C(e) {
   exact transport(
     C, f4_symmetry(f4_symmetry_bit(e)), e, f4_symmetry_classify(e),
     f2_induction(
@@ -17,7 +18,8 @@ def f4_automorphism_induction(
 // A family with no Frobenius fixes alpha: every remaining symmetry is identity.
 theorem f4_family_without_frobenius_fixes_alpha(
   H : F4Automorphism -> U0, noFrobenius : H(f4_frobenius_automorphism) -> Void
-) : GaloisFixed(F2, F4OverF2, H, f4_2) {
+) :
+  GaloisFixed(F2, F4OverF2, H, f4_2) {
   exact (
     fun (e : F4Automorphism) => f4_automorphism_induction(
       (fun (d : F4Automorphism) => H(d) -> (f4_auto_apply(d, f4_2) = f4_2)),
@@ -37,10 +39,11 @@ theorem f4_fixing_fixed_recovers_members(
   H : F4Automorphism -> U0, laws : GaloisSubgroupLaws(F2, F4OverF2, H),
   decideFrobenius : Decidable(H(f4_frobenius_automorphism)), e : F4Automorphism,
   fixes : GaloisFixing(F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), e)
-) : H(e) {
-  have frobeniusCase : GaloisFixing(
-    F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), f4_frobenius_automorphism
-  ) -> H(f4_frobenius_automorphism) {
+) :
+  H(e) {
+  have frobeniusCase :
+    GaloisFixing(F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), f4_frobenius_automorphism)
+    -> H(f4_frobenius_automorphism) {
     intro fixesFrobenius;
     cases decideFrobenius {
       left member => {
@@ -77,7 +80,8 @@ theorem f4_fixed_fixing_recovers_members(
   P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P),
   decideAlpha : Decidable(P(f4_2)), x : F4Carrier,
   fixed : GaloisFixed(F2, F4OverF2, GaloisFixing(F2, F4OverF2, P), x)
-) : P(x) {
+) :
+  P(x) {
   cases decideAlpha {
     left alpha => {
       exact f4_intermediate_with_alpha(P, laws, alpha, x);
@@ -102,9 +106,10 @@ theorem f4_fixed_fixing_recovers_members(
 theorem f4_fixing_fixed_subgroup(
   H : GaloisSubgroup(F2, F4OverF2),
   decideFrobenius : Decidable(galois_subgroup_members(F2, F4OverF2, H, f4_frobenius_automorphism))
-) : fixing_galois_subgroup(F2, F4OverF2, fixed_intermediate_field(F2, F4OverF2, H)) =[
-  GaloisSubgroup(F2, F4OverF2)
-] H {
+) :
+  fixing_galois_subgroup(F2, F4OverF2, fixed_intermediate_field(F2, F4OverF2, H)) =[
+    GaloisSubgroup(F2, F4OverF2)
+  ] H {
   let members = galois_subgroup_members(F2, F4OverF2, H);
   let closed = GaloisFixing(F2, F4OverF2, GaloisFixed(F2, F4OverF2, members));
   let laws = subgroup_laws(F4GaloisGroup, H);
@@ -133,9 +138,10 @@ theorem f4_fixing_fixed_subgroup(
 theorem f4_fixed_fixing_intermediate(
   M : IntermediateField(F2, F4OverF2),
   decideAlpha : Decidable(intermediate_members(F2, F4OverF2, M, f4_2))
-) : fixed_intermediate_field(F2, F4OverF2, fixing_galois_subgroup(F2, F4OverF2, M)) =[
-  IntermediateField(F2, F4OverF2)
-] M {
+) :
+  fixed_intermediate_field(F2, F4OverF2, fixing_galois_subgroup(F2, F4OverF2, M)) =[
+    IntermediateField(F2, F4OverF2)
+  ] M {
   let members = intermediate_members(F2, F4OverF2, M);
   let closed = GaloisFixed(F2, F4OverF2, GaloisFixing(F2, F4OverF2, members));
   let laws = intermediate_laws(F2, F4OverF2, M);

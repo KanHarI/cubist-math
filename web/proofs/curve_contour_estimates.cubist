@@ -37,12 +37,16 @@ theorem curve_contour_tag_change_close(
     (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t))), delta, n, vertices,
     oldTags, newTags
   ), epsilon : F, small : lt(mulF(delta, length), epsilon)
-) : ComplexClose(
-  F, addF, lt,
-  curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, newTags),
-  curve_contour_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, oldTags),
-  epsilon
-) {
+) :
+  ComplexClose(
+    F, addF, lt,
+    curve_contour_samples(
+      F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, newTags
+    ),
+    curve_contour_samples(
+      F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, oldTags
+    ), epsilon
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let values = (fun (t : I) => integrand(curve(t)));
   obtain (realBounds, imagBounds, totalBound) = variation(n, vertices, oldTags, ordered);

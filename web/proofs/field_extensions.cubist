@@ -5,17 +5,23 @@ import algebraic_fields;
 def FieldEmbeddingLaws(K : AlgebraicField, A : U0, data : FieldData(A), f : af_carrier(K) -> A) =
   FieldOpsPreserved(af_carrier(K), A, f, af_operations(K), field_data_ops(A, data))
   and (forall x : af_carrier(K), forall y : af_carrier(K), (f(x) = f(y)) -> (x = y));
+
 def FieldEmbeddingData(K : AlgebraicField, A : U0, data : FieldData(A)) =
   exists f : af_carrier(K) -> A, FieldEmbeddingLaws(K, A, data, f);
+
 def ExtensionData(K : AlgebraicField, A : U0) =
   exists data : FieldData(A), FieldEmbeddingData(K, A, data);
+
 def extension_field_data(K : AlgebraicField, A : U0, data : ExtensionData(K, A)) =
   sigma_first(FieldData(A), FieldEmbeddingData(K, A), data);
+
 def extension_embedding_data(K : AlgebraicField, A : U0, data : ExtensionData(K, A)) =
   sigma_second(FieldData(A), FieldEmbeddingData(K, A), data);
+
 def extension_embedding_function(
   K : AlgebraicField, A : U0, data : FieldData(A), e : FieldEmbeddingData(K, A, data)
-) : af_carrier(K) -> A {
+) :
+  af_carrier(K) -> A {
   exact sigma_first((af_carrier(K) -> A), FieldEmbeddingLaws(K, A, data), e);
 }
 
@@ -27,7 +33,8 @@ def extension_embed(K : AlgebraicField, A : U0, data : ExtensionData(K, A)) : af
 
 theorem field_embedding_laws_prop(
   K : AlgebraicField, A : U0, setA : IsSet(A), data : FieldData(A), f : af_carrier(K) -> A
-) : Proposition(FieldEmbeddingLaws(K, A, data, f)) {
+) :
+  Proposition(FieldEmbeddingLaws(K, A, data, f)) {
   exact product_prop(
     FieldOpsPreserved(af_carrier(K), A, f, af_operations(K), field_data_ops(A, data)),
     (forall x : af_carrier(K), forall y : af_carrier(K), (f(x) = f(y)) -> (x = y)),
@@ -55,6 +62,7 @@ def ExtensionPreserved(
 ) =
   FieldPreserved(A, B, f, extension_field_data(K, A, a), extension_field_data(K, B, b))
   and (forall k : af_carrier(K), f(extension_embed(K, A, a, k)) = extension_embed(K, B, b, k));
+
 def extension_preserved_prop(
   K : AlgebraicField, A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B,
   a : ExtensionData(K, A), b : ExtensionData(K, B)
@@ -71,9 +79,9 @@ def extension_preserved_prop(
       (fun (k : af_carrier(K)) => setB(f(extension_embed(K, A, a, k)), extension_embed(K, B, b, k)))
     )
   );
-def extension_preserved_identity(K : AlgebraicField, A : U0, a : ExtensionData(K, A)) : ExtensionPreserved(
-  K, A, A, (fun (x : A) => x), a, a
-) {
+
+def extension_preserved_identity(K : AlgebraicField, A : U0, a : ExtensionData(K, A)) :
+  ExtensionPreserved(K, A, A, (fun (x : A) => x), a, a) {
   exact (
     field_preserved_identity(A, extension_field_data(K, A, a)),
     (fun (k : af_carrier(K)) => refl(extension_embed(K, A, a, k)))
@@ -82,11 +90,12 @@ def extension_preserved_identity(K : AlgebraicField, A : U0, a : ExtensionData(K
 
 theorem extension_data_path(
   K : AlgebraicField, A : U0, setA : IsSet(A), a : FieldData(A), b : FieldData(A), p : a = b
-) : forall e : FieldEmbeddingData(K, A, a), forall d : FieldEmbeddingData(K, A, b),
-(
-  forall k : af_carrier(K),
-  extension_embedding_function(K, A, a, e, k) = extension_embedding_function(K, A, b, d, k)
-) -> (typed(ExtensionData(K, A), (a, e)) = typed(ExtensionData(K, A), (b, d))) {
+) :
+  forall e : FieldEmbeddingData(K, A, a), forall d : FieldEmbeddingData(K, A, b),
+  (
+    forall k : af_carrier(K),
+    extension_embedding_function(K, A, a, e, k) = extension_embedding_function(K, A, b, d, k)
+  ) -> (typed(ExtensionData(K, A), (a, e)) = typed(ExtensionData(K, A), (b, d))) {
   exact path_induction(
     FieldData(A),
     (
@@ -124,7 +133,8 @@ theorem extension_data_path(
 theorem extension_preserved_reflect(
   K : AlgebraicField, A : U0, setA : IsSet(A), a : ExtensionData(K, A), b : ExtensionData(K, A),
   preserves : ExtensionPreserved(K, A, A, (fun (x : A) => x), a, b)
-) : a = b {
+) :
+  a = b {
   obtain (fieldMap, fixesBase) = preserves;
   let firstPath =
     field_preserved_reflect(
@@ -142,17 +152,21 @@ theorem extension_preserved_reflect(
 }
 
 def FieldExt(K : AlgebraicField) = Structure(ExtensionData(K));
+
 def ExtensionIso(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K)) =
   StructureIso(ExtensionData(K), ExtensionPreserved(K), E, F);
+
 def extension_carrier(K : AlgebraicField, E : FieldExt(K)) = structure_carrier(ExtensionData(K), E);
-def extension_inclusion(K : AlgebraicField, E : FieldExt(K)) : af_carrier(K)
--> extension_carrier(K, E) {
+
+def extension_inclusion(K : AlgebraicField, E : FieldExt(K)) :
+  af_carrier(K) -> extension_carrier(K, E) {
   exact extension_embed(K, extension_carrier(K, E), structure_data(ExtensionData(K), E));
 }
 
 def extension_iso_forward(
   K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), e : ExtensionIso(K, E, F)
-) : extension_carrier(K, E) -> extension_carrier(K, F) {
+) :
+  extension_carrier(K, E) -> extension_carrier(K, F) {
   exact structure_iso_forward(ExtensionData(K), ExtensionPreserved(K), E, F, e);
 }
 
@@ -160,16 +174,18 @@ def extension_identity_iso(K : AlgebraicField, E : FieldExt(K)) =
   structure_identity_iso(
     ExtensionData(K), ExtensionPreserved(K), extension_preserved_identity(K), E
   );
-def extension_path_iso(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) : ExtensionIso(
-  K, E, F
-) {
+
+def extension_path_iso(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) :
+  ExtensionIso(K, E, F) {
   exact structure_equality_iso(
     ExtensionData(K), ExtensionPreserved(K), extension_preserved_identity(K), E, F, p
   );
 }
+
 def extension_iso_path(
   K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), e : ExtensionIso(K, E, F)
-) : E =[FieldExt(K)] F {
+) :
+  E =[FieldExt(K)] F {
   exact with unfolding [
     field_first, identity_total_point, identity_system_decode, structure_iso_point,
     structure_iso_center, structure_equality_iso, structure_iso_equality
@@ -180,9 +196,9 @@ def extension_iso_path(
     )
   };
 }
-theorem extension_structure_identity(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K)) : Equiv(
-  U1, (E =[FieldExt(K)] F), ExtensionIso(K, E, F)
-) {
+
+theorem extension_structure_identity(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K)) :
+  Equiv(U1, (E =[FieldExt(K)] F), ExtensionIso(K, E, F)) {
   exact structure_identity(
     ExtensionData(K), ExtensionPreserved(K), extension_preserved_prop(K),
     extension_preserved_identity(K), extension_preserved_reflect(K), E, F
@@ -191,16 +207,16 @@ theorem extension_structure_identity(K : AlgebraicField, E : FieldExt(K), F : Fi
 
 theorem extension_iso_roundtrip(
   K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), e : ExtensionIso(K, E, F)
-) : extension_path_iso(K, E, F, extension_iso_path(K, E, F, e)) = e {
+) :
+  extension_path_iso(K, E, F, extension_iso_path(K, E, F, e)) = e {
   exact structure_iso_roundtrip(
     ExtensionData(K), ExtensionPreserved(K), extension_preserved_prop(K),
     extension_preserved_identity(K), extension_preserved_reflect(K), E, F, e
   );
 }
 
-theorem extension_path_roundtrip(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) : extension_iso_path(
-  K, E, F, extension_path_iso(K, E, F, p)
-) = p {
+theorem extension_path_roundtrip(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) :
+  extension_iso_path(K, E, F, extension_path_iso(K, E, F, p)) = p {
   exact with unfolding [
     field_first, identity_total_point, identity_system_decode, structure_iso_point,
     structure_iso_center, structure_equality_iso, structure_iso_equality, structure_identity_family,
@@ -215,9 +231,9 @@ theorem extension_path_roundtrip(K : AlgebraicField, E : FieldExt(K), F : FieldE
 
 // The automorphisms are defined algebraically, independently of paths.
 def Galois(K : AlgebraicField, E : FieldExt(K)) = ExtensionIso(K, E, E);
-theorem galois_automorphisms_are_loops(K : AlgebraicField, E : FieldExt(K)) : Galois(K, E) =[U1](
-  E =[FieldExt(K)] E
-) {
+
+theorem galois_automorphisms_are_loops(K : AlgebraicField, E : FieldExt(K)) :
+  Galois(K, E) =[U1](E =[FieldExt(K)] E) {
   exact sym(ua(U1, (E =[FieldExt(K)] E), Galois(K, E), extension_structure_identity(K, E, E)));
 }
 

@@ -4,6 +4,7 @@ import ring_laws;
 // Unordered fields on small sets. Inverses are supplied only for nonzero
 // elements; there is no zero test, selected total inverse, LEM, or choice.
 def FieldOps(A : U0) = A and A and (A -> A) and (A -> A -> A) and (A -> A -> A);
+
 def af_zero(A : U0, ops : FieldOps(A)) : A {
   exact fst((A), ((A) and (A -> A) and (A -> A -> A) and (A -> A -> A)), ops);
 }
@@ -53,6 +54,7 @@ def af_mul(A : U0, ops : FieldOps(A)) : A -> A -> A {
 
 def field_ops(A : U0, zero : A, one : A, neg : A -> A, add : A -> A -> A, mul : A -> A -> A) =
   typed(FieldOps(A), (zero, one, neg, add, mul));
+
 def FieldAddLaws(A : U0, ops : FieldOps(A)) =
   (
     forall x : A, forall y : A, forall z : A,
@@ -60,9 +62,9 @@ def FieldAddLaws(A : U0, ops : FieldOps(A)) =
   ) and (forall x : A, forall y : A, af_add(A, ops, x, y) = af_add(A, ops, y, x))
   and (forall x : A, af_add(A, ops, af_zero(A, ops), x) = x)
   and (forall x : A, af_add(A, ops, af_neg(A, ops, x), x) = af_zero(A, ops));
-theorem fieldaddlaws_prop(A : U0, ops : FieldOps(A), setA : IsSet(A)) : Proposition(
-  FieldAddLaws(A, ops)
-) {
+
+theorem fieldaddlaws_prop(A : U0, ops : FieldOps(A), setA : IsSet(A)) :
+  Proposition(FieldAddLaws(A, ops)) {
   exact product_prop(
     (
       forall x : A, forall y : A, forall z : A,
@@ -147,9 +149,9 @@ def FieldMulLaws(A : U0, ops : FieldOps(A)) =
       A, ops, af_mul(A, ops, x, y), af_mul(A, ops, x, z)
     )
   );
-theorem fieldmullaws_prop(A : U0, ops : FieldOps(A), setA : IsSet(A)) : Proposition(
-  FieldMulLaws(A, ops)
-) {
+
+theorem fieldmullaws_prop(A : U0, ops : FieldOps(A), setA : IsSet(A)) :
+  Proposition(FieldMulLaws(A, ops)) {
   exact product_prop(
     (
       forall x : A, forall y : A, forall z : A,
@@ -272,32 +274,41 @@ theorem fieldmullaws_prop(A : U0, ops : FieldOps(A), setA : IsSet(A)) : Proposit
 }
 
 def FieldRingLaws(A : U0, ops : FieldOps(A)) = FieldAddLaws(A, ops) and FieldMulLaws(A, ops);
+
 def FieldNonzero(A : U0, ops : FieldOps(A), x : A) = (x = af_zero(A, ops)) -> Void;
+
 def FieldInverseLaws(A : U0, ops : FieldOps(A)) =
   forall x : A, FieldNonzero(A, ops, x) -> exists y : A, af_mul(A, ops, x, y) = af_one(A, ops);
+
 def AlgebraicFieldLaws(A : U0, ops : FieldOps(A)) =
   FieldRingLaws(A, ops) and FieldNonzero(A, ops, af_one(A, ops)) and FieldInverseLaws(A, ops);
+
 def FieldData(A : U0) = exists ops : FieldOps(A), AlgebraicFieldLaws(A, ops);
+
 def field_data_ops(A : U0, data : FieldData(A)) =
   sigma_first(FieldOps(A), AlgebraicFieldLaws(A), data);
+
 def field_data_laws(A : U0, data : FieldData(A)) =
   sigma_second(FieldOps(A), AlgebraicFieldLaws(A), data);
+
 def field_ring_data(A : U0, ops : FieldOps(A), laws : AlgebraicFieldLaws(A, ops)) =
   fst(
     FieldRingLaws(A, ops), (FieldNonzero(A, ops, af_one(A, ops)) and FieldInverseLaws(A, ops)), laws
   );
 
 // Reuse the existing commutative-ring development at its checked small instance.
-def algebraic_field_ring(A : U0, ops : FieldOps(A), setA : IsSet(A), laws : FieldRingLaws(A, ops)) : CommutativeRing(
-  A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops)
-) {
+def algebraic_field_ring(A : U0, ops : FieldOps(A), setA : IsSet(A), laws : FieldRingLaws(A, ops)) :
+  CommutativeRing(
+    A, af_zero(A, ops), af_one(A, ops), af_add(A, ops), af_mul(A, ops), af_neg(A, ops)
+  ) {
   exact (setA, laws);
 }
 
 theorem algebraic_inverse_unique(
   A : U0, ops : FieldOps(A), setA : IsSet(A), laws : FieldRingLaws(A, ops), x : A, y : A, z : A,
   hy : af_mul(A, ops, x, y) = af_one(A, ops), hz : af_mul(A, ops, x, z) = af_one(A, ops)
-) : y = z {
+) :
+  y = z {
   let ring = algebraic_field_ring(A, ops, setA, laws);
   exact trans(
     sym(
@@ -336,7 +347,8 @@ theorem algebraic_inverse_unique(
 
 theorem algebraic_inverse_evidence_prop(
   A : U0, ops : FieldOps(A), setA : IsSet(A), laws : FieldRingLaws(A, ops), x : A
-) : Proposition(exists y : A, af_mul(A, ops, x, y) = af_one(A, ops)) {
+) :
+  Proposition(exists y : A, af_mul(A, ops, x, y) = af_one(A, ops)) {
   intro p;
   intro q;
   let P = fun (y : A) => af_mul(A, ops, x, y) = af_one(A, ops);
@@ -352,7 +364,8 @@ theorem algebraic_inverse_evidence_prop(
 theorem algebraic_field_laws_prop(
   A : U0, ops : FieldOps(A), setA : IsSet(A), p : AlgebraicFieldLaws(A, ops),
   q : AlgebraicFieldLaws(A, ops)
-) : p = q {
+) :
+  p = q {
   let ring = field_ring_data(A, ops, p);
   let ringProp =
     product_prop(
@@ -397,11 +410,16 @@ theorem algebraic_field_laws_prop(
 }
 
 def AlgebraicField = Structure(FieldData);
+
 def algebraic_field(A : U0, ops : FieldOps(A), setA : IsSet(A), laws : AlgebraicFieldLaws(A, ops)) =
   structure_object(FieldData, A, typed(FieldData(A), (ops, laws)), setA);
+
 def af_carrier(F : AlgebraicField) = structure_carrier(FieldData, F);
+
 def af_operations(F : AlgebraicField) = field_data_ops(af_carrier(F), structure_data(FieldData, F));
+
 def af_laws(F : AlgebraicField) = field_data_laws(af_carrier(F), structure_data(FieldData, F));
+
 def af_set(F : AlgebraicField) : IsSet(af_carrier(F)) {
   exact structure_set(FieldData, F);
 }
@@ -409,7 +427,8 @@ def af_set(F : AlgebraicField) : IsSet(af_carrier(F)) {
 theorem algebra_pair_ext(
   A : U0, B : U0, p : A and B, q : A and B, first : fst(A, B, p) = fst(A, B, q),
   second : snd(A, B, p) = snd(A, B, q)
-) : p = q {
+) :
+  p = q {
   exact trans(
     sym(sigma_eta(A, (fun (a : A) => B), p)),
     trans(
@@ -424,9 +443,11 @@ def FieldOpsPreserved(A : U0, B : U0, f : A -> B, a : FieldOps(A), b : FieldOps(
   and (forall x : A, f(af_neg(A, a, x)) = af_neg(B, b, f(x)))
   and (forall x : A, forall y : A, f(af_add(A, a, x, y)) = af_add(B, b, f(x), f(y)))
   and (forall x : A, forall y : A, f(af_mul(A, a, x, y)) = af_mul(B, b, f(x), f(y)));
+
 theorem field_ops_preserved_prop(
   A : U0, B : U0, setB : IsSet(B), f : A -> B, a : FieldOps(A), b : FieldOps(B)
-) : Proposition(FieldOpsPreserved(A, B, f, a, b)) {
+) :
+  Proposition(FieldOpsPreserved(A, B, f, a, b)) {
   exact product_prop(
     (f(af_zero(A, a)) = af_zero(B, b)),
     (
@@ -489,7 +510,8 @@ def field_ops_identity(A : U0, a : FieldOps(A)) : FieldOpsPreserved(A, A, (fun (
 theorem field_ops_reflect(
   A : U0, a : FieldOps(A), b : FieldOps(A),
   preserves : FieldOpsPreserved(A, A, (fun (x : A) => x), a, b)
-) : a = b {
+) :
+  a = b {
   obtain (zeroPath, onePath, negPath, addPath, mulPath) = preserves;
   let negEq = FunExt(U0, A, (fun (x : A) => A), af_neg(A, a), af_neg(A, b), negPath);
   let addEq =
@@ -550,16 +572,20 @@ theorem field_ops_reflect(
 
 def FieldPreserved(A : U0, B : U0, f : A -> B, a : FieldData(A), b : FieldData(B)) =
   FieldOpsPreserved(A, B, f, field_data_ops(A, a), field_data_ops(B, b));
+
 def field_preserved_prop(
   A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, a : FieldData(A), b : FieldData(B)
 ) =
   field_ops_preserved_prop(A, B, setB, f, field_data_ops(A, a), field_data_ops(B, b));
+
 def field_preserved_identity(A : U0, a : FieldData(A)) =
   field_ops_identity(A, field_data_ops(A, a));
+
 theorem field_preserved_reflect(
   A : U0, setA : IsSet(A), a : FieldData(A), b : FieldData(A),
   preserves : FieldPreserved(A, A, (fun (x : A) => x), a, b)
-) : a = b {
+) :
+  a = b {
   exact subtype_ext(
     FieldOps(A), AlgebraicFieldLaws(A),
     (fun (ops : FieldOps(A)) => algebraic_field_laws_prop(A, ops, setA)), a, b,
@@ -569,9 +595,9 @@ theorem field_preserved_reflect(
 
 def FieldIso(F : AlgebraicField, G : AlgebraicField) =
   StructureIso(FieldData, FieldPreserved, F, G);
-theorem field_structure_identity(F : AlgebraicField, G : AlgebraicField) : Equiv(
-  U1, (F = G), FieldIso(F, G)
-) {
+
+theorem field_structure_identity(F : AlgebraicField, G : AlgebraicField) :
+  Equiv(U1, (F = G), FieldIso(F, G)) {
   exact structure_identity(
     FieldData, FieldPreserved, field_preserved_prop, field_preserved_identity,
     field_preserved_reflect, F, G

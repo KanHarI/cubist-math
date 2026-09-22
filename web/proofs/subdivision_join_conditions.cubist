@@ -23,11 +23,12 @@ theorem subdivision_tagged_join_step(
   same : sample_last(C, succ(n), vertices) = sample_first(C, m, rightVertices),
   valid : SubdivisionTagged(C, condition, succ(n), vertices, tags, pieces),
   rightValid : SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces)
-) : SubdivisionTagged(
-  C, condition, succ(n) + m, join_vertices(C, succ(n), vertices, m, rightVertices),
-  join_tags(C, succ(n), tags, m, rightTags),
-  join_subdivision_families(C, succ(n), vertices, pieces, m, rightVertices, rightPieces, same)
-) {
+) :
+  SubdivisionTagged(
+    C, condition, succ(n) + m, join_vertices(C, succ(n), vertices, m, rightVertices),
+    join_tags(C, succ(n), tags, m, rightTags),
+    join_subdivision_families(C, succ(n), vertices, pieces, m, rightVertices, rightPieces, same)
+  ) {
   let a = field_fst(C, SampleVertices(C, n), vertices);
   let tail = field_snd(C, SampleVertices(C, n), vertices);
   let b = sample_first(C, n, tail);
@@ -42,8 +43,9 @@ theorem subdivision_tagged_join_step(
   let joinedPieces =
     join_subdivision_families(C, n, tail, tailPieces, m, rightVertices, rightPieces, same);
   let moved = subdivision_move_end(C, a, b, joinedFirst, firstPath, headPiece);
-  have data : condition(a, b, tag, headPiece)
-  and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) {
+  have data :
+    condition(a, b, tag, headPiece)
+    and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) {
     exact valid;
   }
   obtain (headValid, tailValid) = data;
@@ -66,18 +68,19 @@ theorem subdivision_tagged_join_step(
 
 theorem subdivision_tagged_join(
   C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), n : Nat
-) : forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-forall pieces : SampleSubdivisions(C, n, vertices), forall m : Nat,
-forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m),
-forall rightPieces : SampleSubdivisions(C, m, rightVertices),
-forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices),
-SubdivisionTagged(C, condition, n, vertices, tags, pieces)
--> SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces)
--> SubdivisionTagged(
-  C, condition, n + m, join_vertices(C, n, vertices, m, rightVertices),
-  join_tags(C, n, tags, m, rightTags),
-  join_subdivision_families(C, n, vertices, pieces, m, rightVertices, rightPieces, same)
-) {
+) :
+  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  forall pieces : SampleSubdivisions(C, n, vertices), forall m : Nat,
+  forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m),
+  forall rightPieces : SampleSubdivisions(C, m, rightVertices),
+  forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices),
+  SubdivisionTagged(C, condition, n, vertices, tags, pieces)
+  -> SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces)
+  -> SubdivisionTagged(
+    C, condition, n + m, join_vertices(C, n, vertices, m, rightVertices),
+    join_tags(C, n, tags, m, rightTags),
+    join_subdivision_families(C, n, vertices, pieces, m, rightVertices, rightPieces, same)
+  ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     forall pieces : SampleSubdivisions(C, k, vertices), forall m : Nat,

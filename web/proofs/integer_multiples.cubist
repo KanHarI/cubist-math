@@ -6,7 +6,8 @@ import integers;
 
 theorem additive_right_zero(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G
-) : addG(x, zero) = x {
+) :
+  addG(x, zero) = x {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   exact trans(comm(x, zero), unit(x));
 }
@@ -14,7 +15,8 @@ theorem additive_right_zero(
 theorem additive_cancel_last(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   y : G
-) : addG(addG(x, y), negG(y)) = x {
+) :
+  addG(addG(x, y), negG(y)) = x {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   exact trans(
     assoc(x, y, negG(y)),
@@ -28,7 +30,8 @@ theorem additive_cancel_last(
 theorem additive_cancel_negative_last(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   y : G
-) : addG(addG(x, negG(y)), y) = x {
+) :
+  addG(addG(x, negG(y)), y) = x {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   exact trans(
     assoc(x, negG(y), y),
@@ -39,7 +42,8 @@ theorem additive_cancel_negative_last(
 theorem additive_shuffle(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   y : G, u : G, v : G
-) : addG(addG(x, y), addG(u, v)) = addG(addG(x, u), addG(y, v)) {
+) :
+  addG(addG(x, y), addG(u, v)) = addG(addG(x, u), addG(y, v)) {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   exact trans(
     assoc(x, y, addG(u, v)),
@@ -59,6 +63,7 @@ def natural_multiple(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, x : G,
     zero => zero;
     succ previous => addG(previous, x);
   };
+
 def integer_multiple(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, x : G, z : Z) =
   match z return G {
     left n => natural_multiple(G, zero, addG, negG, x, n);
@@ -68,9 +73,10 @@ def integer_multiple(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, x : G,
 theorem integer_multiple_successor(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   z : Z
-) : integer_multiple(G, zero, addG, negG, x, successorZ(z)) = addG(
-  integer_multiple(G, zero, addG, negG, x, z), x
-) {
+) :
+  integer_multiple(G, zero, addG, negG, x, successorZ(z)) = addG(
+    integer_multiple(G, zero, addG, negG, x, z), x
+  ) {
   exact match z as w return (
     integer_multiple(G, zero, addG, negG, x, successorZ(w)) = addG(
       integer_multiple(G, zero, addG, negG, x, w), x
@@ -95,9 +101,10 @@ theorem integer_multiple_successor(
 theorem integer_multiple_predecessor(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   z : Z
-) : integer_multiple(G, zero, addG, negG, x, predecessorZ(z)) = addG(
-  integer_multiple(G, zero, addG, negG, x, z), negG(x)
-) {
+) :
+  integer_multiple(G, zero, addG, negG, x, predecessorZ(z)) = addG(
+    integer_multiple(G, zero, addG, negG, x, z), negG(x)
+  ) {
   exact match z as w return (
     integer_multiple(G, zero, addG, negG, x, predecessorZ(w)) = addG(
       integer_multiple(G, zero, addG, negG, x, w), negG(x)
@@ -122,9 +129,10 @@ theorem integer_multiple_predecessor(
 theorem integer_multiple_add_positive(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   z : Z, n : Nat
-) : integer_multiple(G, zero, addG, negG, x, add_nonnegative(n, z)) = addG(
-  integer_multiple(G, zero, addG, negG, x, z), natural_multiple(G, zero, addG, negG, x, n)
-) {
+) :
+  integer_multiple(G, zero, addG, negG, x, add_nonnegative(n, z)) = addG(
+    integer_multiple(G, zero, addG, negG, x, z), natural_multiple(G, zero, addG, negG, x, n)
+  ) {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   exact induction n as k return (
     integer_multiple(G, zero, addG, negG, x, add_nonnegative(k, z)) = addG(
@@ -150,10 +158,11 @@ theorem integer_multiple_add_positive(
 theorem integer_multiple_add_negative(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   z : Z, n : Nat
-) : integer_multiple(G, zero, addG, negG, x, add_negative(n, z)) = addG(
-  integer_multiple(G, zero, addG, negG, x, z),
-  natural_multiple(G, zero, addG, negG, negG(x), succ(n))
-) {
+) :
+  integer_multiple(G, zero, addG, negG, x, add_negative(n, z)) = addG(
+    integer_multiple(G, zero, addG, negG, x, z),
+    natural_multiple(G, zero, addG, negG, negG(x), succ(n))
+  ) {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   exact induction n as k return (
     integer_multiple(G, zero, addG, negG, x, add_negative(k, z)) = addG(
@@ -181,9 +190,10 @@ theorem integer_multiple_add_negative(
 theorem integer_multiple_add(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   z : Z, w : Z
-) : integer_multiple(G, zero, addG, negG, x, addZ(z, w)) = addG(
-  integer_multiple(G, zero, addG, negG, x, z), integer_multiple(G, zero, addG, negG, x, w)
-) {
+) :
+  integer_multiple(G, zero, addG, negG, x, addZ(z, w)) = addG(
+    integer_multiple(G, zero, addG, negG, x, z), integer_multiple(G, zero, addG, negG, x, w)
+  ) {
   exact match w as v return (
     integer_multiple(G, zero, addG, negG, x, addZ(z, v)) = addG(
       integer_multiple(G, zero, addG, negG, x, z), integer_multiple(G, zero, addG, negG, x, v)
@@ -196,7 +206,8 @@ theorem integer_multiple_add(
 
 theorem integer_multiple_one(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G
-) : integer_multiple(G, zero, addG, negG, x, nonnegative(1)) = x {
+) :
+  integer_multiple(G, zero, addG, negG, x, nonnegative(1)) = x {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   exact unit(x);
 }

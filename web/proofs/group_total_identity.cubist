@@ -2,25 +2,29 @@ import group_isomorphisms;
 
 // The total space of groups equipped with an isomorphism from G is contractible.
 def GroupIsoTotal(G : Group) = exists H : Group, GroupIso(G, H);
+
 def group_iso_center(G : Group) = typed(GroupIsoTotal(G), (G, group_identity_iso(G)));
+
 def group_iso_point(G : Group, H : Group, iso : GroupIso(G, H)) = typed(GroupIsoTotal(G), (H, iso));
+
 theorem group_total_laws_path(
   A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply),
   otherLaws : GroupLaws(A, unit, multiply)
-) : forall iso : GroupIso(
-  group_object(A, unit, multiply, laws), group_object(A, unit, multiply, otherLaws)
-),
-(
-  forall x : group_carrier(group_object(A, unit, multiply, laws)),
-  x = group_iso_forward(
-    group_object(A, unit, multiply, laws), group_object(A, unit, multiply, otherLaws), iso, x
+) :
+  forall iso : GroupIso(
+    group_object(A, unit, multiply, laws), group_object(A, unit, multiply, otherLaws)
+  ),
+  (
+    forall x : group_carrier(group_object(A, unit, multiply, laws)),
+    x = group_iso_forward(
+      group_object(A, unit, multiply, laws), group_object(A, unit, multiply, otherLaws), iso, x
+    )
   )
-)
--> (
-  group_iso_center(group_object(A, unit, multiply, laws)) = group_iso_point(
-    group_object(A, unit, multiply, laws), group_object(A, unit, multiply, otherLaws), iso
-  )
-) {
+  -> (
+    group_iso_center(group_object(A, unit, multiply, laws)) = group_iso_point(
+      group_object(A, unit, multiply, laws), group_object(A, unit, multiply, otherLaws), iso
+    )
+  ) {
   exact path_induction(
     GroupLaws(A, unit, multiply),
     (
@@ -66,21 +70,22 @@ theorem group_total_laws_path(
 
 theorem group_total_multiplication_path(
   A : U0, unit : A, multiply : A -> A -> A, other : A -> A -> A, same : multiply = other
-) : forall laws : GroupLaws(A, unit, multiply), forall otherLaws : GroupLaws(A, unit, other),
-forall iso : GroupIso(
-  group_object(A, unit, multiply, laws), group_object(A, unit, other, otherLaws)
-),
-(
-  forall x : group_carrier(group_object(A, unit, multiply, laws)),
-  x = group_iso_forward(
-    group_object(A, unit, multiply, laws), group_object(A, unit, other, otherLaws), iso, x
+) :
+  forall laws : GroupLaws(A, unit, multiply), forall otherLaws : GroupLaws(A, unit, other),
+  forall iso : GroupIso(
+    group_object(A, unit, multiply, laws), group_object(A, unit, other, otherLaws)
+  ),
+  (
+    forall x : group_carrier(group_object(A, unit, multiply, laws)),
+    x = group_iso_forward(
+      group_object(A, unit, multiply, laws), group_object(A, unit, other, otherLaws), iso, x
+    )
   )
-)
--> (
-  group_iso_center(group_object(A, unit, multiply, laws)) = group_iso_point(
-    group_object(A, unit, multiply, laws), group_object(A, unit, other, otherLaws), iso
-  )
-) {
+  -> (
+    group_iso_center(group_object(A, unit, multiply, laws)) = group_iso_point(
+      group_object(A, unit, multiply, laws), group_object(A, unit, other, otherLaws), iso
+    )
+  ) {
   exact path_induction(
     (A -> A -> A),
     (
@@ -106,23 +111,23 @@ forall iso : GroupIso(
   );
 }
 
-theorem group_total_same_carrier(A : U0, unit : A, otherUnit : A, same : unit = otherUnit) : forall multiply : A -> A -> A,
-forall other : A -> A -> A, (multiply = other) -> forall laws : GroupLaws(A, unit, multiply),
-forall otherLaws : GroupLaws(A, otherUnit, other),
-forall iso : GroupIso(
-  group_object(A, unit, multiply, laws), group_object(A, otherUnit, other, otherLaws)
-),
-(
-  forall x : group_carrier(group_object(A, unit, multiply, laws)),
-  x = group_iso_forward(
-    group_object(A, unit, multiply, laws), group_object(A, otherUnit, other, otherLaws), iso, x
+theorem group_total_same_carrier(A : U0, unit : A, otherUnit : A, same : unit = otherUnit) :
+  forall multiply : A -> A -> A, forall other : A -> A -> A, (multiply = other)
+  -> forall laws : GroupLaws(A, unit, multiply), forall otherLaws : GroupLaws(A, otherUnit, other),
+  forall iso : GroupIso(
+    group_object(A, unit, multiply, laws), group_object(A, otherUnit, other, otherLaws)
+  ),
+  (
+    forall x : group_carrier(group_object(A, unit, multiply, laws)),
+    x = group_iso_forward(
+      group_object(A, unit, multiply, laws), group_object(A, otherUnit, other, otherLaws), iso, x
+    )
   )
-)
--> (
-  group_iso_center(group_object(A, unit, multiply, laws)) = group_iso_point(
-    group_object(A, unit, multiply, laws), group_object(A, otherUnit, other, otherLaws), iso
-  )
-) {
+  -> (
+    group_iso_center(group_object(A, unit, multiply, laws)) = group_iso_point(
+      group_object(A, unit, multiply, laws), group_object(A, otherUnit, other, otherLaws), iso
+    )
+  ) {
   exact path_induction(
     A,
     (
@@ -148,30 +153,30 @@ forall iso : GroupIso(
   );
 }
 
-theorem group_total_transport_path(A : U0, B : U0, p : A = B) : forall unitA : A, forall unitB : B,
-forall multiplyA : A -> A -> A, forall multiplyB : B -> B -> B,
-forall lawsA : GroupLaws(A, unitA, multiplyA), forall lawsB : GroupLaws(B, unitB, multiplyB),
-(group_carrier_transport(A, B, p, unitA) = unitB)
--> (
-  forall x : A, forall y : A,
-  group_carrier_transport(A, B, p, multiplyA(x, y)) = multiplyB(
-    group_carrier_transport(A, B, p, x), group_carrier_transport(A, B, p, y)
+theorem group_total_transport_path(A : U0, B : U0, p : A = B) :
+  forall unitA : A, forall unitB : B, forall multiplyA : A -> A -> A,
+  forall multiplyB : B -> B -> B, forall lawsA : GroupLaws(A, unitA, multiplyA),
+  forall lawsB : GroupLaws(B, unitB, multiplyB), (group_carrier_transport(A, B, p, unitA) = unitB)
+  -> (
+    forall x : A, forall y : A,
+    group_carrier_transport(A, B, p, multiplyA(x, y)) = multiplyB(
+      group_carrier_transport(A, B, p, x), group_carrier_transport(A, B, p, y)
+    )
   )
-)
--> forall iso : GroupIso(
-  group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB)
-),
-(
-  forall x : A,
-  group_carrier_transport(A, B, p, x) = group_iso_forward(
-    group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB), iso, x
+  -> forall iso : GroupIso(
+    group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB)
+  ),
+  (
+    forall x : A,
+    group_carrier_transport(A, B, p, x) = group_iso_forward(
+      group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB), iso, x
+    )
   )
-)
--> (
-  group_iso_center(group_object(A, unitA, multiplyA, lawsA)) = group_iso_point(
-    group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB), iso
-  )
-) {
+  -> (
+    group_iso_center(group_object(A, unitA, multiplyA, lawsA)) = group_iso_point(
+      group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB), iso
+    )
+  ) {
   exact path_induction(
     U0,
     (
@@ -256,13 +261,14 @@ theorem group_objects_iso_total_path(
   unitB : B, multiplyB : B -> B -> B, lawsB : GroupLaws(B, unitB, multiplyB), f : A -> B, g : B
   -> A, leftLaw : (forall x : A, g(f(x)) = x), rightLaw : (forall y : B, f(g(y)) = y),
   preserves : (forall x : A, forall y : A, f(multiplyA(x, y)) = multiplyB(f(x), f(y)))
-) : group_iso_center(group_object(A, unitA, multiplyA, lawsA)) = group_iso_point(
-  group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB),
-  typed(
-    GroupIso(group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB)),
-    (f, g, leftLaw, rightLaw, preserves)
-  )
-) {
+) :
+  group_iso_center(group_object(A, unitA, multiplyA, lawsA)) = group_iso_point(
+    group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB),
+    typed(
+      GroupIso(group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB)),
+      (f, g, leftLaw, rightLaw, preserves)
+    )
+  ) {
   let bijection = typed(Bijection(A, B), (f, g, leftLaw, rightLaw));
   let equivalence = bijection_equiv(A, B, group_set_law(B, unitB, multiplyB, lawsB), bijection);
   let carrierPath = ua(U0, A, B, equivalence);
@@ -278,10 +284,11 @@ theorem group_objects_iso_total_path(
       )
     );
   }
-  have multiplicationPath : forall x : A, forall y : A,
-  group_carrier_transport(A, B, carrierPath, multiplyA(x, y)) = multiplyB(
-    group_carrier_transport(A, B, carrierPath, x), group_carrier_transport(A, B, carrierPath, y)
-  ) {
+  have multiplicationPath :
+    forall x : A, forall y : A,
+    group_carrier_transport(A, B, carrierPath, multiplyA(x, y)) = multiplyB(
+      group_carrier_transport(A, B, carrierPath, x), group_carrier_transport(A, B, carrierPath, y)
+    ) {
     intro x;
     intro y;
     exact trans(
@@ -309,9 +316,10 @@ theorem group_objects_iso_total(
   A : U0, unitA : A, multiplyA : A -> A -> A, lawsA : GroupLaws(A, unitA, multiplyA), B : U0,
   unitB : B, multiplyB : B -> B -> B, lawsB : GroupLaws(B, unitB, multiplyB),
   iso : GroupIso(group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB))
-) : group_iso_center(group_object(A, unitA, multiplyA, lawsA)) = group_iso_point(
-  group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB), iso
-) {
+) :
+  group_iso_center(group_object(A, unitA, multiplyA, lawsA)) = group_iso_point(
+    group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB), iso
+  ) {
   exact pair_induction(
     (
       fun (iso : GroupIsomorphism(A, multiplyA, B, multiplyB)) => group_iso_center(
@@ -391,8 +399,8 @@ theorem group_objects_iso_total(
   );
 }
 
-theorem group_isomorphism_total_contractible(G : Group) : forall H : Group,
-forall iso : GroupIso(G, H), group_iso_center(G) = group_iso_point(G, H, iso) {
+theorem group_isomorphism_total_contractible(G : Group) :
+  forall H : Group, forall iso : GroupIso(G, H), group_iso_center(G) = group_iso_point(G, H, iso) {
   exact group_induction(
     (
       fun (G : Group) => forall H : Group, forall iso : GroupIso(G, H),

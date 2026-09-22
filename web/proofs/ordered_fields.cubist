@@ -6,16 +6,19 @@ def AddLaws(F : U1, zero : F, addF : F -> F -> F, negF : F -> F) =
   (forall x : F, forall y : F, forall z : F, addF(addF(x, y), z) = addF(x, addF(y, z)))
   and (forall x : F, forall y : F, addF(x, y) = addF(y, x)) and (forall x : F, addF(zero, x) = x)
   and (forall x : F, addF(negF(x), x) = zero);
+
 def MulLaws(F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F) =
   (forall x : F, forall y : F, forall z : F, mulF(mulF(x, y), z) = mulF(x, mulF(y, z)))
   and (forall x : F, forall y : F, mulF(x, y) = mulF(y, x)) and (forall x : F, mulF(one, x) = x)
   and (forall x : F, forall y : F, forall z : F, mulF(x, addF(y, z)) = addF(mulF(x, y), mulF(x, z)));
+
 def CommutativeRing(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F
 ) =
   FieldSet(F) and AddLaws(F, zero, addF, negF) and MulLaws(F, one, addF, mulF);
 
 def FieldLe(F : U1, lt : F -> F -> U0, x : F, y : F) = lt(y, x) -> Void;
+
 def FieldApart(F : U1, lt : F -> F -> U0, x : F, y : F) = FieldOr(lt(x, y), lt(y, x));
 
 // Cotransitivity is the constructive order law, not decidable trichotomy.
@@ -68,7 +71,8 @@ def OrderedField(
 // Consequences of the interface, usable with every future construction.
 theorem field_add_right_unit(
   F : U1, zero : F, addF : F -> F -> F, negF : F -> F, laws : AddLaws(F, zero, addF, negF), x : F
-) : addF(x, zero) = x {
+) :
+  addF(x, zero) = x {
   obtain (assoc, comm, unit, additiveInverse) = laws;
   exact trans(comm(x, zero), unit(x));
 }
@@ -76,7 +80,8 @@ theorem field_add_right_unit(
 theorem field_add_cancel(
   F : U1, zero : F, addF : F -> F -> F, negF : F -> F, laws : AddLaws(F, zero, addF, negF), x : F,
   y : F, z : F, same : addF(x, y) = addF(x, z)
-) : y = z {
+) :
+  y = z {
   obtain (assoc, comm, unit, additiveInverse) = laws;
   let undoY =
     trans(
@@ -94,7 +99,8 @@ theorem field_add_cancel(
 theorem field_inverse_unique(
   F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F, laws : MulLaws(F, one, addF, mulF),
   x : F, y : F, z : F, leftLaw : mulF(x, y) = one, rightLaw : mulF(x, z) = one
-) : y = z {
+) :
+  y = z {
   obtain (assoc, comm, unit, distribute) = laws;
   exact trans(
     sym(unit(y)),
@@ -113,7 +119,8 @@ theorem field_inverse_unique(
 
 theorem field_zero_not_one(
   F : U1, zero : F, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), positive : lt(zero, one)
-) : (zero = one) -> Void {
+) :
+  (zero = one) -> Void {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
   intro same;
   exact irreflexive(zero, transport((fun (x : F) => lt(zero, x)), one, zero, sym(same), positive));

@@ -13,7 +13,8 @@ def number_equivalence_map(A : U0, B : U0, e : Equiv(U0, A, B)) : A -> B {
 // univalence computation law to express the endpoints through the forward map.
 theorem univalence_transfer_equality(
   A : U0, B : U0, e : Equiv(U0, A, B), x : A, y : A, same : x = y
-) : number_equivalence_map(A, B, e, x) = number_equivalence_map(A, B, e, y) {
+) :
+  number_equivalence_map(A, B, e, x) = number_equivalence_map(A, B, e, y) {
   let moved = fun (v : A) => transport((fun (T : U0) => T), A, B, ua(U0, A, B, e), v);
   have betaX : moved(x) = number_equivalence_map(A, B, e, x) {
     exact UnivalenceBeta(U0, A, B, e, x);

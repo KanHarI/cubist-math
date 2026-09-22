@@ -5,27 +5,34 @@ import permutations;
 // S3 acts on the explicitly enumerated three-element set {0, 1, 2}.
 // The stabilizer of 0 contains (1 2), but conjugation by (0 1) moves it out.
 def S3 = PermutationGroup(Fin(3), fin_is_set(3));
+
 def point0 = head(Fin(2));
+
 def point1 = tail(Fin(2), head(Fin(1)));
+
 def point2 = tail(Fin(2), tail(Fin(1), head(Fin(0))));
+
 def swap01 = swap_bijection(Fin(2), fin_decidable(2), point1);
+
 def swap12 =
   sum_bijection(
     Unit, Fin(2), Unit, Fin(2), identity_bijection(Unit),
     swap_bijection(Fin(1), fin_decidable(1), tail(Fin(1), head(Fin(0))))
   );
+
 def S3PointStabilizer = PointStabilizer(Fin(3), fin_is_set(3), point0);
 
 theorem swap12_fixes_point0 : subgroup_members(S3, S3PointStabilizer, swap12) {
   exact refl(point0);
 }
-theorem conjugate_swap12_moves_point0 : forward(
-  Fin(3), Fin(3), group_conjugate(S3, swap01, swap12), point0
-) = point2 {
+
+theorem conjugate_swap12_moves_point0 :
+  forward(Fin(3), Fin(3), group_conjugate(S3, swap01, swap12), point0) = point2 {
   exact trans(
     permutation_conjugate_apply(Fin(3), fin_is_set(3), swap01, swap12, point0), refl(point2)
   );
 }
+
 theorem point2_not_point0(p : point2 = point0) : Void {
   exact sum_disjoint(Fin(2), tt, tail(Fin(1), head(Fin(0))), sym(p));
 }

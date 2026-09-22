@@ -4,9 +4,8 @@ import group_homomorphisms;
 def SubgroupIncluded(G : Group, S : Subgroup(G), T : Subgroup(G)) =
   forall x : group_carrier(G), subgroup_members(G, S, x) -> subgroup_members(G, T, x);
 
-theorem subgroup_inclusion_prop(G : Group, S : Subgroup(G), T : Subgroup(G)) : Proposition(
-  SubgroupIncluded(G, S, T)
-) {
+theorem subgroup_inclusion_prop(G : Group, S : Subgroup(G), T : Subgroup(G)) :
+  Proposition(SubgroupIncluded(G, S, T)) {
   let A = group_carrier(G);
   let P = subgroup_members(G, S);
   let Q = subgroup_members(G, T);
@@ -20,21 +19,26 @@ theorem subgroup_inclusion_prop(G : Group, S : Subgroup(G), T : Subgroup(G)) : P
     )
   );
 }
+
 theorem subgroup_inclusion_refl(G : Group, S : Subgroup(G)) : SubgroupIncluded(G, S, S) {
   exact (fun (x : group_carrier(G)) => fun (member : subgroup_members(G, S, x)) => member);
 }
+
 theorem subgroup_inclusion_trans(
   G : Group, S : Subgroup(G), T : Subgroup(G), V : Subgroup(G), st : SubgroupIncluded(G, S, T),
   tv : SubgroupIncluded(G, T, V)
-) : SubgroupIncluded(G, S, V) {
+) :
+  SubgroupIncluded(G, S, V) {
   exact (
     fun (x : group_carrier(G)) => fun (member : subgroup_members(G, S, x)) => tv(x, st(x, member))
   );
 }
+
 theorem subgroup_inclusion_antisymmetric(
   G : Group, S : Subgroup(G), T : Subgroup(G), st : SubgroupIncluded(G, S, T),
   ts : SubgroupIncluded(G, T, S)
-) : S =[Subgroup(G)] T {
+) :
+  S =[Subgroup(G)] T {
   exact subgroup_ext(
     G, S, T,
     field_predicate_ext(
@@ -54,6 +58,7 @@ theorem subgroup_inclusion_antisymmetric(
 }
 
 def SubgroupTop(G : Group, x : group_carrier(G)) = Unit;
+
 theorem subgroup_top_laws(G : Group) : SubgroupLaws(G, SubgroupTop(G)) {
   exact (
     (
@@ -71,11 +76,13 @@ theorem subgroup_top_laws(G : Group) : SubgroupLaws(G, SubgroupTop(G)) {
     )
   );
 }
+
 def subgroup_top(G : Group) : Subgroup(G) {
   exact (SubgroupTop(G), subgroup_top_laws(G));
 }
 
 def SubgroupBottom(G : Group, x : group_carrier(G)) = x = group_unit(G);
+
 theorem subgroup_bottom_laws(G : Group) : SubgroupLaws(G, SubgroupBottom(G)) {
   let A = group_carrier(G);
   let one = group_unit(G);
@@ -94,13 +101,13 @@ theorem subgroup_bottom_laws(G : Group) : SubgroupLaws(G, SubgroupBottom(G)) {
     )
   );
 }
+
 def subgroup_bottom(G : Group) : Subgroup(G) {
   exact (SubgroupBottom(G), subgroup_bottom_laws(G));
 }
 
-theorem subgroup_bottom_least(G : Group, S : Subgroup(G)) : SubgroupIncluded(
-  G, subgroup_bottom(G), S
-) {
+theorem subgroup_bottom_least(G : Group, S : Subgroup(G)) :
+  SubgroupIncluded(G, subgroup_bottom(G), S) {
   intro x;
   intro same;
   exact transport(
@@ -108,6 +115,7 @@ theorem subgroup_bottom_least(G : Group, S : Subgroup(G)) : SubgroupIncluded(
     subgroup_unit(G, subgroup_members(G, S), subgroup_laws(G, S))
   );
 }
+
 theorem subgroup_top_greatest(G : Group, S : Subgroup(G)) : SubgroupIncluded(G, S, subgroup_top(G)) {
   exact (fun (x : group_carrier(G)) => fun (member : subgroup_members(G, S, x)) => tt);
 }
@@ -118,9 +126,9 @@ def SubgroupPreimage(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(H), x : group_carrier(G)
 ) =
   subgroup_members(H, S, group_hom_map(G, H, h, x));
-theorem subgroup_preimage_laws(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(H)) : SubgroupLaws(
-  G, SubgroupPreimage(G, H, h, S)
-) {
+
+theorem subgroup_preimage_laws(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(H)) :
+  SubgroupLaws(G, SubgroupPreimage(G, H, h, S)) {
   let A = group_carrier(G);
   let f = group_hom_map(G, H, h);
   let P = subgroup_members(H, S);
@@ -146,13 +154,13 @@ theorem subgroup_preimage_laws(G : Group, H : Group, h : GroupHom(G, H), S : Sub
     )
   );
 }
+
 def subgroup_preimage(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(H)) : Subgroup(G) {
   exact (SubgroupPreimage(G, H, h, S), subgroup_preimage_laws(G, H, h, S));
 }
 
-theorem subgroup_preimage_identity(G : Group, S : Subgroup(G)) : subgroup_preimage(
-  G, G, group_hom_identity(G), S
-) =[Subgroup(G)] S {
+theorem subgroup_preimage_identity(G : Group, S : Subgroup(G)) :
+  subgroup_preimage(G, G, group_hom_identity(G), S) =[Subgroup(G)] S {
   exact subgroup_ext(
     G, subgroup_preimage(G, G, group_hom_identity(G), S), S,
     FunExt(
@@ -162,11 +170,13 @@ theorem subgroup_preimage_identity(G : Group, S : Subgroup(G)) : subgroup_preima
     )
   );
 }
+
 theorem subgroup_preimage_composite(
   G : Group, H : Group, K : Group, h : GroupHom(G, H), k : GroupHom(H, K), S : Subgroup(K)
-) : subgroup_preimage(G, K, group_hom_compose(G, H, K, h, k), S) =[Subgroup(G)] subgroup_preimage(
-  G, H, h, subgroup_preimage(H, K, k, S)
-) {
+) :
+  subgroup_preimage(G, K, group_hom_compose(G, H, K, h, k), S) =[Subgroup(G)] subgroup_preimage(
+    G, H, h, subgroup_preimage(H, K, k, S)
+  ) {
   exact subgroup_ext(
     G, subgroup_preimage(G, K, group_hom_compose(G, H, K, h, k), S),
     subgroup_preimage(G, H, h, subgroup_preimage(H, K, k, S)),
@@ -177,9 +187,9 @@ theorem subgroup_preimage_composite(
 // Small-indexed intersections remain small predicates, as for subfields.
 def SubgroupIntersection(G : Group, I : U0, family : I -> Subgroup(G), x : group_carrier(G)) =
   forall i : I, subgroup_members(G, family(i), x);
-theorem subgroup_intersection_laws(G : Group, I : U0, family : I -> Subgroup(G)) : SubgroupLaws(
-  G, SubgroupIntersection(G, I, family)
-) {
+
+theorem subgroup_intersection_laws(G : Group, I : U0, family : I -> Subgroup(G)) :
+  SubgroupLaws(G, SubgroupIntersection(G, I, family)) {
   let A = group_carrier(G);
   exact (
     (
@@ -209,20 +219,23 @@ theorem subgroup_intersection_laws(G : Group, I : U0, family : I -> Subgroup(G))
     )
   );
 }
+
 def subgroup_intersection(G : Group, I : U0, family : I -> Subgroup(G)) : Subgroup(G) {
   exact (SubgroupIntersection(G, I, family), subgroup_intersection_laws(G, I, family));
 }
-theorem subgroup_intersection_lower(G : Group, I : U0, family : I -> Subgroup(G), i : I) : SubgroupIncluded(
-  G, subgroup_intersection(G, I, family), family(i)
-) {
+
+theorem subgroup_intersection_lower(G : Group, I : U0, family : I -> Subgroup(G), i : I) :
+  SubgroupIncluded(G, subgroup_intersection(G, I, family), family(i)) {
   exact (
     fun (x : group_carrier(G)) => fun (member : SubgroupIntersection(G, I, family, x)) => member(i)
   );
 }
+
 theorem subgroup_intersection_greatest(
   G : Group, I : U0, family : I -> Subgroup(G), S : Subgroup(G),
   lower : (forall i : I, SubgroupIncluded(G, S, family(i)))
-) : SubgroupIncluded(G, S, subgroup_intersection(G, I, family)) {
+) :
+  SubgroupIncluded(G, S, subgroup_intersection(G, I, family)) {
   exact (
     fun (x : group_carrier(G)) => fun (member : subgroup_members(G, S, x)) => fun (i : I) => lower(
       i, x, member

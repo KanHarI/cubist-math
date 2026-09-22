@@ -23,32 +23,33 @@ def FieldClosureStep(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier
 
 def field_closure_step_keep(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), member : P(x)
-) : FieldClosureStep(F, P, x) {
+) :
+  FieldClosureStep(F, P, x) {
   exact left(member);
 }
 
-def field_closure_step_zero(F : AlgebraicField, P : af_carrier(F) -> U0) : FieldClosureStep(
-  F, P, af_zero(af_carrier(F), af_operations(F))
-) {
+def field_closure_step_zero(F : AlgebraicField, P : af_carrier(F) -> U0) :
+  FieldClosureStep(F, P, af_zero(af_carrier(F), af_operations(F))) {
   exact right(left(refl(af_zero(af_carrier(F), af_operations(F)))));
 }
 
-def field_closure_step_one(F : AlgebraicField, P : af_carrier(F) -> U0) : FieldClosureStep(
-  F, P, af_one(af_carrier(F), af_operations(F))
-) {
+def field_closure_step_one(F : AlgebraicField, P : af_carrier(F) -> U0) :
+  FieldClosureStep(F, P, af_one(af_carrier(F), af_operations(F))) {
   exact right(right(left(refl(af_one(af_carrier(F), af_operations(F))))));
 }
 
 def field_closure_step_neg(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), member : P(x)
-) : FieldClosureStep(F, P, af_neg(af_carrier(F), af_operations(F), x)) {
+) :
+  FieldClosureStep(F, P, af_neg(af_carrier(F), af_operations(F), x)) {
   exact right(right(right(left((x, member, refl(af_neg(af_carrier(F), af_operations(F), x)))))));
 }
 
 def field_closure_step_add(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F), px : P(x),
   py : P(y)
-) : FieldClosureStep(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
+) :
+  FieldClosureStep(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
   exact right(
     right(right(right(left((x, y, px, py, refl(af_add(af_carrier(F), af_operations(F), x, y)))))))
   );
@@ -57,7 +58,8 @@ def field_closure_step_add(
 def field_closure_step_mul(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F), px : P(x),
   py : P(y)
-) : FieldClosureStep(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
+) :
+  FieldClosureStep(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
   exact right(
     right(
       right(right(right(left((x, y, px, py, refl(af_mul(af_carrier(F), af_operations(F), x, y)))))))
@@ -70,7 +72,8 @@ def field_closure_step_inverse(
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
   )
-) : FieldClosureStep(F, P, y) {
+) :
+  FieldClosureStep(F, P, y) {
   exact right(right(right(right(right(right((x, px, inverseLaw)))))));
 }
 
@@ -79,7 +82,8 @@ theorem field_closure_step_into_subfield(
   F : AlgebraicField, P : af_carrier(F) -> U0, Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
   included : PredicateIncluded(af_carrier(F), P, Q), x : af_carrier(F),
   step : FieldClosureStep(F, P, x)
-) : Q(x) {
+) :
+  Q(x) {
   cases step {
     left member => {
       exact included(x, member);
@@ -169,7 +173,8 @@ def field_closure_pad(F : AlgebraicField, P : af_carrier(F) -> U0, m : Nat) =
 theorem field_closure_pad_right(
   F : AlgebraicField, P : af_carrier(F) -> U0, n : Nat, m : Nat, x : af_carrier(F),
   member : FieldClosureStage(F, P, n, x)
-) : FieldClosureStage(F, P, n + m, x) {
+) :
+  FieldClosureStage(F, P, n + m, x) {
   exact transport(
     (fun (rank : Nat) => FieldClosureStage(F, P, rank, x)), m + n, n + m, nat_add_comm(m, n),
     field_closure_pad(F, P, m, n, x, member)

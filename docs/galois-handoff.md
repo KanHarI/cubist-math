@@ -6,7 +6,7 @@ kernel and `.cubist` sources. The old Id/J engine, its proof exporters and
 its reference-comparison commands are retired; older checkpoints describe
 historical validation, not the current development workflow.
 
-## Current increment: spans and independent chain bounds
+## Current increment: the general basis theorem
 
 Checked modules added:
 
@@ -27,14 +27,20 @@ Checked modules added:
 The permutation/group results, vector-space constructions and finite-basis
 results use no axioms. Span membership uses existing small propositional
 truncation; U1-indexed unions use the existing `Truncate(U1)` interface.
-No choice or LEM was added to this increment.
+The new basis-existence theorem adds explicit uses of the existing
+`Choice(U1)` and `LEM(U0)` schemas, not new axioms.
 
 The user specifically requests **general basis existence**, with **Zorn
 derived from the existing axiom of choice**, not a new Zorn axiom. See
 [basis-theorem.md](basis-theorem.md) for the exact interfaces, mathematical
-proof route and outstanding formal lemmas. General basis existence and
-Zorn are not yet checked. The finite-coordinate basis interface has not yet
-been related to the independent-subset basis interface.
+proof route and outstanding formal lemmas. **General basis existence is now
+checked** as `vector_basis_existence.vector_space_has_basis`. It uses the
+proved chain-complete form of Zorn (`zorn_chain_complete`) via a checked
+Bourbaki–Witt tower argument. Independent extension and deletion of arbitrary
+finite summands are also checked. The existing universe-lowering U1
+truncation is used explicitly; no axiom or kernel interface changed.
+The finite-coordinate basis interface has not yet been related to the
+independent-subset basis interface.
 
 Alongside the mathematics, the inspector now separates axioms from local
 context, including in the workbench. Annotated declarations show their
@@ -148,11 +154,10 @@ name does not assert that an extension is algebraic.
 
 ## Next work
 
-1. Continue [the general basis development](basis-theorem.md): reindexing
-   and elimination of repeated vectors, independent-set
-   extension, and Zorn derived from choice. Chain bounds and their partial
-   order are now checked. Keep all classical
-   and universe assumptions explicit.
+1. Connect explicit finite coordinate bases to enumerated independent
+   subsets; continue finite exchange and reindexing. The
+   [general basis theorem](basis-theorem.md) is now checked using a
+   choice-derived maximality theorem.
 2. Prove finite dimension invariance and the extension-degree tower law.
    Do not treat `ExtensionDegreeWitness` as a proved numeric degree function.
 3. Generalize structure identity to larger bundled groups when needed for
@@ -230,7 +235,7 @@ including **2,641 checked corpus declarations and 44 templates**, with no
 failed, blocked, or over-budget entries at the regression deadline. Landing,
 statement, and universe-specialization browser regressions pass.
 
-Current validation (2026-09-22): **265 tests passed**, including the complete
+Previous validation (2026-09-22): **265 tests passed**, including the complete
 canonical corpus. The focused `span_subspace independent_order` benchmark
 checks **579 declarations**, with 35 templates and no slow, failed, or blocked
 entries at a 100ms limit. Regression examples exercise empty chains and an
@@ -238,11 +243,21 @@ actual U1-indexed family (`I = U0`), and confirm no Choice/LEM assumptions in
 the new results. Inspector and statement browser regressions pass, including
 `finite_combinations.linear_combination_scale` and workbench navigation.
 
+Current validation after basis existence (2026-09-22): **269 tests passed**,
+including the complete corpus. The focused `vector_basis_existence` benchmark
+checks **676 declarations** and 35 templates, with no failures, blocked
+entries, or entries above 100ms. Browser regression verifies the new basis
+page, its explicit Choice assumption, and the reformatted vector-space source.
+All 264 proof files pass the formatter check. The formatter now distinguishes
+an equality in an annotated type from an assignment and inserts a blank line
+between top-level declarations. Existing sources were reformatted with
+expanded-AST preservation checks; Linear Algebra has its own browsing topic.
+
 Current focused commands:
 
 ```sh
 npm test -- tests/linear-algebra.test.mjs tests/cubical-context.test.mjs tests/cubical-statement.test.mjs
-node tools/benchmark-cubical.mjs span_subspace independent_order --limit-ms=100
+node tools/benchmark-cubical.mjs vector_basis_existence --limit-ms=100
 node tests/statement.browser.mjs
 node tests/cubical-specialization.browser.mjs
 ```

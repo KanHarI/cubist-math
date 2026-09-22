@@ -2,8 +2,11 @@ import sets;
 
 // left(n) represents n; right(n) represents -(n+1). There is one zero.
 def Z = Nat or Nat;
+
 def nonnegative(n : Nat) = typed(Z, left(n));
+
 def negative(n : Nat) = typed(Z, right(n));
+
 def zeroZ = nonnegative(0);
 
 def successorZ(z : Z) = match z return Z {
@@ -67,10 +70,12 @@ def add_nonnegative(n : Nat, z : Z) = induction n as k return Z {
     zero => z;
     succ previous => successorZ(previous);
   };
+
 def add_negative(n : Nat, z : Z) = induction n as k return Z {
     zero => predecessorZ(z);
     succ previous => predecessorZ(previous);
   };
+
 def addZ(x : Z, y : Z) = match y return Z {
     left n => add_nonnegative(n, x);
     right n => add_negative(n, x);
@@ -81,10 +86,12 @@ def predecessorN(n : Nat) = induction n as k return Nat {
     zero => 0;
     succ previous => k;
   };
+
 def zero_fiber(n : Nat) = induction n as k return U0 {
     zero => Unit;
     succ previous => Void;
   };
+
 def zero_not_successor(n : Nat, p : 0 = succ(n)) = transport(zero_fiber, 0, succ(n), p, tt);
 
 def nat_equal_decidable(n : Nat) = induction n as k return (forall m : Nat, Decidable(k = m)) {
@@ -112,10 +119,12 @@ def magnitude(z : Z) = match z return Nat {
     left n => n;
     right n => n;
   };
+
 def sign_fiber(z : Z) = match z return U0 {
     left n => Unit;
     right n => Void;
   };
+
 def signs_differ(n : Nat, m : Nat, p : nonnegative(n) = negative(m)) =
   transport(sign_fiber, nonnegative(n), negative(m), p, tt);
 

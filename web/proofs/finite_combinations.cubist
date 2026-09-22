@@ -14,79 +14,84 @@ def fin_append(A : U0, n : Nat) =
       right j => previous(m, (fun (l : Fin(k)) => f(typed(Fin(succ(k)), right(l)))), g, j);
     };
   };
-theorem fin_append_members(A : U0, P : A -> U0, n : Nat) = induction n as k return (
-  forall m : Nat, forall f : Fin(k) -> A, forall g : Fin(m) -> A, (forall i : Fin(k), P(f(i)))
-  -> (forall j : Fin(m), P(g(j))) -> forall i : Fin(add_count(k, m)),
-  P(fin_append(A, k, m, f, g, i))
-) {
-  zero => fun (m : Nat) => fun (f : Fin(0) -> A) => fun (g : Fin(m) -> A) => fun (
-    hf : (forall i : Fin(0), P(f(i)))
-  ) => fun (hg : (forall j : Fin(m), P(g(j)))) => hg;
-  succ previous => fun (m : Nat) => fun (f : Fin(succ(k)) -> A) => fun (g : Fin(m) -> A) => fun (
-    hf : (forall i : Fin(succ(k)), P(f(i)))
-  ) => fun (hg : (forall j : Fin(m), P(g(j)))) => fun (i : Fin(add_count(succ(k), m))) => match i as index return P(
-    fin_append(A, succ(k), m, f, g, index)
+
+theorem fin_append_members(A : U0, P : A -> U0, n : Nat) =
+  induction n as k return (
+    forall m : Nat, forall f : Fin(k) -> A, forall g : Fin(m) -> A, (forall i : Fin(k), P(f(i)))
+    -> (forall j : Fin(m), P(g(j))) -> forall i : Fin(add_count(k, m)),
+    P(fin_append(A, k, m, f, g, i))
   ) {
-    left u => hf(typed(Fin(succ(k)), left(u)));
-    right j => previous(
-      m, (fun (l : Fin(k)) => f(typed(Fin(succ(k)), right(l)))), g,
-      (fun (l : Fin(k)) => hf(typed(Fin(succ(k)), right(l)))), hg, j
-    );
+    zero => fun (m : Nat) => fun (f : Fin(0) -> A) => fun (g : Fin(m) -> A) => fun (
+      hf : (forall i : Fin(0), P(f(i)))
+    ) => fun (hg : (forall j : Fin(m), P(g(j)))) => hg;
+    succ previous => fun (m : Nat) => fun (f : Fin(succ(k)) -> A) => fun (g : Fin(m) -> A) => fun (
+      hf : (forall i : Fin(succ(k)), P(f(i)))
+    ) => fun (hg : (forall j : Fin(m), P(g(j)))) => fun (i : Fin(add_count(succ(k), m))) => match i as index return P(
+      fin_append(A, succ(k), m, f, g, index)
+    ) {
+      left u => hf(typed(Fin(succ(k)), left(u)));
+      right j => previous(
+        m, (fun (l : Fin(k)) => f(typed(Fin(succ(k)), right(l)))), g,
+        (fun (l : Fin(k)) => hf(typed(Fin(succ(k)), right(l)))), hg, j
+      );
+    };
   };
-};
 
 // Concatenating witnesses computes the sum of their linear combinations.
-theorem linear_combination_append(K : AlgebraicField, V : VectorSpace(K), n : Nat) = induction n as k return (
-  forall m : Nat, forall v : Fin(k) -> vector_carrier(K, V),
-  forall w : Fin(m) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
-  forall b : Fin(m) -> af_carrier(K),
-  linear_combination(
-    K, V, add_count(k, m), fin_append(vector_carrier(K, V), k, m, v, w),
-    fin_append(af_carrier(K), k, m, a, b)
-  ) = vector_add(K, V, linear_combination(K, V, k, v, a), linear_combination(K, V, m, w, b))
-) {
-  zero => fun (m : Nat) => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (
-    w : Fin(m) -> vector_carrier(K, V)
-  ) => fun (a : Fin(0) -> af_carrier(K)) => fun (b : Fin(m) -> af_carrier(K)) => sym(
-    group_unit_left(vector_group(K, V), linear_combination(K, V, m, w, b))
-  );
-  succ previous => fun (m : Nat) => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
-    w : Fin(m) -> vector_carrier(K, V)
-  ) => fun (a : Fin(succ(k)) -> af_carrier(K)) => fun (b : Fin(m) -> af_carrier(K)) => trans(
-    cong(
-      vector_add(
-        K, V, vector_scale(K, V, a(typed(Fin(succ(k)), left(tt))), v(typed(Fin(succ(k)), left(tt))))
+theorem linear_combination_append(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+  induction n as k return (
+    forall m : Nat, forall v : Fin(k) -> vector_carrier(K, V),
+    forall w : Fin(m) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
+    forall b : Fin(m) -> af_carrier(K),
+    linear_combination(
+      K, V, add_count(k, m), fin_append(vector_carrier(K, V), k, m, v, w),
+      fin_append(af_carrier(K), k, m, a, b)
+    ) = vector_add(K, V, linear_combination(K, V, k, v, a), linear_combination(K, V, m, w, b))
+  ) {
+    zero => fun (m : Nat) => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (
+      w : Fin(m) -> vector_carrier(K, V)
+    ) => fun (a : Fin(0) -> af_carrier(K)) => fun (b : Fin(m) -> af_carrier(K)) => sym(
+      group_unit_left(vector_group(K, V), linear_combination(K, V, m, w, b))
+    );
+    succ previous => fun (m : Nat) => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
+      w : Fin(m) -> vector_carrier(K, V)
+    ) => fun (a : Fin(succ(k)) -> af_carrier(K)) => fun (b : Fin(m) -> af_carrier(K)) => trans(
+      cong(
+        vector_add(
+          K, V,
+          vector_scale(K, V, a(typed(Fin(succ(k)), left(tt))), v(typed(Fin(succ(k)), left(tt))))
+        ),
+        previous(
+          m, (fun (i : Fin(k)) => v(typed(Fin(succ(k)), right(i)))), w,
+          (fun (i : Fin(k)) => a(typed(Fin(succ(k)), right(i)))), b
+        )
       ),
-      previous(
-        m, (fun (i : Fin(k)) => v(typed(Fin(succ(k)), right(i)))), w,
-        (fun (i : Fin(k)) => a(typed(Fin(succ(k)), right(i)))), b
+      sym(
+        group_associative(
+          vector_group(K, V),
+          vector_scale(K, V, a(typed(Fin(succ(k)), left(tt))), v(typed(Fin(succ(k)), left(tt)))),
+          linear_combination(
+            K, V, k, (fun (i : Fin(k)) => v(typed(Fin(succ(k)), right(i)))),
+            (fun (i : Fin(k)) => a(typed(Fin(succ(k)), right(i))))
+          ), linear_combination(K, V, m, w, b)
+        )
       )
-    ),
-    sym(
-      group_associative(
-        vector_group(K, V),
-        vector_scale(K, V, a(typed(Fin(succ(k)), left(tt))), v(typed(Fin(succ(k)), left(tt)))),
-        linear_combination(
-          K, V, k, (fun (i : Fin(k)) => v(typed(Fin(succ(k)), right(i)))),
-          (fun (i : Fin(k)) => a(typed(Fin(succ(k)), right(i))))
-        ), linear_combination(K, V, m, w, b)
-      )
-    )
-  );
-};
+    );
+  };
 
 // For fixed a, scalar multiplication is an additive homomorphism.
-def scalar_additive_hom(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K)) : GroupHom(
-  vector_group(K, V), vector_group(K, V)
-) {
+def scalar_additive_hom(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K)) :
+  GroupHom(vector_group(K, V), vector_group(K, V)) {
   exact (vector_scale(K, V, a), vector_scale_add_vectors(K, V, a));
 }
-theorem vector_scale_zero(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K)) : vector_scale(
-  K, V, a, vector_zero(K, V)
-) = vector_zero(K, V) {
+
+theorem vector_scale_zero(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K)) :
+  vector_scale(K, V, a, vector_zero(K, V)) = vector_zero(K, V) {
   exact group_hom_unit(vector_group(K, V), vector_group(K, V), scalar_additive_hom(K, V, a));
 }
+
 def finite_head(A : U0, n : Nat, f : Fin(succ(n)) -> A) = f(typed(Fin(succ(n)), left(tt)));
+
 def finite_tail(A : U0, n : Nat, f : Fin(succ(n)) -> A) =
   fun (i : Fin(n)) => f(typed(Fin(succ(n)), right(i)));
 
@@ -106,9 +111,10 @@ theorem combination_scale_step(
       K, V, n, finite_tail(vector_carrier(K, V), n, v), finite_tail(af_carrier(K), n, b)
     )
   )
-) : linear_combination(
-  K, V, succ(n), v, (fun (i : Fin(succ(n))) => af_mul(af_carrier(K), af_operations(K), a, b(i)))
-) = vector_scale(K, V, a, linear_combination(K, V, succ(n), v, b)) {
+) :
+  linear_combination(
+    K, V, succ(n), v, (fun (i : Fin(succ(n))) => af_mul(af_carrier(K), af_operations(K), a, b(i)))
+  ) = vector_scale(K, V, a, linear_combination(K, V, succ(n), v, b)) {
   let A = af_carrier(K);
   let X = vector_carrier(K, V);
   let tailV = finite_tail(X, n, v);
@@ -131,19 +137,21 @@ theorem combination_scale_step(
     )
   );
 }
-theorem linear_combination_scale(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), n : Nat) = induction n as k return (
-  forall v : Fin(k) -> vector_carrier(K, V), forall b : Fin(k) -> af_carrier(K),
-  linear_combination(
-    K, V, k, v, (fun (i : Fin(k)) => af_mul(af_carrier(K), af_operations(K), a, b(i)))
-  ) = vector_scale(K, V, a, linear_combination(K, V, k, v, b))
-) {
-  zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (b : Fin(0) -> af_carrier(K)) => sym(
-    vector_scale_zero(K, V, a)
-  );
-  succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
-    b : Fin(succ(k)) -> af_carrier(K)
-  ) => combination_scale_step(
-    K, V, a, k, v, b,
-    previous(finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, b))
-  );
-};
+
+theorem linear_combination_scale(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), n : Nat) =
+  induction n as k return (
+    forall v : Fin(k) -> vector_carrier(K, V), forall b : Fin(k) -> af_carrier(K),
+    linear_combination(
+      K, V, k, v, (fun (i : Fin(k)) => af_mul(af_carrier(K), af_operations(K), a, b(i)))
+    ) = vector_scale(K, V, a, linear_combination(K, V, k, v, b))
+  ) {
+    zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (b : Fin(0) -> af_carrier(K)) => sym(
+      vector_scale_zero(K, V, a)
+    );
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
+      b : Fin(succ(k)) -> af_carrier(K)
+    ) => combination_scale_step(
+      K, V, a, k, v, b,
+      previous(finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, b))
+    );
+  };

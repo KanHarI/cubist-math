@@ -1,0 +1,154 @@
+import vector_arithmetic;
+import vector_subspaces;
+
+// Sum every term except the selected index. This recursion compares only
+// finite indices; it needs no decidable equality on vectors or scalars.
+def linear_remainder(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+  induction n as k return (
+    (Fin(k) -> vector_carrier(K, V)) -> (Fin(k) -> af_carrier(K)) -> Fin(k) -> vector_carrier(K, V)
+  ) {
+    zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (a : Fin(0) -> af_carrier(K)) => fun (
+      i : Fin(0)
+    ) => typed(vector_carrier(K, V), absurd(i));
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
+      a : Fin(succ(k)) -> af_carrier(K)
+    ) => fun (i : Fin(succ(k))) => match i return vector_carrier(K, V) {
+      left u => linear_combination(
+        K, V, k, finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a)
+      );
+      right j => vector_add(
+        K, V,
+        vector_scale(
+          K, V, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v)
+        ), previous(finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a), j)
+      );
+    };
+  };
+
+// The full combination is the selected summand plus its remainder.
+theorem linear_combination_split(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+  induction n as k return (
+    forall v : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
+    forall i : Fin(k),
+    linear_combination(K, V, k, v, a) = vector_add(
+      K, V, vector_scale(K, V, a(i), v(i)), linear_remainder(K, V, k, v, a, i)
+    )
+  ) {
+    zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (a : Fin(0) -> af_carrier(K)) => fun (
+      i : Fin(0)
+    ) => typed(
+      (
+        linear_combination(K, V, 0, v, a) = vector_add(
+          K, V, vector_scale(K, V, a(i), v(i)), linear_remainder(K, V, 0, v, a, i)
+        )
+      ), absurd(i)
+    );
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
+      a : Fin(succ(k)) -> af_carrier(K)
+    ) => fun (i : Fin(succ(k))) => match i as index return (
+      linear_combination(K, V, succ(k), v, a) = vector_add(
+        K, V, vector_scale(K, V, a(index), v(index)), linear_remainder(K, V, succ(k), v, a, index)
+      )
+    ) {
+      left u => cong(
+        (
+          fun (w : Unit) => vector_add(
+            K, V,
+            vector_scale(K, V, a(typed(Fin(succ(k)), left(w))), v(typed(Fin(succ(k)), left(w)))),
+            linear_combination(
+              K, V, k, finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a)
+            )
+          )
+        ), unit_equal(u)
+      );
+      right j => trans(
+        cong(
+          vector_add(
+            K, V,
+            vector_scale(
+              K, V, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v)
+            )
+          ), previous(finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a), j)
+        ),
+        vector_add_swap(
+          K, V,
+          vector_scale(
+            K, V, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v)
+          ), vector_scale(K, V, a(typed(Fin(succ(k)), right(j))), v(typed(Fin(succ(k)), right(j)))),
+          linear_remainder(
+            K, V, k, finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a), j
+          )
+        )
+      );
+    };
+  };
+
+// If all the other vectors belong to a subspace, their remainder does too.
+theorem remainder_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) =
+  induction n as k return (
+    forall v : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
+    forall i : Fin(k), (forall j : Fin(k), ((j = i) -> Void) -> subspace_members(K, V, S, v(j)))
+    -> subspace_members(K, V, S, linear_remainder(K, V, k, v, a, i))
+  ) {
+    zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (a : Fin(0) -> af_carrier(K)) => fun (
+      i : Fin(0)
+    ) => fun (members : (forall j : Fin(0), ((j = i) -> Void) -> subspace_members(K, V, S, v(j)))) => typed(
+      subspace_members(K, V, S, linear_remainder(K, V, 0, v, a, i)), absurd(i)
+    );
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
+      a : Fin(succ(k)) -> af_carrier(K)
+    ) => fun (i : Fin(succ(k))) => match i as index return (
+      (forall j : Fin(succ(k)), ((j = index) -> Void) -> subspace_members(K, V, S, v(j)))
+      -> subspace_members(K, V, S, linear_remainder(K, V, succ(k), v, a, index))
+    ) {
+      left u => fun (
+        members : (
+          forall j : Fin(succ(k)), ((j = typed(Fin(succ(k)), left(u))) -> Void)
+          -> subspace_members(K, V, S, v(j))
+        )
+      ) => combination_in_subspace(
+        K, V, S, k, finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a),
+        (
+          fun (j : Fin(k)) => members(
+            typed(Fin(succ(k)), right(j)),
+            (
+              fun (same : typed(Fin(succ(k)), right(j)) = typed(Fin(succ(k)), left(u))) => sum_disjoint(
+                Fin(k), u, j, sym(same)
+              )
+            )
+          )
+        )
+      );
+      right iTail => fun (
+        members : (
+          forall j : Fin(succ(k)), ((j = typed(Fin(succ(k)), right(iTail))) -> Void)
+          -> subspace_members(K, V, S, v(j))
+        )
+      ) => subspace_add(
+        K, V, S,
+        vector_scale(
+          K, V, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v)
+        ),
+        linear_remainder(
+          K, V, k, finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a), iTail
+        ),
+        subspace_scale(
+          K, V, S, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v),
+          members(typed(Fin(succ(k)), left(tt)), sum_disjoint(Fin(k), tt, iTail))
+        ),
+        previous(
+          finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a), iTail,
+          (
+            fun (j : Fin(k)) => fun (different : (j = iTail) -> Void) => members(
+              typed(Fin(succ(k)), right(j)),
+              (
+                fun (same : typed(Fin(succ(k)), right(j)) = typed(Fin(succ(k)), right(iTail))) => different(
+                  tail_injective(Fin(k), j, iTail, same)
+                )
+              )
+            )
+          )
+        )
+      );
+    };
+  };

@@ -8,7 +8,8 @@ theorem classical_complex_nonzero_apart(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F),
   nonzero : (z = complex_zero(F, zero)) -> Void
-) : ComplexApartZero(F, zero, addF, mulF, lt, z) {
+) :
+  ComplexApartZero(F, zero, addF, mulF, lt, z) {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
   exact double_negation(
     ComplexApartZero(F, zero, addF, mulF, lt, z),
@@ -29,7 +30,8 @@ theorem classical_complex_nonzero_inverse(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), z : Complex(F),
   nonzero : (z = complex_zero(F, zero)) -> Void
-) : ComplexUnit(F, zero, one, addF, mulF, negF, z) {
+) :
+  ComplexUnit(F, zero, one, addF, mulF, negF, z) {
   exact complex_apart_inverse(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, z,
     classical_complex_nonzero_apart(

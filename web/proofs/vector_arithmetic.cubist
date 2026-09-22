@@ -1,0 +1,88 @@
+import finite_combinations;
+
+// For a fixed vector, the scalar action is additive in the scalar as well.
+def scalar_evaluation_hom(K : AlgebraicField, V : VectorSpace(K), x : vector_carrier(K, V)) :
+  GroupHom(FieldAdditiveGroup(K), vector_group(K, V)) {
+  exact (
+    (fun (a : af_carrier(K)) => vector_scale(K, V, a, x)),
+    (fun (a : af_carrier(K)) => fun (b : af_carrier(K)) => vector_scale_add_scalars(K, V, a, b, x))
+  );
+}
+
+theorem vector_zero_scale(K : AlgebraicField, V : VectorSpace(K), x : vector_carrier(K, V)) :
+  vector_scale(K, V, af_zero(af_carrier(K), af_operations(K)), x) = vector_zero(K, V) {
+  exact group_hom_unit(FieldAdditiveGroup(K), vector_group(K, V), scalar_evaluation_hom(K, V, x));
+}
+
+theorem vector_neg_scale(
+  K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), x : vector_carrier(K, V)
+) :
+  vector_scale(K, V, af_neg(af_carrier(K), af_operations(K), a), x) = vector_neg(
+    K, V, vector_scale(K, V, a, x)
+  ) {
+  exact group_hom_inverse(
+    FieldAdditiveGroup(K), vector_group(K, V), scalar_evaluation_hom(K, V, x), a
+  );
+}
+
+theorem vector_minus_one_scale(K : AlgebraicField, V : VectorSpace(K), x : vector_carrier(K, V)) :
+  vector_scale(
+    K, V, af_neg(af_carrier(K), af_operations(K), af_one(af_carrier(K), af_operations(K))), x
+  ) = vector_neg(K, V, x) {
+  exact trans(
+    vector_neg_scale(K, V, af_one(af_carrier(K), af_operations(K)), x),
+    cong(vector_neg(K, V), vector_scale_one(K, V, x))
+  );
+}
+
+// An explicitly supplied left inverse undoes scalar multiplication.
+
+// The field laws supply such an inverse for a nonzero scalar, without choice.
+theorem vector_scale_undo(
+  K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), b : af_carrier(K),
+  inverse : af_mul(af_carrier(K), af_operations(K), b, a) = af_one(af_carrier(K), af_operations(K)),
+  x : vector_carrier(K, V)
+) :
+  vector_scale(K, V, b, vector_scale(K, V, a, x)) = x {
+  exact trans(
+    sym(vector_scale_associative(K, V, b, a, x)),
+    trans(
+      cong((fun (c : af_carrier(K)) => vector_scale(K, V, c, x)), inverse),
+      vector_scale_one(K, V, x)
+    )
+  );
+}
+
+theorem vector_scale_injective(
+  K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K),
+  nonzero : FieldNonzero(af_carrier(K), af_operations(K), a), x : vector_carrier(K, V),
+  y : vector_carrier(K, V), same : vector_scale(K, V, a, x) = vector_scale(K, V, a, y)
+) :
+  x = y {
+  obtain (ring, nontrivial, inverses) = af_laws(K);
+  obtain (addLaws, mulLaws) = ring;
+  obtain (assoc, comm, one, distribute) = mulLaws;
+  obtain (b, inverse) = inverses(a, nonzero);
+  let leftInverse = trans(comm(b, a), inverse);
+  exact trans(
+    sym(vector_scale_undo(K, V, a, b, leftInverse, x)),
+    trans(cong(vector_scale(K, V, b), same), vector_scale_undo(K, V, a, b, leftInverse, y))
+  );
+}
+
+// Move a term past its neighbour in an additive sum. This is the only
+
+// reordering needed to isolate any chosen term of a finite combination.
+theorem vector_add_swap(
+  K : AlgebraicField, V : VectorSpace(K), x : vector_carrier(K, V), y : vector_carrier(K, V),
+  z : vector_carrier(K, V)
+) :
+  vector_add(K, V, x, vector_add(K, V, y, z)) = vector_add(K, V, y, vector_add(K, V, x, z)) {
+  exact trans(
+    sym(group_associative(vector_group(K, V), x, y, z)),
+    trans(
+      cong((fun (w : vector_carrier(K, V)) => vector_add(K, V, w, z)), vector_abelian(K, V, x, y)),
+      group_associative(vector_group(K, V), y, x, z)
+    )
+  );
+}

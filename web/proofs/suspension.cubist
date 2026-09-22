@@ -2,10 +2,15 @@ import paths;
 
 // The circle is the suspension of the two-point type.
 def S0 = Unit or Unit;
+
 def S1 = Suspension(S0);
+
 def base = north(S0);
+
 def south_pole = south(S0);
+
 def upper = meridian(S0, typed(S0, left(tt)));
+
 def lower = meridian(S0, typed(S0, right(tt)));
 
 def loop =
@@ -13,10 +18,14 @@ def loop =
 
 // Check dependent elimination and both kinds of computation.
 theorem unit_unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
+
 def constant_family(x : S1) = Unit;
+
 def constant_meridians(a : S0) =
   unit_unique(transport(constant_family, base, south_pole, meridian(S0, a), tt));
+
 def collapse(x : S1) = suspension_induction(constant_family, tt, tt, constant_meridians, x);
+
 theorem collapse_north : collapse(base) = tt {
   exact refl(tt);
 }
@@ -25,9 +34,8 @@ theorem collapse_south : collapse(south_pole) = tt {
   exact refl(tt);
 }
 
-theorem collapse_meridian(a : S0) = suspension_meridian_beta(
-  constant_family, tt, tt, constant_meridians, a
-);
+theorem collapse_meridian(a : S0) =
+  suspension_meridian_beta(constant_family, tt, tt, constant_meridians, a);
 
 // Ordinary recursion and its path-computation theorem are derived in source.
 def lift_meridian(A : U0, B : U1, n : B, s : B, h : A -> (n = s), a : A) =
@@ -41,10 +49,11 @@ def suspension_rec(A : U0, B : U1, n : B, s : B, h : A -> (n = s), x : Suspensio
     (fun (point : Suspension(A)) => B), n, s, (fun (a : A) => lift_meridian(A, B, n, s, h, a)), x
   );
 
-theorem suspension_rec_beta(A : U0, B : U1, n : B, s : B, h : A -> (n = s), a : A) : ap(
-  U1, Suspension(A), B, (fun (point : Suspension(A)) => suspension_rec(A, B, n, s, h, point)),
-  north(A), south(A), meridian(A, a)
-) = h(a) {
+theorem suspension_rec_beta(A : U0, B : U1, n : B, s : B, h : A -> (n = s), a : A) :
+  ap(
+    U1, Suspension(A), B, (fun (point : Suspension(A)) => suspension_rec(A, B, n, s, h, point)),
+    north(A), south(A), meridian(A, a)
+  ) = h(a) {
   let f = fun (point : Suspension(A)) => suspension_rec(A, B, n, s, h, point);
   let p = meridian(A, a);
   let C = fun (point : Suspension(A)) => B;

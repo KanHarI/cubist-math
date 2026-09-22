@@ -54,7 +54,8 @@ def cancel_right_path(A : U1, y : A, z : A, r : y = z) =
 
 theorem null_homotopy_kills_loops(
   A : U1, B : U1, f : A -> B, point : B, homotopy : (forall a : A, f(a) = point), x : A, p : x = x
-) : ap(U1, A, B, f, x, x, p) = refl(f(x)) {
+) :
+  ap(U1, A, B, f, x, x, p) = refl(f(x)) {
   let image = ap(U1, A, B, f, x, x, p);
   have natural : concatenate(U1, B, f(x), f(x), point, image, homotopy(x)) = homotopy(x) {
     exact trans(
@@ -75,7 +76,8 @@ theorem null_homotopy_kills_loops(
 
 theorem contractible_loops_are_null(
   A : U1, center : A, contraction : (forall x : A, x = center), x : A, p : x = x
-) : p = refl(x) {
+) :
+  p = refl(x) {
   exact trans(
     sym(path_map_identity(A, x, x, p)),
     null_homotopy_kills_loops(A, A, (fun (a : A) => a), center, contraction, x, p)
@@ -85,11 +87,11 @@ theorem contractible_loops_are_null(
 // Rebase a loop along a specified path, with its effect on constant loops.
 def rebase_loop(A : U1, x : A, y : A, connector : x = y, p : x = x) =
   transport((fun (a : A) => a = a), x, y, connector, p);
+
 def rebase_constant_loop(A : U1, x : A, y : A, connector : x = y) =
   apd((fun (a : A) => refl(a)), x, y, connector);
 
-theorem rebase_null_loop(A : U1, x : A, y : A, connector : x = y, p : x = x, null : p = refl(x)) : rebase_loop(
-  A, x, y, connector, p
-) = refl(y) {
+theorem rebase_null_loop(A : U1, x : A, y : A, connector : x = y, p : x = x, null : p = refl(x)) :
+  rebase_loop(A, x, y, connector, p) = refl(y) {
   exact trans(cong(rebase_loop(A, x, y, connector), null), rebase_constant_loop(A, x, y, connector));
 }

@@ -4,29 +4,33 @@ import field_extensions;
 // extension. Injectivity remains explicit, independently of any zero test.
 def FieldEmbedding(K : AlgebraicField, L : AlgebraicField) =
   FieldEmbeddingData(K, af_carrier(L), structure_data(FieldData, L));
-def field_embedding_map(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) : af_carrier(
-  K
-) -> af_carrier(L) {
+
+def field_embedding_map(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+  af_carrier(K) -> af_carrier(L) {
   exact extension_embedding_function(K, af_carrier(L), structure_data(FieldData, L), e);
 }
-def field_embedding_evidence(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) : FieldEmbeddingLaws(
-  K, af_carrier(L), structure_data(FieldData, L), field_embedding_map(K, L, e)
-) {
+
+def field_embedding_evidence(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+  FieldEmbeddingLaws(K, af_carrier(L), structure_data(FieldData, L), field_embedding_map(K, L, e)) {
   exact sigma_second(
     (af_carrier(K) -> af_carrier(L)),
     FieldEmbeddingLaws(K, af_carrier(L), structure_data(FieldData, L)), e
   );
 }
-def field_embedding_preserves(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) : FieldOpsPreserved(
-  af_carrier(K), af_carrier(L), field_embedding_map(K, L, e), af_operations(K), af_operations(L)
-) {
+
+def field_embedding_preserves(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+  FieldOpsPreserved(
+    af_carrier(K), af_carrier(L), field_embedding_map(K, L, e), af_operations(K), af_operations(L)
+  ) {
   obtain (preserves, injective) = field_embedding_evidence(K, L, e);
   exact preserves;
 }
+
 theorem field_embedding_injective(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K),
   y : af_carrier(K), same : field_embedding_map(K, L, e, x) = field_embedding_map(K, L, e, y)
-) : x = y {
+) :
+  x = y {
   obtain (preserves, injective) = field_embedding_evidence(K, L, e);
   exact injective(x, y, same);
 }
@@ -43,11 +47,12 @@ def field_embedding_identity(K : AlgebraicField) : FieldEmbedding(K, K) {
 theorem field_embedding_composite_preserves(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
   d : FieldEmbedding(L, M)
-) : FieldOpsPreserved(
-  af_carrier(K), af_carrier(M),
-  (fun (x : af_carrier(K)) => field_embedding_map(L, M, d, field_embedding_map(K, L, e, x))),
-  af_operations(K), af_operations(M)
-) {
+) :
+  FieldOpsPreserved(
+    af_carrier(K), af_carrier(M),
+    (fun (x : af_carrier(K)) => field_embedding_map(L, M, d, field_embedding_map(K, L, e, x))),
+    af_operations(K), af_operations(M)
+  ) {
   let A = af_carrier(K);
   let f = field_embedding_map(K, L, e);
   let g = field_embedding_map(L, M, d);
@@ -64,7 +69,8 @@ theorem field_embedding_composite_preserves(
 def field_embedding_compose(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
   d : FieldEmbedding(L, M)
-) : FieldEmbedding(K, M) {
+) :
+  FieldEmbedding(K, M) {
   let f = field_embedding_map(K, L, e);
   let g = field_embedding_map(L, M, d);
   exact (
@@ -84,7 +90,8 @@ theorem field_embedding_ext(
   same : (
     forall x : af_carrier(K), field_embedding_map(K, L, e, x) = field_embedding_map(K, L, d, x)
   )
-) : e = d {
+) :
+  e = d {
   exact subtype_ext(
     (af_carrier(K) -> af_carrier(L)),
     FieldEmbeddingLaws(K, af_carrier(L), structure_data(FieldData, L)),
@@ -98,26 +105,31 @@ theorem field_embedding_ext(
 
 theorem field_embedding_left_identity(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
-) : field_embedding_compose(K, K, L, field_embedding_identity(K), e) = e {
+) :
+  field_embedding_compose(K, K, L, field_embedding_identity(K), e) = e {
   exact field_embedding_ext(
     K, L, field_embedding_compose(K, K, L, field_embedding_identity(K), e), e,
     (fun (x : af_carrier(K)) => refl(field_embedding_map(K, L, e, x)))
   );
 }
+
 theorem field_embedding_right_identity(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
-) : field_embedding_compose(K, L, L, e, field_embedding_identity(L)) = e {
+) :
+  field_embedding_compose(K, L, L, e, field_embedding_identity(L)) = e {
   exact field_embedding_ext(
     K, L, field_embedding_compose(K, L, L, e, field_embedding_identity(L)), e,
     (fun (x : af_carrier(K)) => refl(field_embedding_map(K, L, e, x)))
   );
 }
+
 theorem field_embedding_associative(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, N : AlgebraicField,
   e : FieldEmbedding(K, L), d : FieldEmbedding(L, M), h : FieldEmbedding(M, N)
-) : field_embedding_compose(K, M, N, field_embedding_compose(K, L, M, e, d), h) = field_embedding_compose(
-  K, L, N, e, field_embedding_compose(L, M, N, d, h)
-) {
+) :
+  field_embedding_compose(K, M, N, field_embedding_compose(K, L, M, e, d), h) = field_embedding_compose(
+    K, L, N, e, field_embedding_compose(L, M, N, d, h)
+  ) {
   exact field_embedding_ext(
     K, N, field_embedding_compose(K, M, N, field_embedding_compose(K, L, M, e, d), h),
     field_embedding_compose(K, L, N, e, field_embedding_compose(L, M, N, d, h)),
@@ -134,9 +146,9 @@ def embedding_as_extension(K : AlgebraicField, L : AlgebraicField, e : FieldEmbe
     ExtensionData(K), af_carrier(L),
     typed(ExtensionData(K, af_carrier(L)), (structure_data(FieldData, L), e)), af_set(L)
   );
-def extension_inclusion_embedding(K : AlgebraicField, E : FieldExt(K)) : FieldEmbedding(
-  K, extension_field(K, E)
-) {
+
+def extension_inclusion_embedding(K : AlgebraicField, E : FieldExt(K)) :
+  FieldEmbedding(K, extension_field(K, E)) {
   exact extension_embedding_data(K, extension_carrier(K, E), structure_data(ExtensionData(K), E));
 }
 
@@ -154,7 +166,8 @@ theorem field_nonzero_of_inverse(
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
   )
-) : FieldNonzero(af_carrier(F), af_operations(F), x) {
+) :
+  FieldNonzero(af_carrier(F), af_operations(F), x) {
   intro equalZero;
   let A = af_carrier(F);
   let ops = af_operations(F);
@@ -179,7 +192,8 @@ theorem field_nonzero_of_inverse(
 theorem field_embedding_reflects_nonzero(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K),
   nonzero : FieldNonzero(af_carrier(L), af_operations(L), field_embedding_map(K, L, e, x))
-) : FieldNonzero(af_carrier(K), af_operations(K), x) {
+) :
+  FieldNonzero(af_carrier(K), af_operations(K), x) {
   intro equalZero;
   obtain (p0, p1, pn, pa, pm) = field_embedding_preserves(K, L, e);
   exact nonzero(trans(cong(field_embedding_map(K, L, e), equalZero), p0));

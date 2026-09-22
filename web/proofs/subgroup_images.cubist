@@ -7,8 +7,10 @@ def SubgroupImageWitness(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), y : group_carrier(H)
 ) =
   exists x : group_carrier(G), subgroup_members(G, S, x) and (group_hom_map(G, H, h, x) = y);
+
 def SubgroupImage(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), y : group_carrier(H)) =
   Mere(SubgroupImageWitness(G, H, h, S, y));
+
 def subgroup_image_prop(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), y : group_carrier(H)
 ) =
@@ -17,7 +19,8 @@ def subgroup_image_prop(
 def subgroup_image_intro(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), x : group_carrier(G),
   member : subgroup_members(G, S, x)
-) : SubgroupImage(G, H, h, S, group_hom_map(G, H, h, x)) {
+) :
+  SubgroupImage(G, H, h, S, group_hom_map(G, H, h, x)) {
   exact merely(
     SubgroupImageWitness(G, H, h, S, group_hom_map(G, H, h, x)),
     typed(
@@ -31,7 +34,8 @@ def subgroup_image_product_witness(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), y : group_carrier(H),
   z : group_carrier(H), a : SubgroupImageWitness(G, H, h, S, y),
   b : SubgroupImageWitness(G, H, h, S, z)
-) : SubgroupImageWitness(G, H, h, S, group_multiply(H, y, z)) {
+) :
+  SubgroupImageWitness(G, H, h, S, group_multiply(H, y, z)) {
   obtain (x, sx, fx) = a;
   obtain (w, sw, fw) = b;
   let f = group_hom_map(G, H, h);
@@ -51,7 +55,8 @@ def subgroup_image_product_witness(
 theorem subgroup_image_multiply(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), y : group_carrier(H),
   z : group_carrier(H), a : SubgroupImage(G, H, h, S, y), b : SubgroupImage(G, H, h, S, z)
-) : SubgroupImage(G, H, h, S, group_multiply(H, y, z)) {
+) :
+  SubgroupImage(G, H, h, S, group_multiply(H, y, z)) {
   let target = SubgroupImage(G, H, h, S, group_multiply(H, y, z));
   let prop = subgroup_image_prop(G, H, h, S, group_multiply(H, y, z));
   exact mere_eliminate(
@@ -69,7 +74,8 @@ theorem subgroup_image_multiply(
 def subgroup_image_inverse_witness(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), y : group_carrier(H),
   a : SubgroupImageWitness(G, H, h, S, y)
-) : SubgroupImageWitness(G, H, h, S, group_inverse(H, y)) {
+) :
+  SubgroupImageWitness(G, H, h, S, group_inverse(H, y)) {
   obtain (x, sx, fx) = a;
   exact (
     group_inverse(G, x),
@@ -83,16 +89,16 @@ def subgroup_image_inverse_witness(
 theorem subgroup_image_inverse(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), y : group_carrier(H),
   a : SubgroupImage(G, H, h, S, y)
-) : SubgroupImage(G, H, h, S, group_inverse(H, y)) {
+) :
+  SubgroupImage(G, H, h, S, group_inverse(H, y)) {
   exact mere_map(
     SubgroupImageWitness(G, H, h, S, y), SubgroupImageWitness(G, H, h, S, group_inverse(H, y)),
     subgroup_image_inverse_witness(G, H, h, S, y), a
   );
 }
 
-theorem subgroup_image_laws(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G)) : SubgroupLaws(
-  H, SubgroupImage(G, H, h, S)
-) {
+theorem subgroup_image_laws(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G)) :
+  SubgroupLaws(H, SubgroupImage(G, H, h, S)) {
   have containsUnit : SubgroupImage(G, H, h, S, group_unit(H)) {
     exact merely(
       SubgroupImageWitness(G, H, h, S, group_unit(H)),
@@ -105,9 +111,9 @@ theorem subgroup_image_laws(G : Group, H : Group, h : GroupHom(G, H), S : Subgro
       )
     );
   }
-  have inverseClosed : forall y : group_carrier(H), forall z : group_carrier(H),
-  SubgroupImage(G, H, h, S, y) -> (group_multiply(H, z, y) = group_unit(H))
-  -> SubgroupImage(G, H, h, S, z) {
+  have inverseClosed :
+    forall y : group_carrier(H), forall z : group_carrier(H), SubgroupImage(G, H, h, S, y)
+    -> (group_multiply(H, z, y) = group_unit(H)) -> SubgroupImage(G, H, h, S, z) {
     intro y;
     intro z;
     intro member;
@@ -127,6 +133,7 @@ theorem subgroup_image_laws(G : Group, H : Group, h : GroupHom(G, H), S : Subgro
     inverseClosed
   );
 }
+
 def subgroup_image(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G)) : Subgroup(H) {
   exact (SubgroupImage(G, H, h, S), subgroup_image_laws(G, H, h, S));
 }
@@ -136,7 +143,8 @@ def subgroup_image(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G)) : 
 theorem subgroup_image_least(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), T : Subgroup(H),
   lands : SubgroupIncluded(G, S, subgroup_preimage(G, H, h, T))
-) : SubgroupIncluded(H, subgroup_image(G, H, h, S), T) {
+) :
+  SubgroupIncluded(H, subgroup_image(G, H, h, S), T) {
   intro y;
   intro member;
   have descend : SubgroupImageWitness(G, H, h, S, y) -> subgroup_members(H, T, y) {
@@ -152,14 +160,15 @@ theorem subgroup_image_least(
 
 theorem subgroup_image_preimage_adjunction(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), T : Subgroup(H)
-) : (
-  SubgroupIncluded(H, subgroup_image(G, H, h, S), T)
-  -> SubgroupIncluded(G, S, subgroup_preimage(G, H, h, T))
-)
-and (
-  SubgroupIncluded(G, S, subgroup_preimage(G, H, h, T))
-  -> SubgroupIncluded(H, subgroup_image(G, H, h, S), T)
-) {
+) :
+  (
+    SubgroupIncluded(H, subgroup_image(G, H, h, S), T)
+    -> SubgroupIncluded(G, S, subgroup_preimage(G, H, h, T))
+  )
+  and (
+    SubgroupIncluded(G, S, subgroup_preimage(G, H, h, T))
+    -> SubgroupIncluded(H, subgroup_image(G, H, h, S), T)
+  ) {
   exact (
     (
       fun (included : SubgroupIncluded(H, subgroup_image(G, H, h, S), T)) => fun (
@@ -174,7 +183,8 @@ and (
 theorem subgroup_image_monotone(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), T : Subgroup(G),
   included : SubgroupIncluded(G, S, T)
-) : SubgroupIncluded(H, subgroup_image(G, H, h, S), subgroup_image(G, H, h, T)) {
+) :
+  SubgroupIncluded(H, subgroup_image(G, H, h, S), subgroup_image(G, H, h, T)) {
   exact subgroup_image_least(
     G, H, h, S, subgroup_image(G, H, h, T),
     (
@@ -185,9 +195,8 @@ theorem subgroup_image_monotone(
   );
 }
 
-theorem subgroup_image_identity(G : Group, S : Subgroup(G)) : subgroup_image(
-  G, G, group_hom_identity(G), S
-) = S {
+theorem subgroup_image_identity(G : Group, S : Subgroup(G)) :
+  subgroup_image(G, G, group_hom_identity(G), S) = S {
   exact subgroup_inclusion_antisymmetric(
     G, subgroup_image(G, G, group_hom_identity(G), S), S,
     subgroup_image_least(G, G, group_hom_identity(G), S, S, subgroup_inclusion_refl(G, S)),
@@ -198,15 +207,15 @@ theorem subgroup_image_identity(G : Group, S : Subgroup(G)) : subgroup_image(
 // Factor a homomorphism as a surjection onto its image followed by inclusion.
 def group_image(G : Group, H : Group, h : GroupHom(G, H)) =
   subgroup_image(G, H, h, subgroup_top(G));
+
 def group_image_factor(G : Group, H : Group, h : GroupHom(G, H)) =
   subgroup_factor(
     G, H, h, group_image(G, H, h),
     (fun (x : group_carrier(G)) => subgroup_image_intro(G, H, h, subgroup_top(G), x, tt))
   );
 
-theorem group_image_trivial(G : Group, H : Group) : group_image(G, H, group_hom_trivial(G, H)) = subgroup_bottom(
-  H
-) {
+theorem group_image_trivial(G : Group, H : Group) :
+  group_image(G, H, group_hom_trivial(G, H)) = subgroup_bottom(H) {
   exact subgroup_inclusion_antisymmetric(
     H, group_image(G, H, group_hom_trivial(G, H)), subgroup_bottom(H),
     subgroup_image_least(
@@ -216,10 +225,11 @@ theorem group_image_trivial(G : Group, H : Group) : group_image(G, H, group_hom_
   );
 }
 
-theorem group_image_factor_triangle(G : Group, H : Group, h : GroupHom(G, H)) : group_hom_compose(
-  G, subgroup_as_group(H, group_image(G, H, h)), H, group_image_factor(G, H, h),
-  subgroup_inclusion(H, group_image(G, H, h))
-) = h {
+theorem group_image_factor_triangle(G : Group, H : Group, h : GroupHom(G, H)) :
+  group_hom_compose(
+    G, subgroup_as_group(H, group_image(G, H, h)), H, group_image_factor(G, H, h),
+    subgroup_inclusion(H, group_image(G, H, h))
+  ) = h {
   exact subgroup_factor_triangle(
     G, H, h, group_image(G, H, h),
     (fun (x : group_carrier(G)) => subgroup_image_intro(G, H, h, subgroup_top(G), x, tt))
@@ -228,15 +238,16 @@ theorem group_image_factor_triangle(G : Group, H : Group, h : GroupHom(G, H)) : 
 
 theorem group_image_factor_surjective(
   G : Group, H : Group, h : GroupHom(G, H), y : SubgroupCarrier(H, group_image(G, H, h))
-) : Mere(
-  exists x : group_carrier(G),
-  group_hom_map(G, subgroup_as_group(H, group_image(G, H, h)), group_image_factor(G, H, h), x) = y
-) {
+) :
+  Mere(
+    exists x : group_carrier(G),
+    group_hom_map(G, subgroup_as_group(H, group_image(G, H, h)), group_image_factor(G, H, h), x) = y
+  ) {
   let image = group_image(G, H, h);
   let value = subgroup_value(H, image, y);
   let f = group_hom_map(G, subgroup_as_group(H, image), group_image_factor(G, H, h));
-  have lift : SubgroupImageWitness(G, H, h, subgroup_top(G), value)
-  -> (exists x : group_carrier(G), f(x) = y) {
+  have lift :
+    SubgroupImageWitness(G, H, h, subgroup_top(G), value) -> (exists x : group_carrier(G), f(x) = y) {
     intro witness;
     obtain (x, member, same) = witness;
     exact (x, subgroup_value_ext(H, image, f(x), y, same));

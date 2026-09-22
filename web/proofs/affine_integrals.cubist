@@ -23,14 +23,15 @@ theorem affine_dyadic_integral_exists(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   ), complete : CauchyComplete(F, zero, addF, lt)
-) : exists value : Complex(F),
-ComplexConverges(
-  F, zero, addF, lt,
-  affine_dyadic_sum(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand,
-    a, b, ordered
-  ), value
-) {
+) :
+  exists value : Complex(F),
+  ComplexConverges(
+    F, zero, addF, lt,
+    affine_dyadic_sum(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
+      integrand, a, b, ordered
+    ), value
+  ) {
   exact complex_cauchy_complete(
     F, zero, addF, lt, complete,
     affine_dyadic_sum(
@@ -101,17 +102,18 @@ theorem affine_dyadic_integral_converges(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   ), complete : CauchyComplete(F, zero, addF, lt)
-) : ComplexConverges(
-  F, zero, addF, lt,
-  affine_dyadic_sum(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand,
-    a, b, ordered
-  ),
-  affine_dyadic_integral(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-    bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete
-  )
-) {
+) :
+  ComplexConverges(
+    F, zero, addF, lt,
+    affine_dyadic_sum(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
+      integrand, a, b, ordered
+    ),
+    affine_dyadic_integral(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete
+    )
+  ) {
   exact field_second(
     Complex(F),
     ComplexConverges(
@@ -156,10 +158,11 @@ theorem affine_dyadic_integral_unique(
       integrand, a, b, ordered
     ), value
   )
-) : affine_dyadic_integral(
-  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-  bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete
-) = value {
+) :
+  affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+    bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete
+  ) = value {
   let halving =
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
   exact complex_limit_unique(
@@ -211,13 +214,14 @@ theorem affine_dyadic_integral_independent_data(
       )
     )
   ), otherComplete : CauchyComplete(F, zero, addF, lt)
-) : affine_dyadic_integral(
-  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-  bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete
-) = affine_dyadic_integral(
-  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, otherInverses,
-  otherBounds, half, halfSum, z, slope, integrand, otherUniform, a, b, ordered, otherComplete
-) {
+) :
+  affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+    bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete
+  ) = affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, otherInverses,
+    otherBounds, half, halfSum, z, slope, integrand, otherUniform, a, b, ordered, otherComplete
+  ) {
   exact affine_dyadic_integral_unique(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
     bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete,

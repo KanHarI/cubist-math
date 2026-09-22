@@ -6,15 +6,15 @@ theorem contour_sum_scale(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, coefficient : F, n : Nat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n)
-) : contour_sum(
-  F, zero, addF, mulF, negF, (fun (x : F) => mulF(f(x), coefficient)), n, vertices, tags
-) = mulF(contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags), coefficient) {
+) :
+  contour_sum(
+    F, zero, addF, mulF, negF, (fun (x : F) => mulF(f(x), coefficient)), n, vertices, tags
+  ) = mulF(contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags), coefficient) {
   let original = contour_edge(F, addF, mulF, negF, f);
   let scaled = contour_edge(F, addF, mulF, negF, (fun (x : F) => mulF(f(x), coefficient)));
   let mapping = mulF(coefficient);
   let mapped = (fun (a : F) => fun (b : F) => fun (tag : F) => mapping(original(a, b, tag)));
-  have edgePath : forall a : F, forall b : F, forall tag : F,
-  scaled(a, b, tag) = mapped(a, b, tag) {
+  have edgePath : forall a : F, forall b : F, forall tag : F, scaled(a, b, tag) = mapped(a, b, tag) {
     intro a;
     intro b;
     intro tag;
@@ -52,13 +52,14 @@ theorem curve_subdivision_samples_add(
   g : Complex(F) -> Complex(F), a : FieldUnitInterval(F, zero, one, lt),
   b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
-) : curve_subdivision_samples(
-  F, zero, one, addF, mulF, negF, lt, curve,
-  (fun (x : Complex(F)) => complex_add(F, addF, f(x), g(x))), a, b, piece
-) = complex_add(
-  F, addF, curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece),
-  curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, g, a, b, piece)
-) {
+) :
+  curve_subdivision_samples(
+    F, zero, one, addF, mulF, negF, lt, curve,
+    (fun (x : Complex(F)) => complex_add(F, addF, f(x), g(x))), a, b, piece
+  ) = complex_add(
+    F, addF, curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece),
+    curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, g, a, b, piece)
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let n = subdivision_count(I, a, b, piece);
   exact contour_sum_add(
@@ -77,13 +78,15 @@ theorem curve_subdivision_samples_scale(
   coefficient : Complex(F), a : FieldUnitInterval(F, zero, one, lt),
   b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
-) : curve_subdivision_samples(
-  F, zero, one, addF, mulF, negF, lt, curve,
-  (fun (x : Complex(F)) => complex_mul(F, addF, mulF, negF, f(x), coefficient)), a, b, piece
-) = complex_mul(
-  F, addF, mulF, negF,
-  curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece), coefficient
-) {
+) :
+  curve_subdivision_samples(
+    F, zero, one, addF, mulF, negF, lt, curve,
+    (fun (x : Complex(F)) => complex_mul(F, addF, mulF, negF, f(x), coefficient)), a, b, piece
+  ) = complex_mul(
+    F, addF, mulF, negF,
+    curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece),
+    coefficient
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let n = subdivision_count(I, a, b, piece);
   exact contour_sum_scale(
@@ -104,9 +107,10 @@ theorem curve_subdivision_samples_cong(
   same : (forall t : FieldUnitInterval(F, zero, one, lt), f(curve(t)) = g(curve(t))),
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
-) : curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece) = curve_subdivision_samples(
-  F, zero, one, addF, mulF, negF, lt, curve, g, a, b, piece
-) {
+) :
+  curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece) = curve_subdivision_samples(
+    F, zero, one, addF, mulF, negF, lt, curve, g, a, b, piece
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let addC = complex_add(F, addF);
   let mulC = complex_mul(F, addF, mulF, negF);

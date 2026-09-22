@@ -95,24 +95,25 @@ theorem affine_dyadic_integral_add(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   ), complete : CauchyComplete(F, zero, addF, lt)
-) : affine_dyadic_integral(
-  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-  bounds, half, halfSum, z, slope, (fun (x : Complex(F)) => complex_add(F, addF, f(x), g(x))),
-  affine_integrand_add_uniform(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, z, slope, f, g, uniformF,
-    uniformG
-  ), a, b, ordered, complete
-) = complex_add(
-  F, addF,
+) :
   affine_dyadic_integral(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-    bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
-  ),
-  affine_dyadic_integral(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-    bounds, half, halfSum, z, slope, g, uniformG, a, b, ordered, complete
-  )
-) {
+    bounds, half, halfSum, z, slope, (fun (x : Complex(F)) => complex_add(F, addF, f(x), g(x))),
+    affine_integrand_add_uniform(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, z, slope, f, g,
+      uniformF, uniformG
+    ), a, b, ordered, complete
+  ) = complex_add(
+    F, addF,
+    affine_dyadic_integral(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
+    ),
+    affine_dyadic_integral(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, g, uniformG, a, b, ordered, complete
+    )
+  ) {
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let combined = (fun (x : Complex(F)) => complex_add(F, addF, f(x), g(x)));
   let uniformSum =
@@ -201,21 +202,22 @@ theorem affine_dyadic_integral_scale(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   ), complete : CauchyComplete(F, zero, addF, lt)
-) : affine_dyadic_integral(
-  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-  bounds, half, halfSum, z, slope,
-  (fun (x : Complex(F)) => complex_mul(F, addF, mulF, negF, f(x), coefficient)),
-  affine_integrand_scale_uniform(
-    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
-    coefficient, z, slope, f, uniformF
-  ), a, b, ordered, complete
-) = complex_mul(
-  F, addF, mulF, negF,
+) :
   affine_dyadic_integral(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-    bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
-  ), coefficient
-) {
+    bounds, half, halfSum, z, slope,
+    (fun (x : Complex(F)) => complex_mul(F, addF, mulF, negF, f(x), coefficient)),
+    affine_integrand_scale_uniform(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
+      coefficient, z, slope, f, uniformF
+    ), a, b, ordered, complete
+  ) = complex_mul(
+    F, addF, mulF, negF,
+    affine_dyadic_integral(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
+    ), coefficient
+  ) {
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let scaled = (fun (x : Complex(F)) => complex_mul(F, addF, mulF, negF, f(x), coefficient));
   let uniformScaled =
@@ -302,13 +304,14 @@ theorem affine_dyadic_integral_cong(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   ), complete : CauchyComplete(F, zero, addF, lt)
-) : affine_dyadic_integral(
-  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-  bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
-) = affine_dyadic_integral(
-  F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-  bounds, half, halfSum, z, slope, g, uniformG, a, b, ordered, complete
-) {
+) :
+  affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+    bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
+  ) = affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+    bounds, half, halfSum, z, slope, g, uniformG, a, b, ordered, complete
+  ) {
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let xs =
     affine_dyadic_sum(

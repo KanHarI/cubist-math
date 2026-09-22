@@ -37,14 +37,15 @@ theorem curve_contour_tag_independent_limit(
       )
     ), value
   )
-) : ComplexConverges(
-  F, zero, addF, lt,
-  (
-    fun (n : Nat) => curve_contour_samples(
-      F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), newTags(n)
-    )
-  ), value
-) {
+) :
+  ComplexConverges(
+    F, zero, addF, lt,
+    (
+      fun (n : Nat) => curve_contour_samples(
+        F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), newTags(n)
+      )
+    ), value
+  ) {
   let I = FieldUnitInterval(F, zero, one, lt);
   let values = (fun (t : I) => integrand(curve(t)));
   let oldMapped =
@@ -71,10 +72,11 @@ theorem curve_contour_tag_independent_limit(
         I, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n)
       )
     );
-  have increments : forall n : Nat,
-  ComplexParameterIncrementBounds(
-    I, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n)
-  ) {
+  have increments :
+    forall n : Nat,
+    ComplexParameterIncrementBounds(
+      I, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n)
+    ) {
     intro n;
     obtain (realBounds, imagBounds, totalBound) = variation(
       count(n), vertices(n), oldTags(n), ordered(n)
@@ -84,15 +86,19 @@ theorem curve_contour_tag_independent_limit(
       realBounds, imagBounds
     );
   }
-  have total : forall n : Nat,
-  FieldLe(
-    F, lt,
-    sample_sum(
-      I, F, zero, addF,
-      (fun (a : I) => fun (b : I) => fun (t : I) => addF(realWeight(a, b, t), imagWeight(a, b, t))),
-      count(n), vertices(n), oldTags(n)
-    ), length
-  ) {
+  have total :
+    forall n : Nat,
+    FieldLe(
+      F, lt,
+      sample_sum(
+        I, F, zero, addF,
+        (
+          fun (a : I) => fun (b : I) => fun (t : I) => addF(
+            realWeight(a, b, t), imagWeight(a, b, t)
+          )
+        ), count(n), vertices(n), oldTags(n)
+      ), length
+    ) {
     intro n;
     obtain (realBounds, imagBounds, totalBound) = variation(
       count(n), vertices(n), oldTags(n), ordered(n)
@@ -167,16 +173,17 @@ theorem affine_curve_contour_tag_independent_limit(
       )
     ), value
   )
-) : ComplexConverges(
-  F, zero, addF, lt,
-  (
-    fun (n : Nat) => curve_contour_samples(
-      F, zero, one, addF, mulF, negF, lt,
-      complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, count(n),
-      vertices(n), newTags(n)
-    )
-  ), value
-) {
+) :
+  ComplexConverges(
+    F, zero, addF, lt,
+    (
+      fun (n : Nat) => curve_contour_samples(
+        F, zero, one, addF, mulF, negF, lt,
+        complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, count(n),
+        vertices(n), newTags(n)
+      )
+    ), value
+  ) {
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error);
   let r = maxF(complex_real(F, error), negF(complex_real(F, error)));
   let s = maxF(complex_imag(F, error), negF(complex_imag(F, error)));

@@ -1,0 +1,205 @@
+import finite_remainders;
+
+def fin_omit(n : Nat) = induction n as k return (Fin(succ(k)) -> Fin(k) -> Fin(succ(k))) {
+    zero => fun (i : Fin(1)) => fun (j : Fin(0)) => typed(Fin(1), absurd(j));
+    succ previous => fun (i : Fin(succ(succ(k)))) => match i return (
+      Fin(succ(k)) -> Fin(succ(succ(k)))
+    ) {
+      left u => fun (j : Fin(succ(k))) => typed(Fin(succ(succ(k))), right(j));
+      right tail => fun (j : Fin(succ(k))) => match j return Fin(succ(succ(k))) {
+        left u => left(u);
+        right t => right(previous(tail, t));
+      };
+    };
+  };
+
+// The omission map never reaches the removed index.
+theorem fin_omit_avoids(n : Nat) =
+  induction n as k return (
+    forall i : Fin(succ(k)), forall j : Fin(k), (fin_omit(k, i, j) = i) -> Void
+  ) {
+    zero => fun (i : Fin(1)) => fun (j : Fin(0)) => fun (same : fin_omit(0, i, j) = i) => typed(
+      Void, absurd(j)
+    );
+    succ previous => fun (i : Fin(succ(succ(k)))) => match i as index return (
+      forall j : Fin(succ(k)), (fin_omit(succ(k), index, j) = index) -> Void
+    ) {
+      left u => fun (j : Fin(succ(k))) => fun (
+        same : fin_omit(succ(k), typed(Fin(succ(succ(k))), left(u)), j) = typed(
+          Fin(succ(succ(k))), left(u)
+        )
+      ) => sum_disjoint(Fin(succ(k)), u, j, sym(same));
+      right tail => fun (j : Fin(succ(k))) => match j as slot return (
+        (
+          fin_omit(succ(k), typed(Fin(succ(succ(k))), right(tail)), slot) = typed(
+            Fin(succ(succ(k))), right(tail)
+          )
+        ) -> Void
+      ) {
+        left u => sum_disjoint(Fin(succ(k)), u, tail);
+        right t => fun (
+          same : typed(Fin(succ(succ(k))), right(fin_omit(k, tail, t))) = typed(
+            Fin(succ(succ(k))), right(tail)
+          )
+        ) => previous(tail, t, tail_injective(Fin(succ(k)), fin_omit(k, tail, t), tail, same));
+      };
+    };
+  };
+
+theorem fin_omit_injective(n : Nat) =
+  induction n as k return (
+    forall i : Fin(succ(k)), forall x : Fin(k), forall y : Fin(k),
+    fin_omit(k, i, x) = fin_omit(k, i, y) -> x = y
+  ) {
+    zero => fun (i : Fin(1)) => fun (x : Fin(0)) => fun (y : Fin(0)) => fun (
+      same : fin_omit(0, i, x) = fin_omit(0, i, y)
+    ) => typed((x = y), absurd(x));
+    succ previous => fun (i : Fin(succ(succ(k)))) => match i as index return (
+      forall x : Fin(succ(k)), forall y : Fin(succ(k)),
+      fin_omit(succ(k), index, x) = fin_omit(succ(k), index, y) -> x = y
+    ) {
+      left u => tail_injective(Fin(succ(k)));
+      right tail => fun (x : Fin(succ(k))) => fun (y : Fin(succ(k))) => match x as a return (
+        fin_omit(succ(k), typed(Fin(succ(succ(k))), right(tail)), a) = fin_omit(
+          succ(k), typed(Fin(succ(succ(k))), right(tail)), y
+        ) -> a = y
+      ) {
+        left u => match y as b return (
+          fin_omit(succ(k), typed(Fin(succ(succ(k))), right(tail)), typed(Fin(succ(k)), left(u))) = fin_omit(
+            succ(k), typed(Fin(succ(succ(k))), right(tail)), b
+          ) -> typed(Fin(succ(k)), left(u)) = b
+        ) {
+          left v => fun (
+            same : typed(Fin(succ(succ(k))), left(u)) = typed(Fin(succ(succ(k))), left(v))
+          ) => cong(
+            (fun (w : Unit) => typed(Fin(succ(k)), left(w))),
+            trans(sym(unit_equal(u)), unit_equal(v))
+          );
+          right t => fun (
+            same : typed(Fin(succ(succ(k))), left(u)) = typed(
+              Fin(succ(succ(k))), right(fin_omit(k, tail, t))
+            )
+          ) => absurd(sum_disjoint(Fin(succ(k)), u, fin_omit(k, tail, t), same));
+        };
+        right s => match y as b return (
+          fin_omit(succ(k), typed(Fin(succ(succ(k))), right(tail)), typed(Fin(succ(k)), right(s))) = fin_omit(
+            succ(k), typed(Fin(succ(succ(k))), right(tail)), b
+          ) -> typed(Fin(succ(k)), right(s)) = b
+        ) {
+          left u => fun (
+            same : typed(Fin(succ(succ(k))), right(fin_omit(k, tail, s))) = typed(
+              Fin(succ(succ(k))), left(u)
+            )
+          ) => absurd(sum_disjoint(Fin(succ(k)), u, fin_omit(k, tail, s), sym(same)));
+          right t => fun (
+            same : typed(Fin(succ(succ(k))), right(fin_omit(k, tail, s))) = typed(
+              Fin(succ(succ(k))), right(fin_omit(k, tail, t))
+            )
+          ) => cong(
+            (fun (w : Fin(k)) => typed(Fin(succ(k)), right(w))),
+            previous(
+              tail, s, t,
+              tail_injective(Fin(succ(k)), fin_omit(k, tail, s), fin_omit(k, tail, t), same)
+            )
+          );
+        };
+      };
+    };
+  };
+
+// Every index is either the removed one or is reached by the omission map.
+def OmitCover(n : Nat, i : Fin(succ(n)), j : Fin(succ(n))) =
+  (j = i) or (exists t : Fin(n), fin_omit(n, i, t) = j);
+
+theorem fin_omit_cover(n : Nat) =
+  induction n as k return (forall i : Fin(succ(k)), forall j : Fin(succ(k)), OmitCover(k, i, j)) {
+    zero => fun (i : Fin(1)) => fun (j : Fin(1)) => typed(
+      OmitCover(0, i, j), left(trans(sym(fin_one_unique(j)), fin_one_unique(i)))
+    );
+    succ previous => fun (i : Fin(succ(succ(k)))) => fun (j : Fin(succ(succ(k)))) => match i as index return OmitCover(
+      succ(k), index, j
+    ) {
+      left u => match j as slot return OmitCover(succ(k), typed(Fin(succ(succ(k))), left(u)), slot) {
+        left v => left(
+          cong(
+            (fun (w : Unit) => typed(Fin(succ(succ(k))), left(w))),
+            trans(sym(unit_equal(v)), unit_equal(u))
+          )
+        );
+        right t => right((t, refl(typed(Fin(succ(succ(k))), right(t)))));
+      };
+      right tail => match j as slot return OmitCover(
+        succ(k), typed(Fin(succ(succ(k))), right(tail)), slot
+      ) {
+        left u => right((typed(Fin(succ(k)), left(u)), refl(typed(Fin(succ(succ(k))), left(u)))));
+        right t => match previous(tail, t) return OmitCover(
+          succ(k), typed(Fin(succ(succ(k))), right(tail)), typed(Fin(succ(succ(k))), right(t))
+        ) {
+          left same => left(
+            cong((fun (w : Fin(succ(k))) => typed(Fin(succ(succ(k))), right(w))), same)
+          );
+          right witness => unpack witness as (s, same) return OmitCover(
+            succ(k), typed(Fin(succ(succ(k))), right(tail)), typed(Fin(succ(succ(k))), right(t))
+          ) {
+            right(
+              (
+                typed(Fin(succ(k)), right(s)),
+                cong((fun (w : Fin(succ(k))) => typed(Fin(succ(succ(k))), right(w))), same)
+              )
+            );
+          };
+        };
+      };
+    };
+  };
+
+// Omitting the selected vector and coefficient computes exactly the remainder.
+theorem linear_combination_omit(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+  induction n as k return (
+    forall v : Fin(succ(k)) -> vector_carrier(K, V), forall a : Fin(succ(k)) -> af_carrier(K),
+    forall i : Fin(succ(k)),
+    linear_combination(
+      K, V, k, (fun (j : Fin(k)) => v(fin_omit(k, i, j))),
+      (fun (j : Fin(k)) => a(fin_omit(k, i, j)))
+    ) = linear_remainder(K, V, succ(k), v, a, i)
+  ) {
+    zero => fun (v : Fin(1) -> vector_carrier(K, V)) => fun (a : Fin(1) -> af_carrier(K)) => fun (
+      i : Fin(1)
+    ) => match i as index return (
+      linear_combination(
+        K, V, 0, (fun (j : Fin(0)) => v(fin_omit(0, index, j))),
+        (fun (j : Fin(0)) => a(fin_omit(0, index, j)))
+      ) = linear_remainder(K, V, 1, v, a, index)
+    ) {
+      left u => refl(vector_zero(K, V));
+      right t => absurd(t);
+    };
+    succ previous => fun (v : Fin(succ(succ(k))) -> vector_carrier(K, V)) => fun (
+      a : Fin(succ(succ(k))) -> af_carrier(K)
+    ) => fun (i : Fin(succ(succ(k)))) => match i as index return (
+      linear_combination(
+        K, V, succ(k), (fun (j : Fin(succ(k))) => v(fin_omit(succ(k), index, j))),
+        (fun (j : Fin(succ(k))) => a(fin_omit(succ(k), index, j)))
+      ) = linear_remainder(K, V, succ(succ(k)), v, a, index)
+    ) {
+      left u => refl(
+        linear_combination(
+          K, V, succ(k), finite_tail(vector_carrier(K, V), succ(k), v),
+          finite_tail(af_carrier(K), succ(k), a)
+        )
+      );
+      right tail => cong(
+        vector_add(
+          K, V,
+          vector_scale(
+            K, V, finite_head(af_carrier(K), succ(k), a),
+            finite_head(vector_carrier(K, V), succ(k), v)
+          )
+        ),
+        previous(
+          finite_tail(vector_carrier(K, V), succ(k), v), finite_tail(af_carrier(K), succ(k), a),
+          tail
+        )
+      );
+    };
+  };

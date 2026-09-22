@@ -28,14 +28,15 @@ def complex_interval_deformation(
 theorem complex_line_restrict_uniform(
   F : U1, zero : F, one : F, addF : F -> F -> F, lt : F -> F -> U0, curve : F -> Complex(F),
   uniform : ComplexUniformLine(F, zero, addF, lt, curve)
-) : ComplexUniformCurve(
-  F, zero, one, addF, lt,
-  (
-    fun (t : FieldUnitInterval(F, zero, one, lt)) => curve(
-      field_interval_coordinate(F, zero, one, lt, t)
+) :
+  ComplexUniformCurve(
+    F, zero, one, addF, lt,
+    (
+      fun (t : FieldUnitInterval(F, zero, one, lt)) => curve(
+        field_interval_coordinate(F, zero, one, lt, t)
+      )
     )
-  )
-) {
+  ) {
   intro epsilon;
   intro positive;
   obtain (delta, positiveDelta, close) = uniform(epsilon, positive);
@@ -56,9 +57,10 @@ theorem complex_interval_deformation_uniform(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), minF : F -> F -> F, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), error : Complex(F)
-) : ComplexUniformCurve(
-  F, zero, one, addF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error)
-) {
+) :
+  ComplexUniformCurve(
+    F, zero, one, addF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error)
+  ) {
   exact complex_line_restrict_uniform(
     F, zero, one, addF, lt, (fun (t : F) => complex_linear_deformation(F, addF, mulF, t, z, error)),
     complex_linear_deformation_uniform(
@@ -82,9 +84,10 @@ theorem complex_straight_curve_uniform(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), minF : F -> F -> F, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), a : Complex(F), b : Complex(F)
-) : ComplexUniformCurve(
-  F, zero, one, addF, lt, complex_straight_curve(F, zero, one, addF, mulF, negF, lt, a, b)
-) {
+) :
+  ComplexUniformCurve(
+    F, zero, one, addF, lt, complex_straight_curve(F, zero, one, addF, mulF, negF, lt, a, b)
+  ) {
   exact complex_interval_deformation_uniform(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice, a,
     complex_add(F, addF, complex_neg(F, negF, a), b)
@@ -96,18 +99,19 @@ theorem complex_straight_curve_endpoints(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   zeroBelowOne : FieldLe(F, lt, zero, one), a : Complex(F), b : Complex(F)
-) : (
-  complex_straight_curve(
-    F, zero, one, addF, mulF, negF, lt, a, b,
-    field_interval_zero(F, zero, one, lt, order, zeroBelowOne)
-  ) = a
-)
-and (
-  complex_straight_curve(
-    F, zero, one, addF, mulF, negF, lt, a, b,
-    field_interval_one(F, zero, one, lt, order, zeroBelowOne)
-  ) = b
-) {
+) :
+  (
+    complex_straight_curve(
+      F, zero, one, addF, mulF, negF, lt, a, b,
+      field_interval_zero(F, zero, one, lt, order, zeroBelowOne)
+    ) = a
+  )
+  and (
+    complex_straight_curve(
+      F, zero, one, addF, mulF, negF, lt, a, b,
+      field_interval_one(F, zero, one, lt, order, zeroBelowOne)
+    ) = b
+  ) {
   let error = complex_add(F, addF, complex_neg(F, negF, a), b);
   let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
   let addC = complex_add(F, addF);
@@ -145,9 +149,10 @@ theorem complex_interval_deformation_avoids_zero(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), error : Complex(F),
   dominates : lt(complex_norm_squared(F, addF, mulF, error), complex_norm_squared(F, addF, mulF, z))
-) : forall t : FieldUnitInterval(F, zero, one, lt),
-(complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error, t) = complex_zero(F, zero))
--> Void {
+) :
+  forall t : FieldUnitInterval(F, zero, one, lt),
+  (complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error, t) = complex_zero(F, zero))
+  -> Void {
   intro t;
   obtain (lower, upper) = field_interval_bounds(F, zero, one, lt, t);
   exact complex_linear_deformation_nonzero(

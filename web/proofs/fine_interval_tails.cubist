@@ -42,7 +42,8 @@ theorem interval_fine_tail_from_bound(
   small : lt(
     dyadic_width(F, half, bound, interval_difference(F, zero, one, addF, negF, lt, a, b)), mesh
   )
-) : FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b) {
+) :
+  FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b) {
   let width = interval_difference(F, zero, one, addF, negF, lt, a, b);
   let nonnegativeWidth =
     field_difference_nonnegative(
@@ -50,8 +51,9 @@ theorem interval_fine_tail_from_bound(
       field_interval_coordinate(F, zero, one, lt)(a),
       field_interval_coordinate(F, zero, one, lt)(b), ordered
     );
-  have levels : forall depth : Nat, IndexLE(bound, depth)
-  -> FineDyadicLevel(F, zero, one, addF, negF, lt, mesh, a, b, depth) {
+  have levels :
+    forall depth : Nat, IndexLE(bound, depth)
+    -> FineDyadicLevel(F, zero, one, addF, negF, lt, mesh, a, b, depth) {
     intro depth;
     intro later;
     let smallDepth =
@@ -80,7 +82,8 @@ theorem archimedean_interval_fine_tail(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   ), mesh : F, positiveMesh : lt(zero, mesh)
-) : FieldExists(FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b)) {
+) :
+  FieldExists(FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b)) {
   let width = interval_difference(F, zero, one, addF, negF, lt, a, b);
   let nonnegativeWidth =
     field_difference_nonnegative(
@@ -123,7 +126,8 @@ theorem bounded_archimedean_interval_fine_tail(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   ), mesh : F, positiveMesh : lt(zero, mesh)
-) : FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b) {
+) :
+  FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b) {
   let width = interval_difference(F, zero, one, addF, negF, lt, a, b);
   let nonnegativeWidth =
     field_difference_nonnegative(

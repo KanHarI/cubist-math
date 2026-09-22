@@ -7,7 +7,8 @@ theorem field_magnitude_small_close(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F, epsilon : F,
   bound : FieldMagnitudeBound(F, negF, lt, x, radius), small : lt(radius, epsilon)
-) : FieldClose(F, addF, lt, x, zero, epsilon) {
+) :
+  FieldClose(F, addF, lt, x, zero, epsilon) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   obtain (upper, lower) = bound;
   let less = leLt(x, radius, epsilon, upper, small);
@@ -35,7 +36,8 @@ theorem field_close_translate(
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, epsilon : F,
   shift : F, close : FieldClose(F, addF, lt, x, y, epsilon)
-) : FieldClose(F, addF, lt, addF(shift, x), addF(shift, y), epsilon) {
+) :
+  FieldClose(F, addF, lt, addF(shift, x), addF(shift, y), epsilon) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   obtain (upper, lower) = close;
   have shiftLess : forall u : F, forall v : F, lt(u, v) -> lt(addF(shift, u), addF(shift, v)) {
@@ -73,7 +75,8 @@ theorem field_magnitude_perturbation_close(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, error : F, radius : F,
   epsilon : F, computes : y = addF(x, error),
   bound : FieldMagnitudeBound(F, negF, lt, error, radius), small : lt(radius, epsilon)
-) : FieldClose(F, addF, lt, y, x, epsilon) {
+) :
+  FieldClose(F, addF, lt, y, x, epsilon) {
   let close =
     field_magnitude_small_close(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, radius, epsilon, bound,
@@ -101,12 +104,12 @@ theorem field_magnitude_squeeze(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors : Nat -> F, radii : Nat -> F,
   bounds : (forall n : Nat, FieldMagnitudeBound(F, negF, lt, errors(n), radii(n))),
   vanishes : FieldConverges(F, zero, addF, lt, radii, zero)
-) : FieldConverges(F, zero, addF, lt, errors, zero) {
+) :
+  FieldConverges(F, zero, addF, lt, errors, zero) {
   intro epsilon;
   intro positive;
   obtain (bound, close) = vanishes(epsilon, positive);
-  have tail : forall n : Nat, IndexLE(bound, n)
-  -> FieldClose(F, addF, lt, errors(n), zero, epsilon) {
+  have tail : forall n : Nat, IndexLE(bound, n) -> FieldClose(F, addF, lt, errors(n), zero, epsilon) {
     intro n;
     intro large;
     obtain (upper, lower) = close(n, large);

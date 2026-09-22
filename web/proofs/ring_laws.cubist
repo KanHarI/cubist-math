@@ -5,7 +5,8 @@ import ordered_fields;
 theorem ring_add_assoc(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
-) : addF(addF(x, y), z) = addF(x, addF(y, z)) {
+) :
+  addF(addF(x, y), z) = addF(x, addF(y, z)) {
   obtain (setF, (aa, ac, az, an), ma, mc, mo, md) = ring;
   exact aa(x, y, z);
 }
@@ -13,7 +14,8 @@ theorem ring_add_assoc(
 theorem ring_add_comm(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
-) : addF(x, y) = addF(y, x) {
+) :
+  addF(x, y) = addF(y, x) {
   obtain (setF, (aa, ac, az, an), ma, mc, mo, md) = ring;
   exact ac(x, y);
 }
@@ -21,7 +23,8 @@ theorem ring_add_comm(
 theorem ring_add_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
-) : addF(zero, x) = x {
+) :
+  addF(zero, x) = x {
   obtain (setF, (aa, ac, az, an), ma, mc, mo, md) = ring;
   exact az(x);
 }
@@ -29,7 +32,8 @@ theorem ring_add_zero(
 theorem ring_add_inverse(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
-) : addF(negF(x), x) = zero {
+) :
+  addF(negF(x), x) = zero {
   obtain (setF, (aa, ac, az, an), ma, mc, mo, md) = ring;
   exact an(x);
 }
@@ -37,7 +41,8 @@ theorem ring_add_inverse(
 theorem ring_mul_assoc(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
-) : mulF(mulF(x, y), z) = mulF(x, mulF(y, z)) {
+) :
+  mulF(mulF(x, y), z) = mulF(x, mulF(y, z)) {
   obtain (setF, (aa, ac, az, an), ma, mc, mo, md) = ring;
   exact ma(x, y, z);
 }
@@ -45,7 +50,8 @@ theorem ring_mul_assoc(
 theorem ring_mul_comm(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
-) : mulF(x, y) = mulF(y, x) {
+) :
+  mulF(x, y) = mulF(y, x) {
   obtain (setF, (aa, ac, az, an), ma, mc, mo, md) = ring;
   exact mc(x, y);
 }
@@ -53,7 +59,8 @@ theorem ring_mul_comm(
 theorem ring_mul_one(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
-) : mulF(one, x) = x {
+) :
+  mulF(one, x) = x {
   obtain (setF, (aa, ac, az, an), ma, mc, mo, md) = ring;
   exact mo(x);
 }
@@ -61,7 +68,8 @@ theorem ring_mul_one(
 theorem ring_distribute(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
-) : mulF(x, addF(y, z)) = addF(mulF(x, y), mulF(x, z)) {
+) :
+  mulF(x, addF(y, z)) = addF(mulF(x, y), mulF(x, z)) {
   obtain (setF, (aa, ac, az, an), ma, mc, mo, md) = ring;
   exact md(x, y, z);
 }
@@ -69,7 +77,8 @@ theorem ring_distribute(
 theorem ring_add_zero_right(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
-) : addF(x, zero) = x {
+) :
+  addF(x, zero) = x {
   exact trans(
     ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, zero),
     ring_add_zero(F, zero, one, addF, mulF, negF, ring, x)
@@ -79,7 +88,8 @@ theorem ring_add_zero_right(
 theorem ring_mul_one_right(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
-) : mulF(x, one) = x {
+) :
+  mulF(x, one) = x {
   exact trans(
     ring_mul_comm(F, zero, one, addF, mulF, negF, ring, x, one),
     ring_mul_one(F, zero, one, addF, mulF, negF, ring, x)
@@ -89,7 +99,8 @@ theorem ring_mul_one_right(
 theorem ring_add_inverse_right(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
-) : addF(x, negF(x)) = zero {
+) :
+  addF(x, negF(x)) = zero {
   exact trans(
     ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, negF(x)),
     ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x)
@@ -99,7 +110,8 @@ theorem ring_add_inverse_right(
 theorem ring_neg_unique(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, cancels : addF(x, y) = zero
-) : y = negF(x) {
+) :
+  y = negF(x) {
   obtain (setF, additive, multiplicative) = ring;
   exact field_add_cancel(
     F, zero, addF, negF, additive, x, y, negF(x),
@@ -110,7 +122,8 @@ theorem ring_neg_unique(
 theorem ring_neg_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
-) : negF(zero) = zero {
+) :
+  negF(zero) = zero {
   exact sym(
     ring_neg_unique(
       F, zero, one, addF, mulF, negF, ring, zero, zero,
@@ -122,7 +135,8 @@ theorem ring_neg_zero(
 theorem ring_neg_neg(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
-) : negF(negF(x)) = x {
+) :
+  negF(negF(x)) = x {
   exact sym(
     ring_neg_unique(
       F, zero, one, addF, mulF, negF, ring, negF(x), x,
@@ -134,7 +148,8 @@ theorem ring_neg_neg(
 theorem ring_add_swap(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
-) : addF(x, addF(y, z)) = addF(y, addF(x, z)) {
+) :
+  addF(x, addF(y, z)) = addF(y, addF(x, z)) {
   exact trans(
     sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, x, y, z)),
     trans(
@@ -147,7 +162,8 @@ theorem ring_add_swap(
 theorem ring_add_shuffle(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
-) : addF(addF(a, b), addF(c, d)) = addF(addF(a, c), addF(b, d)) {
+) :
+  addF(addF(a, b), addF(c, d)) = addF(addF(a, c), addF(b, d)) {
   exact trans(
     ring_add_assoc(F, zero, one, addF, mulF, negF, ring, a, b, addF(c, d)),
     trans(
@@ -160,7 +176,8 @@ theorem ring_add_shuffle(
 theorem ring_neg_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
-) : negF(addF(x, y)) = addF(negF(x), negF(y)) {
+) :
+  negF(addF(x, y)) = addF(negF(x), negF(y)) {
   have cancels : addF(addF(x, y), addF(negF(x), negF(y))) = zero {
     exact trans(
       ring_add_shuffle(F, zero, one, addF, mulF, negF, ring, x, y, negF(x), negF(y)),
@@ -186,7 +203,8 @@ theorem ring_neg_add(
 theorem ring_mul_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
-) : mulF(x, zero) = zero {
+) :
+  mulF(x, zero) = zero {
   obtain (setF, additive, multiplicative) = ring;
   have twice : addF(mulF(x, zero), mulF(x, zero)) = addF(mulF(x, zero), zero) {
     exact trans(
@@ -203,7 +221,8 @@ theorem ring_mul_zero(
 theorem ring_zero_mul(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
-) : mulF(zero, x) = zero {
+) :
+  mulF(zero, x) = zero {
   exact trans(
     ring_mul_comm(F, zero, one, addF, mulF, negF, ring, zero, x),
     ring_mul_zero(F, zero, one, addF, mulF, negF, ring, x)
@@ -213,7 +232,8 @@ theorem ring_zero_mul(
 theorem ring_mul_neg(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
-) : mulF(x, negF(y)) = negF(mulF(x, y)) {
+) :
+  mulF(x, negF(y)) = negF(mulF(x, y)) {
   exact ring_neg_unique(
     F, zero, one, addF, mulF, negF, ring, mulF(x, y), mulF(x, negF(y)),
     trans(
@@ -229,7 +249,8 @@ theorem ring_mul_neg(
 theorem ring_neg_mul(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
-) : mulF(negF(x), y) = negF(mulF(x, y)) {
+) :
+  mulF(negF(x), y) = negF(mulF(x, y)) {
   exact trans(
     ring_mul_comm(F, zero, one, addF, mulF, negF, ring, negF(x), y),
     trans(
@@ -242,7 +263,8 @@ theorem ring_neg_mul(
 theorem ring_distribute_left(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
-) : mulF(addF(x, y), z) = addF(mulF(x, z), mulF(y, z)) {
+) :
+  mulF(addF(x, y), z) = addF(mulF(x, z), mulF(y, z)) {
   exact trans(
     ring_mul_comm(F, zero, one, addF, mulF, negF, ring, addF(x, y), z),
     trans(
@@ -260,7 +282,8 @@ theorem ring_distribute_left(
 theorem ring_mul_swap(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
-) : mulF(x, mulF(y, z)) = mulF(y, mulF(x, z)) {
+) :
+  mulF(x, mulF(y, z)) = mulF(y, mulF(x, z)) {
   exact trans(
     sym(ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, x, y, z)),
     trans(
@@ -273,7 +296,8 @@ theorem ring_mul_swap(
 theorem ring_add_cancel_prefix(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
-) : addF(x, addF(negF(x), y)) = y {
+) :
+  addF(x, addF(negF(x), y)) = y {
   exact trans(
     sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, x, negF(x), y)),
     trans(

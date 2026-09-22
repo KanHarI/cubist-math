@@ -5,9 +5,11 @@ import field_embedding_factorization;
 // The middle field has actual elements (an ambient value and membership proof).
 def intermediate_as_field(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
   subfield_as_field(extension_field(K, E), intermediate_subfield(K, E, M));
+
 def intermediate_base_map(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), k : af_carrier(K)
-) : af_carrier(intermediate_as_field(K, E, M)) {
+) :
+  af_carrier(intermediate_as_field(K, E, M)) {
   exact typed(
     SubfieldCarrier(extension_field(K, E), intermediate_subfield(K, E, M)),
     (extension_inclusion(K, E, k), intermediate_contains_base(K, E, M, k))
@@ -16,43 +18,45 @@ def intermediate_base_map(
 
 theorem intermediate_base_preserves(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)
-) : FieldOpsPreserved(
-  af_carrier(K), af_carrier(intermediate_as_field(K, E, M)), intermediate_base_map(K, E, M),
-  af_operations(K), af_operations(intermediate_as_field(K, E, M))
-) {
+) :
+  FieldOpsPreserved(
+    af_carrier(K), af_carrier(intermediate_as_field(K, E, M)), intermediate_base_map(K, E, M),
+    af_operations(K), af_operations(intermediate_as_field(K, E, M))
+  ) {
   exact field_embedding_lift_preserves(
     K, extension_field(K, E), extension_inclusion_embedding(K, E), intermediate_subfield(K, E, M),
     intermediate_contains_base(K, E, M)
   );
 }
 
-def intermediate_base_embedding(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) : FieldEmbedding(
-  K, intermediate_as_field(K, E, M)
-) {
+def intermediate_base_embedding(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
+  FieldEmbedding(K, intermediate_as_field(K, E, M)) {
   exact field_embedding_factor(
     K, extension_field(K, E), extension_inclusion_embedding(K, E), intermediate_subfield(K, E, M),
     intermediate_contains_base(K, E, M)
   );
 }
-def intermediate_ambient_embedding(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) : FieldEmbedding(
-  intermediate_as_field(K, E, M), extension_field(K, E)
-) {
+
+def intermediate_ambient_embedding(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
+  FieldEmbedding(intermediate_as_field(K, E, M), extension_field(K, E)) {
   exact subfield_inclusion(extension_field(K, E), intermediate_subfield(K, E, M));
 }
 
 // These two extensions realize the lower and upper steps of the tower.
 def intermediate_as_extension(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
   embedding_as_extension(K, intermediate_as_field(K, E, M), intermediate_base_embedding(K, E, M));
+
 def intermediate_overfield(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
   embedding_as_extension(
     intermediate_as_field(K, E, M), extension_field(K, E), intermediate_ambient_embedding(K, E, M)
   );
 
 // The triangle commutes as equality of complete embeddings, including laws.
-theorem intermediate_tower(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) : FieldTower(
-  K, intermediate_as_field(K, E, M), extension_field(K, E), intermediate_base_embedding(K, E, M),
-  intermediate_ambient_embedding(K, E, M), extension_inclusion_embedding(K, E)
-) {
+theorem intermediate_tower(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
+  FieldTower(
+    K, intermediate_as_field(K, E, M), extension_field(K, E), intermediate_base_embedding(K, E, M),
+    intermediate_ambient_embedding(K, E, M), extension_inclusion_embedding(K, E)
+  ) {
   exact field_embedding_factor_triangle(
     K, extension_field(K, E), extension_inclusion_embedding(K, E), intermediate_subfield(K, E, M),
     intermediate_contains_base(K, E, M)

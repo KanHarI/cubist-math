@@ -11,76 +11,80 @@ def SubspaceLaws(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V
   and (
     forall a : af_carrier(K), forall x : vector_carrier(K, V), P(x) -> P(vector_scale(K, V, a, x))
   );
+
 def Subspace(K : AlgebraicField, V : VectorSpace(K)) =
   exists P : vector_carrier(K, V) -> U0, SubspaceLaws(K, V, P);
+
 def subspace_members(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) =
   unpack S as (P, laws) return (vector_carrier(K, V) -> U0) {
     P;
   };
-def subspace_laws(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) : SubspaceLaws(
-  K, V, subspace_members(K, V, S)
-) {
+
+def subspace_laws(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
+  SubspaceLaws(K, V, subspace_members(K, V, S)) {
   exact field_second(
     (vector_carrier(K, V) -> U0),
     (fun (P : vector_carrier(K, V) -> U0) => typed(U1, SubspaceLaws(K, V, P))), S
   );
 }
-def subspace_prop(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) : forall x : vector_carrier(
-  K, V
-), Proposition(subspace_members(K, V, S, x)) {
+
+def subspace_prop(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
+  forall x : vector_carrier(K, V), Proposition(subspace_members(K, V, S, x)) {
   obtain (prop, zero, add, scale) = subspace_laws(K, V, S);
   exact prop;
 }
-def subspace_zero(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) : subspace_members(
-  K, V, S, vector_zero(K, V)
-) {
+
+def subspace_zero(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
+  subspace_members(K, V, S, vector_zero(K, V)) {
   obtain (prop, zero, add, scale) = subspace_laws(K, V, S);
   exact zero;
 }
-def subspace_add(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) : forall x : vector_carrier(
-  K, V
-), forall y : vector_carrier(K, V), subspace_members(K, V, S, x) -> subspace_members(K, V, S, y)
--> subspace_members(K, V, S, vector_add(K, V, x, y)) {
+
+def subspace_add(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
+  forall x : vector_carrier(K, V), forall y : vector_carrier(K, V), subspace_members(K, V, S, x)
+  -> subspace_members(K, V, S, y) -> subspace_members(K, V, S, vector_add(K, V, x, y)) {
   obtain (prop, zero, add, scale) = subspace_laws(K, V, S);
   exact add;
 }
-def subspace_scale(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) : forall a : af_carrier(
-  K
-), forall x : vector_carrier(K, V), subspace_members(K, V, S, x)
--> subspace_members(K, V, S, vector_scale(K, V, a, x)) {
+
+def subspace_scale(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
+  forall a : af_carrier(K), forall x : vector_carrier(K, V), subspace_members(K, V, S, x)
+  -> subspace_members(K, V, S, vector_scale(K, V, a, x)) {
   obtain (prop, zero, add, scale) = subspace_laws(K, V, S);
   exact scale;
 }
+
 def SubspaceIncluded(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), T : Subspace(K, V)) =
   forall x : vector_carrier(K, V), subspace_members(K, V, S, x) -> subspace_members(K, V, T, x);
 
 // Every finite combination of members stays in the subspace.
-theorem combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) = induction n as k return (
-  forall v : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
-  (forall i : Fin(k), subspace_members(K, V, S, v(i)))
-  -> subspace_members(K, V, S, linear_combination(K, V, k, v, a))
-) {
-  zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (a : Fin(0) -> af_carrier(K)) => fun (
-    members : (forall i : Fin(0), subspace_members(K, V, S, v(i)))
-  ) => subspace_zero(K, V, S);
-  succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
-    a : Fin(succ(k)) -> af_carrier(K)
-  ) => fun (members : (forall i : Fin(succ(k)), subspace_members(K, V, S, v(i)))) => subspace_add(
-    K, V, S,
-    vector_scale(K, V, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v)),
-    linear_combination(
-      K, V, k, finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a)
-    ),
-    subspace_scale(
-      K, V, S, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v),
-      members(typed(Fin(succ(k)), left(tt)))
-    ),
-    previous(
-      finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a),
-      (fun (i : Fin(k)) => members(typed(Fin(succ(k)), right(i))))
-    )
-  );
-};
+theorem combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) =
+  induction n as k return (
+    forall v : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
+    (forall i : Fin(k), subspace_members(K, V, S, v(i)))
+    -> subspace_members(K, V, S, linear_combination(K, V, k, v, a))
+  ) {
+    zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (a : Fin(0) -> af_carrier(K)) => fun (
+      members : (forall i : Fin(0), subspace_members(K, V, S, v(i)))
+    ) => subspace_zero(K, V, S);
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
+      a : Fin(succ(k)) -> af_carrier(K)
+    ) => fun (members : (forall i : Fin(succ(k)), subspace_members(K, V, S, v(i)))) => subspace_add(
+      K, V, S,
+      vector_scale(K, V, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v)),
+      linear_combination(
+        K, V, k, finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a)
+      ),
+      subspace_scale(
+        K, V, S, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v),
+        members(typed(Fin(succ(k)), left(tt)))
+      ),
+      previous(
+        finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a),
+        (fun (i : Fin(k)) => members(typed(Fin(succ(k)), right(i))))
+      )
+    );
+  };
 
 // Span is contained in every subspace containing the generators. Truncated
 // witnesses are eliminated only into proposition-valued membership.
@@ -88,7 +92,8 @@ theorem span_least(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, S : Subspace(K, V),
   included : (forall x : vector_carrier(K, V), P(x) -> subspace_members(K, V, S, x)),
   x : vector_carrier(K, V), member : Span(K, V, P, x)
-) : subspace_members(K, V, S, x) {
+) :
+  subspace_members(K, V, S, x) {
   have descend : SpanWitness(K, V, P, x) -> subspace_members(K, V, S, x) {
     intro witness;
     obtain (n, vectors, coefficients, members, sum) = witness;
