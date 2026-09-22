@@ -1,0 +1,158 @@
+import finite_dimension;
+
+// A dimension asserts existence of coordinates, without choosing coordinates.
+// Keeping this separate from FiniteBasis preserves the distinction between
+// a mathematical invariant and the data of a particular basis.
+def HasDimension(K : AlgebraicField, V : VectorSpace(K), n : Nat) = Mere(FiniteBasis(K, V, n));
+
+def has_dimension_prop(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+  mere_is_prop(FiniteBasis(K, V, n));
+
+def basis_has_dimension(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)
+) =
+  merely(FiniteBasis(K, V, n), basis);
+
+theorem dimension_unique(
+  K : AlgebraicField, V : VectorSpace(K), m : Nat, n : Nat, first : HasDimension(K, V, m),
+  second : HasDimension(K, V, n)
+) :
+  m = n {
+  let equal_is_prop = hedberg(Nat, nat_eq_decidable, m, n);
+  exact mere_eliminate(
+    FiniteBasis(K, V, m), m = n, equal_is_prop,
+    (
+      fun (b : FiniteBasis(K, V, m)) => mere_eliminate(
+        FiniteBasis(K, V, n), m = n, equal_is_prop,
+        (fun (c : FiniteBasis(K, V, n)) => finite_dimension_invariance(K, V, m, n, b, c)), second
+      )
+    ), first
+  );
+}
+
+// This dependent pair is a proposition: its natural number is unique and
+// its basis evidence is truncated. Extracting that number needs no choice.
+def FiniteDimensional(K : AlgebraicField, V : VectorSpace(K)) =
+  exists n : Nat, HasDimension(K, V, n);
+
+def dimension(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V)) =
+  sigma_first(Nat, HasDimension(K, V), finite);
+
+def dimension_specification(
+  K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V)
+) =
+  sigma_second(Nat, HasDimension(K, V), finite);
+
+theorem finite_dimensional_prop(K : AlgebraicField, V : VectorSpace(K)) :
+  Proposition(FiniteDimensional(K, V)) {
+  intro first;
+  intro second;
+  exact subtype_ext(
+    Nat, HasDimension(K, V), has_dimension_prop(K, V), first, second,
+    dimension_unique(
+      K, V, dimension(K, V, first), dimension(K, V, second), dimension_specification(K, V, first),
+      dimension_specification(K, V, second)
+    )
+  );
+}
+
+def finite_dimensional_basis(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)
+) :
+  FiniteDimensional(K, V) {
+  exact (n, basis_has_dimension(K, V, n, basis));
+}
+
+// Mere finite basis existence suffices: the destination is a proposition.
+def finite_dimensional_from_mere(
+  K : AlgebraicField, V : VectorSpace(K), finite : Mere(exists n : Nat, FiniteBasis(K, V, n))
+) :
+  FiniteDimensional(K, V) {
+  exact mere_eliminate(
+    (exists n : Nat, FiniteBasis(K, V, n)), FiniteDimensional(K, V), finite_dimensional_prop(K, V),
+    (
+      fun (b : (exists n : Nat, FiniteBasis(K, V, n))) => finite_dimensional_basis(
+        K, V, sigma_first(Nat, FiniteBasis(K, V), b), sigma_second(Nat, FiniteBasis(K, V), b)
+      )
+    ), finite
+  );
+}
+
+theorem dimension_of_basis(
+  K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), n : Nat,
+  basis : FiniteBasis(K, V, n)
+) :
+  dimension(K, V, finite) = n {
+  exact dimension_unique(
+    K, V, dimension(K, V, finite), n, dimension_specification(K, V, finite),
+    basis_has_dimension(K, V, n, basis)
+  );
+}
+
+theorem dimension_evidence_independent(
+  K : AlgebraicField, V : VectorSpace(K), first : FiniteDimensional(K, V),
+  second : FiniteDimensional(K, V)
+) :
+  dimension(K, V, first) = dimension(K, V, second) {
+  exact cong(dimension(K, V), finite_dimensional_prop(K, V, first, second));
+}
+
+def has_dimension_iso(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W), n : Nat,
+  finite : HasDimension(K, V, n)
+) :
+  HasDimension(K, W, n) {
+  exact mere_map(
+    FiniteBasis(K, V, n), FiniteBasis(K, W, n),
+    (
+      fun (basis : FiniteBasis(K, V, n)) => linear_iso_compose(
+        K, CoordinateSpace(K, n), V, W, basis, e
+      )
+    ), finite
+  );
+}
+
+def finite_dimensional_iso(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W),
+  finite : FiniteDimensional(K, V)
+) :
+  FiniteDimensional(K, W) {
+  exact (
+    dimension(K, V, finite),
+    has_dimension_iso(K, V, W, e, dimension(K, V, finite), dimension_specification(K, V, finite))
+  );
+}
+
+theorem dimension_linear_iso(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W),
+  finiteV : FiniteDimensional(K, V), finiteW : FiniteDimensional(K, W)
+) :
+  dimension(K, V, finiteV) = dimension(K, W, finiteW) {
+  exact dimension_unique(
+    K, W, dimension(K, V, finiteV), dimension(K, W, finiteW),
+    has_dimension_iso(K, V, W, e, dimension(K, V, finiteV), dimension_specification(K, V, finiteV)),
+    dimension_specification(K, W, finiteW)
+  );
+}
+
+// Equality of spaces transports the complete coordinate data. In particular
+// this applies to paths obtained from a structure-identity theorem.
+def has_dimension_path(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), p : V =[VectorSpace(K)] W, n : Nat,
+  finite : HasDimension(K, V, n)
+) :
+  HasDimension(K, W, n) {
+  exact transport((fun (X : VectorSpace(K)) => HasDimension(K, X, n)), V, W, p, finite);
+}
+
+theorem dimension_path(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), p : V =[VectorSpace(K)] W,
+  finiteV : FiniteDimensional(K, V), finiteW : FiniteDimensional(K, W)
+) :
+  dimension(K, V, finiteV) = dimension(K, W, finiteW) {
+  exact dimension_unique(
+    K, W, dimension(K, V, finiteV), dimension(K, W, finiteW),
+    has_dimension_path(K, V, W, p, dimension(K, V, finiteV), dimension_specification(K, V, finiteV)),
+    dimension_specification(K, W, finiteW)
+  );
+}

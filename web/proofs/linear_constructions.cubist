@@ -1,0 +1,262 @@
+import vector_arithmetic;
+import finite_sums;
+
+def vector_additive_laws(K : AlgebraicField, V : VectorSpace(K)) :
+  AddLaws(vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), vector_neg(K, V)) {
+  exact (
+    group_associative(vector_group(K, V)), vector_abelian(K, V),
+    group_unit_left(vector_group(K, V)), group_inverse_left(vector_group(K, V))
+  );
+}
+
+def linear_as_group_hom(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W)
+) :
+  GroupHom(vector_group(K, V), vector_group(K, W)) {
+  exact (linear_map(K, V, W, f), linear_add(K, V, W, f));
+}
+
+def linear_zero(K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W)) =
+  group_hom_unit(vector_group(K, V), vector_group(K, W), linear_as_group_hom(K, V, W, f));
+
+def linear_neg(K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W)) =
+  group_hom_inverse(vector_group(K, V), vector_group(K, W), linear_as_group_hom(K, V, W, f));
+
+def linear_sum(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  g : LinearMap(K, V, W)
+) :
+  LinearMap(K, V, W) {
+  let F = linear_map(K, V, W, f);
+  let G = linear_map(K, V, W, g);
+  let add = vector_add(K, W);
+  let X = vector_carrier(K, V);
+  let Y = vector_carrier(K, W);
+  have additive :
+    forall x : X, forall y : X,
+    add(F(vector_add(K, V, x, y)), G(vector_add(K, V, x, y))) = add(
+      add(F(x), G(x)), add(F(y), G(y))
+    ) {
+    intro x;
+    intro y;
+    exact trans(
+      cong((fun (z : Y) => add(z, G(vector_add(K, V, x, y)))), linear_add(K, V, W, f, x, y)),
+      trans(
+        cong(add(add(F(x), F(y))), linear_add(K, V, W, g, x, y)),
+        additive_shuffle(
+          Y, vector_zero(K, W), add, vector_neg(K, W), vector_additive_laws(K, W), F(x), F(y), G(x),
+          G(y)
+        )
+      )
+    );
+  }
+  have scalar :
+    forall a : af_carrier(K), forall x : X,
+    add(F(vector_scale(K, V, a, x)), G(vector_scale(K, V, a, x))) = vector_scale(
+      K, W, a, add(F(x), G(x))
+    ) {
+    intro a;
+    intro x;
+    exact trans(
+      cong((fun (z : Y) => add(z, G(vector_scale(K, V, a, x)))), linear_scale(K, V, W, f, a, x)),
+      trans(
+        cong(add(vector_scale(K, W, a, F(x))), linear_scale(K, V, W, g, a, x)),
+        sym(vector_scale_add_vectors(K, W, a, F(x), G(x)))
+      )
+    );
+  }
+  exact ((fun (x : X) => add(F(x), G(x))), additive, scalar);
+}
+
+def scalar_multiple_linear(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K)) :
+  LinearMap(K, V, V) {
+  obtain (addLaws, mulLaws) = field_ring_data(af_carrier(K), af_operations(K), af_laws(K));
+  obtain (assoc, comm, one, distribute) = mulLaws;
+  have scalar :
+    forall b : af_carrier(K), forall x : vector_carrier(K, V),
+    vector_scale(K, V, a, vector_scale(K, V, b, x)) = vector_scale(
+      K, V, b, vector_scale(K, V, a, x)
+    ) {
+    intro b;
+    intro x;
+    exact trans(
+      sym(vector_scale_associative(K, V, a, b, x)),
+      trans(
+        cong((fun (c : af_carrier(K)) => vector_scale(K, V, c, x)), comm(a, b)),
+        vector_scale_associative(K, V, b, a, x)
+      )
+    );
+  }
+  exact (vector_scale(K, V, a), vector_scale_add_vectors(K, V, a), scalar);
+}
+
+def scalar_vector_linear(K : AlgebraicField, V : VectorSpace(K), x : vector_carrier(K, V)) :
+  LinearMap(K, ScalarSpace(K), V) {
+  exact (
+    (fun (a : af_carrier(K)) => vector_scale(K, V, a, x)),
+    (fun (a : af_carrier(K)) => fun (b : af_carrier(K)) => vector_scale_add_scalars(K, V, a, b, x)),
+    (fun (a : af_carrier(K)) => fun (b : af_carrier(K)) => vector_scale_associative(K, V, a, b, x))
+  );
+}
+
+def linear_iso_forward(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W)
+) :
+  LinearMap(K, V, W) {
+  obtain (f, g, left, right) = e;
+  exact f;
+}
+
+def linear_iso_backward(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W)
+) :
+  LinearMap(K, W, V) {
+  obtain (f, g, left, right) = e;
+  exact g;
+}
+
+def linear_iso_left(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W)
+) :
+  forall x : vector_carrier(K, V),
+  linear_map(
+    K, W, V, linear_iso_backward(K, V, W, e), linear_map(K, V, W, linear_iso_forward(K, V, W, e), x)
+  ) = x {
+  obtain (f, g, left, right) = e;
+  exact left;
+}
+
+def linear_iso_right(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W)
+) :
+  forall y : vector_carrier(K, W),
+  linear_map(
+    K, V, W, linear_iso_forward(K, V, W, e), linear_map(K, W, V, linear_iso_backward(K, V, W, e), y)
+  ) = y {
+  obtain (f, g, left, right) = e;
+  exact right;
+}
+
+def linear_iso_inverse(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W)
+) :
+  LinearIso(K, W, V) {
+  obtain (f, g, left, right) = e;
+  exact (g, f, right, left);
+}
+
+def linear_iso_compose(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), X : VectorSpace(K),
+  e : LinearIso(K, V, W), d : LinearIso(K, W, X)
+) :
+  LinearIso(K, V, X) {
+  obtain (f, g, leftE, rightE) = e;
+  obtain (h, k, leftD, rightD) = d;
+  exact (
+    linear_compose(K, V, W, X, f, h), linear_compose(K, X, W, V, k, g),
+    (
+      fun (v : vector_carrier(K, V)) => trans(
+        cong(linear_map(K, W, V, g), leftD(linear_map(K, V, W, f, v))), leftE(v)
+      )
+    ),
+    (
+      fun (x : vector_carrier(K, X)) => trans(
+        cong(linear_map(K, W, X, h), rightE(linear_map(K, X, W, k, x))), rightD(x)
+      )
+    )
+  );
+}
+
+theorem linear_iso_injective(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W),
+  x : vector_carrier(K, V), y : vector_carrier(K, V),
+  same : linear_map(K, V, W, linear_iso_forward(K, V, W, e), x) = linear_map(
+    K, V, W, linear_iso_forward(K, V, W, e), y
+  )
+) :
+  x = y {
+  exact trans(
+    sym(linear_iso_left(K, V, W, e, x)),
+    trans(
+      cong(linear_map(K, W, V, linear_iso_backward(K, V, W, e)), same),
+      linear_iso_left(K, V, W, e, y)
+    )
+  );
+}
+
+theorem linear_map_change(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
+  g : vector_carrier(K, V) -> vector_carrier(K, W),
+  same : (forall x : vector_carrier(K, V), linear_map(K, V, W, h, x) = g(x))
+) :
+  LinearMap(K, V, W) {
+  let f = linear_map(K, V, W, h);
+  let X = vector_carrier(K, V);
+  let Y = vector_carrier(K, W);
+  exact (
+    g,
+    (
+      fun (x : X) => fun (y : X) => trans(
+        sym(same(vector_add(K, V, x, y))),
+        trans(
+          linear_add(K, V, W, h, x, y),
+          trans(
+            cong((fun (z : Y) => vector_add(K, W, z, f(y))), same(x)),
+            cong(vector_add(K, W, g(x)), same(y))
+          )
+        )
+      )
+    ),
+    (
+      fun (a : af_carrier(K)) => fun (x : X) => trans(
+        sym(same(vector_scale(K, V, a, x))),
+        trans(linear_scale(K, V, W, h, a, x), cong(vector_scale(K, W, a), same(x)))
+      )
+    )
+  );
+}
+
+def negation_linear(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, V, V) {
+  exact linear_map_change(
+    K, V, V,
+    scalar_multiple_linear(
+      K, V, af_neg(af_carrier(K), af_operations(K), af_one(af_carrier(K), af_operations(K)))
+    ), vector_neg(K, V), vector_minus_one_scale(K, V)
+  );
+}
+
+def linear_subtract(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  g : LinearMap(K, V, W)
+) =
+  linear_sum(K, V, W, f, linear_compose(K, V, W, W, g, negation_linear(K, W)));
+
+theorem linear_kernel_injective(
+  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
+  kernel : (
+    forall x : vector_carrier(K, V), linear_map(K, V, W, h, x) = vector_zero(K, W)
+    -> x = vector_zero(K, V)
+  ), x : vector_carrier(K, V), y : vector_carrier(K, V),
+  same : linear_map(K, V, W, h, x) = linear_map(K, V, W, h, y)
+) :
+  x = y {
+  let f = linear_map(K, V, W, h);
+  let d = vector_add(K, V, x, vector_neg(K, V, y));
+  have vanishes : f(d) = vector_zero(K, W) {
+    exact trans(
+      linear_add(K, V, W, h, x, vector_neg(K, V, y)),
+      trans(
+        cong(vector_add(K, W, f(x)), linear_neg(K, V, W, h, y)),
+        trans(
+          cong(
+            (fun (z : vector_carrier(K, W)) => vector_add(K, W, z, vector_neg(K, W, f(y)))), same
+          ), group_inverse_right(vector_group(K, W), f(y))
+        )
+      )
+    );
+  }
+  exact group_cancel_right(
+    vector_group(K, V), x, y, vector_neg(K, V, y),
+    trans(kernel(d, vanishes), sym(group_inverse_right(vector_group(K, V), y)))
+  );
+}

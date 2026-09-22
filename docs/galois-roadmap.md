@@ -283,8 +283,19 @@ subsets have chain least upper bounds, and adjoining a vector outside the
 span preserves independence. The needed chain-complete form of Zorn is
 proved from `Choice(U1)` and `LEM(U0)` using Bourbaki–Witt; no Zorn axiom was
 introduced. The existing U1 truncation's resizing strength is recorded.
-Finite dimension invariance and the degree tower law remain open; general
-basis existence does not supply them automatically.
+[Finite dimension invariance, extension degree, and the tower law](finite-dimension.md)
+are now checked independently of general basis existence. An injective linear
+map K^m -> K^n implies m <= n by finite pivot elimination; two finite bases
+therefore have the same size. `extension_degree` is a basis-independent natural
+number with explicit finiteness evidence. `tower_law` proves [M:K] = [M:L][L:K]
+for a commuting triangle and finite lower and upper steps. The constructive
+product-basis proof is axiom-free; dimension uniqueness uses LEM(U0), and the
+propositional degree interface uses the existing small truncation. Choice and
+U1 resizing are not used in this increment. Extension-isomorphism invariance
+uses the existing univalent equality of complete extensions.
+
+The converse finiteness criterion, finite spanning-family reduction, and the
+bridge to enumerated independent subset bases remain open.
 
 The larger-group structure identity equivalence also remains useful future
 work: `GroupAt(U1)` first-isomorphism results currently supply group

@@ -1,0 +1,184 @@
+import coordinate_splitting;
+import classical;
+import maps;
+
+// Gaussian elimination removes one source and one target coordinate.
+// The pivot inverse is supplied explicitly; the algebra itself is constructive.
+def pivot_coefficient(
+  K : AlgebraicField, m : Nat, n : Nat,
+  f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
+) =
+  linear_compose(
+    K, CoordinateSpace(K, m), ScalarSpace(K), ScalarSpace(K),
+    linear_compose(
+      K, CoordinateSpace(K, m), CoordinateSpace(K, succ(n)), ScalarSpace(K),
+      linear_compose(
+        K, CoordinateSpace(K, m), CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)),
+        coordinate_insert_linear(K, m), f
+      ), evaluation_linear(K, Fin(succ(n)), ScalarSpace(K), typed(Fin(succ(n)), left(tt)))
+    ), scalar_multiple_linear(K, ScalarSpace(K), b)
+  );
+
+def pivot_corrected(
+  K : AlgebraicField, m : Nat, n : Nat,
+  f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
+) =
+  linear_subtract(
+    K, CoordinateSpace(K, m), CoordinateSpace(K, succ(n)),
+    linear_compose(
+      K, CoordinateSpace(K, m), CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)),
+      coordinate_insert_linear(K, m), f
+    ),
+    linear_compose(
+      K, CoordinateSpace(K, m), ScalarSpace(K), CoordinateSpace(K, succ(n)),
+      pivot_coefficient(K, m, n, f, b),
+      scalar_vector_linear(
+        K, CoordinateSpace(K, succ(n)),
+        linear_map(
+          K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f, coordinate_first(K, m)
+        )
+      )
+    )
+  );
+
+def pivot_reduced(
+  K : AlgebraicField, m : Nat, n : Nat,
+  f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
+) =
+  linear_compose(
+    K, CoordinateSpace(K, m), CoordinateSpace(K, succ(n)), CoordinateSpace(K, n),
+    pivot_corrected(K, m, n, f, b), coordinate_tail_linear(K, n)
+  );
+
+theorem scalar_pivot_cancel(
+  K : AlgebraicField, a : af_carrier(K), b : af_carrier(K),
+  inv : af_mul(af_carrier(K), af_operations(K), a, b) = af_one(af_carrier(K), af_operations(K)),
+  x : af_carrier(K)
+) :
+  af_mul(af_carrier(K), af_operations(K), af_mul(af_carrier(K), af_operations(K), b, x), a) = x {
+  let A = af_carrier(K);
+  let ops = af_operations(K);
+  let mul = af_mul(A, ops);
+  obtain (addLaws, assoc, comm, one, distribute) = field_ring_data(A, ops, af_laws(K));
+  exact trans(
+    comm(mul(b, x), a),
+    trans(sym(assoc(a, b, x)), trans(cong((fun (z : A) => mul(z, x)), inv), one(x)))
+  );
+}
+
+theorem pivot_corrected_head(
+  K : AlgebraicField, m : Nat, n : Nat,
+  f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K),
+  inv : af_mul(
+    af_carrier(K), af_operations(K),
+    finite_head(
+      af_carrier(K), n,
+      linear_map(
+        K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f, coordinate_first(K, m)
+      )
+    ), b
+  ) = af_one(af_carrier(K), af_operations(K)), v : Fin(m) -> af_carrier(K)
+) :
+  finite_head(
+    af_carrier(K), n,
+    linear_map(
+      K, CoordinateSpace(K, m), CoordinateSpace(K, succ(n)), pivot_corrected(K, m, n, f, b), v
+    )
+  ) = af_zero(af_carrier(K), af_operations(K)) {
+  let A = af_carrier(K);
+  let ops = af_operations(K);
+  let F = linear_map(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f);
+  let a = finite_head(A, n, F(coordinate_first(K, m)));
+  let x = finite_head(A, n, F(coordinate_insert(K, m, v)));
+  exact trans(
+    cong(
+      (fun (z : A) => af_add(A, ops, x, af_neg(A, ops, z))), scalar_pivot_cancel(K, a, b, inv, x)
+    ), group_inverse_right(FieldAdditiveGroup(K), x)
+  );
+}
+
+theorem pivot_reduced_kernel(
+  K : AlgebraicField, m : Nat, n : Nat,
+  f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
+  injective : Injective(
+    vector_carrier(K, CoordinateSpace(K, succ(m))), vector_carrier(K, CoordinateSpace(K, succ(n))),
+    linear_map(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f)
+  ), b : af_carrier(K),
+  inv : af_mul(
+    af_carrier(K), af_operations(K),
+    finite_head(
+      af_carrier(K), n,
+      linear_map(
+        K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f, coordinate_first(K, m)
+      )
+    ), b
+  ) = af_one(af_carrier(K), af_operations(K)), v : Fin(m) -> af_carrier(K),
+  vanishes : linear_map(
+    K, CoordinateSpace(K, m), CoordinateSpace(K, n), pivot_reduced(K, m, n, f, b), v
+  ) = vector_zero(K, CoordinateSpace(K, n))
+) :
+  v = vector_zero(K, CoordinateSpace(K, m)) {
+  let A = af_carrier(K);
+  let S = CoordinateSpace(K, succ(m));
+  let T = CoordinateSpace(K, succ(n));
+  let F = linear_map(K, S, T, f);
+  let c = linear_map(K, CoordinateSpace(K, m), ScalarSpace(K), pivot_coefficient(K, m, n, f, b), v);
+  let u = F(coordinate_first(K, m));
+  let h = F(coordinate_insert(K, m, v));
+  let cu = vector_scale(K, T, c, u);
+  have corrected_zero : vector_add(K, T, h, vector_neg(K, T, cu)) = vector_zero(K, T) {
+    exact finite_function_ext(
+      A, n, vector_add(K, T, h, vector_neg(K, T, cu)), vector_zero(K, T),
+      pivot_corrected_head(K, m, n, f, b, inv, v), vanishes
+    );
+  }
+  have image_equal : h = cu {
+    exact group_cancel_right(
+      vector_group(K, T), h, cu, vector_neg(K, T, cu),
+      trans(corrected_zero, sym(group_inverse_right(vector_group(K, T), cu)))
+    );
+  }
+  have source_equal : coordinate_insert(K, m, v) = vector_scale(K, S, c, coordinate_first(K, m)) {
+    exact injective(
+      coordinate_insert(K, m, v), vector_scale(K, S, c, coordinate_first(K, m)),
+      trans(image_equal, sym(linear_scale(K, S, T, f, c, coordinate_first(K, m))))
+    );
+  }
+  // Every tail coordinate of a multiple of the first coordinate vector is zero.
+  exact trans(
+    cong(finite_tail(A, m), source_equal),
+    FunExt(
+      U0, Fin(m), (fun (i : Fin(m)) => A),
+      finite_tail(A, m, vector_scale(K, S, c, coordinate_first(K, m))),
+      vector_zero(K, CoordinateSpace(K, m)),
+      (fun (i : Fin(m)) => vector_scale_zero(K, ScalarSpace(K), c))
+    )
+  );
+}
+
+theorem pivot_reduced_injective(
+  K : AlgebraicField, m : Nat, n : Nat,
+  f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
+  injective : Injective(
+    vector_carrier(K, CoordinateSpace(K, succ(m))), vector_carrier(K, CoordinateSpace(K, succ(n))),
+    linear_map(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f)
+  ), b : af_carrier(K),
+  inv : af_mul(
+    af_carrier(K), af_operations(K),
+    finite_head(
+      af_carrier(K), n,
+      linear_map(
+        K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f, coordinate_first(K, m)
+      )
+    ), b
+  ) = af_one(af_carrier(K), af_operations(K))
+) :
+  Injective(
+    vector_carrier(K, CoordinateSpace(K, m)), vector_carrier(K, CoordinateSpace(K, n)),
+    linear_map(K, CoordinateSpace(K, m), CoordinateSpace(K, n), pivot_reduced(K, m, n, f, b))
+  ) {
+  exact linear_kernel_injective(
+    K, CoordinateSpace(K, m), CoordinateSpace(K, n), pivot_reduced(K, m, n, f, b),
+    pivot_reduced_kernel(K, m, n, f, injective, b, inv)
+  );
+}

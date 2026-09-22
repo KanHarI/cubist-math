@@ -6,7 +6,34 @@ kernel and `.cubist` sources. The old Id/J engine, its proof exporters and
 its reference-comparison commands are retired; older checkpoints describe
 historical validation, not the current development workflow.
 
-## Current increment: the general basis theorem
+## Current increment: finite dimension and extension degree
+
+All three requested milestones now check: finite dimension invariance,
+basis-independent extension degree, and the finite tower law. See
+[the proof guide](finite-dimension.md) for statements and the elimination proof.
+
+The new modules are `linear_constructions`, `function_linear_isos`,
+`scalar_restriction`, `coordinate_splitting`, `coordinate_elimination`,
+`finite_dimension`, `dimension`, and `extension_degree`. The headline results
+are `finite_dimension_invariance`, `extension_degree_unique`,
+`finite_extension_tower`, and `tower_law`. The product basis is constructed
+from actual coordinate isomorphisms. The tower triangle transports along an
+equality of embeddings, and `extension_degree_iso` uses univalent equality
+of complete extensions. No new axioms or kernel changes were needed.
+
+Dimension invariance uses LEM(U0) to select a nonzero coordinate of a finite
+vector; no choice is used. `FiniteDimensional(K,V)` is a proposition proved
+from uniqueness of the natural number and truncated basis evidence.
+`extension_degree` needs this finiteness evidence and is independent of it.
+Infinite extensions are not assigned zero. The identity extension has degree
+one, and zero degree is ruled out.
+
+This increment proves the finite tower formula given finite lower and upper
+steps, not yet the converse criterion deriving both from finite M/K.
+Finite-coordinate/subset-basis comparison and finite spanning-family reduction
+also remain open.
+
+## Previous increment: the general basis theorem
 
 Checked modules added:
 
@@ -146,7 +173,7 @@ Useful modules: `galois_paths`, `galois_orders`, `f4_galois_correspondence`,
 See [the development guide](galois.md) for the earlier constructions.
 
 The general fundamental theorem of Galois theory is **not proved**. Completion
-of finite linear algebra and extension degree, polynomial theory, algebraic extensions,
+of finite spanning/exchange interfaces, polynomial theory, algebraic extensions,
 separability, normal field extensions, and Artin's fixed-field theorem remain.
 Algebraic closures and the infinite correspondence with Krull topology are
 separate later stages. `AlgebraicField` is the unordered field interface; its
@@ -158,8 +185,10 @@ name does not assert that an extension is algebraic.
    subsets; continue finite exchange and reindexing. The
    [general basis theorem](basis-theorem.md) is now checked using a
    choice-derived maximality theorem.
-2. Prove finite dimension invariance and the extension-degree tower law.
-   Do not treat `ExtensionDegreeWitness` as a proved numeric degree function.
+2. Extend the proved dimension/degree interface with finite spanning-family
+   reduction, finite subspace bases, and the converse tower finiteness
+   criterion. `ExtensionDegreeWitness` retains coordinates;
+   `extension_degree` is now the proved numeric invariant.
 3. Generalize structure identity to larger bundled groups when needed for
    quotient isomorphisms as paths of structures; coherent roundtrips matter.
 4. Continue polynomial theory, algebraic/separable/normal extensions, and
@@ -243,7 +272,7 @@ actual U1-indexed family (`I = U0`), and confirm no Choice/LEM assumptions in
 the new results. Inspector and statement browser regressions pass, including
 `finite_combinations.linear_combination_scale` and workbench navigation.
 
-Current validation after basis existence (2026-09-22): **269 tests passed**,
+Previous validation after basis existence (2026-09-22): **269 tests passed**,
 including the complete corpus. The focused `vector_basis_existence` benchmark
 checks **676 declarations** and 35 templates, with no failures, blocked
 entries, or entries above 100ms. Browser regression verifies the new basis
@@ -253,11 +282,20 @@ an equality in an annotated type from an assignment and inserts a blank line
 between top-level declarations. Existing sources were reformatted with
 expanded-AST preservation checks; Linear Algebra has its own browsing topic.
 
+Current validation after degree/tower development (2026-09-22): **273 tests
+passed**, including the whole corpus. The focused `extension_degree`
+benchmark checks **747 declarations** and **35 templates**, with no failures,
+blocked entries, or entries above 100ms. All new modules are registered in
+the proof selector and bundled-source registry. The negative regressions
+reject selecting a basis from truncation and forgetting linearity or a tower
+triangle. The browser regression checks the new dimension and tower-law
+pages, and all 272 sources pass the formatter check.
+
 Current focused commands:
 
 ```sh
-npm test -- tests/linear-algebra.test.mjs tests/cubical-context.test.mjs tests/cubical-statement.test.mjs
-node tools/benchmark-cubical.mjs vector_basis_existence --limit-ms=100
+npm test -- tests/dimension.test.mjs tests/linear-algebra.test.mjs
+node tools/benchmark-cubical.mjs extension_degree --limit-ms=100
 node tests/statement.browser.mjs
 node tests/cubical-specialization.browser.mjs
 ```

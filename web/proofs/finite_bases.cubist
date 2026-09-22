@@ -181,8 +181,8 @@ theorem basis_carrier_path(
   exact linear_iso_carrier_path(K, CoordinateSpace(K, n), V, basis);
 }
 
-// Degree witnesses retain their basis. Dimension invariance and the tower
-// law are subsequent theorems, not built into this definition.
+// Degree witnesses retain their basis. The module extension_degree proves
+// that their size is unique and defines the basis-independent numeric degree.
 def ExtensionDegreeWitness(K : AlgebraicField, E : FieldExt(K), n : Nat) =
   FiniteBasis(K, ExtensionVectorSpace(K, E), n);
 

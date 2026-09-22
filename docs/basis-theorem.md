@@ -145,10 +145,11 @@ not in B, so this contradicts maximality. Therefore B spans V and is a basis.
 ## Remaining linear algebra for Galois theory
 
 1. Connect explicit finite coordinate bases to enumerated independent subsets.
-2. Develop finite exchange and dimension invariance, including reindexing and
-   elimination of repeated generators where useful.
-3. Define extension degree with its finiteness hypotheses and prove the
-   degree tower law.
+2. Continue finite exchange, spanning-family reduction, and elimination of
+   repeated generators where useful.
+3. The independent [dimension and degree development](finite-dimension.md)
+   now proves finite dimension invariance, the unique extension degree, and
+   the finite tower formula. Derive the converse finiteness criterion next.
 4. Optionally generalize maximality to the upper-bound-only form of Zorn,
    and prove that any prescribed independent subset extends to a basis.
 

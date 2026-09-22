@@ -59,6 +59,16 @@ try {
   await page.goto(`${base}/proof.html?proof=vector_spaces&name=vector_scale_add_vectors`);
   await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "vector_scale_add_vectors");
   await page.screenshot({ path: "/tmp/cubist-vector-spaces-formatted.png" });
+  await page.goto(`${base}/proof.html?proof=finite_dimension&name=finite_dimension_invariance`);
+  await page.waitForFunction(() => document.querySelector("#inspect-type").textContent === "m = n");
+  assert.equal(await page.locator("#diagnostic").isVisible(), false);
+  assert.doesNotMatch(await page.locator("#kernel-axioms").textContent(), /Choice/);
+  await page.goto(`${base}/proof.html?proof=extension_degree&name=tower_law`);
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "tower_law");
+  assert.match(await page.locator("#inspect-type").textContent(), /extension_degree.*multiply_count/);
+  assert.equal(await page.locator("#diagnostic").isVisible(), false);
+  assert.doesNotMatch(await page.locator("#kernel-axioms").textContent(), /Choice/);
+  await page.screenshot({ path: "/tmp/cubist-tower-law.png" });
   assert.deepEqual(errors, []);
-  console.log("PASS source statements: conclusion, named hypotheses, binder navigation, mobile, S3, finite and general bases");
+  console.log("PASS source statements: conclusion, named hypotheses, binder navigation, mobile, S3, finite and general bases, dimension and tower law");
 } finally { await browser?.close(); server.kill(); }
