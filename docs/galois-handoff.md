@@ -1,10 +1,41 @@
 # Galois development: resumption checkpoint
 
-Updated 2026-09-22. Continue from this file and the
+Updated 2026-09-23. Continue from this file and the
 [full roadmap](galois-roadmap.md). All canonical proofs now use the cubical C
 kernel and `.cubist` sources. The old Id/J engine, its proof exporters and
 its reference-comparison commands are retired; older checkpoints describe
 historical validation, not the current development workflow.
+
+## Paused checkpoint: 2026-09-23
+
+Galois development is paused at the user's request. No further mathematics is
+part of the repository-maintenance task. The checked results and performance
+follow-up below are the resumption baseline; older increment sections are
+historical and may list work that has since been completed.
+
+Remaining finite milestones, in suggested dependency order:
+
+1. Prove linear independence of distinct field homomorphisms and Artin's
+   fixed-field theorem: for a finite automorphism group H, [L:L^H] = |H|,
+   with all automorphisms fixing L^H classified by H.
+2. Complete derivative/repeated-root criteria and the polynomial
+   characterization of normality. Develop finite splitting-target embedding
+   extension/counting, so the finite route needs no constructed algebraic closure.
+3. Connect finite normal separable extensions with their splitting-field and
+   automorphism-count characterizations.
+4. Prove the general subgroup/intermediate-field correspondence, its inverse
+   bundle equalities, order reversal, joins/meets, and degree/index formulas.
+5. Prove the normal-subgroup criterion and restriction quotient isomorphism,
+   reusing the checked quotient universal property and first isomorphism theorem.
+6. Supply Lang's distinguished-class instances for finite and finite separable
+   extensions, including compositum base change.
+7. Validate a proper intermediate-field example, negative statements, exact
+   assumptions, and the full corpus. Reuse univalence and the existing
+   automorphism/loop interpretation where applicable.
+
+The general finite fundamental theorem is not yet proved. Infinite extensions,
+algebraic-closure existence, and infinite Galois theory remain out of scope.
+No new axioms or mathematical kernel rules are planned.
 
 ## Scope decision: finite theory first
 

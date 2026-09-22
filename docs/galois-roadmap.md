@@ -1,6 +1,7 @@
 # Requirements for a full Galois theory development
 
-Status: finite algebraic-extension development on main (2026-09-22).
+Status: finite algebraic-extension development on main; paused at the user's request (2026-09-23).
+See the resumption checkpoint for the remaining finite milestones.
 Start with the [resumption checkpoint](galois-handoff.md) for validation and
 [polynomial algebra](polynomial-algebra.md) for the new checked statements.
 Finite basis extraction, finite subspace bases, both directions of tower
