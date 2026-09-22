@@ -1,6 +1,27 @@
 // Workbench transformations propose syntax; only the C checker accepts it.
 import { substituteTerm, substituteDimension } from "./dist/cubical-runtime/core.mjs";
 
+// Simplify administrative lambda applications in displayed types. Do not
+// unfold definitions or evaluate recursors (which may encode huge numerals).
+// This only proposes syntax; callers must check it before displaying it.
+export function simplifyTypeApplications(term, budget = 10000) {
+  const memo = new WeakMap();
+  const visit = value => {
+    if (!value || typeof value !== "object") return value;
+    if (memo.has(value)) return memo.get(value);
+    if (--budget < 0) throw new Error("Display simplification budget");
+    let changed = false;
+    const child = value => { const result = visit(value); if (result !== value) changed = true; return result; };
+    let result = Array.isArray(value) ? value.map(child)
+      : Object.fromEntries(Object.entries(value).map(([key, value]) => [key, child(value)]));
+    if (!changed) result = value;
+    if (result.tag === "App" && result.fn.tag === "Lam")
+      result = visit(substituteTerm(result.fn.body, result.fn.name, result.arg));
+    memo.set(value, result); return result;
+  };
+  try { return visit(term); } catch { return term; }
+}
+
 export function reductionRule(term, kind) {
   if (kind === "delta" && term?.tag === "DefRef") return { rule: "δ", name: term.name };
   if (kind !== "beta") return null;

@@ -6,11 +6,43 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import { foldedInspection } from "../web/cubical-inspection.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
+import { simplifyTypeApplications } from "../web/cubical-reduction.mjs";
 
 const module = await createCubical();
 const readSource = name => readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
 const variable = name => ({ tag: "Var", name });
 const nat = { tag: "Nat" };
+
+test("inferred induction statements simplify the motive and retain source binder names", async t => {
+  const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
+  assert.equal((await program.check(await readSource("finite_combinations"), "finite_combinations")).complete, true);
+  const view = program.inspect("finite_combinations__linear_combination_scale");
+  assert.equal(view.statement.inferred, true);
+  assert.deepEqual(view.statement.parameters.map(p => p.name[0].text), ["K", "V", "a", "n", "v", "b"]);
+  assert.doesNotMatch(view.typeText, /b\d+|λ k/);
+  assert.match(view.typeText, /λ \(i : Fin\(n\)\)/);
+  assert.equal(view.type.body.body.body.body.tag, "App"); // raw motive application remains available
+  assert.equal(view.folded.type.body.body.body.body.tag, "Pi");
+  const k = Object.values(view.symbols).find(symbol => symbol.local && symbol.name === "k");
+  assert.ok(k);
+  let conclusion = view.folded.type;
+  while (conclusion.tag === "Pi") conclusion = conclusion.body;
+  const tree = cubicalMathTree(conclusion, view.symbols);
+  assert.equal(tree.left.args.at(-1).kind, "Lambda");
+  assert.equal(tree.left.args.at(-1).name, "i");
+  assert.equal(tree.left.args.at(-1).domain.fn.name, "Fin");
+});
+
+test("type simplification avoids capture, preserves definitions, and has a budget", () => {
+  const term = { tag: "App", fn: { tag: "Lam", name: "x", domain: nat,
+    body: { tag: "Lam", name: "y", domain: nat, body: variable("x") } }, arg: variable("y") };
+  const result = simplifyTypeApplications(term);
+  assert.equal(result.tag, "Lam");
+  assert.notEqual(result.name, "y");
+  assert.equal(result.body.name, "y");
+  assert.deepEqual(simplifyTypeApplications({ tag: "DefRef", name: "Named" }), { tag: "DefRef", name: "Named" });
+  assert.equal(simplifyTypeApplications(term, 0), term);
+});
 
 test("Euclid locals retain checked syntax, source aliases, and navigable assumptions", async t => {
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());

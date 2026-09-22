@@ -41,6 +41,15 @@ try {
   await page.waitForFunction(() => document.querySelector("#inspect-type").textContent === "FiniteBasis(K, ScalarSpace(K), 1)");
   assert.equal(await page.locator("#diagnostic").isVisible(), false);
   assert.equal(await page.locator("#kernel-axioms").isVisible(), false);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`${base}/proof.html?proof=finite_combinations&name=linear_combination_scale`);
+  await page.waitForFunction(() => document.querySelector("#inspect-parameters-label").textContent === "Parameters and hypotheses (6)");
+  assert.doesNotMatch(await page.locator("#inspect-type").textContent(), /b\d+|AlgebraicField|λ k/);
+  assert.match(await page.locator("#inspect-type").textContent(), /linear_combination/);
+  assert.doesNotMatch(await page.locator("#kernel-type").textContent(), /b\d+/);
+  assert.match(await page.locator("#kernel-type").textContent(), /λ.*i/);
+  await page.screenshot({ path: "/tmp/cubist-linear-scale-inspector.png" });
+  assert.equal(await page.locator("#diagnostic").isVisible(), false);
   assert.deepEqual(errors, []);
   console.log("PASS source statements: conclusion, named hypotheses, binder navigation, mobile, S3 and finite basis");
 } finally { await browser?.close(); server.kill(); }

@@ -649,7 +649,10 @@ function renderStatement(view) {
   $("inspect-parameters-list").replaceChildren();
   for (const parameter of parameters) {
     const row = document.createElement("div"); row.className = "statement-parameter";
-    append(row, parameter.name); row.append(document.createTextNode(" : ")); append(row, parameter.type);
+    const name = document.createElement("span"), type = document.createElement("span");
+    append(name, parameter.name);
+    append(type, parameter.type);
+    row.append(name, " : ", type);
     $("inspect-parameters-list").append(row);
   }
 }
@@ -704,7 +707,7 @@ function renderCubicalKernel(view) {
   $("kernel-view").disabled = false;
   $("kernel-view").querySelector('[value="expanded"]').hidden = false;
   $("kernel-view-note").textContent = folded
-    ? "Checked cubical terms with source names. Local names abbreviate their checked expressions; typed identity wrappers are hidden. Select stored notation or raw syntax to inspect every constructor."
+    ? "Checked cubical terms with source names. Type applications are simplified and local names abbreviate their checked expressions. Select stored notation or raw syntax to inspect every constructor."
     : raw ? "Raw checked syntax, including annotations and internal names."
     : "Stored checked syntax in mathematical notation, with source labels for bound variables.";
   $("kernel-inference").textContent = `Cubical C · ${open ? "Open judgement" : "Closed judgement"}`;

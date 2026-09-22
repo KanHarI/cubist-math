@@ -1,0 +1,140 @@
+import independent_unions;
+
+// Independence is a property, not extra structure. Pointwise paths between
+// its proofs come from the scalar field being a set.
+theorem independence_is_prop(
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
+  p : LinearlyIndependent(K, V, P), q : LinearlyIndependent(K, V, P)
+) : p = q {
+  exact path(
+    (fun (t : Interval) => LinearlyIndependent(K, V, P)),
+    (
+      fun (t : Interval) => fun (n : Nat) => fun (vectors : Fin(n) -> vector_carrier(K, V)) => fun (
+        distinct : (forall i : Fin(n), forall j : Fin(n), vectors(i) = vectors(j) -> i = j)
+      ) => fun (members : (forall i : Fin(n), P(vectors(i)))) => fun (
+        coefficients : Fin(n) -> af_carrier(K)
+      ) => fun (vanishes : linear_combination(K, V, n, vectors, coefficients) = vector_zero(K, V)) => fun (
+        i : Fin(n)
+      ) => at(
+        af_set(
+          K, coefficients(i), af_zero(af_carrier(K), af_operations(K)),
+          p(n, vectors, distinct, members, coefficients, vanishes, i),
+          q(n, vectors, distinct, members, coefficients, vanishes, i)
+        ), t
+      )
+    )
+  );
+}
+theorem independent_evidence_prop(
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0
+) : Proposition(
+  (forall x : vector_carrier(K, V), Proposition(P(x))) and LinearlyIndependent(K, V, P)
+) {
+  exact product_prop(
+    (forall x : vector_carrier(K, V), Proposition(P(x))), LinearlyIndependent(K, V, P),
+    forall_prop(
+      vector_carrier(K, V), (fun (x : vector_carrier(K, V)) => Proposition(P(x))),
+      (fun (x : vector_carrier(K, V)) => is_prop_prop(P(x)))
+    ), independence_is_prop(K, V, P)
+  );
+}
+def independent_prop(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) : forall x : vector_carrier(
+  K, V
+), Proposition(independent_members(K, V, S, x)) {
+  obtain (prop, law) = independent_evidence(K, V, S);
+  exact prop;
+}
+theorem independent_ext(
+  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V), T : IndependentSubset(K, V),
+  same : independent_members(K, V, S) = independent_members(K, V, T)
+) : S =[IndependentSubset(K, V)] T {
+  exact field_subtype_ext(
+    (vector_carrier(K, V) -> U0),
+    (
+      fun (P : vector_carrier(K, V) -> U0) => typed(
+        U1, (forall x : vector_carrier(K, V), Proposition(P(x))) and LinearlyIndependent(K, V, P)
+      )
+    ), independent_evidence_prop(K, V), S, T, same
+  );
+}
+def IndependentIncluded(
+  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V), T : IndependentSubset(K, V)
+) =
+  PredicateIncluded(
+    vector_carrier(K, V), independent_members(K, V, S), independent_members(K, V, T)
+  );
+theorem independent_inclusion_prop(
+  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V), T : IndependentSubset(K, V)
+) : Proposition(IndependentIncluded(K, V, S, T)) {
+  exact forall_prop(
+    vector_carrier(K, V),
+    (
+      fun (x : vector_carrier(K, V)) => independent_members(K, V, S, x)
+      -> independent_members(K, V, T, x)
+    ),
+    (
+      fun (x : vector_carrier(K, V)) => forall_prop(
+        independent_members(K, V, S, x),
+        (fun (member : independent_members(K, V, S, x)) => independent_members(K, V, T, x)),
+        (fun (member : independent_members(K, V, S, x)) => independent_prop(K, V, T, x))
+      )
+    )
+  );
+}
+theorem independent_inclusion_refl(
+  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)
+) : IndependentIncluded(K, V, S, S) {
+  intro x;
+  intro member;
+  exact member;
+}
+theorem independent_inclusion_trans(
+  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V), T : IndependentSubset(K, V),
+  R : IndependentSubset(K, V), st : IndependentIncluded(K, V, S, T),
+  tr : IndependentIncluded(K, V, T, R)
+) : IndependentIncluded(K, V, S, R) {
+  intro x;
+  intro member;
+  exact tr(x, st(x, member));
+}
+// Univalence identifies mutually included predicates; proof irrelevance then
+// identifies the complete independent-subset records, including their laws.
+theorem independent_inclusion_antisymmetric(
+  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V), T : IndependentSubset(K, V),
+  st : IndependentIncluded(K, V, S, T), ts : IndependentIncluded(K, V, T, S)
+) : S =[IndependentSubset(K, V)] T {
+  exact independent_ext(
+    K, V, S, T,
+    field_predicate_ext(
+      vector_carrier(K, V), independent_members(K, V, S), independent_members(K, V, T),
+      independent_prop(K, V, S), independent_prop(K, V, T),
+      (
+        fun (x : vector_carrier(K, V)) => typed(
+          FieldIff(independent_members(K, V, S, x), independent_members(K, V, T, x)), (st(x), ts(x))
+        )
+      )
+    )
+  );
+}
+theorem independent_partial_order(K : AlgebraicField, V : VectorSpace(K)) : PartialOrderLaws(
+  IndependentSubset(K, V), IndependentIncluded(K, V)
+) {
+  exact (
+    (
+      independent_inclusion_prop(K, V), independent_inclusion_refl(K, V),
+      independent_inclusion_trans(K, V)
+    ), independent_inclusion_antisymmetric(K, V)
+  );
+}
+// The chain union is the least upper bound, not just some candidate bound.
+theorem independent_union_least(
+  K : AlgebraicField, V : VectorSpace(K), I : U1, family : I -> IndependentSubset(K, V),
+  chain : PredicateChain(
+    I, vector_carrier(K, V), (fun (i : I) => independent_members(K, V, family(i)))
+  ), T : IndependentSubset(K, V), upper : (forall i : I, IndependentIncluded(K, V, family(i), T))
+) : IndependentIncluded(K, V, IndependentUnion(K, V, I, family, chain), T) {
+  exact predicate_union_least(
+    I, vector_carrier(K, V), (fun (i : I) => independent_members(K, V, family(i))),
+    independent_members(K, V, T), independent_prop(K, V, T), upper
+  );
+}

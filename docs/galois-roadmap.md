@@ -279,8 +279,11 @@ These are not yet full structure-identity theorems for vector spaces.
 The requested general basis theorem has its own
 [development plan](basis-theorem.md). Zorn must be derived from `Choice(U)`,
 not added as an axiom. Its proof and general basis existence remain open.
-Span closure/finite character and independent-subset extension are the next
-linear-algebra lemmas. Finite dimension invariance and the degree tower law
+Span is now a checked least subspace, with univalent idempotence. Directed
+unions satisfy the finite-covering lemma, chain unions of independent subsets
+are independent, and these subsets form a partial order with chain least
+upper bounds. Independent-subset extension is still open, along with the
+choice-to-Zorn derivation. Finite dimension invariance and the degree tower law
 also remain open; the general basis theorem does not supply them automatically.
 
 The larger-group structure identity equivalence also remains useful future

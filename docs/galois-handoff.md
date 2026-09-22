@@ -1,12 +1,12 @@
 # Galois development: resumption checkpoint
 
-Updated 2026-09-21. Continue from this file and the
+Updated 2026-09-22. Continue from this file and the
 [full roadmap](galois-roadmap.md). All canonical proofs now use the cubical C
 kernel and `.cubist` sources. The old Id/J engine, its proof exporters and
 its reference-comparison commands are retired; older checkpoints describe
 historical validation, not the current development workflow.
 
-## Current increment: linear algebra begins
+## Current increment: spans and independent chain bounds
 
 Checked modules added:
 
@@ -19,10 +19,15 @@ Checked modules added:
 | `linear_maps` | Bundled linear maps, composition, extensionality, linear isomorphisms, coherent carrier equivalences and univalence |
 | `finite_bases` | Pointwise function spaces, K^n, explicit finite bases, coordinate roundtrips/uniqueness, one-element scalar basis, basis transport |
 | `linear_span` | Finite combinations, proposition-valued span, empty independence, exclusion of zero, and `VectorBasis` for arbitrary subset bases |
+| `finite_combinations` | Concatenation and scaling laws for finite combinations; scalar action preserves zero |
+| `vector_subspaces`, `span_subspace` | Span is the least subspace containing its generators; idempotence as a univalent predicate equality |
+| `predicate_chains` | U1-indexed unions, chain-to-directed conversion, and finite covers in directed unions |
+| `independent_unions`, `independent_order` | Independent chain unions, a univalent partial order of complete subset records, and chain least upper bounds |
 
 The permutation/group results, vector-space constructions and finite-basis
 results use no axioms. Span membership uses existing small propositional
-truncation. No choice or LEM was added to this increment.
+truncation; U1-indexed unions use the existing `Truncate(U1)` interface.
+No choice or LEM was added to this increment.
 
 The user specifically requests **general basis existence**, with **Zorn
 derived from the existing axiom of choice**, not a new Zorn axiom. See
@@ -34,7 +39,12 @@ been related to the independent-subset basis interface.
 Alongside the mathematics, the inspector now separates axioms from local
 context, including in the workbench. Annotated declarations show their
 source conclusion first, with named parameters and hypotheses expandable;
-the precise elaborated type remains in kernel details.
+the precise elaborated type remains in kernel details. Inferred declarations
+also separate their conclusion from the parameter telescope. Displayed types
+beta-reduce administrative motive applications, checked again by C, without
+unfolding named definitions. Induction binders retain their source names,
+lambda text includes the domain, and summaries wrap in the narrow panel.
+Stored/raw views preserve the original type syntax.
 
 ## Previous increment: quotient universal property
 
@@ -138,9 +148,10 @@ name does not assert that an extension is algebraic.
 
 ## Next work
 
-1. Continue [the general basis development](basis-theorem.md): finite
-   combination laws, span closure and finite character, independent-set
-   extension, chain unions, and Zorn derived from choice. Keep all classical
+1. Continue [the general basis development](basis-theorem.md): reindexing
+   and elimination of repeated vectors, independent-set
+   extension, and Zorn derived from choice. Chain bounds and their partial
+   order are now checked. Keep all classical
    and universe assumptions explicit.
 2. Prove finite dimension invariance and the extension-degree tower law.
    Do not treat `ExtensionDegreeWitness` as a proved numeric degree function.
@@ -208,7 +219,7 @@ Inlining propositional induction into homomorphism extensionality caused
 expensive conversion of the nested quotient. The epimorphism proof checks
 under the 1,000,000-step diagnostic budget without new conversion hints.
 
-Current focused benchmark: **662 checked declarations**, 35 templates,
+Previous checkpoint benchmark: **662 checked declarations**, 35 templates,
 no slow/failed/blocked entries at a 100ms limit for `linear_span` and
 `non_normal_subgroup`. Regression checks include actual cubical computation
 of transport along the one-dimensional coordinate equivalence, rejection of
@@ -219,11 +230,19 @@ including **2,641 checked corpus declarations and 44 templates**, with no
 failed, blocked, or over-budget entries at the regression deadline. Landing,
 statement, and universe-specialization browser regressions pass.
 
+Current validation (2026-09-22): **265 tests passed**, including the complete
+canonical corpus. The focused `span_subspace independent_order` benchmark
+checks **579 declarations**, with 35 templates and no slow, failed, or blocked
+entries at a 100ms limit. Regression examples exercise empty chains and an
+actual U1-indexed family (`I = U0`), and confirm no Choice/LEM assumptions in
+the new results. Inspector and statement browser regressions pass, including
+`finite_combinations.linear_combination_scale` and workbench navigation.
+
 Current focused commands:
 
 ```sh
 npm test -- tests/linear-algebra.test.mjs tests/cubical-context.test.mjs tests/cubical-statement.test.mjs
-node tools/benchmark-cubical.mjs linear_span non_normal_subgroup --limit-ms=100
+node tools/benchmark-cubical.mjs span_subspace independent_order --limit-ms=100
 node tests/statement.browser.mjs
 node tests/cubical-specialization.browser.mjs
 ```

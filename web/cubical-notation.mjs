@@ -103,18 +103,28 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
   return visit(term);
 }
 
-export function cubicalText(term, symbols = {}) {
+// Text fragments wrap naturally in narrow statement panels while keeping each
+// reference attached to its checked binding (not a lookup by printed spelling).
+export function cubicalTextParts(tree) {
+  const literal = text => [{ text }];
+  const join = (parts, separator) => parts.flatMap((part, index) => index ? [...literal(separator), ...part] : part);
   const show = t => {
-    if (t.kind === "Name") return t.name;
-    if (t.kind === "Number") return String(t.value);
-    if (t.kind === "Universe") return `U${t.level}`;
-    if (t.kind === "Call") return `${show(t.fn)}(${t.args.map(show).join(", ")})`;
-    if (t.kind === "Lambda") return `λ ${t.name}. ${show(t.body)}`;
-    if (["Pi", "Sigma"].includes(t.kind)) return `${t.kind === "Pi" ? "Π" : "Σ"} (${t.name} : ${show(t.domain)}), ${show(t.body)}`;
-    if (t.kind === "Identity") return `(${show(t.left)} =[${show(t.carrier)}] ${show(t.right)})`;
-    if (["Arrow", "Product"].includes(t.kind)) return `(${show(t.left)} ${t.kind === "Arrow" ? "→" : "×"} ${show(t.right)})`;
-    if (t.kind === "Scope") return `[${t.names.join(", ")}]. ${show(t.body)}`;
-    return `(${show(t.left)} ${t.kind === "Sum" ? "+" : ","} ${show(t.right)})`;
+    if (t.kind === "Name") return [{ text: t.name, binding: t.contextBinding ?? t.binding }];
+    if (t.kind === "Number") return literal(String(t.value));
+    if (t.kind === "Universe") return literal(`U${t.level}`);
+    if (t.kind === "Call") return [...(t.fn.kind === "Lambda" ? [...literal("("), ...show(t.fn), ...literal(")")] : show(t.fn)),
+      ...literal("("), ...join(t.args.map(show), ", "), ...literal(")")];
+    if (t.kind === "Lambda") return [...literal(`λ ${t.domain ? "(" : ""}${t.name}`),
+      ...(t.domain ? [...literal(" : "), ...show(t.domain), ...literal(")")] : []), ...literal(". "), ...show(t.body)];
+    if (["Pi", "Sigma"].includes(t.kind)) return [...literal(`${t.kind === "Pi" ? "Π" : "Σ"} (${t.name} : `), ...show(t.domain), ...literal("), "), ...show(t.body)];
+    if (t.kind === "Identity") return [...literal("("), ...show(t.left), ...literal(" =["), ...show(t.carrier), ...literal("] "), ...show(t.right), ...literal(")")];
+    if (t.kind === "Scope") return [...literal(`[${t.names.join(", ")}]. `), ...show(t.body)];
+    const operator = { Arrow: "→", Product: "×", Sum: "+", Pair: "," }[t.kind];
+    return [...literal("("), ...show(t.left), ...literal(` ${operator} `), ...show(t.right), ...literal(")")];
   };
-  return show(cubicalMathTree(term, symbols));
+  return show(tree);
+}
+
+export function cubicalText(term, symbols = {}) {
+  return cubicalTextParts(cubicalMathTree(term, symbols)).map(part => part.text).join("");
 }

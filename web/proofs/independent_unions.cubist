@@ -1,0 +1,110 @@
+import predicate_chains;
+
+// A finite dependence in a directed union already occurs in one independent
+// member. All eliminations target coefficient equalities, which are propositions.
+// No representative, choice function, or inhabitant of an empty chain is needed.
+theorem directed_union_independent(
+  K : AlgebraicField, V : VectorSpace(K), I : U1, P : I -> vector_carrier(K, V) -> U0,
+  directed : PredicateDirected(I, vector_carrier(K, V), P),
+  independent : (forall j : I, LinearlyIndependent(K, V, P(j)))
+) : LinearlyIndependent(K, V, PredicateUnion(I, vector_carrier(K, V), P)) {
+  intro n;
+  intro vectors;
+  intro distinct;
+  intro members;
+  intro coefficients;
+  intro vanishes;
+  intro i;
+  let A = vector_carrier(K, V);
+  let zero = af_zero(af_carrier(K), af_operations(K));
+  let Goal = coefficients(i) = zero;
+  let prop = af_set(K, coefficients(i), zero);
+  have fromSeed : (exists j : I, P(j, vectors(i))) -> Goal {
+    intro seedWitness;
+    obtain (seed, member) = seedWitness;
+    have fromCover : FiniteFamilyCover(I, A, P, n, vectors) -> Goal {
+      intro witness;
+      obtain (j, allMembers) = witness;
+      exact independent(j, n, vectors, distinct, allMembers, coefficients, vanishes, i);
+    }
+    exact field_exists_elim(
+      FiniteFamilyCover(I, A, P, n, vectors), Goal, prop, fromCover,
+      finite_directed_union_cover(I, A, P, directed, seed, n, vectors, members)
+    );
+  }
+  exact field_exists_elim((exists j : I, P(j, vectors(i))), Goal, prop, fromSeed, members(i));
+}
+theorem chain_union_independent(
+  K : AlgebraicField, V : VectorSpace(K), I : U1, P : I -> vector_carrier(K, V) -> U0,
+  chain : PredicateChain(I, vector_carrier(K, V), P),
+  independent : (forall j : I, LinearlyIndependent(K, V, P(j)))
+) : LinearlyIndependent(K, V, PredicateUnion(I, vector_carrier(K, V), P)) {
+  exact directed_union_independent(
+    K, V, I, P, predicate_chain_directed(I, vector_carrier(K, V), P, chain), independent
+  );
+}
+
+// The actual candidates for Zorn form a type in U1: a small membership
+// predicate together with its proposition and independence evidence.
+def IndependentSubset(K : AlgebraicField, V : VectorSpace(K)) =
+  exists P : vector_carrier(K, V) -> U0, (forall x : vector_carrier(K, V), Proposition(P(x)))
+  and LinearlyIndependent(K, V, P);
+def independent_members(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) =
+  unpack S as (P, evidence) return (vector_carrier(K, V) -> U0) {
+    P;
+  };
+def independent_evidence(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) : (
+  forall x : vector_carrier(K, V), Proposition(independent_members(K, V, S, x))
+) and LinearlyIndependent(K, V, independent_members(K, V, S)) {
+  exact field_second(
+    (vector_carrier(K, V) -> U0),
+    (
+      fun (P : vector_carrier(K, V) -> U0) => typed(
+        U1, (forall x : vector_carrier(K, V), Proposition(P(x))) and LinearlyIndependent(K, V, P)
+      )
+    ), S
+  );
+}
+def independent_law(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) : LinearlyIndependent(
+  K, V, independent_members(K, V, S)
+) {
+  obtain (prop, law) = independent_evidence(K, V, S);
+  exact law;
+}
+def EmptyIndependentSubset(K : AlgebraicField, V : VectorSpace(K)) =
+  typed(
+    IndependentSubset(K, V),
+    (
+      (fun (x : vector_carrier(K, V)) => Void),
+      (
+        fun (x : vector_carrier(K, V)) => fun (p : Void) => fun (q : Void) => typed(
+          (p = q), absurd(p)
+        )
+      ), empty_linearly_independent(K, V)
+    )
+  );
+def IndependentUnion(
+  K : AlgebraicField, V : VectorSpace(K), I : U1, family : I -> IndependentSubset(K, V),
+  chain : PredicateChain(
+    I, vector_carrier(K, V), (fun (i : I) => independent_members(K, V, family(i)))
+  )
+) : IndependentSubset(K, V) {
+  let P = fun (i : I) => independent_members(K, V, family(i));
+  exact (
+    PredicateUnion(I, vector_carrier(K, V), P), predicate_union_prop(I, vector_carrier(K, V), P),
+    chain_union_independent(K, V, I, P, chain, (fun (i : I) => independent_law(K, V, family(i))))
+  );
+}
+theorem independent_union_upper(
+  K : AlgebraicField, V : VectorSpace(K), I : U1, family : I -> IndependentSubset(K, V),
+  chain : PredicateChain(
+    I, vector_carrier(K, V), (fun (i : I) => independent_members(K, V, family(i)))
+  ), i : I
+) : PredicateIncluded(
+  vector_carrier(K, V), independent_members(K, V, family(i)),
+  independent_members(K, V, IndependentUnion(K, V, I, family, chain))
+) {
+  exact predicate_union_upper(
+    I, vector_carrier(K, V), (fun (j : I) => independent_members(K, V, family(j))), i
+  );
+}

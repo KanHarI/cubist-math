@@ -5,7 +5,8 @@ import { Translator } from "./dist/cubical-runtime/translate.mjs";
 import { parse } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
-import { cubicalText } from "./cubical-notation.mjs";
+import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
+import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 
 // Imports are source, loaded on demand. Every module has its own environment;
 // closed native definitions have qualified names so shadowing cannot retarget
@@ -336,13 +337,26 @@ export class CubicalProgram {
       view.specialization = { ...origin, binding, mentions };
     }
     view.sourceBinding = aliases.find(alias => alias.term === local?.term)?.binding;
-    view.folded = foldedInspection(view, aliases);
+    const simplifiedType = simplifyTypeApplications(view.type);
+    const presentation = simplifiedType === view.type ? view
+      : checkReduction(this, view, "type", simplifiedType).view;
+    view.folded = foldedInspection(presentation, aliases);
     view.expressionText = cubicalText(view.folded.expression, symbols);
     view.typeText = cubicalText(view.folded.type, symbols);
     if (info?.verified && !local) {
       const module = info.sourceModule ?? this.main;
       const declaration = this.sourceAsts.get(module)?.declarations.find(d => d.name.text === info.name);
       if (declaration) view.statement = sourceStatement(this.sources[module], declaration, this.declarationReferences.get(binding));
+      if (!view.statement) {
+        let conclusion = cubicalMathTree(view.folded.type, symbols), raw = view.folded.type;
+        const parameters = [];
+        while (conclusion.kind === "Pi") {
+          parameters.push({ name: [{ text: conclusion.name, binding: symbols[raw.name]?.binding }], type: cubicalTextParts(conclusion.domain) });
+          conclusion = conclusion.body;
+          raw = raw.body;
+        }
+        view.statement = { inferred: true, conclusion: cubicalTextParts(conclusion), parameters };
+      }
     }
     if (local && view.sourceBinding && local.term.tag !== "Var") view.folded.reference = {
       tag: "DisplayRef", name: this.localSymbols[binding]?.name, binding: view.sourceBinding,

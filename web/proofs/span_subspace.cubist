@@ -1,0 +1,108 @@
+import vector_subspaces;
+
+// Add the two finite witnesses before eliminating their truncations.
+theorem span_add_witnesses(
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
+  y : vector_carrier(K, V), hx : SpanWitness(K, V, P, x), hy : SpanWitness(K, V, P, y)
+) : Span(K, V, P, vector_add(K, V, x, y)) {
+  obtain (n, v, a, membersV, sumX) = hx;
+  obtain (m, w, b, membersW, sumY) = hy;
+  let vectors = fin_append(vector_carrier(K, V), n, m, v, w);
+  let coefficients = fin_append(af_carrier(K), n, m, a, b);
+  have sum : linear_combination(K, V, add_count(n, m), vectors, coefficients) = vector_add(
+    K, V, x, y
+  ) {
+    exact trans(
+      linear_combination_append(K, V, n, m, v, w, a, b),
+      trans(
+        cong(
+          (fun (z : vector_carrier(K, V)) => vector_add(K, V, z, linear_combination(K, V, m, w, b))),
+          sumX
+        ), cong(vector_add(K, V, x), sumY)
+      )
+    );
+  }
+  exact TruncateIntro(
+    U0, SpanWitness(K, V, P, vector_add(K, V, x, y)),
+    typed(
+      SpanWitness(K, V, P, vector_add(K, V, x, y)),
+      (
+        add_count(n, m), vectors, coefficients,
+        fin_append_members(vector_carrier(K, V), P, n, m, v, w, membersV, membersW), sum
+      )
+    )
+  );
+}
+theorem span_add(
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
+  y : vector_carrier(K, V), hx : Span(K, V, P, x), hy : Span(K, V, P, y)
+) : Span(K, V, P, vector_add(K, V, x, y)) {
+  exact TruncateElim(
+    U0, SpanWitness(K, V, P, x), Span(K, V, P, vector_add(K, V, x, y)),
+    span_prop(K, V, P, vector_add(K, V, x, y)),
+    (
+      fun (wx : SpanWitness(K, V, P, x)) => TruncateElim(
+        U0, SpanWitness(K, V, P, y), Span(K, V, P, vector_add(K, V, x, y)),
+        span_prop(K, V, P, vector_add(K, V, x, y)), span_add_witnesses(K, V, P, x, y, wx), hy
+      )
+    ), hx
+  );
+}
+theorem span_scale_witness(
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, a : af_carrier(K),
+  x : vector_carrier(K, V), witness : SpanWitness(K, V, P, x)
+) : Span(K, V, P, vector_scale(K, V, a, x)) {
+  obtain (n, vectors, coefficients, members, sum) = witness;
+  exact TruncateIntro(
+    U0, SpanWitness(K, V, P, vector_scale(K, V, a, x)),
+    typed(
+      SpanWitness(K, V, P, vector_scale(K, V, a, x)),
+      (
+        n, vectors,
+        (fun (i : Fin(n)) => af_mul(af_carrier(K), af_operations(K), a, coefficients(i))), members,
+        trans(
+          linear_combination_scale(K, V, a, n, vectors, coefficients),
+          cong(vector_scale(K, V, a), sum)
+        )
+      )
+    )
+  );
+}
+theorem span_scale(
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, a : af_carrier(K),
+  x : vector_carrier(K, V), member : Span(K, V, P, x)
+) : Span(K, V, P, vector_scale(K, V, a, x)) {
+  exact TruncateElim(
+    U0, SpanWitness(K, V, P, x), Span(K, V, P, vector_scale(K, V, a, x)),
+    span_prop(K, V, P, vector_scale(K, V, a, x)), span_scale_witness(K, V, P, a, x), member
+  );
+}
+
+// The linear span is itself a subspace; together with span_least this is
+// its universal property, with no choice of coefficients or representatives.
+def SpanSubspace(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) =
+  typed(
+    Subspace(K, V),
+    (Span(K, V, P), span_prop(K, V, P), span_zero(K, V, P), span_add(K, V, P), span_scale(K, V, P))
+  );
+theorem span_idempotent(
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
+) : FieldIff(Span(K, V, Span(K, V, P), x), Span(K, V, P, x)) {
+  exact (
+    (
+      fun (member : Span(K, V, Span(K, V, P), x)) => span_least(
+        K, V, Span(K, V, P), SpanSubspace(K, V, P),
+        (fun (y : vector_carrier(K, V)) => fun (hy : Span(K, V, P, y)) => hy), x, member
+      )
+    ), span_generator(K, V, Span(K, V, P), x)
+  );
+}
+// Univalence identifies the proposition-valued predicates themselves.
+theorem span_idempotent_path(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) : Span(
+  K, V, Span(K, V, P)
+) = Span(K, V, P) {
+  exact field_predicate_ext(
+    vector_carrier(K, V), Span(K, V, Span(K, V, P)), Span(K, V, P), span_prop(K, V, Span(K, V, P)),
+    span_prop(K, V, P), span_idempotent(K, V, P)
+  );
+}

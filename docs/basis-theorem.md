@@ -20,6 +20,23 @@ not an added axiom or an asserted checked theorem.
   `VectorBasis(K,V)`. Zero belongs to every span, generators belong to their
   span, span is monotone, the empty subset is independent, and independent
   subsets cannot contain the zero vector.
+- `finite_combinations`: concatenation of indexed families, addition of
+  their combinations, and scalar multiplication of coefficients. The scalar
+  action sends the zero vector to zero.
+- `vector_subspaces` and `span_subspace`: subspace bundles, span closure
+  under addition and scalar multiplication, the least-subspace property,
+  and idempotence of span as an equality of predicates using univalence.
+- `predicate_chains`: unions of U1-indexed families of small predicates;
+  chains are directed, and every finite family in a nonempty directed union
+  has a common member containing it. Membership and the cover remain
+  truncated: no choice function is extracted.
+- `independent_unions`: directed and chain unions are independent. The
+  empty-chain case needs no supplied inhabitant: when proving a particular
+  coefficient vanishes, that coefficient's vector supplies the seed locally.
+- `independent_order`: independence evidence is a proposition, with an
+  explicit cubical path between proofs. Independent subsets form a partial
+  order under inclusion. Antisymmetry uses univalence, and chain unions are
+  least upper bounds of the full subset records.
 
 `Span` is a truncation of finite-combination witnesses; it does not choose
 coordinates. Independence quantifies over **injective** finite lists of
@@ -96,14 +113,15 @@ not in B, so this contradicts maximality. Therefore B spans V and is a basis.
 
 ## Next formal lemmas
 
-1. Concatenate finite combinations; prove the combination laws, scalar
-   multiplication, zero coefficients, reindexing, and elimination of repeated
-   vectors. Establish subspace closure of `Span` and finite character.
+1. Continue the combination algebra with zero coefficients, reindexing,
+   and elimination of repeated vectors. Concatenation, scaling, span closure,
+   and finite covering in directed unions are checked already.
 2. Prove extension of an independent subset by a vector outside its span,
    including the coefficient-division step using the existing nonzero
    inverse API. Do not assume decidable equality of arbitrary field elements.
-3. Construct chain unions of independent subsets and prove their
-   independence. Introduce only the order/chain interfaces needed by Zorn.
+3. Connect the checked independent-subset partial order and chain least
+   upper bounds to the eventual Zorn interface. No maximality principle
+   follows from the chain bounds alone without the choice argument.
 4. Develop Zorn from `Choice(U)` with checked universe bookkeeping, then
    apply it to the independent-subset order and finish basis existence.
 5. Connect explicit finite bases to the subset interface. Separately prove

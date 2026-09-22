@@ -70,3 +70,46 @@ test("nonlinear constant maps and a silently changed basis length are rejected",
   assert.ok(result.outputs.every(symbol => !symbol.verified));
   assert.ok(result.gaps.every(gap => gap.module === "invalid_linear"), JSON.stringify(result.gaps));
 });
+
+test("spans are least subspaces and independent chains have bounds, including empty and U1-indexed chains", async t => {
+  const program = create(t);
+  const result = await program.check(`import span_subspace;
+    import independent_order;
+    def empty_family(K : AlgebraicField, V : VectorSpace(K), i : Void) : IndependentSubset(K, V) { exact absurd(i); }
+    theorem empty_chain(K : AlgebraicField, V : VectorSpace(K)) :
+      PredicateChain(Void, vector_carrier(K, V), (fun (i : Void) => independent_members(K, V, empty_family(K, V, i)))) {
+      intro i; exact absurd(i);
+    }
+    theorem empty_union_bound(K : AlgebraicField, V : VectorSpace(K)) :
+      IndependentIncluded(K, V, IndependentUnion(K, V, Void, empty_family(K, V), empty_chain(K, V)), EmptyIndependentSubset(K, V)) {
+      exact independent_union_least(K, V, Void, empty_family(K, V), empty_chain(K, V), EmptyIndependentSubset(K, V),
+        (fun (i : Void) => typed(IndependentIncluded(K, V, empty_family(K, V, i), EmptyIndependentSubset(K, V)), absurd(i))));
+    }
+    def large_constant_family(K : AlgebraicField, V : VectorSpace(K), A : U0) = EmptyIndependentSubset(K, V);
+    theorem large_constant_chain(K : AlgebraicField, V : VectorSpace(K)) :
+      PredicateChain(U0, vector_carrier(K, V), (fun (A : U0) => independent_members(K, V, large_constant_family(K, V, A)))) {
+      intro A; intro B;
+      exact field_exists_intro(
+        IndependentIncluded(K, V, EmptyIndependentSubset(K, V), EmptyIndependentSubset(K, V)) or
+        IndependentIncluded(K, V, EmptyIndependentSubset(K, V), EmptyIndependentSubset(K, V)),
+        left(independent_inclusion_refl(K, V, EmptyIndependentSubset(K, V))));
+    }
+    def large_union(K : AlgebraicField, V : VectorSpace(K)) =
+      IndependentUnion(K, V, U0, large_constant_family(K, V), large_constant_chain(K, V));
+  `, "chain_regression");
+  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  assert.deepEqual(result.gaps, []);
+  const checked = [
+    ["finite_combinations", "linear_combination_append"], ["finite_combinations", "linear_combination_scale"],
+    ["vector_subspaces", "span_least"], ["span_subspace", "SpanSubspace"], ["span_subspace", "span_idempotent_path"],
+    ["independent_unions", "chain_union_independent"], ["independent_order", "independent_partial_order"],
+    ["independent_order", "independent_union_least"],
+  ];
+  for (const [file, name] of checked) {
+    const symbol = program.symbols[file + "__" + name];
+    assert.equal(symbol.verified, true, name);
+    const assumptions = symbol.axioms.map(binding => program.checker.assumptionLabels.get(binding));
+    assert.ok(assumptions.every(name => /^Truncate/.test(name)), JSON.stringify(assumptions));
+  }
+  assert.deepEqual(program.symbols.independent_order__independent_partial_order.axioms, []);
+});
