@@ -62,7 +62,7 @@
 import sets;
 
 // Declarations follow the imports.</code></pre>
-            <p>Imports come first and use module names without quotes or a file extension. Imported mathematical source and its dependencies are checked. The special <code>prelude</code> import makes the existing axiom library available; an import alone does not make every theorem depend on all its axioms.</p>
+            <p>Imports come first and use module names without quotes or a file extension. Imported mathematical source and its dependencies are checked. An import alone does not make every theorem depend on all its axioms.</p>
             <p>Names are case-sensitive: a letter or underscore, followed by letters, digits, or underscores. Write comments with <code>//</code> through the end of the line. Block comments, quoted strings, and Unicode operators are not source syntax. Use <code>-&gt;</code>, <code>forall</code>, and <code>exists</code>; the inspector can display mathematical symbols.</p>
             <p>Put <code>//</code> comments immediately above a declaration to show them as its inspector description, including through imports. Consecutive lines are joined into a paragraph; an empty <code>//</code> line starts another paragraph. A physical blank line separates a section comment from a declaration. Trailing comments do not document the next declaration. Descriptions are plain text and do not affect the checked proof.</p>
             <p>Declarations become available in source order. There are no implicit arguments or forward declarations. Each parameter has its own explicit type: <code>(A : U0, x : A, y : A)</code>. Choose fresh local names to avoid collisions with names already in scope.</p>
@@ -326,7 +326,7 @@ theorem reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
           </section>
           <section id="axioms">
             <h2>Axioms and propositional truncation</h2>
-            <p>The operations in this section use principles from <code>import prelude;</code> (possibly through another imported module). They are explicit dependencies, not consequences of the basic introduction and elimination rules. A user-written <code>axiom</code> declaration is likewise an assumption; its name and dependencies remain inspectable.</p>
+            <p>The operations in this section use explicit universe-specialized axiom schemas. They are explicit dependencies, not consequences of the basic introduction and elimination rules. A user-written <code>axiom</code> declaration is likewise an assumption; its name and dependencies remain inspectable.</p>
             <h3>Truncation</h3>
             <p><code>Truncate(U0, A)</code>, often named <code>Mere(A)</code> by the library, expresses mere inhabitation. It discards access to a chosen witness. The inspector can render it as <span class="math">‖A‖</span>; that is display notation, not source syntax.</p>
             <div class="table-scroll"><table>
@@ -339,7 +339,7 @@ theorem reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
               </tbody>
             </table></div>
             <p>For a named universe, use <code>Truncate(U, A)</code>, <code>TruncateIntro(U, A, a)</code>, <code>TruncateProp(U, A)</code>, or <code>TruncateElim(U, A, P, proposition, map)</code>. Here <code>U</code> must be a universe such as <code>U1</code>, and both <code>A</code> and the elimination target <code>P</code> must belong to it.</p>
-            <p class="note">The current prelude truncation constructor returns a type in U₀ even for larger inputs. These wrappers preserve that signature; they do not assert universe-preserving truncation. In particular, <code>Truncate(U1, U0)</code> is valid, while <code>Truncate(U0, U0)</code> is not.</p>
+            <p class="note">The current library truncation constructor returns a type in U₀ even for larger inputs. These wrappers preserve that signature; they do not assert universe-preserving truncation. In particular, <code>Truncate(U1, U0)</code> is valid, while <code>Truncate(U0, U0)</code> is not.</p>
             <h3>Function extensionality and univalence</h3>
             <dl>
               <dt><code>FunExt(U0, A, B, f, g, pointwise)</code></dt>

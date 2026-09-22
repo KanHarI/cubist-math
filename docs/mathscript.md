@@ -202,7 +202,7 @@ For example, `Truncate(U1, U0)` is valid and
 `Truncate(U0, U0)` is rejected. A family may need an explicit lift,
 such as `fun (a : A) => typed(U1, Unit)`.
 
-The existing prelude truncation constructor returns U0 even when its input is
+The existing library truncation constructor returns U0 even when its input is
 large. These wrappers preserve that signature; they do not promise
 universe-preserving truncation. Elimination still requires evidence that its
 target is a proposition. See the [real-number foundation notes](reals.md) for

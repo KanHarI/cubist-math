@@ -10,7 +10,7 @@ test("every bundled import is available to the browser worker", async () => {
   await Promise.all([...available].map(async name => {
     const source = await readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
     for (const dependency of parse(source).imports) {
-      assert.ok(dependency === "prelude" || available.has(dependency), `${name} imports unregistered module ${dependency}`);
+      assert.ok(available.has(dependency), `${name} imports unregistered module ${dependency}`);
     }
   }));
 });

@@ -1,8 +1,7 @@
-import prelude;
 import paths;
 
 // Carriers in U1 include proposition-valued Dedekind cuts over small Q.
-// Universe arguments to the original prelude axioms remain explicit here.
+// Universe arguments to the original library axioms remain explicit here.
 def FieldProp(P : U1) = forall p : P, forall q : P, p = q;
 
 def FieldSet(F : U1) = forall x : F, forall y : F, FieldProp(x = y);

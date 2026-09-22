@@ -147,7 +147,7 @@ coefficients and zero lengths need no zero test.
   truncation principles; they introduce no excluded middle, choice, or
   kernel rule. Their input certificates are part of their assumptions even
   when they do not appear in the axiom list.
-- The existing higher-universe `FieldExists` uses the prelude's
+- The existing higher-universe `FieldExists` uses the library’s
   universe-lowering truncation into `U0`. This foundational qualification is
   documented in [reals.md](reals.md#universes-and-foundational-assumptions).
 - Keep shared foundations constructive. The user permits explicit

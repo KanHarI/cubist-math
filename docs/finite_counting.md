@@ -100,11 +100,11 @@ The literal Unit-sum example additionally uses `lib_univalence`.
 These are per-result dependencies; the import closure can contain other unused
 axioms. None of these results requires excluded middle or the axiom of choice.
 
-**Truncation interface correction:** the original prelude accidentally required
+**Truncation interface correction:** the original library accidentally required
 `U -> P` instead of `A -> P`, for `A : U`. The Rust construction and the generated
-C/prelude library now use the corrected `lib_trunc_elim` axiom. All bundled copies
+axiom library now use the corrected `lib_trunc_elim` axiom. All bundled copies
 have been regenerated. In [truncation.cubist](../web/proofs/truncation.cubist),
-`mere_eliminate` is a checked definition wrapping that prelude axiom; it is no
+`mere_eliminate` is a checked definition wrapping that library axiom; it is no
 longer a separate axiom. The result dependency list links to `lib_trunc_elim`.
 
 ## Source map

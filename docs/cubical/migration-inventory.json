@@ -28,7 +28,7 @@
     "unit_prop_unique.construction.cubist",
     "uuomega.construction.cubist",
     "void.construction.cubist",
-    "prelude_library.construction.cubist",
+    "axiom_library.construction.cubist",
     "wnat.construction.cubist",
     "wnat_equiv.construction.cubist"
   ],
@@ -1634,8 +1634,7 @@
     {
       "module": "bouquet_actions",
       "imports": [
-        "puncture_graph",
-        "prelude"
+        "puncture_graph"
       ],
       "declarations": [
         {
@@ -1740,8 +1739,7 @@
     {
       "module": "bouquet_cover",
       "imports": [
-        "puncture_graph",
-        "prelude"
+        "puncture_graph"
       ],
       "declarations": [
         {
@@ -2213,7 +2211,6 @@
     {
       "module": "circle",
       "imports": [
-        "prelude",
         "suspension",
         "integers",
         "groups"
@@ -6304,7 +6301,6 @@
     {
       "module": "equivalences",
       "imports": [
-        "prelude",
         "paths"
       ],
       "declarations": [
@@ -8353,7 +8349,6 @@
     {
       "module": "field_logic",
       "imports": [
-        "prelude",
         "paths"
       ],
       "declarations": [
@@ -18249,7 +18244,6 @@
     {
       "module": "truncation",
       "imports": [
-        "prelude",
         "paths"
       ],
       "declarations": [

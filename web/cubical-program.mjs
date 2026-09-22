@@ -42,7 +42,7 @@ export class CubicalProgram {
     const prepared = new Map();
     let total = this.completed;
     const prepare = async (name, text = null) => {
-      if (name === "prelude" || this.modules.has(name) || prepared.has(name)) return;
+      if (this.modules.has(name) || prepared.has(name)) return;
       try {
         text ??= await this.readSource(name);
         const ast = parse(text);
@@ -56,7 +56,6 @@ export class CubicalProgram {
     await prepare(main, source);
     const visiting = new Set();
     const load = async (name, text = null) => {
-      if (name === "prelude") { const env = new Map(); this.modules.set(name, env); return env; }
       if (visiting.has(name)) throw new Error(`Cyclic source import: ${name}`);
       if (this.modules.has(name)) return this.modules.get(name);
       visiting.add(name);

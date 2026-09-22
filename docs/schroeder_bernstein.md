@@ -38,7 +38,7 @@ This adapts the g-point argument in
 [Escardó's proof](https://arxiv.org/abs/2002.07079).
 
 The checked dependencies are excluded middle (`LEM`), function extensionality,
-and the existing truncation constructor and eliminator. The prelude expresses
+and the existing truncation constructor and eliminator. The library expresses
 LEM as double negation implying mere inhabitation, so
 [classical.cubist](../web/proofs/classical.cubist) derives proposition-level
 double-negation elimination and excluded middle from it. The recorded

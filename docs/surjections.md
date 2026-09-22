@@ -10,7 +10,7 @@ check EverySurjectionHasRightInverse every_surjection_has_right_inverse
 ```
 
 The [Cubist source](../web/proofs/surjections.cubist) proves the usual
-set-theoretic statement using the existing prelude axiom of choice (`AOC`):
+set-theoretic statement using the existing library axiom of choice (`AOC`):
 
 ```text
 forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) ->

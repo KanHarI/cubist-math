@@ -131,7 +131,7 @@ checks, pass `--corrected-kernel` to the oracle built from the corrected Rust
 checkout. Separate Rust and C regressions check dependent Nat motives and binder
 behavior; the generator excludes C-only suspension opcodes from the Rust oracle.
 
-All bundled truncation constructions now contain the corrected prelude axiom.
+All bundled truncation constructions now contain the corrected library axiom.
 The high-level `mere_eliminate` definition wraps `lib_trunc_elim` and introduces
 no additional axiom.
 

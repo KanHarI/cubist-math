@@ -1,6 +1,5 @@
 import binary_naturals;
 import paths;
-import prelude;
 
 // W constructors store child functions. Extensionality identifies an empty
 // child function with the leaf's function, or a Unit-indexed one with its value.

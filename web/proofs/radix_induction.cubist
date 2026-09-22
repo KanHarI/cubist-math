@@ -1,6 +1,5 @@
 import radix_naturals;
 import paths;
-import prelude;
 
 theorem radix_empty_children(extra : Nat, f : Void -> RadixPositive(extra)) :
   (fun (v : Void) => typed(RadixPositive(extra), absurd(v))) = f {

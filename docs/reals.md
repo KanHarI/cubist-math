@@ -80,12 +80,12 @@ live in `U1`. The shared interface accepts a carrier `F : U1`, so these
 cuts do not have to be replaced with Booleans to fit its universe.
 
 [field_logic.cubist](../web/proofs/field_logic.cubist) specializes the **existing**
-prelude truncation and function-extensionality axioms at `U1` using the new
+library truncation and function-extensionality axioms at `U1` using the new
 explicit-universe primitives. [field_extensionality.cubist](../web/proofs/field_extensionality.cubist)
 adds small-proposition extensionality via the existing univalence axiom and
 equality lemmas for dependent pairs in `U1`.
 
-There is a foundational qualification: the existing prelude `lib_Trunc` returns
+There is a foundational qualification: the existing library `lib_Trunc` returns
 a type in **U0 even for an input in a higher universe**. `FieldExists` retains
 that signature. This is universe-lowering truncation; this development is not
 claimed to avoid resizing strength. It adds no resizing axiom, classical axiom,

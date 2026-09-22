@@ -1,5 +1,4 @@
 import puncture_graph;
-import prelude;
 
 def action_forward(F : U0, e : Equiv(U0, F, F)) : F -> F {
   exact equivalence_function(F, F, e);
