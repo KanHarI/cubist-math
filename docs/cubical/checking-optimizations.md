@@ -1,5 +1,55 @@
 # Native checking performance
 
+## September 23: polynomial and extension checks
+
+The expanded corpus has 3,573 concrete declarations and 44 universe templates.
+Before this pass, the 100 ms run checked 3,446 declarations, timed out on six,
+and blocked 121 dependents. A diagnostic run at one second checked everything;
+the slowest declaration took 480 ms.
+
+Conversion now reuses successful equality comparisons as well as folded syntax
+comparisons. The exact key contains both term handles and both binder-renaming
+scopes. Success is valid independently of the unfolding strategy; a cached
+failure applies only to folded syntax. Failures from reduction or hint passes
+are not cached. Directed universe cumulativity is not stored as equality.
+
+Renaming scopes are interned by the exact triple (parent scope, left name, right
+name). A collision evicts an entry; its identity is never assigned to another
+chain. Identity renamings use the empty scope for comparison lookup, since they
+preserve precisely the same name equalities. Their complete parent chains are
+still retained when extending a renaming. Hashing mixes high bits of sequential
+handles and names to reduce collisions in the fixed-size tables. The extra
+scope table is bounded at 192 KiB per kernel session; allocation failure simply
+disables scope interning. Existing rollback and compaction invalidate all cached
+comparisons before handles are reused. The scope table contains only names and
+chain identities, so it does not retain arena handles.
+
+Two existing proof blocks also prioritize the small wrappers `FieldTower` and
+`EmbeddingTowerFiber`. These hints expose the expected type without expanding
+the constructed residue field. Statements, proof premises, and axioms are
+unchanged; every resulting conversion still goes through the C checker.
+
+The complete 100 ms Node run now checks all 3,573 declarations, with zero slow,
+blocked, or failed entries, in 10.14 s. Observed timings on Apple M3 Pro / Node
+24.13.0 (the before column uses the one-second diagnostic):
+
+| Declaration | Before (ms) | After (ms) |
+| --- | ---: | ---: |
+| `finite_separable_count_step` | 479.6 | 93.1 |
+| `finite_embedding_extension_step` | 292.2 | 76.6 |
+| `generated_algebraic_finite_step` | 335.4 | 65.3 |
+
+Regression coverage includes free versus bound names, shadowing, term and
+interval renamings, repeated beta-convertible DAGs, changing hints, arena handle
+reuse after rollback, and rejection of downward universe conversion.
+Validation passed: all 283 automated tests, the native C regression suite,
+undefined-behavior sanitizer checks for conversion/hints/checkpoints/check
+caches, and all 348 source-format checks. The browser proof/workbench tests
+also passed; its live corpus worker independently checked all 3,573 concrete
+declarations within 100 ms, with no slow, blocked, or failed entries.
+
+## September 21 baseline
+
 The 100 ms performance pass starts from the completed native migration:
 2,484 concrete declarations, 16 universe templates, and no rejected proofs.
 Twenty-six declarations exceeded 100 ms in the saved one-second scan. The

@@ -12,11 +12,33 @@ typedef struct alpha_binding {
     const struct alpha_binding *previous;
 } alpha_binding;
 
+static size_t comparison_slot(uint64_t hash) {
+    /* Arena handles and binder names are sequential. Mix their high bits too,
+     * rather than letting the power-of-two table discard them outright. */
+    hash ^= hash >> 33;
+    hash *= UINT64_C(0xff51afd7ed558ccd);
+    hash ^= hash >> 33;
+    return (size_t)(hash % CC_ALPHA_MEMO_SIZE);
+}
+
 static alpha_binding bind(cc_kernel *k, uint32_t left, uint32_t right,
                            const alpha_binding *previous) {
-    if (k->next_alpha_scope == UINT64_MAX)
-        ck_fail(k, "Alpha-comparison scope counter exhausted.");
-    return (alpha_binding){left, right, ++k->next_alpha_scope,
+    uint64_t parent = previous ? previous->scope : 0;
+    size_t slot = comparison_slot((parent * UINT64_C(1099511628211) ^ left) *
+                                 UINT64_C(1099511628211) ^ right);
+    if (!k->alpha_scopes)
+        k->alpha_scopes = calloc(CC_ALPHA_MEMO_SIZE, sizeof *k->alpha_scopes);
+    cc_alpha_scope *entry = k->alpha_scopes ? &k->alpha_scopes[slot] : NULL;
+    uint64_t scope;
+    if (entry && entry->scope && entry->parent == parent && entry->left == left && entry->right == right) {
+        scope = entry->scope;
+    } else {
+        if (k->next_alpha_scope == UINT64_MAX)
+            ck_fail(k, "Alpha-comparison scope counter exhausted.");
+        scope = k->next_alpha_scope == UINT64_MAX ? UINT64_MAX : ++k->next_alpha_scope;
+        if (entry) *entry = (cc_alpha_scope){left, right, parent, scope};
+    }
+    return (alpha_binding){left, right, scope,
         left == right && (!previous || previous->identity), previous};
 }
 
@@ -25,7 +47,7 @@ static size_t alpha_slot(cc_term left, cc_term right, uint64_t terms, uint64_t d
     hash = (hash ^ right) * UINT64_C(1099511628211);
     hash = (hash ^ terms) * UINT64_C(1099511628211);
     hash = (hash ^ dims) * UINT64_C(1099511628211);
-    return (size_t)(hash % CC_ALPHA_MEMO_SIZE);
+    return comparison_slot(hash);
 }
 
 static const alpha_binding *bound(const alpha_binding *env, uint32_t name, bool right) {
@@ -393,19 +415,22 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
         --k->recursion;
         return ck_fail(k, "Native conversion recursion depth exceeded.");
     }
-    uint64_t term_scope = terms ? terms->scope : 0;
-    uint64_t dimension_scope = dims ? dims->scope : 0;
+    uint64_t term_scope = terms && !terms->identity ? terms->scope : 0;
+    uint64_t dimension_scope = dims && !dims->identity ? dims->scope : 0;
     size_t slot = alpha_slot(a, b, term_scope, dimension_scope);
-    if (mode == FOLDED && a && b && k->alpha_memo) {
+    if (a && b && k->alpha_memo) {
         cc_alpha_memo entry = k->alpha_memo[slot];
         if (entry.left == a && entry.right == b && entry.term_scope == term_scope &&
-            entry.dimension_scope == dimension_scope) {
+            entry.dimension_scope == dimension_scope && (entry.equal || mode == FOLDED)) {
             --k->recursion;
             return ck_tick(k, false) && entry.equal;
         }
     }
     bool equal = alpha_inner(k, a, b, terms, dims, mode);
-    if (mode == FOLDED && a && b && !k->error[0]) {
+    /* Success is definitional equality regardless of the reduction strategy.
+     * A failed folded comparison says nothing about equality after reduction;
+     * failures from other strategies (including hints) are never retained. */
+    if ((equal || mode == FOLDED) && a && b && !k->error[0]) {
         if (!k->alpha_memo) {
             k->alpha_memo = calloc(CC_ALPHA_MEMO_SIZE, sizeof *k->alpha_memo);
             if (!k->alpha_memo)

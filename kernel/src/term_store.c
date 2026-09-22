@@ -81,6 +81,7 @@ void cc_kernel_free(cc_kernel *k) {
     free(k->formulas);
     free(k->syntax_memo);
     free(k->alpha_memo);
+    free(k->alpha_scopes);
     free(k->weak_cache);
     free(k->interned);
     free(k->contexts);

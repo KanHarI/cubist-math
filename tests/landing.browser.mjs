@@ -60,7 +60,12 @@ try {
     assert.equal(await page.locator("#example").count(), 0);
     assert.equal(await page.getByRole("button", { name: "Euclid example" }).count(), 0);
     assert.equal(await page.locator("#diagnostic").isVisible(), false);
-    assert.match(await page.locator("#result").textContent(), proof === "euclid" ? /Verified euclid/ : proof === "circle_group_identity" ? /circle_group_isomorphism/ : proof === "group_univalence" ? /group_structure_identity/ : /f4_galois_is_cyclic_two/);
+    assert.match(await page.locator("#result").textContent(), proof === "euclid" ? /Verified euclid/ : proof === "circle_group_identity" ? /circle_group_isomorphism/ : proof === "group_univalence" ? /group_structure_identity/ : /f4_extension_loops_equal_cyclic_two/);
+    if (proof === "f4_galois_group") {
+      assert.equal(new URL(page.url()).searchParams.get("name"), "f4_extension_loops_equal_cyclic_two");
+      assert.match(await page.locator("#inspect-type").textContent(), /F4OverF2/);
+      assert.match(await page.locator("#inspect-type").textContent(), /CyclicTwo/);
+    }
     if (proof === "circle_group_identity") {
       await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
       assert.match(await page.locator("#inspect-type").textContent(), /GroupIso\(CircleLoopGroup, IntegerGroup\)/);

@@ -54,7 +54,9 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
   let h = adjoin_root_embedding(K, M, irr, L, e, x, root);
   let triangle = residue_evaluate_constant(K, M, L, e, x, root);
   have tower : FieldTower(K, R, L, i, h, e) {
-    exact field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle);
+    exact with unfolding [FieldTower] {
+      field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle)
+    };
   }
   let algebraicR =
     (

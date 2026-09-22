@@ -65,7 +65,7 @@ try {
   await page.locator("#edit-mode").click();
   await page.locator("#editor").fill("theorem wrong : 0 = 1 { exact refl(0); }");
   await page.locator("#check").click(); await idle();
-  assert.match(await page.locator("#status").textContent(), /migration incomplete/);
+  assert.match(await page.locator("#status").textContent(), /check incomplete/);
   assert.match(await page.locator("#result").textContent(), /Not checked wrong/);
   assert.equal(await page.locator("#kernel-details").isVisible(), false);
   await page.goto(`http://127.0.0.1:${port}/proof.html?proof=cubical_paths&name=reverse_twice`);

@@ -181,3 +181,176 @@ theorem f4_galois_is_cyclic_two : GroupIso(CyclicTwo, F4GaloisGroup) {
 theorem f4_galois_group_equality : CyclicTwo =[Group] F4GaloisGroup {
   exact group_isotoid(CyclicTwo, F4GaloisGroup, f4_galois_is_cyclic_two);
 }
+
+// Loops are equalities of the whole extension, including its F2-embedding.
+// This identity type lives in U1; no truncation or resizing is applied.
+def F4ExtensionLoops = F4OverF2 =[FieldExt(F2)] F4OverF2;
+
+def f4_loop_of_bit(b : F2Carrier) = extension_iso_path(F2, F4OverF2, F4OverF2, f4_symmetry(b));
+
+def f4_loop_bit(p : F4ExtensionLoops) =
+  f4_symmetry_bit(extension_path_iso(F2, F4OverF2, F4OverF2, p));
+
+theorem f4_loop_bit_roundtrip(b : F2Carrier) : f4_loop_bit(f4_loop_of_bit(b)) = b {
+  exact with unfolding [f4_loop_bit, f4_loop_of_bit] {
+    trans(
+      cong(f4_symmetry_bit, extension_iso_roundtrip(F2, F4OverF2, F4OverF2, f4_symmetry(b))),
+      f4_symmetry_bit_roundtrip(b)
+    )
+  };
+}
+
+theorem f4_extension_loop_roundtrip(p : F4ExtensionLoops) : f4_loop_of_bit(f4_loop_bit(p)) = p {
+  exact with unfolding [f4_loop_bit, f4_loop_of_bit] {
+    trans(
+      cong(
+        extension_iso_path(F2, F4OverF2, F4OverF2),
+        f4_symmetry_classify(extension_path_iso(F2, F4OverF2, F4OverF2, p))
+      ), extension_path_roundtrip(F2, F4OverF2, F4OverF2, p)
+    )
+  };
+}
+
+// The two loops are reflexivity and the nontrivial Frobenius loop.
+theorem f4_symmetry_zero : f4_symmetry(f2_0) = f4_identity_automorphism {
+  exact with unfolding [f4_symmetry] {
+    refl(f4_identity_automorphism)
+  };
+}
+
+theorem f4_symmetry_one : f4_symmetry(f2_1) = f4_frobenius_automorphism {
+  exact with unfolding [f4_symmetry] {
+    refl(f4_frobenius_automorphism)
+  };
+}
+
+theorem f4_loop_zero : f4_loop_of_bit(f2_0) = refl(F4OverF2) {
+  exact with unfolding [f4_loop_of_bit, f4_identity_automorphism] {
+    trans(
+      cong(extension_iso_path(F2, F4OverF2, F4OverF2), f4_symmetry_zero),
+      galois_identity_is_reflexivity(F2, F4OverF2)
+    )
+  };
+}
+
+theorem f4_loop_one : f4_loop_of_bit(f2_1) = f4_galois_loop {
+  exact with unfolding [f4_loop_of_bit, f4_galois_loop] {
+    cong(extension_iso_path(F2, F4OverF2, F4OverF2), f4_symmetry_one)
+  };
+}
+
+theorem f4_loop_of_bit_add(a : F2Carrier, b : F2Carrier) :
+  f4_loop_of_bit(f2_add(a, b)) = trans(f4_loop_of_bit(a), f4_loop_of_bit(b)) {
+  exact with unfolding [f4_loop_of_bit, f4_auto_compose] {
+    trans(
+      cong(extension_iso_path(F2, F4OverF2, F4OverF2), f4_symmetry_add(a, b)),
+      galois_composition_is_concatenation(F2, F4OverF2, f4_symmetry(a), f4_symmetry(b))
+    )
+  };
+}
+
+// Reading a concatenation of loops gives the sum of their two symmetry bits.
+theorem f4_loop_bit_concatenate(p : F4ExtensionLoops, q : F4ExtensionLoops) :
+  f4_loop_bit(trans(p, q)) = f2_add(f4_loop_bit(p), f4_loop_bit(q)) {
+  have recovered :
+    trans(f4_loop_of_bit(f4_loop_bit(p)), f4_loop_of_bit(f4_loop_bit(q))) = trans(p, q) {
+    exact trans(
+      cong(
+        (fun (r : F4ExtensionLoops) => trans(r, f4_loop_of_bit(f4_loop_bit(q)))),
+        f4_extension_loop_roundtrip(p)
+      ), cong((fun (r : F4ExtensionLoops) => trans(p, r)), f4_extension_loop_roundtrip(q))
+    );
+  }
+  exact with unfolding [f4_loop_bit, f4_loop_of_bit] {
+    trans(
+      sym(cong(f4_loop_bit, recovered)),
+      trans(
+        cong(f4_loop_bit, sym(f4_loop_of_bit_add(f4_loop_bit(p), f4_loop_bit(q)))),
+        f4_loop_bit_roundtrip(f2_add(f4_loop_bit(p), f4_loop_bit(q)))
+      )
+    )
+  };
+}
+
+def f4_extension_loop_equivalence : Equiv(U1, F4ExtensionLoops, group_carrier(CyclicTwo)) {
+  exact equiv_from_inverse_into_set(
+    U1, F4ExtensionLoops, F2Carrier, fin_is_set(2), f4_loop_bit, f4_loop_of_bit,
+    f4_extension_loop_roundtrip, f4_loop_bit_roundtrip
+  );
+}
+
+// Univalence identifies the actual identity type of the extension with C2's
+// carrier. This is a proved equality of types, not definitional equality.
+// Under this identification, concatenation is addition modulo two.
+theorem f4_extension_loops_equal_cyclic_two :
+  (F4OverF2 =[FieldExt(F2)] F4OverF2) =[U1] group_carrier(CyclicTwo) {
+  exact ua(U1, F4ExtensionLoops, group_carrier(CyclicTwo), f4_extension_loop_equivalence);
+}
+
+// Transport along the displayed equality is the explicit symmetry-bit map.
+theorem f4_extension_loop_equality_action(p : F4ExtensionLoops) :
+  transport(
+    (fun (A : U1) => A), F4ExtensionLoops, group_carrier(CyclicTwo),
+    f4_extension_loops_equal_cyclic_two, p
+  ) = f4_loop_bit(p) {
+  exact with unfolding [f4_extension_loops_equal_cyclic_two, f4_extension_loop_equivalence] {
+    UnivalenceBeta(U1, F4ExtensionLoops, group_carrier(CyclicTwo), f4_extension_loop_equivalence, p)
+  };
+}
+
+theorem f4_automorphisms_equal_loops : F4Automorphism =[U1] F4ExtensionLoops {
+  exact galois_automorphisms_are_loops(F2, F4OverF2);
+}
+
+// Concatenation gives the loop type its group structure in the same universe.
+def f4_extension_loop_multiply(p : F4ExtensionLoops, q : F4ExtensionLoops) = trans(p, q);
+
+def f4_extension_loops_are_set :
+  forall p : F4ExtensionLoops, forall q : F4ExtensionLoops, forall r : p = q, forall s : p = q,
+  r = s {
+  exact transport(
+    (fun (A : U1) => forall x : A, forall y : A, forall p : x = y, forall q : x = y, p = q),
+    F2Carrier, F4ExtensionLoops, sym(f4_extension_loops_equal_cyclic_two), fin_is_set(2)
+  );
+}
+
+def f4_extension_loop_group_laws :
+  GroupLawsAt(U1, F4ExtensionLoops, refl(F4OverF2), f4_extension_loop_multiply) {
+  exact (
+    f4_extension_loops_are_set,
+    (
+      fun (p : F4ExtensionLoops) => fun (q : F4ExtensionLoops) => fun (r : F4ExtensionLoops) => path_associative(
+        FieldExt(F2), F4OverF2, F4OverF2, F4OverF2, F4OverF2, p, q, r
+      )
+    ), (fun (p : F4ExtensionLoops) => left_unit(FieldExt(F2), F4OverF2, F4OverF2, p)),
+    (fun (p : F4ExtensionLoops) => right_unit(FieldExt(F2), F4OverF2, F4OverF2, p)),
+    (
+      fun (p : F4ExtensionLoops) => typed(
+        (
+          exists q : F4ExtensionLoops, (trans(q, p) = refl(F4OverF2))
+          and (trans(p, q) = refl(F4OverF2))
+        ),
+        (
+          sym(p), inverse_left(FieldExt(F2), F4OverF2, F4OverF2, p),
+          inverse_right(FieldExt(F2), F4OverF2, F4OverF2, p)
+        )
+      )
+    )
+  );
+}
+
+def F4ExtensionLoopGroup =
+  group_object_at(
+    U1, F4ExtensionLoops, refl(F4OverF2), f4_extension_loop_multiply, f4_extension_loop_group_laws
+  );
+
+// Repackage the small cyclic group in U1 so both carriers have the same bound.
+def CyclicTwoAtU1 = group_object_at(U1, F2Carrier, f2_0, f2_add, cyclic_two_laws);
+
+// The identification respects the full group operations, not just cardinality.
+theorem f4_extension_loop_group_is_cyclic_two : GroupIsoAt(U1, F4ExtensionLoopGroup, CyclicTwoAtU1) {
+  exact (
+    f4_loop_bit, f4_loop_of_bit, f4_extension_loop_roundtrip, f4_loop_bit_roundtrip,
+    f4_loop_bit_concatenate
+  );
+}

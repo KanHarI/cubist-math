@@ -9,7 +9,67 @@ static cc_term lambda(cc_kernel *k, uint32_t name, cc_term body) {
     return ck_make(k, CC_LAM, name, ck_make(k, CC_NAT, 0, 0, 0, 0, 0), body, 0, 0);
 }
 
+static void conversion_cache(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term nat = ck_make(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term zero = ck_make(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term one = ck_make(k, CC_SUCC, 0, zero, 0, 0, 0);
+    cc_term x = ck_var(k, 10), y = ck_var(k, 11);
+    cc_term beta_x = ck_make(k, CC_APP, 0, lambda(k, 12, ck_var(k, 12)), x, 0, 0);
+    assert(ck_convertible(k, beta_x, x));
+    uint64_t before = k->reduction_steps;
+    assert(ck_convertible(k, beta_x, x));
+    assert(k->reduction_steps - before == 1);
+
+    // The cached free comparison is valid under identical binders, but not
+    // when one side's x becomes bound and the other's x remains free.
+    assert(ck_convertible(k, lambda(k, 10, beta_x), lambda(k, 10, x)));
+    assert(!ck_convertible(k, lambda(k, 10, beta_x), lambda(k, 11, x)));
+    assert(ck_convertible(k, lambda(k, 10, beta_x), lambda(k, 11, y)));
+    assert(!ck_convertible(k, beta_x, y));
+
+    cc_term path = ck_make(k, CC_PATH, 2, nat, zero, zero, 0);
+    cc_term at_i = ck_make(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 20), path, 0, 0);
+    cc_term beta_i = ck_make(k, CC_APP, 0, lambda(k, 12, ck_var(k, 12)), at_i, 0, 0);
+    assert(ck_convertible(k, beta_i, at_i));
+    assert(!ck_convertible(k, ck_make(k, CC_PLAM, 0, nat, beta_i, 0, 0),
+                            ck_make(k, CC_PLAM, 1, nat, at_i, 0, 0)));
+
+    // A different application can acquire the same numeric handle after
+    // rollback. Its old equality must not survive arena reuse.
+    cc_term identity = lambda(k, 12, ck_var(k, 12));
+    cc_kernel_checkpoint(k);
+    cc_term old = ck_make(k, CC_APP, 0, identity, zero, 0, 0);
+    assert(old && ck_convertible(k, old, zero));
+    cc_kernel_rollback(k);
+    cc_term replacement = ck_make(k, CC_APP, 0, identity, one, 0, 0);
+    assert(replacement == old);
+    assert(!ck_convertible(k, replacement, zero));
+    assert(ck_convertible(k, replacement, one));
+
+    // Shared subexpressions may match only after beta reduction. The folded
+    // failure cache alone would revisit exponentially many equal branches.
+    cc_term left = ck_make(k, CC_APP, 0, identity, zero, 0, 0), right = zero;
+    for (unsigned i = 0; i < 24; ++i) {
+        left = ck_make(k, CC_PAIR, 0, nat, left, left, 0);
+        right = ck_make(k, CC_PAIR, 0, nat, right, right, 0);
+    }
+    before = k->reduction_steps;
+    assert(ck_convertible(k, lambda(k, 10, left), lambda(k, 11, right)));
+    assert(k->reduction_steps - before < 2000);
+
+    // Equality reuse never bypasses the typing gate or downward cumulativity.
+    cc_term u0 = ck_make(k, CC_U, 0, 0, 0, 0, 0);
+    cc_term u1 = ck_make(k, CC_U, 1, 0, 0, 0, 0);
+    assert(ck_expect(k, u0, u1));
+    assert(!ck_convertible(k, u0, u1));
+    assert(!ck_expect(k, u1, u0));
+    cc_kernel_free(k);
+}
+
 int main(void) {
+    conversion_cache();
     cc_kernel *k = cc_kernel_new();
     assert(k);
     k->budget = UINT64_C(1000000);

@@ -63,6 +63,130 @@ algebraically closed target may be used, but constructing such an infinite
 target is not a completion requirement. Build the particular finite splitting
 fields needed for the initial theorem instead.
 
+## Required general HoTT showcase: equality of the subfield and subgroup lattices
+
+The intended general showcase is the **entire inclusion-reversing
+correspondence**, formulated using the loop group of the extension. For every
+finite Galois extension E/K, prove an equivalence of ordered structures
+
+```text
+IntermediateFields(E/K) ≃ Subgroups(Ω(FieldExt(K), E))^op.
+```
+
+The superscript `op` reverses inclusion. Supply the two maps explicitly:
+
+- An intermediate field M maps to the subgroup of loops whose transport fixes
+  every element of M pointwise.
+- A subgroup H of loops maps to the intermediate field of elements fixed by
+  transport around every loop in H.
+
+Prove the two roundtrips as equalities of the bundled subobjects, together with
+order reversal, intersections/composita versus generated joins/intersections
+of subgroups, and the degree/index formulas. Include normal-subgroup,
+normal-subextension, and restriction-quotient compatibility. This realizes the
+[finite fundamental theorem](https://stacks.math.columbia.edu/tag/09DW) through
+the previously checked automorphism/loop identification.
+
+Then use an appropriate univalent structure identity theorem to promote the
+lattice isomorphism to a **proved equality of bundled lattices**:
+
+```text
+IntermediateFieldLattice(E/K)
+  = OppositeLattice(SubgroupLattice(ExtensionLoopGroup(K, E))).
+```
+
+Specify a common universe for these bundles. Preserve order and lattice
+operations in this equality, so results about subgroups can be transported to
+results about intermediate fields. An equivalence or equality of the underlying
+collections alone does not establish this requirement. A lattice/poset
+interface suffices; general category infrastructure is optional.
+
+This full equivalence requires E/K to be finite Galois. For a finite separable
+extension that is not normal, the corresponding formulation uses a specified
+finite Galois closure N/K and the subgroup interval between Gal(N/E) and
+Gal(N/K), rather than the automorphism group of E/K alone. Inseparable
+extensions are not classified by ordinary automorphism subgroups in this way.
+Keep the distinction explicit when stating the scope of the showcase.
+
+The two-loop F4/F2 identity below is the small landing-page example motivating
+this general lattice-level goal. General development remains paused; this
+section records the intended result, not a claim that it is already proved.
+
+### Prerequisite: finite extensions as loop types
+
+The showcase is a **general development requirement for every finite-degree
+field extension**, not only the concrete F4/F2 example. For each bundled
+extension E over K, establish the chain
+
+```text
+Aut_K(E) =_[U1] (E =_[FieldExt(K)] E)
+Ω(FieldExt(K), E) ≅ AutGroup_K(E).
+```
+
+Here the first line compares carrier types by a proved univalence equality;
+the second compares groups, with ordinary path concatenation on the loop side
+and composition of automorphisms on the algebraic side. Neither identification
+is definitional equality. `galois_automorphisms_are_loops` already proves the
+carrier equality for arbitrary bundled extensions, and `galois_paths` proves
+composition compatibility. Complete and expose the general bundled loop-group
+isomorphism, then derive equality of the bundled groups using group structure
+identity at the required universe. Carrier equality alone is not that final
+group equality. Reuse this theorem to obtain the concrete showcase results.
+
+The finite-degree development must additionally prove that this loop group is
+finite and relate it to the algebraic degree. For arbitrary finite extensions,
+its order is at most [E:K]; equality with [E:K] requires normality and
+separability (the finite Galois case). Do not claim that all finite extensions
+have [E:K] automorphisms, or that their automorphism groups are cyclic. For a
+finite Galois extension, present the fundamental correspondence and its
+degree/index formulas in this loop-group interpretation as well as the
+algebraic interpretation. State the assumptions of each result explicitly.
+
+Acceptance criteria for the general identification:
+
+- Encode/decode maps with both inverse homotopies, and a computation theorem
+  identifying carrier transport with the corresponding field automorphism.
+- Compatibility of reflexivity, reversal, and concatenation with identity,
+  inverse, and composition of automorphisms.
+- A set-valued loop type retaining distinct automorphisms as distinct paths;
+  no propositional truncation of the identity type and no implicit resizing.
+- Checked group isomorphism and bundled group equality in a common universe.
+- F4/F2 obtained by specialization, plus a non-Galois finite example that
+  prevents accidentally asserting the full-degree automorphism count generally.
+
+### Landing-page specialization: the two loops of F4/F2
+
+The landing-page showcase should lead with the equality of types
+
+```text
+(F4OverF2 =[FieldExt(F2)] F4OverF2) =[U1] group_carrier(CyclicTwo).
+```
+
+Display this mathematically as `(𝔽₄ =_{Ext(𝔽₂)} 𝔽₄) =_{𝒰₁} C₂`, where
+𝔽₄ denotes the extension with its specified 𝔽₂-embedding and C₂ denotes the
+cyclic group's carrier. Keep `Gal(𝔽₄/𝔽₂)` in the explanation. The card links
+directly to `f4_galois_group.f4_extension_loops_equal_cyclic_two`, the second
+identification in the chain from algebraic automorphisms to loops to C₂.
+
+This is a proved univalence equality, **not definitional equality**. The
+identity type is not propositionally truncated: reflexivity and the Frobenius
+loop remain different. No choice, excluded middle, or resizing is required.
+The loop type lives in U1 even though it is equivalent to a small two-element
+type; do not silently treat it as a U0 carrier.
+
+The supporting checked development in `f4_galois_group.cubist` supplies both
+inverse maps, their roundtrips, the identification of zero with reflexivity
+and one with Frobenius, and the univalence transport computation rule
+(`f4_extension_loop_equality_action`). Loop concatenation corresponds to
+addition modulo two (`f4_loop_bit_concatenate`). The bundled result
+`f4_extension_loop_group_is_cyclic_two` packages this as a `GroupIsoAt(U1, ...)`;
+the displayed type equality does not claim to be equality of bundled groups.
+
+Use this as the presentation model for the general requirement above: show
+the identity type of a bundled extension, then compute its symmetries and
+their composition. Recording this requirement and refining the concrete
+showcase does not resume the paused general finite-Galois milestones.
+
 ## Lang's distinguished classes of extensions
 
 Use the definition in the excerpt supplied by the user. Write C(F,E) for

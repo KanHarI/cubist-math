@@ -25,6 +25,11 @@ int main(void) {
     cc_kernel_clear_error(k);
     assert(cc_kernel_set_unfolding_hints(k, &reference, 1));
     cc_term one = cc_kernel_term(k, CC_SUCC, 0, zero, 0, 0, 0);
+    assert(ck_convertible(k, reference, zero));
+    assert(cc_kernel_set_unfolding_hints(k, NULL, 0));
+    assert(ck_convertible(k, reference, zero));
+    assert(!ck_convertible(k, reference, one));
+    assert(cc_kernel_set_unfolding_hints(k, &reference, 1));
     cc_term line = cc_kernel_term(k, CC_PLAM, 0, nat, reference, 0, 0);
     cc_term false_type = cc_kernel_term(k, CC_PATH, 0, nat, zero, one, 0);
     cc_checked_result result;

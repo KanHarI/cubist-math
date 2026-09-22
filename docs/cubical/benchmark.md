@@ -1,5 +1,17 @@
 # Temporary declaration benchmark
 
+Latest optimization pass (September 23): **3,573 checked within 100 ms, zero
+slow, blocked, or failed declarations, plus 44 universe templates**, across
+346 modules. The Node run took 10.14 s; its slowest declaration took 93.075 ms.
+See [the performance notes](checking-optimizations.md) for the changes and
+comparison with the previous corpus scan. The live browser worker independently
+completed the same corpus with no slow, blocked, or failed entries. These are
+machine-specific timings.
+
+The subsequent F4/F2 loop-equality showcase adds 21 concrete declarations.
+The updated saved scan checks all **3,594** within 100 ms, with zero slow,
+blocked, or failed entries and 44 templates (10.74 s total; maximum 92.851 ms).
+
 Open `/benchmark.html` and choose **Run benchmark in this browser**. A worker
 loads the current source corpus, checks imports once, and gives each declaration
 a 100 ms shared deadline for elaboration and the native closed check.
@@ -36,7 +48,7 @@ See [the optimization audit](checking-optimizations.md) for correctness details.
 4. **Needs fixing:** checking failed for another reason. Investigate whether
    the fault is in migration, elaboration, the source proof, or resource use.
 
-The 16 universe templates are separate: only their concrete specializations
+Universe templates are separate: only their concrete specializations
 are closed, checked kernel definitions. Counting templates as standalone proof
 certificates would be misleading. Counts refer to source declarations, not
 generated specialization helpers or kernel instructions.

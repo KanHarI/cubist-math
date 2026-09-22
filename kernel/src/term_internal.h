@@ -38,14 +38,23 @@ typedef struct {
 #define CC_SYNTAX_MEMO_SIZE 8192
 #define CC_INTERN_SIZE 65536
 
-/* Folded alpha-comparison keys include exact, never-reused binder scopes.
- * This memoizes a syntactic comparison, never a typing judgement. */
+/* Conversion keys include exact, never-reused binder-renaming scopes. An
+ * identity renaming is equivalent to the empty renaming and uses scope zero.
+ * Success is reusable in every strategy; failure means only that the folded
+ * syntax differed. This caches equality, never a typing judgement. */
 typedef struct {
     cc_term left, right;
     uint64_t term_scope, dimension_scope;
     bool equal;
 } cc_alpha_memo;
 #define CC_ALPHA_MEMO_SIZE 8192
+
+/* Intern complete renaming chains so repeated comparisons beneath the same
+ * binders can share results. Evicted identities are never reassigned. */
+typedef struct {
+    uint32_t left, right;
+    uint64_t parent, scope;
+} cc_alpha_scope;
 
 typedef struct {
     uint32_t name;
@@ -69,6 +78,7 @@ struct cc_kernel {
     cc_term *interned; /* Exact syntax sharing; never a typing certificate. */
     cc_syntax_memo *syntax_memo;
     cc_alpha_memo *alpha_memo;
+    cc_alpha_scope *alpha_scopes;
     uint64_t next_alpha_scope;
     size_t count, capacity;
     size_t checkpoint_count, checkpoint_definitions;

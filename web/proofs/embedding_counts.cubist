@@ -219,7 +219,7 @@ def finite_separable_count_step(n : Nat, previous : FiniteSeparableEmbeddingCoun
         R, L, h, upper, tail, genR, T, closed, sepR, embedding_over(K, R, i, T, j, d)
       )
     );
-  exact with unfolding [adjoined_extension] {
+  exact with unfolding [adjoined_extension, EmbeddingTowerFiber] {
     embedding_tower_degree_count(
       K, R, L, T, i, h, e, triangle, j, lower, upper, finite, countR, countL
     )
