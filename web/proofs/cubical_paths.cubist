@@ -1,3 +1,5 @@
+import suspension_types;
+
 // Cubical paths expose their interval coordinate; Interval is binder syntax,
 // not an additional type in the universe hierarchy.
 def reverse_path(A : U0, x : A, y : A, p : x = y) =
@@ -56,11 +58,11 @@ def transported_meridian(a : Unit) =
   unit_unique(transport(unit_family, north(Unit), south(Unit), meridian(Unit, a), tt));
 
 def collapse_with_transport(p : Suspension(Unit)) =
-  suspension_induction(unit_family, tt, tt, transported_meridian, p);
+  suspension_induction(Unit, unit_family, tt, tt, transported_meridian, p);
 
 theorem transported_meridian_beta(a : Unit) :
   apd(collapse_with_transport, north(Unit), south(Unit), meridian(Unit, a)) = transported_meridian(
     a
   ) {
-  exact suspension_meridian_beta(unit_family, tt, tt, transported_meridian, a);
+  exact suspension_meridian_beta(Unit, unit_family, tt, tt, transported_meridian, a);
 }

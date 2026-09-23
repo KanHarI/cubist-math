@@ -17,6 +17,7 @@ test("the extension's identity type equals C2, with the specified transport and 
     "f4_extension_loop_equality_action", "f4_loop_zero", "f4_loop_one",
     "f4_loop_bit_roundtrip", "f4_extension_loop_roundtrip",
     "f4_loop_bit_concatenate", "f4_extension_loop_group_is_cyclic_two",
+    "f4_extension_fundamental_group_is_cyclic_two",
   ]) {
     const symbol = p.symbols[`f4_galois_group__${name}`];
     assert.equal(symbol?.verified, true, name);

@@ -156,7 +156,20 @@ Acceptance criteria for the general identification:
 
 ### Landing-page specialization: the two loops of F4/F2
 
-The landing-page showcase should lead with the equality of types
+The landing-page showcase leads with the bundled group isomorphism
+
+```text
+π₁(Ext(𝔽₂), 𝔽₄) ≅ C₂.
+```
+
+The primary link is `f4_galois_group.f4_extension_fundamental_group_is_cyclic_two`.
+`FundamentalGroup(X, x, loops_are_set)` in `fundamental_groups.cubist` constructs
+this group from concatenation, reflexivity, and path reversal. Its explicit
+set hypothesis is proved for F4/F2, so no set truncation is needed. This is a
+construction for pointed types whose loop spaces are sets, not a general
+set-truncation operation for arbitrary higher types.
+
+A secondary link in the explanation displays the equality of types
 
 ```text
 (F4OverF2 =[FieldExt(F2)] F4OverF2) =[U1] group_carrier(CyclicTwo).
@@ -164,7 +177,7 @@ The landing-page showcase should lead with the equality of types
 
 Display this mathematically as `(𝔽₄ =_{Ext(𝔽₂)} 𝔽₄) =_{𝒰₁} C₂`, where
 𝔽₄ denotes the extension with its specified 𝔽₂-embedding and C₂ denotes the
-cyclic group's carrier. Keep `Gal(𝔽₄/𝔽₂)` in the explanation. The card links
+cyclic group's carrier. Keep `Gal(𝔽₄/𝔽₂)` in the explanation. The secondary link goes
 directly to `f4_galois_group.f4_extension_loops_equal_cyclic_two`, the second
 identification in the chain from algebraic automorphisms to loops to C₂.
 

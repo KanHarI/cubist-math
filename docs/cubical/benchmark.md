@@ -1,5 +1,11 @@
 # Temporary declaration benchmark
 
+After moving suspension into ordinary source definitions and adding the
+fundamental-group showcase, the final scan checks **3,607 declarations within
+100 ms each**, with **zero slow, blocked, or failed entries**, plus 44 universe
+templates across 348 modules. It took 10.63 s; the slowest declaration took
+92.438 ms on the local Apple M3 Pro. The saved report includes these changes.
+
 Latest optimization pass (September 23): **3,573 checked within 100 ms, zero
 slow, blocked, or failed declarations, plus 44 universe templates**, across
 346 modules. The Node run took 10.14 s; its slowest declaration took 93.075 ms.

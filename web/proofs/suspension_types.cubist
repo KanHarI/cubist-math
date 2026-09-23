@@ -1,0 +1,69 @@
+// Suspension glues two points along one path for each element of A.
+// All operations below are ordinary definitions over the pushout primitive.
+def Suspension(A : U0) = Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);
+
+def north(A : U0) = push_left(Suspension(A), tt);
+
+def south(A : U0) = push_right(Suspension(A), tt);
+
+def meridian(A : U0, a : A) = push_path(Suspension(A), a);
+
+// Convert transport coherence to the dependent path required by pushout induction.
+def suspension_induction(
+  A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)), coherence : forall a : A,
+  transport(C, north(A), south(A), meridian(A, a), n) = s, point : Suspension(A)
+) =
+  pushout_induction(
+    C, fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_left(Suspension(A), v)), n, u),
+    fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_right(Suspension(A), v)), s, u),
+    fun (a : A) => path_from_transport(
+      fun (i : Interval) => C(at(meridian(A, a), i)), n, s, coherence(a)
+    ), point
+  );
+
+// A filling cube proves that converting a transport equality to a dependent
+// path and back returns the original equality.
+theorem transport_path_roundtrip(
+  X : U0, C : X -> U1, x : X, y : X, p : x = y, n : C(x), s : C(y), q : transport(C, x, y, p, n) = s
+) :
+  path_to_transport(
+    fun (i : Interval) => C(at(p, i)), n, s,
+    path_from_transport(fun (i : Interval) => C(at(p, i)), n, s, q)
+  ) = q {
+  exact path(
+    fun (k : Interval) => transport(C, x, y, p, n) = s,
+    fun (k : Interval) => path(
+      fun (j : Interval) => C(y),
+      fun (j : Interval) => comp(
+        fun (i : Interval) => C(at(p, i)), n,
+        face(j, 0, fun (i : Interval) => fill(fun (r : Interval) => C(at(p, r)), n, i)),
+        face(
+          j, 1,
+          fun (i : Interval) => at(
+            path_from_transport(fun (r : Interval) => C(at(p, r)), n, s, q), i
+          )
+        ),
+        face(
+          k, 1,
+          fun (i : Interval) => fill(
+            fun (r : Interval) => C(at(p, i)), fill(fun (r : Interval) => C(at(p, r)), n, i), j,
+            face(i, 0, fun (r : Interval) => n), face(i, 1, fun (r : Interval) => at(q, r))
+          )
+        )
+      )
+    )
+  );
+}
+
+// Meridian computation follows from pushout computation and the round trip.
+theorem suspension_meridian_beta(
+  A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)), coherence : forall a : A,
+  transport(C, north(A), south(A), meridian(A, a), n) = s, a : A
+) :
+  apd(suspension_induction(A, C, n, s, coherence), north(A), south(A), meridian(A, a)) = coherence(
+    a
+  ) {
+  exact transport_path_roundtrip(
+    Suspension(A), C, north(A), south(A), meridian(A, a), n, s, coherence(a)
+  );
+}

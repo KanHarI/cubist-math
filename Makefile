@@ -1,7 +1,10 @@
 # The cubical C kernel is the sole trusted checker.
 .PHONY: all test sanitize clean bench lint wasm cubical-wasm wasm-test serve cli browser-test
-all test sanitize:
+all sanitize:
 	$(MAKE) -C kernel $@
+# Serialize the recursive builds when CI requests `make -j2 all test`.
+test: all
+	$(MAKE) -C kernel test
 clean:
 	$(MAKE) -C kernel clean
 bench:

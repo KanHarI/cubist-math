@@ -32,7 +32,7 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
       name: node.name.text, domain: visit(node.domain), body: visit(node.body, scope) };
   }
   if (node.kind === "call") {
-    const native = new Set(["succ", "refl", "Eq", "Suspension", "north", "south", "meridian", "transport", "apd"]);
+    const native = new Set(["succ", "refl", "Eq", "transport", "apd"]);
     if (node.checked && node.fn.kind === "name" && !native.has(node.fn.name)
         && !globals.has(node.fn.name) && !bound.has(node.fn.name))
       return { kind: "Checked", ...node.checked };

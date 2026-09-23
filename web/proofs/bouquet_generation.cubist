@@ -130,7 +130,7 @@ def bouquet_generation_edges(A : U0, label : Unit or A) =
 
 def bouquet_generation_predicate(A : U0, x : Bouquet(A)) =
   suspension_induction(
-    bouquet_generation_family(A), BouquetGenerated(A), BouquetGenerated(A),
+    (Unit or A), bouquet_generation_family(A), BouquetGenerated(A), BouquetGenerated(A),
     bouquet_generation_edges(A), x
   );
 
@@ -192,7 +192,7 @@ def bouquet_connection_edges(A : U0, label : Unit or A) =
 
 theorem bouquet_connected(A : U0, x : Bouquet(A)) : Mere(bouquet_base(A) = x) {
   exact suspension_induction(
-    bouquet_connection_family(A),
+    (Unit or A), bouquet_connection_family(A),
     merely((bouquet_base(A) = bouquet_base(A)), refl(bouquet_base(A))),
     merely((bouquet_base(A) = bouquet_tip(A)), bouquet_spoke(A)), bouquet_connection_edges(A), x
   );

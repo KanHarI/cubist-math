@@ -239,7 +239,9 @@ test("Cubist expresses cubical paths, composition and pushout induction with che
   const kernel = session(t), checker = new NativeCubicalElaborator(kernel);
   const translator = new Translator({ checker, normalize: false });
   const source = await readFile(new URL("../web/proofs/cubical_paths.cubist", import.meta.url), "utf8");
-  const result = translator.translate(source);
+  const library = translator.translate(await readFile(new URL("../web/proofs/suspension_types.cubist", import.meta.url), "utf8"));
+  assert.ok(library.declarations.every(d => d.status === "checked-native-cubical"));
+  const result = translator.translate(source, library.env);
   assert.deepEqual(result.declarations.filter(d => d.status !== "checked-native-cubical"), []);
   assert.equal(result.declarations.length, 15);
   const invalid = translator.translate(`
@@ -273,21 +275,23 @@ test("WASM round trips pushout boxes and corrected transport across changing map
   assert.throws(() => syntax.check(T.trans("i", family(I.variable("i")), F.top, T.pushLeft(old, north(T.unit))), last));
 });
 
-test("existing transport-style suspension induction elaborates through a proved PathP bridge", t => {
+test("source-defined suspension induction uses a proved PathP bridge", async t => {
   const kernel = session(t), checker = new NativeCubicalElaborator(kernel);
   const translator = new Translator({ checker, normalize: false });
+  const library = translator.translate(await readFile(new URL("../web/proofs/suspension_types.cubist", import.meta.url), "utf8"));
+  assert.ok(library.declarations.every(d => d.status === "checked-native-cubical"));
   const result = translator.translate(`
     def C = Suspension(Unit);
     def family(p : C) = Unit;
     theorem unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
     def boundary(a : Unit) = unique(transport(family, north(Unit), south(Unit), meridian(Unit, a), tt));
-    def collapse(p : C) = suspension_induction(family, tt, tt, boundary, p);
+    def collapse(p : C) = suspension_induction(Unit, family, tt, tt, boundary, p);
     theorem point_beta : collapse(north(Unit)) = tt { exact refl(tt); }
     theorem bridge_beta(a : Unit) :
       apd(collapse, north(Unit), south(Unit), meridian(Unit, a)) = boundary(a) {
-      exact suspension_meridian_beta(family, tt, tt, boundary, a);
+      exact suspension_meridian_beta(Unit, family, tt, tt, boundary, a);
     }
-  `);
+  `, library.env);
   assert.deepEqual(result.declarations.filter(d => d.status !== "checked-native-cubical"), []);
   assert.equal(result.declarations.length, 7);
 });

@@ -318,11 +318,16 @@ theorem reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
           </section>
           <section id="suspensions">
             <h2>Suspensions</h2>
-            <p>The kernel supports the suspension higher inductive type. <code>Suspension(A)</code> has points <code>north(A)</code> and <code>south(A)</code>, and, for every <code>a : A</code>, a path <code>meridian(A, a) : north(A) = south(A)</code>. The circle and puncture models build on these operations.</p>
-            <p><code>suspension_induction(C, atNorth, atSouth, coherence, point)</code> eliminates into a family <code>C</code> on the suspension. The coherence argument takes <code>a : A</code> and proves</p>
+            <p>Suspension is derived from the kernel’s pushout type. Its operations are ordinary definitions in <a href="proof.html?proof=suspension_types&amp;name=Suspension">the suspension library</a>. Import <code>suspension_types</code> to use them; click their names to inspect their definitions. <code>Suspension(A)</code> has points <code>north(A)</code> and <code>south(A)</code>, and, for every <code>a : A</code>, a path <code>meridian(A, a) : north(A) = south(A)</code>. The circle and puncture models build on these operations.</p>
+            <pre><code>def Suspension(A : U0) = Pushout(A, Unit, Unit,
+  fun (_ : A) =&gt; tt, fun (_ : A) =&gt; tt);
+def north(A : U0) = push_left(Suspension(A), tt);
+def south(A : U0) = push_right(Suspension(A), tt);
+def meridian(A : U0, a : A) = push_path(Suspension(A), a);</code></pre>
+            <p><code>suspension_induction(A, C, atNorth, atSouth, coherence, point)</code> eliminates into a family <code>C</code> on the suspension. The coherence argument takes <code>a : A</code> and proves</p>
             <pre><code>transport(C, north(A), south(A), meridian(A, a), atNorth)
   = atSouth</code></pre>
-            <p>The result has type <code>C(point)</code>. <code>suspension_meridian_beta(C, atNorth, atSouth, coherence, a)</code> gives the propositional computation law on the meridian: dependent application of the constructed section to that path equals <code>coherence(a)</code>. See the <a href="proof.html?proof=suspension">suspension examples</a> and <a href="proof.html?proof=circle">circle proof</a>.</p>
+            <p>The result has type <code>C(point)</code>. <code>suspension_meridian_beta(A, C, atNorth, atSouth, coherence, a)</code> gives the propositional computation law on the meridian: dependent application of the constructed section to that path equals <code>coherence(a)</code>. See the <a href="proof.html?proof=suspension">suspension examples</a> and <a href="proof.html?proof=circle">circle proof</a>.</p>
           </section>
           <section id="axioms">
             <h2>Axioms and propositional truncation</h2>

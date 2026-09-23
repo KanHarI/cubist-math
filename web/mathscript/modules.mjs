@@ -1,5 +1,7 @@
 // Bundled mathematical source modules; no checked proof snapshots.
 export const sourceModules = [
+  "fundamental_groups",
+  "suspension_types",
   "field_embedding_spaces",
   "algebraic_base_change",
   "basis_generators",

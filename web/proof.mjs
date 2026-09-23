@@ -414,8 +414,7 @@ const builtinForms = new Set([
   "Nat", "Unit", "Void", "Universe", "tt", "succ", "refl", "absurd",
   "sym", "trans", "cong", "transport", "apd", "Eq", "typed", "unfold",
   "induct", "unpack", "pair_induction", "unit_induction", "path_induction",
-  "Suspension", "north", "south", "meridian", "suspension_induction",
-  "suspension_meridian_beta", "Choice", "LEM", "FunExt", "Truncate",
+  "Choice", "LEM", "FunExt", "Truncate",
   "TruncateIntro", "TruncateProp", "TruncateElim", "Univalence", "UnivalenceBeta", "UnivalenceEta", "ua", "idtoequiv",
 ]);
 function renderSource() {
@@ -487,7 +486,7 @@ function renderSource() {
         };
         code.append(link);
       } else {
-        const info = keywords.has(text) && !builtinForms.has(text) ? null : linkMap.get(start);
+        const info = linkMap.get(start);
         const expansion = last.mode === "mathematical" && /^[0-9]+$/.test(text) && Number(text) <= 256
           ? "succ(".repeat(Number(text)) + "0" + ")".repeat(Number(text))
           : info?.expansion;

@@ -1,0 +1,49 @@
+import group_universes;
+
+// Loops based at a point, with their full path structure.
+def LoopSpace(X : U1, basepoint : X) = basepoint =[X] basepoint;
+
+// When the loop space is already a set, its set truncation changes nothing.
+// This hypothesis lets us construct pi_1 directly, without a set-truncation axiom.
+def LoopSpaceIsSet(X : U1, basepoint : X) =
+  forall p : LoopSpace(X, basepoint), forall q : LoopSpace(X, basepoint), forall r : p = q,
+  forall s : p = q, r = s;
+
+def loop_concatenate(
+  X : U1, basepoint : X, p : LoopSpace(X, basepoint), q : LoopSpace(X, basepoint)
+) =
+  trans(p, q);
+
+def fundamental_group_laws(X : U1, basepoint : X, loops_are_set : LoopSpaceIsSet(X, basepoint)) :
+  GroupLawsAt(U1, LoopSpace(X, basepoint), refl(basepoint), loop_concatenate(X, basepoint)) {
+  exact (
+    loops_are_set,
+    (
+      fun (p : LoopSpace(X, basepoint)) => fun (q : LoopSpace(X, basepoint)) => fun (
+        r : LoopSpace(X, basepoint)
+      ) => path_associative(X, basepoint, basepoint, basepoint, basepoint, p, q, r)
+    ), (fun (p : LoopSpace(X, basepoint)) => left_unit(X, basepoint, basepoint, p)),
+    (fun (p : LoopSpace(X, basepoint)) => right_unit(X, basepoint, basepoint, p)),
+    (
+      fun (p : LoopSpace(X, basepoint)) => typed(
+        (
+          exists q : LoopSpace(X, basepoint), (trans(q, p) = refl(basepoint))
+          and (trans(p, q) = refl(basepoint))
+        ),
+        (
+          sym(p), inverse_left(X, basepoint, basepoint, p),
+          inverse_right(X, basepoint, basepoint, p)
+        )
+      )
+    )
+  );
+}
+
+// The fundamental group of a pointed type whose loops are a set.
+// The identity is the constant loop, multiplication is concatenation,
+// and the inverse reverses a loop. The set hypothesis is proof data.
+def FundamentalGroup(X : U1, basepoint : X, loops_are_set : LoopSpaceIsSet(X, basepoint)) =
+  group_object_at(
+    U1, LoopSpace(X, basepoint), refl(basepoint), loop_concatenate(X, basepoint),
+    fundamental_group_laws(X, basepoint, loops_are_set)
+  );

@@ -31,6 +31,7 @@ h2 { margin: 0; font-size: 21px; font-weight: 600; }
 .section-heading p { margin: 0; color: #627468; font-size: 14px; }
 .proof-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .proof-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -42,7 +43,17 @@ h2 { margin: 0; font-size: 21px; font-weight: 600; }
   transition: border-color 120ms ease, background-color 120ms ease;
 }
 .proof-card:hover { border-color: #789782; background: #fcfdfb; }
-.proof-card:hover .open-proof { text-decoration: underline; text-underline-offset: 4px; }
+.proof-card[href]:hover .open-proof { text-decoration: underline; text-underline-offset: 4px; }
+.proof-card a { text-decoration: none; }
+.proof-card a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.proof-card-main { color: inherit; text-decoration: none; max-width: 100%; }
+.proof-card .proof-card-main:hover { text-decoration: none; }
+.proof-card-main::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: 12px; }
+.proof-card-main:focus-visible { outline: none; }
+.proof-card-main:focus-visible::after { outline: 3px solid #387956; outline-offset: 5px; }
+.related-proof { display: block; margin-top: 14px; font-size: 14px; color: #346447; text-underline-offset: 3px; }
+.related-proof, .proof-card > a.open-proof { position: relative; z-index: 2; }
+.related-formula { display: block; font: 22px/1.7 Georgia, 'Times New Roman', serif; }
 .featured { border-top: 3px solid #769780; }
 .formula { margin: 20px 0 3px; font: 35px/1.5 Georgia, 'Times New Roman', serif; color: #375e45; }
 .group-formula { font-size: clamp(22px, 2.5vw, 35px); }

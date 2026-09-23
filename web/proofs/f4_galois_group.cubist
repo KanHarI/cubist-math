@@ -1,5 +1,6 @@
 import f4_galois;
 import group_univalence;
+import fundamental_groups;
 
 // Every automorphism is determined by the image of alpha. The only possible
 // images are alpha and alpha+1, so the Galois group has exactly two elements.
@@ -314,35 +315,11 @@ def f4_extension_loops_are_set :
   );
 }
 
-def f4_extension_loop_group_laws :
-  GroupLawsAt(U1, F4ExtensionLoops, refl(F4OverF2), f4_extension_loop_multiply) {
-  exact (
-    f4_extension_loops_are_set,
-    (
-      fun (p : F4ExtensionLoops) => fun (q : F4ExtensionLoops) => fun (r : F4ExtensionLoops) => path_associative(
-        FieldExt(F2), F4OverF2, F4OverF2, F4OverF2, F4OverF2, p, q, r
-      )
-    ), (fun (p : F4ExtensionLoops) => left_unit(FieldExt(F2), F4OverF2, F4OverF2, p)),
-    (fun (p : F4ExtensionLoops) => right_unit(FieldExt(F2), F4OverF2, F4OverF2, p)),
-    (
-      fun (p : F4ExtensionLoops) => typed(
-        (
-          exists q : F4ExtensionLoops, (trans(q, p) = refl(F4OverF2))
-          and (trans(p, q) = refl(F4OverF2))
-        ),
-        (
-          sym(p), inverse_left(FieldExt(F2), F4OverF2, F4OverF2, p),
-          inverse_right(FieldExt(F2), F4OverF2, F4OverF2, p)
-        )
-      )
-    )
-  );
-}
+def f4_extension_loop_group_laws =
+  fundamental_group_laws(FieldExt(F2), F4OverF2, f4_extension_loops_are_set);
 
-def F4ExtensionLoopGroup =
-  group_object_at(
-    U1, F4ExtensionLoops, refl(F4OverF2), f4_extension_loop_multiply, f4_extension_loop_group_laws
-  );
+// This is pi_1(Ext(F2), F4): the loop space is already a set.
+def F4ExtensionLoopGroup = FundamentalGroup(FieldExt(F2), F4OverF2, f4_extension_loops_are_set);
 
 // Repackage the small cyclic group in U1 so both carriers have the same bound.
 def CyclicTwoAtU1 = group_object_at(U1, F2Carrier, f2_0, f2_add, cyclic_two_laws);
@@ -353,4 +330,14 @@ theorem f4_extension_loop_group_is_cyclic_two : GroupIsoAt(U1, F4ExtensionLoopGr
     f4_loop_bit, f4_loop_of_bit, f4_extension_loop_roundtrip, f4_loop_bit_roundtrip,
     f4_loop_bit_concatenate
   );
+}
+
+// pi_1(Ext(F2), F4) is cyclic of order two. This compares bundled groups:
+// the two loops are the constant loop and Frobenius, and concatenation is
+// addition modulo two. No set truncation is needed: the loops form a set.
+theorem f4_extension_fundamental_group_is_cyclic_two :
+  GroupIsoAt(
+    U1, FundamentalGroup(FieldExt(F2), F4OverF2, f4_extension_loops_are_set), CyclicTwoAtU1
+  ) {
+  exact f4_extension_loop_group_is_cyclic_two;
 }

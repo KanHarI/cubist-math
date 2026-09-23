@@ -98,7 +98,7 @@ export class CubicalProgram {
               if (!Number.isInteger(item.node.start)) continue;
               let head = item.term; while (head.tag === "App") head = head.fn;
               const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
-              const definition = head.tag === "DefRef" && !source && !item.node.schemaBinding;
+              const definition = head.tag === "DefRef" && !source && !item.node.schemaBinding && !item.node.expressionSite;
               const binding = definition ? head.name : `${name}__local_${item.node.start}`;
               references.push({ start: item.node.start, binding });
               if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });

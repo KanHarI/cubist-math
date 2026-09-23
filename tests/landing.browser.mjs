@@ -32,7 +32,7 @@ try {
   assert.equal(response.status(), 200);
   assert.match(await page.title(), /Proof highlights/);
   assert.equal(await page.locator("h1").count(), 1);
-  const links = await page.locator(".proof-card").evaluateAll(cards => cards.map(card => card.href));
+  const links = await page.locator(".proof-card[href], .proof-card-main").evaluateAll(cards => cards.map(card => card.href));
   assert.equal(links.length, 8);
   // Every card points to a registered source and to a real theorem in that source.
   for (const link of links) {
@@ -50,19 +50,32 @@ try {
   }
   await page.screenshot({ path: "/private/tmp/thth-highlights-mobile.png", fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator(".proof-card-main").hover();
+  assert.equal(await page.locator(".proof-card-main").evaluate(el => getComputedStyle(el).textDecorationLine), "none");
+  assert.equal(await page.locator(".related-proof").evaluate(el => getComputedStyle(el).textDecorationLine), "none");
+  await page.locator(".related-proof").hover();
+  assert.equal(await page.locator(".related-proof").evaluate(el => getComputedStyle(el).textDecorationLine), "underline");
+  await page.mouse.move(0, 0);
   await page.screenshot({ path: "/private/tmp/thth-highlights-desktop.png", fullPage: true });
+  await page.locator('.related-proof').click();
+  await idle();
+  assert.equal(new URL(page.url()).searchParams.get("name"), "f4_extension_loops_equal_cyclic_two");
+  assert.equal(await page.locator("#diagnostic").isVisible(), false);
+  await page.goto(base);
   // Check representative destinations, including the named final result.
   for (const proof of groupOnly ? ["group_univalence"] : ["euclid", "circle_group_identity", "group_univalence", "f4_galois_group"]) {
-    await page.locator(`.proof-card[href*="proof=${proof}&"]`).click();
+    if (proof === "f4_galois_group")
+      await page.locator("article.proof-card").click({ position: { x: 8, y: 8 } });
+    else await page.locator(`.proof-card[href*="proof=${proof}&"]`).click();
     await idle();
     assert.equal(await page.locator("#proof-picker").inputValue(), proof);
     assert.equal(await page.locator("#inspect-name").textContent(), new URL(page.url()).searchParams.get("name"));
     assert.equal(await page.locator("#example").count(), 0);
     assert.equal(await page.getByRole("button", { name: "Euclid example" }).count(), 0);
     assert.equal(await page.locator("#diagnostic").isVisible(), false);
-    assert.match(await page.locator("#result").textContent(), proof === "euclid" ? /Verified euclid/ : proof === "circle_group_identity" ? /circle_group_isomorphism/ : proof === "group_univalence" ? /group_structure_identity/ : /f4_extension_loops_equal_cyclic_two/);
+    assert.match(await page.locator("#result").textContent(), proof === "euclid" ? /Verified euclid/ : proof === "circle_group_identity" ? /circle_group_isomorphism/ : proof === "group_univalence" ? /group_structure_identity/ : /f4_extension_fundamental_group_is_cyclic_two/);
     if (proof === "f4_galois_group") {
-      assert.equal(new URL(page.url()).searchParams.get("name"), "f4_extension_loops_equal_cyclic_two");
+      assert.equal(new URL(page.url()).searchParams.get("name"), "f4_extension_fundamental_group_is_cyclic_two");
       assert.match(await page.locator("#inspect-type").textContent(), /F4OverF2/);
       assert.match(await page.locator("#inspect-type").textContent(), /CyclicTwo/);
     }

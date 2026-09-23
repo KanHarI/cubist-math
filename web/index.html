@@ -43,7 +43,7 @@
             <div class="formula" aria-label="The fundamental group of the circle is isomorphic to the integer group">π₁(S¹) ≅ ℤ</div>
             <h3>The circle’s fundamental group</h3>
             <p>Winding number gives a group isomorphism from the circle’s loops to the additive group of integers. Its inverse turns each integer into a loop, and loop composition corresponds to addition.</p>
-            <span class="assumptions">Uses univalence, function extensionality, and the suspension construction of S¹.</span>
+            <span class="assumptions">Uses univalence and function extensionality. S¹ is constructed as a suspension using pushouts.</span>
             <span class="open-proof">Explore loops and integers <span aria-hidden="true">→</span></span>
           </a>
           <a class="proof-card featured" href="proof.html?proof=group_univalence&amp;name=group_isomorphism_is_equality">
@@ -54,14 +54,20 @@
             <span class="assumptions">Uses univalence and function extensionality.</span>
             <span class="open-proof">Explore equality of structures <span aria-hidden="true">→</span></span>
           </a>
-          <a class="proof-card featured" href="proof.html?proof=f4_galois_group&amp;name=f4_extension_loops_equal_cyclic_two">
+          <article class="proof-card featured">
+            <a class="proof-card-main" href="proof.html?proof=f4_galois_group&amp;name=f4_extension_fundamental_group_is_cyclic_two">
             <span class="eyebrow">GALOIS THEORY &amp; HOMOTOPY</span>
-            <div class="formula group-formula" aria-label="The type of equalities from the F four extension to itself in Ext of F two equals the carrier of C two in universe U one">(𝔽₄ <span class="typed-equality">=<sub>Ext(𝔽₂)</sub></span> 𝔽₄) <span class="typed-equality">=<sub>𝒰₁</sub></span> C₂</div>
+            <div class="formula group-formula" aria-label="The fundamental group of Ext of F two, based at the F four extension, is isomorphic to C two">π₁(Ext(𝔽₂), 𝔽₄) ≅ C₂</div>
             <h3>Field symmetries are loops</h3>
-            <p>The Galois group Gal(𝔽₄/𝔽₂) is the loop type of the extension 𝔽₄ over 𝔽₂. Univalence identifies this type with C₂: Frobenius is the nontrivial loop, and concatenating loops corresponds to addition modulo two.</p>
+            </a>
+            <p>The Galois group Gal(𝔽₄/𝔽₂) is the fundamental group of the type of field extensions over 𝔽₂, based at 𝔽₄. Frobenius is the nontrivial loop, and concatenation is addition modulo two.
+              <a class="related-proof" href="proof.html?proof=f4_galois_group&amp;name=f4_extension_loops_equal_cyclic_two">Also as an equality of types:
+                <span class="related-formula">(𝔽₄ <span class="typed-equality">=<sub>Ext(𝔽₂)</sub></span> 𝔽₄) <span class="typed-equality">=<sub>𝒰₁</sub></span> C₂ <span aria-hidden="true">→</span></span>
+              </a>
+            </p>
             <span class="assumptions">Uses univalence and function extensionality. No excluded middle or choice.</span>
-            <span class="open-proof">Explore the equality of types <span aria-hidden="true">→</span></span>
-          </a>
+            <a class="open-proof" href="proof.html?proof=f4_galois_group&amp;name=f4_extension_fundamental_group_is_cyclic_two">Explore the fundamental group <span aria-hidden="true">→</span></a>
+          </article>
           <a class="proof-card" href="proof.html?proof=schroeder_bernstein&amp;name=cantor_schroeder_bernstein">
             <span class="eyebrow">SETS &amp; MAPS</span>
             <h3>Cantor–Schröder–Bernstein</h3>

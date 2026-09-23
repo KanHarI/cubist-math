@@ -33,6 +33,22 @@ try {
     await page.goto(`http://127.0.0.1:${port}/proof.html?proof=${proof}&name=${name}`);
     await idle(); await inspected(name);
   };
+  await openProof("suspension", "S1");
+  for (const name of ["Suspension", "north", "south", "meridian", "suspension_induction", "suspension_meridian_beta"]) {
+    const link = page.locator(`#read-source button[data-name="${name}"]`).first();
+    assert.ok(await link.count(), `${name} has a source reference`);
+    assert.doesNotMatch(await link.getAttribute("class"), /keyword|macro/);
+    await link.click(); await inspected(name);
+    assert.ok((await page.locator("#kernel-expression").textContent()).length > 0);
+    assert.equal(await page.locator("#view-source").isVisible(), true);
+  }
+  await openProof("circle_group_identity", "circle_group_isomorphism");
+  await page.locator('#read-source button[data-name="refl"]').first().click(); await inspected("refl");
+  assert.match(await page.locator("#kernel-type").textContent(), /base/);
+  await page.locator('#read-source button[data-name="="]').first().click(); await inspected("=");
+  assert.match(await page.locator("#kernel-expression").textContent(), /CircleLoopGroup/);
+  await page.locator('#read-source button[data-name="winding"]').first().click(); await inspected("winding");
+  assert.match(await page.locator("#view-source").getAttribute("href"), /proof=circle/);
   await openProof("euclid", "euclid");
   assert.equal(await page.locator(".library").count(), 0);
   const sourceBounds = await page.locator("#source-panel").boundingBox();

@@ -232,7 +232,7 @@ def decoder_meridians(a : S0) =
   };
 
 def decode(x : S1) =
-  suspension_induction(decoder_family, integer_loop, south_decoder, decoder_meridians, x);
+  suspension_induction(S0, decoder_family, integer_loop, south_decoder, decoder_meridians, x);
 
 theorem decode_encode(x : S1, p : base = x) : decode(x, encode(x, p)) = p {
   exact based_induction(

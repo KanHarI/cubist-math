@@ -255,8 +255,8 @@ def bouquet_decoder_edges(A : U0, label : Unit or A) =
 
 def bouquet_decode(A : U0, x : Bouquet(A)) =
   suspension_induction(
-    bouquet_decoder_family(A), (fun (p : BouquetLoops(A)) => p), bouquet_south_decoder(A),
-    bouquet_decoder_edges(A), x
+    (Unit or A), bouquet_decoder_family(A), (fun (p : BouquetLoops(A)) => p),
+    bouquet_south_decoder(A), bouquet_decoder_edges(A), x
   );
 
 def bouquet_encode(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) =
