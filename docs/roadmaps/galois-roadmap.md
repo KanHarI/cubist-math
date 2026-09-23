@@ -234,8 +234,8 @@ the displayed type equality does not claim to be equality of bundled groups.
 
 Use this as the presentation model for the general requirement above: show
 the identity type of a bundled extension, then compute its symmetries and
-their composition. Recording this requirement and refining the concrete
-showcase does not resume the paused general finite-Galois milestones.
+their composition. The general bundled loop-group identification and lattice
+equality remain requirements of the active finite-Galois development.
 
 ## Lang's distinguished classes of extensions
 
@@ -317,13 +317,15 @@ for completing the initial finite Galois development.
 
 ## Current implementation and next work
 
-Checked source modules: `subgroups`, `subfields`, `subfield_intersections`,
+The checked subobject foundation includes `subgroups`, `subfields`, `subfield_intersections`,
 `intermediate_fields`, `galois_fixed_points`, `galois_fixed_fields`,
 `galois_fixing_subgroups`, `f4_fixed_field`, `f4_intermediate_fields`,
 `f4_galois_connection`, `decidable_subobjects` and `f4_galois_correspondence`.
 The reusable `order_maps` interface and its
 `galois_orders` instance establish variance and idempotent closure as bundle
 equality. All are available in the proof selector.
+The subsequent finite algebra and Artin development is summarized at the top
+of this roadmap and in the [active checkpoint](../tactical/galois-handoff.md#active-checkpoint-2026-09-23).
 
 The stage-1 completion criterion (an order-reversing connection) holds, and
 the listed subobject constructions are checked. Generated subfields and
@@ -336,7 +338,9 @@ subgroups, inverse images, kernels and realized subgroup carriers are now
 checked. Subgroup images and their surjective factorization are also checked;
 the quotient-group layer now includes arbitrary-coset operations and the first isomorphism theorem.
 The F4 example has a packaged correspondence of decidable-subobject types;
-a classical all-subobject theorem is not yet exposed.
+`galois_intermediate_roundtrip.finite_galois_correspondence` now supplies the
+classical all-subobject equivalence for finite normal separable extensions,
+with an explicit algebraically closed target and embedding into it.
 
 Universe plan: carriers and membership values lie in U0; `Subfield(F)`,
 `IntermediateField(K,E)` and `Subgroup(G)` lie in U1. The implemented
@@ -460,8 +464,8 @@ S3 has six elements, its point stabilizer contains the transposition (1 2),
 and conjugation by (0 1) moves that transposition outside the stabilizer.
 `permutation_groups` supplies the reusable group and stabilizer constructions.
 
-Stage 2 is now started. `vector_spaces`, `field_vector_spaces`, `linear_maps`,
-`finite_bases`, and `linear_span` check bundled spaces over the existing
+Stage 2's checked foundation includes `vector_spaces`, `field_vector_spaces`,
+`linear_maps`, `finite_bases`, and `linear_span`. These check bundled spaces over the existing
 unordered fields, scalar restriction along a field embedding, linear maps
 and isomorphisms, finite coordinate spaces, explicit bases and unique
 coordinates, finite linear combinations, span and independence interfaces.
@@ -514,16 +518,21 @@ Implementation constraints for the remaining group layer:
 
 ## Precise finite target
 
-For a finite normal separable extension L/K, let G = Aut_K(L). Prove:
+For a finite normal separable extension L/K, let G = Aut_K(L).
+The checked general correspondence currently also takes an algebraically
+closed target T and an embedding L → T. Removing that supplied-target
+hypothesis by finite splitting-target arguments remains work.
 
-- The fixed field of G is the image of K.
-- `H ↦ Fix(H)` and `M ↦ Aut_M(L)` are inverse equivalences between the
-  type of subgroups of G and the type of intermediate fields of L/K.
-- The equivalence reverses inclusion. It exchanges generated joins and meets.
-- For an intermediate field M corresponding to H,
-  `[L : M] = |H|` and `[M : K] = [G : H]`.
-- M/K is Galois exactly when H is normal in G.
-- In that case restriction induces `G/H ≃ Aut_K(M)` as groups.
+| Target | Current status |
+| --- | --- |
+| The fixed field of G is the image of K | Checked with the supplied closed target |
+| `H ↦ Fix(H)` and `M ↦ Aut_M(L)` are inverse equivalences on all subgroups and intermediate fields | Checked with the supplied closed target |
+| Both assignments reverse inclusion | Checked; explicit join/meet exchange and bundled lattice equality remain |
+| `[L : Fix(H)] = \|H\|` | Artin's theorem checked for every merely finite H, without a closed target |
+| `[L : M] = \|Aut_M(L)\|` and `\|G\| = \|Aut_M(L)\| [M:K]` | Checked with the supplied closed target |
+| `[M : K] = [G : H]` for the corresponding H | Remaining: a small finite coset presentation and index count |
+| M/K is Galois exactly when H is normal in G | Remaining |
+| Restriction induces `G/H ≃ Aut_K(M)` when H is normal | Remaining |
 
 These are the usual finite correspondence and normal-subgroup target; see
 the [Stacks Project's fundamental theorem](https://stacks.math.columbia.edu/tag/09DW).
@@ -565,14 +574,14 @@ Check that composition, inversion, restriction, and actions on roots agree
 with path composition, reversal, induced maps, and transport. When moving from
 a group isomorphism to equality of bundled groups, apply the existing group
 structure identity theorem. Equality of structures is not definitional
-equality, and it must retain the univalence dependency in the inspector.
+equality. Retain its univalence construction in the proof; in the current
+cubical kernel univalence is derived and adds no axiom label.
 
-First complete the correspondence for F4/F2: its fixed fields, subgroups, and
-the absence of proper intermediate fields, stating explicitly whether the
-subobjects are decidable or classical. This validates the interfaces on the
-current finite model. It does not replace the general theorem. Add a later
-example with a proper intermediate field, and an example detecting why the
-normal-subgroup condition is necessary.
+The checked decidable-subobject correspondence for F4/F2 validates the fixed
+fields, subgroups, and absence of proper decidable intermediate fields on the
+concrete finite model. The general classical correspondence is now checked
+under the hypotheses above. Add an example with a proper intermediate field,
+and an example detecting why the normal-subgroup condition is necessary.
 
 For each milestone, check selected modules while developing; run the full
 library once the batch is complete. Include negative checks for lost
@@ -582,10 +591,9 @@ planned requirements on the website.
 
 ## Effort assessment
 
-This is a substantial library project, not a short extension of the F4
-calculation. The current automorphism/loop layer is reusable, but the remaining characterizations and fixed-field/correspondence results in
-stages 4–7 are still required before the general finite theorem. Stages 8–9 are deferred and explicitly out of scope for this initial development. Estimate calendar time only after stage 2 exposes the cost of reusable
-finite-dimensional proofs in Cubist.
-Development is now authorized by the subsequent request to work toward this
-full roadmap. This file retains the complete target; the checked first-stage
-results do not narrow it.
+Finite linear algebra, Artin's fixed-field theorem, and the core finite
+correspondence are checked. The remaining finite work includes removing the
+supplied closed target, equivalent Galois characterizations, finite coset
+indices, the normal-subgroup and quotient theorems, distinguished-class
+instances, and the bundled loop-group and lattice equalities. These remain
+part of the full target. Stages 8–9 are deferred and outside the initial scope.

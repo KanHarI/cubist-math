@@ -47,7 +47,9 @@ Remaining finite milestones, in suggested dependency order:
 2. Connect finite normal separable extensions with their splitting-field and
    automorphism-count characterizations.
 3. Present finite coset indices in a small type, prove the index formula
-   `[M:K] = [G:H]`, and make join/meet exchange explicit.
+   `[M:K] = [G:H]`, and make join/meet exchange explicit. Package the general
+   loop-group identification and promote the correspondence to the bundled
+   lattice equality required by the roadmap, using structure identity.
 4. Prove the normal-subgroup criterion and restriction quotient isomorphism,
    reusing the checked quotient universal property and first isomorphism theorem.
 5. Supply Lang's distinguished-class instances for finite and finite separable
@@ -68,7 +70,7 @@ means finite Galois theory; infinite embedding extension, algebraic/separable
 closure construction, profinite topology, and infinite correspondence are out of
 scope. See the roadmap's deferred section. Do not treat them as initial blockers.
 
-## Current increment: finite algebraic extensions and embedding counts
+## Previous increment: finite algebraic extensions and embedding counts
 
 The four requested finite milestones now have checked source proofs. See
 [polynomial-algebra.md](polynomial-algebra.md) for statements, representation,
@@ -118,11 +120,10 @@ assumptions are involved. All four algebraic-extension tests pass, including
 a new 10-million-step budget regression for the count step and its helper with
 inspector references enabled. Formatting and whitespace checks pass.
 
-Next mathematical work: normality's polynomial characterization and the
-finite Galois characterizations, splitting-target embedding counts, Artin's
-fixed-field degree theorem, and the general correspondence. Derivative criteria
-and distinguished-class instances remain roadmap work. Algebraic closure
-existence and arbitrary infinite extension of embeddings are separately scoped.
+Since this increment, Artin's fixed-field degree theorem and the core general
+correspondence have been checked. See the [active checkpoint](#active-checkpoint-2026-09-23)
+for their hypotheses and the remaining finite work, including splitting-target
+embedding counts, derivative criteria, and distinguished-class instances.
 
 ## Previous increment: finite dimension and extension degree
 
@@ -146,7 +147,7 @@ from uniqueness of the natural number and truncated basis evidence.
 Infinite extensions are not assigned zero. The identity extension has degree
 one, and zero degree is ruled out.
 
-The current increment supplies the converse tower criterion,
+The subsequent algebraic-extension increment supplies the converse tower criterion,
 finite subspace bases, and indexed subfamily extraction from spanning families.
 
 ## Previous increment: the general basis theorem
@@ -182,8 +183,8 @@ proved chain-complete form of Zorn (`zorn_chain_complete`) via a checked
 Bourbaki–Witt tower argument. Independent extension and deletion of arbitrary
 finite summands are also checked. The existing universe-lowering U1
 truncation is used explicitly; no axiom or kernel interface changed.
-The finite-coordinate basis interface has not yet been related to the
-independent-subset basis interface.
+The later finite spanning increment connects the finite-coordinate and
+indexed independent-subset basis interfaces.
 
 Alongside the mathematics, the inspector now separates axioms from local
 context, including in the workbench. Annotated declarations show their
@@ -288,27 +289,23 @@ Useful modules: `galois_paths`, `galois_orders`, `f4_galois_correspondence`,
 `group_cosets`, `group_quotient_maps`, and `kernel_quotient_image`.
 See [the development guide](galois.md) for the earlier constructions.
 
-The general fundamental theorem of Galois theory is **not proved**. Completion
-of finite spanning/exchange interfaces, polynomial theory, algebraic extensions,
-separability, normal field extensions, and Artin's fixed-field theorem remain.
-Algebraic closures and the infinite correspondence with Krull topology are
-separate later stages. `AlgebraicField` is the unordered field interface; its
-name does not assert that an extension is algebraic.
+Finite spanning and degree interfaces, polynomial division and root adjunction,
+finite algebraic extensions, splitting fields, separable embedding counts, and
+Artin's fixed-field theorem are now checked. The core finite correspondence is
+checked with a supplied algebraically closed target and embedding into it.
+The full finite target still includes the index formula, normal-subgroup and
+restriction quotient theorems, and the bundled lattice equality. Algebraic
+closures and infinite correspondence are deferred. `AlgebraicField` is the
+unordered field interface; its name does not assert that an extension is algebraic.
 
 ## Next work
 
-1. Connect explicit finite coordinate bases to enumerated independent
-   subsets; continue finite exchange and reindexing. The
-   [general basis theorem](basis-theorem.md) is now checked using a
-   choice-derived maximality theorem.
-2. Extend the proved dimension/degree interface with finite spanning-family
-   reduction, finite subspace bases, and the converse tower finiteness
-   criterion. `ExtensionDegreeWitness` retains coordinates;
-   `extension_degree` is now the proved numeric invariant.
-3. Generalize structure identity to larger bundled groups when needed for
-   quotient isomorphisms as paths of structures; coherent roundtrips matter.
-4. Continue polynomial theory, algebraic/separable/normal extensions, and
-   Artin's theorem before asserting the full finite Galois correspondence.
+Use the ordered list in the [active checkpoint](#active-checkpoint-2026-09-23).
+Finite spanning-family reduction, subspace bases, converse tower finiteness,
+and Artin's theorem have been completed. Larger-group structure identity is
+still needed to turn the general loop-group isomorphism into equality of
+bundled groups; the existing first isomorphism theorem already provides a
+bundled `GroupIsoAt(U1, ...)`.
 
 The quotient construction still starts from a small source group and small
 subgroup predicates. Its universal-property target may be any group in U1.
@@ -316,7 +313,7 @@ No quotient universe lowering has been proved.
 
 ## Validation and workflow
 
-Previous batch validation: **255 tests passed**. The complete corpus checked
+Historical quotient batch validation: **255 tests passed**. The complete corpus checked
 **2,537 concrete declarations and 44 universe templates**, with no failed,
 blocked, or over-budget declarations at the regression deadline. The browser
 landing regression passes, including the quotient universal-property page
@@ -330,7 +327,7 @@ hypothesis pass. All four changed mathematical sources pass the formatter.
 The previously known all-source formatter issues in `bouquet_actions`,
 `bouquet_cover`, `bouquet_generation`, and `primes` were not changed here.
 
-Selected checks for the current increment:
+Selected checks for that quotient increment:
 
 ```sh
 npm test -- quotient_group_universal group_first_isomorphism circle_group_identity

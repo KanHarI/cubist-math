@@ -1,8 +1,18 @@
 # Galois symmetries as loops
 
-Development resumed on main from the [2026-09-20 checkpoint](galois-handoff.md).
-The latest modules establish constructive quotient descent and identify the
-kernel quotient with the image of a homomorphism:
+Updated 2026-09-23. Artin's degree theorem and automorphism classification are
+checked for every merely finite subgroup of extension automorphisms. The core
+finite correspondence is checked for finite normal separable extensions with
+a supplied algebraically closed target and an embedding into it. The
+[active checkpoint](galois-handoff.md#active-checkpoint-2026-09-23) records exact
+assumptions and validation; the [roadmap](../roadmaps/galois-roadmap.md) records
+the remaining index, normal-subgroup, quotient, and bundled lattice results.
+
+[Inspect Artin's degree theorem](../../web/proof.html?proof=artin_degree&name=artin_fixed_field_degree).
+[Inspect the general finite correspondence](../../web/proof.html?proof=galois_intermediate_roundtrip&name=finite_galois_correspondence).
+
+The group foundation establishes constructive quotient descent and identifies
+the kernel quotient with the image of a homomorphism:
 
 ```text
 kernel_quotient_image_equiv(G, H, h) :
@@ -14,15 +24,10 @@ kernel_quotient_image_equality(G, H, h) :
 
 The inverse uses the entire fiber predicate, without selecting preimages.
 Univalence identifies the carriers, and setness transports from the image to
-the quotient. This establishes the carrier part of the first isomorphism
-theorem. A bundled quotient `GroupIso` still requires a universe-polymorphic
-group interface and quotient operations. The [checkpoint](galois-handoff.md)
-records validation and the exact next step; the [roadmap](../roadmaps/galois-roadmap.md)
-retains the complete target.
-
-For planned work, see [requirements for full Galois theory](../roadmaps/galois-roadmap.md),
-including Lang's distinguished classes. That document is a roadmap, not a
-claim that the general correspondence is already proved.
+the quotient. `group_first_isomorphism` also packages the result as a
+`GroupIsoAt(U1, ...)`, using the checked quotient operations and universe
+schema for groups. Equality of complete bundled groups in U1 still needs
+the corresponding structure identity theorem.
 
 [Explore the concrete Galois group](../../web/proof.html?proof=f4_galois_group&name=f4_galois_is_cyclic_two).
 [Inspect the root-exchanging loop](../../web/proof.html?proof=f4_galois&name=f4_loop_exchanges_roots).
@@ -171,7 +176,21 @@ The reusable `equiv_from_inverse` lemma adjusts two inverse homotopies into the
 half-adjoint coherence required by the existing `IsEquiv`, while preserving the
 forward map and inverse. It works in every supported universe, for arbitrary
 types, by path induction alone. No setness assumption or new axiom is added.
-The full finite theorem with degrees and normal extensions remains outstanding.
+
+The general classical result in `galois_intermediate_roundtrip` now gives
+`Equiv(U1, GaloisSubgroup(K,E), IntermediateField(K,E))` for finite normal
+separable E/K, with a supplied algebraically closed T and embedding E → T.
+The two maps recover every proposition-valued subgroup and intermediate field
+as equal bundles; existing order theorems give inclusion reversal. Artin's
+theorem proves `[E:E^H] = |H|` for merely finite H without a closed target.
+The general correspondence also proves `|Aut_M(E)| = [E:M]` and the numerical
+product `|G| = |Aut_M(E)| [M:K]`. Finite coset indices, normal-subgroup and
+restriction quotient results, and the bundled lattice equality remain work.
+
+The Artin evaluation matrices use transport around extension loops for their
+entries. Equivariance makes the expansion coefficients invariant under those
+loops, while path reversal supplies inverse cancellation. This connects the
+degree calculation to the same homotopy interpretation as the F4 example.
 
 The general normal-subgroup foundation is now checked. `group_kernel_normal`
 proves that the kernel of every group homomorphism is normal, without axioms.
@@ -190,13 +209,17 @@ deciding subgroup membership. The general normal-extension correspondence and
 quotient-group theorem remain outstanding. See the
 [group development](group_identity.md) for the reusable constructions.
 
-| Result | Axioms used |
+| Result | Foundational ingredients |
 |---|---|
 | Predicate-level connection, order reversal, closure containments | None |
 | Fixed-field inverse closure; F4 fixed-element/base-image implications | None |
 | Fixed subfield, subobject-law proof irrelevance, small intersections | Function extensionality |
 | Fixing subgroup via path reversal; invariance under loops | Function extensionality, univalence |
 | Extensional equality of subfields; F4 classification, recovery and decidable correspondence | Function extensionality, univalence |
+
+Function extensionality and univalence in this table are derived constructions
+in the current cubical kernel, not additional axiom labels. The classical
+Artin and general correspondence results have the separate assumptions below.
 
 ## Foundations and scope
 
@@ -228,13 +251,13 @@ with all of F4, omitting a common-base triangle, substituting membership of
 the wrong extension, or supplying non-propositional witness data as class
 membership.
 
-| New result | Checked axiom dependencies |
+| Result | Foundational ingredients |
 |---|---|
 | Embedded-compositum leastness | Truncation type and elimination |
 | Factor embeddings and factorization | Four existing truncation axioms |
-| Commuting triangles, base agreement, derivation of Lang's third clause | Four truncation axioms and function extensionality |
-| Equality after swapping factors; the F2 compositum field equality | Four truncation axioms, function extensionality and univalence |
-| Invariance of class membership under extension isomorphism | Function extensionality and univalence |
+| Commuting triangles, base agreement, derivation of Lang's third clause | Four truncation axioms and derived function extensionality |
+| Equality after swapping factors; the F2 compositum field equality | Four truncation axioms, derived function extensionality and univalence |
+| Invariance of class membership under extension isomorphism | Derived function extensionality and univalence |
 
 Class predicates themselves are in U2: the fixed scope is U0 field carriers,
 U1 field and extension bundles, and U1-valued membership. No resizing, choice,
@@ -246,17 +269,23 @@ witness for each element proved unequal to zero. It requires no decidable zero
 test and no total inverse function. Inverse witnesses are proved unique, making
 the field-law evidence propositional when the carrier is a set.
 
-The general structure identity theorem uses the existing univalence axiom,
-its transport computation rule, and function extensionality. No result adds
-an axiom, uses `LEM`, or uses `Choice`. The concrete finite-field laws and the
-Frobenius automorphism itself have no axiom dependencies. Equality of maps and
-the classification use function extensionality; their conversion into paths
-uses univalence. The explorer reports the exact dependencies of each theorem.
+The general structure identity theorem uses derived univalence, its transport
+computation rule, and derived function extensionality. The concrete finite-field
+laws and Frobenius automorphism have no axiom dependencies. The subobject and
+decidable F4 correspondence layers use neither LEM nor Choice.
 
-The automorphism/loop interpretation, general subobject connection and the
-F4 subobject results above are checked. The general fundamental theorem,
-splitting fields, separability, normality, degree calculations and infinite
-correspondence remain unproved. See the roadmap for their unchanged scope.
+Artin's degree theorem and classification use exactly `LEM(U0)`, `Truncate(U0)`,
+`TruncateElim(U0)`, `TruncateIntro(U0)`, and `TruncateProp(U0)`. The general
+finite correspondence additionally uses `Truncate(U1)` and `TruncateElim(U1)`.
+These results require no Choice axiom or new kernel rule. The explorer reports
+each theorem's exact dependencies; the focused regressions assert these lists.
+
+Finite splitting-field existence, separable embedding counts, embedding
+normality, degree calculations, Artin's theorem, and the core correspondence
+are checked. Removing the supplied closed target, the remaining finite
+characterizations, index and normal quotient results, distinguished-class
+instances, and the general bundled homotopy showcase remain roadmap work.
+Algebraic-closure existence and infinite correspondence are deferred.
 
 ## Modules and verification
 
@@ -279,6 +308,13 @@ correspondence remain unproved. See the roadmap for their unchanged scope.
 | `f4_galois_connection` | Recovery of subgroups and intermediate fields with explicit decisions |
 | `f4_galois_correspondence` | Order-reversing equivalence of decidable subobjects |
 | `finite_decisions`, `decidable_subobjects` | Finite membership algorithms and uniqueness of decision data |
+| `artin_hom_independence`, `artin_loop_independence` | Independence of distinct embeddings and their transport actions |
+| `artin_evaluation`, `artin_evaluation_matrix`, `artin_evaluation_basis` | Separating evaluation vectors and a finite evaluation basis |
+| `artin_fixed_evaluation`, `artin_equivariance`, `artin_degree` | Invariant coefficients, spanning and independence over the fixed field, Artin degree equality |
+| `artin_embedding_bound`, `artin_classification` | Embedding bound and recovery of every finite automorphism subgroup |
+| `galois_normal_bridge`, `galois_normal_target` | Normal embeddings, loop identification, and automorphism counts in a supplied closed target |
+| `finite_equal_dimension`, `finite_decidable_subtypes` | Surjectivity in equal dimension and cardinalities of classical finite subtypes |
+| `galois_intermediate_roundtrip` | General finite correspondence, full-group fixed field, and numerical degree product |
 
 The hypotheses of the reusable structure identity argument are ordinary theorem
 parameters, proved for the field and extension signatures: preservation is a
@@ -289,14 +325,16 @@ Run focused checks with:
 
 ```sh
 npm test -- web/proofs/f4_galois_group.cubist
-npm test -- tests/galois.test.mjs tests/galois-fixed.test.mjs
-npm test -- f4_galois_connection subfield_intersections
+npm test -- tests/f4-extension-loops.test.mjs
+npm test -- f4_galois_correspondence subfield_intersections
+npm test -- tests/artin-degree.test.mjs tests/galois-finite-correspondence.test.mjs
 ```
 
-Regression tests reject a corrupted multiplication table, a collapsed base-field
+Historical regression tests rejected a corrupted multiplication table, a collapsed base-field
 embedding, replacing the root-exchanging symmetry by the identity, claiming
 alpha is fixed, claiming alpha lies in the base image, and discarding the
-inverse-uniqueness argument. Exact axiom dependencies are asserted in tests. During
+inverse-uniqueness argument. The current Artin and correspondence tests assert
+the exact axiom dependencies; the F4 loop tests check the homotopy showcase. During
 this development, the finite tables exposed an existing Unit beta-reduction
 bug under enclosing binders. The correction returns the Unit point branch
 unchanged, matching the existing `UnitComp` rule; it adds no inference rule.
@@ -345,12 +383,12 @@ embedding as an equality of its source and entire codomain.
 The F4 regression examples prove that alpha generates the whole field and
 that its prime subfield is the embedded F2. A separate theorem excludes alpha
 from the prime subfield, and a concrete computation checks addition of
-derivations with different ranks. Mutation tests reject incorrect rank padding
+derivations with different ranks. Historical mutation tests rejected incorrect rank padding
 and replacement of inverse closure by an unrelated membership proof.
 
 The new modules are `subfield_generation_steps`, `generated_subfields`,
 `subfield_composita`, `subfield_transport` and `f4_generated_subfields`.
-Run their focused checks with `npm test -- tests/generated-subfields.test.mjs`.
+Check these sources with `npm test -- f4_generated_subfields subfield_composita subfield_transport`.
 
 ## Variance and the order interface
 
@@ -366,9 +404,9 @@ shrinks its fixed field; enlarging an intermediate field shrinks its fixing
 group. The composite `intermediate_galois_closure` is monotone and idempotent
 as an equality of bundled intermediate fields. The generic order-theoretic
 derivations have no axioms. Their Galois
-instantiations inherit function extensionality and univalence from the bundled
+instantiations use derived function extensionality and univalence in the bundled
 fixing-subgroup construction, whose inverse closure uses path reversal.
-Antisymmetry and the resulting bundle equality also use those two axioms.
+Antisymmetry and the resulting bundle equality also use those constructions.
 The predicate-level connection and variance proofs remain axiom-free.
 
 This is order reversal under **inclusion**, distinct from transport along an
@@ -431,4 +469,5 @@ function extensionality. No equality with the entire codomain is asserted.
 `f4_embedding_images` checks these interfaces on the non-surjective F2 → F4
 inclusion. Negative tests reject a noncommuting tower, an alleged equality of
 F2 with all of F4, and replacement of the image inverse by a constant map.
-Run `npm test -- tests/field-embeddings.test.mjs` for these focused checks.
+These negative tests belong to the historical engine. Check the current sources
+with `npm test -- f4_embedding_images subfield_image_orders compositum_embeddings`.

@@ -132,11 +132,17 @@ the resumption checkpoint.
 
 ## Next toward full Galois
 
+Since this increment, Artin's fixed-field degree theorem and automorphism
+classification have been checked, along with the core finite correspondence
+for finite normal separable extensions supplied with an algebraically closed
+target and an embedding into it. See the [active Galois checkpoint](galois-handoff.md#active-checkpoint-2026-09-23)
+for the statements, exact assumptions, and validation.
+
 The full roadmap retains additional work: derivative/repeated-root criteria,
 normality's equivalent polynomial and finite Galois characterizations,
 embedding counts in splitting targets without a supplied algebraic closure,
-Artin's fixed-field degree theorem, and the general finite Galois correspondence
-with its normal-subgroup quotient statement. Distinguished-class instances
+the coset index formula, join/meet exchange and bundled lattice equality,
+and the normal-subgroup and restriction quotient theorems. Distinguished-class instances
 still need to be connected to these new algebraic and separability interfaces.
 Arbitrary infinite algebraic extension of embeddings and algebraic-closure
 existence are explicitly outside the initial finite Galois scope; they require

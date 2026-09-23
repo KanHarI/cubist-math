@@ -152,9 +152,12 @@ pass the formatter check. See `tests/dimension.test.mjs`.
 
 ## Remaining work for Galois theory
 
-This proves the finite tower formula when both steps have finite bases. It
-does not yet prove the converse finiteness criterion from finiteness of M/K.
-The bridge between finite coordinate bases and enumerated independent subset
-bases, finite spanning-family reduction, polynomial theory, algebraicity,
-separability, normality, and Artin's fixed-field theorem remain separate work.
-The general basis theorem alone never asserted those results.
+This increment proves the finite tower formula when both steps have finite
+bases. The subsequent [polynomial and algebraic-extension development](polynomial-algebra.md)
+supplies the converse finiteness criterion, finite spanning-family reduction,
+subspace bases, and indexed independent subset bases. Artin's fixed-field
+theorem and the core finite normal separable correspondence are also now
+checked; the latter takes a supplied algebraically closed target and embedding.
+See the [active Galois checkpoint](galois-handoff.md#active-checkpoint-2026-09-23)
+for the remaining finite milestones and current validation. The numerical
+validation above records this earlier dimension increment.
