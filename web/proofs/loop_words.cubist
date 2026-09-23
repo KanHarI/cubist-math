@@ -52,7 +52,7 @@ def eval_word(
     eval_word_of(A, X, basepoint, generators, length, letters);
   };
 
-theorem eval_snoc(
+def eval_snoc(
   A : U0, X : U0, basepoint : X, generators : A -> (basepoint = basepoint), word : Word(A),
   letter : Signed(A)
 ) :
@@ -99,7 +99,7 @@ def generated_identity(A : U0, X : U0, basepoint : X, generators : A -> (basepoi
     )
   );
 
-theorem generated_snoc(
+def generated_snoc(
   A : U0, X : U0, basepoint : X, generators : A -> (basepoint = basepoint),
   p : basepoint = basepoint, represented : GeneratedLoop(A, X, basepoint, generators, p),
   letter : Signed(A)
@@ -146,7 +146,7 @@ theorem generated_snoc(
   );
 }
 
-theorem reverse_letter_path(
+def reverse_letter_path(
   A : U0, X : U0, basepoint : X, generators : A -> (basepoint = basepoint), letter : Signed(A)
 ) :
   letter_path(A, X, basepoint, generators, reverse_letter(A, letter)) = inverse(
@@ -162,7 +162,7 @@ theorem reverse_letter_path(
   };
 }
 
-theorem word_backtrack_cancels(
+def word_backtrack_cancels(
   A : U0, X : U0, basepoint : X, generators : A -> (basepoint = basepoint), word : Word(A),
   letter : Signed(A)
 ) :
@@ -222,7 +222,7 @@ def LoopMapLaws(
     h(append_path(X, point, point, point, p, q)) = multiply(h(p), h(q))
   );
 
-theorem loop_map_word_of(
+def loop_map_word_of(
   A : U0, X : U0, point : X, generators : A -> (point = point), G : U1, unit : G, multiply : G -> G
   -> G, h : (point = point) -> G, laws : LoopMapLaws(X, point, G, unit, multiply, h), n : Nat
 ) :
@@ -263,7 +263,7 @@ theorem loop_map_word_of(
   };
 }
 
-theorem loop_map_word(
+def loop_map_word(
   A : U0, X : U0, point : X, generators : A -> (point = point), G : U1, unit : G, multiply : G -> G
   -> G, h : (point = point) -> G, laws : LoopMapLaws(X, point, G, unit, multiply, h), word : Word(A)
 ) :

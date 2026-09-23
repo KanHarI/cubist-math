@@ -29,7 +29,7 @@ def minimum_at_prop(P : Nat -> U0, prop : (forall n : Nat, Proposition(P(n))), n
     )
   );
 
-theorem natural_minimum_prop(P : Nat -> U0, prop : (forall n : Nat, Proposition(P(n)))) :
+def natural_minimum_prop(P : Nat -> U0, prop : (forall n : Nat, Proposition(P(n)))) :
   Proposition(NaturalMinimum(P)) {
   intro u;
   intro v;

@@ -7,7 +7,7 @@ def index_sum_left(n : Nat, m : Nat) =
 
 def index_sum_right(n : Nat, m : Nat) = typed(IndexLE(m, n + m), nat_le_add(n, m));
 
-theorem field_converges_constant(
+def field_converges_constant(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F
@@ -25,7 +25,7 @@ theorem field_converges_constant(
   );
 }
 
-theorem field_limit_unique(
+def field_limit_unique(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -55,7 +55,7 @@ theorem field_limit_unique(
   );
 }
 
-theorem field_converges_add(
+def field_converges_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -90,7 +90,7 @@ theorem field_converges_add(
   );
 }
 
-theorem field_converges_is_cauchy(
+def field_converges_is_cauchy(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -116,7 +116,7 @@ theorem field_converges_is_cauchy(
   );
 }
 
-theorem field_cauchy_add(
+def field_cauchy_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -160,7 +160,7 @@ theorem field_cauchy_add(
 }
 
 // A pointwise equality of sequences preserves its convergence certificate.
-theorem field_converges_pointwise(
+def field_converges_pointwise(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs : Nat -> F, ys : Nat -> F,
   same : (forall n : Nat, xs(n) = ys(n)), limit : F,
   converges : FieldConverges(F, zero, addF, lt, xs, limit)
@@ -180,7 +180,7 @@ theorem field_converges_pointwise(
   );
 }
 
-theorem ordered_field_limit_unique(
+def ordered_field_limit_unique(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

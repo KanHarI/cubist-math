@@ -48,7 +48,7 @@
         <article id="reference">
           <section id="first-proof">
             <h2>A first proof</h2>
-            <pre><code data-check="core">theorem identity : forall A : U0, A -&gt; A {
+            <pre><code data-check="core">def identity : forall A : U0, A -&gt; A {
   intro A;       // A : U0
   intro value;   // value : A
   exact value;
@@ -75,7 +75,7 @@ def same(A : U0, x : A) : A {
   exact x;
 }
 
-theorem self_equal(A : U0, x : A) : x = x {
+def self_equal(A : U0, x : A) : x = x {
   exact refl(x);
 }
 
@@ -84,9 +84,8 @@ opaque def next(n : Nat) = succ(n);</code></pre>
               <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
               <tbody>
                 <tr><td><code>def name(params) = term;</code></td><td>Infer the result type from a term. Parameters are optional.</td></tr>
-                <tr><td><code>def name(params) : T { … }</code></td><td>Check a block against the explicit result type <code>T</code>.</td></tr>
-                <tr><td><code>theorem name(params) : T { … }</code></td><td>Check a proof and keep its definition opaque during ordinary computation. Expression form <code>theorem name = term;</code> is also accepted.</td></tr>
-                <tr><td><code>opaque def name …</code></td><td>A checked definition that remains named during ordinary unfolding.</td></tr>
+                <tr><td><code>def name(params) : T { … }</code></td><td>Check a block against the explicit result type <code>T</code>. Use this form for proofs as well as constructions.</td></tr>
+                <tr><td><code>opaque def name …</code></td><td>Accepted syntax for a checked definition; currently checked and unfolded like <code>def</code>.</td></tr>
                 <tr><td><code>axiom name(params) : T;</code></td><td>An explicit assumption with no proof body. Recorded in axiom dependencies.</td></tr>
               </tbody>
             </table></div>
@@ -122,7 +121,7 @@ def universe_identity = identity(U2, U1, U0);</code></pre>
           <section id="expressions">
             <h2>Terms and notation</h2>
             <p><code>x =[T] y</code> is equality with an explicit carrier: both endpoints must have type <code>T</code>. Plain <code>x = y</code> infers that carrier. This is an identity type, not an assertion of definitional equality or a cast.</p>
-            <pre><code data-check="core">theorem explicit_reflexivity(U : Universe, A : U, x : A) : x =[A] x {
+            <pre><code data-check="core">def explicit_reflexivity(U : Universe, A : U, x : A) : x =[A] x {
   exact refl(x);
 }</code></pre>
             <p>Application is curried: <code>f(a, b)</code> means <code>f(a)(b)</code>. A lambda binds one parameter; nest lambdas for more. Parentheses group expressions. The kernel uses binary pairs. Tuple notation <code>(a, b, c, d)</code> expands to <code>(a, (b, (c, d)))</code>. Explicit left-nesting stays distinct: <code>((a, b), c)</code> is a different shape. Pass a tuple as one argument with <code>f((a, b, c))</code>; <code>f(a, b, c)</code> remains curried application.</p>
@@ -184,7 +183,7 @@ def choose_left = typed(Unit or Nat, left(tt));</code></pre>
               <dt><code>cases term { left x =&gt; { … } right y =&gt; { … } }</code></dt>
               <dd>Prove the current goal in each branch of a disjoint sum. Each branch has its corresponding witness available.</dd>
             </dl>
-            <pre><code data-check="core">theorem swap_product(A : U0, B : U0) :
+            <pre><code data-check="core">def swap_product(A : U0, B : U0) :
     (A and B) -&gt; (B and A) {
   intro pair;
   obtain (a, b) = pair;
@@ -195,7 +194,7 @@ def choose_left = typed(Unit or Nat, left(tt));</code></pre>
   exact result;
 }
 
-theorem swap_sum(A : U0, B : U0, value : A or B) : B or A {
+def swap_sum(A : U0, B : U0, value : A or B) : B or A {
   cases value {
     left a =&gt; { exact right(a); }
     right b =&gt; { exact left(b); }
@@ -206,7 +205,7 @@ theorem swap_sum(A : U0, B : U0, value : A or B) : B or A {
 
 def SetAssumption = forall A : U0, IsSet(A) -&gt; IsSet(A);
 
-theorem use_set_assumption : SetAssumption {
+def use_set_assumption : SetAssumption {
   intro A;       // A : U0, from the forall
   intro setA;    // setA : IsSet(A), from the implication
   exact setA;
@@ -221,7 +220,7 @@ theorem use_set_assumption : SetAssumption {
   succ previous =&gt; succ(previous);
 };
 
-theorem copy_two : copy(2) = 2 {
+def copy_two : copy(2) = 2 {
   exact refl(2);
 }</code></pre>
             <p>In <code>induction n as k return C(k)</code>, the zero branch must have type <code>C(0)</code>. In the successor branch, <code>k : Nat</code> is the predecessor and <code>previous : C(k)</code> is the induction hypothesis. The branch must produce <code>C(succ(k))</code>. Each branch is an expression, not a proof block; put a longer argument in a separate helper theorem.</p>
@@ -236,7 +235,7 @@ theorem copy_two : copy(2) = 2 {
             <pre><code data-check="core">def triple(n : Nat) : exists m : Nat, (m = n) and Nat {
   exact (n, refl(n), succ(n));
 }
-theorem third : Nat {
+def third : Nat {
   obtain (a, same, b) = triple(0);
   exact b;
 }</code></pre>
@@ -269,13 +268,13 @@ theorem third : Nat {
             <p>The path-induction motive takes <code>x : A</code>, <code>y : A</code>, and <code>p : x = y</code>, and returns a type. The reflexive case <code>base</code> takes <code>a : A</code> and proves <code>motive(a, a, refl(a))</code>. The eliminator returns <code>motive(x, y, p)</code>.</p>
             <pre><code data-check="paths">import paths;
 
-theorem reverse_path(A : U0, x : A, y : A, p : x = y) : y = x {
+def reverse_path(A : U0, x : A, y : A, p : x = y) : y = x {
   exact sym(p);
 }</code></pre>
             <p><code>sym</code> is a language convenience for the library's <code>inverse</code> function, which is proved by path induction. It adds no axiom. It also reverses equalities of types: in <code>A =[U] B</code>, the endpoints <code>A</code> and <code>B</code> are types and their carrier is the universe <code>U</code>.</p>
             <pre><code data-check="paths">import paths;
 
-theorem reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
+def reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
   exact sym(p);
 }</code></pre>
             <p>For example, univalence applied to the group structure identity equivalence gives <code>(G =[Group] H) =[U1] GroupIso(G, H)</code>. Applying <code>sym</code> gives the orientation used in <a href="proof.html?proof=group_univalence&amp;name=group_isomorphism_is_equality">the highlighted group theorem</a>: <code>GroupIso(G, H) =[U1] (G =[Group] H)</code>.</p>
@@ -375,11 +374,11 @@ def meridian(A : U0, a : A) = push_path(Suspension(A), a);</code></pre>
           <section id="conversion">
             <h2>Conversion and opacity</h2>
             <p>The checker accepts a term when its type is definitionally equal to the requested type. Function application computes by beta reduction; eliminators compute on constructors. For example, <code>(fun (n : Nat) =&gt; succ(n))(0)</code> computes to <code>1</code>.</p>
-            <p><code>def</code> is transparent for computation. <code>opaque def</code> and <code>theorem</code> keep checked bodies named during ordinary reduction. Conversion can unfold those bodies when necessary to establish equality of types. Opacity does not introduce an axiom or prevent inspection.</p>
+            <p><code>def</code> defines both constructions and proofs. The checker retains named definitions and can unfold their checked bodies to establish equality of types. <code>opaque def</code> is accepted syntax, but currently has the same checking and unfolding behavior as <code>def</code>. Proof blocks appear by name in the inspector, where their bodies can be opened.</p>
             <pre><code data-check="core">opaque def boxed_successor(n : Nat) = succ(n);
 def explicitly_opened = unfold(boxed_successor(1));
 
-theorem opened_is_two : explicitly_opened = 2 {
+def opened_is_two : explicitly_opened = 2 {
   exact refl(2);
 }</code></pre>
             <p><code>unfold(term)</code> explicitly unfolds definitions and normalizes the term and its type. It can expand a large expression substantially. A proof such as commutativity is still a propositional equality; the checker does not use arbitrary theorems as automatic rewrite rules.</p>
@@ -388,7 +387,7 @@ theorem opened_is_two : explicitly_opened = 2 {
               names of already checked definitions; the braces contain one expression, without a
               trailing semicolon. Empty lists and nested scopes are allowed. For example:</p>
             <pre><code>def identity(n : Nat) = n;
-theorem identity_zero : identity(0) = 0 {
+def identity_zero : identity(0) = 0 {
   exact with unfolding [identity] { refl(0) };
 }</code></pre>
             <p>The checker first tries unfolding the selected wrappers while keeping other

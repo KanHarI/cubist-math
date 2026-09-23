@@ -3,7 +3,7 @@ import ordered_halves;
 
 // Two-sided order balls: triangle, addition, and separation laws.
 
-theorem order_lt_add_left(
+def order_lt_add_left(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, z : F, less : lt(x, y)
@@ -22,7 +22,7 @@ theorem order_lt_add_left(
   );
 }
 
-theorem order_lt_add_pair(
+def order_lt_add_pair(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, u : F, v : F,
@@ -38,7 +38,7 @@ theorem order_lt_add_pair(
   );
 }
 
-theorem order_difference_positive(
+def order_difference_positive(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, less : lt(x, y)
@@ -52,7 +52,7 @@ theorem order_difference_positive(
   );
 }
 
-theorem field_close_self(
+def field_close_self(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, epsilon : F,
@@ -80,7 +80,7 @@ def field_close_symmetry(
   exact (backward, forward);
 }
 
-theorem field_close_triangle(
+def field_close_triangle(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, z : F, epsilon : F,
@@ -112,7 +112,7 @@ theorem field_close_triangle(
   );
 }
 
-theorem field_close_add(
+def field_close_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, u : F, v : F,
@@ -144,7 +144,7 @@ theorem field_close_add(
   );
 }
 
-theorem field_close_all_le(
+def field_close_all_le(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,
@@ -171,7 +171,7 @@ theorem field_close_all_le(
   exact irreflexive(x, transport(lt(x), addF(y, gap), x, recovers, upper));
 }
 
-theorem field_close_separated(
+def field_close_separated(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,
@@ -193,7 +193,7 @@ theorem field_close_separated(
   );
 }
 
-theorem field_close_halved_triangle(
+def field_close_halved_triangle(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,

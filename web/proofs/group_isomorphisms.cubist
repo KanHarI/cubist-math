@@ -2,7 +2,7 @@ import group_identity;
 
 // Isomorphisms are determined by their forward maps. All remaining fields
 // are propositions because group carriers are sets.
-theorem group_map_laws_prop(
+def group_map_laws_prop(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(A),
   setB : IsSet(B), f : A -> B, g : B -> A
 ) :
@@ -27,7 +27,7 @@ theorem group_map_laws_prop(
   );
 }
 
-theorem group_map_evidence_prop(
+def group_map_evidence_prop(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(A),
   setB : IsSet(B), f : A -> B, p : GroupMapEvidence(A, multiplyA, B, multiplyB, f),
   q : GroupMapEvidence(A, multiplyA, B, multiplyB, f)
@@ -63,7 +63,7 @@ theorem group_map_evidence_prop(
   );
 }
 
-theorem group_iso_ext(
+def group_iso_ext(
   G : Group, H : Group, p : GroupIso(G, H), q : GroupIso(G, H), same : forall x : group_carrier(G),
   group_iso_forward(G, H, p, x) = group_iso_forward(G, H, q, x)
 ) :

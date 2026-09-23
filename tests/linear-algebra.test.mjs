@@ -12,7 +12,7 @@ const create = t => {
 
 test("S3 has six elements and a genuinely non-normal point stabilizer, without axioms", async t => {
   const program = create(t);
-  const result = await program.check("import non_normal_subgroup; theorem verified_example : IsNormal(S3, S3PointStabilizer) -> Void { exact s3_point_stabilizer_not_normal; }", "s3_regression");
+  const result = await program.check("import non_normal_subgroup; def verified_example : IsNormal(S3, S3PointStabilizer) -> Void { exact s3_point_stabilizer_not_normal; }", "s3_regression");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   for (const name of ["s3_has_six_elements", "s3_point_stabilizer_not_normal", "conjugate_swap12_moves_point0"]) {
     const symbol = program.symbols[`non_normal_subgroup__${name}`];
@@ -25,12 +25,12 @@ test("finite bases give unique coordinates and cubical carrier transport without
   const program = create(t);
   const result = await program.check(`import linear_span;
     import finite_fields;
-    theorem f2_basis : FiniteBasis(F2, ScalarSpace(F2), 1) { exact scalar_space_basis(F2); }
-    theorem f4_basis_over_itself : FiniteBasis(F4, ScalarSpace(F4), 1) { exact scalar_space_basis(F4); }
-    theorem coordinate_plane_basis(K : AlgebraicField) : FiniteBasis(K, CoordinateSpace(K, 2), 2) {
+    def f2_basis : FiniteBasis(F2, ScalarSpace(F2), 1) { exact scalar_space_basis(F2); }
+    def f4_basis_over_itself : FiniteBasis(F4, ScalarSpace(F4), 1) { exact scalar_space_basis(F4); }
+    def coordinate_plane_basis(K : AlgebraicField) : FiniteBasis(K, CoordinateSpace(K, 2), 2) {
       exact standard_basis(K, 2);
     }
-    theorem scalar_transport_computes(K : AlgebraicField, x : af_carrier(K)) :
+    def scalar_transport_computes(K : AlgebraicField, x : af_carrier(K)) :
       transport((fun (A : U0) => A), (Fin(1) -> af_carrier(K)), af_carrier(K),
         ua(U0, (Fin(1) -> af_carrier(K)), af_carrier(K),
           linear_iso_equiv(K, CoordinateSpace(K, 1), ScalarSpace(K), scalar_space_basis(K))),
@@ -76,17 +76,17 @@ test("spans are least subspaces and independent chains have bounds, including em
   const result = await program.check(`import span_subspace;
     import independent_order;
     def empty_family(K : AlgebraicField, V : VectorSpace(K), i : Void) : IndependentSubset(K, V) { exact absurd(i); }
-    theorem empty_chain(K : AlgebraicField, V : VectorSpace(K)) :
+    def empty_chain(K : AlgebraicField, V : VectorSpace(K)) :
       PredicateChain(Void, vector_carrier(K, V), (fun (i : Void) => independent_members(K, V, empty_family(K, V, i)))) {
       intro i; exact absurd(i);
     }
-    theorem empty_union_bound(K : AlgebraicField, V : VectorSpace(K)) :
+    def empty_union_bound(K : AlgebraicField, V : VectorSpace(K)) :
       IndependentIncluded(K, V, IndependentUnion(K, V, Void, empty_family(K, V), empty_chain(K, V)), EmptyIndependentSubset(K, V)) {
       exact independent_union_least(K, V, Void, empty_family(K, V), empty_chain(K, V), EmptyIndependentSubset(K, V),
         (fun (i : Void) => typed(IndependentIncluded(K, V, empty_family(K, V, i), EmptyIndependentSubset(K, V)), absurd(i))));
     }
     def large_constant_family(K : AlgebraicField, V : VectorSpace(K), A : U0) = EmptyIndependentSubset(K, V);
-    theorem large_constant_chain(K : AlgebraicField, V : VectorSpace(K)) :
+    def large_constant_chain(K : AlgebraicField, V : VectorSpace(K)) :
       PredicateChain(U0, vector_carrier(K, V), (fun (A : U0) => independent_members(K, V, large_constant_family(K, V, A)))) {
       intro A; intro B;
       exact field_exists_intro(
@@ -118,13 +118,13 @@ test("the general basis theorem derives maximality from choice, with its exact a
   const program = create(t);
   const result = await program.check(`import vector_basis_existence;
     import finite_fields;
-    theorem any_vector_space(K : AlgebraicField, V : VectorSpace(K)) : FieldExists(VectorBasis(K, V)) {
+    def any_vector_space(K : AlgebraicField, V : VectorSpace(K)) : FieldExists(VectorBasis(K, V)) {
       exact vector_space_has_basis(K, V);
     }
-    theorem empty_coordinate_space(K : AlgebraicField) : FieldExists(VectorBasis(K, CoordinateSpace(K, 0))) {
+    def empty_coordinate_space(K : AlgebraicField) : FieldExists(VectorBasis(K, CoordinateSpace(K, 0))) {
       exact vector_space_has_basis(K, CoordinateSpace(K, 0));
     }
-    theorem binary_field_basis : FieldExists(VectorBasis(F2, ScalarSpace(F2))) {
+    def binary_field_basis : FieldExists(VectorBasis(F2, ScalarSpace(F2))) {
       exact vector_space_has_basis(F2, ScalarSpace(F2));
     }
   `, "general_basis_regression");
@@ -152,7 +152,7 @@ test("basis existence cannot silently select a basis or justify adjoining the ze
     def cannot_untruncate(K : AlgebraicField, V : VectorSpace(K)) : VectorBasis(K, V) {
       exact vector_space_has_basis(K, V);
     }
-    theorem zero_is_not_outside(K : AlgebraicField, V : VectorSpace(K)) :
+    def zero_is_not_outside(K : AlgebraicField, V : VectorSpace(K)) :
       Span(K, V, (fun (x : vector_carrier(K, V)) => Void), vector_zero(K, V)) -> Void {
       intro member; exact member;
     }

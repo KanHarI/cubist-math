@@ -12,7 +12,7 @@ def QuotientValue(
 ) =
   forall a : A, quotient_predicate(A, relation, q, a) -> f(a) = b;
 
-theorem quotient_predicate_prop(
+def quotient_predicate_prop(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
   q : SetQuotient(A, relation), a : A
 ) :
@@ -36,7 +36,7 @@ theorem quotient_predicate_prop(
   );
 }
 
-theorem quotient_value_prop(
+def quotient_value_prop(
   A : U1, relation : A -> A -> U0, B : U1, setB : FieldSet(B), f : A -> B,
   q : SetQuotient(A, relation), b : B
 ) :
@@ -54,7 +54,7 @@ theorem quotient_value_prop(
 }
 
 // Propositional induction uses only the mere surjectivity of the class map.
-theorem quotient_induction_prop(
+def quotient_induction_prop(
   A : U1, relation : A -> A -> U0, P : SetQuotient(A, relation) -> U1,
   propP : (forall q : SetQuotient(A, relation), FieldProp(P(q))),
   atClass : (forall a : A, P(quotient_class(A, relation, a))), q : SetQuotient(A, relation)
@@ -71,7 +71,7 @@ theorem quotient_induction_prop(
   );
 }
 
-theorem quotient_value_unique(
+def quotient_value_unique(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
   setB : FieldSet(B), f : A -> B, q : SetQuotient(A, relation), b : B, c : B,
   pb : QuotientValue(A, relation, B, f, q, b), pc : QuotientValue(A, relation, B, f, q, c)
@@ -95,7 +95,7 @@ theorem quotient_value_unique(
   );
 }
 
-theorem quotient_value_pair_prop(
+def quotient_value_pair_prop(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
   setB : FieldSet(B), f : A -> B, q : SetQuotient(A, relation)
 ) :
@@ -158,7 +158,7 @@ def quotient_rec(
   );
 }
 
-theorem quotient_rec_member(
+def quotient_rec_member(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
   setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f),
   q : SetQuotient(A, relation), a : A, member : quotient_predicate(A, relation, q, a)
@@ -176,7 +176,7 @@ theorem quotient_rec_member(
 
 // Computation is a checked equality; the truncation axioms do not add a
 // definitional reduction rule or a chosen representative of each class.
-theorem quotient_rec_beta(
+def quotient_rec_beta(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
   setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f), a : A
 ) :
@@ -189,7 +189,7 @@ theorem quotient_rec_beta(
   );
 }
 
-theorem quotient_maps_ext(
+def quotient_maps_ext(
   A : U1, relation : A -> A -> U0, B : U1, setB : FieldSet(B), f : SetQuotient(A, relation) -> B,
   g : SetQuotient(A, relation) -> B,
   atClass : (forall a : A, f(quotient_class(A, relation, a)) = g(quotient_class(A, relation, a)))
@@ -205,7 +205,7 @@ theorem quotient_maps_ext(
 }
 
 // The descended map is the unique map whose composite with the class map is f.
-theorem quotient_rec_unique(
+def quotient_rec_unique(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
   setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f),
   g : SetQuotient(A, relation) -> B,

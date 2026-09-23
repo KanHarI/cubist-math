@@ -1,6 +1,6 @@
 import polynomial_leading;
 
-theorem polynomial_constant_mul(K : AlgebraicField, a : af_carrier(K), b : af_carrier(K)) :
+def polynomial_constant_mul(K : AlgebraicField, a : af_carrier(K), b : af_carrier(K)) :
   polynomial_constant(K, field_mul(K, a, b)) = polynomial_mul(
     K, polynomial_constant(K, a), polynomial_constant(K, b)
   ) {
@@ -27,7 +27,7 @@ theorem polynomial_constant_mul(K : AlgebraicField, a : af_carrier(K), b : af_ca
   );
 }
 
-theorem polynomial_constant_neg(K : AlgebraicField, a : af_carrier(K)) :
+def polynomial_constant_neg(K : AlgebraicField, a : af_carrier(K)) :
   polynomial_constant(K, field_neg(K, a)) = polynomial_neg(K, polynomial_constant(K, a)) {
   have coefficient :
     forall n : Nat, series_constant(K, field_neg(K, a), n) = field_neg(K, series_constant(K, a, n)) {

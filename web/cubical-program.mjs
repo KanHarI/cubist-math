@@ -346,6 +346,8 @@ export class CubicalProgram {
       const module = info.sourceModule ?? this.main;
       const declaration = this.sourceAsts.get(module)?.declarations.find(d => d.name.text === info.name);
       if (declaration) view.statement = sourceStatement(this.sources[module], declaration, this.declarationReferences.get(binding));
+      // Keep proof blocks compact, with their checked bodies available to inspect.
+      if (declaration?.body) view.folded.reference = { tag: "DefRef", name: binding };
       if (!view.statement) {
         let conclusion = cubicalMathTree(view.folded.type, symbols), raw = view.folded.type;
         const parameters = [];
@@ -360,7 +362,6 @@ export class CubicalProgram {
     if (local && view.sourceBinding && local.term.tag !== "Var") view.folded.reference = {
       tag: "DisplayRef", name: this.localSymbols[binding]?.name, binding: view.sourceBinding,
     };
-    if (info?.kind === "theorem") view.folded.reference = { tag: "DefRef", name: binding };
     view.locals = aliases.filter(alias => alias.term.tag !== "Var" && alias.binding !== binding && alias.binding !== view.sourceBinding)
       .map(({ name, binding }) => ({ name, binding }));
     return view;

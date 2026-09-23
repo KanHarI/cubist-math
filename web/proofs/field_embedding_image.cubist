@@ -5,7 +5,7 @@ import field_embedding_factorization;
 def embedding_image_field(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
   subfield_as_field(L, subfield_image(K, L, e, subfield_top(K)));
 
-theorem field_embedding_lands_in_image(
+def field_embedding_lands_in_image(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K)
 ) :
   SubfieldImage(K, L, e, subfield_top(K), field_embedding_map(K, L, e, x)) {
@@ -37,7 +37,7 @@ def embedding_image_inverse(
 }
 
 // The inverse returns the preimage stored in the image-membership witness.
-theorem embedding_image_inverse_spec(
+def embedding_image_inverse_spec(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   y : af_carrier(embedding_image_field(K, L, e))
 ) :
@@ -52,7 +52,7 @@ theorem embedding_image_inverse_spec(
   exact snd(Unit, (f(x) = value), sigma_second(af_carrier(K), fiber, subfield_evidence(L, S, y)));
 }
 
-theorem embedding_image_left_inverse(
+def embedding_image_left_inverse(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K)
 ) :
   embedding_image_inverse(K, L, e, embedding_image_forward(K, L, e, x)) = x {
@@ -62,7 +62,7 @@ theorem embedding_image_left_inverse(
   );
 }
 
-theorem embedding_image_right_inverse(
+def embedding_image_right_inverse(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   y : af_carrier(embedding_image_field(K, L, e))
 ) :
@@ -75,7 +75,7 @@ theorem embedding_image_right_inverse(
 }
 
 // Every field embedding is an isomorphism onto its image, constructively.
-theorem field_embedding_image_iso(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def field_embedding_image_iso(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   FieldIso(K, embedding_image_field(K, L, e)) {
   exact (
     embedding_image_forward(K, L, e),
@@ -88,7 +88,7 @@ theorem field_embedding_image_iso(K : AlgebraicField, L : AlgebraicField, e : Fi
 
 // Univalence now identifies the source field with its image as a field type.
 // This does not identify the source with the entire codomain of an embedding.
-theorem field_embedding_image_equality(
+def field_embedding_image_equality(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
 ) :
   K =[AlgebraicField] embedding_image_field(K, L, e) {

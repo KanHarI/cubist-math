@@ -1,7 +1,7 @@
 import f4_fixed_field;
 
 // Adjoining alpha already contains all four elements: alpha+1 is a sum.
-theorem f4_intermediate_with_alpha(
+def f4_intermediate_with_alpha(
   P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P), alpha : P(f4_2)
 ) :
   forall x : F4Carrier, P(x) {
@@ -15,7 +15,7 @@ theorem f4_intermediate_with_alpha(
 }
 
 // Without alpha there can be no alpha+1, since adding 1 would recover alpha.
-theorem f4_intermediate_without_alpha(
+def f4_intermediate_without_alpha(
   P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P), noAlpha : P(f4_2) -> Void
 ) :
   forall x : F4Carrier, P(x) -> F2Image(x) {
@@ -38,7 +38,7 @@ theorem f4_intermediate_without_alpha(
   );
 }
 
-theorem f4_intermediate_contains_image(
+def f4_intermediate_contains_image(
   P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P), x : F4Carrier,
   member : F2Image(x)
 ) :
@@ -54,7 +54,7 @@ def F4IntermediateAlternatives(M : IntermediateField(F2, F4OverF2)) =
   (M =[IntermediateField(F2, F4OverF2)] f4_base_intermediate)
   or (M =[IntermediateField(F2, F4OverF2)] intermediate_top(F2, F4OverF2));
 
-theorem f4_intermediate_classification(
+def f4_intermediate_classification(
   M : IntermediateField(F2, F4OverF2),
   decideAlpha : Decidable(intermediate_members(F2, F4OverF2, M, f4_2))
 ) :

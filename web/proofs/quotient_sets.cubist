@@ -9,7 +9,7 @@ def QuotientComparison(
   forall a : A,
   FieldIff(quotient_predicate(A, relation, q, a), quotient_predicate(A, relation, r, a));
 
-theorem quotient_comparison_prop(
+def quotient_comparison_prop(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
   q : SetQuotient(A, relation), r : SetQuotient(A, relation)
 ) :
@@ -65,7 +65,7 @@ def quotient_comparison_path(
 
 // A weakly constant endomap of each path space gives setness by Hedberg's
 // argument. No decidable equality, representative choice, or resizing is used.
-theorem quotient_is_set(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation)) :
+def quotient_is_set(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation)) :
   FieldSet(SetQuotient(A, relation)) {
   let choose =
     fun (q : SetQuotient(A, relation)) => fun (r : SetQuotient(A, relation)) => fun (p : q = r) => quotient_comparison_path(
@@ -89,7 +89,7 @@ theorem quotient_is_set(A : U1, relation : A -> A -> U0, laws : EquivalenceRelat
 
 // Dependent functions into sets are a set. The square is pointwise: both
 // path coordinates are retained, rather than postulating proof irrelevance.
-theorem dependent_functions_are_set(A : U1, B : A -> U1, setB : (forall a : A, FieldSet(B(a)))) :
+def dependent_functions_are_set(A : U1, B : A -> U1, setB : (forall a : A, FieldSet(B(a)))) :
   FieldSet(forall a : A, B(a)) {
   intro f;
   intro g;

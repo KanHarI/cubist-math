@@ -4,7 +4,7 @@ import radix_factorial;
 
 // Compatibility identifies each transported algorithm with the already proved
 // factorial on its target representation, rather than silently redefining it.
-theorem binary_to_radix_factorial(extra : Nat, n : Nat) :
+def binary_to_radix_factorial(extra : Nat, n : Nat) :
   binary_to_radix(extra, binary_factorial(n)) = radix_factorial(extra, n) {
   exact radix_injective(
     extra, binary_to_radix(extra, binary_factorial(n)), radix_factorial(extra, n),
@@ -15,7 +15,7 @@ theorem binary_to_radix_factorial(extra : Nat, n : Nat) :
   );
 }
 
-theorem radix_to_binary_factorial(extra : Nat, n : Nat) :
+def radix_to_binary_factorial(extra : Nat, n : Nat) :
   radix_to_binary(extra, radix_factorial(extra, n)) = binary_factorial(n) {
   exact binary_injective(
     radix_to_binary(extra, radix_factorial(extra, n)), binary_factorial(n),
@@ -27,7 +27,7 @@ theorem radix_to_binary_factorial(extra : Nat, n : Nat) :
 }
 
 // Binary -> arbitrary radix, using the same binary proof for every radix.
-theorem factorial_ten_binary_to_radix(extra : Nat) :
+def factorial_ten_binary_to_radix(extra : Nat) :
   radix_factorial(extra, 10) = binary_to_radix(extra, 0b1101110101111100000000) {
   exact trans(
     sym(binary_to_radix_factorial(extra, 10)),
@@ -39,7 +39,7 @@ theorem factorial_ten_binary_to_radix(extra : Nat) :
 }
 
 // Arbitrary radix -> binary, for any checked factorial value in that radix.
-theorem factorial_ten_radix_to_binary(
+def factorial_ten_radix_to_binary(
   extra : Nat, value : RadixNat(extra), same : radix_factorial(extra, 10) = value
 ) :
   binary_factorial(10) = radix_to_binary(extra, value) {
@@ -52,7 +52,7 @@ theorem factorial_ten_radix_to_binary(
 }
 
 // Arbitrary radix -> unary Nat. The endpoint remains an unevaluated expression.
-theorem factorial_ten_radix_to_nat(
+def factorial_ten_radix_to_nat(
   extra : Nat, value : RadixNat(extra), same : radix_factorial(extra, 10) = value
 ) :
   factorial(10) = radix_to_nat(extra, value) {
@@ -65,11 +65,11 @@ theorem factorial_ten_radix_to_nat(
 }
 
 // Concrete manual decimal and generic-binary proofs transported to unary Nat.
-theorem factorial_ten_from_base_ten : factorial(10) = radix_to_nat(8, base_ten_factorial_value_10) {
+def factorial_ten_from_base_ten : factorial(10) = radix_to_nat(8, base_ten_factorial_value_10) {
   exact factorial_ten_radix_to_nat(8, base_ten_factorial_value_10, radix_factorial_ten_base_ten);
 }
 
-theorem factorial_ten_from_base_two : factorial(10) = radix_to_nat(0, base_two_factorial_value_10) {
+def factorial_ten_from_base_two : factorial(10) = radix_to_nat(0, base_two_factorial_value_10) {
   exact factorial_ten_radix_to_nat(0, base_two_factorial_value_10, radix_factorial_ten_base_two);
 }
 
@@ -77,7 +77,7 @@ theorem factorial_ten_from_base_two : factorial(10) = radix_to_nat(0, base_two_f
 
 def converted_ten_prefix_1 = base_ten_leading_3;
 
-theorem converted_ten_value_1 : radix_positive_to_binary(8, converted_ten_prefix_1) = 0b11 {
+def converted_ten_value_1 : radix_positive_to_binary(8, converted_ten_prefix_1) = 0b11 {
   exact radix_binary_leading_beta(
     8,
     radix_digit_weaken(
@@ -94,7 +94,7 @@ theorem converted_ten_value_1 : radix_positive_to_binary(8, converted_ten_prefix
 
 def converted_ten_prefix_2 = radix_append(8, base_ten_digit_6, converted_ten_prefix_1);
 
-theorem converted_ten_value_2 : radix_positive_to_binary(8, converted_ten_prefix_2) = 0b100100 {
+def converted_ten_value_2 : radix_positive_to_binary(8, converted_ten_prefix_2) = 0b100100 {
   exact radix_binary_append_value(
     8, base_ten_digit_6, converted_ten_prefix_1, 0b11, converted_ten_value_1
   );
@@ -102,7 +102,7 @@ theorem converted_ten_value_2 : radix_positive_to_binary(8, converted_ten_prefix
 
 def converted_ten_prefix_3 = radix_append(8, base_ten_digit_2, converted_ten_prefix_2);
 
-theorem converted_ten_value_3 : radix_positive_to_binary(8, converted_ten_prefix_3) = 0b101101010 {
+def converted_ten_value_3 : radix_positive_to_binary(8, converted_ten_prefix_3) = 0b101101010 {
   exact radix_binary_append_value(
     8, base_ten_digit_2, converted_ten_prefix_2, 0b100100, converted_ten_value_2
   );
@@ -110,7 +110,7 @@ theorem converted_ten_value_3 : radix_positive_to_binary(8, converted_ten_prefix
 
 def converted_ten_prefix_4 = radix_append(8, base_ten_digit_8, converted_ten_prefix_3);
 
-theorem converted_ten_value_4 : radix_positive_to_binary(8, converted_ten_prefix_4) = 0b111000101100 {
+def converted_ten_value_4 : radix_positive_to_binary(8, converted_ten_prefix_4) = 0b111000101100 {
   exact radix_binary_append_value(
     8, base_ten_digit_8, converted_ten_prefix_3, 0b101101010, converted_ten_value_3
   );
@@ -118,7 +118,7 @@ theorem converted_ten_value_4 : radix_positive_to_binary(8, converted_ten_prefix
 
 def converted_ten_prefix_5 = radix_append(8, base_ten_digit_8, converted_ten_prefix_4);
 
-theorem converted_ten_value_5 :
+def converted_ten_value_5 :
   radix_positive_to_binary(8, converted_ten_prefix_5) = 0b1000110111000000 {
   exact radix_binary_append_value(
     8, base_ten_digit_8, converted_ten_prefix_4, 0b111000101100, converted_ten_value_4
@@ -127,7 +127,7 @@ theorem converted_ten_value_5 :
 
 def converted_ten_prefix_6 = radix_append(8, base_ten_digit_0, converted_ten_prefix_5);
 
-theorem converted_ten_value_6 :
+def converted_ten_value_6 :
   radix_positive_to_binary(8, converted_ten_prefix_6) = 0b1011000100110000000 {
   exact radix_binary_append_value(
     8, base_ten_digit_0, converted_ten_prefix_5, 0b1000110111000000, converted_ten_value_5
@@ -136,26 +136,26 @@ theorem converted_ten_value_6 :
 
 def converted_ten_prefix_7 = radix_append(8, base_ten_digit_0, converted_ten_prefix_6);
 
-theorem converted_ten_value_7 :
+def converted_ten_value_7 :
   radix_positive_to_binary(8, converted_ten_prefix_7) = 0b1101110101111100000000 {
   exact radix_binary_append_value(
     8, base_ten_digit_0, converted_ten_prefix_6, 0b1011000100110000000, converted_ten_value_6
   );
 }
 
-theorem base_ten_3628800_to_binary :
+def base_ten_3628800_to_binary :
   radix_to_binary(8, base_ten_factorial_value_10) = 0b1101110101111100000000 {
   exact trans(radix_binary_positive_beta(8, converted_ten_prefix_7), converted_ten_value_7);
 }
 
-theorem factorial_ten_base_ten_to_binary : binary_factorial(10) = 0b1101110101111100000000 {
+def factorial_ten_base_ten_to_binary : binary_factorial(10) = 0b1101110101111100000000 {
   exact trans(
     factorial_ten_radix_to_binary(8, base_ten_factorial_value_10, radix_factorial_ten_base_ten),
     base_ten_3628800_to_binary
   );
 }
 
-theorem factorial_ten_binary_to_base_ten : radix_factorial(8, 10) = base_ten_factorial_value_10 {
+def factorial_ten_binary_to_base_ten : radix_factorial(8, 10) = base_ten_factorial_value_10 {
   exact trans(
     factorial_ten_binary_to_radix(8),
     trans(
@@ -167,13 +167,13 @@ theorem factorial_ten_binary_to_base_ten : radix_factorial(8, 10) = base_ten_fac
 
 def converted_two_prefix_1 = base_two_leading_1;
 
-theorem converted_two_value_1 : radix_positive_to_binary(0, converted_two_prefix_1) = 0b1 {
+def converted_two_value_1 : radix_positive_to_binary(0, converted_two_prefix_1) = 0b1 {
   exact radix_binary_leading_beta(0, radix_digit_top(0));
 }
 
 def converted_two_prefix_2 = radix_append(0, base_two_digit_1, converted_two_prefix_1);
 
-theorem converted_two_value_2 : radix_positive_to_binary(0, converted_two_prefix_2) = 0b11 {
+def converted_two_value_2 : radix_positive_to_binary(0, converted_two_prefix_2) = 0b11 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_1, 0b1, converted_two_value_1
   );
@@ -181,7 +181,7 @@ theorem converted_two_value_2 : radix_positive_to_binary(0, converted_two_prefix
 
 def converted_two_prefix_3 = radix_append(0, base_two_digit_0, converted_two_prefix_2);
 
-theorem converted_two_value_3 : radix_positive_to_binary(0, converted_two_prefix_3) = 0b110 {
+def converted_two_value_3 : radix_positive_to_binary(0, converted_two_prefix_3) = 0b110 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_2, 0b11, converted_two_value_2
   );
@@ -189,7 +189,7 @@ theorem converted_two_value_3 : radix_positive_to_binary(0, converted_two_prefix
 
 def converted_two_prefix_4 = radix_append(0, base_two_digit_1, converted_two_prefix_3);
 
-theorem converted_two_value_4 : radix_positive_to_binary(0, converted_two_prefix_4) = 0b1101 {
+def converted_two_value_4 : radix_positive_to_binary(0, converted_two_prefix_4) = 0b1101 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_3, 0b110, converted_two_value_3
   );
@@ -197,7 +197,7 @@ theorem converted_two_value_4 : radix_positive_to_binary(0, converted_two_prefix
 
 def converted_two_prefix_5 = radix_append(0, base_two_digit_1, converted_two_prefix_4);
 
-theorem converted_two_value_5 : radix_positive_to_binary(0, converted_two_prefix_5) = 0b11011 {
+def converted_two_value_5 : radix_positive_to_binary(0, converted_two_prefix_5) = 0b11011 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_4, 0b1101, converted_two_value_4
   );
@@ -205,7 +205,7 @@ theorem converted_two_value_5 : radix_positive_to_binary(0, converted_two_prefix
 
 def converted_two_prefix_6 = radix_append(0, base_two_digit_1, converted_two_prefix_5);
 
-theorem converted_two_value_6 : radix_positive_to_binary(0, converted_two_prefix_6) = 0b110111 {
+def converted_two_value_6 : radix_positive_to_binary(0, converted_two_prefix_6) = 0b110111 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_5, 0b11011, converted_two_value_5
   );
@@ -213,7 +213,7 @@ theorem converted_two_value_6 : radix_positive_to_binary(0, converted_two_prefix
 
 def converted_two_prefix_7 = radix_append(0, base_two_digit_0, converted_two_prefix_6);
 
-theorem converted_two_value_7 : radix_positive_to_binary(0, converted_two_prefix_7) = 0b1101110 {
+def converted_two_value_7 : radix_positive_to_binary(0, converted_two_prefix_7) = 0b1101110 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_6, 0b110111, converted_two_value_6
   );
@@ -221,7 +221,7 @@ theorem converted_two_value_7 : radix_positive_to_binary(0, converted_two_prefix
 
 def converted_two_prefix_8 = radix_append(0, base_two_digit_1, converted_two_prefix_7);
 
-theorem converted_two_value_8 : radix_positive_to_binary(0, converted_two_prefix_8) = 0b11011101 {
+def converted_two_value_8 : radix_positive_to_binary(0, converted_two_prefix_8) = 0b11011101 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_7, 0b1101110, converted_two_value_7
   );
@@ -229,7 +229,7 @@ theorem converted_two_value_8 : radix_positive_to_binary(0, converted_two_prefix
 
 def converted_two_prefix_9 = radix_append(0, base_two_digit_0, converted_two_prefix_8);
 
-theorem converted_two_value_9 : radix_positive_to_binary(0, converted_two_prefix_9) = 0b110111010 {
+def converted_two_value_9 : radix_positive_to_binary(0, converted_two_prefix_9) = 0b110111010 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_8, 0b11011101, converted_two_value_8
   );
@@ -237,7 +237,7 @@ theorem converted_two_value_9 : radix_positive_to_binary(0, converted_two_prefix
 
 def converted_two_prefix_10 = radix_append(0, base_two_digit_1, converted_two_prefix_9);
 
-theorem converted_two_value_10 : radix_positive_to_binary(0, converted_two_prefix_10) = 0b1101110101 {
+def converted_two_value_10 : radix_positive_to_binary(0, converted_two_prefix_10) = 0b1101110101 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_9, 0b110111010, converted_two_value_9
   );
@@ -245,7 +245,7 @@ theorem converted_two_value_10 : radix_positive_to_binary(0, converted_two_prefi
 
 def converted_two_prefix_11 = radix_append(0, base_two_digit_1, converted_two_prefix_10);
 
-theorem converted_two_value_11 :
+def converted_two_value_11 :
   radix_positive_to_binary(0, converted_two_prefix_11) = 0b11011101011 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_10, 0b1101110101, converted_two_value_10
@@ -254,7 +254,7 @@ theorem converted_two_value_11 :
 
 def converted_two_prefix_12 = radix_append(0, base_two_digit_1, converted_two_prefix_11);
 
-theorem converted_two_value_12 :
+def converted_two_value_12 :
   radix_positive_to_binary(0, converted_two_prefix_12) = 0b110111010111 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_11, 0b11011101011, converted_two_value_11
@@ -263,7 +263,7 @@ theorem converted_two_value_12 :
 
 def converted_two_prefix_13 = radix_append(0, base_two_digit_1, converted_two_prefix_12);
 
-theorem converted_two_value_13 :
+def converted_two_value_13 :
   radix_positive_to_binary(0, converted_two_prefix_13) = 0b1101110101111 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_12, 0b110111010111, converted_two_value_12
@@ -272,7 +272,7 @@ theorem converted_two_value_13 :
 
 def converted_two_prefix_14 = radix_append(0, base_two_digit_1, converted_two_prefix_13);
 
-theorem converted_two_value_14 :
+def converted_two_value_14 :
   radix_positive_to_binary(0, converted_two_prefix_14) = 0b11011101011111 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_13, 0b1101110101111, converted_two_value_13
@@ -281,7 +281,7 @@ theorem converted_two_value_14 :
 
 def converted_two_prefix_15 = radix_append(0, base_two_digit_0, converted_two_prefix_14);
 
-theorem converted_two_value_15 :
+def converted_two_value_15 :
   radix_positive_to_binary(0, converted_two_prefix_15) = 0b110111010111110 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_14, 0b11011101011111, converted_two_value_14
@@ -290,7 +290,7 @@ theorem converted_two_value_15 :
 
 def converted_two_prefix_16 = radix_append(0, base_two_digit_0, converted_two_prefix_15);
 
-theorem converted_two_value_16 :
+def converted_two_value_16 :
   radix_positive_to_binary(0, converted_two_prefix_16) = 0b1101110101111100 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_15, 0b110111010111110, converted_two_value_15
@@ -299,7 +299,7 @@ theorem converted_two_value_16 :
 
 def converted_two_prefix_17 = radix_append(0, base_two_digit_0, converted_two_prefix_16);
 
-theorem converted_two_value_17 :
+def converted_two_value_17 :
   radix_positive_to_binary(0, converted_two_prefix_17) = 0b11011101011111000 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_16, 0b1101110101111100, converted_two_value_16
@@ -308,7 +308,7 @@ theorem converted_two_value_17 :
 
 def converted_two_prefix_18 = radix_append(0, base_two_digit_0, converted_two_prefix_17);
 
-theorem converted_two_value_18 :
+def converted_two_value_18 :
   radix_positive_to_binary(0, converted_two_prefix_18) = 0b110111010111110000 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_17, 0b11011101011111000, converted_two_value_17
@@ -317,7 +317,7 @@ theorem converted_two_value_18 :
 
 def converted_two_prefix_19 = radix_append(0, base_two_digit_0, converted_two_prefix_18);
 
-theorem converted_two_value_19 :
+def converted_two_value_19 :
   radix_positive_to_binary(0, converted_two_prefix_19) = 0b1101110101111100000 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_18, 0b110111010111110000, converted_two_value_18
@@ -326,7 +326,7 @@ theorem converted_two_value_19 :
 
 def converted_two_prefix_20 = radix_append(0, base_two_digit_0, converted_two_prefix_19);
 
-theorem converted_two_value_20 :
+def converted_two_value_20 :
   radix_positive_to_binary(0, converted_two_prefix_20) = 0b11011101011111000000 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_19, 0b1101110101111100000, converted_two_value_19
@@ -335,7 +335,7 @@ theorem converted_two_value_20 :
 
 def converted_two_prefix_21 = radix_append(0, base_two_digit_0, converted_two_prefix_20);
 
-theorem converted_two_value_21 :
+def converted_two_value_21 :
   radix_positive_to_binary(0, converted_two_prefix_21) = 0b110111010111110000000 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_20, 0b11011101011111000000, converted_two_value_20
@@ -344,26 +344,26 @@ theorem converted_two_value_21 :
 
 def converted_two_prefix_22 = radix_append(0, base_two_digit_0, converted_two_prefix_21);
 
-theorem converted_two_value_22 :
+def converted_two_value_22 :
   radix_positive_to_binary(0, converted_two_prefix_22) = 0b1101110101111100000000 {
   exact radix_binary_append_value(
     0, base_two_digit_0, converted_two_prefix_21, 0b110111010111110000000, converted_two_value_21
   );
 }
 
-theorem base_two_3628800_to_binary :
+def base_two_3628800_to_binary :
   radix_to_binary(0, base_two_factorial_value_10) = 0b1101110101111100000000 {
   exact trans(radix_binary_positive_beta(0, converted_two_prefix_22), converted_two_value_22);
 }
 
-theorem factorial_ten_base_two_to_binary : binary_factorial(10) = 0b1101110101111100000000 {
+def factorial_ten_base_two_to_binary : binary_factorial(10) = 0b1101110101111100000000 {
   exact trans(
     factorial_ten_radix_to_binary(0, base_two_factorial_value_10, radix_factorial_ten_base_two),
     base_two_3628800_to_binary
   );
 }
 
-theorem factorial_ten_binary_to_base_two : radix_factorial(0, 10) = base_two_factorial_value_10 {
+def factorial_ten_binary_to_base_two : radix_factorial(0, 10) = base_two_factorial_value_10 {
   exact trans(
     factorial_ten_binary_to_radix(0),
     trans(

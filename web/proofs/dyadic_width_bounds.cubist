@@ -2,7 +2,7 @@ import dyadic_sampling;
 
 // Scalar estimates for mesh decay; these use no Archimedean or completeness
 // assumption and do not extract witnesses from propositional truncation.
-theorem field_natural_nonnegative(
+def field_natural_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat
@@ -22,7 +22,7 @@ theorem field_natural_nonnegative(
   };
 }
 
-theorem field_natural_successor_ge_one(
+def field_natural_successor_ge_one(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat
@@ -38,7 +38,7 @@ theorem field_natural_successor_ge_one(
   );
 }
 
-theorem dyadic_width_nonnegative(
+def dyadic_width_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -61,7 +61,7 @@ theorem dyadic_width_nonnegative(
   };
 }
 
-theorem dyadic_width_growth_step(
+def dyadic_width_growth_step(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -135,7 +135,7 @@ theorem dyadic_width_growth_step(
 
 // (depth + 1) * width_after_depth_halvings <= original_width.
 // This weaker-than-exponential bound suffices for the Archimedean argument.
-theorem dyadic_width_growth_bound(
+def dyadic_width_growth_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,

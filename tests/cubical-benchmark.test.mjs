@@ -6,7 +6,7 @@ import { benchmark, category } from "../web/benchmark-runner.mjs";
 
 test("benchmark distinguishes invalid proofs, blocked uses, and independent checked declarations", async () => {
   const report = await benchmark({ modules: ["sample"], readSource: async () =>
-    "def good = 0; theorem bad : 0 = 1 { exact refl(0); } def dependent = bad; def independent = 2;" });
+    "def good = 0; def bad : 0 = 1 { exact refl(0); } def dependent = bad; def independent = 2;" });
   assert.deepEqual(report.declarations.map(d => d.category), ["checked", "failed", "blocked", "checked"]);
   assert.equal(report.declarations[2].rootBlocker, "sample__bad");
   assert.equal(report.importErrors.length, 0);

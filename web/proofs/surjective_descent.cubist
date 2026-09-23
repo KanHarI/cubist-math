@@ -9,7 +9,7 @@ def DescentValue(A : U1, B : U1, G : U1, present : A -> B, value : A -> G, b : B
 def DescentData(A : U1, B : U1, G : U1, present : A -> B, value : A -> G, b : B) =
   exists v : G, DescentValue(A, B, G, present, value, b, v);
 
-theorem descent_value_prop(
+def descent_value_prop(
   A : U1, B : U1, G : U1, setG : FieldSet(G), present : A -> B, value : A -> G, b : B, v : G
 ) :
   FieldProp(DescentValue(A, B, G, present, value, b, v)) {
@@ -24,7 +24,7 @@ theorem descent_value_prop(
   );
 }
 
-theorem descent_data_prop(
+def descent_data_prop(
   A : U1, B : U1, G : U1, setG : FieldSet(G), present : A -> B, value : A -> G, b : B,
   covered : FieldExists(exists a : A, present(a) = b)
 ) :
@@ -95,7 +95,7 @@ def surjective_descent(
     surjective_descent_data(A, B, G, setG, present, value, covered, consistent, b)
   );
 
-theorem surjective_descent_beta(
+def surjective_descent_beta(
   A : U1, B : U1, G : U1, setG : FieldSet(G), present : A -> B, value : A -> G,
   covered : (forall b : B, FieldExists(exists a : A, present(a) = b)),
   consistent : (forall a : A, forall a2 : A, (present(a) = present(a2)) -> value(a) = value(a2)),

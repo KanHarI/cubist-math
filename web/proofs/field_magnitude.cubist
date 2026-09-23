@@ -4,7 +4,7 @@ import ordered_bounds;
 def FieldMagnitudeBound(F : U1, negF : F -> F, lt : F -> F -> U0, x : F, radius : F) =
   FieldLe(F, lt, x, radius) and FieldLe(F, lt, negF(x), radius);
 
-theorem field_magnitude_zero(
+def field_magnitude_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)
@@ -20,7 +20,7 @@ theorem field_magnitude_zero(
   );
 }
 
-theorem field_magnitude_neg(
+def field_magnitude_neg(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F,
@@ -37,7 +37,7 @@ theorem field_magnitude_neg(
   );
 }
 
-theorem field_magnitude_radius_nonnegative(
+def field_magnitude_radius_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F,
@@ -55,7 +55,7 @@ theorem field_magnitude_radius_nonnegative(
   exact irreflexive(zero, transitive(zero, negF(x), zero, positiveNegX, negativeNegX));
 }
 
-theorem field_magnitude_enlarge(
+def field_magnitude_enlarge(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F, larger : F,
@@ -69,7 +69,7 @@ theorem field_magnitude_enlarge(
   );
 }
 
-theorem field_magnitude_add(
+def field_magnitude_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, r : F, s : F,
@@ -90,7 +90,7 @@ theorem field_magnitude_add(
   );
 }
 
-theorem order_product_upper_nonnegative(
+def order_product_upper_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, r : F, s : F,
@@ -116,7 +116,7 @@ theorem order_product_upper_nonnegative(
   );
 }
 
-theorem field_magnitude_product_upper(
+def field_magnitude_product_upper(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, r : F, s : F,
@@ -169,7 +169,7 @@ theorem field_magnitude_product_upper(
   );
 }
 
-theorem field_magnitude_mul(
+def field_magnitude_mul(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, r : F, s : F,

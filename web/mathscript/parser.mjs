@@ -375,8 +375,8 @@ export function parse(source, typeOnly = false) {
     let t = take();
     const opaque = t.text === "opaque";
     if (opaque) t = take("def");
-    if (!["theorem", "def", "axiom"].includes(t.text))
-      throw Object.assign(new Error("Expected theorem, def, or axiom."), {
+    if (!["def", "axiom"].includes(t.text))
+      throw Object.assign(new Error("Expected def or axiom."), {
         offset: t.start,
       });
     const n = name(),

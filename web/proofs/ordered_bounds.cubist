@@ -1,13 +1,13 @@
 import ordered_squares;
 
 // Weak inequalities derived from the constructive ordered-ring interface.
-theorem order_le_refl(F : U1, lt : F -> F -> U0, order : StrictOrder(F, lt), x : F) :
+def order_le_refl(F : U1, lt : F -> F -> U0, order : StrictOrder(F, lt), x : F) :
   FieldLe(F, lt, x, x) {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
   exact irreflexive(x);
 }
 
-theorem order_le_trans(
+def order_le_trans(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, z : F,
   xy : FieldLe(F, lt, x, y), yz : FieldLe(F, lt, y, z)
@@ -18,7 +18,7 @@ theorem order_le_trans(
   exact yz(ltLe(z, x, y, zx, xy));
 }
 
-theorem order_le_translate(
+def order_le_translate(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, z : F,
   xy : FieldLe(F, lt, x, y)
@@ -30,7 +30,7 @@ theorem order_le_translate(
   exact xy(backward(reversed));
 }
 
-theorem order_le_add(
+def order_le_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, u : F, v : F,
@@ -54,7 +54,7 @@ theorem order_le_add(
   );
 }
 
-theorem order_le_add_nonnegative(
+def order_le_add_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,
@@ -74,7 +74,7 @@ theorem order_le_add_nonnegative(
   );
 }
 
-theorem order_mul_nonnegative(
+def order_mul_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,

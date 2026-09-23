@@ -10,7 +10,7 @@ const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, impo
 test("the extension's identity type equals C2, with the specified transport and group law", async t => {
   const p = new CubicalProgram(module, readSource);
   t.after(() => p.dispose());
-  const result = await p.check("import f4_galois_group; theorem checked : Unit { exact tt; }", "loop_highlight");
+  const result = await p.check("import f4_galois_group; def checked : Unit { exact tt; }", "loop_highlight");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   for (const name of [
     "f4_automorphisms_equal_loops", "f4_extension_loops_equal_cyclic_two",
@@ -29,7 +29,7 @@ test("the two-loop equality cannot certify a one-element loop type", async t => 
   const p = new CubicalProgram(module, readSource, { collectReferences: false });
   t.after(() => p.dispose());
   const result = await p.check(`import f4_galois_group;
-    theorem loops_are_contractible : F4ExtensionLoops =[U1] Unit {
+    def loops_are_contractible : F4ExtensionLoops =[U1] Unit {
       exact f4_extension_loops_equal_cyclic_two;
     }`, "false_loop_highlight");
   assert.equal(result.complete, false);

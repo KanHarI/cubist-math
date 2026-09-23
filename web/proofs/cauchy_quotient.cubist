@@ -46,7 +46,7 @@ def CauchySame(
 def CauchyQuotient(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0) =
   SetQuotient(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ));
 
-theorem sequence_same_prop(
+def sequence_same_prop(
   Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x : Nat -> Q, y : Nat -> Q
 ) :
   FieldProp(SequenceSame(Q, zero, addQ, ltQ, x, y)) {
@@ -76,7 +76,7 @@ theorem sequence_same_prop(
   );
 }
 
-theorem sequence_same_reflexive(
+def sequence_same_reflexive(
   Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   closeSelf : (
     forall x : Q, forall epsilon : Q, ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)
@@ -99,7 +99,7 @@ theorem sequence_same_reflexive(
   );
 }
 
-theorem sequence_same_symmetric(
+def sequence_same_symmetric(
   Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x : Nat -> Q, y : Nat -> Q,
   same : SequenceSame(Q, zero, addQ, ltQ, x, y)
 ) :
@@ -156,7 +156,7 @@ def CloseComposition(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0) =
     -> FieldClose(Q, addQ, ltQ, y, z, delta) -> FieldClose(Q, addQ, ltQ, x, z, epsilon)
   );
 
-theorem close_tails_compose(
+def close_tails_compose(
   Q : U0, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x : Nat -> Q, y : Nat -> Q, z : Nat -> Q,
   epsilon : Q, delta : Q,
   composeClose : (
@@ -198,7 +198,7 @@ theorem close_tails_compose(
   );
 }
 
-theorem sequence_same_transitive(
+def sequence_same_transitive(
   Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   composeClose : CloseComposition(Q, zero, addQ, ltQ), x : Nat -> Q, y : Nat -> Q, z : Nat -> Q,
   xy : SequenceSame(Q, zero, addQ, ltQ, x, y), yz : SequenceSame(Q, zero, addQ, ltQ, y, z)
@@ -228,7 +228,7 @@ theorem sequence_same_transitive(
   );
 }
 
-theorem cauchy_same_equivalence(
+def cauchy_same_equivalence(
   Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
   closeSelf : (
     forall x : Q, forall epsilon : Q, ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)
@@ -261,7 +261,7 @@ theorem cauchy_same_equivalence(
   );
 }
 
-theorem cauchy_class_represented(
+def cauchy_class_represented(
   Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x : CauchyQuotient(Q, zero, addQ, ltQ)
 ) :
   FieldExists(
@@ -272,7 +272,7 @@ theorem cauchy_class_represented(
 }
 
 // Choice is an explicit argument. Its conclusion stays truncated.
-theorem cauchy_sequence_representatives(
+def cauchy_sequence_representatives(
   Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, sequence : Nat
   -> CauchyQuotient(Q, zero, addQ, ltQ),
   choice : RepresentativeChoice(

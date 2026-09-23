@@ -1,7 +1,7 @@
 import complex_coordinates;
 import complex_numbers;
 
-theorem complex_add_assoc(
+def complex_add_assoc(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F),
   v : Complex(F)
@@ -23,7 +23,7 @@ theorem complex_add_assoc(
   );
 }
 
-theorem complex_add_comm(
+def complex_add_comm(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F)
 ) :
@@ -35,7 +35,7 @@ theorem complex_add_comm(
   );
 }
 
-theorem complex_add_zero(
+def complex_add_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F)
 ) :
@@ -47,7 +47,7 @@ theorem complex_add_zero(
   );
 }
 
-theorem complex_add_inverse(
+def complex_add_inverse(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F)
 ) :
@@ -59,7 +59,7 @@ theorem complex_add_inverse(
   );
 }
 
-theorem complex_mul_assoc(
+def complex_mul_assoc(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F),
   v : Complex(F)
@@ -81,7 +81,7 @@ theorem complex_mul_assoc(
   );
 }
 
-theorem complex_mul_comm(
+def complex_mul_comm(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F)
 ) :
@@ -99,7 +99,7 @@ theorem complex_mul_comm(
   );
 }
 
-theorem complex_mul_one(
+def complex_mul_one(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F)
 ) :
@@ -115,7 +115,7 @@ theorem complex_mul_one(
   );
 }
 
-theorem complex_distribute(
+def complex_distribute(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), w : Complex(F),
   v : Complex(F)
@@ -139,7 +139,7 @@ theorem complex_distribute(
   );
 }
 
-theorem complex_commutative_ring(
+def complex_commutative_ring(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :
@@ -162,7 +162,7 @@ theorem complex_commutative_ring(
   );
 }
 
-theorem complex_i_squared(
+def complex_i_squared(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :
@@ -177,7 +177,7 @@ theorem complex_i_squared(
   );
 }
 
-theorem complex_conjugate_involution(
+def complex_conjugate_involution(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F)
 ) :
@@ -188,7 +188,7 @@ theorem complex_conjugate_involution(
   );
 }
 
-theorem complex_mul_conjugate(
+def complex_mul_conjugate(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F)
 ) :
@@ -207,14 +207,14 @@ theorem complex_mul_conjugate(
   );
 }
 
-theorem complex_embedding_injective(
+def complex_embedding_injective(
   F : U1, zero : F, x : F, y : F, same : complex_embed(F, zero, x) = complex_embed(F, zero, y)
 ) :
   x = y {
   exact cong(complex_real(F), same);
 }
 
-theorem complex_zero_not_one(F : U1, zero : F, one : F, distinct : (zero = one) -> Void) :
+def complex_zero_not_one(F : U1, zero : F, one : F, distinct : (zero = one) -> Void) :
   (complex_zero(F, zero) = complex_one(F, zero, one)) -> Void {
   intro same;
   exact distinct(complex_embedding_injective(F, zero, zero, one, same));
@@ -222,7 +222,7 @@ theorem complex_zero_not_one(F : U1, zero : F, one : F, distinct : (zero = one) 
 
 // A reciprocal of a^2+b^2 gives an actual complex inverse. Establishing that
 // the norm is invertible for apart-from-zero z belongs to the ordered layer.
-theorem complex_inverse_from_norm(
+def complex_inverse_from_norm(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), z : Complex(F), reciprocal : F,
   normLaw : mulF(complex_norm_squared(F, addF, mulF, z), reciprocal) = one

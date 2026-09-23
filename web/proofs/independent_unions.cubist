@@ -3,7 +3,7 @@ import predicate_chains;
 // A finite dependence in a directed union already occurs in one independent
 // member. All eliminations target coefficient equalities, which are propositions.
 // No representative, choice function, or inhabitant of an empty chain is needed.
-theorem directed_union_independent(
+def directed_union_independent(
   K : AlgebraicField, V : VectorSpace(K), I : U1, P : I -> vector_carrier(K, V) -> U0,
   directed : PredicateDirected(I, vector_carrier(K, V), P),
   independent : (forall j : I, LinearlyIndependent(K, V, P(j)))
@@ -36,7 +36,7 @@ theorem directed_union_independent(
   exact field_exists_elim((exists j : I, P(j, vectors(i))), Goal, prop, fromSeed, members(i));
 }
 
-theorem chain_union_independent(
+def chain_union_independent(
   K : AlgebraicField, V : VectorSpace(K), I : U1, P : I -> vector_carrier(K, V) -> U0,
   chain : PredicateChain(I, vector_carrier(K, V), P),
   independent : (forall j : I, LinearlyIndependent(K, V, P(j)))
@@ -104,7 +104,7 @@ def IndependentUnion(
   );
 }
 
-theorem independent_union_upper(
+def independent_union_upper(
   K : AlgebraicField, V : VectorSpace(K), I : U1, family : I -> IndependentSubset(K, V),
   chain : PredicateChain(
     I, vector_carrier(K, V), (fun (i : I) => independent_members(K, V, family(i)))

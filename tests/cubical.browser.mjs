@@ -63,7 +63,7 @@ try {
   assert.equal(await workbench.locator("#diagnostic").isVisible(), true);
   await workbench.close();
   await page.locator("#edit-mode").click();
-  await page.locator("#editor").fill("theorem wrong : 0 = 1 { exact refl(0); }");
+  await page.locator("#editor").fill("def wrong : 0 = 1 { exact refl(0); }");
   await page.locator("#check").click(); await idle();
   assert.match(await page.locator("#status").textContent(), /check incomplete/);
   assert.match(await page.locator("#result").textContent(), /Not checked wrong/);

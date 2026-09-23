@@ -74,25 +74,25 @@ opaque def binary_factorial(n : Nat) = induction n as k return BinaryNat {
     succ previous => binary_mul(binary_of_nat(succ(k)), previous);
   };
 
-theorem binary_carry_example : binary_succ(0b11111111) = 0b100000000 {
+def binary_carry_example : binary_succ(0b11111111) = 0b100000000 {
   exact refl(0b100000000);
 }
 
-theorem binary_add_example : binary_add(0b1101, 0b1011) = 0b11000 {
+def binary_add_example : binary_add(0b1101, 0b1011) = 0b11000 {
   exact refl(0b11000);
 }
 
-theorem binary_mul_example : binary_mul(0b1101, 0b1011) = 0b10001111 {
+def binary_mul_example : binary_mul(0b1101, 0b1011) = 0b10001111 {
   exact refl(0b10001111);
 }
 
 // The factorial step remains folded until its previous value is supplied.
-theorem binary_factorial_step(n : Nat) :
+def binary_factorial_step(n : Nat) :
   binary_factorial(succ(n)) = binary_mul(binary_of_nat(succ(n)), binary_factorial(n)) {
   exact refl(binary_mul(binary_of_nat(succ(n)), binary_factorial(n)));
 }
 
-theorem binary_factorial_value_step(
+def binary_factorial_value_step(
   n : Nat, value : BinaryNat, previous : binary_factorial(n) = value
 ) :
   binary_factorial(succ(n)) = binary_mul(binary_of_nat(succ(n)), value) {
@@ -102,46 +102,46 @@ theorem binary_factorial_value_step(
   );
 }
 
-theorem binary_factorial_zero : binary_factorial(0) = 0b1 {
+def binary_factorial_zero : binary_factorial(0) = 0b1 {
   exact refl(0b1);
 }
 
-theorem binary_factorial_1 : binary_factorial(1) = 0b1 {
+def binary_factorial_1 : binary_factorial(1) = 0b1 {
   exact binary_factorial_value_step(0, 0b1, binary_factorial_zero);
 }
 
-theorem binary_factorial_2 : binary_factorial(2) = 0b10 {
+def binary_factorial_2 : binary_factorial(2) = 0b10 {
   exact binary_factorial_value_step(1, 0b1, binary_factorial_1);
 }
 
-theorem binary_factorial_3 : binary_factorial(3) = 0b110 {
+def binary_factorial_3 : binary_factorial(3) = 0b110 {
   exact binary_factorial_value_step(2, 0b10, binary_factorial_2);
 }
 
-theorem binary_factorial_4 : binary_factorial(4) = 0b11000 {
+def binary_factorial_4 : binary_factorial(4) = 0b11000 {
   exact binary_factorial_value_step(3, 0b110, binary_factorial_3);
 }
 
-theorem binary_factorial_5 : binary_factorial(5) = 0b1111000 {
+def binary_factorial_5 : binary_factorial(5) = 0b1111000 {
   exact binary_factorial_value_step(4, 0b11000, binary_factorial_4);
 }
 
-theorem binary_factorial_6 : binary_factorial(6) = 0b1011010000 {
+def binary_factorial_6 : binary_factorial(6) = 0b1011010000 {
   exact binary_factorial_value_step(5, 0b1111000, binary_factorial_5);
 }
 
-theorem binary_factorial_7 : binary_factorial(7) = 0b1001110110000 {
+def binary_factorial_7 : binary_factorial(7) = 0b1001110110000 {
   exact binary_factorial_value_step(6, 0b1011010000, binary_factorial_6);
 }
 
-theorem binary_factorial_8 : binary_factorial(8) = 0b1001110110000000 {
+def binary_factorial_8 : binary_factorial(8) = 0b1001110110000000 {
   exact binary_factorial_value_step(7, 0b1001110110000, binary_factorial_7);
 }
 
-theorem binary_factorial_9 : binary_factorial(9) = 0b1011000100110000000 {
+def binary_factorial_9 : binary_factorial(9) = 0b1011000100110000000 {
   exact binary_factorial_value_step(8, 0b1001110110000000, binary_factorial_8);
 }
 
-theorem binary_factorial_ten : binary_factorial(10) = 0b1101110101111100000000 {
+def binary_factorial_ten : binary_factorial(10) = 0b1101110101111100000000 {
   exact binary_factorial_value_step(9, 0b1011000100110000000, binary_factorial_9);
 }

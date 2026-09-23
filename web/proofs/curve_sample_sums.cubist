@@ -1,7 +1,7 @@
 import affine_partition_refinement;
 
 // The parameter sum and the sum on the image curve are the same checked value.
-theorem curve_subdivision_sum_is_mapped(
+def curve_subdivision_sum_is_mapped(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F)
   -> Complex(F), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
@@ -24,7 +24,7 @@ theorem curve_subdivision_sum_is_mapped(
   );
 }
 
-theorem curve_subdivision_samples_join(
+def curve_subdivision_samples_join(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),

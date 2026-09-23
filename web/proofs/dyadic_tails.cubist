@@ -1,7 +1,7 @@
 import dyadic_decay;
 
 // Halving a nonnegative width cannot increase it.
-theorem nonnegative_half_le(
+def nonnegative_half_le(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), width : F, halfWidth : F,
@@ -23,7 +23,7 @@ theorem nonnegative_half_le(
 
 // The recursive width applies one halving to the input before the previous
 // iterate. Induction therefore generalizes over that input width.
-theorem dyadic_width_step_le(
+def dyadic_width_step_le(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -51,7 +51,7 @@ theorem dyadic_width_step_le(
 
 // Turn successive weak decreases into the inequality for arbitrary ordered
 // natural indices. IndexLE is definitionally the same natural order as le.
-theorem field_sequence_antitone_step(
+def field_sequence_antitone_step(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   sequence : Nat -> F,
@@ -76,7 +76,7 @@ theorem field_sequence_antitone_step(
   }
 }
 
-theorem field_sequence_antitone(
+def field_sequence_antitone(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   sequence : Nat -> F,
@@ -101,7 +101,7 @@ theorem field_sequence_antitone(
   };
 }
 
-theorem dyadic_width_antitone(
+def dyadic_width_antitone(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -121,7 +121,7 @@ theorem dyadic_width_antitone(
   );
 }
 
-theorem dyadic_width_small_tail(
+def dyadic_width_small_tail(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -144,7 +144,7 @@ theorem dyadic_width_small_tail(
 
 // Archimedeanness supplies a merely existing bound for the whole tail.
 // This does not choose an actual convergence modulus.
-theorem dyadic_width_eventually_small(
+def dyadic_width_eventually_small(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,

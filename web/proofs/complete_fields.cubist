@@ -64,7 +64,7 @@ def DedekindComplete(F : U1, lt : F -> F -> U0) =
   forall lower : F -> U0, forall upper : F -> U0, CutLaws(F, lt, lower, upper) -> exists point : F,
   RealizesCut(F, lt, lower, upper, point);
 
-theorem complete_field_ordered(
+def complete_field_ordered(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, minF : F -> F
   -> F, maxF : F -> F -> F, lt : F -> F -> U0,
   complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt)
@@ -74,7 +74,7 @@ theorem complete_field_ordered(
   exact ordered;
 }
 
-theorem complete_field_limit(
+def complete_field_limit(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, minF : F -> F
   -> F, maxF : F -> F -> F, lt : F -> F -> U0,
   complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt), sequence : Nat
@@ -85,7 +85,7 @@ theorem complete_field_limit(
   exact cauchy(sequence, cauchySequence);
 }
 
-theorem field_constant_converges(
+def field_constant_converges(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, unit : (forall x : F, addF(x, zero) = x),
   translate : (forall x : F, forall y : F, forall z : F, lt(x, y) -> lt(addF(z, x), addF(z, y))),
   x : F

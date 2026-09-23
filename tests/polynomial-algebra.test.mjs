@@ -18,7 +18,7 @@ test("formal division, uniqueness, root bounds and Bezout are checked without ex
   const p = create(t);
   const result = await p.check(`import polynomial_root_bound;
     import polynomial_irreducible;
-    theorem division(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), nz : PolynomialNonzero(K, q)) : PolynomialDivision(K, p, q) {
+    def division(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), nz : PolynomialNonzero(K, q)) : PolynomialDivision(K, p, q) {
       exact polynomial_division(K, p, q, nz);
     }
   `, "polynomial_regression");
@@ -31,7 +31,7 @@ test("adjoined roots and embeddings into a root field are constructed, not assum
   const p = create(t);
   const result = await p.check(`import polynomial_root_embeddings;
     import polynomial_annihilator;
-    theorem root(K : AlgebraicField, M : PolynomialModulus(K), irr : PolynomialIrreducible(K, modulus_polynomial(K, M))) :
+    def root(K : AlgebraicField, M : PolynomialModulus(K), irr : PolynomialIrreducible(K, modulus_polynomial(K, M))) :
       PolynomialRoot(K, PolynomialResidueField(K, M, irr), residue_embedding(K, M, irr), modulus_polynomial(K, M), adjoined_root(K, M)) {
       exact adjoined_root_is_root(K, M, irr);
     }
@@ -44,10 +44,10 @@ test("adjoined roots and embeddings into a root field are constructed, not assum
 test("zero polynomial is excluded from root bounds and division by zero", async t => {
   const p = create(t);
   const result = await p.check(`import polynomial_root_bound;
-    theorem zero_has_no_roots(K : AlgebraicField) : RootFamily(K, polynomial_zero(K), 1) -> Void {
+    def zero_has_no_roots(K : AlgebraicField) : RootFamily(K, polynomial_zero(K), 1) -> Void {
       exact polynomial_root_bound(K, polynomial_zero(K), polynomial_one_not_zero(K));
     }
-    theorem divide_by_zero(K : AlgebraicField, p : Polynomial(K)) : PolynomialDivision(K, p, polynomial_zero(K)) {
+    def divide_by_zero(K : AlgebraicField, p : Polynomial(K)) : PolynomialDivision(K, p, polynomial_zero(K)) {
       exact polynomial_division(K, p, polynomial_zero(K), polynomial_one_not_zero(K));
     }
   `, "invalid_polynomial_claims");

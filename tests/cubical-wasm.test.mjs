@@ -111,7 +111,7 @@ test("the actual W binary source checks entirely in cubical WASM", async t => {
   for (const declaration of result.declarations)
     assert.equal(declaration.status, "checked-native-cubical", `${declaration.name}: ${declaration.reason}`);
   const bad = new Translator({ normalize: false, nativeCheck }).translate(
-    "theorem bad_binary_literal : 0b110 = 0b111 { exact refl(0b110); }", result.env);
+    "def bad_binary_literal : 0b110 = 0b111 { exact refl(0b110); }", result.env);
   assert.equal(bad.declarations[0].status, "not-translated");
 });
 
@@ -165,7 +165,7 @@ test("native elaboration checks all manual factorial sources while retaining che
   }
   assert.ok(last.arenaNodes < 500000, JSON.stringify(last));
   assert.ok(last.arenaBytes < 32 * 1024 * 1024, JSON.stringify(last));
-  const bad = translator.translate("theorem wrong_factorial : binary_factorial(3) = 0b111 { exact refl(0b111); }", env);
+  const bad = translator.translate("def wrong_factorial : binary_factorial(3) = 0b111 { exact refl(0b111); }", env);
   assert.equal(bad.declarations[0].status, "not-translated");
   assert.equal(k.definitions.has("wrong_factorial"), false);
 });
@@ -246,7 +246,7 @@ test("Cubist expresses cubical paths, composition and pushout induction with che
   assert.equal(result.declarations.length, 15);
   const invalid = translator.translate(`
     def escaped = path(fun (i : Interval) => Nat, fun (i : Interval) => i);
-    theorem wrong : 0 = 1 { exact path(fun (i : Interval) => Nat, fun (i : Interval) => 0); }
+    def wrong : 0 = 1 { exact path(fun (i : Interval) => Nat, fun (i : Interval) => 0); }
     def malformed = comp(fun (i : Interval) => Nat, 0, face(i, 0, fun (j : Interval) => 0));
     def bad_bridge = pushout_induction(fun (p : Susp(Unit)) => Nat,
       fun (a : Unit) => 0, fun (b : Unit) => 1,
@@ -283,11 +283,11 @@ test("source-defined suspension induction uses a proved PathP bridge", async t =
   const result = translator.translate(`
     def C = Suspension(Unit);
     def family(p : C) = Unit;
-    theorem unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
+    def unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
     def boundary(a : Unit) = unique(transport(family, north(Unit), south(Unit), meridian(Unit, a), tt));
     def collapse(p : C) = suspension_induction(Unit, family, tt, tt, boundary, p);
-    theorem point_beta : collapse(north(Unit)) = tt { exact refl(tt); }
-    theorem bridge_beta(a : Unit) :
+    def point_beta : collapse(north(Unit)) = tt { exact refl(tt); }
+    def bridge_beta(a : Unit) :
       apd(collapse, north(Unit), south(Unit), meridian(Unit, a)) = boundary(a) {
       exact suspension_meridian_beta(Unit, family, tt, tt, boundary, a);
     }

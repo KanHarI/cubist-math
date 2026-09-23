@@ -5,7 +5,7 @@ def RootFamily(K : AlgebraicField, p : Polynomial(K), n : Nat) =
   exists roots : Fin(n) -> af_carrier(K), Injective(Fin(n), af_carrier(K), roots)
   and (forall i : Fin(n), PolynomialRoot(K, K, field_embedding_identity(K), p, roots(i)));
 
-theorem linear_factor_eval_nonzero(
+def linear_factor_eval_nonzero(
   K : AlgebraicField, r : af_carrier(K), x : af_carrier(K), different : (x = r) -> Void
 ) :
   FieldNonzero(
@@ -21,7 +21,7 @@ theorem linear_factor_eval_nonzero(
   );
 }
 
-theorem root_descends_to_factor_quotient(
+def root_descends_to_factor_quotient(
   K : AlgebraicField, p : Polynomial(K), r : af_carrier(K), q : Polynomial(K),
   factor : p = polynomial_mul(K, polynomial_linear_factor(K, r), q), x : af_carrier(K),
   different : (x = r) -> Void, root : PolynomialRoot(K, K, field_embedding_identity(K), p, x)
@@ -44,7 +44,7 @@ theorem root_descends_to_factor_quotient(
   );
 }
 
-theorem factor_quotient_nonzero(
+def factor_quotient_nonzero(
   K : AlgebraicField, p : Polynomial(K), f : Polynomial(K), q : Polynomial(K),
   factor : p = polynomial_mul(K, f, q), nonzero : (p = polynomial_zero(K)) -> Void,
   zero : q = polynomial_zero(K)
@@ -53,7 +53,7 @@ theorem factor_quotient_nonzero(
   exact nonzero(trans(factor, trans(cong(polynomial_mul(K, f), zero), polynomial_mul_zero(K, f))));
 }
 
-theorem linear_factor_quotient_degree(
+def linear_factor_quotient_degree(
   K : AlgebraicField, p : Polynomial(K), r : af_carrier(K), q : Polynomial(K),
   factor : p = polynomial_mul(K, polynomial_linear_factor(K, r), q), m : Nat,
   degree : polynomial_cutoff(K, p) = succ(succ(m)), nonzero : (q = polynomial_zero(K)) -> Void
@@ -74,7 +74,7 @@ theorem linear_factor_quotient_degree(
   exact trans(dq, cong((fun (n : Nat) => succ(n)), sym(mk)));
 }
 
-theorem polynomial_constant_no_root_family(
+def polynomial_constant_no_root_family(
   K : AlgebraicField, p : Polynomial(K), degree : polynomial_cutoff(K, p) = 1,
   family : RootFamily(K, p, 1)
 ) :
@@ -92,7 +92,7 @@ theorem polynomial_constant_no_root_family(
   );
 }
 
-theorem polynomial_root_bound_step(
+def polynomial_root_bound_step(
   K : AlgebraicField, m : Nat,
   previous : (
     forall p : Polynomial(K), polynomial_cutoff(K, p) = succ(m) -> RootFamily(K, p, succ(m)) -> Void
@@ -142,7 +142,7 @@ theorem polynomial_root_bound_step(
   exact previous(q, dq, typed(RootFamily(K, q, succ(m)), (rest, restDistinct, restRoots)));
 }
 
-theorem polynomial_root_bound_degree(K : AlgebraicField, d : Nat) =
+def polynomial_root_bound_degree(K : AlgebraicField, d : Nat) =
   induction d as k return (
     forall p : Polynomial(K), polynomial_cutoff(K, p) = succ(k) -> RootFamily(K, p, succ(k)) -> Void
   ) {
@@ -151,7 +151,7 @@ theorem polynomial_root_bound_degree(K : AlgebraicField, d : Nat) =
   };
 
 // The root bound uses formal degree, not the size of a chosen coefficient list.
-theorem polynomial_root_bound(
+def polynomial_root_bound(
   K : AlgebraicField, p : Polynomial(K), nonzero : (p = polynomial_zero(K)) -> Void
 ) :
   RootFamily(K, p, succ(polynomial_degree(K, p))) -> Void {

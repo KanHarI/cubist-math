@@ -3,7 +3,7 @@ import subfield_image_orders;
 
 // Change-of-ambient compatibility for every field embedding, not just an
 // isomorphism. The image of a compositum is the compositum of the two images.
-theorem compositum_image_forward(
+def compositum_image_forward(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), T : Subfield(K)
 ) :
   SubfieldIncluded(
@@ -27,7 +27,7 @@ theorem compositum_image_forward(
   );
 }
 
-theorem compositum_image_backward(
+def compositum_image_backward(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), T : Subfield(K)
 ) :
   SubfieldIncluded(
@@ -42,7 +42,7 @@ theorem compositum_image_backward(
   );
 }
 
-theorem compositum_image(
+def compositum_image(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), T : Subfield(K)
 ) :
   subfield_image(K, L, e, compositum(K, S, T)) =[Subfield(L)] compositum(

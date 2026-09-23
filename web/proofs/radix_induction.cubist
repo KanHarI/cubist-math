@@ -1,7 +1,7 @@
 import radix_naturals;
 import paths;
 
-theorem radix_empty_children(extra : Nat, f : Void -> RadixPositive(extra)) :
+def radix_empty_children(extra : Nat, f : Void -> RadixPositive(extra)) :
   (fun (v : Void) => typed(RadixPositive(extra), absurd(v))) = f {
   exact FunExt(
     U0, Void, (fun (v : Void) => RadixPositive(extra)),
@@ -10,7 +10,7 @@ theorem radix_empty_children(extra : Nat, f : Void -> RadixPositive(extra)) :
   );
 }
 
-theorem radix_unit_children(extra : Nat, f : Unit -> RadixPositive(extra)) :
+def radix_unit_children(extra : Nat, f : Unit -> RadixPositive(extra)) :
   (fun (u : Unit) => f(tt)) = f {
   exact FunExt(
     U0, Unit, (fun (u : Unit) => RadixPositive(extra)), (fun (u : Unit) => f(tt)), f,

@@ -357,7 +357,7 @@ def parallelogram_right_expansion(
     )
   );
 
-theorem complex_coordinate_parallelogram(
+def complex_coordinate_parallelogram(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
 ) :

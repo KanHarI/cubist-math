@@ -17,7 +17,7 @@ test("finite algebraic extensions, actual splitting fields, normality and genera
   const p = create(t);
   const result = await p.check(`import embedding_counts;
     import normal_extensions;
-    import finitely_generated_algebraic; theorem checked : Unit { exact tt; }`, "algebraic_milestones");
+    import finitely_generated_algebraic; def checked : Unit { exact tt; }`, "algebraic_milestones");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   for (const name of [
     "minimal_polynomials__minimal_polynomial_irreducible",
@@ -43,12 +43,12 @@ test("finite algebraic extensions, actual splitting fields, normality and genera
 
   const negative = create(t);
   const invalid = await negative.check(`import embedding_counts;
-    theorem embedding_without_closed_target(K : AlgebraicField, L : AlgebraicField,
+    def embedding_without_closed_target(K : AlgebraicField, L : AlgebraicField,
       e : FieldEmbedding(K, L), finite : FiniteExtension(K, embedding_as_extension(K, L, e)),
       T : AlgebraicField, j : FieldEmbedding(K, T)) : Mere(EmbeddingsOver(K, L, e, T, j)) {
       exact finite_extension_embedding_exists(K, L, e, finite, T, j);
     }
-    theorem all_separable_extensions_have_one_embedding(K : AlgebraicField, L : AlgebraicField,
+    def all_separable_extensions_have_one_embedding(K : AlgebraicField, L : AlgebraicField,
       e : FieldEmbedding(K, L), finite : FiniteExtension(K, embedding_as_extension(K, L, e)),
       separable : SeparableExtension(K, L, e), T : AlgebraicField, closed : AlgebraicallyClosed(T),
       j : FieldEmbedding(K, T)) : HasCardinality(EmbeddingsOver(K, L, e, T, j), 1) {
@@ -62,13 +62,13 @@ test("finite algebraic extensions, actual splitting fields, normality and genera
 
 test("the formal F2 polynomial computes the two F4 roots and rejects zero as a root", async t => {
   const p = create(t);
-  const result = await p.check("import f4_formal_polynomial; theorem checked : Unit { exact tt; }", "formal_f4_regression");
+  const result = await p.check("import f4_formal_polynomial; def checked : Unit { exact tt; }", "formal_f4_regression");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   for (const name of ["f2_quadratic_alpha_root", "f2_quadratic_other_root", "f2_quadratic_nonzero", "f2_quadratic_roots_distinct"])
     assert.equal(p.symbols[`f4_formal_polynomial__${name}`]?.verified, true, name);
   const negative = create(t);
   const invalid = await negative.check(`import f4_formal_polynomial;
-    theorem zero_is_a_root : PolynomialRoot(F2, F4, f2_f4_embedding, f2_quadratic, f4_0) {
+    def zero_is_a_root : PolynomialRoot(F2, F4, f2_f4_embedding, f2_quadratic, f4_0) {
       exact f2_quadratic_alpha_root;
     }`, "invalid_f4_root");
   assert.equal(invalid.complete, false);
@@ -91,7 +91,7 @@ test("embedding roundtrip stays within the conversion budget with inspector refe
   });
   t.after(() => p.dispose());
   p.kernel.withGrowingBudget = operation => operation();
-  const result = await p.check("import separable_divisors; theorem checked : Unit { exact tt; }", "roundtrip_budget");
+  const result = await p.check("import separable_divisors; def checked : Unit { exact tt; }", "roundtrip_budget");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   assert.equal(p.symbols.simple_extension_embeddings__embedding_root_roundtrip.verified, true);
 });
@@ -111,7 +111,7 @@ test("finite separable count step keeps tower and root-count conversions bounded
   });
   t.after(() => p.dispose());
   p.kernel.withGrowingBudget = operation => operation();
-  const result = await p.check("import embedding_counts; theorem checked : Unit { exact tt; }", "count_step_budget");
+  const result = await p.check("import embedding_counts; def checked : Unit { exact tt; }", "count_step_budget");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   for (const name of [...bounded, "finite_separable_embedding_count"])
     assert.equal(p.symbols[`embedding_counts__${name}`]?.verified, true, name);

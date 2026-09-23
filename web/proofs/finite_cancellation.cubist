@@ -11,7 +11,7 @@ def swap_tail(A : U0, a : A, b : A, d : Decidable(a = b)) = match d return (Unit
     right no => tail(A, b);
   };
 
-theorem swap_tail_equal(A : U0, a : A, b : A, d : Decidable(a = b), p : a = b) =
+def swap_tail_equal(A : U0, a : A, b : A, d : Decidable(a = b), p : a = b) =
   match d as decision return (swap_tail(A, a, b, decision) = head(A)) {
     left yes => refl(head(A));
     right no => typed(
@@ -19,7 +19,7 @@ theorem swap_tail_equal(A : U0, a : A, b : A, d : Decidable(a = b), p : a = b) =
     );
   };
 
-theorem swap_tail_different(A : U0, a : A, b : A, d : Decidable(a = b), no : (a = b) -> Void) =
+def swap_tail_different(A : U0, a : A, b : A, d : Decidable(a = b), no : (a = b) -> Void) =
   match d as decision return (swap_tail(A, a, b, decision) = tail(A, b)) {
     left yes => typed(
       (swap_tail(A, a, b, typed(Decidable(a = b), left(yes))) = tail(A, b)), absurd(no(yes))
@@ -35,7 +35,7 @@ def swap_right(
     right b => swap_tail(A, a, b, decide(a, b));
   };
 
-theorem swap_right_twice(
+def swap_right_twice(
   A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), a : A, x : Unit or A
 ) =
   match x as z return (swap_right(A, decide, a, swap_right(A, decide, a, z)) = z) {
@@ -65,7 +65,7 @@ def swap(
     right a => swap_right(A, decide, a, x);
   };
 
-theorem swap_twice(
+def swap_twice(
   A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A, x : Unit or A
 ) =
   match chosen as c return (swap(A, decide, c, swap(A, decide, c, x)) = x) {
@@ -73,7 +73,7 @@ theorem swap_twice(
     right a => swap_right_twice(A, decide, a, x);
   };
 
-theorem swap_head(
+def swap_head(
   A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A
 ) =
   match chosen as c return (swap(A, decide, c, head(A)) = c) {
@@ -81,7 +81,7 @@ theorem swap_head(
     right a => refl(tail(A, a));
   };
 
-theorem swap_chosen(
+def swap_chosen(
   A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A
 ) =
   trans(
@@ -108,7 +108,7 @@ def not_head_tail(A : U0, x : Unit or A) = match x as z return (((z = head(A)) -
     right a => fun (no : (tail(A, a) = head(A)) -> Void) => a;
   };
 
-theorem not_head_tail_path(A : U0, x : Unit or A) =
+def not_head_tail_path(A : U0, x : Unit or A) =
   match x as z return (forall no : (z = head(A)) -> Void, tail(A, not_head_tail(A, z, no)) = z) {
     left u => fun (no : (typed(Unit or A, left(u)) = head(A)) -> Void) => typed(
       (tail(A, not_head_tail(A, typed(Unit or A, left(u)), no)) = typed(Unit or A, left(u))),
@@ -123,7 +123,7 @@ def inverse_injective(
 ) =
   trans(sym(eta(x)), trans(cong(g, p), eta(y)));
 
-theorem preserves_tail(
+def preserves_tail(
   A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A,
   bad : f(tail(A, a)) = head(B)
@@ -143,13 +143,13 @@ def restrict_tail(
 ) =
   not_head_tail(B, f(tail(A, a)), preserves_tail(A, B, f, g, eta, fixed, a));
 
-theorem restrict_tail_path(
+def restrict_tail_path(
   A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A
 ) =
   not_head_tail_path(B, f(tail(A, a)), preserves_tail(A, B, f, g, eta, fixed, a));
 
-theorem restriction_inverse(
+def restriction_inverse(
   A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), eps : (forall y : Unit or B, f(g(y)) = y),
   fixed_f : f(head(A)) = head(B), fixed_g : g(head(B)) = head(A), a : A
@@ -184,7 +184,7 @@ def restrict_bijection(
   );
 }
 
-theorem cancel_finite_successor(n : Nat, m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m)))) :
+def cancel_finite_successor(n : Nat, m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m)))) :
   Bijection(Fin(n), Fin(m)) {
   let image = forward(Fin(succ(n)), Fin(succ(m)), e, head(Fin(n)));
   let adjusted =
@@ -195,7 +195,7 @@ theorem cancel_finite_successor(n : Nat, m : Nat, e : Bijection(Fin(succ(n)), Fi
 }
 
 // Finite cardinality is invariant under arbitrary bijections.
-theorem finite_cardinality_unique(n : Nat) =
+def finite_cardinality_unique(n : Nat) =
   induction n as k return (forall m : Nat, Bijection(Fin(k), Fin(m)) -> (k = m)) {
     zero => fun (m : Nat) => induction m as j return (Bijection(Fin(0), Fin(j)) -> (0 = j)) {
       zero => fun (e : Bijection(Fin(0), Fin(0))) => refl(0);

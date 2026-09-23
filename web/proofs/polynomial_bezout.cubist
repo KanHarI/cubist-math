@@ -198,7 +198,7 @@ def PolynomialCoprime(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) 
 
 // The principal-ideal theorem supplies the coefficients. Coprimality is only
 // a condition on common divisors, not an assumed Bezout identity.
-theorem polynomial_bezout(
+def polynomial_bezout(
   K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), nonzero : PolynomialNonzero(K, p),
   coprime : PolynomialCoprime(K, p, q)
 ) :

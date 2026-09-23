@@ -3,7 +3,7 @@ import curve_sample_sums;
 
 // This is the recursion equation for the actual contour sums, using the
 // same midpoint and the same endpoint-order proofs as the sampler.
-theorem affine_dyadic_sum_successor(
+def affine_dyadic_sum_successor(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -83,7 +83,7 @@ theorem affine_dyadic_sum_successor(
 
 // Completeness and uniqueness carry the exact finite-sum equation to limits.
 // All three integrals use the same affine curve and its restricted endpoints.
-theorem affine_dyadic_integral_midpoint(
+def affine_dyadic_integral_midpoint(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F

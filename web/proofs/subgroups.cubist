@@ -28,7 +28,7 @@ def subgroup_laws(G : Group, S : Subgroup(G)) : SubgroupLaws(G, subgroup_members
   );
 }
 
-theorem subgroup_prop(
+def subgroup_prop(
   G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G)
 ) :
   Proposition(H(x)) {
@@ -36,13 +36,13 @@ theorem subgroup_prop(
   exact prop(x);
 }
 
-theorem subgroup_unit(G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H)) :
+def subgroup_unit(G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H)) :
   H(group_unit(G)) {
   obtain (prop, unit, multiplyLocal, invClosed) = laws;
   exact unit;
 }
 
-theorem subgroup_multiply(
+def subgroup_multiply(
   G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G),
   y : group_carrier(G), hx : H(x), hy : H(y)
 ) :
@@ -51,7 +51,7 @@ theorem subgroup_multiply(
   exact multiplyLocal(x, y, hx, hy);
 }
 
-theorem subgroup_inverse(
+def subgroup_inverse(
   G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G),
   y : group_carrier(G), hx : H(x), inverseLaw : group_multiply(G, y, x) = group_unit(G)
 ) :
@@ -61,7 +61,7 @@ theorem subgroup_inverse(
 }
 
 // The entire law bundle is a proposition; subgroups retain only membership data.
-theorem subgroup_laws_prop(
+def subgroup_laws_prop(
   G : Group, H : group_carrier(G) -> U0, p : SubgroupLaws(G, H), q : SubgroupLaws(G, H)
 ) :
   p = q {
@@ -149,7 +149,7 @@ theorem subgroup_laws_prop(
   exact membershipTailUnique(p, q);
 }
 
-theorem subgroup_ext(
+def subgroup_ext(
   G : Group, S : Subgroup(G), T : Subgroup(G),
   same : subgroup_members(G, S) = subgroup_members(G, T)
 ) :

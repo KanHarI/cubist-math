@@ -5,7 +5,7 @@ import descent_loop_laws;
 // descend to homotopy paths. Representatives of the same path may have
 // different approximations at every finite stage.
 
-theorem homotopy_limit_descent(
+def homotopy_limit_descent(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -45,7 +45,7 @@ theorem homotopy_limit_descent(
   );
 }
 
-theorem homotopy_limit_period(
+def homotopy_limit_period(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

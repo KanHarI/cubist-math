@@ -9,7 +9,7 @@ def complex_box_radius(F : U1, negF : F -> F, maxF : F -> F -> F, z : Complex(F)
     maxF(complex_imag(F, z), negF(complex_imag(F, z)))
   );
 
-theorem complex_lattice_box_bound(
+def complex_lattice_box_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
@@ -44,7 +44,7 @@ def ComplexUniformLine(
     -> ComplexClose(F, addF, lt, curve(s), curve(t), epsilon)
   );
 
-theorem complex_linear_deformation_uniform(
+def complex_linear_deformation_uniform(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

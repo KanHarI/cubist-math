@@ -1,7 +1,7 @@
 import dyadic_sampling;
 import sample_condition_maps;
 
-theorem interval_tagged_width_admissible(
+def interval_tagged_width_admissible(
   F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F,
   n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
@@ -28,7 +28,7 @@ theorem interval_tagged_width_admissible(
   exact sample_tagged_map(I, condition, other, mapping, n, vertices, tags, valid);
 }
 
-theorem interval_tagged_width_mesh(
+def interval_tagged_width_mesh(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), radius : F, mesh : F,
   small : lt(radius, mesh), n : Nat,
@@ -59,7 +59,7 @@ theorem interval_tagged_width_mesh(
 // A bound on the scalar dyadic width yields actual admissible samples below
 // the requested mesh. Scalar decay for all positive tolerances is proved
 // separately in dyadic_decay, using the Archimedean assumption.
-theorem dyadic_interval_samples_fine(
+def dyadic_interval_samples_fine(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,

@@ -12,7 +12,7 @@ def bin_cardinality(n : Nat, k : Nat, s : FiniteBinomial(n, k)) =
 def bin_pair(n : Nat, k : Nat, p : Fin(n) -> Bool, h : BinCard(n, k, p)) =
   typed(FiniteBinomial(n, k), (p, h));
 
-theorem bin_ext(
+def bin_ext(
   n : Nat, k : Nat, u : FiniteBinomial(n, k), v : FiniteBinomial(n, k),
   p : bin_predicate(n, k, u) = bin_predicate(n, k, v)
 ) :
@@ -144,7 +144,7 @@ def pascal_backward(n : Nat, k : Nat, s : FiniteBinomial(n, k) or FiniteBinomial
     right v => bin_exclude(n, succ(k), bin_predicate(n, succ(k), v), bin_cardinality(n, succ(k), v));
   };
 
-theorem pascal_predicate_roundtrip(n : Nat, k : Nat, p : Fin(n) -> Bool, b : Bool) =
+def pascal_predicate_roundtrip(n : Nat, k : Nat, p : Fin(n) -> Bool, b : Bool) =
   match b as c return (
     forall h : BinCard(succ(n), succ(k), predicate_join(Fin(n), c, p)),
     bin_predicate(succ(n), succ(k), pascal_backward(n, k, pascal_on_head(n, k, p, c, h))) = predicate_join(
@@ -161,7 +161,7 @@ theorem pascal_predicate_roundtrip(n : Nat, k : Nat, p : Fin(n) -> Bool, b : Boo
     );
   };
 
-theorem pascal_left(n : Nat, k : Nat, s : FiniteBinomial(succ(n), succ(k))) :
+def pascal_left(n : Nat, k : Nat, s : FiniteBinomial(succ(n), succ(k))) :
   pascal_backward(n, k, pascal_forward(n, k, s)) = s {
   let p = bin_predicate(succ(n), succ(k), s);
   let h = bin_cardinality(succ(n), succ(k), s);
@@ -185,7 +185,7 @@ def sum_right_or(A : U0, B : U0, fallback : B, x : A or B) = match x return B {
     right b => b;
   };
 
-theorem pascal_right_selected(n : Nat, k : Nat, s : FiniteBinomial(n, k)) :
+def pascal_right_selected(n : Nat, k : Nat, s : FiniteBinomial(n, k)) :
   pascal_forward(
     n, k, pascal_backward(n, k, typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), left(s)))
   ) = typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), left(s)) {
@@ -211,7 +211,7 @@ theorem pascal_right_selected(n : Nat, k : Nat, s : FiniteBinomial(n, k)) :
   );
 }
 
-theorem pascal_right_omitted(n : Nat, k : Nat, s : FiniteBinomial(n, succ(k))) :
+def pascal_right_omitted(n : Nat, k : Nat, s : FiniteBinomial(n, succ(k))) :
   pascal_forward(
     n, k, pascal_backward(n, k, typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), right(s)))
   ) = typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), right(s)) {
@@ -245,7 +245,7 @@ def pascal_right(n : Nat, k : Nat, s : FiniteBinomial(n, k) or FiniteBinomial(n,
     }
   };
 
-theorem binomial_pascal(n : Nat, k : Nat) :
+def binomial_pascal(n : Nat, k : Nat) :
   Bijection(FiniteBinomial(succ(n), succ(k)), FiniteBinomial(n, k) or FiniteBinomial(n, succ(k))) {
   exact (pascal_forward(n, k), pascal_backward(n, k), pascal_left(n, k), pascal_right(n, k));
 }

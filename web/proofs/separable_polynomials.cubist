@@ -92,7 +92,7 @@ def distinct_splitting_root_count(
   );
 }
 
-theorem separable_root_count(
+def separable_root_count(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), separable : SeparableIn(K, L, e, p)
 ) :
@@ -107,7 +107,7 @@ theorem separable_root_count(
 
 // A simple extension has exactly deg(p) embeddings into a field where its
 // defining polynomial splits separably. The count is transported by univalence.
-theorem separable_adjoined_embedding_count(
+def separable_adjoined_embedding_count(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L), separable : SeparableIn(K, L, e, modulus_polynomial(K, M))
@@ -127,7 +127,7 @@ theorem separable_adjoined_embedding_count(
   );
 }
 
-theorem polynomial_root_family_upper_bound(
+def polynomial_root_family_upper_bound(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p),
   family : DistinctFamily(PolynomialRoots(K, L, e, p), succ(polynomial_degree(K, p)))
@@ -155,7 +155,7 @@ theorem polynomial_root_family_upper_bound(
   );
 }
 
-theorem adjoined_embeddings_upper_bound(
+def adjoined_embeddings_upper_bound(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L),

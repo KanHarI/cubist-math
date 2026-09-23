@@ -1,7 +1,7 @@
 import field_scale_limits;
 
 // A canonical bound uses the lattice, not a decision about the sign of x.
-theorem field_lattice_magnitude(
+def field_lattice_magnitude(
   F : U1, negF : F -> F, lt : F -> F -> U0, minF : F -> F -> F, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), x : F
 ) :
@@ -10,7 +10,7 @@ theorem field_lattice_magnitude(
   exact (maxLeft(x, negF(x)), maxRight(x, negF(x)));
 }
 
-theorem field_close_difference_bound(
+def field_close_difference_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s : F, t : F, delta : F,
@@ -32,7 +32,7 @@ theorem field_close_difference_bound(
 }
 
 // The increment formula used to turn a parameter bound into a curve bound.
-theorem field_affine_increment(
+def field_affine_increment(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, d : F, s : F, t : F
 ) :
@@ -63,7 +63,7 @@ theorem field_affine_increment(
   );
 }
 
-theorem field_affine_close(
+def field_affine_close(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a : F, d : F, length : F,

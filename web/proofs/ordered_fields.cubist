@@ -69,7 +69,7 @@ def OrderedField(
   and FieldInverses(F, zero, one, mulF, lt);
 
 // Consequences of the interface, usable with every future construction.
-theorem field_add_right_unit(
+def field_add_right_unit(
   F : U1, zero : F, addF : F -> F -> F, negF : F -> F, laws : AddLaws(F, zero, addF, negF), x : F
 ) :
   addF(x, zero) = x {
@@ -77,7 +77,7 @@ theorem field_add_right_unit(
   exact trans(comm(x, zero), unit(x));
 }
 
-theorem field_add_cancel(
+def field_add_cancel(
   F : U1, zero : F, addF : F -> F -> F, negF : F -> F, laws : AddLaws(F, zero, addF, negF), x : F,
   y : F, z : F, same : addF(x, y) = addF(x, z)
 ) :
@@ -96,7 +96,7 @@ theorem field_add_cancel(
   exact trans(sym(undoY), trans(cong((fun (a : F) => addF(negF(x), a)), same), undoZ));
 }
 
-theorem field_inverse_unique(
+def field_inverse_unique(
   F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F, laws : MulLaws(F, one, addF, mulF),
   x : F, y : F, z : F, leftLaw : mulF(x, y) = one, rightLaw : mulF(x, z) = one
 ) :
@@ -117,7 +117,7 @@ theorem field_inverse_unique(
   );
 }
 
-theorem field_zero_not_one(
+def field_zero_not_one(
   F : U1, zero : F, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), positive : lt(zero, one)
 ) :
   (zero = one) -> Void {

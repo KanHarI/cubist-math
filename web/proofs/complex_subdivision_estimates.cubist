@@ -13,7 +13,7 @@ def ComplexSubdivisionEstimate(
     radius(a, b, tag)
   );
 
-theorem complex_subdivision_total_estimate_step(
+def complex_subdivision_total_estimate_step(
   C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
   -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> Complex(F),
@@ -80,7 +80,7 @@ theorem complex_subdivision_total_estimate_step(
 }
 
 // Combine actual local error witnesses along an arbitrary finite partition.
-theorem complex_subdivision_total_estimate(
+def complex_subdivision_total_estimate(
   C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
   -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> Complex(F),
@@ -127,7 +127,7 @@ theorem complex_subdivision_total_estimate(
 
 // Return an actual flattened subdivision and an error certificate for its sum.
 // The resulting bound is exactly the sum of the coarse-edge radii.
-theorem complex_subdivision_flat_estimate(
+def complex_subdivision_flat_estimate(
   C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
   -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> Complex(F),

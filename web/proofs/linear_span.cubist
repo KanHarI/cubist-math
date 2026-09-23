@@ -42,7 +42,7 @@ def span_prop(
 ) =
   TruncateProp(U0, SpanWitness(K, V, P, x));
 
-theorem span_zero(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :
+def span_zero(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :
   Span(K, V, P, vector_zero(K, V)) {
   exact TruncateIntro(
     U0, SpanWitness(K, V, P, vector_zero(K, V)),
@@ -58,7 +58,7 @@ theorem span_zero(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, 
   );
 }
 
-theorem span_generator(
+def span_generator(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
   member : P(x)
 ) :
@@ -81,7 +81,7 @@ theorem span_generator(
   );
 }
 
-theorem span_included(
+def span_included(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, Q : vector_carrier(K, V)
   -> U0, included : (forall x : vector_carrier(K, V), P(x) -> Q(x)), x : vector_carrier(K, V),
   member : Span(K, V, P, x)
@@ -122,7 +122,7 @@ def VectorBasis(K : AlgebraicField, V : VectorSpace(K)) =
   and LinearlyIndependent(K, V, P) and Spans(K, V, P);
 
 // The empty subset is independent, constructively.
-theorem empty_linearly_independent(K : AlgebraicField, V : VectorSpace(K)) :
+def empty_linearly_independent(K : AlgebraicField, V : VectorSpace(K)) :
   LinearlyIndependent(K, V, (fun (x : vector_carrier(K, V)) => Void)) {
   intro n;
   intro vectors;
@@ -135,7 +135,7 @@ theorem empty_linearly_independent(K : AlgebraicField, V : VectorSpace(K)) :
 }
 
 // Independence excludes the zero vector: its coefficient 1 would vanish.
-theorem independent_excludes_zero(
+def independent_excludes_zero(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   independent : LinearlyIndependent(K, V, P), member : P(vector_zero(K, V))
 ) :

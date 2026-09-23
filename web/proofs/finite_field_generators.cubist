@@ -12,7 +12,7 @@ def FieldGeneratedBy(
   -> (forall i : Fin(n), subfield_members(L, S, generators(i))) -> forall y : af_carrier(L),
   subfield_members(L, S, y);
 
-theorem finite_basis_generates_field(
+def finite_basis_generates_field(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
   basis : FiniteBasis(K, field_vector_space(K, L, e), n)
 ) :
@@ -47,7 +47,7 @@ theorem finite_basis_generates_field(
   );
 }
 
-theorem field_generated_empty_surjective(
+def field_generated_empty_surjective(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), generators : Fin(0)
   -> af_carrier(L), generates : FieldGeneratedBy(K, L, e, 0, generators)
 ) :
@@ -66,7 +66,7 @@ theorem field_generated_empty_surjective(
 }
 
 // After adjoining the first generator, the tail generates over the new base.
-theorem field_generated_adjoin_tail(
+def field_generated_adjoin_tail(
   K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, i : FieldEmbedding(K, R),
   h : FieldEmbedding(R, L), e : FieldEmbedding(K, L), triangle : EmbeddingOverLaw(K, R, i, L, e, h),
   n : Nat, generators : Fin(succ(n)) -> af_carrier(L),
@@ -102,7 +102,7 @@ theorem field_generated_adjoin_tail(
   exact generates(S, oldBase, all, y);
 }
 
-theorem generated_field_generators(
+def generated_field_generators(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, roots : Fin(n)
   -> af_carrier(L),
   generates : (

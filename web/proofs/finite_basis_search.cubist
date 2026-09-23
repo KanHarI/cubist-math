@@ -2,7 +2,7 @@ import linear_bijections;
 
 // Classical counterexamples are produced only under propositional truncation.
 // No global selection function or axiom of choice is required.
-theorem classical_counterexample(
+def classical_counterexample(
   A : U0, P : A -> U0, prop : (forall x : A, Proposition(P(x))), notAll : (forall x : A, P(x))
   -> Void
 ) :
@@ -45,7 +45,7 @@ def NoIndependent(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
   forall f : LinearMap(K, CoordinateSpace(K, n), V), LinearInjective(K, CoordinateSpace(K, n), V, f)
   -> Void;
 
-theorem finite_basis_search_step(
+def finite_basis_search_step(
   K : AlgebraicField, V : VectorSpace(K), fuel : Nat, m : Nat,
   previous : (
     forall k : Nat, forall f : LinearMap(K, CoordinateSpace(K, k), V),
@@ -107,7 +107,7 @@ def finite_basis_search(K : AlgebraicField, V : VectorSpace(K), fuel : Nat) =
     );
   };
 
-theorem finite_dimensional_from_bound(
+def finite_dimensional_from_bound(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, bound : NoIndependent(K, V, n)
 ) :
   FiniteDimensional(K, V) {
@@ -117,12 +117,12 @@ theorem finite_dimensional_from_bound(
   );
 }
 
-theorem successor_not_le_self(n : Nat) = induction n as k return (le(succ(k), k) -> Void) {
+def successor_not_le_self(n : Nat) = induction n as k return (le(succ(k), k) -> Void) {
     zero => fun (impossible : le(1, 0)) => impossible;
     succ previous => fun (impossible : le(succ(succ(k)), succ(k))) => previous(impossible);
   };
 
-theorem coordinate_embedding_bound(
+def coordinate_embedding_bound(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, h : LinearMap(K, V, CoordinateSpace(K, n)),
   injective : LinearInjective(K, V, CoordinateSpace(K, n), h)
 ) :
@@ -142,7 +142,7 @@ theorem coordinate_embedding_bound(
   );
 }
 
-theorem finite_dimensional_coordinates_injection(
+def finite_dimensional_coordinates_injection(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, h : LinearMap(K, V, CoordinateSpace(K, n)),
   injective : LinearInjective(K, V, CoordinateSpace(K, n), h)
 ) :
@@ -152,7 +152,7 @@ theorem finite_dimensional_coordinates_injection(
   );
 }
 
-theorem finite_dimensional_injection_basis(
+def finite_dimensional_injection_basis(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
   injective : LinearInjective(K, V, W, h), n : Nat, basis : FiniteBasis(K, W, n)
 ) :
@@ -178,7 +178,7 @@ theorem finite_dimensional_injection_basis(
 
 // Subobjects of finite-dimensional vector spaces are finite-dimensional.
 // The injective-map form applies without a chosen subtype presentation.
-theorem finite_dimensional_injection(
+def finite_dimensional_injection(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
   injective : LinearInjective(K, V, W, h), finite : FiniteDimensional(K, W)
 ) :

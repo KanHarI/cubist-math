@@ -48,7 +48,7 @@ def cut_upper_prop(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) :
   exact upperProp;
 }
 
-theorem principal_cut_laws(
+def principal_cut_laws(
   Q : U0, ltQ : Q -> Q -> U0, order : StrictOrder(Q, ltQ), dense : DenseOrder(Q, ltQ),
   unbounded : NoEndpoints(Q, ltQ), q : Q
 ) :
@@ -114,7 +114,7 @@ def principal_cut(
 def CutLess(Q : U0, ltQ : Q -> Q -> U0, x : DedekindCut(Q, ltQ), y : DedekindCut(Q, ltQ)) =
   FieldExists(exists q : Q, cut_upper(Q, ltQ, x, q) and cut_lower(Q, ltQ, y, q));
 
-theorem principal_cut_order(
+def principal_cut_order(
   Q : U0, ltQ : Q -> Q -> U0, order : StrictOrder(Q, ltQ), dense : DenseOrder(Q, ltQ),
   unbounded : NoEndpoints(Q, ltQ), p : Q, q : Q
 ) :
@@ -143,7 +143,7 @@ theorem principal_cut_order(
   );
 }
 
-theorem cut_less_irreflexive(Q : U0, ltQ : Q -> Q -> U0, x : DedekindCut(Q, ltQ)) :
+def cut_less_irreflexive(Q : U0, ltQ : Q -> Q -> U0, x : DedekindCut(Q, ltQ)) :
   CutLess(Q, ltQ, x, x) -> Void {
   obtain (
     lowerProp, upperProp, inhabitedLower, inhabitedUpper, roundedLower, roundedUpper, disjoint,
@@ -164,7 +164,7 @@ theorem cut_less_irreflexive(Q : U0, ltQ : Q -> Q -> U0, x : DedekindCut(Q, ltQ)
   );
 }
 
-theorem cut_lower_downward(
+def cut_lower_downward(
   Q : U0, ltQ : Q -> Q -> U0, x : DedekindCut(Q, ltQ), p : Q, q : Q, below : ltQ(p, q),
   member : cut_lower(Q, ltQ, x, q)
 ) :
@@ -178,7 +178,7 @@ theorem cut_lower_downward(
   exact roundBack(field_exists_intro(witnessType, typed(witnessType, (q, below, member))));
 }
 
-theorem cut_upper_upward(
+def cut_upper_upward(
   Q : U0, ltQ : Q -> Q -> U0, x : DedekindCut(Q, ltQ), p : Q, q : Q, below : ltQ(p, q),
   member : cut_upper(Q, ltQ, x, p)
 ) :
@@ -192,7 +192,7 @@ theorem cut_upper_upward(
   exact roundBack(field_exists_intro(witnessType, typed(witnessType, (p, member, below))));
 }
 
-theorem cut_separated(
+def cut_separated(
   Q : U0, ltQ : Q -> Q -> U0, order : StrictOrder(Q, ltQ), x : DedekindCut(Q, ltQ), p : Q, q : Q,
   lower : cut_lower(Q, ltQ, x, p), upper : cut_upper(Q, ltQ, x, q)
 ) :
@@ -225,7 +225,7 @@ theorem cut_separated(
   );
 }
 
-theorem cut_less_transitive(
+def cut_less_transitive(
   Q : U0, ltQ : Q -> Q -> U0, order : StrictOrder(Q, ltQ), x : DedekindCut(Q, ltQ),
   y : DedekindCut(Q, ltQ), z : DedekindCut(Q, ltQ), xy : CutLess(Q, ltQ, x, y),
   yz : CutLess(Q, ltQ, y, z)
@@ -262,7 +262,7 @@ theorem cut_less_transitive(
   );
 }
 
-theorem principal_cut_injective(
+def principal_cut_injective(
   Q : U0, ltQ : Q -> Q -> U0, order : StrictOrder(Q, ltQ), dense : DenseOrder(Q, ltQ),
   unbounded : NoEndpoints(Q, ltQ), p : Q, q : Q,
   same : principal_cut(Q, ltQ, order, dense, unbounded, p) = principal_cut(

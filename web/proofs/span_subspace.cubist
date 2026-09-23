@@ -1,7 +1,7 @@
 import vector_subspaces;
 
 // Add the two finite witnesses before eliminating their truncations.
-theorem span_add_witnesses(
+def span_add_witnesses(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
   y : vector_carrier(K, V), hx : SpanWitness(K, V, P, x), hy : SpanWitness(K, V, P, y)
 ) :
@@ -34,7 +34,7 @@ theorem span_add_witnesses(
   );
 }
 
-theorem span_add(
+def span_add(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
   y : vector_carrier(K, V), hx : Span(K, V, P, x), hy : Span(K, V, P, y)
 ) :
@@ -51,7 +51,7 @@ theorem span_add(
   );
 }
 
-theorem span_scale_witness(
+def span_scale_witness(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, a : af_carrier(K),
   x : vector_carrier(K, V), witness : SpanWitness(K, V, P, x)
 ) :
@@ -73,7 +73,7 @@ theorem span_scale_witness(
   );
 }
 
-theorem span_scale(
+def span_scale(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, a : af_carrier(K),
   x : vector_carrier(K, V), member : Span(K, V, P, x)
 ) :
@@ -92,7 +92,7 @@ def SpanSubspace(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V
     (Span(K, V, P), span_prop(K, V, P), span_zero(K, V, P), span_add(K, V, P), span_scale(K, V, P))
   );
 
-theorem span_idempotent(
+def span_idempotent(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
 ) :
   FieldIff(Span(K, V, Span(K, V, P), x), Span(K, V, P, x)) {
@@ -107,7 +107,7 @@ theorem span_idempotent(
 }
 
 // Univalence identifies the proposition-valued predicates themselves.
-theorem span_idempotent_path(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :
+def span_idempotent_path(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :
   Span(K, V, Span(K, V, P)) = Span(K, V, P) {
   exact field_predicate_ext(
     vector_carrier(K, V), Span(K, V, Span(K, V, P)), Span(K, V, P), span_prop(K, V, Span(K, V, P)),

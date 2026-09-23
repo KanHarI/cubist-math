@@ -204,9 +204,9 @@
         </p>
         <p>
           <code>def name(params) = term;</code> defines a term with an inferred
-          type. <code>theorem name(params) : T { … }</code> checks a proof of
-          <code>T</code>. Parameters have explicit types. A definition can also
-          use a typed block. Imports come first: <code>import paths;</code>.
+          type. <code>def name(params) : T { … }</code> checks a proof of
+          <code>T</code>. Use <code>def</code> for both constructions and proofs.
+          Parameters have explicit types. Imports come first: <code>import paths;</code>.
           Comments start with <code>//</code>.
         </p>
         <p>
@@ -252,7 +252,7 @@
           the goal, including when the goal is a named definition.
         </p>
         <pre>import sets;
-theorem use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
+def use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
   intro A;       // A : U0
   intro setA;    // setA : IsSet(A)
   exact setA;
@@ -299,7 +299,7 @@ theorem use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
         <pre>def identity(A : U0, x : A) = x;
 def pair = typed(Nat and Nat, (0, 1));
 def either = typed(Unit or Nat, left(tt));
-theorem pair_first : Nat {
+def pair_first : Nat {
   obtain (a, b) = pair;
   have result : Nat { exact a; }
   exact result;
@@ -342,9 +342,9 @@ theorem pair_first : Nat {
           <code>C(y)</code>.
         </p>
         <p>
-          <code>def</code> is transparent; <code>theorem</code> and
-          <code>opaque def</code> keep checked bodies named in ordinary
-          computation. <code>unfold(term)</code> explicitly unfolds them. In the native cubical backend,
+          Named definitions have checked bodies that the checker can unfold.
+          <code>opaque def</code> currently behaves like <code>def</code>.
+          <code>unfold(term)</code> explicitly unfolds definitions. In the native cubical backend,
           <code>with unfolding [alias, another_alias] { expression }</code> suggests which
           checked definitions to unfold while elaborating the enclosed expression.
           The compiler can retain a checked helper for this block so the enclosing

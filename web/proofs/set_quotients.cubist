@@ -34,7 +34,7 @@ def quotient_class(A : U1, relation : A -> A -> U0, a : A) =
     )
   );
 
-theorem quotient_ext(
+def quotient_ext(
   A : U1, relation : A -> A -> U0, x : SetQuotient(A, relation), y : SetQuotient(A, relation),
   same : quotient_predicate(A, relation, x) = quotient_predicate(A, relation, y)
 ) :
@@ -49,7 +49,7 @@ theorem quotient_ext(
   );
 }
 
-theorem quotient_surjective(A : U1, relation : A -> A -> U0, q : SetQuotient(A, relation)) :
+def quotient_surjective(A : U1, relation : A -> A -> U0, q : SetQuotient(A, relation)) :
   FieldExists(exists a : A, quotient_class(A, relation, a) = q) {
   exact field_exists_map(
     (exists a : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(a, x)),
@@ -82,7 +82,7 @@ def EquivalenceRelation(A : U1, relation : A -> A -> U0) =
   and (forall x : A, forall y : A, relation(x, y) -> relation(y, x))
   and (forall x : A, forall y : A, forall z : A, relation(x, y) -> relation(y, z) -> relation(x, z));
 
-theorem related_classes_equal(
+def related_classes_equal(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), x : A, y : A,
   related : relation(x, y)
 ) :
@@ -105,7 +105,7 @@ theorem related_classes_equal(
   );
 }
 
-theorem equal_classes_related(
+def equal_classes_related(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), x : A, y : A,
   same : quotient_class(A, relation, x) = quotient_class(A, relation, y)
 ) :
@@ -125,7 +125,7 @@ def RepresentativeChoice(
   (forall n : Nat, FieldExists(exists a : A, quotient_class(A, relation, a) = sequence(n)))
   -> FieldExists(forall n : Nat, exists a : A, quotient_class(A, relation, a) = sequence(n));
 
-theorem quotient_sequence_representatives(
+def quotient_sequence_representatives(
   A : U1, relation : A -> A -> U0, sequence : Nat -> SetQuotient(A, relation),
   choice : RepresentativeChoice(A, relation, sequence)
 ) :

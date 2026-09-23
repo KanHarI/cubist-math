@@ -11,7 +11,7 @@ def strict_above_point(A : U1, le : OrderRelation(A), x : A, witness : StrictlyA
 def strict_above_laws(A : U1, le : OrderRelation(A), x : A, witness : StrictlyAbove(A, le, x)) =
   field_second(A, (fun (y : A) => typed(U1, le(x, y) and (le(y, x) -> Void))), witness);
 
-theorem strict_above_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x : A) :
+def strict_above_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x : A) :
   FieldSet(StrictlyAbove(A, le, x)) {
   exact field_subtype_is_set(
     A, (fun (y : A) => typed(U1, le(x, y) and (le(y, x) -> Void))),
@@ -26,7 +26,7 @@ theorem strict_above_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLa
 
 // If there is no maximal element, each point merely has a strict successor.
 // At this stage there is no selected successor function.
-theorem no_maximal_strict_successor(
+def no_maximal_strict_successor(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le),
   none : FieldExists(exists x : A, OrderMaximal(A, le, x)) -> Void, x : A
 ) :
@@ -53,7 +53,7 @@ theorem no_maximal_strict_successor(
 }
 
 // A selected strict-successor function contradicts the fixed-point theorem.
-theorem no_strict_successor_function(
+def no_strict_successor_function(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   choose : (forall x : A, StrictlyAbove(A, le, x))
 ) :
@@ -72,7 +72,7 @@ theorem no_strict_successor_function(
 // The chain-complete form of Zorn, derived from Choice(U1) and LEM.
 // Choice is applied only to sets, and its merely selected function is
 // eliminated into Void. No maximality or fixed-point axiom is introduced.
-theorem zorn_chain_complete(
+def zorn_chain_complete(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le)
 ) :
   FieldExists(exists x : A, OrderMaximal(A, le, x)) {

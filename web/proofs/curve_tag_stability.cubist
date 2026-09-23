@@ -24,7 +24,7 @@ def CurveFineTagsClose(
 
 // Uniform continuity of the integrand along the curve and bounded variation
 // give a mesh threshold valid for every admissible pair of tag schemes.
-theorem curve_contour_uniform_tag_stability(
+def curve_contour_uniform_tag_stability(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -77,7 +77,7 @@ theorem curve_contour_uniform_tag_stability(
   exact (mesh, positiveMesh, stable);
 }
 
-theorem affine_contour_uniform_tag_stability(
+def affine_contour_uniform_tag_stability(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -129,7 +129,7 @@ theorem affine_contour_uniform_tag_stability(
 
 // Concrete left and right endpoint sums are instances; their tags are
 // constructed from the vertices and their admissibility is proved.
-theorem affine_contour_endpoint_sums_close(
+def affine_contour_endpoint_sums_close(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

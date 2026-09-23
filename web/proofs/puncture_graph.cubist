@@ -26,7 +26,7 @@ def PunctureGraph(n : Nat) = Bouquet(Fin(n));
 
 def puncture_loop(n : Nat, i : Fin(n)) = bouquet_generator(Fin(n), i);
 
-theorem bouquet_generator_spoke(A : U0, a : A) :
+def bouquet_generator_spoke(A : U0, a : A) :
   concatenate(
     U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_tip(A), bouquet_generator(A, a),
     bouquet_spoke(A)
@@ -46,7 +46,7 @@ def bouquet_map_edges(A : U0, X : U0, point : X, loops : A -> (point = point), l
 def bouquet_map(A : U0, X : U0, point : X, loops : A -> (point = point)) =
   suspension_rec(Unit or A, X, point, point, bouquet_map_edges(A, X, point, loops));
 
-theorem bouquet_map_generator(A : U0, X : U0, point : X, loops : A -> (point = point), a : A) :
+def bouquet_map_generator(A : U0, X : U0, point : X, loops : A -> (point = point), a : A) :
   ap(
     U1, Bouquet(A), X, bouquet_map(A, X, point, loops), bouquet_base(A), bouquet_base(A),
     bouquet_generator(A, a)

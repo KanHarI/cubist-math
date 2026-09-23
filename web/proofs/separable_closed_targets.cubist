@@ -56,7 +56,7 @@ def generated_splitting_roots_algebraic(
 
 // Only the finitely generated root field must be embedded in T; the originally
 // supplied splitting field may be arbitrarily large.
-theorem distinct_splitting_to_closed(
+def distinct_splitting_to_closed(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), n : Nat,
   splitting : DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n), T : AlgebraicField,
@@ -105,7 +105,7 @@ theorem distinct_splitting_to_closed(
   );
 }
 
-theorem separable_polynomial_splits_in_closed(
+def separable_polynomial_splits_in_closed(
   K : AlgebraicField, p : Polynomial(K), separable : SeparablePolynomial(K, p), T : AlgebraicField,
   closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
 ) :
@@ -133,7 +133,7 @@ theorem separable_polynomial_splits_in_closed(
   );
 }
 
-theorem separable_polynomial_closed_root_count(
+def separable_polynomial_closed_root_count(
   K : AlgebraicField, p : Polynomial(K), separable : SeparablePolynomial(K, p), T : AlgebraicField,
   closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
 ) :

@@ -3,7 +3,7 @@ import puncture_noncommutative;
 
 // The noncontractible commutator is invisible to every additive period.
 // This does NOT identify paths having the same winding vector.
-theorem nontrivial_loop_with_zero_period(
+def nontrivial_loop_with_zero_period(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(2)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(2), bouquet_base(Fin(2)), G, zero, addG, period)
@@ -19,7 +19,7 @@ theorem nontrivial_loop_with_zero_period(
 }
 
 // Reversing a generator negates its local contribution.
-theorem puncture_period_reversed_generator(
+def puncture_period_reversed_generator(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
   period : BouquetLoops(Fin(n)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),

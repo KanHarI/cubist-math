@@ -13,7 +13,7 @@ def SampleTagged(C : U1, condition : C -> C -> C -> U0, n : Nat) =
     and previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags));
   };
 
-theorem sample_tagged_adjacent(
+def sample_tagged_adjacent(
   C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
   orders : (forall a : C, forall b : C, forall tag : C, condition(a, b, tag) -> related(a, b)),
   n : Nat
@@ -82,7 +82,7 @@ def sample_left_tags(C : U1, n : Nat) =
     );
   };
 
-theorem sample_left_tags_valid(
+def sample_left_tags_valid(
   C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
   admits : (forall a : C, forall b : C, related(a, b) -> condition(a, b, a)), n : Nat
 ) :
@@ -144,7 +144,7 @@ def sample_right_tags(C : U1, n : Nat) =
     );
   };
 
-theorem sample_right_tags_valid(
+def sample_right_tags_valid(
   C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
   admits : (forall a : C, forall b : C, related(a, b) -> condition(a, b, b)), n : Nat
 ) :

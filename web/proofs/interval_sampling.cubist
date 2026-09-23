@@ -17,7 +17,7 @@ def IntervalMeshBelow(
     ), n
   );
 
-theorem interval_tag_orders_endpoints(
+def interval_tag_orders_endpoints(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
@@ -35,7 +35,7 @@ theorem interval_tag_orders_endpoints(
   );
 }
 
-theorem interval_admissible_samples_ordered(
+def interval_admissible_samples_ordered(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
@@ -64,7 +64,7 @@ theorem interval_admissible_samples_ordered(
   );
 }
 
-theorem interval_endpoint_tags_admissible(
+def interval_endpoint_tags_admissible(
   F : U1, zero : F, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   ordered : SampleAdjacent(

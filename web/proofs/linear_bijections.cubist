@@ -97,7 +97,7 @@ def linear_empty(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, Coordina
   );
 }
 
-theorem linear_empty_injective(K : AlgebraicField, V : VectorSpace(K)) :
+def linear_empty_injective(K : AlgebraicField, V : VectorSpace(K)) :
   LinearInjective(K, CoordinateSpace(K, 0), V, linear_empty(K, V)) {
   intro v;
   intro w;
@@ -125,7 +125,7 @@ def adjoin_linear(
     )
   );
 
-theorem adjoin_nonzero_impossible(
+def adjoin_nonzero_impossible(
   K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
   x : vector_carrier(K, V),
   outside : Mere(
@@ -175,7 +175,7 @@ theorem adjoin_nonzero_impossible(
   );
 }
 
-theorem adjoin_linear_kernel(
+def adjoin_linear_kernel(
   K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
   injective : LinearInjective(K, CoordinateSpace(K, m), V, f), x : vector_carrier(K, V),
   outside : Mere(
@@ -229,7 +229,7 @@ theorem adjoin_linear_kernel(
   );
 }
 
-theorem adjoin_linear_injective(
+def adjoin_linear_injective(
   K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
   injective : LinearInjective(K, CoordinateSpace(K, m), V, f), x : vector_carrier(K, V),
   outside : Mere(

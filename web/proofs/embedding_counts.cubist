@@ -3,7 +3,7 @@ import separability_base_change;
 import finite_towers;
 
 // A surjective base embedding leaves exactly one embedding over that base.
-theorem embeddings_over_surjective_prop(
+def embeddings_over_surjective_prop(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e)), T : AlgebraicField,
   j : FieldEmbedding(K, T)
@@ -53,7 +53,7 @@ def embeddings_over_surjective_count(
   );
 }
 
-theorem surjective_embedding_degree(
+def surjective_embedding_degree(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e)),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e))
@@ -72,11 +72,11 @@ theorem surjective_embedding_degree(
 
 // Cardinal multiplication is independent of whether the tower is read bottom
 // first or top first. It agrees with the multiplication in the degree theorem.
-theorem count_multiply_comm(n : Nat, m : Nat) : multiply_count(n, m) = multiply_count(m, n) {
+def count_multiply_comm(n : Nat, m : Nat) : multiply_count(n, m) = multiply_count(m, n) {
   exact nat_mul_comm(n, m);
 }
 
-theorem embedding_tower_count(
+def embedding_tower_count(
   K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
   i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
   triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T), n : Nat, m : Nat,
@@ -108,7 +108,7 @@ theorem embedding_tower_count(
 
 // Count a finite tower using extension degrees. Keep this transport generic:
 // specializing the fields should not recheck the entire product-count proof.
-theorem embedding_tower_degree_count(
+def embedding_tower_degree_count(
   K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
   i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
   triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),
@@ -226,7 +226,7 @@ def finite_separable_count_step(n : Nat, previous : FiniteSeparableEmbeddingCoun
   };
 }
 
-theorem finitely_generated_separable_embedding_count(n : Nat) =
+def finitely_generated_separable_embedding_count(n : Nat) =
   induction n as k return FiniteSeparableEmbeddingCount(k) {
     zero => finite_separable_count_zero;
     succ previous => finite_separable_count_step(k, previous);
@@ -234,7 +234,7 @@ theorem finitely_generated_separable_embedding_count(n : Nat) =
 
 // A finite separable extension has exactly [L:K] embeddings extending any
 // specified embedding of K into an algebraically closed field.
-theorem finite_separable_embedding_count(
+def finite_separable_embedding_count(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e)),
   separable : SeparableExtension(K, L, e), T : AlgebraicField, closed : AlgebraicallyClosed(T),

@@ -32,7 +32,7 @@ def polynomial_cutoff_least(K : AlgebraicField, p : Polynomial(K)) :
   exact least;
 }
 
-theorem support_zero_polynomial(
+def support_zero_polynomial(
   K : AlgebraicField, p : Polynomial(K),
   support : SeriesSupport(K, polynomial_coefficients(K, p), 0)
 ) :
@@ -40,7 +40,7 @@ theorem support_zero_polynomial(
   exact polynomial_coefficient_ext(K, p, polynomial_zero(K), (fun (k : Nat) => support(k, tt)));
 }
 
-theorem polynomial_cutoff_zero(
+def polynomial_cutoff_zero(
   K : AlgebraicField, p : Polynomial(K), zero : polynomial_cutoff(K, p) = 0
 ) :
   p = polynomial_zero(K) {
@@ -53,7 +53,7 @@ theorem polynomial_cutoff_zero(
   );
 }
 
-theorem polynomial_zero_cutoff(K : AlgebraicField) : polynomial_cutoff(K, polynomial_zero(K)) = 0 {
+def polynomial_zero_cutoff(K : AlgebraicField) : polynomial_cutoff(K, polynomial_zero(K)) = 0 {
   exact nat_le_zero(
     polynomial_cutoff(K, polynomial_zero(K)),
     polynomial_cutoff_least(
@@ -62,7 +62,7 @@ theorem polynomial_zero_cutoff(K : AlgebraicField) : polynomial_cutoff(K, polyno
   );
 }
 
-theorem support_predecessor(
+def support_predecessor(
   K : AlgebraicField, f : FormalSeries(K), n : Nat, support : SeriesSupport(K, f, succ(n)),
   last : f(n) = field_zero(K)
 ) :
@@ -75,7 +75,7 @@ theorem support_predecessor(
   };
 }
 
-theorem polynomial_leading_nonzero(
+def polynomial_leading_nonzero(
   K : AlgebraicField, p : Polynomial(K), n : Nat, degree : polynomial_cutoff(K, p) = succ(n)
 ) :
   FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, p, n)) {
@@ -96,7 +96,7 @@ theorem polynomial_leading_nonzero(
 }
 
 // A known top nonzero coefficient determines the canonical cutoff.
-theorem polynomial_cutoff_exact(
+def polynomial_cutoff_exact(
   K : AlgebraicField, p : Polynomial(K), n : Nat,
   support : SeriesSupport(K, polynomial_coefficients(K, p), succ(n)),
   nonzero : FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, p, n))

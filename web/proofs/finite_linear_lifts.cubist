@@ -12,7 +12,7 @@ def FiniteLinearLift(
     K, CoordinateSpace(K, m), W, h, v
   );
 
-theorem linear_first_tail(
+def linear_first_tail(
   K : AlgebraicField, W : VectorSpace(K), m : Nat, h : LinearMap(K, CoordinateSpace(K, succ(m)), W),
   v : Fin(succ(m)) -> af_carrier(K)
 ) :
@@ -162,7 +162,7 @@ def finite_linear_lift(
     succ previous => finite_linear_lift_step(K, V, W, f, onto, k, previous);
   };
 
-theorem coordinate_surjection_bound(
+def coordinate_surjection_bound(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
   onto : LinearSurjective(K, CoordinateSpace(K, n), V, f)
 ) :
@@ -192,7 +192,7 @@ theorem coordinate_surjection_bound(
   );
 }
 
-theorem finite_dimensional_coordinate_surjection(
+def finite_dimensional_coordinate_surjection(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
   onto : LinearSurjective(K, CoordinateSpace(K, n), V, f)
 ) :

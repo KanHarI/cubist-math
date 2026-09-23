@@ -8,7 +8,7 @@ def SubfieldImage(
 ) =
   exists x : af_carrier(K), subfield_members(K, S, x) and (field_embedding_map(K, L, e, x) = y);
 
-theorem subfield_image_prop(
+def subfield_image_prop(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
   y : af_carrier(L), p : SubfieldImage(K, L, e, S, y), q : SubfieldImage(K, L, e, S, y)
 ) :
@@ -35,7 +35,7 @@ theorem subfield_image_prop(
   );
 }
 
-theorem subfield_image_zero(
+def subfield_image_zero(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)
 ) :
   SubfieldImage(K, L, e, S, af_zero(af_carrier(L), af_operations(L))) {
@@ -46,7 +46,7 @@ theorem subfield_image_zero(
   );
 }
 
-theorem subfield_image_one(
+def subfield_image_one(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)
 ) :
   SubfieldImage(K, L, e, S, af_one(af_carrier(L), af_operations(L))) {
@@ -57,7 +57,7 @@ theorem subfield_image_one(
   );
 }
 
-theorem subfield_image_neg(
+def subfield_image_neg(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
   y : af_carrier(L), member : SubfieldImage(K, L, e, S, y)
 ) :
@@ -71,7 +71,7 @@ theorem subfield_image_neg(
   );
 }
 
-theorem subfield_image_add(
+def subfield_image_add(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
   x : af_carrier(L), y : af_carrier(L), px : SubfieldImage(K, L, e, S, x),
   py : SubfieldImage(K, L, e, S, y)
@@ -93,7 +93,7 @@ theorem subfield_image_add(
   );
 }
 
-theorem subfield_image_mul(
+def subfield_image_mul(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
   x : af_carrier(L), y : af_carrier(L), px : SubfieldImage(K, L, e, S, x),
   py : SubfieldImage(K, L, e, S, y)
@@ -117,7 +117,7 @@ theorem subfield_image_mul(
 
 // An ambient inverse of an image element is the image of its unique source
 // inverse. The inverse witness forces nonzeroness; no zero decision is used.
-theorem subfield_image_inverse(
+def subfield_image_inverse(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
   x : af_carrier(L), y : af_carrier(L), px : SubfieldImage(K, L, e, S, x),
   inverseLaw : af_mul(af_carrier(L), af_operations(L), x, y) = af_one(
@@ -153,7 +153,7 @@ theorem subfield_image_inverse(
   );
 }
 
-theorem subfield_image_laws(
+def subfield_image_laws(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)
 ) :
   SubfieldLaws(L, SubfieldImage(K, L, e, S)) {

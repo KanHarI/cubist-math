@@ -36,7 +36,7 @@ def root_to_embedding(
   );
 }
 
-theorem embedding_generator_root(
+def embedding_generator_root(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L), h : FieldEmbedding(PolynomialResidueField(K, M, irreducible), L),
@@ -80,7 +80,7 @@ def embedding_to_root(
   );
 }
 
-theorem root_embedding_roundtrip(
+def root_embedding_roundtrip(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L), root : PolynomialRoots(K, L, e, modulus_polynomial(K, M))
@@ -97,7 +97,7 @@ theorem root_embedding_roundtrip(
 
 // An embedding is determined by its generator image. Unfold only the maps
 // and pair projections here, retaining the named residue-field construction.
-theorem embedding_root_roundtrip(
+def embedding_root_roundtrip(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L), h : AdjoinedEmbeddings(K, M, irreducible, L, e)
@@ -151,7 +151,7 @@ def adjoined_embeddings_roots_equiv(
 
 // Univalence identifies the two types themselves, so counting or other
 // constructions on roots can be transported to the embedding type.
-theorem adjoined_embeddings_are_roots(
+def adjoined_embeddings_are_roots(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L)

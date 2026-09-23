@@ -7,7 +7,7 @@ def group_iso_center(G : Group) = typed(GroupIsoTotal(G), (G, group_identity_iso
 
 def group_iso_point(G : Group, H : Group, iso : GroupIso(G, H)) = typed(GroupIsoTotal(G), (H, iso));
 
-theorem group_total_laws_path(
+def group_total_laws_path(
   A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply),
   otherLaws : GroupLaws(A, unit, multiply)
 ) :
@@ -68,7 +68,7 @@ theorem group_total_laws_path(
   );
 }
 
-theorem group_total_multiplication_path(
+def group_total_multiplication_path(
   A : U0, unit : A, multiply : A -> A -> A, other : A -> A -> A, same : multiply = other
 ) :
   forall laws : GroupLaws(A, unit, multiply), forall otherLaws : GroupLaws(A, unit, other),
@@ -111,7 +111,7 @@ theorem group_total_multiplication_path(
   );
 }
 
-theorem group_total_same_carrier(A : U0, unit : A, otherUnit : A, same : unit = otherUnit) :
+def group_total_same_carrier(A : U0, unit : A, otherUnit : A, same : unit = otherUnit) :
   forall multiply : A -> A -> A, forall other : A -> A -> A, (multiply = other)
   -> forall laws : GroupLaws(A, unit, multiply), forall otherLaws : GroupLaws(A, otherUnit, other),
   forall iso : GroupIso(
@@ -153,7 +153,7 @@ theorem group_total_same_carrier(A : U0, unit : A, otherUnit : A, same : unit = 
   );
 }
 
-theorem group_total_transport_path(A : U0, B : U0, p : A = B) :
+def group_total_transport_path(A : U0, B : U0, p : A = B) :
   forall unitA : A, forall unitB : B, forall multiplyA : A -> A -> A,
   forall multiplyB : B -> B -> B, forall lawsA : GroupLaws(A, unitA, multiplyA),
   forall lawsB : GroupLaws(B, unitB, multiplyB), (group_carrier_transport(A, B, p, unitA) = unitB)
@@ -256,7 +256,7 @@ theorem group_total_transport_path(A : U0, B : U0, p : A = B) :
   );
 }
 
-theorem group_objects_iso_total_path(
+def group_objects_iso_total_path(
   A : U0, unitA : A, multiplyA : A -> A -> A, lawsA : GroupLaws(A, unitA, multiplyA), B : U0,
   unitB : B, multiplyB : B -> B -> B, lawsB : GroupLaws(B, unitB, multiplyB), f : A -> B, g : B
   -> A, leftLaw : (forall x : A, g(f(x)) = x), rightLaw : (forall y : B, f(g(y)) = y),
@@ -312,7 +312,7 @@ theorem group_objects_iso_total_path(
   );
 }
 
-theorem group_objects_iso_total(
+def group_objects_iso_total(
   A : U0, unitA : A, multiplyA : A -> A -> A, lawsA : GroupLaws(A, unitA, multiplyA), B : U0,
   unitB : B, multiplyB : B -> B -> B, lawsB : GroupLaws(B, unitB, multiplyB),
   iso : GroupIso(group_object(A, unitA, multiplyA, lawsA), group_object(B, unitB, multiplyB, lawsB))
@@ -399,7 +399,7 @@ theorem group_objects_iso_total(
   );
 }
 
-theorem group_isomorphism_total_contractible(G : Group) :
+def group_isomorphism_total_contractible(G : Group) :
   forall H : Group, forall iso : GroupIso(G, H), group_iso_center(G) = group_iso_point(G, H, iso) {
   exact group_induction(
     (

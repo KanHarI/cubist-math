@@ -12,7 +12,7 @@ test("universe specializations are independently checked once and reused as name
   await program.check(`def identity(U : Universe, A : U, x : A) = x;
     def first = identity(U0, Nat, 0); def second = identity(U0, Nat, 1);
     def higher = identity(U1, U0, Nat);
-    theorem wrong : 0 = 1 { exact refl(identity(U0, Nat, 0)); }`, "specialization");
+    def wrong : 0 = 1 { exact refl(identity(U0, Nat, 0)); }`, "specialization");
   assert.deepEqual([...program.checker.schemaSpecializations.keys()], ["specialization__identity__U0", "specialization__identity__U1"]);
   assert.equal(program.symbols.specialization__identity.verified, false);
   assert.equal(program.symbols.specialization__identity.template, true);
@@ -42,7 +42,7 @@ test("the browser program checks Euclid from source and exports a replayable nat
 test("module shadowing cannot retarget earlier checked native definitions", async t => {
   const sources = { first: "def value = 0; def remembered = value;", second: "def value = 1;" };
   const program = new CubicalProgram(module, async name => sources[name]); t.after(() => program.dispose());
-  const result = await program.check("import first; import second; theorem preserved : remembered = 0 { exact refl(0); }", "example");
+  const result = await program.check("import first; import second; def preserved : remembered = 0 { exact refl(0); }", "example");
   assert.equal(result.complete, true);
   assert.equal(program.inspect("first__remembered").expression.name, "first__value");
   assert.equal(program.inspect("first__value", { normalize: true }).expression.tag, "Zero");
@@ -51,7 +51,7 @@ test("module shadowing cannot retarget earlier checked native definitions", asyn
 
 test("unsupported foundations and invalid proofs remain explicitly unverified", async t => {
   const program = new CubicalProgram(module, async () => { throw new Error("Source unavailable"); }); t.after(() => program.dispose());
-  const result = await program.check("import missing; theorem wrong : 0 = 1 { exact refl(0); } def dependent = wrong; def fine = 0;", "example");
+  const result = await program.check("import missing; def wrong : 0 = 1 { exact refl(0); } def dependent = wrong; def fine = 0;", "example");
   assert.equal(result.complete, false);
   assert.deepEqual(result.outputs.map(d => d.verified), [false, false, true]);
   assert.ok(result.gaps.some(g => g.module === "missing"));
@@ -88,8 +88,8 @@ test("logical assumptions remain explicit, minimal, and inspectable after native
   const result = await program.check(`
     def Mere(A : U1) = Truncate(U1, A);
     def introduction(A : U1, a : A) = TruncateIntro(U1, A, a);
-    theorem innocent : 0 = 0 { exact refl(0); }
-    theorem wrong : 0 = 1 { exact refl(0); }
+    def innocent : 0 = 0 { exact refl(0); }
+    def wrong : 0 = 1 { exact refl(0); }
   `, "assumptions");
   assert.deepEqual(result.outputs.map(d => d.verified), [true, true, true, false]);
   assert.equal(result.outputs[1].axioms.length, 2);
@@ -109,10 +109,10 @@ test("source unfolding hints name checked definitions, remain scoped, and cannot
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const source = `
     def id(n : Nat) = n;
-    theorem hinted : id(0) = 0 { exact with unfolding [id] { refl(0) }; }
-    theorem ordinary : 0 = 0 { exact refl(0); }
-    theorem false_hint : id(0) = 1 { exact with unfolding [id] { refl(0) }; }
-    theorem missing : 0 = 0 { exact with unfolding [unknown] { refl(0) }; }
+    def hinted : id(0) = 0 { exact with unfolding [id] { refl(0) }; }
+    def ordinary : 0 = 0 { exact refl(0); }
+    def false_hint : id(0) = 1 { exact with unfolding [id] { refl(0) }; }
+    def missing : 0 = 0 { exact with unfolding [unknown] { refl(0) }; }
   `;
   const result = await program.check(source, "hints");
   assert.deepEqual(result.outputs.map(d => d.verified), [true, true, true, false, false]);
@@ -145,12 +145,12 @@ test("unfolding scopes close local variables and interval coordinates without le
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const result = await program.check(`
     def id(n : Nat) = n;
-    theorem local(n : Nat) : id(n) = n { exact with unfolding [id] { refl(n) }; }
+    def local(n : Nat) : id(n) = n { exact with unfolding [id] { refl(n) }; }
     def scoped_path(n : Nat, p : n = n) = path(
       fun (i : Interval) => Nat,
       fun (i : Interval) => with unfolding [id] { at(p, i) }
     );
-    theorem endpoint(n : Nat, p : n = n) : at(scoped_path(n, p), 0) = n { exact refl(n); }
+    def endpoint(n : Nat, p : n = n) : at(scoped_path(n, p), 0) = n { exact refl(n); }
   `, "scope");
   assert.deepEqual(result.outputs.map(d => [d.name, d.reason]).filter(([, reason]) => reason), []);
   assert.equal(result.complete, true);
@@ -180,12 +180,12 @@ test("native optimization switches preserve path proofs and rejection independen
     const program = new CubicalProgram(module, async () => "", { optimizations });
     try {
       const result = await program.check(`
-        theorem compose(x : Nat, y : Nat, z : Nat, p : x = y, q : y = z) : succ(x) = succ(z) {
+        def compose(x : Nat, y : Nat, z : Nat, p : x = y, q : y = z) : succ(x) = succ(z) {
           exact cong(succ, trans(p, q));
         }
-        theorem reverse(x : Nat, y : Nat, p : x = y) : y = x { exact sym(p); }
-        theorem wrong : 0 = 1 { exact trans(refl(0), refl(0)); }
-        theorem disconnected : 0 = 1 { exact trans(refl(0), refl(1)); }
+        def reverse(x : Nat, y : Nat, p : x = y) : y = x { exact sym(p); }
+        def wrong : 0 = 1 { exact trans(refl(0), refl(0)); }
+        def disconnected : 0 = 1 { exact trans(refl(0), refl(1)); }
       `, "options");
       assert.deepEqual(result.outputs.map(d => d.verified), [true, true, false, false], JSON.stringify(optimizations));
       assert.deepEqual(program.kernel.optimizations, optimizations);

@@ -3,7 +3,7 @@ import complex_limits;
 import field_magnitude_close;
 
 // Dropping the first term keeps the same limit and the same sufficient bound.
-theorem complex_converges_successor(
+def complex_converges_successor(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F),
   value : Complex(F), converges : ComplexConverges(F, zero, addF, lt, sequence, value)
 ) :
@@ -22,7 +22,7 @@ theorem complex_converges_successor(
 }
 
 // Coordinate balls have the symmetry and triangle laws of their real parts.
-theorem complex_close_symmetry(
+def complex_close_symmetry(
   F : U1, addF : F -> F -> F, lt : F -> F -> U0, x : Complex(F), y : Complex(F), epsilon : F,
   close : ComplexClose(F, addF, lt, x, y, epsilon)
 ) :
@@ -34,7 +34,7 @@ theorem complex_close_symmetry(
   );
 }
 
-theorem complex_close_triangle(
+def complex_close_triangle(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : Complex(F), y : Complex(F),
@@ -58,7 +58,7 @@ theorem complex_close_triangle(
 
 // A checked error certificate gives a strict ball once its weak radius is
 // strictly below epsilon. No sign decision on either coordinate is used.
-theorem complex_perturbation_close(
+def complex_perturbation_close(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), old : Complex(F),
@@ -89,7 +89,7 @@ theorem complex_perturbation_close(
 
 // Compare arbitrary m and n through their common later level m+n.
 // The sum order on indices is commutative; contour sums need not be.
-theorem complex_cauchy_from_refinements(
+def complex_cauchy_from_refinements(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

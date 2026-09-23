@@ -14,7 +14,7 @@ def subfield_evidence(F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F
   exact sigma_second(af_carrier(F), subfield_members(F, S), x);
 }
 
-theorem subfield_value_ext(
+def subfield_value_ext(
   F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S),
   same : subfield_value(F, S, x) = subfield_value(F, S, y)
 ) :
@@ -25,7 +25,7 @@ theorem subfield_value_ext(
   );
 }
 
-theorem subfield_carrier_is_set(F : AlgebraicField, S : Subfield(F)) : IsSet(SubfieldCarrier(F, S)) {
+def subfield_carrier_is_set(F : AlgebraicField, S : Subfield(F)) : IsSet(SubfieldCarrier(F, S)) {
   exact subtype_is_set(
     af_carrier(F), subfield_members(F, S), af_set(F),
     subfield_prop(F, subfield_members(F, S), subfield_laws(F, S))
@@ -89,7 +89,7 @@ def subfield_carrier_ops(F : AlgebraicField, S : Subfield(F)) =
     subfield_carrier_neg(F, S), subfield_carrier_add(F, S), subfield_carrier_mul(F, S)
   );
 
-theorem subfield_carrier_add_assoc(
+def subfield_carrier_add_assoc(
   F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S),
   z : SubfieldCarrier(F, S)
 ) :
@@ -109,7 +109,7 @@ theorem subfield_carrier_add_assoc(
   );
 }
 
-theorem subfield_carrier_add_comm(
+def subfield_carrier_add_comm(
   F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S)
 ) :
   subfield_carrier_add(F, S, x, y) = subfield_carrier_add(F, S, y, x) {
@@ -125,7 +125,7 @@ theorem subfield_carrier_add_comm(
   );
 }
 
-theorem subfield_carrier_add_zero(F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S)) :
+def subfield_carrier_add_zero(F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S)) :
   subfield_carrier_add(F, S, subfield_carrier_zero(F, S), x) = x {
   obtain (addLaws, mulLaws) = typed(
     FieldRingLaws(af_carrier(F), af_operations(F)),
@@ -139,7 +139,7 @@ theorem subfield_carrier_add_zero(F : AlgebraicField, S : Subfield(F), x : Subfi
   );
 }
 
-theorem subfield_carrier_add_inverse(F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S)) :
+def subfield_carrier_add_inverse(F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S)) :
   subfield_carrier_add(F, S, subfield_carrier_neg(F, S, x), x) = subfield_carrier_zero(F, S) {
   obtain (addLaws, mulLaws) = typed(
     FieldRingLaws(af_carrier(F), af_operations(F)),
@@ -153,7 +153,7 @@ theorem subfield_carrier_add_inverse(F : AlgebraicField, S : Subfield(F), x : Su
   );
 }
 
-theorem subfield_carrier_mul_assoc(
+def subfield_carrier_mul_assoc(
   F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S),
   z : SubfieldCarrier(F, S)
 ) :
@@ -173,7 +173,7 @@ theorem subfield_carrier_mul_assoc(
   );
 }
 
-theorem subfield_carrier_mul_comm(
+def subfield_carrier_mul_comm(
   F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S)
 ) :
   subfield_carrier_mul(F, S, x, y) = subfield_carrier_mul(F, S, y, x) {
@@ -189,7 +189,7 @@ theorem subfield_carrier_mul_comm(
   );
 }
 
-theorem subfield_carrier_mul_one(F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S)) :
+def subfield_carrier_mul_one(F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S)) :
   subfield_carrier_mul(F, S, subfield_carrier_one(F, S), x) = x {
   obtain (addLaws, mulLaws) = typed(
     FieldRingLaws(af_carrier(F), af_operations(F)),
@@ -203,7 +203,7 @@ theorem subfield_carrier_mul_one(F : AlgebraicField, S : Subfield(F), x : Subfie
   );
 }
 
-theorem subfield_carrier_distribute(
+def subfield_carrier_distribute(
   F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S),
   z : SubfieldCarrier(F, S)
 ) :
@@ -223,7 +223,7 @@ theorem subfield_carrier_distribute(
   );
 }
 
-theorem subfield_carrier_ring_laws(F : AlgebraicField, S : Subfield(F)) :
+def subfield_carrier_ring_laws(F : AlgebraicField, S : Subfield(F)) :
   FieldRingLaws(SubfieldCarrier(F, S), subfield_carrier_ops(F, S)) {
   exact (
     (
@@ -236,7 +236,7 @@ theorem subfield_carrier_ring_laws(F : AlgebraicField, S : Subfield(F)) :
 
 // Inequality with zero passes to the ambient field because equality of
 // subtype elements is determined by equality of their ambient values.
-theorem subfield_carrier_nonzero(
+def subfield_carrier_nonzero(
   F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S),
   nonzero : FieldNonzero(SubfieldCarrier(F, S), subfield_carrier_ops(F, S), x)
 ) :
@@ -245,7 +245,7 @@ theorem subfield_carrier_nonzero(
   exact nonzero(subfield_value_ext(F, S, x, subfield_carrier_zero(F, S), same));
 }
 
-theorem subfield_carrier_nontrivial(F : AlgebraicField, S : Subfield(F)) :
+def subfield_carrier_nontrivial(F : AlgebraicField, S : Subfield(F)) :
   FieldNonzero(SubfieldCarrier(F, S), subfield_carrier_ops(F, S), subfield_carrier_one(F, S)) {
   intro same;
   obtain (ring, nontrivial, inverses) = typed(
@@ -255,7 +255,7 @@ theorem subfield_carrier_nontrivial(F : AlgebraicField, S : Subfield(F)) :
 }
 
 // Ambient inverse witnesses lie in the subfield by its inverse-closure law.
-theorem subfield_carrier_inverse(
+def subfield_carrier_inverse(
   F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S),
   nonzero : FieldNonzero(SubfieldCarrier(F, S), subfield_carrier_ops(F, S), x)
 ) :
@@ -282,7 +282,7 @@ theorem subfield_carrier_inverse(
   );
 }
 
-theorem subfield_carrier_field_laws(F : AlgebraicField, S : Subfield(F)) :
+def subfield_carrier_field_laws(F : AlgebraicField, S : Subfield(F)) :
   AlgebraicFieldLaws(SubfieldCarrier(F, S), subfield_carrier_ops(F, S)) {
   exact (
     subfield_carrier_ring_laws(F, S), subfield_carrier_nontrivial(F, S),

@@ -11,7 +11,7 @@ def number_equivalence_map(A : U0, B : U0, e : Equiv(U0, A, B)) : A -> B {
 
 // First transport the endpoints and their path along ua(e), then use the
 // univalence computation law to express the endpoints through the forward map.
-theorem univalence_transfer_equality(
+def univalence_transfer_equality(
   A : U0, B : U0, e : Equiv(U0, A, B), x : A, y : A, same : x = y
 ) :
   number_equivalence_map(A, B, e, x) = number_equivalence_map(A, B, e, y) {
@@ -27,7 +27,7 @@ theorem univalence_transfer_equality(
 
 // Arithmetic compatibility identifies the transported factorial with the
 // existing Nat factorial, while the binary-to-Nat result stays folded.
-theorem factorial_ten_via_univalence : factorial(10) = nat_3628800 {
+def factorial_ten_via_univalence : factorial(10) = nat_3628800 {
   exact trans(
     sym(binary_factorial_correct(10)),
     univalence_transfer_equality(
@@ -37,14 +37,14 @@ theorem factorial_ten_via_univalence : factorial(10) = nat_3628800 {
   );
 }
 
-theorem binary_encode_factorial(n : Nat) : binary_factorial(n) = binary_of_nat(factorial(n)) {
+def binary_encode_factorial(n : Nat) : binary_factorial(n) = binary_of_nat(factorial(n)) {
   exact trans(
     sym(binary_roundtrip(binary_factorial(n))), cong(binary_of_nat, binary_factorial_correct(n))
   );
 }
 
 // The opposite direction transports the Nat theorem back to binary numbers.
-theorem binary_factorial_ten_via_nat : binary_factorial(10) = 0b1101110101111100000000 {
+def binary_factorial_ten_via_nat : binary_factorial(10) = 0b1101110101111100000000 {
   exact trans(
     binary_encode_factorial(10),
     trans(

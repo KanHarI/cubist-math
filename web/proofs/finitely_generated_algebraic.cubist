@@ -66,7 +66,7 @@ def generated_algebraic_finite_step(n : Nat, previous : GeneratedAlgebraicFinite
   );
 }
 
-theorem finitely_generated_algebraic_is_finite(n : Nat) =
+def finitely_generated_algebraic_is_finite(n : Nat) =
   induction n as k return GeneratedAlgebraicFinite(k) {
     zero => generated_algebraic_finite_zero;
     succ previous => generated_algebraic_finite_step(k, previous);
@@ -76,7 +76,7 @@ def FiniteFieldGeneration(K : AlgebraicField, L : AlgebraicField, e : FieldEmbed
   exists n : Nat, exists generators : Fin(n) -> af_carrier(L),
   FieldGeneratedBy(K, L, e, n, generators);
 
-theorem finite_extension_finitely_generated(
+def finite_extension_finitely_generated(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e))
 ) :
@@ -95,7 +95,7 @@ theorem finite_extension_finitely_generated(
   );
 }
 
-theorem algebraic_finitely_generated_extension_finite(
+def algebraic_finitely_generated_extension_finite(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   algebraic : AlgebraicExtension(K, L, e), generated : FieldExists(FiniteFieldGeneration(K, L, e))
 ) :

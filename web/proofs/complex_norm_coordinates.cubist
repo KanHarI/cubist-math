@@ -1235,7 +1235,7 @@ def complex_norm_right_expansion(
     )
   );
 
-theorem complex_coordinate_norm_product(
+def complex_coordinate_norm_product(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
 ) :
@@ -1263,7 +1263,7 @@ theorem complex_coordinate_norm_product(
   );
 }
 
-theorem complex_coordinate_norm_one(
+def complex_coordinate_norm_one(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :

@@ -8,7 +8,7 @@ def Surjective(A : U0, B : U0, f : A -> B) = forall y : B, Mere(Fiber(A, B, f, y
 def RightInverse(A : U0, B : U0, f : A -> B) = exists g : B -> A, forall y : B, f(g(y)) = y;
 
 // Explicit preimages already contain the data of a right inverse: no choice.
-theorem right_inverse_from_preimages(
+def right_inverse_from_preimages(
   A : U0, B : U0, f : A -> B, preimages : (forall y : B, Fiber(A, B, f, y))
 ) :
   RightInverse(A, B, f) {
@@ -16,7 +16,7 @@ theorem right_inverse_from_preimages(
   exact (g, (fun (y : B) => sigma_second(A, (fun (x : A) => f(x) = y), preimages(y))));
 }
 
-theorem fiber_is_set(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, y : B) :
+def fiber_is_set(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, y : B) :
   IsSet(Fiber(A, B, f, y)) {
   exact subtype_is_set(A, (fun (x : A) => f(x) = y), setA, (fun (x : A) => setB(f(x), y)));
 }
@@ -28,7 +28,7 @@ def EverySurjectionHasRightInverse =
 // Apply the existing set-level axiom of choice to the fibers over B.
 // Its conclusion is mere existence; truncation is eliminated only into the
 // proposition Mere(RightInverse(...)), never into an arbitrarily chosen map.
-theorem every_surjection_has_right_inverse : EverySurjectionHasRightInverse {
+def every_surjection_has_right_inverse : EverySurjectionHasRightInverse {
   intro A; // A : U0
   intro B; // B : U0
   intro setA; // setA : IsSet(A), from the first implication above

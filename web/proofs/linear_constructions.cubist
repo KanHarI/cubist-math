@@ -167,7 +167,7 @@ def linear_iso_compose(
   );
 }
 
-theorem linear_iso_injective(
+def linear_iso_injective(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W),
   x : vector_carrier(K, V), y : vector_carrier(K, V),
   same : linear_map(K, V, W, linear_iso_forward(K, V, W, e), x) = linear_map(
@@ -184,7 +184,7 @@ theorem linear_iso_injective(
   );
 }
 
-theorem linear_map_change(
+def linear_map_change(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
   g : vector_carrier(K, V) -> vector_carrier(K, W),
   same : (forall x : vector_carrier(K, V), linear_map(K, V, W, h, x) = g(x))
@@ -231,7 +231,7 @@ def linear_subtract(
 ) =
   linear_sum(K, V, W, f, linear_compose(K, V, W, W, g, negation_linear(K, W)));
 
-theorem linear_kernel_injective(
+def linear_kernel_injective(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
   kernel : (
     forall x : vector_carrier(K, V), linear_map(K, V, W, h, x) = vector_zero(K, W)

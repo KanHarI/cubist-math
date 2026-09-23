@@ -1,6 +1,6 @@
 import polynomial_irreducible;
 
-theorem polynomial_cancel_nonzero(
+def polynomial_cancel_nonzero(
   K : AlgebraicField, a : Polynomial(K), b : Polynomial(K), c : Polynomial(K),
   nonzero : PolynomialNonzero(K, a), same : polynomial_mul(K, a, b) = polynomial_mul(K, a, c)
 ) :
@@ -33,7 +33,7 @@ theorem polynomial_cancel_nonzero(
   exact polynomial_subtract_zero_equal(K, b, c, zero);
 }
 
-theorem polynomial_multiple_factor_unit(
+def polynomial_multiple_factor_unit(
   K : AlgebraicField, p : Polynomial(K), a : Polynomial(K), b : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), equation : p = polynomial_mul(K, a, b),
   divides : PolynomialDivides(K, p, a)
@@ -70,7 +70,7 @@ theorem polynomial_multiple_factor_unit(
   );
 }
 
-theorem polynomial_small_divisible_zero(
+def polynomial_small_divisible_zero(
   K : AlgebraicField, p : Polynomial(K), divisor : Polynomial(K), d : Nat,
   degree : polynomial_cutoff(K, divisor) = succ(d),
   support : SeriesSupport(K, polynomial_coefficients(K, p), d),

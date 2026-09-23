@@ -2,7 +2,7 @@ import polynomial_ideals;
 import polynomial_maps;
 import polynomial_root_bound;
 
-theorem bounded_eval_mapped(
+def bounded_eval_mapped(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat
 ) =
   induction n as k return (
@@ -21,7 +21,7 @@ theorem bounded_eval_mapped(
     );
   };
 
-theorem polynomial_eval_mapped(
+def polynomial_eval_mapped(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   x : af_carrier(L)
 ) :
@@ -44,7 +44,7 @@ theorem polynomial_eval_mapped(
   };
 }
 
-theorem polynomial_map_nonzero(
+def polynomial_map_nonzero(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p)
 ) :
@@ -63,7 +63,7 @@ def ExtensionRootFamily(
   exists roots : Fin(n) -> af_carrier(L), Injective(Fin(n), af_carrier(L), roots)
   and (forall i : Fin(n), PolynomialRoot(K, L, e, p, roots(i)));
 
-theorem polynomial_extension_root_bound(
+def polynomial_extension_root_bound(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p),
   family : ExtensionRootFamily(K, L, e, p, succ(polynomial_degree(K, p)))

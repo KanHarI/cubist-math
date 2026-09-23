@@ -16,7 +16,7 @@ def path_right_unit_at(U : Universe, A : U, x : A, y : A, p : x = y) =
     )
   );
 
-theorem path_cancel_right_at(
+def path_cancel_right_at(
   U : Universe, A : U, x : A, y : A, z : A, p : x = y, q : x = y, r : y = z,
   same : concatenate(U, A, x, y, z, p, r) = concatenate(U, A, x, y, z, q, r)
 ) :
@@ -975,7 +975,7 @@ def homotopy_natural(
     )
   );
 
-theorem homotopy_self(U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x), x : A) :
+def homotopy_self(U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x), x : A) :
   ap(U, A, A, f, f(x), x, h(x)) = h(f(x)) {
   exact path(
     fun (interval_path_____ : Interval) => PathP(
@@ -1847,7 +1847,7 @@ def adjoint_counit(
     )
   );
 
-theorem adjoint_triangle(
+def adjoint_triangle(
   U : Universe, A : U, B : U, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
   epsilon : (forall y : B, f(g(y)) = y), x : A
 ) :

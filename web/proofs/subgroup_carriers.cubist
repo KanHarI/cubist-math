@@ -13,7 +13,7 @@ def subgroup_evidence(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S)) :
   exact sigma_second(group_carrier(G), subgroup_members(G, S), x);
 }
 
-theorem subgroup_value_ext(
+def subgroup_value_ext(
   G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S), y : SubgroupCarrier(G, S),
   same : subgroup_value(G, S, x) = subgroup_value(G, S, y)
 ) :
@@ -24,7 +24,7 @@ theorem subgroup_value_ext(
   );
 }
 
-theorem subgroup_carrier_is_set(G : Group, S : Subgroup(G)) : IsSet(SubgroupCarrier(G, S)) {
+def subgroup_carrier_is_set(G : Group, S : Subgroup(G)) : IsSet(SubgroupCarrier(G, S)) {
   exact subtype_is_set(
     group_carrier(G), subgroup_members(G, S), group_is_set(G),
     subgroup_prop(G, subgroup_members(G, S), subgroup_laws(G, S))
@@ -60,7 +60,7 @@ def subgroup_carrier_inverse(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, 
   );
 }
 
-theorem subgroup_carrier_group_laws(G : Group, S : Subgroup(G)) :
+def subgroup_carrier_group_laws(G : Group, S : Subgroup(G)) :
   GroupLaws(SubgroupCarrier(G, S), subgroup_carrier_unit(G, S), subgroup_carrier_multiply(G, S)) {
   let A = SubgroupCarrier(G, S);
   let value = subgroup_value(G, S);
@@ -104,7 +104,7 @@ def subgroup_inclusion(G : Group, S : Subgroup(G)) : GroupHom(subgroup_as_group(
   );
 }
 
-theorem subgroup_inclusion_injective(
+def subgroup_inclusion_injective(
   G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S), y : SubgroupCarrier(G, S),
   same : group_hom_map(subgroup_as_group(G, S), G, subgroup_inclusion(G, S), x) = group_hom_map(
     subgroup_as_group(G, S), G, subgroup_inclusion(G, S), y
@@ -141,7 +141,7 @@ def subgroup_factor(
   );
 }
 
-theorem subgroup_factor_triangle(
+def subgroup_factor_triangle(
   K : Group, G : Group, h : GroupHom(K, G), S : Subgroup(G),
   lands : (forall x : group_carrier(K), subgroup_members(G, S, group_hom_map(K, G, h, x)))
 ) :
@@ -156,7 +156,7 @@ theorem subgroup_factor_triangle(
   );
 }
 
-theorem subgroup_factor_unique(
+def subgroup_factor_unique(
   K : Group, G : Group, h : GroupHom(K, G), S : Subgroup(G),
   lands : (forall x : group_carrier(K), subgroup_members(G, S, group_hom_map(K, G, h, x))),
   d : GroupHom(K, subgroup_as_group(G, S)),

@@ -12,7 +12,7 @@ def bounded_eval(
     );
   };
 
-theorem bounded_eval_zero_support(
+def bounded_eval_zero_support(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat
 ) :
   forall f : FormalSeries(K), SeriesSupport(K, f, 0)
@@ -59,7 +59,7 @@ theorem bounded_eval_zero_support(
   };
 }
 
-theorem bounded_eval_independent(
+def bounded_eval_independent(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), m : Nat
 ) =
   induction m as k return (
@@ -98,7 +98,7 @@ def polynomial_eval(
 ) =
   bounded_eval(K, L, e, x, polynomial_cutoff(K, p), polynomial_coefficients(K, p));
 
-theorem polynomial_eval_bound(
+def polynomial_eval_bound(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   x : af_carrier(L), n : Nat, support : SeriesSupport(K, polynomial_coefficients(K, p), n)
 ) :
@@ -109,7 +109,7 @@ theorem polynomial_eval_bound(
   );
 }
 
-theorem polynomial_eval_zero(
+def polynomial_eval_zero(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_zero(K), x) = field_zero(L) {
@@ -119,7 +119,7 @@ theorem polynomial_eval_zero(
   );
 }
 
-theorem polynomial_eval_constant(
+def polynomial_eval_constant(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K),
   x : af_carrier(L)
 ) :
@@ -133,7 +133,7 @@ theorem polynomial_eval_constant(
   );
 }
 
-theorem bounded_eval_add(
+def bounded_eval_add(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat
 ) :
   forall f : FormalSeries(K), forall g : FormalSeries(K),
@@ -190,7 +190,7 @@ theorem bounded_eval_add(
   };
 }
 
-theorem polynomial_eval_add(
+def polynomial_eval_add(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   q : Polynomial(K), x : af_carrier(L)
 ) :
@@ -225,7 +225,7 @@ theorem polynomial_eval_add(
   );
 }
 
-theorem polynomial_eval_shift(
+def polynomial_eval_shift(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   x : af_carrier(L)
 ) :
@@ -252,7 +252,7 @@ theorem polynomial_eval_shift(
   );
 }
 
-theorem bounded_eval_scale(
+def bounded_eval_scale(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   a : af_carrier(K), n : Nat
 ) :
@@ -303,7 +303,7 @@ theorem bounded_eval_scale(
   };
 }
 
-theorem polynomial_eval_scale(
+def polynomial_eval_scale(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K),
   p : Polynomial(K), x : af_carrier(L)
 ) :
@@ -329,7 +329,7 @@ theorem polynomial_eval_scale(
   );
 }
 
-theorem polynomial_eval_mul_step(
+def polynomial_eval_mul_step(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   q : Polynomial(K), x : af_carrier(L),
   previous : polynomial_eval(K, L, e, polynomial_mul(K, polynomial_tail(K, p), q), x) = field_mul(
@@ -416,7 +416,7 @@ theorem polynomial_eval_mul_step(
   };
 }
 
-theorem polynomial_eval_mul_zero(
+def polynomial_eval_mul_zero(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   q : Polynomial(K), x : af_carrier(L), support : SeriesSupport(K, polynomial_coefficients(K, p), 0)
 ) :
@@ -441,7 +441,7 @@ theorem polynomial_eval_mul_zero(
   };
 }
 
-theorem polynomial_eval_mul_bound(
+def polynomial_eval_mul_bound(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat
 ) =
   induction n as k return (
@@ -465,7 +465,7 @@ theorem polynomial_eval_mul_bound(
     );
   };
 
-theorem polynomial_eval_mul(
+def polynomial_eval_mul(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   q : Polynomial(K), x : af_carrier(L)
 ) :

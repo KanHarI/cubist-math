@@ -60,7 +60,7 @@ def division_adjust(
   );
 }
 
-theorem division_horner_identity(
+def division_horner_identity(
   K : AlgebraicField, p : Polynomial(K), divisor : Polynomial(K), q : Polynomial(K),
   r : Polynomial(K),
   tailEquation : polynomial_tail(K, p) = polynomial_add(K, polynomial_mul(K, q, divisor), r),
@@ -220,7 +220,7 @@ def PolynomialDivision(K : AlgebraicField, p : Polynomial(K), divisor : Polynomi
 
 // Division with remainder, for every nonzero formal polynomial over a field.
 // The numerical degree convention at zero is unused for the divisor.
-theorem polynomial_division(
+def polynomial_division(
   K : AlgebraicField, p : Polynomial(K), divisor : Polynomial(K),
   nonzero : (divisor = polynomial_zero(K)) -> Void
 ) :

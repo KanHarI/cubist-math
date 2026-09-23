@@ -51,10 +51,10 @@ test("selected proofs load only transitive imports and tolerate cycles for compi
   await writeFile(join(root, "web/proofs/a.cubist"), "import b; def a = tt;");
   await writeFile(join(root, "web/proofs/b.cubist"), "// import missing;\nimport a; def b = tt;");
   const path = join(root, "root.cubist");
-  await writeFile(path, "import a; theorem root : Unit { exact tt; }");
+  await writeFile(path, "import a; def root : Unit { exact tt; }");
   const loaded = await loadProof(path, root);
   assert.deepEqual(Object.keys(loaded.sources).sort(), ["a", "b"]);
-  assert.match(loaded.source, /theorem root/);
+  assert.match(loaded.source, /def root/);
   assert.equal(loaded.label, "root.cubist");
 });
 
@@ -82,8 +82,8 @@ test("targeted CLI checks a small proof and propagates failures without running 
   const root = await mkdtemp(join(tmpdir(), "mathscript-runner-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const good = join(root, "good.cubist"), bad = join(root, "bad.cubist");
-  await writeFile(good, "theorem good : Unit { exact tt; }");
-  await writeFile(bad, "theorem bad : Void { exact tt; }");
+  await writeFile(good, "def good : Unit { exact tt; }");
+  await writeFile(bad, "def bad : Void { exact tt; }");
   for (const [path, success] of [[good, true], [bad, false]]) {
     const result = spawnSync(process.execPath, [runner, path], { cwd: root, encoding: "utf8", timeout: 15000 });
     assert.equal(result.error, undefined);

@@ -12,7 +12,7 @@ def FieldAsymptotic(
     -> FieldClose(F, addF, lt, xs(n), ys(n), epsilon)
   );
 
-theorem field_close_prop(
+def field_close_prop(
   F : U1, addF : F -> F -> F, lt : F -> F -> U0, order : StrictOrder(F, lt), x : F, y : F,
   epsilon : F
 ) :
@@ -29,7 +29,7 @@ theorem field_close_prop(
   );
 }
 
-theorem field_asymptotic_limits_equal(
+def field_asymptotic_limits_equal(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

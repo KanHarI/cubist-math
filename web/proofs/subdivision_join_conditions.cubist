@@ -2,7 +2,7 @@ import subdivision_join;
 
 // The condition can depend on the actual fine subdivision, not just on
 // endpoints. Transport along the endpoint path preserves this dependency.
-theorem subdivision_tagged_join_step(
+def subdivision_tagged_join_step(
   C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), n : Nat,
   previous : (
     forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
@@ -66,7 +66,7 @@ theorem subdivision_tagged_join_step(
   );
 }
 
-theorem subdivision_tagged_join(
+def subdivision_tagged_join(
   C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), n : Nat
 ) :
   forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),

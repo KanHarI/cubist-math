@@ -38,7 +38,7 @@ def subfield_laws(F : AlgebraicField, S : Subfield(F)) : SubfieldLaws(F, subfiel
 
 // These projections let clients use closure without depending on tuple layout.
 
-theorem subfield_prop(
+def subfield_prop(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F)
 ) :
   Proposition(P(x)) {
@@ -46,19 +46,19 @@ theorem subfield_prop(
   exact prop(x);
 }
 
-theorem subfield_zero(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) :
+def subfield_zero(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) :
   P(af_zero(af_carrier(F), af_operations(F))) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
   exact zero;
 }
 
-theorem subfield_one(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) :
+def subfield_one(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) :
   P(af_one(af_carrier(F), af_operations(F))) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
   exact one;
 }
 
-theorem subfield_neg(
+def subfield_neg(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F),
   member : P(x)
 ) :
@@ -67,7 +67,7 @@ theorem subfield_neg(
   exact negateLocal(x, member);
 }
 
-theorem subfield_add(
+def subfield_add(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F),
   y : af_carrier(F), px : P(x), py : P(y)
 ) :
@@ -76,7 +76,7 @@ theorem subfield_add(
   exact addLocal(x, y, px, py);
 }
 
-theorem subfield_mul(
+def subfield_mul(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F),
   y : af_carrier(F), px : P(x), py : P(y)
 ) :
@@ -85,7 +85,7 @@ theorem subfield_mul(
   exact multiplyLocal(x, y, px, py);
 }
 
-theorem subfield_inverse(
+def subfield_inverse(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F),
   y : af_carrier(F), px : P(x),
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
@@ -98,7 +98,7 @@ theorem subfield_inverse(
 }
 
 // Closure laws and membership proposition evidence are properties, not extra data.
-theorem subfield_laws_prop(
+def subfield_laws_prop(
   F : AlgebraicField, P : af_carrier(F) -> U0, p : SubfieldLaws(F, P), q : SubfieldLaws(F, P)
 ) :
   p = q {
@@ -238,7 +238,7 @@ theorem subfield_laws_prop(
 }
 
 // Univalence identifies subfields with the same elements, including their laws.
-theorem subfield_ext(
+def subfield_ext(
   F : AlgebraicField, S : Subfield(F), T : Subfield(F),
   same : (
     forall x : af_carrier(F), (subfield_members(F, S, x) -> subfield_members(F, T, x))
@@ -263,7 +263,7 @@ theorem subfield_ext(
 // The whole ambient field is the greatest subfield.
 def SubfieldTop(F : AlgebraicField, x : af_carrier(F)) = Unit;
 
-theorem subfield_top_laws(F : AlgebraicField) : SubfieldLaws(F, SubfieldTop(F)) {
+def subfield_top_laws(F : AlgebraicField) : SubfieldLaws(F, SubfieldTop(F)) {
   let A = af_carrier(F);
   let ops = af_operations(F);
   exact (
@@ -287,7 +287,7 @@ def SubfieldIncluded(F : AlgebraicField, S : Subfield(F), T : Subfield(F)) =
   forall x : af_carrier(F), subfield_members(F, S, x) -> subfield_members(F, T, x);
 
 // Antisymmetry is equality of bundled subfields, using their univalent predicates.
-theorem subfield_inclusion_antisymmetric(
+def subfield_inclusion_antisymmetric(
   F : AlgebraicField, S : Subfield(F), T : Subfield(F), includedST : SubfieldIncluded(F, S, T),
   includedTS : SubfieldIncluded(F, T, S)
 ) :
@@ -305,13 +305,13 @@ theorem subfield_inclusion_antisymmetric(
   );
 }
 
-theorem subfield_inclusion_refl(F : AlgebraicField, S : Subfield(F)) : SubfieldIncluded(F, S, S) {
+def subfield_inclusion_refl(F : AlgebraicField, S : Subfield(F)) : SubfieldIncluded(F, S, S) {
   intro x;
   intro member;
   exact member;
 }
 
-theorem subfield_inclusion_trans(
+def subfield_inclusion_trans(
   F : AlgebraicField, S : Subfield(F), T : Subfield(F), V : Subfield(F),
   st : SubfieldIncluded(F, S, T), tv : SubfieldIncluded(F, T, V)
 ) :

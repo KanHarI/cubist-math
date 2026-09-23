@@ -25,7 +25,7 @@ def complex_interval_deformation(
     F, addF, mulF, field_interval_coordinate(F, zero, one, lt, t), z, error
   );
 
-theorem complex_line_restrict_uniform(
+def complex_line_restrict_uniform(
   F : U1, zero : F, one : F, addF : F -> F -> F, lt : F -> F -> U0, curve : F -> Complex(F),
   uniform : ComplexUniformLine(F, zero, addF, lt, curve)
 ) :
@@ -51,7 +51,7 @@ theorem complex_line_restrict_uniform(
   );
 }
 
-theorem complex_interval_deformation_uniform(
+def complex_interval_deformation_uniform(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -78,7 +78,7 @@ def complex_straight_curve(
     F, zero, one, addF, mulF, lt, a, complex_add(F, addF, complex_neg(F, negF, a), b)
   );
 
-theorem complex_straight_curve_uniform(
+def complex_straight_curve_uniform(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -94,7 +94,7 @@ theorem complex_straight_curve_uniform(
   );
 }
 
-theorem complex_straight_curve_endpoints(
+def complex_straight_curve_endpoints(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -144,7 +144,7 @@ theorem complex_straight_curve_endpoints(
 
 // These same continuous interval curves avoid the origin whenever the
 // existing squared-norm domination estimate applies at the starting point.
-theorem complex_interval_deformation_avoids_zero(
+def complex_interval_deformation_avoids_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), error : Complex(F),

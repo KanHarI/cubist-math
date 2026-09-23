@@ -12,7 +12,7 @@ def PolynomialHornerLaw(
     field_mul(L, x, F(polynomial_tail(K, p)))
   );
 
-theorem polynomial_eval_characterization_step(
+def polynomial_eval_characterization_step(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   F : Polynomial(K) -> af_carrier(L), step : PolynomialHornerLaw(K, L, e, x, F), n : Nat,
   p : Polynomial(K), support : SeriesSupport(K, polynomial_coefficients(K, p), succ(n)),
@@ -39,7 +39,7 @@ theorem polynomial_eval_characterization_step(
   };
 }
 
-theorem polynomial_eval_characterization_bounded(
+def polynomial_eval_characterization_bounded(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   F : Polynomial(K) -> af_carrier(L), zero : F(polynomial_zero(K)) = field_zero(L),
   step : PolynomialHornerLaw(K, L, e, x, F), n : Nat
@@ -64,7 +64,7 @@ theorem polynomial_eval_characterization_bounded(
     );
   };
 
-theorem polynomial_eval_characterization(
+def polynomial_eval_characterization(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   F : Polynomial(K) -> af_carrier(L), zero : F(polynomial_zero(K)) = field_zero(L),
   step : PolynomialHornerLaw(K, L, e, x, F), p : Polynomial(K)

@@ -17,7 +17,7 @@ def curve_contour_samples(
     map_sample_tags(FieldUnitInterval(F, zero, one, lt), Complex(F), curve, n, tags)
   );
 
-theorem curve_contour_tag_change_close(
+def curve_contour_tag_change_close(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

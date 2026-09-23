@@ -3,7 +3,7 @@ import classical;
 
 // The constructive core uses positive apartness. This separate corollary
 // explicitly uses the existing LEM axiom to turn negated equality into it.
-theorem classical_complex_nonzero_apart(
+def classical_complex_nonzero_apart(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F),
@@ -24,7 +24,7 @@ theorem classical_complex_nonzero_apart(
   );
 }
 
-theorem classical_complex_nonzero_inverse(
+def classical_complex_nonzero_inverse(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

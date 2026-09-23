@@ -17,7 +17,7 @@ def adjoin_vector_prop(
 ) =
   TruncateProp(U0, P(y) or (y = x));
 
-theorem adjoin_vector_old(
+def adjoin_vector_old(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
   y : vector_carrier(K, V), member : P(y)
 ) :
@@ -25,14 +25,14 @@ theorem adjoin_vector_old(
   exact TruncateIntro(U0, P(y) or (y = x), left(member));
 }
 
-theorem adjoin_vector_new(
+def adjoin_vector_new(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
 ) :
   AdjoinVector(K, V, P, x, x) {
   exact TruncateIntro(U0, P(x) or (x = x), right(refl(x)));
 }
 
-theorem adjoin_vector_other(
+def adjoin_vector_other(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   prop : (forall y : vector_carrier(K, V), Proposition(P(y))), x : vector_carrier(K, V),
   y : vector_carrier(K, V), different : (y = x) -> Void, member : AdjoinVector(K, V, P, x, y)
@@ -48,7 +48,7 @@ theorem adjoin_vector_other(
 
 // Deleting a zero coefficient leaves a genuine shorter injective list of
 // generators. Coverage restores the conclusion at every original index.
-theorem independent_zero_omission(
+def independent_zero_omission(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   independent : LinearlyIndependent(K, V, P), n : Nat, v : Fin(succ(n)) -> vector_carrier(K, V),
   distinct : (forall i : Fin(succ(n)), forall j : Fin(succ(n)), v(i) = v(j) -> i = j),
@@ -102,7 +102,7 @@ theorem independent_zero_omission(
 
 // A vector outside the old span cannot have a nonzero coefficient in a
 // dependence. Turning not-nonzero into zero uses the explicit LEM instance.
-theorem outside_span_coefficient_zero(
+def outside_span_coefficient_zero(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, n : Nat, v : Fin(n)
   -> vector_carrier(K, V), a : Fin(n) -> af_carrier(K), i : Fin(n), outside : Span(K, V, P, v(i))
   -> Void, others : (forall j : Fin(n), ((j = i) -> Void) -> P(v(j))),
@@ -120,7 +120,7 @@ theorem outside_span_coefficient_zero(
   );
 }
 
-theorem adjoin_dependence_at_new(
+def adjoin_dependence_at_new(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   prop : (forall y : vector_carrier(K, V), Proposition(P(y))),
   independent : LinearlyIndependent(K, V, P), x : vector_carrier(K, V), outside : Span(K, V, P, x)
@@ -148,7 +148,7 @@ theorem adjoin_dependence_at_new(
   );
 }
 
-theorem adjoin_independent_step(
+def adjoin_independent_step(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   prop : (forall y : vector_carrier(K, V), Proposition(P(y))),
   independent : LinearlyIndependent(K, V, P), x : vector_carrier(K, V), outside : Span(K, V, P, x)
@@ -187,7 +187,7 @@ theorem adjoin_independent_step(
   }
 }
 
-theorem adjoin_independent_finite(
+def adjoin_independent_finite(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   prop : (forall y : vector_carrier(K, V), Proposition(P(y))),
   independent : LinearlyIndependent(K, V, P), x : vector_carrier(K, V),
@@ -210,7 +210,7 @@ theorem adjoin_independent_finite(
     succ previous => adjoin_independent_step(K, V, P, prop, independent, x, outside, k);
   };
 
-theorem adjoin_independent(
+def adjoin_independent(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   prop : (forall y : vector_carrier(K, V), Proposition(P(y))),
   independent : LinearlyIndependent(K, V, P), x : vector_carrier(K, V), outside : Span(K, V, P, x)
@@ -238,7 +238,7 @@ def MaximalIndependent(K : AlgebraicField, V : VectorSpace(K), S : IndependentSu
   forall T : IndependentSubset(K, V), IndependentIncluded(K, V, S, T)
   -> IndependentIncluded(K, V, T, S);
 
-theorem maximal_independent_spans(
+def maximal_independent_spans(
   K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V),
   maximal : MaximalIndependent(K, V, S)
 ) :
@@ -254,7 +254,7 @@ theorem maximal_independent_spans(
   exact double_negation(Span(K, V, P, x), span_prop(K, V, P, x), contradiction);
 }
 
-theorem maximal_independent_basis(
+def maximal_independent_basis(
   K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V),
   maximal : MaximalIndependent(K, V, S)
 ) :

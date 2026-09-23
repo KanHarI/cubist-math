@@ -3,7 +3,7 @@ import simple_extension_embeddings;
 import finite_cardinalities;
 
 // A zero product of linear factors locates a root in the finite list.
-theorem linear_factor_product_root_step(
+def linear_factor_product_root_step(
   K : AlgebraicField, n : Nat,
   previous : (
     forall roots : Fin(n) -> af_carrier(K), forall x : af_carrier(K),
@@ -36,7 +36,7 @@ theorem linear_factor_product_root_step(
   };
 }
 
-theorem linear_factor_product_root_index(K : AlgebraicField, n : Nat) :
+def linear_factor_product_root_index(K : AlgebraicField, n : Nat) :
   forall roots : Fin(n) -> af_carrier(K), forall x : af_carrier(K),
   PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, n, roots), x)
   -> Mere(exists i : Fin(n), roots(i) = x) {
@@ -58,7 +58,7 @@ theorem linear_factor_product_root_index(K : AlgebraicField, n : Nat) :
   };
 }
 
-theorem linear_factor_product_listed_step(
+def linear_factor_product_listed_step(
   K : AlgebraicField, n : Nat,
   previous : (
     forall roots : Fin(n) -> af_carrier(K), forall i : Fin(n),
@@ -100,7 +100,7 @@ theorem linear_factor_product_listed_step(
   };
 }
 
-theorem linear_factor_product_listed_root(K : AlgebraicField, n : Nat) =
+def linear_factor_product_listed_root(K : AlgebraicField, n : Nat) =
   induction n as k return (
     forall roots : Fin(k) -> af_carrier(K), forall i : Fin(k),
     PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, k, roots), roots(i))
@@ -113,7 +113,7 @@ theorem linear_factor_product_listed_root(K : AlgebraicField, n : Nat) =
     succ previous => linear_factor_product_listed_step(K, k, previous);
   };
 
-theorem splitting_listed_root(
+def splitting_listed_root(
   K : AlgebraicField, p : Polynomial(K), n : Nat, roots : Fin(n) -> af_carrier(K),
   a : af_carrier(K),
   equation : p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots)),
@@ -140,7 +140,7 @@ theorem splitting_listed_root(
   };
 }
 
-theorem splitting_root_index(
+def splitting_root_index(
   K : AlgebraicField, p : Polynomial(K), n : Nat, roots : Fin(n) -> af_carrier(K),
   a : af_carrier(K),
   equation : p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots)),

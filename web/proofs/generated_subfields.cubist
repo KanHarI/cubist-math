@@ -81,33 +81,33 @@ def field_derivation_inverse(
   exact (succ(n), field_closure_step_inverse(F, FieldClosureStage(F, P, n), x, y, px, inverseLaw));
 }
 
-theorem generated_field_prop(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) :
+def generated_field_prop(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) :
   Proposition(GeneratedField(F, P, x)) {
   exact mere_is_prop(FieldDerivation(F, P, x));
 }
 
-theorem generated_field_contains(
+def generated_field_contains(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), member : P(x)
 ) :
   GeneratedField(F, P, x) {
   exact merely(FieldDerivation(F, P, x), field_derivation_generator(F, P, x, member));
 }
 
-theorem generated_field_zero(F : AlgebraicField, P : af_carrier(F) -> U0) :
+def generated_field_zero(F : AlgebraicField, P : af_carrier(F) -> U0) :
   GeneratedField(F, P, af_zero(af_carrier(F), af_operations(F))) {
   exact merely(
     FieldDerivation(F, P, af_zero(af_carrier(F), af_operations(F))), field_derivation_zero(F, P)
   );
 }
 
-theorem generated_field_one(F : AlgebraicField, P : af_carrier(F) -> U0) :
+def generated_field_one(F : AlgebraicField, P : af_carrier(F) -> U0) :
   GeneratedField(F, P, af_one(af_carrier(F), af_operations(F))) {
   exact merely(
     FieldDerivation(F, P, af_one(af_carrier(F), af_operations(F))), field_derivation_one(F, P)
   );
 }
 
-theorem generated_field_neg(
+def generated_field_neg(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), member : GeneratedField(F, P, x)
 ) :
   GeneratedField(F, P, af_neg(af_carrier(F), af_operations(F), x)) {
@@ -117,7 +117,7 @@ theorem generated_field_neg(
   );
 }
 
-theorem generated_field_add(
+def generated_field_add(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
   px : GeneratedField(F, P, x), py : GeneratedField(F, P, y)
 ) :
@@ -134,7 +134,7 @@ theorem generated_field_add(
   );
 }
 
-theorem generated_field_mul(
+def generated_field_mul(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
   px : GeneratedField(F, P, x), py : GeneratedField(F, P, y)
 ) :
@@ -151,7 +151,7 @@ theorem generated_field_mul(
   );
 }
 
-theorem generated_field_inverse(
+def generated_field_inverse(
   F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
   px : GeneratedField(F, P, x),
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
@@ -166,7 +166,7 @@ theorem generated_field_inverse(
   );
 }
 
-theorem generated_field_laws(F : AlgebraicField, P : af_carrier(F) -> U0) :
+def generated_field_laws(F : AlgebraicField, P : af_carrier(F) -> U0) :
   SubfieldLaws(F, GeneratedField(F, P)) {
   exact (
     generated_field_prop(F, P), generated_field_zero(F, P), generated_field_one(F, P),
@@ -181,7 +181,7 @@ def generated_subfield(F : AlgebraicField, P : af_carrier(F) -> U0) : Subfield(F
 
 // Elimination of truncated derivations is only into the membership proposition
 // of an already supplied subfield. No arbitrary derivation is extracted.
-theorem generated_field_least(
+def generated_field_least(
   F : AlgebraicField, P : af_carrier(F) -> U0, Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
   included : PredicateIncluded(af_carrier(F), P, Q), x : af_carrier(F),
   member : GeneratedField(F, P, x)
@@ -197,7 +197,7 @@ theorem generated_field_least(
   );
 }
 
-theorem generated_subfield_least(
+def generated_subfield_least(
   F : AlgebraicField, P : af_carrier(F) -> U0, S : Subfield(F),
   included : PredicateIncluded(af_carrier(F), P, subfield_members(F, S))
 ) :

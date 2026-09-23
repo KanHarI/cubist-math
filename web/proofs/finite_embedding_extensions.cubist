@@ -92,7 +92,7 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
   );
 }
 
-theorem finitely_generated_embedding_extension(n : Nat) =
+def finitely_generated_embedding_extension(n : Nat) =
   induction n as k return FiniteEmbeddingExtension(k) {
     zero => finite_embedding_extension_zero;
     succ previous => finite_embedding_extension_step(k, previous);
@@ -100,7 +100,7 @@ theorem finitely_generated_embedding_extension(n : Nat) =
 
 // No generators are requested from the caller: a finite vector basis supplies
 // them internally. The existence statement preserves its propositional truncation.
-theorem finite_extension_embedding_exists(
+def finite_extension_embedding_exists(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e)), T : AlgebraicField,
   closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)

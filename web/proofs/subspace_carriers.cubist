@@ -109,7 +109,7 @@ def subspace_inclusion_linear(K : AlgebraicField, V : VectorSpace(K), S : Subspa
   );
 }
 
-theorem finite_subspace(
+def finite_subspace(
   K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), S : Subspace(K, V)
 ) :
   FiniteDimensional(K, SubspaceVectorSpace(K, V, S)) {
@@ -120,7 +120,7 @@ theorem finite_subspace(
 }
 
 // Finite subspace bases are asserted without selecting a basis globally.
-theorem finite_subspace_basis(
+def finite_subspace_basis(
   K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), S : Subspace(K, V)
 ) :
   Mere(exists n : Nat, FiniteBasis(K, SubspaceVectorSpace(K, V, S), n)) {

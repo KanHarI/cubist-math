@@ -1,7 +1,7 @@
 import polynomial_residue_ring;
 
 // Nontriviality needs precisely that the modulus is not invertible.
-theorem residue_one_not_zero(
+def residue_one_not_zero(
   K : AlgebraicField, M : PolynomialModulus(K),
   nonunit : PolynomialUnit(K, modulus_polynomial(K, M)) -> Void,
   same : residue_one(K, M) = residue_zero(K, M)
@@ -25,7 +25,7 @@ theorem residue_one_not_zero(
   );
 }
 
-theorem residue_nonzero_not_divisible(
+def residue_nonzero_not_divisible(
   K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M),
   nonzero : (x = residue_zero(K, M)) -> Void,
   divides : PolynomialDivides(K, modulus_polynomial(K, M), residue_polynomial(K, M, x))
@@ -89,7 +89,7 @@ def residue_bezout_inverse(
 
 // Inverses are unique, so their mere existence from Bezout eliminates into
 // an actual inverse without invoking any form of choice.
-theorem residue_field_inverse(
+def residue_field_inverse(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), x : PolynomialResidue(K, M),
   nonzero : (x = residue_zero(K, M)) -> Void

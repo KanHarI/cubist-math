@@ -46,7 +46,7 @@ def copy(n : Nat) = induction n as k return Nat {
   succ previous => succ(previous);
 };
 
-theorem copy_of_two : copy(2) = 2 {
+def copy_of_two : copy(2) = 2 {
   exact refl(2);
 }
 ```
@@ -54,8 +54,8 @@ theorem copy_of_two : copy(2) = 2 {
 A definition may have an explicit result type and a block, or an expression
 whose type is inferred. All parameters have explicit types. Functions can also
 be written as `fun (x : A) => body`. Application `f(a, b)` is curried.
-`theorem` uses an opaque checked proof definition; `def` remains transparent for
-computation. Both are checked for closure.
+Use `def` for both mathematical constructions and proofs. Every definition is
+type-checked and checked for closure; a proof is a term of its stated type.
 
 Place `//` comments immediately above a declaration to document it in the
 inspector, including when it is imported by another proof:
@@ -68,11 +68,12 @@ def identity(A : U0, x : A) = x;
 Consecutive comment lines form a paragraph; an empty `//` line starts another
 paragraph. A physical blank line separates a file or section comment from a
 declaration. Trailing comments are not used as documentation for the next
-declaration. This also works for theorems, axioms, opaque definitions and
+declaration. This also works for proof blocks, axioms, opaque definitions and
 construction declarations. Documentation is displayed as plain text and does
 not change the checked proof.
 
-Use `opaque def` to keep a checked concept named during ordinary reduction:
+The parser also accepts `opaque def`; the current cubical backend checks and
+unfolds it exactly like `def`:
 
 ```text
 opaque def Permutations(n : Nat) = Bijection(Fin(n), Fin(n));
@@ -81,12 +82,11 @@ def folded = successor(1);
 def opened = unfold(folded); // 2
 ```
 
-Opacity controls **definition unfolding (delta reduction)**, not beta reduction:
-`(fun (x : Nat) => succ(x))(1)` still computes. Type conversion can unfold checked
-opaque definitions when necessary to compare types; the resulting judgement is
-restored to the requested named type. `unfold(expression)` explicitly unfolds
-its definitions and normalizes it. This is not a secrecy boundary, and an opaque
-definition is not an axiom. Theorem bodies remain boxed during ordinary checking.
+Named definitions retain their checked bodies, which conversion can unfold
+when necessary to compare types. Function application still computes by beta
+reduction: `(fun (x : Nat) => succ(x))(1)` computes to `2`. Proof blocks appear
+by name in the inspector, with their bodies available to open. This presentation
+does not change checking or introduce an axiom.
 
 An explicit assumption uses `axiom name(params) : T;`. It has no proof body;
 the kernel checks its type and records an `Axiom` instruction. Every result and
@@ -258,12 +258,12 @@ generic radix algorithm at base 2 and base 10; its parameter is radix minus two.
 Dedicated
 calculation blocks, implicit arguments, and editor completion are future work.
 
-A named proposition can be used directly as a theorem type:
+A named proposition can be used directly as a definition's result type:
 
 ```text
 def InfinitelyManyPrimes = forall n : Nat, exists p : Nat, Prime(p) and n < p;
 
-theorem euclid : InfinitelyManyPrimes {
+def euclid : InfinitelyManyPrimes {
   intro n;
   // Construct a prime above n, then finish with exact.
 }
@@ -316,7 +316,7 @@ not ask for a fully normalized expression.
 
 ```mathscript
 def identity(n : Nat) = n;
-theorem identity_zero : identity(0) = 0 {
+def identity_zero : identity(0) = 0 {
   exact with unfolding [identity] { refl(0) };
 }
 ```

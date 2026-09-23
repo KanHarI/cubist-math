@@ -10,7 +10,7 @@ def F2Image(x : F4Carrier) = exists k : F2Carrier, f2_into_f4(k) = x;
 
 // Frobenius exchanges alpha and alpha+1. A point fixed by Frobenius
 // must therefore be 0 or 1. The proof returns its actual base-field preimage.
-theorem f4_frobenius_fixed_in_base(x : F4Carrier) : (f4_frobenius(x) = x) -> F2Image(x) {
+def f4_frobenius_fixed_in_base(x : F4Carrier) : (f4_frobenius(x) = x) -> F2Image(x) {
   exact f4_induction(
     (fun (x : F4Carrier) => (f4_frobenius(x) = x) -> F2Image(x)),
     (fun (fixed : (f4_frobenius(f4_0) = f4_0)) => typed(F2Image(f4_0), (f2_0, refl(f4_0)))),
@@ -24,11 +24,11 @@ theorem f4_frobenius_fixed_in_base(x : F4Carrier) : (f4_frobenius(x) = x) -> F2I
   );
 }
 
-theorem f4_fixed_in_base(x : F4Carrier, fixed : F4Fixed(x)) : F2Image(x) {
+def f4_fixed_in_base(x : F4Carrier, fixed : F4Fixed(x)) : F2Image(x) {
   exact f4_frobenius_fixed_in_base(x, fixed(f4_frobenius_automorphism, tt));
 }
 
-theorem f4_base_is_fixed(x : F4Carrier, member : F2Image(x)) : F4Fixed(x) {
+def f4_base_is_fixed(x : F4Carrier, member : F2Image(x)) : F4Fixed(x) {
   obtain (k, same) = member;
   exact transport(
     F4Fixed, f2_into_f4(k), x, same, galois_fixed_contains_base(F2, F4OverF2, F4AllAutomorphisms, k)
@@ -37,14 +37,14 @@ theorem f4_base_is_fixed(x : F4Carrier, member : F2Image(x)) : F4Fixed(x) {
 
 // The fixed elements of Gal(F4/F2) are exactly the embedded base field.
 // Both implications are constructive, without LEM, choice, or univalence.
-theorem f4_fixed_field_is_base(x : F4Carrier) :
+def f4_fixed_field_is_base(x : F4Carrier) :
   (F4Fixed(x) -> F2Image(x)) and (F2Image(x) -> F4Fixed(x)) {
   exact (f4_fixed_in_base(x), f4_base_is_fixed(x));
 }
 
 // The embedding is injective, so its actual fibers are propositions. No
 // truncation is required when expressing membership in this base-field image.
-theorem f2_image_prop(x : F4Carrier, p : F2Image(x), q : F2Image(x)) : p = q {
+def f2_image_prop(x : F4Carrier, p : F2Image(x), q : F2Image(x)) : p = q {
   let fiber = (fun (k : F2Carrier) => f2_into_f4(k) = x);
   let k = sigma_first(F2Carrier, fiber, p);
   let l = sigma_first(F2Carrier, fiber, q);
@@ -60,7 +60,7 @@ theorem f2_image_prop(x : F4Carrier, p : F2Image(x), q : F2Image(x)) : p = q {
   );
 }
 
-theorem f4_fixed_predicate_is_base : F4Fixed = F2Image {
+def f4_fixed_predicate_is_base : F4Fixed = F2Image {
   exact field_predicate_ext(
     F4Carrier, F4Fixed, F2Image, galois_fixed_prop(F2, F4OverF2, F4AllAutomorphisms), f2_image_prop,
     f4_fixed_field_is_base
@@ -80,7 +80,7 @@ def f4_base_intermediate : IntermediateField(F2, F4OverF2) {
   );
 }
 
-theorem f4_fixed_intermediate_is_base :
+def f4_fixed_intermediate_is_base :
   galois_fixed_field(F2, F4OverF2, F4AllAutomorphisms) =[IntermediateField(F2, F4OverF2)] f4_base_intermediate {
   exact intermediate_ext(
     F2, F4OverF2, galois_fixed_field(F2, F4OverF2, F4AllAutomorphisms), f4_base_intermediate,

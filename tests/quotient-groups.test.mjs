@@ -15,12 +15,12 @@ test("quotient groups and the first isomorphism theorem check constructively acr
       exact group_object_at(U2, group_carrier_at(U1, G), group_unit_at(U1, G),
         group_multiply_at(U1, G), group_laws_at(U1, G));
     }
-    theorem identity_quotient(G : Group) : GroupIsoAt(U1,
+    def identity_quotient(G : Group) : GroupIsoAt(U1,
       KernelQuotientGroup(G, G, group_hom_identity(G)),
       group_lift(ImageGroup(G, G, group_hom_identity(G)))) {
       exact group_first_isomorphism(G, G, group_hom_identity(G));
     }
-    theorem trivial_quotient(G : Group, H : Group) : GroupIsoAt(U1,
+    def trivial_quotient(G : Group, H : Group) : GroupIsoAt(U1,
       KernelQuotientGroup(G, H, group_hom_trivial(G, H)),
       group_lift(ImageGroup(G, H, group_hom_trivial(G, H)))) {
       exact group_first_isomorphism(G, H, group_hom_trivial(G, H));

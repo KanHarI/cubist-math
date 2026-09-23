@@ -18,7 +18,7 @@ def residue_from_coordinates(
   exact (polynomial_of_support(K, f, n, support), support);
 }
 
-theorem residue_coordinates_left(
+def residue_coordinates_left(
   K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M)
 ) :
   residue_from_coordinates(K, M, residue_coordinates(K, M, r)) = r {
@@ -34,14 +34,14 @@ theorem residue_coordinates_left(
   );
 }
 
-theorem residue_coordinates_right(
+def residue_coordinates_right(
   K : AlgebraicField, M : PolynomialModulus(K), a : Fin(modulus_degree(K, M)) -> af_carrier(K)
 ) :
   residue_coordinates(K, M, residue_from_coordinates(K, M, a)) = a {
   exact series_coordinates_roundtrip(K, modulus_degree(K, M), a);
 }
 
-theorem residue_coordinates_injective(
+def residue_coordinates_injective(
   K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M),
   s : PolynomialResidue(K, M), same : residue_coordinates(K, M, r) = residue_coordinates(K, M, s)
 ) :
@@ -52,7 +52,7 @@ theorem residue_coordinates_injective(
   );
 }
 
-theorem residue_coordinates_surjective(
+def residue_coordinates_surjective(
   K : AlgebraicField, M : PolynomialModulus(K), a : Fin(modulus_degree(K, M)) -> af_carrier(K)
 ) :
   Mere(exists r : PolynomialResidue(K, M), residue_coordinates(K, M, r) = a) {
@@ -65,7 +65,7 @@ theorem residue_coordinates_surjective(
   );
 }
 
-theorem residue_scalar_polynomial(
+def residue_scalar_polynomial(
   K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K), r : PolynomialResidue(K, M)
 ) :
   residue_polynomial(K, M, residue_mul(K, M, residue_constant(K, M, a), r)) = polynomial_scale(
@@ -83,7 +83,7 @@ theorem residue_scalar_polynomial(
   };
 }
 
-theorem residue_coordinates_add(
+def residue_coordinates_add(
   K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M),
   s : PolynomialResidue(K, M)
 ) :
@@ -98,7 +98,7 @@ theorem residue_coordinates_add(
   );
 }
 
-theorem residue_coordinates_scale(
+def residue_coordinates_scale(
   K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K), r : PolynomialResidue(K, M)
 ) :
   residue_coordinates(K, M, residue_mul(K, M, residue_constant(K, M, a), r)) = (
@@ -179,7 +179,7 @@ def adjoined_extension_finite(
   );
 }
 
-theorem adjoined_extension_degree(
+def adjoined_extension_degree(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)),
   finite : FiniteExtension(K, adjoined_extension(K, M, irreducible))

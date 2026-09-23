@@ -15,7 +15,7 @@ def ExtensionMember(
 
 // Isomorphism invariance comes from transport on the univalent extension
 // type. It is not an extra law imposed on each class of extensions.
-theorem extension_class_iso(
+def extension_class_iso(
   C : ExtensionClass, K : AlgebraicField, E : FieldExt(K), F : FieldExt(K),
   e : ExtensionIso(K, E, F), member : C(K, E)
 ) :
@@ -23,7 +23,7 @@ theorem extension_class_iso(
   exact transport(C(K), E, F, extension_iso_path(K, E, F, e), member);
 }
 
-theorem extension_class_iso_iff(
+def extension_class_iso_iff(
   C : ExtensionClass, K : AlgebraicField, E : FieldExt(K), F : FieldExt(K),
   e : ExtensionIso(K, E, F)
 ) :
@@ -75,7 +75,7 @@ def Distinguished(C : ExtensionClass) =
 
 // The third clause follows from the first two. The common-base agreement
 // is essential when applying the tower criterion through the right factor.
-theorem distinguished_composita_from_tower_base_change(
+def distinguished_composita_from_tower_base_change(
   C : ExtensionClass, towerLaw : DistinguishedTower(C), baseChange : DistinguishedBaseChange(C)
 ) :
   DistinguishedComposita(C) {
@@ -106,7 +106,7 @@ theorem distinguished_composita_from_tower_base_change(
   exact combine(typed((ExtensionMember(C, B, L, bl) and ExtensionMember(C, L, M, lm)), (inL, inLM)));
 }
 
-theorem distinguished_from_tower_base_change(
+def distinguished_from_tower_base_change(
   C : ExtensionClass, prop : ExtensionClassProp(C), towerLaw : DistinguishedTower(C),
   baseChange : DistinguishedBaseChange(C)
 ) :

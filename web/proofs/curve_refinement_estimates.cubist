@@ -4,7 +4,7 @@ import subdivision_refinement;
 // A partition estimate constructs some flattening. A refinement certificate
 // identifies its sum with the specified fine samples; equal sample lists are
 // not required. Transport only the value of the fine contour sum.
-theorem curve_refinement_partition_estimate(
+def curve_refinement_partition_estimate(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F)
   -> Complex(F),
@@ -82,7 +82,7 @@ theorem curve_refinement_partition_estimate(
 
 // The error estimate now applies to a specified actual fine sample, rather
 // than only the fresh flattening returned by the partition estimate.
-theorem affine_refinement_sum_estimate(
+def affine_refinement_sum_estimate(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F

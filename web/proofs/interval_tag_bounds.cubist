@@ -15,7 +15,7 @@ def IntervalTagWithin(
     field_interval_coordinate(F, zero, one, lt, b)
   );
 
-theorem field_between_close(
+def field_between_close(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a : F, b : F, x : F, y : F,
@@ -55,7 +55,7 @@ theorem field_between_close(
   );
 }
 
-theorem interval_tags_close(
+def interval_tags_close(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

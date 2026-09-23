@@ -3,11 +3,11 @@
 // laws and arithmetic compatibility in C. They are checked definitions, not
 // axioms. All other names come from the original binary/radix source modules.
 
-theorem factorial_ten_binary_to_nat : factorial(10) = nat_3628800 {
+def factorial_ten_binary_to_nat : factorial(10) = nat_3628800 {
   exact cubical_factorial_ten_via_univalence;
 }
 
-theorem factorial_ten_binary_to_base_two : radix_factorial(0, 10) = base_two_factorial_value_10 {
+def factorial_ten_binary_to_base_two : radix_factorial(0, 10) = base_two_factorial_value_10 {
   exact trans(
     cubical_binary_radix_base_2_original_factorial,
     trans(
@@ -17,7 +17,7 @@ theorem factorial_ten_binary_to_base_two : radix_factorial(0, 10) = base_two_fac
   );
 }
 
-theorem factorial_ten_binary_to_base_ten : radix_factorial(8, 10) = base_ten_factorial_value_10 {
+def factorial_ten_binary_to_base_ten : radix_factorial(8, 10) = base_ten_factorial_value_10 {
   exact trans(
     cubical_binary_radix_base_10_original_factorial,
     trans(
@@ -27,15 +27,15 @@ theorem factorial_ten_binary_to_base_ten : radix_factorial(8, 10) = base_ten_fac
   );
 }
 
-theorem factorial_ten_base_two_to_binary : binary_factorial(10) = 0b1101110101111100000000 {
+def factorial_ten_base_two_to_binary : binary_factorial(10) = 0b1101110101111100000000 {
   exact trans(cubical_radix_binary_base_2_original_factorial, base_two_3628800_to_binary);
 }
 
-theorem factorial_ten_base_ten_to_binary : binary_factorial(10) = 0b1101110101111100000000 {
+def factorial_ten_base_ten_to_binary : binary_factorial(10) = 0b1101110101111100000000 {
   exact trans(cubical_radix_binary_base_10_original_factorial, base_ten_3628800_to_binary);
 }
 
-theorem factorial_ten_base_two_to_nat : factorial(10) = nat_3628800 {
+def factorial_ten_base_two_to_nat : factorial(10) = nat_3628800 {
   exact trans(
     cubical_radix_nat_base_2_original_factorial,
     trans(
@@ -45,7 +45,7 @@ theorem factorial_ten_base_two_to_nat : factorial(10) = nat_3628800 {
   );
 }
 
-theorem factorial_ten_base_ten_to_nat : factorial(10) = nat_3628800 {
+def factorial_ten_base_ten_to_nat : factorial(10) = nat_3628800 {
   exact trans(
     cubical_radix_nat_base_10_original_factorial,
     trans(

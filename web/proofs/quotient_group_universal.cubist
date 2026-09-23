@@ -23,7 +23,7 @@ def group_hom_lift(G : Group, H : Group, h : GroupHom(G, H)) :
 
 // Equal cosets have equal images: x * (x^-1 * y) = y, and the second
 // factor maps to the identity. This avoids selecting coset representatives.
-theorem killing_subgroup_respects_cosets_at(
+def killing_subgroup_respects_cosets_at(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   kills : KillsSubgroupAt(G, H, h, S)
 ) :
@@ -65,7 +65,7 @@ def quotient_descend_map(
     killing_subgroup_respects_cosets_at(G, H, h, S, kills)
   );
 
-theorem quotient_descend_beta(
+def quotient_descend_beta(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   kills : KillsSubgroupAt(G, H, h, S), x : group_carrier(G)
 ) :
@@ -81,7 +81,7 @@ theorem quotient_descend_beta(
   };
 }
 
-theorem quotient_descend_multiply_classes(
+def quotient_descend_multiply_classes(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S), x : group_carrier(G),
   y : group_carrier(G)
@@ -112,7 +112,7 @@ theorem quotient_descend_multiply_classes(
   );
 }
 
-theorem quotient_descend_multiply(
+def quotient_descend_multiply(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S), q : LeftCosets(G, S),
   r : LeftCosets(G, S)
@@ -162,7 +162,7 @@ def quotient_descend_hom(
 }
 
 // The commuting triangle is an equality of bundled homomorphisms.
-theorem quotient_descend_triangle(
+def quotient_descend_triangle(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S)
 ) :
@@ -181,7 +181,7 @@ theorem quotient_descend_triangle(
 
 // Any other homomorphism whose composite with the projection is h equals
 // the descended homomorphism, including its multiplication-law evidence.
-theorem quotient_descend_unique(
+def quotient_descend_unique(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S),
   k : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
@@ -214,7 +214,7 @@ theorem quotient_descend_unique(
 
 // Every homomorphism killing the normal subgroup has a unique factorization.
 // Both the factor and its uniqueness live in the homomorphism type.
-theorem quotient_group_universal(
+def quotient_group_universal(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
   normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S)
 ) :
@@ -238,7 +238,7 @@ theorem quotient_group_universal(
 }
 
 // On small targets this recovers the earlier unique map of sets.
-theorem quotient_descend_agrees_with_map(
+def quotient_descend_agrees_with_map(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
 ) :
   quotient_descend_map(G, group_lift(H), group_hom_lift(G, H, h), S, kills) = group_quotient_map(
@@ -251,7 +251,7 @@ theorem quotient_descend_agrees_with_map(
 }
 
 // Every subgroup element becomes the identity under the quotient projection.
-theorem quotient_projection_kills(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
+def quotient_projection_kills(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
   KillsSubgroupAt(G, QuotientGroup(G, S, normal), quotient_projection(G, S, normal), S) {
   intro n;
   intro member;
@@ -265,7 +265,7 @@ theorem quotient_projection_kills(G : Group, S : Subgroup(G), normal : IsNormal(
 
 // Projection is an epimorphism: equality after precomposition detects
 // equality of maps out of the quotient, including their law fields.
-theorem quotient_projection_epimorphism(
+def quotient_projection_epimorphism(
   G : Group, H : GroupAt(U1), S : Subgroup(G), normal : IsNormal(G, S),
   f : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
   g : GroupHomAt(U1, QuotientGroup(G, S, normal), H),

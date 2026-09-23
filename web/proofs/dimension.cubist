@@ -13,7 +13,7 @@ def basis_has_dimension(
 ) =
   merely(FiniteBasis(K, V, n), basis);
 
-theorem dimension_unique(
+def dimension_unique(
   K : AlgebraicField, V : VectorSpace(K), m : Nat, n : Nat, first : HasDimension(K, V, m),
   second : HasDimension(K, V, n)
 ) :
@@ -43,7 +43,7 @@ def dimension_specification(
 ) =
   sigma_second(Nat, HasDimension(K, V), finite);
 
-theorem finite_dimensional_prop(K : AlgebraicField, V : VectorSpace(K)) :
+def finite_dimensional_prop(K : AlgebraicField, V : VectorSpace(K)) :
   Proposition(FiniteDimensional(K, V)) {
   intro first;
   intro second;
@@ -78,7 +78,7 @@ def finite_dimensional_from_mere(
   );
 }
 
-theorem dimension_of_basis(
+def dimension_of_basis(
   K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), n : Nat,
   basis : FiniteBasis(K, V, n)
 ) :
@@ -89,7 +89,7 @@ theorem dimension_of_basis(
   );
 }
 
-theorem dimension_evidence_independent(
+def dimension_evidence_independent(
   K : AlgebraicField, V : VectorSpace(K), first : FiniteDimensional(K, V),
   second : FiniteDimensional(K, V)
 ) :
@@ -123,7 +123,7 @@ def finite_dimensional_iso(
   );
 }
 
-theorem dimension_linear_iso(
+def dimension_linear_iso(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), e : LinearIso(K, V, W),
   finiteV : FiniteDimensional(K, V), finiteW : FiniteDimensional(K, W)
 ) :
@@ -145,7 +145,7 @@ def has_dimension_path(
   exact transport((fun (X : VectorSpace(K)) => HasDimension(K, X, n)), V, W, p, finite);
 }
 
-theorem dimension_path(
+def dimension_path(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), p : V =[VectorSpace(K)] W,
   finiteV : FiniteDimensional(K, V), finiteW : FiniteDimensional(K, W)
 ) :

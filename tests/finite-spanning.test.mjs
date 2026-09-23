@@ -11,10 +11,10 @@ const assumptions = (p, name) => { const s = p.symbols[name]; assert.equal(s?.ve
 test("finite spanning families contain an indexed subfamily basis without choice", async t => {
   const p = create(t);
   const result = await p.check(`import spanning_subfamilies;
-    theorem extract(K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V), spans : FiniteSpanningFamily(K, V, n, v)) : Mere(SubfamilyBasis(K, V, n, v)) {
+    def extract(K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V), spans : FiniteSpanningFamily(K, V, n, v)) : Mere(SubfamilyBasis(K, V, n, v)) {
       exact finite_spanning_subfamily_basis(K, V, n, v, spans);
     }
-    theorem generator_coordinates(K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V), basis : FamilyBasis(K, V, n, v)) : FiniteBasis(K, V, n) {
+    def generator_coordinates(K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V), basis : FamilyBasis(K, V, n, v)) : FiniteBasis(K, V, n) {
       exact family_basis_coordinates(K, V, n, v, basis);
     }
   `, "spanning_regression");
@@ -27,10 +27,10 @@ test("arbitrary finite subspaces have bases and finiteness descends both ways in
   const p = create(t);
   const result = await p.check(`import subspace_carriers;
     import finite_towers;
-    theorem subspace_basis(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), S : Subspace(K, V)) : Mere(exists n : Nat, FiniteBasis(K, SubspaceVectorSpace(K, V, S), n)) {
+    def subspace_basis(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), S : Subspace(K, V)) : Mere(exists n : Nat, FiniteBasis(K, SubspaceVectorSpace(K, V, S), n)) {
       exact finite_subspace_basis(K, V, finite, S);
     }
-    theorem tower_converse(K : AlgebraicField, L : AlgebraicField, M : AlgebraicField,
+    def tower_converse(K : AlgebraicField, L : AlgebraicField, M : AlgebraicField,
       e : FieldEmbedding(K, L), d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c), finite : FiniteExtension(K, embedding_as_extension(K, M, c))) :
       FiniteExtension(K, embedding_as_extension(K, L, e)) and FiniteExtension(L, embedding_as_extension(L, M, d)) {
       exact finite_extension_tower_converse(K, L, M, e, d, c, triangle, finite);
@@ -45,10 +45,10 @@ test("arbitrary finite subspaces have bases and finiteness descends both ways in
 test("finite extraction does not choose a basis or equate finiteness with independence", async t => {
   const p = create(t);
   const result = await p.check(`import spanning_subfamilies;
-    theorem cannot_choose(K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V), spans : FiniteSpanningFamily(K, V, n, v)) : SubfamilyBasis(K, V, n, v) {
+    def cannot_choose(K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V), spans : FiniteSpanningFamily(K, V, n, v)) : SubfamilyBasis(K, V, n, v) {
       exact finite_spanning_subfamily_basis(K, V, n, v, spans);
     }
-    theorem cannot_keep_duplicates(K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V), spans : FiniteSpanningFamily(K, V, n, v)) : FamilyBasis(K, V, n, v) {
+    def cannot_keep_duplicates(K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V), spans : FiniteSpanningFamily(K, V, n, v)) : FamilyBasis(K, V, n, v) {
       exact (family_linear_surjective(K, V, n, v, spans), family_linear_surjective(K, V, n, v, spans));
     }
   `, "invalid_spanning");

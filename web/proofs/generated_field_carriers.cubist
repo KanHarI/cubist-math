@@ -11,7 +11,7 @@ def generated_carrier_generator(
   exact (x, generated_field_contains(F, P, x, member));
 }
 
-theorem generated_carrier_least(
+def generated_carrier_least(
   F : AlgebraicField, P : af_carrier(F) -> U0,
   H : Subfield(subfield_as_field(F, generated_subfield(F, P))),
   contains : (

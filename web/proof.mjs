@@ -272,7 +272,7 @@ function decorate(info) {
   const local = last?.links.find(
     (d) =>
       d.binding === info.binding &&
-      ["local", "parameter", "def", "theorem"].includes(d.role),
+      ["local", "parameter", "def"].includes(d.role),
   );
   const output = last?.outputs.find(d => d.binding === info.binding && d.name === info.name);
   const value = { ...declaration, ...output, ...info, ...imported, kind: "value" };
@@ -372,7 +372,6 @@ function renderResult() {
 }
 const keywords = new Set([
   "import",
-  "theorem",
   "def",
   "forall",
   "exists",

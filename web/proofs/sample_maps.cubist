@@ -22,7 +22,7 @@ def map_sample_tags(C : U1, D : U1, f : C -> D, n : Nat) =
     );
   };
 
-theorem map_sample_first(C : U1, D : U1, f : C -> D, n : Nat) :
+def map_sample_first(C : U1, D : U1, f : C -> D, n : Nat) :
   forall vertices : SampleVertices(C, n),
   sample_first(D, n, map_sample_vertices(C, D, f, n, vertices)) = f(sample_first(C, n, vertices)) {
   exact induction n as k return (
@@ -36,7 +36,7 @@ theorem map_sample_first(C : U1, D : U1, f : C -> D, n : Nat) :
   };
 }
 
-theorem map_sample_last(C : U1, D : U1, f : C -> D, n : Nat) :
+def map_sample_last(C : U1, D : U1, f : C -> D, n : Nat) :
   forall vertices : SampleVertices(C, n),
   sample_last(D, n, map_sample_vertices(C, D, f, n, vertices)) = f(sample_last(C, n, vertices)) {
   exact induction n as k return (
@@ -51,7 +51,7 @@ theorem map_sample_last(C : U1, D : U1, f : C -> D, n : Nat) :
 }
 
 // Sampling after a map agrees with evaluating the pulled-back edge formula.
-theorem map_sample_sum(
+def map_sample_sum(
   C : U1, D : U1, f : C -> D, G : U1, zero : G, addG : G -> G -> G, edge : D -> D -> D -> G, n : Nat
 ) :
   forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),

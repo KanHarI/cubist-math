@@ -17,7 +17,7 @@ opaque def documented = 0;
 def detached = 0; // Trailing comment belongs to this line.
 def next = 0;
 // Proof documentation.
-theorem proof : Nat { exact 0; }
+def proof : Nat { exact 0; }
 // Explicit assumption documentation.
 axiom assumed : Nat;
 `;

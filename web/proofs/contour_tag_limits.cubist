@@ -3,7 +3,7 @@ import field_magnitude_close;
 import field_scale_limits;
 
 // The tag-error estimate controls the difference of the actual finite sums.
-theorem contour_tag_change_close(
+def contour_tag_change_close(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : F -> F, weight : F -> F -> F
@@ -39,7 +39,7 @@ theorem contour_tag_change_close(
 
 // The sampling scheme and its analytic estimates are explicit inputs.
 // This does not postulate that arbitrary refinements have small errors.
-theorem contour_tag_errors_converge(
+def contour_tag_errors_converge(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : F -> F, weight : F -> F -> F
@@ -90,7 +90,7 @@ theorem contour_tag_errors_converge(
 }
 
 // Over ordered fields, convergence of delta itself suffices.
-theorem contour_tag_errors_from_vanishing_values(
+def contour_tag_errors_from_vanishing_values(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

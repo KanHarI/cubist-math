@@ -2,7 +2,7 @@ import curve_sample_sums;
 import contour_sums;
 
 // Right scalar multiplication, using commutativity of the coefficient ring.
-theorem contour_sum_scale(
+def contour_sum_scale(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, coefficient : F, n : Nat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n)
@@ -45,7 +45,7 @@ theorem contour_sum_scale(
   );
 }
 
-theorem curve_subdivision_samples_add(
+def curve_subdivision_samples_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f : Complex(F) -> Complex(F),
@@ -71,7 +71,7 @@ theorem curve_subdivision_samples_add(
   );
 }
 
-theorem curve_subdivision_samples_scale(
+def curve_subdivision_samples_scale(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f : Complex(F) -> Complex(F),
@@ -100,7 +100,7 @@ theorem curve_subdivision_samples_scale(
 
 // Only values on the curve matter; no equality of the whole functions is
 // required, and no function-extensionality axiom is used.
-theorem curve_subdivision_samples_cong(
+def curve_subdivision_samples_cong(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f : Complex(F) -> Complex(F),
   g : Complex(F) -> Complex(F),

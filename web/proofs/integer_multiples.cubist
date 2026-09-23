@@ -4,7 +4,7 @@ import integers;
 // Integer multiples in an arbitrary abelian group, constructed by recursion.
 // No field, order, choice, or excluded-middle assumption is used.
 
-theorem additive_right_zero(
+def additive_right_zero(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G
 ) :
   addG(x, zero) = x {
@@ -12,7 +12,7 @@ theorem additive_right_zero(
   exact trans(comm(x, zero), unit(x));
 }
 
-theorem additive_cancel_last(
+def additive_cancel_last(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   y : G
 ) :
@@ -27,7 +27,7 @@ theorem additive_cancel_last(
   );
 }
 
-theorem additive_cancel_negative_last(
+def additive_cancel_negative_last(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   y : G
 ) :
@@ -39,7 +39,7 @@ theorem additive_cancel_negative_last(
   );
 }
 
-theorem additive_shuffle(
+def additive_shuffle(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   y : G, u : G, v : G
 ) :
@@ -70,7 +70,7 @@ def integer_multiple(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, x : G,
     right n => natural_multiple(G, zero, addG, negG, negG(x), succ(n));
   };
 
-theorem integer_multiple_successor(
+def integer_multiple_successor(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   z : Z
 ) :
@@ -98,7 +98,7 @@ theorem integer_multiple_successor(
   };
 }
 
-theorem integer_multiple_predecessor(
+def integer_multiple_predecessor(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   z : Z
 ) :
@@ -126,7 +126,7 @@ theorem integer_multiple_predecessor(
   };
 }
 
-theorem integer_multiple_add_positive(
+def integer_multiple_add_positive(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   z : Z, n : Nat
 ) :
@@ -155,7 +155,7 @@ theorem integer_multiple_add_positive(
   };
 }
 
-theorem integer_multiple_add_negative(
+def integer_multiple_add_negative(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   z : Z, n : Nat
 ) :
@@ -187,7 +187,7 @@ theorem integer_multiple_add_negative(
   };
 }
 
-theorem integer_multiple_add(
+def integer_multiple_add(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
   z : Z, w : Z
 ) :
@@ -204,7 +204,7 @@ theorem integer_multiple_add(
   };
 }
 
-theorem integer_multiple_one(
+def integer_multiple_one(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G
 ) :
   integer_multiple(G, zero, addG, negG, x, nonnegative(1)) = x {

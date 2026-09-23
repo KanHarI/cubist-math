@@ -10,7 +10,7 @@ def coordinate_unit(K : AlgebraicField, n : Nat) =
     };
   };
 
-theorem adjoin_first_value(
+def adjoin_first_value(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
   x : vector_carrier(K, V)
 ) :
@@ -32,7 +32,7 @@ theorem adjoin_first_value(
   );
 }
 
-theorem adjoin_tail_value(
+def adjoin_tail_value(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
   x : vector_carrier(K, V), a : Fin(n) -> af_carrier(K)
 ) :
@@ -46,7 +46,7 @@ theorem adjoin_tail_value(
   );
 }
 
-theorem family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V), forall i : Fin(k),
     linear_map(K, CoordinateSpace(K, k), V, family_linear(K, V, k, v), coordinate_unit(K, k, i)) = v(
@@ -137,7 +137,7 @@ def linear_image_combine_mere(
   );
 }
 
-theorem family_combination_in_image(
+def family_combination_in_image(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat
 ) =
   induction n as k return (
@@ -184,7 +184,7 @@ theorem family_combination_in_image(
     );
   };
 
-theorem spanning_family_in_image(
+def spanning_family_in_image(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat,
   v : Fin(n) -> vector_carrier(K, W), spanning : FiniteSpanningFamily(K, W, n, v),
   members : (

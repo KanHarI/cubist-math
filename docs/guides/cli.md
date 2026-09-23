@@ -21,7 +21,7 @@ Save this as `example.cubist`:
 
 ```text
 // Every natural number equals itself.
-theorem self_equal(n : Nat) : n =[Nat] n {
+def self_equal(n : Nat) : n =[Nat] n {
   exact refl(n);
 }
 ```

@@ -58,7 +58,7 @@ def dyadic_children_join(
 }
 
 // These equations are checked by conversion of the actual constructed terms.
-theorem dyadic_piece_zero(
+def dyadic_piece_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -75,7 +75,7 @@ theorem dyadic_piece_zero(
   exact refl(single_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, b));
 }
 
-theorem dyadic_piece_succ(
+def dyadic_piece_succ(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -100,7 +100,7 @@ theorem dyadic_piece_succ(
   );
 }
 
-theorem dyadic_piece_count(
+def dyadic_piece_count(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -127,7 +127,7 @@ theorem dyadic_piece_count(
   );
 }
 
-theorem dyadic_piece_valid(
+def dyadic_piece_valid(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -158,7 +158,7 @@ theorem dyadic_piece_valid(
   );
 }
 
-theorem dyadic_piece_admissible(
+def dyadic_piece_admissible(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,

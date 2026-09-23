@@ -23,7 +23,7 @@ def parameter_contour_sum(
 ) =
   sample_sum(C, F, zero, addF, parameter_contour_edge(C, F, addF, mulF, negF, curve, values), n);
 
-theorem parameter_contour_edge_change_tag(
+def parameter_contour_edge_change_tag(
   C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve : C -> F, values : C -> F, a : C,
   b : C, oldTag : C, newTag : C
@@ -59,7 +59,7 @@ def parameter_contour_tag_error_sum(
     );
   };
 
-theorem parameter_contour_sum_change_tags(
+def parameter_contour_sum_change_tags(
   C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve : C -> F, values : C -> F, n : Nat
 ) :
@@ -154,7 +154,7 @@ theorem parameter_contour_sum_change_tags(
 
 // With values = integrand after curve, these are exactly the original
 // contour sums on the mapped vertices and tags, without injectivity of curve.
-theorem parameter_contour_sum_is_mapped(
+def parameter_contour_sum_is_mapped(
   C : U1, F : U1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, curve : C -> F,
   integrand : F -> F, n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)
 ) :

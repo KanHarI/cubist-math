@@ -14,7 +14,7 @@ def complex_parameter_contour_sum(
   );
 
 // Actual complex finite sums become close under the coordinate variation bound.
-theorem complex_parameter_tag_change_close(
+def complex_parameter_tag_change_close(
   C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
   -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve : C -> Complex(F), values : C

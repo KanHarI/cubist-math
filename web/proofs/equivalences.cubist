@@ -26,7 +26,7 @@ def backward(A : U0, B : U0, e : Bijection(A, B)) = unpack e as (f, rest) return
     };
   };
 
-theorem left_inverse(A : U0, B : U0, e : Bijection(A, B)) =
+def left_inverse(A : U0, B : U0, e : Bijection(A, B)) =
   pair_induction(
     (fun (v : Bijection(A, B)) => forall x : A, backward(A, B, v, forward(A, B, v, x)) = x),
     (
@@ -49,7 +49,7 @@ theorem left_inverse(A : U0, B : U0, e : Bijection(A, B)) =
     ), e
   );
 
-theorem right_inverse(A : U0, B : U0, e : Bijection(A, B)) =
+def right_inverse(A : U0, B : U0, e : Bijection(A, B)) =
   pair_induction(
     (fun (v : Bijection(A, B)) => forall y : B, forward(A, B, v, backward(A, B, v, y)) = y),
     (
@@ -111,7 +111,7 @@ def sum_map(A : U0, B : U0, C : U0, D : U0, f : A -> C, g : B -> D, x : A or B) 
     right b => right(g(b));
   };
 
-theorem sum_inverse(
+def sum_inverse(
   A : U0, B : U0, C : U0, D : U0, f : A -> C, g : B -> D, fi : C -> A, gi : D -> B,
   eta : (forall a : A, fi(f(a)) = a), eps : (forall b : B, gi(g(b)) = b), x : A or B
 ) =
@@ -151,7 +151,7 @@ def product_path(A : U0, B : U0, x : A, y : A, p : x = y, u : B, v : B, q : u = 
 def product_map(A : U0, B : U0, C : U0, D : U0, f : A -> C, g : B -> D, p : A and B) =
   typed(C and D, (f(fst(A, B, p)), g(snd(A, B, p))));
 
-theorem product_inverse(
+def product_inverse(
   A : U0, B : U0, C : U0, D : U0, f : A -> C, g : B -> D, fi : C -> A, gi : D -> B,
   eta : (forall a : A, fi(f(a)) = a), eps : (forall b : B, gi(g(b)) = b), p : A and B
 ) =
@@ -160,7 +160,7 @@ theorem product_inverse(
     (fun (a : A) => fun (b : B) => product_path(A, B, fi(f(a)), a, eta(a), gi(g(b)), b, eps(b))), p
   );
 
-theorem product_bijection(A : U0, B : U0, C : U0, D : U0, e : Bijection(A, C), d : Bijection(B, D)) =
+def product_bijection(A : U0, B : U0, C : U0, D : U0, e : Bijection(A, C), d : Bijection(B, D)) =
   typed(
     Bijection(A and B, C and D),
     (
@@ -181,7 +181,7 @@ def unit_equal(u : Unit) = unit_induction((fun (v : Unit) => tt = v), refl(tt), 
 
 def empty_function(A : U0, x : Void) = typed(A, absurd(x));
 
-theorem empty_functions(A : U0) =
+def empty_functions(A : U0) =
   typed(
     Bijection(Void -> A, Unit),
     (
@@ -226,7 +226,7 @@ def function_split_join(A : U0, B : U0, p : B and (A -> B)) =
     ), p
   );
 
-theorem functions_on_successor(A : U0, B : U0) =
+def functions_on_successor(A : U0, B : U0) =
   typed(
     Bijection((Unit or A) -> B, B and (A -> B)),
     (
@@ -294,7 +294,7 @@ def product_successor_right(A : U0, B : U0, y : B or (A and B)) =
     );
   };
 
-theorem product_successor(A : U0, B : U0) =
+def product_successor(A : U0, B : U0) =
   typed(
     Bijection((Unit or A) and B, B or (A and B)),
     (

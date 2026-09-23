@@ -9,7 +9,7 @@ def backtrack_tags(F : U1, forwardTag : F, reverseTag : F) : SampleTags(F, 2) {
   exact typed((F and (F and Unit)), (forwardTag, reverseTag, tt));
 }
 
-theorem contour_two_edge_sum(
+def contour_two_edge_sum(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a : F, b : F, forwardTag : F,
   reverseTag : F
@@ -29,7 +29,7 @@ theorem contour_two_edge_sum(
   );
 }
 
-theorem contour_edge_self_zero(
+def contour_edge_self_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a : F, tag : F
 ) :
@@ -40,7 +40,7 @@ theorem contour_edge_self_zero(
   );
 }
 
-theorem contour_backtrack_same_tag(
+def contour_backtrack_same_tag(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a : F, b : F, tag : F
 ) :
@@ -56,7 +56,7 @@ theorem contour_backtrack_same_tag(
   );
 }
 
-theorem contour_backtrack_error(
+def contour_backtrack_error(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a : F, b : F, forwardTag : F,
   reverseTag : F
@@ -98,7 +98,7 @@ theorem contour_backtrack_error(
 
 // Left-endpoint tags for f(z)=z on 0 -> 1 -> 0 give -1, although matched
 // tags give zero. This is a finite sum, not the value of a contour integral.
-theorem identity_backtrack_sum(
+def identity_backtrack_sum(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :
@@ -128,7 +128,7 @@ theorem identity_backtrack_sum(
   );
 }
 
-theorem identity_backtrack_sum_nonzero(
+def identity_backtrack_sum_nonzero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), nontrivial : (zero = one) -> Void
 ) :

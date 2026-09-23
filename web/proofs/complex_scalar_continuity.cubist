@@ -2,7 +2,7 @@ import complex_uniform_operations;
 
 // Right multiplication is convenient for the product-box estimate. Complex
 // multiplication is commutative, so this is also scalar multiplication.
-theorem complex_scaled_close(
+def complex_scaled_close(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), coefficient : Complex(F), r : F,
@@ -77,7 +77,7 @@ theorem complex_scaled_close(
 }
 
 // One radius works on the whole complex plane, including a zero coefficient.
-theorem complex_scalar_uniform_radius(
+def complex_scalar_uniform_radius(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -135,7 +135,7 @@ theorem complex_scalar_uniform_radius(
   );
 }
 
-theorem complex_uniform_curve_scale(
+def complex_uniform_curve_scale(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -172,7 +172,7 @@ theorem complex_uniform_curve_scale(
   );
 }
 
-theorem complex_converges_scale(
+def complex_converges_scale(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

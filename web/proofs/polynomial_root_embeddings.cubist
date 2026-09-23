@@ -7,7 +7,7 @@ def residue_evaluate(
 ) =
   polynomial_eval(K, L, e, residue_polynomial(K, M, r), x);
 
-theorem residue_evaluate_one(
+def residue_evaluate_one(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x)
 ) :
@@ -20,7 +20,7 @@ theorem residue_evaluate_one(
   };
 }
 
-theorem residue_evaluate_neg(
+def residue_evaluate_neg(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), r : PolynomialResidue(K, M)
 ) :
@@ -30,7 +30,7 @@ theorem residue_evaluate_neg(
   exact polynomial_eval_neg(K, L, e, residue_polynomial(K, M, r), x);
 }
 
-theorem residue_evaluate_add(
+def residue_evaluate_add(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), r : PolynomialResidue(K, M), s : PolynomialResidue(K, M)
 ) :
@@ -40,7 +40,7 @@ theorem residue_evaluate_add(
   exact polynomial_eval_add(K, L, e, residue_polynomial(K, M, r), residue_polynomial(K, M, s), x);
 }
 
-theorem residue_evaluate_mul(
+def residue_evaluate_mul(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x),
   r : PolynomialResidue(K, M), s : PolynomialResidue(K, M)
@@ -82,7 +82,7 @@ def adjoin_root_embedding(
     residue_evaluate_preserves(K, M, L, e, x, root)
   );
 
-theorem residue_evaluate_constant(
+def residue_evaluate_constant(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x), a : af_carrier(K)
 ) :
@@ -95,7 +95,7 @@ theorem residue_evaluate_constant(
   };
 }
 
-theorem residue_evaluate_generator(
+def residue_evaluate_generator(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x)
 ) :

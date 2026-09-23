@@ -6,7 +6,7 @@ def reverse_path(A : U0, x : A, y : A, p : x = y) =
   path(fun (i : Interval) => A, fun (i : Interval) => at(p, flip(i)));
 
 // Reversing twice computes to the original path, even in an arbitrary type.
-theorem reverse_twice(A : U0, x : A, y : A, p : x = y) :
+def reverse_twice(A : U0, x : A, y : A, p : x = y) :
   reverse_path(A, y, x, reverse_path(A, x, y, p)) = p {
   exact refl(p);
 }
@@ -44,7 +44,7 @@ def collapse_suspension(A : U0, z : Susp(A)) =
     fun (a : A) => path(fun (i : Interval) => Unit, fun (i : Interval) => tt), z
   );
 
-theorem collapse_north(A : U0) : collapse_suspension(A, push_left(Susp(A), tt)) = tt {
+def collapse_north(A : U0) : collapse_suspension(A, push_left(Susp(A), tt)) = tt {
   exact refl(tt);
 }
 
@@ -52,7 +52,7 @@ theorem collapse_north(A : U0) : collapse_suspension(A, push_left(Susp(A), tt)) 
 // Its bridge to dependent paths includes an independently checked inverse law.
 def unit_family(p : Suspension(Unit)) = Unit;
 
-theorem unit_unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
+def unit_unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
 
 def transported_meridian(a : Unit) =
   unit_unique(transport(unit_family, north(Unit), south(Unit), meridian(Unit, a), tt));
@@ -60,7 +60,7 @@ def transported_meridian(a : Unit) =
 def collapse_with_transport(p : Suspension(Unit)) =
   suspension_induction(Unit, unit_family, tt, tt, transported_meridian, p);
 
-theorem transported_meridian_beta(a : Unit) :
+def transported_meridian_beta(a : Unit) :
   apd(collapse_with_transport, north(Unit), south(Unit), meridian(Unit, a)) = transported_meridian(
     a
   ) {

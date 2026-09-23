@@ -1,6 +1,6 @@
 import polynomial_eval_characterization;
 
-theorem polynomial_eval_horner(
+def polynomial_eval_horner(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   p : Polynomial(K)
 ) :
@@ -33,7 +33,7 @@ theorem polynomial_eval_horner(
 
 // Evaluation commutes with a field embedding, with its coefficient embedding
 // explicitly composed. This supplies the commuting squares for root transport.
-theorem polynomial_eval_embedding(
+def polynomial_eval_embedding(
   K : AlgebraicField, L : AlgebraicField, T : AlgebraicField, e : FieldEmbedding(K, L),
   h : FieldEmbedding(L, T), p : Polynomial(K), x : af_carrier(L)
 ) :
@@ -65,7 +65,7 @@ theorem polynomial_eval_embedding(
   };
 }
 
-theorem polynomial_root_image(
+def polynomial_root_image(
   K : AlgebraicField, L : AlgebraicField, T : AlgebraicField, e : FieldEmbedding(K, L),
   h : FieldEmbedding(L, T), p : Polynomial(K), x : af_carrier(L),
   root : polynomial_eval(K, L, e, p, x) = field_zero(L)

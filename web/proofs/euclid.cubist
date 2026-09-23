@@ -3,7 +3,7 @@ import primes;
 def InfinitelyManyPrimes = forall n : Nat, exists p : Nat, Prime(p) and n < p;
 
 // Every bound has a larger prime. No axioms are required.
-theorem euclid : InfinitelyManyPrimes {
+def euclid : InfinitelyManyPrimes {
   intro n;
   let m = succ(factorial(n));
   obtain (i, hp, hd) = prime_divisor_exists(m, factorial_positive(n));

@@ -15,7 +15,7 @@ def radix_digit_lift_step(n : Nat, result : RadixDigit(n) or Unit) =
     right carry => left(radix_digit_top(n));
   };
 
-theorem radix_digit_lift_law(n : Nat, d : RadixDigit(n), result : RadixDigit(n) or Unit) :
+def radix_digit_lift_law(n : Nat, d : RadixDigit(n), result : RadixDigit(n) or Unit) :
   RadixDigitStepLaw(n, d, result)
   -> RadixDigitStepLaw(succ(n), radix_digit_weaken(n, d), radix_digit_lift_step(n, result)) {
   exact match result as r return (
@@ -27,7 +27,7 @@ theorem radix_digit_lift_law(n : Nat, d : RadixDigit(n), result : RadixDigit(n) 
   };
 }
 
-theorem radix_digit_succ_law(n : Nat) :
+def radix_digit_succ_law(n : Nat) :
   forall d : RadixDigit(n), RadixDigitStepLaw(n, d, radix_digit_succ(n, d)) {
   exact induction n as k return (
     forall d : RadixDigit(k), RadixDigitStepLaw(k, d, radix_digit_succ(k, d))
@@ -42,7 +42,7 @@ theorem radix_digit_succ_law(n : Nat) :
   };
 }
 
-theorem radix_digit_zero_value(n : Nat) : radix_digit_value(succ(n), radix_digit_zero(n)) = 0 {
+def radix_digit_zero_value(n : Nat) : radix_digit_value(succ(n), radix_digit_zero(n)) = 0 {
   exact induction n as k return (radix_digit_value(succ(k), radix_digit_zero(k)) = 0) {
     zero => refl(0);
     succ previous => previous;

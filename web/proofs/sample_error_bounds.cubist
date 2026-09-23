@@ -33,7 +33,7 @@ def SampleCloseBounds(
     and previous(field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags));
   };
 
-theorem sample_sum_error_bound(
+def sample_sum_error_bound(
   C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
   -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> F, other : C

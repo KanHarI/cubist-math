@@ -102,14 +102,14 @@ opaque def radix_factorial(extra : Nat, n : Nat) = induction n as k return Radix
     succ previous => radix_mul(extra, radix_of_nat(extra, succ(k)), previous);
   };
 
-theorem radix_factorial_step(extra : Nat, n : Nat) :
+def radix_factorial_step(extra : Nat, n : Nat) :
   radix_factorial(extra, succ(n)) = radix_mul(
     extra, radix_of_nat(extra, succ(n)), radix_factorial(extra, n)
   ) {
   exact refl(radix_mul(extra, radix_of_nat(extra, succ(n)), radix_factorial(extra, n)));
 }
 
-theorem radix_factorial_value_step(
+def radix_factorial_value_step(
   extra : Nat, n : Nat, value : RadixNat(extra), previous : radix_factorial(extra, n) = value
 ) :
   radix_factorial(extra, succ(n)) = radix_mul(extra, radix_of_nat(extra, succ(n)), value) {
@@ -119,7 +119,7 @@ theorem radix_factorial_value_step(
   );
 }
 
-theorem radix_factorial_zero(extra : Nat) :
+def radix_factorial_zero(extra : Nat) :
   radix_factorial(extra, 0) = radix_positive(extra, radix_one(extra)) {
   exact refl(radix_positive(extra, radix_one(extra)));
 }

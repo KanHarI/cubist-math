@@ -2,7 +2,7 @@ import parameter_contour_bounds;
 import sample_tagged;
 
 // Lift a bound for two admissible tags in one small edge to all sampled edges.
-theorem parameter_tag_bounds_from_samples(
+def parameter_tag_bounds_from_samples(
   C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, values : C -> Complex(F),
   delta : F, mesh : C -> C -> U0, valid : C -> C -> C -> U0,
   localBound : (

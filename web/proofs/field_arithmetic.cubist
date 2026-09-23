@@ -125,12 +125,12 @@ def scalar_add_cancel_prefix(K : AlgebraicField) =
     scalar_ring(K)
   );
 
-theorem scalar_zero_mul(K : AlgebraicField, x : af_carrier(K)) :
+def scalar_zero_mul(K : AlgebraicField, x : af_carrier(K)) :
   field_mul(K, field_zero(K), x) = field_zero(K) {
   exact trans(scalar_mul_comm(K, field_zero(K), x), scalar_mul_zero(K, x));
 }
 
-theorem scalar_neg_zero(K : AlgebraicField) : field_neg(K, field_zero(K)) = field_zero(K) {
+def scalar_neg_zero(K : AlgebraicField) : field_neg(K, field_zero(K)) = field_zero(K) {
   exact trans(
     sym(scalar_add_zero_right(K, field_neg(K, field_zero(K)))), scalar_add_inverse(K, field_zero(K))
   );

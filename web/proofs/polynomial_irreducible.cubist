@@ -44,7 +44,7 @@ def polynomial_divides_refl(K : AlgebraicField, p : Polynomial(K)) : PolynomialD
   );
 }
 
-theorem polynomial_divides_trans(
+def polynomial_divides_trans(
   K : AlgebraicField, a : Polynomial(K), b : Polynomial(K), c : Polynomial(K),
   ab : PolynomialDivides(K, a, b), bc : PolynomialDivides(K, b, c)
 ) :
@@ -80,7 +80,7 @@ theorem polynomial_divides_trans(
   );
 }
 
-theorem polynomial_unit_factor_reverse(
+def polynomial_unit_factor_reverse(
   K : AlgebraicField, p : Polynomial(K), a : Polynomial(K), b : Polynomial(K),
   equation : p = polynomial_mul(K, a, b), unit : PolynomialUnit(K, b)
 ) :
@@ -110,7 +110,7 @@ theorem polynomial_unit_factor_reverse(
 }
 
 // An irreducible polynomial is coprime to every polynomial it does not divide.
-theorem irreducible_coprime(
+def irreducible_coprime(
   K : AlgebraicField, p : Polynomial(K), irreducible : PolynomialIrreducible(K, p),
   q : Polynomial(K), notDivides : PolynomialDivides(K, p, q) -> Void
 ) :
@@ -146,7 +146,7 @@ theorem irreducible_coprime(
   );
 }
 
-theorem irreducible_bezout(
+def irreducible_bezout(
   K : AlgebraicField, p : Polynomial(K), irreducible : PolynomialIrreducible(K, p),
   q : Polynomial(K), notDivides : PolynomialDivides(K, p, q) -> Void
 ) :

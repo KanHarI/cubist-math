@@ -2,7 +2,7 @@ import embedding_transport;
 import finite_dependent_counts;
 
 // Transport in a family of subtypes changes its evidence, retaining its value.
-theorem transported_subtype_value(
+def transported_subtype_value(
   I : U0, A : U0, P : I -> A -> U0, i : I, j : I, same : i = j, u : (exists a : A, P(i, a))
 ) :
   sigma_first(A, P(j), transport((fun (k : I) => (exists a : A, P(k, a))), i, j, same, u)) = sigma_first(
@@ -66,7 +66,7 @@ def embedding_tower_compose(
   );
 }
 
-theorem embedding_tower_whole_roundtrip(
+def embedding_tower_whole_roundtrip(
   K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
   i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
   triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),
@@ -85,7 +85,7 @@ theorem embedding_tower_whole_roundtrip(
   );
 }
 
-theorem embedding_tower_pair_roundtrip(
+def embedding_tower_pair_roundtrip(
   K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, T : AlgebraicField,
   i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), e : FieldEmbedding(K, L),
   triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),

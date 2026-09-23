@@ -1,7 +1,7 @@
 import complex_convergence;
 import field_limits;
 
-theorem complex_converges_coordinates(
+def complex_converges_coordinates(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F),
   limit : Complex(F)
 ) :
@@ -111,7 +111,7 @@ theorem complex_converges_coordinates(
   exact (forward, backward);
 }
 
-theorem complex_cauchy_coordinates(
+def complex_cauchy_coordinates(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F)
 ) :
   (
@@ -213,7 +213,7 @@ theorem complex_cauchy_coordinates(
   exact (forward, backward);
 }
 
-theorem complex_cauchy_complete(
+def complex_cauchy_complete(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> Complex(F),
   cauchy : ComplexCauchy(F, zero, addF, lt, sequence)
@@ -257,7 +257,7 @@ theorem complex_cauchy_complete(
   );
 }
 
-theorem complex_limit_unique(
+def complex_limit_unique(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -303,7 +303,7 @@ theorem complex_limit_unique(
   );
 }
 
-theorem complex_converges_add(
+def complex_converges_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -367,7 +367,7 @@ theorem complex_converges_add(
   );
 }
 
-theorem complex_converges_is_cauchy(
+def complex_converges_is_cauchy(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -408,7 +408,7 @@ theorem complex_converges_is_cauchy(
 }
 
 // Equality of sequence terms transfers the existing convergence certificate.
-theorem complex_converges_pointwise(
+def complex_converges_pointwise(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs : Nat -> Complex(F), ys : Nat
   -> Complex(F), same : (forall n : Nat, xs(n) = ys(n)), value : Complex(F),
   converges : ComplexConverges(F, zero, addF, lt, xs, value)

@@ -10,7 +10,7 @@ def SampleAdjacent(C : U1, related : C -> C -> U0, n : Nat) =
     ) and previous(field_snd(C, SampleVertices(C, k), vertices));
   };
 
-theorem sample_adjacent_magnitude(
+def sample_adjacent_magnitude(
   C : U1, F : U1, negF : F -> F, lt : F -> F -> U0, related : C -> C -> U0, edge : C -> C -> C -> F,
   radius : C -> C -> C -> F,
   bounded : (

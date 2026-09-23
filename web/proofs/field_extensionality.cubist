@@ -3,7 +3,7 @@ import bijection_equality;
 
 // The predicate values are small, although the space of predicates is U1.
 // Univalence and function extensionality are constructive assumptions here.
-theorem field_prop_ext(
+def field_prop_ext(
   P : U0, Q : U0, propP : FieldProp(P), propQ : FieldProp(Q), f : P -> Q, g : Q -> P
 ) :
   P = Q {
@@ -19,7 +19,7 @@ theorem field_prop_ext(
   );
 }
 
-theorem field_predicate_ext(
+def field_predicate_ext(
   A : U1, P : A -> U0, Q : A -> U0, propP : (forall a : A, FieldProp(P(a))),
   propQ : (forall a : A, FieldProp(Q(a))), same : (forall a : A, FieldIff(P(a), Q(a)))
 ) :
@@ -55,7 +55,7 @@ def field_sigma_eta(A : U1, P : A -> U1, u : (exists x : A, P(x))) =
     ), (fun (x : A) => fun (h : P(x)) => refl(typed((exists z : A, P(z)), (x, h)))), u
   );
 
-theorem field_subtype_ext(
+def field_subtype_ext(
   A : U1, P : A -> U1, prop : (forall a : A, FieldProp(P(a))), u : (exists x : A, P(x)),
   v : (exists x : A, P(x)), p : field_first(A, P, u) = field_first(A, P, v)
 ) :
@@ -76,7 +76,7 @@ theorem field_subtype_ext(
   );
 }
 
-theorem field_sigma_prop(
+def field_sigma_prop(
   A : U1, P : A -> U1, propA : FieldProp(A), propP : (forall a : A, FieldProp(P(a))),
   u : (exists a : A, P(a)), v : (exists a : A, P(a))
 ) :

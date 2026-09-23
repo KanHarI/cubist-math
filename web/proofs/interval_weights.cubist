@@ -18,7 +18,7 @@ def interval_weight(
 ) =
   mulF(interval_difference(F, zero, one, addF, negF, lt, s, t), length);
 
-theorem field_difference_nonnegative(
+def field_difference_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s : F, t : F,
@@ -32,7 +32,7 @@ theorem field_difference_nonnegative(
   );
 }
 
-theorem interval_difference_le_one(
+def interval_difference_le_one(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -67,7 +67,7 @@ theorem interval_difference_le_one(
 
 // Telescoping is valid even without ordered samples. Nonnegative weights
 // and their use as magnitude bounds require ordered adjacent parameters.
-theorem interval_weight_sum(
+def interval_weight_sum(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), length : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
@@ -112,7 +112,7 @@ theorem interval_weight_sum(
   );
 }
 
-theorem interval_weight_sum_bound(
+def interval_weight_sum_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), length : F,

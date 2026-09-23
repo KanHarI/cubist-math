@@ -16,7 +16,7 @@ def contour_sum(
 ) =
   sample_sum(F, F, zero, addF, contour_edge(F, addF, mulF, negF, f), n);
 
-theorem difference_add_back(
+def difference_add_back(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
 ) :
@@ -30,7 +30,7 @@ theorem difference_add_back(
   );
 }
 
-theorem difference_compose(
+def difference_compose(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F
 ) :

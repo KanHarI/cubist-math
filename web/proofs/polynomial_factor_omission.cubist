@@ -3,7 +3,7 @@ import finite_omission;
 
 // Move any chosen linear factor to the front, leaving the other indices in
 // their original order. The index map records exactly which factor was removed.
-theorem linear_factor_product_omit(K : AlgebraicField, n : Nat) =
+def linear_factor_product_omit(K : AlgebraicField, n : Nat) =
   induction n as k return (
     forall roots : Fin(succ(k)) -> af_carrier(K), forall i : Fin(succ(k)),
     linear_factor_product(K, succ(k), roots) = polynomial_mul(
@@ -71,7 +71,7 @@ def distinct_roots_omit(
   exact fin_omit_injective(n, i, j, k, distinct(fin_omit(n, i, j), fin_omit(n, i, k), same));
 }
 
-theorem distinct_roots_omit_avoid(
+def distinct_roots_omit_avoid(
   K : AlgebraicField, n : Nat, roots : Fin(succ(n)) -> af_carrier(K),
   distinct : Injective(Fin(succ(n)), af_carrier(K), roots), i : Fin(succ(n)), j : Fin(n),
   same : roots(fin_omit(n, i, j)) = roots(i)

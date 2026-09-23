@@ -17,7 +17,7 @@ test("source summaries separate the conclusion from named parameters without ela
 });
 
 test("statement fragments retain explicit equality and skip comments without hiding syntax", () => {
-  const source = `theorem t(A : U0, x : A) : x // equality comment
+  const source = `def t(A : U0, x : A) : x // equality comment
     =[A] x { exact refl(x); }`;
   const statement = sourceStatement(source, parse(source).declarations[0]);
   assert.equal(text(statement.conclusion), "x =[A] x");

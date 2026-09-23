@@ -3,7 +3,7 @@ import subdivision_tagged_zip;
 import interval_subdivisions;
 
 // Coarse width bounds and fine admissibility refer to the same actual family.
-theorem interval_refinement_mesh(
+def interval_refinement_mesh(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), radius : F, mesh : F,
   small : lt(radius, mesh), n : Nat,
@@ -51,7 +51,7 @@ theorem interval_refinement_mesh(
 
 // Once this dyadic level meets the mesh bound, every later level gives a
 // refinement certificate satisfying the hypotheses of the analytic estimates.
-theorem dyadic_samples_refine_below_mesh(
+def dyadic_samples_refine_below_mesh(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,

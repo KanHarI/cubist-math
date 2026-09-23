@@ -49,7 +49,7 @@ def join_subdivision_families(C : U1, n : Nat) =
     succ previous => join_subdivision_families_step(C, k, previous);
   };
 
-theorem subdivision_total_join_step(
+def subdivision_total_join_step(
   C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat,
@@ -106,7 +106,7 @@ theorem subdivision_total_join_step(
 
 // The equality retains the actual supplied families and their order;
 // no commutativity assumption or choice of a replacement sum is used.
-theorem subdivision_total_join(
+def subdivision_total_join(
   C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat

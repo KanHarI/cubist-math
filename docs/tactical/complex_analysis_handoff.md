@@ -248,9 +248,9 @@ linearity batch is saved together with this handoff.
 
 ## Implementation cautions
 
-- Data-producing recursive constructions that must compute through
-  projections should be transparent `def`s. An opaque `theorem` can block
-  a needed definitional reduction; this mattered for dyadic sample data.
+- Data-producing recursive constructions and proofs both use `def`.
+  Check that projections of recursive constructions compute as needed;
+  this mattered for dyadic sample data.
 - `obtain` does not generally rewrite a goal depending on the original
   dependent pair. Use projections or dependent pair induction for such
   goals.

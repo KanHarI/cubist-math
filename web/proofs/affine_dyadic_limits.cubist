@@ -25,7 +25,7 @@ def affine_dyadic_sum(
     )
   );
 
-theorem affine_coordinate_length_nonnegative(
+def affine_coordinate_length_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
@@ -58,7 +58,7 @@ theorem affine_coordinate_length_nonnegative(
 
 // Actual Archimedean bounds and uniform continuity compute a Cauchy modulus.
 // No Cauchy or convergence hypothesis about the contour sums is supplied.
-theorem affine_dyadic_cauchy(
+def affine_dyadic_cauchy(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F

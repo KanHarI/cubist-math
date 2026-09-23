@@ -34,7 +34,7 @@ def AntitoneConnection(
 ) =
   forall a : A, forall b : B, (leB(b, f(a)) -> leA(a, g(b))) and (leA(a, g(b)) -> leB(b, f(a)));
 
-theorem antitone_compose(
+def antitone_compose(
   A : U1, B : U1, C : U1, leA : OrderRelation(A), leB : OrderRelation(B), leC : OrderRelation(C),
   f : A -> B, g : B -> C, reversesF : Antitone(A, B, leA, leB, f),
   reversesG : Antitone(B, C, leB, leC, g)
@@ -47,7 +47,7 @@ theorem antitone_compose(
 }
 
 // Extensivity follows just by transposing reflexivity.
-theorem antitone_connection_extensive(
+def antitone_connection_extensive(
   A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g), reflexiveB : OrderReflexive(B, leB), a : A
 ) :
@@ -56,7 +56,7 @@ theorem antitone_connection_extensive(
   exact toA(reflexiveB(f(a)));
 }
 
-theorem antitone_connection_reverses(
+def antitone_connection_reverses(
   A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g), transitiveA : OrderTransitive(A, leA),
   reflexiveB : OrderReflexive(B, leB)
@@ -75,7 +75,7 @@ theorem antitone_connection_reverses(
 }
 
 // Swapping the two sides preserves the antitone form of the connection.
-theorem antitone_connection_swap(
+def antitone_connection_swap(
   A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g)
 ) :
@@ -87,7 +87,7 @@ theorem antitone_connection_swap(
 }
 
 // In a partial order, the induced closure is idempotent as an actual equality.
-theorem antitone_connection_closure_idempotent(
+def antitone_connection_closure_idempotent(
   A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g), reflexiveA : OrderReflexive(A, leA),
   reflexiveB : OrderReflexive(B, leB), transitiveB : OrderTransitive(B, leB),

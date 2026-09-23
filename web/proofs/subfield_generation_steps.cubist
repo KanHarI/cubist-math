@@ -78,7 +78,7 @@ def field_closure_step_inverse(
 }
 
 // A subfield containing P contains the result of every single closure step.
-theorem field_closure_step_into_subfield(
+def field_closure_step_into_subfield(
   F : AlgebraicField, P : af_carrier(F) -> U0, Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
   included : PredicateIncluded(af_carrier(F), P, Q), x : af_carrier(F),
   step : FieldClosureStep(F, P, x)
@@ -170,7 +170,7 @@ def field_closure_pad(F : AlgebraicField, P : af_carrier(F) -> U0, m : Nat) =
     );
   };
 
-theorem field_closure_pad_right(
+def field_closure_pad_right(
   F : AlgebraicField, P : af_carrier(F) -> U0, n : Nat, m : Nat, x : af_carrier(F),
   member : FieldClosureStage(F, P, n, x)
 ) :

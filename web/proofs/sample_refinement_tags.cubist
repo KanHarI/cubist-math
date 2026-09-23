@@ -7,7 +7,7 @@ def sample_repeat_tags(C : U1, n : Nat) = induction n as k return (C -> SampleTa
     succ previous => fun (tag : C) => typed((C and SampleTags(C, k)), (tag, previous(tag)));
   };
 
-theorem sample_adjacent_endpoints(
+def sample_adjacent_endpoints(
   C : U1, related : C -> C -> U0, reflexivity : (forall x : C, related(x, x)),
   transitiveRelation : (
     forall x : C, forall y : C, forall z : C, related(x, y) -> related(y, z) -> related(x, z)
@@ -45,7 +45,7 @@ theorem sample_adjacent_endpoints(
   };
 }
 
-theorem sample_adjacent_constant(C : U1, P : U0, witness : P, n : Nat) :
+def sample_adjacent_constant(C : U1, P : U0, witness : P, n : Nat) :
   forall vertices : SampleVertices(C, n),
   SampleAdjacent(C, (fun (a : C) => fun (b : C) => P), n, vertices) {
   exact induction n as k return (
@@ -64,7 +64,7 @@ theorem sample_adjacent_constant(C : U1, P : U0, witness : P, n : Nat) :
   };
 }
 
-theorem sample_repeat_tags_valid(C : U1, P : C -> U0, tag : C, valid : P(tag), n : Nat) :
+def sample_repeat_tags_valid(C : U1, P : C -> U0, tag : C, valid : P(tag), n : Nat) :
   forall vertices : SampleVertices(C, n),
   SampleTagged(C, (fun (a : C) => fun (b : C) => P), n, vertices, sample_repeat_tags(C, n, tag)) {
   exact induction n as k return (
@@ -89,7 +89,7 @@ def SampleBetween(C : U1, related : C -> C -> U0, n : Nat) =
     C, (fun (a : C) => fun (b : C) => fun (tag : C) => related(a, tag) and related(tag, b)), n
   );
 
-theorem sample_between_ordered(
+def sample_between_ordered(
   C : U1, related : C -> C -> U0,
   transitiveRelation : (
     forall x : C, forall y : C, forall z : C, related(x, y) -> related(y, z) -> related(x, z)
@@ -122,7 +122,7 @@ def SampleBetweenGlobal(C : U1, related : C -> C -> U0, n : Nat) =
     vertices, tags
   );
 
-theorem sample_between_global_step(
+def sample_between_global_step(
   C : U1, related : C -> C -> U0, reflexivity : (forall x : C, related(x, x)),
   transitiveRelation : (
     forall x : C, forall y : C, forall z : C, related(x, y) -> related(y, z) -> related(x, z)
@@ -173,7 +173,7 @@ theorem sample_between_global_step(
   );
 }
 
-theorem sample_between_global(
+def sample_between_global(
   C : U1, related : C -> C -> U0, reflexivity : (forall x : C, related(x, x)),
   transitiveRelation : (
     forall x : C, forall y : C, forall z : C, related(x, y) -> related(y, z) -> related(x, z)
@@ -191,7 +191,7 @@ theorem sample_between_global(
 }
 
 // A constant tag turns subdivision into an exact telescoping identity.
-theorem sample_repeat_sum_telescopes(
+def sample_repeat_sum_telescopes(
   C : U1, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, tag : C,
   diagonal : (forall a : C, edge(a, a, tag) = zero),
   composeEdges : (

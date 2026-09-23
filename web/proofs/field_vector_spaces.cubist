@@ -43,7 +43,7 @@ def field_scalar_action(
 ) =
   af_mul(af_carrier(L), af_operations(L), field_embedding_map(K, L, e, a), x);
 
-theorem field_scalar_laws(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def field_scalar_laws(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   ScalarLaws(K, FieldAdditiveGroup(L), field_scalar_action(K, L, e)) {
   let A = af_carrier(L);
   let ops = af_operations(L);

@@ -3,14 +3,14 @@ import truncation;
 
 // The existing LEM axiom returns Mere(P), not an arbitrary witness of P.
 // Elimination into P is allowed here precisely because P is a proposition.
-theorem double_negation(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) : P {
+def double_negation(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) : P {
   exact mere_eliminate(P, P, prop, (fun (p : P) => p), LEM(U0, P, nn));
 }
 
 def negation_is_prop(P : U0, f : P -> Void, g : P -> Void) =
   FunExt(U0, P, (fun (p : P) => Void), f, g, (fun (p : P) => typed((f(p) = g(p)), absurd(f(p)))));
 
-theorem decision_is_prop(P : U0, prop : Proposition(P), u : Decidable(P), v : Decidable(P)) : u = v {
+def decision_is_prop(P : U0, prop : Proposition(P), u : Decidable(P), v : Decidable(P)) : u = v {
   exact match u as a return (a = v) {
     left p => match v as b return (typed(Decidable(P), left(p)) = b) {
       left q => cong((fun (r : P) => typed(Decidable(P), left(r))), prop(p, q));
@@ -26,7 +26,7 @@ theorem decision_is_prop(P : U0, prop : Proposition(P), u : Decidable(P), v : De
   };
 }
 
-theorem excluded_middle(P : U0, prop : Proposition(P)) : Decidable(P) {
+def excluded_middle(P : U0, prop : Proposition(P)) : Decidable(P) {
   exact double_negation(
     Decidable(P), decision_is_prop(P, prop),
     (

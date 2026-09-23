@@ -26,7 +26,7 @@ def field_embedding_preserves(K : AlgebraicField, L : AlgebraicField, e : FieldE
   exact preserves;
 }
 
-theorem field_embedding_injective(
+def field_embedding_injective(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K),
   y : af_carrier(K), same : field_embedding_map(K, L, e, x) = field_embedding_map(K, L, e, y)
 ) :
@@ -44,7 +44,7 @@ def field_embedding_identity(K : AlgebraicField) : FieldEmbedding(K, K) {
 
 // Composition and identities supply the morphism operations needed for towers.
 // Composition is written in traversal order: first e, then d.
-theorem field_embedding_composite_preserves(
+def field_embedding_composite_preserves(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
   d : FieldEmbedding(L, M)
 ) :
@@ -85,7 +85,7 @@ def field_embedding_compose(
 
 // Embedding-law evidence is propositional. Equal underlying maps give equal
 // morphisms, so categorical laws do not distinguish irrelevant law proofs.
-theorem field_embedding_ext(
+def field_embedding_ext(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), d : FieldEmbedding(K, L),
   same : (
     forall x : af_carrier(K), field_embedding_map(K, L, e, x) = field_embedding_map(K, L, d, x)
@@ -103,7 +103,7 @@ theorem field_embedding_ext(
   );
 }
 
-theorem field_embedding_left_identity(
+def field_embedding_left_identity(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
 ) :
   field_embedding_compose(K, K, L, field_embedding_identity(K), e) = e {
@@ -113,7 +113,7 @@ theorem field_embedding_left_identity(
   );
 }
 
-theorem field_embedding_right_identity(
+def field_embedding_right_identity(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
 ) :
   field_embedding_compose(K, L, L, e, field_embedding_identity(L)) = e {
@@ -123,7 +123,7 @@ theorem field_embedding_right_identity(
   );
 }
 
-theorem field_embedding_associative(
+def field_embedding_associative(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, N : AlgebraicField,
   e : FieldEmbedding(K, L), d : FieldEmbedding(L, M), h : FieldEmbedding(M, N)
 ) :
@@ -161,7 +161,7 @@ def FieldTower(
   field_embedding_compose(K, L, M, kl, lm) = km;
 
 // An element admitting an inverse is unequal to zero, constructively.
-theorem field_nonzero_of_inverse(
+def field_nonzero_of_inverse(
   F : AlgebraicField, x : af_carrier(F), y : af_carrier(F),
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
@@ -189,7 +189,7 @@ theorem field_nonzero_of_inverse(
   );
 }
 
-theorem field_embedding_reflects_nonzero(
+def field_embedding_reflects_nonzero(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K),
   nonzero : FieldNonzero(af_carrier(L), af_operations(L), field_embedding_map(K, L, e, x))
 ) :

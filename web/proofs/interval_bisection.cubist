@@ -2,7 +2,7 @@ import interval_subdivisions;
 import ordered_halves;
 
 // If a + increment = b, the oriented difference from a to b is increment.
-theorem difference_from_increment(
+def difference_from_increment(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, increment : F,
   sums : addF(a, increment) = b
@@ -28,7 +28,7 @@ theorem difference_from_increment(
 
 // A weakly nonnegative quantity has a weakly nonnegative half, including
 // zero-width intervals. No decision whether that width is zero is required.
-theorem nonnegative_half_from_sum(
+def nonnegative_half_from_sum(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), epsilon : F, half : F,
@@ -52,7 +52,7 @@ theorem nonnegative_half_from_sum(
 
 // Construct a midpoint in the interval subtype, with proofs that both
 // subinterval widths are the prescribed half of the original width.
-theorem interval_midpoint(
+def interval_midpoint(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -133,7 +133,7 @@ def two_edge_subdivision(C : U1, a : C, midpoint : C, b : C) : SampleSubdivision
   );
 }
 
-theorem two_edge_subdivision_admissible(
+def two_edge_subdivision_admissible(
   F : U1, zero : F, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt),
   a : FieldUnitInterval(F, zero, one, lt), midpoint : FieldUnitInterval(F, zero, one, lt),
   b : FieldUnitInterval(F, zero, one, lt),
@@ -168,7 +168,7 @@ theorem two_edge_subdivision_admissible(
 
 // Supply the halving operation from the ordered field itself, then construct
 // both admissible samples. This requires no midpoint or sampling oracle.
-theorem ordered_interval_bisection(
+def ordered_interval_bisection(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

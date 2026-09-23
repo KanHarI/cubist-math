@@ -7,12 +7,12 @@ import field_homomorphisms;
 def residue_constant(K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K)) =
   residue_reduce(K, M, polynomial_constant(K, a));
 
-theorem residue_constant_zero(K : AlgebraicField, M : PolynomialModulus(K)) :
+def residue_constant_zero(K : AlgebraicField, M : PolynomialModulus(K)) :
   residue_constant(K, M, field_zero(K)) = residue_zero(K, M) {
   exact trans(cong(residue_reduce(K, M), polynomial_constant_zero(K)), residue_reduce_zero(K, M));
 }
 
-theorem residue_constant_neg(K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K)) :
+def residue_constant_neg(K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K)) :
   residue_constant(K, M, field_neg(K, a)) = residue_neg(K, M, residue_constant(K, M, a)) {
   exact trans(
     cong(residue_reduce(K, M), polynomial_constant_neg(K, a)),
@@ -20,7 +20,7 @@ theorem residue_constant_neg(K : AlgebraicField, M : PolynomialModulus(K), a : a
   );
 }
 
-theorem residue_constant_add(
+def residue_constant_add(
   K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K), b : af_carrier(K)
 ) :
   residue_constant(K, M, field_add(K, a, b)) = residue_add(
@@ -32,7 +32,7 @@ theorem residue_constant_add(
   );
 }
 
-theorem residue_constant_mul(
+def residue_constant_mul(
   K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K), b : af_carrier(K)
 ) :
   residue_constant(K, M, field_mul(K, a, b)) = residue_mul(
@@ -67,7 +67,7 @@ def adjoined_root(K : AlgebraicField, M : PolynomialModulus(K)) =
   residue_reduce(K, M, polynomial_variable(K));
 
 // Reduction satisfies the Horner equations, using its ring-homomorphism laws.
-theorem residue_reduce_horner(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
+def residue_reduce_horner(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
   residue_reduce(K, M, p) = residue_add(
     K, M, residue_constant(K, M, polynomial_coefficients(K, p, 0)),
     residue_mul(K, M, adjoined_root(K, M), residue_reduce(K, M, polynomial_tail(K, p)))
@@ -95,7 +95,7 @@ theorem residue_reduce_horner(K : AlgebraicField, M : PolynomialModulus(K), p : 
   };
 }
 
-theorem residue_eval_polynomial(
+def residue_eval_polynomial(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), p : Polynomial(K)
 ) :
@@ -113,7 +113,7 @@ theorem residue_eval_polynomial(
 }
 
 // The chosen element really is a root of the original polynomial over K.
-theorem adjoined_root_is_root(
+def adjoined_root_is_root(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M))
 ) :

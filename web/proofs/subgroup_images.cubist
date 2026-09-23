@@ -52,7 +52,7 @@ def subgroup_image_product_witness(
   );
 }
 
-theorem subgroup_image_multiply(
+def subgroup_image_multiply(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), y : group_carrier(H),
   z : group_carrier(H), a : SubgroupImage(G, H, h, S, y), b : SubgroupImage(G, H, h, S, z)
 ) :
@@ -86,7 +86,7 @@ def subgroup_image_inverse_witness(
   );
 }
 
-theorem subgroup_image_inverse(
+def subgroup_image_inverse(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), y : group_carrier(H),
   a : SubgroupImage(G, H, h, S, y)
 ) :
@@ -97,7 +97,7 @@ theorem subgroup_image_inverse(
   );
 }
 
-theorem subgroup_image_laws(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G)) :
+def subgroup_image_laws(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G)) :
   SubgroupLaws(H, SubgroupImage(G, H, h, S)) {
   have containsUnit : SubgroupImage(G, H, h, S, group_unit(H)) {
     exact merely(
@@ -140,7 +140,7 @@ def subgroup_image(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G)) : 
 
 // Direct image is left adjoint to inverse image in the subobject orders.
 // Truncation is eliminated only into the target's propositional membership.
-theorem subgroup_image_least(
+def subgroup_image_least(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), T : Subgroup(H),
   lands : SubgroupIncluded(G, S, subgroup_preimage(G, H, h, T))
 ) :
@@ -158,7 +158,7 @@ theorem subgroup_image_least(
   );
 }
 
-theorem subgroup_image_preimage_adjunction(
+def subgroup_image_preimage_adjunction(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), T : Subgroup(H)
 ) :
   (
@@ -180,7 +180,7 @@ theorem subgroup_image_preimage_adjunction(
   );
 }
 
-theorem subgroup_image_monotone(
+def subgroup_image_monotone(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), T : Subgroup(G),
   included : SubgroupIncluded(G, S, T)
 ) :
@@ -195,7 +195,7 @@ theorem subgroup_image_monotone(
   );
 }
 
-theorem subgroup_image_identity(G : Group, S : Subgroup(G)) :
+def subgroup_image_identity(G : Group, S : Subgroup(G)) :
   subgroup_image(G, G, group_hom_identity(G), S) = S {
   exact subgroup_inclusion_antisymmetric(
     G, subgroup_image(G, G, group_hom_identity(G), S), S,
@@ -214,7 +214,7 @@ def group_image_factor(G : Group, H : Group, h : GroupHom(G, H)) =
     (fun (x : group_carrier(G)) => subgroup_image_intro(G, H, h, subgroup_top(G), x, tt))
   );
 
-theorem group_image_trivial(G : Group, H : Group) :
+def group_image_trivial(G : Group, H : Group) :
   group_image(G, H, group_hom_trivial(G, H)) = subgroup_bottom(H) {
   exact subgroup_inclusion_antisymmetric(
     H, group_image(G, H, group_hom_trivial(G, H)), subgroup_bottom(H),
@@ -225,7 +225,7 @@ theorem group_image_trivial(G : Group, H : Group) :
   );
 }
 
-theorem group_image_factor_triangle(G : Group, H : Group, h : GroupHom(G, H)) :
+def group_image_factor_triangle(G : Group, H : Group, h : GroupHom(G, H)) :
   group_hom_compose(
     G, subgroup_as_group(H, group_image(G, H, h)), H, group_image_factor(G, H, h),
     subgroup_inclusion(H, group_image(G, H, h))
@@ -236,7 +236,7 @@ theorem group_image_factor_triangle(G : Group, H : Group, h : GroupHom(G, H)) :
   );
 }
 
-theorem group_image_factor_surjective(
+def group_image_factor_surjective(
   G : Group, H : Group, h : GroupHom(G, H), y : SubgroupCarrier(H, group_image(G, H, h))
 ) :
   Mere(

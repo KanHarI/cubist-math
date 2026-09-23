@@ -58,7 +58,7 @@ def SubspaceIncluded(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V),
   forall x : vector_carrier(K, V), subspace_members(K, V, S, x) -> subspace_members(K, V, T, x);
 
 // Every finite combination of members stays in the subspace.
-theorem combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) =
+def combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) =
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
     (forall i : Fin(k), subspace_members(K, V, S, v(i)))
@@ -88,7 +88,7 @@ theorem combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subs
 
 // Span is contained in every subspace containing the generators. Truncated
 // witnesses are eliminated only into proposition-valued membership.
-theorem span_least(
+def span_least(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, S : Subspace(K, V),
   included : (forall x : vector_carrier(K, V), P(x) -> subspace_members(K, V, S, x)),
   x : vector_carrier(K, V), member : Span(K, V, P, x)

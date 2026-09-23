@@ -3,7 +3,7 @@ import classical;
 
 // A unital field homomorphism is automatically injective. This lets universal
 // constructions prove preservation first, without adding injectivity data by hand.
-theorem field_hom_kernel_zero(
+def field_hom_kernel_zero(
   K : AlgebraicField, L : AlgebraicField, f : af_carrier(K) -> af_carrier(L),
   preserves : FieldOpsPreserved(af_carrier(K), af_carrier(L), f, af_operations(K), af_operations(L)),
   a : af_carrier(K), zero : f(a) = field_zero(L)
@@ -34,7 +34,7 @@ theorem field_hom_kernel_zero(
   exact double_negation(a = field_zero(K), af_set(K, a, field_zero(K)), impossible);
 }
 
-theorem field_hom_injective(
+def field_hom_injective(
   K : AlgebraicField, L : AlgebraicField, f : af_carrier(K) -> af_carrier(L),
   preserves : FieldOpsPreserved(af_carrier(K), af_carrier(L), f, af_operations(K), af_operations(L)),
   x : af_carrier(K), y : af_carrier(K), same : f(x) = f(y)

@@ -8,7 +8,7 @@ def polynomial_from_coordinates(K : AlgebraicField, n : Nat, a : Fin(n) -> af_ca
     K, series_from_coordinates(K, n, a), n, series_from_coordinates_support(K, n, a)
   );
 
-theorem series_coordinates_zero(K : AlgebraicField, n : Nat) =
+def series_coordinates_zero(K : AlgebraicField, n : Nat) =
   induction n as k return (
     series_coordinates(K, k, series_zero(K)) = (fun (i : Fin(k)) => field_zero(K))
   ) {
@@ -27,7 +27,7 @@ theorem series_coordinates_zero(K : AlgebraicField, n : Nat) =
     );
   };
 
-theorem polynomial_from_coordinates_zero(
+def polynomial_from_coordinates_zero(
   K : AlgebraicField, n : Nat, a : Fin(n) -> af_carrier(K),
   zero : polynomial_from_coordinates(K, n, a) = polynomial_zero(K)
 ) :
@@ -42,7 +42,7 @@ theorem polynomial_from_coordinates_zero(
   );
 }
 
-theorem polynomial_from_coordinates_add(
+def polynomial_from_coordinates_add(
   K : AlgebraicField, n : Nat, a : Fin(n) -> af_carrier(K), b : Fin(n) -> af_carrier(K)
 ) :
   polynomial_from_coordinates(K, n, (fun (i : Fin(n)) => field_add(K, a(i), b(i)))) = polynomial_add(
@@ -89,7 +89,7 @@ theorem polynomial_from_coordinates_add(
   );
 }
 
-theorem polynomial_from_coordinates_scale(
+def polynomial_from_coordinates_scale(
   K : AlgebraicField, n : Nat, a : af_carrier(K), b : Fin(n) -> af_carrier(K)
 ) :
   polynomial_from_coordinates(K, n, (fun (i : Fin(n)) => field_mul(K, a, b(i)))) = polynomial_scale(

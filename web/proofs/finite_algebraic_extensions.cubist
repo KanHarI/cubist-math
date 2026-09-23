@@ -5,7 +5,7 @@ import extension_degree;
 
 // The n+1 powers of any element of an n-dimensional extension are dependent.
 // The resulting nonzero coefficient array is a formal annihilating polynomial.
-theorem finite_basis_element_algebraic(
+def finite_basis_element_algebraic(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
   basis : FiniteBasis(K, field_vector_space(K, L, e), n), x : af_carrier(L)
 ) :
@@ -60,7 +60,7 @@ theorem finite_basis_element_algebraic(
 def AlgebraicExtension(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
   forall x : af_carrier(L), AlgebraicElement(K, L, e, x);
 
-theorem finite_extension_algebraic(
+def finite_extension_algebraic(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e))
 ) :

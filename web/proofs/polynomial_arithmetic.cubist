@@ -65,7 +65,7 @@ def polynomial_add_cancel_prefix(K : AlgebraicField) =
 def polynomial_scale(K : AlgebraicField, a : af_carrier(K), p : Polynomial(K)) =
   polynomial_mul(K, polynomial_constant(K, a), p);
 
-theorem polynomial_scale_coefficient(
+def polynomial_scale_coefficient(
   K : AlgebraicField, a : af_carrier(K), p : Polynomial(K), n : Nat
 ) :
   polynomial_coefficients(K, polynomial_scale(K, a, p), n) = field_mul(
@@ -94,7 +94,7 @@ def polynomial_tail(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
   );
 }
 
-theorem polynomial_decompose(K : AlgebraicField, p : Polynomial(K)) :
+def polynomial_decompose(K : AlgebraicField, p : Polynomial(K)) :
   p = polynomial_add(
     K, polynomial_constant(K, polynomial_coefficients(K, p, 0)),
     polynomial_shift(K, polynomial_tail(K, p))
@@ -108,7 +108,7 @@ theorem polynomial_decompose(K : AlgebraicField, p : Polynomial(K)) :
   );
 }
 
-theorem polynomial_shift_add(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
+def polynomial_shift_add(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
   polynomial_shift(K, polynomial_add(K, p, q)) = polynomial_add(
     K, polynomial_shift(K, p), polynomial_shift(K, q)
   ) {
@@ -130,7 +130,7 @@ theorem polynomial_shift_add(K : AlgebraicField, p : Polynomial(K), q : Polynomi
   );
 }
 
-theorem polynomial_shift_mul(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
+def polynomial_shift_mul(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
   polynomial_shift(K, polynomial_mul(K, p, q)) = polynomial_mul(K, polynomial_shift(K, p), q) {
   let f = polynomial_coefficients(K, p);
   let g = polynomial_coefficients(K, q);
@@ -154,7 +154,7 @@ theorem polynomial_shift_mul(K : AlgebraicField, p : Polynomial(K), q : Polynomi
   );
 }
 
-theorem polynomial_variable_mul(K : AlgebraicField, p : Polynomial(K)) :
+def polynomial_variable_mul(K : AlgebraicField, p : Polynomial(K)) :
   polynomial_mul(K, polynomial_variable(K), p) = polynomial_shift(K, p) {
   exact trans(
     sym(polynomial_shift_mul(K, polynomial_one(K), p)),
@@ -162,7 +162,7 @@ theorem polynomial_variable_mul(K : AlgebraicField, p : Polynomial(K)) :
   );
 }
 
-theorem polynomial_constant_add(K : AlgebraicField, a : af_carrier(K), b : af_carrier(K)) :
+def polynomial_constant_add(K : AlgebraicField, a : af_carrier(K), b : af_carrier(K)) :
   polynomial_constant(K, field_add(K, a, b)) = polynomial_add(
     K, polynomial_constant(K, a), polynomial_constant(K, b)
   ) {
@@ -182,7 +182,7 @@ theorem polynomial_constant_add(K : AlgebraicField, a : af_carrier(K), b : af_ca
   );
 }
 
-theorem polynomial_constant_zero(K : AlgebraicField) :
+def polynomial_constant_zero(K : AlgebraicField) :
   polynomial_constant(K, field_zero(K)) = polynomial_zero(K) {
   exact polynomial_coefficient_ext(
     K, polynomial_constant(K, field_zero(K)), polynomial_zero(K),
@@ -197,7 +197,7 @@ theorem polynomial_constant_zero(K : AlgebraicField) :
   );
 }
 
-theorem support_add_same(
+def support_add_same(
   K : AlgebraicField, f : FormalSeries(K), g : FormalSeries(K), n : Nat,
   sf : SeriesSupport(K, f, n), sg : SeriesSupport(K, g, n)
 ) :
@@ -210,7 +210,7 @@ theorem support_add_same(
   );
 }
 
-theorem polynomial_scale_support(
+def polynomial_scale_support(
   K : AlgebraicField, a : af_carrier(K), p : Polynomial(K), n : Nat,
   support : SeriesSupport(K, polynomial_coefficients(K, p), n)
 ) :
@@ -223,7 +223,7 @@ theorem polynomial_scale_support(
   );
 }
 
-theorem polynomial_neg_support(
+def polynomial_neg_support(
   K : AlgebraicField, p : Polynomial(K), n : Nat,
   support : SeriesSupport(K, polynomial_coefficients(K, p), n)
 ) :

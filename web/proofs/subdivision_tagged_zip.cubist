@@ -3,7 +3,7 @@ import sample_tagged;
 
 // Combine a coarse-edge condition and a condition on its actual subdivision.
 // Both families have the same vertices and tags, so their heads correspond.
-theorem subdivision_tagged_zip_step(
+def subdivision_tagged_zip_step(
   C : U1, coarse : C -> C -> C -> U0,
   fine : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
@@ -47,7 +47,7 @@ theorem subdivision_tagged_zip_step(
   );
 }
 
-theorem subdivision_tagged_zip(
+def subdivision_tagged_zip(
   C : U1, coarse : C -> C -> C -> U0,
   fine : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),

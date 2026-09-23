@@ -20,7 +20,7 @@ def tower_member_prop(
 ) =
   field_exists_prop(forall P : A -> U0, TowerLaws(A, le, complete, f, P) -> P(x));
 
-theorem tower_contains(
+def tower_contains(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, P : A -> U0,
   laws : TowerLaws(A, le, complete, f, P), x : A, member : TowerMember(A, le, complete, f, x)
 ) :
@@ -36,7 +36,7 @@ theorem tower_contains(
   );
 }
 
-theorem tower_step(
+def tower_step(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, x : A,
   member : TowerMember(A, le, complete, f, x)
 ) :
@@ -52,7 +52,7 @@ theorem tower_step(
   );
 }
 
-theorem tower_sup(
+def tower_sup(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, C : A -> U0,
   chain : OrderChain(A, le, C), members : (forall x : A, C(x) -> TowerMember(A, le, complete, f, x))
 ) :
@@ -81,7 +81,7 @@ theorem tower_sup(
 
 // Lift the universal property to U1-valued propositions by the same existing
 // truncation interface. This is not elimination into untruncated data.
-theorem tower_induction_large(
+def tower_induction_large(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, P : A -> U1,
   prop : (forall x : A, FieldProp(P(x))), step : (forall x : A, P(x) -> P(f(x))),
   supremum : (
@@ -110,7 +110,7 @@ theorem tower_induction_large(
 }
 
 // In the step and supremum cases, keep access to membership in the tower.
-theorem tower_relative_induction(
+def tower_relative_induction(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, P : A -> U1,
   prop : (forall x : A, FieldProp(P(x))),
   step : (forall x : A, TowerMember(A, le, complete, f, x) -> P(x) -> P(f(x))),
@@ -154,7 +154,7 @@ theorem tower_relative_induction(
 def TowerStable(A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, a : A) =
   forall b : A, TowerMember(A, le, complete, f, b) -> le(b, a) -> (le(a, b) -> Void) -> le(f(b), a);
 
-theorem tower_stable_prop(
+def tower_stable_prop(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, a : A
 ) :

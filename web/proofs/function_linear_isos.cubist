@@ -137,7 +137,7 @@ def uncurry_linear(K : AlgebraicField, I : U0, J : U0, V : VectorSpace(K)) :
   );
 }
 
-theorem curry_linear_iso(K : AlgebraicField, I : U0, J : U0, V : VectorSpace(K)) :
+def curry_linear_iso(K : AlgebraicField, I : U0, J : U0, V : VectorSpace(K)) :
   LinearIso(K, FunctionSpace(K, I and J, V), FunctionSpace(K, I, FunctionSpace(K, J, V))) {
   let X = vector_carrier(K, V);
   have left :

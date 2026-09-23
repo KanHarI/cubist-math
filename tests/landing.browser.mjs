@@ -40,7 +40,7 @@ try {
     assert.ok(proofChoices.some(p => p.id === query.get("proof")));
     const source = await page.request.get(`${base}/proofs/${query.get("proof")}.cubist`);
     assert.equal(source.status(), 200);
-    assert.ok((await source.text()).includes(`theorem ${query.get("name")}`));
+    assert.ok((await source.text()).includes(`def ${query.get("name")}`));
   }
   assert.equal(await page.evaluate(() => performance.getEntriesByType("resource").some(r => /kernel|wasm/.test(r.name))), false);
   for (const width of [1440, 390, 320]) {

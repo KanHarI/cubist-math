@@ -3,7 +3,7 @@ import bourbaki_tower;
 def TowerSeparation(A : U1, le : OrderRelation(A), f : A -> A, a : A, b : A) =
   FieldOr(le(b, a), le(f(a), b));
 
-theorem tower_separation_step(
+def tower_separation_step(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, progressive : Progressive(A, le, f), a : A,
   stable : TowerStable(A, le, complete, f, a), b : A, tb : TowerMember(A, le, complete, f, b),
@@ -41,7 +41,7 @@ theorem tower_separation_step(
   );
 }
 
-theorem tower_separation_sup(
+def tower_separation_sup(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, a : A, C : A -> U0, chain : OrderChain(A, le, C),
   separated : (forall b : A, C(b) -> TowerSeparation(A, le, f, a, b))
@@ -87,7 +87,7 @@ theorem tower_separation_sup(
 }
 
 // Stable points separate the tower: a tower point b is below a, or above f(a).
-theorem tower_separation(
+def tower_separation(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, progressive : Progressive(A, le, f), a : A,
   stable : TowerStable(A, le, complete, f, a), b : A, tb : TowerMember(A, le, complete, f, b)
@@ -105,7 +105,7 @@ theorem tower_separation(
   );
 }
 
-theorem tower_stable_step(
+def tower_stable_step(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, progressive : Progressive(A, le, f), a : A,
   stable : TowerStable(A, le, complete, f, a)
@@ -136,7 +136,7 @@ theorem tower_stable_step(
   );
 }
 
-theorem tower_stable_sup(
+def tower_stable_sup(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, progressive : Progressive(A, le, f), C : A -> U0, chain : OrderChain(A, le, C),
   stable : (forall a : A, C(a) -> TowerStable(A, le, complete, f, a))
@@ -181,7 +181,7 @@ theorem tower_stable_sup(
   exact double_negation(le(f(b), s), order_prop(A, le, laws, f(b), s), contradiction);
 }
 
-theorem tower_is_stable(
+def tower_is_stable(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, progressive : Progressive(A, le, f), a : A, ta : TowerMember(A, le, complete, f, a)
 ) :
@@ -202,7 +202,7 @@ theorem tower_is_stable(
   );
 }
 
-theorem tower_is_chain(
+def tower_is_chain(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, progressive : Progressive(A, le, f)
 ) :
@@ -228,7 +228,7 @@ theorem tower_is_chain(
 
 // The supremum of the entire tower is fixed. The empty-chain case supplies
 // its initial point; no ordinal type or transfinite-recursion axiom is used.
-theorem bourbaki_witt(
+def bourbaki_witt(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, progressive : Progressive(A, le, f)
 ) :

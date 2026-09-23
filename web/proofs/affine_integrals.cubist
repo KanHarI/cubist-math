@@ -3,7 +3,7 @@ import affine_dyadic_limits;
 // The integral is constructed by completeness from the proved Cauchy sequence.
 // Actual Archimedean bounds and the field's completeness operation remain
 // explicit inputs; no convergence of these contour sums is assumed.
-theorem affine_dyadic_integral_exists(
+def affine_dyadic_integral_exists(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
@@ -82,7 +82,7 @@ def affine_dyadic_integral(
     )
   );
 
-theorem affine_dyadic_integral_converges(
+def affine_dyadic_integral_converges(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
@@ -131,7 +131,7 @@ theorem affine_dyadic_integral_converges(
 }
 
 // Any other limit of these actual sums is the constructed integral.
-theorem affine_dyadic_integral_unique(
+def affine_dyadic_integral_unique(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
@@ -184,7 +184,7 @@ theorem affine_dyadic_integral_unique(
 
 // Changing the witnesses used to obtain a modulus or a limit cannot change
 // the value: the sampled sequence does not contain these witnesses.
-theorem affine_dyadic_integral_independent_data(
+def affine_dyadic_integral_independent_data(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F

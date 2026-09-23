@@ -2,7 +2,7 @@ import ring_laws;
 
 // Square and norm estimates proved constructively, without sign decisions.
 
-theorem ordered_lt_implies_le(
+def ordered_lt_implies_le(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, less : lt(x, y)
@@ -13,7 +13,7 @@ theorem ordered_lt_implies_le(
   exact irreflexive(x, transitive(x, y, x, less, backward));
 }
 
-theorem ordered_neg_positive(
+def ordered_neg_positive(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, belowZero : lt(x, zero)
@@ -33,7 +33,7 @@ theorem ordered_neg_positive(
   );
 }
 
-theorem ordered_negative_square(
+def ordered_negative_square(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F
@@ -48,7 +48,7 @@ theorem ordered_negative_square(
   );
 }
 
-theorem ordered_square_of_nonnegative(
+def ordered_square_of_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F,
@@ -63,7 +63,7 @@ theorem ordered_square_of_nonnegative(
   );
 }
 
-theorem ordered_square_of_positive(
+def ordered_square_of_positive(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, positive : lt(zero, x)
@@ -77,7 +77,7 @@ theorem ordered_square_of_positive(
   );
 }
 
-theorem ordered_square_nonnegative(
+def ordered_square_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F
@@ -111,7 +111,7 @@ theorem ordered_square_nonnegative(
   )(negativeSquare);
 }
 
-theorem ordered_square_of_apart(
+def ordered_square_of_apart(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F,
@@ -139,7 +139,7 @@ theorem ordered_square_of_apart(
   );
 }
 
-theorem ordered_positive_plus_nonnegative(
+def ordered_positive_plus_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,
@@ -156,7 +156,7 @@ theorem ordered_positive_plus_nonnegative(
   exact leLt(zero, y, addF(x, y), aboveZeroWeak, shifted);
 }
 
-theorem ordered_sum_nonnegative(
+def ordered_sum_nonnegative(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,

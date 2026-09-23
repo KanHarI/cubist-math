@@ -17,7 +17,7 @@ def coordinate_first(K : AlgebraicField, n : Nat) =
 def coordinate_insert(K : AlgebraicField, n : Nat, v : Fin(n) -> af_carrier(K)) =
   coordinate_cons(K, n, af_zero(af_carrier(K), af_operations(K)), v);
 
-theorem finite_function_ext(
+def finite_function_ext(
   A : U0, n : Nat, f : Fin(succ(n)) -> A, g : Fin(succ(n)) -> A,
   first : finite_head(A, n, f) = finite_head(A, n, g),
   rest : finite_tail(A, n, f) = finite_tail(A, n, g)
@@ -35,7 +35,7 @@ theorem finite_function_ext(
   );
 }
 
-theorem scalar_mul_one_right(K : AlgebraicField, a : af_carrier(K)) :
+def scalar_mul_one_right(K : AlgebraicField, a : af_carrier(K)) :
   af_mul(af_carrier(K), af_operations(K), a, af_one(af_carrier(K), af_operations(K))) = a {
   obtain (addLaws, mulLaws) = field_ring_data(af_carrier(K), af_operations(K), af_laws(K));
   obtain (assoc, comm, one, distribute) = mulLaws;
@@ -85,7 +85,7 @@ def coordinate_tail_linear(K : AlgebraicField, n : Nat) :
   );
 }
 
-theorem coordinate_decompose(K : AlgebraicField, n : Nat, v : Fin(succ(n)) -> af_carrier(K)) :
+def coordinate_decompose(K : AlgebraicField, n : Nat, v : Fin(succ(n)) -> af_carrier(K)) :
   vector_add(
     K, CoordinateSpace(K, succ(n)),
     vector_scale(

@@ -23,7 +23,7 @@ def bijective_map_bijection(
   exact (f, g, (fun (x : A) => injective(g(f(x)), x, right(f(x)))), right);
 }
 
-theorem cardinality_unique(
+def cardinality_unique(
   A : U0, n : Nat, m : Nat, hn : HasCardinality(A, n), hm : HasCardinality(A, m)
 ) :
   n = m {

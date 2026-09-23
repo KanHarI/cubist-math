@@ -38,7 +38,7 @@ def square_root_coefficients(F : U1, zero : F, negF : F -> F, a : F) : MonicCoef
   exact typed(F and (F and Unit), (negF(a), zero, tt));
 }
 
-theorem monic_linear_eval(
+def monic_linear_eval(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F
 ) :
@@ -46,7 +46,7 @@ theorem monic_linear_eval(
   exact cong(addF(a), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, z));
 }
 
-theorem monic_linear_root(
+def monic_linear_root(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F
 ) :
@@ -60,7 +60,7 @@ theorem monic_linear_root(
   );
 }
 
-theorem monic_linear_root_unique(
+def monic_linear_root_unique(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F,
   root : monic_eval(F, one, addF, mulF, 1, linear_coefficients(F, a), z) = zero
@@ -72,7 +72,7 @@ theorem monic_linear_root_unique(
   );
 }
 
-theorem monic_square_eval(
+def monic_square_eval(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F
 ) :
@@ -88,7 +88,7 @@ theorem monic_square_eval(
   );
 }
 
-theorem monic_square_root_equation(
+def monic_square_root_equation(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F,
   root : monic_eval(F, one, addF, mulF, 2, square_root_coefficients(F, zero, negF, a), z) = zero
@@ -106,7 +106,7 @@ theorem monic_square_root_equation(
 
 // Even the degree-two consequence demands exact roots. This implication does
 // not assert that its algebraic-closure hypothesis is available for any model.
-theorem algebraic_closure_implies_square_roots(
+def algebraic_closure_implies_square_roots(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   closed : MonicAlgebraicClosure(F, zero, one, addF, mulF), a : F

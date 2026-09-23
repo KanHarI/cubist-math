@@ -3,7 +3,7 @@ import dyadic_refinement_mesh;
 
 // Uniform continuity supplies one mesh controlling every later dyadic level.
 // The bound depends on the outer width, not the number of samples.
-theorem affine_dyadic_refinement_estimate(
+def affine_dyadic_refinement_estimate(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F

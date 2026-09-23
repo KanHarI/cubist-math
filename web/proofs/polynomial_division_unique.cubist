@@ -25,7 +25,7 @@ def PolynomialAdditiveGroup(K : AlgebraicField) =
 def polynomial_subtract(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) =
   polynomial_add(K, p, polynomial_neg(K, q));
 
-theorem polynomial_subtract_zero_equal(
+def polynomial_subtract_zero_equal(
   K : AlgebraicField, p : Polynomial(K), q : Polynomial(K),
   zero : polynomial_subtract(K, p, q) = polynomial_zero(K)
 ) :
@@ -36,7 +36,7 @@ theorem polynomial_subtract_zero_equal(
   );
 }
 
-theorem polynomial_difference_of_sums(
+def polynomial_difference_of_sums(
   K : AlgebraicField, a : Polynomial(K), b : Polynomial(K), c : Polynomial(K), d : Polynomial(K),
   same : polynomial_add(K, a, b) = polynomial_add(K, c, d)
 ) :
@@ -67,7 +67,7 @@ theorem polynomial_difference_of_sums(
   );
 }
 
-theorem polynomial_neg_mul(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
+def polynomial_neg_mul(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K)) :
   polynomial_mul(K, polynomial_neg(K, p), q) = polynomial_neg(K, polynomial_mul(K, p, q)) {
   exact trans(
     polynomial_mul_comm(K, polynomial_neg(K, p), q),
@@ -75,7 +75,7 @@ theorem polynomial_neg_mul(K : AlgebraicField, p : Polynomial(K), q : Polynomial
   );
 }
 
-theorem polynomial_subtract_mul(
+def polynomial_subtract_mul(
   K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), r : Polynomial(K)
 ) :
   polynomial_mul(K, polynomial_subtract(K, p, q), r) = polynomial_subtract(
@@ -87,7 +87,7 @@ theorem polynomial_subtract_mul(
   );
 }
 
-theorem polynomial_small_multiple_zero(
+def polynomial_small_multiple_zero(
   K : AlgebraicField, q : Polynomial(K), divisor : Polynomial(K), d : Nat,
   degree : polynomial_cutoff(K, divisor) = succ(d),
   support : SeriesSupport(K, polynomial_coefficients(K, polynomial_mul(K, q, divisor)), d)
@@ -114,7 +114,7 @@ theorem polynomial_small_multiple_zero(
 
 // Uniqueness uses formal degree and the integral-domain property; equality
 // of evaluations on the field would not be sufficient here.
-theorem polynomial_division_unique(
+def polynomial_division_unique(
   K : AlgebraicField, p : Polynomial(K), divisor : Polynomial(K), d : Nat,
   degree : polynomial_cutoff(K, divisor) = succ(d), q : Polynomial(K), r : Polynomial(K),
   equation : p = polynomial_add(K, polynomial_mul(K, q, divisor), r),

@@ -138,7 +138,7 @@ def basis_coordinates(K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : F
   exact coordinates;
 }
 
-theorem basis_expansion_coordinates(
+def basis_expansion_coordinates(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n),
   x : vector_carrier(K, V)
 ) :
@@ -150,7 +150,7 @@ theorem basis_expansion_coordinates(
   exact right(x);
 }
 
-theorem basis_coordinates_expansion(
+def basis_coordinates_expansion(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n),
   c : vector_carrier(K, CoordinateSpace(K, n))
 ) :
@@ -162,7 +162,7 @@ theorem basis_coordinates_expansion(
   exact left(c);
 }
 
-theorem basis_coordinates_unique(
+def basis_coordinates_unique(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n),
   c : vector_carrier(K, CoordinateSpace(K, n)), x : vector_carrier(K, V),
   expands : linear_map(K, CoordinateSpace(K, n), V, basis_expansion(K, V, n, basis), c) = x
@@ -174,7 +174,7 @@ theorem basis_coordinates_unique(
   );
 }
 
-theorem basis_carrier_path(
+def basis_carrier_path(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)
 ) :
   (Fin(n) -> af_carrier(K)) =[U0] vector_carrier(K, V) {
@@ -223,13 +223,13 @@ def constant_linear(K : AlgebraicField, I : U0, V : VectorSpace(K)) :
 
 def fin_one_center = typed(Fin(1), left(tt));
 
-theorem fin_one_unique(i : Fin(1)) : fin_one_center = i {
+def fin_one_unique(i : Fin(1)) : fin_one_center = i {
   exact trans(
     cong((fun (u : Unit) => typed(Fin(1), left(u))), unit_equal(one_out(i))), one_roundtrip(i)
   );
 }
 
-theorem one_coordinate_roundtrip(
+def one_coordinate_roundtrip(
   K : AlgebraicField, V : VectorSpace(K), f : Fin(1) -> vector_carrier(K, V)
 ) :
   (fun (i : Fin(1)) => f(fin_one_center)) = f {
@@ -239,7 +239,7 @@ theorem one_coordinate_roundtrip(
   );
 }
 
-theorem one_coordinate_iso(K : AlgebraicField, V : VectorSpace(K)) :
+def one_coordinate_iso(K : AlgebraicField, V : VectorSpace(K)) :
   LinearIso(K, FunctionSpace(K, Fin(1), V), V) {
   exact (
     evaluation_linear(K, Fin(1), V, fin_one_center), constant_linear(K, Fin(1), V),
@@ -248,7 +248,7 @@ theorem one_coordinate_iso(K : AlgebraicField, V : VectorSpace(K)) :
 }
 
 // The field as a vector space over itself has the explicit one-element basis.
-theorem scalar_space_basis(K : AlgebraicField) : FiniteBasis(K, ScalarSpace(K), 1) {
+def scalar_space_basis(K : AlgebraicField) : FiniteBasis(K, ScalarSpace(K), 1) {
   exact one_coordinate_iso(K, ScalarSpace(K));
 }
 

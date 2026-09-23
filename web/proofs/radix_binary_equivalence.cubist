@@ -27,14 +27,14 @@ opaque def radix_to_binary(extra : Nat, n : RadixNat(extra)) = match n return Bi
     right p => radix_positive_to_binary(extra, p);
   };
 
-theorem radix_binary_leading_correct(extra : Nat, d : RadixDigit(succ(extra))) :
+def radix_binary_leading_correct(extra : Nat, d : RadixDigit(succ(extra))) :
   binary_to_nat(radix_positive_to_binary(extra, radix_leading(extra, d))) = radix_positive_to_nat(
     extra, radix_leading(extra, d)
   ) {
   exact binary_nat_roundtrip(succ(radix_digit_value(succ(extra), d)));
 }
 
-theorem radix_binary_append_correct(
+def radix_binary_append_correct(
   extra : Nat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra),
   ih : binary_to_nat(radix_positive_to_binary(extra, p)) = radix_positive_to_nat(extra, p)
 ) :
@@ -65,7 +65,7 @@ theorem radix_binary_append_correct(
   );
 }
 
-theorem radix_binary_positive_correct(extra : Nat, p : RadixPositive(extra)) :
+def radix_binary_positive_correct(extra : Nat, p : RadixPositive(extra)) :
   binary_to_nat(radix_positive_to_binary(extra, p)) = radix_positive_to_nat(extra, p) {
   exact radix_positive_induction(
     extra,
@@ -77,7 +77,7 @@ theorem radix_binary_positive_correct(extra : Nat, p : RadixPositive(extra)) :
   );
 }
 
-theorem radix_binary_correct(extra : Nat, n : RadixNat(extra)) :
+def radix_binary_correct(extra : Nat, n : RadixNat(extra)) :
   binary_to_nat(radix_to_binary(extra, n)) = radix_to_nat(extra, n) {
   exact match n as x return (binary_to_nat(radix_to_binary(extra, x)) = radix_to_nat(extra, x)) {
     left zero => refl(0);
@@ -102,7 +102,7 @@ opaque def binary_to_radix(extra : Nat, n : BinaryNat) = match n return RadixNat
     right p => binary_positive_to_radix(extra, p);
   };
 
-theorem binary_radix_even_correct(
+def binary_radix_even_correct(
   extra : Nat, p : BinaryPositive,
   ih : radix_to_nat(extra, binary_positive_to_radix(extra, p)) = binary_positive_to_nat(p)
 ) :
@@ -115,7 +115,7 @@ theorem binary_radix_even_correct(
   );
 }
 
-theorem binary_radix_odd_correct(
+def binary_radix_odd_correct(
   extra : Nat, p : BinaryPositive,
   ih : radix_to_nat(extra, binary_positive_to_radix(extra, p)) = binary_positive_to_nat(p)
 ) :
@@ -138,7 +138,7 @@ theorem binary_radix_odd_correct(
   );
 }
 
-theorem binary_radix_positive_correct(extra : Nat, p : BinaryPositive) :
+def binary_radix_positive_correct(extra : Nat, p : BinaryPositive) :
   radix_to_nat(extra, binary_positive_to_radix(extra, p)) = binary_positive_to_nat(p) {
   exact binary_positive_induction(
     (
@@ -149,7 +149,7 @@ theorem binary_radix_positive_correct(extra : Nat, p : BinaryPositive) :
   );
 }
 
-theorem binary_radix_correct(extra : Nat, n : BinaryNat) :
+def binary_radix_correct(extra : Nat, n : BinaryNat) :
   radix_to_nat(extra, binary_to_radix(extra, n)) = binary_to_nat(n) {
   exact match n as x return (radix_to_nat(extra, binary_to_radix(extra, x)) = binary_to_nat(x)) {
     left zero => refl(0);
@@ -157,12 +157,12 @@ theorem binary_radix_correct(extra : Nat, n : BinaryNat) :
   };
 }
 
-theorem binary_injective(a : BinaryNat, b : BinaryNat, same : binary_to_nat(a) = binary_to_nat(b)) :
+def binary_injective(a : BinaryNat, b : BinaryNat, same : binary_to_nat(a) = binary_to_nat(b)) :
   a = b {
   exact trans(sym(binary_roundtrip(a)), trans(cong(binary_of_nat, same), binary_roundtrip(b)));
 }
 
-theorem radix_binary_roundtrip(extra : Nat, n : RadixNat(extra)) :
+def radix_binary_roundtrip(extra : Nat, n : RadixNat(extra)) :
   binary_to_radix(extra, radix_to_binary(extra, n)) = n {
   exact radix_injective(
     extra, binary_to_radix(extra, radix_to_binary(extra, n)), n,
@@ -170,7 +170,7 @@ theorem radix_binary_roundtrip(extra : Nat, n : RadixNat(extra)) :
   );
 }
 
-theorem binary_radix_roundtrip(extra : Nat, n : BinaryNat) :
+def binary_radix_roundtrip(extra : Nat, n : BinaryNat) :
   radix_to_binary(extra, binary_to_radix(extra, n)) = n {
   exact binary_injective(
     radix_to_binary(extra, binary_to_radix(extra, n)), n,
@@ -192,14 +192,14 @@ def binary_radix_equiv(extra : Nat) =
 
 // Small conversion certificates permit evaluation one digit at a time.
 // The checked evaluator need never expand all recursive calls simultaneously.
-theorem radix_binary_leading_beta(extra : Nat, d : RadixDigit(succ(extra))) :
+def radix_binary_leading_beta(extra : Nat, d : RadixDigit(succ(extra))) :
   radix_positive_to_binary(extra, radix_leading(extra, d)) = binary_of_nat(
     succ(radix_digit_value(succ(extra), d))
   ) {
   exact refl(binary_of_nat(succ(radix_digit_value(succ(extra), d))));
 }
 
-theorem radix_binary_append_beta(
+def radix_binary_append_beta(
   extra : Nat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra)
 ) :
   radix_positive_to_binary(extra, radix_append(extra, d, p)) = binary_add(
@@ -214,7 +214,7 @@ theorem radix_binary_append_beta(
   );
 }
 
-theorem radix_binary_append_value(
+def radix_binary_append_value(
   extra : Nat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra), value : BinaryNat,
   previous : radix_positive_to_binary(extra, p) = value
 ) :
@@ -235,7 +235,7 @@ theorem radix_binary_append_value(
   );
 }
 
-theorem radix_binary_positive_beta(extra : Nat, p : RadixPositive(extra)) :
+def radix_binary_positive_beta(extra : Nat, p : RadixPositive(extra)) :
   radix_to_binary(extra, radix_positive(extra, p)) = radix_positive_to_binary(extra, p) {
   exact refl(radix_positive_to_binary(extra, p));
 }

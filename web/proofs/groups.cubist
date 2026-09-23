@@ -176,7 +176,7 @@ def group_induction(
 }
 
 // Rebuilding a bundled group from its fields gives back the same group.
-theorem group_object_eta(G : Group) :
+def group_object_eta(G : Group) :
   group_object(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G)) = G {
   exact group_induction(
     (

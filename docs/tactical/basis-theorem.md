@@ -3,7 +3,7 @@
 Status (2026-09-22): **the general basis-existence theorem is checked**.
 
 ```cubist
-theorem vector_space_has_basis(K : AlgebraicField, V : VectorSpace(K)) :
+def vector_space_has_basis(K : AlgebraicField, V : VectorSpace(K)) :
   FieldExists(VectorBasis(K, V))
 ```
 

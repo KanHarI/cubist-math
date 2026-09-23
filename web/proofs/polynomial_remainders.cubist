@@ -26,7 +26,7 @@ def modulus_degree_equality(K : AlgebraicField, M : PolynomialModulus(K)) =
     modulus_degree_data(K, M)
   );
 
-theorem polynomial_reduction_data(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
+def polynomial_reduction_data(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
   DivisionResult(K, p, modulus_polynomial(K, M), modulus_degree(K, M)) {
   exact divide_by_degree(
     K, p, modulus_polynomial(K, M), modulus_degree(K, M), modulus_degree_equality(K, M)
@@ -60,7 +60,7 @@ def polynomial_remainder_support(K : AlgebraicField, M : PolynomialModulus(K), p
   exact support;
 }
 
-theorem polynomial_remainder_unique(
+def polynomial_remainder_unique(
   K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K), q : Polynomial(K),
   r : Polynomial(K),
   equation : p = polynomial_add(K, polynomial_mul(K, q, modulus_polynomial(K, M)), r),
@@ -76,7 +76,7 @@ theorem polynomial_remainder_unique(
   exact sameR;
 }
 
-theorem polynomial_remainder_small(
+def polynomial_remainder_small(
   K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K),
   support : SeriesSupport(K, polynomial_coefficients(K, p), modulus_degree(K, M))
 ) :
@@ -100,7 +100,7 @@ def polynomial_remainder_zero(K : AlgebraicField, M : PolynomialModulus(K)) =
     (fun (n : Nat) => fun (above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
   );
 
-theorem polynomial_remainder_add(
+def polynomial_remainder_add(
   K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K), q : Polynomial(K)
 ) :
   polynomial_remainder(K, M, polynomial_add(K, p, q)) = polynomial_add(
@@ -143,7 +143,7 @@ theorem polynomial_remainder_add(
   );
 }
 
-theorem polynomial_remainder_multiple(
+def polynomial_remainder_multiple(
   K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)
 ) :
   polynomial_remainder(K, M, polynomial_mul(K, p, modulus_polynomial(K, M))) = polynomial_zero(K) {
@@ -154,7 +154,7 @@ theorem polynomial_remainder_multiple(
   );
 }
 
-theorem polynomial_remainder_mul_left(
+def polynomial_remainder_mul_left(
   K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K), q : Polynomial(K)
 ) :
   polynomial_remainder(K, M, polynomial_mul(K, p, q)) = polynomial_remainder(
@@ -207,7 +207,7 @@ theorem polynomial_remainder_mul_left(
   };
 }
 
-theorem polynomial_remainder_mul_right(
+def polynomial_remainder_mul_right(
   K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K), q : Polynomial(K)
 ) :
   polynomial_remainder(K, M, polynomial_mul(K, p, q)) = polynomial_remainder(
@@ -222,7 +222,7 @@ theorem polynomial_remainder_mul_right(
   );
 }
 
-theorem polynomial_remainder_neg(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
+def polynomial_remainder_neg(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
   polynomial_remainder(K, M, polynomial_neg(K, p)) = polynomial_neg(
     K, polynomial_remainder(K, M, p)
   ) {
@@ -247,7 +247,7 @@ theorem polynomial_remainder_neg(K : AlgebraicField, M : PolynomialModulus(K), p
   };
 }
 
-theorem polynomial_remainder_zero_divides(
+def polynomial_remainder_zero_divides(
   K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K),
   zero : polynomial_remainder(K, M, p) = polynomial_zero(K)
 ) :
@@ -274,7 +274,7 @@ theorem polynomial_remainder_zero_divides(
   );
 }
 
-theorem polynomial_divides_remainder_zero(
+def polynomial_divides_remainder_zero(
   K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K),
   divides : PolynomialDivides(K, modulus_polynomial(K, M), p)
 ) :

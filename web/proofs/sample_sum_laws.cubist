@@ -3,7 +3,7 @@ import integer_multiples;
 
 // Finite-sum laws, independent of any continuity or integration axiom.
 
-theorem sample_sum_join(
+def sample_sum_join(
   C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat
@@ -89,7 +89,7 @@ theorem sample_sum_join(
   };
 }
 
-theorem sample_sum_cong(
+def sample_sum_cong(
   C : U1, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, other : C -> C -> C -> G,
   same : (forall a : C, forall b : C, forall tag : C, edge(a, b, tag) = other(a, b, tag)), n : Nat
 ) :
@@ -137,7 +137,7 @@ theorem sample_sum_cong(
   };
 }
 
-theorem sample_sum_add(
+def sample_sum_add(
   C : U1, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
   edge : C -> C -> C -> G, other : C -> C -> C -> G, n : Nat
 ) :
@@ -210,7 +210,7 @@ theorem sample_sum_add(
   };
 }
 
-theorem sample_sum_map(
+def sample_sum_map(
   C : U1, G : U1, zero : G, addG : G -> G -> G, H : U1, zeroH : H, addH : H -> H -> H, mapping : G
   -> H, mapsZero : mapping(zero) = zeroH,
   mapsAdd : (forall x : G, forall y : G, mapping(addG(x, y)) = addH(mapping(x), mapping(y))),
@@ -259,7 +259,7 @@ theorem sample_sum_map(
   };
 }
 
-theorem sample_sum_telescopes(
+def sample_sum_telescopes(
   C : U1, G : U1, zero : G, addG : G -> G -> G, delta : C -> C -> G,
   diagonal : (forall a : C, delta(a, a) = zero),
   composeDelta : (

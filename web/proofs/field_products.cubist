@@ -32,7 +32,7 @@ def field_pair_path_decode(A : U1, B : U1, u : A and B, v : A and B, p : u = v) 
     ), field_pair_path_refl(A, B), u, v, p
   );
 
-theorem field_product_is_set(A : U1, B : U1, setA : FieldSet(A), setB : FieldSet(B)) :
+def field_product_is_set(A : U1, B : U1, setA : FieldSet(A), setB : FieldSet(B)) :
   FieldSet(A and B) {
   intro u;
   intro v;

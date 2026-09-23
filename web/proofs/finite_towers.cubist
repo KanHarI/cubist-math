@@ -17,7 +17,7 @@ def tower_middle_linear(
   );
 }
 
-theorem finite_tower_lower(
+def finite_tower_lower(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
   d : FieldEmbedding(L, M),
   whole : FiniteExtension(K, embedding_as_extension(K, M, field_embedding_compose(K, L, M, e, d)))
@@ -30,7 +30,7 @@ theorem finite_tower_lower(
   );
 }
 
-theorem finite_tower_upper(
+def finite_tower_upper(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
   d : FieldEmbedding(L, M),
   whole : FiniteExtension(K, embedding_as_extension(K, M, field_embedding_compose(K, L, M, e, d)))
@@ -47,7 +47,7 @@ theorem finite_tower_upper(
 
 // Finiteness of the whole tower implies finiteness of both steps. The
 // commuting triangle is used by transport, so the base embedding is retained.
-theorem finite_extension_tower_converse(
+def finite_extension_tower_converse(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
   d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c),
   whole : FiniteExtension(K, embedding_as_extension(K, M, c))
@@ -64,7 +64,7 @@ theorem finite_extension_tower_converse(
 }
 
 // The finiteness part of Lang's tower criterion, in both directions.
-theorem finite_extension_tower_iff(
+def finite_extension_tower_iff(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
   d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c)
 ) :

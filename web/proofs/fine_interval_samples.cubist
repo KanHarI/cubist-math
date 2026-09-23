@@ -23,7 +23,7 @@ def FineIntervalSamples(
 // Every weakly ordered interval has arbitrarily fine admissible finite
 // samples. Midpoints, tags, counts and widths are all supplied by checked
 // constructions. Neither a partition oracle nor choice/LEM is assumed.
-theorem archimedean_interval_fine_samples(
+def archimedean_interval_fine_samples(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

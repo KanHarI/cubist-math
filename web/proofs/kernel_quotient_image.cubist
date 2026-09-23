@@ -10,7 +10,7 @@ def GroupImageCarrier(G : Group, H : Group, h : GroupHom(G, H)) =
 def group_image_map(G : Group, H : Group, h : GroupHom(G, H)) =
   group_hom_map(G, subgroup_as_group(H, group_image(G, H, h)), group_image_factor(G, H, h));
 
-theorem image_map_respects_kernel(G : Group, H : Group, h : GroupHom(G, H)) :
+def image_map_respects_kernel(G : Group, H : Group, h : GroupHom(G, H)) :
   RespectsRelation(
     group_carrier(G), SameLeftCoset(G, group_kernel(G, H, h)), GroupImageCarrier(G, H, h),
     group_image_map(G, H, h)
@@ -32,7 +32,7 @@ def kernel_quotient_to_image(G : Group, H : Group, h : GroupHom(G, H)) =
     image_map_respects_kernel(G, H, h)
   );
 
-theorem kernel_quotient_to_image_beta(
+def kernel_quotient_to_image_beta(
   G : Group, H : Group, h : GroupHom(G, H), x : group_carrier(G)
 ) :
   kernel_quotient_to_image(G, H, h, left_coset(G, group_kernel(G, H, h), x)) = group_image_map(
@@ -54,7 +54,7 @@ def ImageFiberPredicate(
 ) =
   subgroup_value(H, group_image(G, H, h), y) = group_hom_map(G, H, h, x);
 
-theorem image_fiber_class_witness(
+def image_fiber_class_witness(
   G : Group, H : Group, h : GroupHom(G, H), y : GroupImageCarrier(G, H, h)
 ) :
   ClassWitness(
@@ -109,7 +109,7 @@ def image_to_kernel_quotient(
   exact (ImageFiberPredicate(G, H, h, y), image_fiber_class_witness(G, H, h, y));
 }
 
-theorem kernel_quotient_image_right(
+def kernel_quotient_image_right(
   G : Group, H : Group, h : GroupHom(G, H), y : GroupImageCarrier(G, H, h)
 ) :
   kernel_quotient_to_image(G, H, h, image_to_kernel_quotient(G, H, h, y)) = y {
@@ -137,7 +137,7 @@ theorem kernel_quotient_image_right(
   );
 }
 
-theorem kernel_quotient_image_member(
+def kernel_quotient_image_member(
   G : Group, H : Group, h : GroupHom(G, H), q : KernelQuotient(G, H, h), a : group_carrier(G),
   member : quotient_predicate(group_carrier(G), SameLeftCoset(G, group_kernel(G, H, h)), q, a)
 ) :
@@ -155,7 +155,7 @@ theorem kernel_quotient_image_member(
   );
 }
 
-theorem kernel_quotient_image_member_inverse(
+def kernel_quotient_image_member_inverse(
   G : Group, H : Group, h : GroupHom(G, H), q : KernelQuotient(G, H, h), a : group_carrier(G),
   member : ImageFiberPredicate(G, H, h, kernel_quotient_to_image(G, H, h, q), a)
 ) :
@@ -184,7 +184,7 @@ theorem kernel_quotient_image_member_inverse(
   );
 }
 
-theorem kernel_quotient_image_left(
+def kernel_quotient_image_left(
   G : Group, H : Group, h : GroupHom(G, H), q : KernelQuotient(G, H, h)
 ) :
   image_to_kernel_quotient(G, H, h, kernel_quotient_to_image(G, H, h, q)) = q {
@@ -228,7 +228,7 @@ def kernel_image_ap_interchange = ap_interchange(U1);
 
 def kernel_image_path_prepend_inverse_cancel_at = path_prepend_inverse_cancel_at(U1);
 
-theorem kernel_image_adjoint_triangle(
+def kernel_image_adjoint_triangle(
   A : U1, B : U1, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
   epsilon : (forall y : B, f(g(y)) = y), x : A
 ) :
@@ -282,14 +282,14 @@ def kernel_quotient_image_equiv(G : Group, H : Group, h : GroupHom(G, H)) :
 
 // Univalence identifies these carriers in U1. This does not lower the
 // universe of the quotient expression; the image is its small presentation.
-theorem kernel_quotient_image_equality(G : Group, H : Group, h : GroupHom(G, H)) :
+def kernel_quotient_image_equality(G : Group, H : Group, h : GroupHom(G, H)) :
   KernelQuotient(G, H, h) =[U1] GroupImageCarrier(G, H, h) {
   exact ua(
     U1, KernelQuotient(G, H, h), GroupImageCarrier(G, H, h), kernel_quotient_image_equiv(G, H, h)
   );
 }
 
-theorem kernel_quotient_is_set(G : Group, H : Group, h : GroupHom(G, H)) :
+def kernel_quotient_is_set(G : Group, H : Group, h : GroupHom(G, H)) :
   FieldSet(KernelQuotient(G, H, h)) {
   exact transport(
     (fun (A : U1) => FieldSet(A)), GroupImageCarrier(G, H, h), KernelQuotient(G, H, h),

@@ -2,7 +2,7 @@ import subfield_images;
 import order_maps;
 
 // Image is left adjoint to inverse image on subfield inclusion orders.
-theorem subfield_image_inclusion_to_preimage(
+def subfield_image_inclusion_to_preimage(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
   T : Subfield(L), included : SubfieldIncluded(L, subfield_image(K, L, e, S), T)
 ) :
@@ -13,7 +13,7 @@ theorem subfield_image_inclusion_to_preimage(
   exact included(f(x), typed(SubfieldImage(K, L, e, S, f(x)), (x, member, refl(f(x)))));
 }
 
-theorem subfield_image_inclusion_from_preimage(
+def subfield_image_inclusion_from_preimage(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
   T : Subfield(L), included : SubfieldIncluded(K, S, subfield_preimage(K, L, e, T))
 ) :
@@ -24,7 +24,7 @@ theorem subfield_image_inclusion_from_preimage(
   exact transport(subfield_members(L, T), field_embedding_map(K, L, e, x), y, same, included(x, px));
 }
 
-theorem subfield_image_preimage_adjunction(
+def subfield_image_preimage_adjunction(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
 ) :
   OrderAdjunction(
@@ -41,7 +41,7 @@ theorem subfield_image_preimage_adjunction(
 
 // In these two results the embedding is fixed: both operations preserve
 // inclusion. Contravariance of inverse image concerns composition of embeddings.
-theorem subfield_image_monotone(
+def subfield_image_monotone(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
   T : Subfield(K), included : SubfieldIncluded(K, S, T)
 ) :
@@ -52,7 +52,7 @@ theorem subfield_image_monotone(
   exact typed(SubfieldImage(K, L, e, T, y), (x, included(x, px), same));
 }
 
-theorem subfield_preimage_monotone(
+def subfield_preimage_monotone(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
   T : Subfield(L), included : SubfieldIncluded(L, S, T)
 ) :
@@ -63,7 +63,7 @@ theorem subfield_preimage_monotone(
 }
 
 // Injectivity also recovers a subfield after taking its image then preimage.
-theorem subfield_preimage_image(
+def subfield_preimage_image(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)
 ) :
   subfield_preimage(K, L, e, subfield_image(K, L, e, S)) =[Subfield(K)] S {

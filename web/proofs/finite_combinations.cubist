@@ -15,7 +15,7 @@ def fin_append(A : U0, n : Nat) =
     };
   };
 
-theorem fin_append_members(A : U0, P : A -> U0, n : Nat) =
+def fin_append_members(A : U0, P : A -> U0, n : Nat) =
   induction n as k return (
     forall m : Nat, forall f : Fin(k) -> A, forall g : Fin(m) -> A, (forall i : Fin(k), P(f(i)))
     -> (forall j : Fin(m), P(g(j))) -> forall i : Fin(add_count(k, m)),
@@ -38,7 +38,7 @@ theorem fin_append_members(A : U0, P : A -> U0, n : Nat) =
   };
 
 // Concatenating witnesses computes the sum of their linear combinations.
-theorem linear_combination_append(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def linear_combination_append(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
   induction n as k return (
     forall m : Nat, forall v : Fin(k) -> vector_carrier(K, V),
     forall w : Fin(m) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
@@ -85,7 +85,7 @@ def scalar_additive_hom(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K
   exact (vector_scale(K, V, a), vector_scale_add_vectors(K, V, a));
 }
 
-theorem vector_scale_zero(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K)) :
+def vector_scale_zero(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K)) :
   vector_scale(K, V, a, vector_zero(K, V)) = vector_zero(K, V) {
   exact group_hom_unit(vector_group(K, V), vector_group(K, V), scalar_additive_hom(K, V, a));
 }
@@ -95,7 +95,7 @@ def finite_head(A : U0, n : Nat, f : Fin(succ(n)) -> A) = f(typed(Fin(succ(n)), 
 def finite_tail(A : U0, n : Nat, f : Fin(succ(n)) -> A) =
   fun (i : Fin(n)) => f(typed(Fin(succ(n)), right(i)));
 
-theorem combination_scale_step(
+def combination_scale_step(
   K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), n : Nat, v : Fin(succ(n))
   -> vector_carrier(K, V), b : Fin(succ(n)) -> af_carrier(K),
   previous : linear_combination(
@@ -138,7 +138,7 @@ theorem combination_scale_step(
   );
 }
 
-theorem linear_combination_scale(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), n : Nat) =
+def linear_combination_scale(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), n : Nat) =
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V), forall b : Fin(k) -> af_carrier(K),
     linear_combination(

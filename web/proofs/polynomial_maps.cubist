@@ -2,7 +2,7 @@ import polynomial_roots;
 
 // Change coefficients through a specified field embedding. Formal support,
 // coefficient equality and degree are preserved, even over finite fields.
-theorem mapped_series_support(
+def mapped_series_support(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), f : FormalSeries(K), n : Nat,
   support : SeriesSupport(K, f, n)
 ) :
@@ -25,7 +25,7 @@ def polynomial_map(
     )
   );
 
-theorem polynomial_map_injective(
+def polynomial_map_injective(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   q : Polynomial(K), same : polynomial_map(K, L, e, p) = polynomial_map(K, L, e, q)
 ) :
@@ -41,7 +41,7 @@ theorem polynomial_map_injective(
   );
 }
 
-theorem polynomial_map_cutoff(
+def polynomial_map_cutoff(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)
 ) :
   polynomial_cutoff(L, polynomial_map(K, L, e, p)) = polynomial_cutoff(K, p) {
@@ -68,7 +68,7 @@ theorem polynomial_map_cutoff(
   );
 }
 
-theorem polynomial_map_zero(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def polynomial_map_zero(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   polynomial_map(K, L, e, polynomial_zero(K)) = polynomial_zero(L) {
   obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
   exact polynomial_coefficient_ext(
@@ -76,7 +76,7 @@ theorem polynomial_map_zero(K : AlgebraicField, L : AlgebraicField, e : FieldEmb
   );
 }
 
-theorem polynomial_map_constant(
+def polynomial_map_constant(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K)
 ) :
   polynomial_map(K, L, e, polynomial_constant(K, a)) = polynomial_constant(
@@ -96,7 +96,7 @@ theorem polynomial_map_constant(
   );
 }
 
-theorem polynomial_map_add(
+def polynomial_map_add(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   q : Polynomial(K)
 ) :
@@ -111,7 +111,7 @@ theorem polynomial_map_add(
   );
 }
 
-theorem polynomial_map_neg(
+def polynomial_map_neg(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)
 ) :
   polynomial_map(K, L, e, polynomial_neg(K, p)) = polynomial_neg(L, polynomial_map(K, L, e, p)) {
@@ -122,7 +122,7 @@ theorem polynomial_map_neg(
   );
 }
 
-theorem convolution_embedding(
+def convolution_embedding(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat
 ) :
   forall a : FormalSeries(K), forall b : FormalSeries(K),
@@ -151,7 +151,7 @@ theorem convolution_embedding(
   };
 }
 
-theorem polynomial_map_mul(
+def polynomial_map_mul(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   q : Polynomial(K)
 ) :
@@ -169,7 +169,7 @@ theorem polynomial_map_mul(
   );
 }
 
-theorem polynomial_map_shift(
+def polynomial_map_shift(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)
 ) :
   polynomial_map(K, L, e, polynomial_shift(K, p)) = polynomial_shift(L, polynomial_map(K, L, e, p)) {
@@ -192,7 +192,7 @@ theorem polynomial_map_shift(
   );
 }
 
-theorem polynomial_map_identity(K : AlgebraicField, p : Polynomial(K)) :
+def polynomial_map_identity(K : AlgebraicField, p : Polynomial(K)) :
   polynomial_map(K, K, field_embedding_identity(K), p) = p {
   exact polynomial_coefficient_ext(
     K, polynomial_map(K, K, field_embedding_identity(K), p), p,
@@ -200,7 +200,7 @@ theorem polynomial_map_identity(K : AlgebraicField, p : Polynomial(K)) :
   );
 }
 
-theorem polynomial_map_composition(
+def polynomial_map_composition(
   K : AlgebraicField, L : AlgebraicField, T : AlgebraicField, e : FieldEmbedding(K, L),
   h : FieldEmbedding(L, T), p : Polynomial(K)
 ) :

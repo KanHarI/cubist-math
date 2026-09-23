@@ -11,7 +11,7 @@ def paired_complex_period(
   exact (realPeriod(p), imagPeriod(p));
 }
 
-theorem paired_complex_period_laws(
+def paired_complex_period_laws(
   F : U1, zero : F, addF : F -> F -> F, X : U0, point : X, realPeriod : (point = point) -> F,
   imagPeriod : (point = point) -> F, realLaws : LoopMapLaws(X, point, F, zero, addF, realPeriod),
   imagLaws : LoopMapLaws(X, point, F, zero, addF, imagPeriod)
@@ -48,7 +48,7 @@ def PeriodApproximationLaws(
     )
   );
 
-theorem complex_cauchy_approximation_period_laws(
+def complex_cauchy_approximation_period_laws(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

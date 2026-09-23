@@ -1,7 +1,7 @@
 import field_magnitude_close;
 
 // Constructive moduli for multiplication by a fixed bounded scalar.
-theorem field_nonnegative_magnitude(
+def field_nonnegative_magnitude(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F,
@@ -28,7 +28,7 @@ theorem field_nonnegative_magnitude(
   );
 }
 
-theorem field_close_zero_magnitude(
+def field_close_zero_magnitude(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F,
@@ -74,7 +74,7 @@ theorem field_close_zero_magnitude(
   );
 }
 
-theorem field_positive_product(
+def field_positive_product(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,
@@ -89,7 +89,7 @@ theorem field_positive_product(
   );
 }
 
-theorem field_positive_reciprocal(
+def field_positive_reciprocal(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -118,7 +118,7 @@ theorem field_positive_reciprocal(
   exact (reciprocal, backward(zeroProduct), inverseLaw);
 }
 
-theorem field_small_scaled_radius(
+def field_small_scaled_radius(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -182,7 +182,7 @@ theorem field_small_scaled_radius(
   );
 }
 
-theorem field_bounded_scale_zero_converges(
+def field_bounded_scale_zero_converges(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -223,7 +223,7 @@ theorem field_bounded_scale_zero_converges(
   exact (bound, tail);
 }
 
-theorem field_nonnegative_scale_zero_converges(
+def field_nonnegative_scale_zero_converges(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

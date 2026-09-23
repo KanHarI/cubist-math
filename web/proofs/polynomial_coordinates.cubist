@@ -25,7 +25,7 @@ def series_from_coordinates(K : AlgebraicField, n : Nat) =
     );
   };
 
-theorem series_cons_support(
+def series_cons_support(
   K : AlgebraicField, a : af_carrier(K), f : FormalSeries(K), n : Nat,
   support : SeriesSupport(K, f, n)
 ) :
@@ -37,7 +37,7 @@ theorem series_cons_support(
   };
 }
 
-theorem series_from_coordinates_support(K : AlgebraicField, n : Nat) =
+def series_from_coordinates_support(K : AlgebraicField, n : Nat) =
   induction n as k return (
     forall a : Fin(k) -> af_carrier(K), SeriesSupport(K, series_from_coordinates(K, k, a), k)
   ) {
@@ -51,7 +51,7 @@ theorem series_from_coordinates_support(K : AlgebraicField, n : Nat) =
     );
   };
 
-theorem series_cons_decompose(K : AlgebraicField, f : FormalSeries(K)) :
+def series_cons_decompose(K : AlgebraicField, f : FormalSeries(K)) :
   series_cons(K, f(0), series_tail(K, f)) = f {
   have pointwise : forall n : Nat, series_cons(K, f(0), series_tail(K, f), n) = f(n) {
     intro n;
@@ -65,7 +65,7 @@ theorem series_cons_decompose(K : AlgebraicField, f : FormalSeries(K)) :
   );
 }
 
-theorem series_from_coordinates_roundtrip(K : AlgebraicField, n : Nat) =
+def series_from_coordinates_roundtrip(K : AlgebraicField, n : Nat) =
   induction n as k return (
     forall f : FormalSeries(K), SeriesSupport(K, f, k)
     -> series_from_coordinates(K, k, series_coordinates(K, k, f)) = f
@@ -84,7 +84,7 @@ theorem series_from_coordinates_roundtrip(K : AlgebraicField, n : Nat) =
     );
   };
 
-theorem series_coordinates_roundtrip(K : AlgebraicField, n : Nat) =
+def series_coordinates_roundtrip(K : AlgebraicField, n : Nat) =
   induction n as k return (
     forall a : Fin(k) -> af_carrier(K),
     series_coordinates(K, k, series_from_coordinates(K, k, a)) = a
@@ -104,7 +104,7 @@ theorem series_coordinates_roundtrip(K : AlgebraicField, n : Nat) =
     );
   };
 
-theorem series_coordinates_injective(
+def series_coordinates_injective(
   K : AlgebraicField, n : Nat, f : FormalSeries(K), g : FormalSeries(K),
   sf : SeriesSupport(K, f, n), sg : SeriesSupport(K, g, n),
   same : series_coordinates(K, n, f) = series_coordinates(K, n, g)
@@ -116,7 +116,7 @@ theorem series_coordinates_injective(
   );
 }
 
-theorem series_coordinates_add(K : AlgebraicField, n : Nat) =
+def series_coordinates_add(K : AlgebraicField, n : Nat) =
   induction n as k return (
     forall f : FormalSeries(K), forall g : FormalSeries(K),
     series_coordinates(K, k, series_add(K, f, g)) = (
@@ -153,7 +153,7 @@ theorem series_coordinates_add(K : AlgebraicField, n : Nat) =
     );
   };
 
-theorem series_coordinates_scale(K : AlgebraicField, a : af_carrier(K), n : Nat) =
+def series_coordinates_scale(K : AlgebraicField, a : af_carrier(K), n : Nat) =
   induction n as k return (
     forall f : FormalSeries(K),
     series_coordinates(K, k, series_scale(K, a, f)) = (

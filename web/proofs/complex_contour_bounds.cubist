@@ -12,7 +12,7 @@ def complex_contour_tag_error_sum(
     complex_neg(F, negF), f, n
   );
 
-theorem complex_box_zero(
+def complex_box_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)
@@ -22,7 +22,7 @@ theorem complex_box_zero(
   exact (bound, bound);
 }
 
-theorem complex_box_enlarge(
+def complex_box_enlarge(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), value : Complex(F), radius : F,
@@ -43,7 +43,7 @@ theorem complex_box_enlarge(
   );
 }
 
-theorem complex_box_squeeze(
+def complex_box_squeeze(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors : Nat -> Complex(F),
@@ -139,7 +139,7 @@ def ComplexContourIncrementBounds(
     );
   };
 
-theorem complex_contour_tag_error_variation_bound(
+def complex_contour_tag_error_variation_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),
@@ -454,7 +454,7 @@ theorem complex_contour_tag_error_variation_bound(
   };
 }
 
-theorem complex_contour_tag_error_length_bound(
+def complex_contour_tag_error_length_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),

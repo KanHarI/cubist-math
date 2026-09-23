@@ -62,7 +62,7 @@ def minimal_polynomial_spec_prop(
 
 // Two monic generators have equal degree. Their difference has smaller
 // degree and is still annihilating, hence must be zero.
-theorem minimal_polynomial_unique(
+def minimal_polynomial_unique(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   p : Polynomial(K), q : Polynomial(K), hp : MinimalPolynomialSpec(K, L, e, x, p),
   hq : MinimalPolynomialSpec(K, L, e, x, q)
@@ -91,7 +91,7 @@ theorem minimal_polynomial_unique(
   );
 }
 
-theorem minimal_polynomial_data_prop(
+def minimal_polynomial_data_prop(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)
 ) :
   Proposition(MinimalPolynomialData(K, L, e, x)) {
@@ -174,7 +174,7 @@ def minimal_polynomial_spec(
     Polynomial(K), MinimalPolynomialSpec(K, L, e, x), minimal_polynomial_data(K, L, e, x, algebraic)
   );
 
-theorem minimal_polynomial_irreducible(
+def minimal_polynomial_irreducible(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x)
 ) :
@@ -185,7 +185,7 @@ theorem minimal_polynomial_irreducible(
   );
 }
 
-theorem minimal_polynomial_divides(
+def minimal_polynomial_divides(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x), q : Polynomial(K), root : PolynomialRoot(K, L, e, q, x)
 ) :

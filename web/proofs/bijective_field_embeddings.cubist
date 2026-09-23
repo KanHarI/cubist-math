@@ -46,7 +46,7 @@ def field_inverse_left(
     field_inverse_right(K, L, e, onto, field_embedding_map(K, L, e, x))
   );
 
-theorem field_inverse_preserves(
+def field_inverse_preserves(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e))
 ) :

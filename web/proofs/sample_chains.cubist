@@ -76,7 +76,7 @@ def join_tags(C : U1, n : Nat) =
     );
   };
 
-theorem join_vertices_first(C : U1, n : Nat) :
+def join_vertices_first(C : U1, n : Nat) :
   forall vertices : SampleVertices(C, n), forall m : Nat,
   forall rightVertices : SampleVertices(C, m),
   (sample_last(C, n, vertices) = sample_first(C, m, rightVertices))
@@ -102,7 +102,7 @@ theorem join_vertices_first(C : U1, n : Nat) :
   };
 }
 
-theorem join_vertices_last(C : U1, n : Nat) :
+def join_vertices_last(C : U1, n : Nat) :
   forall vertices : SampleVertices(C, n), forall m : Nat,
   forall rightVertices : SampleVertices(C, m),
   sample_last(C, n + m, join_vertices(C, n, vertices, m, rightVertices)) = sample_last(

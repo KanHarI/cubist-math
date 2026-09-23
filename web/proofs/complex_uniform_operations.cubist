@@ -2,7 +2,7 @@ import field_uniform_radii;
 import complex_curves;
 import complex_limits;
 
-theorem complex_close_add(
+def complex_close_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : Complex(F), y : Complex(F),
@@ -28,7 +28,7 @@ theorem complex_close_add(
 
 // The common input radius is constructed from the two supplied moduli.
 // There is no comparison or choice of which modulus is smaller.
-theorem complex_uniform_curve_add(
+def complex_uniform_curve_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

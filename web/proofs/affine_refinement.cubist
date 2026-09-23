@@ -21,7 +21,7 @@ def affine_coordinate_length(
 
 // The total affine weight depends on the outer endpoints, not the number
 // of refined intervals. Ordering is only needed when using it as a bound.
-theorem affine_sample_variation_sum(
+def affine_sample_variation_sum(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), r : F, s : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
@@ -62,7 +62,7 @@ theorem affine_sample_variation_sum(
   );
 }
 
-theorem affine_refinement_error_bound(
+def affine_refinement_error_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
@@ -161,7 +161,7 @@ def curve_coarse_contribution(
 // Uniform continuity supplies the value-error tolerance on an entire coarse
 // interval. Every admissible finite refinement then has this width-scaled
 // error certificate for the actual mapped contour sum.
-theorem affine_refinement_uniform_estimate(
+def affine_refinement_uniform_estimate(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F

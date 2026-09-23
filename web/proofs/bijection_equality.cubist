@@ -28,7 +28,7 @@ def subtype_pair_path(
 ) =
   dependent_pair_path(A, P, x, y, p, u, v, prop(y, transport(P, x, y, p, u), v));
 
-theorem subtype_ext(
+def subtype_ext(
   A : U0, P : A -> U0, prop : (forall x : A, forall h : P(x), forall k : P(x), h = k),
   u : (exists x : A, P(x)), v : (exists x : A, P(x)),
   p : sigma_first(A, P, u) = sigma_first(A, P, v)
@@ -50,7 +50,7 @@ def InverseLaws(A : U0, B : U0, f : A -> B, g : B -> A) =
 
 def InverseData(A : U0, B : U0, f : A -> B) = exists g : B -> A, InverseLaws(A, B, f, g);
 
-theorem inverse_laws_prop(
+def inverse_laws_prop(
   A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, g : B -> A,
   p : InverseLaws(A, B, f, g), q : InverseLaws(A, B, f, g)
 ) :
@@ -79,7 +79,7 @@ theorem inverse_laws_prop(
   );
 }
 
-theorem inverse_data_prop(
+def inverse_data_prop(
   A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, p : InverseData(A, B, f),
   q : InverseData(A, B, f)
 ) :
@@ -99,7 +99,7 @@ theorem inverse_data_prop(
   );
 }
 
-theorem bijection_ext(
+def bijection_ext(
   A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), e : Bijection(A, B), d : Bijection(A, B),
   same : forward(A, B, e) = forward(A, B, d)
 ) :
@@ -110,7 +110,7 @@ theorem bijection_ext(
 // These proposition lemmas use only function extensionality and path induction.
 def Proposition(A : U0) = forall x : A, forall y : A, x = y;
 
-theorem proposition_is_set(A : U0, prop : Proposition(A)) : IsSet(A) {
+def proposition_is_set(A : U0, prop : Proposition(A)) : IsSet(A) {
   exact hedberg(A, (fun (x : A) => fun (y : A) => typed(Decidable(x = y), left(prop(x, y)))));
 }
 
@@ -120,7 +120,7 @@ def forall_prop(
 ) =
   FunExt(U0, A, P, f, g, (fun (x : A) => prop(x, f(x), g(x))));
 
-theorem sigma_prop(
+def sigma_prop(
   A : U0, P : A -> U0, propA : Proposition(A), propP : (forall x : A, Proposition(P(x))),
   u : (exists x : A, P(x)), v : (exists x : A, P(x))
 ) :
@@ -129,7 +129,7 @@ theorem sigma_prop(
 }
 
 // Being a set is itself a proposition; this does not depend on any group laws.
-theorem is_set_prop(A : U0, p : IsSet(A), q : IsSet(A)) : p = q {
+def is_set_prop(A : U0, p : IsSet(A), q : IsSet(A)) : p = q {
   exact FunExt(
     U0, A, (fun (x : A) => forall y : A, Proposition(x = y)), p, q,
     (
@@ -158,7 +158,7 @@ theorem is_set_prop(A : U0, p : IsSet(A), q : IsSet(A)) : p = q {
 def product_prop(P : U0, Q : U0, propP : Proposition(P), propQ : Proposition(Q)) =
   sigma_prop(P, (fun (p : P) => Q), propP, (fun (p : P) => propQ));
 
-theorem coherence_prop(
+def coherence_prop(
   A : U0, B : U0, setB : IsSet(B), f : A -> B, g : B -> A, eta : LeftLaw(A, B, f, g),
   eps : RightLaw(A, B, f, g)
 ) :
@@ -173,7 +173,7 @@ theorem coherence_prop(
   );
 }
 
-theorem half_adjoint_laws_prop(
+def half_adjoint_laws_prop(
   A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, g : B -> A
 ) :
   Proposition(HalfAdjointLaws(A, B, f, g)) {
@@ -192,7 +192,7 @@ theorem half_adjoint_laws_prop(
   );
 }
 
-theorem is_equiv_prop(
+def is_equiv_prop(
   A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, p : IsEquiv(U0, A, B, f),
   q : IsEquiv(U0, A, B, f)
 ) :
@@ -213,7 +213,7 @@ theorem is_equiv_prop(
   );
 }
 
-theorem equivalence_ext(
+def equivalence_ext(
   A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), e : Equiv(U0, A, B), d : Equiv(U0, A, B),
   same : equivalence_function(A, B, e) = equivalence_function(A, B, d)
 ) :
@@ -221,7 +221,7 @@ theorem equivalence_ext(
   exact subtype_ext(A -> B, IsEquiv(U0, A, B), is_equiv_prop(A, B, setA, setB), e, d, same);
 }
 
-theorem equivalences_are_bijections(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B)) :
+def equivalences_are_bijections(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B)) :
   Bijection(Equiv(U0, A, B), Bijection(A, B)) {
   exact (
     equiv_bijection(A, B), bijection_equiv(A, B, setB),
@@ -241,7 +241,7 @@ theorem equivalences_are_bijections(A : U0, B : U0, setA : IsSet(A), setB : IsSe
 }
 
 // Propositionality evidence has no further choices once the proposition is known.
-theorem is_prop_prop(P : U0, p : Proposition(P), q : Proposition(P)) : p = q {
+def is_prop_prop(P : U0, p : Proposition(P), q : Proposition(P)) : p = q {
   exact FunExt(
     U0, P, (fun (x : P) => forall y : P, x = y), p, q,
     (
@@ -262,7 +262,7 @@ def subtype_path(
 ) =
   subtype_ext(A, P, prop, u, v, cong(sigma_first(A, P), p));
 
-theorem subtype_path_correction(
+def subtype_path_correction(
   A : U0, P : A -> U0, prop : (forall x : A, Proposition(P(x))), u : (exists x : A, P(x)),
   v : (exists x : A, P(x)), p : u = v
 ) :
@@ -277,7 +277,7 @@ theorem subtype_path_correction(
   );
 }
 
-theorem subtype_is_set(
+def subtype_is_set(
   A : U0, P : A -> U0, setA : IsSet(A), prop : (forall x : A, Proposition(P(x)))
 ) :
   IsSet(exists x : A, P(x)) {

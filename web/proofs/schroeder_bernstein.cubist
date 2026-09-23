@@ -51,7 +51,7 @@ def g_preimage_law(A : U0, B : U0, f : A -> B, g : B -> A, x : A, good : GPoint(
     sigma_second(B, (fun (y : B) => g(y) = x), good(x, 0, refl(x)))
   );
 
-theorem gpoint_backward(
+def gpoint_backward(
   A : U0, B : U0, f : A -> B, g : B -> A, x : A, good : GPoint(A, B, f, g, g(f(x)))
 ) :
   GPoint(A, B, f, g, x) {
@@ -61,7 +61,7 @@ theorem gpoint_backward(
   exact good(origin, succ(n), cong((fun (a : A) => g(f(a))), p));
 }
 
-theorem gpoint_forward(
+def gpoint_forward(
   A : U0, B : U0, f : A -> B, g : B -> A, injF : Injective(A, B, f), injG : Injective(B, A, g),
   x : A, good : GPoint(A, B, f, g, x)
 ) :
@@ -85,7 +85,7 @@ theorem gpoint_forward(
 // If g(y) is not a g-point, the proposition-valued f-fiber of y is inhabited.
 // With no f-preimage, a positive-length ancestor is impossible; at length zero
 // y itself supplies the g-preimage. That would make g(y) a g-point.
-theorem f_preimage(
+def f_preimage(
   A : U0, B : U0, f : A -> B, g : B -> A, embedF : Embedding(A, B, f), injG : Injective(B, A, g),
   y : B, bad : GPoint(A, B, f, g, g(y)) -> Void
 ) :
@@ -129,7 +129,7 @@ def csb_map_at(
 def csb_map(A : U0, B : U0, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : A) =
   csb_map_at(A, B, f, g, x, decide_gpoint(A, B, f, g, embedG, x));
 
-theorem csb_good_at(
+def csb_good_at(
   A : U0, B : U0, f : A -> B, g : B -> A, x : A, good : GPoint(A, B, f, g, x),
   decision : Decidable(GPoint(A, B, f, g, x))
 ) :
@@ -146,7 +146,7 @@ def csb_good(
 ) =
   csb_good_at(A, B, f, g, x, good, decide_gpoint(A, B, f, g, embedG, x));
 
-theorem csb_bad_at(
+def csb_bad_at(
   A : U0, B : U0, f : A -> B, g : B -> A, x : A, bad : GPoint(A, B, f, g, x) -> Void,
   decision : Decidable(GPoint(A, B, f, g, x))
 ) :
@@ -164,7 +164,7 @@ def csb_bad(
   csb_bad_at(A, B, f, g, x, bad, decide_gpoint(A, B, f, g, embedG, x));
 
 // The two branches have disjoint images.
-theorem csb_disjoint(
+def csb_disjoint(
   A : U0, B : U0, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : A, z : A,
   good : GPoint(A, B, f, g, x), bad : GPoint(A, B, f, g, z) -> Void,
   same : csb_map(A, B, f, g, embedG, x) = csb_map(A, B, f, g, embedG, z)
@@ -178,7 +178,7 @@ theorem csb_disjoint(
   exact bad(gpoint_backward(A, B, f, g, z, transport(GPoint(A, B, f, g), x, g(f(z)), path, good)));
 }
 
-theorem csb_injective(
+def csb_injective(
   A : U0, B : U0, f : A -> B, g : B -> A, injF : Injective(A, B, f), embedG : Embedding(B, A, g)
 ) :
   Injective(A, B, csb_map(A, B, f, g, embedG)) {
@@ -218,7 +218,7 @@ theorem csb_injective(
   }
 }
 
-theorem csb_preimages(
+def csb_preimages(
   A : U0, B : U0, f : A -> B, g : B -> A, injF : Injective(A, B, f), injG : Injective(B, A, g),
   embedF : Embedding(A, B, f), embedG : Embedding(B, A, g), y : B
 ) :
@@ -248,7 +248,7 @@ theorem csb_preimages(
 }
 
 // A split surjection that is injective is a bijection, by cancellation.
-theorem injective_split_bijection(
+def injective_split_bijection(
   A : U0, B : U0, h : A -> B, injective : Injective(A, B, h),
   preimages : (forall y : B, Fiber(A, B, h, y))
 ) :
@@ -263,7 +263,7 @@ def CantorSchroederBernstein =
   forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) -> forall f : A -> B, forall g : B -> A,
   Injective(A, B, f) -> Injective(B, A, g) -> Equiv(U0, A, B);
 
-theorem cantor_schroeder_bernstein : CantorSchroederBernstein {
+def cantor_schroeder_bernstein : CantorSchroederBernstein {
   intro A;
   intro B;
   intro setA;

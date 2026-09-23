@@ -1,7 +1,7 @@
 import polynomial_monic;
 
 // A nonzero degree-zero polynomial is an invertible constant.
-theorem polynomial_degree_zero_unit(
+def polynomial_degree_zero_unit(
   K : AlgebraicField, p : Polynomial(K), degree : polynomial_cutoff(K, p) = 1
 ) :
   PolynomialUnit(K, p) {
@@ -30,7 +30,7 @@ theorem polynomial_degree_zero_unit(
   );
 }
 
-theorem polynomial_factor_nonzero_left(
+def polynomial_factor_nonzero_left(
   K : AlgebraicField, p : Polynomial(K), a : Polynomial(K), b : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), equation : p = polynomial_mul(K, a, b)
 ) :
@@ -46,7 +46,7 @@ theorem polynomial_factor_nonzero_left(
   );
 }
 
-theorem polynomial_factor_nonzero_right(
+def polynomial_factor_nonzero_right(
   K : AlgebraicField, p : Polynomial(K), a : Polynomial(K), b : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), equation : p = polynomial_mul(K, a, b)
 ) :
@@ -56,7 +56,7 @@ theorem polynomial_factor_nonzero_right(
   );
 }
 
-theorem natural_sum_le_left_zero(m : Nat) =
+def natural_sum_le_left_zero(m : Nat) =
   induction m as k return (forall n : Nat, le(add_count(k, n), k) -> n = 0) {
     zero => fun (n : Nat) => fun (above : le(n, 0)) => dimension_order_antisymmetric(
       n, 0, above, tt
@@ -70,7 +70,7 @@ def NonunitDivisor(K : AlgebraicField, p : Polynomial(K), g : Polynomial(K)) =
 def IrreducibleFactor(K : AlgebraicField, p : Polynomial(K)) =
   exists g : Polynomial(K), PolynomialIrreducible(K, g) and PolynomialDivides(K, g, p);
 
-theorem least_nonunit_divisor_irreducible(
+def least_nonunit_divisor_irreducible(
   K : AlgebraicField, p : Polynomial(K), g : Polynomial(K), divisor : NonunitDivisor(K, p, g),
   least : (
     forall a : Polynomial(K), NonunitDivisor(K, p, a)
@@ -132,7 +132,7 @@ def NonunitDivisorAt(K : AlgebraicField, p : Polynomial(K), n : Nat) =
 
 // The least-degree nonunit divisor is irreducible. This avoids assuming
 // factorization, maximal ideals, or an algebraic closure as an axiom.
-theorem polynomial_irreducible_factor(
+def polynomial_irreducible_factor(
   K : AlgebraicField, p : Polynomial(K), nonzero : PolynomialNonzero(K, p),
   nonunit : PolynomialUnit(K, p) -> Void
 ) :
@@ -167,14 +167,14 @@ theorem polynomial_irreducible_factor(
   exact mere_map(NonunitDivisorAt(K, p, n), IrreducibleFactor(K, p), extract, candidate);
 }
 
-theorem polynomial_one_cutoff(K : AlgebraicField) : polynomial_cutoff(K, polynomial_one(K)) = 1 {
+def polynomial_one_cutoff(K : AlgebraicField) : polynomial_cutoff(K, polynomial_one(K)) = 1 {
   obtain (ring, nontrivial, inverses) = af_laws(K);
   exact polynomial_cutoff_exact(
     K, polynomial_one(K), 0, support_constant(K, field_one(K)), nontrivial
   );
 }
 
-theorem polynomial_unit_cutoff(
+def polynomial_unit_cutoff(
   K : AlgebraicField, p : Polynomial(K), nonzero : PolynomialNonzero(K, p),
   unit : PolynomialUnit(K, p)
 ) :
@@ -209,7 +209,7 @@ theorem polynomial_unit_cutoff(
   exact trans(degree, cong((fun (j : Nat) => succ(j)), zero));
 }
 
-theorem polynomial_positive_degree_nonunit(
+def polynomial_positive_degree_nonunit(
   K : AlgebraicField, p : Polynomial(K), d : Nat, degree : polynomial_cutoff(K, p) = succ(succ(d)),
   nonzero : PolynomialNonzero(K, p), unit : PolynomialUnit(K, p)
 ) :

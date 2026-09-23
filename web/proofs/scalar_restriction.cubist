@@ -6,7 +6,7 @@ def restricted_action(
 ) =
   vector_scale(L, V, field_embedding_map(K, L, e, a), x);
 
-theorem restricted_scalar_laws(
+def restricted_scalar_laws(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L)
 ) :
   ScalarLaws(K, vector_group(L, V), restricted_action(K, L, e, V)) {
@@ -108,7 +108,7 @@ def restrict_field_tower_iso(
 
 // A product of coordinate systems gives a basis over the bottom field.
 // The index order is outer L-coordinates, then inner K-coordinates.
-theorem field_tower_basis(
+def field_tower_basis(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
   d : FieldEmbedding(L, M), m : Nat, n : Nat,
   lower : FiniteBasis(K, field_vector_space(K, L, e), m),

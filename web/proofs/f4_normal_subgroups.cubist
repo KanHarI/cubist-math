@@ -1,25 +1,25 @@
 import normal_subgroups;
 import f4_galois_group;
 
-theorem cyclic_two_abelian : IsAbelian(CyclicTwo) {
+def cyclic_two_abelian : IsAbelian(CyclicTwo) {
   exact f2_add_comm;
 }
 
 // Equality of groups transports the group property itself. No repeated
 // case analysis of F4 automorphisms is needed to prove commutativity here.
-theorem f4_galois_abelian : IsAbelian(F4GaloisGroup) {
+def f4_galois_abelian : IsAbelian(F4GaloisGroup) {
   exact transport(IsAbelian, CyclicTwo, F4GaloisGroup, f4_galois_group_equality, cyclic_two_abelian);
 }
 
 // All subgroups are normal, without assuming their membership decidable.
 // This does not remove the separate decision hypotheses of the constructive
 // F4 fixed-field correspondence, nor prove the general normality criterion.
-theorem f4_galois_subgroups_normal(S : Subgroup(F4GaloisGroup)) : IsNormal(F4GaloisGroup, S) {
+def f4_galois_subgroups_normal(S : Subgroup(F4GaloisGroup)) : IsNormal(F4GaloisGroup, S) {
   exact abelian_subgroups_normal(F4GaloisGroup, f4_galois_abelian, S);
 }
 
 // The kernel of the identity homomorphism is exactly the identity subgroup.
-theorem f4_identity_kernel :
+def f4_identity_kernel :
   group_kernel(F4GaloisGroup, F4GaloisGroup, group_hom_identity(F4GaloisGroup)) =[
     Subgroup(F4GaloisGroup)
   ] subgroup_bottom(F4GaloisGroup) {

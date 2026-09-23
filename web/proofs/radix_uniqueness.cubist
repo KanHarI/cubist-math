@@ -2,14 +2,14 @@ import radix_decode;
 import equivalences;
 
 // Uniqueness of quotient and bounded remainder, without division or choice.
-theorem radix_nat_no_smaller_self(n : Nat) : (succ(n) <= n) -> Void {
+def radix_nat_no_smaller_self(n : Nat) : (succ(n) <= n) -> Void {
   exact induction n as k return ((succ(k) <= k) -> Void) {
     zero => fun (impossible : Void) => impossible;
     succ previous => previous;
   };
 }
 
-theorem radix_nat_small_not_large(r : Nat, d : Nat, e : Nat, small : succ(d) <= r, same : d = r + e) :
+def radix_nat_small_not_large(r : Nat, d : Nat, e : Nat, small : succ(d) <= r, same : d = r + e) :
   Void {
   let large =
     transport(
@@ -18,11 +18,11 @@ theorem radix_nat_small_not_large(r : Nat, d : Nat, e : Nat, small : succ(d) <= 
   exact radix_nat_no_smaller_self(d, nat_le_trans(succ(d), r, d, small, large));
 }
 
-theorem radix_eval_succ(r : Nat, n : Nat, d : Nat) : r * succ(n) + d = r + (r * n + d) {
+def radix_eval_succ(r : Nat, n : Nat, d : Nat) : r * succ(n) + d = r + (r * n + d) {
   exact trans(cong((fun (v : Nat) => v + d), nat_mul_succ(r, n)), nat_add_assoc(r, r * n, d));
 }
 
-theorem radix_cancel_block(
+def radix_cancel_block(
   r : Nat, a : Nat, b : Nat, d : Nat, e : Nat, same : r * succ(a) + d = r * succ(b) + e
 ) :
   r * a + d = r * b + e {
@@ -32,7 +32,7 @@ theorem radix_cancel_block(
   );
 }
 
-theorem radix_division_zero(r : Nat, d : Nat, e : Nat, small : succ(d) <= r, b : Nat) :
+def radix_division_zero(r : Nat, d : Nat, e : Nat, small : succ(d) <= r, b : Nat) :
   (d = r * b + e) -> ((0 = b) and (d = e)) {
   exact induction b as k return ((d = r * k + e) -> ((0 = k) and (d = e))) {
     zero => fun (same : d = r * 0 + e) => typed(
@@ -47,7 +47,7 @@ theorem radix_division_zero(r : Nat, d : Nat, e : Nat, small : succ(d) <= r, b :
   };
 }
 
-theorem radix_division_successor(
+def radix_division_successor(
   r : Nat, d : Nat, e : Nat, smallE : succ(e) <= r, a : Nat,
   ih : (forall b : Nat, (r * a + d = r * b + e) -> ((a = b) and (d = e))), b : Nat
 ) :
@@ -73,7 +73,7 @@ theorem radix_division_successor(
   };
 }
 
-theorem radix_division_unique(
+def radix_division_unique(
   r : Nat, d : Nat, e : Nat, smallD : succ(d) <= r, smallE : succ(e) <= r, a : Nat
 ) :
   forall b : Nat, (r * a + d = r * b + e) -> ((a = b) and (d = e)) {
@@ -85,7 +85,7 @@ theorem radix_division_unique(
   };
 }
 
-theorem radix_digit_bound(n : Nat) : forall d : RadixDigit(n), succ(radix_digit_value(n, d)) <= n {
+def radix_digit_bound(n : Nat) : forall d : RadixDigit(n), succ(radix_digit_value(n, d)) <= n {
   exact induction n as k return (forall d : RadixDigit(k), succ(radix_digit_value(k, d)) <= k) {
     zero => fun (d : Void) => typed((succ(radix_digit_value(0, d)) <= 0), absurd(d));
     succ previous => fun (d : RadixDigit(succ(k))) => match typed(Unit or RadixDigit(k), d) as digit return (
@@ -103,7 +103,7 @@ def RadixDigitInjective(n : Nat) =
   forall d : RadixDigit(n), forall e : RadixDigit(n),
   (radix_digit_value(n, d) = radix_digit_value(n, e)) -> (d = e);
 
-theorem radix_digit_top_unique(n : Nat, u : Unit, e : RadixDigit(succ(n))) :
+def radix_digit_top_unique(n : Nat, u : Unit, e : RadixDigit(succ(n))) :
   (n = radix_digit_value(succ(n), e)) -> (typed(Unit or RadixDigit(n), left(u)) = e) {
   exact match typed(Unit or RadixDigit(n), e) as digit return (
     (n = radix_digit_value(succ(n), digit)) -> (typed(Unit or RadixDigit(n), left(u)) = digit)
@@ -127,7 +127,7 @@ theorem radix_digit_top_unique(n : Nat, u : Unit, e : RadixDigit(succ(n))) :
   };
 }
 
-theorem radix_digit_lower_unique(
+def radix_digit_lower_unique(
   n : Nat, ih : RadixDigitInjective(n), d : RadixDigit(n), e : RadixDigit(succ(n))
 ) :
   (radix_digit_value(n, d) = radix_digit_value(succ(n), e)) -> (radix_digit_weaken(n, d) = e) {
@@ -144,7 +144,7 @@ theorem radix_digit_lower_unique(
   };
 }
 
-theorem radix_digit_injective(n : Nat) : RadixDigitInjective(n) {
+def radix_digit_injective(n : Nat) : RadixDigitInjective(n) {
   exact induction n as k return RadixDigitInjective(k) {
     zero => fun (d : Void) => typed(
       (forall e : Void, (radix_digit_value(0, d) = radix_digit_value(0, e)) -> (d = e)), absurd(d)

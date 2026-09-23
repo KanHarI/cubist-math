@@ -23,7 +23,7 @@ def suspension_induction(
 
 // A filling cube proves that converting a transport equality to a dependent
 // path and back returns the original equality.
-theorem transport_path_roundtrip(
+def transport_path_roundtrip(
   X : U0, C : X -> U1, x : X, y : X, p : x = y, n : C(x), s : C(y), q : transport(C, x, y, p, n) = s
 ) :
   path_to_transport(
@@ -56,7 +56,7 @@ theorem transport_path_roundtrip(
 }
 
 // Meridian computation follows from pushout computation and the round trip.
-theorem suspension_meridian_beta(
+def suspension_meridian_beta(
   A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)), coherence : forall a : A,
   transport(C, north(A), south(A), meridian(A, a), n) = s, a : A
 ) :

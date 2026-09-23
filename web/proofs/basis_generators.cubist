@@ -70,7 +70,7 @@ def coordinates_in_subspace_step(
   );
 }
 
-theorem coordinates_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) =
+def coordinates_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) =
   induction n as k return CoordinatesInSubspace(K, V, S, k) {
     zero => coordinates_in_subspace_zero(K, V, S);
     succ previous => coordinates_in_subspace_step(K, V, S, k, previous);
@@ -81,7 +81,7 @@ def basis_columns(
 ) =
   linear_map(K, CoordinateSpace(K, n), V, basis_expansion(K, V, n, basis), coordinate_unit(K, n, i));
 
-theorem basis_columns_span(
+def basis_columns_span(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n), S : Subspace(K, V),
   contains : (forall i : Fin(n), subspace_members(K, V, S, basis_columns(K, V, n, basis, i))),
   y : vector_carrier(K, V)
@@ -118,7 +118,7 @@ def subfield_base_subspace(
 
 // Consequently every finite extension has finitely many field generators:
 // any supplied vector basis supplies them, with no primitive-element theorem.
-theorem finite_basis_field_generators(
+def finite_basis_field_generators(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
   basis : FiniteBasis(K, field_vector_space(K, L, e), n), y : af_carrier(L)
 ) :

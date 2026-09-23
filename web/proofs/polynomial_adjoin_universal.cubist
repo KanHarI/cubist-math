@@ -3,7 +3,7 @@ import polynomial_eval_embeddings;
 
 // A residue-ring map is determined by its action on constants and X.
 // Stating this with the raw ring operations avoids imposing field hypotheses.
-theorem residue_hom_evaluation(
+def residue_hom_evaluation(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), f : PolynomialResidue(K, M) -> af_carrier(L),
   f0 : f(residue_zero(K, M)) = field_zero(L),
@@ -60,7 +60,7 @@ theorem residue_hom_evaluation(
   };
 }
 
-theorem adjoin_root_embedding_unique(
+def adjoin_root_embedding_unique(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L), x : af_carrier(L),

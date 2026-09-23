@@ -8,7 +8,7 @@ def IntegerGroup = group_object(Z, zeroZ, addZ, integer_group);
 
 // Winding number is a group isomorphism from the circle's loops to the integers.
 // Its inverse sends an integer to that many turns around the circle.
-theorem circle_group_isomorphism : GroupIso(CircleLoopGroup, IntegerGroup) {
+def circle_group_isomorphism : GroupIso(CircleLoopGroup, IntegerGroup) {
   exact (winding, integer_loop, integer_loop_winding, winding_integer_loop, winding_concatenate);
 }
 
@@ -18,12 +18,12 @@ def circle_group_identification : CircleLoopGroup =[Group] IntegerGroup {
 
 // The circle's fundamental group equals the additive group of integers in Group.
 // This equality identifies the complete group structures via the winding isomorphism.
-theorem circle_loop_group_equals_integers : CircleLoopGroup =[Group] IntegerGroup {
+def circle_loop_group_equals_integers : CircleLoopGroup =[Group] IntegerGroup {
   exact circle_group_identification;
 }
 
 // Reading that equality as an isomorphism recovers the original winding map.
-theorem circle_group_identification_recovers_winding :
+def circle_group_identification_recovers_winding :
   group_idtoiso(CircleLoopGroup, IntegerGroup, circle_group_identification) = circle_group_isomorphism {
   exact group_idtoiso_isotoid(CircleLoopGroup, IntegerGroup, circle_group_isomorphism);
 }

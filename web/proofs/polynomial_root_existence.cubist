@@ -3,7 +3,7 @@ import polynomial_irreducible_factors;
 import polynomial_residue_basis;
 
 // A root of a divisor is a root of the original polynomial, in any extension.
-theorem polynomial_divisor_root(
+def polynomial_divisor_root(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   g : Polynomial(K), divides : PolynomialDivides(K, g, p), x : af_carrier(L),
   root : PolynomialRoot(K, L, e, g, x)
@@ -56,7 +56,7 @@ def root_adjunction_from_factor(
 
 // The witness includes an actual finite field extension and a root. The
 // existential is in U1 because it quantifies over bundled small fields.
-theorem polynomial_root_extension_exists(
+def polynomial_root_extension_exists(
   K : AlgebraicField, p : Polynomial(K), nonzero : PolynomialNonzero(K, p),
   nonunit : PolynomialUnit(K, p) -> Void
 ) :

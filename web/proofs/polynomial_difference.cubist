@@ -2,7 +2,7 @@ import complex_polynomials;
 
 // The algebraic step in Horner division by X - r.
 
-theorem polynomial_difference_step(
+def polynomial_difference_step(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, x : F, r : F, q : F, d : F
 ) :
@@ -69,7 +69,7 @@ def monic_divided_difference(
     };
   };
 
-theorem monic_difference_identity(
+def monic_difference_identity(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, r : F, n : Nat
 ) :
@@ -120,7 +120,7 @@ theorem monic_difference_identity(
 
 // Once an exact root r is supplied, this proves the pointwise factor identity
 // p(x) = (x-r) q(x). It does not assert that a root exists.
-theorem monic_factor_at_root(
+def monic_factor_at_root(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : Nat,
   coefficients : MonicCoefficients(F, n), r : F,

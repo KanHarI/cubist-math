@@ -31,7 +31,7 @@ def truth_prop(b : Bool) = match b as c return Proposition(Truth(c)) {
 
 def void_prop(x : Void, y : Void) = typed((x = y), absurd(x));
 
-theorem selected_decidable(
+def selected_decidable(
   A : U0, decide : (forall x : A, forall y : A, Decidable(x = y)), p : A -> Bool,
   u : Selected(A, p), v : Selected(A, p)
 ) :
@@ -49,7 +49,7 @@ theorem selected_decidable(
   }
 }
 
-theorem selected_is_set(
+def selected_is_set(
   A : U0, decide : (forall x : A, forall y : A, Decidable(x = y)), p : A -> Bool
 ) :
   IsSet(Selected(A, p)) {
@@ -63,7 +63,7 @@ def subtype_map(
     (exists x : A, Q(x)), (sigma_first(A, P, u), f(sigma_first(A, P, u), sigma_second(A, P, u)))
   );
 
-theorem subtype_bijection(
+def subtype_bijection(
   A : U0, P : A -> U0, Q : A -> U0, propP : (forall x : A, Proposition(P(x))),
   propQ : (forall x : A, Proposition(Q(x))), f : (forall x : A, P(x) -> Q(x)),
   g : (forall x : A, Q(x) -> P(x))
@@ -86,7 +86,7 @@ theorem subtype_bijection(
   );
 }
 
-theorem finite_binomial_presentation(n : Nat, k : Nat) :
+def finite_binomial_presentation(n : Nat, k : Nat) :
   Bijection(Binomial(Fin(n), Fin(k)), FiniteBinomial(n, k)) {
   exact subtype_bijection(
     Fin(n) -> Bool, (fun (p : Fin(n) -> Bool) => Mere(Equiv(U0, Fin(k), Selected(Fin(n), p)))),
@@ -116,7 +116,7 @@ def predicate_tail(A : U0, p : (Unit or A) -> Bool, a : A) = p(tail(A, a));
 def predicate_normal(A : U0, p : (Unit or A) -> Bool) =
   predicate_join(A, p(head(A)), predicate_tail(A, p));
 
-theorem predicate_eta(A : U0, p : (Unit or A) -> Bool) : predicate_normal(A, p) = p {
+def predicate_eta(A : U0, p : (Unit or A) -> Bool) : predicate_normal(A, p) = p {
   exact FunExt(
     U0, Unit or A, (fun (x : Unit or A) => Bool), predicate_normal(A, p), p,
     function_join_split_point(A, Bool, p)
@@ -141,7 +141,7 @@ def cardinal_compose(A : U0, B : U0, C : U0, h : Mere(Bijection(A, B)), e : Bije
     (fun (d : Bijection(A, B)) => compose_bijection(A, B, C, d, e)), h
   );
 
-theorem cancel_unit_bijection(
+def cancel_unit_bijection(
   A : U0, B : U0, decide : (forall x : B, forall y : B, Decidable(x = y)),
   e : Bijection(Unit or A, Unit or B)
 ) :
@@ -191,7 +191,7 @@ def selected_true_index_path(A : U0, p : A -> Bool, x : Unit or A) =
     right a => fun (h : Truth(p(a))) => refl(tail(A, a));
   };
 
-theorem selected_true_left(
+def selected_true_left(
   A : U0, p : A -> Bool, s : Selected(Unit or A, predicate_join(A, yes, p))
 ) :
   selected_true_in(A, p, selected_true_out(A, p, s)) = s {
@@ -215,7 +215,7 @@ def selected_true_right(A : U0, p : A -> Bool, x : Unit or Selected(A, p)) =
     );
   };
 
-theorem selected_true(A : U0, p : A -> Bool) :
+def selected_true(A : U0, p : A -> Bool) :
   Bijection(Selected(Unit or A, predicate_join(A, yes, p)), Unit or Selected(A, p)) {
   exact (
     selected_true_out(A, p), selected_true_in(A, p), selected_true_left(A, p),
@@ -260,7 +260,7 @@ def selected_false_index_path(A : U0, p : A -> Bool, x : Unit or A) =
     right a => fun (h : Truth(p(a))) => refl(tail(A, a));
   };
 
-theorem selected_false_left(
+def selected_false_left(
   A : U0, p : A -> Bool, s : Selected(Unit or A, predicate_join(A, no, p))
 ) :
   selected_false_in(A, p, selected_false_out(A, p, s)) = s {
@@ -278,7 +278,7 @@ theorem selected_false_left(
 def selected_false_right(A : U0, p : A -> Bool, s : Selected(A, p)) =
   sigma_eta(A, (fun (a : A) => Truth(p(a))), s);
 
-theorem selected_false(A : U0, p : A -> Bool) :
+def selected_false(A : U0, p : A -> Bool) :
   Bijection(Selected(Unit or A, predicate_join(A, no, p)), Selected(A, p)) {
   exact (
     selected_false_out(A, p), selected_false_in(A, p), selected_false_left(A, p),

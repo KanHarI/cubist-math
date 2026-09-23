@@ -81,7 +81,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
     if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === "=")
       assignmentTokens.add(tokenBefore.get(valueStart).start);
-    if (node.type && ["def", "theorem", "axiom", "have"].includes(node.kind)) {
+    if (node.type && ["def", "axiom", "have"].includes(node.kind)) {
       annotationStarts.add(node.type.start);
       const next = tokenAfter.get(node.type.end);
       if (next?.text === "{") proofBodyStarts.add(next.start);
@@ -143,7 +143,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         if (!close && trailing && preceding && declarationEnds.has(preceding.end)) docs.push(hard);
         previous = null; continue;
       }
-      if (!close && ["def", "theorem", "axiom", "opaque", "construction"].includes(text) && previous && previous.text !== "opaque") {
+      if (!close && ["def", "axiom", "opaque", "construction"].includes(text) && previous && previous.text !== "opaque") {
         flush(); docs.push(hard, hard); previous = null;
       }
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)

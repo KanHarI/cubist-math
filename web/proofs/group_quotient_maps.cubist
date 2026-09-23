@@ -7,7 +7,7 @@ def KillsSubgroup(G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G)) =
   forall n : group_carrier(G), subgroup_members(G, S, n)
   -> group_hom_map(G, H, h, n) = group_unit(H);
 
-theorem killing_subgroup_respects_cosets(
+def killing_subgroup_respects_cosets(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
 ) :
   RespectsRelation(group_carrier(G), SameLeftCoset(G, S), group_carrier(H), group_hom_map(G, H, h)) {
@@ -27,7 +27,7 @@ def group_quotient_map(
     group_is_set(H), group_hom_map(G, H, h), killing_subgroup_respects_cosets(G, H, h, S, kills)
   );
 
-theorem group_quotient_map_beta(
+def group_quotient_map_beta(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
   x : group_carrier(G)
 ) :
@@ -38,7 +38,7 @@ theorem group_quotient_map_beta(
   );
 }
 
-theorem group_quotient_map_unique(
+def group_quotient_map_unique(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
   g : LeftCosets(G, S) -> group_carrier(H),
   triangle : (forall x : group_carrier(G), g(left_coset(G, S, x)) = group_hom_map(G, H, h, x))
@@ -51,7 +51,7 @@ theorem group_quotient_map_unique(
   );
 }
 
-theorem group_quotient_map_unit(
+def group_quotient_map_unit(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
 ) :
   group_quotient_map(G, H, h, S, kills, left_coset(G, S, group_unit(G))) = group_unit(H) {
@@ -60,7 +60,7 @@ theorem group_quotient_map_unit(
 
 // Multiplicativity on classes of representatives. An operation on arbitrary
 // quotient elements is a separate construction, not implicit in this statement.
-theorem group_quotient_map_multiply(
+def group_quotient_map_multiply(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
   x : group_carrier(G), y : group_carrier(G)
 ) :
@@ -88,7 +88,7 @@ theorem group_quotient_map_multiply(
   );
 }
 
-theorem quotient_factor_kills_subgroup(
+def quotient_factor_kills_subgroup(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), g : LeftCosets(G, S)
   -> group_carrier(H),
   triangle : (forall x : group_carrier(G), g(left_coset(G, S, x)) = group_hom_map(G, H, h, x))

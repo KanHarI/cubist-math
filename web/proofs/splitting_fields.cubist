@@ -17,7 +17,7 @@ def FiniteSplittingField(K : AlgebraicField, p : Polynomial(K), n : Nat) =
     ) and (forall y : af_carrier(L), GeneratedField(L, RootFieldGenerators(K, L, e, n, roots), y))
   );
 
-theorem root_generated_factorization(
+def root_generated_factorization(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat,
   roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
   equation : polynomial_map(K, L, e, p) = polynomial_mul(
@@ -102,7 +102,7 @@ def restrict_to_splitting_field(
   );
 }
 
-theorem finite_splitting_field_exists(
+def finite_splitting_field_exists(
   K : AlgebraicField, p : Polynomial(K), nonzero : PolynomialNonzero(K, p)
 ) :
   FieldExists(FiniteSplittingField(K, p, polynomial_degree(K, p))) {

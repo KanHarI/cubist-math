@@ -16,7 +16,7 @@ def bouquet_code_edges(A : U0, label : Unit or A) =
 def bouquet_code(A : U0) =
   suspension_rec(Unit or A, U0, BouquetLoops(A), BouquetLoops(A), bouquet_code_edges(A));
 
-theorem bouquet_univalent_action(A : U0, a : A, p : BouquetLoops(A)) :
+def bouquet_univalent_action(A : U0, a : A, p : BouquetLoops(A)) :
   transport(
     (fun (T : U0) => T), BouquetLoops(A), BouquetLoops(A),
     ua(
@@ -36,7 +36,7 @@ theorem bouquet_univalent_action(A : U0, a : A, p : BouquetLoops(A)) :
   );
 }
 
-theorem bouquet_spoke_action(A : U0, p : BouquetLoops(A)) :
+def bouquet_spoke_action(A : U0, p : BouquetLoops(A)) :
   transport(bouquet_code(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A), p) = p {
   exact trans(
     trans(
@@ -61,7 +61,7 @@ theorem bouquet_spoke_action(A : U0, p : BouquetLoops(A)) :
   );
 }
 
-theorem bouquet_edge_action(A : U0, a : A, p : BouquetLoops(A)) :
+def bouquet_edge_action(A : U0, a : A, p : BouquetLoops(A)) :
   transport(bouquet_code(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a), p) = append_path(
     Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), p, bouquet_generator(A, a)
   ) {
@@ -85,7 +85,7 @@ theorem bouquet_edge_action(A : U0, a : A, p : BouquetLoops(A)) :
   );
 }
 
-theorem bouquet_spoke_backward(A : U0, p : BouquetLoops(A)) :
+def bouquet_spoke_backward(A : U0, p : BouquetLoops(A)) :
   transport(
     bouquet_code(A), bouquet_tip(A), bouquet_base(A),
     inverse(U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)), p
@@ -103,7 +103,7 @@ theorem bouquet_spoke_backward(A : U0, p : BouquetLoops(A)) :
   );
 }
 
-theorem bouquet_edge_backward(A : U0, a : A, p : BouquetLoops(A)) :
+def bouquet_edge_backward(A : U0, a : A, p : BouquetLoops(A)) :
   transport(
     bouquet_code(A), bouquet_tip(A), bouquet_base(A),
     inverse(U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a)), p
@@ -141,7 +141,7 @@ theorem bouquet_edge_backward(A : U0, a : A, p : BouquetLoops(A)) :
 def bouquet_south_decoder(A : U0, p : BouquetLoops(A)) =
   concatenate(U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_tip(A), p, bouquet_spoke(A));
 
-theorem bouquet_decoder_edge(A : U0, a : A, p : BouquetLoops(A)) :
+def bouquet_decoder_edge(A : U0, a : A, p : BouquetLoops(A)) :
   concatenate(
     U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_tip(A),
     append_path(
@@ -178,7 +178,7 @@ theorem bouquet_decoder_edge(A : U0, a : A, p : BouquetLoops(A)) :
 
 def bouquet_decoder_family(A : U0, x : Bouquet(A)) = bouquet_code(A, x) -> (bouquet_base(A) = x);
 
-theorem bouquet_decoder_spoke(A : U0) :
+def bouquet_decoder_spoke(A : U0) :
   transport(
     bouquet_decoder_family(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A),
     (fun (p : BouquetLoops(A)) => p)
@@ -203,7 +203,7 @@ theorem bouquet_decoder_spoke(A : U0) :
   );
 }
 
-theorem bouquet_decoder_meridian(A : U0, a : A) :
+def bouquet_decoder_meridian(A : U0, a : A) :
   transport(
     bouquet_decoder_family(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a),
     (fun (p : BouquetLoops(A)) => p)
@@ -262,7 +262,7 @@ def bouquet_decode(A : U0, x : Bouquet(A)) =
 def bouquet_encode(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) =
   transport(bouquet_code(A), bouquet_base(A), x, p, refl(bouquet_base(A)));
 
-theorem bouquet_decode_encode(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :
+def bouquet_decode_encode(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :
   bouquet_decode(A, x, bouquet_encode(A, x, p)) = p {
   exact based_induction(
     U1, U0, Bouquet(A), bouquet_base(A),

@@ -2,7 +2,7 @@ import ordered_fields;
 
 // Derived commutative-ring identities, valid at U1 with no choice or order.
 
-theorem ring_add_assoc(
+def ring_add_assoc(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
 ) :
@@ -11,7 +11,7 @@ theorem ring_add_assoc(
   exact aa(x, y, z);
 }
 
-theorem ring_add_comm(
+def ring_add_comm(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
 ) :
@@ -20,7 +20,7 @@ theorem ring_add_comm(
   exact ac(x, y);
 }
 
-theorem ring_add_zero(
+def ring_add_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
 ) :
@@ -29,7 +29,7 @@ theorem ring_add_zero(
   exact az(x);
 }
 
-theorem ring_add_inverse(
+def ring_add_inverse(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
 ) :
@@ -38,7 +38,7 @@ theorem ring_add_inverse(
   exact an(x);
 }
 
-theorem ring_mul_assoc(
+def ring_mul_assoc(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
 ) :
@@ -47,7 +47,7 @@ theorem ring_mul_assoc(
   exact ma(x, y, z);
 }
 
-theorem ring_mul_comm(
+def ring_mul_comm(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
 ) :
@@ -56,7 +56,7 @@ theorem ring_mul_comm(
   exact mc(x, y);
 }
 
-theorem ring_mul_one(
+def ring_mul_one(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
 ) :
@@ -65,7 +65,7 @@ theorem ring_mul_one(
   exact mo(x);
 }
 
-theorem ring_distribute(
+def ring_distribute(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
 ) :
@@ -74,7 +74,7 @@ theorem ring_distribute(
   exact md(x, y, z);
 }
 
-theorem ring_add_zero_right(
+def ring_add_zero_right(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
 ) :
@@ -85,7 +85,7 @@ theorem ring_add_zero_right(
   );
 }
 
-theorem ring_mul_one_right(
+def ring_mul_one_right(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
 ) :
@@ -96,7 +96,7 @@ theorem ring_mul_one_right(
   );
 }
 
-theorem ring_add_inverse_right(
+def ring_add_inverse_right(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
 ) :
@@ -107,7 +107,7 @@ theorem ring_add_inverse_right(
   );
 }
 
-theorem ring_neg_unique(
+def ring_neg_unique(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, cancels : addF(x, y) = zero
 ) :
@@ -119,7 +119,7 @@ theorem ring_neg_unique(
   );
 }
 
-theorem ring_neg_zero(
+def ring_neg_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :
@@ -132,7 +132,7 @@ theorem ring_neg_zero(
   );
 }
 
-theorem ring_neg_neg(
+def ring_neg_neg(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
 ) :
@@ -145,7 +145,7 @@ theorem ring_neg_neg(
   );
 }
 
-theorem ring_add_swap(
+def ring_add_swap(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
 ) :
@@ -159,7 +159,7 @@ theorem ring_add_swap(
   );
 }
 
-theorem ring_add_shuffle(
+def ring_add_shuffle(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, c : F, d : F
 ) :
@@ -173,7 +173,7 @@ theorem ring_add_shuffle(
   );
 }
 
-theorem ring_neg_add(
+def ring_neg_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
 ) :
@@ -200,7 +200,7 @@ theorem ring_neg_add(
   );
 }
 
-theorem ring_mul_zero(
+def ring_mul_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
 ) :
@@ -218,7 +218,7 @@ theorem ring_mul_zero(
   exact field_add_cancel(F, zero, addF, negF, additive, mulF(x, zero), mulF(x, zero), zero, twice);
 }
 
-theorem ring_zero_mul(
+def ring_zero_mul(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
 ) :
@@ -229,7 +229,7 @@ theorem ring_zero_mul(
   );
 }
 
-theorem ring_mul_neg(
+def ring_mul_neg(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
 ) :
@@ -246,7 +246,7 @@ theorem ring_mul_neg(
   );
 }
 
-theorem ring_neg_mul(
+def ring_neg_mul(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
 ) :
@@ -260,7 +260,7 @@ theorem ring_neg_mul(
   );
 }
 
-theorem ring_distribute_left(
+def ring_distribute_left(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
 ) :
@@ -279,7 +279,7 @@ theorem ring_distribute_left(
   );
 }
 
-theorem ring_mul_swap(
+def ring_mul_swap(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F, z : F
 ) :
@@ -293,7 +293,7 @@ theorem ring_mul_swap(
   );
 }
 
-theorem ring_add_cancel_prefix(
+def ring_add_cancel_prefix(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, y : F
 ) :

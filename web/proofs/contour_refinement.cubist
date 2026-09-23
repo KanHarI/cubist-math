@@ -10,7 +10,7 @@ def contour_tag_error(
     coordinate_difference(F, addF, negF, a, b)
   );
 
-theorem contour_edge_change_tag(
+def contour_edge_change_tag(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, y : F, oldTag : F,
   newTag : F
@@ -36,7 +36,7 @@ theorem contour_edge_change_tag(
   );
 }
 
-theorem contour_edge_subdivide(
+def contour_edge_subdivide(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, middle : F, y : F,
   tag : F
@@ -56,7 +56,7 @@ theorem contour_edge_subdivide(
   );
 }
 
-theorem contour_edge_refinement(
+def contour_edge_refinement(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, middle : F, y : F,
   coarseTag : F, leftTag : F, rightTag : F
@@ -135,7 +135,7 @@ def contour_tag_error_sum(
     );
   };
 
-theorem contour_sum_change_tags(
+def contour_sum_change_tags(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, n : Nat
 ) :

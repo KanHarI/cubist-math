@@ -56,7 +56,7 @@ def splitting_extension_compose(
   );
 }
 
-theorem finite_splitting_step(
+def finite_splitting_step(
   n : Nat,
   previous : (
     forall L : AlgebraicField, forall q : Polynomial(L), polynomial_cutoff(L, q) = succ(n)
@@ -98,7 +98,7 @@ theorem finite_splitting_step(
 
 // Each step adjoins one root and recurses on the quotient of smaller degree.
 // Finiteness is composed using the proved tower theorem.
-theorem finite_splitting_by_degree(n : Nat) =
+def finite_splitting_by_degree(n : Nat) =
   induction n as k return (
     forall K : AlgebraicField, forall p : Polynomial(K), polynomial_cutoff(K, p) = succ(k)
     -> FieldExists(FiniteSplittingExtension(K, p, k))
@@ -109,7 +109,7 @@ theorem finite_splitting_by_degree(n : Nat) =
     succ previous => finite_splitting_step(k, previous);
   };
 
-theorem finite_splitting_extension_exists(
+def finite_splitting_extension_exists(
   K : AlgebraicField, p : Polynomial(K), nonzero : PolynomialNonzero(K, p)
 ) :
   FieldExists(FiniteSplittingExtension(K, p, polynomial_degree(K, p))) {

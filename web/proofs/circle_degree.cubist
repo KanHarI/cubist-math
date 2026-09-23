@@ -13,7 +13,7 @@ def circle_map_meridians(X : U0, point : X, p : point = point, a : S0) =
 def circle_map_from_loop(X : U0, point : X, p : point = point, x : S1) =
   suspension_rec(S0, X, point, point, circle_map_meridians(X, point, p), x);
 
-theorem circle_map_generator(X : U0, point : X, p : point = point) :
+def circle_map_generator(X : U0, point : X, p : point = point) :
   ap(U1, S1, X, circle_map_from_loop(X, point, p), base, base, loop) = p {
   let f = circle_map_from_loop(X, point, p);
   let upperLaw =
@@ -50,7 +50,7 @@ def circle_power_map(n : Nat, x : S1) = circle_map_from_loop(S1, base, positive_
 def circle_map_degree(f : S1 -> S1, anchor : f(base) = base) =
   winding(rebase_loop(S1, f(base), base, anchor, ap(U1, S1, S1, f, base, base, loop)));
 
-theorem circle_power_degree(n : Nat) :
+def circle_power_degree(n : Nat) :
   circle_map_degree(circle_power_map(n), refl(base)) = nonnegative(n) {
   let generator = ap(U1, S1, S1, circle_power_map(n), base, base, loop);
   // Transport along reflexivity has a cubical computation path.
@@ -61,7 +61,7 @@ theorem circle_power_degree(n : Nat) :
   );
 }
 
-theorem null_homotopic_circle_map_degree_zero(
+def null_homotopic_circle_map_degree_zero(
   f : S1 -> S1, anchor : f(base) = base, point : S1, homotopy : (forall x : S1, f(x) = point)
 ) :
   circle_map_degree(f, anchor) = zeroZ {
@@ -74,7 +74,7 @@ theorem null_homotopic_circle_map_degree_zero(
   );
 }
 
-theorem nonzero_degree_not_null_homotopic(
+def nonzero_degree_not_null_homotopic(
   f : S1 -> S1, anchor : f(base) = base, nonzero : (circle_map_degree(f, anchor) = zeroZ) -> Void,
   point : S1, homotopy : (forall x : S1, f(x) = point)
 ) :
@@ -82,7 +82,7 @@ theorem nonzero_degree_not_null_homotopic(
   exact nonzero(null_homotopic_circle_map_degree_zero(f, anchor, point, homotopy));
 }
 
-theorem positive_circle_power_not_null_homotopic(
+def positive_circle_power_not_null_homotopic(
   n : Nat, point : S1, homotopy : (forall x : S1, circle_power_map(succ(n), x) = point)
 ) :
   Void {
@@ -96,7 +96,7 @@ theorem positive_circle_power_not_null_homotopic(
 
 // The homotopy need not fix the basepoint. Its value at base is tracked by
 // naturality, so an arbitrary contraction point is allowed.
-theorem homotopic_to_positive_power_not_null(
+def homotopic_to_positive_power_not_null(
   n : Nat, f : S1 -> S1, comparison : (forall x : S1, f(x) = circle_power_map(succ(n), x)),
   point : S1, contraction : (forall x : S1, f(x) = point)
 ) :
@@ -109,7 +109,7 @@ theorem homotopic_to_positive_power_not_null(
 // No map of positive circle degree can extend through a contractible homotopy
 // type. Applying this to polynomials still needs the geometric circle/disk
 // comparison and the leading-term homotopy; neither is assumed as an axiom.
-theorem positive_degree_no_contractible_extension(
+def positive_degree_no_contractible_extension(
   n : Nat, X : U1, center : X, contraction : (forall x : X, x = center), boundary : S1 -> X,
   value : X -> S1, comparison : (forall x : S1, value(boundary(x)) = circle_power_map(succ(n), x))
 ) :
@@ -121,7 +121,7 @@ theorem positive_degree_no_contractible_extension(
 }
 
 // The corresponding statements directly about loops and retractions.
-theorem positive_winding_loop_not_null(
+def positive_winding_loop_not_null(
   n : Nat, p : base = base, degree : winding(p) = nonnegative(succ(n)), null : p = refl(base)
 ) :
   Void {
@@ -131,11 +131,11 @@ theorem positive_winding_loop_not_null(
   exact zero_not_successor(n, sym(cong(magnitude, impossible)));
 }
 
-theorem positive_loop_not_null(n : Nat, null : positive_loops(succ(n)) = refl(base)) : Void {
+def positive_loop_not_null(n : Nat, null : positive_loops(succ(n)) = refl(base)) : Void {
   exact positive_winding_loop_not_null(n, positive_loops(succ(n)), winding_positive(succ(n)), null);
 }
 
-theorem circle_not_contractible(point : S1, contraction : (forall x : S1, x = point)) : Void {
+def circle_not_contractible(point : S1, contraction : (forall x : S1, x = point)) : Void {
   exact positive_loop_not_null(
     0,
     trans(
@@ -145,7 +145,7 @@ theorem circle_not_contractible(point : S1, contraction : (forall x : S1, x = po
   );
 }
 
-theorem circle_no_retraction_from_contractible(
+def circle_no_retraction_from_contractible(
   X : U1, center : X, contraction : (forall x : X, x = center), boundary : S1 -> X, retraction : X
   -> S1, retracts : (forall x : S1, retraction(boundary(x)) = x)
 ) :

@@ -42,7 +42,7 @@ def f2_mul(x : F2Carrier, y : F2Carrier) =
 
 def f2_ops = field_ops(F2Carrier, f2_0, f2_1, (fun (x : F2Carrier) => x), f2_add, f2_mul);
 
-theorem f2_add_assoc(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
+def f2_add_assoc(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
   f2_add(f2_add(x, y), z) = f2_add(x, f2_add(y, z)) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_add(f2_add(x, y), z) = f2_add(x, f2_add(y, z))),
@@ -71,7 +71,7 @@ theorem f2_add_assoc(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
   );
 }
 
-theorem f2_add_comm(x : F2Carrier, y : F2Carrier) : f2_add(x, y) = f2_add(y, x) {
+def f2_add_comm(x : F2Carrier, y : F2Carrier) : f2_add(x, y) = f2_add(y, x) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_add(x, y) = f2_add(y, x)),
     f2_induction(
@@ -85,21 +85,21 @@ theorem f2_add_comm(x : F2Carrier, y : F2Carrier) : f2_add(x, y) = f2_add(y, x) 
   );
 }
 
-theorem f2_add_zero(x : F2Carrier) : f2_add(f2_0, x) = x {
+def f2_add_zero(x : F2Carrier) : f2_add(f2_0, x) = x {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_add(f2_0, x) = x), refl(f2_add(f2_0, f2_0)),
     refl(f2_add(f2_0, f2_1)), x
   );
 }
 
-theorem f2_add_neg(x : F2Carrier) : f2_add(x, x) = f2_0 {
+def f2_add_neg(x : F2Carrier) : f2_add(x, x) = f2_0 {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_add(x, x) = f2_0), refl(f2_add(f2_0, f2_0)),
     refl(f2_add(f2_1, f2_1)), x
   );
 }
 
-theorem f2_mul_assoc(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
+def f2_mul_assoc(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
   f2_mul(f2_mul(x, y), z) = f2_mul(x, f2_mul(y, z)) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_mul(f2_mul(x, y), z) = f2_mul(x, f2_mul(y, z))),
@@ -128,7 +128,7 @@ theorem f2_mul_assoc(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
   );
 }
 
-theorem f2_mul_comm(x : F2Carrier, y : F2Carrier) : f2_mul(x, y) = f2_mul(y, x) {
+def f2_mul_comm(x : F2Carrier, y : F2Carrier) : f2_mul(x, y) = f2_mul(y, x) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_mul(x, y) = f2_mul(y, x)),
     f2_induction(
@@ -142,14 +142,14 @@ theorem f2_mul_comm(x : F2Carrier, y : F2Carrier) : f2_mul(x, y) = f2_mul(y, x) 
   );
 }
 
-theorem f2_mul_one(x : F2Carrier) : f2_mul(f2_1, x) = x {
+def f2_mul_one(x : F2Carrier) : f2_mul(f2_1, x) = x {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_mul(f2_1, x) = x), refl(f2_mul(f2_1, f2_0)),
     refl(f2_mul(f2_1, f2_1)), x
   );
 }
 
-theorem f2_distribute(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
+def f2_distribute(x : F2Carrier, y : F2Carrier, z : F2Carrier) :
   f2_mul(x, f2_add(y, z)) = f2_add(f2_mul(x, y), f2_mul(x, z)) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_mul(x, f2_add(y, z)) = f2_add(f2_mul(x, y), f2_mul(x, z))),
@@ -327,7 +327,7 @@ def f4_mul(x : F4Carrier, y : F4Carrier) =
 
 def f4_ops = field_ops(F4Carrier, f4_0, f4_1, (fun (x : F4Carrier) => x), f4_add, f4_mul);
 
-theorem f4_add_assoc(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
+def f4_add_assoc(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
   f4_add(f4_add(x, y), z) = f4_add(x, f4_add(y, z)) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_add(f4_add(x, y), z) = f4_add(x, f4_add(y, z))),
@@ -426,7 +426,7 @@ theorem f4_add_assoc(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
   );
 }
 
-theorem f4_add_comm(x : F4Carrier, y : F4Carrier) : f4_add(x, y) = f4_add(y, x) {
+def f4_add_comm(x : F4Carrier, y : F4Carrier) : f4_add(x, y) = f4_add(y, x) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_add(x, y) = f4_add(y, x)),
     f4_induction(
@@ -448,21 +448,21 @@ theorem f4_add_comm(x : F4Carrier, y : F4Carrier) : f4_add(x, y) = f4_add(y, x) 
   );
 }
 
-theorem f4_add_zero(x : F4Carrier) : f4_add(f4_0, x) = x {
+def f4_add_zero(x : F4Carrier) : f4_add(f4_0, x) = x {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_add(f4_0, x) = x), refl(f4_add(f4_0, f4_0)),
     refl(f4_add(f4_0, f4_1)), refl(f4_add(f4_0, f4_2)), refl(f4_add(f4_0, f4_3)), x
   );
 }
 
-theorem f4_add_neg(x : F4Carrier) : f4_add(x, x) = f4_0 {
+def f4_add_neg(x : F4Carrier) : f4_add(x, x) = f4_0 {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_add(x, x) = f4_0), refl(f4_add(f4_0, f4_0)),
     refl(f4_add(f4_1, f4_1)), refl(f4_add(f4_2, f4_2)), refl(f4_add(f4_3, f4_3)), x
   );
 }
 
-theorem f4_mul_assoc(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
+def f4_mul_assoc(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
   f4_mul(f4_mul(x, y), z) = f4_mul(x, f4_mul(y, z)) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_mul(f4_mul(x, y), z) = f4_mul(x, f4_mul(y, z))),
@@ -561,7 +561,7 @@ theorem f4_mul_assoc(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
   );
 }
 
-theorem f4_mul_comm(x : F4Carrier, y : F4Carrier) : f4_mul(x, y) = f4_mul(y, x) {
+def f4_mul_comm(x : F4Carrier, y : F4Carrier) : f4_mul(x, y) = f4_mul(y, x) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_mul(x, y) = f4_mul(y, x)),
     f4_induction(
@@ -583,14 +583,14 @@ theorem f4_mul_comm(x : F4Carrier, y : F4Carrier) : f4_mul(x, y) = f4_mul(y, x) 
   );
 }
 
-theorem f4_mul_one(x : F4Carrier) : f4_mul(f4_1, x) = x {
+def f4_mul_one(x : F4Carrier) : f4_mul(f4_1, x) = x {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_mul(f4_1, x) = x), refl(f4_mul(f4_1, f4_0)),
     refl(f4_mul(f4_1, f4_1)), refl(f4_mul(f4_1, f4_2)), refl(f4_mul(f4_1, f4_3)), x
   );
 }
 
-theorem f4_distribute(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
+def f4_distribute(x : F4Carrier, y : F4Carrier, z : F4Carrier) :
   f4_mul(x, f4_add(y, z)) = f4_add(f4_mul(x, y), f4_mul(x, z)) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_mul(x, f4_add(y, z)) = f4_add(f4_mul(x, y), f4_mul(x, z))),

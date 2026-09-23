@@ -7,7 +7,7 @@ def Injective(A : U0, B : U0, f : A -> B) = forall x : A, forall y : A, (f(x) = 
 // For arbitrary types, an embedding has proposition-valued fibers.
 def Embedding(A : U0, B : U0, f : A -> B) = forall y : B, Proposition(Fiber(A, B, f, y));
 
-theorem injection_is_embedding(
+def injection_is_embedding(
   A : U0, B : U0, setB : IsSet(B), f : A -> B, injective : Injective(A, B, f)
 ) :
   Embedding(A, B, f) {

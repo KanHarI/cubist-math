@@ -31,7 +31,7 @@ def series_support_prop(K : AlgebraicField, f : FormalSeries(K), n : Nat) =
     )
   );
 
-theorem polynomial_ext(
+def polynomial_ext(
   K : AlgebraicField, p : Polynomial(K), q : Polynomial(K),
   same : polynomial_coefficients(K, p) = polynomial_coefficients(K, q)
 ) :
@@ -58,7 +58,7 @@ def polynomial_of_support(
   );
 }
 
-theorem support_weaken(
+def support_weaken(
   K : AlgebraicField, f : FormalSeries(K), n : Nat, m : Nat, bound : le(n, m),
   support : SeriesSupport(K, f, n)
 ) :
@@ -68,7 +68,7 @@ theorem support_weaken(
   exact support(k, nat_le_trans(n, m, k, bound, above));
 }
 
-theorem support_constant(K : AlgebraicField, a : af_carrier(K)) :
+def support_constant(K : AlgebraicField, a : af_carrier(K)) :
   SeriesSupport(K, series_constant(K, a), 1) {
   intro k;
   exact induction k as j return (le(1, j) -> series_constant(K, a, j) = field_zero(K)) {
@@ -77,7 +77,7 @@ theorem support_constant(K : AlgebraicField, a : af_carrier(K)) :
   };
 }
 
-theorem support_shift(
+def support_shift(
   K : AlgebraicField, f : FormalSeries(K), n : Nat, support : SeriesSupport(K, f, n)
 ) :
   SeriesSupport(K, series_shift(K, f), succ(n)) {
@@ -90,14 +90,14 @@ theorem support_shift(
   };
 }
 
-theorem natural_le_add_left(m : Nat, n : Nat) : le(m, add_count(m, n)) {
+def natural_le_add_left(m : Nat, n : Nat) : le(m, add_count(m, n)) {
   exact transport(
     (fun (k : Nat) => le(m, k)), add_count(n, m), add_count(m, n), nat_add_comm(n, m),
     nat_le_add(n, m)
   );
 }
 
-theorem support_add(
+def support_add(
   K : AlgebraicField, f : FormalSeries(K), g : FormalSeries(K), m : Nat, n : Nat,
   sf : SeriesSupport(K, f, m), sg : SeriesSupport(K, g, n)
 ) :
@@ -118,7 +118,7 @@ theorem support_add(
   );
 }
 
-theorem support_mul_zero(
+def support_mul_zero(
   K : AlgebraicField, f : FormalSeries(K), g : FormalSeries(K), sf : SeriesSupport(K, f, 0), n : Nat
 ) :
   SeriesSupport(K, series_mul(K, f, g), n) {
@@ -134,7 +134,7 @@ theorem support_mul_zero(
   );
 }
 
-theorem support_mul_step(
+def support_mul_step(
   K : AlgebraicField, m : Nat,
   previous : (
     forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat, SeriesSupport(K, f, m)
@@ -178,7 +178,7 @@ theorem support_mul_step(
   };
 }
 
-theorem support_mul(K : AlgebraicField, m : Nat) =
+def support_mul(K : AlgebraicField, m : Nat) =
   induction m as k return (
     forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat, SeriesSupport(K, f, k)
     -> SeriesSupport(K, g, n) -> SeriesSupport(K, series_mul(K, f, g), add_count(k, n))

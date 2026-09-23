@@ -20,8 +20,8 @@ test("tuples expand to right-associated pairs without changing comparison syntax
 });
 
 test("tuple formatting preserves nested delimiters, comments, comparisons and patterns", () => {
-  const source = `theorem build(a:Nat,b:Nat):Nat and Nat and Nat{exact (a, // saved
-b,0);} theorem unpacked : Nat { obtain (a,b,c) = build(0,0); exact c; }
+  const source = `def build(a:Nat,b:Nat):Nat and Nat and Nat{exact (a, // saved
+b,0);} def unpacked : Nat { obtain (a,b,c) = build(0,0); exact c; }
   def nested = typed((Nat and Nat) and Nat and Nat, ((0,1),2,3));
   def relation(a:Nat,b:Nat) = a < b;
 `;
@@ -37,11 +37,11 @@ b,0);} theorem unpacked : Nat { obtain (a,b,c) = build(0,0); exact c; }
 test("AST linearization preserves comments, grouping, left components and application arguments", async () => {
   const { linearizeTuples, expandedSyntax } = await import("../web/mathscript/tuples.mjs");
   const source = `// 🧮 A tuple with a paired first field and a right-associated tail.
-    theorem build : (Nat and Nat) and Nat and Nat and Nat {
+    def build : (Nat and Nat) and Nat and Nat and Nat {
       exact ((0, 1), (2, // keep the tail note
         ((3, 4))));
     }
-    theorem use : Nat { obtain ((a, b), (c, (d, e))) = build; exact e; }
+    def use : Nat { obtain ((a, b), (c, (d, e))) = build; exact e; }
     def call = f(a, b, c);
   `;
   const raw = linearizeTuples(source);
@@ -60,12 +60,12 @@ test("native tuple notation exposes its expansion and a checked inspector bindin
   const { CubicalProgram } = await import("../web/cubical-program.mjs");
   const program = new CubicalProgram(await createCubical(), async () => "");
   t.after(() => program.dispose());
-  const result = await program.check("theorem triple : Nat and Nat and Nat { exact (0, 1, 2); }", "tuples");
+  const result = await program.check("def triple : Nat and Nat and Nat { exact (0, 1, 2); }", "tuples");
   assert.equal(result.complete, true);
   const links = result.links.filter(x => x.role === "tuple macro");
   assert.equal(links.length, 2);
   assert.equal(links[0].expansion, "(0, (1, 2))");
   assert.equal(program.inspect(links[0].binding).expression.tag, "Pair");
-  const invalid = await program.check("theorem wrong : Nat and Nat { exact (0, 1, 2); }", "wrong");
+  const invalid = await program.check("def wrong : Nat and Nat { exact (0, 1, 2); }", "wrong");
   assert.equal(invalid.complete, false);
 });

@@ -6,7 +6,7 @@ import contour_sums;
 // Specialization of the finite quadrature laws to complex coordinates.
 // These are finite sums; existence of a contour integral is not asserted.
 
-theorem complex_constant_contour_closed(
+def complex_constant_contour_closed(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : Complex(F), n : Nat,
   vertices : SampleVertices(Complex(F), n), tags : SampleTags(Complex(F), n),
@@ -23,7 +23,7 @@ theorem complex_constant_contour_closed(
   );
 }
 
-theorem complex_contour_composes(
+def complex_contour_composes(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : Complex(F) -> Complex(F), n : Nat,
   vertices : SampleVertices(Complex(F), n), tags : SampleTags(Complex(F), n), m : Nat,
@@ -45,7 +45,7 @@ theorem complex_contour_composes(
   );
 }
 
-theorem complex_identity_backtrack_sum(
+def complex_identity_backtrack_sum(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :
@@ -61,7 +61,7 @@ theorem complex_identity_backtrack_sum(
   );
 }
 
-theorem complex_identity_backtrack_nonzero(
+def complex_identity_backtrack_nonzero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), nontrivial : (zero = one) -> Void
 ) :

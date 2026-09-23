@@ -1,7 +1,7 @@
 import field_scale_limits;
 
 // Widening a two-sided order ball preserves closeness.
-theorem field_close_enlarge(
+def field_close_enlarge(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, delta : F,
@@ -29,7 +29,7 @@ theorem field_close_enlarge(
 
 // An actual common positive radius without comparing r and s or deciding
 // which is smaller. Choose delta with delta*(r+s) < r*s, then cancel r+s.
-theorem field_common_positive_radius(
+def field_common_positive_radius(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

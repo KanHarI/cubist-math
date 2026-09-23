@@ -14,7 +14,7 @@ def polynomial_root_prop(
 ) =
   af_set(L, polynomial_eval(K, L, e, p, x), field_zero(L));
 
-theorem polynomial_eval_one(
+def polynomial_eval_one(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_one(K), x) = field_one(L) {
@@ -22,7 +22,7 @@ theorem polynomial_eval_one(
   exact trans(polynomial_eval_constant(K, L, e, field_one(K), x), one);
 }
 
-theorem polynomial_eval_variable(
+def polynomial_eval_variable(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_variable(K), x) = x {
@@ -32,7 +32,7 @@ theorem polynomial_eval_variable(
   );
 }
 
-theorem polynomial_eval_neg(
+def polynomial_eval_neg(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   x : af_carrier(L)
 ) :
@@ -55,7 +55,7 @@ theorem polynomial_eval_neg(
 def polynomial_linear_factor(K : AlgebraicField, r : af_carrier(K)) =
   polynomial_add(K, polynomial_variable(K), polynomial_constant(K, field_neg(K, r)));
 
-theorem linear_factor_support(K : AlgebraicField, r : af_carrier(K)) :
+def linear_factor_support(K : AlgebraicField, r : af_carrier(K)) :
   SeriesSupport(K, polynomial_coefficients(K, polynomial_linear_factor(K, r)), 2) {
   exact support_add_same(
     K, polynomial_coefficients(K, polynomial_variable(K)), series_constant(K, field_neg(K, r)), 2,
@@ -66,7 +66,7 @@ theorem linear_factor_support(K : AlgebraicField, r : af_carrier(K)) :
   );
 }
 
-theorem linear_factor_degree(K : AlgebraicField, r : af_carrier(K)) :
+def linear_factor_degree(K : AlgebraicField, r : af_carrier(K)) :
   polynomial_cutoff(K, polynomial_linear_factor(K, r)) = 2 {
   obtain (ring, nontrivial, inverses) = af_laws(K);
   exact polynomial_cutoff_exact(
@@ -79,7 +79,7 @@ theorem linear_factor_degree(K : AlgebraicField, r : af_carrier(K)) :
   );
 }
 
-theorem linear_factor_nonzero(
+def linear_factor_nonzero(
   K : AlgebraicField, r : af_carrier(K), zero : polynomial_linear_factor(K, r) = polynomial_zero(K)
 ) :
   Void {
@@ -94,7 +94,7 @@ theorem linear_factor_nonzero(
   );
 }
 
-theorem linear_factor_eval(K : AlgebraicField, r : af_carrier(K), x : af_carrier(K)) :
+def linear_factor_eval(K : AlgebraicField, r : af_carrier(K), x : af_carrier(K)) :
   polynomial_eval(K, K, field_embedding_identity(K), polynomial_linear_factor(K, r), x) = field_add(
     K, x, field_neg(K, r)
   ) {
@@ -115,12 +115,12 @@ theorem linear_factor_eval(K : AlgebraicField, r : af_carrier(K), x : af_carrier
   };
 }
 
-theorem linear_factor_root(K : AlgebraicField, r : af_carrier(K)) :
+def linear_factor_root(K : AlgebraicField, r : af_carrier(K)) :
   PolynomialRoot(K, K, field_embedding_identity(K), polynomial_linear_factor(K, r), r) {
   exact trans(linear_factor_eval(K, r, r), scalar_add_inverse_right(K, r));
 }
 
-theorem support_one_eval(
+def support_one_eval(
   K : AlgebraicField, p : Polynomial(K),
   support : SeriesSupport(K, polynomial_coefficients(K, p), 1), x : af_carrier(K)
 ) :
@@ -136,7 +136,7 @@ theorem support_one_eval(
 
 // The factor theorem is an equality of formal polynomials, not only of
 // their values. The quotient is obtained by the checked division algorithm.
-theorem polynomial_factor_theorem(
+def polynomial_factor_theorem(
   K : AlgebraicField, p : Polynomial(K), r : af_carrier(K),
   root : PolynomialRoot(K, K, field_embedding_identity(K), p, r)
 ) :
@@ -193,7 +193,7 @@ theorem polynomial_factor_theorem(
   );
 }
 
-theorem polynomial_factor_root(
+def polynomial_factor_root(
   K : AlgebraicField, p : Polynomial(K), r : af_carrier(K), q : Polynomial(K),
   factor : p = polynomial_mul(K, polynomial_linear_factor(K, r), q)
 ) :

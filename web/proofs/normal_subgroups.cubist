@@ -9,7 +9,7 @@ def IsNormal(G : Group, S : Subgroup(G)) =
 
 def NormalSubgroup(G : Group) = exists S : Subgroup(G), IsNormal(G, S);
 
-theorem normal_subgroup_prop(G : Group, S : Subgroup(G)) : Proposition(IsNormal(G, S)) {
+def normal_subgroup_prop(G : Group, S : Subgroup(G)) : Proposition(IsNormal(G, S)) {
   let A = group_carrier(G);
   let P = subgroup_members(G, S);
   exact forall_prop(
@@ -32,14 +32,14 @@ theorem normal_subgroup_prop(G : Group, S : Subgroup(G)) : Proposition(IsNormal(
   );
 }
 
-theorem subgroup_top_normal(G : Group) : IsNormal(G, subgroup_top(G)) {
+def subgroup_top_normal(G : Group) : IsNormal(G, subgroup_top(G)) {
   intro g;
   intro x;
   intro member;
   exact tt;
 }
 
-theorem subgroup_bottom_normal(G : Group) : IsNormal(G, subgroup_bottom(G)) {
+def subgroup_bottom_normal(G : Group) : IsNormal(G, subgroup_bottom(G)) {
   intro g;
   intro x;
   intro member;
@@ -48,7 +48,7 @@ theorem subgroup_bottom_normal(G : Group) : IsNormal(G, subgroup_bottom(G)) {
   );
 }
 
-theorem abelian_subgroups_normal(G : Group, abelian : IsAbelian(G), S : Subgroup(G)) :
+def abelian_subgroups_normal(G : Group, abelian : IsAbelian(G), S : Subgroup(G)) :
   IsNormal(G, S) {
   intro g;
   intro x;
@@ -59,7 +59,7 @@ theorem abelian_subgroups_normal(G : Group, abelian : IsAbelian(G), S : Subgroup
   );
 }
 
-theorem subgroup_preimage_normal(
+def subgroup_preimage_normal(
   G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(H), normal : IsNormal(H, S)
 ) :
   IsNormal(G, subgroup_preimage(G, H, h, S)) {
@@ -78,7 +78,7 @@ theorem subgroup_preimage_normal(
 def group_kernel(G : Group, H : Group, h : GroupHom(G, H)) =
   subgroup_preimage(G, H, h, subgroup_bottom(H));
 
-theorem group_kernel_normal(G : Group, H : Group, h : GroupHom(G, H)) :
+def group_kernel_normal(G : Group, H : Group, h : GroupHom(G, H)) :
   IsNormal(G, group_kernel(G, H, h)) {
   exact subgroup_preimage_normal(G, H, h, subgroup_bottom(H), subgroup_bottom_normal(H));
 }
@@ -87,17 +87,17 @@ def group_normal_kernel(G : Group, H : Group, h : GroupHom(G, H)) : NormalSubgro
   exact (group_kernel(G, H, h), group_kernel_normal(G, H, h));
 }
 
-theorem group_kernel_identity(G : Group) :
+def group_kernel_identity(G : Group) :
   group_kernel(G, G, group_hom_identity(G)) =[Subgroup(G)] subgroup_bottom(G) {
   exact subgroup_preimage_identity(G, subgroup_bottom(G));
 }
 
-theorem group_kernel_trivial_member(G : Group, H : Group, x : group_carrier(G)) :
+def group_kernel_trivial_member(G : Group, H : Group, x : group_carrier(G)) :
   subgroup_members(G, group_kernel(G, H, group_hom_trivial(G, H)), x) {
   exact refl(group_unit(H));
 }
 
-theorem group_kernel_trivial(G : Group, H : Group) :
+def group_kernel_trivial(G : Group, H : Group) :
   group_kernel(G, H, group_hom_trivial(G, H)) =[Subgroup(G)] subgroup_top(G) {
   exact subgroup_inclusion_antisymmetric(
     G, group_kernel(G, H, group_hom_trivial(G, H)), subgroup_top(G),
@@ -106,7 +106,7 @@ theorem group_kernel_trivial(G : Group, H : Group) :
   );
 }
 
-theorem subgroup_intersection_normal(
+def subgroup_intersection_normal(
   G : Group, I : U0, family : I -> Subgroup(G), normals : (forall i : I, IsNormal(G, family(i)))
 ) :
   IsNormal(G, subgroup_intersection(G, I, family)) {
@@ -119,7 +119,7 @@ theorem subgroup_intersection_normal(
 
 // Conjugation has an explicit inverse, so closure gives invariance in both
 // directions, without deciding membership or invoking excluded middle.
-theorem normal_members_conjugate(
+def normal_members_conjugate(
   G : Group, S : Subgroup(G), normal : IsNormal(G, S), g : group_carrier(G), x : group_carrier(G)
 ) :
   (subgroup_members(G, S, group_conjugate(G, g, x)) -> subgroup_members(G, S, x))
@@ -137,7 +137,7 @@ theorem normal_members_conjugate(
 
 // Univalent predicate extensionality turns invariance into equality of the
 // complete subgroup bundles, including their proposition-valued laws.
-theorem normal_subgroup_conjugation_invariant(
+def normal_subgroup_conjugation_invariant(
   G : Group, S : Subgroup(G), normal : IsNormal(G, S), g : group_carrier(G)
 ) :
   subgroup_preimage(G, G, group_iso_hom(G, G, group_conjugation_iso(G, g)), S) =[Subgroup(G)] S {
@@ -165,7 +165,7 @@ def subgroup_transport(G : Group, H : Group, path : G =[Group] H, S : Subgroup(G
 
 // Path induction transports normality across equality of groups. Univalence
 // then gives invariance under group isomorphism without re-proving the laws.
-theorem normal_subgroup_transport(
+def normal_subgroup_transport(
   G : Group, H : Group, path : G =[Group] H, S : Subgroup(G), normal : IsNormal(G, S)
 ) :
   IsNormal(H, subgroup_transport(G, H, path, S)) {
@@ -179,7 +179,7 @@ theorem normal_subgroup_transport(
 def subgroup_along_iso(G : Group, H : Group, iso : GroupIso(G, H), S : Subgroup(G)) =
   subgroup_transport(G, H, group_isotoid(G, H, iso), S);
 
-theorem normal_subgroup_along_iso(
+def normal_subgroup_along_iso(
   G : Group, H : Group, iso : GroupIso(G, H), S : Subgroup(G), normal : IsNormal(G, S)
 ) :
   IsNormal(H, subgroup_along_iso(G, H, iso, S)) {
@@ -191,7 +191,7 @@ theorem normal_subgroup_along_iso(
 def group_conjugation_path(G : Group, g : group_carrier(G)) =
   group_isotoid(G, G, group_conjugation_iso(G, g));
 
-theorem group_conjugation_path_roundtrip(G : Group, g : group_carrier(G)) :
+def group_conjugation_path_roundtrip(G : Group, g : group_carrier(G)) :
   group_idtoiso(G, G, group_conjugation_path(G, g)) = group_conjugation_iso(G, g) {
   exact group_idtoiso_isotoid(G, G, group_conjugation_iso(G, g));
 }

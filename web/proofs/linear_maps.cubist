@@ -71,7 +71,7 @@ def linear_compose(
   );
 }
 
-theorem linear_scalar_law_prop(
+def linear_scalar_law_prop(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : vector_carrier(K, V)
   -> vector_carrier(K, W)
 ) :
@@ -100,7 +100,7 @@ theorem linear_scalar_law_prop(
   );
 }
 
-theorem linear_laws_prop(
+def linear_laws_prop(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : vector_carrier(K, V)
   -> vector_carrier(K, W)
 ) :
@@ -112,7 +112,7 @@ theorem linear_laws_prop(
   );
 }
 
-theorem linear_ext(
+def linear_ext(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
   k : LinearMap(K, V, W),
   same : (forall x : vector_carrier(K, V), linear_map(K, V, W, h, x) = linear_map(K, V, W, k, x))
@@ -153,7 +153,7 @@ def linear_iso_equiv(
 
 // Univalence identifies the underlying carriers. Linear structure remains
 // explicit in LinearIso; this is not yet a structure-identity theorem for spaces.
-theorem linear_iso_carrier_path(
+def linear_iso_carrier_path(
   K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), iso : LinearIso(K, V, W)
 ) :
   vector_carrier(K, V) =[U0] vector_carrier(K, W) {

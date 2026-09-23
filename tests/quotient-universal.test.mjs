@@ -20,10 +20,10 @@ test("homomorphism universe schemas check at U0–U3 and agree with small homomo
   const specializations = [0, 1, 2, 3].flatMap(level => schemas.map(name => `def check_${name}_${level} = ${name}(U${level});`));
   const result = await program.check(`import group_homomorphisms;
     ${specializations.join("\n")}
-    theorem small_hom_specialization(G : Group, H : Group) : GroupHomAt(U0, G, H) =[U0] GroupHom(G, H) {
+    def small_hom_specialization(G : Group, H : Group) : GroupHomAt(U0, G, H) =[U0] GroupHom(G, H) {
       exact refl(GroupHom(G, H));
     }
-    theorem identity_computes(G : GroupAt(U2), x : group_carrier_at(U2, G)) :
+    def identity_computes(G : GroupAt(U2), x : group_carrier_at(U2, G)) :
       group_hom_map_at(U2, G, G, group_hom_identity_at(U2, G), x) = x { exact refl(x); }
   `, "hom_universe_regression");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
@@ -37,7 +37,7 @@ test("homomorphism universe schemas check at U0–U3 and agree with small homomo
 test("quotient universal property works for genuinely U1 targets without representative choice", async t => {
   const program = create(t);
   const result = await program.check(`import quotient_group_universal;
-    theorem projection_descends_to_identity(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
+    def projection_descends_to_identity(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
       quotient_descend_hom(G, QuotientGroup(G, S, normal), quotient_projection(G, S, normal), S, normal,
         quotient_projection_kills(G, S, normal)) = group_hom_identity_at(U1, QuotientGroup(G, S, normal)) {
       let Q = QuotientGroup(G, S, normal);

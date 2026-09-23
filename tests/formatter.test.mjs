@@ -22,7 +22,7 @@ test("formatting every bundled source preserves tokens, comments, syntax and is 
 
 test("nested pairs, equality carriers and line comments keep their boundaries", () => {
   const source = `// Header
-theorem copy(A:U0,x:A):A and A{exact (x, // first component
+def copy(A:U0,x:A):A and A{exact (x, // first component
 x);}
 def equality = 0 =[Nat] 0; // keep this comment
 `;
@@ -44,11 +44,11 @@ def first = 0; // trailing
 // Second declaration.
 // Its documentation continues.
 def second = 1;
-theorem same : 0 = 0 { exact refl(0); }
+def same : 0 = 0 { exact refl(0); }
 def last = 2;`;
   const formatted = formatMathScript(source);
   assert.match(formatted, /first = 0; \/\/ trailing\n\n\/\/ Second declaration\.\n\/\/ Its documentation continues\.\ndef second/);
-  assert.match(formatted, /second = 1;\n\ntheorem same/);
+  assert.match(formatted, /second = 1;\n\ndef same/);
   assert.match(formatted, /}\n\ndef last/);
   assert.equal(formatMathScript(formatted), formatted);
 });
@@ -87,7 +87,7 @@ test("long quantified statements pack short binders and preserve function domain
 
 test("the formatter automatically linearizes tuples while preserving their expanded AST", async () => {
   const { expandedSyntax } = await import("../web/mathscript/tuples.mjs");
-  const source = "theorem triple : Nat and Nat and Nat { exact (0, (1, 2)); }";
+  const source = "def triple : Nat and Nat and Nat { exact (0, (1, 2)); }";
   const formatted = formatMathScript(source);
   assert.match(formatted, /exact \(0, 1, 2\);/);
   assert.equal(expandedSyntax(parse(formatted)), expandedSyntax(parse(source)));

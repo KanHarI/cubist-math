@@ -22,24 +22,24 @@ def swap12 =
 
 def S3PointStabilizer = PointStabilizer(Fin(3), fin_is_set(3), point0);
 
-theorem swap12_fixes_point0 : subgroup_members(S3, S3PointStabilizer, swap12) {
+def swap12_fixes_point0 : subgroup_members(S3, S3PointStabilizer, swap12) {
   exact refl(point0);
 }
 
-theorem conjugate_swap12_moves_point0 :
+def conjugate_swap12_moves_point0 :
   forward(Fin(3), Fin(3), group_conjugate(S3, swap01, swap12), point0) = point2 {
   exact trans(
     permutation_conjugate_apply(Fin(3), fin_is_set(3), swap01, swap12, point0), refl(point2)
   );
 }
 
-theorem point2_not_point0(p : point2 = point0) : Void {
+def point2_not_point0(p : point2 = point0) : Void {
   exact sum_disjoint(Fin(2), tt, tail(Fin(1), head(Fin(0))), sym(p));
 }
 
 // A concrete negative theorem, not a failed attempt to supply normality.
 // Hence arbitrary subgroups cannot be used to construct quotient groups.
-theorem s3_point_stabilizer_not_normal : IsNormal(S3, S3PointStabilizer) -> Void {
+def s3_point_stabilizer_not_normal : IsNormal(S3, S3PointStabilizer) -> Void {
   intro normal;
   exact point2_not_point0(
     trans(sym(conjugate_swap12_moves_point0), normal(swap01, swap12, swap12_fixes_point0))
@@ -47,7 +47,7 @@ theorem s3_point_stabilizer_not_normal : IsNormal(S3, S3PointStabilizer) -> Void
 }
 
 // This permutation group has six elements; its finiteness is witnessed.
-theorem s3_has_six_elements : Bijection(group_carrier(S3), Fin(6)) {
+def s3_has_six_elements : Bijection(group_carrier(S3), Fin(6)) {
   exact with unfolding [Permutations] {
     three_permutations
   };

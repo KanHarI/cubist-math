@@ -11,7 +11,7 @@ def power_count(m : Nat, n : Nat) = induction n as k return Nat {
     succ previous => multiply_count(m, previous);
   };
 
-theorem fin_product(n : Nat, m : Nat) =
+def fin_product(n : Nat, m : Nat) =
   induction n as k return Bijection(Fin(k) and Fin(m), Fin(multiply_count(k, m))) {
     zero => impossible_bijection(Void and Fin(m), fst(Void, Fin(m)));
     succ previous => compose_bijection(
@@ -29,7 +29,7 @@ theorem fin_product(n : Nat, m : Nat) =
   };
 
 // A function on n+1 alternatives is one output and a function on n alternatives.
-theorem finite_function_count(n : Nat, m : Nat) =
+def finite_function_count(n : Nat, m : Nat) =
   induction n as k return Bijection(Fin(k) -> Fin(m), Fin(power_count(m, k))) {
     zero => compose_bijection(
       Void -> Fin(m), Unit, Fin(1), empty_functions(Fin(m)), unit_to_fin_one
@@ -48,19 +48,19 @@ theorem finite_function_count(n : Nat, m : Nat) =
     );
   };
 
-theorem endofunction_count(k : Nat) : Bijection(Fin(k) -> Fin(k), Fin(power_count(k, k))) {
+def endofunction_count(k : Nat) : Bijection(Fin(k) -> Fin(k), Fin(power_count(k, k))) {
   exact finite_function_count(k, k);
 }
 
-theorem three_to_three : Bijection(Fin(3) -> Fin(3), Fin(27)) {
+def three_to_three : Bijection(Fin(3) -> Fin(3), Fin(27)) {
   exact endofunction_count(3);
 }
 
-theorem empty_to_empty : Bijection(Fin(0) -> Fin(0), Fin(1)) {
+def empty_to_empty : Bijection(Fin(0) -> Fin(0), Fin(1)) {
   exact endofunction_count(0);
 }
 
-theorem finite_function_equivalence(n : Nat, m : Nat) :
+def finite_function_equivalence(n : Nat, m : Nat) :
   Equiv(U0, Fin(n) -> Fin(m), Fin(power_count(m, n))) {
   exact bijection_equiv(
     Fin(n) -> Fin(m), Fin(power_count(m, n)), fin_is_set(power_count(m, n)),

@@ -16,7 +16,7 @@ def intermediate_base_map(
   );
 }
 
-theorem intermediate_base_preserves(
+def intermediate_base_preserves(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)
 ) :
   FieldOpsPreserved(
@@ -52,7 +52,7 @@ def intermediate_overfield(K : AlgebraicField, E : FieldExt(K), M : Intermediate
   );
 
 // The triangle commutes as equality of complete embeddings, including laws.
-theorem intermediate_tower(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
+def intermediate_tower(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
   FieldTower(
     K, intermediate_as_field(K, E, M), extension_field(K, E), intermediate_base_embedding(K, E, M),
     intermediate_ambient_embedding(K, E, M), extension_inclusion_embedding(K, E)

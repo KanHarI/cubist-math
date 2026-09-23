@@ -19,7 +19,7 @@ def weighted_winding_sum(
     )
   );
 
-theorem weighted_winding_laws(
+def weighted_winding_laws(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
   values : Fin(n) -> G
 ) :
@@ -86,7 +86,7 @@ theorem weighted_winding_laws(
   exact (constant, append);
 }
 
-theorem weighted_winding_generator(
+def weighted_winding_generator(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
   values : Fin(n) -> G, selected : Fin(n)
 ) :
@@ -113,7 +113,7 @@ theorem weighted_winding_generator(
   );
 }
 
-theorem additive_right_cancellation(
+def additive_right_cancellation(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG)
 ) :
   RightCancellation(G, addG) {
@@ -130,7 +130,7 @@ theorem additive_right_cancellation(
 // This is a theorem about ALL paths in the puncture homotopy type, not just
 // explicitly given words. Generation is used only under propositional
 // truncation to establish an equality in the set G; no word is chosen.
-theorem puncture_period_formula(
+def puncture_period_formula(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(n)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
@@ -150,7 +150,7 @@ theorem puncture_period_formula(
   );
 }
 
-theorem puncture_period_same_windings(
+def puncture_period_same_windings(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(n)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
@@ -187,7 +187,7 @@ theorem puncture_period_same_windings(
   );
 }
 
-theorem puncture_period_zero_windings(
+def puncture_period_zero_windings(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(n)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),

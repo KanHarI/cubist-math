@@ -31,7 +31,7 @@ def extension_embed(K : AlgebraicField, A : U0, data : ExtensionData(K, A)) : af
   );
 }
 
-theorem field_embedding_laws_prop(
+def field_embedding_laws_prop(
   K : AlgebraicField, A : U0, setA : IsSet(A), data : FieldData(A), f : af_carrier(K) -> A
 ) :
   Proposition(FieldEmbeddingLaws(K, A, data, f)) {
@@ -88,7 +88,7 @@ def extension_preserved_identity(K : AlgebraicField, A : U0, a : ExtensionData(K
   );
 }
 
-theorem extension_data_path(
+def extension_data_path(
   K : AlgebraicField, A : U0, setA : IsSet(A), a : FieldData(A), b : FieldData(A), p : a = b
 ) :
   forall e : FieldEmbeddingData(K, A, a), forall d : FieldEmbeddingData(K, A, b),
@@ -130,7 +130,7 @@ theorem extension_data_path(
   );
 }
 
-theorem extension_preserved_reflect(
+def extension_preserved_reflect(
   K : AlgebraicField, A : U0, setA : IsSet(A), a : ExtensionData(K, A), b : ExtensionData(K, A),
   preserves : ExtensionPreserved(K, A, A, (fun (x : A) => x), a, b)
 ) :
@@ -197,7 +197,7 @@ def extension_iso_path(
   };
 }
 
-theorem extension_structure_identity(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K)) :
+def extension_structure_identity(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K)) :
   Equiv(U1, (E =[FieldExt(K)] F), ExtensionIso(K, E, F)) {
   exact structure_identity(
     ExtensionData(K), ExtensionPreserved(K), extension_preserved_prop(K),
@@ -205,7 +205,7 @@ theorem extension_structure_identity(K : AlgebraicField, E : FieldExt(K), F : Fi
   );
 }
 
-theorem extension_iso_roundtrip(
+def extension_iso_roundtrip(
   K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), e : ExtensionIso(K, E, F)
 ) :
   extension_path_iso(K, E, F, extension_iso_path(K, E, F, e)) = e {
@@ -215,7 +215,7 @@ theorem extension_iso_roundtrip(
   );
 }
 
-theorem extension_path_roundtrip(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) :
+def extension_path_roundtrip(K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E = F) :
   extension_iso_path(K, E, F, extension_path_iso(K, E, F, p)) = p {
   exact with unfolding [
     field_first, identity_total_point, identity_system_decode, structure_iso_point,
@@ -232,7 +232,7 @@ theorem extension_path_roundtrip(K : AlgebraicField, E : FieldExt(K), F : FieldE
 // The automorphisms are defined algebraically, independently of paths.
 def Galois(K : AlgebraicField, E : FieldExt(K)) = ExtensionIso(K, E, E);
 
-theorem galois_automorphisms_are_loops(K : AlgebraicField, E : FieldExt(K)) :
+def galois_automorphisms_are_loops(K : AlgebraicField, E : FieldExt(K)) :
   Galois(K, E) =[U1](E =[FieldExt(K)] E) {
   exact sym(ua(U1, (E =[FieldExt(K)] E), Galois(K, E), extension_structure_identity(K, E, E)));
 }

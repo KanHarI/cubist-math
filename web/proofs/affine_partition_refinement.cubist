@@ -63,7 +63,7 @@ def CurvePartitionEstimate(
 // Assemble a partition estimate from fixed-mesh local estimates.
 // Checking this generic step once keeps the continuity witness folded.
 // Move a fixed-mesh estimate to the stored endpoints of one piece.
-theorem affine_partition_piece_estimate(
+def affine_partition_piece_estimate(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
@@ -218,7 +218,7 @@ theorem affine_partition_piece_estimate(
   exact mapEstimates;
 }
 
-theorem affine_partition_from_local_estimates(
+def affine_partition_from_local_estimates(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
@@ -371,7 +371,7 @@ theorem affine_partition_from_local_estimates(
   exact estimates;
 }
 
-theorem affine_partition_uniform_estimate(
+def affine_partition_uniform_estimate(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F

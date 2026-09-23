@@ -106,7 +106,7 @@ def reopen_path(
 
 // Cancel the right connector, then the left connector. Each cancellation
 // is a checked path-algebra lemma, without a strict reflexivity base case.
-theorem reopen_closed_path(
+def reopen_closed_path(
   X : U0, origin : X, x : X, y : X, leftConnector : origin = x, rightConnector : origin = y,
   p : x = y
 ) :

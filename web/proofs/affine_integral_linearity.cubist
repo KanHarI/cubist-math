@@ -67,7 +67,7 @@ def affine_integrand_scale_uniform(
   );
 
 // Finite-sum linearity and limit uniqueness prove integral linearity.
-theorem affine_dyadic_integral_add(
+def affine_dyadic_integral_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
@@ -182,7 +182,7 @@ theorem affine_dyadic_integral_add(
   );
 }
 
-theorem affine_dyadic_integral_scale(
+def affine_dyadic_integral_scale(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
@@ -270,7 +270,7 @@ theorem affine_dyadic_integral_scale(
   );
 }
 
-theorem affine_dyadic_integral_cong(
+def affine_dyadic_integral_cong(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F

@@ -17,7 +17,7 @@ def subgroup_decisions(G : Group, D : DecidableSubgroup(G)) :
   exact field_second(Subgroup(G), (fun (S : Subgroup(G)) => typed(U1, SubgroupDecisions(G, S))), D);
 }
 
-theorem subgroup_decisions_prop(G : Group, S : Subgroup(G)) : Proposition(SubgroupDecisions(G, S)) {
+def subgroup_decisions_prop(G : Group, S : Subgroup(G)) : Proposition(SubgroupDecisions(G, S)) {
   exact forall_prop(
     group_carrier(G), (fun (x : group_carrier(G)) => Decidable(subgroup_members(G, S, x))),
     (
@@ -28,7 +28,7 @@ theorem subgroup_decisions_prop(G : Group, S : Subgroup(G)) : Proposition(Subgro
   );
 }
 
-theorem decidable_subgroup_ext(
+def decidable_subgroup_ext(
   G : Group, D : DecidableSubgroup(G), E : DecidableSubgroup(G),
   same : decidable_subgroup(G, D) =[Subgroup(G)] decidable_subgroup(G, E)
 ) :
@@ -63,7 +63,7 @@ def intermediate_decisions(
   );
 }
 
-theorem intermediate_decisions_prop(
+def intermediate_decisions_prop(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)
 ) :
   Proposition(IntermediateDecisions(K, E, M)) {
@@ -80,7 +80,7 @@ theorem intermediate_decisions_prop(
   );
 }
 
-theorem decidable_intermediate_ext(
+def decidable_intermediate_ext(
   K : AlgebraicField, E : FieldExt(K), D : DecidableIntermediateField(K, E),
   F : DecidableIntermediateField(K, E),
   same : decidable_intermediate(K, E, D) =[IntermediateField(K, E)] decidable_intermediate(K, E, F)

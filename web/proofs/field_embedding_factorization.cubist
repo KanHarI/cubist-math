@@ -11,7 +11,7 @@ def field_embedding_lift(
   exact (field_embedding_map(K, L, e, x), lands(x));
 }
 
-theorem field_embedding_lift_preserves(
+def field_embedding_lift_preserves(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
   lands : (forall x : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, x)))
 ) :
@@ -63,7 +63,7 @@ def field_embedding_factor(
   );
 }
 
-theorem field_embedding_factor_triangle(
+def field_embedding_factor_triangle(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
   lands : (forall x : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, x)))
 ) :
@@ -80,7 +80,7 @@ theorem field_embedding_factor_triangle(
   );
 }
 
-theorem field_embedding_factor_unique(
+def field_embedding_factor_unique(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
   lands : (forall x : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, x))),
   d : FieldEmbedding(K, subfield_as_field(L, S)),

@@ -1,11 +1,11 @@
 import binary_equivalence;
 
 // Small scalar identities used to check the four digit-addition cases.
-theorem nat_add_one(n : Nat) : n + 1 = succ(n) {
+def nat_add_one(n : Nat) : n + 1 = succ(n) {
   exact trans(nat_add_succ(n, 0), cong(succ, nat_add_zero(n)));
 }
 
-theorem nat_double_add(a : Nat, b : Nat) : (a + b) + (a + b) = (a + a) + (b + b) {
+def nat_double_add(a : Nat, b : Nat) : (a + b) + (a + b) = (a + a) + (b + b) {
   exact trans(
     nat_add_assoc(a, b, a + b),
     trans(cong(add(a), nat_add_shuffle(b, a, b)), sym(nat_add_assoc(a, a, b + b)))
@@ -17,7 +17,7 @@ def BinaryAddCorrect(p : BinaryPositive, q : BinaryPositive) =
     q
   );
 
-theorem binary_add_right_one(
+def binary_add_right_one(
   p : BinaryPositive, same : binary_positive_add(p, binary_one) = binary_positive_succ(p)
 ) :
   BinaryAddCorrect(p, binary_one) {
@@ -27,7 +27,7 @@ theorem binary_add_right_one(
   );
 }
 
-theorem binary_add_even_even(p : BinaryPositive, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
+def binary_add_even_even(p : BinaryPositive, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
   BinaryAddCorrect(binary_bit0(p), binary_bit0(q)) {
   exact trans(
     binary_decode_even(binary_positive_add(p, q)),
@@ -38,7 +38,7 @@ theorem binary_add_even_even(p : BinaryPositive, q : BinaryPositive, ih : Binary
   );
 }
 
-theorem binary_add_even_odd(p : BinaryPositive, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
+def binary_add_even_odd(p : BinaryPositive, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
   BinaryAddCorrect(binary_bit0(p), binary_bit1(q)) {
   exact trans(
     binary_decode_odd(binary_positive_add(p, q)),
@@ -57,7 +57,7 @@ theorem binary_add_even_odd(p : BinaryPositive, q : BinaryPositive, ih : BinaryA
   );
 }
 
-theorem binary_add_odd_even(p : BinaryPositive, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
+def binary_add_odd_even(p : BinaryPositive, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
   BinaryAddCorrect(binary_bit1(p), binary_bit0(q)) {
   exact trans(
     binary_decode_odd(binary_positive_add(p, q)),
@@ -68,7 +68,7 @@ theorem binary_add_odd_even(p : BinaryPositive, q : BinaryPositive, ih : BinaryA
   );
 }
 
-theorem binary_add_odd_odd(p : BinaryPositive, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
+def binary_add_odd_odd(p : BinaryPositive, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
   BinaryAddCorrect(binary_bit1(p), binary_bit1(q)) {
   let a = binary_positive_to_nat(p);
   let b = binary_positive_to_nat(q);
@@ -91,7 +91,7 @@ theorem binary_add_odd_odd(p : BinaryPositive, q : BinaryPositive, ih : BinaryAd
   );
 }
 
-theorem binary_decode_add_even(
+def binary_decode_add_even(
   p : BinaryPositive, ih : forall q : BinaryPositive, BinaryAddCorrect(p, q), q : BinaryPositive
 ) :
   BinaryAddCorrect(binary_bit0(p), q) {
@@ -111,7 +111,7 @@ theorem binary_decode_add_even(
   );
 }
 
-theorem binary_decode_add_odd(
+def binary_decode_add_odd(
   p : BinaryPositive, ih : forall q : BinaryPositive, BinaryAddCorrect(p, q), q : BinaryPositive
 ) :
   BinaryAddCorrect(binary_bit1(p), q) {
@@ -131,7 +131,7 @@ theorem binary_decode_add_odd(
   );
 }
 
-theorem binary_decode_positive_add(p : BinaryPositive) :
+def binary_decode_positive_add(p : BinaryPositive) :
   forall q : BinaryPositive, BinaryAddCorrect(p, q) {
   exact binary_positive_induction(
     (fun (a : BinaryPositive) => forall b : BinaryPositive, BinaryAddCorrect(a, b)),
@@ -139,7 +139,7 @@ theorem binary_decode_positive_add(p : BinaryPositive) :
   );
 }
 
-theorem binary_decode_add(a : BinaryNat, b : BinaryNat) :
+def binary_decode_add(a : BinaryNat, b : BinaryNat) :
   binary_to_nat(binary_add(a, b)) = binary_to_nat(a) + binary_to_nat(b) {
   exact match a as x return (binary_to_nat(binary_add(x, b)) = binary_to_nat(x) + binary_to_nat(b)) {
     left zero => refl(binary_to_nat(b));
@@ -159,7 +159,7 @@ def BinaryMulCorrect(p : BinaryPositive, q : BinaryPositive) =
     q
   );
 
-theorem binary_mul_even(p : BinaryPositive, q : BinaryPositive, ih : BinaryMulCorrect(p, q)) :
+def binary_mul_even(p : BinaryPositive, q : BinaryPositive, ih : BinaryMulCorrect(p, q)) :
   BinaryMulCorrect(binary_bit0(p), q) {
   exact trans(
     binary_decode_even(binary_positive_mul(p, q)),
@@ -172,7 +172,7 @@ theorem binary_mul_even(p : BinaryPositive, q : BinaryPositive, ih : BinaryMulCo
   );
 }
 
-theorem binary_mul_odd(p : BinaryPositive, q : BinaryPositive, ih : BinaryMulCorrect(p, q)) :
+def binary_mul_odd(p : BinaryPositive, q : BinaryPositive, ih : BinaryMulCorrect(p, q)) :
   BinaryMulCorrect(binary_bit1(p), q) {
   exact trans(
     binary_decode_positive_add(q, binary_bit0(binary_positive_mul(p, q))),
@@ -193,7 +193,7 @@ theorem binary_mul_odd(p : BinaryPositive, q : BinaryPositive, ih : BinaryMulCor
   );
 }
 
-theorem binary_decode_positive_mul(p : BinaryPositive, q : BinaryPositive) : BinaryMulCorrect(p, q) {
+def binary_decode_positive_mul(p : BinaryPositive, q : BinaryPositive) : BinaryMulCorrect(p, q) {
   exact binary_positive_induction(
     (fun (a : BinaryPositive) => BinaryMulCorrect(a, q)),
     sym(nat_add_zero(binary_positive_to_nat(q))),
@@ -202,7 +202,7 @@ theorem binary_decode_positive_mul(p : BinaryPositive, q : BinaryPositive) : Bin
   );
 }
 
-theorem binary_decode_mul(a : BinaryNat, b : BinaryNat) :
+def binary_decode_mul(a : BinaryNat, b : BinaryNat) :
   binary_to_nat(binary_mul(a, b)) = binary_to_nat(a) * binary_to_nat(b) {
   exact match a as x return (binary_to_nat(binary_mul(x, b)) = binary_to_nat(x) * binary_to_nat(b)) {
     left zero => refl(0);
@@ -217,7 +217,7 @@ theorem binary_decode_mul(a : BinaryNat, b : BinaryNat) :
   };
 }
 
-theorem binary_factorial_correct(n : Nat) : binary_to_nat(binary_factorial(n)) = factorial(n) {
+def binary_factorial_correct(n : Nat) : binary_to_nat(binary_factorial(n)) = factorial(n) {
   exact induction n as k return (binary_to_nat(binary_factorial(k)) = factorial(k)) {
     zero => refl(1);
     succ previous => trans(
@@ -239,6 +239,6 @@ theorem binary_factorial_correct(n : Nat) : binary_to_nat(binary_factorial(n)) =
 // the computational cubical-univalence transport regression.
 def nat_3628800 = binary_to_nat(0b1101110101111100000000);
 
-theorem factorial_ten_from_binary : factorial(10) = nat_3628800 {
+def factorial_ten_from_binary : factorial(10) = nat_3628800 {
   exact trans(sym(binary_factorial_correct(10)), cong(binary_to_nat, binary_factorial_ten));
 }

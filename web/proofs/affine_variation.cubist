@@ -2,7 +2,7 @@ import field_affine;
 import interval_weights;
 import sample_relations;
 
-theorem field_affine_difference(
+def field_affine_difference(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, d : F, s : F, t : F
 ) :
@@ -39,7 +39,7 @@ theorem field_affine_difference(
   );
 }
 
-theorem field_affine_increment_bound(
+def field_affine_increment_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a : F, d : F, length : F,
@@ -92,7 +92,7 @@ def interval_affine_increment(
     addF(a, mulF(field_interval_coordinate(F, zero, one, lt, t), d))
   );
 
-theorem interval_affine_increment_bounds(
+def interval_affine_increment_bounds(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a : F, d : F, length : F,

@@ -99,7 +99,7 @@ def structure_iso_preserves(
     ), structure_iso_evidence(S, R, X, Y, e)
   );
 
-theorem structure_map_laws_prop(
+def structure_map_laws_prop(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R), X : Structure(S),
   Y : Structure(S), f : structure_carrier(S, X) -> structure_carrier(S, Y)
 ) :
@@ -120,7 +120,7 @@ theorem structure_map_laws_prop(
   );
 }
 
-theorem structure_iso_ext(
+def structure_iso_ext(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R), X : Structure(S),
   Y : Structure(S), e : StructureIso(S, R, X, Y), d : StructureIso(S, R, X, Y),
   same : (
@@ -168,7 +168,7 @@ def structure_iso_center(
   structure_iso_point(S, R, X, X, structure_identity_iso(S, R, identity, X));
 
 // At a fixed carrier and fixed data, sethood evidence contributes no extra paths.
-theorem structure_total_set_path(
+def structure_total_set_path(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), A : U0, a : S(A), setA : IsSet(A), setB : IsSet(A)
 ) :
@@ -223,7 +223,7 @@ theorem structure_total_set_path(
   );
 }
 
-theorem structure_total_data_path(
+def structure_total_data_path(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), A : U0, a : S(A), b : S(A), p : a = b
 ) :
@@ -263,7 +263,7 @@ theorem structure_total_data_path(
   );
 }
 
-theorem structure_total_same_carrier(
+def structure_total_same_carrier(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), A : U0, a : S(A), b : S(A),
   setA : IsSet(A), setB : IsSet(A),
@@ -318,7 +318,7 @@ def structure_total_constant_transport(
   );
 
 // Univalence is used only for the carrier; path induction handles the structure.
-theorem structure_total_transport(
+def structure_total_transport(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), A : U0, B : U0, p : A = B
 ) :
@@ -358,7 +358,7 @@ theorem structure_total_transport(
   );
 }
 
-theorem structure_objects_total(
+def structure_objects_total(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), A : U0, B : U0, a : S(A),
   b : S(B), setA : IsSet(A), setB : IsSet(B),
@@ -398,7 +398,7 @@ def structure_induction(
   );
 }
 
-theorem structure_total_contractible(
+def structure_total_contractible(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), X : Structure(S)
 ) :
@@ -455,7 +455,7 @@ def structure_iso_choose_path(
 ) =
   structure_iso_ext(S, R, prop, X, Y, e, d, structure_iso_path_data(S, R, X, Y, e, d, p));
 
-theorem structure_iso_set(
+def structure_iso_set(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R), X : Structure(S),
   Y : Structure(S)
 ) :
@@ -500,7 +500,7 @@ def structure_identity_family(
   typed(U1, StructureIso(S, R, X, Y));
 
 // The forward map is canonical: transport of the identity isomorphism.
-theorem structure_identity(
+def structure_identity(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), X : Structure(S),
   Y : Structure(S)
@@ -540,7 +540,7 @@ def structure_iso_equality(
   };
 }
 
-theorem structure_iso_roundtrip(
+def structure_iso_roundtrip(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), X : Structure(S),
   Y : Structure(S), e : StructureIso(S, R, X, Y)
@@ -554,7 +554,7 @@ theorem structure_iso_roundtrip(
   );
 }
 
-theorem structure_path_roundtrip(
+def structure_path_roundtrip(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), X : Structure(S),
   Y : Structure(S), p : X = Y

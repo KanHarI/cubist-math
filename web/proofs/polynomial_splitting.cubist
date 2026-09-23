@@ -20,13 +20,13 @@ def PolynomialSplitting(K : AlgebraicField, p : Polynomial(K), n : Nat) =
 def PolynomialSplits(K : AlgebraicField, p : Polynomial(K)) =
   Mere(exists n : Nat, PolynomialSplitting(K, p, n));
 
-theorem polynomial_map_one(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def polynomial_map_one(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   polynomial_map(K, L, e, polynomial_one(K)) = polynomial_one(L) {
   obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
   exact trans(polynomial_map_constant(K, L, e, field_one(K)), cong(polynomial_constant(L), one));
 }
 
-theorem polynomial_map_variable(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def polynomial_map_variable(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   polynomial_map(K, L, e, polynomial_variable(K)) = polynomial_variable(L) {
   exact trans(
     polynomial_map_shift(K, L, e, polynomial_one(K)),
@@ -34,7 +34,7 @@ theorem polynomial_map_variable(K : AlgebraicField, L : AlgebraicField, e : Fiel
   );
 }
 
-theorem polynomial_map_linear_factor(
+def polynomial_map_linear_factor(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K)
 ) :
   polynomial_map(K, L, e, polynomial_linear_factor(K, x)) = polynomial_linear_factor(
@@ -62,7 +62,7 @@ theorem polynomial_map_linear_factor(
   );
 }
 
-theorem linear_factor_product_map(
+def linear_factor_product_map(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat
 ) =
   induction n as k return (

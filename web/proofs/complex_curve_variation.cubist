@@ -52,7 +52,7 @@ def ComplexCurveVariation(
     ), length
   );
 
-theorem complex_interval_deformation_variation(
+def complex_interval_deformation_variation(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F

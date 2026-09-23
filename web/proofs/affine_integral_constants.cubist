@@ -3,7 +3,7 @@ import contour_sums;
 
 // The constant-integrand formula holds already for every finite subdivision,
 // without a continuity, fineness, or limiting assumption.
-theorem curve_subdivision_constant(
+def curve_subdivision_constant(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), coefficient : Complex(F),
@@ -56,7 +56,7 @@ theorem curve_subdivision_constant(
   );
 }
 
-theorem complex_constant_curve_uniform(
+def complex_constant_curve_uniform(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), value : Complex(F)
@@ -94,7 +94,7 @@ theorem complex_constant_curve_uniform(
   );
 }
 
-theorem complex_constant_sequence_converges(
+def complex_constant_sequence_converges(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), value : Complex(F)
@@ -121,7 +121,7 @@ theorem complex_constant_sequence_converges(
 
 // Normalization of the constructed integral, not an assumed integral law:
 // integrating c gives c times the oriented displacement of the endpoints.
-theorem affine_dyadic_integral_constant(
+def affine_dyadic_integral_constant(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F

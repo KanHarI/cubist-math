@@ -22,7 +22,7 @@ def ContourTagBounds(
     );
   };
 
-theorem contour_tag_error_variation_bound(
+def contour_tag_error_variation_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : F -> F, weight : F -> F -> F
@@ -231,7 +231,7 @@ theorem contour_tag_error_variation_bound(
   };
 }
 
-theorem contour_tag_error_length_bound(
+def contour_tag_error_length_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : F -> F, weight : F -> F -> F

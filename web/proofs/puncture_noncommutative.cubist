@@ -60,7 +60,7 @@ def puncture_commutator =
 def three_state_action(p : BouquetLoops(Fin(2)), v : Fin(3)) =
   loop_action(Fin(2), Fin(3), puncture_permutations, p, v);
 
-theorem puncture_ab_action : three_state_action(puncture_ab, state_zero) = state_one {
+def puncture_ab_action : three_state_action(puncture_ab, state_zero) = state_one {
   exact trans(
     loop_action_append(
       Fin(2), Fin(3), puncture_permutations, first_puncture_loop, second_puncture_loop, state_zero
@@ -81,7 +81,7 @@ theorem puncture_ab_action : three_state_action(puncture_ab, state_zero) = state
   );
 }
 
-theorem puncture_aba_inverse_action :
+def puncture_aba_inverse_action :
   three_state_action(puncture_aba_inverse, state_zero) = state_zero {
   exact trans(
     loop_action_append(
@@ -104,7 +104,7 @@ theorem puncture_aba_inverse_action :
   );
 }
 
-theorem puncture_commutator_action : three_state_action(puncture_commutator, state_zero) = state_two {
+def puncture_commutator_action : three_state_action(puncture_commutator, state_zero) = state_two {
   exact trans(
     loop_action_append(
       Fin(2), Fin(3), puncture_permutations, puncture_aba_inverse,
@@ -119,7 +119,7 @@ theorem puncture_commutator_action : three_state_action(puncture_commutator, sta
   );
 }
 
-theorem puncture_commutator_nontrivial : (puncture_commutator = refl(bouquet_base(Fin(2)))) -> Void {
+def puncture_commutator_nontrivial : (puncture_commutator = refl(bouquet_base(Fin(2)))) -> Void {
   intro collapsed;
   let impossible =
     trans(
@@ -129,7 +129,7 @@ theorem puncture_commutator_nontrivial : (puncture_commutator = refl(bouquet_bas
   exact sum_disjoint(Fin(2), tt, second_puncture, sym(impossible));
 }
 
-theorem puncture_generators_do_not_commute :
+def puncture_generators_do_not_commute :
   (
     two_loop_product(first_puncture_loop, second_puncture_loop) = two_loop_product(
       second_puncture_loop, first_puncture_loop
@@ -171,7 +171,7 @@ theorem puncture_generators_do_not_commute :
   );
 }
 
-theorem commutator_first_winding_zero :
+def commutator_first_winding_zero :
   puncture_winding(2, first_puncture, puncture_commutator) = zeroZ {
   let abValue =
     puncture_winding_append_values(
@@ -191,7 +191,7 @@ theorem commutator_first_winding_zero :
   );
 }
 
-theorem commutator_second_winding_zero :
+def commutator_second_winding_zero :
   puncture_winding(2, second_puncture, puncture_commutator) = zeroZ {
   let abValue =
     puncture_winding_append_values(
@@ -211,7 +211,7 @@ theorem commutator_second_winding_zero :
   );
 }
 
-theorem commutator_all_windings_zero(selected : Fin(2)) :
+def commutator_all_windings_zero(selected : Fin(2)) :
   puncture_winding(2, selected, puncture_commutator) = zeroZ {
   exact match typed(Unit or Fin(1), selected) as label return (
     puncture_winding(2, label, puncture_commutator) = zeroZ
@@ -237,7 +237,7 @@ theorem commutator_all_windings_zero(selected : Fin(2)) :
 }
 
 // A checked counterexample to identifying homotopy classes by winding vectors.
-theorem winding_vector_does_not_classify_loops :
+def winding_vector_does_not_classify_loops :
   exists p : BouquetLoops(Fin(2)),
   (forall selected : Fin(2), puncture_winding(2, selected, p) = zeroZ)
   and ((p = refl(bouquet_base(Fin(2)))) -> Void) {

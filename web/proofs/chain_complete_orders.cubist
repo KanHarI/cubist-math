@@ -118,7 +118,7 @@ def collapse_path(
 ) =
   trans(sym(h(x, x, refl(x))), h(x, y, p));
 
-theorem collapse_path_recovers(
+def collapse_path_recovers(
   A : U1, h : (forall x : A, forall y : A, (x = y) -> (x = y)), x : A, y : A, p : x = y
 ) :
   collapse_path(A, h, x, y, p) = p {
@@ -128,7 +128,7 @@ theorem collapse_path_recovers(
   );
 }
 
-theorem weak_path_collapser_set(
+def weak_path_collapser_set(
   A : U1, h : (forall x : A, forall y : A, (x = y) -> (x = y)),
   constant : (
     forall x : A, forall y : A, forall p : x = y, forall q : x = y, h(x, y, p) = h(x, y, q)
@@ -156,7 +156,7 @@ def order_path_collapse(
     transport((fun (z : A) => le(z, x)), x, y, p, order_refl(A, le, laws, x))
   );
 
-theorem partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
+def partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
   FieldSet(A) {
   have constant :
     forall x : A, forall y : A, forall p : x = y, forall q : x = y,
@@ -182,7 +182,7 @@ theorem partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderL
   exact weak_path_collapser_set(A, order_path_collapse(A, le, laws), constant);
 }
 
-theorem field_subtype_is_set(
+def field_subtype_is_set(
   A : U1, P : A -> U1, setA : FieldSet(A), prop : (forall x : A, FieldProp(P(x)))
 ) :
   FieldSet(exists x : A, P(x)) {

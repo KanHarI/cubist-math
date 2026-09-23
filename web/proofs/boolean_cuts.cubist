@@ -21,7 +21,7 @@ def truth_of_decision(P : U0, decision : Decidable(P)) = match decision return C
     right no => right(tt);
   };
 
-theorem decision_truth(P : U0, decision : Decidable(P)) :
+def decision_truth(P : U0, decision : Decidable(P)) :
   FieldIff(CutTruth(truth_of_decision(P, decision)), P) {
   exact match decision as d return FieldIff(CutTruth(truth_of_decision(P, d)), P) {
     left yes => ((fun (u : Unit) => yes), (fun (p : P) => tt));
@@ -31,7 +31,7 @@ theorem decision_truth(P : U0, decision : Decidable(P)) :
 
 def classical_truth(P : U0, prop : FieldProp(P)) = truth_of_decision(P, excluded_middle(P, prop));
 
-theorem classical_truth_correct(P : U0, prop : FieldProp(P)) :
+def classical_truth_correct(P : U0, prop : FieldProp(P)) :
   FieldIff(CutTruth(classical_truth(P, prop)), P) {
   exact decision_truth(P, excluded_middle(P, prop));
 }
@@ -102,7 +102,7 @@ def classical_cut_predicate(
 ) =
   fun (q : Q) => classical_truth(predicate(q), prop(q));
 
-theorem classical_cut_predicate_correct(
+def classical_cut_predicate_correct(
   Q : U0, predicate : Q -> U0, prop : (forall q : Q, FieldProp(predicate(q)))
 ) :
   decoded_cut_predicate(Q, classical_cut_predicate(Q, predicate, prop)) = predicate {
@@ -134,7 +134,7 @@ def dedekind_to_boolean(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) :
   );
 }
 
-theorem classical_lower_membership(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ), q : Q) :
+def classical_lower_membership(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ), q : Q) :
   FieldIff(
     CutTruth(boolean_cut_lower(Q, ltQ, dedekind_to_boolean(Q, ltQ, cut), q)),
     cut_lower(Q, ltQ, cut, q)
@@ -142,7 +142,7 @@ theorem classical_lower_membership(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut
   exact classical_truth_correct(cut_lower(Q, ltQ, cut, q), cut_lower_prop(Q, ltQ, cut, q));
 }
 
-theorem classical_upper_membership(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ), q : Q) :
+def classical_upper_membership(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ), q : Q) :
   FieldIff(
     CutTruth(boolean_cut_upper(Q, ltQ, dedekind_to_boolean(Q, ltQ, cut), q)),
     cut_upper(Q, ltQ, cut, q)

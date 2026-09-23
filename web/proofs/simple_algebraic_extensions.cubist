@@ -11,7 +11,7 @@ def SimpleGenerated(
   (forall a : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, a)))
   -> subfield_members(L, S, x) -> forall y : af_carrier(L), subfield_members(L, S, y);
 
-theorem simple_root_embedding_surjective(
+def simple_root_embedding_surjective(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L), x : af_carrier(L),

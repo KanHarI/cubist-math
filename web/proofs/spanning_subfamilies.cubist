@@ -29,7 +29,7 @@ def fin_prepend(A : U0, n : Nat, first : A, rest : Fin(n) -> A, i : Fin(succ(n))
     right j => rest(j);
   };
 
-theorem fin_prepend_injective(
+def fin_prepend_injective(
   A : U0, n : Nat, first : A, rest : Fin(n) -> A, injective : Injective(Fin(n), A, rest),
   fresh : (forall j : Fin(n), first = rest(j) -> Void)
 ) :
@@ -61,7 +61,7 @@ theorem fin_prepend_injective(
   };
 }
 
-theorem outside_generator_fresh(
+def outside_generator_fresh(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V), m : Nat,
   chosen : Fin(m) -> Fin(n), i : Fin(n),
   outside : Mere(
@@ -90,7 +90,7 @@ theorem outside_generator_fresh(
   );
 }
 
-theorem spanning_subfamily_step(
+def spanning_subfamily_step(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
   spanning : FiniteSpanningFamily(K, V, n, v), fuel : Nat,
   previous : (
@@ -170,7 +170,7 @@ def spanning_subfamily_search(
 
 // A finite spanning family contains a basis. Chosen indices are distinct,
 // so duplicate entries or zero generators are never silently kept in a basis.
-theorem finite_spanning_subfamily_basis(
+def finite_spanning_subfamily_basis(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
   spanning : FiniteSpanningFamily(K, V, n, v)
 ) :

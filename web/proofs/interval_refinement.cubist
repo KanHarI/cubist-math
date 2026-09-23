@@ -2,7 +2,7 @@ import uniform_curve_tags;
 import sample_refinement_tags;
 
 // Tags admissible for a refinement all lie within its outer endpoints.
-theorem interval_refinement_tags_global(
+def interval_refinement_tags_global(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
@@ -35,7 +35,7 @@ theorem interval_refinement_tags_global(
 
 // A coarse tag need not be admissible for each refined edge. The common
 // containing interval, rather than the refined edge, controls its distance.
-theorem uniform_refinement_tag_bounds(
+def uniform_refinement_tag_bounds(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

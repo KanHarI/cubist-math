@@ -6,7 +6,7 @@ import set_quotients;
 def SameLeftCoset(G : Group, S : Subgroup(G), x : group_carrier(G), y : group_carrier(G)) =
   subgroup_members(G, S, group_multiply(G, group_inverse(G, x), y));
 
-theorem coset_factor(G : Group, x : group_carrier(G), y : group_carrier(G)) :
+def coset_factor(G : Group, x : group_carrier(G), y : group_carrier(G)) :
   group_multiply(G, x, group_multiply(G, group_inverse(G, x), y)) = y {
   let m = group_multiply(G);
   exact trans(
@@ -19,7 +19,7 @@ theorem coset_factor(G : Group, x : group_carrier(G), y : group_carrier(G)) :
 }
 
 // A specified factor proves membership; no representative is selected from a truncation.
-theorem same_coset_from_factor(
+def same_coset_from_factor(
   G : Group, S : Subgroup(G), x : group_carrier(G), y : group_carrier(G), n : group_carrier(G),
   member : subgroup_members(G, S, n), factor : group_multiply(G, x, n) = y
 ) :
@@ -32,7 +32,7 @@ theorem same_coset_from_factor(
   );
 }
 
-theorem same_coset_refl(G : Group, S : Subgroup(G), x : group_carrier(G)) :
+def same_coset_refl(G : Group, S : Subgroup(G), x : group_carrier(G)) :
   SameLeftCoset(G, S, x, x) {
   exact same_coset_from_factor(
     G, S, x, x, group_unit(G), subgroup_unit(G, subgroup_members(G, S), subgroup_laws(G, S)),
@@ -40,7 +40,7 @@ theorem same_coset_refl(G : Group, S : Subgroup(G), x : group_carrier(G)) :
   );
 }
 
-theorem same_coset_sym(
+def same_coset_sym(
   G : Group, S : Subgroup(G), x : group_carrier(G), y : group_carrier(G),
   same : SameLeftCoset(G, S, x, y)
 ) :
@@ -60,7 +60,7 @@ theorem same_coset_sym(
   );
 }
 
-theorem same_coset_trans(
+def same_coset_trans(
   G : Group, S : Subgroup(G), x : group_carrier(G), y : group_carrier(G), z : group_carrier(G),
   xy : SameLeftCoset(G, S, x, y), yz : SameLeftCoset(G, S, y, z)
 ) :
@@ -80,7 +80,7 @@ theorem same_coset_trans(
   );
 }
 
-theorem same_coset_equivalence(G : Group, S : Subgroup(G)) :
+def same_coset_equivalence(G : Group, S : Subgroup(G)) :
   EquivalenceRelation(group_carrier(G), SameLeftCoset(G, S)) {
   exact (
     (
@@ -92,7 +92,7 @@ theorem same_coset_equivalence(G : Group, S : Subgroup(G)) :
 }
 
 // Left multiplication preserves left cosets for every subgroup.
-theorem same_coset_multiply_left(
+def same_coset_multiply_left(
   G : Group, S : Subgroup(G), a : group_carrier(G), x : group_carrier(G), y : group_carrier(G),
   same : SameLeftCoset(G, S, x, y)
 ) :
@@ -104,7 +104,7 @@ theorem same_coset_multiply_left(
   );
 }
 
-theorem group_conjugate_shift(G : Group, a : group_carrier(G), n : group_carrier(G)) :
+def group_conjugate_shift(G : Group, a : group_carrier(G), n : group_carrier(G)) :
   group_multiply(G, a, group_conjugate(G, group_inverse(G, a), n)) = group_multiply(G, n, a) {
   let m = group_multiply(G);
   let i = group_inverse(G, a);
@@ -118,7 +118,7 @@ theorem group_conjugate_shift(G : Group, a : group_carrier(G), n : group_carrier
 }
 
 // Right multiplication is the step that needs normality.
-theorem same_coset_multiply_right(
+def same_coset_multiply_right(
   G : Group, S : Subgroup(G), normal : IsNormal(G, S), x : group_carrier(G), y : group_carrier(G),
   a : group_carrier(G), same : SameLeftCoset(G, S, x, y)
 ) :
@@ -141,7 +141,7 @@ theorem same_coset_multiply_right(
   );
 }
 
-theorem normal_coset_multiply(
+def normal_coset_multiply(
   G : Group, S : Subgroup(G), normal : IsNormal(G, S), x : group_carrier(G), x2 : group_carrier(G),
   y : group_carrier(G), y2 : group_carrier(G), xx : SameLeftCoset(G, S, x, x2),
   yy : SameLeftCoset(G, S, y, y2)
@@ -154,7 +154,7 @@ theorem normal_coset_multiply(
   );
 }
 
-theorem same_coset_unit_member(
+def same_coset_unit_member(
   G : Group, S : Subgroup(G), x : group_carrier(G), same : SameLeftCoset(G, S, group_unit(G), x)
 ) :
   subgroup_members(G, S, x) {
@@ -166,7 +166,7 @@ theorem same_coset_unit_member(
 }
 
 // Normality is necessary too: right translation takes gS = gnS to S = gng⁻¹S.
-theorem right_coset_compatibility_implies_normal(
+def right_coset_compatibility_implies_normal(
   G : Group, S : Subgroup(G),
   compatible : (
     forall x : group_carrier(G), forall y : group_carrier(G), forall a : group_carrier(G),
@@ -190,7 +190,7 @@ theorem right_coset_compatibility_implies_normal(
   );
 }
 
-theorem normal_coset_inverse(
+def normal_coset_inverse(
   G : Group, S : Subgroup(G), normal : IsNormal(G, S), x : group_carrier(G), y : group_carrier(G),
   same : SameLeftCoset(G, S, x, y)
 ) :
@@ -217,7 +217,7 @@ theorem normal_coset_inverse(
 
 // Kernel cosets are exactly the fibers of the homomorphism. This is the
 // relation-level part of the first isomorphism theorem, before quotient descent.
-theorem group_hom_difference(
+def group_hom_difference(
   G : Group, H : Group, h : GroupHom(G, H), x : group_carrier(G), y : group_carrier(G)
 ) :
   group_hom_map(G, H, h, group_multiply(G, group_inverse(G, x), y)) = group_multiply(
@@ -230,7 +230,7 @@ theorem group_hom_difference(
   );
 }
 
-theorem kernel_coset_of_equal_images(
+def kernel_coset_of_equal_images(
   G : Group, H : Group, h : GroupHom(G, H), x : group_carrier(G), y : group_carrier(G),
   same : group_hom_map(G, H, h, x) = group_hom_map(G, H, h, y)
 ) :
@@ -242,7 +242,7 @@ theorem kernel_coset_of_equal_images(
   );
 }
 
-theorem kernel_coset_equal_images(
+def kernel_coset_equal_images(
   G : Group, H : Group, h : GroupHom(G, H), x : group_carrier(G), y : group_carrier(G),
   same : SameLeftCoset(G, group_kernel(G, H, h), x, y)
 ) :
@@ -264,7 +264,7 @@ def LeftCosets(G : Group, S : Subgroup(G)) = SetQuotient(group_carrier(G), SameL
 def left_coset(G : Group, S : Subgroup(G), x : group_carrier(G)) =
   quotient_class(group_carrier(G), SameLeftCoset(G, S), x);
 
-theorem same_coset_path(
+def same_coset_path(
   G : Group, S : Subgroup(G), x : group_carrier(G), y : group_carrier(G),
   same : SameLeftCoset(G, S, x, y)
 ) :
@@ -274,7 +274,7 @@ theorem same_coset_path(
   );
 }
 
-theorem coset_path_membership(
+def coset_path_membership(
   G : Group, S : Subgroup(G), x : group_carrier(G), y : group_carrier(G),
   same : left_coset(G, S, x) = left_coset(G, S, y)
 ) :
@@ -284,7 +284,7 @@ theorem coset_path_membership(
   );
 }
 
-theorem normal_coset_product_path(
+def normal_coset_product_path(
   G : Group, S : Subgroup(G), normal : IsNormal(G, S), x : group_carrier(G), x2 : group_carrier(G),
   y : group_carrier(G), y2 : group_carrier(G), xx : left_coset(G, S, x) = left_coset(G, S, x2),
   yy : left_coset(G, S, y) = left_coset(G, S, y2)

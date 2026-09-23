@@ -2,7 +2,7 @@ import interval_sampling;
 import parameter_tag_sampling;
 import complex_curves;
 
-theorem complex_close_difference_bound(
+def complex_close_difference_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F),
@@ -37,7 +37,7 @@ theorem complex_close_difference_bound(
 
 // Uniform continuity produces a positive mesh threshold. Tag errors are
 // then proved from admissibility, rather than supplied as an extra premise.
-theorem uniform_curve_tag_bounds(
+def uniform_curve_tag_bounds(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

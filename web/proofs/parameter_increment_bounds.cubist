@@ -12,7 +12,7 @@ def parameter_imag_increment(
   coordinate_difference(F, addF, negF, complex_imag(F, curve(a)), complex_imag(F, curve(b)));
 
 // Repackage separately proved coordinate bounds for the contour estimate.
-theorem parameter_coordinate_increment_bounds(
+def parameter_coordinate_increment_bounds(
   C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
   realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, n : Nat
 ) :

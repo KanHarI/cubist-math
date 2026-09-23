@@ -10,7 +10,7 @@ def SeparableElementsIn(
   forall algebraic : AlgebraicElement(K, L, e, x),
   SeparableIn(K, T, j, minimal_polynomial(K, L, e, x, algebraic));
 
-theorem separable_extension_in_closed(
+def separable_extension_in_closed(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   separable : SeparableExtension(K, L, e), T : AlgebraicField, closed : AlgebraicallyClosed(T)
 ) :
@@ -28,7 +28,7 @@ theorem separable_extension_in_closed(
   );
 }
 
-theorem polynomial_map_divides(
+def polynomial_map_divides(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), q : Polynomial(K),
   p : Polynomial(K), divides : PolynomialDivides(K, q, p)
 ) :
@@ -54,7 +54,7 @@ theorem polynomial_map_divides(
 // Minimal polynomials over a larger base divide the old minimal polynomial
 // after changing its coefficients. Distinct-root factorization descends to
 // this divisor, which is the separability fact used in a tower.
-theorem separable_elements_enlarge_base(
+def separable_elements_enlarge_base(
   K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, i : FieldEmbedding(K, R),
   h : FieldEmbedding(R, L), e : FieldEmbedding(K, L), triangle : FieldTower(K, R, L, i, h, e),
   algebraicK : AlgebraicExtension(K, L, e), T : AlgebraicField, closed : AlgebraicallyClosed(T),

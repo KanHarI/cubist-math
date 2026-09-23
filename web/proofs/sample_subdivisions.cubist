@@ -109,7 +109,7 @@ def join_subdivisions(
   );
 }
 
-theorem subdivision_sum_join(
+def subdivision_sum_join(
   C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, a : C, b : C, c : C, left : SampleSubdivision(C, a, b),
@@ -194,7 +194,7 @@ def FlattenedSubdivision(
     C, G, zero, addG, edge, sample_first(C, n, vertices), sample_last(C, n, vertices), flat
   ) = subdivision_total(C, G, zero, addG, edge, n, vertices, pieces);
 
-theorem sample_subdivisions_flatten_step(
+def sample_subdivisions_flatten_step(
   C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat,
@@ -222,7 +222,7 @@ theorem sample_subdivisions_flatten_step(
 
 // Construct an actual single list of samples with the same endpoints and
 // exactly the sum of all per-edge subdivisions. No choice is used.
-theorem sample_subdivisions_flatten(
+def sample_subdivisions_flatten(
   C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat

@@ -65,7 +65,7 @@ def root_generated_root(
 }
 
 // The realized field is still generated internally by the lifted base and roots.
-theorem root_generated_generates(
+def root_generated_generates(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, roots : Fin(n)
   -> af_carrier(L), z : af_carrier(RootGeneratedField(K, L, e, n, roots))
 ) :

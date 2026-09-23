@@ -16,7 +16,7 @@ def identity_system_encode(
 ) =
   cong(field_first(A, R), contraction(identity_total_point(A, R, b, r)));
 
-theorem identity_total_second_path(
+def identity_total_second_path(
   A : U1, R : A -> U1, x : IdentityTotal(A, R), y : IdentityTotal(A, R), p : x = y
 ) :
   transport(
@@ -25,7 +25,7 @@ theorem identity_total_second_path(
   exact apd(field_second(A, R), x, y, p);
 }
 
-theorem identity_system_section(
+def identity_system_section(
   A : U1, a : A, R : A -> U1, r0 : R(a),
   contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
   r : R(b)
@@ -37,7 +37,7 @@ theorem identity_system_section(
   );
 }
 
-theorem identity_system_retraction(
+def identity_system_retraction(
   A : U1, a : A, R : A -> U1, r0 : R(a),
   contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
   p : a = b
@@ -68,7 +68,7 @@ theorem identity_system_retraction(
 
 // Identity systems with set-valued fibers. The set hypothesis supplies the
 // half-adjoint triangle law; the encode/decode round trips above do not need it.
-theorem identity_system_equivalence(
+def identity_system_equivalence(
   A : U1, a : A, R : A -> U1, r0 : R(a),
   contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
   setR : FieldSet(R(b))
@@ -82,7 +82,7 @@ theorem identity_system_equivalence(
 }
 
 // The weakly constant path-map form of Hedberg's argument.
-theorem constant_path_correction(
+def constant_path_correction(
   A : U1, choose : (forall x : A, forall y : A, (x = y) -> (x = y)), x : A, y : A, p : x = y
 ) :
   concatenate(U1, A, x, x, y, inverse(U1, A, x, x, choose(x, x, refl(x))), choose(x, y, p)) = p {
@@ -96,7 +96,7 @@ theorem constant_path_correction(
   );
 }
 
-theorem constant_paths_are_set(
+def constant_paths_are_set(
   A : U1, choose : (forall x : A, forall y : A, (x = y) -> (x = y)),
   constant : (
     forall x : A, forall y : A, forall p : x = y, forall q : x = y,

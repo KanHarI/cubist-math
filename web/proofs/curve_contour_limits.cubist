@@ -3,7 +3,7 @@ import parameter_contour_limits;
 
 // Given convergence for one tag scheme, bounded variation and vanishing
 // sampled value errors transfer that limit to the other tag scheme.
-theorem curve_contour_tag_independent_limit(
+def curve_contour_tag_independent_limit(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -140,7 +140,7 @@ theorem curve_contour_tag_independent_limit(
 // For the constructed affine curve, the variation hypothesis is discharged
 // by its proved lattice bounds. Only the integrand's sampled errors and one
 // convergent tag scheme remain inputs; convergence is not postulated afresh.
-theorem affine_curve_contour_tag_independent_limit(
+def affine_curve_contour_tag_independent_limit(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

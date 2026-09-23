@@ -161,6 +161,6 @@ def integer_equal_decidable(x : Z) = match x as a return (forall y : Z, Decidabl
     };
   };
 
-theorem integers_are_a_set : IsSet(Z) {
+def integers_are_a_set : IsSet(Z) {
   exact hedberg(Z, integer_equal_decidable);
 }

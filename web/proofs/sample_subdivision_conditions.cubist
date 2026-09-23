@@ -35,7 +35,7 @@ def SubdivisionTagged(
     );
   };
 
-theorem subdivision_tagged_map_step(
+def subdivision_tagged_map_step(
   C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   mapping : (
@@ -71,7 +71,7 @@ theorem subdivision_tagged_map_step(
   );
 }
 
-theorem subdivision_tagged_map(
+def subdivision_tagged_map(
   C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   mapping : (

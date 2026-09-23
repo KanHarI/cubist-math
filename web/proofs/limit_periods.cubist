@@ -13,7 +13,7 @@ def limit_period(
 ) =
   field_sequence_limit(F, zero, addF, lt, complete, approximations(p), cauchy(p));
 
-theorem cauchy_approximation_period_laws(
+def cauchy_approximation_period_laws(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -70,7 +70,7 @@ theorem cauchy_approximation_period_laws(
 }
 
 // Changing the approximating scheme by a vanishing error preserves its period.
-theorem limit_period_independent_of_approximation(
+def limit_period_independent_of_approximation(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

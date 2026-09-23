@@ -16,7 +16,7 @@ def IntervalRefinementAdmissible(
     )
   );
 
-theorem dyadic_refinement_zero(
+def dyadic_refinement_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -75,7 +75,7 @@ theorem dyadic_refinement_zero(
   );
 }
 
-theorem dyadic_refinement_step(
+def dyadic_refinement_step(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -212,7 +212,7 @@ theorem dyadic_refinement_step(
 
 // Any later level is an actual admissible per-edge refinement of this one.
 // The target sum may be noncommutative: concatenation order is preserved.
-theorem dyadic_samples_refine(
+def dyadic_samples_refine(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,

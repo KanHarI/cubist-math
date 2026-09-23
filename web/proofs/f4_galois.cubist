@@ -7,20 +7,20 @@ def f2_into_f4(x : F2Carrier) = f2_induction((fun (x : F2Carrier) => F4Carrier),
 def f4_retract_f2(x : F4Carrier) =
   f4_induction((fun (x : F4Carrier) => F2Carrier), f2_0, f2_1, f2_0, f2_1, x);
 
-theorem f2_inclusion_retraction(x : F2Carrier) : f4_retract_f2(f2_into_f4(x)) = x {
+def f2_inclusion_retraction(x : F2Carrier) : f4_retract_f2(f2_into_f4(x)) = x {
   exact f2_induction(
     (fun (x : F2Carrier) => f4_retract_f2(f2_into_f4(x)) = x), refl(f2_0), refl(f2_1), x
   );
 }
 
-theorem f2_inclusion_injective(x : F2Carrier, y : F2Carrier, p : f2_into_f4(x) = f2_into_f4(y)) :
+def f2_inclusion_injective(x : F2Carrier, y : F2Carrier, p : f2_into_f4(x) = f2_into_f4(y)) :
   x = y {
   exact trans(
     sym(f2_inclusion_retraction(x)), trans(cong(f4_retract_f2, p), f2_inclusion_retraction(y))
   );
 }
 
-theorem f2_inclusion_add(x : F2Carrier, y : F2Carrier) :
+def f2_inclusion_add(x : F2Carrier, y : F2Carrier) :
   f2_into_f4(f2_add(x, y)) = f4_add(f2_into_f4(x), f2_into_f4(y)) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_into_f4(f2_add(x, y)) = f4_add(f2_into_f4(x), f2_into_f4(y))),
@@ -35,7 +35,7 @@ theorem f2_inclusion_add(x : F2Carrier, y : F2Carrier) :
   );
 }
 
-theorem f2_inclusion_mul(x : F2Carrier, y : F2Carrier) :
+def f2_inclusion_mul(x : F2Carrier, y : F2Carrier) :
   f2_into_f4(f2_mul(x, y)) = f4_mul(f2_into_f4(x), f2_into_f4(y)) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_into_f4(f2_mul(x, y)) = f4_mul(f2_into_f4(x), f2_into_f4(y))),
@@ -69,7 +69,7 @@ def F4OverF2 = structure_object(ExtensionData(F2), F4Carrier, f4_extension_data,
 // Frobenius x |-> x^2 fixes 0 and 1 and exchanges alpha with alpha+1.
 def f4_frobenius(x : F4Carrier) = f4_mul(x, x);
 
-theorem f4_frobenius_add(x : F4Carrier, y : F4Carrier) :
+def f4_frobenius_add(x : F4Carrier, y : F4Carrier) :
   f4_frobenius(f4_add(x, y)) = f4_add(f4_frobenius(x), f4_frobenius(y)) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_frobenius(f4_add(x, y)) = f4_add(f4_frobenius(x), f4_frobenius(y))),
@@ -108,7 +108,7 @@ theorem f4_frobenius_add(x : F4Carrier, y : F4Carrier) :
   );
 }
 
-theorem f4_frobenius_mul(x : F4Carrier, y : F4Carrier) :
+def f4_frobenius_mul(x : F4Carrier, y : F4Carrier) :
   f4_frobenius(f4_mul(x, y)) = f4_mul(f4_frobenius(x), f4_frobenius(y)) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_frobenius(f4_mul(x, y)) = f4_mul(f4_frobenius(x), f4_frobenius(y))),
@@ -147,7 +147,7 @@ theorem f4_frobenius_mul(x : F4Carrier, y : F4Carrier) :
   );
 }
 
-theorem f4_frobenius_involution(x : F4Carrier) : f4_frobenius(f4_frobenius(x)) = x {
+def f4_frobenius_involution(x : F4Carrier) : f4_frobenius(f4_frobenius(x)) = x {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_frobenius(f4_frobenius(x)) = x),
     refl(f4_frobenius(f4_frobenius(f4_0))), refl(f4_frobenius(f4_frobenius(f4_1))),
@@ -155,7 +155,7 @@ theorem f4_frobenius_involution(x : F4Carrier) : f4_frobenius(f4_frobenius(x)) =
   );
 }
 
-theorem f4_frobenius_fixes_base(x : F2Carrier) : f4_frobenius(f2_into_f4(x)) = f2_into_f4(x) {
+def f4_frobenius_fixes_base(x : F2Carrier) : f4_frobenius(f2_into_f4(x)) = f2_into_f4(x) {
   exact f2_induction(
     (fun (x : F2Carrier) => f4_frobenius(f2_into_f4(x)) = f2_into_f4(x)),
     refl(f4_frobenius(f2_into_f4(f2_0))), refl(f4_frobenius(f2_into_f4(f2_1))), x
@@ -183,7 +183,7 @@ def f4_frobenius_automorphism : Galois(F2, F4OverF2) {
 
 def f4_identity_automorphism = extension_identity_iso(F2, F4OverF2);
 
-theorem f4_frobenius_square :
+def f4_frobenius_square :
   extension_iso_compose(
     F2, F4OverF2, F4OverF2, F4OverF2, f4_frobenius_automorphism, f4_frobenius_automorphism
   ) = f4_identity_automorphism {
@@ -198,11 +198,11 @@ theorem f4_frobenius_square :
 // Both roots exist in the constructed field; they are distinct.
 def f4_root_polynomial(x : F4Carrier) = f4_add(f4_add(f4_mul(x, x), x), f4_1);
 
-theorem f4_alpha_root : f4_root_polynomial(f4_2) = f4_0 {
+def f4_alpha_root : f4_root_polynomial(f4_2) = f4_0 {
   exact refl(f4_0);
 }
 
-theorem f4_other_root : f4_root_polynomial(f4_3) = f4_0 {
+def f4_other_root : f4_root_polynomial(f4_3) = f4_0 {
   exact refl(f4_0);
 }
 
@@ -243,16 +243,16 @@ def f4_2_not_1(p : f4_2 = f4_1) =
 // This is a path of whole field extensions, not a path between field elements.
 def f4_galois_loop = extension_iso_path(F2, F4OverF2, F4OverF2, f4_frobenius_automorphism);
 
-theorem f4_loop_exchanges_roots :
+def f4_loop_exchanges_roots :
   transport(extension_carrier(F2), F4OverF2, F4OverF2, f4_galois_loop, f4_2) = f4_3 {
   exact galois_loop_action(F2, F4OverF2, f4_frobenius_automorphism, f4_2);
 }
 
-theorem f4_loop_nontrivial : (f4_galois_loop = refl(F4OverF2)) -> Void {
+def f4_loop_nontrivial : (f4_galois_loop = refl(F4OverF2)) -> Void {
   exact galois_moving_loop_nontrivial(F2, F4OverF2, f4_frobenius_automorphism, f4_2, f4_3_not_2);
 }
 
-theorem f4_loop_twice : trans(f4_galois_loop, f4_galois_loop) = refl(F4OverF2) {
+def f4_loop_twice : trans(f4_galois_loop, f4_galois_loop) = refl(F4OverF2) {
   exact with unfolding [f4_galois_loop, f4_identity_automorphism] {
     trans(
       sym(

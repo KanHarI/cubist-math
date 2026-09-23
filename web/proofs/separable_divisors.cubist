@@ -3,7 +3,7 @@ import algebraic_base_change;
 import polynomial_root_existence;
 
 // Cancellation of a common linear factor also cancels divisibility evidence.
-theorem polynomial_factor_divisibility_cancel(
+def polynomial_factor_divisibility_cancel(
   K : AlgebraicField, F : Polynomial(K), nonzero : PolynomialNonzero(K, F), p : Polynomial(K),
   q : Polynomial(K), a : Polynomial(K), b : Polynomial(K), ep : p = polynomial_mul(K, F, a),
   eq : q = polynomial_mul(K, F, b), divides : PolynomialDivides(K, q, p)
@@ -68,7 +68,7 @@ def DistinctSplittingDivisors(K : AlgebraicField, n : Nat) =
   -> Mere(DistinctPolynomialSplitting(K, q, polynomial_degree(K, q)));
 
 // The selected root is absent from every root of the remaining divisor.
-theorem omitted_divisor_roots_avoid(
+def omitted_divisor_roots_avoid(
   K : AlgebraicField, n : Nat, roots : Fin(succ(n)) -> af_carrier(K),
   distinct : Injective(Fin(succ(n)), af_carrier(K), roots), index : Fin(succ(n)), a : af_carrier(K),
   p : Polynomial(K),
@@ -263,7 +263,7 @@ def distinct_splitting_divisor_step(
   };
 }
 
-theorem distinct_splitting_divisor(K : AlgebraicField, closed : AlgebraicallyClosed(K), n : Nat) =
+def distinct_splitting_divisor(K : AlgebraicField, closed : AlgebraicallyClosed(K), n : Nat) =
   induction n as k return DistinctSplittingDivisors(K, k) {
     zero => distinct_splitting_divisor_zero(K, closed);
     succ previous => distinct_splitting_divisor_step(K, closed, k, previous);

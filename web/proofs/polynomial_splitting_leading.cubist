@@ -2,7 +2,7 @@ import polynomial_splitting;
 import polynomial_irreducible_factors;
 
 // A product of n monic linear factors is monic of degree n.
-theorem linear_factor_leading(K : AlgebraicField, x : af_carrier(K)) :
+def linear_factor_leading(K : AlgebraicField, x : af_carrier(K)) :
   polynomial_coefficients(K, polynomial_linear_factor(K, x), 1) = field_one(K) {
   exact scalar_add_zero_right(K, field_one(K));
 }
@@ -11,7 +11,7 @@ def MonicLinearProduct(K : AlgebraicField, n : Nat, roots : Fin(n) -> af_carrier
   (polynomial_cutoff(K, linear_factor_product(K, n, roots)) = succ(n))
   and (polynomial_coefficients(K, linear_factor_product(K, n, roots), n) = field_one(K));
 
-theorem monic_linear_product_step(
+def monic_linear_product_step(
   K : AlgebraicField, n : Nat,
   previous : (forall roots : Fin(n) -> af_carrier(K), MonicLinearProduct(K, n, roots)),
   roots : Fin(succ(n)) -> af_carrier(K)
@@ -43,7 +43,7 @@ theorem monic_linear_product_step(
   exact (polynomial_product_degree(K, A, B, 1, n, da, db), leading);
 }
 
-theorem monic_linear_product(K : AlgebraicField, n : Nat) =
+def monic_linear_product(K : AlgebraicField, n : Nat) =
   induction n as k return (forall roots : Fin(k) -> af_carrier(K), MonicLinearProduct(K, k, roots)) {
     zero => fun (roots : Fin(0) -> af_carrier(K)) => typed(
       MonicLinearProduct(K, 0, roots), (polynomial_one_cutoff(K), refl(field_one(K)))
@@ -51,7 +51,7 @@ theorem monic_linear_product(K : AlgebraicField, n : Nat) =
     succ previous => monic_linear_product_step(K, k, previous);
   };
 
-theorem polynomial_splitting_leading(
+def polynomial_splitting_leading(
   K : AlgebraicField, p : Polynomial(K), n : Nat, roots : Fin(n) -> af_carrier(K),
   a : af_carrier(K),
   equation : p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots))

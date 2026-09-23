@@ -18,7 +18,7 @@ def independent_chain_evidence(
 ) =
   field_second(IndependentSubset(K, V), (fun (S : IndependentSubset(K, V)) => typed(U1, C(S))), i);
 
-theorem independent_indexed_chain(
+def independent_indexed_chain(
   K : AlgebraicField, V : VectorSpace(K), C : IndependentSubset(K, V) -> U0,
   chain : OrderChain(IndependentSubset(K, V), IndependentIncluded(K, V), C)
 ) :
@@ -38,7 +38,7 @@ theorem independent_indexed_chain(
   );
 }
 
-theorem independent_chain_complete(K : AlgebraicField, V : VectorSpace(K)) :
+def independent_chain_complete(K : AlgebraicField, V : VectorSpace(K)) :
   ChainComplete(IndependentSubset(K, V), IndependentIncluded(K, V)) {
   intro C;
   intro chain;
@@ -69,7 +69,7 @@ theorem independent_chain_complete(K : AlgebraicField, V : VectorSpace(K)) :
 // mere: the theorem does not select coordinates or a preferred basis.
 // The only classical assumptions are the existing Choice and LEM schemas;
 // maximality is proved through the chain-complete form of Zorn above.
-theorem vector_space_has_basis(K : AlgebraicField, V : VectorSpace(K)) :
+def vector_space_has_basis(K : AlgebraicField, V : VectorSpace(K)) :
   FieldExists(VectorBasis(K, V)) {
   let A = IndependentSubset(K, V);
   let le = IndependentIncluded(K, V);

@@ -10,7 +10,7 @@ def ComplexPerturbation(
   exists error : Complex(F), (fresh = complex_add(F, addF, old, error))
   and ComplexBoxBound(F, negF, lt, error, radius);
 
-theorem complex_perturbation_zero(
+def complex_perturbation_zero(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)
@@ -24,7 +24,7 @@ theorem complex_perturbation_zero(
   );
 }
 
-theorem complex_perturbation_add(
+def complex_perturbation_add(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), oldLeft : Complex(F),

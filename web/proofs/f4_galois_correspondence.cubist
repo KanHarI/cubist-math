@@ -8,7 +8,7 @@ import galois_orders;
 def F4FixedOnRepresentatives(H : F4Automorphism -> U0, x : F4Carrier) =
   forall b : F2Carrier, H(f4_symmetry(b)) -> (f4_auto_apply(f4_symmetry(b), x) = x);
 
-theorem f4_fixed_from_representatives(
+def f4_fixed_from_representatives(
   H : F4Automorphism -> U0, x : F4Carrier, tested : F4FixedOnRepresentatives(H, x)
 ) :
   GaloisFixed(F2, F4OverF2, H, x) {
@@ -79,7 +79,7 @@ def f4_decidable_fixing(D : DecidableIntermediateField(F2, F4OverF2)) :
   );
 }
 
-theorem f4_decidable_fixing_fixed(D : DecidableSubgroup(F4GaloisGroup)) :
+def f4_decidable_fixing_fixed(D : DecidableSubgroup(F4GaloisGroup)) :
   f4_decidable_fixing(f4_decidable_fixed(D)) = D {
   exact decidable_subgroup_ext(
     F4GaloisGroup, f4_decidable_fixing(f4_decidable_fixed(D)), D,
@@ -90,7 +90,7 @@ theorem f4_decidable_fixing_fixed(D : DecidableSubgroup(F4GaloisGroup)) :
   );
 }
 
-theorem f4_decidable_fixed_fixing(D : DecidableIntermediateField(F2, F4OverF2)) :
+def f4_decidable_fixed_fixing(D : DecidableIntermediateField(F2, F4OverF2)) :
   f4_decidable_fixed(f4_decidable_fixing(D)) = D {
   exact decidable_intermediate_ext(
     F2, F4OverF2, f4_decidable_fixed(f4_decidable_fixing(D)), D,
@@ -124,7 +124,7 @@ def F4DecidableIntermediateIncluded(
     F2, F4OverF2, decidable_intermediate(F2, F4OverF2, D), decidable_intermediate(F2, F4OverF2, E)
   );
 
-theorem f4_decidable_fixed_antitone :
+def f4_decidable_fixed_antitone :
   Antitone(
     DecidableSubgroup(F4GaloisGroup), DecidableIntermediateField(F2, F4OverF2),
     F4DecidableSubgroupIncluded, F4DecidableIntermediateIncluded, f4_decidable_fixed
@@ -138,7 +138,7 @@ theorem f4_decidable_fixed_antitone :
   );
 }
 
-theorem f4_decidable_fixing_antitone :
+def f4_decidable_fixing_antitone :
   Antitone(
     DecidableIntermediateField(F2, F4OverF2), DecidableSubgroup(F4GaloisGroup),
     F4DecidableIntermediateIncluded, F4DecidableSubgroupIncluded, f4_decidable_fixing

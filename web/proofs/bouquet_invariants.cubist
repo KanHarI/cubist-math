@@ -3,7 +3,7 @@ import bouquet_generation;
 // A set-valued invariant preserving the constant loop and concatenation is
 // determined by the values of the signed generators. No loop-setness or
 // reduced-word uniqueness is assumed.
-theorem bouquet_maps_determined_by_letters(
+def bouquet_maps_determined_by_letters(
   A : U0, G : U1, setG : FieldSet(G), unit : G, multiply : G -> G -> G, h : BouquetLoops(A) -> G,
   k : BouquetLoops(A) -> G, lawsH : LoopMapLaws(Bouquet(A), bouquet_base(A), G, unit, multiply, h),
   lawsK : LoopMapLaws(Bouquet(A), bouquet_base(A), G, unit, multiply, k),
@@ -68,7 +68,7 @@ theorem bouquet_maps_determined_by_letters(
 def RightCancellation(G : U1, multiply : G -> G -> G) =
   forall a : G, forall b : G, forall c : G, (multiply(a, c) = multiply(b, c)) -> a = b;
 
-theorem loop_map_inverse_right(
+def loop_map_inverse_right(
   X : U0, point : X, G : U1, unit : G, multiply : G -> G -> G, h : (point = point) -> G,
   laws : LoopMapLaws(X, point, G, unit, multiply, h), p : point = point
 ) :
@@ -88,7 +88,7 @@ theorem loop_map_inverse_right(
   );
 }
 
-theorem bouquet_maps_determined_by_generators(
+def bouquet_maps_determined_by_generators(
   A : U0, G : U1, setG : FieldSet(G), unit : G, multiply : G -> G -> G,
   cancel : RightCancellation(G, multiply), h : BouquetLoops(A) -> G, k : BouquetLoops(A) -> G,
   lawsH : LoopMapLaws(Bouquet(A), bouquet_base(A), G, unit, multiply, h),

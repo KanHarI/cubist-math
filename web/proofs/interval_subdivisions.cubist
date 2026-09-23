@@ -28,7 +28,7 @@ def interval_refinement_radius(
 
 // The sum of all coarse radii is delta times outer width times length,
 // with no factor for the number of coarse intervals or refined samples.
-theorem interval_refinement_radius_sum(
+def interval_refinement_radius_sum(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), delta : F, length : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),

@@ -85,7 +85,7 @@ def sum_associativity(A : U0, B : U0, C : U0) =
   );
 
 // Joining an n-element enumeration to an m-element enumeration.
-theorem fin_sum(n : Nat, m : Nat) =
+def fin_sum(n : Nat, m : Nat) =
   induction n as k return Bijection(Fin(k) or Fin(m), Fin(add_count(k, m))) {
     zero => empty_sum_bijection(Fin(m));
     succ previous => compose_bijection(
@@ -154,7 +154,7 @@ def tail_injective(
 ) =
   cong(tail_or(A, a), p);
 
-theorem fin_decidable(n : Nat) =
+def fin_decidable(n : Nat) =
   induction n as k return (forall a : Fin(k), forall b : Fin(k), Decidable(a = b)) {
     zero => fun (a : Fin(0)) => fun (b : Fin(0)) => typed(Decidable(a = b), absurd(a));
     succ previous => fun (a : Fin(succ(k))) => fun (b : Fin(succ(k))) => match typed(
@@ -212,6 +212,6 @@ theorem fin_decidable(n : Nat) =
     };
   };
 
-theorem fin_is_set(n : Nat) : IsSet(Fin(n)) {
+def fin_is_set(n : Nat) : IsSet(Fin(n)) {
   exact hedberg(Fin(n), fin_decidable(n));
 }

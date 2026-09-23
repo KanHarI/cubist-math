@@ -1,7 +1,7 @@
 import sample_tagged;
 
 // Map the evidence at each edge without changing vertices or tags.
-theorem sample_tagged_map_step(
+def sample_tagged_map_step(
   C : U1, condition : C -> C -> C -> U0, other : C -> C -> C -> U0,
   mapping : (forall a : C, forall b : C, forall tag : C, condition(a, b, tag) -> other(a, b, tag)),
   n : Nat,
@@ -27,7 +27,7 @@ theorem sample_tagged_map_step(
   );
 }
 
-theorem sample_tagged_map(
+def sample_tagged_map(
   C : U1, condition : C -> C -> C -> U0, other : C -> C -> C -> U0,
   mapping : (forall a : C, forall b : C, forall tag : C, condition(a, b, tag) -> other(a, b, tag)),
   n : Nat

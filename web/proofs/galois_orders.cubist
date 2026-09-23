@@ -15,14 +15,14 @@ def IntermediateIncluded(
     extension_carrier(K, E), intermediate_members(K, E, M), intermediate_members(K, E, N)
   );
 
-theorem galois_subgroup_inclusion_refl(
+def galois_subgroup_inclusion_refl(
   K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E)
 ) :
   GaloisSubgroupIncluded(K, E, H, H) {
   exact subgroup_inclusion_refl(GaloisGroup(K, E), H);
 }
 
-theorem intermediate_inclusion_refl(
+def intermediate_inclusion_refl(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)
 ) :
   IntermediateIncluded(K, E, M, M) {
@@ -31,7 +31,7 @@ theorem intermediate_inclusion_refl(
   exact member;
 }
 
-theorem galois_subgroup_inclusion_trans(
+def galois_subgroup_inclusion_trans(
   K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), J : GaloisSubgroup(K, E),
   L : GaloisSubgroup(K, E), hj : GaloisSubgroupIncluded(K, E, H, J),
   jl : GaloisSubgroupIncluded(K, E, J, L)
@@ -40,7 +40,7 @@ theorem galois_subgroup_inclusion_trans(
   exact subgroup_inclusion_trans(GaloisGroup(K, E), H, J, L, hj, jl);
 }
 
-theorem intermediate_inclusion_trans(
+def intermediate_inclusion_trans(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), N : IntermediateField(K, E),
   P : IntermediateField(K, E), mn : IntermediateIncluded(K, E, M, N),
   np : IntermediateIncluded(K, E, N, P)
@@ -51,7 +51,7 @@ theorem intermediate_inclusion_trans(
   exact np(x, mn(x, member));
 }
 
-theorem galois_subgroup_inclusion_antisym(
+def galois_subgroup_inclusion_antisym(
   K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), J : GaloisSubgroup(K, E),
   hj : GaloisSubgroupIncluded(K, E, H, J), jh : GaloisSubgroupIncluded(K, E, J, H)
 ) :
@@ -59,7 +59,7 @@ theorem galois_subgroup_inclusion_antisym(
   exact subgroup_inclusion_antisymmetric(GaloisGroup(K, E), H, J, hj, jh);
 }
 
-theorem intermediate_inclusion_antisym(
+def intermediate_inclusion_antisym(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), N : IntermediateField(K, E),
   mn : IntermediateIncluded(K, E, M, N), nm : IntermediateIncluded(K, E, N, M)
 ) :
@@ -83,7 +83,7 @@ theorem intermediate_inclusion_antisym(
 }
 
 // The concrete fixing relation realizes the reusable order-reversing interface.
-theorem galois_order_connection(K : AlgebraicField, E : FieldExt(K)) :
+def galois_order_connection(K : AlgebraicField, E : FieldExt(K)) :
   AntitoneConnection(
     GaloisSubgroup(K, E), IntermediateField(K, E), GaloisSubgroupIncluded(K, E),
     IntermediateIncluded(K, E), fixed_intermediate_field(K, E), fixing_galois_subgroup(K, E)
@@ -94,7 +94,7 @@ theorem galois_order_connection(K : AlgebraicField, E : FieldExt(K)) :
   exact (toFixing, toFixed);
 }
 
-theorem fixed_field_reverses_inclusion(K : AlgebraicField, E : FieldExt(K)) :
+def fixed_field_reverses_inclusion(K : AlgebraicField, E : FieldExt(K)) :
   Antitone(
     GaloisSubgroup(K, E), IntermediateField(K, E), GaloisSubgroupIncluded(K, E),
     IntermediateIncluded(K, E), fixed_intermediate_field(K, E)
@@ -107,7 +107,7 @@ theorem fixed_field_reverses_inclusion(K : AlgebraicField, E : FieldExt(K)) :
   );
 }
 
-theorem fixing_group_reverses_inclusion(K : AlgebraicField, E : FieldExt(K)) :
+def fixing_group_reverses_inclusion(K : AlgebraicField, E : FieldExt(K)) :
   Antitone(
     IntermediateField(K, E), GaloisSubgroup(K, E), IntermediateIncluded(K, E),
     GaloisSubgroupIncluded(K, E), fixing_galois_subgroup(K, E)
@@ -127,7 +127,7 @@ theorem fixing_group_reverses_inclusion(K : AlgebraicField, E : FieldExt(K)) :
 def intermediate_galois_closure(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
   fixed_intermediate_field(K, E, fixing_galois_subgroup(K, E, M));
 
-theorem intermediate_galois_closure_monotone(K : AlgebraicField, E : FieldExt(K)) :
+def intermediate_galois_closure_monotone(K : AlgebraicField, E : FieldExt(K)) :
   Monotone(
     IntermediateField(K, E), IntermediateField(K, E), IntermediateIncluded(K, E),
     IntermediateIncluded(K, E), intermediate_galois_closure(K, E)
@@ -140,7 +140,7 @@ theorem intermediate_galois_closure_monotone(K : AlgebraicField, E : FieldExt(K)
   );
 }
 
-theorem intermediate_galois_closure_idempotent(
+def intermediate_galois_closure_idempotent(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)
 ) :
   intermediate_galois_closure(K, E, intermediate_galois_closure(K, E, M)) =[IntermediateField(K, E)] intermediate_galois_closure(
@@ -159,14 +159,14 @@ theorem intermediate_galois_closure_idempotent(
 }
 
 // Inclusion proofs are propositions even though subobjects themselves live in U1.
-theorem galois_subgroup_inclusion_prop(
+def galois_subgroup_inclusion_prop(
   K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), J : GaloisSubgroup(K, E)
 ) :
   Proposition(GaloisSubgroupIncluded(K, E, H, J)) {
   exact subgroup_inclusion_prop(GaloisGroup(K, E), H, J);
 }
 
-theorem intermediate_inclusion_prop(
+def intermediate_inclusion_prop(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), N : IntermediateField(K, E)
 ) :
   Proposition(IntermediateIncluded(K, E, M, N)) {
@@ -184,7 +184,7 @@ theorem intermediate_inclusion_prop(
   );
 }
 
-theorem galois_subgroup_partial_order(K : AlgebraicField, E : FieldExt(K)) :
+def galois_subgroup_partial_order(K : AlgebraicField, E : FieldExt(K)) :
   PartialOrderLaws(GaloisSubgroup(K, E), GaloisSubgroupIncluded(K, E)) {
   exact (
     (
@@ -194,7 +194,7 @@ theorem galois_subgroup_partial_order(K : AlgebraicField, E : FieldExt(K)) :
   );
 }
 
-theorem intermediate_partial_order(K : AlgebraicField, E : FieldExt(K)) :
+def intermediate_partial_order(K : AlgebraicField, E : FieldExt(K)) :
   PartialOrderLaws(IntermediateField(K, E), IntermediateIncluded(K, E)) {
   exact (
     (

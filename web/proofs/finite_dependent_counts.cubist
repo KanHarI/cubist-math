@@ -38,7 +38,7 @@ def finite_mere_choice_step(
   exact mere_eliminate(P(h), Mere(Goal), mere_is_prop(Goal), chooseHead, inhabited(h));
 }
 
-theorem finite_mere_choice(n : Nat) =
+def finite_mere_choice(n : Nat) =
   induction n as k return (
     forall P : Fin(k) -> U0, (forall i : Fin(k), Mere(P(i))) -> Mere(forall i : Fin(k), P(i))
   ) {
@@ -81,7 +81,7 @@ def finite_uniform_fiber_count(n : Nat, m : Nat) : UniformFiberCount(Fin(n), n, 
   );
 }
 
-theorem uniform_fiber_count(
+def uniform_fiber_count(
   A : U0, setA : IsSet(A), n : Nat, m : Nat, countA : HasCardinality(A, n)
 ) :
   UniformFiberCount(A, n, m) {

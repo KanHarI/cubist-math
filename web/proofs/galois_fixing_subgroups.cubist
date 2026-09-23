@@ -8,7 +8,7 @@ def GaloisSubgroupLaws(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> 
 
 def GaloisSubgroup(K : AlgebraicField, E : FieldExt(K)) = Subgroup(GaloisGroup(K, E));
 
-theorem galois_fixing_prop(
+def galois_fixing_prop(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E)
 ) :
   Proposition(GaloisFixing(K, E, P, e)) {
@@ -28,7 +28,7 @@ theorem galois_fixing_prop(
   );
 }
 
-theorem galois_fixing_identity(
+def galois_fixing_identity(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0
 ) :
   GaloisFixing(K, E, P, extension_identity_iso(K, E)) {
@@ -37,7 +37,7 @@ theorem galois_fixing_identity(
   exact refl(x);
 }
 
-theorem galois_fixing_compose(
+def galois_fixing_compose(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E),
   d : Galois(K, E), fixesE : GaloisFixing(K, E, P, e), fixesD : GaloisFixing(K, E, P, d)
 ) :
@@ -49,7 +49,7 @@ theorem galois_fixing_compose(
 
 // A loop and its reverse have inverse actions on the carrier. If the loop
 // fixes x, this equation forces its reverse to fix x as well.
-theorem galois_fixing_inverse(
+def galois_fixing_inverse(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E),
   fixes : GaloisFixing(K, E, P, e)
 ) :
@@ -67,7 +67,7 @@ theorem galois_fixing_inverse(
 }
 
 // Any witnessed left inverse agrees with the inverse supplied by path reversal.
-theorem galois_fixing_witnessed_inverse(
+def galois_fixing_witnessed_inverse(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E),
   d : Galois(K, E), fixes : GaloisFixing(K, E, P, e),
   inverseLaw : galois_compose(K, E, d, e) = extension_identity_iso(K, E)
@@ -86,7 +86,7 @@ theorem galois_fixing_witnessed_inverse(
 }
 
 // No closure property of P is required to obtain a subgroup of symmetries.
-theorem galois_fixing_subgroup_laws(
+def galois_fixing_subgroup_laws(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0
 ) :
   GaloisSubgroupLaws(K, E, GaloisFixing(K, E, P)) {
@@ -115,7 +115,7 @@ def fixing_galois_subgroup(K : AlgebraicField, E : FieldExt(K), M : Intermediate
 // The two assignments are an order-reversing connection between genuine
 // subgroup and intermediate-field records. They are not yet a correspondence:
 // inverse equalities require the finite normal separable hypotheses and proofs.
-theorem intermediate_galois_connection(
+def intermediate_galois_connection(
   K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), M : IntermediateField(K, E)
 ) :
   GaloisConnection(K, E, galois_subgroup_members(K, E, H), intermediate_members(K, E, M)) {

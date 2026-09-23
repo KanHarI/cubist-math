@@ -34,7 +34,7 @@ def intermediate_subfield(K : AlgebraicField, E : FieldExt(K), M : IntermediateF
   exact (P, closure);
 }
 
-theorem intermediate_contains_base(
+def intermediate_contains_base(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), k : af_carrier(K)
 ) :
   intermediate_members(K, E, M, extension_inclusion(K, E, k)) {
@@ -42,7 +42,7 @@ theorem intermediate_contains_base(
   exact base(k);
 }
 
-theorem intermediate_laws_prop(
+def intermediate_laws_prop(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0,
   p : IntermediateFieldLaws(K, E, P), q : IntermediateFieldLaws(K, E, P)
 ) :
@@ -60,7 +60,7 @@ theorem intermediate_laws_prop(
 }
 
 // Membership equality determines equality as intermediate fields over K.
-theorem intermediate_ext(
+def intermediate_ext(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), N : IntermediateField(K, E),
   same : intermediate_members(K, E, M) = intermediate_members(K, E, N)
 ) :

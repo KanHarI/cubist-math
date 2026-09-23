@@ -29,7 +29,7 @@ def FineIntervalTail(
 // One small dyadic width gives a uniform construction of fine samples at
 // every subsequent level. No choice of a family from pointwise existences
 // is involved: each level uses the recursive bisection construction.
-theorem interval_fine_tail_from_bound(
+def interval_fine_tail_from_bound(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
@@ -71,7 +71,7 @@ theorem interval_fine_tail_from_bound(
 
 // Ordinary Archimedeanness gives mere existence of this whole constructed
 // tail, with truncation still outside the natural bound and family.
-theorem archimedean_interval_fine_tail(
+def archimedean_interval_fine_tail(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
@@ -115,7 +115,7 @@ theorem archimedean_interval_fine_tail(
 
 // An explicit Archimedean bound function supplies the actual tail expected
 // by constructions that require natural moduli.
-theorem bounded_archimedean_interval_fine_tail(
+def bounded_archimedean_interval_fine_tail(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

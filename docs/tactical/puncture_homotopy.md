@@ -38,7 +38,7 @@ particular, removing points from a set type does not create identity loops.
 [bouquet_generation.cubist](../../web/proofs/bouquet_generation.cubist) proves:
 
 ```text
-theorem every_puncture_loop_generated(
+def every_puncture_loop_generated(
   n : Nat, p : bouquet_base(Fin(n)) = bouquet_base(Fin(n))) :
   Mere(exists word : Word(Fin(n)),
     eval_word(Fin(n), PunctureGraph(n), bouquet_base(Fin(n)),

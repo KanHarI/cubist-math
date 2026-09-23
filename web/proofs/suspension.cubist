@@ -18,7 +18,7 @@ def loop =
   concatenate(U1, S1, base, south_pole, base, upper, inverse(U1, S1, base, south_pole, lower));
 
 // Check dependent elimination and both kinds of computation.
-theorem unit_unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
+def unit_unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
 
 def constant_family(x : S1) = Unit;
 
@@ -27,15 +27,15 @@ def constant_meridians(a : S0) =
 
 def collapse(x : S1) = suspension_induction(S0, constant_family, tt, tt, constant_meridians, x);
 
-theorem collapse_north : collapse(base) = tt {
+def collapse_north : collapse(base) = tt {
   exact refl(tt);
 }
 
-theorem collapse_south : collapse(south_pole) = tt {
+def collapse_south : collapse(south_pole) = tt {
   exact refl(tt);
 }
 
-theorem collapse_meridian(a : S0) =
+def collapse_meridian(a : S0) =
   suspension_meridian_beta(S0, constant_family, tt, tt, constant_meridians, a);
 
 // Ordinary recursion and its path-computation theorem are derived in source.
@@ -50,7 +50,7 @@ def suspension_rec(A : U0, B : U1, n : B, s : B, h : A -> (n = s), x : Suspensio
     A, (fun (point : Suspension(A)) => B), n, s, (fun (a : A) => lift_meridian(A, B, n, s, h, a)), x
   );
 
-theorem suspension_rec_beta(A : U0, B : U1, n : B, s : B, h : A -> (n = s), a : A) :
+def suspension_rec_beta(A : U0, B : U1, n : B, s : B, h : A -> (n = s), a : A) :
   ap(
     U1, Suspension(A), B, (fun (point : Suspension(A)) => suspension_rec(A, B, n, s, h, point)),
     north(A), south(A), meridian(A, a)

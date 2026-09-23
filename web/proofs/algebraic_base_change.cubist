@@ -3,7 +3,7 @@ import polynomial_extension_roots;
 import polynomial_eval_embeddings;
 import polynomial_irreducible_factors;
 
-theorem bounded_eval_base_change(
+def bounded_eval_base_change(
   K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, i : FieldEmbedding(K, R),
   h : FieldEmbedding(R, L), x : af_carrier(L), n : Nat
 ) =
@@ -24,7 +24,7 @@ theorem bounded_eval_base_change(
   };
 
 // Changing the coefficient field commutes with evaluation in a larger field.
-theorem polynomial_eval_base_change(
+def polynomial_eval_base_change(
   K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, i : FieldEmbedding(K, R),
   h : FieldEmbedding(R, L), p : Polynomial(K), x : af_carrier(L)
 ) :
@@ -48,7 +48,7 @@ theorem polynomial_eval_base_change(
   };
 }
 
-theorem algebraic_element_enlarge_base(
+def algebraic_element_enlarge_base(
   K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, i : FieldEmbedding(K, R),
   h : FieldEmbedding(R, L), e : FieldEmbedding(K, L), triangle : FieldTower(K, R, L, i, h, e),
   x : af_carrier(L), algebraic : AlgebraicElement(K, L, e, x)
@@ -80,7 +80,7 @@ theorem algebraic_element_enlarge_base(
   );
 }
 
-theorem polynomial_map_reflects_unit(
+def polynomial_map_reflects_unit(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), unit : PolynomialUnit(L, polynomial_map(K, L, e, p))
 ) :
@@ -101,7 +101,7 @@ def AlgebraicallyClosed(K : AlgebraicField) =
   forall p : Polynomial(K), PolynomialNonzero(K, p) -> (PolynomialUnit(K, p) -> Void)
   -> Mere(exists x : af_carrier(K), PolynomialRoot(K, K, field_embedding_identity(K), p, x));
 
-theorem algebraically_closed_extension_root(
+def algebraically_closed_extension_root(
   K : AlgebraicField, T : AlgebraicField, e : FieldEmbedding(K, T), closed : AlgebraicallyClosed(T),
   p : Polynomial(K), nonzero : PolynomialNonzero(K, p), nonunit : PolynomialUnit(K, p) -> Void
 ) :
@@ -127,7 +127,7 @@ theorem algebraically_closed_extension_root(
 }
 
 // An injective map reflects a polynomial equation, not only preserves it.
-theorem polynomial_root_reflect(
+def polynomial_root_reflect(
   K : AlgebraicField, R : AlgebraicField, L : AlgebraicField, i : FieldEmbedding(K, R),
   h : FieldEmbedding(R, L), e : FieldEmbedding(K, L), triangle : FieldTower(K, R, L, i, h, e),
   p : Polynomial(K), x : af_carrier(R),

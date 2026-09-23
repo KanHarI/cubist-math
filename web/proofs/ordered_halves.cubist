@@ -6,7 +6,7 @@ def Halving(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0) =
   exists half : F -> F, (forall epsilon : F, addF(half(epsilon), half(epsilon)) = epsilon)
   and (forall epsilon : F, lt(zero, epsilon) -> lt(zero, half(epsilon)));
 
-theorem half_sum_from_inverse_two(
+def half_sum_from_inverse_two(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), reciprocal : F,
   inverseTwo : mulF(addF(one, one), reciprocal) = one, epsilon : F
@@ -37,7 +37,7 @@ theorem half_sum_from_inverse_two(
   );
 }
 
-theorem positive_half_from_sum(
+def positive_half_from_sum(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
   order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   epsilon : F, half : F, sum : addF(half, half) = epsilon, positive : lt(zero, epsilon)
@@ -56,7 +56,7 @@ theorem positive_half_from_sum(
   );
 }
 
-theorem ordered_field_halving(
+def ordered_field_halving(
   F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
   -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),

@@ -14,7 +14,7 @@ def NormalEmbeddingLaw(K : AlgebraicField, L : AlgebraicField, e : FieldEmbeddin
 def NormalExtension(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
   AlgebraicExtension(K, L, e) and NormalEmbeddingLaw(K, L, e);
 
-theorem splitting_root_image(
+def splitting_root_image(
   K : AlgebraicField, L : AlgebraicField, T : AlgebraicField, e : FieldEmbedding(K, L),
   j : FieldEmbedding(L, T), h : FieldEmbedding(L, T),
   triangle : field_embedding_compose(K, L, T, e, h) = field_embedding_compose(K, L, T, e, j),
@@ -73,7 +73,7 @@ theorem splitting_root_image(
 
 // A splitting field is stable under every embedding over the base. The proof
 // first locates the images of the roots, then uses generated-field leastness.
-theorem splitting_field_embedding_normal(
+def splitting_field_embedding_normal(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
   equation : polynomial_map(K, L, e, p) = polynomial_mul(
@@ -124,7 +124,7 @@ theorem splitting_field_embedding_normal(
   exact (z, same);
 }
 
-theorem finite_splitting_field_normal(
+def finite_splitting_field_normal(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e)), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),

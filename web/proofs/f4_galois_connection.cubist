@@ -16,7 +16,7 @@ def f4_automorphism_induction(
 }
 
 // A family with no Frobenius fixes alpha: every remaining symmetry is identity.
-theorem f4_family_without_frobenius_fixes_alpha(
+def f4_family_without_frobenius_fixes_alpha(
   H : F4Automorphism -> U0, noFrobenius : H(f4_frobenius_automorphism) -> Void
 ) :
   GaloisFixed(F2, F4OverF2, H, f4_2) {
@@ -35,7 +35,7 @@ theorem f4_family_without_frobenius_fixes_alpha(
 
 // Deciding Frobenius membership suffices for the nontrivial direction of
 // H = Aut(F4 / Fix(H)); the identity belongs by the subgroup laws.
-theorem f4_fixing_fixed_recovers_members(
+def f4_fixing_fixed_recovers_members(
   H : F4Automorphism -> U0, laws : GaloisSubgroupLaws(F2, F4OverF2, H),
   decideFrobenius : Decidable(H(f4_frobenius_automorphism)), e : F4Automorphism,
   fixes : GaloisFixing(F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), e)
@@ -76,7 +76,7 @@ theorem f4_fixing_fixed_recovers_members(
 
 // Dually, deciding alpha membership recovers the intermediate field from
 // the subgroup of automorphisms fixing it pointwise.
-theorem f4_fixed_fixing_recovers_members(
+def f4_fixed_fixing_recovers_members(
   P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P),
   decideAlpha : Decidable(P(f4_2)), x : F4Carrier,
   fixed : GaloisFixed(F2, F4OverF2, GaloisFixing(F2, F4OverF2, P), x)
@@ -103,7 +103,7 @@ theorem f4_fixed_fixing_recovers_members(
 }
 
 // These are equalities of complete subobjects, with the two decisions explicit.
-theorem f4_fixing_fixed_subgroup(
+def f4_fixing_fixed_subgroup(
   H : GaloisSubgroup(F2, F4OverF2),
   decideFrobenius : Decidable(galois_subgroup_members(F2, F4OverF2, H, f4_frobenius_automorphism))
 ) :
@@ -135,7 +135,7 @@ theorem f4_fixing_fixed_subgroup(
   );
 }
 
-theorem f4_fixed_fixing_intermediate(
+def f4_fixed_fixing_intermediate(
   M : IntermediateField(F2, F4OverF2),
   decideAlpha : Decidable(intermediate_members(F2, F4OverF2, M, f4_2))
 ) :

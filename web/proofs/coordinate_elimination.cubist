@@ -50,7 +50,7 @@ def pivot_reduced(
     pivot_corrected(K, m, n, f, b), coordinate_tail_linear(K, n)
   );
 
-theorem scalar_pivot_cancel(
+def scalar_pivot_cancel(
   K : AlgebraicField, a : af_carrier(K), b : af_carrier(K),
   inv : af_mul(af_carrier(K), af_operations(K), a, b) = af_one(af_carrier(K), af_operations(K)),
   x : af_carrier(K)
@@ -66,7 +66,7 @@ theorem scalar_pivot_cancel(
   );
 }
 
-theorem pivot_corrected_head(
+def pivot_corrected_head(
   K : AlgebraicField, m : Nat, n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K),
   inv : af_mul(
@@ -97,7 +97,7 @@ theorem pivot_corrected_head(
   );
 }
 
-theorem pivot_reduced_kernel(
+def pivot_reduced_kernel(
   K : AlgebraicField, m : Nat, n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
   injective : Injective(
@@ -156,7 +156,7 @@ theorem pivot_reduced_kernel(
   );
 }
 
-theorem pivot_reduced_injective(
+def pivot_reduced_injective(
   K : AlgebraicField, m : Nat, n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
   injective : Injective(
