@@ -58,8 +58,9 @@ while checking that the expanded AST is unchanged. Add `-- --check` for a dry ru
 
 Start with the [documentation index](docs/README.md), then read the relevant
 [roadmap](docs/roadmaps/README.md) and [tactical checkpoint](docs/tactical/README.md)
-before implementing a result. Galois theory, complex analysis, and the real-number
-constructions each have a roadmap. These record the intended scope, existing
+before implementing a result. Galois theory, complex analysis, the real-number
+constructions, and the RH-to-prime-counting implication each have a roadmap.
+These record the intended scope, existing
 results, remaining obligations, and assumptions; continue from that work rather
 than rebuilding its foundations. A paused roadmap records possible future work,
 not an instruction to resume it automatically.
