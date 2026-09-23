@@ -1,7 +1,7 @@
 # Compiler optimization experiments
 
 > Historical design notes. The current project uses only the cubical C kernel;
-> see [the project README](../README.md) and the [CLI guide](cli.md). Retired implementation paths below describe the earlier design.
+> see [the project README](../../README.md) and the [CLI guide](../guides/cli.md). Retired implementation paths below describe the earlier design.
 
 Cubist compiler optimizations are independently selectable. They change
 which checked instructions the compiler emits; the kernel's inference rules

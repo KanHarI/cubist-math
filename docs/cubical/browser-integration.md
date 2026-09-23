@@ -181,4 +181,4 @@ The new backend is not its default. The general production `idtoequiv isEquiv`
 API, strict identity elimination compatibility, higher inductive types and full
 library translation remain unfinished. The compact factorial transfer acceptance
 test now passes natively. The production transfer proofs are documented
-separately in [binary-radix.md](../binary-radix.md).
+separately in [binary-radix.md](../tactical/binary-radix.md).

@@ -1,11 +1,11 @@
 # Compatibility and proof provenance
 
 > Historical design notes. The current project uses only the cubical C kernel;
-> see [the project README](../README.md) and the [CLI guide](cli.md). Retired implementation paths below describe the earlier design.
+> see [the project README](../../README.md) and the [CLI guide](../guides/cli.md). Retired implementation paths below describe the earlier design.
 
 Source: `KanHarI/thth`, commit
 `79060d57eacdf42cd2b4762b2b4bfa3a530f0861` (2025-02-13).
-File hashes are in [proof_sources.json](proof_sources.json). The current generated
+File hashes are in [proof_sources.json](../proof_sources.json). The current generated
 builtin library additionally includes Rust commit `45cceb9`, correcting the
 truncation eliminator. Rust commit `2bae35d` backports the computation and induction
 fixes described below into the original repository.

@@ -15,7 +15,7 @@ at bases 2 and 10. The derived cubical computation law and arithmetic compatibil
 identify the original target factorial and its concrete numeral. Full library and
 website migration are separate outstanding work; there is no old-kernel fallback
 labelled as a successful cubical check. See
-[native browser integration](cubical/browser-integration.md) for current checks.
+[native browser integration](../cubical/browser-integration.md) for current checks.
 
 ## Representation and syntax
 
@@ -115,7 +115,7 @@ npm test -- radix_univalence_transfer
 ```
 
 The new C backend and remaining website migration are tracked separately under
-[`docs/cubical/browser-integration.md`](cubical/browser-integration.md).
+[`docs/cubical/browser-integration.md`](../cubical/browser-integration.md).
 Run `make cubical-wasm` and `node --test tests/cubical-wasm.test.mjs` for its
 independent source and computational-transport checks.
 Cubical univalence's construction is based on the Glue rules in

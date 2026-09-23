@@ -1,7 +1,7 @@
 # Cubical experiment: scope, specification, and migration ledger
 
 > Historical design notes. The current project uses only the cubical C kernel;
-> see [the project README](../../README.md) and the [CLI guide](../cli.md). Retired implementation paths below describe the earlier design.
+> see [the project README](../../README.md) and the [CLI guide](../guides/cli.md). Retired implementation paths below describe the earlier design.
 
 Branch: `experiment/cubical-hott`, based on `dd3fcc8`. The production kernel and
 website remain unchanged. This experiment was explicitly requested on 2026-09-20.
@@ -91,7 +91,7 @@ The experiment now incorporates production `main` at `1f6cddb`. The previously
 reported reference-trace/proof-export failures have been repaired there, and the
 main agent reports 236 passing regression tests for the new quotient-descent
 and kernel/image batch. Galois development is active again; complex analysis
-remains paused. See [the updated Galois handoff](../galois-handoff.md). Migration
+remains paused. See [the updated Galois handoff](../tactical/galois-handoff.md). Migration
 covers existing proofs, not completion of their unfinished mathematical goals.
 Generated inventory and translation reports record the source revision.
 

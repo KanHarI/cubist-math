@@ -19,12 +19,12 @@ been constructed.
 
 | Document | Scope |
 | --- | --- |
-| [Complex analysis overview](complex_analysis.md) | Algebra, inverse assumptions, exact algebraic-closure target, winding strategy, Picard strategy. |
+| [Complex analysis overview](../roadmaps/complex-analysis-roadmap.md) | Algebra, inverse assumptions, exact algebraic-closure target, winding strategy, Picard strategy. |
 | [Geometric curves and integration](complex_curves.md#constructed-affine-dyadic-integrals) | The latest approximation estimates and constructed integral. |
 | [Finite contour sums](contour_sums.md) | Sampling data, concatenation, telescoping and error bounds. |
 | [Limits and descent](analysis_limits.md) | Passing from limits on geometric representatives to functions on actual homotopy paths. |
 | [Puncture homotopy](puncture_homotopy.md) | Loop generation, winding and the abstract period formula. |
-| [Real-number development](reals.md) | Shared field interfaces and the unfinished concrete constructions. |
+| [Real-number development](../roadmaps/reals-roadmap.md) | Shared field interfaces and the unfinished concrete constructions. |
 
 The proof sources are in `web/proofs/`. `web/mathscript/modules.mjs` registers
 imports for the browser; `web/proof-library.mjs` registers the proof selector
@@ -116,11 +116,11 @@ These five modules are included in this checkpoint and in the web selector:
 
 | Module | Checked result |
 | --- | --- |
-| [field_uniform_radii](../web/proofs/field_uniform_radii.cubist) | Enlarge a closeness radius; construct a common positive radius below two given positive radii without comparing them. |
-| [complex_uniform_operations](../web/proofs/complex_uniform_operations.cubist) | Add complex error bounds and construct a uniform-continuity witness for a sum of curves. |
-| [complex_scalar_continuity](../web/proofs/complex_scalar_continuity.cubist) | Fixed complex multiplication preserves closeness, uniform continuity and convergence; the coefficient may be zero. |
-| [curve_integrand_sums](../web/proofs/curve_integrand_sums.cubist) | Finite contour-sum addition, scaling and equality when integrands agree along the curve. |
-| [affine_integral_linearity](../web/proofs/affine_integral_linearity.cubist) | `affine_dyadic_integral_add`, `affine_dyadic_integral_scale`, and `affine_dyadic_integral_cong`. |
+| [field_uniform_radii](../../web/proofs/field_uniform_radii.cubist) | Enlarge a closeness radius; construct a common positive radius below two given positive radii without comparing them. |
+| [complex_uniform_operations](../../web/proofs/complex_uniform_operations.cubist) | Add complex error bounds and construct a uniform-continuity witness for a sum of curves. |
+| [complex_scalar_continuity](../../web/proofs/complex_scalar_continuity.cubist) | Fixed complex multiplication preserves closeness, uniform continuity and convergence; the coefficient may be zero. |
+| [curve_integrand_sums](../../web/proofs/curve_integrand_sums.cubist) | Finite contour-sum addition, scaling and equality when integrands agree along the curve. |
+| [affine_integral_linearity](../../web/proofs/affine_integral_linearity.cubist) | `affine_dyadic_integral_add`, `affine_dyadic_integral_scale`, and `affine_dyadic_integral_cong`. |
 
 Continuity witnesses for sums and scalar multiples are constructed from the
 input witnesses; they are not extra assumptions. Finite-sum identities and
@@ -149,7 +149,7 @@ coefficients and zero lengths need no zero test.
   when they do not appear in the axiom list.
 - The existing higher-universe `FieldExists` uses the library’s
   universe-lowering truncation into `U0`. This foundational qualification is
-  documented in [reals.md](reals.md#universes-and-foundational-assumptions).
+  documented in [reals.md](../roadmaps/reals-roadmap.md#universes-and-foundational-assumptions).
 - Keep shared foundations constructive. The user permits explicit
   theorem-specific LEM or choice where needed. Do not introduce target
   theorems as axioms, choose representatives from mere existence, or replace
@@ -194,14 +194,14 @@ preimages in every punctured neighborhood. Holomorphic functions,
 essential singularities, normal families and the required omitted-value
 estimates are not yet developed. Loop generation alone does not prove it.
 The possible analytic route and references are in
-[the overview](complex_analysis.md#great-picard); no complete route is
+[the overview](../roadmaps/complex-analysis-roadmap.md#great-picard); no complete route is
 formalized yet.
 
 Concrete reals are a shared outstanding dependency: even rational ordered
 arithmetic is not yet constructed, and none of the constructive Dedekind,
 classical Boolean Dedekind or ordinary Cauchy quotient carriers has a full
 `CompleteOrderedField` certificate. See the explicit construction tasks in
-[reals.md](reals.md#remaining-construction-proofs).
+[reals.md](../roadmaps/reals-roadmap.md#remaining-construction-proofs).
 
 ## Validation and restart commands
 

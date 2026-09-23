@@ -37,14 +37,14 @@ coordinates itself cannot encode the topology of the punctured plane.
 
 | Module | Results |
 | --- | --- |
-| [sample_chains](../web/proofs/sample_chains.cubist) | Vertices, tags, finite edge sums, and concatenation with endpoint laws. |
-| [sample_sum_laws](../web/proofs/sample_sum_laws.cubist) | Additivity under matched concatenation, pointwise congruence, addition and additive maps, and telescoping. |
-| [contour_samples](../web/proofs/contour_samples.cubist) | Contour-sum definitions and oriented-increment identities, available without importing the later sum theorems. |
-| [contour_sums](../web/proofs/contour_sums.cubist) | Ring-valued contour sums, linearity in the integrand, and the constant-integrand formula `c * (last - first)`. Potential differences telescope; this is an algebraic identity, not a fundamental theorem of calculus. |
-| [contour_refinement](../web/proofs/contour_refinement.cubist) | Exact changes under replacement of tags and splitting an edge; accumulated tag-error identity. |
-| [contour_examples](../web/proofs/contour_examples.cubist) | Backtracking cancels with equal tags, and its error is explicit with different tags. A nonzero coarse sum on a closed chain is calculated. |
-| [sample_error_bounds](../web/proofs/sample_error_bounds.cubist) | Pointwise scalar error bounds at the sampled edges accumulate into a bound on the total sum. |
-| [complex_contour_sums](../web/proofs/complex_contour_sums.cubist) | Complex specialization: composition, zero for a closed constant-integrand sum, and the nonzero backtracking example. |
+| [sample_chains](../../web/proofs/sample_chains.cubist) | Vertices, tags, finite edge sums, and concatenation with endpoint laws. |
+| [sample_sum_laws](../../web/proofs/sample_sum_laws.cubist) | Additivity under matched concatenation, pointwise congruence, addition and additive maps, and telescoping. |
+| [contour_samples](../../web/proofs/contour_samples.cubist) | Contour-sum definitions and oriented-increment identities, available without importing the later sum theorems. |
+| [contour_sums](../../web/proofs/contour_sums.cubist) | Ring-valued contour sums, linearity in the integrand, and the constant-integrand formula `c * (last - first)`. Potential differences telescope; this is an algebraic identity, not a fundamental theorem of calculus. |
+| [contour_refinement](../../web/proofs/contour_refinement.cubist) | Exact changes under replacement of tags and splitting an edge; accumulated tag-error identity. |
+| [contour_examples](../../web/proofs/contour_examples.cubist) | Backtracking cancels with equal tags, and its error is explicit with different tags. A nonzero coarse sum on a closed chain is calculated. |
+| [sample_error_bounds](../../web/proofs/sample_error_bounds.cubist) | Pointwise scalar error bounds at the sampled edges accumulate into a bound on the total sum. |
+| [complex_contour_sums](../../web/proofs/complex_contour_sums.cubist) | Complex specialization: composition, zero for a closed constant-integrand sum, and the nonzero backtracking example. |
 
 Writing `E(a,b,t) = f(t)(b-a)`, the tag-error identity is
 
@@ -67,14 +67,14 @@ edge bounds are supplied.
 
 `FieldMagnitudeBound(x, r)` means `x <= r` and `-x <= r`. It does not
 decide a sign or require an absolute-value operation. The
-[field_magnitude](../web/proofs/field_magnitude.cubist) proofs show that these
+[field_magnitude](../../web/proofs/field_magnitude.cubist) proofs show that these
 bounds imply `0 <= r`, are preserved by negation, add under addition, and
 multiply under multiplication. The product proof is constructive: to refute
 a putative violation, a negative factor can first be ruled out, yielding
 the weak nonnegativity needed for ordered multiplication. No sign case
 split is assumed.
 
-[sample_magnitude_bounds](../web/proofs/sample_magnitude_bounds.cubist) proves
+[sample_magnitude_bounds](../../web/proofs/sample_magnitude_bounds.cubist) proves
 that finite magnitude bounds add, including for the empty sum. If sampled
 errors have magnitude at most `delta`, the increments have bounds `w_j`,
 `delta >= 0`, and `sum w_j <= L`, the weighted error satisfies
@@ -85,28 +85,28 @@ errors have magnitude at most `delta`, the increments have bounds `w_j`,
 
 The notation here abbreviates the two weak inequalities, not a newly
 postulated absolute-value function. Bounds are required only at sampled
-edges, using [SampleMagnitudeBounds](../web/proofs/sample_magnitude.cubist).
+edges, using [SampleMagnitudeBounds](../../web/proofs/sample_magnitude.cubist).
 
-[contour_error_bounds](../web/proofs/contour_error_bounds.cubist) applies this
+[contour_error_bounds](../../web/proofs/contour_error_bounds.cubist) applies this
 kind of estimate directly to changes of scalar contour tags. Its hypotheses
 bound `f(newTag_j)-f(oldTag_j)` by `delta` and each displacement by `w_j`.
 It proves that the exact accumulated tag error has magnitude at most
 `delta * sum w_j`, and hence at most `delta * L` under the variation bound.
 
-[field_magnitude_close](../web/proofs/field_magnitude_close.cubist) connects
+[field_magnitude_close](../../web/proofs/field_magnitude_close.cubist) connects
 weak magnitude bounds to the existing strict `FieldClose` relation when
 the radius is strictly smaller than the requested tolerance. It also proves
 a squeeze theorem: errors bounded by radii converging to zero themselves
 converge to zero, with the same supplied tail indices.
 
-[contour_tag_limits](../web/proofs/contour_tag_limits.cubist) proves closeness
+[contour_tag_limits](../../web/proofs/contour_tag_limits.cubist) proves closeness
 of the actual old and new scalar sums whenever `delta * L < epsilon`.
 For a sequence of sampling data, it proves convergence of the tag errors
 to zero **given convergence of `delta_n * L` to zero** and the corresponding
 sample bounds. Over ordered fields, `contour_tag_errors_from_vanishing_values`
 now derives this from `delta_n -> 0` and `L >= 0`.
 
-[field_scale_limits](../web/proofs/field_scale_limits.cubist) supplies that
+[field_scale_limits](../../web/proofs/field_scale_limits.cubist) supplies that
 scaling result constructively. For each positive tolerance `epsilon`, it
 uses the reciprocal of `1+L` to construct a positive `delta` with
 `delta*L < epsilon`. This also works at `L=0`. The supplied ordered-field
@@ -119,7 +119,7 @@ These results do not yet construct a sampling scheme, deduce its rate from
 uniform continuity, or prove convergence of the sums themselves. Those
 analytic obligations remain explicit.
 
-[complex_magnitude](../web/proofs/complex_magnitude.cubist) supplies the
+[complex_magnitude](../../web/proofs/complex_magnitude.cubist) supplies the
 coordinate estimate needed for the complex version: if both coordinates
 of `z` have magnitude at most `delta`, and the coordinates of `w` have
 bounds `r, s`, both coordinates of `z*w` have bounds `delta*(r+s)`.
@@ -128,7 +128,7 @@ estimate feeds the assembled complex results below.
 
 ## Complex tag-independent limits
 
-[complex_contour_bounds](../web/proofs/complex_contour_bounds.cubist) proves
+[complex_contour_bounds](../../web/proofs/complex_contour_bounds.cubist) proves
 that both coordinates of the complex tag-error sum are bounded by
 
 \[
@@ -139,7 +139,7 @@ where `r_j, s_j` bound the real and imaginary displacements of the sampled
 edge. The condition is checked only at the visited samples. A bound `L`
 on this total coordinate variation gives the common radius `delta*L`.
 
-[complex_contour_tag_limits](../web/proofs/complex_contour_tag_limits.cubist)
+[complex_contour_tag_limits](../../web/proofs/complex_contour_tag_limits.cubist)
 proves closeness of the actual complex sums under that radius bound, and
 convergence of the complex tag errors to zero when `delta_n -> 0`.
 `complex_contour_tag_independent_limit` then proves that a new choice of
@@ -158,9 +158,9 @@ admissible partitions, relate different refinements, and derive the error
 moduli from continuity.
 
 The complex convergence definitions live in
-[complex_convergence](../web/proofs/complex_convergence.cubist), and the finite
+[complex_convergence](../../web/proofs/complex_convergence.cubist), and the finite
 complex sum definition lives in
-[complex_contour_samples](../web/proofs/complex_contour_samples.cubist).
+[complex_contour_samples](../../web/proofs/complex_contour_samples.cubist).
 This allows estimates to import their definitions without the later
 completeness and example proofs.
 

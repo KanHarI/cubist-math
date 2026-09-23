@@ -2,8 +2,8 @@
 
 Status: finite algebraic-extension development on main; paused at the user's request (2026-09-23).
 See the resumption checkpoint for the remaining finite milestones.
-Start with the [resumption checkpoint](galois-handoff.md) for validation and
-[polynomial algebra](polynomial-algebra.md) for the new checked statements.
+Start with the [resumption checkpoint](../tactical/galois-handoff.md) for validation and
+[polynomial algebra](../tactical/polynomial-algebra.md) for the new checked statements.
 Finite basis extraction, finite subspace bases, both directions of tower
 finiteness, polynomial division and root adjunction, minimal polynomials,
 finite splitting fields, embedding normality, and finite separable embedding
@@ -432,14 +432,14 @@ The field over itself has an explicit one-element basis. Univalence gives
 carrier paths for linear isomorphisms, and paths of spaces transport bases.
 These are not yet full structure-identity theorems for vector spaces.
 
-The requested [general basis theorem](basis-theorem.md) is now checked:
+The requested [general basis theorem](../tactical/basis-theorem.md) is now checked:
 `vector_space_has_basis(K,V) : FieldExists(VectorBasis(K,V))`.
 Span is a checked least subspace, with univalent idempotence. Independent
 subsets have chain least upper bounds, and adjoining a vector outside the
 span preserves independence. The needed chain-complete form of Zorn is
 proved from `Choice(U1)` and `LEM(U0)` using Bourbaki–Witt; no Zorn axiom was
 introduced. The existing U1 truncation's resizing strength is recorded.
-[Finite dimension invariance, extension degree, and the tower law](finite-dimension.md)
+[Finite dimension invariance, extension degree, and the tower law](../tactical/finite-dimension.md)
 are now checked independently of general basis existence. An injective linear
 map K^m -> K^n implies m <= n by finite pivot elimination; two finite bases
 therefore have the same size. `extension_degree` is a basis-independent natural
@@ -451,7 +451,7 @@ U1 resizing are not used in this increment. Extension-isomorphism invariance
 uses the existing univalent equality of complete extensions.
 
 The converse finiteness criterion and finite spanning subfamily basis extraction
-now check, including indexed independent subsets. See [polynomial algebra](polynomial-algebra.md)
+now check, including indexed independent subsets. See [polynomial algebra](../tactical/polynomial-algebra.md)
 for the subsequent finite algebraic-extension and embedding-count development.
 
 The larger-group structure identity equivalence also remains useful future

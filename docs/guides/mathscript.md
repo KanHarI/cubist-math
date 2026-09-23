@@ -1,13 +1,13 @@
 # Cubist
 
 > Historical design notes. The current project uses only the cubical C kernel;
-> see [the project README](../README.md) and the [CLI guide](cli.md). Retired implementation paths below describe the earlier design.
+> see [the project README](../../README.md) and the [CLI guide](cli.md). Retired implementation paths below describe the earlier design.
 
 Cubist is a mathematical source language checked by the existing C kernel,
 compiled to WebAssembly. Authoring uses `.cubist` text, not JSON. The parser and
 elaborator are untrusted: they produce ordinary checked kernel instructions.
 
-The [full language reference](../web/language.html) documents the current syntax,
+The [full language reference](../../web/language.html) documents the current syntax,
 proof statements, eliminators, universe restrictions, and axiom wrappers, with
 examples. The proof workspace also includes a shorter quick reference linking
 to that page. This document describes the workflow and implementation.
@@ -110,7 +110,7 @@ to see the binary-pair expansion or click to inspect the checked tuple.
 `x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
 
 Blocks support `intro`, `let`, `obtain`, `have`, `cases`, and `exact`. See
-[Euclid](../web/proofs/euclid.cubist) for the complete short argument. Induction
+[Euclid](../../web/proofs/euclid.cubist) for the complete short argument. Induction
 expressions carry an explicit motive:
 
 ```text
@@ -150,7 +150,7 @@ induction and introduce no axiom. `refl(x)` supplies the reflexive path `x = x`.
 Equality induction is available as
 `path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
 function of two endpoints and their equality proof. The foundational symmetry,
-transitivity, and congruence proofs in [primes.cubist](../web/proofs/primes.cubist)
+transitivity, and congruence proofs in [primes.cubist](../../web/proofs/primes.cubist)
 show its use. The lower-level `induct`, `cases`, and `unpack` function forms remain
 available for proof-producing source tools.
 
@@ -166,7 +166,7 @@ and can be specialized as `identity(U0)` or `identity(U2)`. `Universe` is a
 universe-parameter sort, not an unrestricted ordinary type parameter.
 
 The following functions specialize the library principles and their derived
-operations. See [the single-axiom univalence development](univalence.md).
+operations. See [the single-axiom univalence development](../tactical/univalence.md).
 
 ```text
 Truncate(U, A)
@@ -205,7 +205,7 @@ such as `fun (a : A) => typed(U1, Unit)`.
 The existing library truncation constructor returns U0 even when its input is
 large. These wrappers preserve that signature; they do not promise
 universe-preserving truncation. Elimination still requires evidence that its
-target is a proposition. See the [real-number foundation notes](reals.md) for
+target is a proposition. See the [real-number foundation notes](../roadmaps/reals-roadmap.md) for
 the implications and current development status.
 
 ### Source checking
@@ -237,8 +237,8 @@ completed-definition counters restart it; repeated progress messages with
 unchanged counters do not. Other worker requests have a 30-second timeout.
 
 The mathematical layer covers Euclid, the circle fundamental group,
-[right inverses of surjections using choice](surjections.md), and
-[finite counting](finite_counting.md), including functions, permutations, and
+[right inverses of surjections using choice](../tactical/surjections.md), and
+[finite counting](../tactical/finite_counting.md), including functions, permutations, and
 Rijke binomial types. Ports of the
 older universe-polymorphic library are still in progress. General W types now
 use `W(A, B)`, `sup(T, label, children)` and `wrec(T, motive, step, tree)`.

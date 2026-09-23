@@ -66,11 +66,11 @@ The final object displays its verified type, `InfinitelyManyPrimes`.
 
 The proof-producing sources are:
 
-- [`arithmetic.mjs`](../tools/proofs/arithmetic.mjs): arithmetic and order.
-- [`number_theory.mjs`](../tools/proofs/number_theory.mjs): bounded search and divisibility.
-- [`euclid.mjs`](../tools/proofs/euclid.mjs): prime divisors and the final argument.
-- [`check_primes.mjs`](../tools/proofs/check_primes.mjs): independent boundary checks.
-- [`primes.mjs`](../tools/proofs/primes.mjs): dependency pruning and artifact export.
+- [`arithmetic.mjs`](../../tools/proofs/arithmetic.mjs): arithmetic and order.
+- [`number_theory.mjs`](../../tools/proofs/number_theory.mjs): bounded search and divisibility.
+- [`euclid.mjs`](../../tools/proofs/euclid.mjs): prime divisors and the final argument.
+- [`check_primes.mjs`](../../tools/proofs/check_primes.mjs): independent boundary checks.
+- [`primes.mjs`](../../tools/proofs/primes.mjs): dependency pruning and artifact export.
 
 Run `make proof-export` to regenerate. The generator replays the optimized proof
 in a fresh axiom-disabled engine before saving it. JSON and `.math` source both

@@ -1,7 +1,7 @@
 # Galois development: resumption checkpoint
 
 Updated 2026-09-23. Continue from this file and the
-[full roadmap](galois-roadmap.md). All canonical proofs now use the cubical C
+[full roadmap](../roadmaps/galois-roadmap.md). All canonical proofs now use the cubical C
 kernel and `.cubist` sources. The old Id/J engine, its proof exporters and
 its reference-comparison commands are retired; older checkpoints describe
 historical validation, not the current development workflow.

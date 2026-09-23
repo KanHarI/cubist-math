@@ -49,9 +49,9 @@ library's existing function-extensionality axiom. It does not use LEM, choice,
 univalence, or a newly postulated equivalence. The generator verifies that its
 single axiom is exactly the loaded `lib_funext` judgement.
 
-[`tools/proofs/wnat_equiv.mjs`](../tools/proofs/wnat_equiv.mjs) is the readable
-construction. [`paths.mjs`](../tools/proofs/paths.mjs) derives the path algebra;
-[`builder.mjs`](../tools/proofs/builder.mjs) emits explicit kernel instructions
+[`tools/proofs/wnat_equiv.mjs`](../../tools/proofs/wnat_equiv.mjs) is the readable
+construction. [`paths.mjs`](../../tools/proofs/paths.mjs) derives the path algebra;
+[`builder.mjs`](../../tools/proofs/builder.mjs) emits explicit kernel instructions
 for abstraction, application, conversion, and fresh contexts. These helpers are
 untrusted proof producers. All conclusions still pass through `tt_apply`.
 

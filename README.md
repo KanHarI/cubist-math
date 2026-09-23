@@ -45,13 +45,30 @@ while checking that the expanded AST is unchanged. Add `-- --check` for a dry ru
 
 ## Code and documentation
 
+- [`docs/README.md`](docs/README.md): documentation index and where to resume each development.
 - [`kernel/`](kernel/README.md): the trusted C checker, with one file per group of rules.
-- [`docs/cli.md`](docs/cli.md): custom proofs, imports, commands, and CLI limitations.
-- [`docs/kernel.md`](docs/kernel.md): a mathematician's guide to reading the kernel.
-- [`lib/cubical/`](lib/cubical/): elaboration, inert native adapters, and an independent JavaScript reference used in tests.
-- [`web/proofs/`](web/proofs/): the canonical `.cubist` mathematical library.
+- [`docs/guides/cli.md`](docs/guides/cli.md): custom proofs, imports, commands, and CLI limitations.
+- [`docs/guides/kernel.md`](docs/guides/kernel.md): a mathematician's guide to reading the kernel.
+- [`lib/cubical/`](lib/cubical): elaboration, inert native adapters, and an independent JavaScript reference used in tests.
+- [`web/proofs/`](web/proofs): the canonical `.cubist` mathematical library.
 - [`web/language.html`](web/language.html): the full source language reference.
-- [`docs/galois-handoff.md`](docs/galois-handoff.md) and [`docs/complex_analysis.md`](docs/complex_analysis.md): unfinished mathematical developments and resumption notes.
+- [`docs/tactical/galois-handoff.md`](docs/tactical/galois-handoff.md) and [`docs/roadmaps/complex-analysis-roadmap.md`](docs/roadmaps/complex-analysis-roadmap.md): unfinished mathematical developments and resumption notes.
+
+## Resuming development
+
+Start with the [documentation index](docs/README.md), then read the relevant
+[roadmap](docs/roadmaps/README.md) and [tactical checkpoint](docs/tactical/README.md)
+before implementing a result. Galois theory, complex analysis, and the real-number
+constructions each have a roadmap. These record the intended scope, existing
+results, remaining obligations, and assumptions; continue from that work rather
+than rebuilding its foundations. A paused roadmap records possible future work,
+not an instruction to resume it automatically.
+
+Confirm the checkpoint against the current `.cubist` sources and run its focused
+checks. Some notes describe earlier kernels: the current cubical checker and
+verified declarations determine what is actually available. Preserve explicit
+assumptions, prove missing steps instead of assuming them, and update the roadmap
+and handoff with the results, verification commands, and next unfinished step.
 
 `npm run build:site` assembles `build/site`; pushes to `main` publish it through
 GitHub Pages at `cubist.kanhar.art`. The repository's `web/CNAME` declares the domain.

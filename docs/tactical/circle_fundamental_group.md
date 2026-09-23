@@ -17,12 +17,12 @@ ordinary addition, and a multiplication-preserving bijection between them.
 
 | Source | Content |
 | --- | --- |
-| [suspension.cubist](../web/proofs/suspension.cubist) | `S0 = Unit or Unit`, `S1 = Suspension(S0)`, the generating loop, and a derived recursor with its path computation law |
-| [paths.cubist](../web/proofs/paths.cubist) | Path algebra, transport, based path induction, and half-adjoint equivalences |
-| [sets.cubist](../web/proofs/sets.cubist) | Decidable equality and Hedberg's theorem |
-| [groups.cubist](../web/proofs/groups.cubist) | Group and group-isomorphism statements |
-| [integers.cubist](../web/proofs/integers.cubist) | Signed integers, successor equivalence, arithmetic addition, and setness |
-| [circle.cubist](../web/proofs/circle.cubist) | Integer cover, encode/decode, winding, inverse laws, group laws, and the final theorem |
+| [suspension.cubist](../../web/proofs/suspension.cubist) | `S0 = Unit or Unit`, `S1 = Suspension(S0)`, the generating loop, and a derived recursor with its path computation law |
+| [paths.cubist](../../web/proofs/paths.cubist) | Path algebra, transport, based path induction, and half-adjoint equivalences |
+| [sets.cubist](../../web/proofs/sets.cubist) | Decidable equality and Hedberg's theorem |
+| [groups.cubist](../../web/proofs/groups.cubist) | Group and group-isomorphism statements |
+| [integers.cubist](../../web/proofs/integers.cubist) | Signed integers, successor equivalence, arithmetic addition, and setness |
+| [circle.cubist](../../web/proofs/circle.cubist) | Integer cover, encode/decode, winding, inverse laws, group laws, and the final theorem |
 
 Suspending the two-point type gives the circle. Suspending `Unit` alone gives a
 contractible type. Integers use `Nat or Nat`: `left n` represents n, and `right n`
@@ -43,7 +43,7 @@ associativity, units, inverses, setness, and a group isomorphism.
 The development uses two library axioms: univalence and function extensionality.
 Its transport computation rule is [derived from univalence](univalence.md). Source inspection links these uses
 to their original declarations. No circle-specific axiom or theorem is added to C.
-The [kernel extension](../src/kernel/suspension.c) supplies general suspension
+The [kernel extension](../../src/kernel/suspension.c) supplies general suspension
 formation, points, meridians, dependent elimination, and propositional meridian
 computation. Transport and dependent application reuse the existing equality
 eliminator. Point computation is definitional; path computation is propositional.
