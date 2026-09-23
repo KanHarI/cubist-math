@@ -1,8 +1,14 @@
-# Mathematical roadmaps
+# Development roadmaps
 
-These describe the intended developments, their limits, and remaining proof
+These describe the intended developments, their limits, and remaining
 obligations. Read the linked checkpoint before resuming work. Do not treat a
 target statement or a supplied theorem parameter as an already proved result.
+
+## Language tooling
+
+- [Simplification and shorter proofs](proof-ergonomics-roadmap.md): staged `rw`, `calc`, `simp`, argument inference, and other ways to reduce verbosity, with HoTT and cubical requirements. Planning only; no implementation is claimed.
+
+## Mathematics
 
 - [Galois theory](galois-roadmap.md): finite Galois theory and its homotopy interpretation. Infinite extensions are deferred. Read the [Galois checkpoint](../tactical/galois-handoff.md) for the current resumption point.
 - [Complex analysis](complex-analysis-roadmap.md): algebraic closure, the residue theorem, and Great Picard. Read the [complex-analysis checkpoint](../tactical/complex_analysis_handoff.md) for the paused state and validation commands.

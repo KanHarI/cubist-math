@@ -1,15 +1,51 @@
 # Requirements for a full Galois theory development
 
-Status: finite algebraic-extension development on main; paused at the user's request (2026-09-23).
-See the resumption checkpoint for the remaining finite milestones.
-Start with the [resumption checkpoint](../tactical/galois-handoff.md) for validation and
+Status: finite Galois development active (2026-09-23); Artin's theorem and the core finite correspondence are checked.
+See the [development checkpoint](../tactical/galois-handoff.md) for the remaining finite milestones and validation, and
 [polynomial algebra](../tactical/polynomial-algebra.md) for the new checked statements.
 Finite basis extraction, finite subspace bases, both directions of tower
 finiteness, polynomial division and root adjunction, minimal polynomials,
 finite splitting fields, embedding normality, and finite separable embedding
-counts are now proved. The full roadmap below remains broader: equivalent
-Galois characterizations, Artin's fixed-field degree theorem, distinguished
-instances, and the general correspondence are still required.
+counts are now proved. For a merely finite automorphism subgroup H,
+`artin_degree` proves `[E:E^H] = |H|`, and `artin_classification` proves
+`Aut_{E^H}(E) = H` as an equality of bundled loop subgroups. The evaluation
+matrices compute each loop action by carrier transport around its extension
+path. Equivalent Galois characterizations, distinguished instances, index
+formulas, and the normal-subgroup quotient theorem remain.
+Dedekind independence is now checked for every finite family of pairwise
+distinct field embeddings into a common field. The corresponding finite family
+of distinct extension loops has linearly independent transport actions.
+`artin_evaluation` proves that the evaluation vectors of distinct embeddings
+have zero annihilator, and that a nonzero coefficient vector is detected at
+some merely specified evaluation point. Its loop version evaluates carrier
+transport. `artin_evaluation_matrix` constructs the finite row map, proves
+that m separating rows require n <= m columns, and extends any independent
+partial family of evaluation rows while m < n. `artin_evaluation_basis`
+iterates this step: n distinct embeddings admit n evaluation points whose
+vectors form a basis of the target coordinate space. Its loop corollary uses
+transport around extension paths for every matrix entry.
+`artin_fixed_evaluation` applies this basis theorem to a merely finite
+automorphism subgroup, retaining the truncated enumeration and points.
+`artin_equivariance` proves that the expansion coefficients are H-fixed and
+that the evaluation points span E over E^H. `artin_degree` proves that those
+points are independent over E^H, giving the exact degree. `artin_embedding_bound`
+and `artin_classification` exclude every extra automorphism fixing E^H.
+
+`galois_normal_bridge` and `galois_normal_target` identify embeddings into a
+common target with automorphism loops under normality. Separable embedding
+counts give `|Aut_M(E)| = [E:M]` for every intermediate M. Equal degrees
+force `Fix(Aut_M(E)) = M` in `galois_intermediate_roundtrip`.
+That module also identifies the fixed field of the full automorphism group
+with the embedded base field and proves the numerical product
+`|G| = |Aut_M(E)| [M:K]`. A finite coset presentation is still needed to
+identify the factor `[M:K]` with the literal subgroup index `[G:H]`.
+`finite_decidable_subtypes` derives a cardinality for every proposition-valued
+subgroup of the finite automorphism group. The roundtrips assemble into a
+checked `Equiv(U1, GaloisSubgroup(K,E), IntermediateField(K,E))`.
+The theorem explicitly takes an algebraically closed target T and an embedding
+E → T; it does not construct an algebraic closure. The existing order theorems
+show that both maps reverse inclusion. The checked theorem uses LEM(U0) and
+the listed truncation interfaces, with no Choice axiom or new kernel rule.
 
 ## Existing foundation and remaining scope
 
@@ -37,11 +73,12 @@ These are actual equalities of bundles. `f4_galois_correspondence` now packages
 the two assignments as a full `Equiv(U1, ...)` between decidable subgroups and
 decidable intermediate fields; both maps reverse inclusion. Membership
 decisions are explicit data, with uniqueness proved by function extensionality.
-This does not yet prove degrees or supply the general finite correspondence.
+The F4 result remains a concrete decidable-subobject example; the general
+normal-separable roundtrips and Artin degree formula are now checked above.
 Generated subfields and ambient composita are constructed from finite
-derivations, with their leastness and lattice laws. Most of the remaining
-general algebra is finite linear algebra, polynomial theory, algebraic
-extensions, and Artin's fixed-field theorem.
+derivations, with their leastness and lattice laws. The remaining finite work
+includes finite coset index counting, the normal-subgroup criterion and
+restriction quotient, and equivalent Galois characterizations.
 
 The F4 Galois group is abelian by transport from the cyclic group of order two,
 and consequently all its subgroups are normal, without a decidability
@@ -109,7 +146,7 @@ extensions are not classified by ordinary automorphism subgroups in this way.
 Keep the distinction explicit when stating the scope of the showcase.
 
 The two-loop F4/F2 identity below is the small landing-page example motivating
-this general lattice-level goal. General development remains paused; this
+this general lattice-level goal. This
 section records the intended result, not a claim that it is already proved.
 
 ### Prerequisite: finite extensions as loop types
@@ -259,8 +296,8 @@ to prove the algebraic tower and compositum laws.
 | 3. Polynomial algebra | Finite-support polynomials, evaluation, division over fields, root bound, ideals or a sufficient principal-ideal API, irreducibility and quotient fields | Adjoining a root of an irreducible polynomial constructs a field with its universal property |
 | 4. Algebraic extensions | Minimal polynomials, finite versus finitely generated algebraic extensions, simple extensions, embedding extension lemmas and composita | Finite extensions satisfy the distinguished interface; finitely generated algebraic extensions are proved finite |
 | 5. Separability and normality | Repeated roots, formal derivative, separable polynomials/elements/extensions, splitting fields, normal extensions, embedding criteria, counts of embeddings | Separable distinguished-class instances and the finite Galois characterizations are proved |
-| 6. Fixed-field theorem | Linear independence of distinct field homomorphisms; Artin's theorem for a finite group H of field automorphisms | The degree of L over its H-fixed field is the cardinality of H, and all automorphisms fixing that field are classified |
-| 7. Finite correspondence | Mutual inverse assignments, order reversal, degree/index formulas, normality criterion, restriction maps and quotient group isomorphisms | The complete finite fundamental theorem stated below is checked |
+| 6. Fixed-field theorem | Finite Dedekind independence, evaluation basis, Artin degree equality, and automorphism classification (checked) | The degree of L over its H-fixed field is the cardinality of H, and all automorphisms fixing that field are classified |
+| 7. Finite correspondence | Mutual inverse assignments and order reversal (checked with a supplied closed target); finite coset index, normality criterion, restriction maps and quotient group isomorphisms (remaining) | The complete finite fundamental theorem stated below is checked |
 
 Stage 6 can proceed alongside parts of stages 3–5 once the linear-algebra
 foundation is ready. The final finite correspondence uses both branches.

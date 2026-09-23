@@ -1,0 +1,232 @@
+import binomial_types;
+import equivalence_from_inverse;
+import finite_cardinalities;
+import classical;
+
+def HasFiniteCardinality(A : U0) = exists n : Nat, HasCardinality(A, n);
+
+def finite_cardinality_prop(A : U0) : Proposition(HasFiniteCardinality(A)) {
+  intro first;
+  intro second;
+  obtain (n, countN) = first;
+  obtain (m, countM) = second;
+  exact subtype_ext(
+    Nat, HasCardinality(A), has_cardinality_prop(A), first, second,
+    cardinality_unique(A, n, m, countN, countM)
+  );
+}
+
+def finite_cardinality_bijection(
+  A : U0, B : U0, e : Bijection(A, B), finite : HasFiniteCardinality(A)
+) :
+  HasFiniteCardinality(B) {
+  obtain (n, count) = finite;
+  exact (
+    n,
+    mere_map(
+      Bijection(Fin(n), A), Bijection(Fin(n), B),
+      (fun (enumeration : Bijection(Fin(n), A)) => compose_bijection(Fin(n), A, B, enumeration, e)),
+      count
+    )
+  );
+}
+
+def finite_selected_true(
+  k : Nat, q : Fin(k) -> Bool, m : Nat, count : HasCardinality(Selected(Fin(k), q), m)
+) :
+  HasCardinality(Selected(Fin(succ(k)), predicate_join(Fin(k), yes, q)), succ(m)) {
+  let A = Fin(k);
+  let S = Selected(A, q);
+  let W = Selected(Fin(succ(k)), predicate_join(A, yes, q));
+  exact mere_map(
+    Bijection(Fin(m), S), Bijection(Fin(succ(m)), W),
+    (
+      fun (e : Bijection(Fin(m), S)) => compose_bijection(
+        Fin(succ(m)), Unit or S, W,
+        sum_bijection(Unit, Fin(m), Unit, S, identity_bijection(Unit), e),
+        reverse_bijection(W, Unit or S, selected_true(A, q))
+      )
+    ), count
+  );
+}
+
+def finite_selected_false(
+  k : Nat, q : Fin(k) -> Bool, m : Nat, count : HasCardinality(Selected(Fin(k), q), m)
+) :
+  HasCardinality(Selected(Fin(succ(k)), predicate_join(Fin(k), no, q)), m) {
+  let A = Fin(k);
+  let S = Selected(A, q);
+  let W = Selected(Fin(succ(k)), predicate_join(A, no, q));
+  exact mere_map(
+    Bijection(Fin(m), S), Bijection(Fin(m), W),
+    (
+      fun (e : Bijection(Fin(m), S)) => compose_bijection(
+        Fin(m), S, W, e, reverse_bijection(W, S, selected_false(A, q))
+      )
+    ), count
+  );
+}
+
+def finite_selected_bool_step(
+  k : Nat, previous : forall p : Fin(k) -> Bool, HasFiniteCardinality(Selected(Fin(k), p)),
+  p : Fin(succ(k)) -> Bool
+) :
+  HasFiniteCardinality(Selected(Fin(succ(k)), p)) {
+  let A = Fin(k);
+  let q = predicate_tail(A, p);
+  let S = Selected(A, q);
+  let W = Selected(Fin(succ(k)), p);
+  let norm = selected_normalize(A, p);
+  obtain (m, count) = previous(q);
+  let normalized =
+    match p(head(A)) as first return HasFiniteCardinality(
+      Selected(Fin(succ(k)), predicate_join(A, first, q))
+    ) {
+      left u => transport(
+        (fun (b : Bool) => HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, b, q)))),
+        yes, typed(Bool, left(u)), cong((fun (v : Unit) => typed(Bool, left(v))), unit_equal(u)),
+        typed(
+          HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, yes, q))),
+          (succ(m), finite_selected_true(k, q, m, count))
+        )
+      );
+      right u => transport(
+        (fun (b : Bool) => HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, b, q)))),
+        no, typed(Bool, right(u)), cong((fun (v : Unit) => typed(Bool, right(v))), unit_equal(u)),
+        typed(
+          HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, no, q))),
+          (m, finite_selected_false(k, q, m, count))
+        )
+      );
+    };
+  exact finite_cardinality_bijection(
+    Selected(Fin(succ(k)), predicate_normal(A, p)), W,
+    reverse_bijection(W, Selected(Fin(succ(k)), predicate_normal(A, p)), norm), normalized
+  );
+}
+
+def finite_selected_bool(n : Nat) =
+  induction n as k return (forall p : Fin(k) -> Bool, HasFiniteCardinality(Selected(Fin(k), p))) {
+    zero => fun (p : Fin(0) -> Bool) => typed(
+      HasFiniteCardinality(Selected(Fin(0), p)),
+      (
+        0,
+        merely(
+          Bijection(Fin(0), Selected(Fin(0), p)),
+          reverse_bijection(
+            Selected(Fin(0), p), Fin(0),
+            impossible_bijection(
+              Selected(Fin(0), p),
+              (fun (s : Selected(Fin(0), p)) => absurd(selected_index(Fin(0), p, s)))
+            )
+          )
+        )
+      )
+    );
+    succ previous => finite_selected_bool_step(k, previous);
+  };
+
+def classical_predicate_bool(A : U0, P : A -> U0, prop : forall a : A, Proposition(P(a)), a : A) :
+  Bool {
+  exact match excluded_middle(P(a), prop(a)) return Bool {
+    left witness => yes;
+    right absent => no;
+  };
+}
+
+def classical_predicate_truth(A : U0, P : A -> U0, prop : forall a : A, Proposition(P(a)), a : A) :
+  (P(a) -> Truth(classical_predicate_bool(A, P, prop, a)))
+  and (Truth(classical_predicate_bool(A, P, prop, a)) -> P(a)) {
+  let decision = excluded_middle(P(a), prop(a));
+  exact match decision as d return ((P(a) -> Truth(match d return Bool {
+          left witness => yes;
+          right absent => no;
+        })) and (Truth(match d return Bool {
+          left witness => yes;
+          right absent => no;
+        }) -> P(a))) {
+    left witness => (fun (member : P(a)) => tt, fun (truth : Unit) => witness);
+    right absent => (
+      fun (member : P(a)) => absurd(absent(member)), fun (truth : Void) => absurd(truth)
+    );
+  };
+}
+
+def subtype_reindex_bijection(
+  A : U0, B : U0, P : B -> U0, prop : forall b : B, Proposition(P(b)), e : Bijection(A, B)
+) :
+  Bijection((exists a : A, P(forward(A, B, e, a))), (exists b : B, P(b))) {
+  let Q = fun (a : A) => P(forward(A, B, e, a));
+  let X = exists a : A, Q(a);
+  let Y = exists b : B, P(b);
+  let f = fun (x : X) => typed(Y, (forward(A, B, e, sigma_first(A, Q, x)), sigma_second(A, Q, x)));
+  let g =
+    fun (y : Y) => typed(
+      X,
+      (
+        backward(A, B, e, sigma_first(B, P, y)),
+        transport(
+          P, sigma_first(B, P, y), forward(A, B, e, backward(A, B, e, sigma_first(B, P, y))),
+          sym(right_inverse(A, B, e, sigma_first(B, P, y))), sigma_second(B, P, y)
+        )
+      )
+    );
+  exact (
+    f, g,
+    (
+      fun (x : X) => subtype_ext(
+        A, Q, (fun (a : A) => prop(forward(A, B, e, a))), g(f(x)), x,
+        left_inverse(A, B, e, sigma_first(A, Q, x))
+      )
+    ),
+    (
+      fun (y : Y) => subtype_ext(
+        B, P, prop, f(g(y)), y, right_inverse(A, B, e, sigma_first(B, P, y))
+      )
+    )
+  );
+}
+
+def finite_predicate_from_enumeration(
+  A : U0, n : Nat, enumeration : Bijection(Fin(n), A), P : A -> U0, prop : forall a : A,
+  Proposition(P(a))
+) :
+  HasFiniteCardinality(exists a : A, P(a)) {
+  let Q = fun (i : Fin(n)) => P(forward(Fin(n), A, enumeration, i));
+  let propQ = fun (i : Fin(n)) => prop(forward(Fin(n), A, enumeration, i));
+  let p = classical_predicate_bool(Fin(n), Q, propQ);
+  let decide = fun (i : Fin(n)) => classical_predicate_truth(Fin(n), Q, propQ, i);
+  let selectedToSubtype =
+    reverse_bijection(
+      (exists i : Fin(n), Q(i)), Selected(Fin(n), p),
+      subtype_bijection(
+        Fin(n), Q, (fun (i : Fin(n)) => Truth(p(i))), propQ, (fun (i : Fin(n)) => truth_prop(p(i))),
+        (fun (i : Fin(n)) => fst(Q(i) -> Truth(p(i)), Truth(p(i)) -> Q(i), decide(i))),
+        (fun (i : Fin(n)) => snd(Q(i) -> Truth(p(i)), Truth(p(i)) -> Q(i), decide(i)))
+      )
+    );
+  let reindex = subtype_reindex_bijection(Fin(n), A, P, prop, enumeration);
+  exact finite_cardinality_bijection(
+    Selected(Fin(n), p), (exists a : A, P(a)),
+    compose_bijection(
+      Selected(Fin(n), p), (exists i : Fin(n), Q(i)), (exists a : A, P(a)), selectedToSubtype,
+      reindex
+    ), finite_selected_bool(n, p)
+  );
+}
+
+def finite_predicate_of_finite(
+  A : U0, n : Nat, finite : HasCardinality(A, n), P : A -> U0, prop : forall a : A,
+  Proposition(P(a))
+) :
+  HasFiniteCardinality(exists a : A, P(a)) {
+  let B = exists a : A, P(a);
+  exact mere_eliminate(
+    Bijection(Fin(n), A), HasFiniteCardinality(B), finite_cardinality_prop(B),
+    (
+      fun (enumeration : Bijection(Fin(n), A)) => finite_predicate_from_enumeration(
+        A, n, enumeration, P, prop
+      )
+    ), finite
+  );
+}

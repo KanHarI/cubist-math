@@ -1,0 +1,187 @@
+import artin_embedding_bound;
+
+def outside_subgroup_extra_embedding_distinct(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), g : Galois(K, E),
+  outside : subgroup_members(GaloisGroup(K, E), H, g) -> Void
+) :
+  PairwiseDistinctEmbeddings(
+    extension_field(K, E), extension_field(K, E), succ(n),
+    fin_prepend(
+      FieldEmbedding(extension_field(K, E), extension_field(K, E)), n,
+      galois_field_embedding(K, E, g), subgroup_evaluation_maps(K, E, H, n, enumeration)
+    )
+  ) {
+  let G = GaloisGroup(K, E);
+  let F = extension_field(K, E);
+  let A = SubgroupCarrier(G, H);
+  let tail = subgroup_evaluation_maps(K, E, H, n, enumeration);
+  let f = forward(Fin(n), A, enumeration);
+  have fresh : forall j : Fin(n), galois_field_embedding(K, E, g) = tail(j) -> Void {
+    intro j;
+    intro same;
+    let h = f(j);
+    let equal = galois_field_embedding_injective(K, E, g, subgroup_value(G, H, h), same);
+    exact outside(
+      transport(
+        subgroup_members(G, H), subgroup_value(G, H, h), g, sym(equal), subgroup_evidence(G, H, h)
+      )
+    );
+  }
+  exact fin_prepend_injective(
+    FieldEmbedding(F, F), n, galois_field_embedding(K, E, g), tail,
+    subgroup_evaluation_maps_distinct(K, E, H, n, enumeration), fresh
+  );
+}
+
+def extra_embedding_fixes_fixed_base(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), g : Galois(K, E),
+  fixes : GaloisFixing(K, E, intermediate_members(K, E, fixed_intermediate_field(K, E, H)), g),
+  t : Fin(succ(n)), a : af_carrier(intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)))
+) :
+  field_embedding_map(
+    extension_field(K, E), extension_field(K, E),
+    fin_prepend(
+      FieldEmbedding(extension_field(K, E), extension_field(K, E)), n,
+      galois_field_embedding(K, E, g), subgroup_evaluation_maps(K, E, H, n, enumeration)
+    )(t),
+    field_embedding_map(
+      intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)), extension_field(K, E),
+      intermediate_ambient_embedding(K, E, fixed_intermediate_field(K, E, H)), a
+    )
+  ) = field_embedding_map(
+    intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)), extension_field(K, E),
+    intermediate_ambient_embedding(K, E, fixed_intermediate_field(K, E, H)), a
+  ) {
+  let G = GaloisGroup(K, E);
+  let M = fixed_intermediate_field(K, E, H);
+  let F = extension_field(K, E);
+  let value =
+    field_embedding_map(
+      intermediate_as_field(K, E, M), F, intermediate_ambient_embedding(K, E, M), a
+    );
+  let member = subfield_evidence(F, intermediate_subfield(K, E, M), a);
+  exact match t as index return (
+    field_embedding_map(
+      F, F,
+      fin_prepend(
+        FieldEmbedding(F, F), n, galois_field_embedding(K, E, g),
+        subgroup_evaluation_maps(K, E, H, n, enumeration)
+      )(index), value
+    ) = value
+  ) {
+    left u => fixes(value, member);
+    right j => subgroup_member_fixes_intermediate(
+      K, E, H, forward(Fin(n), SubgroupCarrier(G, H), enumeration, j), value, member
+    );
+  };
+}
+
+// Every automorphism fixing the fixed field of a finite subgroup was already
+// in that subgroup. This completes Artin's automorphism classification without
+// assuming that the full automorphism group is finite in advance.
+def artin_fixed_field_automorphism_classification(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  finite : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n), g : Galois(K, E),
+  fixes : GaloisFixing(K, E, intermediate_members(K, E, fixed_intermediate_field(K, E, H)), g)
+) :
+  subgroup_members(GaloisGroup(K, E), H, g) {
+  let G = GaloisGroup(K, E);
+  let M = fixed_intermediate_field(K, E, H);
+  let R = intermediate_as_field(K, E, M);
+  let F = extension_field(K, E);
+  let i = intermediate_ambient_embedding(K, E, M);
+  let A = SubgroupCarrier(G, H);
+  let Basis =
+    exists enumeration : Bijection(Fin(n), A), exists points : Fin(n) -> extension_carrier(K, E),
+    FamilyBasis(
+      F, CoordinateSpace(F, n), n,
+      (
+        fun (j : Fin(n)) => embedding_evaluation_vector(
+          F, F, n, subgroup_evaluation_maps(K, E, H, n, enumeration), points(j)
+        )
+      )
+    );
+  have contradiction : (subgroup_members(G, H, g) -> Void) -> Void {
+    intro outside;
+    have reject : Basis -> Void {
+      intro witness;
+      obtain (enumeration, points, basis) = witness;
+      let maps =
+        fin_prepend(
+          FieldEmbedding(F, F), n, galois_field_embedding(K, E, g),
+          subgroup_evaluation_maps(K, E, H, n, enumeration)
+        );
+      let spanning = subgroup_evaluation_spans_fixed_field(K, E, H, n, enumeration, points, basis);
+      exact finite_spanning_embeddings_upper_bound(
+        R, F, i, n, points, spanning, maps,
+        outside_subgroup_extra_embedding_distinct(K, E, H, n, enumeration, g, outside),
+        (
+          fun (t : Fin(succ(n))) => fun (a : af_carrier(R)) => extra_embedding_fixes_fixed_base(
+            K, E, H, n, enumeration, g, fixes, t, a
+          )
+        )
+      );
+    }
+    exact mere_eliminate(
+      Basis, Void, (fun (u : Void) => fun (v : Void) => absurd(u)), reject,
+      finite_subgroup_evaluation_basis(K, E, H, n, finite)
+    );
+  }
+  exact double_negation(
+    subgroup_members(G, H, g), subgroup_prop(G, subgroup_members(G, H), subgroup_laws(G, H), g),
+    contradiction
+  );
+}
+
+// The fixing subgroup of E^H is H as an equality of bundled subgroups.
+// The membership comparison is pointwise; extensionality then identifies the
+// loop subgroups themselves.
+def artin_fixing_fixed_subgroup(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  finite : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n)
+) :
+  fixing_galois_subgroup(K, E, fixed_intermediate_field(K, E, H)) =[GaloisSubgroup(K, E)] H {
+  let G = GaloisGroup(K, E);
+  let members = galois_subgroup_members(K, E, H);
+  let closed = GaloisFixing(K, E, intermediate_members(K, E, fixed_intermediate_field(K, E, H)));
+  have same : closed = members {
+    exact field_predicate_ext(
+      Galois(K, E), closed, members,
+      galois_fixing_prop(K, E, intermediate_members(K, E, fixed_intermediate_field(K, E, H))),
+      subgroup_prop(G, members, subgroup_laws(G, H)),
+      (
+        fun (g : Galois(K, E)) => typed(
+          (closed(g) -> members(g)) and (members(g) -> closed(g)),
+          (
+            (
+              fun (fixes : closed(g)) => artin_fixed_field_automorphism_classification(
+                K, E, H, n, finite, g, fixes
+              )
+            ), galois_fixing_fixed_contains(K, E, members, g)
+          )
+        )
+      )
+    );
+  }
+  exact subgroup_ext(G, fixing_galois_subgroup(K, E, fixed_intermediate_field(K, E, H)), H, same);
+}
+
+// A fixed field determines its finite loop subgroup uniquely.
+def artin_fixed_field_injective(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), J : GaloisSubgroup(K, E), n : Nat,
+  finiteH : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n), m : Nat,
+  finiteJ : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), J), m),
+  same : fixed_intermediate_field(K, E, H) =[IntermediateField(K, E)] fixed_intermediate_field(
+    K, E, J
+  )
+) :
+  H =[GaloisSubgroup(K, E)] J {
+  exact trans(
+    sym(artin_fixing_fixed_subgroup(K, E, H, n, finiteH)),
+    trans(
+      cong(fixing_galois_subgroup(K, E), same), artin_fixing_fixed_subgroup(K, E, J, m, finiteJ)
+    )
+  );
+}

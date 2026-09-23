@@ -1,0 +1,149 @@
+import artin_loop_independence;
+import finite_basis_search;
+
+// The evaluation vector of a finite family of embeddings is a point of the
+// coordinate space over the target field.
+def embedding_evaluation_vector(
+  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  x : af_carrier(K)
+) :
+  vector_carrier(L, CoordinateSpace(L, n)) {
+  exact fun (i : Fin(n)) => field_embedding_map(K, L, maps(i), x);
+}
+
+def embedding_evaluation_dot(
+  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  coefficients : Fin(n) -> af_carrier(L), x : af_carrier(K)
+) :
+  af_carrier(L) {
+  exact field_sum(
+    L, n,
+    (
+      fun (i : Fin(n)) => field_mul(
+        L, coefficients(i), embedding_evaluation_vector(K, L, n, maps, x)(i)
+      )
+    )
+  );
+}
+
+def embedding_evaluation_dot_is_relation(
+  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  coefficients : Fin(n) -> af_carrier(L), x : af_carrier(K)
+) :
+  embedding_evaluation_dot(K, L, n, maps, coefficients, x) = hom_family_sum(
+    K, L, n, maps, coefficients, x
+  ) {
+  exact refl(hom_family_sum(K, L, n, maps, coefficients, x));
+}
+
+// The annihilator of all evaluation vectors is zero. This is the precise
+// finite-coordinate form of Dedekind independence used by Artin's argument.
+def embedding_evaluations_separate(
+  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  distinct : PairwiseDistinctEmbeddings(K, L, n, maps), coefficients : Fin(n) -> af_carrier(L),
+  annihilates : forall x : af_carrier(K),
+  embedding_evaluation_dot(K, L, n, maps, coefficients, x) = field_zero(L)
+) :
+  forall i : Fin(n), coefficients(i) = field_zero(L) {
+  exact distinct_field_embeddings_independent(
+    n, K, L, maps, distinct, coefficients,
+    (
+      fun (x : af_carrier(K)) => trans(
+        sym(embedding_evaluation_dot_is_relation(K, L, n, maps, coefficients, x)), annihilates(x)
+      )
+    )
+  );
+}
+
+// A nonzero coordinate functional detects some evaluation vector. The
+// witness remains truncated: no global choice of an evaluation point occurs.
+def embedding_evaluations_detect_nonzero(
+  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  distinct : PairwiseDistinctEmbeddings(K, L, n, maps), coefficients : Fin(n) -> af_carrier(L),
+  i : Fin(n), nonzero : (coefficients(i) = field_zero(L)) -> Void
+) :
+  Mere(
+    exists x : af_carrier(K),
+    (embedding_evaluation_dot(K, L, n, maps, coefficients, x) = field_zero(L)) -> Void
+  ) {
+  exact classical_counterexample(
+    af_carrier(K),
+    (
+      fun (x : af_carrier(K)) => embedding_evaluation_dot(K, L, n, maps, coefficients, x) = field_zero(
+        L
+      )
+    ),
+    (
+      fun (x : af_carrier(K)) => af_set(L)(
+        embedding_evaluation_dot(K, L, n, maps, coefficients, x), field_zero(L)
+      )
+    ),
+    (
+      fun (
+        all : forall x : af_carrier(K),
+        embedding_evaluation_dot(K, L, n, maps, coefficients, x) = field_zero(L)
+      ) => nonzero(embedding_evaluations_separate(K, L, n, maps, distinct, coefficients, all, i))
+    )
+  );
+}
+
+// The same separation statement for the homotopy interpretation: automorphisms
+// are loops of the bundled extension, and their action is carrier transport.
+def loop_evaluations_separate(
+  n : Nat, K : AlgebraicField, E : FieldExt(K), loops : Fin(n) -> (E =[FieldExt(K)] E),
+  distinct : forall i : Fin(n), forall j : Fin(n), loops(i) = loops(j) -> i = j,
+  coefficients : Fin(n) -> extension_carrier(K, E),
+  annihilates : forall x : extension_carrier(K, E),
+  field_sum(
+    extension_field(K, E), n,
+    (
+      fun (i : Fin(n)) => field_mul(
+        extension_field(K, E), coefficients(i), transport(extension_carrier(K), E, E, loops(i), x)
+      )
+    )
+  ) = field_zero(extension_field(K, E))
+) :
+  forall i : Fin(n), coefficients(i) = field_zero(extension_field(K, E)) {
+  exact distinct_extension_loops_independent(n, K, E, loops, distinct, coefficients, annihilates);
+}
+
+def loop_evaluations_detect_nonzero(
+  n : Nat, K : AlgebraicField, E : FieldExt(K), loops : Fin(n) -> (E =[FieldExt(K)] E),
+  distinct : forall i : Fin(n), forall j : Fin(n), loops(i) = loops(j) -> i = j,
+  coefficients : Fin(n) -> extension_carrier(K, E), i : Fin(n),
+  nonzero : (coefficients(i) = field_zero(extension_field(K, E))) -> Void
+) :
+  Mere(
+    exists x : extension_carrier(K, E),
+    (
+      field_sum(
+        extension_field(K, E), n,
+        (
+          fun (j : Fin(n)) => field_mul(
+            extension_field(K, E), coefficients(j),
+            transport(extension_carrier(K), E, E, loops(j), x)
+          )
+        )
+      ) = field_zero(extension_field(K, E))
+    ) -> Void
+  ) {
+  let F = extension_field(K, E);
+  let dot =
+    fun (x : extension_carrier(K, E)) => field_sum(
+      F, n,
+      (
+        fun (j : Fin(n)) => field_mul(
+          F, coefficients(j), transport(extension_carrier(K), E, E, loops(j), x)
+        )
+      )
+    );
+  exact classical_counterexample(
+    extension_carrier(K, E), (fun (x : extension_carrier(K, E)) => dot(x) = field_zero(F)),
+    (fun (x : extension_carrier(K, E)) => af_set(F, dot(x), field_zero(F))),
+    (
+      fun (all : forall x : extension_carrier(K, E), dot(x) = field_zero(F)) => nonzero(
+        loop_evaluations_separate(n, K, E, loops, distinct, coefficients, all, i)
+      )
+    )
+  );
+}

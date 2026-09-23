@@ -15,9 +15,13 @@ Moving these documents does not change their recorded status or resume paused wo
 | Real numbers | [Real-number constructions](roadmaps/reals-roadmap.md) | The roadmap includes the shared interface, checked constructions, assumptions, and remaining construction proofs. |
 | Analytic number theory | [RH and prime-counting error](roadmaps/rh-prime-counting-roadmap.md) | Planning only: precise conditional statement, analytic dependencies, and potential homotopy interpretations. No proof implementation or tactical checkpoint yet. |
 
+## Language tooling roadmap
+
+- [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md): adding `simp`, explicit rewriting, calculation chains, inferred arguments, and other proof conveniences while preserving HoTT and cubical semantics. Planning only.
+
 ## Other sections
 
-- [Roadmaps](roadmaps/README.md): intended scope and unfinished mathematical goals.
+- [Roadmaps](roadmaps/README.md): intended scope and unfinished mathematical and language-tooling goals.
 - [Tactical notes](tactical/README.md): handoffs, implementation details, and checked proof developments.
 - Guides: [CLI](guides/cli.md), [kernel](guides/kernel.md), and [deployment](guides/deployment.md).
 - [Cubical implementation notes](cubical/): kernel constructions, performance, browser integration, and migration history. Start with the [benchmark](cubical/benchmark.md) and [checking optimizations](cubical/checking-optimizations.md) for performance work.

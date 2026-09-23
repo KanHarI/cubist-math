@@ -1,0 +1,103 @@
+import artin_evaluation_basis;
+import artin_fixed_embeddings;
+
+def subgroup_evaluation_maps(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H))
+) :
+  Fin(n) -> FieldEmbedding(extension_field(K, E), extension_field(K, E)) {
+  let G = GaloisGroup(K, E);
+  let A = SubgroupCarrier(G, H);
+  exact fun (i : Fin(n)) => galois_field_embedding(
+    K, E, subgroup_value(G, H, forward(Fin(n), A, enumeration, i))
+  );
+}
+
+def subgroup_evaluation_maps_distinct(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H))
+) :
+  PairwiseDistinctEmbeddings(
+    extension_field(K, E), extension_field(K, E), n,
+    subgroup_evaluation_maps(K, E, H, n, enumeration)
+  ) {
+  let G = GaloisGroup(K, E);
+  let A = SubgroupCarrier(G, H);
+  let f = forward(Fin(n), A, enumeration);
+  intro i;
+  intro j;
+  intro same;
+  exact inverse_injective(
+    Fin(n), A, f, backward(Fin(n), A, enumeration), left_inverse(Fin(n), A, enumeration), i, j,
+    subgroup_value_ext(
+      G, H, f(i), f(j),
+      galois_field_embedding_injective(
+        K, E, subgroup_value(G, H, f(i)), subgroup_value(G, H, f(j)), same
+      )
+    )
+  );
+}
+
+// Artin's evaluation basis now applies directly to an enumerated finite
+// automorphism subgroup. Enumeration and evaluation points remain truncated.
+def finite_subgroup_evaluation_basis(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  finite : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n)
+) :
+  Mere(
+    exists enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)),
+    exists points : Fin(n) -> extension_carrier(K, E),
+    FamilyBasis(
+      extension_field(K, E), CoordinateSpace(extension_field(K, E), n), n,
+      (
+        fun (j : Fin(n)) => embedding_evaluation_vector(
+          extension_field(K, E), extension_field(K, E), n,
+          subgroup_evaluation_maps(K, E, H, n, enumeration), points(j)
+        )
+      )
+    )
+  ) {
+  let G = GaloisGroup(K, E);
+  let A = SubgroupCarrier(G, H);
+  let F = extension_field(K, E);
+  let C = CoordinateSpace(F, n);
+  let Goal =
+    exists enumeration : Bijection(Fin(n), A), exists points : Fin(n) -> extension_carrier(K, E),
+    FamilyBasis(
+      F, C, n,
+      (
+        fun (j : Fin(n)) => embedding_evaluation_vector(
+          F, F, n, subgroup_evaluation_maps(K, E, H, n, enumeration), points(j)
+        )
+      )
+    );
+  have withEnumeration : Bijection(Fin(n), A) -> Mere(Goal) {
+    intro enumeration;
+    let maps = subgroup_evaluation_maps(K, E, H, n, enumeration);
+    have attach :
+      (
+        exists points : Fin(n) -> extension_carrier(K, E),
+        FamilyBasis(
+          F, C, n, (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
+        )
+      ) -> Goal {
+      intro basis;
+      obtain (points, independent, onto) = basis;
+      exact (enumeration, points, independent, onto);
+    }
+    exact mere_map(
+      (
+        exists points : Fin(n) -> extension_carrier(K, E),
+        FamilyBasis(
+          F, C, n, (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
+        )
+      ), Goal, attach,
+      distinct_embeddings_evaluation_basis(
+        F, F, n, maps, subgroup_evaluation_maps_distinct(K, E, H, n, enumeration)
+      )
+    );
+  }
+  exact mere_eliminate(
+    Bijection(Fin(n), A), Mere(Goal), mere_is_prop(Goal), withEnumeration, finite
+  );
+}

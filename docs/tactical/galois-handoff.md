@@ -6,34 +6,58 @@ kernel and `.cubist` sources. The old Id/J engine, its proof exporters and
 its reference-comparison commands are retired; older checkpoints describe
 historical validation, not the current development workflow.
 
-## Paused checkpoint: 2026-09-23
+## Active checkpoint: 2026-09-23
 
-Galois development is paused at the user's request. No further mathematics is
-part of the repository-maintenance task. The checked results and performance
-follow-up below are the resumption baseline; older increment sections are
+Artin's theorem is now checked in `artin_degree`: for a merely finite subgroup
+H of extension loops, `[E:E^H] = |H|`. `artin_equivariance` proves the
+evaluation coefficients are H-fixed, giving spanning over E^H; the same
+evaluation points are independent over E^H. `artin_embedding_bound` excludes
+more than n distinct embeddings over a field spanned by n elements.
+`artin_classification` uses that bound to prove `Aut_{E^H}(E) = H` as an
+equality of bundled subgroups. The matrix entries and automorphism actions
+are transport around extension paths; composition and inverse cancellation
+are checked at the loop level. No new axiom or kernel rule was added.
+
+The core finite correspondence is checked in `galois_intermediate_roundtrip`.
+For a finite normal separable E/K and a supplied algebraically closed T with
+an embedding E → T, `galois_normal_target` proves
+`|Aut_M(E)| = [E:M]` for every intermediate M. A degree-one inclusion argument
+then proves `Fix(Aut_M(E)) = M`. `finite_decidable_subtypes` derives the
+cardinality of every proposition-valued subgroup from the finite ambient
+automorphism group, so the two roundtrips assemble into
+`Equiv(U1, GaloisSubgroup(K,E), IntermediateField(K,E))` without a separate
+finiteness argument for each H. Existing order proofs show both maps reverse
+inclusion. The full automorphism group fixes exactly the embedded base field,
+and `finite_galois_cardinality_tower_law` checks
+`|G| = |Aut_M(E)| [M:K]`. Exact axioms for the correspondence are LEM(U0), Truncate(U0/U1),
+TruncateElim(U0/U1), TruncateIntro(U0), and TruncateProp(U0); no Choice axiom.
+
+The new focused regressions check Artin degree, classification, both
+roundtrips, and the exact axiom families. Older increment sections below are
 historical and may list work that has since been completed.
+Full validation: `npm test` passes 292 tests; the canonical corpus checks
+3,766 concrete declarations and 44 universe templates with zero failures,
+blocked declarations, or optimization candidates.
 
 Remaining finite milestones, in suggested dependency order:
 
-1. Prove linear independence of distinct field homomorphisms and Artin's
-   fixed-field theorem: for a finite automorphism group H, [L:L^H] = |H|,
-   with all automorphisms fixing L^H classified by H.
-2. Complete derivative/repeated-root criteria and the polynomial
+1. Complete derivative/repeated-root criteria and the polynomial
    characterization of normality. Develop finite splitting-target embedding
    extension/counting, so the finite route needs no constructed algebraic closure.
-3. Connect finite normal separable extensions with their splitting-field and
+2. Connect finite normal separable extensions with their splitting-field and
    automorphism-count characterizations.
-4. Prove the general subgroup/intermediate-field correspondence, its inverse
-   bundle equalities, order reversal, joins/meets, and degree/index formulas.
-5. Prove the normal-subgroup criterion and restriction quotient isomorphism,
+3. Present finite coset indices in a small type, prove the index formula
+   `[M:K] = [G:H]`, and make join/meet exchange explicit.
+4. Prove the normal-subgroup criterion and restriction quotient isomorphism,
    reusing the checked quotient universal property and first isomorphism theorem.
-6. Supply Lang's distinguished-class instances for finite and finite separable
+5. Supply Lang's distinguished-class instances for finite and finite separable
    extensions, including compositum base change.
-7. Validate a proper intermediate-field example, negative statements, exact
+6. Validate a proper intermediate-field example, negative statements, exact
    assumptions, and the full corpus. Reuse univalence and the existing
    automorphism/loop interpretation where applicable.
 
-The general finite fundamental theorem is not yet proved. Infinite extensions,
+The complete finite fundamental theorem still needs index and normal quotient
+statements. Infinite extensions,
 algebraic-closure existence, and infinite Galois theory remain out of scope.
 No new axioms or mathematical kernel rules are planned.
 

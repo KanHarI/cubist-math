@@ -1,0 +1,563 @@
+import artin_fixed_evaluation;
+
+// A field automorphism commutes with a finite sum. The proof is by finite
+// recursion and uses only preservation of zero and addition.
+def embedding_preserves_field_sum_zero(
+  F : AlgebraicField, e : FieldEmbedding(F, F), values : Fin(0) -> af_carrier(F)
+) :
+  field_embedding_map(F, F, e, field_sum(F, 0, values)) = field_sum(
+    F, 0, (fun (i : Fin(0)) => field_embedding_map(F, F, e, values(i)))
+  ) {
+  obtain (zero, one, neg, add, mul) = field_embedding_preserves(F, F, e);
+  exact zero;
+}
+
+def embedding_preserves_field_sum_step(
+  F : AlgebraicField, e : FieldEmbedding(F, F), k : Nat,
+  previous : forall values : Fin(k) -> af_carrier(F),
+  field_embedding_map(F, F, e, field_sum(F, k, values)) = field_sum(
+    F, k, (fun (i : Fin(k)) => field_embedding_map(F, F, e, values(i)))
+  ), values : Fin(succ(k)) -> af_carrier(F)
+) :
+  field_embedding_map(F, F, e, field_sum(F, succ(k), values)) = field_sum(
+    F, succ(k), (fun (i : Fin(succ(k))) => field_embedding_map(F, F, e, values(i)))
+  ) {
+  obtain (zero, one, neg, add, mul) = field_embedding_preserves(F, F, e);
+  exact trans(
+    add(
+      finite_head(af_carrier(F), k, values), field_sum(F, k, finite_tail(af_carrier(F), k, values))
+    ),
+    cong(
+      field_add(F, field_embedding_map(F, F, e, finite_head(af_carrier(F), k, values))),
+      previous(finite_tail(af_carrier(F), k, values))
+    )
+  );
+}
+
+def embedding_preserves_field_sum(F : AlgebraicField, e : FieldEmbedding(F, F), n : Nat) =
+  induction n as k return (
+    forall values : Fin(k) -> af_carrier(F),
+    field_embedding_map(F, F, e, field_sum(F, k, values)) = field_sum(
+      F, k, (fun (i : Fin(k)) => field_embedding_map(F, F, e, values(i)))
+    )
+  ) {
+    zero => embedding_preserves_field_sum_zero(F, e);
+    succ previous => embedding_preserves_field_sum_step(F, e, k, previous);
+  };
+
+def embedding_preserves_weighted_sum(
+  F : AlgebraicField, e : FieldEmbedding(F, F), n : Nat, coefficients : Fin(n) -> af_carrier(F),
+  values : Fin(n) -> af_carrier(F)
+) :
+  field_embedding_map(
+    F, F, e, field_sum(F, n, (fun (i : Fin(n)) => field_mul(F, coefficients(i), values(i))))
+  ) = field_sum(
+    F, n,
+    (
+      fun (i : Fin(n)) => field_mul(
+        F, field_embedding_map(F, F, e, coefficients(i)), field_embedding_map(F, F, e, values(i))
+      )
+    )
+  ) {
+  obtain (zero, one, neg, add, mul) = field_embedding_preserves(F, F, e);
+  exact trans(
+    embedding_preserves_field_sum(
+      F, e, n, (fun (i : Fin(n)) => field_mul(F, coefficients(i), values(i)))
+    ),
+    field_sum_cong(
+      F, n,
+      (fun (i : Fin(n)) => field_embedding_map(F, F, e, field_mul(F, coefficients(i), values(i)))),
+      (
+        fun (i : Fin(n)) => field_mul(
+          F, field_embedding_map(F, F, e, coefficients(i)), field_embedding_map(F, F, e, values(i))
+        )
+      ), (fun (i : Fin(n)) => mul(coefficients(i), values(i)))
+    )
+  );
+}
+
+// Projecting a coordinate linear combination gives the corresponding scalar
+// finite sum. This connects the evaluated basis to pointwise automorphism
+// equations without selecting any inverse matrix entries.
+def coordinate_combination_component(F : AlgebraicField, n : Nat, i : Fin(n), m : Nat) =
+  induction m as k return (
+    forall rows : Fin(k) -> (Fin(n) -> af_carrier(F)),
+    forall coefficients : Fin(k) -> af_carrier(F),
+    linear_combination(F, CoordinateSpace(F, n), k, rows, coefficients)(i) = field_sum(
+      F, k, (fun (j : Fin(k)) => field_mul(F, coefficients(j), rows(j)(i)))
+    )
+  ) {
+    zero => fun (rows : Fin(0) -> (Fin(n) -> af_carrier(F))) => fun (
+      coefficients : Fin(0) -> af_carrier(F)
+    ) => refl(field_zero(F));
+    succ previous => fun (rows : Fin(succ(k)) -> (Fin(n) -> af_carrier(F))) => fun (
+      coefficients : Fin(succ(k)) -> af_carrier(F)
+    ) => cong(
+      field_add(
+        F,
+        field_mul(
+          F, finite_head(af_carrier(F), k, coefficients),
+          finite_head(Fin(n) -> af_carrier(F), k, rows)(i)
+        )
+      ),
+      previous(
+        finite_tail(Fin(n) -> af_carrier(F), k, rows), finite_tail(af_carrier(F), k, coefficients)
+      )
+    );
+  };
+
+// The evaluation basis makes coefficients of a pointwise relation unique.
+def evaluation_coefficients_unique(
+  F : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(F, F), points : Fin(n)
+  -> af_carrier(F),
+  independent : LinearInjective(
+    F, CoordinateSpace(F, n), CoordinateSpace(F, n),
+    family_linear(
+      F, CoordinateSpace(F, n), n,
+      (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
+    )
+  ), first : Fin(n) -> af_carrier(F), second : Fin(n) -> af_carrier(F), same : forall i : Fin(n),
+  field_sum(
+    F, n,
+    (fun (j : Fin(n)) => field_mul(F, first(j), field_embedding_map(F, F, maps(i), points(j))))
+  ) = field_sum(
+    F, n,
+    (fun (j : Fin(n)) => field_mul(F, second(j), field_embedding_map(F, F, maps(i), points(j))))
+  )
+) :
+  first = second {
+  let C = CoordinateSpace(F, n);
+  let rows = fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j));
+  let f = family_linear(F, C, n, rows);
+  have sameCombinations :
+    linear_combination(F, C, n, rows, first) = linear_combination(F, C, n, rows, second) {
+    exact FunExt(
+      U0, Fin(n), (fun (i : Fin(n)) => af_carrier(F)), linear_combination(F, C, n, rows, first),
+      linear_combination(F, C, n, rows, second),
+      (
+        fun (i : Fin(n)) => trans(
+          coordinate_combination_component(F, n, i, n, rows, first),
+          trans(same(i), sym(coordinate_combination_component(F, n, i, n, rows, second)))
+        )
+      )
+    );
+  }
+  exact independent(
+    first, second,
+    trans(
+      family_linear_evaluation(F, C, n, rows, first),
+      trans(sameCombinations, sym(family_linear_evaluation(F, C, n, rows, second)))
+    )
+  );
+}
+
+def evaluation_coefficients(
+  F : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(F, F), points : Fin(n)
+  -> af_carrier(F),
+  basis : FamilyBasis(
+    F, CoordinateSpace(F, n), n,
+    (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
+  ), y : af_carrier(F)
+) :
+  Fin(n) -> af_carrier(F) {
+  let C = CoordinateSpace(F, n);
+  let rows = fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j));
+  let iso = family_basis_coordinates(F, C, n, rows, basis);
+  exact linear_map(
+    F, C, CoordinateSpace(F, n), basis_coordinates(F, C, n, iso),
+    embedding_evaluation_vector(F, F, n, maps, y)
+  );
+}
+
+def evaluation_coefficients_relation(
+  F : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(F, F), points : Fin(n)
+  -> af_carrier(F),
+  basis : FamilyBasis(
+    F, CoordinateSpace(F, n), n,
+    (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
+  ), y : af_carrier(F), i : Fin(n)
+) :
+  field_sum(
+    F, n,
+    (
+      fun (j : Fin(n)) => field_mul(
+        F, evaluation_coefficients(F, n, maps, points, basis, y)(j),
+        field_embedding_map(F, F, maps(i), points(j))
+      )
+    )
+  ) = field_embedding_map(F, F, maps(i), y) {
+  let C = CoordinateSpace(F, n);
+  let rows = fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j));
+  let iso = family_basis_coordinates(F, C, n, rows, basis);
+  let c = evaluation_coefficients(F, n, maps, points, basis, y);
+  let v = embedding_evaluation_vector(F, F, n, maps, y);
+  have expansion : linear_combination(F, C, n, rows, c) = v {
+    exact trans(
+      sym(family_linear_evaluation(F, C, n, rows, c)), basis_expansion_coordinates(F, C, n, iso, v)
+    );
+  }
+  exact trans(
+    sym(coordinate_combination_component(F, n, i, n, rows, c)),
+    cong((fun (w : Fin(n) -> af_carrier(F)) => w(i)), expansion)
+  );
+}
+
+// For h and s in a subgroup, first acting by s^{-1} after h and then by s
+// returns the action of h. In the homotopy presentation, this is cancellation
+// of a loop with its reversed loop after path composition.
+def subgroup_cancel_action(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E),
+  h : SubgroupCarrier(GaloisGroup(K, E), H), s : SubgroupCarrier(GaloisGroup(K, E), H),
+  x : extension_carrier(K, E)
+) :
+  field_embedding_map(
+    extension_field(K, E), extension_field(K, E),
+    galois_field_embedding(K, E, subgroup_value(GaloisGroup(K, E), H, s)),
+    field_embedding_map(
+      extension_field(K, E), extension_field(K, E),
+      galois_field_embedding(
+        K, E,
+        subgroup_value(
+          GaloisGroup(K, E), H,
+          subgroup_carrier_multiply(
+            GaloisGroup(K, E), H, h, subgroup_carrier_inverse(GaloisGroup(K, E), H, s)
+          )
+        )
+      ), x
+    )
+  ) = field_embedding_map(
+    extension_field(K, E), extension_field(K, E),
+    galois_field_embedding(K, E, subgroup_value(GaloisGroup(K, E), H, h)), x
+  ) {
+  let G = GaloisGroup(K, E);
+  let hv = subgroup_value(G, H, h);
+  let sv = subgroup_value(G, H, s);
+  let inverse = subgroup_carrier_inverse(G, H, s);
+  let shifted = subgroup_carrier_multiply(G, H, h, inverse);
+  have canceled : group_multiply(G, subgroup_value(G, H, shifted), sv) = hv {
+    exact trans(
+      group_associative(G, hv, group_inverse(G, sv), sv),
+      trans(cong(group_multiply(G, hv), group_inverse_left(G, sv)), group_unit_right(G, hv))
+    );
+  }
+  exact cong((fun (g : Galois(K, E)) => extension_iso_forward(K, E, E, g, x)), canceled);
+}
+
+def subgroup_indexed_relation(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points : Fin(n)
+  -> extension_carrier(K, E), coefficients : Fin(n) -> extension_carrier(K, E),
+  y : extension_carrier(K, E), indexed : forall i : Fin(n),
+  field_sum(
+    extension_field(K, E), n,
+    (
+      fun (j : Fin(n)) => field_mul(
+        extension_field(K, E), coefficients(j),
+        field_embedding_map(
+          extension_field(K, E), extension_field(K, E),
+          subgroup_evaluation_maps(K, E, H, n, enumeration)(i), points(j)
+        )
+      )
+    )
+  ) = field_embedding_map(
+    extension_field(K, E), extension_field(K, E),
+    subgroup_evaluation_maps(K, E, H, n, enumeration)(i), y
+  ), h : SubgroupCarrier(GaloisGroup(K, E), H)
+) :
+  field_sum(
+    extension_field(K, E), n,
+    (
+      fun (j : Fin(n)) => field_mul(
+        extension_field(K, E), coefficients(j),
+        extension_iso_forward(K, E, E, subgroup_value(GaloisGroup(K, E), H, h), points(j))
+      )
+    )
+  ) = extension_iso_forward(K, E, E, subgroup_value(GaloisGroup(K, E), H, h), y) {
+  let G = GaloisGroup(K, E);
+  let A = SubgroupCarrier(G, H);
+  let i = backward(Fin(n), A, enumeration, h);
+  exact transport(
+    (
+      fun (t : A) => field_sum(
+        extension_field(K, E), n,
+        (
+          fun (j : Fin(n)) => field_mul(
+            extension_field(K, E), coefficients(j),
+            extension_iso_forward(K, E, E, subgroup_value(G, H, t), points(j))
+          )
+        )
+      ) = extension_iso_forward(K, E, E, subgroup_value(G, H, t), y)
+    ), forward(Fin(n), A, enumeration, i), h, right_inverse(Fin(n), A, enumeration, h), indexed(i)
+  );
+}
+
+def subgroup_relation_transform(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat, points : Fin(n)
+  -> extension_carrier(K, E), coefficients : Fin(n) -> extension_carrier(K, E),
+  y : extension_carrier(K, E), relation : forall h : SubgroupCarrier(GaloisGroup(K, E), H),
+  field_sum(
+    extension_field(K, E), n,
+    (
+      fun (j : Fin(n)) => field_mul(
+        extension_field(K, E), coefficients(j),
+        extension_iso_forward(K, E, E, subgroup_value(GaloisGroup(K, E), H, h), points(j))
+      )
+    )
+  ) = extension_iso_forward(K, E, E, subgroup_value(GaloisGroup(K, E), H, h), y),
+  s : SubgroupCarrier(GaloisGroup(K, E), H), h : SubgroupCarrier(GaloisGroup(K, E), H)
+) :
+  field_sum(
+    extension_field(K, E), n,
+    (
+      fun (j : Fin(n)) => field_mul(
+        extension_field(K, E),
+        extension_iso_forward(K, E, E, subgroup_value(GaloisGroup(K, E), H, s), coefficients(j)),
+        extension_iso_forward(K, E, E, subgroup_value(GaloisGroup(K, E), H, h), points(j))
+      )
+    )
+  ) = extension_iso_forward(K, E, E, subgroup_value(GaloisGroup(K, E), H, h), y) {
+  let G = GaloisGroup(K, E);
+  let F = extension_field(K, E);
+  let sv = subgroup_value(G, H, s);
+  let shifted = subgroup_carrier_multiply(G, H, h, subgroup_carrier_inverse(G, H, s));
+  let act =
+    fun (u : SubgroupCarrier(G, H)) => fun (x : extension_carrier(K, E)) => extension_iso_forward(
+      K, E, E, subgroup_value(G, H, u), x
+    );
+  let e = galois_field_embedding(K, E, sv);
+  let values = fun (j : Fin(n)) => act(shifted, points(j));
+  let transformed = fun (j : Fin(n)) => field_mul(F, act(s, coefficients(j)), act(h, points(j)));
+  let mapped = fun (j : Fin(n)) => field_mul(F, act(s, coefficients(j)), act(s, values(j)));
+  have sameSum : field_sum(F, n, mapped) = field_sum(F, n, transformed) {
+    exact field_sum_cong(
+      F, n, mapped, transformed,
+      (
+        fun (j : Fin(n)) => cong(
+          field_mul(F, act(s, coefficients(j))), subgroup_cancel_action(K, E, H, h, s, points(j))
+        )
+      )
+    );
+  }
+  exact trans(
+    sym(sameSum),
+    trans(
+      sym(embedding_preserves_weighted_sum(F, e, n, coefficients, values)),
+      trans(cong(act(s), relation(shifted)), subgroup_cancel_action(K, E, H, h, s, y))
+    )
+  );
+}
+
+// Uniqueness of the evaluation expansion forces every coefficient to be
+// invariant under every subgroup automorphism. This is the central descent
+// calculation in Artin's fixed-field dimension argument.
+def subgroup_evaluation_coefficient_fixed(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points : Fin(n)
+  -> extension_carrier(K, E),
+  basis : FamilyBasis(
+    extension_field(K, E), CoordinateSpace(extension_field(K, E), n), n,
+    (
+      fun (j : Fin(n)) => embedding_evaluation_vector(
+        extension_field(K, E), extension_field(K, E), n,
+        subgroup_evaluation_maps(K, E, H, n, enumeration), points(j)
+      )
+    )
+  ), y : extension_carrier(K, E), s : SubgroupCarrier(GaloisGroup(K, E), H), j : Fin(n)
+) :
+  extension_iso_forward(
+    K, E, E, subgroup_value(GaloisGroup(K, E), H, s),
+    evaluation_coefficients(
+      extension_field(K, E), n, subgroup_evaluation_maps(K, E, H, n, enumeration), points, basis, y
+    )(j)
+  ) = evaluation_coefficients(
+    extension_field(K, E), n, subgroup_evaluation_maps(K, E, H, n, enumeration), points, basis, y
+  )(j) {
+  let G = GaloisGroup(K, E);
+  let A = SubgroupCarrier(G, H);
+  let F = extension_field(K, E);
+  let maps = subgroup_evaluation_maps(K, E, H, n, enumeration);
+  let c = evaluation_coefficients(F, n, maps, points, basis, y);
+  let transformed =
+    fun (k : Fin(n)) => extension_iso_forward(K, E, E, subgroup_value(G, H, s), c(k));
+  obtain (independent, onto) = basis;
+  have all :
+    forall h : A,
+    field_sum(
+      F, n,
+      (
+        fun (k : Fin(n)) => field_mul(
+          F, c(k), extension_iso_forward(K, E, E, subgroup_value(G, H, h), points(k))
+        )
+      )
+    ) = extension_iso_forward(K, E, E, subgroup_value(G, H, h), y) {
+    intro h;
+    exact subgroup_indexed_relation(
+      K, E, H, n, enumeration, points, c, y,
+      (fun (i : Fin(n)) => evaluation_coefficients_relation(F, n, maps, points, basis, y, i)), h
+    );
+  }
+  have same :
+    forall i : Fin(n),
+    field_sum(
+      F, n, (fun (k : Fin(n)) => field_mul(F, c(k), field_embedding_map(F, F, maps(i), points(k))))
+    ) = field_sum(
+      F, n,
+      (
+        fun (k : Fin(n)) => field_mul(
+          F, transformed(k), field_embedding_map(F, F, maps(i), points(k))
+        )
+      )
+    ) {
+    intro i;
+    let h = forward(Fin(n), A, enumeration, i);
+    exact trans(
+      evaluation_coefficients_relation(F, n, maps, points, basis, y, i),
+      sym(subgroup_relation_transform(K, E, H, n, points, c, y, all, s, h))
+    );
+  }
+  let equal = evaluation_coefficients_unique(F, n, maps, points, independent, c, transformed, same);
+  exact sym(cong((fun (v : Fin(n) -> af_carrier(F)) => v(j)), equal));
+}
+
+def subgroup_evaluation_coefficient_member(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points : Fin(n)
+  -> extension_carrier(K, E),
+  basis : FamilyBasis(
+    extension_field(K, E), CoordinateSpace(extension_field(K, E), n), n,
+    (
+      fun (j : Fin(n)) => embedding_evaluation_vector(
+        extension_field(K, E), extension_field(K, E), n,
+        subgroup_evaluation_maps(K, E, H, n, enumeration), points(j)
+      )
+    )
+  ), y : extension_carrier(K, E), j : Fin(n)
+) :
+  intermediate_members(
+    K, E, fixed_intermediate_field(K, E, H),
+    evaluation_coefficients(
+      extension_field(K, E), n, subgroup_evaluation_maps(K, E, H, n, enumeration), points, basis, y
+    )(j)
+  ) {
+  let G = GaloisGroup(K, E);
+  exact with unfolding [
+    fixed_intermediate_field, galois_fixed_field, intermediate_members, galois_subgroup_members,
+    subgroup_members
+  ] {
+    fun (e : Galois(K, E)) => fun (member : subgroup_members(G, H, e)) => subgroup_evaluation_coefficient_fixed(
+      K, E, H, n, enumeration, points, basis, y, typed(SubgroupCarrier(G, H), (e, member)), j
+    )
+  };
+}
+
+def subgroup_evaluation_at_identity(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points : Fin(n)
+  -> extension_carrier(K, E),
+  basis : FamilyBasis(
+    extension_field(K, E), CoordinateSpace(extension_field(K, E), n), n,
+    (
+      fun (j : Fin(n)) => embedding_evaluation_vector(
+        extension_field(K, E), extension_field(K, E), n,
+        subgroup_evaluation_maps(K, E, H, n, enumeration), points(j)
+      )
+    )
+  ), y : extension_carrier(K, E)
+) :
+  field_sum(
+    extension_field(K, E), n,
+    (
+      fun (j : Fin(n)) => field_mul(
+        extension_field(K, E),
+        evaluation_coefficients(
+          extension_field(K, E), n, subgroup_evaluation_maps(K, E, H, n, enumeration), points,
+          basis, y
+        )(j), points(j)
+      )
+    )
+  ) = y {
+  let G = GaloisGroup(K, E);
+  let F = extension_field(K, E);
+  let maps = subgroup_evaluation_maps(K, E, H, n, enumeration);
+  let c = evaluation_coefficients(F, n, maps, points, basis, y);
+  exact subgroup_indexed_relation(
+    K, E, H, n, enumeration, points, c, y,
+    (fun (i : Fin(n)) => evaluation_coefficients_relation(F, n, maps, points, basis, y, i)),
+    subgroup_carrier_unit(G, H)
+  );
+}
+
+def field_vector_combination_sum(
+  R : AlgebraicField, F : AlgebraicField, i : FieldEmbedding(R, F), n : Nat
+) =
+  induction n as k return (
+    forall points : Fin(k) -> af_carrier(F), forall coefficients : Fin(k) -> af_carrier(R),
+    linear_combination(R, field_vector_space(R, F, i), k, points, coefficients) = field_sum(
+      F, k,
+      (fun (j : Fin(k)) => field_mul(F, field_embedding_map(R, F, i, coefficients(j)), points(j)))
+    )
+  ) {
+    zero => fun (points : Fin(0) -> af_carrier(F)) => fun (coefficients : Fin(0) -> af_carrier(R)) => refl(
+      field_zero(F)
+    );
+    succ previous => fun (points : Fin(succ(k)) -> af_carrier(F)) => fun (
+      coefficients : Fin(succ(k)) -> af_carrier(R)
+    ) => cong(
+      field_add(
+        F,
+        field_mul(
+          F, field_embedding_map(R, F, i, finite_head(af_carrier(R), k, coefficients)),
+          finite_head(af_carrier(F), k, points)
+        )
+      ),
+      previous(finite_tail(af_carrier(F), k, points), finite_tail(af_carrier(R), k, coefficients))
+    );
+  };
+
+def subgroup_evaluation_spans_fixed_field(
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points : Fin(n)
+  -> extension_carrier(K, E),
+  basis : FamilyBasis(
+    extension_field(K, E), CoordinateSpace(extension_field(K, E), n), n,
+    (
+      fun (j : Fin(n)) => embedding_evaluation_vector(
+        extension_field(K, E), extension_field(K, E), n,
+        subgroup_evaluation_maps(K, E, H, n, enumeration), points(j)
+      )
+    )
+  )
+) :
+  FiniteSpanningFamily(
+    intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)),
+    field_vector_space(
+      intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)), extension_field(K, E),
+      intermediate_ambient_embedding(K, E, fixed_intermediate_field(K, E, H))
+    ), n, points
+  ) {
+  let M = fixed_intermediate_field(K, E, H);
+  let R = intermediate_as_field(K, E, M);
+  let F = extension_field(K, E);
+  let i = intermediate_ambient_embedding(K, E, M);
+  let V = field_vector_space(R, F, i);
+  let maps = subgroup_evaluation_maps(K, E, H, n, enumeration);
+  intro y;
+  let c = evaluation_coefficients(F, n, maps, points, basis, y);
+  let inside =
+    fun (j : Fin(n)) => typed(
+      af_carrier(R),
+      (c(j), subgroup_evaluation_coefficient_member(K, E, H, n, enumeration, points, basis, y, j))
+    );
+  have sum : linear_combination(R, V, n, points, inside) = y {
+    exact trans(
+      field_vector_combination_sum(R, F, i, n, points, inside),
+      subgroup_evaluation_at_identity(K, E, H, n, enumeration, points, basis, y)
+    );
+  }
+  exact merely(
+    (
+      exists coefficients : Fin(n) -> af_carrier(R),
+      linear_combination(R, V, n, points, coefficients) = y
+    ), (inside, sum)
+  );
+}
