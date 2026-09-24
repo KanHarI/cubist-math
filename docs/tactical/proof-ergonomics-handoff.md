@@ -23,7 +23,8 @@ the C/WASM cubical kernel and report no axiom dependencies.
   parents, left goal endpoint before right, source rule order at each node.
   `simpa` simplifies the supplied equality type and goal, then uses checked
   endpoint paths to reconstruct the original goal. All inferred rule parameters
-  must occur on the matched side. Cycle, missing
+  must occur on the matched side. A rigid syntactic match with an incompatible
+  parameter type is skipped so later rules remain available. Cycle, missing
   match, unfinished residual goal, traversal, rewrite-count and generated-term
   bounds cause failure.
 - For other type-valued goals, `simp` rewrites the type along checked paths and
@@ -37,7 +38,8 @@ the C/WASM cubical kernel and report no axiom dependencies.
   names an explicit collection. Registrations and sets flow through imports;
   duplicate default rules collapse by checked identity, sorted by descending
   priority and then identity. Conflicting imported set names are ambiguous until
-  locally overridden. `simp;`, `simp [units];`, `simp only [units];` and the
+  locally overridden. Universe templates retain the rule environment from
+  their definition when specialized or inspected. `simp;`, `simp [units];`, `simp only [units];` and the
   corresponding `simpa ... using proof;` use those environments.
   `simp without [lemma];` removes a default rule; `simp [units] at h as h2;`
   binds a checked simplified copy of local equality proof `h`. Conditional
@@ -61,8 +63,11 @@ the C/WASM cubical kernel and report no axiom dependencies.
   checked step with a distinct expansion identity. The simplifier likewise
   exposes each checked rewrite path and selected rule in the inspector. Its
   “Replace with simp only” action preserves rule order, lists only rules that
-  fired, and rechecks the edited source. It is unavailable when a used imported
-  rule has no visible name in the current scope.
+  fired, and rechecks the edited source. Before offering a reduced list, the
+  elaborator also repeats simplification with just those rules and requires the
+  same residual goals; a changed conditional premise search withholds the
+  action. It is unavailable when a used imported rule has no visible name in
+  the current scope.
 
 The actual checked source files are [arithmetic](../examples/proof-ergonomics/implemented/arithmetic.cubist),
 [cubical](../examples/proof-ergonomics/implemented/cubical.cubist),
@@ -83,7 +88,8 @@ proposition-specific maps, logical equivalences, and arbitrary PathP reversal
 remain open. Non-equality goals can already be rewritten where an actual
 checked path equates their types.
 
-The current simplifier uses explicit or registered rules and a 64-rewrite cap.
+The current simplifier uses explicit or registered rules, a 64-rewrite cap, a
+512-node traversal cap and an 8,192-candidate cap per traversal.
 It has bounded equality-premise search but no broader proposition simplification. The
 source inspector shows the completed checked witness, individual calculation
 and rewrite steps, and selected rule spelling.
@@ -131,6 +137,7 @@ types before migrating existing proofs.
 node tools/build-cubical-runtime.mjs
 npm test -- tests/proof-ergonomics.test.mjs tests/cubical-program.test.mjs tests/cubical-benchmark.test.mjs
 npm test -- docs/examples/proof-ergonomics/current/*.cubist docs/examples/proof-ergonomics/implemented/*.cubist
+npm test
 npm run test:browser
 npm run build:site
 npm run test:site
@@ -143,13 +150,12 @@ equalities, nontrivial-loop preservation, and a rejected malformed naturality
 square. It also checks imported rule scope, ambiguous named sets, exclusions,
 conditional witnesses, and fresh simplified hypothesis copies.
 The standard formatter and program/benchmark tests passed in the same session.
-The full suite passed 311 tests and checked all 3,766 concrete corpus
+The full suite passed 315 tests and checked all 3,766 concrete corpus
 declarations and 44 templates without failed, blocked, or timed-out items.
 The five implemented source files checked 30 declarations without axioms; the
 six explicit counterparts checked 19. The inspector browser suite, static
 site browser suite, and `make lint` also passed. The rule-diagnostic test checks
-source spans
-for `rw`, invalid `simp` rules, and missing conditional premises. The benchmark
+source spans for `rw`, invalid `simp` rules, and missing conditional premises. The benchmark
 test checks that successful declarations report native steps and arena
 snapshots, while its rejected sample declarations report no final-check snapshot.
 The nested-premise test checks two levels of native-checked witness
@@ -161,3 +167,7 @@ source-link collection.
 The type-transport test checks both directions of a supplied path of types,
 rewriting beneath a type-valued family, a frozen `simpa only` replay, and
 rejection of unrelated maps and cyclic type rules.
+Four review regressions now cover children-first rule selection on equality and
+type goals, skipping an incompatible quantified candidate, lexical rule scope
+in universe-template specialization and inspection, and withholding a freeze
+whose reduced rules change conditional premise search.

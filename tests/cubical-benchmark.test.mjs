@@ -93,12 +93,21 @@ test("benchmark reports the selected deadline and optimizations and rejects inva
 
 test("benchmark checks local simp witnesses without collecting inspector references",async()=>{
   const report=await benchmark({modules:["ergonomics_registered"],limitMs:1000,
-    readSource:name=>readFile(name==="ergonomics_registered"
-      ? new URL("../docs/examples/proof-ergonomics/implemented/registered-simp.cubist",import.meta.url)
-      : new URL(`../web/proofs/${name}.cubist`,import.meta.url),"utf8")});
+    readSource:async name=>{
+      const source=await readFile(name==="ergonomics_registered"
+        ? new URL("../docs/examples/proof-ergonomics/implemented/registered-simp.cubist",import.meta.url)
+        : new URL(`../web/proofs/${name}.cubist`,import.meta.url),"utf8");
+      return name==="ergonomics_registered"?`${source}
+        def folded(n : Nat) = n + 0;
+        def twice(n : Nat) = folded(n);
+        def inner(n : Nat, h : n + 0 = n) : folded(n) = n { exact h; }
+        def outer(n : Nat, h : folded(n) = n) : twice(n) = n { exact h; }
+        def nested(n : Nat) : twice(n) = n { simp only [outer, inner, nat_add_zero]; }
+      `:source;
+    }});
   assert.equal(report.counts.failed,0,JSON.stringify(report.declarations.filter(d=>d.category==="failed")));
-  for(const name of ["simplified_copy","conditional_rewrite","recursive_premise"])
+  for(const name of ["simplified_copy","conditional_rewrite","recursive_premise","nested"])
     assert.equal(report.declarations.find(d=>d.name===name)?.category,"checked",name);
-  const work=report.declarations.find(d=>d.name==="recursive_premise").rewriteWork;
-  assert.ok(work.candidateVisits>0&&work.premiseAttempts>0&&work.premiseProofs>0);
+  const work=report.declarations.find(d=>d.name==="nested").rewriteWork;
+  assert.ok(work.candidateVisits>0&&work.premiseAttempts>=2&&work.premiseProofs>=2);
 });

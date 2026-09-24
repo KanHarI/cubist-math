@@ -73,8 +73,10 @@ One observation checked 19 example declarations with references disabled.
 The explicit `add_zero_twice` uses 35 source tokens and 115 native checking
 steps; `add_zero_twice_simp` uses 25 tokens, 309 native checking steps and 13
 candidate visits. The shorter source currently costs more checking work in this
-small example. `recursive_premise` uses 31 candidate visits and two premise
-search attempts, one of which constructs a checked premise proof. These counts
+small example. `recursive_premise` uses 47 candidate visits and two failed
+premise searches; the child `nat_add_zero` rewrites complete its proof. A
+separate nested test checks two levels of successful premise reconstruction.
+These counts
 describe this exact source and import order; the recorded arena values are
 cumulative snapshots, not per-declaration allocation deltas.
 

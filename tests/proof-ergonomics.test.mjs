@@ -125,6 +125,73 @@ test("simpa transports through checked paths of types without inventing equivale
   assert.match(bad.outputs[2].reason,/cycle/);
 });
 
+test("simp tries rules at each child before rewriting its parent",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const result=await program.check(`
+    def equality(f : Nat -> Nat, a b c d : Nat,
+      p : f(a) = c, q : a = b, r : f(b) = d) : f(a) = d {
+      simp only [p, q, r];
+    }
+    def type_goal(P : Nat -> U0, f : Nat -> Nat, a b c d : Nat,
+      p : f(a) = c, q : a = b, r : f(b) = d, h : P(d)) : P(f(a)) {
+      simpa only [p, q, r] using h;
+    }
+  `,"simp_child_order");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  assert.ok(result.outputs.every(output=>output.axioms.length===0));
+});
+
+test("a quantified rule with an incompatible parameter type leaves later rules available",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const result=await program.check(`import primes;
+    def through(f : Nat -> Nat, n : Nat) : f(n + 0) = f(n) {
+      exact cong(f,nat_add_zero(n));
+    }
+    def family(P : Nat -> U0, n : Nat) : P(n + 0) = P(n) {
+      simp only [through, nat_add_zero];
+    }
+  `,"simp_incompatible_candidate");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  assert.ok(result.outputs.every(output=>output.axioms.length===0));
+});
+
+test("universe templates retain their defining simplification sets during use and inspection",async t=>{
+  const modules={rules:`import primes;
+    simp_set units = [nat_add_zero];
+    def generic(U : Universe, n : Nat) : n + 0 = n { simp only [units]; }
+  `};
+  const program=new CubicalProgram(await createCubical(),
+    module=>modules[module]??readLibrary(module));
+  t.after(()=>program.dispose());
+  const result=await program.check(`import rules;
+    simp_set units = [];
+    def use(n : Nat) : n + 0 = n { exact generic(U0,n); }
+  `,"template_rule_scope");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  assert.deepEqual(result.outputs[0].axioms,[]);
+  assert.equal(program.inspect("rules__generic",{universes:[0]}).type.tag,"Pi");
+});
+
+test("freeze is withheld when removing a rule changes conditional premise search",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const result=await program.check(`import primes;
+    def freeze_case(f g k : Nat -> Nat, a b t : Nat,
+      c : forall n : Nat, g(n) = n -> f(n) = k(n),
+      divert : g(a) = b, unit : forall n : Nat, g(n) = n,
+      fallback : f(a) = t) : f(a) + f(b) = t + k(b) {
+      simp [c, divert, unit, fallback];
+    }
+  `,"simp_freeze_premise_search");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  assert.deepEqual(result.outputs[0].axioms,[]);
+  const link=result.links.find(item=>item.role==="simplification witness");
+  assert.ok(link);
+  assert.equal(link.freeze,null);
+});
+
 test("a naturality square must preserve its varying right boundary",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
@@ -198,13 +265,13 @@ test("registered default and named sets retain checked proofs and format stably"
   const work=result.outputs.find(d=>d.name==="recursive_premise").rewriteWork;
   assert.ok(work.traversals>work.successfulRewrites);
   assert.ok(work.candidateVisits>=work.traversals);
-  assert.ok(work.premiseAttempts>0&&work.premiseProofs>0&&work.premiseRewriteSteps>0);
+  assert.equal(work.premiseProofs,0);
   const choices=result.links.filter(link=>link.role==="simplification witness"&&link.freeze);
   assert.equal(choices.length,6);
   const recursive=choices.find(choice=>choice.freeze.original==="simp;"
-    &&choice.freeze.text.includes("double_zero_if"));
-  assert.match(recursive?.freeze.text??"",/double_zero_if, nat_add_zero/);
-  assert.match(recursive.rewriteSteps[0].description,/Premise simplified using nat_add_zero/);
+    &&choice.freeze.text.includes("nat_add_zero"));
+  assert.ok(recursive);
+  assert.doesNotMatch(recursive.freeze.text,/double_zero_if/);
   for(const [index,choice] of choices.entries()) {
     assert.ok(choice.rewriteSteps?.length,choice.name);
     for(const step of choice.rewriteSteps)
@@ -349,38 +416,33 @@ test("conditional premise simplification is bounded and keeps nested witnesses",
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
   const result=await program.check(`import primes;
-    def inner(n : Nat, h : (n + 0) + 0 = n + 0) : (n + 0) + 0 = n {
-      calc {
-        (n + 0) + 0 = n + 0 by h;
-        _ = n by nat_add_zero(n);
-      }
-    }
-    def outer(n : Nat, h : (n + 0) + 0 = n) : ((n + 0) + 0) + 0 = n {
-      calc {
-        ((n + 0) + 0) + 0 = (n + 0) + 0 by nat_add_zero((n + 0) + 0);
-        _ = n by h;
-      }
-    }
-    def nested(n : Nat) : ((n + 0) + 0) + 0 = n {
+    def folded(n : Nat) = n + 0;
+    def twice(n : Nat) = folded(n);
+    def inner(n : Nat, h : n + 0 = n) : folded(n) = n { exact h; }
+    def outer(n : Nat, h : folded(n) = n) : twice(n) = n { exact h; }
+    def nested(n : Nat) : twice(n) = n {
       simp only [outer, inner, nat_add_zero];
     }
-    def simpa_nested(n : Nat) : ((n + 0) + 0) + 0 = n {
+    def simpa_nested(n : Nat) : twice(n) = n {
       simpa only [outer, inner, nat_add_zero] using refl(n);
     }
-    def no_base(n : Nat) : ((n + 0) + 0) + 0 = n {
+    def no_base(n : Nat) : twice(n) = n {
       simp only [outer, inner];
     }
-    def no_self(n : Nat) : ((n + 0) + 0) + 0 = n {
+    def no_self(n : Nat) : twice(n) = n {
       simp only [outer];
     }
   `,"nested_premises");
-  assert.deepEqual(result.outputs.map(d=>d.verified),[true,true,true,true,false,false]);
-  assert.deepEqual(result.outputs[2].axioms,[]);
-  assert.deepEqual(result.outputs[3].axioms,[]);
-  for(const output of result.outputs.slice(4))
+  assert.deepEqual(result.outputs.map(d=>d.verified),[true,true,true,true,true,true,false,false]);
+  assert.deepEqual(result.outputs[4].axioms,[]);
+  assert.deepEqual(result.outputs[5].axioms,[]);
+  assert.ok(result.outputs[4].rewriteWork.premiseAttempts>=2);
+  assert.ok(result.outputs[4].rewriteWork.premiseProofs>=2);
+  assert.ok(result.outputs[4].rewriteWork.premiseRewriteSteps>=2);
+  for(const output of result.outputs.slice(6))
     assert.match(output.reason,/unproved premise/);
-  assert.ok(result.outputs[4].rewriteWork.premiseAttempts>0);
-  assert.equal(result.outputs[4].rewriteWork.premiseProofs,0);
+  assert.ok(result.outputs[6].rewriteWork.premiseAttempts>0);
+  assert.equal(result.outputs[6].rewriteWork.premiseProofs,0);
   const step=result.links.find(link=>link.role==="simplification step"
     &&link.description.includes("using outer"));
   assert.match(step?.description??"",/Premise simplified using inner, nat_add_zero/);

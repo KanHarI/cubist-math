@@ -38,7 +38,7 @@ def conditional_rewrite(n : Nat, h : n = 0) : n + 0 = 0 {
   simp with [h];
 }
 
-// The premise itself is proved by a different checked simplification rule.
+// This conditional rule remains available when its whole left side is chosen.
 def double_zero_if(n : Nat, h : n + 0 = n) : (n + 0) + 0 = n {
   calc {
     (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
@@ -49,5 +49,6 @@ def double_zero_if(n : Nat, h : n + 0 = n) : (n + 0) + 0 = n {
 simp_rule double_zero_if priority 30;
 
 def recursive_premise(n : Nat) : (n + 0) + 0 = n {
+  // Child rewrites fire first, so nat_add_zero reduces both nested additions.
   simp;
 }

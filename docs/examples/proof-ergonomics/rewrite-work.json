@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-24T08:56:45.790Z",
-  "revision": "540409abf0b11d49916215efccd49ea0ab391108",
+  "generatedAt": "2026-09-24T10:11:56.871Z",
+  "revision": "439d0d33e910240315eba2e0bebf50139c65549f",
   "dirty": true,
   "runtime": "v24.13.0",
   "cpu": "Apple M3 Pro",
@@ -17,7 +17,7 @@
     },
     "ergonomics_registered": {
       "path": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist",
-      "sha256": "7b5f456bad48ae5eb7ef1602028862e07ca5504d1fbfa064d06e825340cdf6c4"
+      "sha256": "f55b48fb8b6aaea9f8ad8826e84891cafd2a74296809cb22a75e51f19cae752f"
     }
   },
   "graph": {
@@ -29,7 +29,7 @@
       "failed": 0,
       "template": 0
     },
-    "elapsedSeconds": 0.11
+    "elapsedSeconds": 0.07
   },
   "selected": [
     {
@@ -37,7 +37,7 @@
       "module": "ergonomics_current",
       "name": "add_zero_twice",
       "category": "checked",
-      "elapsedMs": 1.738,
+      "elapsedMs": 1.058,
       "nativeCheckingSteps": 115,
       "rewriteWork": {
         "traversals": 0,
@@ -58,7 +58,7 @@
       "module": "ergonomics_current",
       "name": "add_zero_under_function",
       "category": "checked",
-      "elapsedMs": 0.485,
+      "elapsedMs": 0.268,
       "nativeCheckingSteps": 102,
       "rewriteWork": {
         "traversals": 0,
@@ -79,7 +79,7 @@
       "module": "ergonomics_current",
       "name": "insert_zero",
       "category": "checked",
-      "elapsedMs": 0.47,
+      "elapsedMs": 0.233,
       "nativeCheckingSteps": 45,
       "rewriteWork": {
         "traversals": 0,
@@ -100,7 +100,7 @@
       "module": "ergonomics_implemented",
       "name": "add_zero_twice",
       "category": "checked",
-      "elapsedMs": 2.503,
+      "elapsedMs": 1.638,
       "nativeCheckingSteps": 200,
       "rewriteWork": {
         "traversals": 0,
@@ -121,7 +121,7 @@
       "module": "ergonomics_implemented",
       "name": "add_zero_under_function",
       "category": "checked",
-      "elapsedMs": 4.823,
+      "elapsedMs": 3.771,
       "nativeCheckingSteps": 553,
       "rewriteWork": {
         "traversals": 2,
@@ -142,7 +142,7 @@
       "module": "ergonomics_implemented",
       "name": "insert_zero",
       "category": "checked",
-      "elapsedMs": 1.253,
+      "elapsedMs": 0.738,
       "nativeCheckingSteps": 162,
       "rewriteWork": {
         "traversals": 1,
@@ -163,7 +163,7 @@
       "module": "ergonomics_implemented",
       "name": "add_zero_twice_simp",
       "category": "checked",
-      "elapsedMs": 3.9,
+      "elapsedMs": 2.609,
       "nativeCheckingSteps": 309,
       "rewriteWork": {
         "traversals": 4,
@@ -184,7 +184,7 @@
       "module": "ergonomics_implemented",
       "name": "residual_goal",
       "category": "checked",
-      "elapsedMs": 2.066,
+      "elapsedMs": 1.793,
       "nativeCheckingSteps": 383,
       "rewriteWork": {
         "traversals": 4,
@@ -205,7 +205,7 @@
       "module": "ergonomics_implemented",
       "name": "named_step",
       "category": "checked",
-      "elapsedMs": 0.467,
+      "elapsedMs": 0.34,
       "nativeCheckingSteps": 136,
       "rewriteWork": {
         "traversals": 0,
@@ -226,7 +226,7 @@
       "module": "ergonomics_implemented",
       "name": "simpa_add_zero",
       "category": "checked",
-      "elapsedMs": 1.089,
+      "elapsedMs": 0.947,
       "nativeCheckingSteps": 158,
       "rewriteWork": {
         "traversals": 5,
@@ -247,7 +247,7 @@
       "module": "ergonomics_registered",
       "name": "default_rewrite",
       "category": "checked",
-      "elapsedMs": 0.902,
+      "elapsedMs": 0.672,
       "nativeCheckingSteps": 165,
       "rewriteWork": {
         "traversals": 3,
@@ -268,7 +268,7 @@
       "module": "ergonomics_registered",
       "name": "named_rewrite",
       "category": "checked",
-      "elapsedMs": 1.346,
+      "elapsedMs": 0.606,
       "nativeCheckingSteps": 165,
       "rewriteWork": {
         "traversals": 3,
@@ -289,7 +289,7 @@
       "module": "ergonomics_registered",
       "name": "frozen_rewrite",
       "category": "checked",
-      "elapsedMs": 0.978,
+      "elapsedMs": 0.58,
       "nativeCheckingSteps": 165,
       "rewriteWork": {
         "traversals": 3,
@@ -310,7 +310,7 @@
       "module": "ergonomics_registered",
       "name": "supplied_rewrite",
       "category": "checked",
-      "elapsedMs": 1.092,
+      "elapsedMs": 0.692,
       "nativeCheckingSteps": 158,
       "rewriteWork": {
         "traversals": 5,
@@ -331,7 +331,7 @@
       "module": "ergonomics_registered",
       "name": "simplified_copy",
       "category": "checked",
-      "elapsedMs": 0.949,
+      "elapsedMs": 0.743,
       "nativeCheckingSteps": 220,
       "rewriteWork": {
         "traversals": 3,
@@ -352,7 +352,7 @@
       "module": "ergonomics_registered",
       "name": "zero_if",
       "category": "checked",
-      "elapsedMs": 0.538,
+      "elapsedMs": 0.415,
       "nativeCheckingSteps": 181,
       "rewriteWork": {
         "traversals": 0,
@@ -373,11 +373,11 @@
       "module": "ergonomics_registered",
       "name": "conditional_rewrite",
       "category": "checked",
-      "elapsedMs": 1.461,
+      "elapsedMs": 1.032,
       "nativeCheckingSteps": 221,
       "rewriteWork": {
-        "traversals": 5,
-        "candidateVisits": 9,
+        "traversals": 3,
+        "candidateVisits": 13,
         "eligibleMatches": 1,
         "successfulRewrites": 1,
         "premiseAttempts": 0,
@@ -394,7 +394,7 @@
       "module": "ergonomics_registered",
       "name": "double_zero_if",
       "category": "checked",
-      "elapsedMs": 0.733,
+      "elapsedMs": 0.628,
       "nativeCheckingSteps": 247,
       "rewriteWork": {
         "traversals": 0,
@@ -415,18 +415,18 @@
       "module": "ergonomics_registered",
       "name": "recursive_premise",
       "category": "checked",
-      "elapsedMs": 3.251,
-      "nativeCheckingSteps": 365,
+      "elapsedMs": 2.028,
+      "nativeCheckingSteps": 340,
       "rewriteWork": {
-        "traversals": 15,
-        "candidateVisits": 31,
+        "traversals": 8,
+        "candidateVisits": 47,
         "eligibleMatches": 2,
         "successfulRewrites": 2,
         "premiseAttempts": 2,
-        "premiseProofs": 1,
-        "premiseRewriteSteps": 1
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
       },
-      "finalCheckArenaNodes": 3721,
+      "finalCheckArenaNodes": 3710,
       "finalCheckArenaBytes": 1966848,
       "line": 51,
       "sourceTokens": 21

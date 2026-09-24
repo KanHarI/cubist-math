@@ -49,7 +49,7 @@ particularly `finite_uniform_fiber_count`, for its finite-counting baseline.
 | 5b. Quantified `simp only` | 5a | Rigid first-order rule matching with dependent parameter types checked in telescope order; cache rule shapes by checked binding identity. | `simp only [nat_add_zero];`, repeated-variable rejection, underdetermined argument diagnostic, no full unfolding of large endpoints. |
 | 6. Expected-type cubical notation | 2; independent of 4–5 | `path i => e`, `p @ i`, and `ext x;` for homogeneous equality of dependent functions. Preserve the explicit two-argument `path`. | Native-checked path, pointwise and naturality-square examples, wrong faces and captured dimensions rejected; nested path source inspection. |
 | 7. Directed dependent movement | 6 | `along C by p from v`, direct `apd_path(f,p)`, expected-type `over C along p by { ... }` transport bridge. | Match the checked dependent examples; bridge work occurs only on request; loop-dependent transport and inverse laws retain witnesses. |
-| 8. Rule environments and broader `simpa` | 5b | Checked registrations, imported/named sets, deterministic priorities, explicit exclusions, fresh simplified equality-hypothesis copies, conditional equality rules with selected/reflexive witnesses, depth-two checked equality-premise simplification, checked type-path transport for `simp`/`simpa`, and an inspected freeze-to-used-rules action are implemented. General proposition premises and map-based proposition simplification remain. | Deterministic imports, no leaked local rules, minimal assumptions, false premises rejected, freeze-to-used-rules action. |
+| 8. Rule environments and broader `simpa` | 5b | Checked registrations, imported/named sets, deterministic priorities, explicit exclusions, fresh simplified equality-hypothesis copies, conditional equality rules with selected/reflexive witnesses, depth-two checked equality-premise simplification, checked type-path transport for `simp`/`simpa`, lexical rule scope for universe templates, and a residual-goal-validated freeze action are implemented. General proposition premises and map-based proposition simplification remain. | Deterministic imports, no leaked local rules, minimal assumptions, false premises rejected, freeze-to-used-rules action. |
 | 9. Scoped argument inference | 2, evidence from 5b/6 | Named arguments, scoped term metavariables, restricted unification, `_`, opt-in implicit binders, then universe constraints. | Omitted endpoint/carrier examples, occurs/scope checks, ambiguous universes rejected, inspector shows solved arguments. |
 | 10. Multiple goals and dependent rewriting | 7, 9 | `apply`/`refine`, expected motives, selected dependent congruence and telescope reconstruction. Constructor-specific cubical support follows separately. | Recheck all downstream hypotheses; transport proof-dependent indices; reject unsupported HIT boundaries; no unsolved term reaches native encoding. |
 | 11. Structure views and selected automation | 8, 9, migration evidence | Lexical notation packs and named views of existing Sigma structures, then records/sections; certified algebra normalization separately. | Field/group examples preserve expanded signatures and assumptions; nested scopes restore notation; no global instance search. |
@@ -228,6 +228,12 @@ and goal, transports the proof to their common type, checks it, then transports
 back. Homogeneous equality goals retain endpoint reconstruction. Arbitrary
 logical equivalences and proposition-specific conversions still need explicit
 checked maps; these are not inferred from two functions.
+Rule selection is children first and then source order at each node. A rigid
+shape match with a mistyped inferred argument is ineligible, so another rule
+can still prove the goal. A universe template uses the simplification sets
+captured where it was defined, including during source inspection. The freeze
+action withholds a reduced `simp only` list if replay changes either residual
+goal; this matters when an omitted rule affected a failed premise search.
 
 ### Application elaboration and PR 9 inference boundary
 

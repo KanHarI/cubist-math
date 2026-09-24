@@ -276,7 +276,8 @@ for this release.
   duplicate registration handling, priorities, and deterministic tie-breaking.
   Checked registrations and named sets now flow through imports, with sorted
   default rules and an error for ambiguous imported set names. A reviewed
-  library default remains open.
+  library default remains open. Universe templates capture the rule environment
+  at their definition, including for later specialization and inspection.
 - [ ] Add `simp;`, `simp [rules];`, local exclusions, and broader `simpa`
   modes backed by registered sets. These forms and explicit `without [rules]`
   exclusions work for homogeneous equality goals. For other type-valued goals,
@@ -301,7 +302,8 @@ for this release.
 - [x] Offer an action that replaces an exploratory `simp` invocation with an
   explicit `simp only` list of the lemmas actually used. The inspector offers
   the action only when every used rule has a name in the current source scope;
-  the edited source is checked again immediately.
+  the edited source is checked again immediately. Removing unused rules must
+  reproduce the same residual goals before the action appears.
 
 Completion: imports cannot leak local rules; unrelated unused rules add no
 axiom dependencies to a proof; changes to a rule invalidate affected results;

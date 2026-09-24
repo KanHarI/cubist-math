@@ -280,10 +280,12 @@ export class CubicalProgram {
       const instance = `${binding}__inspect_${levels.map(level => `U${level}`).join("_")}`;
       if (!this.views.has(instance)) {
         const references = [];
+        const schema = this.templates.get(binding);
         const translator = new Translator({ normalize: false, checker: this.checker,
+          simpRegistry:schema.simpRegistry,moduleName:schema.moduleName,
           onReference: (node, term, context, dimensions, aliases) => references.push({ node, term, context, dimensions, aliases }) });
         translator.source = this.sources[info.sourceModule ?? this.main];
-        const schema = this.templates.get(binding), scope = new Map(schema.env);
+        const scope = new Map(schema.env);
         scope.set(schema.parameter, { tag: "U", level: levels[0] });
         references.push({ node: { ...schema.parameterSite, name: schema.parameter, role: "universe argument" },
           term: { tag: "U", level: levels[0] }, context: new Map(), dimensions: new Map(), aliases: [] });
