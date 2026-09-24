@@ -40,3 +40,6 @@ cubical source before building on it.
 - [Earlier univalence axiom presentation](univalence.md)
 
 Current cubical implementation notes remain in [../cubical/](../cubical/).
+# Language tooling
+
+- [Proof ergonomics implementation checkpoint](proof-ergonomics-handoff.md): checked `rw`, `calc`, explicit `simp only`, and cubical path conveniences; remaining rule registry, inference, and structure work.

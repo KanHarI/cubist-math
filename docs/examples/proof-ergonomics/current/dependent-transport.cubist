@@ -1,0 +1,30 @@
+import paths;
+
+// A rewrite of the index changes the fiber and therefore carries transport.
+def move_in_fiber(A : U0, C : A -> U0, x : A, y : A, p : x = y, v : C(x)) : C(y) {
+  exact transport(C, x, y, p, v);
+}
+
+// A section gives a dependent path directly in cubical notation.
+def section_path(A : U0, C : A -> U0, f : (forall a : A, C(a)), x : A, y : A, p : x = y) :
+  PathP(fun (i : Interval) => C(at(p, i)), f(x), f(y)) {
+  exact path(fun (i : Interval) => C(at(p, i)), fun (i : Interval) => f(at(p, i)));
+}
+
+// The transport presentation has different endpoint types from ordinary cong.
+def section_after_transport(A : U0, C : A -> U0, f : (forall a : A, C(a)), x : A, y : A, p : x = y) :
+  transport(C, x, y, p, f(x)) = f(y) {
+  exact apd(f, x, y, p);
+}
+
+// The checked bridge recovers a dependent path from equality after transport.
+def section_via_transport(A : U0, C : A -> U0, f : (forall a : A, C(a)), x : A, y : A, p : x = y) :
+  PathP(fun (i : Interval) => C(at(p, i)), f(x), f(y)) {
+  exact path_from_transport(fun (i : Interval) => C(at(p, i)), f(x), f(y), apd(f, x, y, p));
+}
+
+// Transport fusion is a theorem, not an assumed conversion rule.
+def transport_in_two_steps(A : U0, C : A -> U0, x : A, y : A, z : A, p : x = y, q : y = z, v : C(x)) :
+  transport(C, x, z, trans(p, q), v) = transport(C, y, z, q, transport(C, x, y, p, v)) {
+  exact transport_concat(A, C, x, y, z, p, q, v);
+}

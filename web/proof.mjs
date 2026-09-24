@@ -385,6 +385,7 @@ const keywords = new Set([
   "left",
   "right",
   "exact",
+  "rfl", "calc", "rw", "simp", "simpa", "simp_rule", "simp_set", "priority", "only", "without", "using", "by", "occurrence", "ext", "over", "along", "from",
   "private",
   "export",
   "verify",
@@ -411,7 +412,7 @@ const builtinForms = new Set([
   "Interval", "path", "PathP", "at", "comp", "face", "flip", "meet", "join",
   "Pushout", "push_left", "push_right", "push_path", "pushout_induction",
   "Nat", "Unit", "Void", "Universe", "tt", "succ", "refl", "absurd",
-  "sym", "trans", "cong", "transport", "apd", "Eq", "typed", "unfold",
+  "sym", "trans", "cong", "transport", "apd", "apd_path", "Eq", "typed", "unfold",
   "induct", "unpack", "pair_induction", "unit_induction", "path_induction",
   "Choice", "LEM", "FunExt", "Truncate",
   "TruncateIntro", "TruncateProp", "TruncateElim", "Univalence", "UnivalenceBeta", "UnivalenceEta", "ua", "idtoequiv",
@@ -536,6 +537,28 @@ async function inspect(info, remember = true) {
   $("inspect-parameters-list").replaceChildren();
   renderType(info.kind === "goal" ? info.step.goal : (info.type ?? ""));
   $("inspect-description").textContent = info.description ?? "";
+  const trace=$("rewrite-trace");
+  trace.replaceChildren();trace.hidden=!info.rewriteSteps?.length;
+  for(const step of info.rewriteSteps??[]) {
+    const button=document.createElement("button");
+    button.className="reference";
+    button.textContent=step.description;
+    button.onclick=()=>inspect(decorate(step));
+    trace.append(button);
+  }
+  const freeze=$("freeze-simp");
+  freeze.hidden=!info.freeze;
+  freeze.disabled=dirty();
+  freeze.onclick=async()=>{
+    const edit=info.freeze;
+    if(!edit||!last||dirty()||last.source.slice(edit.start,edit.end)!==edit.original) {
+      diagnostic(Error("Recheck the current source before replacing this simplification."));
+      return;
+    }
+    $("editor").value=last.source.slice(0,edit.start)+edit.text+last.source.slice(edit.end);
+    $("editor").dispatchEvent(new Event("input",{bubbles:true}));
+    await check();
+  };
   const templateBinding = info.template ? info.binding : info.templateBinding;
   const universeControls = $("inspect-universes");
   universeControls.replaceChildren(); universeControls.hidden = !templateBinding;

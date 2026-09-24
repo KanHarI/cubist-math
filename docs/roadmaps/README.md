@@ -6,7 +6,8 @@ target statement or a supplied theorem parameter as an already proved result.
 
 ## Language tooling
 
-- [Simplification and shorter proofs](proof-ergonomics-roadmap.md): staged `rw`, `calc`, `simp`, argument inference, and other ways to reduce verbosity, with HoTT and cubical requirements. Planning only; no implementation is claimed.
+- [Simplification and shorter proofs](proof-ergonomics-roadmap.md): checked first slice of `rw`, `calc`, `simp only`, and expected cubical paths, with further argument inference and HoTT/cubical requirements in progress.
+  The [concrete implementation plan](proof-ergonomics-implementation-plan.md) adds PR-sized steps, lowering contracts, cubical notation proposals, and checked current-language sample expansions.
 
 ## Mathematics
 

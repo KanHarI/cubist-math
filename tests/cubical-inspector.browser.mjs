@@ -240,6 +240,20 @@ try {
   assert.equal(await reductionBench.locator("#syntax").inputValue(), '{"tag":"Succ","value":{"tag":"Zero"}}');
   assert.equal(await reductionBench.locator("[data-reduction]:enabled").count(), 0);
   await reductionBench.close();
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(`import primes;
+    simp_rule nat_add_zero;
+    def frozen(n : Nat) : n + 0 = n { simp; }
+  `);
+  await page.locator("#check").click(); await idle();
+  await page.locator('#read-source button[data-name="simp"]').click(); await inspected("simp");
+  assert.equal(await page.locator("#rewrite-trace button").count(),1);
+  await page.locator("#rewrite-trace button").click(); await inspected("simp step 1");
+  await page.locator("#back").click(); await inspected("simp");
+  assert.equal(await page.locator("#freeze-simp").isVisible(),true);
+  await page.locator("#freeze-simp").click(); await idle();
+  assert.match(await page.locator("#editor").inputValue(),/simp only \[nat_add_zero\];/);
+  assert.equal(await page.locator("#diagnostic").isVisible(),false);
   assert.deepEqual(errors, []);
-  console.log("PASS cubical inspector: folding, names, navigation, reading controls, axiom links, and workbench editing");
+  console.log("PASS cubical inspector: folding, names, navigation, simp trace/freeze, axiom links, and workbench editing");
 } finally { await browser?.close(); server.kill(); }

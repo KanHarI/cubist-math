@@ -2,27 +2,31 @@ import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator } from "./cubical-elaborator.mjs";
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
+import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
 import { parse } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
+import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 
 // Imports are source, loaded on demand. Every module has its own environment;
 // closed native definitions have qualified names so shadowing cannot retarget
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
-  constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {} } = {}) {
+  constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {}, manageTransactions = true } = {}) {
     this.kernel = new CubicalKernel(module);
     this.kernel.setOptimizations(optimizations);
     this.checker = new NativeCubicalElaborator(this.kernel);
     this.readSource = readSource;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
+    this.manageTransactions = manageTransactions;
     this.localSymbols = {}; this.declarationBindings = new Map();
     this.declarationReferences = new Map();
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
     this.sourceAsts = new Map();
+    this.simpRegistries = new Map();
     this.templates = new Map();
     this.templateSelections = new Map();
     this.gaps = []; this.links = []; this.sources = {}; this.completed = 0;
@@ -73,33 +77,55 @@ export class CubicalProgram {
       }
       this.sources[name] = text;
       this.sourceAsts.set(name, ast);
-      let env = new Map();
-      for (const dependency of ast.imports) env = new Map([...env, ...await load(dependency)]);
+      let env = new Map(),simpRegistry=emptySimpRegistry();
+      for (const dependency of ast.imports) {
+        env = new Map([...env, ...await load(dependency)]);
+        simpRegistry=mergeSimpRegistries(simpRegistry,this.simpRegistries.get(dependency));
+      }
       const define = this.checker.define.bind(this.checker);
       const checker = Object.create(this.checker);
       checker.bindingName = local => `${name}__${local}`;
       checker.define = (local, term, type) => define(`${name}__${local}`, term, type);
       let pending = [];
-      const translator = new Translator({ normalize: false, checker,
+      let transaction = null;
+      const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
         onDeclarationStart: declaration => {
-          this.onDeclarationStart?.(name, declaration);
-          onProgress({ completed: this.completed, total,
-          current: `${name}.${declaration.name.text}`, phase: "checking", unit: "declarations", instructions: checker.steps });
+          if (this.manageTransactions) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
+          try {
+            this.onDeclarationStart?.(name, declaration);
+            onProgress({ completed: this.completed, total,
+              current: `${name}.${declaration.name.text}`, phase: "checking", unit: "declarations", instructions: checker.steps });
+          } catch(error) {
+            transaction?.finish(false);
+            transaction=null;
+            throw error;
+          }
         },
         onReference: this.collectReferences ? (node, term, context, dimensions, aliases) => pending.push({ node, term, context, dimensions, aliases, unfoldingHints: [...this.kernel.unfoldingHints] }) : null,
         onDeclaration: (declaration, result) => {
-          this.onDeclaration?.(name, declaration, result);
+          try {this.onDeclaration?.(name, declaration, result);}
+          catch(error) {
+            transaction?.finish(false);
+            transaction=null;
+            throw error;
+          }
+          if (transaction) {
+            transaction.finish(result.status === "checked-native-cubical");
+            transaction = null;
+          }
           this.completed++;
           if (result.status === "checked-native-cubical") {
             this.declarationBindings.set(`${name}__${result.name}`, pending.filter(item => item.node.isBinding));
             const references = [];
+            const declarationLinks = [];
             this.declarationReferences.set(`${name}__${result.name}`, references);
             for (const item of pending) {
               if (!Number.isInteger(item.node.start)) continue;
               let head = item.term; while (head.tag === "App") head = head.fn;
               const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
               const definition = head.tag === "DefRef" && !source && !item.node.schemaBinding && !item.node.expressionSite;
-              const binding = definition ? head.name : `${name}__local_${item.node.start}`;
+              const binding = definition ? head.name : `${name}__local_${item.node.start}${
+                item.node.expansionIndex ? `_${item.node.role.replaceAll(" ","_")}_${item.node.expansionIndex}` : ""}`;
               references.push({ start: item.node.start, binding });
               if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
               if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
@@ -109,10 +135,18 @@ export class CubicalProgram {
                 universes: item.node.universes,
                 definitionStart: source?.start ?? item.node.start,
                 ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
-              if (name === main) this.links.push({ name: item.node.name, binding, start: item.node.start,
+              if (name === main) {
+                const link={ name: item.node.name, binding, start: item.node.start,
                 end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (definition ? "definition" : "local"),
-                expansion: item.node.expansion, description: item.node.description });
+                expansion: item.node.expansion, description: item.node.description,
+                freeze:item.node.freeze,traceParent:item.node.traceParent };
+                this.links.push(link);declarationLinks.push(link);
+              }
             }
+            for(const link of declarationLinks)if(link.role==="simplification witness")
+              link.rewriteSteps=declarationLinks.filter(step=>step.role==="simplification step"
+                &&step.traceParent===link.start).map(step=>({name:step.name,binding:step.binding,
+                  role:step.role,description:step.description,start:step.start,end:step.end}));
           }
           pending = [];
           onProgress({ completed: this.completed, total,
@@ -120,6 +154,10 @@ export class CubicalProgram {
         },
       });
       const result = translator.translate(text, env);
+      this.simpRegistries.set(name,result.simpRegistry);
+      for(const directive of result.directives??[])if(directive.status!=="checked")
+        this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
+          reason:directive.reason,directive:true});
       this.checker.steps = checker.steps;
       const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
       for (const d of result.declarations) {
@@ -203,7 +241,8 @@ export class CubicalProgram {
     return this.metadata = { backend: "cubical", mode: "mathematical", source, outputs,
       imports: all.filter(d => d.sourceModule), symbols: [...all, ...Object.values(this.assumptionSymbols())], assumptionLabels: Object.fromEntries(this.checker.assumptionLabels), declarations: outputs, links: this.links,
       steps: [], declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
-      complete: outputs.length > 0 && outputs.every(d => d.verified || d.template), sources: this.sources };
+      complete: outputs.length > 0 && outputs.every(d => d.verified || d.template)
+        && !this.gaps.some(gap=>gap.directive), sources: this.sources };
   }
   generatedSymbols() {
     const specializations = new Map();

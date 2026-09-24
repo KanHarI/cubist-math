@@ -17,7 +17,8 @@ Moving these documents does not change their recorded status or resume paused wo
 
 ## Language tooling roadmap
 
-- [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md): adding `simp`, explicit rewriting, calculation chains, inferred arguments, and other proof conveniences while preserving HoTT and cubical semantics. Planning only.
+- [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md): checked first slice of explicit rewriting, calculations, `simp only`, and cubical path syntax; broader inference and structure work remains.
+  See the [implementation plan](roadmaps/proof-ergonomics-implementation-plan.md) and [checked/proposed examples](examples/proof-ergonomics/README.md) for concrete work packages and cubical language designs.
 
 ## Other sections
 

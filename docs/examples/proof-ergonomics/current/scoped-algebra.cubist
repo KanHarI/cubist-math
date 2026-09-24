@@ -1,0 +1,7 @@
+import field_vector_spaces;
+
+// Explicit structure projections are the expansion for scoped field notation.
+def field_add_zero(F : AlgebraicField, x : af_carrier(F)) :
+  af_add(af_carrier(F), af_operations(F), x, af_zero(af_carrier(F), af_operations(F))) = x {
+  exact group_unit_right(FieldAdditiveGroup(F), x);
+}

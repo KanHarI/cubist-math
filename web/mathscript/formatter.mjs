@@ -143,7 +143,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         if (!close && trailing && preceding && declarationEnds.has(preceding.end)) docs.push(hard);
         previous = null; continue;
       }
-      if (!close && ["def", "axiom", "opaque", "construction"].includes(text) && previous && previous.text !== "opaque") {
+      if (!close && ["def", "axiom", "opaque", "construction", "simp_rule", "simp_set"].includes(text) && previous && previous.text !== "opaque") {
         flush(); docs.push(hard, hard); previous = null;
       }
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)

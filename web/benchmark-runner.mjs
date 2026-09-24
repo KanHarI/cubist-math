@@ -3,6 +3,7 @@ import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { sourceModules, cubicalSourceModules } from "./mathscript/modules.mjs";
 import { cubicalSourceFile } from "./cubical-sources.mjs";
+import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 
 export function category(result, elapsedMs, limitMs) {
   if (result.reason?.startsWith("Universe schema:")) return "template";
@@ -20,12 +21,11 @@ export async function benchmark({ modules = [...sourceModules, ...cubicalSourceM
   onResult = () => {}, onSnapshot = () => {} } = {}) {
   if (!Number.isFinite(limitMs) || limitMs <= 0) throw new Error("The declaration limit must be a positive number of milliseconds.");
   const started = performance.now(), declarations = [];
-  let declarationStart, definitionsBefore;
+  let declarationStart, transaction;
   const program = new CubicalProgram(await createCubical(), readSource, {
-    collectReferences: false, optimizations,
+    collectReferences: false, optimizations, manageTransactions: false,
     onDeclarationStart() {
-      definitionsBefore = new Set(program.kernel.definitions.keys());
-      program.kernel.module._cb_checkpoint(program.kernel.handle);
+      transaction = new CubicalDeclarationTransaction(program.kernel,program.checker);
       declarationStart = performance.now();
       program.kernel.setDeadline(limitMs);
     },
@@ -36,33 +36,12 @@ export async function benchmark({ modules = [...sourceModules, ...cubicalSourceM
         category: category(result, elapsedMs, limitMs), elapsedMs: +elapsedMs.toFixed(3),
         reason: result.reason, blockedBy: result.blockedBy,
         line: program.sources[module].slice(0, syntax.start).split("\n").length };
-      if (row.category !== "checked" && row.category !== "template") {
-        if (row.category === "optimize") {
-          result.status = "not-translated";
-          result.reason = "Declaration time limit exceeded.";
-        }
-        program.kernel.module._cb_rollback(program.kernel.handle);
-        program.kernel.unfoldingHints = [];
-        for (const name of program.kernel.definitions.keys()) if (!definitionsBefore.has(name)) {
-          program.kernel.definitions.delete(name); program.checker.definitionViews.delete(name);
-          program.checker.scopeDefinitions.delete(name);
-        }
-        for (const key of program.checker.schemaSpecializations.keys())
-          if (!program.kernel.definitions.has(key)) program.checker.schemaSpecializations.delete(key);
-        // Handle reuse is confined to rejected attempts. Never reuse a JS
-        // cache entry whose native node may have been discarded.
-        program.checker.syntax.encoded = new WeakMap();
-        program.checker.syntax.decoded.clear();
+      if (row.category === "optimize") {
+        result.status = "not-translated";
+        result.reason = "Declaration time limit exceeded.";
       }
-      if (row.category === "checked") {
-        if (!program.kernel.module._cb_commit_checkpoint(program.kernel.handle))
-          throw Error(program.kernel.error());
-        for (const [name, handle] of program.kernel.definitions)
-          if (!definitionsBefore.has(name)) program.kernel.definitions.set(name,
-            program.kernel.module._cb_relocated(program.kernel.handle, handle));
-        program.checker.syntax.encoded = new WeakMap();
-        program.checker.syntax.decoded.clear();
-      }
+      transaction.finish(row.category === "checked");
+      transaction = null;
       declarations.push(row); onResult(row);
     },
   });

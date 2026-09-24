@@ -1,8 +1,21 @@
 # Simplification and shorter proofs in Cubist
 
-Status: planning only, 2026-09-23. No implementation is claimed by this roadmap.
-The next step is milestone 0. This document covers language tooling; it does
-not resume any mathematical roadmap. All new syntax below is proposed syntax.
+Status: implementation in progress, 2026-09-24. Explicit `rw`, `calc`, `rfl`,
+`simp only`, `simpa only`, registered default/named simplification sets, grouped
+binders, expected paths, pointwise `ext`, and selected dependent path
+conveniences and selected conditional equality rules now check through the
+native kernel. Broader conditional solving, broad inference, dependent
+hypothesis replacement and structure
+notation remain planned. See the [implementation checkpoint](../tactical/proof-ergonomics-handoff.md).
+This document covers language tooling and does not resume any mathematical roadmap.
+Examples below not yet covered by the checked sample files remain proposals.
+
+Continue with the [PR-sized implementation plan](proof-ergonomics-implementation-plan.md)
+and its [checked and exploratory sample files](../examples/proof-ergonomics/README.md).
+That plan specifies reconstruction APIs, matching/occurrence semantics,
+transactions, measurements, and cubical notation priorities. It brings
+expected-type paths and pointwise equality forward without requiring general
+argument inference.
 
 ## Objective and current foundation
 
@@ -11,11 +24,12 @@ and checked by the existing cubical C kernel. Deliver a useful simplifier in
 small increments, together with features that remove repeated arguments,
 nested equality chains, and repeated structure projections.
 
-Today the language has `intro`, `let`, `obtain`, `have`, `cases`, and `exact`;
-explicit lambdas and induction motives; tuple patterns; and equality operations
-including `refl`, `sym`, `trans`, `cong`, `transport`, and `apd`.
+The language has `intro`, `let`, `obtain`, `have`, `cases`, `exact`, `rfl`,
+`calc`, `rw`, registered `simp` and `simpa`, and explicit `only` modes; typed and expected-type lambdas;
+tuple patterns; and equality operations including `refl`, `sym`, `trans`,
+`cong`, `transport`, and `apd`.
 The [language reference](../../web/language.html) is the current syntax authority.
-There is no `simp`, `rewrite`, `apply`, or `calc` tactic and no implicit argument
+There is no recursive premise solver, `apply`, or general implicit argument
 syntax. Universe parameters are explicitly specialized by the elaborator.
 
 The checker already computes and unfolds definitions on demand.
@@ -156,17 +170,18 @@ Small syntax conveniences in 0 can ship independently of the simplifier.
 
 ### 0. Establish examples and remove straightforward repetition
 
-- [ ] Select representative proofs from `primes`, `paths`, `finite_counting`,
+- [ ] Select representative proofs from `primes`, `paths`, `finite_dependent_counts`,
   `group_operations`, and `field_vector_spaces`. Record source token counts,
   repeated explicit parameters, checking time, kernel steps, and arena usage.
   Keep the original public statements and assumption lists as a baseline.
-- [ ] Add grouped introductions, such as `intro A x h;`, by expansion to
+- [x] Add grouped introductions, such as `intro A x h;`, by expansion to
   existing introductions, preserving an inspectable context at each binder.
-- [ ] Add grouped typed binders, such as `(x y : A)`, and multi-binder lambdas.
+- [x] Add grouped typed binders, such as `(x y : A)`, and multi-binder lambdas.
   Add expected-type lambda binders only where the expected function type gives
   an unambiguous domain.
-- [ ] Add `have h = term;` when its type can already be inferred, plus
-  `have h : T = term;` as shorthand for an existing `have`/`exact` block.
+- [x] Add `have h = term;` when its type can already be inferred, plus
+  `have h : T := term;` as shorthand for an existing `have`/`exact` block.
+  The distinct assignment token avoids ambiguity with equality inside `T`.
 - [ ] Define source spans and formatter behavior for each expansion.
 
 Completion: conveniences elaborate to the same core meaning as their expanded
@@ -177,14 +192,14 @@ work. Publish measured examples without claiming an unmeasured percentage gain.
 
 - [ ] Introduce the goal/reconstruction representation and a rewrite service
   initially accepting fully instantiated homogeneous equality proofs.
-- [ ] Add `rw [p];` and `rw [<- p];`, with rules applied in listed order.
+- [x] Add `rw [p];` and `rw [<- p];`, with rules applied in listed order.
   Initially rewrite the first eligible occurrence in a documented traversal;
   add an explicit occurrence selector before supporting complicated targets.
 - [ ] Support rewriting equality endpoints and ordinary applications with a
   fixed result type. Report unsupported dependent positions precisely.
-- [ ] Add `rfl;` to close goals whose endpoints are definitionally equal.
+- [x] Add `rfl;` to close goals whose endpoints are definitionally equal.
   `rw` leaves a goal unless it can close it by this rule.
-- [ ] Add `calc` for homogeneous equality chains, elaborating each step against
+- [x] Add `calc` for homogeneous equality chains, elaborating each step against
   its endpoint types and composing checked paths. Inequality and mixed-relation
   chains are a later extension requiring registered composition lemmas.
 
@@ -208,12 +223,12 @@ the previous checked state intact.
 
 ### 2. Minimal useful simplifier: explicit rule lists
 
-- [ ] Add `simp only [rules];` on equality goals. First permit instantiated
+- [x] Add `simp only [rules];` on equality goals. First permit instantiated
   proofs, then universally quantified equality lemmas through a restricted
   matcher. Infer parameters from the matched side and its checked type; require
   explicit arguments when inference is ambiguous. Full implicit syntax is
   not a prerequisite.
-- [ ] Traverse supported subterms from children to parents, rewrite in a
+- [x] Traverse supported subterms from children to parents, rewrite in a
   deterministic order, and repeat until stable or a resource limit is reached.
   Reuse congruence and path composition from milestone 1.
 - [ ] Return checked endpoint witnesses, then close by conversion if possible.
@@ -225,7 +240,8 @@ the previous checked state intact.
 - [ ] Keep associativity, commutativity, distributivity, and expanding
   definitions out of automatic default normalization. Explicit cyclic lists
   must still terminate with a useful failure.
-- [ ] Show used lemmas and intermediate equalities in the inspector.
+- [x] Show used lemmas and intermediate equalities in the inspector. Each
+  simplifier rewrite now exposes its checked path and selected rule.
 
 Proposed example, after quantified-rule matching lands:
 
@@ -245,25 +261,36 @@ for this release.
 
 ### 3. Imported rule sets, conditional rules, and `simpa`
 
-- [ ] Add explicit metadata registering an already checked equality lemma.
+- [x] Add explicit metadata registering an already checked equality lemma.
   Since Cubist uses `def` for proofs and constructions, classify registrations
   by their checked type. Keep requests to unfold a definition distinct from
   requests to rewrite by a path; settle exact attribute syntax here.
 - [ ] Define module export/import behavior, qualified identities, local scope,
   duplicate registration handling, priorities, and deterministic tie-breaking.
-  Begin with a small reviewed default set; provide named domain-specific sets.
-- [ ] Add `simp;`, `simp [rules];`, local exclusions, and `simpa only [rules]
-  using term;`. `simpa` checks a reconstruction from the supplied term's type
-  to the original goal, and fails if any obligation remains.
+  Checked registrations and named sets now flow through imports, with sorted
+  default rules and an error for ambiguous imported set names. A reviewed
+  library default remains open.
+- [ ] Add `simp;`, `simp [rules];`, local exclusions, and broader `simpa`
+  modes backed by registered sets. The first two forms and explicit
+  `without [rules]` exclusions are implemented for
+  homogeneous equalities with registered defaults/named sets, as is
+  `simpa [rules] using term;`. The explicit homogeneous-equality form
+  `simpa only [rules] using term;` is implemented; it reconstructs the original
+  goal from the supplied equality proof and fails if an obligation remains.
 - [ ] Permit conditional rules only when every premise gets an actual checked
-  witness. Initially discharge by an explicitly selected local hypothesis,
-  conversion/reflexivity, or bounded recursive simplification; prevent recursive
-  self-justification. Witnesses used by the conclusion must be retained.
-- [ ] Add `simp only [h] at hypothesis;` first for hypotheses with no downstream
-  dependencies, or bind a fresh simplified copy. Defer dependent replacement
-  to milestone 4. Local hypotheses enter the rule set only when selected.
-- [ ] Offer an action that replaces an exploratory `simp` invocation with an
-  explicit `simp only` list of the lemmas actually used.
+  witness. Explicitly selected local equality witnesses and reflexive premises
+  now work, with witnesses retained in the instantiated theorem application.
+  Bounded recursive premise simplification and broader proposition premises
+  remain open; prevent recursive self-justification.
+- [x] Add `simp only [h] at hypothesis;` first for hypotheses with no downstream
+  dependencies, or bind a fresh simplified copy. The implemented
+  `simp only [rules] at h as h2;` binds a checked fresh equality copy and keeps
+  `h`; dependent replacement remains in milestone 4. Local hypotheses enter
+  the rule set only when selected.
+- [x] Offer an action that replaces an exploratory `simp` invocation with an
+  explicit `simp only` list of the lemmas actually used. The inspector offers
+  the action only when every used rule has a name in the current source scope;
+  the edited source is checked again immediately.
 
 Completion: imports cannot leak local rules; unrelated unused rules add no
 axiom dependencies to a proof; changes to a rule invalidate affected results;

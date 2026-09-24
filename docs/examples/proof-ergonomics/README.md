@@ -1,0 +1,76 @@
+# Proof ergonomics examples
+
+These accompany the [implementation plan](../../roadmaps/proof-ergonomics-implementation-plan.md).
+The current files are explicit expansions. The implemented files use new
+arithmetic and cubical syntax and pass native checking. The scoped algebra
+file remains a design fixture, excluded from `.cubist` corpus checks.
+
+| Short source | Explicit expansion | Status |
+| --- | --- | --- |
+| [arithmetic](implemented/arithmetic.cubist) | [arithmetic.cubist](current/arithmetic.cubist) | Native checked: typed `have`, `calc`, `rw`, `simp only`, `simpa only` |
+| [cubical](implemented/cubical.cubist) | [pointwise.cubist](current/pointwise.cubist) | Native checked: expected paths, interval application, `ext` |
+| [dependent](implemented/dependent.cubist) | [dependent-transport.cubist](current/dependent-transport.cubist), [path-coherence.cubist](current/path-coherence.cubist) | Native checked: direct PathP action and explicit transport bridge |
+| [registered simp](implemented/registered-simp.cubist) | [arithmetic.cubist](current/arithmetic.cubist) | Native checked: default/named sets, simplified hypothesis copy and conditional equality rule |
+| [scoped algebra](proposed/scoped-algebra.cubist.proposed) | [scoped-algebra.cubist](current/scoped-algebra.cubist) | Design only: lexical notation packs |
+
+Arithmetic elaborates to checked composition, inversion and congruence witnesses.
+Function equality swaps an interval binder and a term binder. The naturality
+square uses its expected PathP families. The transport shorthand infers
+endpoints while preserving the chosen path. The remaining structure notation
+proposal would expand to ordinary field operations on an explicitly chosen field.
+
+The dependent examples deliberately distinguish `section_path` from
+`section_after_transport`: the former is a path in varying fibers; the latter
+is an equality in the final fiber. Neither is interchangeable with ordinary
+`cong` without checking the fiber. `loop_action_right_unit` leaves the supplied
+loop in the final transport and needs no `IsSet` assumption.
+
+## Checks and reproducibility
+
+See the [current examples' verification record](current/README.md) for exact
+declaration counts, assumption checks, formatter results and CLI commands.
+The baseline check `npm test -- docs/examples/proof-ergonomics/current/*.cubist`
+passed: five files, 16 declarations, zero axiom dependencies. The new
+`npm test -- docs/examples/proof-ergonomics/implemented/*.cubist` selection
+checks 23 declarations, also without axioms.
+Focused rejection tests are in `tests/proof-ergonomics.test.mjs`. The complete
+roadmap remains in progress.
+
+The selected real-library [snapshot](baseline.json) is separate from these
+small examples. Reproduce it with the existing C/WASM build:
+
+```sh
+node docs/examples/proof-ergonomics/measure.mjs
+```
+
+This overwrites `baseline.json` with source hashes, token/line counts, machine
+and revision metadata, one timing observation per selected declaration, and
+import-graph status. It does not overwrite the site's benchmark report. Review
+the JSON diff before retaining a newer baseline. The snapshot explicitly lists
+unmeasured quantities; timings are not estimates of future speedups. Hashes pin
+the source of inferred theorem statements without serializing normalized types.
+PR 1 must additionally preserve checked signatures and assumption inventories.
+
+## Rejection examples and remaining acceptance tests
+
+These illustrate current and future negative cases. The focused test file
+covers false equality, wrong occurrences, cycles, unsupported dependent
+positions, loop non-erasure, and a malformed naturality square. Other rows
+remain test targets for later implementation.
+
+| Future snippet/context | Required result |
+| --- | --- |
+| `def false_goal : 0 = 1 { simp only []; }` | Residual `0 = 1`, unfinished proof. |
+| `calc { x = y by p; _ = z by q; }`, with `q : x = z` and distinct `x,y` | Reject the second step's left endpoint. |
+| `rw [p] at lhs occurrence 2;` with one eligible occurrence | Error naming the missing occurrence; no partial statement result. |
+| `p : x = y`, `C : A -> U0`, `v : C(x)`; change `v` to type `C(y)` by ordinary congruence | Require explicit transport or report unsupported dependent position. |
+| `def collapse(A : U0, x : A, p : x = x) : p = refl(x) { simp only []; }` | Leave the higher equality unsolved; never assume UIP. |
+| In the naturality square, replace the body with `path j => path i => H(x) @ j` | Reject the generic right edge and outer endpoints; dimensions are not decorative. |
+| `exact path i => ...` without an expected path family | Request an explicit `path(family, body)` or a type annotation. |
+| `simp only [p, <- p];` on a nontrivial local equality | Cycle/budget diagnostic, with involved rules; no success via a partial run. |
+| Equality `law(a,a) : op(a,a) = a` matched against `op(x,y)` | Require conversion of `x` and `y`; do not assign the same rule parameter twice. |
+| A registered lemma with an unproved premise | Keep a witness obligation or reject the rule use; no assumed premise. |
+
+Future inference tests must also distinguish `_` as the previous endpoint in a
+`calc` step from `_` as a scoped term hole. A term or dimension from one branch
+must not solve a hole in a sibling branch.

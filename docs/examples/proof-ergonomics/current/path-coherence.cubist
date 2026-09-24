@@ -1,0 +1,18 @@
+import paths;
+
+// This is a higher path between paths; it does not say that p is reflexivity.
+def loop_right_unit(A : U0, x : A, p : x = x) : trans(p, refl(x)) = p {
+  exact right_unit(A, x, x, p);
+}
+
+// A loop may act nontrivially on a fiber. Preserve p in the simplified result.
+def loop_action_right_unit(A : U0, C : A -> U0, x : A, p : x = x, v : C(x)) :
+  transport(C, x, x, trans(p, refl(x)), v) = transport(C, x, x, p, v) {
+  exact cong(fun (q : x = x) => transport(C, x, x, q, v), loop_right_unit(A, x, p));
+}
+
+// Reassociation requires its checked coherence witness, including for loops.
+def reassociate_paths(A : U0, x : A, y : A, z : A, w : A, p : x = y, q : y = z, r : z = w) :
+  trans(trans(p, q), r) = trans(p, trans(q, r)) {
+  exact path_associative(A, x, y, z, w, p, q, r);
+}

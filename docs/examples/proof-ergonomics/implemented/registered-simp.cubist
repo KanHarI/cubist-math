@@ -1,0 +1,39 @@
+import primes;
+
+// Registrations refer to already checked equality proofs.
+simp_rule nat_add_zero priority 10;
+simp_set nat_units =[nat_add_zero];
+
+def default_rewrite(n : Nat) : n + 0 = n {
+  simp;
+}
+
+def named_rewrite(n : Nat) : n + 0 = n {
+  simp [nat_units];
+}
+
+def frozen_rewrite(n : Nat) : n + 0 = n {
+  simp only [nat_units];
+}
+
+def supplied_rewrite(n : Nat) : n + 0 = n {
+  simpa [nat_units] using refl(n);
+}
+
+def simplified_copy(n : Nat, h : n + 0 = n) : n = n {
+  simp [nat_units] at h as normalized;
+  exact normalized;
+}
+
+def zero_if(n : Nat, h : n = 0) : n + 0 = 0 {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+    _ = 0 by h;
+  }
+}
+
+simp_rule zero_if priority 20;
+
+def conditional_rewrite(n : Nat, h : n = 0) : n + 0 = 0 {
+  simp with [h];
+}

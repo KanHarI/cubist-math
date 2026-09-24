@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-24T06:59:23.925Z",
+  "revision": "ff415a3ccea4012616663c511b7a19268b639d67",
+  "dirty": true,
+  "runtime": "v24.13.0",
+  "cpu": "Apple M3 Pro",
+  "method": "One selected import graph in source order with imports checked once, references disabled, no normalization request, native declaration transactions. Elapsed times include elaboration and checking, exclude import parsing, and are a single observation, not a statistical baseline or speedup claim. Tokens exclude comments, whitespace and EOF.",
+  "unmeasured": [
+    "per-declaration aggregate checking/reduction steps",
+    "peak temporary arena",
+    "retained arena delta",
+    "generated proof DAG size",
+    "repeated explicit parameter count",
+    "repeated-run variance"
+  ],
+  "limitMs": 1000,
+  "optimizations": {
+    "shareSyntax": true,
+    "reuseChecks": true,
+    "compactPaths": true
+  },
+  "graph": {
+    "modules": 28,
+    "counts": {
+      "checked": 497,
+      "optimize": 0,
+      "blocked": 0,
+      "failed": 0,
+      "template": 24
+    },
+    "elapsedSeconds": 0.57
+  },
+  "selected": [
+    {
+      "module": "primes",
+      "name": "nat_add_assoc",
+      "sourcePath": "web/proofs/primes.cubist",
+      "sourceSha256": "e3375419c18f2e6507064148785abe0419af0e990c4d87191ea677a7665e4f4f",
+      "declarationSha256": "3411b712c8c77697e78dac6a1dd204bc598222a6b9e49a3011c2acb47bf44b58",
+      "sourceTokens": 145,
+      "sourceLines": 11,
+      "observation": {
+        "binding": "primes__nat_add_assoc",
+        "module": "primes",
+        "name": "nat_add_assoc",
+        "category": "checked",
+        "elapsedMs": 1.606,
+        "line": 86
+      }
+    },
+    {
+      "module": "paths",
+      "name": "right_unit",
+      "sourcePath": "web/proofs/paths.cubist",
+      "sourceSha256": "69eb6dc4a775a7e9a23bf086e3bdda786d3ab5e0493bdecc79e87d5387d2ddd6",
+      "declarationSha256": "4d658b748fcb9563dee87ffd270cb44f0d768723006008bea888602159ce8f75",
+      "sourceTokens": 134,
+      "sourceLines": 11,
+      "observation": {
+        "binding": "paths__right_unit",
+        "module": "paths",
+        "name": "right_unit",
+        "category": "checked",
+        "elapsedMs": 0.307,
+        "line": 77
+      }
+    },
+    {
+      "module": "finite_dependent_counts",
+      "name": "finite_uniform_fiber_count",
+      "sourcePath": "web/proofs/finite_dependent_counts.cubist",
+      "sourceSha256": "d2b061dd500925293d378a952e41577b75c3e5c5a7221a137e44071a38f65b13",
+      "declarationSha256": "db12d55e81d3a828a56a53380e29fceddf827e5a967823cd946a913bf69cf589",
+      "sourceTokens": 360,
+      "sourceLines": 28,
+      "observation": {
+        "binding": "finite_dependent_counts__finite_uniform_fiber_count",
+        "module": "finite_dependent_counts",
+        "name": "finite_uniform_fiber_count",
+        "category": "checked",
+        "elapsedMs": 21.564,
+        "line": 55
+      }
+    },
+    {
+      "module": "group_operations",
+      "name": "group_conjugate_multiply",
+      "sourcePath": "web/proofs/group_operations.cubist",
+      "sourceSha256": "69a5f0f3dbdff82db4c42ea4dc70ae61c44b36e59f198825c46c846cb116e179",
+      "declarationSha256": "2572ae4723ba2035ee13b56c2effe4e80ff60491f8c5f95971ffeec582f67dfb",
+      "sourceTokens": 275,
+      "sourceLines": 27,
+      "observation": {
+        "binding": "group_operations__group_conjugate_multiply",
+        "module": "group_operations",
+        "name": "group_conjugate_multiply",
+        "category": "checked",
+        "elapsedMs": 4.7,
+        "line": 109
+      }
+    },
+    {
+      "module": "field_vector_spaces",
+      "name": "field_scalar_laws",
+      "sourcePath": "web/proofs/field_vector_spaces.cubist",
+      "sourceSha256": "e52533fce3c3f3cbf1b21f25aafd34a355aadc019f0c6cae74d5546d87faa29a",
+      "declarationSha256": "f00f0df920653c9421e91c47fe8a61cd9db8ed35bdbf97c7a0db498a3c31d8ab",
+      "sourceTokens": 440,
+      "sourceLines": 34,
+      "observation": {
+        "binding": "field_vector_spaces__field_scalar_laws",
+        "module": "field_vector_spaces",
+        "name": "field_scalar_laws",
+        "category": "checked",
+        "elapsedMs": 5.216,
+        "line": 46
+      }
+    }
+  ]
+}

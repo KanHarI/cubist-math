@@ -180,6 +180,17 @@ pre {
 #inspect-description {
   font-size: 13px;
 }
+#rewrite-trace:not([hidden]) {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+#rewrite-trace button {
+  text-align: left;
+}
+#freeze-simp:not([hidden]) {
+  margin: 6px 0 12px;
+}
 .result {
   margin-top: 16px;
   padding: 14px 18px;
