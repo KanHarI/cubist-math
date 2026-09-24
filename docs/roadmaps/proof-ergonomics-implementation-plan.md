@@ -49,7 +49,7 @@ particularly `finite_uniform_fiber_count`, for its finite-counting baseline.
 | 5b. Quantified `simp only` | 5a | Rigid first-order rule matching with dependent parameter types checked in telescope order; cache rule shapes by checked binding identity. | `simp only [nat_add_zero];`, repeated-variable rejection, underdetermined argument diagnostic, no full unfolding of large endpoints. |
 | 6. Expected-type cubical notation | 2; independent of 4–5 | `path i => e`, `p @ i`, and `ext x;` for homogeneous equality of dependent functions. Preserve the explicit two-argument `path`. | Native-checked path, pointwise and naturality-square examples, wrong faces and captured dimensions rejected; nested path source inspection. |
 | 7. Directed dependent movement | 6 | `along C by p from v`, direct `apd_path(f,p)`, expected-type `over C along p by { ... }` transport bridge. | Match the checked dependent examples; bridge work occurs only on request; loop-dependent transport and inverse laws retain witnesses. |
-| 8. Rule environments and broader `simpa` | 5b | Checked registrations, imported/named sets, deterministic priorities, explicit exclusions, fresh simplified equality-hypothesis copies, conditional equality rules with selected/reflexive witnesses, and an inspected freeze-to-used-rules action are implemented. Recursive premise solving and generalized `simpa` remain. | Deterministic imports, no leaked local rules, minimal assumptions, false premises rejected, freeze-to-used-rules action. |
+| 8. Rule environments and broader `simpa` | 5b | Checked registrations, imported/named sets, deterministic priorities, explicit exclusions, fresh simplified equality-hypothesis copies, conditional equality rules with selected/reflexive witnesses, depth-two checked equality-premise simplification, and an inspected freeze-to-used-rules action are implemented. General proposition premises and generalized `simpa` remain. | Deterministic imports, no leaked local rules, minimal assumptions, false premises rejected, freeze-to-used-rules action. |
 | 9. Scoped argument inference | 2, evidence from 5b/6 | Named arguments, scoped term metavariables, restricted unification, `_`, opt-in implicit binders, then universe constraints. | Omitted endpoint/carrier examples, occurs/scope checks, ambiguous universes rejected, inspector shows solved arguments. |
 | 10. Multiple goals and dependent rewriting | 7, 9 | `apply`/`refine`, expected motives, selected dependent congruence and telescope reconstruction. Constructor-specific cubical support follows separately. | Recheck all downstream hypotheses; transport proof-dependent indices; reject unsupported HIT boundaries; no unsolved term reaches native encoding. |
 | 11. Structure views and selected automation | 8, 9, migration evidence | Lexical notation packs and named views of existing Sigma structures, then records/sections; certified algebra normalization separately. | Field/group examples preserve expanded signatures and assumptions; nested scopes restore notation; no global instance search. |
@@ -218,8 +218,10 @@ homogeneous equality types, exports qualified rule identities through imports,
 resolves explicit set names lexically, de-duplicates rules and orders defaults
 by priority then identity. Local hypotheses enter only through explicit lists.
 `simp ... at h as h2;` binds a fresh checked equality copy instead of replacing
-dependents. Conditional equality premises use selected local witnesses or
-conversion/reflexivity. `simpa` remains restricted to homogeneous equality
+dependents. Conditional equality premises use selected local witnesses,
+conversion/reflexivity, or depth-two simplification by other selected rules.
+Active rules are excluded, and the resulting premise path is checked. `simpa`
+remains restricted to homogeneous equality
 types whose endpoint witnesses reconstruct the original goal; generalized
 proposition/type conversions wait for explicit checked maps.
 

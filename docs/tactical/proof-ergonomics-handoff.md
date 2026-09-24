@@ -36,9 +36,12 @@ the C/WASM cubical kernel and report no axiom dependencies.
   `simp without [lemma];` removes a default rule; `simp [units] at h as h2;`
   binds a checked simplified copy of local equality proof `h`. Conditional
   equality rules can use an explicitly selected local witness through
-  `simp with [h];`, or a premise proved reflexive by conversion. The witness is
-  an argument of the checked theorem application. There is no recursive
-  premise search or arbitrary proposition-premise solver.
+  `simp with [h];`, a premise proved reflexive by conversion, or a homogeneous
+  equality premise simplified by other selected rules. Premise search has a
+  depth-two limit, 64-attempt budget and shared elapsed-work deadline; active
+  rules cannot justify themselves. The generated witness is checked and passed
+  to the theorem. Premise rules appear in the inspector trace and frozen
+  `simp only` list. Arbitrary proposition-premise solving remains open.
 - Expected-type `path i => body`, path application `p @ i`, `ext x;` for equality
   of functions with a fixed Pi carrier, `along C by p from v`, `apd_path(f,p)`,
   and `over C along p by { ... }`. The last form requires an explicitly chosen
@@ -72,7 +75,7 @@ named function wrapper. Rewriting a hypothesis and all dependents, proposition
 rewrites, logical equivalences, and arbitrary PathP reversal remain open.
 
 The current simplifier uses explicit or registered rules and a 64-rewrite cap.
-It has no recursive premise solver or broader proposition simplification. The
+It has bounded equality-premise search but no broader proposition simplification. The
 source inspector shows the completed checked witness, individual calculation
 and rewrite steps, and selected rule spelling.
 Failures in an explicit `rw` or `simp` list now point to the selected rule's
@@ -101,8 +104,7 @@ The selected 28-module baseline now records per-declaration native checking
 steps and a final-check arena snapshot: 497 checked declarations and 24
 templates. These snapshots are cumulative kernel state, not per-declaration
 allocation. Next implementation items: measure rewrite candidate work and
-arena deltas on selected real proofs; add bounded premise simplification and
-generalized proposition `simpa`. General
+arena deltas on selected real proofs; add generalized proposition `simpa`. General
 named/implicit arguments, `apply`/`refine`, dependent hypothesis replacement,
 scoped records/notation and certified algebra normalization follow the PR
 dependencies in the implementation plan. Recheck assumptions and public theorem
@@ -122,10 +124,13 @@ equalities, nontrivial-loop preservation, and a rejected malformed naturality
 square. It also checks imported rule scope, ambiguous named sets, exclusions,
 conditional witnesses, and fresh simplified hypothesis copies.
 The standard formatter and program/benchmark tests passed in the same session.
-The full suite passed 308 tests and checked all 3,766 concrete corpus
+The full suite passed 309 tests and checked all 3,766 concrete corpus
 declarations and 44 templates without failed, blocked, or timed-out items.
-The four new source files checked 23 declarations without axioms. The browser
+The four new source files checked 25 declarations without axioms. The browser
 suite and `make lint` also passed. The rule-diagnostic test checks source spans
 for `rw`, invalid `simp` rules, and missing conditional premises. The benchmark
 test checks that successful declarations report native steps and arena
 snapshots, while its rejected sample declarations report no final-check snapshot.
+The nested-premise test checks two levels of native-checked witness
+reconstruction through both `simp` and `simpa`, and rejects missing base rules
+and self-justification.

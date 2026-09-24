@@ -159,10 +159,14 @@ test("registered default and named sets retain checked proofs and format stably"
   const source=await sample("registered-simp");
   const result=await program.check(source,"registered_simp");
   assert.equal(result.complete,true,JSON.stringify(result.gaps));
-  assert.equal(result.outputs.length,7);
+  assert.equal(result.outputs.length,9);
   assert.ok(result.outputs.every(d=>d.verified&&d.axioms.length===0));
   const choices=result.links.filter(link=>link.role==="simplification witness"&&link.freeze);
-  assert.equal(choices.length,5);
+  assert.equal(choices.length,6);
+  const recursive=choices.find(choice=>choice.freeze.original==="simp;"
+    &&choice.freeze.text.includes("double_zero_if"));
+  assert.match(recursive?.freeze.text??"",/double_zero_if, nat_add_zero/);
+  assert.match(recursive.rewriteSteps[0].description,/Premise simplified using nat_add_zero/);
   for(const [index,choice] of choices.entries()) {
     assert.ok(choice.rewriteSteps?.length,choice.name);
     for(const step of choice.rewriteSteps)
@@ -301,6 +305,46 @@ test("conditional simp retains an explicitly selected or reflexive premise proof
   assert.match(result.outputs[4].reason,/unresolved equality/);
   const reflexiveLink=result.links.find(link=>link.role==="simplification witness"&&link.description?.includes("1 rewrites"));
   assert.ok(reflexiveLink);
+});
+
+test("conditional premise simplification is bounded and keeps nested witnesses",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const result=await program.check(`import primes;
+    def inner(n : Nat, h : (n + 0) + 0 = n + 0) : (n + 0) + 0 = n {
+      calc {
+        (n + 0) + 0 = n + 0 by h;
+        _ = n by nat_add_zero(n);
+      }
+    }
+    def outer(n : Nat, h : (n + 0) + 0 = n) : ((n + 0) + 0) + 0 = n {
+      calc {
+        ((n + 0) + 0) + 0 = (n + 0) + 0 by nat_add_zero((n + 0) + 0);
+        _ = n by h;
+      }
+    }
+    def nested(n : Nat) : ((n + 0) + 0) + 0 = n {
+      simp only [outer, inner, nat_add_zero];
+    }
+    def simpa_nested(n : Nat) : ((n + 0) + 0) + 0 = n {
+      simpa only [outer, inner, nat_add_zero] using refl(n);
+    }
+    def no_base(n : Nat) : ((n + 0) + 0) + 0 = n {
+      simp only [outer, inner];
+    }
+    def no_self(n : Nat) : ((n + 0) + 0) + 0 = n {
+      simp only [outer];
+    }
+  `,"nested_premises");
+  assert.deepEqual(result.outputs.map(d=>d.verified),[true,true,true,true,false,false]);
+  assert.deepEqual(result.outputs[2].axioms,[]);
+  assert.deepEqual(result.outputs[3].axioms,[]);
+  for(const output of result.outputs.slice(4))
+    assert.match(output.reason,/unproved premise/);
+  const step=result.links.find(link=>link.role==="simplification step"
+    &&link.description.includes("using outer"));
+  assert.match(step?.description??"",/Premise simplified using inner, nat_add_zero/);
+  assert.equal(program.inspect(step.binding).type.tag,"Path");
 });
 
 test("rewrite errors identify the selected rule and explain an unproved premise",async t=>{

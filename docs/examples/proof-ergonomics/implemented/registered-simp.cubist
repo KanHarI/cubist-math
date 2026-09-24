@@ -37,3 +37,17 @@ simp_rule zero_if priority 20;
 def conditional_rewrite(n : Nat, h : n = 0) : n + 0 = 0 {
   simp with [h];
 }
+
+// The premise itself is proved by a different checked simplification rule.
+def double_zero_if(n : Nat, h : n + 0 = n) : (n + 0) + 0 = n {
+  calc {
+    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
+    _ = n by h;
+  }
+}
+
+simp_rule double_zero_if priority 30;
+
+def recursive_premise(n : Nat) : (n + 0) + 0 = n {
+  simp;
+}

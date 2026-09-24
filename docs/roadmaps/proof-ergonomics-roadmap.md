@@ -3,8 +3,8 @@
 Status: implementation in progress, 2026-09-24. Explicit `rw`, `calc`, `rfl`,
 `simp only`, `simpa only`, registered default/named simplification sets, grouped
 binders, expected paths, pointwise `ext`, and selected dependent path
-conveniences and selected conditional equality rules now check through the
-native kernel. Broader conditional solving, broad inference, dependent
+conveniences and bounded conditional equality rules now check through the
+native kernel. General proposition premises, broad inference, dependent
 hypothesis replacement and structure
 notation remain planned. See the [implementation checkpoint](../tactical/proof-ergonomics-handoff.md).
 This document covers language tooling and does not resume any mathematical roadmap.
@@ -29,7 +29,8 @@ The language has `intro`, `let`, `obtain`, `have`, `cases`, `exact`, `rfl`,
 tuple patterns; and equality operations including `refl`, `sym`, `trans`,
 `cong`, `transport`, and `apd`.
 The [language reference](../../web/language.html) is the current syntax authority.
-There is no recursive premise solver, `apply`, or general implicit argument
+There is bounded equality-premise simplification, but no general proposition
+premise solver, `apply`, or general implicit argument
 syntax. Universe parameters are explicitly specialized by the elaborator.
 
 The checker already computes and unfolds definitions on demand.
@@ -280,8 +281,11 @@ for this release.
 - [ ] Permit conditional rules only when every premise gets an actual checked
   witness. Explicitly selected local equality witnesses and reflexive premises
   now work, with witnesses retained in the instantiated theorem application.
-  Bounded recursive premise simplification and broader proposition premises
-  remain open; prevent recursive self-justification.
+  A homogeneous equality premise may also be simplified by other selected
+  rules, to depth two and within a shared deadline and premise-search budget.
+  Active rules are excluded from their own premise search; every resulting
+  premise witness is checked before theorem application. General proposition
+  premises remain open.
 - [x] Add `simp only [h] at hypothesis;` first for hypotheses with no downstream
   dependencies, or bind a fresh simplified copy. The implemented
   `simp only [rules] at h as h2;` binds a checked fresh equality copy and keeps
