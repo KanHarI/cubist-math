@@ -233,9 +233,10 @@ shape match with a mistyped inferred argument is ineligible, so another rule
 can still prove the goal. A universe template uses the simplification sets
 captured where it was defined, including during source inspection. The freeze
 action withholds a reduced `simp only` list if replay changes either residual
-goal. For `simp at h as h2`, it also compares the reconstructed `h2` witness
-by conversion, since later proof steps can depend on that path. This matters
-when an omitted rule affected a failed premise search.
+goal or the constructed proof up to conversion. This applies to `simp at h as h2`
+and proofs returned by `simp` or `simpa`, since later steps can depend on any of
+those paths. An omitted rule can affect a failed premise search even when the
+residual equality type stays the same.
 
 ### Application elaboration and PR 9 inference boundary
 

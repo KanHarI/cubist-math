@@ -237,6 +237,78 @@ test("freezing a simplified hypothesis preserves its witness for dependent proof
     "simp_freeze_witness_replay")).complete,true);
 });
 
+for(const tactic of ["simp","simpa"]) {
+  test(`${tactic} freeze preserves a proof later compared with another path`,async t=>{
+    const program=new CubicalProgram(await createCubical(),readLibrary);
+    t.after(()=>program.dispose());
+    const using=tactic==="simpa"?" using refl(k(a) + k(b))":"";
+    const source=`import primes;
+      def dependent(f g k : Nat -> Nat, a b : Nat,
+        c : forall n : Nat, g(n) = n -> f(n) = k(n),
+        divert : g(a) = b, unit : forall n : Nat, g(n) = n,
+        fallback : f(a) = k(a)) : 0 = 0 {
+        have h1 : f(a) + f(b) = k(a) + k(b) {
+          ${tactic} only [c, divert, unit, fallback]${using};
+        }
+        have h2 : f(a) + f(b) = k(a) + k(b) {
+          ${tactic} [c, divert, unit, fallback]${using};
+        }
+        have stable : h2 = h1 { rfl; }
+        rfl;
+      }
+    `;
+    const result=await program.check(source,`${tactic}_freeze_path_identity`);
+    assert.equal(result.complete,true,JSON.stringify(result.gaps));
+    assert.deepEqual(result.outputs[0].axioms,[]);
+    const links=result.links.filter(item=>item.role==="simplification witness");
+    assert.equal(links.length,2);
+    assert.equal(links[1].freeze,null);
+  });
+}
+
+for(const tactic of ["simp","simpa"]) {
+  test(`${tactic} type-path freeze preserves a proof later compared with another`,async t=>{
+    const program=new CubicalProgram(await createCubical(),readLibrary);
+    t.after(()=>program.dispose());
+    const using=tactic==="simpa"?" using h":"";
+    const finish=tactic==="simp"?"exact h;":"";
+    const source=`import primes;
+      def dependent(P : Nat -> U0, f g k : Nat -> Nat, a b : Nat,
+        c : forall n : Nat, g(n) = n -> f(n) = k(n),
+        divert : g(a) = b, unit : forall n : Nat, g(n) = n,
+        fallback : f(a) = k(a), h : P(k(a) + k(b))) : 0 = 0 {
+        have h1 : P(f(a) + f(b)) {
+          ${tactic} only [c, divert, unit, fallback]${using};
+          ${finish}
+        }
+        have h2 : P(f(a) + f(b)) {
+          ${tactic} [c, divert, unit, fallback]${using};
+          ${finish}
+        }
+        have stable : h2 = h1 { rfl; }
+        rfl;
+      }
+      def stable(P : Nat -> U0, n : Nat, h : P(n), unused : 2 = 3) : P(n + 0) {
+        ${tactic} [nat_add_zero, unused]${using};
+        ${finish}
+      }
+    `;
+    const result=await program.check(source,`${tactic}_type_freeze_path_identity`);
+    assert.equal(result.complete,true,JSON.stringify(result.gaps));
+    assert.ok(result.outputs.every(output=>output.axioms.length===0));
+    const links=result.links.filter(item=>item.role==="simplification witness");
+    assert.equal(links.length,3);
+    assert.equal(links[1].freeze,null);
+    assert.equal(links[2].freeze?.text,
+      `${tactic} only [nat_add_zero]${using};`);
+    const edit=links[2].freeze;
+    const replay=new CubicalProgram(await createCubical(),readLibrary);
+    t.after(()=>replay.dispose());
+    assert.equal((await replay.check(source.slice(0,edit.start)+edit.text+source.slice(edit.end),
+      `${tactic}_type_freeze_replay`)).complete,true);
+  });
+}
+
 test("a naturality square must preserve its varying right boundary",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
