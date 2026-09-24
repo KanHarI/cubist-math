@@ -26,6 +26,12 @@ the C/WASM cubical kernel and report no axiom dependencies.
   must occur on the matched side. Cycle, missing
   match, unfinished residual goal, traversal, rewrite-count and generated-term
   bounds cause failure.
+- For other type-valued goals, `simp` rewrites the type along checked paths and
+  transports a following proof back to the original goal. `simpa` simplifies
+  the supplied proof type and target type, transports the proof to their common
+  type, checks it there, and transports it back. Root rewrites and ordinary
+  fixed-codomain application contexts are supported; arbitrary maps between
+  propositions are not synthesized.
 - `simp_rule lemma priority 10;` registers an already checked homogeneous
   equality for deterministic default simplification. `simp_set units = [lemma];`
   names an explicit collection. Registrations and sets flow through imports;
@@ -59,9 +65,10 @@ the C/WASM cubical kernel and report no axiom dependencies.
   rule has no visible name in the current scope.
 
 The actual checked source files are [arithmetic](../examples/proof-ergonomics/implemented/arithmetic.cubist),
-[cubical](../examples/proof-ergonomics/implemented/cubical.cubist), and
-[dependent](../examples/proof-ergonomics/implemented/dependent.cubist), and
-[registered simplification](../examples/proof-ergonomics/implemented/registered-simp.cubist). Their
+[cubical](../examples/proof-ergonomics/implemented/cubical.cubist),
+[dependent](../examples/proof-ergonomics/implemented/dependent.cubist),
+[registered simplification](../examples/proof-ergonomics/implemented/registered-simp.cubist), and
+[type transport](../examples/proof-ergonomics/implemented/type-transport.cubist). Their
 explicit predecessors are in the adjacent `current/` directory. The scoped
 algebra notation file remains exploratory.
 
@@ -71,8 +78,10 @@ No new C rule was added. Rewriting does not descend into binders, dependent
 applications, composition, Glue or HIT data. In particular, source
 `transport(...)` lowers to `Comp`; rewriting one of its apparent arguments is
 outside the early `rw` traversal. Use an explicit checked `cong` context or a
-named function wrapper. Rewriting a hypothesis and all dependents, proposition
-rewrites, logical equivalences, and arbitrary PathP reversal remain open.
+named function wrapper. Rewriting a hypothesis and all dependents,
+proposition-specific maps, logical equivalences, and arbitrary PathP reversal
+remain open. Non-equality goals can already be rewritten where an actual
+checked path equates their types.
 
 The current simplifier uses explicit or registered rules and a 64-rewrite cap.
 It has bounded equality-premise search but no broader proposition simplification. The
@@ -109,7 +118,8 @@ candidate visit, including failed matches and premise search. For example,
 checking steps; its 35-token explicit predecessor has 115 checking steps in
 this one observation. Arena snapshots are cumulative kernel state, not
 per-declaration allocation. Next implementation items: measure arena deltas
-on selected real proofs and add generalized proposition `simpa`. General
+on selected real proofs and add explicit checked proposition-map support where
+no path of types is available. General
 named/implicit arguments, `apply`/`refine`, dependent hypothesis replacement,
 scoped records/notation and certified algebra normalization follow the PR
 dependencies in the implementation plan. Recheck assumptions and public theorem
@@ -120,7 +130,11 @@ types before migrating existing proofs.
 ```sh
 node tools/build-cubical-runtime.mjs
 npm test -- tests/proof-ergonomics.test.mjs tests/cubical-program.test.mjs tests/cubical-benchmark.test.mjs
-npm test -- docs/examples/proof-ergonomics/implemented/arithmetic.cubist docs/examples/proof-ergonomics/implemented/cubical.cubist docs/examples/proof-ergonomics/implemented/dependent.cubist docs/examples/proof-ergonomics/implemented/registered-simp.cubist
+npm test -- docs/examples/proof-ergonomics/current/*.cubist docs/examples/proof-ergonomics/implemented/*.cubist
+npm run test:browser
+npm run build:site
+npm run test:site
+make lint
 ```
 
 The focused JS suite checked native acceptance, formatter roundtrips, reverse
@@ -129,10 +143,12 @@ equalities, nontrivial-loop preservation, and a rejected malformed naturality
 square. It also checks imported rule scope, ambiguous named sets, exclusions,
 conditional witnesses, and fresh simplified hypothesis copies.
 The standard formatter and program/benchmark tests passed in the same session.
-The full suite passed 310 tests and checked all 3,766 concrete corpus
+The full suite passed 311 tests and checked all 3,766 concrete corpus
 declarations and 44 templates without failed, blocked, or timed-out items.
-The four new source files checked 25 declarations without axioms. The browser
-suite and `make lint` also passed. The rule-diagnostic test checks source spans
+The five implemented source files checked 30 declarations without axioms; the
+six explicit counterparts checked 19. The inspector browser suite, static
+site browser suite, and `make lint` also passed. The rule-diagnostic test checks
+source spans
 for `rw`, invalid `simp` rules, and missing conditional premises. The benchmark
 test checks that successful declarations report native steps and arena
 snapshots, while its rejected sample declarations report no final-check snapshot.
@@ -142,3 +158,6 @@ and self-justification.
 The benchmark regression also checks local `simp with` and `simp at` examples
 with inspector references disabled; local witness scope is independent of
 source-link collection.
+The type-transport test checks both directions of a supplied path of types,
+rewriting beneath a type-valued family, a frozen `simpa only` replay, and
+rejection of unrelated maps and cyclic type rules.

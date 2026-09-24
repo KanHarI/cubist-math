@@ -3,8 +3,9 @@
 Status: implementation in progress, 2026-09-24. Explicit `rw`, `calc`, `rfl`,
 `simp only`, `simpa only`, registered default/named simplification sets, grouped
 binders, expected paths, pointwise `ext`, and selected dependent path
-conveniences and bounded conditional equality rules now check through the
-native kernel. General proposition premises, broad inference, dependent
+conveniences, bounded conditional equality rules, and checked type-path
+transport for `simp`/`simpa` now check through the native kernel. General
+proposition premises, broad inference, dependent
 hypothesis replacement and structure
 notation remain planned. See the [implementation checkpoint](../tactical/proof-ergonomics-handoff.md).
 This document covers language tooling and does not resume any mathematical roadmap.
@@ -277,12 +278,13 @@ for this release.
   default rules and an error for ambiguous imported set names. A reviewed
   library default remains open.
 - [ ] Add `simp;`, `simp [rules];`, local exclusions, and broader `simpa`
-  modes backed by registered sets. The first two forms and explicit
-  `without [rules]` exclusions are implemented for
-  homogeneous equalities with registered defaults/named sets, as is
-  `simpa [rules] using term;`. The explicit homogeneous-equality form
-  `simpa only [rules] using term;` is implemented; it reconstructs the original
-  goal from the supplied equality proof and fails if an obligation remains.
+  modes backed by registered sets. These forms and explicit `without [rules]`
+  exclusions work for homogeneous equality goals. For other type-valued goals,
+  `simp` rewrites along checked paths of types and transports the following
+  proof back; `simpa` simplifies the supplied proof type and goal, transports
+  between them, and checks the result. Rewriting is limited to the root and
+  ordinary fixed-codomain applications. Arbitrary logical equivalences,
+  proposition-specific maps, and dependent contexts remain open.
 - [ ] Permit conditional rules only when every premise gets an actual checked
   witness. Explicitly selected local equality witnesses and reflexive premises
   now work, with witnesses retained in the instantiated theorem application.

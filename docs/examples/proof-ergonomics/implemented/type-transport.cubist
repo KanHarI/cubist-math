@@ -1,0 +1,29 @@
+// Checked transport through paths of types and type-valued families.
+import primes;
+
+simp_rule nat_add_zero;
+
+// A path A = B is proof data, so its direction controls transport.
+def move_type(A B : U0, p : A = B, a : A) : B {
+  simpa only [p] using a;
+}
+
+def move_type_back(A B : U0, p : A = B, b : B) : A {
+  simpa only [p] using b;
+}
+
+// Rewriting the index constructs a path P(n + 0) = P(n) in the universe.
+// simpa transports h back along that checked path.
+def family_simpa(P : Nat -> U0, n : Nat, h : P(n)) : P(n + 0) {
+  simpa only [nat_add_zero] using h;
+}
+
+def family_simp(P : Nat -> U0, n : Nat, h : P(n)) : P(n + 0) {
+  simp only [nat_add_zero];
+  exact h;
+}
+
+// The inspector can freeze this default into simpa only [nat_add_zero].
+def family_default(P : Nat -> U0, n : Nat, h : P(n)) : P(n + 0) {
+  simpa using h;
+}

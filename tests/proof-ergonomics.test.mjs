@@ -11,7 +11,7 @@ const readLibrary = name => readFile(new URL(`../web/proofs/${name}.cubist`,impo
 const sample = name => readFile(new URL(`../docs/examples/proof-ergonomics/implemented/${name}.cubist`,import.meta.url),"utf8");
 
 test("short arithmetic, cubical and dependent examples elaborate to native axiom-free proofs",async t=>{
-  for(const name of ["arithmetic","cubical","dependent"]) {
+  for(const name of ["arithmetic","cubical","dependent","type-transport"]) {
     const program=new CubicalProgram(await createCubical(),readLibrary);
     t.after(()=>program.dispose());
     const result=await program.check(await sample(name),`ergonomics_${name}`);
@@ -32,7 +32,7 @@ test("short arithmetic, cubical and dependent examples elaborate to native axiom
 });
 
 test("new proof syntax survives formatting with the same expanded AST",async()=>{
-  for(const name of ["arithmetic","cubical","dependent"]) {
+  for(const name of ["arithmetic","cubical","dependent","type-transport"]) {
     const source=await sample(name),formatted=formatMathScript(source);
     assert.equal(formatMathScript(formatted),formatted,name);
     assert.equal(expandedSyntax(parse(formatted)),expandedSyntax(parse(source)),name);
@@ -89,6 +89,40 @@ test("simpa reconstructs the original equality and rejects a false supplied term
   assert.deepEqual(result.outputs.map(d=>d.verified),[true,false]);
   assert.deepEqual(result.outputs[0].axioms,[]);
   assert.match(result.outputs[1].reason,/Type mismatch/);
+});
+
+test("simpa transports through checked paths of types without inventing equivalences",async t=>{
+  const source=await sample("type-transport");
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const checked=await program.check(source,"type_transport");
+  assert.equal(checked.complete,true,JSON.stringify(checked.gaps));
+  assert.equal(checked.outputs.length,5);
+  assert.ok(checked.outputs.every(output=>output.verified&&output.axioms.length===0));
+  const frozen=checked.links.find(link=>link.role==="simplification witness"&&link.freeze);
+  assert.equal(frozen?.freeze.text,"simpa only [nat_add_zero] using h;");
+  assert.equal(program.inspect(frozen.rewriteSteps[0].binding).type.tag,"Path");
+  const replaySource=source.slice(0,frozen.freeze.start)+frozen.freeze.text
+    +source.slice(frozen.freeze.end);
+  const replay=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>replay.dispose());
+  assert.equal((await replay.check(replaySource,"type_transport_frozen")).complete,true);
+
+  const rejected=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>rejected.dispose());
+  const bad=await rejected.check(`
+    def no_path(A B : U0, a : A) : B { simpa only [] using a; }
+    def maps_are_not_type_paths(A B : U0, f : A -> B, g : B -> A, a : A) : B {
+      simpa only [f, g] using a;
+    }
+    def nontrivial_loop(A : U0, p : A = A, a : A) : A {
+      simpa only [p] using a;
+    }
+  `,"type_transport_rejections");
+  assert.deepEqual(bad.outputs.map(output=>output.verified),[false,false,false]);
+  assert.match(bad.outputs[0].reason,/Type mismatch/);
+  assert.match(bad.outputs[1].reason,/homogeneous equality/);
+  assert.match(bad.outputs[2].reason,/cycle/);
 });
 
 test("a naturality square must preserve its varying right boundary",async t=>{

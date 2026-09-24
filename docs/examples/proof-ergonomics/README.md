@@ -10,6 +10,7 @@ file remains a design fixture, excluded from `.cubist` corpus checks.
 | [arithmetic](implemented/arithmetic.cubist) | [arithmetic.cubist](current/arithmetic.cubist) | Native checked: typed `have`, `calc`, `rw`, `simp only`, `simpa only` |
 | [cubical](implemented/cubical.cubist) | [pointwise.cubist](current/pointwise.cubist) | Native checked: expected paths, interval application, `ext` |
 | [dependent](implemented/dependent.cubist) | [dependent-transport.cubist](current/dependent-transport.cubist), [path-coherence.cubist](current/path-coherence.cubist) | Native checked: direct PathP action and explicit transport bridge |
+| [type transport](implemented/type-transport.cubist) | [type-transport.cubist](current/type-transport.cubist) | Native checked: `simpa` and `simp` along paths of types and type-valued families |
 | [registered simp](implemented/registered-simp.cubist) | [arithmetic.cubist](current/arithmetic.cubist) | Native checked: default/named sets, simplified hypothesis copy and conditional equality premises |
 | [scoped algebra](proposed/scoped-algebra.cubist.proposed) | [scoped-algebra.cubist](current/scoped-algebra.cubist) | Design only: lexical notation packs |
 
@@ -25,14 +26,20 @@ is an equality in the final fiber. Neither is interchangeable with ordinary
 `cong` without checking the fiber. `loop_action_right_unit` leaves the supplied
 loop in the final transport and needs no `IsSet` assumption.
 
+The type-transport pair makes the new non-equality `simpa` reconstruction
+explicit. A path `p : A = B` transports a value between `A` and `B`; an
+equality `n + 0 = n` lifts through a fixed-codomain family `P : Nat -> U0`
+to a path between `P(n + 0)` and `P(n)`. The simplifier does not turn two
+ordinary maps `A -> B` and `B -> A` into a path of types.
+
 ## Checks and reproducibility
 
 See the [current examples' verification record](current/README.md) for exact
 declaration counts, assumption checks, formatter results and CLI commands.
 The baseline check `npm test -- docs/examples/proof-ergonomics/current/*.cubist`
-passed: five files, 16 declarations, zero axiom dependencies. The new
+passed: six files, 19 declarations, zero axiom dependencies. The new
 `npm test -- docs/examples/proof-ergonomics/implemented/*.cubist` selection
-checks 25 declarations, also without axioms.
+checks 30 declarations, also without axioms.
 Focused rejection tests are in `tests/proof-ergonomics.test.mjs`. The complete
 roadmap remains in progress.
 
