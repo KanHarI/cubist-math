@@ -165,7 +165,8 @@ export class CubicalProgram {
         const verified = d.status === "checked-native-cubical";
         const template = d.reason?.startsWith("Universe schema:") ?? false;
         const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified, template,
-          status: d.status, reason: d.reason, unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [], start: syntax.start, end: syntax.end,
+          status: d.status, reason: d.reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
+          unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [], start: syntax.start, end: syntax.end,
           definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
           ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),
           type: verified ? cubicalText(d.type, { ...this.symbols, ...Object.fromEntries(
@@ -214,7 +215,8 @@ export class CubicalProgram {
             }
           }
         }
-        if (!verified && !template) this.gaps.push({ module: name, name: d.name, reason: d.reason });
+        if (!verified && !template) this.gaps.push({ module: name, name: d.name,
+          reason: d.reason, start: d.errorStart, end: d.errorEnd });
         if (name === main) this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
       }
       this.modules.set(name, result.env); visiting.delete(name);

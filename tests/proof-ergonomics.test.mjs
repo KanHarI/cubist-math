@@ -302,3 +302,42 @@ test("conditional simp retains an explicitly selected or reflexive premise proof
   const reflexiveLink=result.links.find(link=>link.role==="simplification witness"&&link.description?.includes("1 rewrites"));
   assert.ok(reflexiveLink);
 });
+
+test("rewrite errors identify the selected rule and explain an unproved premise",async t=>{
+  const reverseSource="def reverse(n : Nat) : n = n { rw [<- refl(n)] at lhs; }";
+  const reverseRule=parse(reverseSource).declarations[0].body[0].rules[0];
+  assert.equal(reverseSource.slice(reverseRule.start,reverseRule.end),"<- refl(n)");
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const source=`import primes;
+    def bad_rw(n : Nat) : n + 0 = n {
+      rw [nat_add_zero(n)] at lhs occurrence 2;
+    }
+    def bad_simp(n : Nat) : n = n {
+      simp only [0];
+    }
+    def zero_if(n : Nat, h : n = 0) : n + 0 = 0 {
+      calc {
+        n + 0 = n by nat_add_zero(n);
+        _ = 0 by h;
+      }
+    }
+    def missing_premise(n : Nat) : n + 0 = 0 {
+      simp only [zero_if];
+    }
+  `;
+  const result=await program.check(source,"rule_diagnostics");
+  assert.deepEqual(result.outputs.map(d=>d.verified),[false,false,true,false]);
+  for(const [name,token] of [["bad_rw","nat_add_zero(n)"],
+    ["bad_simp","[0]"],["missing_premise","[zero_if]"]]) {
+    const output=result.outputs.find(d=>d.name===name);
+    const statementStart=source.indexOf(`def ${name}`);
+    const expected=source.indexOf(token,statementStart)+(token.startsWith("[")?1:0);
+    assert.equal(output.errorStart,expected,name);
+    assert.equal(result.gaps.find(g=>g.name===name).start,expected,name);
+  }
+  assert.match(result.outputs.find(d=>d.name==="missing_premise").reason,
+    /unproved premise at parameter 2.*simp with \[name\]/);
+  assert.match(result.outputs.find(d=>d.name==="bad_rw").reason,/occurrence 2.* at \d+:\d+/);
+  assert.match(result.outputs.find(d=>d.name==="bad_simp").reason,/homogeneous equality.* at \d+:\d+/);
+});

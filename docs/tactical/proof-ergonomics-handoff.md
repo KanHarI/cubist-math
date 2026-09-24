@@ -75,9 +75,14 @@ The current simplifier uses explicit or registered rules and a 64-rewrite cap.
 It has no recursive premise solver or broader proposition simplification. The
 source inspector shows the completed checked witness, individual calculation
 and rewrite steps, and selected rule spelling.
-Error reasons do not yet carry a separate source span for each rewrite
-candidate. For a failed statement, the
-declaration itself is rejected; no metas or subgoals enter the kernel.
+Failures in an explicit `rw` or `simp` list now point to the selected rule's
+source span, including a leading `<-`. A matched conditional rule with no
+checked premise witness reports which parameter blocked it and suggests
+`simp with [name]`. Imported default rules have no rule token in the current
+file, so their failures still point to the `simp` statement. Subterm-specific
+candidate spans remain unavailable because normalized core terms do not carry
+source offsets. For a failed statement, the declaration itself is rejected;
+no metas or subgoals enter the kernel.
 
 The frontend still allocates interval slots for lexical nesting in
 `Translator.dimensionBody`; deeper liveness support needs its own regression.
@@ -92,8 +97,8 @@ reverted. These single observations are enough to reject that implementation,
 not to establish a general timing ratio. Further work should try lazy,
 shared codomain substitution and count native queries and DAG size.
 
-Next implementation items: finish per-candidate error spans and diagnostics;
-measure rewrite work and native/arena deltas on selected real proofs; add
+Next implementation items: measure rewrite work and native/arena deltas on
+selected real proofs; add
 bounded premise simplification and generalized proposition `simpa`. General
 named/implicit arguments, `apply`/`refine`, dependent hypothesis replacement,
 scoped records/notation and certified algebra normalization follow the PR
@@ -114,7 +119,8 @@ equalities, nontrivial-loop preservation, and a rejected malformed naturality
 square. It also checks imported rule scope, ambiguous named sets, exclusions,
 conditional witnesses, and fresh simplified hypothesis copies.
 The standard formatter and program/benchmark tests passed in the same session.
-The full suite passed 307 tests and checked all 3,766 concrete corpus
+The full suite passed 308 tests and checked all 3,766 concrete corpus
 declarations and 44 templates without failed, blocked, or timed-out items.
 The four new source files checked 23 declarations without axioms. The browser
-suite and `make lint` also passed.
+suite and `make lint` also passed. The rule-diagnostic test checks source spans
+for `rw`, invalid `simp` rules, and missing conditional premises.

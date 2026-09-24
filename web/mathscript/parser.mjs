@@ -369,9 +369,9 @@ export function parse(source, typeOnly = false) {
         const rules = [];
         if (peek() !== "]") while (true) {
           const reverse = peek() === "<-";
-          if (reverse) take("<-");
+          const reverseToken = reverse ? take("<-") : null;
           const value = expr();
-          rules.push({ value, reverse, start: value.start, end: value.end });
+          rules.push({ value, reverse, start: reverseToken?.start ?? value.start, end: value.end });
           if (peek() !== ",") break;
           take(",");
         }
@@ -401,9 +401,9 @@ export function parse(source, typeOnly = false) {
           take("[");
           if (peek() !== "]") while (true) {
             const reverse = peek() === "<-";
-            if (reverse) take("<-");
+            const reverseToken = reverse ? take("<-") : null;
             const value = expr();
-            rules.push({value, reverse, start:value.start, end:value.end});
+            rules.push({value, reverse, start:reverseToken?.start ?? value.start, end:value.end});
             if (peek() !== ",") break;
             take(",");
           }
