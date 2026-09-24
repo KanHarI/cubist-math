@@ -9,13 +9,15 @@ the C/WASM cubical kernel and report no axiom dependencies.
 ## Implemented source fragment
 
 - Grouped `intro x y;`, grouped typed declaration/quantifier/lambda binders,
+  including consecutive `Universe` schema parameters,
   expected-type `fun x => ...`, `have h = e;`, and `have h : T := e;`.
 - Terminal homogeneous `calc { lhs = rhs by proof; _ = ... by { ... } }` and
   `rfl;`. Each step has an actual checked path; `_` means the preceding right
   endpoint only inside `calc`.
 - `rw [p, <- q] at lhs occurrence 2;` (or `at rhs`) on homogeneous equality
   goals. Rules are fully instantiated paths, applied in source order. The
-  default target counts occurrences across left then right. Eligible occurrences use preorder
+  default target counts eligible occurrences across left then right, skipping
+  unsupported dependent positions before trying the right endpoint. Eligible occurrences use preorder
   through ordinary `App` nodes only. Each fixed result type context is checked
   as a one-hole function before path congruence is constructed.
 - `simp only [rules];` and `simpa only [rules] using proof;` for explicit instantiated or rigid first-order
@@ -68,8 +70,8 @@ the C/WASM cubical kernel and report no axiom dependencies.
   same residual goals and constructed proof up to conversion. This applies to
   `simp at`, `simp`, and `simpa`: later steps may depend on any of their paths.
   A changed conditional premise search withholds the action. It is unavailable
-  when a used imported rule has no visible name in
-  the current scope.
+  when a used imported rule has no visible name in the current scope, or when
+  a named simplification set would shadow an emitted rule name.
 
 The actual checked source files are [arithmetic](../examples/proof-ergonomics/implemented/arithmetic.cubist),
 [cubical](../examples/proof-ergonomics/implemented/cubical.cubist),
@@ -91,7 +93,9 @@ remain open. Non-equality goals can already be rewritten where an actual
 checked path equates their types.
 
 The current simplifier uses explicit or registered rules, a 64-rewrite cap, a
-512-node traversal cap and an 8,192-candidate cap per traversal.
+512-node traversal cap and an 8,192-candidate cap per traversal. Cycle-state
+serialization polls the deadline and stops at a bounded expanded size, even
+when the core term is a compact shared DAG.
 It has bounded equality-premise search but no broader proposition simplification. The
 source inspector shows the completed checked witness, individual calculation
 and rewrite steps, and selected rule spelling.
@@ -152,7 +156,7 @@ equalities, nontrivial-loop preservation, and a rejected malformed naturality
 square. It also checks imported rule scope, ambiguous named sets, exclusions,
 conditional witnesses, and fresh simplified hypothesis copies.
 The standard formatter and program/benchmark tests passed in the same session.
-The full suite passed 321 tests and checked all 3,766 concrete corpus
+The full suite passed 326 tests and checked all 3,766 concrete corpus
 declarations and 44 templates without failed, blocked, or timed-out items.
 The five implemented source files checked 30 declarations without axioms; the
 six explicit counterparts checked 19. The inspector browser suite, static
@@ -178,3 +182,7 @@ hanging, and withhold `simp at`, `simp`, and `simpa` freezes that change a path
 even when its residual equality or type goal is unchanged. Equality and
 type-path cases cover both `simp` and `simpa`; reduced lists that preserve the
 witness still appear, and their edited source checks.
+Additional review regressions check shared-term size limits, rule/set name
+collisions in frozen edits, grouped universe specialization, default `rw`
+selection past a dependent position, and distinct inspector bindings for
+template calculation steps and their source endpoints.

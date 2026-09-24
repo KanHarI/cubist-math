@@ -176,7 +176,9 @@ export class CubicalProgram {
         this.symbols[binding] = info;
         if (template) {
           const schema = result.env.get(d.name);
-          schema.parameterSite = syntax.value?.kind === "lambda" ? syntax.value.name : syntax.params[0].name;
+          schema.parameterSite = syntax.value?.kind === "lambda" ? syntax.value.name
+            : syntax.value?.kind === "binderGroup" ? syntax.value.names[0]
+            : syntax.params[0].name;
           this.templates.set(binding, schema);
           info.templateParameters = [schema.parameter];
           let body = schema.body;
@@ -307,7 +309,8 @@ export class CubicalProgram {
           templateBinding: binding, templateParameters: parameters, universes: [...levels] };
         for (const item of references) {
           if (!Number.isInteger(item.node.start)) continue;
-          const name = `${instance}__local_${item.node.start}`;
+          const name = `${instance}__local_${item.node.start}${item.node.expansionIndex
+            ? `_${item.node.role.replaceAll(" ","_")}_${item.node.expansionIndex}` : ""}`;
           this.views.set(name, { ...item, module: info.sourceModule ?? this.main, referencePrefix: instance,
             templateInspection: { binding, universes: [...levels], offset: item.node.start } });
           const target = this.symbols[item.node.schemaBinding] ?? (item.term.tag === "DefRef" ? this.symbols[item.term.name] : null);

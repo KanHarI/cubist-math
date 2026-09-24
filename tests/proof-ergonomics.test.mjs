@@ -69,13 +69,15 @@ test("rewrites retain occurrence, carrier and dependent-position obligations",as
       exact nat_add_zero(n);
     }
     def missing(n : Nat) : n + 0 = n { rw [nat_add_zero(n)] at lhs occurrence 2; }
+    def missing_default(n : Nat) : n + 0 = n { rw [nat_add_zero(n)] occurrence 2; }
     def dependent(A : U0, C : A -> U0, f : forall a : A, C(a), x : A, y : A, p : x = y) :
       f(x) = f(x) { rw [p] at lhs; }
     def after : 0 = 0 { rfl; }
   `,"rewrite_rejections");
-  assert.deepEqual(result.outputs.map(d=>d.verified),[true,true,true,true,false,false,true]);
+  assert.deepEqual(result.outputs.map(d=>d.verified),[true,true,true,true,false,false,false,true]);
   assert.match(result.outputs[4].reason,/occurrence 2/);
-  assert.match(result.outputs[5].reason,/unsupported dependent position/);
+  assert.match(result.outputs[5].reason,/occurrence 2 was not found \(1 eligible matches\)/);
+  assert.match(result.outputs[6].reason,/unsupported dependent position/);
 });
 
 test("simp stops on cycles and does not equate a loop with reflexivity",async t=>{
@@ -91,6 +93,28 @@ test("simp stops on cycles and does not equate a loop with reflexivity",async t=
   assert.match(result.outputs[0].reason,/cycle|budget/);
   assert.match(result.outputs[1].reason,/unresolved equality/);
   assert.match(result.outputs[2].reason,/unresolved equality/);
+});
+
+test("simp size budget interrupts serialization of a compact shared term",()=>{
+  const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
+  const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
+  const script=`import createCubical from ${JSON.stringify(wasm)};
+    import {CubicalProgram} from ${JSON.stringify(program)};
+    let source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 = n;";
+    for(let i=1;i<=24;i++)source+="let t"+i+" = f(t"+(i-1)+", t"+(i-1)+");";
+    source+="have h : t24 = t24 { simp only []; } rfl; }";
+    const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
+      {collectReferences:false});
+    try {
+      const result=await checker.check(source,"shared_simp_budget");
+      console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));
+    } finally {checker.dispose();}`;
+  const child=spawnSync(process.execPath,["--max-old-space-size=96","--input-type=module","-e",script],
+    {encoding:"utf8",timeout:1000});
+  assert.equal(child.error,undefined,child.stderr);
+  assert.equal(child.status,0,child.stderr);
+  assert.deepEqual(JSON.parse(child.stdout.trim()).map(output=>output.verified),[false]);
+  assert.match(child.stdout,/Simplification term-size budget exceeded/);
 });
 
 test("simpa reconstructs the original equality and rejects a false supplied term",async t=>{
@@ -204,6 +228,24 @@ test("freeze is withheld when removing a rule changes conditional premise search
   const link=result.links.find(item=>item.role==="simplification witness");
   assert.ok(link);
   assert.equal(link.freeze,null);
+});
+
+test("freeze withholds a rule name shadowed by a named simplification set",async t=>{
+  const source=`import primes;
+    simp_rule nat_add_zero;
+    simp_set nat_add_zero = [];
+    def checked(n : Nat) : n + 0 = n { simp; }
+  `;
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const result=await program.check(source,"simp_freeze_set_collision");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  assert.equal(result.links.find(item=>item.role==="simplification witness")?.freeze,null);
+  const edited=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>edited.dispose());
+  const broken=await edited.check(source.replace("simp;","simp only [nat_add_zero];"),
+    "simp_freeze_set_collision_edited");
+  assert.equal(broken.outputs[0].verified,false);
 });
 
 test("freezing a simplified hypothesis preserves its witness for dependent proofs",async t=>{
@@ -329,6 +371,50 @@ test("a grouped binder checks its shared domain before a binder shadows that nam
     def quantified : forall A B : U0, A -> B -> A { intro A B x y; exact x; }
   `,"group_shadowing");
   assert.deepEqual(result.outputs.map(d=>d.verified),[true,true,true,true,true]);
+});
+
+test("grouped universe parameters specialize like separate universe binders",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const result=await program.check(`
+    def separate(U : Universe, V : Universe, A : U, B : V, x : A, y : B) = x;
+    def grouped(U V : Universe, A : U, B : V, x : A, y : B) = x;
+    def use_separate = separate(U0, U1, Nat, U0, 0, Nat);
+    def use_grouped = grouped(U0, U1, Nat, U0, 0, Nat);
+  `,"grouped_universes");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  assert.deepEqual(result.outputs.map(item=>item.template),[true,true,false,false]);
+  assert.deepEqual(result.outputs.slice(2).map(item=>item.verified),[true,true]);
+  assert.equal(program.inspect("grouped_universes__grouped",{universes:[0,1]}).type.tag,"Pi");
+});
+
+test("rw skips an unsupported left occurrence to reach an eligible right one",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const params=`A : U0, C : A -> U0, f : forall a : A, C(a), x y : A,
+    k : A -> C(x), p : x = y, h : f(x) = k(y)`;
+  const result=await program.check(`
+    def default_target(${params}) : f(x) = k(x) { rw [p]; exact h; }
+    def explicit_target(${params}) : f(x) = k(x) { rw [p] at rhs; exact h; }
+  `,"rewrite_eligible_rhs");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  assert.ok(result.outputs.every(item=>item.verified&&item.axioms.length===0));
+});
+
+test("template inspection keeps calc endpoints separate from step witnesses",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const source=`import primes;
+    def generic(U : Universe, n : Nat) : n + 0 = n {
+      calc { n + 0 = n by nat_add_zero(n); }
+    }`;
+  const result=await program.check(source,"template_calc");
+  const offset=source.indexOf("n + 0 = n by");
+  const link=result.links.find(item=>item.role==="template reference"&&item.start===offset);
+  assert.ok(link);
+  assert.equal(program.inspect(link.binding).type.tag,"Nat");
+  const step=`template_calc__generic__inspect_U0__local_${offset}_calculation_step_1`;
+  assert.equal(program.inspect(step).type.tag,"Path");
 });
 
 test("normal program checking rolls back a failed universe specialization",async t=>{
