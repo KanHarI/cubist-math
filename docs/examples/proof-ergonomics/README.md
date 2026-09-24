@@ -44,11 +44,14 @@ node docs/examples/proof-ergonomics/measure.mjs
 ```
 
 This overwrites `baseline.json` with source hashes, token/line counts, machine
-and revision metadata, one timing observation per selected declaration, and
-import-graph status. It does not overwrite the site's benchmark report. Review
-the JSON diff before retaining a newer baseline. The snapshot explicitly lists
-unmeasured quantities; timings are not estimates of future speedups. Hashes pin
-the source of inferred theorem statements without serializing normalized types.
+and revision metadata, one timing observation, aggregate native checking steps
+per declaration, the kernel arena snapshot at each final check, and import-graph
+status. The arena snapshots include earlier retained terms; they are not
+per-declaration memory deltas. The script does not overwrite the site's
+benchmark report. Review the JSON diff before retaining a newer baseline. The
+snapshot explicitly lists unmeasured quantities; timings are not estimates of
+future speedups. Hashes pin the source of inferred theorem statements without
+serializing normalized types.
 PR 1 must additionally preserve checked signatures and assumption inventories.
 
 ## Rejection examples and remaining acceptance tests

@@ -97,9 +97,12 @@ reverted. These single observations are enough to reject that implementation,
 not to establish a general timing ratio. Further work should try lazy,
 shared codomain substitution and count native queries and DAG size.
 
-Next implementation items: measure rewrite work and native/arena deltas on
-selected real proofs; add
-bounded premise simplification and generalized proposition `simpa`. General
+The selected 28-module baseline now records per-declaration native checking
+steps and a final-check arena snapshot: 497 checked declarations and 24
+templates. These snapshots are cumulative kernel state, not per-declaration
+allocation. Next implementation items: measure rewrite candidate work and
+arena deltas on selected real proofs; add bounded premise simplification and
+generalized proposition `simpa`. General
 named/implicit arguments, `apply`/`refine`, dependent hypothesis replacement,
 scoped records/notation and certified algebra normalization follow the PR
 dependencies in the implementation plan. Recheck assumptions and public theorem
@@ -123,4 +126,6 @@ The full suite passed 308 tests and checked all 3,766 concrete corpus
 declarations and 44 templates without failed, blocked, or timed-out items.
 The four new source files checked 23 declarations without axioms. The browser
 suite and `make lint` also passed. The rule-diagnostic test checks source spans
-for `rw`, invalid `simp` rules, and missing conditional premises.
+for `rw`, invalid `simp` rules, and missing conditional premises. The benchmark
+test checks that successful declarations report native steps and arena
+snapshots, while its rejected sample declarations report no final-check snapshot.

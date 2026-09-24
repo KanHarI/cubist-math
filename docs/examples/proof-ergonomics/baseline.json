@@ -1,16 +1,17 @@
 {
-  "version": 1,
-  "generatedAt": "2026-09-24T06:59:23.925Z",
-  "revision": "ff415a3ccea4012616663c511b7a19268b639d67",
+  "version": 2,
+  "generatedAt": "2026-09-24T08:27:58.385Z",
+  "revision": "d44d5d9a12f63dd0f9465c616e9411c7cddbc7ed",
   "dirty": true,
   "runtime": "v24.13.0",
   "cpu": "Apple M3 Pro",
-  "method": "One selected import graph in source order with imports checked once, references disabled, no normalization request, native declaration transactions. Elapsed times include elaboration and checking, exclude import parsing, and are a single observation, not a statistical baseline or speedup claim. Tokens exclude comments, whitespace and EOF.",
+  "method": "One selected import graph in source order with imports checked once, references disabled, no normalization request, native declaration transactions. Elapsed times include elaboration and checking, exclude import parsing, and are a single observation, not a statistical baseline or speedup claim. Native checking steps count every checker query during each declaration. Arena nodes/bytes snapshot the kernel at the final check, including earlier retained terms; they are not a per-declaration delta or peak. Tokens exclude comments, whitespace and EOF.",
   "unmeasured": [
-    "per-declaration aggregate checking/reduction steps",
+    "aggregate reduction steps",
     "peak temporary arena",
     "retained arena delta",
     "generated proof DAG size",
+    "rewrite candidate visits",
     "repeated explicit parameter count",
     "repeated-run variance"
   ],
@@ -29,7 +30,7 @@
       "failed": 0,
       "template": 24
     },
-    "elapsedSeconds": 0.57
+    "elapsedSeconds": 0.6
   },
   "selected": [
     {
@@ -45,7 +46,10 @@
         "module": "primes",
         "name": "nat_add_assoc",
         "category": "checked",
-        "elapsedMs": 1.606,
+        "elapsedMs": 0.845,
+        "nativeCheckingSteps": 256,
+        "finalCheckArenaNodes": 569,
+        "finalCheckArenaBytes": 1868544,
         "line": 86
       }
     },
@@ -62,7 +66,10 @@
         "module": "paths",
         "name": "right_unit",
         "category": "checked",
-        "elapsedMs": 0.307,
+        "elapsedMs": 0.282,
+        "nativeCheckingSteps": 38,
+        "finalCheckArenaNodes": 2838,
+        "finalCheckArenaBytes": 1966848,
         "line": 77
       }
     },
@@ -79,7 +86,10 @@
         "module": "finite_dependent_counts",
         "name": "finite_uniform_fiber_count",
         "category": "checked",
-        "elapsedMs": 21.564,
+        "elapsedMs": 22.62,
+        "nativeCheckingSteps": 3362,
+        "finalCheckArenaNodes": 15940,
+        "finalCheckArenaBytes": 2362368,
         "line": 55
       }
     },
@@ -96,7 +106,10 @@
         "module": "group_operations",
         "name": "group_conjugate_multiply",
         "category": "checked",
-        "elapsedMs": 4.7,
+        "elapsedMs": 4.277,
+        "nativeCheckingSteps": 1698,
+        "finalCheckArenaNodes": 16836,
+        "finalCheckArenaBytes": 2889728,
         "line": 109
       }
     },
@@ -113,7 +126,10 @@
         "module": "field_vector_spaces",
         "name": "field_scalar_laws",
         "category": "checked",
-        "elapsedMs": 5.216,
+        "elapsedMs": 5.674,
+        "nativeCheckingSteps": 3648,
+        "finalCheckArenaNodes": 32861,
+        "finalCheckArenaBytes": 3944448,
         "line": 46
       }
     }

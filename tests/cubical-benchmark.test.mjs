@@ -9,6 +9,16 @@ test("benchmark distinguishes invalid proofs, blocked uses, and independent chec
     "def good = 0; def bad : 0 = 1 { exact refl(0); } def dependent = bad; def independent = 2;" });
   assert.deepEqual(report.declarations.map(d => d.category), ["checked", "failed", "blocked", "checked"]);
   assert.equal(report.declarations[2].rootBlocker, "sample__bad");
+  for(const row of report.declarations) {
+    assert.ok(Number.isSafeInteger(row.nativeCheckingSteps)&&row.nativeCheckingSteps>=0);
+    if(row.category==="checked") {
+      assert.ok(row.finalCheckArenaNodes>0);
+      assert.ok(row.finalCheckArenaBytes>0);
+    } else {
+      assert.equal(row.finalCheckArenaNodes,null);
+      assert.equal(row.finalCheckArenaBytes,null);
+    }
+  }
   assert.equal(report.importErrors.length, 0);
 });
 

@@ -21,19 +21,23 @@ export async function benchmark({ modules = [...sourceModules, ...cubicalSourceM
   onResult = () => {}, onSnapshot = () => {} } = {}) {
   if (!Number.isFinite(limitMs) || limitMs <= 0) throw new Error("The declaration limit must be a positive number of milliseconds.");
   const started = performance.now(), declarations = [];
-  let declarationStart, transaction;
+  let declarationStart, declarationStartSteps, transaction;
   const program = new CubicalProgram(await createCubical(), readSource, {
     collectReferences: false, optimizations, manageTransactions: false,
-    onDeclarationStart() {
+    onDeclarationStart(_module,_syntax,checker) {
       transaction = new CubicalDeclarationTransaction(program.kernel,program.checker);
       declarationStart = performance.now();
+      declarationStartSteps = checker.steps;
       program.kernel.setDeadline(limitMs);
     },
-    onDeclaration(module, syntax, result) {
+    onDeclaration(module, syntax, result, checker) {
       const elapsedMs = performance.now() - declarationStart;
       program.kernel.setDeadline();
       const row = { binding: `${module}__${result.name}`, module, name: result.name,
         category: category(result, elapsedMs, limitMs), elapsedMs: +elapsedMs.toFixed(3),
+        nativeCheckingSteps: checker.steps-declarationStartSteps,
+        finalCheckArenaNodes: result.native?.arenaNodes ?? null,
+        finalCheckArenaBytes: result.native?.arenaBytes ?? null,
         reason: result.reason, blockedBy: result.blockedBy,
         line: program.sources[module].slice(0, syntax.start).split("\n").length };
       if (row.category === "optimize") {

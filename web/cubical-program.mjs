@@ -92,7 +92,7 @@ export class CubicalProgram {
         onDeclarationStart: declaration => {
           if (this.manageTransactions) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
           try {
-            this.onDeclarationStart?.(name, declaration);
+            this.onDeclarationStart?.(name, declaration, checker);
             onProgress({ completed: this.completed, total,
               current: `${name}.${declaration.name.text}`, phase: "checking", unit: "declarations", instructions: checker.steps });
           } catch(error) {
@@ -103,7 +103,7 @@ export class CubicalProgram {
         },
         onReference: this.collectReferences ? (node, term, context, dimensions, aliases) => pending.push({ node, term, context, dimensions, aliases, unfoldingHints: [...this.kernel.unfoldingHints] }) : null,
         onDeclaration: (declaration, result) => {
-          try {this.onDeclaration?.(name, declaration, result);}
+          try {this.onDeclaration?.(name, declaration, result, checker);}
           catch(error) {
             transaction?.finish(false);
             transaction=null;
