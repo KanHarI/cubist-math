@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {spawnSync} from "node:child_process";
 import {readFile} from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
@@ -36,6 +37,19 @@ test("new proof syntax survives formatting with the same expanded AST",async()=>
     const source=await sample(name),formatted=formatMathScript(source);
     assert.equal(formatMathScript(formatted),formatted,name);
     assert.equal(expandedSyntax(parse(formatted)),expandedSyntax(parse(source)),name);
+  }
+});
+
+test("incomplete grouped binders and introductions fail without hanging the parser",()=>{
+  const parser=new URL("../web/mathscript/parser.mjs",import.meta.url).href;
+  for(const source of ["def f(x","def f : forall x","def f = fun (x",
+    "def f : Nat { intro x"]) {
+    const script=`import {parse} from ${JSON.stringify(parser)}; parse(process.argv[1]);`;
+    const child=spawnSync(process.execPath,["--input-type=module","-e",script,source],
+      {encoding:"utf8",timeout:1000});
+    assert.equal(child.error,undefined,source);
+    assert.notEqual(child.status,0,source);
+    assert.match(child.stderr,/Expected a name\./,source);
   }
 });
 
@@ -190,6 +204,37 @@ test("freeze is withheld when removing a rule changes conditional premise search
   const link=result.links.find(item=>item.role==="simplification witness");
   assert.ok(link);
   assert.equal(link.freeze,null);
+});
+
+test("freezing a simplified hypothesis preserves its witness for dependent proofs",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const source=`import primes;
+    def dependent(f g k : Nat -> Nat, a b : Nat,
+      c : forall n : Nat, g(n) = n -> f(n) = k(n),
+      divert : g(a) = b, unit : forall n : Nat, g(n) = n,
+      fallback : f(a) = k(a), h : f(a) + f(b) = k(a) + k(b)) : 0 = 0 {
+      simp only [c, divert, unit, fallback] at h as h1;
+      simp [c, divert, unit, fallback] at h as h2;
+      have stable : h2 = h1 { rfl; }
+      rfl;
+    }
+    def stable(n : Nat, h : n + 0 = n, unused : 2 = 3) : n = n {
+      simp [h, unused] at h as h2;
+      exact h2;
+    }
+  `;
+  const result=await program.check(source,"simp_freeze_witness");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  const links=result.links.filter(item=>item.role==="simplification witness");
+  assert.equal(links.length,3);
+  assert.equal(links[1].freeze,null);
+  assert.equal(links[2].freeze?.text,"simp only [h] at h as h2;");
+  const edit=links[2].freeze;
+  const replay=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>replay.dispose());
+  assert.equal((await replay.check(source.slice(0,edit.start)+edit.text+source.slice(edit.end),
+    "simp_freeze_witness_replay")).complete,true);
 });
 
 test("a naturality square must preserve its varying right boundary",async t=>{

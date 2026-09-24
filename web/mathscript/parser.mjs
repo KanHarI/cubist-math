@@ -36,7 +36,7 @@ export function parse(source, typeOnly = false) {
   }
   function name() {
     const t = take();
-    if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
+    if (t.text === "EOF" || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
       throw Object.assign(new Error("Expected a name."), { offset: t.start });
     return t;
   }

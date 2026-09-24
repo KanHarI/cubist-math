@@ -303,7 +303,9 @@ for this release.
   explicit `simp only` list of the lemmas actually used. The inspector offers
   the action only when every used rule has a name in the current source scope;
   the edited source is checked again immediately. Removing unused rules must
-  reproduce the same residual goals before the action appears.
+  reproduce the same residual goals before the action appears. For a copied
+  hypothesis, the edit must also reproduce its proof witness up to conversion;
+  later proof steps may depend on the particular path.
 
 Completion: imports cannot leak local rules; unrelated unused rules add no
 axiom dependencies to a proof; changes to a rule invalidate affected results;

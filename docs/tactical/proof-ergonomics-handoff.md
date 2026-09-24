@@ -65,8 +65,10 @@ the C/WASM cubical kernel and report no axiom dependencies.
   “Replace with simp only” action preserves rule order, lists only rules that
   fired, and rechecks the edited source. Before offering a reduced list, the
   elaborator also repeats simplification with just those rules and requires the
-  same residual goals; a changed conditional premise search withholds the
-  action. It is unavailable when a used imported rule has no visible name in
+  same residual goals. For `simp at`, it additionally requires the same
+  simplified proof witness up to conversion, since later steps may depend on
+  that path. A changed conditional premise search withholds the action. It is
+  unavailable when a used imported rule has no visible name in
   the current scope.
 
 The actual checked source files are [arithmetic](../examples/proof-ergonomics/implemented/arithmetic.cubist),
@@ -150,7 +152,7 @@ equalities, nontrivial-loop preservation, and a rejected malformed naturality
 square. It also checks imported rule scope, ambiguous named sets, exclusions,
 conditional witnesses, and fresh simplified hypothesis copies.
 The standard formatter and program/benchmark tests passed in the same session.
-The full suite passed 315 tests and checked all 3,766 concrete corpus
+The full suite passed 317 tests and checked all 3,766 concrete corpus
 declarations and 44 templates without failed, blocked, or timed-out items.
 The five implemented source files checked 30 declarations without axioms; the
 six explicit counterparts checked 19. The inspector browser suite, static
@@ -171,3 +173,7 @@ Four review regressions now cover children-first rule selection on equality and
 type goals, skipping an incompatible quantified candidate, lexical rule scope
 in universe-template specialization and inspection, and withholding a freeze
 whose reduced rules change conditional premise search.
+Two further regressions reject truncated grouped binders and introductions
+without hanging, and withhold a `simp at` freeze that changes the copied path
+even when its residual equality type is unchanged. A freeze that preserves the
+copied witness still appears and checks after replacement.
