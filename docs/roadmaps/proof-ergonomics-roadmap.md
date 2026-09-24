@@ -175,6 +175,9 @@ Small syntax conveniences in 0 can ship independently of the simplifier.
   `group_operations`, and `field_vector_spaces`. Record source token counts,
   repeated explicit parameters, checking time, kernel steps, and arena usage.
   Keep the original public statements and assumption lists as a baseline.
+  The selected graph now records tokens, elapsed time, native checking steps,
+  rewrite candidate work and final-check arena snapshots; parameter repetition,
+  per-declaration arena deltas and signature/assumption inventories remain.
 - [x] Add grouped introductions, such as `intro A x h;`, by expansion to
   existing introductions, preserving an inspectable context at each binder.
 - [x] Add grouped typed binders, such as `(x y : A)`, and multi-binder lambdas.
@@ -237,7 +240,9 @@ the previous checked state intact.
   Diagnose an unfinished block with that residual goal.
 - [ ] Bound rewrite count, matching work, generated term size, and elapsed
   work; support worker cancellation. Detect repeated states and report the
-  rules involved. A loop or exhausted budget never counts as success.
+  rules involved. A loop or exhausted budget never counts as success. The
+  current traversal and premise-search budgets are recorded per declaration,
+  including failed candidates; broader cancellation and diagnostics remain.
 - [ ] Keep associativity, commutativity, distributivity, and expanding
   definitions out of automatic default normalization. Explicit cyclic lists
   must still terminate with a useful failure.

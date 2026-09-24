@@ -101,10 +101,15 @@ not to establish a general timing ratio. Further work should try lazy,
 shared codomain substitution and count native queries and DAG size.
 
 The selected 28-module baseline now records per-declaration native checking
-steps and a final-check arena snapshot: 497 checked declarations and 24
-templates. These snapshots are cumulative kernel state, not per-declaration
-allocation. Next implementation items: measure rewrite candidate work and
-arena deltas on selected real proofs; add generalized proposition `simpa`. General
+steps, rewrite-work counters and a final-check arena snapshot: 497 checked
+declarations and 24 templates. A separate explicit/ergonomic workload checks
+19 example declarations and records every attempted rewrite traversal and
+candidate visit, including failed matches and premise search. For example,
+`add_zero_twice_simp` has 25 source tokens, 13 candidate visits and 309 native
+checking steps; its 35-token explicit predecessor has 115 checking steps in
+this one observation. Arena snapshots are cumulative kernel state, not
+per-declaration allocation. Next implementation items: measure arena deltas
+on selected real proofs and add generalized proposition `simpa`. General
 named/implicit arguments, `apply`/`refine`, dependent hypothesis replacement,
 scoped records/notation and certified algebra normalization follow the PR
 dependencies in the implementation plan. Recheck assumptions and public theorem
@@ -124,7 +129,7 @@ equalities, nontrivial-loop preservation, and a rejected malformed naturality
 square. It also checks imported rule scope, ambiguous named sets, exclusions,
 conditional witnesses, and fresh simplified hypothesis copies.
 The standard formatter and program/benchmark tests passed in the same session.
-The full suite passed 309 tests and checked all 3,766 concrete corpus
+The full suite passed 310 tests and checked all 3,766 concrete corpus
 declarations and 44 templates without failed, blocked, or timed-out items.
 The four new source files checked 25 declarations without axioms. The browser
 suite and `make lint` also passed. The rule-diagnostic test checks source spans
@@ -134,3 +139,6 @@ snapshots, while its rejected sample declarations report no final-check snapshot
 The nested-premise test checks two levels of native-checked witness
 reconstruction through both `simp` and `simpa`, and rejects missing base rules
 and self-justification.
+The benchmark regression also checks local `simp with` and `simp at` examples
+with inspector references disabled; local witness scope is independent of
+source-link collection.

@@ -161,6 +161,10 @@ test("registered default and named sets retain checked proofs and format stably"
   assert.equal(result.complete,true,JSON.stringify(result.gaps));
   assert.equal(result.outputs.length,9);
   assert.ok(result.outputs.every(d=>d.verified&&d.axioms.length===0));
+  const work=result.outputs.find(d=>d.name==="recursive_premise").rewriteWork;
+  assert.ok(work.traversals>work.successfulRewrites);
+  assert.ok(work.candidateVisits>=work.traversals);
+  assert.ok(work.premiseAttempts>0&&work.premiseProofs>0&&work.premiseRewriteSteps>0);
   const choices=result.links.filter(link=>link.role==="simplification witness"&&link.freeze);
   assert.equal(choices.length,6);
   const recursive=choices.find(choice=>choice.freeze.original==="simp;"
@@ -341,6 +345,8 @@ test("conditional premise simplification is bounded and keeps nested witnesses",
   assert.deepEqual(result.outputs[3].axioms,[]);
   for(const output of result.outputs.slice(4))
     assert.match(output.reason,/unproved premise/);
+  assert.ok(result.outputs[4].rewriteWork.premiseAttempts>0);
+  assert.equal(result.outputs[4].rewriteWork.premiseProofs,0);
   const step=result.links.find(link=>link.role==="simplification step"
     &&link.description.includes("using outer"));
   assert.match(step?.description??"",/Premise simplified using inner, nat_add_zero/);

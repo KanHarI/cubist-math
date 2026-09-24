@@ -1,17 +1,16 @@
 {
-  "version": 2,
-  "generatedAt": "2026-09-24T08:27:58.385Z",
-  "revision": "d44d5d9a12f63dd0f9465c616e9411c7cddbc7ed",
+  "version": 3,
+  "generatedAt": "2026-09-24T08:57:15.302Z",
+  "revision": "540409abf0b11d49916215efccd49ea0ab391108",
   "dirty": true,
   "runtime": "v24.13.0",
   "cpu": "Apple M3 Pro",
-  "method": "One selected import graph in source order with imports checked once, references disabled, no normalization request, native declaration transactions. Elapsed times include elaboration and checking, exclude import parsing, and are a single observation, not a statistical baseline or speedup claim. Native checking steps count every checker query during each declaration. Arena nodes/bytes snapshot the kernel at the final check, including earlier retained terms; they are not a per-declaration delta or peak. Tokens exclude comments, whitespace and EOF.",
+  "method": "One selected import graph in source order with imports checked once, references disabled, no normalization request, native declaration transactions. Elapsed times include elaboration and checking, exclude import parsing, and are a single observation, not a statistical baseline or speedup claim. Native checking steps count every checker query during each declaration. Rewrite work counts all attempted traversals and candidate nodes, including failed matches and premise search. Arena nodes/bytes snapshot the kernel at the final check, including earlier retained terms; they are not a per-declaration delta or peak. Tokens exclude comments, whitespace and EOF.",
   "unmeasured": [
     "aggregate reduction steps",
     "peak temporary arena",
     "retained arena delta",
     "generated proof DAG size",
-    "rewrite candidate visits",
     "repeated explicit parameter count",
     "repeated-run variance"
   ],
@@ -46,8 +45,17 @@
         "module": "primes",
         "name": "nat_add_assoc",
         "category": "checked",
-        "elapsedMs": 0.845,
+        "elapsedMs": 0.813,
         "nativeCheckingSteps": 256,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
         "finalCheckArenaNodes": 569,
         "finalCheckArenaBytes": 1868544,
         "line": 86
@@ -66,8 +74,17 @@
         "module": "paths",
         "name": "right_unit",
         "category": "checked",
-        "elapsedMs": 0.282,
+        "elapsedMs": 0.259,
         "nativeCheckingSteps": 38,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
         "finalCheckArenaNodes": 2838,
         "finalCheckArenaBytes": 1966848,
         "line": 77
@@ -86,8 +103,17 @@
         "module": "finite_dependent_counts",
         "name": "finite_uniform_fiber_count",
         "category": "checked",
-        "elapsedMs": 22.62,
+        "elapsedMs": 21.734,
         "nativeCheckingSteps": 3362,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
         "finalCheckArenaNodes": 15940,
         "finalCheckArenaBytes": 2362368,
         "line": 55
@@ -106,8 +132,17 @@
         "module": "group_operations",
         "name": "group_conjugate_multiply",
         "category": "checked",
-        "elapsedMs": 4.277,
+        "elapsedMs": 4.294,
         "nativeCheckingSteps": 1698,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
         "finalCheckArenaNodes": 16836,
         "finalCheckArenaBytes": 2889728,
         "line": 109
@@ -126,8 +161,17 @@
         "module": "field_vector_spaces",
         "name": "field_scalar_laws",
         "category": "checked",
-        "elapsedMs": 5.674,
+        "elapsedMs": 6.097,
         "nativeCheckingSteps": 3648,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
         "finalCheckArenaNodes": 32861,
         "finalCheckArenaBytes": 3944448,
         "line": 46

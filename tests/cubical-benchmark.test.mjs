@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { benchmark, category } from "../web/benchmark-runner.mjs";
@@ -11,6 +12,8 @@ test("benchmark distinguishes invalid proofs, blocked uses, and independent chec
   assert.equal(report.declarations[2].rootBlocker, "sample__bad");
   for(const row of report.declarations) {
     assert.ok(Number.isSafeInteger(row.nativeCheckingSteps)&&row.nativeCheckingSteps>=0);
+    assert.deepEqual(row.rewriteWork,{traversals:0,candidateVisits:0,eligibleMatches:0,
+      successfulRewrites:0,premiseAttempts:0,premiseProofs:0,premiseRewriteSteps:0});
     if(row.category==="checked") {
       assert.ok(row.finalCheckArenaNodes>0);
       assert.ok(row.finalCheckArenaBytes>0);
@@ -86,4 +89,16 @@ test("benchmark reports the selected deadline and optimizations and rejects inva
   assert.deepEqual(report.optimizations, optimizations);
   assert.equal(report.counts.checked, 1);
   for (const limitMs of [0, -1, NaN, Infinity]) await assert.rejects(benchmark({ limitMs }), /positive number/);
+});
+
+test("benchmark checks local simp witnesses without collecting inspector references",async()=>{
+  const report=await benchmark({modules:["ergonomics_registered"],limitMs:1000,
+    readSource:name=>readFile(name==="ergonomics_registered"
+      ? new URL("../docs/examples/proof-ergonomics/implemented/registered-simp.cubist",import.meta.url)
+      : new URL(`../web/proofs/${name}.cubist`,import.meta.url),"utf8")});
+  assert.equal(report.counts.failed,0,JSON.stringify(report.declarations.filter(d=>d.category==="failed")));
+  for(const name of ["simplified_copy","conditional_rewrite","recursive_premise"])
+    assert.equal(report.declarations.find(d=>d.name===name)?.category,"checked",name);
+  const work=report.declarations.find(d=>d.name==="recursive_premise").rewriteWork;
+  assert.ok(work.candidateVisits>0&&work.premiseAttempts>0&&work.premiseProofs>0);
 });

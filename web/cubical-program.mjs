@@ -166,6 +166,7 @@ export class CubicalProgram {
         const template = d.reason?.startsWith("Universe schema:") ?? false;
         const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified, template,
           status: d.status, reason: d.reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
+          rewriteWork: d.rewriteWork,
           unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [], start: syntax.start, end: syntax.end,
           definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
           ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),

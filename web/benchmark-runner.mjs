@@ -36,6 +36,7 @@ export async function benchmark({ modules = [...sourceModules, ...cubicalSourceM
       const row = { binding: `${module}__${result.name}`, module, name: result.name,
         category: category(result, elapsedMs, limitMs), elapsedMs: +elapsedMs.toFixed(3),
         nativeCheckingSteps: checker.steps-declarationStartSteps,
+        rewriteWork: result.rewriteWork,
         finalCheckArenaNodes: result.native?.arenaNodes ?? null,
         finalCheckArenaBytes: result.native?.arenaBytes ?? null,
         reason: result.reason, blockedBy: result.blockedBy,

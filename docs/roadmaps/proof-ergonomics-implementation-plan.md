@@ -379,15 +379,20 @@ is predictable source-to-proof construction with fewer redundant parameters.
 The initial [source/benchmark snapshot](../examples/proof-ergonomics/baseline.json)
 selects `nat_add_assoc`, `right_unit`, `finite_uniform_fiber_count`,
 `group_conjugate_multiply`, and `field_scalar_laws`. It records source tokens
-using the current tokenizer and one timing observation; it is not a speedup
+using the current tokenizer, native checking steps, rewrite candidate work,
+final-check arena snapshots and one timing observation; it is not a speedup
 claim. The selected import graph checked 497 concrete declarations and 24
 templates with no failed, blocked or timed-out entries at a 1 s limit.
+The separate [rewrite-work snapshot](../examples/proof-ergonomics/rewrite-work.json)
+checks 19 paired explicit and ergonomic declarations, including conditional
+premise search, with inspector references disabled.
 
 Before PR 1 completion, extend measurement to repeated explicit carrier/endpoint
-arguments, aggregate kernel-step deltas, generated DAG size, peak temporary
-arena use and retained arena use after compaction. The existing benchmark rows
-only contain elapsed time/status; `infer().native.arenaNodes` alone is a session
-snapshot, not a per-declaration peak. Record instrumentation definitions, source
+arguments, aggregate reduction-step deltas, generated DAG size, peak temporary
+arena use and retained arena use after compaction. The benchmark now records
+per-declaration native checking-step deltas and attempted rewrite traversals;
+`infer().native.arenaNodes` is still a cumulative session snapshot, not a
+per-declaration peak or delta. Record instrumentation definitions, source
 revision, options and machine. Use repeated runs with warm-up, medians and
 variance; preserve the raw samples. Compare statement types by native conversion
 and explicit assumption lists. Recheck proof-dependent consumers as well.

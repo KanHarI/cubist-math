@@ -1,0 +1,435 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-24T08:56:45.790Z",
+  "revision": "540409abf0b11d49916215efccd49ea0ab391108",
+  "dirty": true,
+  "runtime": "v24.13.0",
+  "cpu": "Apple M3 Pro",
+  "method": "One checked import graph, source order, imports shared, inspector references disabled, one 1000 ms deadline per declaration. Candidate visits count every term node considered by rw/simp, including failed rule traversals and premise search. Native steps count checker queries. Arena values snapshot the cumulative kernel at the final check; they are not allocation deltas. Elapsed times are one observation and not a speedup estimate.",
+  "modules": {
+    "ergonomics_current": {
+      "path": "docs/examples/proof-ergonomics/current/arithmetic.cubist",
+      "sha256": "06d5e0f007723c2bdd30ff025b1e61b614196f86ee1dcf9059a6d318c24617e1"
+    },
+    "ergonomics_implemented": {
+      "path": "docs/examples/proof-ergonomics/implemented/arithmetic.cubist",
+      "sha256": "c0929463bcf555921f73765807834fe9851e79b04960a9df6a5db8b1d9f4c1be"
+    },
+    "ergonomics_registered": {
+      "path": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist",
+      "sha256": "7b5f456bad48ae5eb7ef1602028862e07ca5504d1fbfa064d06e825340cdf6c4"
+    }
+  },
+  "graph": {
+    "modules": 4,
+    "counts": {
+      "checked": 61,
+      "optimize": 0,
+      "blocked": 0,
+      "failed": 0,
+      "template": 0
+    },
+    "elapsedSeconds": 0.11
+  },
+  "selected": [
+    {
+      "binding": "ergonomics_current__add_zero_twice",
+      "module": "ergonomics_current",
+      "name": "add_zero_twice",
+      "category": "checked",
+      "elapsedMs": 1.738,
+      "nativeCheckingSteps": 115,
+      "rewriteWork": {
+        "traversals": 0,
+        "candidateVisits": 0,
+        "eligibleMatches": 0,
+        "successfulRewrites": 0,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 2767,
+      "finalCheckArenaBytes": 1966848,
+      "line": 4,
+      "sourceTokens": 35
+    },
+    {
+      "binding": "ergonomics_current__add_zero_under_function",
+      "module": "ergonomics_current",
+      "name": "add_zero_under_function",
+      "category": "checked",
+      "elapsedMs": 0.485,
+      "nativeCheckingSteps": 102,
+      "rewriteWork": {
+        "traversals": 0,
+        "candidateVisits": 0,
+        "eligibleMatches": 0,
+        "successfulRewrites": 0,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 2784,
+      "finalCheckArenaBytes": 1966848,
+      "line": 9,
+      "sourceTokens": 46
+    },
+    {
+      "binding": "ergonomics_current__insert_zero",
+      "module": "ergonomics_current",
+      "name": "insert_zero",
+      "category": "checked",
+      "elapsedMs": 0.47,
+      "nativeCheckingSteps": 45,
+      "rewriteWork": {
+        "traversals": 0,
+        "candidateVisits": 0,
+        "eligibleMatches": 0,
+        "successfulRewrites": 0,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 2802,
+      "finalCheckArenaBytes": 1966848,
+      "line": 14,
+      "sourceTokens": 24
+    },
+    {
+      "binding": "ergonomics_implemented__add_zero_twice",
+      "module": "ergonomics_implemented",
+      "name": "add_zero_twice",
+      "category": "checked",
+      "elapsedMs": 2.503,
+      "nativeCheckingSteps": 200,
+      "rewriteWork": {
+        "traversals": 0,
+        "candidateVisits": 0,
+        "eligibleMatches": 0,
+        "successfulRewrites": 0,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 2869,
+      "finalCheckArenaBytes": 1966848,
+      "line": 6,
+      "sourceTokens": 50
+    },
+    {
+      "binding": "ergonomics_implemented__add_zero_under_function",
+      "module": "ergonomics_implemented",
+      "name": "add_zero_under_function",
+      "category": "checked",
+      "elapsedMs": 4.823,
+      "nativeCheckingSteps": 553,
+      "rewriteWork": {
+        "traversals": 2,
+        "candidateVisits": 6,
+        "eligibleMatches": 2,
+        "successfulRewrites": 2,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3035,
+      "finalCheckArenaBytes": 1966848,
+      "line": 15,
+      "sourceTokens": 93
+    },
+    {
+      "binding": "ergonomics_implemented__insert_zero",
+      "module": "ergonomics_implemented",
+      "name": "insert_zero",
+      "category": "checked",
+      "elapsedMs": 1.253,
+      "nativeCheckingSteps": 162,
+      "rewriteWork": {
+        "traversals": 1,
+        "candidateVisits": 1,
+        "eligibleMatches": 1,
+        "successfulRewrites": 1,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3020,
+      "finalCheckArenaBytes": 1966848,
+      "line": 27,
+      "sourceTokens": 26
+    },
+    {
+      "binding": "ergonomics_implemented__add_zero_twice_simp",
+      "module": "ergonomics_implemented",
+      "name": "add_zero_twice_simp",
+      "category": "checked",
+      "elapsedMs": 3.9,
+      "nativeCheckingSteps": 309,
+      "rewriteWork": {
+        "traversals": 4,
+        "candidateVisits": 13,
+        "eligibleMatches": 2,
+        "successfulRewrites": 2,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3124,
+      "finalCheckArenaBytes": 1966848,
+      "line": 32,
+      "sourceTokens": 25
+    },
+    {
+      "binding": "ergonomics_implemented__residual_goal",
+      "module": "ergonomics_implemented",
+      "name": "residual_goal",
+      "category": "checked",
+      "elapsedMs": 2.066,
+      "nativeCheckingSteps": 383,
+      "rewriteWork": {
+        "traversals": 4,
+        "candidateVisits": 13,
+        "eligibleMatches": 2,
+        "successfulRewrites": 2,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3191,
+      "finalCheckArenaBytes": 1966848,
+      "line": 37,
+      "sourceTokens": 38
+    },
+    {
+      "binding": "ergonomics_implemented__named_step",
+      "module": "ergonomics_implemented",
+      "name": "named_step",
+      "category": "checked",
+      "elapsedMs": 0.467,
+      "nativeCheckingSteps": 136,
+      "rewriteWork": {
+        "traversals": 0,
+        "candidateVisits": 0,
+        "eligibleMatches": 0,
+        "successfulRewrites": 0,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3161,
+      "finalCheckArenaBytes": 1966848,
+      "line": 43,
+      "sourceTokens": 46
+    },
+    {
+      "binding": "ergonomics_implemented__simpa_add_zero",
+      "module": "ergonomics_implemented",
+      "name": "simpa_add_zero",
+      "category": "checked",
+      "elapsedMs": 1.089,
+      "nativeCheckingSteps": 158,
+      "rewriteWork": {
+        "traversals": 5,
+        "candidateVisits": 9,
+        "eligibleMatches": 1,
+        "successfulRewrites": 1,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3208,
+      "finalCheckArenaBytes": 1966848,
+      "line": 49,
+      "sourceTokens": 26
+    },
+    {
+      "binding": "ergonomics_registered__default_rewrite",
+      "module": "ergonomics_registered",
+      "name": "default_rewrite",
+      "category": "checked",
+      "elapsedMs": 0.902,
+      "nativeCheckingSteps": 165,
+      "rewriteWork": {
+        "traversals": 3,
+        "candidateVisits": 7,
+        "eligibleMatches": 1,
+        "successfulRewrites": 1,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3258,
+      "finalCheckArenaBytes": 1966848,
+      "line": 7,
+      "sourceTokens": 17
+    },
+    {
+      "binding": "ergonomics_registered__named_rewrite",
+      "module": "ergonomics_registered",
+      "name": "named_rewrite",
+      "category": "checked",
+      "elapsedMs": 1.346,
+      "nativeCheckingSteps": 165,
+      "rewriteWork": {
+        "traversals": 3,
+        "candidateVisits": 7,
+        "eligibleMatches": 1,
+        "successfulRewrites": 1,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3296,
+      "finalCheckArenaBytes": 1966848,
+      "line": 11,
+      "sourceTokens": 20
+    },
+    {
+      "binding": "ergonomics_registered__frozen_rewrite",
+      "module": "ergonomics_registered",
+      "name": "frozen_rewrite",
+      "category": "checked",
+      "elapsedMs": 0.978,
+      "nativeCheckingSteps": 165,
+      "rewriteWork": {
+        "traversals": 3,
+        "candidateVisits": 7,
+        "eligibleMatches": 1,
+        "successfulRewrites": 1,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3333,
+      "finalCheckArenaBytes": 1966848,
+      "line": 15,
+      "sourceTokens": 21
+    },
+    {
+      "binding": "ergonomics_registered__supplied_rewrite",
+      "module": "ergonomics_registered",
+      "name": "supplied_rewrite",
+      "category": "checked",
+      "elapsedMs": 1.092,
+      "nativeCheckingSteps": 158,
+      "rewriteWork": {
+        "traversals": 5,
+        "candidateVisits": 9,
+        "eligibleMatches": 1,
+        "successfulRewrites": 1,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3369,
+      "finalCheckArenaBytes": 1966848,
+      "line": 19,
+      "sourceTokens": 25
+    },
+    {
+      "binding": "ergonomics_registered__simplified_copy",
+      "module": "ergonomics_registered",
+      "name": "simplified_copy",
+      "category": "checked",
+      "elapsedMs": 0.949,
+      "nativeCheckingSteps": 220,
+      "rewriteWork": {
+        "traversals": 3,
+        "candidateVisits": 7,
+        "eligibleMatches": 1,
+        "successfulRewrites": 1,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3427,
+      "finalCheckArenaBytes": 1966848,
+      "line": 23,
+      "sourceTokens": 33
+    },
+    {
+      "binding": "ergonomics_registered__zero_if",
+      "module": "ergonomics_registered",
+      "name": "zero_if",
+      "category": "checked",
+      "elapsedMs": 0.538,
+      "nativeCheckingSteps": 181,
+      "rewriteWork": {
+        "traversals": 0,
+        "candidateVisits": 0,
+        "eligibleMatches": 0,
+        "successfulRewrites": 0,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3442,
+      "finalCheckArenaBytes": 1966848,
+      "line": 28,
+      "sourceTokens": 41
+    },
+    {
+      "binding": "ergonomics_registered__conditional_rewrite",
+      "module": "ergonomics_registered",
+      "name": "conditional_rewrite",
+      "category": "checked",
+      "elapsedMs": 1.461,
+      "nativeCheckingSteps": 221,
+      "rewriteWork": {
+        "traversals": 5,
+        "candidateVisits": 9,
+        "eligibleMatches": 1,
+        "successfulRewrites": 1,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3526,
+      "finalCheckArenaBytes": 1966848,
+      "line": 37,
+      "sourceTokens": 27
+    },
+    {
+      "binding": "ergonomics_registered__double_zero_if",
+      "module": "ergonomics_registered",
+      "name": "double_zero_if",
+      "category": "checked",
+      "elapsedMs": 0.733,
+      "nativeCheckingSteps": 247,
+      "rewriteWork": {
+        "traversals": 0,
+        "candidateVisits": 0,
+        "eligibleMatches": 0,
+        "successfulRewrites": 0,
+        "premiseAttempts": 0,
+        "premiseProofs": 0,
+        "premiseRewriteSteps": 0
+      },
+      "finalCheckArenaNodes": 3537,
+      "finalCheckArenaBytes": 1966848,
+      "line": 42,
+      "sourceTokens": 55
+    },
+    {
+      "binding": "ergonomics_registered__recursive_premise",
+      "module": "ergonomics_registered",
+      "name": "recursive_premise",
+      "category": "checked",
+      "elapsedMs": 3.251,
+      "nativeCheckingSteps": 365,
+      "rewriteWork": {
+        "traversals": 15,
+        "candidateVisits": 31,
+        "eligibleMatches": 2,
+        "successfulRewrites": 2,
+        "premiseAttempts": 2,
+        "premiseProofs": 1,
+        "premiseRewriteSteps": 1
+      },
+      "finalCheckArenaNodes": 3721,
+      "finalCheckArenaBytes": 1966848,
+      "line": 51,
+      "sourceTokens": 21
+    }
+  ]
+}

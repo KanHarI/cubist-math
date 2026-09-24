@@ -37,12 +37,12 @@ const selected = await Promise.all(selection.map(async ([module, name]) => {
 }));
 
 const snapshot = {
-  version: 2, generatedAt: report.generatedAt,
+  version: 3, generatedAt: report.generatedAt,
   revision: execFileSync("git", ["rev-parse", "HEAD"], { cwd: fileURLToPath(root), encoding: "utf8" }).trim(),
   dirty: !!execFileSync("git", ["status", "--porcelain"], { cwd: fileURLToPath(root), encoding: "utf8" }).trim(),
   runtime: process.version, cpu: cpus()[0]?.model,
-  method: "One selected import graph in source order with imports checked once, references disabled, no normalization request, native declaration transactions. Elapsed times include elaboration and checking, exclude import parsing, and are a single observation, not a statistical baseline or speedup claim. Native checking steps count every checker query during each declaration. Arena nodes/bytes snapshot the kernel at the final check, including earlier retained terms; they are not a per-declaration delta or peak. Tokens exclude comments, whitespace and EOF.",
-  unmeasured: ["aggregate reduction steps", "peak temporary arena", "retained arena delta", "generated proof DAG size", "rewrite candidate visits", "repeated explicit parameter count", "repeated-run variance"],
+  method: "One selected import graph in source order with imports checked once, references disabled, no normalization request, native declaration transactions. Elapsed times include elaboration and checking, exclude import parsing, and are a single observation, not a statistical baseline or speedup claim. Native checking steps count every checker query during each declaration. Rewrite work counts all attempted traversals and candidate nodes, including failed matches and premise search. Arena nodes/bytes snapshot the kernel at the final check, including earlier retained terms; they are not a per-declaration delta or peak. Tokens exclude comments, whitespace and EOF.",
+  unmeasured: ["aggregate reduction steps", "peak temporary arena", "retained arena delta", "generated proof DAG size", "repeated explicit parameter count", "repeated-run variance"],
   limitMs: report.limitMs, optimizations: report.optimizations,
   graph: { modules: report.modules, counts: report.counts, elapsedSeconds: report.elapsedSeconds },
   selected,

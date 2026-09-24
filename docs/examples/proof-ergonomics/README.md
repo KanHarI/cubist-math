@@ -45,7 +45,7 @@ node docs/examples/proof-ergonomics/measure.mjs
 
 This overwrites `baseline.json` with source hashes, token/line counts, machine
 and revision metadata, one timing observation, aggregate native checking steps
-per declaration, the kernel arena snapshot at each final check, and import-graph
+and rewrite work per declaration, the kernel arena snapshot at each final check, and import-graph
 status. The arena snapshots include earlier retained terms; they are not
 per-declaration memory deltas. The script does not overwrite the site's
 benchmark report. Review the JSON diff before retaining a newer baseline. The
@@ -53,6 +53,23 @@ snapshot explicitly lists unmeasured quantities; timings are not estimates of
 future speedups. Hashes pin the source of inferred theorem statements without
 serializing normalized types.
 PR 1 must additionally preserve checked signatures and assumption inventories.
+
+The separate [rewrite-work snapshot](rewrite-work.json) measures the paired
+explicit and ergonomic arithmetic examples plus registered simplification.
+Regenerate it with:
+
+```sh
+node docs/examples/proof-ergonomics/rewrite-work.mjs
+```
+
+One observation checked 19 example declarations with references disabled.
+The explicit `add_zero_twice` uses 35 source tokens and 115 native checking
+steps; `add_zero_twice_simp` uses 25 tokens, 309 native checking steps and 13
+candidate visits. The shorter source currently costs more checking work in this
+small example. `recursive_premise` uses 31 candidate visits and two premise
+search attempts, one of which constructs a checked premise proof. These counts
+describe this exact source and import order; the recorded arena values are
+cumulative snapshots, not per-declaration allocation deltas.
 
 ## Rejection examples and remaining acceptance tests
 
