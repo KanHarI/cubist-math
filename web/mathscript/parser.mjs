@@ -200,11 +200,16 @@ export function parse(source, typeOnly = false) {
       if (!binders.length) binders.push({ names: [name()], domain: null });
       take("=>");
       a = expr();
-      for (const binder of binders.reverse()) a = {
-        kind: binder.names.length === 1 ? "lambda" : "binderGroup",
-        ...(binder.names.length === 1 ? {name:binder.names[0]} : {names:binder.names}),
-        binderKind:"lambda",domain: binder.domain, body:a, start:t.start, end:a.end,
-      };
+      for (let index=binders.length-1;index>=0;index--) {
+        const binder=binders[index];
+        a = {
+          kind: binder.names.length === 1 ? "lambda" : "binderGroup",
+          ...(binder.names.length === 1 ? {name:binder.names[0]} : {names:binder.names}),
+          binderKind:"lambda",domain: binder.domain, body:a, start:t.start, end:a.end,
+          // Only the outer expression owns the single source `fun` token.
+          ...(index ? {generatedBinder:true} : {}),
+        };
+      }
     } else if (t.text === "forall" || t.text === "exists") {
       const names = [name()];
       while (peek() !== ":") names.push(name());

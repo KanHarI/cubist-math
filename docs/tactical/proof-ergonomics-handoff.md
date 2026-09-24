@@ -11,6 +11,9 @@ the C/WASM cubical kernel and report no axiom dependencies.
 - Grouped `intro x y;`, grouped typed declaration/quantifier/lambda binders,
   including consecutive `Universe` schema parameters,
   expected-type `fun x => ...`, `have h = e;`, and `have h : T := e;`.
+  A source `fun` token with several binder groups opens the complete checked
+  function in the inspector. Template source links include names introduced by
+  `ext` and `simp ... at h as h2`, including their later uses.
 - Terminal homogeneous `calc { lhs = rhs by proof; _ = ... by { ... } }` and
   `rfl;`. Each step has an actual checked path; `_` means the preceding right
   endpoint only inside `calc`.
@@ -94,10 +97,30 @@ checked path equates their types.
 
 The current simplifier uses explicit or registered rules, a 64-rewrite cap, a
 512-node traversal cap and an 8,192-candidate cap per traversal. Cycle-state
-serialization polls the deadline and stops at a bounded expanded size, even
-when the core term is a compact shared DAG.
-It has bounded equality-premise search but no broader proposition simplification. The
-source inspector shows the completed checked witness, individual calculation
+and rule-identity serialization poll the deadline and stop at a bounded expanded
+size, even when the core term is a compact shared DAG. Rule selection and
+exclusion apply this bound before comparing or compiling local rule identities.
+Quantified rule parameter scanning visits each shared pattern node once and
+checks the same selection deadline. An untyped lambda without an expected
+function type reports a normal diagnostic, including inside a universe template.
+The simplifier has bounded equality-premise search but no broader proposition
+simplification.
+Path composition and the other cubical syntax builders now preserve compact
+shared terms while replacing native references and reserving binder names.
+Composition uses the active proof deadline and an explicit syntax-size bound;
+compact, deeply shared equality witnesses no longer expand into exponential
+trees during `rw`, `calc`, `simp`, or `simpa` reconstruction.
+Core free-variable scans and term/interval substitution now visit each shared
+syntax node once per operation. This also keeps expected-type `path` and the
+`over` transport bridge compact while retaining capture avoidance under
+different binders.
+The inspector's path-notation dependency scan also memoizes shared syntax and
+has a display-work limit. Raw syntax views stop before JSON expansion exceeds
+their size or depth limit and show a message; the checked mathematical view
+remains available.
+The native CLI adapter also reuses serialized handles for a shared syntax node
+in the same interval context and bounds the number of emitted nodes per term.
+The source inspector shows the completed checked witness, individual calculation
 and rewrite steps, and selected rule spelling.
 Failures in an explicit `rw` or `simp` list now point to the selected rule's
 source span, including a leading `<-`. A matched conditional rule with no
@@ -107,6 +130,9 @@ file, so their failures still point to the `simp` statement. Subterm-specific
 candidate spans remain unavailable because normalized core terms do not carry
 source offsets. For a failed statement, the declaration itself is rejected;
 no metas or subgoals enter the kernel.
+An error while specializing an imported universe template selects the caller's
+template name and identifies the defining module and position in its message;
+later declarations in the caller can still check.
 
 The frontend still allocates interval slots for lexical nesting in
 `Translator.dimensionBody`; deeper liveness support needs its own regression.
@@ -156,7 +182,7 @@ equalities, nontrivial-loop preservation, and a rejected malformed naturality
 square. It also checks imported rule scope, ambiguous named sets, exclusions,
 conditional witnesses, and fresh simplified hypothesis copies.
 The standard formatter and program/benchmark tests passed in the same session.
-The full suite passed 326 tests and checked all 3,766 concrete corpus
+The full suite passed 338 tests and checked all 3,766 concrete corpus
 declarations and 44 templates without failed, blocked, or timed-out items.
 The five implemented source files checked 30 declarations without axioms; the
 six explicit counterparts checked 19. The inspector browser suite, static
@@ -185,4 +211,64 @@ witness still appear, and their edited source checks.
 Additional review regressions check shared-term size limits, rule/set name
 collisions in frozen edits, grouped universe specialization, default `rw`
 selection past a dependent position, and distinct inspector bindings for
-template calculation steps and their source endpoints.
+template calculation steps and their source endpoints. Further regressions
+bound selected and excluded rule identities, inspect consecutive mixed
+`Universe` binder groups, and replay a template calculation step through the
+workbench transfer with its checked path identity intact. The latest tests also
+check a quantified rule whose compact syntax has a highly shared pattern and
+an untyped lambda template that must not abort later declarations. Inspector
+regressions now check that a multi-binder `fun` link selects the complete
+function and that template `ext` and simplified-hypothesis locals are linked
+and replayable.
+The latest resource regressions check `rw`, two-step `calc`, `simp`, and `simpa`
+against 24-level shared terms under a 128 MB heap and a 100 ms kernel deadline.
+The native serialization regression keeps a 28-level shared application graph
+under 100 emitted lines.
+Another regression checks that thousands of distinct native references receive
+distinct temporary names and recover their original reference identities.
+The latest cubical regressions check `path` over a 24-level shared carrier and
+`over` over a 24-level shared endpoint under the same 128 MB heap and 100 ms
+deadline. A core substitution test checks that sharing under two different
+binders does not capture a free name.
+The imported-template regression checks that a bad rule in a different source
+file selects the caller's `broken__rule` token and reports the definition's line.
+
+The interval and face DNF operations now share a bounded work budget while
+elaborating each source formula. They check the active native deadline, cap
+clause products before allocation, and reject oversized expansions with a
+source-located lattice budget diagnostic. Reversal, substitution, endpoint-face
+conversion, normalization, and entailment use the same bounds. The regression
+accepts an eight-pair cubical path formula, rejects a fourteen-pair formula
+under a 128 MB heap without hanging, and then checks the next declaration.
+Direct lattice tests cover growth during reversal and endpoint-face conversion.
+
+The subsequent native review found another route around the source guard:
+substituting a 16-clause join of meets into a reversed interval could expand
+inside C after the elaborator had accepted the compact input. Native join,
+meet, reversal, and interval substitution now share a bounded comparison
+budget and a 4,096-clause product cap; substitution checks its deadline at the
+native call boundary. The reproducer now returns promptly. The elaborator
+also keeps a dimension-independent path unchanged under `sym`, so the concrete
+`sym(refl(0))` example still checks without expanding its reversal. A generic
+path that needs a large distributed formula receives an explicit budget error.
+This is a resource bound, not a new equality rule or a complete compact
+interval solver.
+The follow-up native test preserves an eight-pair formula and rejects the
+sixteen-pair reversal of a neutral path promptly, while accepting the
+constant-path case. The current full JS suite passed 346 tests, the native
+suite and `make lint` passed, and the inspector and built-site browser suites
+passed. The canonical corpus still checks 3,766 declarations with no failures.
+
+Generic universe-template `calc`, `rw`, `simp`, and `simpa` tactic keywords now
+link to their checked specialized witnesses. Each `calc` step's `by` keyword
+links to its separate checked path. Specialization exposes the witness
+description and simplification trace to the inspector. The freeze edit is
+withheld for a generic template: checking a proposed edit at one universe
+level cannot establish that it preserves the other levels. The template
+itself remains a schema until a level is selected.
+
+Native face substitution now computes `r=0` or `r=1` only when the input face
+uses that endpoint. This lets a positive face accept a compact interval whose
+unused negative endpoint would exceed the native lattice budget. Tube-face
+substitution reports a budget error rather than an invalid-face diagnostic
+when a genuinely needed expansion is too large.

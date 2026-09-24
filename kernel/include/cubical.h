@@ -12,7 +12,7 @@
  * In a face clause, positive means i=1 and negative means i=0.
  * Only the latter forbids both generators for the same dimension. */
 typedef enum { CC_INTERVAL, CC_FACE } cc_sort;
-typedef enum { CC_OK, CC_BAD_INPUT, CC_ALLOCATION_FAILED } cc_status;
+typedef enum { CC_OK, CC_BAD_INPUT, CC_ALLOCATION_FAILED, CC_LIMIT_EXCEEDED } cc_status;
 typedef struct { uint64_t positive, negative; } cc_clause;
 typedef struct {
     cc_sort sort;

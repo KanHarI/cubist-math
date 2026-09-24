@@ -153,8 +153,11 @@ int cb_formula_clause(uint32_t token, uint32_t pl, uint32_t ph, uint32_t nl, uin
     if (!s || !s->formula_open) return 0;
     cc_clause clause = {((uint64_t)ph << 32) | pl, ((uint64_t)nh << 32) | nl};
     cc_formula input = {s->formula.sort, &clause, 1, 1};
-    if (cc_join(&s->formula, &s->formula, &input) != CC_OK) {
-        s->error = "Could not allocate cubical formula.";
+    cc_status status = cc_join(&s->formula, &s->formula, &input);
+    if (status != CC_OK) {
+        s->error = status == CC_LIMIT_EXCEEDED
+            ? "Cubical lattice term-size or work budget exceeded."
+            : "Could not allocate cubical formula.";
         s->formula_open = false;
         return 0;
     }

@@ -3,12 +3,14 @@ import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator } from "./cubical-elaborator.mjs";
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
-import { parse } from "./mathscript/parser.mjs";
+import { parse, tokenize } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
+
+const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${index}` : "";
 
 // Imports are source, loaded on demand. Every module has its own environment;
 // closed native definitions have qualified names so shadowing cannot retarget
@@ -125,7 +127,7 @@ export class CubicalProgram {
               const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
               const definition = head.tag === "DefRef" && !source && !item.node.schemaBinding && !item.node.expressionSite;
               const binding = definition ? head.name : `${name}__local_${item.node.start}${
-                item.node.expansionIndex ? `_${item.node.role.replaceAll(" ","_")}_${item.node.expansionIndex}` : ""}`;
+                expansionSuffix(item.node.role,item.node.expansionIndex)}`;
               references.push({ start: item.node.start, binding });
               if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
               if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
@@ -160,6 +162,7 @@ export class CubicalProgram {
           reason:directive.reason,directive:true});
       this.checker.steps = checker.steps;
       const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
+      let sourceTokens;
       for (const d of result.declarations) {
         const syntax = byName.get(d.name), binding = `${name}__${d.name}`;
         const verified = d.status === "checked-native-cubical";
@@ -182,13 +185,29 @@ export class CubicalProgram {
           this.templates.set(binding, schema);
           info.templateParameters = [schema.parameter];
           let body = schema.body;
-          while (body.kind === "lambda" && body.domain.kind === "name" && body.domain.name === "Universe") {
+          while (body?.kind === "lambda" && body.domain?.kind === "name" && body.domain.name === "Universe") {
             info.templateParameters.push(body.name.text); body = body.body;
           }
           if (name === main && this.collectReferences) {
             const nodes = [], binders = new Set(info.templateParameters);
+            sourceTokens ??= tokenize(text);
             const visit = node => {
               if (!node || typeof node !== "object") return;
+              const tactic = {calc:"calculation witness",rw:"rewrite witness",
+                simp:"simplification witness",simpOnly:"simplification witness",
+                simpa:"simplification witness",simpaOnly:"simplification witness"}[node.kind];
+              if (tactic) {
+                const keyword = node.kind.replace("Only","");
+                nodes.push({name:keyword,start:node.start,end:node.start+keyword.length,
+                  selectionOffset:node.start,role:tactic});
+                if (node.kind === "calc") node.steps.forEach((step,index) => {
+                  const by = sourceTokens.find(token => token.text === "by" &&
+                    token.start >= step.right.end && token.start < step.end);
+                  if (by) nodes.push({name:`calc step ${index+1}`,start:by.start,end:by.end,
+                    selectionOffset:step.start,role:"calculation step",
+                    expansion:{role:"calculation step",index:index+1}});
+                });
+              }
               if (["let", "obtain"].includes(node.kind)) {
                 const bind = pattern => {
                   if (!pattern || typeof pattern !== "object") return;
@@ -198,6 +217,16 @@ export class CubicalProgram {
                 bind(node.target);
               }
               if (node.kind === "name") nodes.push(node);
+              if (node.kind === "binderGroup") for (const name of node.names) {
+                binders.add(name.text);
+                nodes.push({ ...name, name: name.text });
+              }
+              // Proof tactics bind names outside the ordinary lambda/name fields.
+              for (const name of [node.kind === "ext" ? node.variable : null,
+                node.kind === "simpOnly" ? node.as : null]) if (name?.text) {
+                binders.add(name.text);
+                nodes.push({ ...name, name: name.text });
+              }
               if (node.name?.text && node !== syntax) {
                 binders.add(node.name.text);
                 nodes.push({ ...node.name, name: node.name.text });
@@ -208,12 +237,15 @@ export class CubicalProgram {
             const seen = new Set();
             for (const node of nodes) {
               if (!Number.isInteger(node.start) || seen.has(node.start) ||
-                !(schema.env.has(node.name) || binders.has(node.name))) continue;
+                !(node.role || schema.env.has(node.name) || binders.has(node.name))) continue;
               seen.add(node.start);
               const reference = `${binding}__reference_${node.start}`;
-              this.templateSelections.set(reference, { binding, offset: node.start });
+              const selectedOffset = node.selectionOffset ?? node.start;
+              this.templateSelections.set(reference, { binding, offset: selectedOffset,
+                expansion:node.expansion });
               this.links.push({ name: node.name, binding: reference, start: node.start, end: node.end,
-                role: "template reference", templateBinding: binding, templateOffset: node.start,
+                role: node.role ?? "template reference", templateBinding: binding,
+                templateOffset: selectedOffset, ...(node.expansion ? {templateExpansion:node.expansion} : {}),
                 templateParameters: info.templateParameters, definitionStart: node.start });
             }
           }
@@ -267,10 +299,11 @@ export class CubicalProgram {
       ...specializations.get(binding),
     }]));
   }
-  inspect(binding, { normalize = false, universes, offset } = {}) {
+  inspect(binding, { normalize = false, universes, offset, expansion } = {}) {
     if (this.templateSelections.has(binding)) {
       const selection = this.templateSelections.get(binding);
-      return this.inspect(selection.binding, { normalize, universes, offset: selection.offset });
+      return this.inspect(selection.binding, { normalize, universes, offset: selection.offset,
+        expansion:selection.expansion });
     }
     const info = this.symbols[binding], local = this.views.get(binding);
     if (info?.template) {
@@ -309,21 +342,46 @@ export class CubicalProgram {
           templateBinding: binding, templateParameters: parameters, universes: [...levels] };
         for (const item of references) {
           if (!Number.isInteger(item.node.start)) continue;
-          const name = `${instance}__local_${item.node.start}${item.node.expansionIndex
-            ? `_${item.node.role.replaceAll(" ","_")}_${item.node.expansionIndex}` : ""}`;
+          const name = `${instance}__local_${item.node.start}${expansionSuffix(item.node.role,item.node.expansionIndex)}`;
+          const expansion=item.node.expansionIndex
+            ? {role:item.node.role,index:item.node.expansionIndex} : undefined;
           this.views.set(name, { ...item, module: info.sourceModule ?? this.main, referencePrefix: instance,
-            templateInspection: { binding, universes: [...levels], offset: item.node.start } });
+            templateInspection: { binding, universes: [...levels], offset: item.node.start,
+              ...(expansion ? { expansion } : {}) } });
           const target = this.symbols[item.node.schemaBinding] ?? (item.term.tag === "DefRef" ? this.symbols[item.term.name] : null);
           this.localSymbols[name] = { binding: name, name: item.node.name,
             role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
+            // A template edit changes every universe specialization. Its
+            // witness here was checked only at the selected level, so it
+            // cannot certify a source-wide simplification edit.
+            description:item.node.description,freeze:null,
+            traceParent:item.node.traceParent,
             sourceModule: target?.sourceModule ?? info.sourceModule, sourceName: target?.name ?? info.name,
             definitionStart: target?.definitionStart ?? item.node.start,
-            templateBinding: binding, templateParameters: parameters, universes: [...levels], templateOffset: item.node.start };
+            templateBinding: binding, templateParameters: parameters, universes: [...levels],
+            templateOffset: item.node.start, ...(expansion ? {templateExpansion:expansion} : {}) };
+        }
+        for (const item of references) if (item.node.role === "simplification witness") {
+          const witness = this.localSymbols[`${instance}__local_${item.node.start}`];
+          witness.rewriteSteps = references.filter(step => step.node.role === "simplification step"
+            && step.node.traceParent === item.node.start).map(step => {
+            const symbol = this.localSymbols[`${instance}__local_${step.node.start}${
+              expansionSuffix(step.node.role,step.node.expansionIndex)}`];
+            return {name:symbol.name,binding:symbol.binding,role:symbol.role,
+              description:symbol.description,start:step.node.start,end:step.node.end,
+              templateBinding:binding,templateParameters:parameters,universes:[...levels],
+              templateOffset:step.node.start,templateExpansion:symbol.templateExpansion};
+          });
         }
       }
-      if (offset !== undefined && !this.views.has(`${instance}__local_${offset}`))
+      if (expansion && (!Number.isInteger(offset) || typeof expansion.role !== "string"
+        || !Number.isSafeInteger(expansion.index) || expansion.index < 1))
+        throw new Error("Invalid template expansion selection.");
+      const selected = offset === undefined ? instance
+        : `${instance}__local_${offset}${expansionSuffix(expansion?.role,expansion?.index)}`;
+      if (offset !== undefined && !this.views.has(selected))
         throw new Error("No checked term is available for this position in the selected specialization.");
-      return this.inspect(offset === undefined ? instance : `${instance}__local_${offset}`, { normalize });
+      return this.inspect(selected, { normalize });
     }
     if (info && !info.verified) throw new Error(info.reason);
     let term, expected = null, context = [], dimensions = new Map(), unfoldingHints = [];

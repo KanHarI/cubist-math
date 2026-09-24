@@ -33,8 +33,43 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
   const name = value => ({ kind: "Name", name: value });
   const call = (fn, args) => ({ kind: "Call", fn: name(fn), args });
   const formula = value => name(value.length ? value.map(c => c.length ? c.join(" ∧ ") : "1").join(" ∨ ") : "0");
-  const depends = (value, dim) => typeof value === "string" ? value === `${dim}:0` || value === `${dim}:1`
-    : value && typeof value === "object" && Object.values(value).some(v => depends(v, dim));
+  // A display limit does not bound this scan: it runs before visiting the
+  // path's children. Compute each shared subtree once for each dimension.
+  // If the scan budget is exhausted, retain explicit PathP/path notation.
+  let dependencyWork = 100000;
+  const dependencyCache = new WeakMap();
+  const knownDependency = (value, dim) => {
+    if (typeof value === "string") return value === `${dim}:0` || value === `${dim}:1`;
+    return value && typeof value === "object" ? dependencyCache.get(value)?.get(dim) : false;
+  };
+  const rememberDependency = (value, dim, result) => {
+    let byDimension = dependencyCache.get(value);
+    if (!byDimension) { byDimension = new Map(); dependencyCache.set(value, byDimension); }
+    byDimension.set(dim, result);
+  };
+  const depends = (value, dim) => {
+    const known = knownDependency(value, dim);
+    if (known !== undefined) return known;
+    const active = new WeakSet(), stack = [{ value, finish: false }];
+    while (stack.length) {
+      const frame = stack.pop(), node = frame.value;
+      if (knownDependency(node, dim) !== undefined) continue;
+      if (frame.finish) {
+        active.delete(node);
+        rememberDependency(node, dim, Object.values(node).some(child => knownDependency(child, dim) === true));
+        continue;
+      }
+      if (--dependencyWork < 0) { rememberDependency(value, dim, true); return true; }
+      active.add(node);
+      stack.push({ value: node, finish: true });
+      for (const child of Object.values(node)) {
+        if (!child || typeof child !== "object" || knownDependency(child, dim) !== undefined) continue;
+        if (active.has(child)) { rememberDependency(value, dim, true); return true; }
+        stack.push({ value: child, finish: false });
+      }
+    }
+    return knownDependency(value, dim);
+  };
   function visit(t, path = []) {
     const child = (value, ...keys) => visit(value, [...path, ...keys]);
     const tree = build(t, child);

@@ -254,6 +254,59 @@ try {
   await page.locator("#freeze-simp").click(); await idle();
   assert.match(await page.locator("#editor").inputValue(),/simp only \[nat_add_zero\];/);
   assert.equal(await page.locator("#diagnostic").isVisible(),false);
+  if(!await page.locator("#editor").isVisible()) await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(`def generic_calc(U : Universe, x : Nat) : x = x {
+      calc { x = x by refl(x); }
+    }
+    def generic_simp(U : Universe, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n {
+      simp [h];
+    }`);
+  await page.locator("#check").click(); await idle();
+  await page.locator('#read-source button[data-name="calc"]').click(); await inspected("calc");
+  assert.match(await page.locator("#kernel-type").textContent(),/=/);
+  await page.locator('#read-source button[data-name="by"]').click(); await inspected("calc step 1");
+  await page.locator('#read-source button[data-name="simp"]').click(); await inspected("simp");
+  assert.equal(await page.locator("#rewrite-trace button").count(),1);
+  assert.equal(await page.locator("#freeze-simp").isVisible(),false);
+  const templateTransfer=await page.evaluate(async()=>{
+    const [{default:createCubical},{CubicalProgram},{saveWorkbenchTransfer}]=await Promise.all([
+      import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
+    const source=`import primes;
+      def generic(U : Universe, n : Nat) : n + 0 = n {
+        calc { n + 0 = n by nat_add_zero(n); }
+      }`;
+    const program=new CubicalProgram(await createCubical(),async name=>
+      (await fetch(`/proofs/${name}.cubist`)).text());
+    try {
+      await program.check(source,"browser_template_calc");
+      program.inspect("browser_template_calc__generic",{universes:[0]});
+      const offset=source.indexOf("n + 0 = n by");
+      const binding=`browser_template_calc__generic__inspect_U0__local_${offset}_calculation_step_1`;
+      return saveWorkbenchTransfer(program.export(binding));
+    } finally {program.dispose();}
+  });
+  await page.goto(`http://127.0.0.1:${port}/workbench.html?transfer=${templateTransfer}`);
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  assert.equal(await page.locator("#name").textContent(),"calc step 1");
+  assert.match(await page.locator("#type").textContent(),/=/);
+  const sharedTransfer=await page.evaluate(async()=>{
+    const [{default:createCubical},{CubicalProgram},{saveWorkbenchTransfer}]=await Promise.all([
+      import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
+    let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 = A;";
+    for(let i=1;i<=28;i++)source+=`let T${i} = F(T${i-1},T${i-1});`;
+    source+="have h : forall x : T28, x = x { intro x; exact path i => x; } rfl; }";
+    const program=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");});
+    try {
+      const result=await program.check(source,"browser_shared_inspection");
+      const h=result.links.find(link=>link.name==="h");
+      return saveWorkbenchTransfer(program.export(h.binding));
+    } finally {program.dispose();}
+  });
+  await page.goto(`http://127.0.0.1:${port}/workbench.html?transfer=${sharedTransfer}`);
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  assert.match(await page.locator("#syntax").inputValue(),/Raw syntax exceeds the display limit/);
+  assert.equal(await page.locator("#check").isDisabled(),true);
+  assert.ok((await page.locator("#expression").textContent()).length>0);
   assert.deepEqual(errors, []);
-  console.log("PASS cubical inspector: folding, names, navigation, simp trace/freeze, axiom links, and workbench editing");
+  console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, template transfer, bounded raw syntax, and workbench editing");
 } finally { await browser?.close(); server.kill(); }

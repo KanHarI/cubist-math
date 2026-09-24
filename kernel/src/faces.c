@@ -4,7 +4,8 @@
  * The endpoint equations i=0 and i=1 are disjoint but not exhaustive. */
 #include "internal.h"
 
-cc_status cc_endpoint(cc_formula *out, const cc_formula *r, unsigned endpoint) {
+static cc_status cc_endpoint_work(cc_formula *out, const cc_formula *r,
+                                  unsigned endpoint, size_t *work) {
     if (out->sort != CC_FACE || r->sort != CC_INTERVAL || endpoint > 1)
         return CC_BAD_INPUT;
     cc_formula candidate, sum;
@@ -13,19 +14,19 @@ cc_status cc_endpoint(cc_formula *out, const cc_formula *r, unsigned endpoint) {
     cc_status status = endpoint ? CC_OK : cc_one(&candidate);
     for (size_t i = 0; i < r->length && status == CC_OK; ++i) {
         if (endpoint) {
-            status = cc_insert(&candidate, r->clauses[i]);
+            status = cc_insert_work(&candidate, r->clauses[i], work);
             continue;
         }
         cc_zero(&sum);
         for (unsigned d = 0; d < CC_DIMENSIONS && status == CC_OK; ++d) {
             uint64_t bit = UINT64_C(1) << d;
             if (r->clauses[i].positive & bit)
-                status = cc_insert(&sum, (cc_clause){0, bit});
+                status = cc_insert_work(&sum, (cc_clause){0, bit}, work);
             if (status == CC_OK && (r->clauses[i].negative & bit))
-                status = cc_insert(&sum, (cc_clause){bit, 0});
+                status = cc_insert_work(&sum, (cc_clause){bit, 0}, work);
         }
         if (status == CC_OK)
-            status = cc_meet(&candidate, &candidate, &sum);
+            status = cc_meet_work(&candidate, &candidate, &sum, work);
     }
     if (status == CC_OK)
         cc_publish(out, &candidate);
@@ -34,30 +35,42 @@ cc_status cc_endpoint(cc_formula *out, const cc_formula *r, unsigned endpoint) {
     return status;
 }
 
+cc_status cc_endpoint(cc_formula *out, const cc_formula *r, unsigned endpoint) {
+    size_t work = 0;
+    return cc_endpoint_work(out, r, endpoint, &work);
+}
+
 cc_status cc_face_substitute(cc_formula *out, const cc_formula *a,
                              unsigned dimension, const cc_formula *value) {
     if (out->sort != CC_FACE || a->sort != CC_FACE ||
         value->sort != CC_INTERVAL || dimension >= CC_DIMENSIONS)
         return CC_BAD_INPUT;
     uint64_t bit = UINT64_C(1) << dimension;
+    bool needs_zero = false, needs_one = false;
+    for (size_t i = 0; i < a->length; ++i) {
+        needs_zero |= (a->clauses[i].negative & bit) != 0;
+        needs_one |= (a->clauses[i].positive & bit) != 0;
+    }
+    if (!needs_zero && !needs_one) return cc_copy(out, a);
     cc_formula candidate, at_zero, at_one, product;
     cc_init(&candidate, CC_FACE);
     cc_init(&at_zero, CC_FACE);
     cc_init(&at_one, CC_FACE);
     cc_init(&product, CC_FACE);
-    cc_status status = cc_endpoint(&at_zero, value, 0);
-    if (status == CC_OK)
-        status = cc_endpoint(&at_one, value, 1);
+    size_t work = 0;
+    cc_status status = needs_zero ? cc_endpoint_work(&at_zero, value, 0, &work) : CC_OK;
+    if (status == CC_OK && needs_one)
+        status = cc_endpoint_work(&at_one, value, 1, &work);
     for (size_t i = 0; i < a->length && status == CC_OK; ++i) {
         cc_zero(&product);
         cc_clause remainder = {a->clauses[i].positive & ~bit, a->clauses[i].negative & ~bit};
-        status = cc_insert(&product, remainder);
+        status = cc_insert_work(&product, remainder, &work);
         if (status == CC_OK && (a->clauses[i].positive & bit))
-            status = cc_meet(&product, &product, &at_one);
+            status = cc_meet_work(&product, &product, &at_one, &work);
         if (status == CC_OK && (a->clauses[i].negative & bit))
-            status = cc_meet(&product, &product, &at_zero);
+            status = cc_meet_work(&product, &product, &at_zero, &work);
         if (status == CC_OK)
-            status = cc_join(&candidate, &candidate, &product);
+            status = cc_join_work(&candidate, &candidate, &product, &work);
     }
     if (status == CC_OK)
         cc_publish(out, &candidate);

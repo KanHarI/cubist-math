@@ -31,6 +31,46 @@ int main(void) {
     assert(cc_interval_substitute(&i, &i, 63, &reversed) == CC_OK);
     assert(i.clauses[0].positive == (UINT64_C(1) << 63));
     cc_clear(&i); cc_clear(&reversed); cc_clear(&meet); cc_clear(&face); cc_clear(&other);
+    /* Sixteen compact clauses reverse to 2^16 clauses. The native algebra
+     * must report a limit without changing its output or doing that work. */
+    cc_formula compact, left, right, pair, output, variable;
+    cc_init(&compact, CC_INTERVAL); cc_init(&left, CC_INTERVAL);
+    cc_init(&right, CC_INTERVAL); cc_init(&pair, CC_INTERVAL);
+    cc_init(&output, CC_INTERVAL); cc_init(&variable, CC_INTERVAL);
+    for (unsigned d = 0; d < 32; d += 2) {
+        assert(cc_generator(&left, d, true) == CC_OK);
+        assert(cc_generator(&right, d + 1, true) == CC_OK);
+        assert(cc_meet(&pair, &left, &right) == CC_OK);
+        assert(cc_join(&compact, &compact, &pair) == CC_OK);
+    }
+    assert(compact.length == 16);
+    assert(cc_one(&output) == CC_OK);
+    assert(cc_reverse(&output, &compact) == CC_LIMIT_EXCEEDED);
+    assert(output.length == 1 && output.clauses[0].positive == 0 && output.clauses[0].negative == 0);
+    assert(cc_generator(&variable, 63, true) == CC_OK);
+    assert(cc_interval_substitute(&output, &variable, 63, &compact) == CC_OK);
+    assert(cc_equal(&output, &compact));
+    cc_formula positive_face, negative_face, direct_face, substituted_face;
+    cc_init(&positive_face, CC_FACE); cc_init(&negative_face, CC_FACE);
+    cc_init(&direct_face, CC_FACE); cc_init(&substituted_face, CC_FACE);
+    assert(cc_endpoint(&direct_face, &compact, 1) == CC_OK && direct_face.length == 16);
+    assert(cc_endpoint(&positive_face, &variable, 1) == CC_OK);
+    assert(cc_face_substitute(&substituted_face, &positive_face, 63, &compact) == CC_OK);
+    assert(cc_equal(&substituted_face, &direct_face));
+    assert(cc_endpoint(&negative_face, &variable, 0) == CC_OK);
+    assert(cc_one(&substituted_face) == CC_OK);
+    assert(cc_face_substitute(&substituted_face, &negative_face, 63, &compact) == CC_LIMIT_EXCEEDED);
+    assert(substituted_face.length == 1 && substituted_face.clauses[0].positive == 0);
+    assert(cc_generator(&variable, 62, true) == CC_OK);
+    assert(cc_interval_substitute(&output, &variable, 63, &compact) == CC_OK);
+    assert(cc_equal(&output, &variable));
+    assert(cc_endpoint(&positive_face, &variable, 1) == CC_OK);
+    assert(cc_face_substitute(&substituted_face, &positive_face, 63, &compact) == CC_OK);
+    assert(cc_equal(&substituted_face, &positive_face));
+    cc_clear(&positive_face); cc_clear(&negative_face); cc_clear(&direct_face);
+    cc_clear(&substituted_face);
+    cc_clear(&compact); cc_clear(&left); cc_clear(&right); cc_clear(&pair);
+    cc_clear(&output); cc_clear(&variable);
     puts("Native interval/face invariants passed.");
     return 0;
 }

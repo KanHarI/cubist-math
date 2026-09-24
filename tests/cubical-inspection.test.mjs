@@ -6,6 +6,7 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import { foldedInspection } from "../web/cubical-inspection.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
+import { boundedSyntaxJson } from "../web/cubical-json.mjs";
 import { simplifyTypeApplications } from "../web/cubical-reduction.mjs";
 
 const module = await createCubical();
@@ -96,6 +97,23 @@ test("notation preserves dependency and distinguishes renamed shadowing variable
   assert.equal(lambda.body.right.name, "x");
   assert.equal(cubicalMathTree({ tag: "Pi", name: "x", domain: nat, body: nat }).kind, "Arrow");
   assert.equal(cubicalMathTree({ tag: "Sigma", name: "x", domain: nat, body: variable("x") }).kind, "Sigma");
+});
+
+test("path notation and raw syntax display stay bounded on shared terms", () => {
+  let shared = nat;
+  for (let i = 0; i < 28; i++) shared = { tag: "App", fn: shared, arg: shared };
+  const constant = { tag: "PLam", dim: "i", family: shared, body: variable("x") };
+  assert.equal(cubicalMathTree(constant, {}, 1).fn.name, "refl");
+  assert.equal(cubicalMathTree({ tag: "Path", dim: "i", family: shared,
+    left: variable("x"), right: variable("x") }, {}, 1).kind, "Identity");
+  const varying = { tag: "PApp", path: variable("p"), arg: [["i:0"]] };
+  assert.equal(cubicalMathTree({ tag: "Path", dim: "i", family: varying,
+    left: variable("x"), right: variable("x") }).fn.name, "PathP");
+  assert.equal(boundedSyntaxJson(shared), null);
+  assert.equal(boundedSyntaxJson(nat), JSON.stringify(nat, null, 2));
+  let deep = nat;
+  for (let i = 0; i < 600; i++) deep = { tag: "Succ", value: deep };
+  assert.equal(boundedSyntaxJson(deep), null);
 });
 
 test("axiom labels and derived cubical helpers remain inspectable", async t => {

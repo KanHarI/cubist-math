@@ -8,6 +8,7 @@ import { axiomLabels } from "./axiom-labels.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
+import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
 
 const query = new URLSearchParams(location.search);
 const backend = "cubical";
@@ -517,25 +518,7 @@ function renderSource() {
     offset += line.length + 1;
   }
 }
-async function inspect(info, remember = true) {
-  const previousUniverses = selected?.universes;
-  if (remember && selected) {
-    history.push(selected);
-    if (history.length > 60) history.shift();
-  }
-  selected = info;
-  const sequence = ++inspectSerial;
-  $("back").hidden = !history.length && !proofReturnURL(crossFileBack);
-  $("inspect-name").textContent = info.name;
-  $("inspect-kind").textContent =
-    info.kind === "goal"
-      ? "Goal & local assumptions"
-      : (info.role ?? info.kind ?? "Definition");
-  $("inspect-statement-label").hidden = true;
-  $("inspect-parameters").hidden = true;
-  $("inspect-parameters").open = false;
-  $("inspect-parameters-list").replaceChildren();
-  renderType(info.kind === "goal" ? info.step.goal : (info.type ?? ""));
+function renderWitnessDetails(info) {
   $("inspect-description").textContent = info.description ?? "";
   const trace=$("rewrite-trace");
   trace.replaceChildren();trace.hidden=!info.rewriteSteps?.length;
@@ -559,6 +542,27 @@ async function inspect(info, remember = true) {
     $("editor").dispatchEvent(new Event("input",{bubbles:true}));
     await check();
   };
+}
+async function inspect(info, remember = true) {
+  const previousUniverses = selected?.universes;
+  if (remember && selected) {
+    history.push(selected);
+    if (history.length > 60) history.shift();
+  }
+  selected = info;
+  const sequence = ++inspectSerial;
+  $("back").hidden = !history.length && !proofReturnURL(crossFileBack);
+  $("inspect-name").textContent = info.name;
+  $("inspect-kind").textContent =
+    info.kind === "goal"
+      ? "Goal & local assumptions"
+      : (info.role ?? info.kind ?? "Definition");
+  $("inspect-statement-label").hidden = true;
+  $("inspect-parameters").hidden = true;
+  $("inspect-parameters").open = false;
+  $("inspect-parameters-list").replaceChildren();
+  renderType(info.kind === "goal" ? info.step.goal : (info.type ?? ""));
+  renderWitnessDetails(info);
   const templateBinding = info.template ? info.binding : info.templateBinding;
   const universeControls = $("inspect-universes");
   universeControls.replaceChildren(); universeControls.hidden = !templateBinding;
@@ -636,11 +640,19 @@ async function inspect(info, remember = true) {
     }
     try {
       const view = await request("inspect", { binding: templateBinding ?? info.binding,
-        ...(templateBinding ? { universes: info.universes, offset: info.templateOffset } : {}) });
+        ...(templateBinding ? { universes: info.universes, offset: info.templateOffset,
+          expansion: info.templateExpansion } : {}) });
       if (sequence !== inspectSerial) return;
       if (templateBinding) {
         const checkedInfo = view.symbols[view.name];
-        if (checkedInfo) sourceLink(checkedInfo);
+        if (checkedInfo) {
+          sourceLink(checkedInfo);
+          if (info.templateOffset !== undefined) {
+            renderWitnessDetails(checkedInfo);
+            $("inspect-description").prepend(document.createTextNode(
+              `Inspecting at ${info.universes.map(level=>`U${level}`).join(", ")}. `));
+          }
+        }
       }
       if (view.statement) renderStatement(view);
       else renderType(view.typeText, Object.values(view.symbols));
@@ -747,7 +759,7 @@ function renderCubicalKernel(view) {
   }
   const render = (target, term) => {
     target.classList.toggle("typeset", !raw);
-    if (raw) target.textContent = JSON.stringify(term, null, 2);
+    if (raw) target.textContent = boundedSyntaxJson(term) ?? syntaxDisplayLimitMessage;
     else renderMathNotation(target, cubicalMathTree(term, view.symbols, kernelDisplayLimit), navigation);
   };
   for (const [list, entries] of [["kernel-context-list", context], ["kernel-axioms-list", axioms]]) for (const entry of entries) {

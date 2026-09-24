@@ -166,9 +166,14 @@ static cc_term tube_substitute(cc_kernel *k, cc_term term, unsigned dim,
         const cc_formula *phi = cc_kernel_get_formula(k, n.payload);
         cc_formula changed;
         cc_init(&changed, CC_FACE);
-        if (!phi || cc_face_substitute(&changed, phi, dim, value) != CC_OK) {
+        if (!ck_deadline(k)) { cc_clear(&changed); return 0; }
+        cc_status status = phi ? cc_face_substitute(&changed, phi, dim, value) : CC_BAD_INPUT;
+        if (!ck_deadline(k)) { cc_clear(&changed); return 0; }
+        if (status != CC_OK) {
             cc_clear(&changed);
-            return ck_fail(k, "Invalid face substitution."), 0;
+            return ck_fail(k, status == CC_LIMIT_EXCEEDED
+                ? "Cubical lattice term-size or work budget exceeded."
+                : "Invalid face substitution."), 0;
         }
         n.payload = cc_kernel_formula(k, &changed);
         cc_clear(&changed);
@@ -222,9 +227,14 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
         const cc_formula *face = cc_kernel_get_formula(k, n.payload);
         cc_formula changed;
         cc_init(&changed, CC_FACE);
-        if (!face || cc_face_substitute(&changed, face, dim, value) != CC_OK) {
+        if (!ck_deadline(k)) { cc_clear(&changed); return 0; }
+        cc_status status = face ? cc_face_substitute(&changed, face, dim, value) : CC_BAD_INPUT;
+        if (!ck_deadline(k)) { cc_clear(&changed); return 0; }
+        if (status != CC_OK) {
             cc_clear(&changed);
-            return ck_fail(k, "Invalid Glue face substitution."), 0;
+            return ck_fail(k, status == CC_LIMIT_EXCEEDED
+                ? "Cubical lattice term-size or work budget exceeded."
+                : "Invalid Glue face substitution."), 0;
         }
         n.payload = cc_kernel_formula(k, &changed);
         cc_clear(&changed);
@@ -233,9 +243,14 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
         const cc_formula *arg = cc_kernel_get_formula(k, n.payload);
         cc_formula changed;
         cc_init(&changed, CC_INTERVAL);
-        if (!arg || cc_interval_substitute(&changed, arg, dim, value) != CC_OK) {
+        if (!ck_deadline(k)) { cc_clear(&changed); return 0; }
+        cc_status status = arg ? cc_interval_substitute(&changed, arg, dim, value) : CC_BAD_INPUT;
+        if (!ck_deadline(k)) { cc_clear(&changed); return 0; }
+        if (status != CC_OK) {
             cc_clear(&changed);
-            return ck_fail(k, "Invalid interval substitution."), 0;
+            return ck_fail(k, status == CC_LIMIT_EXCEEDED
+                ? "Cubical lattice term-size or work budget exceeded."
+                : "Invalid interval substitution."), 0;
         }
         n.payload = cc_kernel_formula(k, &changed);
         cc_clear(&changed);

@@ -32,6 +32,122 @@ test("short arithmetic, cubical and dependent examples elaborate to native axiom
   }
 });
 
+test("generic proof tactics link their checked specialization witnesses from source",async t=>{
+  const source=`def generic_calc(U : Universe, x : Nat) : x = x { calc { x = x by refl(x); } }
+    def generic_rw(U : Universe, x y : Nat, p : x = y) : x = y { rw [p]; }
+    def generic_simp(U : Universe, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n { simp [h]; }`;
+  const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");});
+  t.after(()=>program.dispose());
+  const result=await program.check(source,"generic_tactic_links");
+  assert.ok(result.outputs.every(output=>output.template));
+  for(const [keyword,role] of [["calc","calculation witness"],["rw","rewrite witness"],
+    ["simp","simplification witness"],["by","calculation step"]]) {
+    const offset=source.indexOf(`${keyword} `,source.indexOf("{"));
+    const link=result.links.find(item=>item.start===offset&&item.role===role);
+    assert.ok(link,`${keyword} source link`);
+    const view=program.inspect(link.binding,{universes:[1]});
+    assert.equal(view.type.tag,"Path",keyword);
+    assert.deepEqual(view.templateInspection.universes,[1]);
+    if(keyword==="by") assert.deepEqual(view.templateInspection.expansion,
+      {role:"calculation step",index:1});
+    if(keyword==="simp") {
+      const witness=view.symbols[view.name];
+      assert.match(witness.description,/Checked simplification/);
+      assert.equal(witness.freeze,null);
+      assert.equal(witness.rewriteSteps.length,1);
+      assert.equal(program.inspect(witness.rewriteSteps[0].binding).type.tag,"Path");
+    }
+  }
+});
+
+test("a template simplification cannot freeze rules needed at another universe",async t=>{
+  const source=`def level_sensitive(U : Universe, f : U2 -> Nat,
+    h0 : f(U0) = 0, h1 : f(U1) = 0) : f(U) = 0 { simp [h0, h1]; }
+    def at_zero(f : U2 -> Nat, h0 : f(U0) = 0, h1 : f(U1) = 0) : f(U0) = 0 {
+      exact level_sensitive(U0, f, h0, h1);
+    }
+    def at_one(f : U2 -> Nat, h0 : f(U0) = 0, h1 : f(U1) = 0) : f(U1) = 0 {
+      exact level_sensitive(U1, f, h0, h1);
+    }`;
+  const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");});
+  t.after(()=>program.dispose());
+  const result=await program.check(source,"template_freeze_levels");
+  assert.deepEqual(result.outputs.map(output=>output.verified),[false,true,true]);
+  const link=result.links.find(item=>item.role==="simplification witness");
+  assert.ok(link);
+  for(const level of [0,1]) {
+    const view=program.inspect(link.binding,{universes:[level]});
+    assert.equal(view.type.tag,"Path");
+    assert.equal(view.symbols[view.name].freeze,null);
+    assert.equal(view.symbols[view.name].rewriteSteps.length,1);
+  }
+});
+
+test("constant path reversal avoids exponential native interval expansion",async t=>{
+  const dimensions=Array.from({length:32},(_,i)=>`d${i}`);
+  let terms=Array.from({length:16},(_,i)=>`meet(d${2*i},d${2*i+1})`);
+  while(terms.length>1)terms=Array.from({length:Math.ceil(terms.length/2)},(_,i)=>
+    terms[2*i+1]?`join(${terms[2*i]},${terms[2*i+1]})`:terms[2*i]);
+  const lets=dimensions.map((_,i)=>`let t${i} = ${i?`refl(t${i-1})`:"0"};`).join("\n");
+  const source=`def native_interval_budget : 0 = 0 {
+    ${lets}
+    have h : t31 = t31 {
+      exact ${dimensions.map(d=>`path ${d} => `).join("")}sym(refl(0)) @ ${terms[0]};
+    }
+    rfl;
+  }`;
+  const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");},
+    {collectReferences:false});
+  t.after(()=>program.dispose());
+  program.kernel.setDeadline(500);
+  const result=await program.check(source,"constant_path_reverse");
+  assert.equal(result.outputs[0].verified,true,result.outputs[0].reason);
+  const neutral=source.replace("def native_interval_budget :",
+    "def native_interval_budget(p : 0 = 0) :").replace("sym(refl(0))","sym(p)")+
+    "\ndef after : 0 = 0 { rfl; }";
+  const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
+  const programPath=new URL("../web/cubical-program.mjs",import.meta.url).href;
+  const script=`import createCubical from ${JSON.stringify(wasm)};
+    import {CubicalProgram} from ${JSON.stringify(programPath)};
+    const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");},
+      {collectReferences:false});
+    program.kernel.setDeadline(1000);
+    try { const result=await program.check(process.argv[1],"neutral_path_reverse");
+      console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));
+    } finally { program.dispose(); }`;
+  const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script,neutral],
+    {encoding:"utf8",timeout:2500});
+  assert.equal(child.error,undefined,child.stderr);
+  assert.equal(child.status,0,child.stderr);
+  const outputs=JSON.parse(child.stdout.trim());
+  assert.deepEqual(outputs.map(output=>output.verified),[false,true]);
+  assert.match(outputs[0].reason,/Cubical lattice term-size or work budget exceeded/);
+});
+
+test("positive composition faces use only the needed endpoint of a compact interval",async t=>{
+  const dimensions=Array.from({length:32},(_,i)=>`d${i}`);
+  let terms=Array.from({length:16},(_,i)=>`meet(d${2*i},d${2*i+1})`);
+  while(terms.length>1)terms=Array.from({length:Math.ceil(terms.length/2)},(_,i)=>
+    terms[2*i+1]?`join(${terms[2*i]},${terms[2*i+1]})`:terms[2*i]);
+  const lets=dimensions.map((_,i)=>`let t${i} = ${i?`refl(t${i-1})`:"0"};`).join("\n");
+  const source=`def positive_face_budget : 0 = 0 {
+    ${lets}
+    have h : t31 = t31 {
+      exact ${dimensions.map(d=>`path ${d} => `).join("")}
+        path(fun (i : Interval) => Nat,
+          fun (i : Interval) => comp(fun (j : Interval) => Nat, 0,
+            face(i, 1, fun (j : Interval) => 0))) @ ${terms[0]};
+    }
+    rfl;
+  }`;
+  const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");},
+    {collectReferences:false});
+  t.after(()=>program.dispose());
+  program.kernel.setDeadline(1000);
+  const result=await program.check(source,"positive_face_budget");
+  assert.equal(result.outputs[0].verified,true,result.outputs[0].reason);
+});
+
 test("new proof syntax survives formatting with the same expanded AST",async()=>{
   for(const name of ["arithmetic","cubical","dependent","type-transport"]) {
     const source=await sample(name),formatted=formatMathScript(source);
@@ -115,6 +231,191 @@ test("simp size budget interrupts serialization of a compact shared term",()=>{
   assert.equal(child.status,0,child.stderr);
   assert.deepEqual(JSON.parse(child.stdout.trim()).map(output=>output.verified),[false]);
   assert.match(child.stdout,/Simplification term-size budget exceeded/);
+});
+
+test("simp rule selection and exclusion bound compact shared identities",()=>{
+  const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
+  const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
+  for(const tactic of ["simp only [h]","simp without [h]"]) {
+    const script=`import createCubical from ${JSON.stringify(wasm)};
+      import {CubicalProgram} from ${JSON.stringify(program)};
+      let source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 = n;";
+      for(let i=1;i<=24;i++)source+="let t"+i+" = f(t"+(i-1)+", t"+(i-1)+");";
+      source+="have h : t24 = t24 { rfl; } ${tactic}; }";
+      const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
+        {collectReferences:false});
+      try {
+        const result=await checker.check(source,"shared_rule_budget");
+        console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));
+      } finally {checker.dispose();}`;
+    const child=spawnSync(process.execPath,["--max-old-space-size=96","--input-type=module","-e",script],
+      {encoding:"utf8",timeout:1500});
+    assert.equal(child.error,undefined,`${tactic}: ${child.stderr}`);
+    assert.equal(child.status,0,`${tactic}: ${child.stderr}`);
+    assert.deepEqual(JSON.parse(child.stdout.trim()).map(output=>output.verified),[false]);
+    assert.match(child.stdout,/Simplification term-size budget exceeded/,tactic);
+  }
+});
+
+test("quantified simp rules scan each shared pattern node once",()=>{
+  const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
+  const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
+  for(const tactic of ["simp only [h]","simp without [h]"]) {
+    const script=`import createCubical from ${JSON.stringify(wasm)};
+      import {CubicalProgram} from ${JSON.stringify(program)};
+      let source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 = n;";
+      for(let i=1;i<=28;i++)source+="let t"+i+" = f(t"+(i-1)+", t"+(i-1)+");";
+      source+="have helper : (forall k : Nat, f(t28,k) = k) -> n = n { intro h; ${tactic}; } rfl; }";
+      const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
+        {collectReferences:false});
+      try {
+        const result=await checker.check(source,"shared_pattern_budget");
+        console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));
+      } finally {checker.dispose();}`;
+    const child=spawnSync(process.execPath,["--max-old-space-size=96","--input-type=module","-e",script],
+      {encoding:"utf8",timeout:1500});
+    assert.equal(child.error,undefined,`${tactic}: ${child.stderr}`);
+    assert.equal(child.status,0,`${tactic}: ${child.stderr}`);
+    assert.deepEqual(JSON.parse(child.stdout.trim()).map(output=>output.verified),[true],tactic);
+  }
+});
+
+test("path reconstruction preserves compact shared terms within the proof deadline",()=>{
+  const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
+  const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
+  const cases=[
+    ["rw","def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 = n;",
+      "f", "have proof : t24 = t24 { rw [refl(t24)] at lhs; } rfl; }"],
+    ["calc","def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 = n;",
+      "f", "have proof : t24 = t24 { calc { t24 = t24 by refl(t24); _ = t24 by refl(t24); } } rfl; }"],
+    ["simp","def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat, n = n -> f(k) = k) : f(n) = n { let t0 = n;",
+      "g", "have h : n = n := (fun (unused : Nat) => refl(n))(t24); simp only [c] with [h]; }"],
+    ["simpa","def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat, n = n -> f(k) = k) : f(n) = n { let t0 = n;",
+      "g", "have h : n = n := (fun (unused : Nat) => refl(n))(t24); simpa only [c] with [h] using refl(n); }"],
+  ];
+  for(const [name,prefix,fn,suffix] of cases) {
+    const script=`import createCubical from ${JSON.stringify(wasm)};
+      import {CubicalProgram} from ${JSON.stringify(program)};
+      let source=${JSON.stringify(prefix)};
+      for(let i=1;i<=24;i++)source+="let t"+i+" = ${fn}(t"+(i-1)+",t"+(i-1)+");";
+      source+=${JSON.stringify(suffix)};
+      const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
+        {collectReferences:false});
+      checker.kernel.setDeadline(100);
+      try {
+        const result=await checker.check(source,"shared_path_reconstruction");
+        console.log(JSON.stringify(result.outputs.map(({verified,reason,axioms})=>({verified,reason,axioms}))));
+      } finally {checker.dispose();}`;
+    const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script],
+      {encoding:"utf8",timeout:2500});
+    assert.equal(child.error,undefined,`${name}: ${child.stderr}`);
+    assert.equal(child.status,0,`${name}: ${child.stderr}`);
+    assert.deepEqual(JSON.parse(child.stdout.trim()),[{verified:true,axioms:[]}],name);
+  }
+});
+
+test("path abstraction and dependent-path transport keep shared inputs compact",()=>{
+  const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
+  const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
+  for(const mode of ["path","over"]) {
+    const script=`import createCubical from ${JSON.stringify(wasm)};
+      import {CubicalProgram} from ${JSON.stringify(program)};
+      let source;
+      if(${JSON.stringify(mode)}==="path") {
+        source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 = A;";
+        for(let i=1;i<=24;i++)source+="let T"+i+" = F(T"+(i-1)+",T"+(i-1)+");";
+        source+="have h : forall x : T24, x = x { intro x; exact path i => x; } rfl; }";
+      } else {
+        source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 = n;";
+        for(let i=1;i<=24;i++)source+="let t"+i+" = f(t"+(i-1)+",t"+(i-1)+");";
+        source+="have h : (along (fun (n : Nat) => Nat) by refl(0) from t24) = t24 -> t24 = t24 { intro q; over (fun (n : Nat) => Nat) along refl(0) by { exact q; } } rfl; }";
+      }
+      const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
+        {collectReferences:false});
+      checker.kernel.setDeadline(100);
+      try {
+        const result=await checker.check(source,"shared_cubical_syntax");
+        console.log(JSON.stringify(result.outputs.map(({verified,reason,axioms})=>({verified,reason,axioms}))));
+      } finally {checker.dispose();}`;
+    const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script],
+      {encoding:"utf8",timeout:2500});
+    assert.equal(child.error,undefined,`${mode}: ${child.stderr}`);
+    assert.equal(child.status,0,`${mode}: ${child.stderr}`);
+    assert.deepEqual(JSON.parse(child.stdout.trim()),[{verified:true,axioms:[]}],mode);
+  }
+});
+
+test("interval expansion is bounded while later declarations still elaborate",()=>{
+  const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
+  const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
+  const sourceFor=(pairs)=>{
+    const dimensions=Array.from({length:2*pairs},(_,i)=>`d${i}`);
+    let formula=Array.from({length:pairs},(_,i)=>`join(d${2*i},d${2*i+1})`);
+    while(formula.length>1)formula=Array.from({length:Math.ceil(formula.length/2)},(_,i)=>
+      formula[2*i+1]?`meet(${formula[2*i]},${formula[2*i+1]})`:formula[2*i]);
+    let source="def interval_budget : 0 = 0 { let t0 = 0;";
+    for(let i=1;i<dimensions.length;i++)source+=`let t${i} = refl(t${i-1});`;
+    source+=`have h : t${dimensions.length-1} = t${dimensions.length-1} { exact `;
+    source+=dimensions.map(d=>`path ${d} => `).join("");
+    return source+`refl(0) @ ${formula[0]}; } rfl; } def after : 0 = 0 { rfl; }`;
+  };
+  const script=`import createCubical from ${JSON.stringify(wasm)};
+    import {CubicalProgram} from ${JSON.stringify(program)};
+    const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
+      {collectReferences:false});
+    checker.kernel.setDeadline(1000);
+    try {
+      const result=await checker.check(process.argv[1],"interval_budget");
+      console.log(JSON.stringify(result.outputs.map(({verified,reason,axioms})=>({verified,reason,axioms}))));
+    } finally {checker.dispose();}`;
+  for(const [pairs,expected] of [[8,true],[14,false]]) {
+    const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script,sourceFor(pairs)],
+      {encoding:"utf8",timeout:2500});
+    assert.equal(child.error,undefined,`${pairs}: ${child.stderr}`);
+    assert.equal(child.status,0,`${pairs}: ${child.stderr}`);
+    const outputs=JSON.parse(child.stdout.trim());
+    assert.deepEqual(outputs.map(output=>output.verified),[expected,true],`${pairs}: ${child.stdout}`);
+    assert.deepEqual(outputs.filter(output=>output.verified).map(output=>output.axioms),
+      expected?[[],[]]:[[]]);
+    if(!expected)assert.match(outputs[0].reason,/Cubical lattice term-size budget exceeded/);
+  }
+});
+
+test("shared path and transport proofs remain inspectable without expanding raw syntax",()=>{
+  const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
+  const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
+  const json=new URL("../web/cubical-json.mjs",import.meta.url).href;
+  for(const mode of ["path","over"]) {
+    let source;
+    if(mode==="path") {
+      source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 = A;";
+      for(let i=1;i<=28;i++)source+=`let T${i} = F(T${i-1},T${i-1});`;
+      source+="have h : forall x : T28, x = x { intro x; exact path i => x; } rfl; }";
+    } else {
+      source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 = n;";
+      for(let i=1;i<=24;i++)source+=`let t${i} = f(t${i-1},t${i-1});`;
+      source+="have h : (along (fun (n : Nat) => Nat) by refl(0) from t24) = t24 -> t24 = t24 { intro q; over (fun (n : Nat) => Nat) along refl(0) by { exact q; } } rfl; }";
+    }
+    const script=`import createCubical from ${JSON.stringify(wasm)};
+      import {CubicalProgram} from ${JSON.stringify(program)};
+      import {boundedSyntaxJson} from ${JSON.stringify(json)};
+      const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");});
+      checker.kernel.setDeadline(100);
+      try {
+        const result=await checker.check(process.argv[1],"shared_inspection");
+        const h=result.links.find(link=>link.name==="h");
+        const view=checker.inspect(h.binding);
+        console.log(JSON.stringify({verified:result.outputs[0].verified,
+          axioms:result.outputs[0].axioms,inspected:!!view.expressionText,
+          rawLimited:boundedSyntaxJson(view.expression)===null}));
+      } finally {checker.dispose();}`;
+    const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script,source],
+      {encoding:"utf8",timeout:2500});
+    assert.equal(child.error,undefined,`${mode}: ${child.stderr}`);
+    assert.equal(child.status,0,`${mode}: ${child.stderr}`);
+    assert.deepEqual(JSON.parse(child.stdout.trim()),
+      {verified:true,axioms:[],inspected:true,rawLimited:true},mode);
+  }
 });
 
 test("simpa reconstructs the original equality and rejects a false supplied term",async t=>{
@@ -210,6 +511,24 @@ test("universe templates retain their defining simplification sets during use an
   assert.equal(result.complete,true,JSON.stringify(result.gaps));
   assert.deepEqual(result.outputs[0].axioms,[]);
   assert.equal(program.inspect("rules__generic",{universes:[0]}).type.tag,"Pi");
+});
+
+test("imported template failures select the caller and name the definition site",async t=>{
+  const library=`// ${".".repeat(200)}\ndef broken__rule(U : Universe, n : Nat) : n = n {\n simp only [0];\n}`;
+  const source="import rules;\ndef use = broken__rule(U0, 0);\ndef good = 0;";
+  const program=new CubicalProgram(await createCubical(),name=>{
+    if(name==="rules")return library;
+    throw Error(`Unexpected import ${name}`);
+  });
+  t.after(()=>program.dispose());
+  const result=await program.check(source,"client");
+  assert.deepEqual(result.outputs.map(output=>output.verified),[false,true]);
+  const failed=result.outputs[0];
+  assert.equal(failed.errorStart,source.indexOf("broken__rule"));
+  assert.equal(failed.errorEnd,source.indexOf("broken__rule")+"broken__rule".length);
+  assert.match(failed.reason,/In template rules\.broken__rule: .* at 3:13/);
+  assert.ok(failed.errorEnd<=source.length);
+  assert.equal(result.gaps[0].start,failed.errorStart);
 });
 
 test("freeze is withheld when removing a rule changes conditional premise search",async t=>{
@@ -373,6 +692,25 @@ test("a grouped binder checks its shared domain before a binder shadows that nam
   assert.deepEqual(result.outputs.map(d=>d.verified),[true,true,true,true,true]);
 });
 
+test("a multi-binder fun source link inspects the complete closed function",async t=>{
+  for(const expression of ["fun (x : Nat) (y : Nat) => x",
+    "fun (x y : Nat) => x", "fun (x : Nat) (fun : Nat) => x"]) {
+    const program=new CubicalProgram(await createCubical(),readLibrary);
+    t.after(()=>program.dispose());
+    const source=`def f = ${expression};`;
+    assert.equal(expandedSyntax(parse(formatMathScript(source))),expandedSyntax(parse(source)));
+    const result=await program.check(source,"multi_binder_link");
+    assert.equal(result.complete,true,JSON.stringify(result.gaps));
+    const links=result.links.filter(link=>link.name==="fun"&&link.start===source.indexOf("fun"));
+    assert.equal(links.length,1,expression);
+    const view=program.inspect(links[0].binding);
+    assert.deepEqual(view.context,[],expression);
+    assert.equal(view.type.tag,"Pi",expression);
+    assert.equal(view.type.body.tag,"Pi",expression);
+    assert.equal(view.symbols[view.name].name,"fun",expression);
+  }
+});
+
 test("grouped universe parameters specialize like separate universe binders",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
@@ -386,6 +724,28 @@ test("grouped universe parameters specialize like separate universe binders",asy
   assert.deepEqual(result.outputs.map(item=>item.template),[true,true,false,false]);
   assert.deepEqual(result.outputs.slice(2).map(item=>item.verified),[true,true]);
   assert.equal(program.inspect("grouped_universes__grouped",{universes:[0,1]}).type.tag,"Pi");
+});
+
+test("consecutive mixed universe groups specialize and inspect every parameter",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const source=`
+    def mixed(U : Universe, V W : Universe, A : U, B : V, x : A, y : B) = x;
+    def multiple(U V : Universe, W X : Universe, A : U, B : W, x : A, y : B) = x;
+    def use_mixed = mixed(U0, U0, U0, Nat, Nat, 0, 0);
+    def use_multiple = multiple(U0, U0, U0, U0, Nat, Nat, 0, 0);
+  `;
+  const result=await program.check(source,"mixed_universes");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  assert.deepEqual(result.outputs.slice(0,2).map(item=>item.templateParameters),
+    [["U","V","W"],["U","V","W","X"]]);
+  assert.deepEqual(result.outputs.slice(2).map(item=>item.verified),[true,true]);
+  assert.equal(program.inspect("mixed_universes__mixed",{universes:[0,1,2]}).type.tag,"Pi");
+  assert.equal(program.inspect("mixed_universes__multiple",{universes:[0,1,2,3]}).type.tag,"Pi");
+  const binder=result.links.find(item=>item.role==="template reference"
+    &&item.start===source.indexOf("V W : Universe"));
+  assert.ok(binder);
+  assert.equal(program.inspect(binder.binding,{universes:[0,1,2]}).expression.level,1);
 });
 
 test("rw skips an unsupported left occurrence to reach an eligible right one",async t=>{
@@ -414,7 +774,48 @@ test("template inspection keeps calc endpoints separate from step witnesses",asy
   assert.ok(link);
   assert.equal(program.inspect(link.binding).type.tag,"Nat");
   const step=`template_calc__generic__inspect_U0__local_${offset}_calculation_step_1`;
-  assert.equal(program.inspect(step).type.tag,"Path");
+  const stepView=program.inspect(step);
+  assert.equal(stepView.type.tag,"Path");
+  const symbol=program.localSymbols[step];
+  assert.deepEqual(symbol.templateExpansion,{role:"calculation step",index:1});
+  assert.equal(program.inspect(symbol.templateBinding,{universes:symbol.universes,
+    offset:symbol.templateOffset,expansion:symbol.templateExpansion}).type.tag,"Path");
+  const payload=program.export(step);
+  assert.deepEqual(payload.templateInspection.expansion,{role:"calculation step",index:1});
+  const replay=new CubicalProgram(await createCubical(),name=>payload.sources[name]);
+  t.after(()=>replay.dispose());
+  await replay.check(payload.source,payload.main);
+  const restored=replay.inspect(payload.templateInspection.binding,payload.templateInspection);
+  assert.equal(restored.name,step);
+  assert.deepEqual(restored.type,stepView.type);
+});
+
+test("template references include ext and simplified hypothesis binders and uses",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const source=`
+    def ext_case(U : Universe, f : Nat -> Nat) : f = f {
+      ext x; exact refl(f(x));
+    }
+    def simp_case(U : Universe, x : Nat, h : x = x) : x = x {
+      simp only [] at h as h2; exact h2;
+    }
+  `;
+  const result=await program.check(source,"template_proof_locals");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  for(const [snippet,name] of [["ext x","x"],["as h2","h2"],["exact h2","h2"]]) {
+    const offset=source.indexOf(snippet)+snippet.lastIndexOf(name);
+    const link=result.links.find(item=>item.role==="template reference"&&item.start===offset);
+    assert.ok(link,`Missing source link for ${snippet}`);
+    const view=program.inspect(link.binding);
+    assert.equal(view.symbols[view.name].name,name);
+    assert.equal(view.type.tag,name==="x"?"Nat":"Path");
+    const payload=program.export(view.name);
+    const replay=new CubicalProgram(await createCubical(),module=>payload.sources[module]);
+    t.after(()=>replay.dispose());
+    await replay.check(payload.source,payload.main);
+    assert.deepEqual(replay.inspect(payload.templateInspection.binding,payload.templateInspection).type,view.type);
+  }
 });
 
 test("normal program checking rolls back a failed universe specialization",async t=>{

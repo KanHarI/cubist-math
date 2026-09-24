@@ -1,0 +1,156 @@
+import circle;
+import field_extensionality;
+import sets;
+import truncation;
+
+// Evidence for the HoTT and cubical automation roadmap. Each statement below
+// checks by conversion or by one existing lemma. The README lists the laws
+// that conversion rejects.
+
+// Suspension recursion with each bridge supplied directly as a path.
+def bridge_rec(A : U0, B : U1, n : B, s : B, h : A -> (n = s), x : Suspension(A)) =
+  pushout_induction(
+    fun (p : Suspension(A)) => B, fun (u : Unit) => n, fun (u : Unit) => s, fun (a : A) => h(a), x
+  );
+
+// Its meridian computation law holds by conversion.
+def bridge_rec_beta(A : U0, B : U1, n : B, s : B, h : A -> (n = s), a : A) :
+  cong(fun (x : Suspension(A)) => bridge_rec(A, B, n, s, h, x), meridian(A, a)) = h(a) {
+  rfl;
+}
+
+// Dependent suspension elimination with PathP bridges.
+def bridge_ind(
+  A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)),
+  m : (forall a : A, PathP(fun (i : Interval) => C(meridian(A, a) @ i), n, s)), x : Suspension(A)
+) =
+  pushout_induction(
+    C, fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_left(Suspension(A), v)), n, u),
+    fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_right(Suspension(A), v)), s, u), m, x
+  );
+
+// Its dependent meridian computation law also holds by conversion.
+def bridge_ind_beta(
+  A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)),
+  m : (forall a : A, PathP(fun (i : Interval) => C(meridian(A, a) @ i), n, s)), a : A
+) :
+  apd_path(fun (x : Suspension(A)) => bridge_ind(A, C, n, s, m, x), meridian(A, a)) = m(a) {
+  rfl;
+}
+
+// The circle's cover through the bridge recursion.
+def bridge_code(x : S1) = bridge_rec(S0, U0, Z, Z, code_meridians, x);
+
+def bridge_code_meridian(a : S0) : cong(bridge_code, meridian(S0, a)) = code_meridians(a) {
+  rfl;
+}
+
+// One univalence computation, without transport_ap or code_meridian.
+def bridge_code_upper(z : Z) : transport(bridge_code, base, south_pole, upper, z) = successorZ(z) {
+  exact UnivalenceBeta(U0, Z, Z, successor_equivalence, z);
+}
+
+// One constant-transport correction.
+def bridge_code_lower(z : Z) : transport(bridge_code, base, south_pole, lower, z) = z {
+  exact transport_constant(U0, Z, Z, Z, refl(Z), z);
+}
+
+// Laws that hold by conversion with their parameters free.
+def cong_constant_line(A : U1, B : U1, point : B, x : A, y : A, p : x = y) :
+  cong(fun (v : A) => point, p) = refl(point) {
+  rfl;
+}
+
+def cong_identity_line(A : U1, x : A, y : A, p : x = y) : cong(fun (v : A) => v, p) = p {
+  rfl;
+}
+
+def cong_compose_line(A : U1, B : U1, C : U1, f : A -> B, g : B -> C, x : A, y : A, p : x = y) :
+  cong(g, cong(f, p)) = cong(fun (v : A) => g(f(v)), p) {
+  rfl;
+}
+
+def cong_refl_line(A : U1, B : U1, f : A -> B, x : A) : cong(f, refl(x)) = refl(f(x)) {
+  rfl;
+}
+
+def cong_sym_line(A : U1, B : U1, f : A -> B, x : A, y : A, p : x = y) :
+  cong(f, sym(p)) = sym(cong(f, p)) {
+  rfl;
+}
+
+def sym_sym_line(A : U1, x : A, y : A, p : x = y) : sym(sym(p)) = p {
+  rfl;
+}
+
+// Right whiskering; the mirror family t = a is rejected.
+def transport_path_right(A : U1, a : A, x : A, y : A, p : x = y, q : a = x) :
+  transport(fun (t : A) => a = t, x, y, p, q) = trans(q, p) {
+  rfl;
+}
+
+// A non-dependent function family: reverse transport, then forward transport.
+def transport_arrow(A : U1, B : A -> U0, C : A -> U0, x : A, y : A, p : x = y, f : B(x) -> C(x)) :
+  transport(fun (t : A) => B(t) -> C(t), x, y, p, f) = (
+    fun (v : B(y)) => transport(C, x, y, p, f(transport(B, y, x, sym(p), v)))
+  ) {
+  rfl;
+}
+
+def happly_funext(
+  A : U0, P : A -> U0, f : (forall a : A, P(a)), g : (forall a : A, P(a)),
+  h : (forall a : A, f(a) = g(a)), a : A
+) :
+  cong(fun (k : (forall b : A, P(b))) => k(a), FunExt(U0, A, P, f, g, h)) = h(a) {
+  rfl;
+}
+
+def sigma_projection_eta(A : U1, P : A -> U1, u : (exists x : A, P(x))) :
+  typed((exists x : A, P(x)), (field_first(A, P, u), field_second(A, P, u))) = u {
+  rfl;
+}
+
+// A homotopy's naturality square, stated as a nested PathP.
+def naturality_square(
+  A : U1, B : U1, f : A -> B, g : A -> B, h : (forall a : A, f(a) = g(a)), x : A, y : A, p : x = y
+) :
+  PathP(fun (i : Interval) => f(p @ i) = g(p @ i), h(x), h(y)) {
+  exact path i => h(p @ i);
+}
+
+// Constant transport computes on closed values, though not on neutral ones.
+def closed_constant_transport(x : Nat) : transport(fun (t : Nat) => Nat, x, x, refl(x), 3) = 3 {
+  rfl;
+}
+
+// Truncation levels counted from propositions: 0 is IsProp and 1 is IsSet.
+def PropLevel(n : Nat) = induction n as k return (U0 -> U0) {
+    zero => fun (A : U0) => IsProp(A);
+    succ previous => fun (A : U0) => forall x : A, forall y : A, previous(x = y);
+  };
+
+def prop_level_zero(A : U0) : PropLevel(0, A) =[U0] IsProp(A) {
+  rfl;
+}
+
+def prop_level_one(A : U0) : PropLevel(1, A) =[U0] IsSet(A) {
+  rfl;
+}
+
+// Dependent paths reverse along the reversed family.
+def reverse_dependent_path(
+  A : U0, B : A -> U0, x : A, y : A, p : x = y, u : B(x), v : B(y),
+  q : PathP(fun (i : Interval) => B(p @ i), u, v)
+) :
+  PathP(fun (i : Interval) => B(p @ flip(i)), v, u) {
+  exact path i => q @ flip(i);
+}
+
+// Dependent congruence over a base path and a dependent path.
+def dependent_congruence(
+  A : U0, B : A -> U0, C : U0, f : (forall a : A, B(a) -> C), x : A, y : A, p : x = y, u : B(x),
+  v : B(y), q : PathP(fun (i : Interval) => B(p @ i), u, v)
+) :
+  f(x, u) = f(y, v) {
+  exact path i => f(p @ i, q @ i);
+}

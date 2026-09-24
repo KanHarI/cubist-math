@@ -18,6 +18,11 @@ transactions, measurements, and cubical notation priorities. It brings
 expected-type paths and pointwise equality forward without requiring general
 argument inference.
 
+The subsequent [HoTT and cubical automation roadmap](hott-automation-roadmap.md)
+records why the current simplifier cannot reach path operations. It reorders
+the remaining dependent, cubical and goal-derived induction work below and
+marks none of it complete.
+
 ## Objective and current foundation
 
 Reduce repetitive proof plumbing while keeping generated proofs inspectable
@@ -59,6 +64,25 @@ Put automation in the parser and elaborator. Its output is ordinary core
 syntax, validated by the native checker before a declaration is accepted.
 No simplifier result, JavaScript equality comparison, cache entry, or rule
 attribute becomes a new trusted proof rule.
+
+Large interval expressions need a separate elaborator-to-kernel improvement.
+The current native clause and work limits make exponential distribution fail
+promptly, and the elaborator simplifies constant-path reversal before checking.
+To accept general compact cubical expressions without raising those limits:
+
+1. Keep interval and face expressions as shared `join`/`meet`/`reverse` DAGs in
+   the elaborator. Normalize only the parts needed by a conversion or face
+   query, with memoization and a measured work budget.
+2. Emit a certificate of local De Morgan, substitution, absorption, and face
+   entailment steps for each nontrivial query. Preserve dimension scope and
+   distinguish interval equality from face entailment in the certificate.
+3. Add a small kernel verifier for those steps, then replace eager native DNF
+   comparison at the certified call sites. Reject missing or oversized
+   certificates; never trust the elaborator's claimed answer on its own.
+4. Test the 16-clause reversal on a genuinely nonconstant path, false face
+   entailments, binder renaming, and adversarial shared DAGs before raising
+   any resource limit. Compare checking time and proof size with the current
+   guarded implementation.
 
 Use a shared rewriting service for `rw`, `calc`, `simp`, and `simpa`:
 

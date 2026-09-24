@@ -256,6 +256,23 @@ test("inspect checks unused templates at selected universes and replays local co
   assert.throws(() => program.inspect("templates__invalid", { universes: [1] }));
 });
 
+test("untyped lambdas in templates report errors without aborting later declarations",async t=>{
+  const program=new CubicalProgram(module,async()=>""); t.after(()=>program.dispose());
+  const result=await program.check(`
+    def generic(U : Universe) = fun x => x;
+    def use = generic(U0);
+    def good = 0;
+    def ordinary = fun x => x;
+    def after = 1;
+  `,"untyped_templates");
+  assert.deepEqual(result.outputs.map(item=>item.verified),[false,false,true,false,true]);
+  assert.equal(result.outputs[0].template,true);
+  assert.match(result.outputs[1].reason,/Untyped lambda requires an expected function type/);
+  assert.match(result.outputs[3].reason,/Untyped lambda requires an expected function type/);
+  assert.throws(()=>program.inspect("untyped_templates__generic"),
+    /Untyped lambda requires an expected function type/);
+});
+
 test("every named reference in group universe templates is inspectable with source labels", async t => {
   const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());

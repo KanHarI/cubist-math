@@ -5,6 +5,7 @@ import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { readWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
+import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
 import { renderMathNotation } from "./math-notation.mjs";
 import { reduceView, checkReduction, reductionRule, termAtPath } from "./cubical-reduction.mjs";
 import { kernelAssembly, assemblyText, renderAssembly } from "./cubical-assembly.mjs";
@@ -21,7 +22,11 @@ function display(updateSyntax = true) {
   document.querySelectorAll("[data-math-option]").forEach(element => { element.hidden = assembly; });
   $("name").textContent = view.symbols[selected]?.name ?? selected ?? "Edited expression";
   $("back").disabled = !history.length;
-  if (updateSyntax) $("syntax").value = JSON.stringify(view.expression, null, 2);
+  if (updateSyntax) {
+    const syntax = boundedSyntaxJson(view.expression);
+    $("syntax").value = syntax ?? syntaxDisplayLimitMessage;
+    $("check").disabled = syntax === null;
+  }
   renderSpecialization($("specialization"), view);
   if (assembly) {
     $("more-reduction-sites").hidden = true;
@@ -159,6 +164,7 @@ $("syntax").oninput = () => {
   if (wasSelecting) display(false);
   $("reduction-status").textContent = "";
   checked = null; enableReductions(false);
+  $("check").disabled = false;
   $("status").textContent = "Edited syntax is not checked; displayed terms show the last checked version.";
 };
 $("check").onclick = () => { try { validate(JSON.parse($("syntax").value)); view.folded = null; display(); } catch (error) { failure(error); } };
@@ -234,8 +240,7 @@ try {
   await program.check(payload.source, payload.main, progress => { $("status").textContent = `Rechecking source · ${progress.completed} declarations`; });
   // Ignore supplied expression/type claims. Reconstruct from replayed source.
   view = payload.templateInspection
-    ? program.inspect(payload.templateInspection.binding, { universes: payload.templateInspection.universes,
-        offset: payload.templateInspection.offset })
+    ? program.inspect(payload.templateInspection.binding, payload.templateInspection)
     : program.inspect(payload.binding);
   selected = view.name;
   if (payload.side === "type") {

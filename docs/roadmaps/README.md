@@ -8,6 +8,7 @@ target statement or a supplied theorem parameter as an already proved result.
 
 - [Simplification and shorter proofs](proof-ergonomics-roadmap.md): checked first slice of `rw`, `calc`, `simp only`, and expected cubical paths, with further argument inference and HoTT/cubical requirements in progress.
   The [concrete implementation plan](proof-ergonomics-implementation-plan.md) adds PR-sized steps, lowering contracts, cubical notation proposals, and checked current-language sample expansions.
+- [HoTT and cubical proof automation](hott-automation-roadmap.md): planning only. The follow-on to the ergonomics roadmap: library changes that use existing kernel computation (eliminators with PathP bridges, numeric h-levels, a conversion audit), folded path operations, congruence-line witnesses and deterministic fuel, then goal-derived path induction, type-directed `ext`, transport and path-algebra rules, an h-level solver, identity systems, and filler-based dependent rewriting.
 
 ## Mathematics
 
