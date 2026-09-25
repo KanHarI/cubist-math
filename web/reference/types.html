@@ -43,6 +43,7 @@
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
+            <li><a href="#introduction">Introduction</a></li>
             <li><a href="#values">Every value has a type</a></li>
             <li><a href="#tour-numbers">Natural numbers</a></li>
             <li><a href="#tour-unit">Unit</a></li>
@@ -56,6 +57,13 @@
           </ul>
         </aside>
         <article id="reference">
+          <section id="introduction">
+            <h2>Introduction</h2>
+            <p>Cubist is a language for writing mathematics that a computer checks. A Cubist file defines objects, states theorems about them, and proves each theorem. The checker accepts a declaration only when its proof really proves its statement.</p>
+            <p>Every value in Cubist has a type. A statement is a type too, and a proof of the statement is a value of that type: proving a statement means building a value of the right type. So the language starts with types and their values, and the <a href="first-proof.html#first-proof">next chapter</a> writes a first proof with them.</p>
+            <p>This chapter introduces the basic types one at a time: natural numbers, <code>Unit</code> and <code>Void</code>, pairs, choices, functions, types themselves, equality, and <code>forall</code> and <code>exists</code>. Each section shows how to write the type, how to build its values, and what the checker says about a value of the wrong type.</p>
+            <p>Every example in this reference is checked. When the checker rejects an example, its error message appears as a <code>// Error:</code> comment on the line at fault. Click a name in an example to see the checked kernel term behind it, with its type and context. <em>Open in workspace</em> opens the example in the <a href="../proof.html">proof workspace</a>, where you can edit and check it. To check files on your own computer, use the <a href="checking.html#cli">command-line checker</a>.</p>
+          </section>
           <section id="values">
             <h2>Every value has a type</h2>
             <p>A Cubist file is a list of declarations. The simplest names a value:</p>
@@ -66,7 +74,7 @@
             <pre><code data-check="accept">def seven_again : Nat {
   exact 7;
 }</code></pre>
-            <p>A short value can also follow the type directly: <code>def seven_again : Nat := 7;</code> means the same. Throughout Cubist, <code>:=</code> gives a name its value, and <code>=</code> always means equality. The checker accepts the declaration only when the value really has the stated type. <code>exact</code> is the simplest statement a block can hold. The following chapters use blocks to build proofs one step at a time, and the chapter on <a href="proof-blocks.html#goals">proof blocks</a> lists every statement. This chapter introduces the basic types and their values; the next one writes a first proof.</p>
+            <p>A short value can also follow the type directly: <code>def seven_again : Nat := 7;</code> means the same. Throughout Cubist, <code>:=</code> gives a name its value, and <code>=</code> always means equality. The checker accepts the declaration only when the value really has the stated type. <code>exact</code> is the simplest statement a block can hold. The following chapters use blocks to build proofs one step at a time, and the chapter on <a href="proof-blocks.html#goals">proof blocks</a> lists every statement.</p>
           </section>
           <section id="tour-numbers">
             <h2>Natural numbers</h2>
@@ -195,6 +203,28 @@ def sum(m n : Nat) := m + n;
 def add_three := sum(3);
 
 evaluate add_three(4) expecting 7;</code></pre>
+            <h3 id="tour-intro">Functions in a block: <code>intro</code></h3>
+            <p>A function can also be built in a block, like any other value. When the type to give is a function type <code>A -> B</code>, <code>intro a;</code> takes the input: it names it <code>a</code>, of type <code>A</code>, and what remains to give is a value of <code>B</code>, which can use <code>a</code>. With several names, <code>intro</code> takes several inputs at once:</p>
+            <pre><code data-check="accept">import naturals;
+
+def double : Nat -&gt; Nat {
+  intro n;        // n : Nat; what remains to give is a Nat
+  exact n + n;
+}
+
+def sum : Nat -&gt; Nat -&gt; Nat {
+  intro m n;      // m : Nat and n : Nat; what remains to give is a Nat
+  exact m + n;
+}
+
+evaluate double(4) expecting 8;
+evaluate sum(3, 4) expecting 7;</code></pre>
+            <p>This <code>double</code> is the same function as <code>def double(n : Nat) := n + n;</code>. The <a href="first-proof.html#first-proof">next chapter</a> calls the type that remains to give the <strong>goal</strong>, and the names available the <strong>context</strong>. In the proof workspace, clicking a line number of a block shows both. A type that is not a function has no input to take:</p>
+            <pre><code data-check="reject">def seven : Nat {
+  intro n;  // Error: intro requires a dependent function goal.
+  exact 7;
+}</code></pre>
+            <p><code>Nat</code> is not a function type. The message’s dependent function types are the <code>forall</code> types <a href="#tour-dependent">below</a>, and <code>A -> B</code> is one of them.</p>
           </section>
           <section id="tour-types">
             <h2>Types are values too</h2>
@@ -221,7 +251,7 @@ def nat_is_a_type : U0 {
           </section>
           <section id="tour-equality">
             <h2>Equality: <code>=</code></h2>
-            <p>For two values <code>x</code> and <code>y</code> of the same type, <code>x = y</code> is a type: the statement that they are equal. Its values are evidence of that equality. <code>refl(x)</code> is evidence that <code>x = x</code>, and the checker also accepts it as evidence of <code>x = y</code> whenever <code>x</code> and <code>y</code> compute to the same value:</p>
+            <p>For two values <code>x</code> and <code>y</code> of the same type, <code>x = y</code> is a type: the statement that they are equal. Its values are evidence of that equality. <code>refl(x)</code>, short for <em>reflexivity</em> (every value is equal to itself), is evidence that <code>x = x</code>, and the checker also accepts it as evidence of <code>x = y</code> whenever <code>x</code> and <code>y</code> compute to the same value:</p>
             <pre><code data-check="accept">import naturals;
 
 def two_plus_two : 2 + 2 = 4 {
@@ -247,8 +277,14 @@ def duplicate : forall A : U0, A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, a);
 }
 
+// The same function, built with intro.
+def duplicate_again : forall A : U0, A -&gt; A and A {
+  intro A a;      // A : U0 and a : A; what remains to give is A and A
+  exact (a, a);
+}
+
 def one_one := duplicate(Nat, 1);</code></pre>
-            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type the argument chose:</p>
+            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type; <code>intro A a;</code> takes the two inputs of <code>duplicate_again</code> in the same order. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type the argument chose:</p>
             <pre><code data-check="reject">def duplicate : forall A : U0, A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, 0);  // Error: Type mismatch: found Nat, expected A.
 }</code></pre>

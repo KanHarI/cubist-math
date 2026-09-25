@@ -75,7 +75,7 @@ def exists_greater_number : forall n : Nat, exists m : Nat, lt(n, m) {
             <p><code>lt_succ</code> proves <code>lt(n, succ(n))</code>, which unfolds to <code>exists k : Nat, succ(k) + n = succ(n)</code>. The pair <code>(0, refl(succ(n)))</code> takes <code>k = 0</code>, and <code>refl(succ(n))</code> is accepted as evidence because <code>succ(0) + n</code> computes to <code>succ(0 + n)</code> and then to <code>succ(n)</code>.</p>
             <p><code>exists_greater_number</code> is proved in a block. At every point in a block there is a <strong>goal</strong>, the type still to be proved, and a <strong>context</strong>, the names available and their types. At the start the goal is the whole statement and the context is empty.</p>
             <ul>
-              <li><code>intro n;</code> takes the input of the <code>forall</code> and adds it to the context. The context holds <code>n : Nat</code>, and the goal becomes <code>exists m : Nat, lt(n, m)</code>.</li>
+              <li><code>intro n;</code> takes the input of the <code>forall</code> and adds it to the context, as in <a href="types.html#tour-intro">chapter 1</a>. The context holds <code>n : Nat</code>, and the goal becomes <code>exists m : Nat, lt(n, m)</code>.</li>
               <li><code>exact (succ(n), lt_succ(n));</code> gives a value of exactly the goal type: the witness <code>succ(n)</code>, and the evidence <code>lt_succ(n) : lt(n, succ(n))</code>. It finishes the proof.</li>
             </ul>
             <p>In the proof workspace, or in any example here, click a proof-step line number to see its goal and context.</p>
