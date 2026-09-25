@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Chains of equalities, rewriting with checked lemmas, and simplification." />
+    <title>Cubist · 7. Equational reasoning and simplification</title>
+    <link rel="stylesheet" href="../language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 7</p>
+        <h1>Equational reasoning and simplification</h1>
+        <p class="lead">Chains of equalities, rewriting with checked lemmas, and simplification.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li class="current"><a href="rewriting.html" aria-current="page">Equational reasoning and simplification</a></li>
+            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
+            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Common errors</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#equational">Equational reasoning</a></li>
+            <li><a href="#simp">Simplification</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="equational">
+            <h2>Equational reasoning</h2>
+            <p>Proving an equality with only <code>sym</code>, <code>trans</code> and <code>cong</code> is exact but hard to read: every intermediate endpoint is implicit. The statements below build the same checked paths from a more readable source. Each produces an ordinary proof term that the kernel checks, and in the inspector each links to the term it built.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Situation</th><th>Use</th></tr></thead>
+              <tbody>
+                <tr><td>The two sides compute to the same thing</td><td><code>rfl;</code></td></tr>
+                <tr><td>You want to show each intermediate expression</td><td><code>calc { … }</code></td></tr>
+                <tr><td>One known equation should replace one specific subterm</td><td><code>rw [p];</code></td></tr>
+                <tr><td>A few lemmas should be applied everywhere until nothing changes</td><td><code>simp only [lemmas];</code></td></tr>
+                <tr><td>A hypothesis matches the goal after the same normalization</td><td><code>simpa only [lemmas] using h;</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>These tactics act on <strong>homogeneous</strong> equality goals: <code>x = y</code> with both sides in one fixed type. They do not rewrite a <code>PathP</code> over a varying family. For such goals, see <a href="cubical.html#cubical-shorthand">cubical shorthand</a>.</p>
+            <h3 id="rfl">Reflexivity: <code>rfl</code></h3>
+            <pre><code data-check="accept">import primes;
+
+def two_plus_two : 2 + 2 = 4 {
+  rfl;
+}</code></pre>
+            <p><code>rfl;</code> closes the goal <code>x = y</code> when <code>x</code> and <code>y</code> are definitionally equal. It is <code>exact refl(x);</code> without repeating <code>x</code>. Here <code>2 + 2</code> computes to <code>4</code>. <code>rfl</code> does not prove <code>n + 0 = n</code> for a variable <code>n</code>; that fails with “Type mismatch.” because it needs induction.</p>
+            <h3 id="calc">Chains: <code>calc</code></h3>
+            <pre><code data-check="accept">import primes;
+
+def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
+  calc {
+    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
+    _ = n by nat_add_zero(n);
+  }
+}</code></pre>
+            <p>Each step has the form <code>left = right by proof;</code>. The proof is either a term, followed by <code>;</code>, or a nested block <code>by { … }</code>, with no semicolon. Inside <code>calc</code>, <code>_</code> as a left endpoint means the right endpoint of the preceding step. The first left endpoint must match the goal's left side, and the last right endpoint must match the goal's right side, up to conversion. The steps are composed with <code>trans</code> in order.</p>
+            <p>A nested block starts with that step's equality as its goal, so it can use any tactic:</p>
+            <pre><code data-check="accept">import primes;
+
+def calc_with_blocks(B : U0, f : Nat -&gt; B, n : Nat) :
+  f((n + 0) + 0) = f(n) {
+  calc {
+    f((n + 0) + 0) = f(n + 0) by {
+      rw [nat_add_zero(n + 0)];
+    }
+    _ = f(n) by {
+      rw [nat_add_zero(n)];
+    }
+  }
+}</code></pre>
+            <p><code>calc</code> closes the block. It supports only equality chains. Mixed chains such as <code>a &lt; b = c &lt;= d</code> are not available.</p>
+            <h3 id="rw">Rewriting: <code>rw</code></h3>
+            <pre><code data-check="accept">import primes;
+
+def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
+  rw [nat_add_zero(n)];   // goal is now n = m
+  exact h;
+}
+
+def rewrite_second(n : Nat) : (n + 0) + (n + 0) = (n + 0) + n {
+  rw [nat_add_zero(n)] at lhs occurrence 2;
+}
+
+def rewrite_backwards(n : Nat) : n = n + 0 {
+  rw [&lt;- nat_add_zero(n)] at lhs;
+}</code></pre>
+            <p><code>rw [p];</code> takes a proof <code>p : a = b</code> and replaces one occurrence of <code>a</code> in the goal by <code>b</code>. Internally it builds <code>cong</code> of a one-hole context around the occurrence and composes it with the goal. <code>&lt;- p</code> uses <code>p</code> right to left, replacing <code>b</code> by <code>a</code>. Several rules <code>rw [p, q, &lt;- r];</code> are applied one after another, in order.</p>
+            <ul>
+              <li><strong>Rules are fully instantiated.</strong> Write <code>nat_add_zero(n)</code>, not <code>nat_add_zero</code>. <code>rw</code> does not search for arguments; use <code>simp only</code> for that.</li>
+              <li><strong>Which occurrence.</strong> Occurrences are counted in preorder (parent before children, left to right) through ordinary function applications. Without <code>at</code>, the count runs across the left endpoint and then the right. <code>at lhs</code> or <code>at rhs</code> restricts it to one side, and <code>occurrence N</code> picks the Nth match; the default is the first. In <code>rewrite_second</code>, the first <code>n + 0</code> is occurrence 1 and the second is occurrence 2.</li>
+              <li><strong>After rewriting.</strong> If the rewritten goal holds by conversion, <code>rw</code> can end the block; no <code>rfl;</code> is needed. Otherwise the block continues with the rewritten goal, and a following statement must prove it.</li>
+              <li><strong>Where it reaches.</strong> Rewriting descends through ordinary applications whose result type stays fixed, such as <code>f(…)</code> and <code>a + …</code>. It does not descend under <code>fun</code> or quantifier binders, into dependent arguments whose type would change, or into the arguments of <code>transport</code>, <code>comp</code> and other cubical forms. Without <code>at</code>, <code>rw</code> skips such a match and keeps counting eligible occurrences; if none remains, or <code>at</code> selects that side, it reports “Rewrite match occurs in an unsupported dependent position.” Use an explicit <code>cong(fun (x : A) =&gt; …, p)</code> instead.</li>
+            </ul>
+          </section>
+          <section id="simp">
+            <h2>Simplification</h2>
+            <p>The simplifier rewrites with a set of equality lemmas, repeatedly and everywhere it can, until no rule applies. Unlike <code>rw</code>, it accepts lemmas with quantified parameters and works out their arguments by matching. It is predictable rather than clever: it only uses the rules you select or register, never searches arbitrary theorems, and never succeeds by looping or exhausting a budget.</p>
+            <h3>Explicit rule lists: <code>simp only</code></h3>
+            <pre><code data-check="accept">import primes;
+
+def add_zero_twice_simp(n : Nat) : (n + 0) + 0 = n {
+  simp only [nat_add_zero];
+}
+
+def residual_goal(n m : Nat, h : n = m) : (n + 0) + 0 = m {
+  simp only [nat_add_zero];   // goal is now n = m
+  exact h;
+}</code></pre>
+            <p><code>nat_add_zero</code> has type <code>forall x : Nat, (x + 0) = x</code>. The simplifier finds each subterm of the shape <code>? + 0</code>, fills <code>x</code> from it, and checks the instantiated rule. As with <code>rw</code>, if the simplified goal holds by conversion the block is closed; otherwise the block continues with the simplified goal.</p>
+            <p>A rule may be:</p>
+            <ul>
+              <li>a quantified lemma name such as <code>nat_add_zero</code>;</li>
+              <li>an instantiated proof such as <code>nat_add_zero(n)</code>, or a local hypothesis such as <code>h : a = b</code>;</li>
+              <li>a named <a href="#simp-registration">simplification set</a>;</li>
+              <li>any of these reversed with <code>&lt;-</code>.</li>
+            </ul>
+            <p>Every quantified parameter must be determined by the matched left side. A rule such as <code>forall x y : Nat, x = x + (y * 0)</code> cannot be used left to right because nothing on the left fixes <code>y</code>. The error is “A simplification rule parameter is not determined by the matched side; supply arguments.” Supply the argument yourself, as in <code>simp only [rule(x, 0)]</code>. Matching is rigid and first-order: a pattern matches a subterm with the same function heads, and it does not unfold definitions to find a match.</p>
+            <h3>Traversal order</h3>
+            <p>The traversal is deterministic, so the same rules always give the same result:</p>
+            <ol>
+              <li>Children are simplified before their parents, and the left endpoint before the right.</li>
+              <li>At each subterm, rules are tried in the listed order and the first that matches fires.</li>
+              <li>The pass repeats until no rule applies.</li>
+            </ol>
+            <p>Traversal reaches the same positions as <a href="#rw"><code>rw</code></a>: ordinary applications with a fixed result type, not binders or cubical forms. A match in a dependent position is skipped, so it never stops simplification elsewhere or a goal that already holds. If the goal is left unsolved, the error says that such matches were skipped.</p>
+            <p>Commutativity-style rules such as <code>forall x y, x + y = y + x</code> rewrite their own output back into their input. The simplifier detects the repeated state and fails with “Simplification cycle detected in the selected rules.” Instantiate such rules at specific arguments instead, as in <code>nat_add_comm(a, b)</code>. There are also fixed resource bounds: 64 rewrites, 512 visited nodes and 8,192 match candidates per traversal, a bound on generated term size, and a one-second time limit on the rule search itself. That limit starts when the search starts. It does not include elaborating the rules you list, the statements after <code>simp</code> or <code>rw</code>, or the steps of a <code>calc</code>. Exceeding any bound is a failure with a named budget message.</p>
+            <h3 id="simpa">Using a hypothesis: <code>simpa</code></h3>
+            <pre><code data-check="accept">import primes;
+
+def simpa_example(n m : Nat, h : n + 0 = m) : n = m + 0 {
+  simpa only [nat_add_zero] using h;
+}</code></pre>
+            <p><code>simpa [rules] using proof;</code> simplifies both the goal and the type of <code>proof</code> with the same rules. Here both become <code>n = m</code>. It checks that the simplified types match, then reconstructs the original goal from the checked rewrite paths. This saves stating the normalized form of a hypothesis. <code>simpa</code> always closes the block.</p>
+            <h3 id="simp-types">Simplifying types, not just equalities</h3>
+            <p>When the goal is a type rather than an equality, <code>simp</code> rewrites the type itself. Each rewrite gives a checked path between types, and the proof of the simplified type is transported back along it:</p>
+            <pre><code data-check="accept">import primes;
+
+def family_simp(P : Nat -&gt; U0, n : Nat, h : P(n)) : P(n + 0) {
+  simp only [nat_add_zero];   // goal is now P(n)
+  exact h;
+}
+
+def family_simpa(P : Nat -&gt; U0, n : Nat, h : P(n)) : P(n + 0) {
+  simpa only [nat_add_zero] using h;
+}
+
+def move_type(A B : U0, p : A = B, a : A) : B {
+  simpa only [p] using a;
+}</code></pre>
+            <p>In <code>move_type</code>, the rule is a path <code>p : A = B</code> between types, and <code>simpa</code> transports <code>a</code> along it. The simplifier only follows actual paths of types. It will not turn a logical equivalence or a pair of maps between propositions into a rewrite.</p>
+            <h3 id="simp-registration">Registering rules and sets</h3>
+            <pre><code data-check="accept">import primes;
+
+simp_rule nat_add_zero priority 10;
+simp_set nat_units = [nat_add_zero];
+
+def default_rules(n : Nat) : n + 0 = n {
+  simp;
+}
+
+def named_set(n : Nat) : (n + 0) + 0 = n {
+  simp only [nat_units];
+}
+
+def simplified_copy(n m : Nat, h : n + 0 = m + 0) : n = m {
+  simp [nat_units] at h as h2;   // h2 : n = m
+  exact h2;
+}</code></pre>
+            <p><code>simp_rule name;</code> and <code>simp_rule name priority N;</code> are top-level directives, placed between declarations. They register an already checked equality as a <strong>default rule</strong>. The priority is an integer from 0 to 1000, with 0 as the default. <code>simp_set name = [a, b];</code> names a collection of rules. Neither directive creates a new proof rule or an assumption: the registered lemma is rechecked every time it is used.</p>
+            <p>Registrations and sets are inherited through imports. When modules register the same lemma, it appears once. Defaults are tried in descending priority, then in a fixed order by checked identity. If two imports define different sets with the same name, that name is ambiguous until the current module declares its own set with that name. Registering the same rule or declaring the same set twice in one module is an error.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Form</th><th>Rules used</th></tr></thead>
+              <tbody>
+                <tr><td><code>simp;</code></td><td>All default rules in scope</td></tr>
+                <tr><td><code>simp [a, s];</code></td><td>Default rules plus the listed rules and sets</td></tr>
+                <tr><td><code>simp only [a, s];</code></td><td>Exactly the listed rules and sets; defaults are ignored</td></tr>
+                <tr><td><code>simp without [a];</code></td><td>Default rules except <code>a</code>. Cannot be combined with <code>only</code>.</td></tr>
+                <tr><td><code>simp [s] at h as h2;</code></td><td>The rules of <code>simp [s]</code>, applied to the type of the local equality <code>h</code>. Binds the result as <code>h2</code> and keeps <code>h</code>. A proof statement must follow.</td></tr>
+                <tr><td><code>simpa …  using proof;</code></td><td>Any of the rule selections above, applied to the goal and to <code>proof</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>Plain <code>simp</code> depends on which rules happen to be registered, so it can change behavior when an import changes. Prefer <code>simp only</code> in library proofs. The inspector can freeze a working <code>simp</code> into a <code>simp only</code> list of the rules that actually fired; see <a href="checking.html#inspection">checking and inspection</a>.</p>
+            <h3 id="simp-conditional">Conditional rules</h3>
+            <p>A rule may have hypotheses that matching does not determine. Here <code>zero_if</code> rewrites <code>n + 0</code> to <code>0</code>, but only given <code>h : n = 0</code>:</p>
+            <pre><code data-check="accept">import primes;
+
+def zero_if(n : Nat, h : n = 0) : n + 0 = 0 {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+    _ = 0 by h;
+  }
+}
+
+simp_rule zero_if priority 20;
+
+def conditional(n : Nat, h : n = 0) : n + 0 = 0 {
+  simp with [h];
+}</code></pre>
+            <p>After matching fixes <code>n</code>, the simplifier needs a proof of the premise <code>n = 0</code>. It looks for one in this order:</p>
+            <ol>
+              <li>a local hypothesis listed in <code>with [h, …]</code>, which must be a name from the current context;</li>
+              <li><code>refl</code>, when the premise holds by conversion;</li>
+              <li>for an equality premise, simplifying it with the other selected rules. This search goes at most two levels deep. A rule cannot be used to prove its own premise. Each distinct premise is searched once per <code>simp</code>, and at most 64 premises are searched; after that, conditional rules whose premise is not already known simply do not fire.</li>
+            </ol>
+            <p>Every premise proof found this way is checked by the kernel and passed to the rule. If none is found, the rule does not fire, and the error names the blocked parameter and suggests <code>simp with [name]</code>. Only equality premises are solved. Other kinds of hypothesis must be supplied through <code>with</code>.</p>
+          </section>
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="paths.html">← 6. Equality and paths</a>
+            <a class="next" href="cubical.html">8. Cubical paths, pushouts and suspensions →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+  </body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="When two terms are equal by computation, and how definitions unfold." />
+    <title>Cubist · 9. Conversion and opacity</title>
+    <link rel="stylesheet" href="../language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 9</p>
+        <h1>Conversion and opacity</h1>
+        <p class="lead">When two terms are equal by computation, and how definitions unfold.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
+            <li class="current"><a href="conversion.html" aria-current="page">Conversion and opacity</a></li>
+            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Common errors</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#conversion">Conversion and opacity</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="conversion">
+            <h2>Conversion and opacity</h2>
+            <p>The checker accepts a term when its type is definitionally equal to the requested type. Two terms are definitionally equal when they reduce to the same normal form by these steps:</p>
+            <ul>
+              <li><strong>beta</strong>: a function applied to an argument computes, so <code>(fun (n : Nat) =&gt; succ(n))(0)</code> is <code>1</code>;</li>
+              <li><strong>delta</strong>: a named definition unfolds to its checked body;</li>
+              <li><strong>eliminator rules</strong>: induction, <code>match</code>, <code>unpack</code> and similar forms compute on constructors, so <code>2 + 2</code> is <code>4</code> but <code>n + 0</code> is stuck on the variable <code>n</code>;</li>
+              <li><strong>eta</strong>: a function equals <code>fun x =&gt; f(x)</code>, and a pair equals the pair of its projections;</li>
+              <li><strong>cubical rules</strong>: a path at <code>0</code> or <code>1</code> is its endpoint, and interval formulas are compared in normal form.</li>
+            </ul>
+            <p>This is why <code>refl</code> and <code>rfl</code> prove some equalities and not others. They succeed exactly when both sides reach the same normal form.</p>
+            <p><code>def</code> defines both constructions and proofs. The checker retains named definitions and can unfold their checked bodies to establish equality of types. <code>opaque def</code> is accepted syntax, but currently has the same checking and unfolding behavior as <code>def</code>. Proof blocks appear by name in the inspector, where their bodies can be opened.</p>
+            <pre><code data-check="accept">opaque def boxed_successor(n : Nat) = succ(n);
+
+def opened_is_two : boxed_successor(1) = 2 {
+  exact refl(2);
+}</code></pre>
+            <p>Conversion opens <code>boxed_successor(1)</code> to <code>succ(1)</code>, which is the numeral <code>2</code>, so <code>refl(2)</code> checks. There is no separate operation that unfolds a term on request: conversion unfolds definitions as it needs them. A theorem such as commutativity is still a propositional equality. The checker never uses a theorem automatically as a rewrite rule. <code>rw</code> and <code>simp</code> use theorems only when they are named in the proof or registered with <code>simp_rule</code>.</p>
+            <p>In the native cubical backend, <code>with unfolding [name₁, name₂] { expression }</code>
+              scopes selective conversion hints around an expression. The bracketed list contains
+              names of already checked definitions; the braces contain one expression, without a
+              trailing semicolon. Empty lists and nested scopes are allowed. For example:</p>
+            <pre><code data-check="accept">def identity(n : Nat) = n;
+def identity_zero : identity(0) = 0 {
+  exact with unfolding [identity] { refl(0) };
+}</code></pre>
+            <p>The checker first tries unfolding the selected wrappers while keeping other
+              definitions folded; ordinary conversion remains available. During elaboration,
+              the hints apply only inside the braces. The compiler may retain the result as a
+              checked helper definition, so the enclosing proof can reuse it without re-expanding
+              it. Rechecking that helper replays its selected strategy; the hints do not leak into
+              surrounding expressions. Hints change reduction order, never the type,
+              assumptions, or proof obligations. They are performance guidance, not evidence of
+              an equality, and do not normalize the whole expression.</p>
+          </section>
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="cubical.html">← 8. Cubical paths, pushouts and suspensions</a>
+            <a class="next" href="assumptions.html">10. Assumptions and computability →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+  </body>
+</html>

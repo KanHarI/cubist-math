@@ -60,7 +60,7 @@ def sum = with unfolding [] { 0 } + 1;`;
 });
 
 test("both language references and keyword styling describe the scoped syntax", async () => {
-  for (const file of ["proof.html", "language.html"]) {
+  for (const file of ["proof.html", "reference/conversion.html"]) {
     const text = await readFile(new URL(`../web/${file}`, import.meta.url), "utf8");
     assert.match(text, /with unfolding \[/);
     assert.doesNotMatch(text, /with_unfolding\(/);

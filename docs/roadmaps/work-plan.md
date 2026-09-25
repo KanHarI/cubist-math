@@ -48,7 +48,7 @@ packages (HoTT A1, A2, A4, A6) continue alongside stage 2.
 | I0.4 | Remove local scratch state (done) | — | — | S |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` (done) | Ergonomics 8 | — | M |
 | D0.1 | Checked-example harness for the reference (done) | Plan | — | S |
-| D0.2 | Reference chapters for the stable language | Plan | D0.1 | L |
+| D0.2 | Reference chapters for the stable language (split done; chapters 1–3 rewritten) | Plan | D0.1 | L |
 
 **I0.2 Archive the first library.** Done on 2026-09-25, working off `main`
 (I0.1 is deferred by choice).
@@ -104,22 +104,30 @@ reference pages. It checks those marked `accept` and requires those marked
 inert, so every current example is unverified. Acceptance: all current
 examples run under the harness, with failures fixed or removed.
 
-**D0.2 Reference chapters.** Split `web/language.html` into chapters, each
-with several checked examples per construct, including rejected ones:
-1. first proof and file structure;
-2. terms, functions and pairs;
-3. proof blocks;
-4. equality and paths;
-5. rewriting and simplification;
-6. cubical paths and composition;
-7. conversion and unfolding;
-8. assumptions and computability;
-9. checking, inspection and the CLI;
-10. errors.
+**D0.2 Reference chapters.** The reference is one page per chapter under
+`web/reference/`, with `language.html` as the index. Anchors of the former
+single page redirect to their chapters. The split and the rewrite of chapters
+1–3 were done on 2026-09-25. Each chapter gets several checked examples per
+construct, including rejected ones:
+1. A first proof and files (rewritten);
+2. Terms, functions and pairs (rewritten);
+3. Proof blocks (rewritten);
+4. Universes;
+5. Natural numbers and inductive types;
+6. Equality and paths;
+7. Equational reasoning and simplification;
+8. Cubical paths, pushouts and suspensions;
+9. Conversion and opacity;
+10. Assumptions and computability;
+11. Checking and inspection;
+12. Common errors.
 
-The universe and induction chapters describe today's syntax and are marked
-for rewrite in stages 1–2. The quick reference in `proof.html` becomes one
-checked example per construct, each linking to its chapter.
+Chapters 4 and 5 describe today's syntax and are rewritten in stages 1–2.
+Chapters 6–12 carry the former page's text, with the facts found wrong while
+writing chapters 1–3 corrected, until their own rewrite. The quick reference
+in `proof.html` becomes one checked example per construct, each linking to
+its chapter. `tests/reference-structure.test.mjs` checks the navigation,
+every link and anchor, and the redirects.
 
 ## Stage 1: universes and the goal layer
 

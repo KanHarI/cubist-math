@@ -242,7 +242,7 @@
           <code>trans(p, q)</code> joins paths <code>x = y</code> and
           <code>y = z</code>; <code>cong(f, p)</code> gives
           <code>f(x) = f(y)</code>. These are checked path operations,
-          with no additional axioms. See <a href="language.html#paths">equality and paths</a>.
+          with no additional axioms. See <a href="reference/paths.html#paths">equality and paths</a>.
         </p>
         <p>
           <code>intro name;</code> (or <code>intro x y h;</code> for several) introduces the next input or assumption from
@@ -289,7 +289,7 @@ def use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
           <code>A</code> and children indexed by <code>B(label)</code>.
           <code>sup(T, label, children)</code> builds a tree;
           <code>wrec(T, motive, step, tree)</code> performs dependent induction.
-          See <a href="language.html#w-types">W types and binary numbers</a>.
+          See <a href="reference/induction.html#w-types">W types and binary numbers</a>.
         </p>
         <p>
           <code>forall</code> is a dependent function (Π); <code>exists</code>
@@ -384,8 +384,8 @@ def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
           them instead. Prefer <code>simp only</code> in library proofs; click a
           <code>simp</code> to see its trace or replace it with the equivalent
           <code>simp only</code> list. See
-          <a href="language.html#equational">equational reasoning</a> and
-          <a href="language.html#simp">simplification</a>.
+          <a href="reference/rewriting.html#equational">equational reasoning</a> and
+          <a href="reference/rewriting.html#simp">simplification</a>.
         </p>
         <p>
           <strong>Cubical paths.</strong>
@@ -401,7 +401,7 @@ def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
           <code>Pushout(S, A, B, f, g)</code> glues along the two maps.
           <code>Suspension</code>, <code>north</code>, <code>south</code>, and <code>meridian</code>
           are ordinary definitions from <code>import suspension_types;</code>.
-          See <a href="language.html#cubical">cubical paths and pushouts</a> and the
+          See <a href="reference/cubical.html#cubical">cubical paths and pushouts</a> and the
           <a href="proof.html?proof=cubical_paths">checked examples</a>.
         </p>
         <p>
@@ -413,13 +413,13 @@ def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
           The compiler can retain a checked helper for this block so the enclosing
           proof can reuse it without expanding it again.
           It does not assume an equality or normalize the whole proof.
-          <code>axiom name : T;</code> declares an assumption, displayed in
-          dependencies. Truncation, function extensionality, univalence, choice,
-          and classical principles have explicit library dependencies; see
-          <a href="language.html#axioms">their signatures and restrictions</a>.
+          A source file cannot add assumptions: <code>axiom</code> declarations are rejected.
+          Truncation, function extensionality, univalence, choice,
+          and classical principles are explicit library assumptions; see
+          <a href="reference/assumptions.html#axioms">their signatures and restrictions</a>.
           <code>computable def</code> requires a declaration to use no assumption, and
           <code>evaluate term expecting value;</code> checks what a closed term computes to;
-          see <a href="language.html#computability">computability</a>.
+          see <a href="reference/assumptions.html#computability">computability</a>.
         </p>
       </details>
     </main>

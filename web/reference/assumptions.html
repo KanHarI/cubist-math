@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="The explicit library assumptions, and how a result states and checks that it computes." />
+    <title>Cubist · 10. Assumptions and computability</title>
+    <link rel="stylesheet" href="../language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 10</p>
+        <h1>Assumptions and computability</h1>
+        <p class="lead">The explicit library assumptions, and how a result states and checks that it computes.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
+            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li class="current"><a href="assumptions.html" aria-current="page">Assumptions and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Common errors</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#axioms">Axioms and propositional truncation</a></li>
+            <li><a href="#computability">Computability</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="axioms">
+            <h2>Axioms and propositional truncation</h2>
+            <p>The operations in this section use explicit universe-specialized axiom schemas. They are explicit dependencies, not consequences of the basic introduction and elimination rules. A source file cannot add assumptions of its own: <code>axiom</code> declarations are rejected, as described in <a href="first-proof.html#other-declarations">declarations</a>.</p>
+            <h3>Truncation</h3>
+            <p><code>Truncate(U0, A)</code>, often named <code>Mere(A)</code> by the library, expresses mere inhabitation. It discards access to a chosen witness. The inspector can render it as <span class="math">‖A‖</span>; that is display notation, not source syntax.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Small-universe operation</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>Truncate(U0, A)</code></td><td>The propositional truncation of <code>A : U0</code>.</td></tr>
+                <tr><td><code>TruncateIntro(U0, A, a)</code></td><td>Send <code>a : A</code> into its truncation.</td></tr>
+                <tr><td><code>TruncateProp(U0, A)</code></td><td>Evidence that any two elements of the truncation are equal.</td></tr>
+                <tr><td><code>TruncateElim(U0, A, P, proposition, map)</code></td><td>Given <code>proposition : forall x : P, forall y : P, x = y</code> and <code>map : A -&gt; P</code>, return <code>Truncate(U0, A) -&gt; P</code>.</td></tr>
+              </tbody>
+            </table></div>
+            <p>For a named universe, use <code>Truncate(U, A)</code>, <code>TruncateIntro(U, A, a)</code>, <code>TruncateProp(U, A)</code>, or <code>TruncateElim(U, A, P, proposition, map)</code>. Here <code>U</code> must be a universe such as <code>U1</code>, and both <code>A</code> and the elimination target <code>P</code> must belong to it.</p>
+            <p class="note">The current library truncation constructor returns a type in U₀ even for larger inputs. These wrappers preserve that signature; they do not assert universe-preserving truncation. In particular, <code>Truncate(U1, U0)</code> is valid, while <code>Truncate(U0, U0)</code> is not.</p>
+            <h3>Function extensionality and univalence</h3>
+            <p>Pointwise equal functions can be proved equal without an axiom using <a href="cubical.html#ext"><code>ext</code></a>. The <code>FunExt</code> interface below remains for existing proofs that were written against it. It is an assumption and is recorded as one.</p>
+            <dl>
+              <dt><code>FunExt(U0, A, B, f, g, pointwise)</code></dt>
+              <dd>For a family <code>B : A -&gt; U0</code> and dependent functions <code>f</code>, <code>g</code>, turn <code>forall x : A, f(x) = g(x)</code> into <code>f = g</code>.</dd>
+              <dt><code>FunExt(U, A, B, f, g, pointwise)</code></dt>
+              <dd>The explicit-universe form, with <code>A : U</code> and <code>B : A -&gt; U</code>.</dd>
+              <dt><code>Univalence(U0, A, B)</code></dt>
+              <dd>The single axiom: <code>IsEquiv(U1, (A =[U0] B), Equiv(U0, A, B), idtoequiv(U0, A, B))</code>.</dd>
+              <dt><code>idtoequiv(U, A, B, p)</code></dt>
+              <dd>The equivalence induced by a type equality, constructed by path induction without axioms.</dd>
+              <dt><code>ua(U0, A, B, equivalence)</code></dt>
+              <dd>For small types and equivalence evidence in the library’s native equivalence representation, produce <code>A = B</code>. A pair of arbitrary forward and backward maps is not enough.</dd>
+              <dt><code>UnivalenceBeta(U0, A, B, equivalence, x)</code></dt>
+              <dd>Prove that transport of <code>x : A</code> along the univalence path equals the image of <code>x</code> under the equivalence’s forward function.</dd>
+            </dl>
+            <p><code>ua(U)(A, B, e)</code> is the inverse extracted from <code>Univalence(U, A, B)</code>. <code>UnivalenceBeta</code> is a derived transport theorem. <code>UnivalenceEta(U, A, B, p)</code> proves <code>ua(U, A, B, idtoequiv(U, A, B, p)) = p</code>. Neither law is an additional axiom. All accept a parameter <code>U : Universe</code>.</p>
+            <h3>Classical principles and choice</h3>
+            <dl>
+              <dt><code>LEM(U0, A, doubleNegation)</code></dt>
+              <dd>Uses excluded middle to turn <code>doubleNegation : (A -&gt; Void) -&gt; Void</code> into <code>Truncate(U0, A)</code>, for <code>A : U0</code>.</dd>
+              <dt><code>Choice(U)(A, B, setA, setFibers, inhabited)</code></dt>
+              <dd>For <code>A : U</code>, <code>B : A -&gt; U</code>, and <code>inhabited : forall a : A, Truncate(U, B(a))</code>, obtain <code>Truncate(U, forall a : A, B(a))</code>. <code>setA</code> proves that A is a set; <code>setFibers</code> proves it for every fiber. This applies the existing choice axiom at the selected universe. It does not return a selected function outside truncation.</dd>
+            </dl>
+            <p>All these interfaces are first-class universe specializations: <code>Choice(U0)</code>, <code>FunExt(U1)</code>, <code>Truncate(U2)</code> and <code>Univalence(U1)</code> are functions you can name or pass onward. A declared <code>U : Universe</code> also works. Supplying the universe and later arguments together is equivalent: <code>Choice(U0, A, B, setA, setFibers, inhabited)</code>.</p>
+            <p>Universe parameters are specialized by the elaborator before kernel checking. For example, <code>Choice(U0)</code> selects the choice schema at <code>U0</code>; the kernel sees a named context assumption with that specialized signature. There is no kernel application of a generic <code>Choice</code> term to <code>U0</code>. Applying this specialized assumption to <code>A</code>, <code>B</code>, and its remaining arguments does produce ordinary kernel applications. The inspector and workbench show the generic schema, the universe substitution, and the checked instance separately. The generic schema display is explanatory notation, not a checked kernel term.</p>
+            <p>These are separate dependencies: using truncation or function extensionality does not by itself request excluded middle or choice. Inspect the axiom list on the particular theorem for the dependencies of its checked derivation, including its type and context.</p>
+          </section>
+          <section id="computability">
+            <h2>Computability</h2>
+            <p>Every assumption in <a href="#axioms">the previous section</a> is a name with a type and no computation rule. A term that uses one can stop computing. <code>LEM(U0, A, doubleNegation)</code> has type <code>Truncate(U0, A)</code>, but it is not built from any element of <code>A</code>, so nothing can be computed from it. A term that uses no assumption is built from the kernel’s own rules only. The kernel is designed so that such a closed term reduces to a canonical value: a closed <code>Nat</code> reduces to a numeral. The test suite checks this on closed examples. The language lets a declaration require it, and lets a file test what a term computes to.</p>
+            <h3 id="computable"><code>computable def</code></h3>
+            <p>Writing <code>computable</code> before <code>def</code> or <code>opaque def</code> requires the declaration to use no assumption. The checker collects the assumptions of the checked term, of its type and of every definition they mention. This is the same list that the inspector shows. If the list is not empty, the declaration is rejected. The error names every assumption, and one chain of definitions through which the first one enters. A rejected declaration is not added, so the declarations that use it are blocked too.</p>
+            <pre><code data-check="accept">import primes;
+
+computable def double(n : Nat) = n + n;
+
+computable def double_two : double(2) = 4 {
+  rfl;
+}</code></pre>
+            <p>A computable declaration may take parameters, like <code>double</code>. The requirement is about assumptions, not about closed terms: every application of <code>double</code> to a numeral computes. The library’s <code>double_negation</code> is proved with excluded middle, so a declaration that uses it cannot be computable:</p>
+            <pre><code data-check="reject" data-error="depends on non-computing assumptions: LEM(U0)">import classical;
+
+computable def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
+  exact double_negation(P, prop, nn);
+}</code></pre>
+            <p>The error reads: <code>This computable declaration depends on non-computing assumptions: LEM(U0), Truncate(U0), TruncateElim(U0). Path to LEM(U0): double_negation (classical) → LEM(U0).</code> Without the modifier, the same proof is accepted and its assumptions are listed as usual. The modifier changes nothing else: a computable declaration is checked and unfolded like any other.</p>
+            <h3 id="evaluate"><code>evaluate</code></h3>
+            <p><code>evaluate term expecting value;</code> is a top-level directive, placed between declarations. It checks both terms and requires <code>term</code> to use no assumption. It requires the two to have the same type, then compares their normal forms. It defines no name. A success is reported with the normal form. A failure is an error that makes the module incomplete, so every evaluation is rechecked with the rest of its module.</p>
+            <pre><code data-check="accept">import primes;
+
+def double(n : Nat) = n + n;
+
+evaluate double(3) expecting 6;
+evaluate double(double(1)) expecting 2 + 2;</code></pre>
+            <pre><code data-check="reject" data-error="The term evaluates to 6, not 7.">import primes;
+
+def double(n : Nat) = n + n;
+
+evaluate double(3) expecting 7;</code></pre>
+            <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to. Evaluation computes full normal forms: it unfolds <code>opaque</code> definitions and ignores <code>with unfolding</code> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are keywords only in these positions. Elsewhere they are ordinary names.</p>
+            <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
+            <p class="note">Truncation is itself an assumption in the current kernel, so a term of type <code>Truncate(U0, A)</code> never evaluates. The kernel roadmap makes truncation an inductive type with a computation rule. After that, a closed truncated term that uses no other assumption will compute, and <code>evaluate</code> is planned to read the witness inside it.</p>
+          </section>
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="conversion.html">← 9. Conversion and opacity</a>
+            <a class="next" href="checking.html">11. Checking and inspection →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+  </body>
+</html>

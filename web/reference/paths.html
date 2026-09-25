@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Identity types, their basic operations, and path induction." />
+    <title>Cubist · 6. Equality and paths</title>
+    <link rel="stylesheet" href="../language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 6</p>
+        <h1>Equality and paths</h1>
+        <p class="lead">Identity types, their basic operations, and path induction.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li class="current"><a href="paths.html" aria-current="page">Equality and paths</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
+            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Common errors</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#paths">Equality and paths</a></li>
+            <li><a href="#carriers">Explicit carriers</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="paths">
+            <h2>Equality and paths</h2>
+            <p><code>x = y</code> is the identity type, not an instruction to rewrite source text. Its elements are paths. Equality of paths can itself be stated using another identity type. Equality by computation is handled separately by <a href="conversion.html#conversion">conversion</a>.</p>
+            <p>Two notions of “equal” appear throughout the reference:</p>
+            <ul>
+              <li><strong>Definitional equality</strong> (conversion): two terms compute to the same normal form, as <code>0 + n</code> and <code>n</code> do. The checker uses it silently. It is never a proposition you state or prove.</li>
+              <li><strong>Propositional equality</strong>: a path <code>p : x = y</code>, a proof that must be constructed, as for <code>n + 0 = n</code>. Using it to replace <code>x</code> by <code>y</code> requires an explicit operation: <code>transport</code>, <code>cong</code>, <code>rw</code> or <code>simp</code>.</li>
+            </ul>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Operation</th><th>Required data and result</th></tr></thead>
+              <tbody>
+                <tr><td><code>x =[T] y</code></td><td>Equality of two elements of the explicitly supplied carrier <code>T</code>. Plain <code>x = y</code> infers the carrier.</td></tr>
+                <tr><td><code>refl(x)</code></td><td>A path <code>x = x</code>. It also proves <code>x = y</code> whenever <code>x</code> and <code>y</code> are definitionally equal.</td></tr>
+                <tr><td><code>sym(p)</code></td><td>Symmetry: reverse <code>p : x =[T] y</code> to obtain <code>y =[T] x</code>, preserving the carrier.</td></tr>
+                <tr><td><code>trans(p, q)</code></td><td>Compose <code>p : x = y</code> and <code>q : y = z</code> into <code>x = z</code>.</td></tr>
+                <tr><td><code>cong(f, p)</code></td><td>For a function with constant codomain, map <code>p : x = y</code> to <code>f(x) = f(y)</code>.</td></tr>
+                <tr><td><code>transport(C, x, y, p, value)</code></td><td>Move <code>value : C(x)</code> along <code>p : x = y</code> to obtain <code>C(y)</code>. The shorter <a href="cubical.html#cubical-shorthand"><code>along C by p from value</code></a> infers <code>x</code> and <code>y</code>.</td></tr>
+                <tr><td><code>apd(f, x, y, p)</code></td><td>For a dependent function <code>f : forall x : A, C(x)</code>, prove <code>transport(C, x, y, p, f(x)) = f(y)</code>. For the direct dependent path, use <code>apd_path(f, p)</code>.</td></tr>
+                <tr><td><code>path_induction(A, motive, base, x, y, p)</code></td><td>Identity elimination, described below. Does not require a classical axiom.</td></tr>
+              </tbody>
+            </table></div>
+            <p><code>sym</code>, <code>trans</code>, and <code>cong</code> are built into the language and need no import. They construct cubical paths pointwise and add no axiom. The <code>paths</code> library names them <code>inverse</code>, <code>concatenate</code> and similar, and proves their laws, such as <code>trans(p, refl(y)) = p</code>.</p>
+            <pre><code data-check="accept">def reverse_path(A : U0, x y : A, p : x = y) : y = x {
+  exact sym(p);
+}
+
+def join_paths(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
+  exact trans(p, q);
+}
+
+def map_path(A B : U0, f : A -&gt; B, x y : A, p : x = y) : f(x) = f(y) {
+  exact cong(f, p);
+}</code></pre>
+            <p><code>sym</code> also reverses equalities of types: in <code>A =[U] B</code>, the endpoints <code>A</code> and <code>B</code> are types and their carrier is the universe <code>U</code>.</p>
+            <pre><code data-check="accept">def reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
+  exact sym(p);
+}</code></pre>
+            <p>For example, univalence applied to the group structure identity equivalence gives <code>(G =[Group] H) =[U1] GroupIso(G, H)</code>. Applying <code>sym</code> gives the orientation used in <a href="../proof.html?proof=group_univalence&amp;name=group_isomorphism_is_equality">the highlighted group theorem</a>: <code>GroupIso(G, H) =[U1] (G =[Group] H)</code>.</p>
+            <h3>Path induction</h3>
+            <p>The path-induction motive takes <code>x : A</code>, <code>y : A</code>, and <code>p : x = y</code>, and returns a type. The reflexive case <code>base</code> takes <code>a : A</code> and proves <code>motive(a, a, refl(a))</code>. The eliminator returns <code>motive(x, y, p)</code>. Informally: to prove something about every path, it suffices to prove it for reflexivity, provided both endpoints are free to vary.</p>
+            <p>Some inferred pair projections do not retain enough equality information for <code>sym</code>, <code>trans</code>, or <code>cong</code>. Introduce an explicitly typed claim with <code>have p : x = y := term;</code> in that case.</p>
+          </section>
+          <section id="carriers">
+            <h2>Explicit carriers</h2>
+            <p><code>x =[T] y</code> is equality with an explicit carrier: both endpoints must have type <code>T</code>. Plain <code>x = y</code> infers that carrier. This is an identity type, not an assertion of definitional equality or a cast.</p>
+            <pre><code data-check="accept">def explicit_reflexivity(U : Universe, A : U, x : A) : x =[A] x {
+  exact refl(x);
+}</code></pre>
+          </section>
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="induction.html">← 5. Natural numbers and inductive types</a>
+            <a class="next" href="rewriting.html">7. Equational reasoning and simplification →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+  </body>
+</html>

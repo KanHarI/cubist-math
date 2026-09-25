@@ -51,7 +51,7 @@ while checking that the expanded AST is unchanged. Add `-- --check` for a dry ru
 - [`docs/guides/kernel.md`](docs/guides/kernel.md): a mathematician's guide to reading the kernel.
 - [`lib/cubical/`](lib/cubical): elaboration, inert native adapters, and an independent JavaScript reference used in tests.
 - [`archive/first-library/`](archive/first-library): the archived first `.cubist` library, still checked in CI. A rebuilt library replaces it area by area; see [`docs/library-results.md`](docs/library-results.md) and the [work plan](docs/roadmaps/work-plan.md).
-- [`web/language.html`](web/language.html): the full source language reference.
+- [`web/language.html`](web/language.html): the source language reference, one page per chapter under `web/reference/`.
 - [`docs/tactical/galois-handoff.md`](docs/tactical/galois-handoff.md) and [`docs/roadmaps/complex-analysis-roadmap.md`](docs/roadmaps/complex-analysis-roadmap.md): unfinished mathematical developments and resumption notes.
 
 ## Resuming development

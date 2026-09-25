@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="The basic types and the terms that build and use them: functions, pairs, sums, Unit and Void, and numbers." />
+    <title>Cubist · 2. Terms, functions and pairs</title>
+    <link rel="stylesheet" href="../language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 2</p>
+        <h1>Terms, functions and pairs</h1>
+        <p class="lead">The basic types and the terms that build and use them: functions, pairs, sums, Unit and Void, and numbers.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li class="current"><a href="terms.html" aria-current="page">Terms, functions and pairs</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
+            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Common errors</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#types">Types at a glance</a></li>
+            <li><a href="#functions">Functions</a></li>
+            <li><a href="#pairs">Pairs and dependent pairs</a></li>
+            <li><a href="#sums">Sums</a></li>
+            <li><a href="#unit-and-void">Unit, Void and negation</a></li>
+            <li><a href="#numbers">Numbers and arithmetic</a></li>
+            <li><a href="#typed">Expected types and <code>typed</code></a></li>
+            <li><a href="#precedence">Precedence</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="types">
+            <h2>Types at a glance</h2>
+            <p>Propositions are types, and a proof of a proposition is an element of it. There is no separate sort of propositions. <code>A -> B</code> is implication, <code>A and B</code> is conjunction, <code>A or B</code> is a disjunction that records which side holds, and <code>A -> Void</code> is negation.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Source</th><th>Meaning</th><th>Build an element</th><th>Use an element</th></tr></thead>
+              <tbody>
+                <tr><td><code>A -> B</code></td><td>Functions, and implication</td><td><code>fun (a : A) => b</code>, or <code>intro a;</code></td><td>Application <code>f(a)</code></td></tr>
+                <tr><td><code>forall x : A, B(x)</code></td><td>Dependent functions, <span class="math">Π<sub>x:A</sub> B(x)</span></td><td>The same as for <code>-></code></td><td>Application <code>f(a) : B(a)</code></td></tr>
+                <tr><td><code>A and B</code></td><td>Pairs, <span class="math">A × B</span></td><td><code>(a, b)</code></td><td><code>obtain</code>, <code>unpack</code></td></tr>
+                <tr><td><code>exists x : A, B(x)</code></td><td>Dependent pairs, <span class="math">Σ<sub>x:A</sub> B(x)</span></td><td><code>(witness, evidence)</code></td><td><code>obtain</code>, <code>unpack</code>, <code>pair_induction</code></td></tr>
+                <tr><td><code>A or B</code></td><td>Disjoint sums, <span class="math">A + B</span></td><td><code>left(a)</code>, <code>right(b)</code></td><td><code>match</code>, <code>cases</code></td></tr>
+                <tr><td><code>Unit</code></td><td>The one-element type</td><td><code>tt</code></td><td><code>unit_induction</code></td></tr>
+                <tr><td><code>Void</code></td><td>The empty type, falsehood</td><td>None</td><td><code>absurd</code></td></tr>
+                <tr><td><code>Nat</code></td><td>Natural numbers</td><td><code>0</code>, <code>succ(n)</code>, numerals</td><td><a href="induction.html#induction"><code>induction</code></a></td></tr>
+                <tr><td><code>x = y</code></td><td>Equality: paths from <code>x</code> to <code>y</code></td><td><code>refl(x)</code></td><td>See <a href="paths.html#paths">equality and paths</a></td></tr>
+                <tr><td><code>U0</code>, <code>U1</code>, …</td><td>Universes of types</td><td>Types themselves</td><td>See <a href="universes.html#universes">universes</a></td></tr>
+              </tbody>
+            </table></div>
+            <p class="note"><code>exists</code> is a pair with an actual witness. It is not truncated. Likewise, <code>or</code> keeps its choice of side. For mere existence, use <a href="assumptions.html#axioms">propositional truncation</a>.</p>
+          </section>
+          <section id="functions">
+            <h2>Functions</h2>
+            <p><code>fun (x : A) => body</code> is the function sending <code>x</code> to <code>body</code>. Its type is <code>A -> B</code> when <code>body : B</code> does not mention <code>x</code>, and <code>forall x : A, B(x)</code> when it does. Binders can be grouped like parameters:</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Source</th><th>Means</th></tr></thead>
+              <tbody>
+                <tr><td><code>fun (x y : A) => body</code></td><td><code>fun (x : A) => fun (y : A) => body</code></td></tr>
+                <tr><td><code>fun (a : A) (b : B) => body</code></td><td>Two binder groups with different types. Use separate parentheses, not commas.</td></tr>
+                <tr><td><code>fun x => body</code></td><td>One binder whose type is taken from the expected function type</td></tr>
+              </tbody>
+            </table></div>
+            <pre><code data-check="accept">def constant(A B : U0) = fun (a : A) (b : B) =&gt; a;
+
+def second(A : U0) = fun (x y : A) =&gt; y;
+
+def twice(A : U0, f : A -&gt; A) = fun (x : A) =&gt; f(f(x));</code></pre>
+            <p>A binder without a type needs an expected function type, from a stated result type, an <code>exact</code> goal or <code>typed</code>. In <code>compose</code>, each untyped binder reads its type from the goal: <code>g : B -> C</code>, then <code>f : A -> B</code>, then <code>x : A</code>.</p>
+            <pre><code data-check="accept">def compose(A B C : U0) : (B -&gt; C) -&gt; (A -&gt; B) -&gt; A -&gt; C {
+  exact fun g =&gt; fun f =&gt; fun x =&gt; g(f(x));
+}
+
+def successor_function = typed(Nat -&gt; Nat, fun n =&gt; succ(n));</code></pre>
+            <pre><code data-check="reject" data-error="Untyped lambda requires an expected function type.">def no_expected_type = fun x =&gt; x;</code></pre>
+            <p>An untyped binder stands alone. Write <code>fun x => fun y => …</code>, not <code>fun x y => …</code>; only typed binders can share a group:</p>
+            <pre><code data-check="reject" data-error="Expected '=&gt;', found 'y'.">def pair_of_binders(A : U0) : A -&gt; A -&gt; A {
+  exact fun x y =&gt; x;
+}</code></pre>
+            <h3 id="application">Application</h3>
+            <p>Application is curried. <code>f(a, b)</code> means <code>f(a)(b)</code>, and <code>f(a)</code> alone is a function waiting for the rest. All arguments are explicit.</p>
+            <pre><code data-check="accept">def apply_twice(A : U0, f : A -&gt; A, a : A) = f(f(a));
+
+def add_two = apply_twice(Nat, fun (n : Nat) =&gt; succ(n));
+
+def five = add_two(3);</code></pre>
+            <p>Only a function can be applied:</p>
+            <pre><code data-check="reject" data-error="Source application is not a function.">def not_a_function = 0(1);</code></pre>
+            <h3 id="dependent-functions">Dependent functions</h3>
+            <p>In <code>forall x : A, B(x)</code>, the result type depends on the argument. Applying <code>f : forall n : Nat, P(n)</code> to <code>0</code> gives an element of <code>P(0)</code>. <code>forall x y : A, B</code> abbreviates two nested quantifiers over the same type.</p>
+            <pre><code data-check="accept">def apply_at_zero(P : Nat -&gt; U0, f : forall n : Nat, P(n)) : P(0) {
+  exact f(0);
+}
+
+def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x y : A, P(x, y)) : forall y x : A, P(x, y) {
+  intro y x;
+  exact f(x, y);
+}</code></pre>
+            <p>The argument decides the result type, so <code>f(0)</code> does not prove <code>P(1)</code>:</p>
+            <pre><code data-check="reject" data-error="Type mismatch.">def wrong_index(P : Nat -&gt; U0, f : forall n : Nat, P(n)) : P(1) {
+  exact f(0);
+}</code></pre>
+          </section>
+          <section id="pairs">
+            <h2>Pairs and dependent pairs</h2>
+            <p><code>(a, b)</code> builds an element of <code>A and B</code>, or of <code>exists x : A, B(x)</code> when <code>b : B(a)</code>. For an existential, the first component is the witness and the second is the evidence about it.</p>
+            <pre><code data-check="accept">def two_units = typed(Unit and Unit, (tt, tt));
+
+def two_exists : exists n : Nat, n = 2 {
+  exact (2, refl(2));
+}</code></pre>
+            <p>A pair needs an expected type. <code>(1, 2)</code> could belong to <code>Nat and Nat</code> or to many <code>exists</code> types, and the elaborator does not guess. The expected type comes from a stated result type, a <code>have</code> type, a function argument’s type or <a href="#typed"><code>typed</code></a>.</p>
+            <pre><code data-check="reject" data-error="Pair requires an expected type.">def unannotated = (1, 2);</code></pre>
+            <h3 id="tuples">Tuples</h3>
+            <p>The kernel has only binary pairs. Tuple notation <code>(a, b, c)</code> means <code>(a, (b, c))</code>, and the same notation works for types: <code>A and B and C</code> means <code>A and (B and C)</code>. Explicit left nesting <code>((a, b), c)</code> is a different shape.</p>
+            <pre><code data-check="accept">def flat_triple : Nat and Unit and Nat {
+  exact (1, tt, 2);
+}
+
+def nested_triple : (Nat and Unit) and Nat {
+  exact ((1, tt), 2);
+}
+
+def first_of_three(t : Nat and Nat and Nat) : Nat {
+  obtain (a, b, c) = t;
+  exact a;
+}
+
+def one = first_of_three((1, 2, 3));</code></pre>
+            <p>To pass a tuple as one argument, keep its parentheses: <code>f((1, 2, 3))</code>. <code>f(1, 2, 3)</code> passes three arguments. A tuple must match the nesting of its type:</p>
+            <pre><code data-check="reject" data-error="Expected a Sigma type for pair.">def wrong_nesting : (Nat and Unit) and Nat {
+  exact (1, tt, 2);
+}</code></pre>
+            <p>The formatter, <code>npm run format:cubist</code>, writes right-nested pairs as flat tuples and checks that the expanded syntax is unchanged. <code>npm run linearize:cubist -- --check</code> lists such pairs without changing any file.</p>
+            <h3 id="using-pairs">Using a pair</h3>
+            <p>There are no projection functions. In a proof block, <a href="proof-blocks.html#obtain"><code>obtain</code></a> names the components. In a term, <code>unpack pair as (a, b) return T { body; }</code> does the same, where the result type <code>T</code> does not mention <code>a</code> or <code>b</code>:</p>
+            <pre><code data-check="accept">def first_number(pair : Nat and Nat) =
+  unpack pair as (a, b) return Nat { a; };
+
+def swap(pair : Nat and Unit) =
+  unpack pair as (n, u) return Unit and Nat { typed(Unit and Nat, (u, n)); };</code></pre>
+            <pre><code data-check="reject" data-error="unpack requires a dependent pair.">def not_a_pair(n : Nat) = unpack n as (a, b) return Nat { a; };</code></pre>
+            <p>When the result type depends on the pair itself, use <code>pair_induction(motive, branch, pair)</code>. For <code>pair : exists x : A, B(x)</code>, the branch takes <code>x : A</code> and <code>y : B(x)</code> and proves <code>motive((x, y))</code>. The result proves <code>motive(pair)</code>.</p>
+            <pre><code data-check="accept">def pair_is_itself(A : U0, B : A -&gt; U0, p : exists x : A, B(x)) : p = p {
+  exact pair_induction(fun (q : exists x : A, B(x)) =&gt; q = q,
+    fun (x : A) (y : B(x)) =&gt; refl(typed(exists x : A, B(x), (x, y))), p);
+}</code></pre>
+          </section>
+          <section id="sums">
+            <h2>Sums</h2>
+            <p><code>left(a)</code> and <code>right(b)</code> build elements of <code>A or B</code>. Like pairs, they need an expected type, because the other side is not determined:</p>
+            <pre><code data-check="accept">def choose_left = typed(Unit or Nat, left(tt));
+
+def choose_right : Unit or Nat {
+  exact right(3);
+}</code></pre>
+            <pre><code data-check="reject" data-error="Sum injection requires an expected type.">def unannotated = left(tt);</code></pre>
+            <h3 id="match">Case analysis: <code>match</code></h3>
+            <p><code>match value return T { left x => …; right y => …; }</code> computes a result of type <code>T</code> from each side. Each branch is an expression and ends with <code>;</code>.</p>
+            <pre><code data-check="accept">def to_number(value : Unit or Nat) = match value return Nat {
+  left u =&gt; 0;
+  right n =&gt; n;
+};
+
+def swap_sides(A B : U0, value : A or B) = match value return B or A {
+  left a =&gt; right(a);
+  right b =&gt; left(b);
+};</code></pre>
+            <p>When the result type depends on the value, name it with <code>as</code>: <code>match value as z return C(z) { … }</code>. The left branch must produce <code>C(left(x))</code> and the right branch <code>C(right(y))</code>.</p>
+            <pre><code data-check="accept">def Shape(value : Unit or Unit) = match value as z return U0 {
+  left a =&gt; Nat;
+  right b =&gt; Unit;
+};
+
+def default(value : Unit or Unit) = match value as z return Shape(z) {
+  left a =&gt; 0;
+  right b =&gt; tt;
+};</code></pre>
+            <pre><code data-check="reject" data-error="match requires a sum type.">def not_a_sum(n : Nat) = match n return Nat {
+  left a =&gt; 0;
+  right b =&gt; 1;
+};</code></pre>
+            <p>The result type is the expected type of each branch, so <code>right(a)</code> needs no annotation. In a proof block, <a href="proof-blocks.html#cases"><code>cases</code></a> does the same with a block for each side, but without refining the goal.</p>
+          </section>
+          <section id="unit-and-void">
+            <h2>Unit, Void and negation</h2>
+            <p><code>tt</code> is the element of <code>Unit</code>. <code>Void</code> has no elements: <code>absurd(impossible)</code> turns <code>impossible : Void</code> into an element of any expected type. Negation is <code>A -> Void</code>; there is no <code>not</code> keyword.</p>
+            <pre><code data-check="accept">def anything_from_void(A : U0, impossible : Void) : A {
+  exact absurd(impossible);
+}
+
+def double_negation_intro(A : U0, a : A) : (A -&gt; Void) -&gt; Void {
+  intro not_a;
+  exact not_a(a);
+}
+
+def unit_is_tt(u : Unit) : u = tt {
+  exact unit_induction(fun (v : Unit) =&gt; v = tt, refl(tt), u);
+}</code></pre>
+            <p><code>unit_induction(motive, base, value)</code> proves <code>motive(value)</code> from <code>base : motive(tt)</code>. <code>absurd</code> needs to know the type to produce:</p>
+            <pre><code data-check="reject" data-error="absurd requires an expected type.">def unannotated(impossible : Void) = absurd(impossible);</code></pre>
+          </section>
+          <section id="numbers">
+            <h2>Numbers and arithmetic</h2>
+            <p><code>Nat</code> is built from <code>0</code> and <code>succ</code>. A numeral is notation for repeated <code>succ</code>: <code>3</code> is <code>succ(succ(succ(0)))</code>, not a machine integer. Numerals go up to 256.</p>
+            <pre><code data-check="accept">def three = succ(succ(succ(0)));
+
+def three_is_three : three = 3 {
+  exact refl(3);
+}</code></pre>
+            <pre><code data-check="reject" data-error="Numerals are limited to 256 in this version.">def too_big = 257;</code></pre>
+            <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines. Import it with <code>import primes;</code>. The operators are not overloaded: they apply to <code>Nat</code> only.</p>
+            <pre><code data-check="accept">import primes;
+
+def two_times_three : 2 * 3 = 6 {
+  exact refl(6);
+}
+
+def two_below_three : 2 &lt; 3 {
+  exact tt;
+}</code></pre>
+            <p>Closed arithmetic computes, so <code>refl(6)</code> proves <code>2 * 3 = 6</code>. The order is defined by computation too: <code>2 &lt; 3</code> computes to <code>Unit</code>, proved by <code>tt</code>, and <code>3 &lt; 2</code> computes to <code>Void</code>. Without the import, the notation has no definition:</p>
+            <pre><code data-check="reject" data-error="Untranslated name: add">def four = 2 + 2;</code></pre>
+            <p>Addition recurses on its first argument. <code>0 + n</code> computes to <code>n</code>, but <code>n + 0</code> is stuck on the variable <code>n</code>, so it needs a proof by induction. The library proves it as <code>nat_add_zero(n)</code>.</p>
+            <pre><code data-check="accept">import primes;
+
+def zero_plus(n : Nat) : 0 + n = n {
+  exact refl(n);
+}
+
+def plus_zero(n : Nat) : n + 0 = n {
+  exact nat_add_zero(n);
+}</code></pre>
+            <pre><code data-check="reject" data-error="Type mismatch.">import primes;
+
+def plus_zero_by_computation(n : Nat) : n + 0 = n {
+  exact refl(n);
+}</code></pre>
+            <p>Induction on <code>Nat</code> and binary numerals are described in chapter 5, <a href="induction.html#induction">natural numbers and inductive types</a>.</p>
+          </section>
+          <section id="typed">
+            <h2>Expected types and <code>typed</code></h2>
+            <p>Several forms need an expected type: pairs, <code>left</code> and <code>right</code>, <code>absurd</code>, and untyped <code>fun x =></code>. The expected type comes from:</p>
+            <ul>
+              <li>the stated result type of a block declaration, through <code>exact</code>;</li>
+              <li>the type in <code>have name : T</code>;</li>
+              <li>the parameter type, when the term is an argument of a function;</li>
+              <li>the result type of a <code>match</code> branch;</li>
+              <li><code>typed(T, term)</code>, which checks <code>term</code> against <code>T</code>.</li>
+            </ul>
+            <pre><code data-check="accept">def number = typed(Nat, 3);
+
+def successor = typed(Nat -&gt; Nat, fun n =&gt; succ(n));
+
+def choice = typed(Nat or Unit, right(tt));</code></pre>
+            <pre><code data-check="reject" data-error="Type mismatch.">def not_a_number = typed(Nat, tt);</code></pre>
+          </section>
+          <section id="precedence">
+            <h2>Precedence</h2>
+            <p>From tightest to loosest:</p>
+            <ol>
+              <li>application <code>f(a)</code>;</li>
+              <li>interval application <code>p @ i</code>;</li>
+              <li><code>*</code>;</li>
+              <li><code>+</code>;</li>
+              <li><code>=</code>, <code>&lt;</code>, <code>&lt;=</code>;</li>
+              <li><code>and</code>;</li>
+              <li><code>or</code>;</li>
+              <li><code>-></code>.</li>
+            </ol>
+            <p><code>-></code>, <code>and</code> and <code>or</code> group to the right. The other operators group to the left. The body of <code>fun</code>, <code>forall</code> and <code>exists</code> extends as far as possible. So <code>A -> B -> C</code> means <code>A -> (B -> C)</code>, and <code>forall x : A, P(x) -> Q(x)</code> means <code>forall x : A, (P(x) -> Q(x))</code>.</p>
+            <pre><code data-check="accept">def arrows_group_right(A B C : U0, f : A -&gt; B -&gt; C) : A -&gt; (B -&gt; C) {
+  exact f;
+}
+
+def and_before_or(A B C : U0, x : A and B or C) : (A and B) or C {
+  exact x;
+}</code></pre>
+            <p>Comparisons do not chain. <code>1 &lt; 2 &lt; 3</code> means <code>(1 &lt; 2) &lt; 3</code>, which compares a type with a number. Write <code>(1 &lt; 2) and (2 &lt; 3)</code>.</p>
+            <pre><code data-check="reject" data-error="Type mismatch.">import primes;
+
+def chained : 1 &lt; 2 &lt; 3 {
+  exact tt;
+}</code></pre>
+            <p>In the source reader, keywords and built-in forms such as <code>succ</code> are purple, and named functions are green. Numerals, tuples and arithmetic are notation: they are amber with a dotted underline. Hover over one to see its expansion; <code>2</code> shows <code>succ(succ(0))</code> and <code>a + b</code> shows <code>add(a, b)</code>.</p>
+          </section>
+
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="first-proof.html">← 1. A first proof and files</a>
+            <a class="next" href="proof-blocks.html">3. Proof blocks →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+  </body>
+</html>
