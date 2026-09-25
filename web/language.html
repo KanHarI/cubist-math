@@ -59,9 +59,18 @@
         <p class="eyebrow">SYNTAX, MEANING, AND CHECKED EVIDENCE</p>
 <h1>Language reference</h1>
 <p class="lead">Write terms and proofs in dependent type theory. Cubist elaborates each declaration into instructions checked by the C kernel.</p>
-<p>The reference describes the mathematical <code>.cubist</code> language in the chapters below. The test suite checks every complete example, including the rejected ones and their error messages. The few partial sketches are marked as such in the page source. The <a href="workbench.html">kernel workbench</a> shows checked terms, their context, and native opcode assembly.</p>
+<p>The reference describes the mathematical <code>.cubist</code> language in the chapters below. The test suite checks every complete example, including the rejected ones and their error messages. The few partial sketches are marked as such in the page source.</p>
 <p>One principle runs through the whole language. The elaborator is written in JavaScript and may be arbitrarily clever: it expands notation, finds rewrite positions and chooses simplification rules. It is not trusted. Everything it produces is an ordinary kernel term, and the C kernel checks every one of them. A convenience that the kernel cannot check makes the declaration fail. It never becomes an assumption.</p>
       </div>
+      <section id="using" class="using">
+        <h2>Using Cubist</h2>
+        <ul>
+          <li><strong>In the browser:</strong> write and check proofs in the <a href="proof.html">proof workspace</a>. <a href="reference/checking.html#inspection">Chapter 11</a> explains editing, checking and the inspector, and the workspace’s <a href="proof.html#language-guide">quick reference</a> summarizes the syntax.</li>
+          <li><strong>From the command line:</strong> <code>node cli/repl.mjs check FILE.cubist</code> checks a file with the same kernel. See <a href="reference/checking.html#cli">the command-line checker</a> and the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/cli.md">CLI guide</a> for setup and commands.</li>
+          <li><strong>Kernel terms:</strong> the <a href="workbench.html">kernel workbench</a> shows checked terms, their context, reductions and native opcode assembly.</li>
+          <li><strong>New to Cubist:</strong> start with <a href="reference/first-proof.html">chapter 1, a first proof</a>. Every example in this reference is checked by the test suite; incorrect examples show their error message as a <code>// Error:</code> comment.</li>
+        </ul>
+      </section>
       <section id="chapters" class="chapter-index">
         <h2>Chapters</h2>
         <ol>
@@ -76,7 +85,7 @@
           <li><a href="reference/conversion.html">Conversion and opacity</a><span>When two terms are equal by computation, and how definitions unfold.</span></li>
           <li><a href="reference/assumptions.html">Assumptions and computability</a><span>The explicit library assumptions, and how a result states and checks that it computes.</span></li>
           <li><a href="reference/checking.html">Checking and inspection</a><span>Where to check a proof, and how to read what the checker found.</span></li>
-          <li><a href="reference/errors.html">Common errors</a><span>Frequent messages, what they mean, and what to do.</span></li>
+          <li><a href="reference/errors.html">Error messages</a><span>Every error message shown in this reference, what it means, and what to do.</span></li>
         </ol>
       </section>
       <section id="examples">

@@ -38,7 +38,7 @@
             <li><a href="conversion.html">Conversion and opacity</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
-            <li><a href="errors.html">Common errors</a></li>
+            <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
@@ -72,17 +72,17 @@
   exact result;          // closes the goal
 }</code></pre>
             <p>A block must end by closing its goal. A block that runs out of statements first is rejected:</p>
-            <pre><code data-check="reject" data-error="Proof block has no conclusion.">def unfinished(A : U0) : A -&gt; A {
-  intro a;
+            <pre><code data-check="reject">def unfinished(A : U0) : A -&gt; A {
+  intro a;  // Error: Proof block has no conclusion.
 }</code></pre>
             <p>Nothing may follow a closing statement in the same block:</p>
-            <pre><code data-check="reject" data-error="Statements after exact are unreachable.">def after_the_end(A : U0, a : A) : A {
+            <pre><code data-check="reject">def after_the_end(A : U0, a : A) : A {
   exact a;
-  exact a;
+  exact a;  // Error: Statements after exact are unreachable.
 }</code></pre>
             <p>An unknown word where a statement belongs is a syntax error:</p>
-            <pre><code data-check="reject" data-error="Expected a proof statement; found 'return'.">def not_a_statement(a : Nat) : Nat {
-  return a;
+            <pre><code data-check="reject">def not_a_statement(a : Nat) : Nat {
+  return a;  // Error: Expected a proof statement; found 'return'.
 }</code></pre>
             <div class="table-scroll"><table>
               <thead><tr><th>Statement</th><th>Effect</th><th>Described in</th></tr></thead>
@@ -118,12 +118,12 @@ def compose_endo(A : U0, f g : Endo(A)) : Endo(A) {
   exact f(g(a));
 }</code></pre>
             <p>A goal that is not a function type has nothing to introduce. This includes asking for more names than the goal has inputs:</p>
-            <pre><code data-check="reject" data-error="intro requires a dependent function goal.">def nothing_to_introduce : Nat {
-  intro n;
+            <pre><code data-check="reject">def nothing_to_introduce : Nat {
+  intro n;  // Error: intro requires a dependent function goal.
   exact n;
 }</code></pre>
-            <pre><code data-check="reject" data-error="intro requires a dependent function goal.">def one_input_only(A : U0) : A -&gt; A {
-  intro a b;
+            <pre><code data-check="reject">def one_input_only(A : U0) : A -&gt; A {
+  intro a b;  // Error: intro requires a dependent function goal.
   exact a;
 }</code></pre>
             <p>A function goal can also be closed without <code>intro</code>, by giving the function: <code>exact fun (a : A) => a;</code>.</p>
@@ -150,8 +150,8 @@ def by_computation : 2 + 2 = 4 {
 def identity_function(A : U0) : A -&gt; A {
   exact fun (a : A) =&gt; a;
 }</code></pre>
-            <pre><code data-check="reject" data-error="Type mismatch.">def wrong_type(A B : U0, a : A) : B {
-  exact a;
+            <pre><code data-check="reject">def wrong_type(A B : U0, a : A) : B {
+  exact a;  // Error: Type mismatch.
 }</code></pre>
           </section>
           <section id="have">
@@ -181,13 +181,13 @@ def from_context(A B : U0, a : A, b : B) : A and B {
   exact pair;
 }</code></pre>
             <p>Use <code>have</code> to split a long argument into named steps, and to state an equality whose endpoints the elaborator cannot infer. Without a type, <code>have name = term;</code> gives the term no expected type, so a pair is rejected:</p>
-            <pre><code data-check="reject" data-error="Pair requires an expected type.">def untyped_pair(a b : Nat) : Nat and Nat {
-  have p = (a, b);
+            <pre><code data-check="reject">def untyped_pair(a b : Nat) : Nat and Nat {
+  have p = (a, b);  // Error: Pair requires an expected type.
   exact p;
 }</code></pre>
             <p>The nested block of <code>have</code> must close its own goal:</p>
-            <pre><code data-check="reject" data-error="Proof block has no conclusion.">def empty_claim(a : Nat) : Nat {
-  have b : Nat {
+            <pre><code data-check="reject">def empty_claim(a : Nat) : Nat {
+  have b : Nat {  // Error: Proof block has no conclusion.
   }
   exact b;
 }</code></pre>
@@ -205,8 +205,8 @@ def with_type(n : Nat) : Nat and Nat {
   exact pair;
 }</code></pre>
             <p><code>let</code> names one term. To take a pair apart, use <code>obtain</code>:</p>
-            <pre><code data-check="reject" data-error="Use obtain to unpack a pair.">def pattern_in_let(p : Nat and Nat) : Nat {
-  let (a, b) = p;
+            <pre><code data-check="reject">def pattern_in_let(p : Nat and Nat) : Nat {
+  let (a, b) = p;  // Error: Use obtain to unpack a pair.
   exact a;
 }</code></pre>
           </section>
@@ -229,16 +229,16 @@ def inner_unit(t : (Nat and Unit) and Nat) : Unit {
   exact h(n, q);
 }</code></pre>
             <p>The pattern must match the type’s shape, and a pattern needs at least two components:</p>
-            <pre><code data-check="reject" data-error="obtain requires a dependent pair matching its pattern.">def not_a_pair(n : Nat) : Nat {
-  obtain (a, b) = n;
+            <pre><code data-check="reject">def not_a_pair(n : Nat) : Nat {
+  obtain (a, b) = n;  // Error: obtain requires a dependent pair matching its pattern.
   exact a;
 }</code></pre>
-            <pre><code data-check="reject" data-error="obtain requires a dependent pair matching its pattern.">def too_many_components(p : Nat and Nat) : Nat {
-  obtain (a, b, c) = p;
+            <pre><code data-check="reject">def too_many_components(p : Nat and Nat) : Nat {
+  obtain (a, b, c) = p;  // Error: obtain requires a dependent pair matching its pattern.
   exact a;
 }</code></pre>
-            <pre><code data-check="reject" data-error="A pair pattern needs at least two components.">def one_component(p : Nat and Nat) : Nat {
-  obtain (a) = p;
+            <pre><code data-check="reject">def one_component(p : Nat and Nat) : Nat {
+  obtain (a) = p;  // Error: A pair pattern needs at least two components.
   exact a;
 }</code></pre>
             <p><code>obtain</code> does not open a <a href="assumptions.html#axioms">propositional truncation</a>: a merely existing witness cannot be named.</p>
@@ -264,29 +264,29 @@ def reassociate(A B C : U0, value : A or (B or C)) : (A or B) or C {
     }
   }
 }</code></pre>
-            <pre><code data-check="reject" data-error="cases requires a sum type.">def not_a_sum(n : Nat) : Nat {
-  cases n {
+            <pre><code data-check="reject">def not_a_sum(n : Nat) : Nat {
+  cases n {  // Error: cases requires a sum type.
     left a =&gt; { exact 0; }
     right b =&gt; { exact 1; }
   }
 }</code></pre>
             <p><code>cases</code> must be the last statement of its block:</p>
-            <pre><code data-check="reject" data-error="Statements after cases are not yet translated.">def after_cases(value : Unit or Unit) : Unit {
+            <pre><code data-check="reject">def after_cases(value : Unit or Unit) : Unit {
   cases value {
     left a =&gt; { exact a; }
     right b =&gt; { exact b; }
   }
-  exact tt;
+  exact tt;  // Error: Statements after cases are not yet translated.
 }</code></pre>
             <p><code>cases</code> does not change the goal in each branch. If the goal mentions <code>value</code>, both branches still see <code>value</code>, not <code>left(x)</code> or <code>right(y)</code>, and a branch that needs the refined goal fails:</p>
-            <pre><code data-check="reject" data-error="Type mismatch.">def Shape(value : Unit or Unit) = match value as z return U0 {
+            <pre><code data-check="reject">def Shape(value : Unit or Unit) = match value as z return U0 {
   left a =&gt; Nat;
   right b =&gt; Unit;
 };
 
 def default(value : Unit or Unit) : Shape(value) {
   cases value {
-    left a =&gt; { exact 0; }
+    left a =&gt; { exact 0; }  // Error: Type mismatch.
     right b =&gt; { exact tt; }
   }
 }</code></pre>
@@ -318,15 +318,15 @@ def pointwise(A B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
   rfl;
 }</code></pre>
             <p>In <code>rewrite_then_finish</code>, <code>rw</code> turns the goal into <code>n + 0 = n</code>, which <code>exact</code> then proves. In <code>pointwise</code>, <code>ext x</code> turns the goal into <code>f(x) = f(x)</code>, which still needs <code>rfl</code>:</p>
-            <pre><code data-check="reject" data-error="Proof block has no conclusion.">def pointwise(A B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
-  ext x;
+            <pre><code data-check="reject">def pointwise(A B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
+  ext x;  // Error: Proof block has no conclusion.
 }</code></pre>
           </section>
           <section id="where-blocks-go">
             <h2>Where blocks can appear</h2>
             <p>A block can appear as the body of a block declaration, of <code>have</code>, of each <code>cases</code> branch, of a <code>calc</code> step, and of <code>over</code>. A block is not an expression: to use a proof inside a term, prove it first with <code>have</code>, or move it into its own declaration.</p>
-            <pre><code data-check="reject" data-error="Expected an expression, found '{'.">def block_as_term : Nat and Nat {
-  exact ({ exact 0; }, 1);
+            <pre><code data-check="reject">def block_as_term : Nat and Nat {
+  exact ({ exact 0; }, 1);  // Error: Expected an expression, found '{'.
 }</code></pre>
           </section>
 
