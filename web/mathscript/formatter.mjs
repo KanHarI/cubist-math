@@ -66,6 +66,12 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
   const construction = tokens[0]?.text === "construction";
   const syntax = construction ? null : parse(source);
   const declarationEnds = new Set(syntax?.declarations.map(node => node.end) ?? []);
+  // `computable` and `evaluate` are ordinary names except where the parser
+  // found a top-level modifier or directive.
+  const itemStarts = new Set([
+    ...(syntax?.declarations ?? []).map(node => node.modifierStart).filter(Number.isInteger),
+    ...(syntax?.directives ?? []).filter(node => node.kind === "evaluate").map(node => node.start),
+  ]);
   // A binder's short domain is one phrase: `forall f : A -> B,` must not
   // split the arrow merely because the surrounding theorem is long.
   const domains = [];
@@ -151,7 +157,10 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         if (!close && trailing && preceding && declarationEnds.has(preceding.end)) docs.push(hard);
         previous = null; continue;
       }
-      if (!close && ["def", "axiom", "opaque", "construction", "simp_rule", "simp_set"].includes(text) && previous && previous.text !== "opaque") {
+      const itemStart = ["def", "axiom", "opaque", "construction", "simp_rule", "simp_set"].includes(text)
+        || itemStarts.has(token.start);
+      if (!close && itemStart && previous && !(["opaque", "computable"].includes(previous.text) && text === "def")
+        && !(previous.text === "computable" && text === "opaque")) {
         flush(); docs.push(hard, hard); previous = null;
       }
       const binderGroup = funBinders && text === "(" && previous?.text === ")";

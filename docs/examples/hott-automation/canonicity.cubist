@@ -1,18 +1,19 @@
 // Invariant 10 of the HoTT roadmap: every closed result that uses no
 // truncation or other assumption reduces to a canonical value. Each
 // declaration states that value and is proved by rfl, so the kernel must
-// compute it. A failure here means a kernel or library change has stopped an
+// compute it, and each is marked computable, so it may use no assumption. A
+// failure here means a kernel or library change has stopped an
 // assumption-free result from computing.
 import primes;
 import circle;
 
 // Natural-number recursion.
-def closed_arithmetic : add(mul(3, 4), 5) = 17 {
+computable def closed_arithmetic : add(mul(3, 4), 5) = 17 {
   rfl;
 }
 
 // Derived path induction along a closed path that is not refl.
-def closed_path_induction :
+computable def closed_path_induction :
   path_induction(
     Nat, fun (a : Nat) => fun (b : Nat) => fun (r : a = b) => Nat, fun (a : Nat) => 7, 3 + 0, 3,
     nat_add_zero(3)
@@ -21,28 +22,32 @@ def closed_path_induction :
 }
 
 // Transport along a closed path, and along a closed family.
-def closed_transport : transport(fun (n : Nat) => Nat, 3 + 0, 3, nat_add_zero(3), 5) = 5 {
+computable def closed_transport : transport(fun (n : Nat) => Nat, 3 + 0, 3, nat_add_zero(3), 5) = 5 {
   rfl;
 }
 
-def closed_dependent_transport :
+computable def closed_dependent_transport :
   transport(fun (n : Nat) => n = n, 3 + 0, 3, nat_add_zero(3), refl(3 + 0)) = refl(3) {
   rfl;
 }
 
 // Univalence (Glue) and the circle's pushout: winding numbers compute.
-def winding_one : winding(loop) = nonnegative(1) {
+computable def winding_one : winding(loop) = nonnegative(1) {
   rfl;
 }
 
-def winding_two : winding(concatenate(U1, S1, base, base, base, loop, loop)) = nonnegative(2) {
+computable def winding_two :
+  winding(concatenate(U1, S1, base, base, base, loop, loop)) = nonnegative(2) {
   rfl;
 }
 
-def winding_minus_one : winding(loop_inverse) = negative(0) {
+computable def winding_minus_one : winding(loop_inverse) = negative(0) {
   rfl;
 }
 
-def winding_integer_loop : winding(integer_loop(negative(2))) = negative(2) {
+computable def winding_integer_loop : winding(integer_loop(negative(2))) = negative(2) {
   rfl;
 }
+
+// The same computation, stated as a checked normal-form test.
+evaluate winding(concatenate(U1, S1, base, base, base, loop, loop)) expecting nonnegative(2);

@@ -31,7 +31,7 @@ export class CubicalProgram {
     this.simpRegistries = new Map();
     this.templates = new Map();
     this.templateSelections = new Map();
-    this.gaps = []; this.links = []; this.sources = {}; this.completed = 0;
+    this.gaps = []; this.evaluations = []; this.links = []; this.sources = {}; this.completed = 0;
   }
   dispose() { this.kernel.dispose(); }
   assumptionSymbols() {
@@ -157,9 +157,13 @@ export class CubicalProgram {
       });
       const result = translator.translate(text, env);
       this.simpRegistries.set(name,result.simpRegistry);
-      for(const directive of result.directives??[])if(directive.status!=="checked")
-        this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
-          reason:directive.reason,directive:true});
+      for(const directive of result.directives??[]) {
+        if(directive.status!=="checked")
+          this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
+            reason:directive.reason,directive:true});
+        else if(directive.kind==="evaluate")
+          this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
+      }
       this.checker.steps = checker.steps;
       const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
       for (const d of result.declarations) {
@@ -275,6 +279,7 @@ export class CubicalProgram {
     return this.metadata = { backend: "cubical", mode: "mathematical", source, outputs,
       imports: all.filter(d => d.sourceModule), symbols: [...all, ...Object.values(this.assumptionSymbols())], assumptionLabels: Object.fromEntries(this.checker.assumptionLabels), declarations: outputs, links: this.links,
       steps: [], declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
+      evaluations: this.evaluations,
       complete: outputs.length > 0 && outputs.every(d => d.verified || d.template)
         && !this.gaps.some(gap=>gap.directive), sources: this.sources };
   }

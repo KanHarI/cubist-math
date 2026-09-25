@@ -49,8 +49,11 @@ test("closed assumption-free results compute to canonical values (invariant 10)"
     "winding_integer_loop"]);
   // Each statement names its canonical value and is proved by computation
   // alone. Replacing rfl by a lemma would hide a result that stopped computing.
-  for(const declaration of parse(source).declarations)
+  for(const declaration of parse(source).declarations) {
     assert.deepEqual(declaration.body.map(statement=>statement.kind),["rfl"],declaration.name.text);
+    assert.equal(declaration.computable,true,`${declaration.name.text} is marked computable`);
+  }
+  assert.equal(result.evaluations.length,1,"the evaluate directive checks");
 });
 
 // Expected outcome of each probe in rejected-probes.cubist.rejected. `until`

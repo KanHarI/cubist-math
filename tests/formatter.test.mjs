@@ -5,7 +5,7 @@ import { formatMathScript } from "../web/mathscript/formatter.mjs";
 import { parse, tokenize } from "../web/mathscript/parser.mjs";
 
 const semantic = value => JSON.parse(JSON.stringify(value, (key, v) =>
-  ["start", "end", "operatorStart", "operatorEnd", "definitionStart", "valueStart", "valueEnd", "tupleStart", "tupleEnd"].includes(key) ? undefined : v));
+  ["start", "end", "operatorStart", "operatorEnd", "definitionStart", "modifierStart", "valueStart", "valueEnd", "tupleStart", "tupleEnd"].includes(key) ? undefined : v));
 test("formatting every bundled source preserves tokens, comments, syntax and is idempotent", async () => {
   const directory = new URL("../archive/first-library/", import.meta.url);
   for (const name of (await readdir(directory)).filter(n => n.endsWith(".cubist"))) {

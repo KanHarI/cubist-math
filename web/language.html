@@ -44,6 +44,7 @@
             <li><a href="#suspensions">Suspensions</a></li>
             <li><a href="#axioms">Axioms and truncation</a></li>
             <li><a href="#conversion">Conversion and opacity</a></li>
+            <li><a href="#computability">Computability</a></li>
             <li><a href="#inspection">Checking and inspection</a></li>
             <li><a href="#errors">Common errors</a></li>
             <li><a href="#examples">Library examples</a></li>
@@ -91,6 +92,8 @@ opaque def next(n : Nat) = succ(n);</code></pre>
                 <tr><td><code>def name(params) = term;</code></td><td>Infer the result type from a term. Parameters are optional.</td></tr>
                 <tr><td><code>def name(params) : T { … }</code></td><td>Check a block against the explicit result type <code>T</code>. Use this form for proofs as well as constructions.</td></tr>
                 <tr><td><code>opaque def name …</code></td><td>Accepted syntax for a checked definition; currently checked and unfolded like <code>def</code>.</td></tr>
+                <tr><td><code>computable def name …</code></td><td>A definition that must use no assumption. See <a href="#computability">computability</a>.</td></tr>
+                <tr><td><code>evaluate term expecting value;</code></td><td>Check what a closed term computes to. See <a href="#evaluate">evaluate</a>.</td></tr>
                 <tr><td><code>axiom name(params) : T;</code></td><td>An explicit assumption with no proof body. Recorded in axiom dependencies.</td></tr>
                 <tr><td><code>simp_rule name priority N;</code></td><td>Register an already checked equality as a default simplification rule. See <a href="#simp-registration">registering rules</a>.</td></tr>
                 <tr><td><code>simp_set name = [rule, …];</code></td><td>Name a collection of simplification rules.</td></tr>
@@ -719,6 +722,42 @@ def identity_zero : identity(0) = 0 {
               assumptions, or proof obligations. They are performance guidance, not evidence of
               an equality, and do not normalize the whole expression.</p>
           </section>
+          <section id="computability">
+            <h2>Computability</h2>
+            <p>Every assumption in <a href="#axioms">the previous section</a>, and every <code>axiom</code> declaration, is a name with a type and no computation rule. A term that uses one can stop computing. <code>LEM(U0, A, doubleNegation)</code> has type <code>Truncate(U0, A)</code>, but it is not built from any element of <code>A</code>, so nothing can be computed from it. A term that uses no assumption is built from the kernel’s own rules only. The kernel is designed so that such a closed term reduces to a canonical value: a closed <code>Nat</code> reduces to a numeral. The test suite checks this on closed examples. The language lets a declaration require it, and lets a file test what a term computes to.</p>
+            <h3 id="computable"><code>computable def</code></h3>
+            <p>Writing <code>computable</code> before <code>def</code> or <code>opaque def</code> requires the declaration to use no assumption. The checker collects the assumptions of the checked term, of its type and of every definition they mention. This is the same list that the inspector shows. If the list is not empty, the declaration is rejected. The error names every assumption, and one chain of definitions through which the first one enters. A rejected declaration is not added, so the declarations that use it are blocked too.</p>
+            <pre><code data-check="accept">import primes;
+
+computable def double(n : Nat) = n + n;
+
+computable def double_two : double(2) = 4 {
+  rfl;
+}</code></pre>
+            <p>A computable declaration may take parameters, like <code>double</code>. The requirement is about assumptions, not about closed terms: every application of <code>double</code> to a numeral computes. The library’s <code>double_negation</code> is proved with excluded middle, so a declaration that uses it cannot be computable:</p>
+            <pre><code data-check="reject" data-error="depends on non-computing assumptions: LEM(U0)">import classical;
+
+computable def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
+  exact double_negation(P, prop, nn);
+}</code></pre>
+            <p>The error reads: <code>This computable declaration depends on non-computing assumptions: LEM(U0), Truncate(U0), TruncateElim(U0). Path to LEM(U0): double_negation (classical) → LEM(U0).</code> Without the modifier, the same proof is accepted and its assumptions are listed as usual. The modifier changes nothing else: a computable declaration is checked and unfolded like any other.</p>
+            <h3 id="evaluate"><code>evaluate</code></h3>
+            <p><code>evaluate term expecting value;</code> is a top-level directive, placed between declarations. It checks both terms and requires <code>term</code> to use no assumption. It requires the two to have the same type, then compares their normal forms. It defines no name. A success is reported with the normal form. A failure is an error that makes the module incomplete, so every evaluation is rechecked with the rest of its module.</p>
+            <pre><code data-check="accept">import primes;
+
+def double(n : Nat) = n + n;
+
+evaluate double(3) expecting 6;
+evaluate double(double(1)) expecting 2 + 2;</code></pre>
+            <pre><code data-check="reject" data-error="The term evaluates to 6, not 7.">import primes;
+
+def double(n : Nat) = n + n;
+
+evaluate double(3) expecting 7;</code></pre>
+            <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to. Evaluation computes full normal forms: it unfolds <code>opaque</code> definitions and ignores <code>with unfolding</code> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are keywords only in these positions. Elsewhere they are ordinary names.</p>
+            <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="#inspection">checking and inspection</a>.</p>
+            <p class="note">Truncation is itself an assumption in the current kernel, so a term of type <code>Truncate(U0, A)</code> never evaluates. The kernel roadmap makes truncation an inductive type with a computation rule. After that, a closed truncated term that uses no other assumption will compute, and <code>evaluate</code> is planned to read the witness inside it.</p>
+          </section>
           <section id="inspection">
             <h2>Checking and inspection</h2>
             <p>Open the <a href="proof.html">proof workspace</a>, choose a topic and proof, then use <strong>Edit</strong> and <strong>Check proof</strong> (Ctrl/Cmd+Enter). Click a name in <strong>Read</strong> mode to inspect its type and source. Click a proof-step line number for its goal and local assumptions. A rejected edit leaves the last checked proof available.</p>
@@ -752,6 +791,10 @@ def identity_zero : identity(0) = 0 {
               <dd>Use <code>have p : x = y := expression;</code> to expose its endpoints to the elaborator.</dd>
               <dt>“Conversion types differ”, “Type mismatch.”</dt>
               <dd>The supplied term does not have the expected type by computation. Check argument order, universes, and dependent endpoints. From <code>rfl</code>, it means the sides are only propositionally equal: use a lemma, <code>rw</code> or <code>simp</code>. A propositional equality may require explicit <code>transport</code>.</dd>
+              <dt>“This computable declaration depends on non-computing assumptions: …”</dt>
+              <dd>The declaration, or a definition it uses, relies on an assumption. The error’s path names the definitions through which the first assumption enters. Replace that step with an assumption-free proof, or remove <code>computable</code>. See <a href="#computability">computability</a>.</dd>
+              <dt>“The term evaluates to 6, not 7.”</dt>
+              <dd>An <code>evaluate</code> directive found a different normal form. The message shows both normal forms.</dd>
               <dt>An attempted witness extraction from <code>Mere(A)</code> fails</dt>
               <dd>Truncation elimination needs a proposition as its target. Proving mere existence does not in general supply a chosen witness.</dd>
             </dl>
