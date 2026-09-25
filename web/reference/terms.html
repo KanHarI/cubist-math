@@ -38,7 +38,7 @@
             <li><a href="conversion.html">Conversion and opacity</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
-            <li><a href="errors.html">Common errors</a></li>
+            <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
@@ -95,10 +95,10 @@ def twice(A : U0, f : A -&gt; A) = fun (x : A) =&gt; f(f(x));</code></pre>
 }
 
 def successor_function = typed(Nat -&gt; Nat, fun n =&gt; succ(n));</code></pre>
-            <pre><code data-check="reject" data-error="Untyped lambda requires an expected function type.">def no_expected_type = fun x =&gt; x;</code></pre>
+            <pre><code data-check="reject">def no_expected_type = fun x =&gt; x;  // Error: Untyped lambda requires an expected function type.</code></pre>
             <p>An untyped binder stands alone. Write <code>fun x => fun y => …</code>, not <code>fun x y => …</code>; only typed binders can share a group:</p>
-            <pre><code data-check="reject" data-error="Expected '=&gt;', found 'y'.">def pair_of_binders(A : U0) : A -&gt; A -&gt; A {
-  exact fun x y =&gt; x;
+            <pre><code data-check="reject">def pair_of_binders(A : U0) : A -&gt; A -&gt; A {
+  exact fun x y =&gt; x;  // Error: Expected '=&gt;', found 'y'.
 }</code></pre>
             <h3 id="application">Application</h3>
             <p>Application is curried. <code>f(a, b)</code> means <code>f(a)(b)</code>, and <code>f(a)</code> alone is a function waiting for the rest. All arguments are explicit.</p>
@@ -108,7 +108,7 @@ def add_two = apply_twice(Nat, fun (n : Nat) =&gt; succ(n));
 
 def five = add_two(3);</code></pre>
             <p>Only a function can be applied:</p>
-            <pre><code data-check="reject" data-error="Source application is not a function.">def not_a_function = 0(1);</code></pre>
+            <pre><code data-check="reject">def not_a_function = 0(1);  // Error: Source application is not a function.</code></pre>
             <h3 id="dependent-functions">Dependent functions</h3>
             <p>In <code>forall x : A, B(x)</code>, the result type depends on the argument. Applying <code>f : forall n : Nat, P(n)</code> to <code>0</code> gives an element of <code>P(0)</code>. <code>forall x y : A, B</code> abbreviates two nested quantifiers over the same type.</p>
             <pre><code data-check="accept">def apply_at_zero(P : Nat -&gt; U0, f : forall n : Nat, P(n)) : P(0) {
@@ -120,8 +120,8 @@ def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x y : A, P(x, y)) 
   exact f(x, y);
 }</code></pre>
             <p>The argument decides the result type, so <code>f(0)</code> does not prove <code>P(1)</code>:</p>
-            <pre><code data-check="reject" data-error="Type mismatch.">def wrong_index(P : Nat -&gt; U0, f : forall n : Nat, P(n)) : P(1) {
-  exact f(0);
+            <pre><code data-check="reject">def wrong_index(P : Nat -&gt; U0, f : forall n : Nat, P(n)) : P(1) {
+  exact f(0);  // Error: Type mismatch.
 }</code></pre>
           </section>
           <section id="pairs">
@@ -133,7 +133,7 @@ def two_exists : exists n : Nat, n = 2 {
   exact (2, refl(2));
 }</code></pre>
             <p>A pair needs an expected type. <code>(1, 2)</code> could belong to <code>Nat and Nat</code> or to many <code>exists</code> types, and the elaborator does not guess. The expected type comes from a stated result type, a <code>have</code> type, a function argument’s type or <a href="#typed"><code>typed</code></a>.</p>
-            <pre><code data-check="reject" data-error="Pair requires an expected type.">def unannotated = (1, 2);</code></pre>
+            <pre><code data-check="reject">def unannotated = (1, 2);  // Error: Pair requires an expected type.</code></pre>
             <h3 id="tuples">Tuples</h3>
             <p>The kernel has only binary pairs. Tuple notation <code>(a, b, c)</code> means <code>(a, (b, c))</code>, and the same notation works for types: <code>A and B and C</code> means <code>A and (B and C)</code>. Explicit left nesting <code>((a, b), c)</code> is a different shape.</p>
             <pre><code data-check="accept">def flat_triple : Nat and Unit and Nat {
@@ -151,8 +151,8 @@ def first_of_three(t : Nat and Nat and Nat) : Nat {
 
 def one = first_of_three((1, 2, 3));</code></pre>
             <p>To pass a tuple as one argument, keep its parentheses: <code>f((1, 2, 3))</code>. <code>f(1, 2, 3)</code> passes three arguments. A tuple must match the nesting of its type:</p>
-            <pre><code data-check="reject" data-error="Expected a Sigma type for pair.">def wrong_nesting : (Nat and Unit) and Nat {
-  exact (1, tt, 2);
+            <pre><code data-check="reject">def wrong_nesting : (Nat and Unit) and Nat {
+  exact (1, tt, 2);  // Error: Expected a Sigma type for pair.
 }</code></pre>
             <p>The formatter, <code>npm run format:cubist</code>, writes right-nested pairs as flat tuples and checks that the expanded syntax is unchanged. <code>npm run linearize:cubist -- --check</code> lists such pairs without changing any file.</p>
             <h3 id="using-pairs">Using a pair</h3>
@@ -162,7 +162,8 @@ def one = first_of_three((1, 2, 3));</code></pre>
 
 def swap(pair : Nat and Unit) =
   unpack pair as (n, u) return Unit and Nat { typed(Unit and Nat, (u, n)); };</code></pre>
-            <pre><code data-check="reject" data-error="unpack requires a dependent pair.">def not_a_pair(n : Nat) = unpack n as (a, b) return Nat { a; };</code></pre>
+            <pre><code data-check="reject">// Error: unpack requires a dependent pair.
+def not_a_pair(n : Nat) = unpack n as (a, b) return Nat { a; };</code></pre>
             <p>When the result type depends on the pair itself, use <code>pair_induction(motive, branch, pair)</code>. For <code>pair : exists x : A, B(x)</code>, the branch takes <code>x : A</code> and <code>y : B(x)</code> and proves <code>motive((x, y))</code>. The result proves <code>motive(pair)</code>.</p>
             <pre><code data-check="accept">def pair_is_itself(A : U0, B : A -&gt; U0, p : exists x : A, B(x)) : p = p {
   exact pair_induction(fun (q : exists x : A, B(x)) =&gt; q = q,
@@ -177,7 +178,7 @@ def swap(pair : Nat and Unit) =
 def choose_right : Unit or Nat {
   exact right(3);
 }</code></pre>
-            <pre><code data-check="reject" data-error="Sum injection requires an expected type.">def unannotated = left(tt);</code></pre>
+            <pre><code data-check="reject">def unannotated = left(tt);  // Error: Sum injection requires an expected type.</code></pre>
             <h3 id="match">Case analysis: <code>match</code></h3>
             <p><code>match value return T { left x => …; right y => …; }</code> computes a result of type <code>T</code> from each side. Each branch is an expression and ends with <code>;</code>.</p>
             <pre><code data-check="accept">def to_number(value : Unit or Nat) = match value return Nat {
@@ -199,7 +200,7 @@ def default(value : Unit or Unit) = match value as z return Shape(z) {
   left a =&gt; 0;
   right b =&gt; tt;
 };</code></pre>
-            <pre><code data-check="reject" data-error="match requires a sum type.">def not_a_sum(n : Nat) = match n return Nat {
+            <pre><code data-check="reject">def not_a_sum(n : Nat) = match n return Nat {  // Error: match requires a sum type.
   left a =&gt; 0;
   right b =&gt; 1;
 };</code></pre>
@@ -221,7 +222,8 @@ def unit_is_tt(u : Unit) : u = tt {
   exact unit_induction(fun (v : Unit) =&gt; v = tt, refl(tt), u);
 }</code></pre>
             <p><code>unit_induction(motive, base, value)</code> proves <code>motive(value)</code> from <code>base : motive(tt)</code>. <code>absurd</code> needs to know the type to produce:</p>
-            <pre><code data-check="reject" data-error="absurd requires an expected type.">def unannotated(impossible : Void) = absurd(impossible);</code></pre>
+            <pre><code data-check="reject">// Error: absurd requires an expected type.
+def unannotated(impossible : Void) = absurd(impossible);</code></pre>
           </section>
           <section id="numbers">
             <h2>Numbers and arithmetic</h2>
@@ -231,7 +233,7 @@ def unit_is_tt(u : Unit) : u = tt {
 def three_is_three : three = 3 {
   exact refl(3);
 }</code></pre>
-            <pre><code data-check="reject" data-error="Numerals are limited to 256 in this version.">def too_big = 257;</code></pre>
+            <pre><code data-check="reject">def too_big = 257;  // Error: Numerals are limited to 256 in this version.</code></pre>
             <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines. Import it with <code>import primes;</code>. The operators are not overloaded: they apply to <code>Nat</code> only.</p>
             <pre><code data-check="accept">import primes;
 
@@ -243,7 +245,7 @@ def two_below_three : 2 &lt; 3 {
   exact tt;
 }</code></pre>
             <p>Closed arithmetic computes, so <code>refl(6)</code> proves <code>2 * 3 = 6</code>. The order is defined by computation too: <code>2 &lt; 3</code> computes to <code>Unit</code>, proved by <code>tt</code>, and <code>3 &lt; 2</code> computes to <code>Void</code>. Without the import, the notation has no definition:</p>
-            <pre><code data-check="reject" data-error="Untranslated name: add">def four = 2 + 2;</code></pre>
+            <pre><code data-check="reject">def four = 2 + 2;  // Error: Untranslated name: add</code></pre>
             <p>Addition recurses on its first argument. <code>0 + n</code> computes to <code>n</code>, but <code>n + 0</code> is stuck on the variable <code>n</code>, so it needs a proof by induction. The library proves it as <code>nat_add_zero(n)</code>.</p>
             <pre><code data-check="accept">import primes;
 
@@ -254,10 +256,10 @@ def zero_plus(n : Nat) : 0 + n = n {
 def plus_zero(n : Nat) : n + 0 = n {
   exact nat_add_zero(n);
 }</code></pre>
-            <pre><code data-check="reject" data-error="Type mismatch.">import primes;
+            <pre><code data-check="reject">import primes;
 
 def plus_zero_by_computation(n : Nat) : n + 0 = n {
-  exact refl(n);
+  exact refl(n);  // Error: Type mismatch.
 }</code></pre>
             <p>Induction on <code>Nat</code> and binary numerals are described in chapter 5, <a href="induction.html#induction">natural numbers and inductive types</a>.</p>
           </section>
@@ -276,7 +278,7 @@ def plus_zero_by_computation(n : Nat) : n + 0 = n {
 def successor = typed(Nat -&gt; Nat, fun n =&gt; succ(n));
 
 def choice = typed(Nat or Unit, right(tt));</code></pre>
-            <pre><code data-check="reject" data-error="Type mismatch.">def not_a_number = typed(Nat, tt);</code></pre>
+            <pre><code data-check="reject">def not_a_number = typed(Nat, tt);  // Error: Type mismatch.</code></pre>
           </section>
           <section id="precedence">
             <h2>Precedence</h2>
@@ -300,10 +302,10 @@ def and_before_or(A B C : U0, x : A and B or C) : (A and B) or C {
   exact x;
 }</code></pre>
             <p>Comparisons do not chain. <code>1 &lt; 2 &lt; 3</code> means <code>(1 &lt; 2) &lt; 3</code>, which compares a type with a number. Write <code>(1 &lt; 2) and (2 &lt; 3)</code>.</p>
-            <pre><code data-check="reject" data-error="Type mismatch.">import primes;
+            <pre><code data-check="reject">import primes;
 
 def chained : 1 &lt; 2 &lt; 3 {
-  exact tt;
+  exact tt;  // Error: Type mismatch.
 }</code></pre>
             <p>In the source reader, keywords and built-in forms such as <code>succ</code> are purple, and named functions are green. Numerals, tuples and arithmetic are notation: they are amber with a dotted underline. Hover over one to see its expansion; <code>2</code> shows <code>succ(succ(0))</code> and <code>a + b</code> shows <code>add(a, b)</code>.</p>
           </section>

@@ -34,7 +34,8 @@ node cli/repl.mjs check example.cubist
 
 A successful check prints the declaration and kernel-step counts and exits with
 status 0. Parse errors, missing imports, or unchecked declarations exit nonzero.
-An explicitly declared axiom is a permitted assumption, not a proof of that axiom.
+A source file cannot add assumptions: `axiom` declarations are rejected. Each
+`evaluate` directive's result is printed after the counts.
 Universe templates are checked through their concrete instantiations.
 
 To import another custom source, put `helpers.cubist` beside `example.cubist`
@@ -67,7 +68,12 @@ export self_equal.json
 quit
 ```
 
-`inspect` shows context, expression, and type. `assembly` lists the actual native
+`inspect` shows context, expression, type, and the assumptions the declaration
+uses, or `none`. `evaluate EXPRESSION` prints the normal form of a closed
+expression that uses no assumption, in the scope of the checked module; a term
+that uses one is refused with the chain through which it enters. The language
+reference's [checking chapter](../../web/reference/checking.html#cli) shows
+checked sessions. `assembly` lists the actual native
 opcodes and operands. Use a qualified binding such as `example__self_equal`
 when a short name is ambiguous. `beta` or `delta` reduces the first applicable
 occurrence in the expression (or `type`); the native checker validates the

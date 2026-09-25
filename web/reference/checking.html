@@ -38,34 +38,121 @@
             <li><a href="conversion.html">Conversion and opacity</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li class="current"><a href="checking.html" aria-current="page">Checking and inspection</a></li>
-            <li><a href="errors.html">Common errors</a></li>
+            <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
-            <li><a href="#inspection">Checking and inspection</a></li>
+            <li><a href="#inspection">The proof workspace</a></li>
+            <li><a href="#inspecting-tactics">Inspecting tactics</a></li>
+            <li><a href="#cli">The command-line checker</a></li>
+            <li><a href="#tools">Formatting and tests</a></li>
+            <li><a href="#limits">Limits</a></li>
           </ul>
         </aside>
         <article id="reference">
           <section id="inspection">
-            <h2>Checking and inspection</h2>
-            <p>Open the <a href="../proof.html">proof workspace</a>, choose a topic and proof, then use <strong>Edit</strong> and <strong>Check proof</strong> (Ctrl/Cmd+Enter). Click a name in <strong>Read</strong> mode to inspect its type and source. Click a proof-step line number for its goal and local assumptions. A rejected edit leaves the last checked proof available.</p>
-            <p>The checked kernel details show the expression, its type, and its open context. Folded kernel notation retains names only where their relationship to the stored term is checked. Use the representation selector for Cubist or raw kernel terms; send either term to the workbench to explore reduction and dependencies. Binder grouping, truncation notation, and equality notation change only presentation. Equality notation is enabled by default: <code>(A =[T] B)</code> displays the identity type with endpoints <code>A</code>, <code>B</code> and carrier <code>T</code>. Uncheck it to see <code>Id</code> with the carrier as a subscript instead. Both views retain links to checked definitions.</p>
-            <h3>Inspecting tactics</h3>
+            <h2>The proof workspace</h2>
+            <p>Open the <a href="../proof.html">proof workspace</a>, choose a topic and a proof, then use <strong>Edit</strong> and <strong>Check proof</strong> (Ctrl/Cmd+Enter). A rejected edit leaves the last checked proof available.</p>
             <ul>
-              <li>Click <code>calc</code>, <code>rw</code>, <code>simp</code> or <code>simpa</code> to see the checked proof term it constructed. Each <code>by</code> inside a <code>calc</code> links to the path for that step.</li>
-              <li>A <code>simp</code> also shows its rewrite trace: each rule that fired, the checked path it produced, and any premise proofs found for conditional rules.</li>
-              <li>A multi-binder <code>fun</code> opens the whole checked function. Names bound by <code>ext</code> or <code>simp … at h as h2</code> link to their types like any other local.</li>
+              <li>In <strong>Read</strong> mode, click a name to inspect its type and source.</li>
+              <li>Click a proof-step line number to see the goal and the context at that step.</li>
+              <li>A theorem’s assumptions are listed with it; see <a href="assumptions.html#computability">computability</a>.</li>
+              <li><code>//</code> comments directly above a declaration are shown as its <a href="first-proof.html#descriptions">description</a>.</li>
             </ul>
-            <p><strong>Replace with simp only</strong> turns a checked <code>simp</code>, <code>simpa</code> or <code>simp at</code> into a <code>simp only</code> list of the rules that actually fired, keeping their original order. Before offering it, the elaborator reruns the simplification with just those rules and requires the same remaining goal and an equivalent proof. After editing, the source is checked again. The action is withheld when it cannot guarantee the same result. This includes when a used imported rule has no name in scope, a set name would shadow a rule name, or premise search would change. It is also withheld for a universe template, because one level's check does not cover the others.</p>
-            <h3>Outside the browser</h3>
-            <p>The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules, explaining contexts, binding, and what must be trusted when verifying a proof.</p>
-            <p>The compiler’s <strong>Reuse normal forms</strong> and <strong>Reuse checked instructions</strong> switches default on. They control reuse during compilation, not the source language or its mathematical assumptions.</p>
-            <p>For local development, <code>make serve</code> serves the workspace. In the CLI, <code>node cli/repl.mjs check FILE.cubist</code> checks a source file. A focused project test can be run as <code>npm test -- archive/first-library/FILE.cubist</code>; this checks the selected mathematical source and its imports. See the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/cli.md">CLI guide</a> for custom files, local imports, inspection, and limitations.</p>
-            <p>Current parser limits are 1,000,000 source characters, 160,000 tokens, nesting depth 128, and numeral literals up to 256. Larger naturals can be built by expressions. These are implementation limits, not mathematical axioms. See the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">implementation notes</a> for runtime limits and the source-checking pipeline.</p>
+            <p>The checked kernel details show the expression, its type and its open context. Folded kernel notation keeps names only where their relationship to the stored term is checked. The representation selector switches between Cubist and raw kernel terms; either can be sent to the <a href="../workbench.html">kernel workbench</a> to explore reduction and dependencies. Binder grouping, truncation notation and equality notation change only the presentation. Equality notation is on by default: <code>(A =[T] B)</code> shows the identity type with endpoints <code>A</code> and <code>B</code> and carrier <code>T</code>. Turn it off to see <code>Id</code> with the carrier as a subscript. Both views keep their links to checked definitions.</p>
           </section>
+          <section id="inspecting-tactics">
+            <h2>Inspecting tactics</h2>
+            <ul>
+              <li>Click <code>calc</code>, <code>rw</code>, <code>simp</code> or <code>simpa</code> to see the checked proof term it built. Each <code>by</code> inside a <code>calc</code> links to the path for that step.</li>
+              <li>A <code>simp</code> also shows its rewrite trace: each rule that fired, the checked path it produced, and any premise proofs found for conditional rules.</li>
+              <li>A multi-binder <code>fun</code>, <code>forall</code> or <code>exists</code> opens the whole checked term. Names bound by <code>ext</code> or <code>simp … at h as h2</code> link to their types like any other local name.</li>
+            </ul>
+            <p><strong>Replace with simp only</strong> turns a checked <code>simp</code>, <code>simpa</code> or <code>simp at</code> into a <code>simp only</code> list of the rules that actually fired, in their original order. Before offering it, the elaborator reruns the simplification with just those rules and requires the same remaining goal and an equivalent proof. After the edit, the source is checked again. The action is withheld when it cannot guarantee the same result: when a used imported rule has no name in scope, when a set name would shadow a rule name, when premise search would change, and for a universe template, because one level’s check does not cover the others.</p>
+          </section>
+          <section id="cli">
+            <h2>The command-line checker</h2>
+            <p><code>node cli/repl.mjs</code> checks source files with the same C kernel as the workspace. It needs the kernel built once with <code>make wasm</code>. Given a command, it runs that command and exits; with none, it reads one command per line. The examples below use this file, saved as <code>sample.cubist</code>:</p>
+            <pre><code data-check="accept" data-name="sample">import primes;
+import classical;
+
+// Twice a number.
+def double(n : Nat) = n + n;
+
+def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
+  exact double_negation(P, prop, nn);
+}
+
+evaluate double(2) expecting 4;</code></pre>
+            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result, and exits with status 0. A file that does not check completely prints the failures and exits with a nonzero status.</p>
+            <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs check sample.cubist
+Checked 2 declarations · … kernel steps
+evaluate at line 11: 4</code></pre>
+            <p>Imports are looked up first in the directory of the checked file, then in the library, so a local module can shadow a library module of the same name. A bare module name, as in <code>node cli/repl.mjs check euclid</code>, checks that library module.</p>
+            <h3 id="cli-commands">Commands</h3>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Command</th><th>Effect</th></tr></thead>
+              <tbody>
+                <tr><td><code>check MODULE</code>, <code>check FILE.cubist</code></td><td>Check a library module or a file, with its imports</td></tr>
+                <tr><td><code>inspect NAME</code></td><td>Show a checked declaration: its context, expression, type and assumptions</td></tr>
+                <tr><td><code>evaluate EXPRESSION</code></td><td>Print the normal form of a closed expression that uses no assumption, in the scope of the checked module</td></tr>
+                <tr><td><code>assembly NAME</code></td><td>Show the native kernel opcode graph of a declaration</td></tr>
+                <tr><td><code>beta [expression|type]</code></td><td>Perform one beta reduction in the inspected declaration, checked by the kernel</td></tr>
+                <tr><td><code>delta [expression|type]</code></td><td>Unfold one named definition in the inspected declaration, checked by the kernel</td></tr>
+                <tr><td><code>export FILE.json</code></td><td>Save the inspected declaration’s source and inspection data</td></tr>
+                <tr><td><code>help</code>, <code>quit</code></td><td>Show the command list, or exit</td></tr>
+              </tbody>
+            </table></div>
+            <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs
+&gt; check sample.cubist
+Checked 2 declarations · … kernel steps
+&gt; inspect double
+sample__double
+Expression: λ (n : Nat). add(n, n)
+Type: (Nat → Nat)
+Assumptions: none
+&gt; evaluate double(3)
+6
+&gt; inspect recover
+sample__recover
+Assumptions: LEM(U0), Truncate(U0), TruncateElim(U0)
+&gt; evaluate recover
+The evaluated term depends on non-computing assumptions: LEM(U0), Truncate(U0), TruncateElim(U0). Path to LEM(U0): recover (sample) → double_negation (classical) → LEM(U0).</code></pre>
+            <p>Lines starting with <code>&gt;</code> are typed commands; the other lines are output. The inspected name is shown with its module, as <code>sample__double</code>. Use that qualified form when a short name is ambiguous. <code>inspect</code> lists the assumptions a declaration uses, or <code>none</code>. <code>evaluate</code> follows the rules of the <a href="assumptions.html#evaluate">evaluate directive</a>: a term that uses an assumption is refused, with the path through which the first one enters.</p>
+            <p><code>beta</code> and <code>delta</code> reduce the first applicable occurrence in the inspected expression, or in its type. The kernel checks the result. The workbench can choose a particular occurrence instead.</p>
+            <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs
+&gt; check sample.cubist
+&gt; inspect double
+&gt; beta expression
+No applicable reduction.
+&gt; delta expression
+sample__double
+Expression: λ (n : Nat). (λ …)(n, n)</code></pre>
+            <p><code>double</code> is a function, so there is nothing to beta-reduce. <code>delta</code> unfolds <code>add</code> to its checked body. <code>export</code> saves the selected declaration’s source and inspection data; it does not save a reduction history, and the CLI cannot yet import the file.</p>
+            <h3 id="cli-options">Options</h3>
+            <p>The flags <code>--no-share-syntax</code>, <code>--no-reuse-checks</code> and <code>--no-compact-paths</code> turn off the compiler’s reuse of shared syntax, checked instructions and compact paths. The workspace has the same switches, <strong>Reuse normal forms</strong> and <strong>Reuse checked instructions</strong>, on by default. They change how much work checking repeats, never the source language or its assumptions. The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/cli.md">CLI guide</a> describes setup and the remaining options.</p>
+          </section>
+          <section id="tools">
+            <h2>Formatting and tests</h2>
+            <ul>
+              <li><code>npm run format:cubist -- FILE.cubist</code> formats a source file. With <code>--check</code> it reports which files would change, without writing. Without file names it formats the library. The formatter keeps every token and comment and checks that the parsed syntax is unchanged.</li>
+              <li><code>npm run linearize:cubist -- --check</code> lists right-nested pairs that can be written as flat tuples; without <code>--check</code>, it rewrites them after checking that the expanded syntax is identical.</li>
+              <li><code>npm test</code> runs the test suite, which includes checking the library and every example in this reference. <code>npm test -- archive/first-library/FILE.cubist</code> checks one library module and its imports.</li>
+              <li><code>make serve</code> serves the workspace locally.</li>
+            </ul>
+          </section>
+          <section id="limits">
+            <h2>Limits</h2>
+            <p>The parser accepts at most 1,000,000 source characters and 160,000 tokens, and nests expressions, blocks and patterns at most 128 deep. Decimal numerals go up to 256, binary literals up to 256 significant bits, and a tuple expands to at most 128 nested pairs. Larger numbers can be built by expressions. The kernel also bounds its work per declaration, and each <code>simp</code> has the budgets described in <a href="rewriting.html#simp-traversal">simplification</a>. These are implementation limits, not mathematical assumptions: exceeding one rejects the declaration, and never accepts anything.</p>
+            <pre><code data-check="reject">def too_big = 257;  // Error: Numerals are limited to 256 in this version.</code></pre>
+            <pre><code data-check="reject">// Error: Binary literals are limited to 256 significant bits.
+def too_long = 0b10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;</code></pre>
+            <p>The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules. It explains contexts, binding, the runtime limits and what must be trusted when a proof is verified.</p>
+          </section>
+
           <nav class="pager" aria-label="Chapter navigation">
             <a class="previous" href="assumptions.html">← 10. Assumptions and computability</a>
-            <a class="next" href="errors.html">12. Common errors →</a>
+            <a class="next" href="errors.html">12. Error messages →</a>
           </nav>
         </article>
       </div>

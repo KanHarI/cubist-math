@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Frequent messages, what they mean, and what to do." />
-    <title>Cubist · 12. Common errors</title>
+    <meta name="description" content="Every error message shown in this reference, what it means, and what to do." />
+    <title>Cubist · 12. Error messages</title>
     <link rel="stylesheet" href="../language.css" />
   </head>
   <body>
@@ -20,8 +20,8 @@
     <main>
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 12</p>
-        <h1>Common errors</h1>
-        <p class="lead">Frequent messages, what they mean, and what to do.</p>
+        <h1>Error messages</h1>
+        <p class="lead">Every error message shown in this reference, what it means, and what to do.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -38,66 +38,194 @@
             <li><a href="conversion.html">Conversion and opacity</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
-            <li class="current"><a href="errors.html" aria-current="page">Common errors</a></li>
+            <li class="current"><a href="errors.html" aria-current="page">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
-            <li><a href="#errors">Common errors</a></li>
+            <li><a href="#errors">How to read an error</a></li>
+            <li><a href="#syntax-errors">Reading the source</a></li>
+            <li><a href="#name-errors">Names and declarations</a></li>
+            <li><a href="#type-errors">Types and terms</a></li>
+            <li><a href="#block-errors">Proof blocks</a></li>
+            <li><a href="#path-errors">Equality and paths</a></li>
+            <li><a href="#rewriting-errors">Equational reasoning and simplification</a></li>
+            <li><a href="#cubical-errors">Cubical paths</a></li>
+            <li><a href="#conversion-errors">Conversion, assumptions and computability</a></li>
+            <li><a href="#not-yet-available">Not yet available</a></li>
           </ul>
         </aside>
         <article id="reference">
           <section id="errors">
-            <h2>Common errors</h2>
-            <h3>Blocks and terms</h3>
-            <dl>
-              <dt>“intro requires a dependent function goal.”</dt>
-              <dd>The next goal is not a function type. Inspect it; a pair needs witnesses, and an equality needs a path.</dd>
-              <dt>“Pair requires an expected type.”, “Sum injection requires an expected type.”</dt>
-              <dd>Supply a type with <code>typed(T, (a, b))</code>, a theorem signature, or a <code>have</code> block.</dd>
-              <dt>“Statements after exact are unreachable.”, “Statements after cases are not yet translated.”</dt>
-              <dd>A closing statement ends the block. Move further reasoning into the appropriate branch, or prove a local claim with <code>have</code> before finishing the outer block.</dd>
-              <dt>“Untyped lambda requires an expected function type.”</dt>
-              <dd>Give the binder a type, <code>fun (x : A) =&gt; …</code>, or put the lambda where a function type is expected.</dd>
-              <dt>“Type mismatch.”</dt>
-              <dd>The supplied term does not have the expected type by computation. Check argument order, universes, and dependent endpoints. From <code>rfl</code>, it means the sides are only propositionally equal: use a lemma, <code>rw</code> or <code>simp</code>. A propositional equality may require explicit <code>transport</code>.</dd>
-              <dt>“This computable declaration depends on non-computing assumptions: …”</dt>
-              <dd>The declaration, or a definition it uses, relies on an assumption. The error’s path names the definitions through which the first assumption enters. Replace that step with an assumption-free proof, or remove <code>computable</code>. See <a href="assumptions.html#computability">computability</a>.</dd>
-              <dt>“The term evaluates to 6, not 7.”</dt>
-              <dd>An <code>evaluate</code> directive found a different normal form. The message shows both normal forms.</dd>
-              <dt>An attempted witness extraction from <code>Mere(A)</code> fails</dt>
-              <dd>Truncation elimination needs a proposition as its target. Proving mere existence does not in general supply a chosen witness.</dd>
-            </dl>
-            <h3>Equational reasoning and simplification</h3>
-            <dl>
-              <dt>“rw left an unresolved equality goal; add a following proof statement.”</dt>
-              <dd>The rewrite succeeded, but the new goal does not hold by conversion. Add another <code>rw</code>, an <code>exact</code>, or a <code>simp</code>. The same applies to the <code>simp</code> variants.</dd>
-              <dt>“Rewrite occurrence 3 was not found (1 eligible matches).”</dt>
-              <dd>Fewer matches exist than the requested occurrence. Check that the rule is instantiated with exactly the subterm that appears, and whether you meant <code>at lhs</code> or <code>at rhs</code>.</dd>
-              <dt>“Rewrite match occurs in an unsupported dependent position.”</dt>
-              <dd>The only match is under a binder or in a dependent argument. Use an explicit <code>cong</code> with a one-hole function.</dd>
-              <dt>“calc step left endpoint does not match the preceding endpoint.”, “calc final endpoint does not match the goal.”</dt>
-              <dd>Adjacent steps must share an endpoint up to conversion. Use <code>_</code> to avoid retyping the previous right side.</dd>
-              <dt>“Simplification cycle detected in the selected rules.”</dt>
-              <dd>A rule, or a pair of rules, can rewrite a term back to an earlier state; commutativity always does. Instantiate the rule at specific arguments, or remove one direction.</dd>
-              <dt>“A simplification rule parameter is not determined by the matched side; supply arguments.”</dt>
-              <dd>Matching cannot fix every parameter. Pass the missing arguments explicitly, or use the rule in the other direction.</dd>
-              <dt>A conditional rule reports a blocked premise</dt>
-              <dd>No proof of the premise was found. List a local proof with <code>simp with [h]</code>, or add a rule that proves the premise.</dd>
-              <dt>“… budget exceeded.”</dt>
-              <dd>Rewriting, matching, term size or elapsed work hit a fixed bound. Narrow the rule list with <code>simp only</code>, or split the proof with <code>have</code> or <code>calc</code>.</dd>
-              <dt>“path i =&gt; ... needs an expected Path or PathP type.”</dt>
-              <dd>Use the long form <code>path(family, body)</code>, or place the shorthand where a path type is expected.</dd>
-            </dl>
-            <h3>Not yet available</h3>
-            <p>Rewriting currently supports homogeneous equality endpoints and type-valued goals through ordinary applications whose result type stays fixed. The following are not available yet:</p>
+            <h2>How to read an error</h2>
+            <p>Every rejected example in this reference shows its error as a <code>// Error:</code> comment, on the line where the checker reports it. This chapter lists those messages by topic, with what each means, what to do, and where an example shows it. Parts in <var>italics</var> stand for names or numbers from your source.</p>
+            <p>An error names the declaration it belongs to, and the workspace marks the statement it points at. A rejected declaration is not added, so every declaration that uses it fails too, with “Untranslated dependency”. Fix the first error in a file first.</p>
+          </section>
+          <section id="syntax-errors">
+            <h2>Reading the source</h2>
+            <p>These are reported before anything is checked, at the first token that does not fit.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="Expected def or axiom.">“Expected def or axiom.”</td><td>A top-level item is not a declaration or directive. Often an <code>import</code> after a declaration: imports come first.</td><td><a href="first-proof.html#files">files</a></td></tr>
+                <tr><td data-message="Unexpected character">“Unexpected character <var>c</var>”</td><td>Source is ASCII. Write <code>-></code>, <code>forall</code> and <code>exists</code> instead of symbols.</td><td><a href="first-proof.html#names">names</a></td></tr>
+                <tr><td data-message="Expected a name.">“Expected a name.”</td><td>A name cannot start with a digit, and every parameter needs a type.</td><td><a href="first-proof.html#names">names</a>, <a href="first-proof.html#parameters">parameters</a></td></tr>
+                <tr><td data-message="Expected '{', found ';'.">“Expected '{', found ';'.”</td><td><code>def name : T = term;</code> is not a form: the type absorbs <code>= term</code>. Use a block with <code>exact</code>, or <code>typed</code>.</td><td><a href="first-proof.html#declarations">declarations</a></td></tr>
+                <tr><td data-message="Expected ';', found">“Expected ';', found <var>token</var>”</td><td>A missing semicolon, reported at the next token.</td><td><a href="first-proof.html#declarations">declarations</a></td></tr>
+                <tr><td data-message="Expected '=>', found">“Expected '=>', found <var>token</var>”</td><td>Untyped binders cannot share a group. Write <code>fun x => fun y => …</code>, or give the binders a type.</td><td><a href="terms.html#functions">functions</a></td></tr>
+                <tr><td data-message="Expected '}', found ';'.">“Expected '}', found ';'.”</td><td>The braces of <code>with unfolding</code> hold one expression, without a semicolon.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
+                <tr><td data-message="Expected '=', found">“Expected '=', found <var>token</var>”</td><td>A <code>calc</code> step is an equality; other relations cannot be chained yet.</td><td><a href="#not-yet-available">not yet available</a></td></tr>
+                <tr><td data-message="Expected a proof statement; found">“Expected a proof statement; found <var>word</var>”</td><td>The word is not a statement. <code>apply</code>, <code>refine</code> and <code>sorry</code> do not exist yet.</td><td><a href="proof-blocks.html#goals">statements</a>, <a href="#not-yet-available">not yet available</a></td></tr>
+                <tr><td data-message="Expected an expression, found '{'.">“Expected an expression, found '{'.”</td><td>A block is not a term. Prove the part first with <code>have</code>.</td><td><a href="proof-blocks.html#where-blocks-go">blocks</a></td></tr>
+                <tr><td data-message="Use obtain to unpack a pair.">“Use obtain to unpack a pair.”</td><td><code>let</code> names one term; <code>obtain</code> takes a pair apart.</td><td><a href="proof-blocks.html#let">let</a></td></tr>
+                <tr><td data-message="A pair pattern needs at least two components.">“A pair pattern needs at least two components.”</td><td>Write <code>obtain (a, b) = pair;</code>, or name the whole value with <code>let</code>.</td><td><a href="proof-blocks.html#obtain">obtain</a></td></tr>
+                <tr><td data-message="Numerals are limited to 256 in this version.">“Numerals are limited to 256 in this version.”</td><td>Build larger numbers with arithmetic, or use binary literals.</td><td><a href="terms.html#numbers">numbers</a>, <a href="checking.html#limits">limits</a></td></tr>
+                <tr><td data-message="Binary literals are limited to 256 significant bits.">“Binary literals are limited to 256 significant bits.”</td><td>A resource limit of the parser.</td><td><a href="checking.html#limits">limits</a></td></tr>
+                <tr><td data-message="simp only requires an explicit rule list.">“simp only requires an explicit rule list.”</td><td>Write <code>simp only [rules];</code>, or plain <code>simp;</code> for the default rules.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
+                <tr><td data-message="simp only cannot exclude rules.">“simp only cannot exclude rules.”</td><td><code>without</code> removes default rules; <code>simp only</code> has none. Leave the rule out of the list instead.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
+                <tr><td data-message="simp_rule priority must be an integer from 0 to 1000.">“simp_rule priority must be an integer from 0 to 1000.”</td><td>Choose a priority in range.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="name-errors">
+            <h2>Names and declarations</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import primes;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type or a <code>_</code> hole outside <code>calc</code>.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
+                <tr><td data-message="Untranslated dependency:">“Untranslated dependency: <var>name</var>”</td><td>The named declaration failed, so its users are blocked. Fix the named declaration.</td><td><a href="first-proof.html#checking">checking</a></td></tr>
+                <tr><td data-message="Definition symbol is already registered.">“Definition symbol is already registered.”</td><td>A name is declared twice in one module. Rename one.</td><td><a href="first-proof.html#order">order</a></td></tr>
+                <tr><td data-message="Axiom declarations require an explicit assumption policy; not translated.">“Axiom declarations require an explicit assumption policy; not translated.”</td><td>A source file cannot add assumptions. Use a parameter, or one of the library assumptions.</td><td><a href="first-proof.html#other-declarations">declarations</a></td></tr>
+                <tr><td data-message="is already registered in this module.">“Simplification rule <var>name</var> is already registered in this module.”</td><td>Register each rule once per module.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="type-errors">
+            <h2>Types and terms</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="Type mismatch.">“Type mismatch.”</td><td>A term’s type is not equal to the expected type by computation. Check argument order, universes and endpoints. From <code>rfl</code>, it means the two sides are only equal propositionally: use a lemma, <code>rw</code> or <code>simp</code>. In a <code>cases</code> branch, the goal is not refined; use <code>match</code>.</td><td><a href="proof-blocks.html#exact">exact</a>, <a href="conversion.html#conversion">conversion</a>, <a href="proof-blocks.html#cases">cases</a></td></tr>
+                <tr><td data-message="Source application is not a function.">“Source application is not a function.”</td><td>Something that is not a function is applied, or a function gets too many arguments.</td><td><a href="terms.html#application">application</a>, <a href="first-proof.html#parameters">parameters</a></td></tr>
+                <tr><td data-message="Untyped lambda requires an expected function type.">“Untyped lambda requires an expected function type.”</td><td>Give the binder a type, or put the function where a function type is expected.</td><td><a href="terms.html#functions">functions</a></td></tr>
+                <tr><td data-message="requires an expected type.">“Pair requires an expected type.”, “Sum injection requires an expected type.”, “absurd requires an expected type.”</td><td>The form needs its type from context. Supply it with a stated result type, <code>have name : T</code> or <code>typed(T, term)</code>.</td><td><a href="terms.html#typed">expected types</a></td></tr>
+                <tr><td data-message="Expected a Sigma type for pair.">“Expected a Sigma type for pair.”</td><td>A pair is checked against a type that is not a pair type, or a tuple does not match the nesting of its type.</td><td><a href="terms.html#tuples">tuples</a></td></tr>
+                <tr><td data-message="unpack requires a dependent pair.">“unpack requires a dependent pair.”</td><td>Only pairs can be unpacked.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
+                <tr><td data-message="match requires a sum type.">“match requires a sum type.”</td><td><code>match</code> analyses <code>A or B</code>. Use <code>induction</code> for <code>Nat</code>.</td><td><a href="terms.html#match">match</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="block-errors">
+            <h2>Proof blocks</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="Proof block has no conclusion.">“Proof block has no conclusion.”</td><td>The block ends without closing its goal. Add a closing statement; after <code>ext</code>, the new goal still needs one.</td><td><a href="proof-blocks.html#goals">statements</a>, <a href="proof-blocks.html#changing-the-goal">changing the goal</a></td></tr>
+                <tr><td data-message="Statements after exact are unreachable.">“Statements after exact are unreachable.”</td><td>Nothing may follow a closing statement. Prove intermediate claims with <code>have</code> before closing.</td><td><a href="proof-blocks.html#goals">statements</a></td></tr>
+                <tr><td data-message="Statements after cases are not yet translated.">“Statements after cases are not yet translated.”</td><td><code>cases</code> must end its block. Move the rest into the branches.</td><td><a href="proof-blocks.html#cases">cases</a></td></tr>
+                <tr><td data-message="intro requires a dependent function goal.">“intro requires a dependent function goal.”</td><td>The goal is not a function type, or all its inputs are already introduced.</td><td><a href="proof-blocks.html#intro">intro</a></td></tr>
+                <tr><td data-message="obtain requires a dependent pair matching its pattern.">“obtain requires a dependent pair matching its pattern.”</td><td>The value is not a pair, or the pattern’s nesting differs from its type’s.</td><td><a href="proof-blocks.html#obtain">obtain</a></td></tr>
+                <tr><td data-message="cases requires a sum type.">“cases requires a sum type.”</td><td><code>cases</code> splits <code>A or B</code>.</td><td><a href="proof-blocks.html#cases">cases</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="path-errors">
+            <h2>Equality and paths</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="Path endpoints do not match.">“Path endpoints do not match.”</td><td>In <code>trans(p, q)</code>, <code>p</code> must end where <code>q</code> starts.</td><td><a href="paths.html#path-operations">operations</a></td></tr>
+                <tr><td data-message="cong requires a path.">“cong requires a path.”</td><td>The second argument must be a path.</td><td><a href="paths.html#path-operations">operations</a></td></tr>
+                <tr><td data-message="Transport endpoints do not match.">“Transport endpoints do not match.”</td><td>The stated endpoints must be the path’s, in order. Transport backwards along <code>sym(p)</code>.</td><td><a href="paths.html#transport">transport</a></td></tr>
+                <tr><td data-message="transport requires a path.">“transport requires a path.”</td><td>The fourth argument must be a path.</td><td><a href="paths.html#transport">transport</a></td></tr>
+                <tr><td data-message="Path induction endpoints/carrier do not match.">“Path induction endpoints/carrier do not match.”</td><td>The type and endpoints passed to <code>path_induction</code> must be the path’s.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
+                <tr><td data-message="Based induction needs concrete universes.">“Based induction needs concrete universes.”</td><td>The first two arguments of <code>based_induction</code> are universes.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="rewriting-errors">
+            <h2>Equational reasoning and simplification</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="rfl requires a homogeneous equality goal.">“rfl requires a homogeneous equality goal.”</td><td>The goal is not an equality.</td><td><a href="rewriting.html#rfl">rfl</a></td></tr>
+                <tr><td data-message="calc step left endpoint does not match the preceding endpoint.">“calc step left endpoint does not match the preceding endpoint.”</td><td>Adjacent steps must share an endpoint. Write <code>_</code> for the previous right side.</td><td><a href="rewriting.html#calc">calc</a></td></tr>
+                <tr><td data-message="calc final endpoint does not match the goal.">“calc final endpoint does not match the goal.”</td><td>The chain must end at the goal’s right side.</td><td><a href="rewriting.html#calc">calc</a></td></tr>
+                <tr><td data-message="calc requires a homogeneous equality goal.">“calc requires a homogeneous equality goal.”</td><td>The goal is not an equality.</td><td><a href="rewriting.html#calc">calc</a></td></tr>
+                <tr><td data-message="Rewrite occurrence">“Rewrite occurrence <var>n</var> was not found (<var>m</var> eligible matches).”</td><td>Fewer matches exist than requested, or none: the rule must be instantiated at exactly the subterm that appears. Rewriting never looks under binders.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr><td data-message="rw left an unresolved equality goal; add a following proof statement.">“rw left an unresolved equality goal; add a following proof statement.”</td><td>The rewrite worked, but the new goal does not hold by computation. Add another statement.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr><td data-message="rw requires a homogeneous equality proof.">“rw requires a homogeneous equality proof.”</td><td>Instantiate the rule fully, as in <code>nat_add_zero(n)</code>, or use <code>simp only</code>.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr><td data-message="Rewrite match occurs in an unsupported dependent position.">“Rewrite match occurs in an unsupported dependent position.”</td><td>The only match is in a dependent argument. Use an explicit <code>cong</code>.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr><td data-message="rw requires a homogeneous equality goal.">“rw requires a homogeneous equality goal.”</td><td>The goal is a type, not an equality. <code>simp</code> rewrites types.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr><td data-message="A simplification rule parameter is not determined by the matched side; supply arguments.">“A simplification rule parameter is not determined by the matched side; supply arguments.”</td><td>Matching cannot fix every parameter. Pass the missing arguments.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
+                <tr><td data-message="simp only left an unresolved equality goal; add a following proof statement.">“simp only left an unresolved equality goal; add a following proof statement.”</td><td>The simplified goal does not hold by computation. Add a statement; the message may name a rule whose premise was not proved.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
+                <tr><td data-message="has an unproved premise at parameter">“Rule <var>name</var> has an unproved premise at parameter <var>n</var>; …”</td><td>A conditional rule could not fire. Supply a local proof with <code>simp with [h]</code>.</td><td><a href="rewriting.html#simp-conditional">conditional rules</a></td></tr>
+                <tr><td data-message="Simplification cycle detected in the selected rules.">“Simplification cycle detected in the selected rules.”</td><td>A rule rewrites its output back into its input, as commutativity does. Instantiate it at specific arguments.</td><td><a href="rewriting.html#simp-traversal">traversal</a></td></tr>
+                <tr><td data-message="budget exceeded.">“… budget exceeded.”</td><td>Rewriting, matching, term size or time hit a fixed bound. Narrow the rules with <code>simp only</code>, or split the proof.</td><td><a href="rewriting.html#simp-traversal">traversal</a></td></tr>
+                <tr><td data-message="simp at requires a local hypothesis:">“simp at requires a local hypothesis: <var>name</var>.”</td><td><code>simp … at h</code> simplifies a hypothesis in the context, not a library lemma.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
+                <tr><td data-message="A simplified hypothesis copy must be followed by a proof statement.">“A simplified hypothesis copy must be followed by a proof statement.”</td><td><code>simp … at h as h2</code> leaves the goal open. Use <code>h2</code> in a following statement.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
+                <tr><td data-message="Simplification premise witness must be local:">“Simplification premise witness must be local: <var>name</var>.”</td><td><code>with [h]</code> lists hypotheses from the context.</td><td><a href="rewriting.html#simp-conditional">conditional rules</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="cubical-errors">
+            <h2>Cubical paths</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="Interval coordinates can only be used in interval arguments.">“Interval coordinates can only be used in interval arguments.”</td><td>A coordinate is not a term. Use it only in <code>@</code>, <code>flip</code>, <code>meet</code>, <code>join</code> and faces.</td><td><a href="cubical.html#cubical">the interval</a></td></tr>
+                <tr><td data-message="path i => ... needs an expected Path or PathP type.">“path i => ... needs an expected Path or PathP type.”</td><td>Use the shorthand where a path type is expected, or write <code>path(family, body)</code>.</td><td><a href="cubical.html#cubical-shorthand">shorthand</a></td></tr>
+                <tr><td data-message="over requires an expected PathP goal.">“over requires an expected PathP goal.”</td><td><code>over</code> proves dependent paths only.</td><td><a href="cubical.html#dependent-paths">dependent paths</a></td></tr>
+                <tr><td data-message="ext requires equality of functions.">“ext requires equality of functions.”</td><td>The goal is not an equality of functions.</td><td><a href="cubical.html#ext">ext</a></td></tr>
+                <tr><td data-message="Composition tube disagrees with its base.">“Composition tube disagrees with its base.”</td><td>A wall does not start on the base. Check each wall at the base coordinate.</td><td><a href="cubical.html#composition">composition</a></td></tr>
+              </tbody>
+            </table></div>
+            <p>Interval and face formulas beyond 4,096 clauses fail with a lattice budget error. Split such a proof into named steps.</p>
+          </section>
+          <section id="conversion-errors">
+            <h2>Conversion, assumptions and computability</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="No checked definition to unfold:">“No checked definition to unfold: <var>name</var>”</td><td>Hints name top-level checked definitions only.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
+                <tr><td data-message="Logical assumptions require a concrete universe and an explicit native context.">“Logical assumptions require a concrete universe and an explicit native context.”</td><td>A library assumption was used without its universe argument. Write <code>Truncate(U0, A)</code>.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
+                <tr><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td>A library assumption got more arguments than its type allows.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
+                <tr><td data-message="This computable declaration depends on non-computing assumptions:">“This computable declaration depends on non-computing assumptions: …”</td><td>The declaration uses an assumption, directly or through a definition. The message names the chain. Replace that step, or drop <code>computable</code>.</td><td><a href="assumptions.html#computable">computable</a></td></tr>
+                <tr><td data-message="The evaluated term depends on non-computing assumptions:">“The evaluated term depends on non-computing assumptions: …”</td><td><code>evaluate</code> accepts only terms that use no assumption.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
+                <tr><td data-message="The term evaluates to">“The term evaluates to <var>a</var>, not <var>b</var>.”</td><td>The normal forms differ; the message shows both.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="not-yet-available">
+            <h2>Not yet available</h2>
+            <p>These are planned; see the work plan. Until then, they are rejected:</p>
+            <pre><code data-check="reject">def uses_apply(A B : U0, f : A -&gt; B, a : A) : B {
+  apply f;  // Error: Expected a proof statement; found 'apply'.
+  exact a;
+}</code></pre>
+            <pre><code data-check="reject">def unfinished : Nat {
+  sorry;  // Error: Expected a proof statement; found 'sorry'.
+}</code></pre>
+            <pre><code data-check="reject">def hole : Nat {
+  exact _;  // Error: Untranslated name: _
+}</code></pre>
+            <pre><code data-check="reject">import primes;
+
+def mixed(a b : Nat, h : a = b) : a &lt;= b {
+  calc {
+    a = b by h;
+    _ &lt;= b by tt;  // Error: Expected '=', found '&lt;='.
+  }
+}</code></pre>
             <ul>
-              <li>rewriting a hypothesis together with everything that depends on it (<code>simp at</code> makes a new copy instead);</li>
               <li><code>apply</code>, <code>refine</code> and <code>sorry</code>;</li>
-              <li>general implicit or named arguments;</li>
-              <li>solving premises that are not equalities;</li>
-              <li>inequality and mixed-relation <code>calc</code> chains.</li>
+              <li>implicit or named arguments, and <code>_</code> holes outside <code>calc</code>;</li>
+              <li>chains of relations other than equality in <code>calc</code>;</li>
+              <li>rewriting a hypothesis together with everything that depends on it: <code>simp at</code> makes a new copy instead;</li>
+              <li>solving premises of conditional rules that are not equalities;</li>
+              <li>user-declared inductive types and <code>match</code> on them, which replace today’s <a href="induction.html#induction">built-in eliminators</a>.</li>
             </ul>
           </section>
+
           <nav class="pager" aria-label="Chapter navigation">
             <a class="previous" href="checking.html">← 11. Checking and inspection</a>
           </nav>

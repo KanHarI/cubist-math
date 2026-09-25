@@ -38,7 +38,7 @@
             <li><a href="conversion.html">Conversion and opacity</a></li>
             <li class="current"><a href="assumptions.html" aria-current="page">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
-            <li><a href="errors.html">Common errors</a></li>
+            <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
@@ -97,9 +97,11 @@ def truncate_types = Truncate(U1, U0);
 def generic(U : Universe, A : U) = Truncate(U, A);</code></pre>
             <p>The checker specializes each assumption to its universe before kernel checking: the kernel sees a named context assumption with the specialized type, such as <code>LEM(U0)</code>. The inspector shows the generic schema, the universe and the checked instance separately.</p>
             <p class="note">Truncation returns a type in <code>U0</code> even for larger inputs. Thus <code>Truncate(U1, U0)</code> is valid, but <code>Truncate(U0, U0)</code> is not, because <code>U0</code> is not a type in <code>U0</code>.</p>
-            <pre><code data-check="reject" data-error="Type mismatch.">def too_large = Truncate(U0, U0);</code></pre>
-            <pre><code data-check="reject" data-error="Logical assumptions require a concrete universe and an explicit native context.">def no_universe(A : U0) = Truncate(A);</code></pre>
-            <pre><code data-check="reject" data-error="Too many arguments to TruncateIntro.">def extra_argument(A : U0, a : A) = TruncateIntro(U0, A, a, a);</code></pre>
+            <pre><code data-check="reject">def too_large = Truncate(U0, U0);  // Error: Type mismatch.</code></pre>
+            <pre><code data-check="reject">// Error: Logical assumptions require a concrete universe and an explicit native context.
+def no_universe(A : U0) = Truncate(A);</code></pre>
+            <pre><code data-check="reject">// Error: Too many arguments to TruncateIntro.
+def extra_argument(A : U0, a : A) = TruncateIntro(U0, A, a, a);</code></pre>
           </section>
           <section id="univalence">
             <h2>Extensionality and univalence compute</h2>
@@ -148,13 +150,18 @@ computable def double_two : double(2) = 4 {
   rfl;
 }</code></pre>
             <p>A computable declaration may take parameters, like <code>double</code>. The requirement is about assumptions, not about closed terms: every application of <code>double</code> to a numeral computes. The library’s <code>double_negation</code> is proved with excluded middle, so a declaration that uses it cannot be computable:</p>
-            <pre><code data-check="reject" data-error="depends on non-computing assumptions: LEM(U0)">import classical;
+            <pre><code data-check="reject">import classical;
 
 computable def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
+  // Error: This computable declaration depends on non-computing assumptions:
+  //   LEM(U0), Truncate(U0), TruncateElim(U0).
+  //   Path to LEM(U0): double_negation (classical) → LEM(U0).
   exact double_negation(P, prop, nn);
 }</code></pre>
-            <p>The error reads: <code>This computable declaration depends on non-computing assumptions: LEM(U0), Truncate(U0), TruncateElim(U0). Path to LEM(U0): double_negation (classical) → LEM(U0).</code> When the assumption is used directly, the path is just its name:</p>
-            <pre><code data-check="reject" data-error="Path to Truncate(U0): Truncate(U0).">computable def merely(A : U0, a : A) : Truncate(U0, A) {
+            <p>The error lists every assumption the proof uses, and the chain of definitions through which the first one enters: here the library’s <code>double_negation</code>. When the assumption is used directly, the chain is just its name:</p>
+            <pre><code data-check="reject">computable def merely(A : U0, a : A) : Truncate(U0, A) {
+  // Error: This computable declaration depends on non-computing assumptions:
+  //   Truncate(U0), TruncateIntro(U0). Path to Truncate(U0): Truncate(U0).
   exact TruncateIntro(U0, A, a);
 }</code></pre>
             <p>Without the modifier, the same proofs are accepted and their assumptions are listed as usual. The modifier changes nothing else: a computable declaration is checked and unfolded like any other.</p>
@@ -166,12 +173,14 @@ def double(n : Nat) = n + n;
 
 evaluate double(3) expecting 6;
 evaluate double(double(1)) expecting 2 + 2;</code></pre>
-            <pre><code data-check="reject" data-error="The term evaluates to 6, not 7.">import primes;
+            <pre><code data-check="reject">import primes;
 
 def double(n : Nat) = n + n;
 
-evaluate double(3) expecting 7;</code></pre>
-            <pre><code data-check="reject" data-error="The evaluated term depends on non-computing assumptions: Truncate(U0), TruncateIntro(U0).">evaluate TruncateIntro(U0, Nat, 3) expecting TruncateIntro(U0, Nat, 3);</code></pre>
+evaluate double(3) expecting 7;  // Error: The term evaluates to 6, not 7.</code></pre>
+            <pre><code data-check="reject">// Error: The evaluated term depends on non-computing assumptions: Truncate(U0), TruncateIntro(U0).
+//   Path to Truncate(U0): Truncate(U0).
+evaluate TruncateIntro(U0, Nat, 3) expecting TruncateIntro(U0, Nat, 3);</code></pre>
             <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to. Evaluation computes full normal forms: it unfolds <code>opaque</code> definitions and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are keywords only in these positions. Elsewhere they are ordinary names.</p>
             <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
             <p class="note">Truncation is itself an assumption in the current kernel, so a term of type <code>Truncate(U0, A)</code> never evaluates. The kernel roadmap makes truncation an inductive type with a computation rule. After that, a closed truncated term that uses no other assumption will compute, and <code>evaluate</code> is planned to read the witness inside it.</p>

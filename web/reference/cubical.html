@@ -38,7 +38,7 @@
             <li><a href="conversion.html">Conversion and opacity</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
-            <li><a href="errors.html">Common errors</a></li>
+            <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
@@ -77,14 +77,15 @@ def to_start(A : U0, x y : A, p : x = y) :
   exact path j =&gt; path i =&gt; p @ meet(i, j);
 }</code></pre>
             <p><code>value_at_zero</code> holds by computation. In <code>to_start</code>, the square <code>p @ meet(i, j)</code> is <code>refl(x)</code> at <code>j = 0</code> and <code>p</code> at <code>j = 1</code>. The kernel checks every endpoint:</p>
-            <pre><code data-check="reject" data-error="Type mismatch.">def wrong_direction(A : U0, x y : A, p : x = y) : x = y {
-  exact path i =&gt; p @ flip(i);
+            <pre><code data-check="reject">def wrong_direction(A : U0, x y : A, p : x = y) : x = y {
+  exact path i =&gt; p @ flip(i);  // Error: Type mismatch.
 }</code></pre>
             <p>A coordinate is not a term, and <code>Interval</code> is not a type:</p>
-            <pre><code data-check="reject" data-error="Interval coordinates can only be used in interval arguments.">def coordinate_as_term(A : U0, x : A) : x = x {
+            <pre><code data-check="reject">def coordinate_as_term(A : U0, x : A) : x = x {
+  // Error: Interval coordinates can only be used in interval arguments.
   exact path i =&gt; typed(Nat, i);
 }</code></pre>
-            <pre><code data-check="reject" data-error="Untranslated name: Interval">def interval_as_type(i : Interval) = i;</code></pre>
+            <pre><code data-check="reject">def interval_as_type(i : Interval) = i;  // Error: Untranslated name: Interval</code></pre>
           </section>
           <section id="cubical-shorthand">
             <h2>Shorthand</h2>
@@ -114,7 +115,8 @@ def naturality_square(A B : U0, f g : A -&gt; B,
 }</code></pre>
             <p><code>reverse_again</code> is the same term as <code>reverse_path</code>, with the family read from the goal. <code>naturality_square</code> fills a square whose sides are <code>cong(f, p)</code>, <code>cong(g, p)</code>, <code>H(x)</code> and <code>H(y)</code>. The outer <code>path j</code> gets its family from the <code>PathP</code> goal, and each inner <code>path i</code> from the equality at <code>j</code>. The kernel then checks all four edges.</p>
             <p>The shorthand needs an expected path type to supply the family:</p>
-            <pre><code data-check="reject" data-error="path i =&gt; ... needs an expected Path or PathP type.">def no_expected_type(A : U0, x : A) = path i =&gt; x;</code></pre>
+            <pre><code data-check="reject">// Error: path i =&gt; ... needs an expected Path or PathP type.
+def no_expected_type(A : U0, x : A) = path i =&gt; x;</code></pre>
           </section>
           <section id="dependent-paths">
             <h2>Dependent paths</h2>
@@ -136,8 +138,8 @@ def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)),
   }
 }</code></pre>
             <p>There are two standard ways to state that a dependent function respects a path. A <code>PathP</code> states it directly, as a path lying over <code>p</code>. The transported equality <code>transport(C, x, y, p, f(x)) = f(y)</code> states it in one fiber. <code>apd_path</code> produces the first and <code>apd</code> the second. <code>over</code> proves a <code>PathP</code> goal from the transported equality, when that is easier. The family <code>C</code> is never inferred: the elaborator does not search for a family that fits.</p>
-            <pre><code data-check="reject" data-error="over requires an expected PathP goal.">def not_a_path_goal(A : U0, C : A -&gt; U0, x y : A, p : x = y) : Nat {
-  over C along p by {
+            <pre><code data-check="reject">def not_a_path_goal(A : U0, C : A -&gt; U0, x y : A, p : x = y) : Nat {
+  over C along p by {  // Error: over requires an expected PathP goal.
     exact 0;
   }
 }</code></pre>
@@ -155,8 +157,8 @@ def dependent_pointwise(A : U0, C : A -&gt; U0, f g : forall a : A, C(a),
   exact h(a);
 }</code></pre>
             <p>Cubical paths make function extensionality provable: <code>path i => fun x => h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the goal is <code>f = g</code> with <code>f g : forall x : A, C(x)</code>. It uses no assumption; <a href="assumptions.html#univalence"><code>FunExt</code></a> builds the same term. Unlike <code>rw</code>, <code>ext</code> never closes the block: a statement proving <code>f(x) = g(x)</code> must follow, even when that holds by <code>rfl</code>.</p>
-            <pre><code data-check="reject" data-error="ext requires equality of functions.">def not_functions(n : Nat) : n = n {
-  ext x;
+            <pre><code data-check="reject">def not_functions(n : Nat) : n = n {
+  ext x;  // Error: ext requires equality of functions.
   rfl;
 }</code></pre>
           </section>
@@ -173,9 +175,9 @@ def move(A : U0, C : A -&gt; U0, x y : A, p : x = y, v : C(x)) : C(y) {
   exact comp(fun (j : Interval) =&gt; C(p @ j), v);
 }</code></pre>
             <p><code>join</code> is how <code>trans</code> is built: the bottom edge is <code>p</code>, the left wall stays at <code>x</code>, and the right wall follows <code>q</code>. A wall that does not start on the base is rejected. Here the left wall starts at <code>y</code>, but the base starts at <code>x</code>:</p>
-            <pre><code data-check="reject" data-error="Composition tube disagrees with its base.">def misplaced_wall(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
+            <pre><code data-check="reject">def misplaced_wall(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
   exact path i =&gt; comp(fun (j : Interval) =&gt; A, p @ i,
-    face(i, 0, fun (j : Interval) =&gt; y),
+    face(i, 0, fun (j : Interval) =&gt; y),  // Error: Composition tube disagrees with its base.
     face(i, 1, fun (j : Interval) =&gt; q @ j));
 }</code></pre>
             <p><code>fill(family, base, level, walls…)</code> is the same filling stopped at the coordinate <code>level</code>, so it gives the whole square rather than its top edge. <code>face_when(formula, wall)</code> states a wall’s face as a formula built from <code>on(i, 0)</code>, <code>on(i, 1)</code>, <code>and</code> and <code>or</code>:</p>

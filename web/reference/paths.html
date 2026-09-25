@@ -38,7 +38,7 @@
             <li><a href="conversion.html">Conversion and opacity</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
-            <li><a href="errors.html">Common errors</a></li>
+            <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
@@ -71,8 +71,8 @@ def numeral_is_successors : succ(succ(0)) = 2 {
 def path_between_paths(A : U0, x : A) : refl(x) = refl(x) {
   exact refl(refl(x));
 }</code></pre>
-            <pre><code data-check="reject" data-error="Type mismatch.">def zero_is_one : 0 = 1 {
-  exact refl(0);
+            <pre><code data-check="reject">def zero_is_one : 0 = 1 {
+  exact refl(0);  // Error: Type mismatch.
 }</code></pre>
           </section>
           <section id="carriers">
@@ -86,8 +86,8 @@ def reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
   exact sym(p);
 }</code></pre>
             <p>In <code>A =[U1] B</code>, the endpoints are types and the carrier is a universe. Equalities between different types come from univalence; see <a href="assumptions.html#univalence">extensionality and univalence</a>. The carrier must be the type of both endpoints:</p>
-            <pre><code data-check="reject" data-error="Type mismatch.">def wrong_carrier(x : Nat) : x =[Unit] x {
-  exact refl(x);
+            <pre><code data-check="reject">def wrong_carrier(x : Nat) : x =[Unit] x {
+  exact refl(x);  // Error: Type mismatch.
 }</code></pre>
           </section>
           <section id="path-operations">
@@ -121,15 +121,15 @@ def apply_path(A B : U0, f g : A -&gt; B, p : f = g, a : A) : f(a) = g(a) {
   exact cong(fun (h : A -&gt; B) =&gt; h(a), p);
 }</code></pre>
             <p><code>trans</code> needs the first path to end where the second starts:</p>
-            <pre><code data-check="reject" data-error="Path endpoints do not match.">def gap_between(A : U0, x y z w : A, p : x = y, q : z = w) : x = w {
-  exact trans(p, q);
+            <pre><code data-check="reject">def gap_between(A : U0, x y z w : A, p : x = y, q : z = w) : x = w {
+  exact trans(p, q);  // Error: Path endpoints do not match.
 }</code></pre>
-            <pre><code data-check="reject" data-error="cong requires a path.">def not_a_path(f : Nat -&gt; Nat, n : Nat) : f(n) = f(n) {
-  exact cong(f, n);
+            <pre><code data-check="reject">def not_a_path(f : Nat -&gt; Nat, n : Nat) : f(n) = f(n) {
+  exact cong(f, n);  // Error: cong requires a path.
 }</code></pre>
             <p><code>cong</code> needs a function with a fixed result type. For a dependent function, <code>f(x)</code> and <code>f(y)</code> have different types, so <code>f(x) = f(y)</code> does not type-check the way <code>cong</code> needs; use <code>apd</code> or <code>apd_path</code>:</p>
-            <pre><code data-check="reject" data-error="Type mismatch.">def dependent_cong(A : U0, C : A -&gt; U0, f : forall a : A, C(a), x y : A, p : x = y) : f(x) = f(y) {
-  exact cong(f, p);
+            <pre><code data-check="reject">def dependent_cong(A : U0, C : A -&gt; U0, f : forall a : A, C(a), x y : A, p : x = y) : f(x) = f(y) {
+  exact cong(f, p);  // Error: Type mismatch.
 }</code></pre>
             <p>Some inferred pair projections do not keep enough equality information for <code>sym</code>, <code>trans</code> or <code>cong</code>. In that case, state the path first with <code>have p : x = y := term;</code>.</p>
           </section>
@@ -149,11 +149,11 @@ def respects(A : U0, C : A -&gt; U0, f : forall a : A, C(a), x y : A, p : x = y)
   exact apd(f, x, y, p);
 }</code></pre>
             <p>The stated endpoints must be the path’s endpoints, in order:</p>
-            <pre><code data-check="reject" data-error="Transport endpoints do not match.">def backwards(A : U0, C : A -&gt; U0, x y : A, p : x = y, v : C(y)) : C(x) {
-  exact transport(C, y, x, p, v);
+            <pre><code data-check="reject">def backwards(A : U0, C : A -&gt; U0, x y : A, p : x = y, v : C(y)) : C(x) {
+  exact transport(C, y, x, p, v);  // Error: Transport endpoints do not match.
 }</code></pre>
-            <pre><code data-check="reject" data-error="transport requires a path.">def not_a_path(C : Nat -&gt; U0, v : C(0)) : C(0) {
-  exact transport(C, 0, 0, 0, v);
+            <pre><code data-check="reject">def not_a_path(C : Nat -&gt; U0, v : C(0)) : C(0) {
+  exact transport(C, 0, 0, 0, v);  // Error: transport requires a path.
 }</code></pre>
             <p>To move backwards, transport along <code>sym(p)</code>.</p>
           </section>
@@ -169,12 +169,14 @@ def respects(A : U0, C : A -&gt; U0, f : forall a : A, C(a), x y : A, p : x = y)
     C : forall b : A, (x = b) -&gt; U0, c : C(x, refl(x))) : C(y, p) {
   exact based_induction(U0, U0, A, x, C, c, y, p);
 }</code></pre>
-            <pre><code data-check="reject" data-error="Path induction endpoints/carrier do not match.">def swapped_endpoints(A : U0, x y : A, p : x = y) : x = y {
+            <pre><code data-check="reject">def swapped_endpoints(A : U0, x y : A, p : x = y) : x = y {
+  // Error: Path induction endpoints/carrier do not match.
   exact path_induction(A, fun (a b : A) (q : a = b) =&gt; a = b,
     fun (a : A) =&gt; refl(a), y, x, p);
 }</code></pre>
-            <pre><code data-check="reject" data-error="Based induction needs concrete universes.">def not_a_universe(A : U0, x y : A, p : x = y,
+            <pre><code data-check="reject">def not_a_universe(A : U0, x y : A, p : x = y,
     C : forall b : A, (x = b) -&gt; U0, c : C(x, refl(x))) : C(y, p) {
+  // Error: Based induction needs concrete universes.
   exact based_induction(Nat, U0, A, x, C, c, y, p);
 }</code></pre>
           </section>

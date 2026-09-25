@@ -38,7 +38,7 @@
             <li class="current"><a href="conversion.html" aria-current="page">Conversion and opacity</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
-            <li><a href="errors.html">Common errors</a></li>
+            <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
@@ -86,10 +86,10 @@ def path_endpoint(A : U0, x y : A, p : x = y) : p @ 1 = y {
   rfl;
 }</code></pre>
             <p>An eliminator applied to a variable does not compute, so an equality that needs a case analysis or induction on the variable is not definitional. It is a theorem, proved with a lemma, <code>rw</code> or <code>simp</code>:</p>
-            <pre><code data-check="reject" data-error="Type mismatch.">import primes;
+            <pre><code data-check="reject">import primes;
 
 def plus_zero(n : Nat) : n + 0 = n {
-  rfl;
+  rfl;  // Error: Type mismatch.
 }</code></pre>
             <p>The checker never uses a theorem automatically. A proved equality such as commutativity is a path, not a reduction rule; <code>rw</code> and <code>simp</code> use it only when it is named in the proof or registered with <a href="rewriting.html#simp-registration"><code>simp_rule</code></a>.</p>
           </section>
@@ -125,17 +125,18 @@ def no_hints : 0 = 0 {
   exact with unfolding [] { refl(0) };
 }</code></pre>
             <p>The checker first tries unfolding the listed definitions while keeping others folded; ordinary conversion remains available. The hints apply only inside the braces. The compiler may keep the result as a checked helper definition, so the enclosing proof can reuse it without expanding it again. Rechecking that helper replays its hints; they do not leak into the surrounding expression. Hints change the order of reduction, never the type, the assumptions or the proof obligations. They are guidance for performance, not evidence of an equality, and they do not normalize the whole expression. <a href="assumptions.html#evaluate"><code>evaluate</code></a> ignores them.</p>
-            <pre><code data-check="reject" data-error="No checked definition to unfold: missing_name">def unknown_hint : 0 = 0 {
+            <pre><code data-check="reject">def unknown_hint : 0 = 0 {
+  // Error: No checked definition to unfold: missing_name
   exact with unfolding [missing_name] { refl(0) };
 }</code></pre>
             <p>Only top-level definitions can be listed; a parameter or local name is not one:</p>
-            <pre><code data-check="reject" data-error="No checked definition to unfold: n">def local_hint(n : Nat) : n = n {
-  exact with unfolding [n] { refl(n) };
+            <pre><code data-check="reject">def local_hint(n : Nat) : n = n {
+  exact with unfolding [n] { refl(n) };  // Error: No checked definition to unfold: n
 }</code></pre>
-            <pre><code data-check="reject" data-error="Expected '}', found ';'.">def identity(n : Nat) = n;
+            <pre><code data-check="reject">def identity(n : Nat) = n;
 
 def statement_in_braces : identity(0) = 0 {
-  exact with unfolding [identity] { refl(0); };
+  exact with unfolding [identity] { refl(0); };  // Error: Expected '}', found ';'.
 }</code></pre>
           </section>
 
