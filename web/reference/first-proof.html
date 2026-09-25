@@ -55,10 +55,21 @@
         <article id="reference">
           <section id="first-proof">
             <h2>A first proof</h2>
-            <p>Every natural number has a greater one. As a type, the statement is <code>forall n : Nat, exists m : Nat, lt(n, m)</code>: for every <code>n</code> there is an <code>m</code> with <code>n &lt; m</code>. First define <code>lt</code>, then prove the statement.</p>
+            <p>Every natural number has a greater one. As a type, the statement is <code>forall n : Nat, exists m : Nat, lt(n, m)</code>: for every <code>n</code> there is an <code>m</code> with <code>n &lt; m</code>. First define <code>lt</code>, and try it on two numbers:</p>
             <pre><code data-check="accept">import naturals;
 
 // n &lt; m: m is n plus a positive number, succ(k) for some k.
+def lt(n m : Nat) := exists k : Nat, succ(k) + n = m;
+
+// 2 &lt; 5: take k = 2, since succ(2) + 2 = 5.
+def two_lt_five : lt(2, 5) {
+  exact (2, refl(5));
+}</code></pre>
+            <p><code>lt</code> is a function that returns a type: <code>lt(n, m)</code> is the statement that <code>n</code> is less than <code>m</code>. A value of it is evidence: a number <code>k</code> together with a proof that <code>succ(k) + n = m</code>.</p>
+            <p><code>two_lt_five</code> proves <code>lt(2, 5)</code>, which unfolds to <code>exists k : Nat, succ(k) + 2 = 5</code>. The pair <code>(2, refl(5))</code> takes <code>k = 2</code>, and <code>refl(5)</code> is accepted as evidence because <code>succ(2) + 2</code> computes to <code>5</code>. Any other <code>k</code> fails, because <code>succ(k) + 2</code> would compute to a different number.</p>
+            <p>The same idea works for every <code>n</code>: <code>succ(n)</code> is greater than <code>n</code>, with <code>k = 0</code>. That gives the statement:</p>
+            <pre><code data-check="accept">import naturals;
+
 def lt(n m : Nat) := exists k : Nat, succ(k) + n = m;
 
 // succ(n) is greater than n: take k = 0.
@@ -69,9 +80,8 @@ def lt_succ(n : Nat) : lt(n, succ(n)) {
 // Every number has a greater one.
 def exists_greater_number : forall n : Nat, exists m : Nat, lt(n, m) {
   intro n;                       // n : Nat
-  exact (succ(n), lt_succ(n));   // the number succ(n), and why it is greater
+  exact (succ(n), lt_succ(n));   // the witness, and the evidence
 }</code></pre>
-            <p><code>lt</code> is a function that returns a type: <code>lt(n, m)</code> is the statement that <code>n</code> is less than <code>m</code>. A value of it is evidence: a number <code>k</code> together with a proof that <code>succ(k) + n = m</code>.</p>
             <p><code>lt_succ</code> proves <code>lt(n, succ(n))</code>, which unfolds to <code>exists k : Nat, succ(k) + n = succ(n)</code>. The pair <code>(0, refl(succ(n)))</code> takes <code>k = 0</code>, and <code>refl(succ(n))</code> is accepted as evidence because <code>succ(0) + n</code> computes to <code>succ(0 + n)</code> and then to <code>succ(n)</code>.</p>
             <p><code>exists_greater_number</code> is proved in a block. At every point in a block there is a <strong>goal</strong>, the type still to be proved, and a <strong>context</strong>, the names available and their types. At the start the goal is the whole statement and the context is empty.</p>
             <ul>
