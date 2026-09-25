@@ -74,7 +74,7 @@
                 <tr><td><code>U0</code>, <code>U1</code>, …</td><td>Universes of types</td><td>Types themselves</td><td>See <a href="universes.html#universes">universes</a></td></tr>
               </tbody>
             </table></div>
-            <p class="note"><code>exists</code> is a pair with an actual witness. It is not truncated. Likewise, <code>or</code> keeps its choice of side. For mere existence, use <a href="assumptions.html#axioms">propositional truncation</a>.</p>
+            <p class="note"><code>exists</code> is a pair with an actual witness. It is not truncated. Likewise, <code>or</code> keeps the side a value is on. For mere existence, use <a href="assumptions.html#axioms">propositional truncation</a>.</p>
           </section>
           <section id="functions">
             <h2>Functions</h2>
@@ -190,9 +190,9 @@ def not_a_pair(n : Nat) := unpack n as (a, b) return Nat { a; };</code></pre>
           <section id="sums">
             <h2>Sums</h2>
             <p><code>left(a)</code> and <code>right(b)</code> build elements of <code>A or B</code>. Like pairs, they need an expected type, because the other side is not determined:</p>
-            <pre><code data-check="accept">def choose_left := typed(Unit or Nat, left(tt));
+            <pre><code data-check="accept">def unit_on_the_left := typed(Unit or Nat, left(tt));
 
-def choose_right : Unit or Nat {
+def three_on_the_right : Unit or Nat {
   exact right(3);
 }</code></pre>
             <pre><code data-check="reject">def unannotated := left(tt);  // Error: Sum injection requires an expected type.</code></pre>
@@ -294,7 +294,7 @@ def plus_zero_by_computation(n : Nat) : n + 0 = n {
 
 def successor := typed(Nat -&gt; Nat, fun n =&gt; succ(n));
 
-def choice := typed(Nat or Unit, right(tt));</code></pre>
+def unit_on_the_right := typed(Nat or Unit, right(tt));</code></pre>
             <pre><code data-check="reject">def not_a_number := typed(Nat, tt);  // Error: Type mismatch: found Unit, expected Nat.</code></pre>
           </section>
           <section id="precedence">

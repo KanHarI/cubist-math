@@ -69,7 +69,7 @@ def lt(n, m : Nat) : U0 {
 def two_lt_seven : lt(2, 7) {
   exact (4, refl(7));
 }</code></pre>
-            <p><code>lt</code> is a function that returns a type, so its value is a type in <code>U0</code>: <code>lt(n, m)</code> is the statement that <code>n</code> is less than <code>m</code>. A value of it is evidence: a number <code>k</code> together with a proof that <code>succ(k) + n = m</code>.</p>
+            <p><code>lt</code> is a function that returns a type, so its value is a type in <code>U0</code>: <code>lt(n, m)</code> is the statement that <code>n</code> is less than <code>m</code>. A value of it is evidence: a number <code>k</code> together with a proof that <code>succ(k) + n = m</code>. This <code>lt</code> is written out to show <code>exists</code> at work. <code>naturals</code> has its own <code>&lt;</code>, computed rather than existential; <a href="#library-order">a note at the end of this section</a> shows how to use it.</p>
             <p><code>two_lt_seven</code> proves <code>lt(2, 7)</code>, which unfolds to <code>exists k : Nat. succ(k) + 2 = 7</code>. The pair <code>(4, refl(7))</code> takes <code>k = 4</code>, and <code>refl(7)</code> is accepted as evidence because <code>succ(4) + 2</code> computes to <code>7</code>. Any other <code>k</code> fails, because <code>succ(k) + 2</code> would compute to a different number.</p>
             <p>The REPL at the bottom of this page checks Cubist one entry at a time. <code>typeof</code> shows the type of a term, and <code>evaluate</code> computes its value; unlike the directive, it needs no expected value. Here the REPL has the example above loaded:</p>
             <pre><code data-check="repl">&gt; typeof lt;
@@ -135,6 +135,37 @@ def not_greater : forall n : Nat. exists m : Nat. lt(n, m) {
   intro n;
   exact (n, lt_succ(n));  // Error: Type mismatch: found lt(n, succ(n)), expected lt(n, n).
 }</code></pre>
+            <aside class="note" id="library-order">
+            <p><strong>The library’s <code>&lt;</code>.</strong> The <code>lt</code> of this section is not the order that <code>naturals</code> provides. There, <code>n &lt; m</code> stands for <code>isLt(n, m)</code>, which is <code>succ(n) &lt;= m</code>, and <code>&lt;=</code> is defined by computation: <code>0 &lt;= m</code> is <code>Unit</code>, <code>succ(n) &lt;= 0</code> is <code>Void</code>, and <code>succ(n) &lt;= succ(m)</code> is <code>n &lt;= m</code>. A comparison of numerals computes to <code>Unit</code> when it is true, so <code>tt</code> proves it, and to <code>Void</code> when it is false, so nothing does.</p>
+            <pre><code data-check="accept">import naturals;
+
+// 2 &lt; 7 computes to Unit.
+def two_lt_seven : 2 &lt; 7 {
+  exact tt;
+}
+
+// n &lt; succ(n) is succ(n) &lt;= succ(n), which computes to n &lt;= n.
+def lt_succ(n : Nat) : n &lt; succ(n) {
+  exact nat_le_refl(n);
+}
+
+def exists_greater_number : forall n : Nat. exists m : Nat. n &lt; m {
+  intro n;
+  exact (succ(n), lt_succ(n));
+}</code></pre>
+            <pre><code data-check="repl">&gt; evaluate 2 &lt; 7;
+Unit
+&gt; evaluate 7 &lt; 2;
+Void
+&gt; evaluate exists_greater_number(5);
+(6, tt)</code></pre>
+            <pre><code data-check="reject">import naturals;
+
+def seven_lt_two : 7 &lt; 2 {
+  exact tt;  // Error: Type mismatch: found Unit, expected 7 &lt; 2.
+}</code></pre>
+            <p>With a variable, the computation stops at the variable, so proofs about <code>&lt;</code> use lemmas. <code>nat_le_refl(n) : n &lt;= n</code> proves <code>n &lt; succ(n)</code>, because <code>succ(n) &lt;= succ(n)</code> computes to <code>n &lt;= n</code>. Both definitions describe the same order. The library’s gives short proofs by computation; the one in this section says what a proof contains.</p>
+            </aside>
           </section>
           <section id="checking">
             <h2>What checking means</h2>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="The basic types and their values: numbers, Unit and Void, pairs, choices, functions, types themselves, and forall and exists." />
+    <meta name="description" content="The basic types and their values: numbers, Unit and Void, pairs, alternatives, functions, types themselves, and forall and exists." />
     <title>Cubist · 1. Types and values</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
@@ -23,7 +23,7 @@
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 1</p>
         <h1>Types and values</h1>
-        <p class="lead">The basic types and their values: numbers, Unit and Void, pairs, choices, functions, types themselves, and forall and exists.</p>
+        <p class="lead">The basic types and their values: numbers, Unit and Void, pairs, alternatives, functions, types themselves, and forall and exists.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -51,7 +51,7 @@
             <li><a href="#tour-unit">Unit</a></li>
             <li><a href="#tour-void">Void</a></li>
             <li><a href="#tour-pairs">Pairs: <code>and</code></a></li>
-            <li><a href="#tour-choices">Choices: <code>or</code></a></li>
+            <li><a href="#tour-alternatives">Alternatives: <code>or</code></a></li>
             <li><a href="#tour-functions">Functions: <code>-></code></a></li>
             <li><a href="#tour-types">Types are values too</a></li>
             <li><a href="#tour-equality">Equality: <code>=</code></a></li>
@@ -63,7 +63,7 @@
             <h2>Introduction</h2>
             <p>Cubist is a language for writing mathematics that a computer checks. A Cubist file defines objects, states theorems about them, and proves each theorem. The checker accepts a declaration only when its proof really proves its statement.</p>
             <p>Every value in Cubist has a type. A statement is a type too, and a proof of the statement is a value of that type: proving a statement means building a value of the right type. So the language starts with types and their values, and the <a href="first-proof.html#first-proof">next chapter</a> writes a first proof with them.</p>
-            <p>This chapter introduces the basic types one at a time: natural numbers, <code>Unit</code> and <code>Void</code>, pairs, choices, functions, types themselves, equality, and <code>forall</code> and <code>exists</code>. Each section shows how to write the type, how to build its values, and what the checker says about a value of the wrong type.</p>
+            <p>This chapter introduces the basic types one at a time: natural numbers, <code>Unit</code> and <code>Void</code>, pairs, alternatives, functions, types themselves, equality, and <code>forall</code> and <code>exists</code>. Each section shows how to write the type, how to build its values, and what the checker says about a value of the wrong type.</p>
             <p>Every example in this reference is checked. When the checker rejects an example, its error message appears as a <code>// Error:</code> comment on the line at fault. Click a name in an example to see the checked kernel term behind it, with its type and context. <em>Open in workspace</em> opens the example in the <a href="../proof.html">proof workspace</a>, where you can edit and check it. To check files on your own computer, use the <a href="checking.html#cli">command-line checker</a>.</p>
           </section>
           <section id="values">
@@ -135,9 +135,9 @@ def triple : Nat and Nat and Nat {
             <p>A pair needs its type stated: the checker does not guess it.</p>
             <pre><code data-check="reject">def loose := (3, tt);  // Error: Pair requires an expected type.</code></pre>
           </section>
-          <section id="tour-choices">
-            <h2>Choices: <code>or</code></h2>
-            <p><code>A or B</code> is the type of values that are either a value of <code>A</code>, written <code>left(a)</code>, or a value of <code>B</code>, written <code>right(b)</code>. A value remembers which side it came from. The chapter on terms shows how to <a href="terms.html#match">take a choice apart</a>.</p>
+          <section id="tour-alternatives">
+            <h2>Alternatives: <code>or</code></h2>
+            <p><code>A or B</code> is the type of values that are either a value of <code>A</code>, written <code>left(a)</code>, or a value of <code>B</code>, written <code>right(b)</code>. A value remembers which side it came from. Such a type is also called a <strong>sum</strong>. The chapter on terms shows how to <a href="terms.html#match">take such a value apart</a>.</p>
             <pre><code data-check="accept">def a_number : Nat or Unit {
   exact left(3);
 }
@@ -145,8 +145,8 @@ def triple : Nat and Nat and Nat {
 def no_number : Nat or Unit {
   exact right(tt);
 }</code></pre>
-            <h3 id="tour-several-choices">More than two choices</h3>
-            <p><code>or</code> groups to the right: <code>Unit or Unit or Nat</code> means <code>Unit or (Unit or Nat)</code>. So <code>left</code> picks the first type, and <code>right</code> steps into the rest, where <code>left</code> and <code>right</code> choose again:</p>
+            <h3 id="tour-several-alternatives">More than two alternatives</h3>
+            <p><code>or</code> groups to the right: <code>Unit or Unit or Nat</code> means <code>Unit or (Unit or Nat)</code>. So <code>left</code> picks the first type, and <code>right</code> steps into the rest, where <code>left</code> and <code>right</code> pick again:</p>
             <pre><code data-check="accept">def first_of_three : Unit or Unit or Nat {
   exact left(tt);
 }
@@ -162,7 +162,7 @@ def third_of_three : Unit or Unit or Nat {
             <pre><code data-check="reject">def skipped_step : Unit or Unit or Nat {
   exact right(5);  // Error: Type mismatch: found Nat, expected Unit or Nat.
 }</code></pre>
-            <p><code>right(5)</code> offers <code>5</code> as a value of the rest, <code>Unit or Nat</code>, which is itself a choice. <code>right(right(5))</code> is the value meant.</p>
+            <p><code>right(5)</code> offers <code>5</code> as a value of the rest, <code>Unit or Nat</code>, which is itself an <code>or</code>. <code>right(right(5))</code> is the value meant.</p>
             <p>Parentheses make a different type. In <code>(Unit or Unit) or Nat</code>, <code>left</code> first picks between the two units:</p>
             <pre><code data-check="accept">def second_unit : (Unit or Unit) or Nat {
   exact left(right(tt));

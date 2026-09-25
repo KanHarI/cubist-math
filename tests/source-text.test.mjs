@@ -51,7 +51,7 @@ test("messages and evaluate results use source syntax", async t => {
 def wrong_sum : 2 + 2 = 5 {
   exact refl(4);
 }
-def choice : Unit or Unit or Nat {
+def three_ways : Unit or Unit or Nat {
   exact 3;
 }
 def sum_and_point : Nat and Unit := (1 + 2, tt);
@@ -61,7 +61,7 @@ evaluate 2 + 2 expecting 5;
 `, "source_messages");
   const reason = name => result.outputs.find(output => output.name === name).reason;
   assert.equal(reason("wrong_sum"), "Type mismatch: found 4 = 4, expected 2 + 2 = 5.");
-  assert.equal(reason("choice"), "Type mismatch: found Nat, expected Unit or Unit or Nat.");
+  assert.equal(reason("three_ways"), "Type mismatch: found Nat, expected Unit or Unit or Nat.");
   assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["(3, tt)"]);
   assert.deepEqual(result.gaps.filter(gap => gap.directive).map(gap => gap.reason), ["The term evaluates to 4, not 5."]);
 });
