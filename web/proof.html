@@ -196,19 +196,11 @@
           — syntax, worked examples, paths, universes, and axiom signatures.
         </p>
         <p>
-          With <strong>Cubical C</strong>, <code>path(fun (i : Interval) =&gt; A, fun (i : Interval) =&gt; body)</code>
-          constructs a path; <code>at(p, i)</code> evaluates it at a coordinate.
-          <code>Pushout(S, A, B, f, g)</code> glues along the two maps.
-          <code>Suspension</code>, <code>north</code>, <code>south</code>, and <code>meridian</code>
-          are ordinary definitions from <code>import suspension_types;</code>.
-          See <a href="language.html#cubical">cubical paths and pushouts</a> and the
-          <a href="proof.html?proof=cubical_paths">checked examples</a>.
-        </p>
-        <p>
           <code>def name(params) = term;</code> defines a term with an inferred
           type. <code>def name(params) : T { … }</code> checks a proof of
           <code>T</code>. Use <code>def</code> for both constructions and proofs.
-          Parameters have explicit types. Imports come first: <code>import paths;</code>.
+          Parameters have explicit types; consecutive ones may share a type, as in
+          <code>(A B : U0, x y : A)</code>. Imports come first: <code>import paths;</code>.
           Comments start with <code>//</code>.
         </p>
         <p>
@@ -238,8 +230,9 @@
           <code>U</code>.
         </p>
         <p>
-          <code>refl(x)</code> proves <code>x = x</code>.
-          With <code>import paths;</code>, <code>sym(p)</code> reverses
+          <code>refl(x)</code> proves <code>x = x</code>, and any <code>x = y</code>
+          whose sides compute to the same value. The built-in
+          <code>sym(p)</code> reverses
           <code>p : x =[T] y</code> to give <code>y =[T] x</code>;
           <code>trans(p, q)</code> joins paths <code>x = y</code> and
           <code>y = z</code>; <code>cong(f, p)</code> gives
@@ -247,7 +240,7 @@
           with no additional axioms. See <a href="language.html#paths">equality and paths</a>.
         </p>
         <p>
-          <code>intro name;</code> introduces the next input or assumption from
+          <code>intro name;</code> (or <code>intro x y h;</code> for several) introduces the next input or assumption from
           the current goal. For <code>forall x : A, B</code>, it names an input
           of type <code>A</code>; for <code>P -> Q</code>, it names evidence of
           <code>P</code> and leaves <code>Q</code> to prove. The type comes from
@@ -267,7 +260,9 @@ def use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
         </p>
         <p>
           <code>let</code> names a term · <code>obtain</code> unpacks an
-          existential or pair · <code>have</code> proves a local claim ·
+          existential or pair · <code>have h : T { … }</code> proves a local claim ·
+          <code>have h = term;</code> names an inferred proof ·
+          <code>have h : T := term;</code> checks and names one ·
           <code>cases</code> splits an <code>or</code> ·
           <code>exact</code> supplies the result ·
           <code>absurd</code> eliminates a contradiction.
@@ -308,12 +303,15 @@ def pair_first : Nat {
 }</pre>
         <p>
           <code>fun (x : A) => body</code> constructs a function;
-          <code>f(a, b)</code> means <code>f(a)(b)</code>.
+          <code>fun (x y : A) => body</code> and <code>fun (a : A) (b : B) => body</code>
+          take several arguments, and <code>fun x => body</code> reads the domain from
+          an expected function type. <code>f(a, b)</code> means <code>f(a)(b)</code>.
           <code>(a, b, c, d)</code> expands to <code>(a, (b, (c, d)))</code>;
           <code>obtain (a, b, c, d) = value;</code> unpacks that same shape.
           Hover over tuple parentheses to see the macro expansion.
           <code>typed(T, term)</code> supplies an expected type for pairs and
-          injections. <code>exact</code> and <code>cases</code> finish a block;
+          injections. <code>exact</code>, <code>cases</code>, <code>rfl</code>,
+          <code>calc</code>, <code>simpa</code> and <code>over</code> finish a block;
           no further statements follow them in that block.
         </p>
         <p>
@@ -336,12 +334,70 @@ def pair_first : Nat {
           <code>pair_induction(motive, branch, pair)</code>.
         </p>
         <p>
-          <code>refl(x)</code> proves <code>x = x</code>.
-          With <code>import paths;</code>, <code>sym(p)</code> reverses a path,
-          <code>trans(p, q)</code> composes paths, and <code>cong(f, p)</code>
-          maps a path through a function. <code>transport(C, x, y, p, value)</code>
+          <code>transport(C, x, y, p, value)</code>
           moves <code>value : C(x)</code> along <code>p : x = y</code> into
-          <code>C(y)</code>.
+          <code>C(y)</code>; <code>along C by p from value</code> is the same with
+          the endpoints read from <code>p</code>.
+        </p>
+        <p>
+          <strong>Equational reasoning.</strong>
+          <code>rfl;</code> closes an equality whose sides compute to the same value.
+          <code>calc { a = b by p; _ = c by q; }</code> chains steps; <code>_</code>
+          is the previous right side, and a step may be proved by a nested
+          <code>by { … }</code> block.
+          <code>rw [p, &lt;- q] at lhs occurrence 2;</code> rewrites with
+          instantiated equalities such as <code>nat_add_zero(n)</code>, in order;
+          <code>&lt;-</code> rewrites right to left, and occurrences count
+          left side then right. If the new goal holds by computation, <code>rw</code>
+          closes the block; otherwise a following statement proves it.
+        </p>
+        <pre>import primes;
+def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
+  calc {
+    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
+    _ = n by nat_add_zero(n);
+  }
+}
+def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
+  rw [nat_add_zero(n)];   // goal: n = m
+  exact h;
+}</pre>
+        <p>
+          <strong>Simplification.</strong>
+          <code>simp only [nat_add_zero];</code> rewrites with the listed rules
+          everywhere, repeatedly, inferring quantified arguments by matching.
+          <code>simpa only [rules] using h;</code> simplifies both the goal and
+          the type of <code>h</code>, then uses <code>h</code>. On a goal that is a type,
+          such as <code>P(n + 0)</code>, <code>simp</code> rewrites the type and
+          transports the proof back. Top-level <code>simp_rule lemma priority 10;</code>
+          registers a default rule and <code>simp_set units = [lemma];</code> names a set;
+          both carry through imports. Then <code>simp;</code> uses the defaults,
+          <code>simp [units];</code> adds to them, <code>simp without [lemma];</code>
+          drops one, <code>simp [units] at h as h2;</code> adds a simplified copy of
+          <code>h</code>, and <code>simp with [h];</code> supplies a premise for a
+          conditional rule. Cycles such as commutativity are rejected; instantiate
+          them instead. Prefer <code>simp only</code> in library proofs; click a
+          <code>simp</code> to see its trace or replace it with the equivalent
+          <code>simp only</code> list. See
+          <a href="language.html#equational">equational reasoning</a> and
+          <a href="language.html#simp">simplification</a>.
+        </p>
+        <p>
+          <strong>Cubical paths.</strong>
+          <code>path(fun (i : Interval) =&gt; A, fun (i : Interval) =&gt; body)</code>
+          constructs a path, and <code>at(p, i)</code> evaluates it at a coordinate.
+          Where a path type is expected, <code>path i =&gt; body</code> reads the family
+          from it, and <code>p @ i</code> abbreviates <code>at(p, i)</code>.
+          <code>ext x;</code> reduces <code>f = g</code> to <code>f(x) = g(x)</code>
+          without an axiom. <code>apd_path(f, p)</code> is the dependent path of a
+          dependent function over <code>p</code>, and
+          <code>over C along p by { … }</code> proves a <code>PathP</code> goal from an
+          equality after transport.
+          <code>Pushout(S, A, B, f, g)</code> glues along the two maps.
+          <code>Suspension</code>, <code>north</code>, <code>south</code>, and <code>meridian</code>
+          are ordinary definitions from <code>import suspension_types;</code>.
+          See <a href="language.html#cubical">cubical paths and pushouts</a> and the
+          <a href="proof.html?proof=cubical_paths">checked examples</a>.
         </p>
         <p>
           Named definitions have checked bodies that the checker can unfold.

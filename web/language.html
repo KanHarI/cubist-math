@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Cubist language reference: types, proof blocks, induction, identity paths, universes, and explicit axioms." />
+    <meta name="description" content="Cubist language reference: types, proof blocks, induction, identity paths, equational reasoning, simplification, cubical paths, universes, and explicit axioms." />
     <title>Cubist · Language reference</title>
     <link rel="stylesheet" href="language.css" />
   </head>
@@ -23,6 +23,7 @@
         <h1>Language reference</h1>
         <p class="lead">Write terms and proofs in dependent type theory. Cubist elaborates each declaration into instructions checked by the C kernel.</p>
         <p>This page describes the mathematical <code>.cubist</code> language. The <a href="workbench.html">kernel workbench</a> shows checked terms, their context, and native opcode assembly.</p>
+        <p>One principle runs through the whole language. The elaborator is written in JavaScript and may be arbitrarily clever: it expands notation, finds rewrite positions and chooses simplification rules. It is not trusted. Everything it produces is an ordinary kernel term, and the C kernel checks every one of them. A convenience that the kernel cannot check makes the declaration fail. It never becomes an assumption.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="On this page">
@@ -33,9 +34,12 @@
             <li><a href="#declarations">Declarations</a></li>
             <li><a href="#types">Types and universes</a></li>
             <li><a href="#expressions">Terms and notation</a></li>
+            <li><a href="#w-types">W types and binary numbers</a></li>
             <li><a href="#blocks">Proof blocks</a></li>
             <li><a href="#induction">Induction and cases</a></li>
             <li><a href="#paths">Equality and paths</a></li>
+            <li><a href="#equational">Equational reasoning</a></li>
+            <li><a href="#simp">Simplification</a></li>
             <li><a href="#cubical">Cubical paths and pushouts</a></li>
             <li><a href="#suspensions">Suspensions</a></li>
             <li><a href="#axioms">Axioms and truncation</a></li>
@@ -54,18 +58,19 @@
   exact value;
 }</code></pre>
             <p>A theorem proves its stated type by constructing a term of that type. Here the term is a function: given a type <code>A</code> and an element of it, return that element. No axioms or imports are needed.</p>
-            <p><code>intro</code> gets a variable’s type from the next input of the goal. After <code>intro A;</code>, the goal is <code>A -&gt; A</code>. After <code>intro value;</code>, it is <code>A</code>. <code>exact value;</code> finishes the proof.</p>
+            <p>At any point in a proof block there is a <strong>goal</strong>, the type still to be proved, and a <strong>context</strong>, the names available with their types. At the start the goal is the whole statement and the context is empty. <code>intro</code> takes the next input from the goal and adds it to the context. After <code>intro A;</code> the goal is <code>A -&gt; A</code> and the context holds <code>A : U0</code>. After <code>intro value;</code> the goal is <code>A</code> and the context also holds <code>value : A</code>. <code>exact value;</code> supplies a term of exactly the goal type and finishes the proof.</p>
+            <p>The same proof can be written as a single term, <code>def identity(A : U0, value : A) = value;</code>. Blocks and terms are interchangeable: a block is a readable way to build a term. In the proof workspace, click a proof-step line number to see its goal and context.</p>
           </section>
           <section id="files">
             <h2>Files and names</h2>
             <pre><code>import paths;
 import sets;
 
-// Declarations follow the imports.</code></pre>
-            <p>Imports come first and use module names without quotes or a file extension. Imported mathematical source and its dependencies are checked. An import alone does not make every theorem depend on all its axioms.</p>
+// Declarations and simplification directives follow the imports.</code></pre>
+            <p>Imports come first and use module names without quotes or a file extension. <code>import paths;</code> loads <code>paths.cubist</code> from the proof library. The CLI first looks in the directory of the file being checked. Imported source and its dependencies are checked too. An import brings in every checked declaration of that module, along with the <a href="#simp-registration">simplification rules and sets</a> it registers. An import alone does not make every theorem depend on all of the imported module's axioms: each theorem's dependencies are computed from its own checked derivation.</p>
             <p>Names are case-sensitive: a letter or underscore, followed by letters, digits, or underscores. Write comments with <code>//</code> through the end of the line. Block comments, quoted strings, and Unicode operators are not source syntax. Use <code>-&gt;</code>, <code>forall</code>, and <code>exists</code>; the inspector can display mathematical symbols.</p>
             <p>Put <code>//</code> comments immediately above a declaration to show them as its inspector description, including through imports. Consecutive lines are joined into a paragraph; an empty <code>//</code> line starts another paragraph. A physical blank line separates a section comment from a declaration. Trailing comments do not document the next declaration. Descriptions are plain text and do not affect the checked proof.</p>
-            <p>Declarations become available in source order. There are no implicit arguments or forward declarations. Each parameter has its own explicit type: <code>(A : U0, x : A, y : A)</code>. Choose fresh local names to avoid collisions with names already in scope.</p>
+            <p>Declarations become available in source order. There are no forward declarations and no implicit arguments: every argument is written at each call. Choose fresh local names to avoid collisions with names already in scope.</p>
           </section>
           <section id="declarations">
             <h2>Declarations</h2>
@@ -87,9 +92,18 @@ opaque def next(n : Nat) = succ(n);</code></pre>
                 <tr><td><code>def name(params) : T { … }</code></td><td>Check a block against the explicit result type <code>T</code>. Use this form for proofs as well as constructions.</td></tr>
                 <tr><td><code>opaque def name …</code></td><td>Accepted syntax for a checked definition; currently checked and unfolded like <code>def</code>.</td></tr>
                 <tr><td><code>axiom name(params) : T;</code></td><td>An explicit assumption with no proof body. Recorded in axiom dependencies.</td></tr>
+                <tr><td><code>simp_rule name priority N;</code></td><td>Register an already checked equality as a default simplification rule. See <a href="#simp-registration">registering rules</a>.</td></tr>
+                <tr><td><code>simp_set name = [rule, …];</code></td><td>Name a collection of simplification rules.</td></tr>
               </tbody>
             </table></div>
             <p>Expression declarations end with <code>;</code>. Block declarations end with <code>}</code>. For an explicit result type, use a block; <code>def name : T = term;</code> is not a supported form. There is no special recursive declaration: use an eliminator such as natural-number induction.</p>
+            <h3>Parameters</h3>
+            <p>A parameter list is a comma-separated sequence of typed binders. Consecutive parameters with the same type may share it: <code>(A B : U0, x y : A)</code> means <code>(A : U0, B : U0, x : A, y : A)</code>. Later parameter types can mention earlier parameters, as <code>x : A</code> does here. A declaration with parameters is a function, so <code>same(Nat, 0)</code> has type <code>Nat</code> and <code>same(Nat)</code> is a function <code>Nat -&gt; Nat</code>.</p>
+            <pre><code data-check="core">def flip_arguments(A B C : U0, f : A -&gt; B -&gt; C) : B -&gt; A -&gt; C {
+  intro b a;
+  exact f(a, b);
+}</code></pre>
+            <p>A proof's statement can go either in its parameters or in its result type. <code>def t(x : A) : P(x) { … }</code> and <code>def t : forall x : A, P(x) { intro x; … }</code> check the same function type. Parameters are shorter. A result type is better when the statement is a named proposition you want to reuse.</p>
           </section>
           <section id="types">
             <h2>Types and universes</h2>
@@ -97,24 +111,28 @@ opaque def next(n : Nat) = succ(n);</code></pre>
               <thead><tr><th>Source</th><th>Kernel meaning</th><th>How to construct an element</th></tr></thead>
               <tbody>
                 <tr><td><code>forall x : A, B(x)</code></td><td>Dependent function, <span class="math">Π<sub>x:A</sub> B(x)</span></td><td><code>fun (x : A) =&gt; term</code>, or <code>intro x;</code></td></tr>
+                <tr><td><code>forall x y : A, B(x, y)</code></td><td>Two nested dependent functions over the same domain</td><td><code>intro x y;</code></td></tr>
                 <tr><td><code>A -&gt; B</code></td><td>Function with constant result type</td><td>A function taking an <code>A</code> to a <code>B</code></td></tr>
                 <tr><td><code>exists x : A, B(x)</code></td><td>Dependent pair, <span class="math">Σ<sub>x:A</sub> B(x)</span></td><td><code>(a, evidence)</code></td></tr>
                 <tr><td><code>A and B</code></td><td>Product, <span class="math">A × B</span></td><td><code>(a, b)</code></td></tr>
                 <tr><td><code>A or B</code></td><td>Disjoint sum, <span class="math">A + B</span></td><td><code>left(a)</code> or <code>right(b)</code></td></tr>
-                <tr><td><code>x = y</code> or <code>Eq(A, x, y)</code></td><td>Identity type (paths from <code>x</code> to <code>y</code>)</td><td><code>refl(x)</code> when endpoints agree by conversion</td></tr>
+                <tr><td><code>x = y</code> or <code>Eq(A, x, y)</code></td><td>Identity type (paths from <code>x</code> to <code>y</code>)</td><td><code>refl(x)</code> or <code>rfl;</code> when endpoints agree by conversion; see <a href="#paths">paths</a></td></tr>
+                <tr><td><code>PathP(family, a, b)</code></td><td>Dependent path from <code>a</code> to <code>b</code> over a line of types</td><td><code>path i =&gt; body</code>; see <a href="#cubical">cubical paths</a></td></tr>
                 <tr><td><code>Nat</code></td><td>Natural numbers</td><td><code>0</code> and <code>succ(n)</code></td></tr>
                 <tr><td><code>Unit</code></td><td>Unit type</td><td><code>tt</code></td></tr>
                 <tr><td><code>Void</code></td><td>Empty type</td><td>No constructor; eliminate a contradiction with <code>absurd</code></td></tr>
               </tbody>
             </table></div>
             <p class="note"><code>exists</code> is an actual dependent pair with a witness. It is not automatically truncated. Likewise, <code>or</code> retains its choice of summand. Use <a href="#axioms">propositional truncation</a> when you mean mere existence.</p>
+            <p>Propositions are types, and a proof of a proposition is an element of it. <code>A -&gt; B</code> is implication, <code>A and B</code> conjunction, <code>A or B</code> a disjunction that records which side holds, and <code>A -&gt; Void</code> negation. There is no separate sort of propositions. <code>IsProp(A)</code> is a library definition saying that <code>A</code> has at most one element up to equality.</p>
+            <h3>Universes</h3>
             <p><code>U0</code> denotes U₀; <code>U1</code>, <code>U2</code>, and <code>U3</code> denote U₁, U₂, and U₃. In particular <code>U0 : U1</code>. Smaller types can be lifted to larger universes; a larger type cannot be silently lowered.</p>
             <pre><code data-check="core">def large_identity(A : U1, x : A) = x;
 def lifted_unit = typed(U1, Unit);
 def identity(U : Universe, A : U, x : A) = x;
 def small_identity = identity(U0);
 def universe_identity = identity(U2, U1, U0);</code></pre>
-            <p>A declaration with <code>A : U0</code> remains restricted to small types. Write <code>U : Universe</code> to parameterize a declaration over a universe. The argument must be a universe, not an arbitrary type. Universe arguments are explicit; the compiler does not infer them. A family may need an explicit lift, such as <code>fun (a : A) =&gt; typed(U1, Unit)</code>.</p>
+            <p>A declaration with <code>A : U0</code> remains restricted to small types. Write <code>U : Universe</code> to parameterize a declaration over a universe. This makes the declaration a <strong>template</strong>: the elaborator makes a separate, specialized copy for each universe it is used at, and the kernel checks that copy. The argument must be a universe, not an arbitrary type. Universe arguments are explicit; the compiler does not infer them. Several universe parameters can be grouped, as in <code>(U V : Universe, A : U, B : V)</code>. A family may need an explicit lift, such as <code>fun (a : A) =&gt; typed(U1, Unit)</code>.</p>
             <p>When inspecting a universe template, choose <code>U0</code>, <code>U1</code>, <code>U2</code>, or <code>U3</code> for each universe parameter. The inspector checks that specialization and shows its expression, type, and local context. Names inside the template use the selected universes too. Workbench transfers preserve the selection and display names such as <code>GroupAt_U0</code>; the generic declaration remains a template.</p>
             <p><code>IsProp(A)</code>, <code>IsSet(A)</code>, and <code>Equiv(U, A, B)</code> are library definitions, not new sorts or language keywords. In particular, <code>IsSet(A)</code> says that any two identity proofs between the same elements agree.</p>
           </section>
@@ -124,17 +142,32 @@ def universe_identity = identity(U2, U1, U0);</code></pre>
             <pre><code data-check="core">def explicit_reflexivity(U : Universe, A : U, x : A) : x =[A] x {
   exact refl(x);
 }</code></pre>
-            <p>Application is curried: <code>f(a, b)</code> means <code>f(a)(b)</code>. Typed binders may be grouped, as in <code>(x y : A)</code> and <code>fun (x y : A) =&gt; x</code>; the common domain is checked before either name is bound. When the expected function type determines a domain, <code>fun x =&gt; x</code> may omit it. Parentheses group expressions. The kernel uses binary pairs. Tuple notation <code>(a, b, c, d)</code> expands to <code>(a, (b, (c, d)))</code>. Explicit left-nesting stays distinct: <code>((a, b), c)</code> is a different shape. Pass a tuple as one argument with <code>f((a, b, c))</code>; <code>f(a, b, c)</code> remains curried application.</p>
-            <pre><code data-check="core">def constant(A : U0, B : U0) =
-  fun (a : A) =&gt; fun (b : B) =&gt; a;
+            <h3>Application and functions</h3>
+            <p>Application is curried: <code>f(a, b)</code> means <code>f(a)(b)</code>, and <code>f(a)</code> alone is a valid partial application. <code>fun (x : A) =&gt; body</code> constructs a function. Binders can be grouped in the same way as parameters:</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Source</th><th>Means</th></tr></thead>
+              <tbody>
+                <tr><td><code>fun (x y : A) =&gt; body</code></td><td><code>fun (x : A) =&gt; fun (y : A) =&gt; body</code>. The shared domain is checked once, before either name is bound.</td></tr>
+                <tr><td><code>fun (a : A) (b : B) =&gt; body</code></td><td>Separate binder groups with different domains. Use separate parentheses, not commas.</td></tr>
+                <tr><td><code>fun x =&gt; body</code></td><td>The domain is taken from the expected function type. It needs one, from a signature, an <code>exact</code> goal or <code>typed</code>.</td></tr>
+              </tbody>
+            </table></div>
+            <pre><code data-check="core">def constant(A B : U0) = fun (a : A) (b : B) =&gt; a;
 
-def two_units = typed(Unit and Unit, (tt, tt));
+def compose(A B C : U0) : (B -&gt; C) -&gt; (A -&gt; B) -&gt; A -&gt; C {
+  exact fun g =&gt; fun f =&gt; fun x =&gt; g(f(x));
+}</code></pre>
+            <p>In <code>compose</code>, each untyped binder reads its domain from the goal: <code>g : B -&gt; C</code>, <code>f : A -&gt; B</code>, <code>x : A</code>. Without an expected type, such as in <code>def k = fun x =&gt; x;</code>, elaboration reports “Untyped lambda requires an expected function type.” More untyped binders than the expected type has arguments are also rejected.</p>
+            <h3>Pairs, sums and expected types</h3>
+            <p>Parentheses group expressions. The kernel uses binary pairs. Tuple notation <code>(a, b, c, d)</code> expands to <code>(a, (b, (c, d)))</code>. Explicit left-nesting stays distinct: <code>((a, b), c)</code> is a different shape. Pass a tuple as one argument with <code>f((a, b, c))</code>; <code>f(a, b, c)</code> remains curried application.</p>
+            <pre><code data-check="core">def two_units = typed(Unit and Unit, (tt, tt));
 def choose_left = typed(Unit or Nat, left(tt));</code></pre>
-            <p><code>typed(T, term)</code> checks <code>term</code> against <code>T</code>. Pairs and sum injections need an expected type. A typed theorem, a <code>have</code> block, or <code>typed</code> supplies it. <code>left</code>, <code>right</code>, and <code>absurd</code> are introductions/elimination checked against that expected type.</p>
-            <p>Arithmetic operators <code>+</code>, <code>*</code>, <code>&lt;</code>, and <code>&lt;=</code> are for <code>Nat</code> and use the arithmetic library (normally <code>import primes;</code>). They are not overloaded field operations. They denote <code>add</code>, <code>mul</code>, <code>isLt</code>, and <code>le</code>; <code>n &lt; m</code> is <code>le(succ(n), m)</code>. The inspector’s <span class="math">+</span> for disjoint sum is display notation; write <code>or</code> in source.</p>
+            <p><code>typed(T, term)</code> checks <code>term</code> against <code>T</code>. Pairs and sum injections need an expected type. A pair <code>(a, b)</code> could inhabit <code>A and B</code> or many different <code>exists</code> types, so the elaborator cannot guess it. A typed theorem, a <code>have</code> block, or <code>typed</code> supplies it. <code>left</code>, <code>right</code>, and <code>absurd</code> are introductions/elimination checked against that expected type.</p>
+            <h3>Arithmetic</h3>
+            <p>Arithmetic operators <code>+</code>, <code>*</code>, <code>&lt;</code>, and <code>&lt;=</code> are for <code>Nat</code> and use the arithmetic library (normally <code>import primes;</code>). They are not overloaded field operations. They denote <code>add</code>, <code>mul</code>, <code>isLt</code>, and <code>le</code>; <code>n &lt; m</code> is <code>le(succ(n), m)</code>. Addition recurses on its first argument, so <code>0 + n</code> computes to <code>n</code> but <code>n + 0</code> does not. <code>n + 0 = n</code> needs a proof, the library lemma <code>nat_add_zero(n)</code>. The inspector’s <span class="math">+</span> for disjoint sum is display notation; write <code>or</code> in source.</p>
             <h3>Precedence</h3>
             <p>From tightest to loosest: application, interval application <code>@</code>, <code>*</code>, <code>+</code>, <code>= &lt; &lt;=</code>, <code>and</code>, <code>or</code>, <code>-&gt;</code>. Arrow, <code>and</code>, and <code>or</code> associate to the right; the other infix operators associate to the left. The body of <code>fun</code>, <code>forall</code>, or <code>exists</code> extends through the following expression.</p>
-            <p>Thus <code>A -&gt; B -&gt; C</code> means <code>A -&gt; (B -&gt; C)</code>. Do not chain comparisons: write <code>(a &lt; b) and (b &lt; c)</code>. Numerals expand to repeated <code>succ</code>, not machine integers. In the source reader, keywords and built-in forms such as <code>sym</code> and <code>succ</code> are purple, named functions are green, and numeral literals, tuple macros and arithmetic notation are amber with dotted underlines. Hover over a macro to see its expansion: <code>2</code> shows <code>succ(succ(0))</code>, and <code>a + b</code> shows <code>add(a, b)</code>.</p>
+            <p>Thus <code>A -&gt; B -&gt; C</code> means <code>A -&gt; (B -&gt; C)</code>, and <code>forall x : A, P(x) -&gt; Q(x)</code> means <code>forall x : A, (P(x) -&gt; Q(x))</code>. Do not chain comparisons: write <code>(a &lt; b) and (b &lt; c)</code>. Numerals expand to repeated <code>succ</code>, not machine integers. In the source reader, keywords and built-in forms such as <code>sym</code> and <code>succ</code> are purple, named functions are green, and numeral literals, tuple macros and arithmetic notation are amber with dotted underlines. Hover over a macro to see its expansion: <code>2</code> shows <code>succ(succ(0))</code>, and <code>a + b</code> shows <code>add(a, b)</code>.</p>
           </section>
           <section id="w-types">
             <h2>W types and binary numbers</h2>
@@ -168,34 +201,50 @@ def choose_left = typed(Unit or Nat, left(tt));</code></pre>
           </section>
           <section id="blocks">
             <h2>Proof blocks</h2>
-            <p>A block starts with an expected goal type. Each statement extends the local context or proves that goal. <code>exact</code> and <code>cases</code> finish a block; no statements may follow them in the same block.</p>
+            <p>A block starts with an expected goal type. Each statement either extends the context and continues, or proves the goal and ends the block. Statements that end a block are marked <em>closing</em> below. Nothing may follow a closing statement in the same block. A block that ends without closing its goal is rejected with the remaining goal.</p>
+            <h3>Building the context</h3>
             <dl>
-              <dt><code>intro x y h;</code></dt>
-              <dd>Introduce successive arguments of a <code>forall</code> or <code>-&gt;</code> goal. Each type comes from the current goal; <code>intro x;</code> remains valid.</dd>
+              <dt><code>intro x;</code> and <code>intro x y h;</code></dt>
+              <dd>Introduce successive arguments of a <code>forall</code> or <code>-&gt;</code> goal. Each type comes from the current goal, including when the goal is a named definition that unfolds to a function type. For a <code>forall x : A, B</code> goal, <code>intro x;</code> binds <code>x : A</code> and leaves <code>B</code>. For an implication <code>P -&gt; Q</code> it binds evidence of <code>P</code> and leaves <code>Q</code>. <code>intro x y h;</code> is three introductions in a row, with the context visible after each one in the inspector.</dd>
               <dt><code>let name = term;</code></dt>
-              <dd>Name an inferred term in the remainder of the block. For an annotation, use <code>let name = typed(T, term);</code>.</dd>
-              <dt><code>obtain (x, evidence) = pair;</code></dt>
-              <dd>Eliminate a dependent pair or product into the remaining goal. Nested pair patterns are supported. This does not eliminate propositional truncation.</dd>
+              <dd>Name an inferred term in the remainder of the block. The name stands for the term: the checker can see through it by conversion. For an annotation, use <code>let name = typed(T, term);</code>.</dd>
               <dt><code>have name : T { … }</code></dt>
-              <dd>Prove a local claim in a nested block; then use it as <code>name : T</code>. The nested block can use the surrounding context.</dd>
-              <dt><code>have name = term;</code> or <code>have name : T := term;</code></dt>
-              <dd>Name an inferred proof, or check it at an explicit type. The assignment token <code>:=</code> keeps equality inside <code>T</code> unambiguous.</dd>
-              <dt><code>exact term;</code></dt>
-              <dd>Check the term against the current goal, using definitional equality where needed, and close the block.</dd>
-              <dt><code>cases term { left x =&gt; { … } right y =&gt; { … } }</code></dt>
-              <dd>Prove the current goal in each branch of a disjoint sum. Each branch has its corresponding witness available.</dd>
-              <dt><code>rfl;</code>, <code>calc { … }</code>, <code>rw [p, &lt;- q] at lhs occurrence 2;</code></dt>
-              <dd>Close a reflexive equality by conversion, compose explicitly justified equality steps, or rewrite the selected occurrence using checked paths. Without <code>at lhs</code> or <code>at rhs</code>, occurrences are counted across the left endpoint and then the right.</dd>
-              <dt><code>simp_rule lemma priority 10;</code>, <code>simp_set units = [lemma];</code></dt>
-              <dd>Register an already checked homogeneous equality lemma as a module default rule, optionally with priority 0–1000, or name an explicit rule set. Registrations and sets are inherited through imports. Equal-priority defaults are ordered by checked rule identity; conflicting imported set names are ambiguous until a local set overrides them.</dd>
-              <dt><code>simp;</code>, <code>simp [units];</code>, <code>simp only [lemma];</code></dt>
-              <dd>Simplify equality endpoints or a type-valued goal using registered defaults, defaults plus listed rules or sets, or exactly the listed rules or sets. For a type goal, rewrites at the root or through ordinary fixed-codomain applications construct a checked path of types; a following proof statement is transported back to the original goal. <code>simp without [lemma];</code> excludes a default rule; <code>simp [units] at h as h2;</code> makes a checked simplified copy of a local equality proof and keeps <code>h</code>. For a conditional equality rule, <code>simp with [h];</code> supplies a local premise witness. A homogeneous equality premise can also be proved by conversion or simplified with other selected rules, to depth two; active rules cannot justify their own premises, and every premise proof is checked. Quantified parameters are inferred from rigid first-order matches; ambiguous arguments need explicit instantiation. Cycles and unfinished goals are errors. Select a checked <code>simp</code> in the inspector to view its rewrite paths. When the used rules alone reproduce the same residual goals, the inspector can replace it with a rechecked <code>simp only</code> list.</dd>
-              <dt><code>simpa only [lemma] using proof;</code>, <code>simpa [units] using proof;</code></dt>
-              <dd>For equality goals, simplify the supplied equality type and goal, check that they match, and reconstruct the original goal from checked endpoint paths. For other type-valued goals, simplify both types along checked type paths, transport the supplied proof, check it at the simplified goal, and transport it back. This does not infer a conversion from ordinary functions or logical equivalences.</dd>
-              <dt><code>ext x;</code></dt>
-              <dd>For equality of functions with a fixed dependent function type, reduce the goal to equality at <code>x</code> and construct the checked function path.</dd>
+              <dd>Prove a local claim in a nested block; then use it as <code>name : T</code>. The nested block can use the surrounding context. Use this to split a long argument into named steps, or to state an equality whose endpoints the elaborator cannot infer.</dd>
+              <dt><code>have name = term;</code></dt>
+              <dd>Name a proof whose type the elaborator can infer, without writing a nested block.</dd>
+              <dt><code>have name : T := term;</code></dt>
+              <dd>Check <code>term</code> against the explicit type <code>T</code>, then name it. This is shorthand for <code>have name : T { exact term; }</code>. The assignment token <code>:=</code> keeps an <code>=</code> inside <code>T</code> unambiguous.</dd>
+              <dt><code>obtain (x, evidence) = pair;</code></dt>
+              <dd>Eliminate a dependent pair or product into the remaining goal. Nested and tuple patterns are supported, as in <code>obtain (a, b, c) = triple;</code>. This does not eliminate propositional truncation.</dd>
             </dl>
-            <pre><code data-check="core">def swap_product(A : U0, B : U0) :
+            <h3>Closing the goal</h3>
+            <dl>
+              <dt><code>exact term;</code> (closing)</dt>
+              <dd>Check the term against the current goal, using definitional equality where needed, and close the block.</dd>
+              <dt><code>cases term { left x =&gt; { … } right y =&gt; { … } }</code> (closing)</dt>
+              <dd>Prove the current goal in each branch of a disjoint sum. Each branch has its corresponding witness available.</dd>
+              <dt><code>rfl;</code> (closing)</dt>
+              <dd>Prove an equality goal whose endpoints are definitionally equal. See <a href="#equational">equational reasoning</a>.</dd>
+              <dt><code>calc { … }</code> (closing)</dt>
+              <dd>Prove an equality goal by a chain of justified steps.</dd>
+              <dt><code>simpa … using proof;</code> (closing)</dt>
+              <dd>Simplify the goal and the type of <code>proof</code>, then use <code>proof</code>. See <a href="#simp">simplification</a>.</dd>
+              <dt><code>over C along p by { … }</code> (closing)</dt>
+              <dd>Prove a dependent path goal from an equality after transport. See <a href="#cubical-shorthand">cubical shorthand</a>.</dd>
+            </dl>
+            <h3>Changing the goal</h3>
+            <p>These statements transform the goal and continue with the new one. If the new goal is closed by conversion, the block is finished. Otherwise a following statement must prove it.</p>
+            <dl>
+              <dt><code>rw [p, &lt;- q] at lhs occurrence 2;</code></dt>
+              <dd>Rewrite an equality goal with checked equality proofs. See <a href="#rw">rewriting</a>.</dd>
+              <dt><code>simp;</code>, <code>simp [rules];</code>, <code>simp only [rules];</code></dt>
+              <dd>Rewrite the goal repeatedly with a set of rules. See <a href="#simp">simplification</a>.</dd>
+              <dt><code>simp [rules] at h as h2;</code></dt>
+              <dd>Add a simplified copy <code>h2</code> of a local equality <code>h</code> to the context. The goal is unchanged.</dd>
+              <dt><code>ext x;</code></dt>
+              <dd>Turn a goal <code>f = g</code> between functions into <code>f(x) = g(x)</code> for a new <code>x</code>. See <a href="#ext">function extensionality</a>.</dd>
+            </dl>
+            <pre><code data-check="core">def swap_product(A B : U0) :
     (A and B) -&gt; (B and A) {
   intro pair;
   obtain (a, b) = pair;
@@ -206,12 +255,13 @@ def choose_left = typed(Unit or Nat, left(tt));</code></pre>
   exact result;
 }
 
-def swap_sum(A : U0, B : U0, value : A or B) : B or A {
+def swap_sum(A B : U0, value : A or B) : B or A {
   cases value {
     left a =&gt; { exact right(a); }
     right b =&gt; { exact left(b); }
   }
 }</code></pre>
+            <p>In <code>swap_product</code>, the goal after <code>intro pair;</code> is <code>B and A</code> with <code>pair : A and B</code> in context. <code>obtain</code> replaces <code>pair</code> by its components <code>a : A</code> and <code>b : B</code>. The pair <code>(b, saved)</code> checks against the <code>have</code> type <code>B and A</code>, which also supplies the expected type a pair needs.</p>
             <h3>Where does <code>setA : IsSet(A)</code> come from?</h3>
             <pre><code data-check="sets">import sets;
 
@@ -236,6 +286,12 @@ def copy_two : copy(2) = 2 {
   exact refl(2);
 }</code></pre>
             <p>In <code>induction n as k return C(k)</code>, the zero branch must have type <code>C(0)</code>. In the successor branch, <code>k : Nat</code> is the predecessor and <code>previous : C(k)</code> is the induction hypothesis. The branch must produce <code>C(succ(k))</code>. Each branch is an expression, not a proof block; put a longer argument in a separate helper theorem.</p>
+            <p>The motive <code>C(k)</code> is what makes this a proof by induction rather than just recursion. For a theorem, it is the statement at <code>k</code>. For example, the library proves <code>n + 0 = n</code> with the motive <code>(k + 0) = k</code>:</p>
+            <pre><code>def nat_add_zero(x : Nat) = induction x as k return ((k + 0) = k) {
+    zero =&gt; refl(0);
+    succ h =&gt; cong((fun (n : Nat) =&gt; succ(n)), h);
+  };</code></pre>
+            <p>The zero branch needs <code>0 + 0 = 0</code>, which holds by computation. The successor branch has <code>h : k + 0 = k</code> and needs <code>succ(k) + 0 = succ(k)</code>. That computes to <code>succ(k + 0) = succ(k)</code>, which is <code>cong</code> of <code>succ</code> applied to <code>h</code>. When a statement quantifies over further variables, put them inside the motive, as in <code>return (forall y : Nat, …)</code>, so the induction hypothesis is general enough.</p>
             <p>The function form is <code>induct(n, motive, base, step)</code>, with <code>motive = fun (k : Nat) =&gt; C(k)</code> and <code>step</code> taking the predecessor and induction hypothesis.</p>
             <h3>Disjoint sums</h3>
             <pre><code data-check="core">def sum_to_nat(value : Unit or Nat) = match value return Nat {
@@ -263,57 +319,300 @@ def third : Nat {
           <section id="paths">
             <h2>Equality and paths</h2>
             <p><code>x = y</code> is the identity type, not an instruction to rewrite source text. Its elements are paths. Equality of paths can itself be stated using another identity type. Equality by computation is handled separately by <a href="#conversion">conversion</a>.</p>
+            <p>Two notions of “equal” appear throughout this page:</p>
+            <ul>
+              <li><strong>Definitional equality</strong> (conversion): two terms compute to the same normal form, as <code>0 + n</code> and <code>n</code> do. The checker uses it silently. It is never a proposition you state or prove.</li>
+              <li><strong>Propositional equality</strong>: a path <code>p : x = y</code>, a proof that must be constructed, as for <code>n + 0 = n</code>. Using it to replace <code>x</code> by <code>y</code> requires an explicit operation: <code>transport</code>, <code>cong</code>, <code>rw</code> or <code>simp</code>.</li>
+            </ul>
             <div class="table-scroll"><table>
               <thead><tr><th>Operation</th><th>Required data and result</th></tr></thead>
               <tbody>
                 <tr><td><code>x =[T] y</code></td><td>Equality of two elements of the explicitly supplied carrier <code>T</code>; the same identity type as <code>Eq(T, x, y)</code>. Plain <code>x = y</code> infers the carrier.</td></tr>
                 <tr><td><code>Eq(A, x, y)</code></td><td>The identity type with its carrier explicit.</td></tr>
-                <tr><td><code>refl(x)</code></td><td>A path <code>x = x</code>.</td></tr>
-                <tr><td><code>sym(p)</code></td><td>Symmetry: reverse <code>p : x =[T] y</code> to obtain <code>y =[T] x</code>, preserving the carrier. Requires the <code>paths</code> library.</td></tr>
-                <tr><td><code>trans(p, q)</code></td><td>Compose <code>p : x = y</code> and <code>q : y = z</code>. Requires <code>paths</code>.</td></tr>
-                <tr><td><code>cong(f, p)</code></td><td>For a function with constant codomain, map a path to <code>f(x) = f(y)</code>. Requires <code>paths</code>.</td></tr>
-                <tr><td><code>transport(C, x, y, p, value)</code></td><td>Move <code>value : C(x)</code> along <code>p : x = y</code> to obtain <code>C(y)</code>.</td></tr>
-                <tr><td><code>apd(f, x, y, p)</code></td><td>For a dependent function <code>f : forall x : A, C(x)</code>, prove <code>transport(C, x, y, p, f(x)) = f(y)</code>.</td></tr>
+                <tr><td><code>refl(x)</code></td><td>A path <code>x = x</code>. It also proves <code>x = y</code> whenever <code>x</code> and <code>y</code> are definitionally equal.</td></tr>
+                <tr><td><code>sym(p)</code></td><td>Symmetry: reverse <code>p : x =[T] y</code> to obtain <code>y =[T] x</code>, preserving the carrier.</td></tr>
+                <tr><td><code>trans(p, q)</code></td><td>Compose <code>p : x = y</code> and <code>q : y = z</code> into <code>x = z</code>.</td></tr>
+                <tr><td><code>cong(f, p)</code></td><td>For a function with constant codomain, map <code>p : x = y</code> to <code>f(x) = f(y)</code>.</td></tr>
+                <tr><td><code>transport(C, x, y, p, value)</code></td><td>Move <code>value : C(x)</code> along <code>p : x = y</code> to obtain <code>C(y)</code>. The shorter <a href="#cubical-shorthand"><code>along C by p from value</code></a> infers <code>x</code> and <code>y</code>.</td></tr>
+                <tr><td><code>apd(f, x, y, p)</code></td><td>For a dependent function <code>f : forall x : A, C(x)</code>, prove <code>transport(C, x, y, p, f(x)) = f(y)</code>. For the direct dependent path, use <code>apd_path(f, p)</code>.</td></tr>
                 <tr><td><code>path_induction(A, motive, base, x, y, p)</code></td><td>Identity elimination, described below. Does not require a classical axiom.</td></tr>
               </tbody>
             </table></div>
-            <p>The path-induction motive takes <code>x : A</code>, <code>y : A</code>, and <code>p : x = y</code>, and returns a type. The reflexive case <code>base</code> takes <code>a : A</code> and proves <code>motive(a, a, refl(a))</code>. The eliminator returns <code>motive(x, y, p)</code>.</p>
-            <pre><code data-check="paths">import paths;
-
-def reverse_path(A : U0, x : A, y : A, p : x = y) : y = x {
+            <p><code>sym</code>, <code>trans</code>, and <code>cong</code> are built into the language and need no import. They construct cubical paths pointwise and add no axiom. The <code>paths</code> library names them <code>inverse</code>, <code>concatenate</code> and similar, and proves their laws, such as <code>trans(p, refl(y)) = p</code>.</p>
+            <pre><code data-check="core">def reverse_path(A : U0, x y : A, p : x = y) : y = x {
   exact sym(p);
-}</code></pre>
-            <p><code>sym</code> is a language convenience for the library's <code>inverse</code> function, which is proved by path induction. It adds no axiom. It also reverses equalities of types: in <code>A =[U] B</code>, the endpoints <code>A</code> and <code>B</code> are types and their carrier is the universe <code>U</code>.</p>
-            <pre><code data-check="paths">import paths;
+}
 
-def reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
+def join_paths(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
+  exact trans(p, q);
+}
+
+def map_path(A B : U0, f : A -&gt; B, x y : A, p : x = y) : f(x) = f(y) {
+  exact cong(f, p);
+}</code></pre>
+            <p><code>sym</code> also reverses equalities of types: in <code>A =[U] B</code>, the endpoints <code>A</code> and <code>B</code> are types and their carrier is the universe <code>U</code>.</p>
+            <pre><code data-check="core">def reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
   exact sym(p);
 }</code></pre>
             <p>For example, univalence applied to the group structure identity equivalence gives <code>(G =[Group] H) =[U1] GroupIso(G, H)</code>. Applying <code>sym</code> gives the orientation used in <a href="proof.html?proof=group_univalence&amp;name=group_isomorphism_is_equality">the highlighted group theorem</a>: <code>GroupIso(G, H) =[U1] (G =[Group] H)</code>.</p>
-            <p>Some inferred pair projections do not retain enough equality information for <code>sym</code>, <code>trans</code>, or <code>cong</code>. Introduce an explicitly typed claim with <code>have p : x = y { exact term; }</code> in that case.</p>
+            <h3>Path induction</h3>
+            <p>The path-induction motive takes <code>x : A</code>, <code>y : A</code>, and <code>p : x = y</code>, and returns a type. The reflexive case <code>base</code> takes <code>a : A</code> and proves <code>motive(a, a, refl(a))</code>. The eliminator returns <code>motive(x, y, p)</code>. Informally: to prove something about every path, it suffices to prove it for reflexivity, provided both endpoints are free to vary.</p>
+            <p>Some inferred pair projections do not retain enough equality information for <code>sym</code>, <code>trans</code>, or <code>cong</code>. Introduce an explicitly typed claim with <code>have p : x = y := term;</code> in that case.</p>
+          </section>
+          <section id="equational">
+            <h2>Equational reasoning</h2>
+            <p>Proving an equality with only <code>sym</code>, <code>trans</code> and <code>cong</code> is exact but hard to read: every intermediate endpoint is implicit. The statements below build the same checked paths from a more readable source. Each produces an ordinary proof term that the kernel checks, and in the inspector each links to the term it built.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Situation</th><th>Use</th></tr></thead>
+              <tbody>
+                <tr><td>The two sides compute to the same thing</td><td><code>rfl;</code></td></tr>
+                <tr><td>You want to show each intermediate expression</td><td><code>calc { … }</code></td></tr>
+                <tr><td>One known equation should replace one specific subterm</td><td><code>rw [p];</code></td></tr>
+                <tr><td>A few lemmas should be applied everywhere until nothing changes</td><td><code>simp only [lemmas];</code></td></tr>
+                <tr><td>A hypothesis matches the goal after the same normalization</td><td><code>simpa only [lemmas] using h;</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>These tactics act on <strong>homogeneous</strong> equality goals: <code>x = y</code> with both sides in one fixed type. They do not rewrite a <code>PathP</code> over a varying family. For such goals, see <a href="#cubical-shorthand">cubical shorthand</a>.</p>
+            <h3 id="rfl">Reflexivity: <code>rfl</code></h3>
+            <pre><code data-check="primes">import primes;
+
+def two_plus_two : 2 + 2 = 4 {
+  rfl;
+}</code></pre>
+            <p><code>rfl;</code> closes the goal <code>x = y</code> when <code>x</code> and <code>y</code> are definitionally equal. It is <code>exact refl(x);</code> without repeating <code>x</code>. Here <code>2 + 2</code> computes to <code>4</code>. <code>rfl</code> does not prove <code>n + 0 = n</code> for a variable <code>n</code>; that fails with “Type mismatch.” because it needs induction.</p>
+            <h3 id="calc">Chains: <code>calc</code></h3>
+            <pre><code data-check="primes">import primes;
+
+def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
+  calc {
+    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
+    _ = n by nat_add_zero(n);
+  }
+}</code></pre>
+            <p>Each step has the form <code>left = right by proof;</code>. The proof is either a term, followed by <code>;</code>, or a nested block <code>by { … }</code>, with no semicolon. Inside <code>calc</code>, <code>_</code> as a left endpoint means the right endpoint of the preceding step. The first left endpoint must match the goal's left side, and the last right endpoint must match the goal's right side, up to conversion. The steps are composed with <code>trans</code> in order.</p>
+            <p>A nested block starts with that step's equality as its goal, so it can use any tactic:</p>
+            <pre><code data-check="primes">import primes;
+
+def calc_with_blocks(B : U0, f : Nat -&gt; B, n : Nat) :
+  f((n + 0) + 0) = f(n) {
+  calc {
+    f((n + 0) + 0) = f(n + 0) by {
+      rw [nat_add_zero(n + 0)];
+    }
+    _ = f(n) by {
+      rw [nat_add_zero(n)];
+    }
+  }
+}</code></pre>
+            <p><code>calc</code> closes the block. It supports only equality chains. Mixed chains such as <code>a &lt; b = c &lt;= d</code> are not available.</p>
+            <h3 id="rw">Rewriting: <code>rw</code></h3>
+            <pre><code data-check="primes">import primes;
+
+def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
+  rw [nat_add_zero(n)];   // goal is now n = m
+  exact h;
+}
+
+def rewrite_second(n : Nat) : (n + 0) + (n + 0) = (n + 0) + n {
+  rw [nat_add_zero(n)] at lhs occurrence 2;
+}
+
+def rewrite_backwards(n : Nat) : n = n + 0 {
+  rw [&lt;- nat_add_zero(n)] at lhs;
+}</code></pre>
+            <p><code>rw [p];</code> takes a proof <code>p : a = b</code> and replaces one occurrence of <code>a</code> in the goal by <code>b</code>. Internally it builds <code>cong</code> of a one-hole context around the occurrence and composes it with the goal. <code>&lt;- p</code> uses <code>p</code> right to left, replacing <code>b</code> by <code>a</code>. Several rules <code>rw [p, q, &lt;- r];</code> are applied one after another, in order.</p>
+            <ul>
+              <li><strong>Rules are fully instantiated.</strong> Write <code>nat_add_zero(n)</code>, not <code>nat_add_zero</code>. <code>rw</code> does not search for arguments; use <code>simp only</code> for that.</li>
+              <li><strong>Which occurrence.</strong> Occurrences are counted in preorder (parent before children, left to right) through ordinary function applications. Without <code>at</code>, the count runs across the left endpoint and then the right. <code>at lhs</code> or <code>at rhs</code> restricts it to one side, and <code>occurrence N</code> picks the Nth match; the default is the first. In <code>rewrite_second</code>, the first <code>n + 0</code> is occurrence 1 and the second is occurrence 2.</li>
+              <li><strong>After rewriting.</strong> If the rewritten goal holds by conversion, <code>rw</code> closes the block, and a trailing <code>rfl;</code> would be unreachable. Otherwise the block continues with the rewritten goal, and a following statement must prove it.</li>
+              <li><strong>Where it reaches.</strong> Rewriting descends through ordinary applications whose result type stays fixed, such as <code>f(…)</code> and <code>a + …</code>. It does not descend under <code>fun</code> or quantifier binders, into dependent arguments whose type would change, or into the arguments of <code>transport</code>, <code>comp</code> and other cubical forms. A match there is skipped or reported as “Rewrite match occurs in an unsupported dependent position.” Use an explicit <code>cong(fun (x : A) =&gt; …, p)</code> instead.</li>
+            </ul>
+          </section>
+          <section id="simp">
+            <h2>Simplification</h2>
+            <p>The simplifier rewrites with a set of equality lemmas, repeatedly and everywhere it can, until no rule applies. Unlike <code>rw</code>, it accepts lemmas with quantified parameters and works out their arguments by matching. It is predictable rather than clever: it only uses the rules you select or register, never searches arbitrary theorems, and never succeeds by looping or exhausting a budget.</p>
+            <h3>Explicit rule lists: <code>simp only</code></h3>
+            <pre><code data-check="primes">import primes;
+
+def add_zero_twice_simp(n : Nat) : (n + 0) + 0 = n {
+  simp only [nat_add_zero];
+}
+
+def residual_goal(n m : Nat, h : n = m) : (n + 0) + 0 = m {
+  simp only [nat_add_zero];   // goal is now n = m
+  exact h;
+}</code></pre>
+            <p><code>nat_add_zero</code> has type <code>forall x : Nat, (x + 0) = x</code>. The simplifier finds each subterm of the shape <code>? + 0</code>, fills <code>x</code> from it, and checks the instantiated rule. As with <code>rw</code>, if the simplified goal holds by conversion the block is closed; otherwise the block continues with the simplified goal.</p>
+            <p>A rule may be:</p>
+            <ul>
+              <li>a quantified lemma name such as <code>nat_add_zero</code>;</li>
+              <li>an instantiated proof such as <code>nat_add_zero(n)</code>, or a local hypothesis such as <code>h : a = b</code>;</li>
+              <li>a named <a href="#simp-registration">simplification set</a>;</li>
+              <li>any of these reversed with <code>&lt;-</code>.</li>
+            </ul>
+            <p>Every quantified parameter must be determined by the matched left side. A rule such as <code>forall x y : Nat, x = x + (y * 0)</code> cannot be used left to right because nothing on the left fixes <code>y</code>. The error is “A simplification rule parameter is not determined by the matched side; supply arguments.” Supply the argument yourself, as in <code>simp only [rule(x, 0)]</code>. Matching is rigid and first-order: a pattern matches a subterm with the same function heads, and it does not unfold definitions to find a match.</p>
+            <h3>Traversal order</h3>
+            <p>The traversal is deterministic, so the same rules always give the same result:</p>
+            <ol>
+              <li>Children are simplified before their parents, and the left endpoint before the right.</li>
+              <li>At each subterm, rules are tried in the listed order and the first that matches fires.</li>
+              <li>The pass repeats until no rule applies.</li>
+            </ol>
+            <p>Traversal reaches the same positions as <a href="#rw"><code>rw</code></a>: ordinary applications with a fixed result type, not binders or cubical forms.</p>
+            <p>Commutativity-style rules such as <code>forall x y, x + y = y + x</code> rewrite their own output back into their input. The simplifier detects the repeated state and fails with “Simplification cycle detected in the selected rules.” Instantiate such rules at specific arguments instead, as in <code>nat_add_comm(a, b)</code>. There are also fixed resource bounds: 64 rewrites, 512 visited nodes and 8,192 match candidates per traversal, a bound on generated term size, and an elapsed-work deadline. Exceeding any of them is a failure with a named budget message.</p>
+            <h3 id="simpa">Using a hypothesis: <code>simpa</code></h3>
+            <pre><code data-check="primes">import primes;
+
+def simpa_example(n m : Nat, h : n + 0 = m) : n = m + 0 {
+  simpa only [nat_add_zero] using h;
+}</code></pre>
+            <p><code>simpa [rules] using proof;</code> simplifies both the goal and the type of <code>proof</code> with the same rules. Here both become <code>n = m</code>. It checks that the simplified types match, then reconstructs the original goal from the checked rewrite paths. This saves stating the normalized form of a hypothesis. <code>simpa</code> always closes the block.</p>
+            <h3 id="simp-types">Simplifying types, not just equalities</h3>
+            <p>When the goal is a type rather than an equality, <code>simp</code> rewrites the type itself. Each rewrite gives a checked path between types, and the proof of the simplified type is transported back along it:</p>
+            <pre><code data-check="primes">import primes;
+
+def family_simp(P : Nat -&gt; U0, n : Nat, h : P(n)) : P(n + 0) {
+  simp only [nat_add_zero];   // goal is now P(n)
+  exact h;
+}
+
+def family_simpa(P : Nat -&gt; U0, n : Nat, h : P(n)) : P(n + 0) {
+  simpa only [nat_add_zero] using h;
+}
+
+def move_type(A B : U0, p : A = B, a : A) : B {
+  simpa only [p] using a;
+}</code></pre>
+            <p>In <code>move_type</code>, the rule is a path <code>p : A = B</code> between types, and <code>simpa</code> transports <code>a</code> along it. The simplifier only follows actual paths of types. It will not turn a logical equivalence or a pair of maps between propositions into a rewrite.</p>
+            <h3 id="simp-registration">Registering rules and sets</h3>
+            <pre><code data-check="primes">import primes;
+
+simp_rule nat_add_zero priority 10;
+simp_set nat_units = [nat_add_zero];
+
+def default_rules(n : Nat) : n + 0 = n {
+  simp;
+}
+
+def named_set(n : Nat) : (n + 0) + 0 = n {
+  simp only [nat_units];
+}
+
+def simplified_copy(n m : Nat, h : n + 0 = m + 0) : n = m {
+  simp [nat_units] at h as h2;   // h2 : n = m
+  exact h2;
+}</code></pre>
+            <p><code>simp_rule name;</code> and <code>simp_rule name priority N;</code> are top-level directives, placed between declarations. They register an already checked equality as a <strong>default rule</strong>. The priority is an integer from 0 to 1000, with 0 as the default. <code>simp_set name = [a, b];</code> names a collection of rules. Neither directive creates a new proof rule or an assumption: the registered lemma is rechecked every time it is used.</p>
+            <p>Registrations and sets are inherited through imports. When modules register the same lemma, it appears once. Defaults are tried in descending priority, then in a fixed order by checked identity. If two imports define different sets with the same name, that name is ambiguous until the current module declares its own set with that name. Registering the same rule or declaring the same set twice in one module is an error.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Form</th><th>Rules used</th></tr></thead>
+              <tbody>
+                <tr><td><code>simp;</code></td><td>All default rules in scope</td></tr>
+                <tr><td><code>simp [a, s];</code></td><td>Default rules plus the listed rules and sets</td></tr>
+                <tr><td><code>simp only [a, s];</code></td><td>Exactly the listed rules and sets; defaults are ignored</td></tr>
+                <tr><td><code>simp without [a];</code></td><td>Default rules except <code>a</code>. Cannot be combined with <code>only</code>.</td></tr>
+                <tr><td><code>simp [s] at h as h2;</code></td><td>The rules of <code>simp [s]</code>, applied to the type of the local equality <code>h</code>. Binds the result as <code>h2</code> and keeps <code>h</code>. A proof statement must follow.</td></tr>
+                <tr><td><code>simpa …  using proof;</code></td><td>Any of the rule selections above, applied to the goal and to <code>proof</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>Plain <code>simp</code> depends on which rules happen to be registered, so it can change behavior when an import changes. Prefer <code>simp only</code> in library proofs. The inspector can freeze a working <code>simp</code> into a <code>simp only</code> list of the rules that actually fired; see <a href="#inspection">checking and inspection</a>.</p>
+            <h3 id="simp-conditional">Conditional rules</h3>
+            <p>A rule may have hypotheses that matching does not determine. Here <code>zero_if</code> rewrites <code>n + 0</code> to <code>0</code>, but only given <code>h : n = 0</code>:</p>
+            <pre><code data-check="primes">import primes;
+
+def zero_if(n : Nat, h : n = 0) : n + 0 = 0 {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+    _ = 0 by h;
+  }
+}
+
+simp_rule zero_if priority 20;
+
+def conditional(n : Nat, h : n = 0) : n + 0 = 0 {
+  simp with [h];
+}</code></pre>
+            <p>After matching fixes <code>n</code>, the simplifier needs a proof of the premise <code>n = 0</code>. It looks for one in this order:</p>
+            <ol>
+              <li>a local hypothesis listed in <code>with [h, …]</code>, which must be a name from the current context;</li>
+              <li><code>refl</code>, when the premise holds by conversion;</li>
+              <li>for an equality premise, simplifying it with the other selected rules. This search goes at most two levels deep and makes at most 64 attempts. A rule cannot be used to prove its own premise.</li>
+            </ol>
+            <p>Every premise proof found this way is checked by the kernel and passed to the rule. If none is found, the rule does not fire, and the error names the blocked parameter and suggests <code>simp with [name]</code>. Only equality premises are solved. Other kinds of hypothesis must be supplied through <code>with</code>.</p>
           </section>
           <section id="cubical">
             <h2>Cubical paths and pushouts</h2>
             <p>All Cubist proofs use the <strong>Cubical C</strong> kernel. A declaration marked “Not checked” has no native certificate.</p>
+            <p>In cubical type theory, a path <code>p : x = y</code> in <code>A</code> is a function from an abstract interval into <code>A</code>. Its value at <code>0</code> is definitionally <code>x</code> and its value at <code>1</code> is <code>y</code>. Many path proofs can therefore be written directly, as functions of an interval coordinate, instead of by path induction.</p>
             <p><code>Interval</code> introduces a coordinate inside the forms below.
               It is not a type in a universe and cannot be used as an ordinary function domain.
-              Coordinates accept <code>0</code>, <code>1</code>, <code>flip(i)</code>,
-              <code>meet(i, j)</code> and <code>join(i, j)</code>.</p>
+              Coordinates accept <code>0</code>, <code>1</code>, <code>flip(i)</code> (the reversal <span class="math">1 − i</span>),
+              <code>meet(i, j)</code> (minimum) and <code>join(i, j)</code> (maximum).</p>
             <pre><code>def reverse_path(A : U0, x : A, y : A, p : x = y) =
   path(fun (i : Interval) =&gt; A,
        fun (i : Interval) =&gt; at(p, flip(i)));</code></pre>
             <p><code>path(family, body)</code> binds a coordinate in both arguments and
-              constructs a path. <code>PathP(family, left, right)</code> states a dependent
-              path type. Each family/body is written <code>fun (i : Interval) =&gt; ...</code>;
+              constructs a path. <code>at(p, i)</code> evaluates a path at a coordinate.
+              <code>PathP(family, left, right)</code> states a dependent
+              path type: at coordinate <code>i</code>, the path lies in the type <code>family(i)</code>. Plain <code>x = y</code> is the case of a constant family. Each family/body is written <code>fun (i : Interval) =&gt; ...</code>;
               their binder names need not agree. The kernel checks the actual family and endpoints.</p>
-            <p>When a path type is expected, <code>path i =&gt; body</code> takes its family from that type. <code>p @ i</code> applies a path to an interval coordinate, like <code>at(p, i)</code>. For a dependent function, <code>apd_path(f, p)</code> returns the direct path in varying fibers. <code>along C by p from v</code> transports <code>v</code> along <code>p</code> in the explicitly chosen family <code>C</code>. In a proof block with a known <code>PathP</code> goal, <code>over C along p by { … }</code> opens the equality-after-transport obligation and checks its bridge back to the dependent path.</p>
+            <h3 id="cubical-shorthand">Shorthand</h3>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Source</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>path i =&gt; body</code></td><td><code>path(family, fun (i : Interval) =&gt; body)</code>, where <code>family</code> comes from the expected <code>Path</code> or <code>PathP</code> type. Without an expected path type it is rejected.</td></tr>
+                <tr><td><code>p @ i</code></td><td><code>at(p, i)</code>. Binds tighter than every infix operator except application.</td></tr>
+                <tr><td><code>along C by p from v</code></td><td><code>transport(C, x, y, p, v)</code> with the endpoints <code>x</code>, <code>y</code> read from <code>p : x = y</code>. The family <code>C</code> is always written explicitly.</td></tr>
+                <tr><td><code>apd_path(f, p)</code></td><td>For <code>f : forall a : A, C(a)</code> and <code>p : x = y</code>, the direct dependent path <code>PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y))</code>, which is <code>path i =&gt; f(p @ i)</code>.</td></tr>
+                <tr><td><code>over C along p by { … }</code></td><td>In a block whose goal is <code>PathP(fun (i : Interval) =&gt; C(p @ i), a, b)</code>, prove instead <code>transport(C, x, y, p, a) = b</code> and convert the result. Closing.</td></tr>
+                <tr><td><code>ext x;</code></td><td>For a goal <code>f = g</code> between functions, bind <code>x</code> and continue with <code>f(x) = g(x)</code>.</td></tr>
+              </tbody>
+            </table></div>
+            <pre><code data-check="core">def reverse_again(A : U0, x y : A, p : x = y) : y = x {
+  exact path i =&gt; p @ flip(i);
+}
+
+def naturality_square(A B : U0, f g : A -&gt; B,
+    H : (forall a : A, f(a) = g(a)), x y : A, p : x = y) :
+  PathP(fun (j : Interval) =&gt; H(x) @ j = H(y) @ j, cong(f, p), cong(g, p)) {
+  exact path j =&gt; path i =&gt; H(p @ i) @ j;
+}</code></pre>
+            <p><code>reverse_again</code> is the same term as <code>reverse_path</code> above, with the family read from the goal. <code>naturality_square</code> fills a square whose sides are <code>cong(f, p)</code>, <code>cong(g, p)</code>, <code>H(x)</code> and <code>H(y)</code>. The outer <code>path j</code> gets its family from the <code>PathP</code> goal. Each inner <code>path i</code> gets its family from the equality at <code>j</code>. The kernel then checks all four edges.</p>
+            <h3 id="dependent-paths">Dependent paths and transport</h3>
+            <pre><code data-check="core">def move_in_fiber(A : U0, C : A -&gt; U0, x y : A, p : x = y, v : C(x)) : C(y) {
+  exact along C by p from v;
+}
+
+def section_path(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)), x y : A, p : x = y) :
+  PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
+  exact apd_path(f, p);
+}
+
+def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)),
+    x y : A, p : x = y) :
+  PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
+  over C along p by {
+    exact apd(f, x, y, p);   // goal: transport(C, x, y, p, f(x)) = f(y)
+  }
+}</code></pre>
+            <p>There are two standard ways to state that a dependent function respects a path. A <code>PathP</code> states it directly, as a path lying over <code>p</code>. The transported equality <code>transport(C, x, y, p, f(x)) = f(y)</code> states it in one fiber. <code>apd_path</code> produces the first; the older <code>apd</code> produces the second. <code>over</code> lets you prove a <code>PathP</code> goal by proving the transported equality, when that is easier. The family <code>C</code> is never inferred: the elaborator does not search for a family that fits.</p>
+            <h3 id="ext">Function extensionality: <code>ext</code></h3>
+            <pre><code data-check="core">def pointwise_path(A B : U0, f g : A -&gt; B, h : (forall x : A, f(x) = g(x))) : f = g {
+  ext x;
+  exact h(x);
+}</code></pre>
+            <p>Cubical paths make function extensionality provable: <code>path i =&gt; fun x =&gt; h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the function type is fixed, meaning the goal is <code>f = g</code> with <code>f g : forall x : A, C(x)</code>. It uses no axiom, unlike the <a href="#axioms"><code>FunExt</code></a> interface.</p>
+            <h3>Composition</h3>
             <pre><code>comp(fun (j : Interval) =&gt; A, at(p, i),
   face(i, 0, fun (j : Interval) =&gt; x),
   face(i, 1, fun (j : Interval) =&gt; at(q, j)))</code></pre>
             <p><code>comp</code> fills from coordinate 0 to coordinate 1, starting at the
               supplied base. Optional walls have the displayed <code>face</code> syntax;
               their coordinate belongs to the outer scope. The kernel checks that the
-              walls match the base and agree on overlaps. With no walls, this is transport.</p>
+              walls match the base and agree on overlaps. With no walls, this is transport.
+              Picture a square with the base as its bottom edge and the walls as its sides. <code>comp</code> produces the top edge. This is how <code>trans</code> is built.</p>
+            <p>Interval and face formulas are kept in a normal form of joins of meets. Some compact formulas have exponentially large normal forms. Rather than exhaust memory, the checker refuses any expansion beyond 4,096 clauses or a fixed work budget, with a lattice budget error. Split such a proof into smaller named steps.</p>
+            <h3>Pushouts</h3>
             <pre><code>def P = Pushout(S, A, B, f, g);
 // f : S -&gt; A; g : S -&gt; B
 // push_left(P, a) : P
@@ -358,6 +657,7 @@ def meridian(A : U0, a : A) = push_path(Suspension(A), a);</code></pre>
             <p>For a named universe, use <code>Truncate(U, A)</code>, <code>TruncateIntro(U, A, a)</code>, <code>TruncateProp(U, A)</code>, or <code>TruncateElim(U, A, P, proposition, map)</code>. Here <code>U</code> must be a universe such as <code>U1</code>, and both <code>A</code> and the elimination target <code>P</code> must belong to it.</p>
             <p class="note">The current library truncation constructor returns a type in U₀ even for larger inputs. These wrappers preserve that signature; they do not assert universe-preserving truncation. In particular, <code>Truncate(U1, U0)</code> is valid, while <code>Truncate(U0, U0)</code> is not.</p>
             <h3>Function extensionality and univalence</h3>
+            <p>Pointwise equal functions can be proved equal without an axiom using <a href="#ext"><code>ext</code></a>. The <code>FunExt</code> interface below remains for existing proofs that were written against it. It is an assumption and is recorded as one.</p>
             <dl>
               <dt><code>FunExt(U0, A, B, f, g, pointwise)</code></dt>
               <dd>For a family <code>B : A -&gt; U0</code> and dependent functions <code>f</code>, <code>g</code>, turn <code>forall x : A, f(x) = g(x)</code> into <code>f = g</code>.</dd>
@@ -386,7 +686,15 @@ def meridian(A : U0, a : A) = push_path(Suspension(A), a);</code></pre>
           </section>
           <section id="conversion">
             <h2>Conversion and opacity</h2>
-            <p>The checker accepts a term when its type is definitionally equal to the requested type. Function application computes by beta reduction; eliminators compute on constructors. For example, <code>(fun (n : Nat) =&gt; succ(n))(0)</code> computes to <code>1</code>.</p>
+            <p>The checker accepts a term when its type is definitionally equal to the requested type. Two terms are definitionally equal when they reduce to the same normal form by these steps:</p>
+            <ul>
+              <li><strong>beta</strong>: a function applied to an argument computes, so <code>(fun (n : Nat) =&gt; succ(n))(0)</code> is <code>1</code>;</li>
+              <li><strong>delta</strong>: a named definition unfolds to its checked body;</li>
+              <li><strong>eliminator rules</strong>: induction, <code>match</code>, <code>unpack</code> and similar forms compute on constructors, so <code>2 + 2</code> is <code>4</code> but <code>n + 0</code> is stuck on the variable <code>n</code>;</li>
+              <li><strong>eta</strong>: a function equals <code>fun x =&gt; f(x)</code>, and a pair equals the pair of its projections;</li>
+              <li><strong>cubical rules</strong>: a path at <code>0</code> or <code>1</code> is its endpoint, and interval formulas are compared in normal form.</li>
+            </ul>
+            <p>This is why <code>refl</code> and <code>rfl</code> prove some equalities and not others. They succeed exactly when both sides reach the same normal form.</p>
             <p><code>def</code> defines both constructions and proofs. The checker retains named definitions and can unfold their checked bodies to establish equality of types. <code>opaque def</code> is accepted syntax, but currently has the same checking and unfolding behavior as <code>def</code>. Proof blocks appear by name in the inspector, where their bodies can be opened.</p>
             <pre><code data-check="core">opaque def boxed_successor(n : Nat) = succ(n);
 def explicitly_opened = unfold(boxed_successor(1));
@@ -394,7 +702,7 @@ def explicitly_opened = unfold(boxed_successor(1));
 def opened_is_two : explicitly_opened = 2 {
   exact refl(2);
 }</code></pre>
-            <p><code>unfold(term)</code> explicitly unfolds definitions and normalizes the term and its type. It can expand a large expression substantially. A proof such as commutativity is still a propositional equality; the checker does not use arbitrary theorems as automatic rewrite rules.</p>
+            <p><code>unfold(term)</code> explicitly unfolds definitions and normalizes the term and its type. It can expand a large expression substantially. A theorem such as commutativity is still a propositional equality. The checker never uses a theorem automatically as a rewrite rule. <code>rw</code> and <code>simp</code> use theorems only when they are named in the proof or registered with <code>simp_rule</code>.</p>
             <p>In the native cubical backend, <code>with unfolding [name₁, name₂] { expression }</code>
               scopes selective conversion hints around an expression. The bracketed list contains
               names of already checked definitions; the braces contain one expression, without a
@@ -416,34 +724,78 @@ def identity_zero : identity(0) = 0 {
             <h2>Checking and inspection</h2>
             <p>Open the <a href="proof.html">proof workspace</a>, choose a topic and proof, then use <strong>Edit</strong> and <strong>Check proof</strong> (Ctrl/Cmd+Enter). Click a name in <strong>Read</strong> mode to inspect its type and source. Click a proof-step line number for its goal and local assumptions. A rejected edit leaves the last checked proof available.</p>
             <p>The checked kernel details show the expression, its type, and its open context. Folded kernel notation retains names only where their relationship to the stored term is checked. Use the representation selector for Cubist or raw kernel terms; send either term to the workbench to explore reduction and dependencies. Binder grouping, truncation notation, and equality notation change only presentation. Equality notation is enabled by default: <code>(A =[T] B)</code> displays the identity type with endpoints <code>A</code>, <code>B</code> and carrier <code>T</code>. Uncheck it to see <code>Id</code> with the carrier as a subscript instead. Both views retain links to checked definitions.</p>
+            <h3>Inspecting tactics</h3>
+            <ul>
+              <li>Click <code>calc</code>, <code>rw</code>, <code>simp</code> or <code>simpa</code> to see the checked proof term it constructed. Each <code>by</code> inside a <code>calc</code> links to the path for that step.</li>
+              <li>A <code>simp</code> also shows its rewrite trace: each rule that fired, the checked path it produced, and any premise proofs found for conditional rules.</li>
+              <li>A multi-binder <code>fun</code> opens the whole checked function. Names bound by <code>ext</code> or <code>simp … at h as h2</code> link to their types like any other local.</li>
+            </ul>
+            <p><strong>Replace with simp only</strong> turns a checked <code>simp</code>, <code>simpa</code> or <code>simp at</code> into a <code>simp only</code> list of the rules that actually fired, keeping their original order. Before offering it, the elaborator reruns the simplification with just those rules and requires the same remaining goal and an equivalent proof. After editing, the source is checked again. The action is withheld when it cannot guarantee the same result. This includes when a used imported rule has no name in scope, a set name would shadow a rule name, or premise search would change. It is also withheld for a universe template, because one level's check does not cover the others.</p>
+            <h3>Outside the browser</h3>
             <p>The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules, explaining contexts, binding, and what must be trusted when verifying a proof.</p>
             <p>The compiler’s <strong>Reuse normal forms</strong> and <strong>Reuse checked instructions</strong> switches default on. They control reuse during compilation, not the source language or its mathematical assumptions.</p>
-            <p>For local development, <code>make serve</code> serves the workspace. In the CLI, <code>check FILE.cubist</code> checks a source file. A focused project test can be run as <code>npm test -- web/proofs/FILE.cubist</code>; this checks the selected mathematical source and its imports. See the <a href="docs/guides/cli.md">CLI guide</a> for custom files, local imports, inspection, and limitations.</p>
+            <p>For local development, <code>make serve</code> serves the workspace. In the CLI, <code>node cli/repl.mjs check FILE.cubist</code> checks a source file. A focused project test can be run as <code>npm test -- web/proofs/FILE.cubist</code>; this checks the selected mathematical source and its imports. See the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/cli.md">CLI guide</a> for custom files, local imports, inspection, and limitations.</p>
             <p>Current parser limits are 1,000,000 source characters, 160,000 tokens, nesting depth 128, and numeral literals up to 256. Larger naturals can be built by expressions. These are implementation limits, not mathematical axioms. See the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">implementation notes</a> for runtime limits and the source-checking pipeline.</p>
           </section>
           <section id="errors">
             <h2>Common errors</h2>
+            <h3>Blocks and terms</h3>
             <dl>
               <dt>“intro requires a forall or implication goal”</dt>
               <dd>The next goal is not a function type. Inspect it; a pair needs witnesses, and an equality needs a path.</dd>
               <dt>“A pair needs an expected exists/and type”</dt>
               <dd>Supply a type with <code>typed(T, (a, b))</code>, a theorem signature, or a <code>have</code> block.</dd>
-              <dt>“No statements may follow exact or cases”</dt>
-              <dd>Move further reasoning into the appropriate branch, or prove a local claim with <code>have</code> before finishing the outer block.</dd>
+              <dt>“No statements may follow exact or cases”, “Statements after calc are unreachable.”</dt>
+              <dd>A closing statement ends the block. Move further reasoning into the appropriate branch, or prove a local claim with <code>have</code> before finishing the outer block.</dd>
+              <dt>“Untyped lambda requires an expected function type.”</dt>
+              <dd>Give the binder a type, <code>fun (x : A) =&gt; …</code>, or put the lambda where a function type is expected.</dd>
               <dt>“This path needs an explicit equality type annotation”</dt>
-              <dd>Use <code>have p : x = y { exact expression; }</code> to expose its endpoints to the elaborator.</dd>
-              <dt>“Conversion types differ”</dt>
-              <dd>The supplied term does not have the expected type by computation. Check argument order, universes, and dependent endpoints. A propositional equality may require explicit <code>transport</code>.</dd>
+              <dd>Use <code>have p : x = y := expression;</code> to expose its endpoints to the elaborator.</dd>
+              <dt>“Conversion types differ”, “Type mismatch.”</dt>
+              <dd>The supplied term does not have the expected type by computation. Check argument order, universes, and dependent endpoints. From <code>rfl</code>, it means the sides are only propositionally equal: use a lemma, <code>rw</code> or <code>simp</code>. A propositional equality may require explicit <code>transport</code>.</dd>
               <dt>An attempted witness extraction from <code>Mere(A)</code> fails</dt>
               <dd>Truncation elimination needs a proposition as its target. Proving mere existence does not in general supply a chosen witness.</dd>
             </dl>
-            <p>Rewriting currently supports homogeneous equality endpoints and type-valued goals through ordinary applications whose result type stays fixed. Dependent hypothesis replacement, <code>apply</code>, <code>sorry</code>, and general implicit arguments are not available yet.</p>
+            <h3>Equational reasoning and simplification</h3>
+            <dl>
+              <dt>“rw left an unresolved equality goal; add a following proof statement.”</dt>
+              <dd>The rewrite succeeded, but the new goal does not hold by conversion. Add another <code>rw</code>, an <code>exact</code>, or a <code>simp</code>. The same applies to the <code>simp</code> variants.</dd>
+              <dt>“Rewrite occurrence 3 was not found (1 eligible matches).”</dt>
+              <dd>Fewer matches exist than the requested occurrence. Check that the rule is instantiated with exactly the subterm that appears, and whether you meant <code>at lhs</code> or <code>at rhs</code>.</dd>
+              <dt>“Rewrite match occurs in an unsupported dependent position.”</dt>
+              <dd>The only match is under a binder or in a dependent argument. Use an explicit <code>cong</code> with a one-hole function.</dd>
+              <dt>“calc step left endpoint does not match the preceding endpoint.”, “calc final endpoint does not match the goal.”</dt>
+              <dd>Adjacent steps must share an endpoint up to conversion. Use <code>_</code> to avoid retyping the previous right side.</dd>
+              <dt>“Simplification cycle detected in the selected rules.”</dt>
+              <dd>A rule, or a pair of rules, can rewrite a term back to an earlier state; commutativity always does. Instantiate the rule at specific arguments, or remove one direction.</dd>
+              <dt>“A simplification rule parameter is not determined by the matched side; supply arguments.”</dt>
+              <dd>Matching cannot fix every parameter. Pass the missing arguments explicitly, or use the rule in the other direction.</dd>
+              <dt>A conditional rule reports a blocked premise</dt>
+              <dd>No proof of the premise was found. List a local proof with <code>simp with [h]</code>, or add a rule that proves the premise.</dd>
+              <dt>“… budget exceeded.”</dt>
+              <dd>Rewriting, matching, term size or elapsed work hit a fixed bound. Narrow the rule list with <code>simp only</code>, or split the proof with <code>have</code> or <code>calc</code>.</dd>
+              <dt>“path i =&gt; ... needs an expected Path or PathP type.”</dt>
+              <dd>Use the long form <code>path(family, body)</code>, or place the shorthand where a path type is expected.</dd>
+            </dl>
+            <h3>Not yet available</h3>
+            <p>Rewriting currently supports homogeneous equality endpoints and type-valued goals through ordinary applications whose result type stays fixed. The following are not available yet:</p>
+            <ul>
+              <li>rewriting a hypothesis together with everything that depends on it (<code>simp at</code> makes a new copy instead);</li>
+              <li><code>apply</code>, <code>refine</code> and <code>sorry</code>;</li>
+              <li>general implicit or named arguments;</li>
+              <li>solving premises that are not equalities;</li>
+              <li>inequality and mixed-relation <code>calc</code> chains.</li>
+            </ul>
           </section>
           <section id="examples">
             <h2>Library examples</h2>
             <ul>
               <li><a href="proof.html?proof=euclid">Euclid</a>: introductions, local claims, pair witnesses, and sum cases.</li>
-              <li><a href="proof.html?proof=paths">Paths</a>: identity induction, symmetry, composition, and congruence.</li>
+              <li><a href="proof.html?proof=paths">Paths</a>: identity induction, symmetry, composition, congruence, <code>path i =&gt;</code> and <code>apd_path</code>.</li>
+              <li><a href="proof.html?proof=primes">Primes</a>: natural-number induction with <code>cong</code>, <code>sym</code> and <code>trans</code>, and <code>calc</code> chains.</li>
+              <li><a href="proof.html?proof=ring_laws">Ring laws</a> and <a href="proof.html?proof=ordered_fields">ordered fields</a>: <code>simp only</code> and <code>simpa only</code> on algebraic identities.</li>
+              <li><a href="proof.html?proof=group_operations">Group operations</a>: chains of <code>rw</code>.</li>
+              <li><a href="proof.html?proof=field_extensionality">Field extensionality</a>: pair paths built with <code>over</code>.</li>
               <li><a href="proof.html?proof=surjections">Right inverses of surjections</a>: set assumptions, choice, and mere existence.</li>
               <li><a href="proof.html?proof=circle">The circle’s fundamental group</a>: suspension paths, equivalences, and univalence.</li>
               <li><a href="proof.html?proof=complete_fields">Complete ordered field interface</a>: explicit universes and constructive hypotheses.</li>
