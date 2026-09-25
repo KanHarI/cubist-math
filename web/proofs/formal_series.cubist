@@ -220,9 +220,7 @@ def series_decompose(K : AlgebraicField, f : FormalSeries(K)) :
   );
 }
 
-def convolution_right_step(
-  K : AlgebraicField, n : Nat, f : FormalSeries(K), g : FormalSeries(K)
-) :
+def convolution_right_step(K : AlgebraicField, n : Nat, f : FormalSeries(K), g : FormalSeries(K)) :
   convolution(K, succ(n), f, g) = field_add(
     K, field_mul(K, f(succ(n)), g(0)), convolution(K, n, f, series_tail(K, g))
   ) {

@@ -13,8 +13,7 @@ def radix_nat_distribute(r : Nat, a : Nat, b : Nat) : r * (a + b) = r * a + r * 
   );
 }
 
-def radix_nat_add_cross(e : Nat, x : Nat, y : Nat, d : Nat) :
-  e + ((x + y) + d) = (x + d) + (y + e) {
+def radix_nat_add_cross(e : Nat, x : Nat, y : Nat, d : Nat) : e + ((x + y) + d) = (x + d) + (y + e) {
   exact trans(
     nat_add_comm(e, (x + y) + d),
     trans(
@@ -48,9 +47,7 @@ def RadixAddCorrect(extra : Nat, p : RadixPositive(extra), q : RadixPositive(ext
     extra, q
   );
 
-def radix_add_leading_correct(
-  extra : Nat, d : RadixDigit(succ(extra)), q : RadixPositive(extra)
-) :
+def radix_add_leading_correct(extra : Nat, d : RadixDigit(succ(extra)), q : RadixPositive(extra)) :
   RadixAddCorrect(extra, radix_leading(extra, d), q) {
   exact radix_decode_add_small(extra, succ(radix_digit_value(succ(extra), d)), q);
 }
@@ -167,9 +164,7 @@ def RadixMulCorrect(extra : Nat, p : RadixPositive(extra), q : RadixPositive(ext
     extra, q
   );
 
-def radix_mul_leading_correct(
-  extra : Nat, d : RadixDigit(succ(extra)), q : RadixPositive(extra)
-) :
+def radix_mul_leading_correct(extra : Nat, d : RadixDigit(succ(extra)), q : RadixPositive(extra)) :
   RadixMulCorrect(extra, radix_leading(extra, d), q) {
   exact radix_decode_add_copies(extra, radix_digit_value(succ(extra), d), q, q);
 }

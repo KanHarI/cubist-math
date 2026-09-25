@@ -130,9 +130,7 @@ def compositum_unassociate_inclusion(
   );
 }
 
-def compositum_associative(
-  F : AlgebraicField, S : Subfield(F), T : Subfield(F), V : Subfield(F)
-) :
+def compositum_associative(F : AlgebraicField, S : Subfield(F), T : Subfield(F), V : Subfield(F)) :
   compositum(F, compositum(F, S, T), V) =[Subfield(F)] compositum(F, S, compositum(F, T, V)) {
   exact subfield_inclusion_antisymmetric(
     F, compositum(F, compositum(F, S, T), V), compositum(F, S, compositum(F, T, V)),

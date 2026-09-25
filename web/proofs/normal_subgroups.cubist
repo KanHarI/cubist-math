@@ -48,8 +48,7 @@ def subgroup_bottom_normal(G : Group) : IsNormal(G, subgroup_bottom(G)) {
   );
 }
 
-def abelian_subgroups_normal(G : Group, abelian : IsAbelian(G), S : Subgroup(G)) :
-  IsNormal(G, S) {
+def abelian_subgroups_normal(G : Group, abelian : IsAbelian(G), S : Subgroup(G)) : IsNormal(G, S) {
   intro g;
   intro x;
   intro member;

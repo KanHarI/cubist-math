@@ -49,9 +49,7 @@ def selected_decidable(
   }
 }
 
-def selected_is_set(
-  A : U0, decide : (forall x : A, forall y : A, Decidable(x = y)), p : A -> Bool
-) :
+def selected_is_set(A : U0, decide : (forall x : A, forall y : A, Decidable(x = y)), p : A -> Bool) :
   IsSet(Selected(A, p)) {
   exact hedberg(Selected(A, p), selected_decidable(A, decide, p));
 }
@@ -191,9 +189,7 @@ def selected_true_index_path(A : U0, p : A -> Bool, x : Unit or A) =
     right a => fun (h : Truth(p(a))) => refl(tail(A, a));
   };
 
-def selected_true_left(
-  A : U0, p : A -> Bool, s : Selected(Unit or A, predicate_join(A, yes, p))
-) :
+def selected_true_left(A : U0, p : A -> Bool, s : Selected(Unit or A, predicate_join(A, yes, p))) :
   selected_true_in(A, p, selected_true_out(A, p, s)) = s {
   exact subtype_ext(
     Unit or A, (fun (x : Unit or A) => Truth(predicate_join(A, yes, p, x))),
@@ -260,9 +256,7 @@ def selected_false_index_path(A : U0, p : A -> Bool, x : Unit or A) =
     right a => fun (h : Truth(p(a))) => refl(tail(A, a));
   };
 
-def selected_false_left(
-  A : U0, p : A -> Bool, s : Selected(Unit or A, predicate_join(A, no, p))
-) :
+def selected_false_left(A : U0, p : A -> Bool, s : Selected(Unit or A, predicate_join(A, no, p))) :
   selected_false_in(A, p, selected_false_out(A, p, s)) = s {
   exact subtype_ext(
     Unit or A, (fun (x : Unit or A) => Truth(predicate_join(A, no, p, x))),

@@ -88,9 +88,7 @@ def independent_inclusion_prop(
   );
 }
 
-def independent_inclusion_refl(
-  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)
-) :
+def independent_inclusion_refl(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) :
   IndependentIncluded(K, V, S, S) {
   intro x;
   intro member;

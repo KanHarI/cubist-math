@@ -6,8 +6,7 @@ import quotient_sets;
 def permutation_multiply(A : U0, f : Bijection(A, A), g : Bijection(A, A)) =
   compose_bijection(A, A, A, g, f);
 
-def bijections_are_set(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B)) :
-  IsSet(Bijection(A, B)) {
+def bijections_are_set(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B)) : IsSet(Bijection(A, B)) {
   exact subtype_is_set(
     A -> B, InverseData(A, B),
     dependent_functions_are_set(A, (fun (a : A) => typed(U1, B)), (fun (a : A) => setB)),
