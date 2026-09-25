@@ -96,6 +96,7 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   and it is unchecked at every level no one has used yet. G0 makes universe
   variables genuine kernel binders and checks each generic definition once, for
   every level.
+  - **Specification.** [g0-universe-specification.md](g0-universe-specification.md) (K1.1): rules, consistency note, acceptance cases and open questions.
   - **Levels.** Level expressions are `0`, `ℓ + 1`, `max(ℓ, ℓ')` and universe
     variables, with `U(ℓ) : U(ℓ + 1)`. Two levels are equal when their normal
     forms agree: for each variable its largest offset, plus a constant. `ℓ ≤ ℓ'`
