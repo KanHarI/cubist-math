@@ -1,15 +1,23 @@
 # Simplification and shorter proofs in Cubist
 
-Status: implementation in progress, 2026-09-24. Explicit `rw`, `calc`, `rfl`,
-`simp only`, `simpa only`, registered default/named simplification sets, grouped
-binders, expected paths, pointwise `ext`, and selected dependent path
-conveniences, bounded conditional equality rules, and checked type-path
-transport for `simp`/`simpa` now check through the native kernel. General
-proposition premises, broad inference, dependent
-hypothesis replacement and structure
-notation remain planned. See the [implementation checkpoint](../tactical/proof-ergonomics-handoff.md).
-This document covers language tooling and does not resume any mathematical roadmap.
-Examples below not yet covered by the checked sample files remain proposals.
+Status: first release delivered, 2026-09-25. Milestones 0–3 check through
+the native kernel: grouped binders and introductions, both `have` forms,
+`rfl`, `calc`, `rw`, `simp` and `simpa` with explicit, registered and named rule
+sets, `simp at h as h2`, bounded conditional equality rules, checked type-path
+transport, and the "Replace with simp only" action. Milestone 4's cubical
+shorthand (`path i =>`, `p @ i`, `ext`, `along`, `apd_path`, `over`) shipped
+early. A review on 2026-09-25 fixed four elaborator bugs and an older
+name-capture bug; see the [implementation checkpoint](../tactical/proof-ergonomics-handoff.md).
+
+The remaining dependent, cubical, induction and shared elaboration work moved
+to the [HoTT and cubical automation roadmap](hott-automation-roadmap.md), and
+kernel-facing interval work to the [kernel roadmap](cubical-kernel-roadmap.md).
+Each open item below names its new owner. This roadmap keeps general argument
+inference with `apply` and `refine` (milestone 5) and structure and notation
+features (milestone 6); both build on the HoTT roadmap's goal layer (A5).
+This document covers language tooling and does not resume any mathematical
+roadmap. Examples below not yet covered by the checked sample files remain
+proposals.
 
 Continue with the [PR-sized implementation plan](proof-ergonomics-implementation-plan.md)
 and its [checked and exploratory sample files](../examples/proof-ergonomics/README.md).
@@ -19,9 +27,9 @@ expected-type paths and pointwise equality forward without requiring general
 argument inference.
 
 The subsequent [HoTT and cubical automation roadmap](hott-automation-roadmap.md)
-records why the current simplifier cannot reach path operations. It reorders
-the remaining dependent, cubical and goal-derived induction work below and
-marks none of it complete.
+records why the current simplifier cannot reach path operations. It now owns
+the remaining dependent, cubical and goal-derived induction work below; see
+its [changes to the ergonomics plan](hott-automation-roadmap.md#changes-to-the-ergonomics-plan).
 
 ## Objective and current foundation
 
@@ -63,26 +71,16 @@ and [simplification versus rewriting](https://lean-lang.org/doc/reference/latest
 Put automation in the parser and elaborator. Its output is ordinary core
 syntax, validated by the native checker before a declaration is accepted.
 No simplifier result, JavaScript equality comparison, cache entry, or rule
-attribute becomes a new trusted proof rule.
+attribute becomes a new trusted proof rule. No convenience adds an assumption
+either: every result that uses no truncation or other assumption must remain
+computable by the kernel
+([HoTT invariant 10](hott-automation-roadmap.md#invariants-added-to-the-ergonomics-requirements)).
 
-Large interval expressions need a separate elaborator-to-kernel improvement.
-The current native clause and work limits make exponential distribution fail
-promptly, and the elaborator simplifies constant-path reversal before checking.
-To accept general compact cubical expressions without raising those limits:
-
-1. Keep interval and face expressions as shared `join`/`meet`/`reverse` DAGs in
-   the elaborator. Normalize only the parts needed by a conversion or face
-   query, with memoization and a measured work budget.
-2. Emit a certificate of local De Morgan, substitution, absorption, and face
-   entailment steps for each nontrivial query. Preserve dimension scope and
-   distinguish interval equality from face entailment in the certificate.
-3. Add a small kernel verifier for those steps, then replace eager native DNF
-   comparison at the certified call sites. Reject missing or oversized
-   certificates; never trust the elaborator's claimed answer on its own.
-4. Test the 16-clause reversal on a genuinely nonconstant path, false face
-   entailments, binder renaming, and adversarial shared DAGs before raising
-   any resource limit. Compare checking time and proof size with the current
-   guarded implementation.
+Large interval expressions need a separate elaborator-to-kernel improvement,
+certified interval normalization, now [G5 in the kernel roadmap](cubical-kernel-roadmap.md#items).
+Until then, the native clause and work limits make exponential distribution
+fail promptly, and the elaborator simplifies constant-path reversal before
+checking.
 
 Use a shared rewriting service for `rw`, `calc`, `simp`, and `simpa`:
 
@@ -189,10 +187,11 @@ relevant source or imported rule changes.
 
 ## Milestones
 
-Dependencies: 0 -> 1 -> 2 -> 3. Milestone 4 extends the supported cubical and
-dependent fragment. Milestone 5 adds general argument inference on top of the
-goal machinery from 1. Milestone 6 follows evidence from real proof migrations.
-Small syntax conveniences in 0 can ship independently of the simplifier.
+Milestones 0–3 form the delivered first release. Milestone 4, and the
+induction and extensionality items of 5 and 6, moved to the HoTT roadmap. The
+remaining items of milestone 5 build on its goal layer (A5). Those of 6 follow
+its projections and structure descriptions (A8, F1) and evidence from real
+proof migrations. A box marked moved names the item's new owner.
 
 ### 0. Establish examples and remove straightforward repetition
 
@@ -203,6 +202,7 @@ Small syntax conveniences in 0 can ship independently of the simplifier.
   The selected graph now records tokens, elapsed time, native checking steps,
   rewrite candidate work and final-check arena snapshots; parameter repetition,
   per-declaration arena deltas and signature/assumption inventories remain.
+  The HoTT roadmap's baseline (A7) extends this measurement.
 - [x] Add grouped introductions, such as `intro A x h;`, by expansion to
   existing introductions, preserving an inspectable context at each binder.
 - [x] Add grouped typed binders, such as `(x y : A)`, and multi-binder lambdas.
@@ -212,7 +212,10 @@ Small syntax conveniences in 0 can ship independently of the simplifier.
 - [x] Add `have h = term;` when its type can already be inferred, plus
   `have h : T := term;` as shorthand for an existing `have`/`exact` block.
   The distinct assignment token avoids ambiguity with equality inside `T`.
-- [ ] Define source spans and formatter behavior for each expansion.
+- [x] Define source spans and formatter behavior for each expansion. The
+  formatter preserves the tokens and expanded syntax of every new form, and
+  each form links to its checked term. Computing link sites in one place moved
+  to HoTT A5.
 
 Completion: conveniences elaborate to the same core meaning as their expanded
 forms; shadowing, dependent binders, comments, formatting, and source inspection
@@ -220,13 +223,17 @@ work. Publish measured examples without claiming an unmeasured percentage gain.
 
 ### 1. Explicit rewriting and calculation chains
 
-- [ ] Introduce the goal/reconstruction representation and a rewrite service
-  initially accepting fully instantiated homogeneous equality proofs.
+- [ ] Moved to HoTT A5: introduce the goal/reconstruction representation. The
+  rewrite service exists in `lib/cubical/proof-rewrite.mjs`; tactics still
+  rebuild proofs through closures.
 - [x] Add `rw [p];` and `rw [<- p];`, with rules applied in listed order.
   Initially rewrite the first eligible occurrence in a documented traversal;
   add an explicit occurrence selector before supporting complicated targets.
-- [ ] Support rewriting equality endpoints and ordinary applications with a
-  fixed result type. Report unsupported dependent positions precisely.
+- [x] Support rewriting equality endpoints and ordinary applications with a
+  fixed result type. Report unsupported dependent positions precisely. `rw`
+  reports a match in a dependent position, and the simplifier skips one.
+  Pointing at the subterm needs source spans on core terms (HoTT A5); other
+  constructors are HoTT A2.
 - [x] Add `rfl;` to close goals whose endpoints are definitionally equal.
   `rw` leaves a goal unless it can close it by this rule.
 - [x] Add `calc` for homogeneous equality chains, elaborating each step against
@@ -261,17 +268,22 @@ the previous checked state intact.
 - [x] Traverse supported subterms from children to parents, rewrite in a
   deterministic order, and repeat until stable or a resource limit is reached.
   Reuse congruence and path composition from milestone 1.
-- [ ] Return checked endpoint witnesses, then close by conversion if possible.
+- [x] Return checked endpoint witnesses, then close by conversion if possible.
   Otherwise retain a reconstructed residual goal for the next statement.
-  Diagnose an unfinished block with that residual goal.
-- [ ] Bound rewrite count, matching work, generated term size, and elapsed
-  work; support worker cancellation. Detect repeated states and report the
-  rules involved. A loop or exhausted budget never counts as success. The
-  current traversal and premise-search budgets are recorded per declaration,
-  including failed candidates; broader cancellation and diagnostics remain.
+  Diagnose an unfinished block with that residual goal. Printing the goal in
+  that diagnostic moved to HoTT A6.
+- [ ] Moved to HoTT A4 and A6: bound rewrite count, matching work, generated
+  term size, and elapsed work; support worker cancellation. Detect repeated
+  states and report the rules involved. A loop or exhausted budget never
+  counts as success. Rewrite count, traversal, candidates, term size and
+  premise search are bounded and recorded per declaration, and each tactic's
+  time limit covers only its own search. Deterministic fuel, cancellation and
+  naming the rules in a cycle remain.
 - [ ] Keep associativity, commutativity, distributivity, and expanding
   definitions out of automatic default normalization. Explicit cyclic lists
-  must still terminate with a useful failure.
+  must still terminate with a useful failure. Cyclic lists fail with a cycle
+  diagnostic. No library default rules are registered yet, so this remains a
+  review criterion for the first default set (milestone 3).
 - [x] Show used lemmas and intermediate equalities in the inspector. Each
   simplifier rewrite now exposes its checked path and selected rule.
 
@@ -301,24 +313,27 @@ for this release.
   duplicate registration handling, priorities, and deterministic tie-breaking.
   Checked registrations and named sets now flow through imports, with sorted
   default rules and an error for ambiguous imported set names. A reviewed
-  library default remains open. Universe templates capture the rule environment
+  library default set remains open and stays in this roadmap. Universe templates capture the rule environment
   at their definition, including for later specialization and inspection.
-- [ ] Add `simp;`, `simp [rules];`, local exclusions, and broader `simpa`
+- [x] Add `simp;`, `simp [rules];`, local exclusions, and broader `simpa`
   modes backed by registered sets. These forms and explicit `without [rules]`
   exclusions work for homogeneous equality goals. For other type-valued goals,
   `simp` rewrites along checked paths of types and transports the following
   proof back; `simpa` simplifies the supplied proof type and goal, transports
   between them, and checks the result. Rewriting is limited to the root and
-  ordinary fixed-codomain applications. Arbitrary logical equivalences,
-  proposition-specific maps, and dependent contexts remain open.
-- [ ] Permit conditional rules only when every premise gets an actual checked
+  ordinary fixed-codomain applications. Proposition-specific maps are deferred
+  to HoTT D1; dependent contexts moved to HoTT A2 and E1. Arbitrary logical
+  equivalences are never turned into paths of types.
+- [x] Permit conditional rules only when every premise gets an actual checked
   witness. Explicitly selected local equality witnesses and reflexive premises
-  now work, with witnesses retained in the instantiated theorem application.
+  work, with witnesses retained in the instantiated theorem application.
   A homogeneous equality premise may also be simplified by other selected
-  rules, to depth two and within a shared deadline and premise-search budget.
-  Active rules are excluded from their own premise search; every resulting
-  premise witness is checked before theorem application. General proposition
-  premises remain open.
+  rules, to depth two within the enclosing search's time limit. Each premise
+  is searched once per simplification; after 64 searches, conditional rules
+  whose premise is not already known do not fire. Active rules are excluded
+  from their own premise search; every resulting premise witness is checked
+  before theorem application. General proposition premises are deferred to
+  HoTT D1.
 - [x] Add `simp only [h] at hypothesis;` first for hypotheses with no downstream
   dependencies, or bind a fresh simplified copy. The implemented
   `simp only [rules] at h as h2;` binds a checked fresh equality copy and keeps
@@ -337,45 +352,45 @@ axiom dependencies to a proof; changes to a rule invalidate affected results;
 explicit lists reproduce the proof's success. Traces explain failed premises
 and rule choices without requiring authors to inspect kernel opcodes.
 
-### 4. Dependent rewriting and cubical extensions
+### 4. Dependent rewriting and cubical extensions (moved)
 
-- [ ] Support selected dependent applications and pairs using transport and
-  checked congruence lemmas. Rebuild changed local telescopes and the final
-  goal together; preserve the original context for reconstruction.
-- [ ] Add rewriting under binders with correct freshness and the necessary
-  checked extensionality construction. Support dependent paths through the
-  existing `PathP`/transport bridge.
-- [ ] Curate separate path, transport, and structure simplification sets.
-  Choose an orientation per family of laws; do not install both directions of
-  the path/transport equivalence as automatic rules.
-- [ ] Add proposition-specific goal transformations only with the required
-  maps and `IsProp` evidence. Make set-specific rules explicitly require
-  `IsSet`. Keep type equivalence and type equality operations distinct.
-- [ ] Extend supported cubical constructors individually, preserving faces,
-  higher inductive boundaries, and coherence witnesses.
+This milestone moved to the [HoTT roadmap](hott-automation-roadmap.md), which
+reorders it around folded path operations, transport fillers and checked
+library laws. Its requirements and completion criteria still apply there.
 
-Completion: dependent transport examples shorten without losing their path
-witnesses; nontrivial circle loops survive simplification; mismatched fibers,
-invalid faces, and unjustified proof irrelevance are rejected. Existing
-univalence, path-over, and higher inductive examples continue to check with
-their recorded assumptions.
+| Item | HoTT roadmap |
+| --- | --- |
+| Dependent applications, pairs and rebuilt telescopes | A2, E1, and B1's `subst` |
+| Dependent paths through the `PathP`/transport bridge | E0 and E1 |
+| Rewriting under binders | Not yet scheduled: A2 excludes binder bodies until a binder-aware traversal exists |
+| Path, transport and structure simplification sets | A1, then C1–C2, classified by A7's conversion fixture |
+| Proposition- and set-specific transformations | D0a–D2 (h-level templates, solver and subtype extensionality) |
+| Cubical constructors | E2 squares and bounded boundary-filling experiments |
+
+Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
+`along C by p from v`, `apd_path(f, p)`, `over C along p by { … }`, and
+`simp`/`simpa` transport along checked paths of types.
 
 ### 5. Inferred arguments and goal-directed proof construction
 
 - [ ] Add named arguments and `_` holes for values determined by a known
   function type, supplied arguments, or the expected result type. Implement
   scoped metavariables, occurs checks, and unresolved-hole diagnostics.
+  Builds on the HoTT roadmap's goal layer (A5).
 - [ ] Add opt-in implicit binders and infer universe specializations where
   constraints determine them. Retain explicit specialization and a way to
   supply every implicit argument. Reject ambiguous inference and universe
-  lowering; do not silently change existing explicit signatures.
+  lowering; do not silently change existing explicit signatures. The least
+  universe for an omitted template argument moved to HoTT A9; implicit binders
+  stay here.
 - [ ] Add `apply theorem;` and `refine term;` with visible subgoals and explicit
-  witness obligations. Reuse the goal machinery rather than inventing assumed
-  inhabitants for missing arguments.
-- [ ] Add induction and case blocks whose motives come from the goal when
-  uniquely recoverable; retain explicit motives and generalization controls
-  for dependent arguments. Add `constructor`/witness conveniences as ordinary
-  pair or sum construction, respecting truncation elimination restrictions.
+  witness obligations. Reuse the goal machinery (HoTT A5) rather than inventing
+  assumed inhabitants for missing arguments.
+- [ ] Moved to HoTT B1, B2 and B5: add induction and case blocks whose motives
+  come from the goal when uniquely recoverable; retain explicit motives and
+  generalization controls for dependent arguments. `constructor`/witness
+  conveniences stay here, as ordinary pair or sum construction respecting
+  truncation elimination restrictions.
 
 Completion: representative algebra proofs omit repeated carrier and endpoint
 arguments; inspectors reveal inferred arguments; ambiguity has a local remedy;
@@ -387,10 +402,10 @@ Prioritize these suggestions using the baseline and migration results:
 
 | Feature | Repetition removed | Design constraint |
 | --- | --- | --- |
-| Named record fields and record literals | Repeated nested projections and positional tuples for fields, groups, and maps | Elaborate to the existing dependent pair representation; honor field dependencies and retain expanded views. |
+| Named record fields and record literals | Repeated nested projections and positional tuples for fields, groups, and maps | Elaborate to the existing dependent pair representation; honor field dependencies and retain expanded views. Follows HoTT A8 projections and F1 structure descriptions. |
 | Scoped notation for a chosen structure | Repeated `field_add(K, ...)`-style calls | Make the structure explicit in scope and inspectable; preserve current natural-number operators. |
 | Sections with shared parameters | Repeating carriers, structure data, and assumptions on each local lemma | Generalize declarations deterministically, including dependencies appearing in types; expose resulting signatures. |
-| `ext` with selected lemmas | Repeated function/structure equality boilerplate | Use checked extensionality or structure identity lemmas, with their assumptions and coherence obligations. |
+| `ext` with selected lemmas | Repeated function/structure equality boilerplate | Moved to HoTT B3 and D2. |
 | Expected-type completion and lemma suggestions | Repeated manual searches and parameter assembly | Suggestions insert checkable source and show the resulting obligations. |
 | Algebraic normalization | Long polynomial or commutative algebra calculations | Separate from generic `simp`; produce checked certificates for a specified algebraic structure. |
 
@@ -454,7 +469,8 @@ does not destroy the benefit of folded definitions. Set numerical performance
 budgets from that baseline and record results, rather than promising speculative
 speedups or proof-size reductions.
 
-The first useful release is milestones 1 and 2 plus their inspection and tests.
+The first useful release is milestones 1 and 2 plus their inspection and tests;
+it was delivered together with milestones 0 and 3 on 2026-09-25.
 The broader roadmap is complete when imported rules, dependent support,
 argument inference, and the selected conveniences have documented semantics,
 representative library migrations, and the required validation. Update the

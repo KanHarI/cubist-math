@@ -1,6 +1,6 @@
 # Proof ergonomics: implementation plan and executable design examples
 
-Implementation checkpoint: 2026-09-24. This refines the
+Implementation checkpoint: 2026-09-25. This refines the
 [roadmap](proof-ergonomics-roadmap.md). The [example directory](../examples/proof-ergonomics/README.md)
 pairs explicit current programs with native-checked new syntax. The remaining
 scoped algebra fixture ends in `.cubist.proposed` and is exploratory. Read the
@@ -16,9 +16,14 @@ dependent path conveniences before attempting dependent context replacement.
 Keep general inference, rule search, and structure elaboration separate enough
 to measure their costs independently.
 
-The checked first slice covers parts of PRs 1–7 below. The remaining items in
-those rows and PRs 8–11 are dependency-sized work packages, not estimates of
-elapsed development time. The handoff records the exact supported fragment.
+Status on 2026-09-25: PRs 1 and 3–7 are delivered. PR 2's declaration
+transactions are delivered; its single-goal transitions moved to the
+[HoTT roadmap](hott-automation-roadmap.md)'s goal layer (A5). PR 8 is delivered
+except general proposition premises, deferred to HoTT D1. PR 10 moved to the
+HoTT roadmap (A5, B1, E1). PRs 9 and 11 remain here; they follow HoTT A5, and
+PR 11 also follows its projections and structure descriptions (A8, F1). These
+are dependency-sized work packages, not estimates of elapsed development time.
+The handoff records the exact supported fragment.
 
 ## What the current code actually provides
 

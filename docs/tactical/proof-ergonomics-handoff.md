@@ -414,3 +414,6 @@ near the one-second limit can pass on a fast machine and fail on a slow one.
 Deterministic work budgets would remove that. Candidate failures are still
 classified by the kernel's "Type mismatch." message, and instantiated rules
 still match by conversion while quantified rules match syntactically.
+The [HoTT roadmap](../roadmaps/hott-automation-roadmap.md) now owns this work:
+deterministic fuel is A4, the goal layer and elaborator infrastructure A5,
+and residual-goal diagnostics A6.
