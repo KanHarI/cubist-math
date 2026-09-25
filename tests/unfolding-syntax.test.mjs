@@ -65,7 +65,7 @@ test("both language references and keyword styling describe the scoped syntax", 
     assert.match(text, /with unfolding \[/);
     assert.doesNotMatch(text, /with_unfolding\(/);
   }
-  const viewer = await readFile(new URL("../web/proof.mjs", import.meta.url), "utf8");
+  const viewer = await readFile(new URL("../web/source-tokens.mjs", import.meta.url), "utf8");
   const keywords = viewer.slice(viewer.indexOf("const keywords ="), viewer.indexOf("const builtinForms ="));
   assert.match(keywords, /"with"/);
   assert.match(keywords, /"unfolding"/);

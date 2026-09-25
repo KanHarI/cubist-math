@@ -2,6 +2,8 @@
 // the browser by the same worker as the proof workspace; every name the
 // checker links becomes clickable and opens the workspace's kernel inspector
 // in a side panel, checked and inspected in the same way as in a proof.
+import { tokenPattern, tokenStyle, numeralExpansion } from "../source-tokens.mjs";
+
 const workerURL = new URL("../cubical-worker.mjs", import.meta.url);
 const workspaceURL = new URL("../proof.html?example=1", import.meta.url);
 
@@ -37,34 +39,42 @@ const encode = source => btoa(String.fromCharCode(...new TextEncoder().encode(so
   .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const workspaceLink = source => `${workspaceURL.href}#source=${encode(source)}`;
 
-// The shortest link at each start, without overlaps, as in the workspace.
-function linkRanges(links) {
-  const byStart = new Map();
+// Highlight source as the workspace's Read view does. Names the checker linked
+// become buttons that open the kernel inspector.
+function render(code, source, links = []) {
+  const linkAt = new Map();
   for (const link of links) {
-    const old = byStart.get(link.start);
-    if (!old || link.end - link.start < old.end - old.start) byStart.set(link.start, link);
+    const old = linkAt.get(link.start);
+    if (!old || link.end - link.start < old.end - old.start) linkAt.set(link.start, link);
   }
-  const ranges = [];
-  for (const link of [...byStart.values()].sort((a, b) => a.start - b.start))
-    if (!ranges.length || link.start >= ranges.at(-1).end) ranges.push(link);
-  return ranges;
-}
-
-function renderLinks(code, source, links) {
   const parts = [];
-  let cursor = 0;
-  for (const link of linkRanges(links)) {
-    if (link.start > cursor) parts.push(document.createTextNode(source.slice(cursor, link.start)));
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "example-token";
-    button.textContent = source.slice(link.start, link.end);
-    button.title = `Inspect ${button.textContent} as a checked kernel term`;
-    button.onclick = () => openInspector(source, link.start);
-    parts.push(button);
-    cursor = link.end;
+  for (const match of source.matchAll(tokenPattern)) {
+    const text = match[0], start = match.index;
+    if (text.startsWith("//")) {
+      const span = document.createElement("span");
+      span.className = "comment";
+      span.textContent = text;
+      parts.push(span);
+      continue;
+    }
+    const expansion = numeralExpansion(text) ?? linkAt.get(start)?.expansion;
+    const style = tokenStyle(text, expansion), link = linkAt.get(start);
+    if (link) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `example-token${style ? ` ${style}` : ""}`;
+      button.textContent = text;
+      button.title = expansion ? `${text} expands to ${expansion}` : `Inspect ${text} as a checked kernel term`;
+      button.onclick = () => openInspector(source, start);
+      parts.push(button);
+    } else if (style) {
+      const span = document.createElement("span");
+      span.className = style;
+      span.textContent = text;
+      if (expansion) span.title = `${text} expands to ${expansion}`;
+      parts.push(span);
+    } else parts.push(document.createTextNode(text));
   }
-  parts.push(document.createTextNode(source.slice(cursor)));
   code.replaceChildren(...parts);
 }
 
@@ -115,13 +125,16 @@ function enhance(pre, code) {
   pre.after(bar);
   checkInTurn(source).then(result => {
     const links = result?.links ?? [];
-    if (links.length) renderLinks(code, source, links);
+    if (links.length) render(code, source, links);
     const evaluations = (result?.evaluations ?? []).map(evaluation => `${evaluation.name}: ${evaluation.value}`);
     status.textContent = [links.length ? "Click a name to inspect its kernel term" : result?.error ? "Not checked" : "",
       ...evaluations.map(text => `evaluate ${text}`)].filter(Boolean).join(" · ");
   });
 }
 
+// Every Cubist example is highlighted at once; checked ones gain links later.
+for (const code of document.querySelectorAll('pre > code[data-check]:not([data-check="cli"])'))
+  render(code, code.textContent);
 const examples = [...document.querySelectorAll('pre > code[data-check="accept"], pre > code[data-check="reject"]')];
 const observer = new IntersectionObserver(entries => {
   for (const entry of entries) if (entry.isIntersecting) {

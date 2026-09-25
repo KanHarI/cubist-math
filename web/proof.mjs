@@ -9,6 +9,7 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
+import { keywords, builtinForms } from "./source-tokens.mjs";
 
 const query = new URLSearchParams(location.search);
 const backend = "cubical";
@@ -413,55 +414,6 @@ function renderResult() {
   detail.textContent = `${last.instructionCount.toLocaleString()} checked instructions. ${last.axiomCount ? last.axiomCount + " explicit axioms in this module." : "No axioms."}`;
   $("result").append(detail);
 }
-const keywords = new Set([
-  "import",
-  "def",
-  "forall",
-  "exists",
-  "and",
-  "or",
-  "let",
-  "obtain",
-  "intro",
-  "have",
-  "cases",
-  "left",
-  "right",
-  "exact",
-  "rfl", "calc", "rw", "simp", "simpa", "simp_rule", "simp_set", "priority", "only", "without", "using", "by", "occurrence", "ext", "over", "along", "from",
-  "private",
-  "export",
-  "verify",
-  "with",
-  "unfolding",
-  "computable",
-  "evaluate",
-  "expecting",
-  "opaque",
-  "axioms",
-  "allow",
-  "none",
-  "intro",
-  "induction",
-  "zero",
-  "succ",
-  "fun",
-  "match",
-  "return",
-  "as",
-]);
-// Language-provided forms share the keyword palette; ordinary library and
-// user-defined functions retain the green reference style.
-const builtinForms = new Set([
-  "W", "sup", "wrec",
-  "Interval", "path", "PathP", "at", "comp", "face", "flip", "meet", "join",
-  "Pushout", "push_left", "push_right", "push_path", "pushout_induction",
-  "Nat", "Unit", "Void", "Universe", "tt", "succ", "refl", "absurd",
-  "sym", "trans", "cong", "transport", "apd", "apd_path", "Eq", "typed",
-  "induct", "unpack", "pair_induction", "unit_induction", "path_induction",
-  "Choice", "LEM", "FunExt", "Truncate",
-  "TruncateIntro", "TruncateProp", "TruncateElim", "Univalence", "UnivalenceBeta", "UnivalenceEta", "ua", "idtoequiv",
-]);
 function renderSource() {
   $("read-source").replaceChildren();
   if (!last) return;

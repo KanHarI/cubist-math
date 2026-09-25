@@ -62,9 +62,15 @@ dd { margin: 5px 0 0; }
   :root { --drawer-width: min(760px, 48vw); }
   body.inspector-open { padding-right: var(--drawer-width); }
 }
-.example-token { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer;
-  border-bottom: 1px dotted #8aa792; }
-.example-token:hover, .example-token:focus-visible { background: #e3ede4; outline: none; }
+/* Source highlighting, as in the proof workspace's Read view. */
+pre code .keyword { color: #735689; font-weight: 600; }
+pre code .macro { color: #98531c; font-weight: 600; text-decoration-line: underline; text-decoration-style: dotted;
+  text-decoration-color: #cba888; text-underline-offset: 3px; }
+pre code .comment { color: #7c8d80; }
+.example-token { padding: 0; border: 0; border-radius: 2px; background: transparent; font: inherit; line-height: inherit;
+  cursor: pointer; color: #216142; text-decoration: underline; text-decoration-color: #abc3a7; text-underline-offset: 3px; }
+.example-token.keyword { text-decoration-color: #b7a7c4; }
+.example-token:hover, .example-token:focus-visible { background: #dcedd4; outline: none; }
 .example-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; margin: -10px 0 18px;
   font-size: 12px; color: #627468; }
 .example-bar a { color: #346447; }
