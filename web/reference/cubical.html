@@ -154,7 +154,7 @@ def dependent_pointwise(A : U0, C : A -&gt; U0, f g : forall a : A, C(a),
   ext a;
   exact h(a);
 }</code></pre>
-            <p>Cubical paths make function extensionality provable: <code>path i => fun x => h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the goal is <code>f = g</code> with <code>f g : forall x : A, C(x)</code>. It uses no assumption, unlike the <a href="assumptions.html#axioms"><code>FunExt</code></a> interface. Unlike <code>rw</code>, <code>ext</code> never closes the block: a statement proving <code>f(x) = g(x)</code> must follow, even when that holds by <code>rfl</code>.</p>
+            <p>Cubical paths make function extensionality provable: <code>path i => fun x => h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the goal is <code>f = g</code> with <code>f g : forall x : A, C(x)</code>. It uses no assumption; <a href="assumptions.html#univalence"><code>FunExt</code></a> builds the same term. Unlike <code>rw</code>, <code>ext</code> never closes the block: a statement proving <code>f(x) = g(x)</code> must follow, even when that holds by <code>rfl</code>.</p>
             <pre><code data-check="reject" data-error="ext requires equality of functions.">def not_functions(n : Nat) : n = n {
   ext x;
   rfl;
