@@ -289,6 +289,22 @@ export class CubicalProgram {
       complete: outputs.length > 0 && outputs.every(d => d.verified || d.template)
         && !this.gaps.some(gap=>gap.directive), sources: this.sources };
   }
+  // Check one more module on top of the loaded ones, as a REPL entry does,
+  // and report only what it added. The program keeps presenting its main
+  // module: inspection, export and metadata are unchanged.
+  async checkEntry(source, name) {
+    const kept = { main: this.main, metadata: this.metadata, links: this.links.length,
+      gaps: this.gaps.length, evaluations: this.evaluations.length };
+    try {
+      await this.check(source, name);
+      const declarations = Object.values(this.symbols).filter(info => !info.sourceModule && info.binding.startsWith(`${name}__`));
+      for (const info of declarations) Object.assign(info, { sourceModule: name, sourceName: info.name });
+      return { declarations, evaluations: this.evaluations.slice(kept.evaluations), gaps: this.gaps.slice(kept.gaps) };
+    } finally {
+      Object.assign(this, { main: kept.main, metadata: kept.metadata });
+      this.links.length = kept.links; this.gaps.length = kept.gaps; this.evaluations.length = kept.evaluations;
+    }
+  }
   generatedSymbols() {
     const specializations = new Map();
     for (const key of this.checker.schemaSpecializations.keys()) {
