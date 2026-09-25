@@ -97,6 +97,7 @@ struct cc_kernel {
     unsigned recursion;
     char error[192];
     cc_error_kind error_kind; /* meaningful only while error is set */
+    cc_term mismatch_found, mismatch_expected; /* meaningful for a MISMATCH error */
 };
 
 cc_context ck_extend(cc_kernel *, uint32_t, cc_term, const cc_context *);

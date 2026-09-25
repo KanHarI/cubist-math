@@ -152,7 +152,7 @@ def identity_function(A : U0) : A -&gt; A {
   exact fun (a : A) =&gt; a;
 }</code></pre>
             <pre><code data-check="reject">def wrong_type(A B : U0, a : A) : B {
-  exact a;  // Error: Type mismatch.
+  exact a;  // Error: Type mismatch: found A, expected B.
 }</code></pre>
           </section>
           <section id="have">
@@ -287,7 +287,8 @@ def reassociate(A B C : U0, value : A or (B or C)) : (A or B) or C {
 
 def default(value : Unit or Unit) : Shape(value) {
   cases value {
-    left a =&gt; { exact 0; }  // Error: Type mismatch.
+    // Error: Type mismatch: found (Unit → Nat), expected (Unit → Shape(value)).
+    left a =&gt; { exact 0; }
     right b =&gt; { exact tt; }
   }
 }</code></pre>

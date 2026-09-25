@@ -63,6 +63,15 @@ unsigned cb_error_kind(uint32_t token) {
     return cc_kernel_error_kind(s->kernel);
 }
 
+/* For a mismatch error, side 0 is the type found and side 1 the type
+ * expected; otherwise 0. */
+uint32_t cb_mismatch(uint32_t token, unsigned side) {
+    browser_session *s = lookup(token);
+    cc_term found, expected;
+    if (!s || s->error || side > 1 || !cc_kernel_mismatch(s->kernel, &found, &expected)) return 0;
+    return side ? expected : found;
+}
+
 void cb_optimizations(uint32_t token, unsigned flags) {
     browser_session *s = lookup(token);
     if (s) cc_kernel_set_optimizations(s->kernel, flags);

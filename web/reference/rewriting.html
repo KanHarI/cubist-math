@@ -86,7 +86,7 @@ def successor_first(n m : Nat) : succ(n) + m = succ(n + m) {
             <pre><code data-check="reject">import primes;
 
 def plus_zero(n : Nat) : n + 0 = n {
-  rfl;  // Error: Type mismatch.
+  rfl;  // Error: Type mismatch: found (add(n, 0) =[Nat] add(n, 0)), expected (add(n, 0) =[Nat] n).
 }</code></pre>
             <pre><code data-check="reject">def not_an_equality : Nat {
   rfl;  // Error: rfl requires a homogeneous equality goal.
@@ -147,7 +147,8 @@ def stops_early(n : Nat) : (n + 0) + 0 = n {
 
 def wrong_step_proof(n : Nat) : (n + 0) + 0 = n {
   calc {
-    (n + 0) + 0 = n by nat_add_zero(n);  // Error: Type mismatch.
+    // Error: Type mismatch: found (add(n, 0) =[Nat] n), expected (add(add(n, 0), 0) =[Nat] n).
+    (n + 0) + 0 = n by nat_add_zero(n);
   }
 }</code></pre>
             <pre><code data-check="reject">def not_an_equality : Nat {
@@ -293,7 +294,8 @@ def simpa_example(n m : Nat, h : n + 0 = m) : n = m + 0 {
             <pre><code data-check="reject">import primes;
 
 def different_after_simplifying(n m : Nat, h : n = m + 1) : n + 0 = m {
-  simpa only [nat_add_zero] using h;  // Error: Type mismatch.
+  // Error: Type mismatch: found (n =[Nat] add(m, 1)), expected (n =[Nat] m).
+  simpa only [nat_add_zero] using h;
 }</code></pre>
           </section>
           <section id="simp-types">

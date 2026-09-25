@@ -1,9 +1,49 @@
 import { CubicalSyntax } from "./cubical-syntax.mjs";
-import { T } from "./dist/cubical-runtime/core.mjs";
+import { T, substituteTerm } from "./dist/cubical-runtime/core.mjs";
 import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
 import { NameSupply } from "./dist/cubical-runtime/names.mjs";
+import { cubicalText } from "./cubical-notation.mjs";
 
 const speculativeFailures = new Set(["mismatch", "budget", "deadline"]);
+const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "W"]);
+
+// For messages only: reduce beta-redexes, within a budget, and give generated
+// names back their source stems (`A3` → `A`, `native10` → `x`) where no two
+// names would clash. The result is never checked or stored.
+export function displayTerm(term, budget = 256) {
+  const reduced = new WeakMap();
+  const beta = t => {
+    if (!t || typeof t !== "object") return t;
+    if (reduced.has(t)) return reduced.get(t);
+    let result = Array.isArray(t) ? t.map(beta) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, beta(value)]));
+    while (result.tag === "App" && result.fn?.tag === "Lam" && budget-- > 0)
+      result = beta(substituteTerm(result.fn.body, result.fn.name, result.arg));
+    reduced.set(t, result);
+    return result;
+  };
+  const shown = beta(term), names = new Set(), seen = new WeakSet();
+  const collect = t => {
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
+    if (namedBinders.has(t.tag) && typeof t.name === "string") names.add(t.name);
+    Object.values(t).forEach(collect);
+  };
+  collect(shown);
+  const stem = name => name.startsWith("__") ? name : /^native\d+$/.test(name) ? "x" : name.replace(/\d+$/, "") || name;
+  const count = new Map();
+  for (const name of names) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
+  const rename = name => count.get(stem(name)) === 1 && !(names.has(stem(name)) && stem(name) !== name) ? stem(name) : name;
+  const renamed = new WeakMap();
+  const apply = t => {
+    if (!t || typeof t !== "object") return t;
+    if (renamed.has(t)) return renamed.get(t);
+    const result = Array.isArray(t) ? t.map(apply) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, apply(value)]));
+    if (namedBinders.has(t.tag) && typeof t.name === "string") result.name = rename(t.name);
+    renamed.set(t, result);
+    return result;
+  };
+  return apply(shown);
+}
 
 // Elaboration queries use the native checker and demand only a type's outer
 // constructor. JavaScript neither normalizes proofs nor approves conversions.
@@ -59,14 +99,39 @@ export class NativeCubicalElaborator {
     for (const [name, type] of [...this.assumptions].reverse()) if (names.has(name)) visit(type);
     return new Map([...this.assumptions].filter(([name]) => names.has(name)));
   }
+  // A type mismatch names both types in Cubist notation. The kernel's handles
+  // are read at once, before any rollback can invalidate them.
+  describeMismatch(error, dimensions) {
+    if (error?.kind !== "mismatch" || !error.mismatch?.found || error.described) return error;
+    error.described = true;
+    try {
+      const [found, expected] = [error.mismatch.found, error.mismatch.expected]
+        .map(handle => this.displayText(this.syntax.decode(handle, dimensions)));
+      error.message = `Type mismatch: found ${found}, expected ${expected}.`;
+    } catch { /* Keep the kernel's message. */ }
+    return error;
+  }
+  displayText(term) {
+    // Definitions show their source names, without the module prefix, and
+    // assumptions their labels.
+    this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
+      : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
+      : name.includes("__") && !name.startsWith("__") ? { name: name.slice(name.indexOf("__") + 2) } : undefined });
+    const text = cubicalText(displayTerm(term), this.displaySymbols);
+    return text.length > 160 ? `${text.slice(0, 159)}…` : text;
+  }
+  checkSyntax(term, expected, context, dimensions, describe = true) {
+    try { return this.syntax.check(term, expected, [...this.context(context)], dimensions); }
+    catch (error) { throw describe ? this.describeMismatch(error, dimensions) : error; }
+  }
   infer(term, context = new Map(), dimensions = this.dimensions) {
-    const checked = this.syntax.check(term, null, [...this.context(context)], dimensions);
+    const checked = this.checkSyntax(term, null, context, dimensions);
     this.steps += checked.checkingSteps;
     return { term: checked.term, type: checked.type, native: { ok: true,
       arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()] } };
   }
-  check(term, expected, context = new Map(), dimensions = this.dimensions) {
-    const checked = this.syntax.check(term, expected, [...this.context(context)], dimensions);
+  check(term, expected, context = new Map(), dimensions = this.dimensions, describe = true) {
+    const checked = this.checkSyntax(term, expected, context, dimensions, describe);
     this.steps += checked.checkingSteps;
     return checked.term;
   }
@@ -97,7 +162,8 @@ export class NativeCubicalElaborator {
   // {ok: false, failure, error} when the kernel reports a type mismatch or
   // runs out of steps or time. Any other rejection throws, as in check().
   attempt(term, expected, context = new Map(), dimensions = this.dimensions) {
-    try { return { ok: true, term: this.check(term, expected, context, dimensions) }; }
+    // Speculative failures are answers, not diagnostics: they are not described.
+    try { return { ok: true, term: this.check(term, expected, context, dimensions, false) }; }
     catch (error) {
       if (!speculativeFailures.has(error?.kind)) throw error;
       return { ok: false, failure: error.kind, error };
@@ -117,7 +183,9 @@ export class NativeCubicalElaborator {
       body = { tag: "Lam", name: parameter, domain, body };
       signature = { tag: "Pi", name: parameter, domain, body: signature };
     }
-    const reference = this.kernel.define(name, this.syntax.encode(body), this.syntax.encode(signature));
+    let reference;
+    try { reference = this.kernel.define(name, this.syntax.encode(body), this.syntax.encode(signature)); }
+    catch (error) { throw this.describeMismatch(error, new Map()); }
     this.definitionViews.set(name, { term, type, assumptions, unfoldingHints: [...this.kernel.unfoldingHints] });
     let result = this.syntax.decode(reference);
     for (const parameter of assumptions.keys()) result = { tag: "App", fn: result, arg: { tag: "Var", name: parameter } };
@@ -177,7 +245,7 @@ export class NativeCubicalElaborator {
   }
 
   verify(term, expected = null, assumptions = []) {
-    const checked = this.syntax.check(term, expected, [...this.context(new Map(assumptions))], this.dimensions);
+    const checked = this.checkSyntax(term, expected, new Map(assumptions), this.dimensions);
     const normal = this.syntax.decode(this.kernel.normalize(checked.expression), this.dimensions);
     return { ...checked, normal, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()] } };
   }

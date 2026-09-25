@@ -91,7 +91,7 @@ evaluate 2 + 2 expecting 5;  // Error: The term evaluates to 4, not 5.</code></p
 }</code></pre>
             <p>A value of the wrong type is rejected:</p>
             <pre><code data-check="reject">def not_unit : Unit {
-  exact 0;  // Error: Type mismatch.
+  exact 0;  // Error: Type mismatch: found Nat, expected Unit.
 }</code></pre>
           </section>
           <section id="tour-pairs">
@@ -133,7 +133,7 @@ evaluate double_again(4) expecting 8;</code></pre>
 
 def double(n : Nat) = n + n;
 
-def wrong_argument = double(tt);  // Error: Type mismatch.</code></pre>
+def wrong_argument = double(tt);  // Error: Type mismatch: found Unit, expected Nat.</code></pre>
             <p>The argument <code>tt</code> has type <code>Unit</code>, but <code>double</code> takes a <code>Nat</code>.</p>
           </section>
           <section id="tour-types">
@@ -156,7 +156,7 @@ def nat_is_a_type : U0 {
 }</code></pre>
             <p>A universe does not contain itself:</p>
             <pre><code data-check="reject">def too_big : U0 {
-  exact U0;  // Error: Type mismatch.
+  exact U0;  // Error: Type mismatch: found U1, expected U0.
 }</code></pre>
             <p>A function’s result type can depend on its argument. <code>forall A : U0, A -> A</code> is the type of functions that take a type <code>A</code> and a value of <code>A</code>, and return a value of <code>A</code>. Read as a statement, it says that every type implies itself. The <a href="first-proof.html#first-proof">next chapter</a> proves it.</p>
           </section>

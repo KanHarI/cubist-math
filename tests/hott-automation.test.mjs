@@ -60,13 +60,13 @@ test("closed assumption-free results compute to canonical values (invariant 10)"
 // names the milestone expected to make the probe check; a probe without one
 // must stay rejected.
 const rejectedProbes = {
-  rejected_right_unit:{reason:/^Type mismatch\./},
-  rejected_cong_trans:{reason:/^Type mismatch\./},
-  rejected_transport_left:{reason:/^Type mismatch\./},
-  rejected_constant_refl:{reason:/^Type mismatch\./},
-  rejected_sequential_line:{reason:/^Type mismatch\./},
-  rejected_convertible_rule_refl:{reason:/^Type mismatch\./},
-  rejected_independent_fillers:{reason:/^Type mismatch\./},
+  rejected_right_unit:{reason:/^Type mismatch: found .+, expected .+\./},
+  rejected_cong_trans:{reason:/^Type mismatch: found .+, expected .+\./},
+  rejected_transport_left:{reason:/^Type mismatch: found .+, expected .+\./},
+  rejected_constant_refl:{reason:/^Type mismatch: found .+, expected .+\./},
+  rejected_sequential_line:{reason:/^Type mismatch: found .+, expected .+\./},
+  rejected_convertible_rule_refl:{reason:/^Type mismatch: found .+, expected .+\./},
+  rejected_independent_fillers:{reason:/^Type mismatch: found .+, expected .+\./},
   rejected_sym_pathp:{reason:/Unbound cubical dimension/,until:"E0 or A1a"},
   rejected_rule_constant:{reason:/not determined by the matched side/,until:"A1"},
   rejected_rule_ap:{reason:/not determined by the matched side/,until:"A1"},

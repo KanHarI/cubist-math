@@ -105,6 +105,14 @@ cc_error_kind cc_kernel_error_kind(const cc_kernel *k) {
     return k->error[0] ? k->error_kind : CC_ERROR_NONE;
 }
 
+bool cc_kernel_mismatch(const cc_kernel *k, cc_term *found, cc_term *expected) {
+    if (!k || !found || !expected || !k->error[0] || k->error_kind != CC_ERROR_MISMATCH)
+        return false;
+    *found = k->mismatch_found;
+    *expected = k->mismatch_expected;
+    return true;
+}
+
 cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
                 cc_term a, cc_term b, cc_term c, cc_term d) {
     if (!k || k->error[0])

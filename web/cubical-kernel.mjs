@@ -12,6 +12,8 @@ export const cubicalKinds = [
 // A rejected kernel request. `kind` classifies it, from cc_error_kind, so no
 // caller needs to read the message: "mismatch" (a type is not convertible to
 // the expected one), "budget" or "deadline" (no judgement was made), "other".
+// A mismatch also carries `mismatch`, the handles of the type found and the
+// type expected; they are valid until the next rollback.
 const errorKinds = ["none", "mismatch", "budget", "deadline", "other"];
 export class KernelError extends Error {
   constructor(message, kind = "other") { super(message); this.kind = kind; }
@@ -93,7 +95,12 @@ export class CubicalKernel {
   // error kind.
   failure(fallback = "") {
     const kind = this.errorKind();
-    return new KernelError(this.error() || fallback, kind === "none" ? "other" : kind);
+    const error = new KernelError(this.error() || fallback, kind === "none" ? "other" : kind);
+    if (kind === "mismatch") error.mismatch = {
+      found: this.module._cb_mismatch(this.handle, 0) >>> 0,
+      expected: this.module._cb_mismatch(this.handle, 1) >>> 0,
+    };
+    return error;
   }
   dispose() {
     if (this.handle) this.module._cb_free(this.handle);

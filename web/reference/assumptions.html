@@ -98,7 +98,7 @@ def truncate_types = Truncate(U1, U0);
 def generic(U : Universe, A : U) = Truncate(U, A);</code></pre>
             <p>The checker specializes each assumption to its universe before kernel checking: the kernel sees a named context assumption with the specialized type, such as <code>LEM(U0)</code>. The inspector shows the generic schema, the universe and the checked instance separately.</p>
             <p class="note">Truncation returns a type in <code>U0</code> even for larger inputs. Thus <code>Truncate(U1, U0)</code> is valid, but <code>Truncate(U0, U0)</code> is not, because <code>U0</code> is not a type in <code>U0</code>.</p>
-            <pre><code data-check="reject">def too_large = Truncate(U0, U0);  // Error: Type mismatch.</code></pre>
+            <pre><code data-check="reject">def too_large = Truncate(U0, U0);  // Error: Type mismatch: found U1, expected U0.</code></pre>
             <pre><code data-check="reject">// Error: Logical assumptions require a concrete universe and an explicit native context.
 def no_universe(A : U0) = Truncate(A);</code></pre>
             <pre><code data-check="reject">// Error: Too many arguments to TruncateIntro.
