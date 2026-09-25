@@ -56,6 +56,21 @@ try {
     assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
     console.log(`PASS static worker, WASM, checking and folded inspection: ${proof} (${backend})`);
   }
+  // Reference examples are checked in the browser; a linked name opens the
+  // workspace's kernel inspector for it.
+  await page.goto(new URL("reference/types.html", base).href);
+  await page.waitForSelector("#values .example-token");
+  await page.locator("#values .example-token", { hasText: "seven" }).first().click();
+  const inspector = page.frameLocator(".inspector-drawer iframe");
+  await inspector.locator("#inspect-name").filter({ hasText: /^seven$/ }).waitFor();
+  await inspector.locator("#kernel-view:not([disabled])").waitFor();
+  assert.equal((await inspector.locator("#kernel-expression").textContent()).trim(), "7");
+  assert.equal((await inspector.locator("#kernel-type").textContent()).trim(), "Nat");
+  await page.locator("#tour-numbers").scrollIntoViewIfNeeded();
+  await page.waitForSelector("#tour-numbers .example-token");
+  assert.match(await page.locator("#tour-numbers .example-bar span").first().textContent(), /evaluate at line 7: 6/);
+  assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?example=1#source=/);
+  console.log("PASS reference examples: in-browser checking, linked names, embedded kernel inspector, evaluate results");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status").textContent.includes("checked"));
   assert.equal(await page.locator("#diagnostic").isVisible(), false);

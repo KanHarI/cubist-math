@@ -634,3 +634,10 @@ select {
   font-size: 0.9em;
   overflow-wrap: anywhere;
 }
+
+/* Embedded in a reference page: only the checked source and the inspector. */
+body.embedded > header, body.embedded .introduction, body.embedded .toolbar,
+body.embedded .compiler-options, body.embedded .hint, body.embedded #language-guide,
+body.embedded footer { display: none; }
+body.embedded main { padding-top: 12px; }
+body.embedded .workspace { grid-template-columns: minmax(0, 1fr); }
