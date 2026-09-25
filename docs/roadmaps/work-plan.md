@@ -47,7 +47,7 @@ packages (HoTT A1, A2, A4, A6) continue alongside stage 2.
 | I0.3 | Start the new library tree | Plan | I0.2 | S |
 | I0.4 | Remove local scratch state (done) | — | — | S |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` | Ergonomics 8 | — | M |
-| D0.1 | Checked-example harness for the reference | Plan | — | S |
+| D0.1 | Checked-example harness for the reference (done) | Plan | — | S |
 | D0.2 | Reference chapters for the stable language | Plan | D0.1 | L |
 
 **I0.2 Archive the first library.** Done on 2026-09-25, working off `main`
@@ -87,7 +87,10 @@ curated pass's findings are recorded in the ergonomics handoff.
 - Acceptance: on the archive, the computed dependencies agree with today's
   assumption lists; negative tests name the dependency chain.
 
-**D0.1 Checked-example harness.** A test extracts every code block from the
+**D0.1 Checked-example harness.** Done on 2026-09-25 as
+`tests/reference-examples.test.mjs`. It found that the reference documented
+`unfold(term)`, which was removed with the cubical kernel; that passage now
+describes conversion instead. A test extracts every code block from the
 reference pages. It checks those marked `accept` and requires those marked
 `reject` to fail with their stated message. Today's `data-check` markers are
 inert, so every current example is unverified. Acceptance: all current

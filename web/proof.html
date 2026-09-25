@@ -251,7 +251,7 @@
           <code>P</code> and leaves <code>Q</code> to prove. The type comes from
           the goal, including when the goal is a named definition.
         </p>
-        <pre>import sets;
+        <pre data-check="accept">import sets;
 def use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
   intro A;       // A : U0
   intro setA;    // setA : IsSet(A)
@@ -298,7 +298,7 @@ def use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
           <code>A + B</code> in kernel notation. Mere existence requires
           truncation; <code>exists</code> does not truncate automatically.
         </p>
-        <pre>def identity(A : U0, x : A) = x;
+        <pre data-check="accept">def identity(A : U0, x : A) = x;
 def pair = typed(Nat and Nat, (0, 1));
 def either = typed(Unit or Nat, left(tt));
 def pair_first : Nat {
@@ -356,7 +356,7 @@ def pair_first : Nat {
           left side then right. If the new goal holds by computation, <code>rw</code>
           closes the block; otherwise a following statement proves it.
         </p>
-        <pre>import primes;
+        <pre data-check="accept">import primes;
 def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
   calc {
     (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
@@ -407,7 +407,7 @@ def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
         <p>
           Named definitions have checked bodies that the checker can unfold.
           <code>opaque def</code> currently behaves like <code>def</code>.
-          <code>unfold(term)</code> explicitly unfolds definitions. In the native cubical backend,
+          Conversion unfolds them as it needs them. In the native cubical backend,
           <code>with unfolding [alias, another_alias] { expression }</code> suggests which
           checked definitions to unfold while elaborating the enclosed expression.
           The compiler can retain a checked helper for this block so the enclosing

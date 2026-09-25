@@ -66,10 +66,10 @@ premise solver, `apply`, or general implicit argument
 syntax. Universe parameters are explicitly specialized by the elaborator until
 the kernel's G0 makes universe-generic definitions checked kernel terms.
 
-The checker already computes and unfolds definitions on demand.
-`unfold(term)` explicitly normalizes a term and its type;
-`with unfolding [names] { expression }` supplies a selective conversion strategy.
-Neither uses arbitrary equality lemmas as rewrite rules. Preserve this
+The checker already computes and unfolds definitions on demand, and
+`with unfolding [names] { expression }` supplies a selective conversion
+strategy. (An explicit `unfold(term)` existed before the cubical kernel and
+was removed with it.) Neither uses arbitrary equality lemmas as rewrite rules. Preserve this
 distinction: theorem simplification constructs paths; conversion remains the
 kernel's existing judgment of computational equality.
 
