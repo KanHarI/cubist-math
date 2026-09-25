@@ -5,6 +5,7 @@
 import { tokenPattern, tokenStyle, numeralExpansion } from "../source-tokens.mjs";
 import { enableTokenTips } from "../token-tips.mjs";
 import { sourceModules, cubicalSourceModules, libraryModules } from "../mathscript/modules.mjs";
+import { replTranscript } from "../repl-session.mjs";
 
 const workerURL = new URL("../cubical-worker.mjs", import.meta.url);
 const workspaceURL = new URL("../proof.html?example=1", import.meta.url);
@@ -149,10 +150,51 @@ function enhance(pre, code) {
   });
 }
 
+// A REPL example is a read-only transcript (see replTranscript). It runs on
+// top of the example before it, as the test suite checks; Fork into REPL
+// replays it in the page's REPL bar.
+function renderTranscript(code) {
+  const entries = replTranscript(code.textContent), pre = code.parentElement;
+  const examples = [...document.querySelectorAll("pre > code[data-check]")];
+  const base = examples.slice(0, examples.indexOf(code)).reverse().find(other => other.dataset.check === "accept");
+  const parts = [];
+  const line = (className, text, prompt) => {
+    const span = document.createElement("span"), content = document.createElement("span");
+    span.className = className;
+    if (prompt) span.append(Object.assign(document.createElement("span"), { className: "repl-prompt", textContent: "› " }));
+    render(content, text);
+    span.append(content);
+    return span;
+  };
+  for (const { input, results } of entries) {
+    parts.push(line("repl-transcript-entry", input, true));
+    for (const result of results) parts.push(line("repl-transcript-result", result));
+  }
+  code.replaceChildren(...parts);
+  pre.classList.add("repl-transcript");
+  const bar = document.createElement("div"), note = document.createElement("span");
+  bar.className = "example-bar";
+  note.textContent = base ? "A REPL session with the example above loaded" : "A REPL session";
+  bar.append(note);
+  // Pages with a REPL bar load its script.
+  if (document.querySelector('script[src*="repl-dock"]')) {
+    const fork = document.createElement("button");
+    fork.type = "button";
+    fork.className = "repl-fork";
+    fork.textContent = "Fork into REPL ↓";
+    fork.title = "Run this session in the REPL bar, where you can continue it";
+    fork.onclick = () => document.dispatchEvent(new CustomEvent("cubist-repl-fork",
+      { detail: { base: base?.textContent ?? null, inputs: entries.map(entry => entry.input) } }));
+    bar.append(fork);
+  }
+  pre.after(bar);
+}
+
 // Every Cubist example is highlighted at once; checked ones gain links later.
 enableTokenTips();
-for (const code of document.querySelectorAll('pre > code[data-check]:not([data-check="cli"])'))
+for (const code of document.querySelectorAll('pre > code[data-check]:not([data-check="cli"]):not([data-check="repl"])'))
   render(code, code.textContent);
+for (const code of document.querySelectorAll('pre > code[data-check="repl"]')) renderTranscript(code);
 const examples = [...document.querySelectorAll('pre > code[data-check="accept"], pre > code[data-check="reject"]')];
 const observer = new IntersectionObserver(entries => {
   for (const entry of entries) if (entry.isIntersecting) {

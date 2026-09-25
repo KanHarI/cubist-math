@@ -78,11 +78,42 @@ try {
   assert.match(await page.locator(".token-tip:not([hidden])").textContent(), /^\d+ expands to succ\(/);
   assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?example=1#source=/);
   console.log("PASS reference examples: in-browser checking, linked names, embedded kernel inspector, evaluate results, instant macro tips");
+  // The reference's REPL bar opens and closes.
+  const dockToggle = page.locator(".repl-dock-toggle");
+  await dockToggle.click();
+  assert.equal(await page.locator(".repl-dock-body").isVisible(), true);
+  await dockToggle.click();
+  assert.equal(await page.locator(".repl-dock-body").isVisible(), false);
+  // Enter each REPL entry and wait for its results.
+  const enter = async text => {
+    const input = page.locator(".repl-text").last();
+    await input.fill(text);
+    await input.press("Enter");
+    await page.waitForFunction(() => !document.querySelector(".repl-form.busy"));
+  };
+  const lastResults = async count => (await page.locator(".repl-log").last().locator(".repl-result").allTextContents()).slice(-count);
+  // A read-only REPL transcript forks into the REPL bar, with the example
+  // before it loaded, and can be continued there.
+  await page.goto(new URL("reference/first-proof.html", base).href);
+  await page.locator(".repl-fork").nth(1).click();
+  await page.waitForFunction(() => document.querySelectorAll(".repl-dock .repl-result").length >= 4 && !document.querySelector(".repl-form.busy"));
+  await enter("evaluate exists_greater_number(10)");
+  assert.deepEqual(await lastResults(2), ["(6, 0, refl(6))", "(11, 0, refl(11))"]);
+  console.log("PASS read-only REPL transcripts fork into the REPL bar");
   await page.goto(new URL("proof.html?proof=naturals", base).href);
   await page.locator("#read-source .reference").first().waitFor();
   assert.equal(await page.locator("#proof-title").textContent(), "Library: naturals");
   assert.equal(await page.locator("#archive-note").isHidden(), true);
-  console.log("PASS library module in the workspace");
+  // The console under a proof has the proof's names loaded.
+  await enter("typeof nat_add_comm;");
+  await enter("let y := add(2, 3);");
+  await enter("y");
+  assert.deepEqual(await lastResults(3), ["forall x : Nat, forall y : Nat, x + y = y + x", "y : Nat", "5"]);
+  console.log("PASS library module in the workspace, with its console");
+  await page.goto(new URL("repl.html", base).href);
+  for (const text of ["let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
+  assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "Type mismatch: found 7 = 7, expected x = 8."]);
+  console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status").textContent.includes("checked"));
   assert.equal(await page.locator("#diagnostic").isVisible(), false);

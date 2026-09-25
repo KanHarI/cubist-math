@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Cubist · Proof workspace</title>
     <link rel="stylesheet" href="proof.css" />
+    <link rel="stylesheet" href="repl.css" />
   </head>
   <body>
     <header>
@@ -15,6 +16,7 @@
         <a href="index.html">Proof highlights</a>
         <a href="workbench.html">Kernel workbench</a
         ><a href="#language-guide" id="guide-link">Language quick reference</a>
+        <a href="repl.html">REPL</a>
         <a href="https://github.com/KanHarI/cubist-math">GitHub repository</a>
       </nav>
     </header>
@@ -113,6 +115,18 @@
               <p id="source-count" class="hint"></p>
             </div>
             <div id="read-source" aria-label="Checked proof source"></div>
+          </section>
+          <section id="repl-panel" class="panel repl-panel" aria-labelledby="repl-title">
+            <div class="panel-head">
+              <h2 id="repl-title">Console</h2>
+              <a href="repl.html">Open the REPL page</a>
+            </div>
+            <p class="hint">
+              The names checked in this file are loaded. <code>typeof NAME;</code> shows a type,
+              <code>evaluate TERM;</code> computes a value, and <code>let x := TERM;</code> adds a
+              name. <code>help</code> lists every command.
+            </p>
+            <div id="repl"></div>
           </section>
           <section id="result" class="result" aria-label="Checked declarations" hidden></section>
         </div>

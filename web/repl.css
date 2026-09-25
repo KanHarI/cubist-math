@@ -1,0 +1,155 @@
+/* The REPL console (repl-console.mjs): under each proof, on repl.html, and
+   in the reference pages' dock. */
+.repl {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid #d7ddd5;
+  border-radius: 8px;
+  background: #fbfcfa;
+  font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #23342d;
+}
+.repl-log {
+  flex: 1;
+  min-height: 3em;
+  max-height: 24em;
+  overflow: auto;
+  padding: 8px 12px;
+}
+.repl-log:empty { display: none; }
+.repl-log pre {
+  margin: 0;
+  padding: 1px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  max-height: none;
+  overflow: visible;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.repl-entry { margin-top: 6px !important; color: #23342d; }
+.repl-entry:first-child { margin-top: 0 !important; }
+.repl-prompt { color: #346447; font-weight: 700; }
+.repl-type, .repl-value, .repl-defined { padding-left: 1.4em !important; }
+.repl-defined { color: #346447; }
+.repl-log .repl-info { color: #5f7066; font-family: ui-sans-serif, system-ui, sans-serif; }
+.repl-help { color: #5f7066; }
+.repl-log pre code { overflow-wrap: anywhere; }
+.repl-error { padding-left: 1.4em !important; color: #a3322b; }
+.repl .keyword { color: #735689; font-weight: 600; }
+.repl .macro { color: #98531c; font-weight: 600; }
+.repl .comment { color: #7c8d80; }
+.repl-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid #e3e8e1;
+}
+.repl-log:empty + .repl-form { border-top: 0; }
+.repl-form .repl-prompt { padding-top: 5px; }
+.repl-text {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  overflow: hidden;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+.repl-text:focus { outline: none; border-color: #9fb89b; background: white; }
+.repl-form button {
+  padding: 4px 10px;
+  border: 1px solid #cbd5cc;
+  border-radius: 6px;
+  background: white;
+  font: 13px/1.5 ui-sans-serif, system-ui, sans-serif;
+  color: inherit;
+  cursor: pointer;
+}
+.repl-form button:hover { background: #e9f3e9; }
+.repl-form.busy .repl-run::after { content: "…"; }
+
+/* Under a proof. */
+.repl-panel { margin-top: 16px; }
+.repl-panel .panel-head a { font-size: 13px; }
+
+/* The reference pages' dock: a bar at the bottom that opens a console. */
+.repl-dock {
+  position: fixed;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-top: 1px solid #d7ddd5;
+  background: #f6f7f3;
+  box-shadow: 0 -4px 16px rgb(0 0 0 / 6%);
+}
+body.inspector-open .repl-dock { right: var(--drawer-width, 0px); }
+.repl-dock-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 6px 16px;
+  font: 13px/1.5 ui-sans-serif, system-ui, sans-serif;
+}
+.repl-dock-toggle {
+  padding: 3px 10px;
+  border: 1px solid #cbd5cc;
+  border-radius: 6px;
+  background: white;
+  font: inherit;
+  font-weight: 600;
+  color: #23342d;
+  cursor: pointer;
+}
+.repl-dock-toggle:hover { background: #e9f3e9; }
+.repl-dock-bar span { color: #5f7066; }
+.repl-dock-bar a { margin-left: auto; color: #346447; }
+.repl-dock-body {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 16px 12px;
+}
+.repl-dock-body .repl-log { max-height: 36vh; }
+.repl-dock-body[hidden] { display: none; }
+body.repl-docked { padding-bottom: 46px; }
+body.repl-docked.repl-open { padding-bottom: calc(36vh + 120px); }
+@media (max-width: 640px) {
+  .repl-dock-bar span { display: none; }
+}
+
+/* The REPL page. */
+.repl-page .repl { min-height: 60vh; }
+.repl-page .repl-log { max-height: none; }
+.repl-page main { padding-bottom: 32px; }
+.repl-commands { margin-top: 28px; }
+.repl-commands table { border-collapse: collapse; }
+.repl-commands td { padding: 6px 16px 6px 0; vertical-align: top; border-top: 1px solid #e3e8e1; }
+.repl-commands td:first-child { white-space: nowrap; }
+
+/* A read-only REPL transcript in the reference (examples.mjs). */
+pre.repl-transcript { background: #fbfcfa; }
+.repl-transcript-entry, .repl-transcript-result { display: block; }
+.repl-transcript-result { padding-left: 1.4em; color: #346447; }
+.repl-transcript-entry + .repl-transcript-entry, .repl-transcript-result + .repl-transcript-entry { margin-top: 6px; }
+.repl-fork {
+  margin-left: auto;
+  padding: 2px 10px;
+  border: 1px solid #cbd5cc;
+  border-radius: 6px;
+  background: white;
+  font: inherit;
+  color: #346447;
+  cursor: pointer;
+}
+.repl-fork:hover { background: #e9f3e9; }

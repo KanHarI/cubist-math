@@ -6,6 +6,7 @@
     <meta name="description" content="Where to check a proof, and how to read what the checker found." />
     <title>Cubist · 12. Checking and inspection</title>
     <link rel="stylesheet" href="../language.css" />
+    <link rel="stylesheet" href="../repl.css" />
   </head>
   <body>
     <a class="skip-link" href="#reference">Skip to chapter</a>
@@ -15,6 +16,7 @@
         <a href="../proof.html">Proof workspace</a>
         <a href="../workbench.html">Kernel workbench</a>
         <a href="../language.html">Language reference</a>
+        <a href="../repl.html">REPL</a>
       </nav>
     </header>
     <main>
@@ -46,6 +48,7 @@
             <li><a href="#inspection">The proof workspace</a></li>
             <li><a href="#inspecting-tactics">Inspecting tactics</a></li>
             <li><a href="#cli">The command-line checker</a></li>
+            <li><a href="#repl">The REPL</a></li>
             <li><a href="#tools">Formatting and tests</a></li>
             <li><a href="#limits">Limits</a></li>
           </ul>
@@ -73,7 +76,7 @@
           </section>
           <section id="cli">
             <h2>The command-line checker</h2>
-            <p><code>node cli/repl.mjs</code> checks source files with the same C kernel as the workspace. It needs the kernel built once with <code>make wasm</code>. Given a command, it runs that command and exits; with none, it reads one command per line. The examples below use this file, saved as <code>sample.cubist</code>:</p>
+            <p><code>node cli/repl.mjs</code> checks source files with the same C kernel as the workspace. It needs the kernel built once with <code>make wasm</code>. Given a command, it runs that command and exits; with none, it reads one command per line. A line that is not a command is a <a href="#repl">REPL</a> entry. The examples below use this file, saved as <code>sample.cubist</code>:</p>
             <pre><code data-check="accept" data-name="sample">import naturals;
 import classical;
 
@@ -96,7 +99,10 @@ evaluate at line 11: 4</code></pre>
               <tbody>
                 <tr><td><code>check MODULE</code>, <code>check FILE.cubist</code></td><td>Check a library module or a file, with its imports</td></tr>
                 <tr><td><code>inspect NAME</code></td><td>Show a checked declaration: its context, expression, type and assumptions</td></tr>
-                <tr><td><code>evaluate EXPRESSION</code></td><td>Print the normal form of a closed expression that uses no assumption, in the scope of the checked module</td></tr>
+                <tr><td><code>let NAME := TERM;</code>, <code>def …</code></td><td>Define a name for later entries; see <a href="#repl">the REPL</a></td></tr>
+                <tr><td><code>typeof TERM;</code></td><td>Print the type of a term</td></tr>
+                <tr><td><code>evaluate TERM;</code></td><td>Print the normal form of a closed term that uses no assumption, in the scope of the checked module</td></tr>
+                <tr><td><code>import MODULE;</code></td><td>Load a module for later entries</td></tr>
                 <tr><td><code>assembly NAME</code></td><td>Show the native kernel opcode graph of a declaration</td></tr>
                 <tr><td><code>beta [expression|type]</code></td><td>Perform one beta reduction in the inspected declaration, checked by the kernel</td></tr>
                 <tr><td><code>delta [expression|type]</code></td><td>Unfold one named definition in the inspected declaration, checked by the kernel</td></tr>
@@ -133,6 +139,37 @@ Expression: λ (n : Nat). (λ …)(n, n)</code></pre>
             <h3 id="cli-options">Options</h3>
             <p>The flags <code>--no-share-syntax</code>, <code>--no-reuse-checks</code> and <code>--no-compact-paths</code> turn off the compiler’s reuse of shared syntax, checked instructions and compact paths. The workspace has the same switches, <strong>Reuse normal forms</strong> and <strong>Reuse checked instructions</strong>, on by default. They change how much work checking repeats, never the source language or its assumptions. The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/cli.md">CLI guide</a> describes setup and the remaining options.</p>
           </section>
+          <section id="repl">
+            <h2>The REPL</h2>
+            <p>The REPL checks Cubist one entry at a time. An entry is a definition, a <code>typeof</code> or <code>evaluate</code> request, an import, or any declaration of a file. The kernel checks each entry as a small module that imports the entries before it, so later entries see earlier names. An entry that does not check changes nothing.</p>
+            <ul>
+              <li>In the browser, the <a href="../repl.html">REPL page</a> starts from an empty program. Every page of this reference has a REPL bar at the bottom.</li>
+              <li>In the <a href="../proof.html">proof workspace</a>, the console under a proof has the proof’s checked names loaded. After an edit is checked, the console replays its own definitions on the new version.</li>
+              <li>On the command line, <code>node cli/repl.mjs</code> reads entries along with its commands. After <code>check</code>, entries see the checked module’s names.</li>
+            </ul>
+            <pre><code data-check="cli">$ node cli/repl.mjs
+&gt; let x := 7;
+x : Nat
+&gt; typeof x;
+Nat
+&gt; evaluate x;
+7
+&gt; import naturals;
+Imported naturals.
+&gt; evaluate x + 3 * 4;
+19
+&gt; def x_is_seven : x = 7 {
+&gt;   exact refl(7);
+&gt; }
+x_is_seven : x = 7
+&gt; def x_is_eight : x = 8 {
+&gt;   exact refl(7);
+&gt; }
+Type mismatch: found 7 = 7, expected x = 8.
+&gt; x + 1
+8</code></pre>
+            <p><code>let x := 7;</code> defines <code>x</code> and prints its type; <code>def</code> works the same way. An entry continues on the next line while a bracket is open, so a proof block is one entry. A term alone is evaluated, and the final <code>;</code> of an entry can be left out. <code>x_is_eight</code> is rejected, so it does not exist for later entries. <code>help</code> lists the entries.</p>
+          </section>
           <section id="tools">
             <h2>Formatting and tests</h2>
             <ul>
@@ -160,5 +197,6 @@ def too_long := 0b10000000000000000000000000000000000000000000000000000000000000
     </main>
     <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
     <script type="module" src="examples.mjs"></script>
+    <script type="module" src="repl-dock.mjs"></script>
   </body>
 </html>

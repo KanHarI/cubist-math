@@ -12,6 +12,7 @@ import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs
 import { keywords, builtinForms } from "./source-tokens.mjs";
 import { libraryModules } from "./mathscript/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
+import { createReplConsole } from "./repl-console.mjs";
 
 const query = new URLSearchParams(location.search);
 const backend = "cubical";
@@ -981,4 +982,10 @@ addEventListener("pageshow", (event) => {
   if (event.persisted) refreshCompiler().catch(diagnostic);
 });
 enableTokenTips();
+// The console runs over the last checked version of this file.
+if (!embedded) createReplConsole($("repl"), {
+  label: "Console input: a Cubist term or declaration",
+  run: input => request("repl", { input }),
+  reset: () => request("repl-reset", {}),
+});
 await startWorker();
