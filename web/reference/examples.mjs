@@ -83,7 +83,7 @@ function openInspector(source, offset) {
     open.rel = "noopener";
     close.type = "button";
     close.textContent = "Close";
-    close.onclick = () => { drawer.hidden = true; };
+    close.onclick = () => { drawer.hidden = true; document.body.classList.remove("inspector-open"); };
     head.append(title, open, close);
     const frame = document.createElement("iframe");
     frame.title = "Kernel inspector";
@@ -95,6 +95,7 @@ function openInspector(source, offset) {
     document.body.append(drawer);
   }
   drawer.hidden = false;
+  document.body.classList.add("inspector-open");
   drawer.querySelector("a").href = workspaceLink(source);
   const frame = drawer.querySelector("iframe");
   frameReady.then(() => frame.contentWindow.postMessage({ type: "cubist-inspect", source, offset }, location.origin));
