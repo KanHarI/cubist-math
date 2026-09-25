@@ -1,6 +1,7 @@
 import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T } from "./dist/cubical-runtime/core.mjs";
 import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
+import { NameSupply } from "./dist/cubical-runtime/names.mjs";
 
 // Elaboration queries use the native checker and demand only a type's outer
 // constructor. JavaScript neither normalizes proofs nor approves conversions.
@@ -9,7 +10,9 @@ export class NativeCubicalElaborator {
     this.kernel = kernel;
     this.syntax = new CubicalSyntax(kernel);
     this.steps = 0;
-    this.serial = 0;
+    // Elaboration passes its own name supply and dimensions to each query;
+    // these defaults serve inspection and other callers outside a source unit.
+    this.names = new NameSupply({ taken: name => this.assumptions.has(name) });
     this.dimensions = new Map();
     this.assumptions = new Map();
     this.libraryAssumptions = new Map();
@@ -54,49 +57,47 @@ export class NativeCubicalElaborator {
     for (const [name, type] of [...this.assumptions].reverse()) if (names.has(name)) visit(type);
     return new Map([...this.assumptions].filter(([name]) => names.has(name)));
   }
-  infer(term, context = new Map()) {
-    const checked = this.syntax.check(term, null, [...this.context(context)], this.dimensions);
+  infer(term, context = new Map(), dimensions = this.dimensions) {
+    const checked = this.syntax.check(term, null, [...this.context(context)], dimensions);
     this.steps += checked.checkingSteps;
     return { term: checked.term, type: checked.type, native: { ok: true,
       arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()] } };
   }
-  check(term, expected, context = new Map()) {
-    const checked = this.syntax.check(term, expected, [...this.context(context)], this.dimensions);
+  check(term, expected, context = new Map(), dimensions = this.dimensions) {
+    const checked = this.syntax.check(term, expected, [...this.context(context)], dimensions);
     this.steps += checked.checkingSteps;
     return checked.term;
   }
-  ascribe(term, type) {
+  ascribe(term, type, names = this.names) {
     // Application of the identity at the declared type retains that exact
     // signature in the kernel's inferred result. The next native check checks
     // the conversion; this is no unchecked annotation or new kernel rule.
-    const name = `ascription${++this.serial}`;
+    const name = names.fresh("ascription");
     return { tag: "App", fn: { tag: "Lam", name, domain: type, body: { tag: "Var", name } }, arg: term };
   }
-  nf(term) {
+  nf(term, dimensions = this.dimensions) {
     // Translator's nf calls ask for Pi/Sigma/Path heads, not full normal forms.
-    return this.syntax.decode(this.kernel.head(this.syntax.encode(term, this.dimensions)), this.dimensions);
+    return this.syntax.decode(this.kernel.head(this.syntax.encode(term, dimensions)), dimensions);
   }
-  equal(left, right, context = new Map()) {
-    const type = this.infer(left, context).type;
-    // This binder scopes over both terms, so it must not capture a live
-    // coordinate; every free coordinate of a checked term is in scope here.
-    let dim = `conversion${++this.serial}`;
-    while (this.dimensions.has(dim)) dim += "_";
+  equal(left, right, context = new Map(), dimensions = this.dimensions, names = this.names) {
+    const type = this.infer(left, context, dimensions).type;
+    // This binder scopes over both terms. A generated name is not a live
+    // coordinate, so it cannot capture one.
+    const dim = names.fresh("conversion");
     const constant = { tag: "PLam", dim, family: type, body: left };
     const expected = { tag: "Path", dim, family: type, left, right };
-    try { this.check(constant, expected, context); return true; }
+    try { this.check(constant, expected, context, dimensions); return true; }
     catch (error) {
       if (error.message === "Type mismatch.") return false;
       throw error;
     }
   }
-  expect(actual, expected, context = new Map()) {
+  expect(actual, expected, context = new Map(), dimensions = this.dimensions, names = this.names) {
     // Ask the kernel whether an arbitrary inhabitant of the actual type also
     // inhabits the expected type. This uses directed cumulative typing, while
     // equal() continues to ask for definitional equality.
-    let name = `expected${++this.serial}`;
-    while (context.has(name) || this.assumptions.has(name)) name += "_";
-    this.check({ tag: "Var", name }, expected, new Map(context).set(name, actual));
+    const name = names.fresh("expected");
+    this.check({ tag: "Var", name }, expected, new Map(context).set(name, actual), dimensions);
   }
   define(name, term, type) {
     const assumptions = this.requiredAssumptions(term, type);
@@ -122,7 +123,7 @@ export class NativeCubicalElaborator {
     this.schemaSpecializations.set(key, value);
     return value;
   }
-  scopedUnfolding(names, elaborate, context, expected = null) {
+  scopedUnfolding(names, elaborate, context, expected = null, dimensions = this.dimensions, supply = this.names) {
     const expanded = new Set(names), visited = new Set(), syntaxSeen = new WeakSet();
     const visitTerm = term => {
       if (!term || typeof term !== "object" || syntaxSeen.has(term)) return;
@@ -141,7 +142,8 @@ export class NativeCubicalElaborator {
     names.forEach(visitDefinition);
     return this.kernel.withUnfoldingHints([...this.kernel.unfoldingHints, ...expanded], () => {
       const raw = elaborate();
-      const checked = expected ? { term: this.check(raw, expected, context), type: expected } : this.infer(raw, context);
+      const checked = expected ? { term: this.check(raw, expected, context, dimensions), type: expected }
+        : this.infer(raw, context, dimensions);
       let term = checked.term, type = checked.type;
       // Close over local variables before interval coordinates: a variable's
       // type may itself depend on a coordinate. The helper is then checked as
@@ -149,15 +151,15 @@ export class NativeCubicalElaborator {
       for (const [name, domain] of [...context].reverse()) {
         term = T.lam(name, domain, term); type = T.pi(name, domain, type);
       }
-      for (const dim of [...this.dimensions.keys()].reverse()) {
+      for (const dim of [...dimensions.keys()].reverse()) {
         term = T.line(dim, type, term);
         type = T.path(dim, type, T.at(term, I.zero), T.at(term, I.one));
       }
       this.kernel.unfoldingSerial = (this.kernel.unfoldingSerial ?? 0) + 1;
       const name = `${this.bindingName?.("unfolding") ?? "unfolding"}_${this.kernel.unfoldingSerial}`;
-      let result = NativeCubicalElaborator.prototype.define.call(this, name, this.ascribe(term, type), type);
+      let result = NativeCubicalElaborator.prototype.define.call(this, name, this.ascribe(term, type, supply), type);
       this.scopeDefinitions.add(name);
-      for (const dim of this.dimensions.keys()) result = T.at(result, I.variable(dim));
+      for (const dim of dimensions.keys()) result = T.at(result, I.variable(dim));
       for (const name of context.keys()) result = T.app(result, T.variable(name));
       return result;
     });
