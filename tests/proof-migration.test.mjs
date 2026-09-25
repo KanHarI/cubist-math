@@ -112,3 +112,39 @@ def pointwise(A : U0, f : A -> A) : f = f {
   assert.equal(exact.identical, 6);
   assert.deepEqual((await check(typed.source, "types")).failures, []);
 });
+
+test("dependents are checked against edited definitions they mention", async () => {
+  const originals = {
+    // n + 0 does not reduce for a variable n, so the edited pick is not
+    // convertible with the original.
+    dependency_fixture: `import primes;
+def double(n : Nat) = n + n;
+def four : double(2) = 4 {
+  exact refl(4);
+}
+def pick(n : Nat) = n + 0;
+`,
+    dependent_fixture: `import dependency_fixture;
+def same(n : Nat) : pick(n) = pick(n) {
+  rfl;
+}
+def eight : double(4) = 8 {
+  rfl;
+}
+`,
+  };
+  const edited = { ...originals, dependency_fixture: originals.dependency_fixture
+    .replace("exact refl(4);", "rfl;").replace("n + 0;", "n;") };
+  const reports = await verifyMigration({ modules: ["dependent_fixture", "dependency_fixture"], level: "types",
+    readOriginal: name => originals[name] ?? library(name), readEdited: async name => edited[name] });
+  const [dependency, dependent] = reports;
+  assert.equal(dependency.module, "dependency_fixture");
+  assert.deepEqual(dependency.failures, []);
+  assert.equal(dependency.identical, 1);
+  assert.equal(dependency.typesPreserved, 2);
+  // same mentions the changed pick and no longer has the same type; eight
+  // mentions only double, which is identical, so it stays identical.
+  assert.deepEqual(dependent.failures.map(failure => [failure.name, failure.reason]),
+    [["same", "The public type changed. It mentions changed definitions from: dependency_fixture__pick."]]);
+  assert.equal(dependent.identical, 1);
+});

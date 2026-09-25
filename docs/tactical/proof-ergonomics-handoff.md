@@ -422,21 +422,38 @@ and residual-goal diagnostics A6.
 
 Library-wide adoption of the new syntax is checked mechanically, not by review
 alone. `node tools/verify-proof-migration.mjs [--base REV] [--level
-identical|types] [module ...]` checks each edited module in the same native
-kernel as its version at `REV` (default `HEAD`). With no module names it takes
-every `web/proofs` module that differs from `REV`. The edited source is loaded
-under a shadow module name, so both versions and their shared imports are
-checked in one kernel session.
+identical|types] [--no-dependents] [module ...]` checks each edited module in
+the same native kernel as its version at `REV` (default `HEAD`). With no module
+names it takes every `web/proofs` module that differs from `REV`. It also
+compares every module that imports one of them, directly or not, unless
+`--no-dependents` is given. Each compared module is loaded again under a shadow
+name. Its imports of other compared modules are redirected to their shadows,
+so a dependent is checked against the edited definitions it mentions.
 
 - `identical` requires every declaration's checked term and type to hash
   equally up to bound-variable and dimension names (de Bruijn indices) and the
   session serials of generated unfolding helpers, which are compared by their
   checked bodies.
+  - Identity is transitive: a declaration counts as identical only if every
+    edited definition it mentions is identical too.
+  - Only identical definitions may stand in for their originals, whether in a
+    hash or in a type comparison.
 - `types` requires kernel-convertible public types and the same assumption
   labels; proof terms may change.
+  - Each type comparison runs with a deadline, 10 s by default, inside a
+    declaration transaction that is always rolled back.
+  - A failure names the edited declarations whose changed definitions the
+    type mentions.
 - Both levels require the same declaration list and order. A template is
   compared through its specialization at the least universe levels (up to
   `U2`) at which the original checks.
+
+Transitive checking exposed a real hazard. A changed proof that is passed into
+data, such as a respect proof given to `quotient_rec` or a closure proof inside
+a subgroup, changes the definitional value of that data. Statements in other
+modules that mention it then have different, non-convertible types, even though
+every proof still checks. Per-module checking against unchanged imports cannot
+see this.
 
 `node tools/migrate-proof-syntax.mjs --rewrites a,b [--skip FILE.json]
 [module ...]` applies source rewrites from
@@ -481,3 +498,48 @@ unchanged assumptions. The full JS suite passed, and the canonical corpus
 still checks 3,761 declarations and 43 templates. The Glue transfer test now
 expects `Coherence` and `HalfAdjointLaws` to translate: without `ap` they no
 longer depend on the path library that the test does not import.
+
+### Curated `rw`/`calc`/`simp` pass: findings (stopped)
+
+After tiers 1 and 2, five agents rewrote equality chains by hand in disjoint
+groups of modules. They first used `rw` and `calc`, then `simp only` and
+`simpa only`. The pass was stopped unmerged on 2026-09-25, when the library was
+scheduled to be archived and rebuilt ([results](../library-results.md)). Its
+edits remain only on the local branch `migration-curated`.
+
+**Measured gains:**
+- 22 complex and analysis modules: 69,242 → 57,984 tokens with `rw`, then
+  53,248 with `simp only`;
+- 24 field, Galois and linear-algebra modules: 92,530 → 89,865;
+- 31 polynomial modules: 52,125 → 49,055;
+- 16 homotopy modules: 52,821 → 52,169.
+
+No `calc` was needed anywhere; `rw` was always shorter. Many rewritten
+declarations checked 2–4× slower, and 14 polynomial proofs were restored to
+keep them under 40 ms. Changing proofs that are passed into data changed
+other modules' public types (see the verifier notes above).
+
+**Elaborator limitations found.** The roadmaps take these as requirements
+(HoTT A2, A4, A5 and C1; ergonomics milestone 7):
+
+1. **No unfolding to find subterms.** `rw` and `simp` see only the folded goal.
+   A pattern inside a definition's body is invisible, and `rw` matches a
+   whole endpoint only up to conversion.
+2. **No descent into cubical forms.** `rw` cannot reach under `succ` (a
+   separate core node), under let-bound function heads, or into `trans`,
+   `sym`, `along` and `cong`. `simp` does not match quantified rules whose
+   pattern contains them.
+3. **Beta-redexes survive a full-context `cong` rule**, blocking later rules.
+4. **No term-level tactics.** Chains inside induction and match branches,
+   tuple components and call arguments are unreachable without a named
+   `have`. This is the largest remaining group.
+5. **No statement-level `with unfolding`.** Losing the hints made some proofs
+   10–700× slower. One ran past 120 s.
+6. **Cost.** A failed conversion at a non-matching node can be very
+   expensive; one took more than 60 s through transports along univalence.
+   `simp` re-checks every instantiated rule at every node on every pass.
+7. **Smaller issues:**
+   - `occurrence n` applies to a whole statement rather than to each rule;
+   - there is no rewrite-once mode, so a reversed rule with a variable
+     pattern cycles;
+   - failure messages omit the residual goal.
