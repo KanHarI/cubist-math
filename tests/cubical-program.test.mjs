@@ -297,3 +297,16 @@ test("every named reference in group universe templates is inspectable with sour
   assert.equal(stored.symbols[stored.name].name, "GroupAssociativeAt_U0");
   assert.doesNotMatch(JSON.stringify(cubicalMathTree(stored.expression, stored.symbols)), /"name":"(?:A|multiply|x|y|z)[0-9]+"/);
 });
+
+test("a declaration that fails after a failed import names the import", async t => {
+  const program = new CubicalProgram(await createCubical(), async name => {
+    throw new Error(`Native source is not available for ${name}.`);
+  }, { collectReferences: false });
+  t.after(() => program.dispose());
+  const result = await program.check("import naturals;\ndef four := 2 + 2;\ndef five := 5;\ndef six : Nat {\n  exact 3 + 3;\n}\n", "imports_missing");
+  const reason = name => result.outputs.find(output => output.name === name).reason;
+  assert.equal(reason("four"),
+    "Untranslated name: add (import naturals failed: Native source is not available for naturals.)");
+  assert.match(reason("six"), /^Untranslated name: add \(import naturals failed: .*\)( at \d+:\d+)?$/);
+  assert.equal(result.outputs.find(output => output.name === "five").verified, true);
+});
