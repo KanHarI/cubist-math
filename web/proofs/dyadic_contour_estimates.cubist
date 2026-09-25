@@ -55,7 +55,6 @@ def affine_dyadic_refinement_estimate(
       )
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let zeroC = complex_zero(F, zero);
   let addC = complex_add(F, addF);

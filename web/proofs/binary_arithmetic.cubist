@@ -75,35 +75,30 @@ opaque def binary_factorial(n : Nat) = induction n as k return BinaryNat {
   };
 
 def binary_carry_example : binary_succ(0b11111111) = 0b100000000 {
-  exact refl(0b100000000);
+  rfl;
 }
 
 def binary_add_example : binary_add(0b1101, 0b1011) = 0b11000 {
-  exact refl(0b11000);
+  rfl;
 }
 
 def binary_mul_example : binary_mul(0b1101, 0b1011) = 0b10001111 {
-  exact refl(0b10001111);
+  rfl;
 }
 
 // The factorial step remains folded until its previous value is supplied.
 def binary_factorial_step(n : Nat) :
   binary_factorial(succ(n)) = binary_mul(binary_of_nat(succ(n)), binary_factorial(n)) {
-  exact refl(binary_mul(binary_of_nat(succ(n)), binary_factorial(n)));
+  rfl;
 }
 
-def binary_factorial_value_step(
-  n : Nat, value : BinaryNat, previous : binary_factorial(n) = value
-) :
+def binary_factorial_value_step(n : Nat, value : BinaryNat, previous : binary_factorial(n) = value) :
   binary_factorial(succ(n)) = binary_mul(binary_of_nat(succ(n)), value) {
-  exact trans(
-    binary_factorial_step(n),
-    cong((fun (v : BinaryNat) => binary_mul(binary_of_nat(succ(n)), v)), previous)
-  );
+  rw [binary_factorial_step(n), previous] at lhs;
 }
 
 def binary_factorial_zero : binary_factorial(0) = 0b1 {
-  exact refl(0b1);
+  rfl;
 }
 
 def binary_factorial_1 : binary_factorial(1) = 0b1 {

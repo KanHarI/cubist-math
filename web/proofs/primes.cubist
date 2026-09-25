@@ -1,24 +1,6 @@
 // Constructive arithmetic and prime numbers. Every definition below is checked from source.
 // No axioms and no imported instruction snapshots.
 
-def nat_eq_sym(x : Nat, y : Nat, p : (x = y)) =
-  path_induction(
-    Nat, (fun (x2 : Nat) => (fun (y2 : Nat) => (fun (path : (x2 = y2)) => (y2 = x2)))),
-    (fun (x2 : Nat) => refl(x2)), x, y, p
-  );
-
-def nat_eq_trans(x : Nat, y : Nat, z : Nat, p : (x = y), q : (y = z)) =
-  path_induction(
-    Nat, (fun (x2 : Nat) => (fun (y2 : Nat) => (fun (path : (x2 = y2)) => ((x = x2) -> (x = y2))))),
-    (fun (x2 : Nat) => (fun (t : (x = x2)) => t)), y, z, q
-  )(p);
-
-def nat_congruence(f : (Nat -> Nat), x : Nat, y : Nat, p : (x = y)) =
-  path_induction(
-    Nat, (fun (x2 : Nat) => (fun (y2 : Nat) => (fun (path : (x2 = y2)) => (f(x2) = f(y2))))),
-    (fun (x2 : Nat) => refl(f(x2))), x, y, p
-  );
-
 // Addition.
 // 0 + b = b; succ(a) + b = succ(a + b).
 def add(x : Nat, y : Nat) = induction x as k return Nat {
@@ -63,46 +45,32 @@ def nat_zero_ne_succ(n : Nat, p : (0 = succ(n))) =
   )(tt);
 
 def nat_succ_injective(x : Nat, y : Nat, p : (succ(x) = succ(y))) =
-  nat_congruence((fun (n : Nat) => induction n as k return Nat {
+  cong((fun (n : Nat) => induction n as k return Nat {
         zero => 0;
         succ ignored => k;
-      }), succ(x), succ(y), p);
+      }), p);
 
 def nat_add_zero(x : Nat) = induction x as k return ((k + 0) = k) {
     zero => refl(0);
-    succ h => nat_congruence((fun (n : Nat) => succ(n)), (k + 0), k, h);
+    succ h => cong((fun (n : Nat) => succ(n)), h);
   };
 
 def nat_add_succ(x : Nat) =
   induction x as k return (forall y : Nat, ((k + succ(y)) = succ((k + y)))) {
     zero => (fun (y : Nat) => refl(succ(y)));
-    succ h => (
-      fun (y : Nat) => nat_congruence(
-        (fun (n : Nat) => succ(n)), (k + succ(y)), succ((k + y)), h(y)
-      )
-    );
+    succ h => (fun (y : Nat) => cong((fun (n : Nat) => succ(n)), h(y)));
   };
 
 def nat_add_assoc(x : Nat) =
   induction x as k return (forall y : Nat, (forall z : Nat, (((k + y) + z) = (k + (y + z))))) {
     zero => (fun (y : Nat) => (fun (z : Nat) => refl((y + z))));
-    succ h => (
-      fun (y : Nat) => (
-        fun (z : Nat) => nat_congruence(
-          (fun (n : Nat) => succ(n)), ((k + y) + z), (k + (y + z)), h(y, z)
-        )
-      )
-    );
+    succ h => (fun (y : Nat) => (fun (z : Nat) => cong((fun (n : Nat) => succ(n)), h(y, z))));
   };
 
 def nat_add_comm(x : Nat) = induction x as k return (forall y : Nat, ((k + y) = (y + k))) {
-    zero => (fun (y : Nat) => nat_eq_sym((y + 0), y, nat_add_zero(y)));
+    zero => (fun (y : Nat) => sym(nat_add_zero(y)));
     succ h => (
-      fun (y : Nat) => nat_eq_trans(
-        succ((k + y)), succ((y + k)), (y + succ(k)),
-        nat_congruence((fun (n : Nat) => succ(n)), (k + y), (y + k), h(y)),
-        nat_eq_sym((y + succ(k)), succ((y + k)), nat_add_succ(y, k))
-      )
+      fun (y : Nat) => trans(cong((fun (n : Nat) => succ(n)), h(y)), sym(nat_add_succ(y, k)))
     );
   };
 
@@ -170,7 +138,7 @@ def nat_le_succ_split(a : Nat) =
         zero => (
           fun (v : (a2 <= 0)) => typed(
             ((succ(a2) <= 0) or (succ(a2) = 1)),
-            right(nat_congruence((fun (n : Nat) => succ(n)), a2, 0, nat_le_zero(a2, v)))
+            right(cong((fun (n : Nat) => succ(n)), nat_le_zero(a2, v)))
           )
         );
         succ ignored => (
@@ -180,7 +148,7 @@ def nat_le_succ_split(a : Nat) =
             left ac => typed(((succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))), left(ac));
             right ac => typed(
               ((succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))),
-              right(nat_congruence((fun (n : Nat) => succ(n)), a2, succ(k), ac))
+              right(cong((fun (n : Nat) => succ(n)), ac))
             );
           }
         );
@@ -205,12 +173,12 @@ def nat_eq_decidable(a : Nat) =
       fun (c : Nat) => induction c as k return ((succ(a2) = k) or ((succ(a2) = k) -> Void)) {
         zero => typed(
           ((succ(a2) = 0) or ((succ(a2) = 0) -> Void)),
-          right((fun (p : (succ(a2) = 0)) => nat_zero_ne_succ(a2, nat_eq_sym(succ(a2), 0, p))))
+          right((fun (p : (succ(a2) = 0)) => nat_zero_ne_succ(a2, sym(p))))
         );
         succ ignored => match h(k) return ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)) {
           left p => typed(
             ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)),
-            left(nat_congruence((fun (n : Nat) => succ(n)), a2, k, p))
+            left(cong((fun (n : Nat) => succ(n)), p))
           );
           right np => typed(
             ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)),
@@ -240,40 +208,29 @@ def nat_mul_zero(a : Nat) = induction a as a2 return ((a2 * 0) = 0) {
     succ h => h;
   };
 
-def nat_add_shuffle(a : Nat, c : Nat, d : Nat) =
-  nat_eq_trans(
-    (a + (c + d)), ((a + c) + d), (c + (a + d)),
-    nat_eq_sym(((a + c) + d), (a + (c + d)), nat_add_assoc(a, c, d)),
-    nat_eq_trans(
-      ((a + c) + d), ((c + a) + d), (c + (a + d)),
-      nat_congruence((fun (x : Nat) => (x + d)), (a + c), (c + a), nat_add_comm(a, c)),
-      nat_add_assoc(c, a, d)
-    )
-  );
+def nat_add_shuffle(a : Nat, c : Nat, d : Nat) : (a + (c + d)) = (c + (a + d)) {
+  calc {
+    a + (c + d) = (a + c) + d by sym(nat_add_assoc(a, c, d));
+    _ = (c + a) + d by cong((fun (x : Nat) => x + d), nat_add_comm(a, c));
+    _ = c + (a + d) by nat_add_assoc(c, a, d);
+  }
+}
 
 def nat_mul_succ(a : Nat) =
   induction a as a2 return (forall c : Nat, ((a2 * succ(c)) = (a2 + (a2 * c)))) {
     zero => (fun (c : Nat) => refl(0));
     succ h => (
-      fun (c : Nat) => nat_congruence(
-        (fun (n : Nat) => succ(n)), (c + (a2 * succ(c))), (a2 + (c + (a2 * c))),
-        nat_eq_trans(
-          (c + (a2 * succ(c))), (c + (a2 + (a2 * c))), (a2 + (c + (a2 * c))),
-          nat_congruence((fun (x : Nat) => (c + x)), (a2 * succ(c)), (a2 + (a2 * c)), h(c)),
-          nat_add_shuffle(c, a2, (a2 * c))
-        )
+      fun (c : Nat) => cong(
+        (fun (n : Nat) => succ(n)),
+        trans(cong((fun (x : Nat) => (c + x)), h(c)), nat_add_shuffle(c, a2, (a2 * c)))
       )
     );
   };
 
 def nat_mul_comm(a : Nat) = induction a as a2 return (forall c : Nat, ((a2 * c) = (c * a2))) {
-    zero => (fun (c : Nat) => nat_eq_sym((c * 0), 0, nat_mul_zero(c)));
+    zero => (fun (c : Nat) => sym(nat_mul_zero(c)));
     succ h => (
-      fun (c : Nat) => nat_eq_trans(
-        (c + (a2 * c)), (c + (c * a2)), (c * succ(a2)),
-        nat_congruence((fun (x : Nat) => (c + x)), (a2 * c), (c * a2), h(c)),
-        nat_eq_sym((c * succ(a2)), (c + (c * a2)), nat_mul_succ(c, a2))
-      )
+      fun (c : Nat) => trans(cong((fun (x : Nat) => (c + x)), h(c)), sym(nat_mul_succ(c, a2)))
     );
   };
 
@@ -284,13 +241,8 @@ def nat_mul_add(a : Nat) =
     zero => (fun (c : Nat) => (fun (d : Nat) => refl((c * d))));
     succ h => (
       fun (c : Nat) => (
-        fun (d : Nat) => nat_eq_trans(
-          (d + ((a2 + c) * d)), (d + ((a2 * d) + (c * d))), ((d + (a2 * d)) + (c * d)),
-          nat_congruence((fun (x : Nat) => (d + x)), ((a2 + c) * d), ((a2 * d) + (c * d)), h(c, d)),
-          nat_eq_sym(
-            ((d + (a2 * d)) + (c * d)), (d + ((a2 * d) + (c * d))),
-            nat_add_assoc(d, (a2 * d), (c * d))
-          )
+        fun (d : Nat) => trans(
+          cong((fun (x : Nat) => (d + x)), h(c, d)), sym(nat_add_assoc(d, (a2 * d), (c * d)))
         )
       )
     );
@@ -301,17 +253,14 @@ def nat_mul_assoc(a : Nat) =
     zero => (fun (c : Nat) => (fun (d : Nat) => refl(0)));
     succ h => (
       fun (c : Nat) => (
-        fun (d : Nat) => nat_eq_trans(
-          ((c + (a2 * c)) * d), ((c * d) + ((a2 * c) * d)), ((c * d) + (a2 * (c * d))),
-          nat_mul_add(c, (a2 * c), d),
-          nat_congruence((fun (x : Nat) => ((c * d) + x)), ((a2 * c) * d), (a2 * (c * d)), h(c, d))
+        fun (d : Nat) => trans(
+          nat_mul_add(c, (a2 * c), d), cong((fun (x : Nat) => ((c * d) + x)), h(c, d))
         )
       )
     );
   };
 
-def nat_quotient_bound(d : Nat, q : Nat) =
-  induction q as q2 return (q2 <= (q2 * succ(succ(d)))) {
+def nat_quotient_bound(d : Nat, q : Nat) = induction q as q2 return (q2 <= (q2 * succ(succ(d)))) {
     zero => tt;
     succ h => nat_le_trans(
       q2, (q2 * succ(succ(d))), succ((d + (q2 * succ(succ(d))))), h,
@@ -321,9 +270,7 @@ def nat_quotient_bound(d : Nat, q : Nat) =
     );
   };
 
-def bounded_least_search(
-  P : (Nat -> U0), dec : (forall n : Nat, (P(n) or (P(n) -> Void))), n : Nat
-) =
+def bounded_least_search(P : (Nat -> U0), dec : (forall n : Nat, (P(n) or (P(n) -> Void))), n : Nat) =
   induction n as n2 return (
     (
       exists i : Nat,
@@ -603,16 +550,7 @@ def divides_transitive(d : Nat, m : Nat, n : Nat, dm : Divides(d, m), mn : Divid
     unpack mn as (l, pl) return Divides(d, n) {
       typed(
         Divides(d, n),
-        (
-          (l * k),
-          nat_eq_trans(
-            ((l * k) * d), (l * (k * d)), n, nat_mul_assoc(l, k, d),
-            nat_eq_trans(
-              (l * (k * d)), (l * m), n, nat_congruence((fun (x : Nat) => (l * x)), (k * d), m, pk),
-              pl
-            )
-          )
-        )
+        ((l * k), trans(nat_mul_assoc(l, k, d), trans(cong((fun (x : Nat) => (l * x)), pk), pl)))
       );
     };
   };
@@ -629,10 +567,7 @@ def multiples_not_adjacent(d : Nat, k : Nat) =
         succ ignored => (
           fun (p : ((succ(k2) * succ(succ(d))) = 1)) => nat_zero_ne_succ(
             (d + (k2 * succ(succ(d)))),
-            nat_eq_sym(
-              succ((d + (k2 * succ(succ(d))))), 0,
-              nat_succ_injective(succ((d + (k2 * succ(succ(d))))), 0, p)
-            )
+            sym(nat_succ_injective(succ((d + (k2 * succ(succ(d))))), 0, p))
           )
         );
       }
@@ -647,16 +582,7 @@ def multiples_not_adjacent(d : Nat, k : Nat) =
             k3,
             nat_add_cancel(
               succ(succ(d)), (k3 * succ(succ(d))), succ((k2 * succ(succ(d)))),
-              nat_eq_trans(
-                (succ(succ(d)) + (k3 * succ(succ(d)))),
-                succ((succ(succ(d)) + (k2 * succ(succ(d))))),
-                (succ(succ(d)) + succ((k2 * succ(succ(d))))), p,
-                nat_eq_sym(
-                  (succ(succ(d)) + succ((k2 * succ(succ(d))))),
-                  succ((succ(succ(d)) + (k2 * succ(succ(d))))),
-                  nat_add_succ(succ(succ(d)), (k2 * succ(succ(d))))
-                )
-              )
+              trans(p, sym(nat_add_succ(succ(succ(d)), (k2 * succ(succ(d))))))
             )
           )
         );
@@ -671,16 +597,7 @@ def nontrivial_divisor_not_consecutive(
 ) =
   unpack dn as (k, pk) return Void {
     unpack dsn as (l, pl) return Void {
-      multiples_not_adjacent(
-        d, k, l,
-        nat_eq_trans(
-          (l * succ(succ(d))), succ(n), succ((k * succ(succ(d)))), pl,
-          nat_eq_sym(
-            succ((k * succ(succ(d)))), succ(n),
-            nat_congruence((fun (n2 : Nat) => succ(n2)), (k * succ(succ(d))), n, pk)
-          )
-        )
-      );
+      multiples_not_adjacent(d, k, l, trans(pl, sym(cong((fun (n2 : Nat) => succ(n2)), pk))));
     };
   };
 
@@ -723,9 +640,8 @@ def bounded_divisor_of_factorial(d : Nat, n : Nat) =
           Divides(succ(succ(d)), factorial(succ(n2))),
           (
             factorial(n2),
-            nat_eq_trans(
-              (factorial(n2) * succ(succ(d))), (factorial(n2) * succ(n2)), factorial(succ(n2)),
-              nat_congruence((fun (x : Nat) => (factorial(n2) * x)), succ(succ(d)), succ(n2), same),
+            trans(
+              cong((fun (x : Nat) => (factorial(n2) * x)), same),
               nat_mul_comm(factorial(n2), succ(n2))
             )
           )

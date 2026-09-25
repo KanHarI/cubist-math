@@ -272,3 +272,90 @@ uses that endpoint. This lets a positive face accept a compact interval whose
 unused negative endpoint would exceed the native lattice budget. Tube-face
 substitution reports a budget error rather than an invalid-face diagnostic
 when a genuinely needed expansion is too large.
+
+## Shared syntax refactor and corpus adoption (2026-09-25)
+
+The three later resource reproductions had one common cause: compact syntax
+graphs were treated as expanded trees at different boundaries. The elaborator
+now uses one bounded graph traversal and copying module for fresh names and
+native-reference replacement. Pushout construction uses that traversal and
+the active proof deadline. Native request caching keys interval contexts by
+their assignments, and the native CLI emits shared result nodes once with
+`$id`/`$ref`; the JS adapter reconstructs the original shared syntax. The
+26-level Pushout source now checks under a 100 ms proof deadline, an 18-level
+nested path input serializes below 2 KB, and a 22-level shared application
+round-trips through the native CLI without expanding its JSON exponentially.
+No kernel checking or equality rule changed.
+
+The corpus cleanup removes 25 unused proof-local `let` bindings across 23
+files and two identity `have` aliases from `field_product_is_set`. The latter
+proof now introduces its four arguments together. Four group cancellation
+proofs use checked `rw` chains; three redundant arithmetic path wrappers were
+removed and their 35 calls use `sym`, `trans`, and `cong` directly. The named
+arithmetic results remain; `nat_add_shuffle` and `nat_double_add` use `calc`. Existing
+function-extensionality proofs in the binary and radix inductions use `ext`,
+and two path-algebra proofs use nested `path` abstraction and `@` in place of
+explicit interval families. Direct transport expressions in cardinality and
+loop rebasing use `along`. Concrete binary examples use `rfl`, and the
+factorial step uses `rw`. These edits preserve theorem statements and reported
+assumptions for the retained results. The inferred types of `nat_add_shuffle`,
+`cardinality_path`, and `rebase_loop` were compared with their old types by
+native kernel conversion. Historical benchmark and migration JSON snapshots
+still record the pre-cleanup corpus and are not current declaration inventories.
+All 39 retained declarations in `primes` have kernel-convertible types and the
+same reported assumptions as before the three helper declarations were removed.
+
+Run `node tools/audit-proof-ergonomics-usage.mjs` to count AST occurrences in
+the canonical corpus, excluding comments and design fixtures. Current counts
+are 7 `rfl`, 5 `rw`, 7 `ext`, 6 `path` abstractions, 12 `@` applications, 3
+grouped introductions, 2 grouped binder uses, 4 `along`, 2 `calc`, and two
+uses each of `simp only`, `simpa only`, `over`, and `apd_path`.
+Rule registrations, untyped expected lambdas, and value-style `have` remain
+exercised in checked examples and regressions but have no corpus use yet.
+Their absence is an adoption gap, not
+evidence of a proof shortcut: avoid replacing a one-line direct proof with a
+longer tactic invocation solely to raise the count.
+
+Verification after this cleanup: the full JS suite passed 351 tests, including
+the canonical corpus with 3,763 checked declarations, 44 templates, and no
+failed or blocked declarations. All 36 changed proof modules and their imports
+checked; the kernel tests, `make lint`, inspector browser test, and built-site
+browser test passed. The undefined-behavior sanitizer passed the native C
+suite and all 13 CLI adapter tests, including the shared output regressions.
+The address-sanitized native binaries compiled, but the
+sanitizer run stalled on its independent `test-lattice` binary, and a trivial
+sanitized CLI query also did not finish within five seconds. Those sanitizer
+executions were interrupted; they are not counted as passing checks.
+
+## Focused simplification and dependent-path adoption (2026-09-25)
+
+Eight existing proofs now use the four remaining requested features. These
+are canonical library proofs, not new demonstration declarations:
+
+| Feature | Existing declarations | Simplification |
+| --- | --- | --- |
+| `simp only` | `ring_distribute_left`, `ring_add_cancel_prefix` in [ring_laws](../../web/proofs/ring_laws.cubist) | Replace explicit congruence/composition chains with selected ring laws. Commutativity is instantiated at the required arguments rather than used as a looping general rule. |
+| `simpa only` | `field_add_cancel`, `field_inverse_unique` in [ordered_fields](../../web/proofs/ordered_fields.cubist) | Normalize the supplied equality after applying the inverse operation; remove the `undoY`/`undoZ` intermediates and explicit chains. |
+| `over` | `field_subtype_ext` in [field_extensionality](../../web/proofs/field_extensionality.cubist), `group_hom_ext_at` in [group_hom_universes](../../web/proofs/group_hom_universes.cubist) | Construct the genuinely dependent second-component path from transported law evidence, then assemble the pair path directly. |
+| `apd_path` | `apd_constant` in [paths](../../web/proofs/paths.cubist), `ap_interchange` in [equivalence_from_inverse](../../web/proofs/equivalence_from_inverse.cubist) | Replace explicit interval families and pointwise function applications in existing homotopy laws. These use the constant-family specialization of dependent path action. |
+
+The pair proofs rely on judgmental Sigma eta, making
+`field_dependent_pair_path`, `field_sigma_eta`, and `group_hom_eta_at`
+unnecessary. Their only corpus callers have been replaced, and the universe
+regression now checks the retained homomorphism schemas at U0–U3. No whole
+file became unused. This follow-up removes 109 source lines across six proof
+modules, relative to the first cleanup above. No elaborator or kernel changes
+were needed for these substitutions.
+
+Native conversion checks against saved pre-edit sources confirmed the types
+and reported assumptions of all 83 retained declarations, including 116
+universe specializations. The two `apd_path` replacements also have
+kernel-convertible proof terms. The simplification and pair-path rewrites
+change proof construction; their consumers were rechecked rather than
+assuming that all equality witnesses are interchangeable.
+
+Verification: all six affected modules check, formatting preserves their
+expanded syntax, and the full 351-test suite passes. The canonical corpus has
+3,761 checked declarations and 43 templates, with zero failed or blocked
+declarations. The AST usage audit reports exactly two uses of each requested
+feature (`simpOnly`/`simpaOnly` are its names for the explicit `only` forms).

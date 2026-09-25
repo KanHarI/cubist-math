@@ -40,7 +40,6 @@ def polynomial_map_linear_factor(
   polynomial_map(K, L, e, polynomial_linear_factor(K, x)) = polynomial_linear_factor(
     L, field_embedding_map(K, L, e, x)
   ) {
-  let f = field_embedding_map(K, L, e);
   obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
   exact trans(
     polynomial_map_add(K, L, e, polynomial_variable(K), polynomial_constant(K, field_neg(K, x))),

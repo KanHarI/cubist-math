@@ -53,9 +53,7 @@ def UniformFiberCount(A : U0, n : Nat, m : Nat) =
 // Equal-size finite fibers multiply their size by the size of the base.
 // The family is identified with the constant Fin(m) family by univalence.
 def finite_uniform_fiber_count(n : Nat, m : Nat) : UniformFiberCount(Fin(n), n, m) {
-  intro B;
-  intro sets;
-  intro counts;
+  intro B sets counts;
   let A = (exists i : Fin(n), B(i));
   let C = Fin(n) and Fin(m);
   let k = multiply_count(n, m);
@@ -81,23 +79,17 @@ def finite_uniform_fiber_count(n : Nat, m : Nat) : UniformFiberCount(Fin(n), n, 
   );
 }
 
-def uniform_fiber_count(
-  A : U0, setA : IsSet(A), n : Nat, m : Nat, countA : HasCardinality(A, n)
-) :
+def uniform_fiber_count(A : U0, setA : IsSet(A), n : Nat, m : Nat, countA : HasCardinality(A, n)) :
   UniformFiberCount(A, n, m) {
-  intro B;
-  intro sets;
-  intro counts;
+  intro B sets counts;
   let Goal = HasCardinality((exists a : A, B(a)), multiply_count(n, m));
   have useEnumeration : Bijection(Fin(n), A) -> Goal {
     intro e;
     let same = ua(U0, Fin(n), A, bijection_equiv(Fin(n), A, setA, e));
-    let result =
-      transport(
-        (fun (X : U0) => UniformFiberCount(X, n, m)), Fin(n), A, same,
-        finite_uniform_fiber_count(n, m)
-      );
-    exact result(B, sets, counts);
+    exact transport(
+      (fun (X : U0) => UniformFiberCount(X, n, m)), Fin(n), A, same,
+      finite_uniform_fiber_count(n, m)
+    )(B, sets, counts);
   }
   exact mere_eliminate(
     Bijection(Fin(n), A), Goal, has_cardinality_prop((exists a : A, B(a)), multiply_count(n, m)),

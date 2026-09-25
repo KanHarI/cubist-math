@@ -86,7 +86,6 @@ def extension_loop_relation_to_embeddings(
     )
   ) = field_zero(extension_field(K, E)) {
   let F = extension_field(K, E);
-  let f = galois_field_embedding(K, E, extension_path_iso(K, E, E, p));
   let g = galois_field_embedding(K, E, extension_path_iso(K, E, E, q));
   exact trans(
     cong(

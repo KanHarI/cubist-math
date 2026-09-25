@@ -5,18 +5,13 @@ import paths;
 // child function with the leaf's function, or a Unit-indexed one with its value.
 def binary_empty_children(f : Void -> BinaryPositive) :
   (fun (v : Void) => typed(BinaryPositive, absurd(v))) = f {
-  exact FunExt(
-    U0, Void, (fun (v : Void) => BinaryPositive),
-    (fun (v : Void) => typed(BinaryPositive, absurd(v))), f,
-    (fun (v : Void) => typed((typed(BinaryPositive, absurd(v)) = f(v)), absurd(v)))
-  );
+  ext v;
+  exact typed((typed(BinaryPositive, absurd(v)) = f(v)), absurd(v));
 }
 
 def binary_unit_children(f : Unit -> BinaryPositive) : (fun (u : Unit) => f(tt)) = f {
-  exact FunExt(
-    U0, Unit, (fun (u : Unit) => BinaryPositive), (fun (u : Unit) => f(tt)), f,
-    (fun (u : Unit) => unit_induction((fun (v : Unit) => f(tt) = f(v)), refl(f(tt)), u))
-  );
+  ext u;
+  exact unit_induction((fun (v : Unit) => f(tt) = f(v)), refl(f(tt)), u);
 }
 
 def binary_label_induction(

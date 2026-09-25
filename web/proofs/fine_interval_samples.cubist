@@ -36,7 +36,6 @@ def archimedean_interval_fine_samples(
   ), mesh : F, positiveMesh : lt(zero, mesh)
 ) :
   FieldExists(FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b)) {
-  let I = FieldUnitInterval(F, zero, one, lt);
   let width = interval_difference(F, zero, one, addF, negF, lt, a, b);
   let nonnegativeWidth =
     field_difference_nonnegative(

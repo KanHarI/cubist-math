@@ -106,7 +106,6 @@ def embedding_tower_pair_roundtrip(
   let d2 = sigma_first(A, B, back);
   let u = sigma_second(A, B, back);
   let v = sigma_second(A, B, tower);
-  let map = embedding_over(R, L, h, T, embedding_over(K, R, i, T, j, d), v);
   let over = embedding_over_law(R, L, h, T, embedding_over(K, R, i, T, j, d), v);
   let same =
     embeddings_over_ext(

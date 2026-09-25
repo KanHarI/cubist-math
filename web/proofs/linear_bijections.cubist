@@ -139,8 +139,6 @@ def adjoin_nonzero_impossible(
   ) = vector_zero(K, V), nonzero : FieldNonzero(af_carrier(K), af_operations(K), a)
 ) :
   Void {
-  let A = af_carrier(K);
-  let ops = af_operations(K);
   let C = CoordinateSpace(K, m);
   let F = linear_map(K, C, V, f);
   let y = F(rest);

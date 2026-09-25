@@ -74,7 +74,6 @@ def finite_selected_bool_step(
   HasFiniteCardinality(Selected(Fin(succ(k)), p)) {
   let A = Fin(k);
   let q = predicate_tail(A, p);
-  let S = Selected(A, q);
   let W = Selected(Fin(succ(k)), p);
   let norm = selected_normalize(A, p);
   obtain (m, count) = previous(q);

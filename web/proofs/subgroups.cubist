@@ -143,7 +143,6 @@ def subgroup_laws_prop(
   let unitTail = unitLaw and multiplicationTail;
   let unitTailUnique =
     product_prop(unitLaw, multiplicationTail, unitUnique, multiplicationTailUnique);
-  let membershipTail = membershipLaw and unitTail;
   let membershipTailUnique =
     product_prop(membershipLaw, unitTail, membershipUnique, unitTailUnique);
   exact membershipTailUnique(p, q);

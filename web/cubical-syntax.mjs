@@ -1,4 +1,5 @@
 import { bindDimensions } from "./dist/cubical-runtime/dimension-slots.mjs";
+import { dimensionContextKey } from "./dist/cubical-runtime/syntax-graph.mjs";
 // Lossless syntax transport between named cubical ASTs and C arena handles.
 // This layer never decides typing or equality. Every checked result comes
 // from CubicalKernel.check; shared input objects retain shared arena nodes.
@@ -26,7 +27,7 @@ export class CubicalSyntax {
   }
   encode(term, dimensions = new Map()) {
     if (!term || typeof term !== "object") throw new TypeError("Expected cubical syntax.");
-    const key = JSON.stringify([...dimensions]);
+    const key = dimensionContextKey(dimensions);
     const cached = this.encoded.get(term)?.get(key);
     if (cached) return cached;
     const k = this.kernel, child = t => this.encode(t, dimensions);
@@ -112,7 +113,7 @@ export class CubicalSyntax {
     });
   }
   decode(id, dimensions = new Map()) {
-    const cacheKey = JSON.stringify([id, [...dimensions]]);
+    const cacheKey = JSON.stringify([id,dimensionContextKey(dimensions)]);
     if (this.decoded.has(cacheKey)) return this.decoded.get(cacheKey);
     const { kind: tag, payload, children: c } = this.kernel.node(id);
     const child = i => this.decode(c[i], dimensions);
@@ -191,7 +192,7 @@ export class CubicalSyntax {
       }
     };
     freeze(result);
-    this.encoded.set(result, new Map([[JSON.stringify([...dimensions]), id]]));
+    this.encoded.set(result, new Map([[dimensionContextKey(dimensions), id]]));
     this.decoded.set(cacheKey, result);
     return result;
   }

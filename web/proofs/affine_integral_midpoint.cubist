@@ -41,7 +41,6 @@ def affine_dyadic_sum_successor(
       ), depth
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
   let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let midpoint =
     interval_midpoint_point(

@@ -231,7 +231,6 @@ def subfield_laws_prop(
   let oneTailUnique = product_prop(oneLaw, negationTail, oneUnique, negationTailUnique);
   let zeroTail = zeroLaw and oneTail;
   let zeroTailUnique = product_prop(zeroLaw, oneTail, zeroUnique, oneTailUnique);
-  let membershipTail = membershipLaw and zeroTail;
   let membershipTailUnique =
     product_prop(membershipLaw, zeroTail, membershipUnique, zeroTailUnique);
   exact membershipTailUnique(p, q);

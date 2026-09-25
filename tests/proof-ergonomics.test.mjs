@@ -148,6 +148,29 @@ test("positive composition faces use only the needed endpoint of a compact inter
   assert.equal(result.outputs[0].verified,true,result.outputs[0].reason);
 });
 
+test("pushout construction visits shared source types within the proof deadline",()=>{
+  const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
+  const programPath=new URL("../web/cubical-program.mjs",import.meta.url).href;
+  let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 = A;";
+  for(let i=1;i<=26;i++)source+=`let T${i} = F(T${i-1},T${i-1});`;
+  source+=`let P = Pushout(T26, Unit, Unit, fun (x : T26) => tt, fun (x : T26) => tt);
+    have h : forall x : P, x = x { intro x; exact path i => x; } rfl; }
+    def after : 0 = 0 { rfl; }`;
+  const script=`import createCubical from ${JSON.stringify(wasm)};
+    import {CubicalProgram} from ${JSON.stringify(programPath)};
+    const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import");},
+      {collectReferences:false});
+    program.kernel.setDeadline(100);
+    try { const result=await program.check(process.argv[1],"shared_pushout");
+      console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));
+    } finally {program.dispose();}`;
+  const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script,source],
+    {encoding:"utf8",timeout:2500});
+  assert.equal(child.error,undefined,child.stderr);
+  assert.equal(child.status,0,child.stderr);
+  assert.deepEqual(JSON.parse(child.stdout.trim()).map(output=>output.verified),[true,true]);
+});
+
 test("new proof syntax survives formatting with the same expanded AST",async()=>{
   for(const name of ["arithmetic","cubical","dependent","type-transport"]) {
     const source=await sample(name),formatted=formatMathScript(source);

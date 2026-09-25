@@ -1815,24 +1815,7 @@ def homotopy_self(U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x),
 
 // Applying f commutes with the actions of g∘f and f∘g on paths.
 def ap_interchange(U : Universe, A : U, B : U, f : A -> B, g : B -> A, x : A, y : A, p : x = y) =
-  path(
-    fun (interval_refl : Interval) => PathP(
-      fun (interval_equality : Interval) => B, f(g(f(x))), f(g(f(y)))
-    ),
-    fun (interval_refl : Interval) => path(
-      fun (interval_apply_ : Interval) => B,
-      fun (interval_apply_ : Interval) => f(
-        at(
-          path(
-            fun (interval_apply : Interval) => A,
-            fun (interval_apply : Interval) => (fun (argument : A) => g(f(argument)))(
-              at(p, interval_apply)
-            )
-          ), interval_apply_
-        )
-      )
-    )
-  );
+  refl(apd_path((fun (a : A) => f(g(f(a)))), p));
 
 // Keep f, g and eta. Correct epsilon so that the half-adjoint triangle holds:
 // epsilon'(y) = epsilon(f(g(y)))⁻¹ · ap(f, eta(g(y))) · epsilon(y).

@@ -83,17 +83,7 @@ def field_add_cancel(
 ) :
   y = z {
   obtain (assoc, comm, unit, additiveInverse) = laws;
-  let undoY =
-    trans(
-      sym(assoc(negF(x), x, y)),
-      trans(cong((fun (a : F) => addF(a, y)), additiveInverse(x)), unit(y))
-    );
-  let undoZ =
-    trans(
-      sym(assoc(negF(x), x, z)),
-      trans(cong((fun (a : F) => addF(a, z)), additiveInverse(x)), unit(z))
-    );
-  exact trans(sym(undoY), trans(cong((fun (a : F) => addF(negF(x), a)), same), undoZ));
+  simpa only [<- assoc, additiveInverse, unit] using cong(addF(negF(x)), same);
 }
 
 def field_inverse_unique(
@@ -102,19 +92,7 @@ def field_inverse_unique(
 ) :
   y = z {
   obtain (assoc, comm, unit, distribute) = laws;
-  exact trans(
-    sym(unit(y)),
-    trans(
-      cong((fun (a : F) => mulF(a, y)), sym(rightLaw)),
-      trans(
-        assoc(x, z, y),
-        trans(
-          cong(mulF(x), comm(z, y)),
-          trans(sym(assoc(x, y, z)), trans(cong((fun (a : F) => mulF(a, z)), leftLaw), unit(z)))
-        )
-      )
-    )
-  );
+  simpa only [<- assoc, leftLaw, rightLaw, unit] using cong(mulF(x), comm(z, y));
 }
 
 def field_zero_not_one(

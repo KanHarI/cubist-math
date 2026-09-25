@@ -134,7 +134,6 @@ def polynomial_root_family_upper_bound(
 ) :
   Void {
   let n = succ(polynomial_degree(K, p));
-  let R = PolynomialRoots(K, L, e, p);
   let P = PolynomialRoot(K, L, e, p);
   obtain (f, distinct) = family;
   let roots = fun (i : Fin(n)) => sigma_first(af_carrier(L), P, f(i));

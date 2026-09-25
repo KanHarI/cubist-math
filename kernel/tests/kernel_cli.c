@@ -31,6 +31,10 @@ static void formula(const cc_formula *f) {
     putchar(']');
 }
 
+/* This adapter emits checked syntax as a graph. JSON has no object sharing,
+ * so later visits point to the first occurrence of a native handle. */
+static unsigned char *printed_terms;
+static size_t printed_capacity;
 static void term(cc_kernel *k, cc_term t, unsigned depth);
 static void field(cc_kernel *k, const char *name, cc_term t, unsigned depth) {
     printf(",\"%s\":", name);
@@ -43,11 +47,17 @@ static void term(cc_kernel *k, cc_term t, unsigned depth) {
     cc_term_kind kind;
     uint32_t payload;
     cc_term ch[4];
-    if (depth > 1024 || !cc_kernel_node(k, t, &kind, &payload, ch)) {
+    if (!t || t >= printed_capacity || depth > 1024 ||
+        !cc_kernel_node(k, t, &kind, &payload, ch)) {
         fputs("null", stdout);
         return;
     }
-    printf("{\"tag\":\"%s\"", tags[kind]);
+    if (printed_terms[t]) {
+        printf("{\"$ref\":%u}", t);
+        return;
+    }
+    printed_terms[t] = 1;
+    printf("{\"$id\":%u,\"tag\":\"%s\"", t, tags[kind]);
     if (kind == CC_U) printf(",\"level\":%u", payload);
     if (kind == CC_DEFREF) {
         uint32_t symbol;
@@ -272,10 +282,22 @@ int main(void) {
                         break;
                     }
                 }
+                cc_term highest = result.type > (normalize ? result.normal : result.expression)
+                    ? result.type : (normalize ? result.normal : result.expression);
+                printed_capacity = (size_t)highest + 1;
+                printed_terms = calloc(printed_capacity, 1);
+                if (!printed_terms) {
+                    fputs("{\"ok\":false,\"error\":\"Native output allocation failed.\"}\n", stdout);
+                    status = 0;
+                    break;
+                }
                 fputs("{\"ok\":true,\"type\":", stdout); term(k, result.type, 0);
                 fputs(",\"normal\":", stdout); term(k, normalize ? result.normal : result.expression, 0);
                 printf(",\"arenaNodes\":%zu,\"arenaBytes\":%zu", result.arena_nodes, result.arena_bytes);
                 printf(",\"checkingSteps\":%" PRIu64 ",\"reductionSteps\":%" PRIu64 "}\n", result.checking_steps, result.reduction_steps);
+                free(printed_terms);
+                printed_terms = NULL;
+                printed_capacity = 0;
             } else printf("{\"ok\":false,\"error\":\"%s\"}\n", cc_kernel_error(k));
             status = 0;
             break;
@@ -285,6 +307,7 @@ int main(void) {
     free(terms.items);
     free(formulas.items);
     free(assumptions);
+    free(printed_terms);
     cc_kernel_free(k);
     return status;
 }

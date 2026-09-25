@@ -52,7 +52,6 @@ def curve_refinement_partition_estimate(
   let I = FieldUnitInterval(F, zero, one, lt);
   let n = subdivision_count(I, a, b, coarse);
   let vertices = subdivision_vertices(I, a, b, coarse);
-  let tags = subdivision_tags(I, a, b, coarse);
   let first = sample_first(I, n, vertices);
   let last = sample_last(I, n, vertices);
   obtain (pieces, valid, computes) = refinement;

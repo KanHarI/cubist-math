@@ -7,7 +7,6 @@ import finite_cardinalities;
 // An extension automorphism is a field embedding of its ambient field.
 def galois_field_embedding(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)) :
   FieldEmbedding(extension_field(K, E), extension_field(K, E)) {
-  let F = extension_field(K, E);
   let A = extension_carrier(K, E);
   let f = extension_iso_forward(K, E, E, e);
   let bijection = structure_iso_bijection(ExtensionData(K), ExtensionPreserved(K), E, E, e);
@@ -34,7 +33,6 @@ def fixing_automorphism_over_intermediate(
   let F = extension_field(K, E);
   let S = intermediate_subfield(K, E, M);
   let R = intermediate_as_field(K, E, M);
-  let i = intermediate_ambient_embedding(K, E, M);
   let h = galois_field_embedding(K, E, e);
   exact (h, (fun (x : af_carrier(R)) => fixes(subfield_value(F, S, x), subfield_evidence(F, S, x))));
 }

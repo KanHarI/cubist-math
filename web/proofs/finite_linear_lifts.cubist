@@ -172,11 +172,9 @@ def coordinate_surjection_bound(
   let N = CoordinateSpace(K, n);
   let C = CoordinateSpace(K, succ(n));
   let F = linear_map(K, N, V, f);
-  let H = linear_map(K, C, V, h);
   have noLift : FiniteLinearLift(K, N, V, f, succ(n), h) -> Void {
     intro witness;
     obtain (l, square) = witness;
-    let L = linear_map(K, C, N, l);
     have injective : CoordinateInjection(K, succ(n), n, l) {
       intro x;
       intro y;

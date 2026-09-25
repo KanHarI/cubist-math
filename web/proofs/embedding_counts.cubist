@@ -186,7 +186,6 @@ def finite_separable_count_step(n : Nat, previous : FiniteSeparableEmbeddingCoun
   let algebraic = finite_extension_algebraic(K, L, e, finite);
   let x = finite_head(af_carrier(L), n, generators);
   let alg = algebraic(x);
-  let p = minimal_polynomial(K, L, e, x, alg);
   let M = minimal_polynomial_modulus(K, L, e, x, alg);
   let irr = minimal_polynomial_irreducible(K, L, e, x, alg);
   obtain (nonzero, monic, root, divides) = minimal_polynomial_spec(K, L, e, x, alg);

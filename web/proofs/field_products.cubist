@@ -32,41 +32,25 @@ def field_pair_path_decode(A : U1, B : U1, u : A and B, v : A and B, p : u = v) 
     ), field_pair_path_refl(A, B), u, v, p
   );
 
-def field_product_is_set(A : U1, B : U1, setA : FieldSet(A), setB : FieldSet(B)) :
-  FieldSet(A and B) {
-  intro u;
-  intro v;
-  intro p;
-  intro q;
-  have pathP : u = v {
-    exact p;
-  }
-  have pathQ : u = v {
-    exact q;
-  }
+def field_product_is_set(A : U1, B : U1, setA : FieldSet(A), setB : FieldSet(B)) : FieldSet(A and B) {
+  intro u v p q;
   let sameFirst =
-    setA(
-      field_fst(A, B, u), field_fst(A, B, v), cong(field_fst(A, B), pathP),
-      cong(field_fst(A, B), pathQ)
-    );
+    setA(field_fst(A, B, u), field_fst(A, B, v), cong(field_fst(A, B), p), cong(field_fst(A, B), q));
   let sameSecond =
-    setB(
-      field_snd(A, B, u), field_snd(A, B, v), cong(field_snd(A, B), pathP),
-      cong(field_snd(A, B), pathQ)
-    );
+    setB(field_snd(A, B, u), field_snd(A, B, v), cong(field_snd(A, B), p), cong(field_snd(A, B), q));
   exact trans(
-    sym(field_pair_path_decode(A, B, u, v, pathP)),
+    sym(field_pair_path_decode(A, B, u, v, p)),
     trans(
       cong(
         (
           fun (r : field_fst(A, B, u) = field_fst(A, B, v)) => field_pair_path(
-            A, B, u, v, r, cong(field_snd(A, B), pathP)
+            A, B, u, v, r, cong(field_snd(A, B), p)
           )
         ), sameFirst
       ),
       trans(
-        cong(field_pair_path(A, B, u, v, cong(field_fst(A, B), pathQ)), sameSecond),
-        field_pair_path_decode(A, B, u, v, pathQ)
+        cong(field_pair_path(A, B, u, v, cong(field_fst(A, B), q)), sameSecond),
+        field_pair_path_decode(A, B, u, v, q)
       )
     )
   );

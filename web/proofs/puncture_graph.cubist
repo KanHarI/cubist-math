@@ -52,7 +52,6 @@ def bouquet_map_generator(A : U0, X : U0, point : X, loops : A -> (point = point
     bouquet_generator(A, a)
   ) = loops(a) {
   let map = bouquet_map(A, X, point, loops);
-  let first = ap(U1, Bouquet(A), X, map, bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a));
   let back =
     ap(
       U1, Bouquet(A), X, map, bouquet_tip(A), bouquet_base(A),

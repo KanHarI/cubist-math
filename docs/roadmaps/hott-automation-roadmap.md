@@ -279,11 +279,13 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   becomes an expected failure. The fixture decides the C1/C2 classification
   and detects any change to kernel computation. Then audit the
   library's proofs by induction where the kernel already computes: the
-  statements of `path_map_constant`, `path_map_identity` and `field_sigma_eta`
-  hold by conversion, and primes' `nat_eq_sym`, `nat_eq_trans` and
-  `nat_congruence` re-implement `sym`, `trans` and `cong` by path induction.
-  Replace them where intended, record each changed witness, and recheck its
-  consumers (invariant 9).
+  statements of `path_map_constant` and `path_map_identity` hold by conversion.
+  The former `field_sigma_eta` helper has been removed: `field_subtype_ext`
+  now builds its pair path directly, relying on judgmental Sigma eta.
+  The redundant prime arithmetic wrappers for `sym`,
+  `trans`, and `cong` have been removed; their callers use the checked builtins.
+  Replace the remaining induction proofs where intended, record each changed
+  witness, and recheck its consumers (invariant 9).
 - [ ] **A8. Σ projections with inferred families.** Add projection syntax, for
   example `p.1` and `p.2`, elaborating to the core `First` and `Second` with
   the family read from the checked type of `p`. The library spells projections
@@ -1227,12 +1229,13 @@ Transport along a constant family still computes on closed values:
 
 The library proves several of these laws by induction: `path_map_constant` and
 `path_map_identity` in [homotopy_paths](../../web/proofs/homotopy_paths.cubist)
-by path induction, and `field_sigma_eta` in
-[field_extensionality](../../web/proofs/field_extensionality.cubist) by pair
-induction.
-[primes](../../web/proofs/primes.cubist) defines `nat_eq_sym`, `nat_eq_trans`
-and `nat_congruence` by path induction; `nat_add_zero`, and therefore the
-arithmetic measurements in this document, use them. A statement that `rfl`
+by path induction. The former `field_sigma_eta` pair-induction helper in
+[field_extensionality](../../web/proofs/field_extensionality.cubist) has been
+removed; `field_subtype_ext` now uses judgmental Sigma eta directly.
+[primes](../../web/proofs/primes.cubist) used to define `nat_eq_sym`,
+`nat_eq_trans` and `nat_congruence` by path induction; the historical arithmetic
+measurements in this document include them. The current corpus uses `sym`,
+`trans`, and `cong` directly. A statement that `rfl`
 also proves does not identify witnesses: `close_path` in
 [path_actions](../../web/proofs/path_actions.cubist) has type
 `origin = origin`, which `rfl` inhabits, but its witness is a nontrivial loop.

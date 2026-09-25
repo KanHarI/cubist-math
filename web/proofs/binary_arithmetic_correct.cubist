@@ -6,10 +6,11 @@ def nat_add_one(n : Nat) : n + 1 = succ(n) {
 }
 
 def nat_double_add(a : Nat, b : Nat) : (a + b) + (a + b) = (a + a) + (b + b) {
-  exact trans(
-    nat_add_assoc(a, b, a + b),
-    trans(cong(add(a), nat_add_shuffle(b, a, b)), sym(nat_add_assoc(a, a, b + b)))
-  );
+  calc {
+    (a + b) + (a + b) = a + (b + (a + b)) by nat_add_assoc(a, b, a + b);
+    _ = a + (a + (b + b)) by cong(add(a), nat_add_shuffle(b, a, b));
+    _ = (a + a) + (b + b) by sym(nat_add_assoc(a, a, b + b));
+  }
 }
 
 def BinaryAddCorrect(p : BinaryPositive, q : BinaryPositive) =

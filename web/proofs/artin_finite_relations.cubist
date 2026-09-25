@@ -375,7 +375,6 @@ def hom_family_twisted_tail_relation(
   let tail = finite_tail(af_carrier(L), n, twisted);
   let tailMaps = finite_tail(FieldEmbedding(K, L), n, maps);
   let tailSum = hom_family_sum(K, L, n, tailMaps, tail, x);
-  let headTerm = field_mul(L, twisted(head), field_embedding_map(K, L, maps(head), x));
   let headZero =
     trans(
       cong(

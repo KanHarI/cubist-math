@@ -8,7 +8,7 @@ def reverse_path(A : U0, x : A, y : A, p : x = y) =
 // Reversing twice computes to the original path, even in an arbitrary type.
 def reverse_twice(A : U0, x : A, y : A, p : x = y) :
   reverse_path(A, y, x, reverse_path(A, x, y, p)) = p {
-  exact refl(p);
+  rfl;
 }
 
 // Function action is pointwise application along a path.
@@ -45,7 +45,7 @@ def collapse_suspension(A : U0, z : Susp(A)) =
   );
 
 def collapse_north(A : U0) : collapse_suspension(A, push_left(Susp(A), tt)) = tt {
-  exact refl(tt);
+  rfl;
 }
 
 // The transport-based suspension interface is also derived from the pushout.

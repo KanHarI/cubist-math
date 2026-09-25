@@ -42,30 +42,12 @@ def group_hom_laws_prop_at(
   -> group_carrier_at(U, H), p : GroupHomLawsAt(U, G, H, f), q : GroupHomLawsAt(U, G, H, f)
 ) :
   p = q {
-  exact path(
-    fun (i : Interval) => GroupHomLawsAt(U, G, H, f),
-    fun (i : Interval) => fun (x : group_carrier_at(U, G)) => fun (y : group_carrier_at(U, G)) => at(
-      group_is_set_at(
-        U, H, f(group_multiply_at(U, G, x, y)), group_multiply_at(U, H, f(x), f(y)), p(x, y),
-        q(x, y)
-      ), i
-    )
+  ext x;
+  ext y;
+  exact group_is_set_at(
+    U, H, f(group_multiply_at(U, G, x, y)), group_multiply_at(U, H, f(x), f(y)), p(x, y), q(x, y)
   );
 }
-
-def group_hom_eta_at(U : Universe, G : GroupAt(U), H : GroupAt(U), h : GroupHomAt(U, G, H)) =
-  pair_induction(
-    (
-      fun (k : GroupHomAt(U, G, H)) => typed(
-        GroupHomAt(U, G, H), (group_hom_map_at(U, G, H, k), group_hom_multiply_at(U, G, H, k))
-      ) = k
-    ),
-    (
-      fun (f : group_carrier_at(U, G) -> group_carrier_at(U, H)) => fun (
-        law : GroupHomLawsAt(U, G, H, f)
-      ) => refl(typed(GroupHomAt(U, G, H), (f, law)))
-    ), h
-  );
 
 // Pointwise equal homomorphisms are equal as complete records, including
 // their law fields. No separate proof-irrelevance axiom is used.
@@ -79,28 +61,19 @@ def group_hom_ext_at(
   h = k {
   let f = group_hom_map_at(U, G, H, h);
   let g = group_hom_map_at(U, G, H, k);
-  let p =
-    path(
-      fun (i : Interval) => group_carrier_at(U, G) -> group_carrier_at(U, H),
-      fun (i : Interval) => fun (x : group_carrier_at(U, G)) => at(same(x), i)
-    );
+  have p : f = g {
+    ext x;
+    exact same(x);
+  }
   let laws = GroupHomLawsAt(U, G, H);
   let a = group_hom_multiply_at(U, G, H, h);
   let b = group_hom_multiply_at(U, G, H, k);
-  let square =
-    path_from_transport(
-      fun (i : Interval) => laws(at(p, i)), a, b,
-      group_hom_laws_prop_at(U, G, H, g, transport(laws, f, g, p, a), b)
-    );
-  exact trans(
-    sym(group_hom_eta_at(U, G, H, h)),
-    trans(
-      path(
-        fun (i : Interval) => GroupHomAt(U, G, H),
-        fun (i : Interval) => typed(GroupHomAt(U, G, H), (at(p, i), at(square, i)))
-      ), group_hom_eta_at(U, G, H, k)
-    )
-  );
+  have square : PathP(fun (i : Interval) => laws(p @ i), a, b) {
+    over laws along p by {
+      exact group_hom_laws_prop_at(U, G, H, g, along laws by p from a, b);
+    }
+  }
+  exact path i => (p @ i, square @ i);
 }
 
 def group_hom_identity_at(U : Universe, G : GroupAt(U)) : GroupHomAt(U, G, G) {

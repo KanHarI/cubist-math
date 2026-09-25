@@ -35,45 +35,19 @@ def field_predicate_ext(
   );
 }
 
-def field_dependent_pair_path(
-  A : U1, P : A -> U1, x : A, y : A, p : x = y, u : P(x), v : P(y), q : transport(P, x, y, p, u) = v
-) =
-  path(
-    fun (i : Interval) => exists z : A, P(z),
-    fun (i : Interval) => typed(
-      (exists z : A, P(z)),
-      (at(p, i), at(path_from_transport(fun (j : Interval) => P(at(p, j)), u, v, q), i))
-    )
-  );
-
-def field_sigma_eta(A : U1, P : A -> U1, u : (exists x : A, P(x))) =
-  pair_induction(
-    (
-      fun (v : (exists x : A, P(x))) => typed(
-        (exists x : A, P(x)), (field_first(A, P, v), field_second(A, P, v))
-      ) = v
-    ), (fun (x : A) => fun (h : P(x)) => refl(typed((exists z : A, P(z)), (x, h)))), u
-  );
-
 def field_subtype_ext(
   A : U1, P : A -> U1, prop : (forall a : A, FieldProp(P(a))), u : (exists x : A, P(x)),
   v : (exists x : A, P(x)), p : field_first(A, P, u) = field_first(A, P, v)
 ) :
   u = v {
-  exact trans(
-    sym(field_sigma_eta(A, P, u)),
-    trans(
-      field_dependent_pair_path(
-        A, P, field_first(A, P, u), field_first(A, P, v), p, field_second(A, P, u),
-        field_second(A, P, v),
-        prop(
-          field_first(A, P, v),
-          transport(P, field_first(A, P, u), field_first(A, P, v), p, field_second(A, P, u)),
-          field_second(A, P, v)
-        )
-      ), field_sigma_eta(A, P, v)
-    )
-  );
+  have square : PathP(fun (i : Interval) => P(p @ i), field_second(A, P, u), field_second(A, P, v)) {
+    over P along p by {
+      exact prop(
+        field_first(A, P, v), along P by p from field_second(A, P, u), field_second(A, P, v)
+      );
+    }
+  }
+  exact path i => (p @ i, square @ i);
 }
 
 def field_sigma_prop(

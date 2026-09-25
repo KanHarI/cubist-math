@@ -43,7 +43,6 @@ def root_generated_factorization(
   let T = RootGeneratedField(K, L, e, n, roots);
   let d = root_generated_embedding(K, L, e, n, roots);
   let j = subfield_inclusion(L, S);
-  let c = field_embedding_compose(K, T, L, d, j);
   let triangle =
     field_embedding_factor_triangle(K, L, e, S, root_generated_contains_base(K, L, e, n, roots));
   let rs = root_generated_root(K, L, e, n, roots);

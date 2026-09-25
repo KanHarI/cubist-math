@@ -42,7 +42,6 @@ def affine_sample_variation_sum(
   let I = FieldUnitInterval(F, zero, one, lt);
   let realWeight = interval_weight(F, zero, one, addF, mulF, negF, lt, r);
   let imagWeight = interval_weight(F, zero, one, addF, mulF, negF, lt, s);
-  let realSum = sample_sum(I, F, zero, addF, realWeight, n, vertices, tags);
   let imagSum = sample_sum(I, F, zero, addF, imagWeight, n, vertices, tags);
   let width = sample_interval_width(F, zero, one, addF, negF, lt, n, vertices);
   exact trans(

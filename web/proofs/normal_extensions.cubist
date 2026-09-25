@@ -89,7 +89,6 @@ def splitting_field_embedding_normal(
   intro h;
   intro triangle;
   intro y;
-  let f = field_embedding_map(L, T, j);
   let g = field_embedding_map(L, T, h);
   let S = subfield_image(L, T, j, subfield_top(L));
   let Q = SubfieldPreimage(L, T, h, S);

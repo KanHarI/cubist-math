@@ -62,12 +62,7 @@ def apd_constant(A : U1, B : U1, f : A -> B, x : A, y : A, p : x = y) =
         ),
         face_when(
           (on(interval_path, 1)),
-          fun (interval_compose : Interval) => at(
-            path(
-              fun (interval_apply : Interval) => B,
-              fun (interval_apply : Interval) => f(at(p, interval_apply))
-            ), interval_compose
-          )
+          fun (interval_compose : Interval) => at(apd_path(f, p), interval_compose)
         )
       )
     )
@@ -87,30 +82,17 @@ def right_unit(A : U1, x : A, y : A, p : x = y) =
   );
 
 def inverse_left(A : U1, x : A, y : A, p : x = y) : trans(sym(p), p) = refl(y) {
-  exact path(
-    fun (k : Interval) => y = y,
-    fun (k : Interval) => path(
-      fun (i : Interval) => A,
-      fun (i : Interval) => comp(
-        fun (j : Interval) => A, at(p, flip(i)), face(i, 0, fun (j : Interval) => y),
-        face(i, 1, fun (j : Interval) => at(p, j)),
-        face(k, 1, fun (j : Interval) => at(p, join(flip(i), j)))
-      )
-    )
+  exact path k => path i => comp(
+    fun (j : Interval) => A, p @ flip(i), face(i, 0, fun (j : Interval) => y),
+    face(i, 1, fun (j : Interval) => p @ j), face(k, 1, fun (j : Interval) => p @ join(flip(i), j))
   );
 }
 
 def inverse_right(A : U1, x : A, y : A, p : x = y) : trans(p, sym(p)) = refl(x) {
-  exact path(
-    fun (k : Interval) => x = x,
-    fun (k : Interval) => path(
-      fun (i : Interval) => A,
-      fun (i : Interval) => comp(
-        fun (j : Interval) => A, at(p, i), face(i, 0, fun (j : Interval) => x),
-        face(i, 1, fun (j : Interval) => at(p, flip(j))),
-        face(k, 1, fun (j : Interval) => at(p, meet(i, flip(j))))
-      )
-    )
+  exact path k => path i => comp(
+    fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
+    face(i, 1, fun (j : Interval) => p @ flip(j)),
+    face(k, 1, fun (j : Interval) => p @ meet(i, flip(j)))
   );
 }
 

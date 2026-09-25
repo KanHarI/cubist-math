@@ -48,22 +48,18 @@ def group_inverse_involutive(G : Group, x : group_carrier(G)) :
 
 def group_cancel_left_value(G : Group, a : group_carrier(G), x : group_carrier(G)) :
   group_multiply(G, group_inverse(G, a), group_multiply(G, a, x)) = x {
-  let multiplyLocal = group_multiply(G);
-  exact trans(
-    sym(group_associative(G, group_inverse(G, a), a, x)),
-    trans(
-      cong((fun (z : group_carrier(G)) => multiplyLocal(z, x)), group_inverse_left(G, a)),
-      group_unit_left(G, x)
-    )
-  );
+  rw [
+    <- group_associative(G, group_inverse(G, a), a, x), group_inverse_left(G, a),
+    group_unit_left(G, x)
+  ] at lhs;
 }
 
 def group_cancel_right_value(G : Group, x : group_carrier(G), a : group_carrier(G)) :
   group_multiply(G, group_multiply(G, x, a), group_inverse(G, a)) = x {
-  exact trans(
-    group_associative(G, x, a, group_inverse(G, a)),
-    trans(cong(group_multiply(G, x), group_inverse_right(G, a)), group_unit_right(G, x))
-  );
+  rw [
+    group_associative(G, x, a, group_inverse(G, a)), group_inverse_right(G, a),
+    group_unit_right(G, x)
+  ] at lhs;
 }
 
 def group_cancel_left(
@@ -71,10 +67,7 @@ def group_cancel_left(
   same : group_multiply(G, a, x) = group_multiply(G, a, y)
 ) :
   x = y {
-  exact trans(
-    sym(group_cancel_left_value(G, a, x)),
-    trans(cong(group_multiply(G, group_inverse(G, a)), same), group_cancel_left_value(G, a, y))
-  );
+  rw [<- group_cancel_left_value(G, a, x), same, group_cancel_left_value(G, a, y)] at lhs;
 }
 
 def group_cancel_right(
@@ -82,13 +75,7 @@ def group_cancel_right(
   same : group_multiply(G, x, a) = group_multiply(G, y, a)
 ) :
   x = y {
-  exact trans(
-    sym(group_cancel_right_value(G, x, a)),
-    trans(
-      cong((fun (z : group_carrier(G)) => group_multiply(G, z, group_inverse(G, a))), same),
-      group_cancel_right_value(G, y, a)
-    )
-  );
+  rw [<- group_cancel_right_value(G, x, a), same, group_cancel_right_value(G, y, a)] at lhs;
 }
 
 // Conjugation is an actual operation on the group carrier. Its automorphism

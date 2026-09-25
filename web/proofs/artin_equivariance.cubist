@@ -128,7 +128,6 @@ def evaluation_coefficients_unique(
   first = second {
   let C = CoordinateSpace(F, n);
   let rows = fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j));
-  let f = family_linear(F, C, n, rows);
   have sameCombinations :
     linear_combination(F, C, n, rows, first) = linear_combination(F, C, n, rows, second) {
     exact FunExt(

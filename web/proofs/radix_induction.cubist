@@ -3,19 +3,14 @@ import paths;
 
 def radix_empty_children(extra : Nat, f : Void -> RadixPositive(extra)) :
   (fun (v : Void) => typed(RadixPositive(extra), absurd(v))) = f {
-  exact FunExt(
-    U0, Void, (fun (v : Void) => RadixPositive(extra)),
-    (fun (v : Void) => typed(RadixPositive(extra), absurd(v))), f,
-    (fun (v : Void) => typed((typed(RadixPositive(extra), absurd(v)) = f(v)), absurd(v)))
-  );
+  ext v;
+  exact typed((typed(RadixPositive(extra), absurd(v)) = f(v)), absurd(v));
 }
 
 def radix_unit_children(extra : Nat, f : Unit -> RadixPositive(extra)) :
   (fun (u : Unit) => f(tt)) = f {
-  exact FunExt(
-    U0, Unit, (fun (u : Unit) => RadixPositive(extra)), (fun (u : Unit) => f(tt)), f,
-    (fun (u : Unit) => unit_induction((fun (v : Unit) => f(tt) = f(v)), refl(f(tt)), u))
-  );
+  ext u;
+  exact unit_induction((fun (v : Unit) => f(tt) = f(v)), refl(f(tt)), u);
 }
 
 def RadixBranch(extra : Nat, P : RadixPositive(extra) -> U0, label : RadixLabel(extra)) =

@@ -126,7 +126,6 @@ def normal_embedding_over_intermediate_automorphism(
   SubgroupCarrier(GaloisGroup(K, E), fixing_galois_subgroup(K, E, M)) {
   let R = intermediate_as_field(K, E, M);
   let F = extension_field(K, E);
-  let i = intermediate_ambient_embedding(K, E, M);
   obtain (h, over) = d;
   have overK :
     forall a : af_carrier(K),
