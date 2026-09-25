@@ -65,9 +65,7 @@ def polynomial_add_cancel_prefix(K : AlgebraicField) =
 def polynomial_scale(K : AlgebraicField, a : af_carrier(K), p : Polynomial(K)) =
   polynomial_mul(K, polynomial_constant(K, a), p);
 
-def polynomial_scale_coefficient(
-  K : AlgebraicField, a : af_carrier(K), p : Polynomial(K), n : Nat
-) :
+def polynomial_scale_coefficient(K : AlgebraicField, a : af_carrier(K), p : Polynomial(K), n : Nat) :
   polynomial_coefficients(K, polynomial_scale(K, a, p), n) = field_mul(
     K, a, polynomial_coefficients(K, p, n)
   ) {

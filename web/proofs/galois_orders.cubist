@@ -15,16 +15,12 @@ def IntermediateIncluded(
     extension_carrier(K, E), intermediate_members(K, E, M), intermediate_members(K, E, N)
   );
 
-def galois_subgroup_inclusion_refl(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E)
-) :
+def galois_subgroup_inclusion_refl(K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E)) :
   GaloisSubgroupIncluded(K, E, H, H) {
   exact subgroup_inclusion_refl(GaloisGroup(K, E), H);
 }
 
-def intermediate_inclusion_refl(
-  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)
-) :
+def intermediate_inclusion_refl(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
   IntermediateIncluded(K, E, M, M) {
   intro x;
   intro member;

@@ -115,8 +115,7 @@ def finite_binomial_cardinality(n : Nat) =
   };
 
 // The requested theorem for Rijke's actual binomial type.
-def finite_binomial_count(n : Nat, k : Nat) :
-  Bijection(Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) {
+def finite_binomial_count(n : Nat, k : Nat) : Bijection(Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) {
   exact compose_bijection(
     Binomial(Fin(n), Fin(k)), FiniteBinomial(n, k), Fin(choose(n, k)),
     finite_binomial_presentation(n, k), finite_binomial_cardinality(n, k)

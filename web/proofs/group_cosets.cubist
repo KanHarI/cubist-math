@@ -32,8 +32,7 @@ def same_coset_from_factor(
   );
 }
 
-def same_coset_refl(G : Group, S : Subgroup(G), x : group_carrier(G)) :
-  SameLeftCoset(G, S, x, x) {
+def same_coset_refl(G : Group, S : Subgroup(G), x : group_carrier(G)) : SameLeftCoset(G, S, x, x) {
   exact same_coset_from_factor(
     G, S, x, x, group_unit(G), subgroup_unit(G, subgroup_members(G, S), subgroup_laws(G, S)),
     group_unit_right(G, x)

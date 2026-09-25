@@ -16,9 +16,7 @@ def intermediate_base_map(
   );
 }
 
-def intermediate_base_preserves(
-  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)
-) :
+def intermediate_base_preserves(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
   FieldOpsPreserved(
     af_carrier(K), af_carrier(intermediate_as_field(K, E, M)), intermediate_base_map(K, E, M),
     af_operations(K), af_operations(intermediate_as_field(K, E, M))

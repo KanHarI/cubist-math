@@ -24,9 +24,7 @@ def radix_decode_leading(extra : Nat, d : RadixDigit(succ(extra))) :
   exact refl(succ(radix_digit_value(succ(extra), d)));
 }
 
-def radix_decode_append(
-  extra : Nat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra)
-) :
+def radix_decode_append(extra : Nat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra)) :
   radix_positive_to_nat(extra, radix_append(extra, d, p)) = succ(succ(extra)) * radix_positive_to_nat(
     extra, p
   ) + radix_digit_value(succ(succ(extra)), d) {

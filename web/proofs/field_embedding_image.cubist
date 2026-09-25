@@ -88,9 +88,7 @@ def field_embedding_image_iso(K : AlgebraicField, L : AlgebraicField, e : FieldE
 
 // Univalence now identifies the source field with its image as a field type.
 // This does not identify the source with the entire codomain of an embedding.
-def field_embedding_image_equality(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
-) :
+def field_embedding_image_equality(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   K =[AlgebraicField] embedding_image_field(K, L, e) {
   exact field_isotoid(K, embedding_image_field(K, L, e), field_embedding_image_iso(K, L, e));
 }

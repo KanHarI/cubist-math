@@ -73,9 +73,7 @@ def quotient_inverse(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) =
     quotient_inverse_respects(G, S, normal)
   );
 
-def quotient_inverse_beta(
-  G : Group, S : Subgroup(G), normal : IsNormal(G, S), x : group_carrier(G)
-) :
+def quotient_inverse_beta(G : Group, S : Subgroup(G), normal : IsNormal(G, S), x : group_carrier(G)) :
   quotient_inverse(G, S, normal, left_coset(G, S, x)) = left_coset(G, S, group_inverse(G, x)) {
   exact with unfolding [quotient_inverse, left_coset, quotient_inverse_on_representatives] {
     quotient_rec_beta(
@@ -176,9 +174,7 @@ def quotient_unit_right(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
   };
 }
 
-def quotient_inverse_left(
-  G : Group, S : Subgroup(G), normal : IsNormal(G, S), q : LeftCosets(G, S)
-) :
+def quotient_inverse_left(G : Group, S : Subgroup(G), normal : IsNormal(G, S), q : LeftCosets(G, S)) :
   quotient_multiply(G, S, normal, quotient_inverse(G, S, normal, q), q) = left_coset(
     G, S, group_unit(G)
   ) {
@@ -269,7 +265,6 @@ def group_lift(G : Group) : GroupAt(U1) {
   exact group_object_at(U1, group_carrier(G), group_unit(G), group_multiply(G), group_laws(G));
 }
 
-def small_group_iso_specialization(G : Group, H : Group) :
-  GroupIsoAt(U0, G, H) =[U0] GroupIso(G, H) {
+def small_group_iso_specialization(G : Group, H : Group) : GroupIsoAt(U0, G, H) =[U0] GroupIso(G, H) {
   exact refl(GroupIso(G, H));
 }

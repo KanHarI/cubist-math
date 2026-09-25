@@ -173,9 +173,7 @@ def coherence_prop(
   );
 }
 
-def half_adjoint_laws_prop(
-  A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, g : B -> A
-) :
+def half_adjoint_laws_prop(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, g : B -> A) :
   Proposition(HalfAdjointLaws(A, B, f, g)) {
   let L = LeftLaw(A, B, f, g);
   let R = RightLaw(A, B, f, g);
@@ -277,9 +275,7 @@ def subtype_path_correction(
   );
 }
 
-def subtype_is_set(
-  A : U0, P : A -> U0, setA : IsSet(A), prop : (forall x : A, Proposition(P(x)))
-) :
+def subtype_is_set(A : U0, P : A -> U0, setA : IsSet(A), prop : (forall x : A, Proposition(P(x)))) :
   IsSet(exists x : A, P(x)) {
   intro u;
   intro v;

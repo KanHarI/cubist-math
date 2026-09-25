@@ -118,8 +118,7 @@ def converted_ten_value_4 : radix_positive_to_binary(8, converted_ten_prefix_4) 
 
 def converted_ten_prefix_5 = radix_append(8, base_ten_digit_8, converted_ten_prefix_4);
 
-def converted_ten_value_5 :
-  radix_positive_to_binary(8, converted_ten_prefix_5) = 0b1000110111000000 {
+def converted_ten_value_5 : radix_positive_to_binary(8, converted_ten_prefix_5) = 0b1000110111000000 {
   exact radix_binary_append_value(
     8, base_ten_digit_8, converted_ten_prefix_4, 0b111000101100, converted_ten_value_4
   );
@@ -245,8 +244,7 @@ def converted_two_value_10 : radix_positive_to_binary(0, converted_two_prefix_10
 
 def converted_two_prefix_11 = radix_append(0, base_two_digit_1, converted_two_prefix_10);
 
-def converted_two_value_11 :
-  radix_positive_to_binary(0, converted_two_prefix_11) = 0b11011101011 {
+def converted_two_value_11 : radix_positive_to_binary(0, converted_two_prefix_11) = 0b11011101011 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_10, 0b1101110101, converted_two_value_10
   );
@@ -254,8 +252,7 @@ def converted_two_value_11 :
 
 def converted_two_prefix_12 = radix_append(0, base_two_digit_1, converted_two_prefix_11);
 
-def converted_two_value_12 :
-  radix_positive_to_binary(0, converted_two_prefix_12) = 0b110111010111 {
+def converted_two_value_12 : radix_positive_to_binary(0, converted_two_prefix_12) = 0b110111010111 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_11, 0b11011101011, converted_two_value_11
   );
@@ -263,8 +260,7 @@ def converted_two_value_12 :
 
 def converted_two_prefix_13 = radix_append(0, base_two_digit_1, converted_two_prefix_12);
 
-def converted_two_value_13 :
-  radix_positive_to_binary(0, converted_two_prefix_13) = 0b1101110101111 {
+def converted_two_value_13 : radix_positive_to_binary(0, converted_two_prefix_13) = 0b1101110101111 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_12, 0b110111010111, converted_two_value_12
   );
@@ -272,8 +268,7 @@ def converted_two_value_13 :
 
 def converted_two_prefix_14 = radix_append(0, base_two_digit_1, converted_two_prefix_13);
 
-def converted_two_value_14 :
-  radix_positive_to_binary(0, converted_two_prefix_14) = 0b11011101011111 {
+def converted_two_value_14 : radix_positive_to_binary(0, converted_two_prefix_14) = 0b11011101011111 {
   exact radix_binary_append_value(
     0, base_two_digit_1, converted_two_prefix_13, 0b1101110101111, converted_two_value_13
   );
