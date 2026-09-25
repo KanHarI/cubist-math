@@ -25,6 +25,7 @@ main { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
 .eyebrow { color: #526f5b; font-size: 11px; font-weight: 700; letter-spacing: 1.6px; }
 h1 { margin: 15px 0 20px; font-size: clamp(34px, 5vw, 54px); line-height: 1.13; letter-spacing: -1.9px; font-weight: 600; }
 .lead { max-width: 660px; color: #526459; font-size: 18px; line-height: 1.7; }
+.browse-links { display: flex; flex-wrap: wrap; column-gap: 32px; }
 .browse-link { display: inline-flex; align-items: center; gap: 12px; margin-top: 10px; font-weight: 600; text-underline-offset: 5px; color: #346447; }
 .section-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 24px; margin-bottom: 18px; }
 h2 { margin: 0; font-size: 21px; font-weight: 600; }

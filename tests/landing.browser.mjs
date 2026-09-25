@@ -32,6 +32,9 @@ try {
   assert.equal(response.status(), 200);
   assert.match(await page.title(), /Proof highlights/);
   assert.equal(await page.locator("h1").count(), 1);
+  // The language reference comes first, then the proof library.
+  assert.deepEqual(await page.locator(".introduction .browse-link").evaluateAll(links => links.map(link => link.getAttribute("href"))),
+    ["language.html", "proof.html"]);
   const links = await page.locator(".proof-card[href], .proof-card-main").evaluateAll(cards => cards.map(card => card.href));
   assert.equal(links.length, 8);
   // Every card points to a registered source and to a real theorem in that source.
