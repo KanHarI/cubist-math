@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="The basic types and their values: numbers, Unit and Void, pairs, choices, functions, and types themselves." />
+    <meta name="description" content="The basic types and their values: numbers, Unit and Void, pairs, choices, functions, types themselves, and forall and exists." />
     <title>Cubist · 1. Types and values</title>
     <link rel="stylesheet" href="../language.css" />
   </head>
@@ -21,7 +21,7 @@
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 1</p>
         <h1>Types and values</h1>
-        <p class="lead">The basic types and their values: numbers, Unit and Void, pairs, choices, functions, and types themselves.</p>
+        <p class="lead">The basic types and their values: numbers, Unit and Void, pairs, choices, functions, types themselves, and forall and exists.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -50,6 +50,7 @@
             <li><a href="#tour-choices">Choices: <code>or</code></a></li>
             <li><a href="#tour-functions">Functions: <code>-></code></a></li>
             <li><a href="#tour-types">Types are values too</a></li>
+            <li><a href="#tour-dependent">Dependent types: <code>forall</code> and <code>exists</code></a></li>
           </ul>
         </aside>
         <article id="reference">
@@ -158,7 +159,40 @@ def nat_is_a_type : U0 {
             <pre><code data-check="reject">def too_big : U0 {
   exact U0;  // Error: Type mismatch: found U1, expected U0.
 }</code></pre>
-            <p>A function’s result type can depend on its argument. <code>forall A : U0, A -> A</code> is the type of functions that take a type <code>A</code> and a value of <code>A</code>, and return a value of <code>A</code>. Read as a statement, it says that every type implies itself. The <a href="first-proof.html#first-proof">next chapter</a> proves it.</p>
+          </section>
+          <section id="tour-dependent">
+            <h2>Dependent types: <code>forall</code> and <code>exists</code></h2>
+            <p>A function’s result type can depend on its argument. <code>forall x : A, B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not.</p>
+            <pre><code data-check="accept">// `and` binds tighter than `-&gt;`, so `A -&gt; A and A` means `A -&gt; (A and A)`.
+def duplicate : forall A : U0, A -&gt; A and A {
+  exact fun (A : U0) (a : A) =&gt; (a, a);
+}
+
+def one_one = duplicate(Nat, 1);</code></pre>
+            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type the argument chose:</p>
+            <pre><code data-check="reject">def duplicate : forall A : U0, A -&gt; A and A {
+  exact fun (A : U0) (a : A) =&gt; (a, 0);  // Error: Type mismatch: found Nat, expected A.
+}</code></pre>
+            <p>A <code>forall</code> type is itself a value, like every type. Compare a function that builds a type with a single type that quantifies over all types:</p>
+            <pre><code data-check="accept">def Twice(A : U0) = A and A;
+
+def AlsoTwice : U1 {
+  exact forall A : U0, A and A;
+}</code></pre>
+            <p><code>Twice</code> is a function from types to types: <code>Twice(Nat)</code> is <code>Nat and Nat</code>. <code>AlsoTwice</code> is one type: the type of functions that give a pair of values in every type. It quantifies over all of <code>U0</code>, so it lives in the next universe, <code>U1</code>. It has no values, because <code>Void</code> has no pair of values.</p>
+            <p><code>exists x : A, B</code> is the type of pairs whose second component’s type depends on the first: a value <code>x : A</code>, together with a value of <code>B</code> for that <code>x</code>.</p>
+            <pre><code data-check="accept">def pointed : exists A : U0, A {
+  exact (Nat, 3);
+}
+
+def two_of_a_kind : exists A : U0, A and A {
+  exact (Nat, (1, 2));
+}</code></pre>
+            <p>The first component decides the type of the second:</p>
+            <pre><code data-check="reject">def pointed : exists A : U0, A {
+  exact (Nat, tt);  // Error: Type mismatch: found Unit, expected Nat.
+}</code></pre>
+            <p>Read as statements, <code>forall</code> and <code>exists</code> are the quantifiers “for all” and “there exists”. A value of <code>exists n : Nat, P(n)</code> is a witness <code>n</code> together with evidence that <code>P(n)</code> holds. A value of <code>forall A : U0, A -> A</code> is evidence that every type implies itself: the <a href="first-proof.html#first-proof">next chapter</a> constructs it as a first proof.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
