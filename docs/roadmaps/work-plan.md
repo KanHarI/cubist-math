@@ -138,23 +138,30 @@ every link and anchor, and the redirects.
 
 | ID | Package | Owner | Depends on | Size |
 | --- | --- | --- | --- | --- |
-| K1.1 | G0 rule specification and consistency note | Kernel G0 | — | M |
+| K1.1 | G0 rule specification and consistency note (done) | Kernel G0 | — | M |
 | K1.2 | G0 in the reference checker | Kernel G0 | K1.1 | L |
 | K1.3 | G0 in the C kernel, ABI, serialization, sanitizers | Kernel G0 | K1.2 | L |
-| L1.1 | Universe binders, level expressions, removal of templates | Kernel G0 (language part) | K1.2 | L |
-| L1.2 | Goal and proof-construction layer | HoTT A5 | — | L |
+| L1.1 | Universe binders, level expressions, removal of templates | Kernel G0 (language part) | K1.3 | L |
+| L1.2 | Goal and proof-construction layer (core done) | HoTT A5 | — | L |
 | L1.3 | Deterministic fuel; residual goals in diagnostics | HoTT A4, A6 | L1.2 for A6 | M |
 | L1.4 | Folded path vocabulary; congruence through constructors | HoTT A1, A2 | L1.2 | L |
 
-**K1.1–K1.3.**
-- Implement level expressions, `Uω` as a binder type only, large types,
-  capture-avoiding level substitution, and symbolic cumulativity.
+**K1.1–K1.3.** K1.1 was done on 2026-09-25: the
+[G0 specification](g0-universe-specification.md) (PRs #10 and #16), with
+every open question answered or deferred to the
+[language enhancement proposals](language-enhancement-proposals.md).
+- Implement tiered universe constants below ω² (`U0…`, `UU0…`, `UUU0…`),
+  level binders `U < UU0`, level quantification as a type with its pointwise
+  composition rule, capture-avoiding level substitution, and symbolic
+  cumulativity across tiers.
 - Acceptance is G0's list in the kernel roadmap: the native and reference
   checkers agree, and the canonicity fixture computes instantiated closed
   results.
 
-**L1.1 Universe binders and levels.**
-- `U : Universe` elaborates to a kernel binder.
+**L1.1 Universe binders and levels.** It depends on K1.3, because the
+elaborator checks only through the native kernel.
+- `U < UU0` elaborates to a kernel level binder, and `Universe` leaves the
+  language. Universe constants of every tier carry an index.
 - Source gains `next(U)` and `max(U, V)`.
 - Specialization, per-universe builtins and per-universe assumption schemas
   are removed.
@@ -163,14 +170,16 @@ every link and anchor, and the redirects.
   those that only worked at particular levels are listed.
 - The universe chapter of the reference is rewritten.
 
-**L1.2 Goal and proof-construction layer** (A5), with the review's elaborator
-items:
+**L1.2 Goal and proof-construction layer** (A5). The core was done on
+2026-09-25 in PRs #12, #13, #15, #17 and #18, with identical checked terms
+for the whole archive. The remaining A5 items are in the HoTT roadmap. The
+review's elaborator items, all done:
 - one name supply;
 - result values instead of message matching;
 - one computation of link sites;
 - an explicit elaboration context;
 - motive abstraction for several scrutinees, with dependent-hypothesis
-  generalization, as `match` needs.
+  generalization, as `match` needs (`lib/cubical/motives.mjs`).
 
 **L1.4 Path vocabulary and constructor congruence** (A1, A2). Include the
 curated pass's findings:
@@ -223,6 +232,12 @@ curated pass's findings:
 - ring lemmas take one `CommRing.Model`;
 - `T.equality` follows once HoTT F1 lands;
 - until then, identity is proved per theory by hand.
+
+**Pattern matching** (L2.2) uses the motive abstraction from L1.2, so a
+`match` refines its goal in each branch. Once it is released, the `cases`
+statement is removed: its 24 uses in 11 archive modules are rewritten to
+`match` under the migration verifier, and then the parser, elaborator,
+formatter, highlighter and reference drop it.
 
 ## Stage 3: rebuild wave 1
 
@@ -364,6 +379,6 @@ Next, in parallel:
 
 1. L0.1, computability tracking (done).
 2. D0.1, the reference harness, then D0.2, the reference chapters.
-3. K1.1, the G0 specification.
-4. L1.2, the goal layer.
+3. K1.1, the G0 specification (done).
+4. L1.2, the goal layer (core done).
 5. I0.3, the new library tree, which is needed only when stage 3 starts.

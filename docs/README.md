@@ -33,6 +33,8 @@ They stay paused until the rebuild reaches their prerequisites.
 
 ## Language tooling roadmap
 
+- [Language enhancement proposals](roadmaps/language-enhancement-proposals.md):
+  deferred features, each kept with what would justify taking it up.
 - [Computation notation: monadic do and arrows](roadmaps/computation-notation-roadmap.md):
   planned blocks for existence proofs, free-algebra substitution and arrow
   composition, with explicit structures and checked elaboration.
