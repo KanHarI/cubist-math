@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Where to check a proof, and how to read what the checker found." />
+    <title>Cubist · 11. Checking and inspection</title>
+    <link rel="stylesheet" href="../language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 11</p>
+        <h1>Checking and inspection</h1>
+        <p class="lead">Where to check a proof, and how to read what the checker found.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
+            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li class="current"><a href="checking.html" aria-current="page">Checking and inspection</a></li>
+            <li><a href="errors.html">Common errors</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#inspection">Checking and inspection</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="inspection">
+            <h2>Checking and inspection</h2>
+            <p>Open the <a href="../proof.html">proof workspace</a>, choose a topic and proof, then use <strong>Edit</strong> and <strong>Check proof</strong> (Ctrl/Cmd+Enter). Click a name in <strong>Read</strong> mode to inspect its type and source. Click a proof-step line number for its goal and local assumptions. A rejected edit leaves the last checked proof available.</p>
+            <p>The checked kernel details show the expression, its type, and its open context. Folded kernel notation retains names only where their relationship to the stored term is checked. Use the representation selector for Cubist or raw kernel terms; send either term to the workbench to explore reduction and dependencies. Binder grouping, truncation notation, and equality notation change only presentation. Equality notation is enabled by default: <code>(A =[T] B)</code> displays the identity type with endpoints <code>A</code>, <code>B</code> and carrier <code>T</code>. Uncheck it to see <code>Id</code> with the carrier as a subscript instead. Both views retain links to checked definitions.</p>
+            <h3>Inspecting tactics</h3>
+            <ul>
+              <li>Click <code>calc</code>, <code>rw</code>, <code>simp</code> or <code>simpa</code> to see the checked proof term it constructed. Each <code>by</code> inside a <code>calc</code> links to the path for that step.</li>
+              <li>A <code>simp</code> also shows its rewrite trace: each rule that fired, the checked path it produced, and any premise proofs found for conditional rules.</li>
+              <li>A multi-binder <code>fun</code> opens the whole checked function. Names bound by <code>ext</code> or <code>simp … at h as h2</code> link to their types like any other local.</li>
+            </ul>
+            <p><strong>Replace with simp only</strong> turns a checked <code>simp</code>, <code>simpa</code> or <code>simp at</code> into a <code>simp only</code> list of the rules that actually fired, keeping their original order. Before offering it, the elaborator reruns the simplification with just those rules and requires the same remaining goal and an equivalent proof. After editing, the source is checked again. The action is withheld when it cannot guarantee the same result. This includes when a used imported rule has no name in scope, a set name would shadow a rule name, or premise search would change. It is also withheld for a universe template, because one level's check does not cover the others.</p>
+            <h3>Outside the browser</h3>
+            <p>The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules, explaining contexts, binding, and what must be trusted when verifying a proof.</p>
+            <p>The compiler’s <strong>Reuse normal forms</strong> and <strong>Reuse checked instructions</strong> switches default on. They control reuse during compilation, not the source language or its mathematical assumptions.</p>
+            <p>For local development, <code>make serve</code> serves the workspace. In the CLI, <code>node cli/repl.mjs check FILE.cubist</code> checks a source file. A focused project test can be run as <code>npm test -- archive/first-library/FILE.cubist</code>; this checks the selected mathematical source and its imports. See the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/cli.md">CLI guide</a> for custom files, local imports, inspection, and limitations.</p>
+            <p>Current parser limits are 1,000,000 source characters, 160,000 tokens, nesting depth 128, and numeral literals up to 256. Larger naturals can be built by expressions. These are implementation limits, not mathematical axioms. See the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">implementation notes</a> for runtime limits and the source-checking pipeline.</p>
+          </section>
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="assumptions.html">← 10. Assumptions and computability</a>
+            <a class="next" href="errors.html">12. Common errors →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+  </body>
+</html>

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Paths as functions of an interval, dependent paths, composition, and the higher inductive types built in today." />
+    <title>Cubist · 8. Cubical paths, pushouts and suspensions</title>
+    <link rel="stylesheet" href="../language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 8</p>
+        <h1>Cubical paths, pushouts and suspensions</h1>
+        <p class="lead">Paths as functions of an interval, dependent paths, composition, and the higher inductive types built in today.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li class="current"><a href="cubical.html" aria-current="page">Cubical paths, pushouts and suspensions</a></li>
+            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Common errors</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#cubical">Cubical paths and pushouts</a></li>
+            <li><a href="#suspensions">Suspensions</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="cubical">
+            <h2>Cubical paths and pushouts</h2>
+            <p>All Cubist proofs use the <strong>Cubical C</strong> kernel. A declaration marked “Not checked” has no native certificate.</p>
+            <p>In cubical type theory, a path <code>p : x = y</code> in <code>A</code> is a function from an abstract interval into <code>A</code>. Its value at <code>0</code> is definitionally <code>x</code> and its value at <code>1</code> is <code>y</code>. Many path proofs can therefore be written directly, as functions of an interval coordinate, instead of by path induction.</p>
+            <p><code>Interval</code> introduces a coordinate inside the forms below.
+              It is not a type in a universe and cannot be used as an ordinary function domain.
+              Coordinates accept <code>0</code>, <code>1</code>, <code>flip(i)</code> (the reversal <span class="math">1 − i</span>),
+              <code>meet(i, j)</code> (minimum) and <code>join(i, j)</code> (maximum).</p>
+            <pre><code data-check="accept">def reverse_path(A : U0, x : A, y : A, p : x = y) =
+  path(fun (i : Interval) =&gt; A,
+       fun (i : Interval) =&gt; at(p, flip(i)));</code></pre>
+            <p><code>path(family, body)</code> binds a coordinate in both arguments and
+              constructs a path. <code>at(p, i)</code> evaluates a path at a coordinate.
+              <code>PathP(family, left, right)</code> states a dependent
+              path type: at coordinate <code>i</code>, the path lies in the type <code>family(i)</code>. Plain <code>x = y</code> is the case of a constant family. Each family/body is written <code>fun (i : Interval) =&gt; ...</code>;
+              their binder names need not agree. The kernel checks the actual family and endpoints.</p>
+            <h3 id="cubical-shorthand">Shorthand</h3>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Source</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>path i =&gt; body</code></td><td><code>path(family, fun (i : Interval) =&gt; body)</code>, where <code>family</code> comes from the expected <code>Path</code> or <code>PathP</code> type. Without an expected path type it is rejected.</td></tr>
+                <tr><td><code>p @ i</code></td><td><code>at(p, i)</code>. Binds tighter than every infix operator except application.</td></tr>
+                <tr><td><code>along C by p from v</code></td><td><code>transport(C, x, y, p, v)</code> with the endpoints <code>x</code>, <code>y</code> read from <code>p : x = y</code>. The family <code>C</code> is always written explicitly.</td></tr>
+                <tr><td><code>apd_path(f, p)</code></td><td>For <code>f : forall a : A, C(a)</code> and <code>p : x = y</code>, the direct dependent path <code>PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y))</code>, which is <code>path i =&gt; f(p @ i)</code>.</td></tr>
+                <tr><td><code>over C along p by { … }</code></td><td>In a block whose goal is <code>PathP(fun (i : Interval) =&gt; C(p @ i), a, b)</code>, prove instead <code>transport(C, x, y, p, a) = b</code> and convert the result. Closing.</td></tr>
+                <tr><td><code>ext x;</code></td><td>For a goal <code>f = g</code> between functions, bind <code>x</code> and continue with <code>f(x) = g(x)</code>.</td></tr>
+              </tbody>
+            </table></div>
+            <pre><code data-check="accept">def reverse_again(A : U0, x y : A, p : x = y) : y = x {
+  exact path i =&gt; p @ flip(i);
+}
+
+def naturality_square(A B : U0, f g : A -&gt; B,
+    H : (forall a : A, f(a) = g(a)), x y : A, p : x = y) :
+  PathP(fun (j : Interval) =&gt; H(x) @ j = H(y) @ j, cong(f, p), cong(g, p)) {
+  exact path j =&gt; path i =&gt; H(p @ i) @ j;
+}</code></pre>
+            <p><code>reverse_again</code> is the same term as <code>reverse_path</code> above, with the family read from the goal. <code>naturality_square</code> fills a square whose sides are <code>cong(f, p)</code>, <code>cong(g, p)</code>, <code>H(x)</code> and <code>H(y)</code>. The outer <code>path j</code> gets its family from the <code>PathP</code> goal. Each inner <code>path i</code> gets its family from the equality at <code>j</code>. The kernel then checks all four edges.</p>
+            <h3 id="dependent-paths">Dependent paths and transport</h3>
+            <pre><code data-check="accept">def move_in_fiber(A : U0, C : A -&gt; U0, x y : A, p : x = y, v : C(x)) : C(y) {
+  exact along C by p from v;
+}
+
+def section_path(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)), x y : A, p : x = y) :
+  PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
+  exact apd_path(f, p);
+}
+
+def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)),
+    x y : A, p : x = y) :
+  PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
+  over C along p by {
+    exact apd(f, x, y, p);   // goal: transport(C, x, y, p, f(x)) = f(y)
+  }
+}</code></pre>
+            <p>There are two standard ways to state that a dependent function respects a path. A <code>PathP</code> states it directly, as a path lying over <code>p</code>. The transported equality <code>transport(C, x, y, p, f(x)) = f(y)</code> states it in one fiber. <code>apd_path</code> produces the first; the older <code>apd</code> produces the second. <code>over</code> lets you prove a <code>PathP</code> goal by proving the transported equality, when that is easier. The family <code>C</code> is never inferred: the elaborator does not search for a family that fits.</p>
+            <h3 id="ext">Function extensionality: <code>ext</code></h3>
+            <pre><code data-check="accept">def pointwise_path(A B : U0, f g : A -&gt; B, h : (forall x : A, f(x) = g(x))) : f = g {
+  ext x;
+  exact h(x);
+}</code></pre>
+            <p>Cubical paths make function extensionality provable: <code>path i =&gt; fun x =&gt; h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the function type is fixed, meaning the goal is <code>f = g</code> with <code>f g : forall x : A, C(x)</code>. It uses no axiom, unlike the <a href="assumptions.html#axioms"><code>FunExt</code></a> interface.</p>
+            <h3>Composition</h3>
+            <pre><code data-check="fragment" data-reason="An expression inside a path body; p, q, x, i and A are bound by the surrounding proof.">comp(fun (j : Interval) =&gt; A, at(p, i),
+  face(i, 0, fun (j : Interval) =&gt; x),
+  face(i, 1, fun (j : Interval) =&gt; at(q, j)))</code></pre>
+            <p><code>comp</code> fills from coordinate 0 to coordinate 1, starting at the
+              supplied base. Optional walls have the displayed <code>face</code> syntax;
+              their coordinate belongs to the outer scope. The kernel checks that the
+              walls match the base and agree on overlaps. With no walls, this is transport.
+              Picture a square with the base as its bottom edge and the walls as its sides. <code>comp</code> produces the top edge. This is how <code>trans</code> is built.</p>
+            <p>Interval and face formulas are kept in a normal form of joins of meets. Some compact formulas have exponentially large normal forms. Rather than exhaust memory, the checker refuses any expansion beyond 4,096 clauses or a fixed work budget, with a lattice budget error. Split such a proof into smaller named steps.</p>
+            <h3>Pushouts</h3>
+            <pre><code data-check="fragment" data-reason="A signature summary: S, A, B, f and g stand for any span.">def P = Pushout(S, A, B, f, g);
+// f : S -&gt; A; g : S -&gt; B
+// push_left(P, a) : P
+// push_right(P, b) : P
+// push_path(P, s) : push_left(P, f(s)) =[P] push_right(P, g(s))</code></pre>
+            <p><code>pushout_induction(motive, leftCase, rightCase, bridgeCase, value)</code>
+              eliminates a pushout. The motive is a type family over the pushout;
+              the bridge case supplies a dependent path over each gluing path, with
+              endpoints given by the two point cases. Constructor computations are checked in C.</p>
+            <p><code>Suspension(A)</code> is the pushout of the two constant maps
+              <code>A -&gt; Unit</code>. <code>north(A)</code>, <code>south(A)</code>, and
+              <code>meridian(A, a)</code> use its point and path constructors.
+              <a href="../proof.html?proof=cubical_paths">Open the checked examples</a>.</p>
+          </section>
+          <section id="suspensions">
+            <h2>Suspensions</h2>
+            <p>Suspension is derived from the kernel’s pushout type. Its operations are ordinary definitions in <a href="../proof.html?proof=suspension_types&amp;name=Suspension">the suspension library</a>. Import <code>suspension_types</code> to use them; click their names to inspect their definitions. <code>Suspension(A)</code> has points <code>north(A)</code> and <code>south(A)</code>, and, for every <code>a : A</code>, a path <code>meridian(A, a) : north(A) = south(A)</code>. The circle and puncture models build on these operations.</p>
+            <pre><code data-check="accept">def Suspension(A : U0) = Pushout(A, Unit, Unit,
+  fun (_ : A) =&gt; tt, fun (_ : A) =&gt; tt);
+def north(A : U0) = push_left(Suspension(A), tt);
+def south(A : U0) = push_right(Suspension(A), tt);
+def meridian(A : U0, a : A) = push_path(Suspension(A), a);</code></pre>
+            <p><code>suspension_induction(A, C, atNorth, atSouth, coherence, point)</code> eliminates into a family <code>C</code> on the suspension. The coherence argument takes <code>a : A</code> and proves</p>
+            <pre><code data-check="fragment" data-reason="The statement a coherence argument proves; its names are the eliminator arguments described above.">transport(C, north(A), south(A), meridian(A, a), atNorth)
+  = atSouth</code></pre>
+            <p>The result has type <code>C(point)</code>. <code>suspension_meridian_beta(A, C, atNorth, atSouth, coherence, a)</code> gives the propositional computation law on the meridian: dependent application of the constructed section to that path equals <code>coherence(a)</code>. See the <a href="../proof.html?proof=suspension">suspension examples</a> and <a href="../proof.html?proof=circle">circle proof</a>.</p>
+          </section>
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="rewriting.html">← 7. Equational reasoning and simplification</a>
+            <a class="next" href="conversion.html">9. Conversion and opacity →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+  </body>
+</html>

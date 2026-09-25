@@ -15,6 +15,8 @@ checked for definitional equality. **Un-highlight** clears visual selection.
 publishes it at https://cubist.kanhar.art. `npm run test:site` exercises that
 artifact, including workers, imports, WASM, source links, and the workbench.
 
-The full language reference is `language.html`; a quick reference appears on
-the proof page. The test runner accepts module names, `.cubist` paths, and
+The full language reference is `language.html`, an index of chapter pages in
+`reference/`; a quick reference appears on the proof page. Every example in
+them is checked by `tests/reference-examples.test.mjs`, and
+`tests/reference-structure.test.mjs` checks their navigation and links. The test runner accepts module names, `.cubist` paths, and
 individual JavaScript test files. See the root README for commands.

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 
@@ -10,8 +10,10 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 //   data-check="excerpt" data-module="m"    the text is quoted from library module m;
 //   data-check="fragment" data-reason="…"   an unchecked sketch, with the reason.
 // An example without a declared check fails this test.
+const chapters = (await readdir(new URL("../web/reference/", import.meta.url))).filter(name => name.endsWith(".html")).sort();
 const pages = [
   { file: "language.html", scope: source => source },
+  ...chapters.map(name => ({ file: `reference/${name}`, scope: source => source })),
   // Only the quick reference panel of the proof workspace holds examples.
   { file: "proof.html", scope: source => source.slice(source.indexOf('id="language-guide"'), source.indexOf("</details>", source.indexOf('id="language-guide"'))) },
 ];

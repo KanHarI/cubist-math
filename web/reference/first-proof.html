@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Write a first proof, then learn how a source file is laid out: imports, names, comments and declarations." />
+    <title>Cubist · 1. A first proof and files</title>
+    <link rel="stylesheet" href="../language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 1</p>
+        <h1>A first proof and files</h1>
+        <p class="lead">Write a first proof, then learn how a source file is laid out: imports, names, comments and declarations.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li class="current"><a href="first-proof.html" aria-current="page">A first proof and files</a></li>
+            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
+            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Common errors</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#first-proof">A first proof</a></li>
+            <li><a href="#checking">What checking means</a></li>
+            <li><a href="#files">Files and imports</a></li>
+            <li><a href="#names">Names and comments</a></li>
+            <li><a href="#declarations">Declarations</a></li>
+            <li><a href="#parameters">Parameters</a></li>
+            <li><a href="#order">Order, scope and recursion</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="first-proof">
+            <h2>A first proof</h2>
+            <pre><code data-check="accept">def identity : forall A : U0, A -&gt; A {
+  intro A;       // A : U0
+  intro value;   // value : A
+  exact value;
+}</code></pre>
+            <p>A theorem proves its stated type by constructing a term of that type. Here the statement <code>forall A : U0, A -> A</code> says: for every type <code>A</code>, there is a function from <code>A</code> to <code>A</code>. The proof constructs that function. No axioms or imports are needed.</p>
+            <p>At every point in a proof block there is a <strong>goal</strong>, the type still to be proved, and a <strong>context</strong>, the names available and their types. At the start the goal is the whole statement and the context is empty.</p>
+            <ul>
+              <li><code>intro A;</code> takes the first input from the goal and adds it to the context. The goal becomes <code>A -> A</code> and the context holds <code>A : U0</code>.</li>
+              <li><code>intro value;</code> does the same again. The goal becomes <code>A</code> and the context also holds <code>value : A</code>.</li>
+              <li><code>exact value;</code> supplies a term of exactly the goal type and finishes the proof.</li>
+            </ul>
+            <p>In the proof workspace, click a proof-step line number to see its goal and context.</p>
+            <h3 id="blocks-and-terms">The same proof as a term</h3>
+            <p>A proof block is a readable way to build a term. The same function can be written directly:</p>
+            <pre><code data-check="accept">def identity(A : U0, value : A) = value;
+
+def identity_on_numbers = identity(Nat);
+
+def five = identity(Nat, 5);</code></pre>
+            <p>Both forms produce the same kind of kernel term: a function taking a type and an element of it. The second <code>identity</code> is used twice: <code>identity(Nat)</code> is the identity function on <code>Nat</code>, and <code>identity(Nat, 5)</code> is the number <code>5</code>. Chapter 3, <a href="proof-blocks.html#goals">proof blocks</a>, describes every statement a block can contain.</p>
+            <p>A wrong proof is rejected with a message, and nothing is added. Here the last step offers the type <code>A</code> where an element of <code>A</code> is needed:</p>
+            <pre><code data-check="reject" data-error="Type mismatch.">def not_identity : forall A : U0, A -&gt; A {
+  intro A;
+  intro value;
+  exact A;
+}</code></pre>
+          </section>
+          <section id="checking">
+            <h2>What checking means</h2>
+            <p>Cubist has two parts. The <strong>elaborator</strong>, written in JavaScript, reads source and builds kernel terms. It expands notation, finds rewrite positions and chooses simplification rules. It is not trusted. The <strong>kernel</strong>, written in C, checks every term the elaborator produces. A declaration is accepted only when the kernel accepts its term at its stated type.</p>
+            <p>A convenience that the kernel cannot check makes the declaration fail. It never turns into an assumption. The only assumptions are the explicit library ones described in chapter 10, <a href="assumptions.html#axioms">assumptions and computability</a>, and each theorem lists the ones it uses.</p>
+            <p>Each declaration is checked on its own. A rejected declaration is not added, so a later declaration that uses it fails too, with a message naming the missing dependency:</p>
+            <pre><code data-check="reject" data-error="Untranslated dependency: wrong">def wrong : Nat {
+  exact tt;
+}
+
+def uses_wrong = succ(wrong);</code></pre>
+            <p>Here <code>wrong</code> fails with “Type mismatch.”, because <code>tt</code> is not a number, and <code>uses_wrong</code> fails because <code>wrong</code> does not exist. Chapter 11, <a href="checking.html#inspection">checking and inspection</a>, shows where to run the checker and how to read its results.</p>
+          </section>
+          <section id="files">
+            <h2>Files and imports</h2>
+            <p>A source file has the extension <code>.cubist</code>. It starts with imports, followed by declarations and directives in any order:</p>
+            <pre><code data-check="accept">import primes;
+import sets;
+
+// Declarations and directives follow the imports.
+def four = 2 + 2;</code></pre>
+            <p>An import names a module without quotes or a file extension. <code>import primes;</code> loads <code>primes.cubist</code>. The command-line checker looks first in the directory of the file being checked, then in the library. The imported module is checked too, along with everything it imports.</p>
+            <p>An import makes every checked declaration of the module available, and so do the modules it imports in turn. It also brings the <a href="rewriting.html#simp-registration">simplification rules and sets</a> that those modules register. Importing a module does not make a theorem depend on that module’s assumptions. Each theorem’s assumptions are computed from its own checked term.</p>
+            <p>Imports must come first. An import after a declaration is a syntax error:</p>
+            <pre><code data-check="reject" data-error="Expected def or axiom.">def zero_again = 0;
+
+import primes;</code></pre>
+          </section>
+          <section id="names">
+            <h2>Names and comments</h2>
+            <p>A name starts with a letter or an underscore, followed by letters, digits and underscores. Names are case-sensitive: <code>value</code> and <code>Value</code> are different names.</p>
+            <pre><code data-check="accept">def value = 0;
+
+def Value = 1;
+
+def value_is_zero : value = 0 {
+  exact refl(0);
+}</code></pre>
+            <p>Comments run from <code>//</code> to the end of the line. There are no block comments and no string literals. Source is plain ASCII: write <code>-></code>, <code>forall</code> and <code>exists</code>, not arrows or quantifier symbols. The inspector can display mathematical symbols, but the source cannot contain them:</p>
+            <pre><code data-check="reject" data-error="Unexpected character →">def arrow(A : U0) : A → A {
+  intro a;
+  exact a;
+}</code></pre>
+            <p>A name cannot start with a digit:</p>
+            <pre><code data-check="reject" data-error="Expected a name.">def 2nd = 0;</code></pre>
+            <h3 id="descriptions">Descriptions</h3>
+            <p><code>//</code> comments directly above a declaration become its description in the inspector, including when the declaration is imported. Consecutive comment lines join into one paragraph, and an empty <code>//</code> line starts another. A blank line separates a section comment from the declaration that follows it. A comment at the end of a line does not describe the next declaration. Descriptions are plain text and do not affect checking.</p>
+            <pre><code data-check="accept">// Section: successors.
+
+// The successor of a number.
+//
+// A second paragraph of the same description.
+def next(n : Nat) = succ(n);</code></pre>
+            <p>Here the first comment is a section comment, because a blank line follows it. The next three lines are the description of <code>next</code>.</p>
+          </section>
+          <section id="declarations">
+            <h2>Declarations</h2>
+            <p>A declaration names a checked term. There are two main forms:</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>def name(params) = term;</code></td><td>The <strong>term form</strong>. The result type is inferred from the term. The parameters are optional.</td></tr>
+                <tr><td><code>def name(params) : T { … }</code></td><td>The <strong>block form</strong>. The block is checked against the stated result type <code>T</code>. Use it for proofs and for constructions whose type should be stated.</td></tr>
+              </tbody>
+            </table></div>
+            <pre><code data-check="accept">def identity_term(A : U0, x : A) = x;
+
+def same(A : U0, x : A) : A {
+  exact x;
+}
+
+def self_equal(A : U0, x : A) : x = x {
+  exact refl(x);
+}</code></pre>
+            <p>A term declaration ends with <code>;</code>. A block declaration ends with <code>}</code>. There is no form with both a stated type and a term: in <code>def four : Nat = 4;</code> the checker reads <code>Nat = 4</code> as the type, an equation, and then expects a block:</p>
+            <pre><code data-check="reject" data-error="Expected '{', found ';'.">def four : Nat = 4;</code></pre>
+            <p>To state the type of a short term, use a block with <code>exact</code>, or <a href="terms.html#typed"><code>typed</code></a>:</p>
+            <pre><code data-check="accept">def four : Nat {
+  exact 4;
+}
+
+def also_four = typed(Nat, 4);</code></pre>
+            <p>A missing semicolon is reported at the next token:</p>
+            <pre><code data-check="reject" data-error="Expected ';', found 'def'.">def one = 1
+def two = 2;</code></pre>
+            <h3 id="other-declarations">Other declaration forms</h3>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>opaque def name …</code></td><td>Accepted, and currently checked and unfolded like <code>def</code>. See <a href="conversion.html#conversion">conversion and opacity</a>.</td></tr>
+                <tr><td><code>computable def name …</code></td><td>A definition that must use no assumption. See <a href="assumptions.html#computability">computability</a>.</td></tr>
+                <tr><td><code>evaluate term expecting value;</code></td><td>A directive that checks what a closed term computes to. See <a href="assumptions.html#evaluate">evaluate</a>.</td></tr>
+                <tr><td><code>simp_rule name priority N;</code><br /><code>simp_set name = [rule, …];</code></td><td>Directives that register checked equalities for simplification. See <a href="rewriting.html#simp-registration">registering rules</a>.</td></tr>
+                <tr><td><code>axiom name(params) : T;</code></td><td>Parsed, but always rejected. See below.</td></tr>
+              </tbody>
+            </table></div>
+            <p>A source file cannot introduce its own assumptions. <code>axiom</code> declarations are parsed and then rejected, and declarations that use them are blocked. The available assumptions are the library’s fixed schemas, such as truncation and excluded middle, described in <a href="assumptions.html#axioms">assumptions</a>.</p>
+            <pre><code data-check="reject" data-error="Axiom declarations require an explicit assumption policy; not translated.">axiom Oracle : Nat -&gt; Nat;
+
+def ask = Oracle(3);</code></pre>
+          </section>
+          <section id="parameters">
+            <h2>Parameters</h2>
+            <p>A parameter list is a comma-separated sequence of typed binders. Consecutive parameters with the same type may share it: <code>(A B : U0, x y : A)</code> means <code>(A : U0, B : U0, x : A, y : A)</code>. A later parameter’s type can mention earlier parameters, as <code>x : A</code> does.</p>
+            <pre><code data-check="accept">def flip_arguments(A B C : U0, f : A -&gt; B -&gt; C) : B -&gt; A -&gt; C {
+  intro b a;
+  exact f(a, b);
+}
+
+def pick_second(A B : U0, x y : A, b : B) = y;
+
+def picked = pick_second(Nat, Unit, 1, 2, tt);</code></pre>
+            <p>A declaration with parameters is a function of them. Every argument is written at each use: there are no implicit arguments, so <code>pick_second</code> takes the types <code>Nat</code> and <code>Unit</code> explicitly. Arguments can also be supplied a few at a time:</p>
+            <pre><code data-check="accept">def pair_up(A B : U0, a : A, b : B) : A and B {
+  exact (a, b);
+}
+
+def with_zero = pair_up(Nat, Unit, 0);
+
+def completed = with_zero(tt);</code></pre>
+            <p><code>with_zero</code> has type <code>Unit -> Nat and Unit</code>. Supplying more arguments than a function takes is an error:</p>
+            <pre><code data-check="reject" data-error="Source application is not a function.">def pick_first(A B : U0, a : A, b : B) = a;
+
+def too_many = pick_first(Nat, Nat, 1, 2, 3);</code></pre>
+            <p>Every parameter needs a type. After <code>x</code>, the parser expects either another name sharing the type or a colon:</p>
+            <pre><code data-check="reject" data-error="Expected a name.">def untyped_parameter(x) = x;</code></pre>
+            <h3 id="statement-placement">Parameters or a quantified type</h3>
+            <p>A statement can put its inputs in the parameters or in the result type. These two declarations have the same type, <code>forall A : U0, A -> A</code>:</p>
+            <pre><code data-check="accept">def in_parameters(A : U0, a : A) : A {
+  exact a;
+}
+
+def in_type : forall A : U0, A -&gt; A {
+  intro A a;
+  exact a;
+}</code></pre>
+            <p>Parameters are shorter. A quantified result type is better when the statement is a named proposition that other declarations reuse.</p>
+          </section>
+          <section id="order">
+            <h2>Order, scope and recursion</h2>
+            <p>Declarations become available in source order. A declaration can use only the declarations above it and the imported ones. There are no forward declarations:</p>
+            <pre><code data-check="reject" data-error="Untranslated name: later">def uses_later = later;
+
+def later = 0;</code></pre>
+            <p>A declaration cannot refer to itself, so there is no recursive definition. Recursion and induction use an eliminator instead, such as <a href="induction.html#induction">natural-number induction</a>:</p>
+            <pre><code data-check="reject" data-error="Untranslated name: loop">def loop(n : Nat) : Nat {
+  exact loop(n);
+}</code></pre>
+            <p>Each name can be declared once in a module:</p>
+            <pre><code data-check="reject" data-error="Definition symbol is already registered.">def twice_named = 0;
+
+def twice_named = 1;</code></pre>
+            <p>Inside a declaration, parameters and local names shadow outer ones. Choose fresh local names when a clash would be confusing to the reader.</p>
+          </section>
+
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="next" href="terms.html">2. Terms, functions and pairs →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+  </body>
+</html>

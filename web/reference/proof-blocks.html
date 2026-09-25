@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A proof block builds a term one statement at a time. Each statement extends the context, changes the goal, or closes it." />
+    <title>Cubist · 3. Proof blocks</title>
+    <link rel="stylesheet" href="../language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 3</p>
+        <h1>Proof blocks</h1>
+        <p class="lead">A proof block builds a term one statement at a time. Each statement extends the context, changes the goal, or closes it.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li class="current"><a href="proof-blocks.html" aria-current="page">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
+            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Common errors</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#goals">Goals and statements</a></li>
+            <li><a href="#intro"><code>intro</code></a></li>
+            <li><a href="#exact"><code>exact</code></a></li>
+            <li><a href="#have"><code>have</code></a></li>
+            <li><a href="#let"><code>let</code></a></li>
+            <li><a href="#obtain"><code>obtain</code></a></li>
+            <li><a href="#cases"><code>cases</code></a></li>
+            <li><a href="#changing-the-goal">Changing the goal</a></li>
+            <li><a href="#where-blocks-go">Where blocks can appear</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="goals">
+            <h2>Goals and statements</h2>
+            <p>A proof block is the body of a block declaration: <code>def name(params) : T { … }</code>. It starts with the goal <code>T</code> and a context holding the parameters. Each statement does one of three things:</p>
+            <ul>
+              <li>it <strong>extends the context</strong> and continues with the same goal: <code>let</code>, <code>have</code>, <code>obtain</code>;</li>
+              <li>it <strong>changes the goal</strong> and continues with the new one: <code>intro</code>, <code>rw</code>, <code>simp</code>, <code>ext</code>;</li>
+              <li>it <strong>closes the goal</strong> and ends the block: <code>exact</code>, <code>cases</code>, <code>rfl</code>, <code>calc</code>, <code>simpa</code>, <code>over</code>.</li>
+            </ul>
+            <pre><code data-check="accept">def swap_product(A B : U0) : (A and B) -&gt; (B and A) {
+  intro pair;            // goal: B and A
+  obtain (a, b) = pair;  // context: a : A, b : B
+  let saved = a;
+  have result : B and A {
+    exact (b, saved);
+  }
+  exact result;          // closes the goal
+}</code></pre>
+            <p>A block must end by closing its goal. A block that runs out of statements first is rejected:</p>
+            <pre><code data-check="reject" data-error="Proof block has no conclusion.">def unfinished(A : U0) : A -&gt; A {
+  intro a;
+}</code></pre>
+            <p>Nothing may follow a closing statement in the same block:</p>
+            <pre><code data-check="reject" data-error="Statements after exact are unreachable.">def after_the_end(A : U0, a : A) : A {
+  exact a;
+  exact a;
+}</code></pre>
+            <p>An unknown word where a statement belongs is a syntax error:</p>
+            <pre><code data-check="reject" data-error="Expected a proof statement; found 'return'.">def not_a_statement(a : Nat) : Nat {
+  return a;
+}</code></pre>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Statement</th><th>Effect</th><th>Described in</th></tr></thead>
+              <tbody>
+                <tr><td><code>intro x y;</code></td><td>Changes the goal</td><td><a href="#intro">intro</a></td></tr>
+                <tr><td><code>exact term;</code></td><td>Closes</td><td><a href="#exact">exact</a></td></tr>
+                <tr><td><code>have name : T { … }</code>, <code>have name = term;</code>, <code>have name : T := term;</code></td><td>Extends the context</td><td><a href="#have">have</a></td></tr>
+                <tr><td><code>let name = term;</code></td><td>Extends the context</td><td><a href="#let">let</a></td></tr>
+                <tr><td><code>obtain (a, b) = pair;</code></td><td>Extends the context</td><td><a href="#obtain">obtain</a></td></tr>
+                <tr><td><code>cases value { left x => { … } right y => { … } }</code></td><td>Closes</td><td><a href="#cases">cases</a></td></tr>
+                <tr><td><code>rfl;</code></td><td>Closes</td><td><a href="rewriting.html#rfl">reflexivity</a></td></tr>
+                <tr><td><code>calc { … }</code></td><td>Closes</td><td><a href="rewriting.html#calc">chains</a></td></tr>
+                <tr><td><code>rw [p];</code></td><td>Changes the goal</td><td><a href="rewriting.html#rw">rewriting</a></td></tr>
+                <tr><td><code>simp;</code>, <code>simp only [rules];</code>, <code>simp [rules] at h as h2;</code></td><td>Changes the goal, or adds a hypothesis</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
+                <tr><td><code>simpa [rules] using proof;</code></td><td>Closes</td><td><a href="rewriting.html#simpa">simpa</a></td></tr>
+                <tr><td><code>ext x;</code></td><td>Changes the goal</td><td><a href="cubical.html#ext">function extensionality</a></td></tr>
+                <tr><td><code>over C along p by { … }</code></td><td>Closes</td><td><a href="cubical.html#cubical-shorthand">dependent paths</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="intro">
+            <h2><code>intro</code></h2>
+            <p><code>intro x;</code> takes the next input of a function goal. For a goal <code>forall x : A, B(x)</code>, it adds <code>x : A</code> to the context and leaves <code>B(x)</code>. For an implication <code>P -> Q</code>, it adds a proof of <code>P</code> and leaves <code>Q</code>. <code>intro x y h;</code> is three introductions in a row; the inspector shows the context after each one.</p>
+            <pre><code data-check="accept">def curry(A B C : U0) : ((A and B) -&gt; C) -&gt; A -&gt; B -&gt; C {
+  intro f a b;
+  exact f((a, b));
+}</code></pre>
+            <p>The goal’s type is computed first, so <code>intro</code> works on a named definition that unfolds to a function type:</p>
+            <pre><code data-check="accept">def Endo(A : U0) = A -&gt; A;
+
+def compose_endo(A : U0, f g : Endo(A)) : Endo(A) {
+  intro a;
+  exact f(g(a));
+}</code></pre>
+            <p>A goal that is not a function type has nothing to introduce. This includes asking for more names than the goal has inputs:</p>
+            <pre><code data-check="reject" data-error="intro requires a dependent function goal.">def nothing_to_introduce : Nat {
+  intro n;
+  exact n;
+}</code></pre>
+            <pre><code data-check="reject" data-error="intro requires a dependent function goal.">def one_input_only(A : U0) : A -&gt; A {
+  intro a b;
+  exact a;
+}</code></pre>
+            <p>A function goal can also be closed without <code>intro</code>, by giving the function: <code>exact fun (a : A) => a;</code>.</p>
+            <p>The name after <code>intro</code> is chosen by the author. Its spelling does not determine its type; the goal does. Here <code>setA</code> gets the type <code>IsSet(A)</code> because that is the next input of the goal:</p>
+            <pre><code data-check="accept">import sets;
+
+def SetAssumption = forall A : U0, IsSet(A) -&gt; IsSet(A);
+
+def use_set_assumption : SetAssumption {
+  intro A;       // A : U0, from the forall
+  intro setA;    // setA : IsSet(A), from the implication
+  exact setA;
+}</code></pre>
+          </section>
+          <section id="exact">
+            <h2><code>exact</code></h2>
+            <p><code>exact term;</code> checks the term against the goal and closes the block. The two types need only be equal by computation, as described in <a href="conversion.html#conversion">conversion</a>:</p>
+            <pre><code data-check="accept">import primes;
+
+def by_computation : 2 + 2 = 4 {
+  exact refl(4);
+}
+
+def identity_function(A : U0) : A -&gt; A {
+  exact fun (a : A) =&gt; a;
+}</code></pre>
+            <pre><code data-check="reject" data-error="Type mismatch.">def wrong_type(A B : U0, a : A) : B {
+  exact a;
+}</code></pre>
+          </section>
+          <section id="have">
+            <h2><code>have</code></h2>
+            <p><code>have</code> proves a local claim and adds it to the context. It has three forms:</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Form</th><th>Use</th></tr></thead>
+              <tbody>
+                <tr><td><code>have name : T { … }</code></td><td>Prove <code>T</code> in a nested block. The block sees the surrounding context.</td></tr>
+                <tr><td><code>have name : T := term;</code></td><td>Check <code>term</code> against <code>T</code>. Shorthand for <code>have name : T { exact term; }</code>. The <code>:=</code> keeps an <code>=</code> inside <code>T</code> unambiguous.</td></tr>
+                <tr><td><code>have name = term;</code></td><td>Name a term whose type the elaborator can infer.</td></tr>
+              </tbody>
+            </table></div>
+            <pre><code data-check="accept">def three_ways(n : Nat) : n = n {
+  have p = refl(n);
+  have q : n = n := p;
+  have r : n = n {
+    exact q;
+  }
+  exact r;
+}
+
+def from_context(A B : U0, a : A, b : B) : A and B {
+  have pair : A and B {
+    exact (a, b);
+  }
+  exact pair;
+}</code></pre>
+            <p>Use <code>have</code> to split a long argument into named steps, and to state an equality whose endpoints the elaborator cannot infer. Without a type, <code>have name = term;</code> gives the term no expected type, so a pair is rejected:</p>
+            <pre><code data-check="reject" data-error="Pair requires an expected type.">def untyped_pair(a b : Nat) : Nat and Nat {
+  have p = (a, b);
+  exact p;
+}</code></pre>
+            <p>The nested block of <code>have</code> must close its own goal:</p>
+            <pre><code data-check="reject" data-error="Proof block has no conclusion.">def empty_claim(a : Nat) : Nat {
+  have b : Nat {
+  }
+  exact b;
+}</code></pre>
+          </section>
+          <section id="let">
+            <h2><code>let</code></h2>
+            <p><code>let name = term;</code> names a term for the rest of the block. The name stands for the term itself, so the checker sees through it: <code>refl(m)</code> below proves <code>succ(n) = succ(n)</code> because <code>m</code> is <code>succ(n)</code>. To give the term an expected type, write <code>let name = typed(T, term);</code>.</p>
+            <pre><code data-check="accept">def see_through(n : Nat) : succ(n) = succ(n) {
+  let m = succ(n);
+  exact refl(m);
+}
+
+def with_type(n : Nat) : Nat and Nat {
+  let pair = typed(Nat and Nat, (n, n));
+  exact pair;
+}</code></pre>
+            <p><code>let</code> names one term. To take a pair apart, use <code>obtain</code>:</p>
+            <pre><code data-check="reject" data-error="Use obtain to unpack a pair.">def pattern_in_let(p : Nat and Nat) : Nat {
+  let (a, b) = p;
+  exact a;
+}</code></pre>
+          </section>
+          <section id="obtain">
+            <h2><code>obtain</code></h2>
+            <p><code>obtain (a, b) = pair;</code> names the components of a pair or dependent pair. Patterns can be tuples and can nest, following the shape of the type.</p>
+            <pre><code data-check="accept">def witness(t : exists n : Nat, (n = n) and Unit) : Nat {
+  obtain (n, same, u) = t;
+  exact n;
+}
+
+def inner_unit(t : (Nat and Unit) and Nat) : Unit {
+  obtain ((a, u), b) = t;
+  exact u;
+}</code></pre>
+            <p>Like <code>let</code>, <code>obtain</code> introduces no new variables. Each name stands for a component of the pair, so <code>(n, q)</code> is equal to <code>p</code> by computation. A goal that mentions the original pair therefore still works:</p>
+            <pre><code data-check="accept">def about_the_pair(P : (exists n : Nat, n = n) -&gt; U0,
+    h : forall n : Nat, forall q : n = n, P((n, q)), p : exists n : Nat, n = n) : P(p) {
+  obtain (n, q) = p;
+  exact h(n, q);
+}</code></pre>
+            <p>The pattern must match the type’s shape, and a pattern needs at least two components:</p>
+            <pre><code data-check="reject" data-error="obtain requires a dependent pair matching its pattern.">def not_a_pair(n : Nat) : Nat {
+  obtain (a, b) = n;
+  exact a;
+}</code></pre>
+            <pre><code data-check="reject" data-error="obtain requires a dependent pair matching its pattern.">def too_many_components(p : Nat and Nat) : Nat {
+  obtain (a, b, c) = p;
+  exact a;
+}</code></pre>
+            <pre><code data-check="reject" data-error="A pair pattern needs at least two components.">def one_component(p : Nat and Nat) : Nat {
+  obtain (a) = p;
+  exact a;
+}</code></pre>
+            <p><code>obtain</code> does not open a <a href="assumptions.html#axioms">propositional truncation</a>: a merely existing witness cannot be named.</p>
+          </section>
+          <section id="cases">
+            <h2><code>cases</code></h2>
+            <p><code>cases value { left x => { … } right y => { … } }</code> proves the goal once for each side of a sum. Each branch is a block with the side’s component in its context. <code>cases</code> closes the goal.</p>
+            <pre><code data-check="accept">def swap_sum(A B : U0, value : A or B) : B or A {
+  cases value {
+    left a =&gt; { exact right(a); }
+    right b =&gt; { exact left(b); }
+  }
+}
+
+def reassociate(A B C : U0, value : A or (B or C)) : (A or B) or C {
+  cases value {
+    left a =&gt; { exact left(left(a)); }
+    right rest =&gt; {
+      cases rest {
+        left b =&gt; { exact left(right(b)); }
+        right c =&gt; { exact right(c); }
+      }
+    }
+  }
+}</code></pre>
+            <pre><code data-check="reject" data-error="cases requires a sum type.">def not_a_sum(n : Nat) : Nat {
+  cases n {
+    left a =&gt; { exact 0; }
+    right b =&gt; { exact 1; }
+  }
+}</code></pre>
+            <p><code>cases</code> must be the last statement of its block:</p>
+            <pre><code data-check="reject" data-error="Statements after cases are not yet translated.">def after_cases(value : Unit or Unit) : Unit {
+  cases value {
+    left a =&gt; { exact a; }
+    right b =&gt; { exact b; }
+  }
+  exact tt;
+}</code></pre>
+            <p><code>cases</code> does not change the goal in each branch. If the goal mentions <code>value</code>, both branches still see <code>value</code>, not <code>left(x)</code> or <code>right(y)</code>, and a branch that needs the refined goal fails:</p>
+            <pre><code data-check="reject" data-error="Type mismatch.">def Shape(value : Unit or Unit) = match value as z return U0 {
+  left a =&gt; Nat;
+  right b =&gt; Unit;
+};
+
+def default(value : Unit or Unit) : Shape(value) {
+  cases value {
+    left a =&gt; { exact 0; }
+    right b =&gt; { exact tt; }
+  }
+}</code></pre>
+            <p>For such a goal, use a dependent <a href="terms.html#match"><code>match</code></a>, which substitutes each side into the result type:</p>
+            <pre><code data-check="accept">def Shape(value : Unit or Unit) = match value as z return U0 {
+  left a =&gt; Nat;
+  right b =&gt; Unit;
+};
+
+def default(value : Unit or Unit) : Shape(value) {
+  exact match value as z return Shape(z) {
+    left a =&gt; 0;
+    right b =&gt; tt;
+  };
+}</code></pre>
+          </section>
+          <section id="changing-the-goal">
+            <h2>Changing the goal</h2>
+            <p><code>rw</code>, <code>simp</code> and <code>ext</code> replace the goal with a new one and continue. Some of them finish the block when the new goal holds by computation; the chapters on <a href="rewriting.html#rw">rewriting</a> and <a href="cubical.html#ext">function extensionality</a> say when. Otherwise, a following statement proves the new goal.</p>
+            <pre><code data-check="accept">import primes;
+
+def rewrite_then_finish(n : Nat) : (n + 0) + 0 = n {
+  rw [nat_add_zero(n)];
+  exact nat_add_zero(n);
+}
+
+def pointwise(A B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
+  ext x;
+  rfl;
+}</code></pre>
+            <p>In <code>rewrite_then_finish</code>, <code>rw</code> turns the goal into <code>n + 0 = n</code>, which <code>exact</code> then proves. In <code>pointwise</code>, <code>ext x</code> turns the goal into <code>f(x) = f(x)</code>, which still needs <code>rfl</code>:</p>
+            <pre><code data-check="reject" data-error="Proof block has no conclusion.">def pointwise(A B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
+  ext x;
+}</code></pre>
+          </section>
+          <section id="where-blocks-go">
+            <h2>Where blocks can appear</h2>
+            <p>A block can appear as the body of a block declaration, of <code>have</code>, of each <code>cases</code> branch, of a <code>calc</code> step, and of <code>over</code>. A block is not an expression: to use a proof inside a term, prove it first with <code>have</code>, or move it into its own declaration.</p>
+            <pre><code data-check="reject" data-error="Expected an expression, found '{'.">def block_as_term : Nat and Nat {
+  exact ({ exact 0; }, 1);
+}</code></pre>
+          </section>
+
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="terms.html">← 2. Terms, functions and pairs</a>
+            <a class="next" href="universes.html">4. Universes →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+  </body>
+</html>
