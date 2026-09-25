@@ -170,7 +170,7 @@ export class CubicalProgram {
       for (const d of result.declarations) {
         const syntax = byName.get(d.name), binding = `${name}__${d.name}`;
         const verified = d.status === "checked-native-cubical";
-        const template = d.reason?.startsWith("Universe schema:") ?? false;
+        const template = !!d.template;
         const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified, template,
           status: d.status, reason: d.reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
           rewriteWork: d.rewriteWork,

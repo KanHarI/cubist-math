@@ -250,7 +250,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
         try { same = checker.equal(before.type, toOriginal(after.type)); }
         catch (error) {
           same = false;
-          if (/time limit/i.test(error.message))
+          if (error.kind === "deadline")
             reason = `The public types were not shown convertible within ${typeTimeLimitMs} ms.`;
         } finally { program.kernel.setDeadline(); transaction.finish(false); }
         if (same) report.typesPreserved++;

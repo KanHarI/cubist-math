@@ -25,7 +25,7 @@ try {
   await program.check(selected.map(name=>`import ${name};`).join('\n'),'audit',p=>{
     if(args.includes("--verbose") || p.completed>=count+100){count=p.completed;process.stdout.write(`${count} declarations · ${p.instructions} steps · ${p.phase ?? "checked"} ${p.current}\n`);}
   });
-  const entries=Object.values(program.symbols), schemas=entries.filter(d=>d.reason?.startsWith('Universe schema:'));
+  const entries=Object.values(program.symbols), schemas=entries.filter(d=>d.template);
   const failures=entries.filter(d=>!d.verified&&!schemas.includes(d));
   const report={diagnosticBudget:diagnosticBudget?.toString()??null,modules:program.modules.size-1,checked:entries.filter(d=>d.verified).length,schemas:schemas.map(d=>d.binding),failures:failures.map(d=>({binding:d.binding,reason:d.reason})),imports:program.gaps.filter(g=>!g.name)};
   const counts=new Map();for(const d of failures)counts.set(d.reason,(counts.get(d.reason)??0)+1);

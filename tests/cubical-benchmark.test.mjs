@@ -59,8 +59,8 @@ test("rollback discards checked definitions and cached reductions from a rejecte
 
 test("a timeout remains a speed failure and templates are not counted as checked proofs", () => {
   assert.equal(category({ status: "checked-native-cubical" }, 1000.01, 1000), "optimize");
-  assert.equal(category({ reason: "Declaration time limit exceeded." }, 1000, 1000), "optimize");
-  assert.equal(category({ reason: "Universe schema: checked at uses" }, 0, 1000), "template");
+  assert.equal(category({ failure: "deadline", reason: "Declaration time limit exceeded." }, 1000, 1000), "optimize");
+  assert.equal(category({ template: true, reason: "Universe schema: checked at uses" }, 0, 1000), "template");
 });
 
 test("successful compaction retains definitions and translates references while clearing stale results", async t => {
