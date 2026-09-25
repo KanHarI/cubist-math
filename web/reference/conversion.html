@@ -42,45 +42,103 @@
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
-            <li><a href="#conversion">Conversion and opacity</a></li>
+            <li><a href="#conversion">Equality by computation</a></li>
+            <li><a href="#opacity">Opaque definitions</a></li>
+            <li><a href="#unfolding-hints">Unfolding hints</a></li>
           </ul>
         </aside>
         <article id="reference">
           <section id="conversion">
-            <h2>Conversion and opacity</h2>
-            <p>The checker accepts a term when its type is definitionally equal to the requested type. Two terms are definitionally equal when they reduce to the same normal form by these steps:</p>
+            <h2>Equality by computation</h2>
+            <p>The checker accepts a term when its type is definitionally equal to the requested type. Two terms are <strong>definitionally equal</strong> when they reduce to the same normal form. <code>refl</code> and <code>rfl</code> prove an equality exactly when its sides are definitionally equal. The reduction steps are:</p>
             <ul>
-              <li><strong>beta</strong>: a function applied to an argument computes, so <code>(fun (n : Nat) =&gt; succ(n))(0)</code> is <code>1</code>;</li>
+              <li><strong>beta</strong>: a function applied to an argument computes, so <code>(fun (n : Nat) => succ(n))(0)</code> is <code>1</code>;</li>
               <li><strong>delta</strong>: a named definition unfolds to its checked body;</li>
-              <li><strong>eliminator rules</strong>: induction, <code>match</code>, <code>unpack</code> and similar forms compute on constructors, so <code>2 + 2</code> is <code>4</code> but <code>n + 0</code> is stuck on the variable <code>n</code>;</li>
-              <li><strong>eta</strong>: a function equals <code>fun x =&gt; f(x)</code>, and a pair equals the pair of its projections;</li>
+              <li><strong>eliminator rules</strong>: <code>induction</code>, <code>match</code>, <code>unpack</code> and the other eliminators compute on constructors, so <code>2 + 2</code> is <code>4</code> but <code>n + 0</code> is stuck on the variable <code>n</code>;</li>
+              <li><strong>eta</strong>: a function equals <code>fun x => f(x)</code>, and a pair equals the pair of its components;</li>
               <li><strong>cubical rules</strong>: a path at <code>0</code> or <code>1</code> is its endpoint, and interval formulas are compared in normal form.</li>
             </ul>
-            <p>This is why <code>refl</code> and <code>rfl</code> prove some equalities and not others. They succeed exactly when both sides reach the same normal form.</p>
-            <p><code>def</code> defines both constructions and proofs. The checker retains named definitions and can unfold their checked bodies to establish equality of types. <code>opaque def</code> is accepted syntax, but currently has the same checking and unfolding behavior as <code>def</code>. Proof blocks appear by name in the inspector, where their bodies can be opened.</p>
+            <pre><code data-check="accept">import primes;
+
+def beta : (fun (n : Nat) =&gt; succ(n))(0) = 1 {
+  rfl;
+}
+
+def double(n : Nat) = succ(succ(n));
+
+def delta : double(1) = 3 {
+  rfl;
+}
+
+def eliminators : match typed(Unit or Nat, right(4)) return Nat { left u =&gt; 0; right n =&gt; n; } = 2 + 2 {
+  rfl;
+}</code></pre>
+            <pre><code data-check="accept">def function_eta(A B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
+  rfl;
+}
+
+def pair_eta(p : Nat and Nat) :
+  p = unpack p as (a, b) return Nat and Nat { typed(Nat and Nat, (a, b)); } {
+  rfl;
+}
+
+def path_endpoint(A : U0, x y : A, p : x = y) : p @ 1 = y {
+  rfl;
+}</code></pre>
+            <p>An eliminator applied to a variable does not compute, so an equality that needs a case analysis or induction on the variable is not definitional. It is a theorem, proved with a lemma, <code>rw</code> or <code>simp</code>:</p>
+            <pre><code data-check="reject" data-error="Type mismatch.">import primes;
+
+def plus_zero(n : Nat) : n + 0 = n {
+  rfl;
+}</code></pre>
+            <p>The checker never uses a theorem automatically. A proved equality such as commutativity is a path, not a reduction rule; <code>rw</code> and <code>simp</code> use it only when it is named in the proof or registered with <a href="rewriting.html#simp-registration"><code>simp_rule</code></a>.</p>
+          </section>
+          <section id="opacity">
+            <h2>Opaque definitions</h2>
+            <p><code>opaque def</code> is accepted syntax. It is currently checked and unfolded exactly like <code>def</code>: conversion opens <code>boxed_successor(1)</code> to <code>succ(1)</code>, which is the numeral <code>2</code>. There is no separate operation that unfolds a term on request; conversion unfolds definitions as it needs them.</p>
             <pre><code data-check="accept">opaque def boxed_successor(n : Nat) = succ(n);
 
 def opened_is_two : boxed_successor(1) = 2 {
   exact refl(2);
+}
+
+def opened_in_a_type(v : boxed_successor(0) = 1) : 1 = 1 {
+  exact v;
 }</code></pre>
-            <p>Conversion opens <code>boxed_successor(1)</code> to <code>succ(1)</code>, which is the numeral <code>2</code>, so <code>refl(2)</code> checks. There is no separate operation that unfolds a term on request: conversion unfolds definitions as it needs them. A theorem such as commutativity is still a propositional equality. The checker never uses a theorem automatically as a rewrite rule. <code>rw</code> and <code>simp</code> use theorems only when they are named in the proof or registered with <code>simp_rule</code>.</p>
-            <p>In the native cubical backend, <code>with unfolding [name₁, name₂] { expression }</code>
-              scopes selective conversion hints around an expression. The bracketed list contains
-              names of already checked definitions; the braces contain one expression, without a
-              trailing semicolon. Empty lists and nested scopes are allowed. For example:</p>
+          </section>
+          <section id="unfolding-hints">
+            <h2>Unfolding hints</h2>
+            <p><code>with unfolding [name₁, name₂] { expression }</code> scopes conversion hints around one expression. The list names already checked definitions; the braces hold one expression, without a trailing semicolon. Empty lists and nested scopes are allowed.</p>
             <pre><code data-check="accept">def identity(n : Nat) = n;
+
 def identity_zero : identity(0) = 0 {
   exact with unfolding [identity] { refl(0) };
+}
+
+def twice(n : Nat) = identity(identity(n));
+
+def nested : twice(0) = 0 {
+  exact with unfolding [twice] { with unfolding [identity] { refl(0) } };
+}
+
+def no_hints : 0 = 0 {
+  exact with unfolding [] { refl(0) };
 }</code></pre>
-            <p>The checker first tries unfolding the selected wrappers while keeping other
-              definitions folded; ordinary conversion remains available. During elaboration,
-              the hints apply only inside the braces. The compiler may retain the result as a
-              checked helper definition, so the enclosing proof can reuse it without re-expanding
-              it. Rechecking that helper replays its selected strategy; the hints do not leak into
-              surrounding expressions. Hints change reduction order, never the type,
-              assumptions, or proof obligations. They are performance guidance, not evidence of
-              an equality, and do not normalize the whole expression.</p>
+            <p>The checker first tries unfolding the listed definitions while keeping others folded; ordinary conversion remains available. The hints apply only inside the braces. The compiler may keep the result as a checked helper definition, so the enclosing proof can reuse it without expanding it again. Rechecking that helper replays its hints; they do not leak into the surrounding expression. Hints change the order of reduction, never the type, the assumptions or the proof obligations. They are guidance for performance, not evidence of an equality, and they do not normalize the whole expression. <a href="assumptions.html#evaluate"><code>evaluate</code></a> ignores them.</p>
+            <pre><code data-check="reject" data-error="No checked definition to unfold: missing_name">def unknown_hint : 0 = 0 {
+  exact with unfolding [missing_name] { refl(0) };
+}</code></pre>
+            <p>Only top-level definitions can be listed; a parameter or local name is not one:</p>
+            <pre><code data-check="reject" data-error="No checked definition to unfold: n">def local_hint(n : Nat) : n = n {
+  exact with unfolding [n] { refl(n) };
+}</code></pre>
+            <pre><code data-check="reject" data-error="Expected '}', found ';'.">def identity(n : Nat) = n;
+
+def statement_in_braces : identity(0) = 0 {
+  exact with unfolding [identity] { refl(0); };
+}</code></pre>
           </section>
+
           <nav class="pager" aria-label="Chapter navigation">
             <a class="previous" href="cubical.html">← 8. Cubical paths, pushouts and suspensions</a>
             <a class="next" href="assumptions.html">10. Assumptions and computability →</a>

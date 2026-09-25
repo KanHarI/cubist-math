@@ -220,12 +220,11 @@
           Inspect a template and select U0–U3 to see its checked specialization.
           <code>Equiv(U, A, B)</code> and <code>IsEquiv(U, A, B, f)</code>
           work at that universe. <code>Choice(U0)</code>, <code>LEM(U0)</code>
-          (excluded middle), <code>FunExt(U1)</code>,
-          <code>Truncate(U1)</code> and <code>Univalence(U1)</code> specialize
-          existing axioms.
-          <code>Univalence(U, A, B)</code> asserts that <code>idtoequiv</code> is an equivalence.
-          Its derived inverse is <code>ua(U, A, B, e)</code>; <code>UnivalenceBeta</code>
-          and <code>UnivalenceEta</code> are derived laws.
+          (excluded middle) and <code>Truncate(U1)</code> specialize the library
+          assumptions to a universe.
+          <code>ua(U, A, B, e)</code> turns an equivalence into a path of types, and
+          <code>UnivalenceBeta</code> computes transport along it. Like
+          <code>FunExt(U, A, B, f, g, h)</code>, they are constructions, not assumptions.
         </p>
         <p>
           <code>x =[T] y</code> means equality of <code>x</code> and
@@ -414,9 +413,10 @@ def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
           proof can reuse it without expanding it again.
           It does not assume an equality or normalize the whole proof.
           A source file cannot add assumptions: <code>axiom</code> declarations are rejected.
-          Truncation, function extensionality, univalence, choice,
-          and classical principles are explicit library assumptions; see
+          Truncation, choice and excluded middle are the explicit library assumptions; see
           <a href="reference/assumptions.html#axioms">their signatures and restrictions</a>.
+          Function extensionality and univalence compute; see
+          <a href="reference/assumptions.html#univalence">extensionality and univalence</a>.
           <code>computable def</code> requires a declaration to use no assumption, and
           <code>evaluate term expecting value;</code> checks what a closed term computes to;
           see <a href="reference/assumptions.html#computability">computability</a>.

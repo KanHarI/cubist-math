@@ -85,7 +85,7 @@ def path_between_paths(A : U0, x : A) : refl(x) = refl(x) {
 def reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
   exact sym(p);
 }</code></pre>
-            <p>In <code>A =[U1] B</code>, the endpoints are types and the carrier is a universe. Equalities between different types come from univalence; see <a href="assumptions.html#axioms">assumptions</a>. The carrier must be the type of both endpoints:</p>
+            <p>In <code>A =[U1] B</code>, the endpoints are types and the carrier is a universe. Equalities between different types come from univalence; see <a href="assumptions.html#univalence">extensionality and univalence</a>. The carrier must be the type of both endpoints:</p>
             <pre><code data-check="reject" data-error="Type mismatch.">def wrong_carrier(x : Nat) : x =[Unit] x {
   exact refl(x);
 }</code></pre>
