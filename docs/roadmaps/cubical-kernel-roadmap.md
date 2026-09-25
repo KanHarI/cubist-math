@@ -33,7 +33,9 @@ Consequences for every item below:
 - An assumption that remains, such as an explicit resizing axiom, is named and
   reported. Results that use it are outside the requirement and do not compute.
 - A canonicity regression normalizes closed assumption-free results to
-  canonical values before and after each change.
+  canonical values before and after each change. It exists as
+  [canonicity.cubist](../examples/hott-automation/canonicity.cubist), checked
+  by `tests/hott-automation.test.mjs`; extend it with each new type former.
 
 ## Priority
 

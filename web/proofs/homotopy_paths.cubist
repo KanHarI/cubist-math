@@ -1,23 +1,19 @@
 import paths;
 
 // Naturality tracks the moving basepoint of a homotopy. No funext or
-// classical principle is needed: these are consequences of path induction.
-def path_map_constant(A : U1, B : U1, point : B, x : A, y : A, p : x = y) =
-  path_induction(
-    A,
-    (
-      fun (a : A) => fun (b : A) => fun (r : a = b) => ap(U1, A, B, (fun (v : A) => point), a, b, r) = refl(
-        point
-      )
-    ), (fun (a : A) => refl(refl(point))), x, y, p
-  );
+// classical principle is needed: the first two laws hold by conversion and
+// the rest are consequences of path induction.
+// Holds by conversion: a constant function maps every path to a constant line.
+def path_map_constant(A : U1, B : U1, point : B, x : A, y : A, p : x = y) :
+  ap(U1, A, B, (fun (v : A) => point), x, y, p) = refl(point) {
+  rfl;
+}
 
-def path_map_identity(A : U1, x : A, y : A, p : x = y) =
-  path_induction(
-    A,
-    (fun (a : A) => fun (b : A) => fun (r : a = b) => ap(U1, A, A, (fun (v : A) => v), a, b, r) = r),
-    (fun (a : A) => refl(refl(a))), x, y, p
-  );
+// Holds by conversion: the identity function maps a path to itself.
+def path_map_identity(A : U1, x : A, y : A, p : x = y) :
+  ap(U1, A, A, (fun (v : A) => v), x, y, p) = p {
+  rfl;
+}
 
 def homotopy_naturality(
   A : U1, B : U1, f : A -> B, g : A -> B, homotopy : (forall a : A, f(a) = g(a)), x : A, y : A,

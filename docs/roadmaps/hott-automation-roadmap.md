@@ -1,6 +1,8 @@
 # HoTT and cubical abstractions and automation in Cubist
 
-Status: planning only, revised after two design reviews on 2026-09-24 and a
+Status: A7 delivered on 2026-09-25 (see the
+[implementation checkpoint](../tactical/hott-automation-handoff.md)); the other
+milestones are planned. Revised after two design reviews on 2026-09-24 and a
 restructuring on 2026-09-25. The second review added library-first milestones:
 several targets follow from computation the kernel already performs, before
 any new tactic. The milestones below are proposed work; existing
@@ -294,7 +296,13 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   rules that fired. A cycle error names the rules involved. The unresolved-goal
   error already names a blocked premise, an exhausted premise search and
   matches skipped in dependent positions; it does not yet show the goal.
-- [ ] **A7. HoTT baseline.** Extend the [measurement script](../examples/proof-ergonomics/measure.mjs)
+- [x] **A7. HoTT baseline.** Delivered on 2026-09-25: the fixtures and
+  `tests/hott-automation.test.mjs`, a
+  [HoTT measurement script](../examples/hott-automation/measure.mjs) beside the
+  unchanged ergonomics baseline, a canonicity fixture for invariant 10, and the
+  conversion audit below. Results are in the
+  [implementation checkpoint](../tactical/hott-automation-handoff.md).
+  Extend the [measurement script](../examples/proof-ergonomics/measure.mjs)
   with these declarations:
   - `group_laws_prop`, `group_total_laws_path`, `identity_system_retraction`
   - `code_upper`, `upper_transition`
@@ -325,6 +333,11 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   `trans`, and `cong` have been removed; their callers use the checked builtins.
   Replace the remaining induction proofs where intended, record each changed
   witness, and recheck its consumers (invariant 9).
+  - The audit checked all 27 corpus declarations that use derived path
+    induction. `path_map_constant`, `path_map_identity` and
+    `field_pair_path_decode` hold by conversion and now use `rfl`, with
+    unchanged public types and assumptions; the other 18 equality statements
+    need their proofs.
 - [ ] **A8. Σ projections with inferred families.** Add projection syntax, for
   example `p.1` and `p.2`, elaborating to the core `First` and `Second` with
   the family read from the checked type of `p`. The library spells projections
@@ -999,7 +1012,7 @@ Mandatory cases:
 | F1 | Incorrect operation preservation rejected; property fields require proposition evidence; nonidentity carrier equivalence exercises derived SIP |
 | F2–F3 | Transferred closed data computes; dependent fibers require maps; generated HIT eliminators preserve boundaries and their declared computation behavior |
 | F4 | Generic loop-group laws specialize at `U0` and `U1`; `loop_group` migrates without a local copy |
-| Invariant 10 | Closed assumption-free results normalize to canonical values before and after each migration; no tactic or convenience introduces an assumption |
+| Invariant 10 | Closed assumption-free results in [canonicity.cubist](../examples/hott-automation/canonicity.cubist) still reduce to their stated canonical values after each migration; no tactic or convenience introduces an assumption |
 
 Future gates, not claimed results:
 
@@ -1203,9 +1216,11 @@ rejected:
 Transport along a constant family still computes on closed values:
 `transport(fun t => Nat, x, x, refl(x), 3) = 3` checks by `rfl`.
 
-The library proves several of these laws by induction: `path_map_constant` and
-`path_map_identity` in [homotopy_paths](../../web/proofs/homotopy_paths.cubist)
-by path induction. The former `field_sigma_eta` pair-induction helper in
+The library proved several of these laws by induction. Since A7,
+`path_map_constant` and `path_map_identity` in
+[homotopy_paths](../../web/proofs/homotopy_paths.cubist), and
+`field_pair_path_decode` in [field_products](../../web/proofs/field_products.cubist),
+use conversion instead. The former `field_sigma_eta` pair-induction helper in
 [field_extensionality](../../web/proofs/field_extensionality.cubist) has been
 removed; `field_subtype_ext` now uses judgmental Sigma eta directly.
 [primes](../../web/proofs/primes.cubist) used to define `nat_eq_sym`,
@@ -1320,8 +1335,10 @@ def convertible_rule(A : U0, x y : A, p : x = y, omega : p = p) :
   sym(sym(p)) = p { exact omega; }
 ```
 
-Its result does not in general convert to `refl(p)`. A7 must retain these
-distinctions as regressions before A3 or C1 changes proof construction.
+Its result does not in general convert to `refl(p)`. A7 retains these
+distinctions as regressions in
+[rejected-probes.cubist.rejected](../examples/hott-automation/rejected-probes.cubist.rejected),
+before A3 or C1 changes proof construction.
 
 ## Measurement record
 
@@ -1350,6 +1367,15 @@ then checked 25 declarations in 89,080 native checking steps, with no axioms,
 through `npm test -- docs/examples/hott-automation/conversion-laws.cubist`. The
 [rejected-law block](../examples/hott-automation/README.md#rejected-laws),
 checked as one file, rejected all seven declarations with the listed reasons.
+
+The A7 baseline, on 2026-09-25, used revision `7d9893b` with the A7 changes
+uncommitted, on Node v22.22.0 and the same Apple M3 Pro. Its measurement
+script and
+[baseline.json](../examples/hott-automation/baseline.json) record 15
+declarations in fresh and reused sessions; the
+[implementation checkpoint](../tactical/hott-automation-handoff.md#measurement-baseline)
+summarizes them. The original measurements above are kept as historical
+evidence.
 
 Corpus counts use `grep -o PATTERN web/proofs/*.cubist | wc -l` with the
 patterns `'\btrans('`, `'\bcong('`, `'\bsym('`, `'\btransport('`,

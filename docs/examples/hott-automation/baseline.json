@@ -1,0 +1,856 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-25T08:15:02.634Z",
+  "revision": "7d9893b5cdf0e1df0f34b5e978c6b839ae4ce125",
+  "dirty": true,
+  "runtime": "v22.22.0",
+  "cpu": "Apple M3 Pro",
+  "method": "The fresh session checks the selected modules' import graph once in a new kernel, with references disabled and declaration transactions. The reused session then checks each selected module's source again, under a new module name, in the same kernel. Native checking steps count every checker query during a declaration. Final-check steps are the translator's closing check; specialization steps are spent inside universe specialization; the rest is elaboration. The kernel's own re-check during definition is not reported to JavaScript. Native queries count calls into the kernel; budget retries count queries repeated after the growing step budget was exhausted. Arena values snapshot the kernel at the final check and are cumulative. Elapsed times are one observation. Tokens exclude comments, whitespace and EOF. A template is measured through a declaration that names its U0 specialization; that specialization may already be cached, so firstSpecialization records the inclusive steps of the first specialization in each session and the declaration that triggered it. foldedType stays null until A1 introduces folded signatures.",
+  "unmeasured": [
+    "kernel re-check during definition",
+    "peak temporary arena",
+    "retained arena delta",
+    "generated proof DAG size",
+    "repeated-run variance",
+    "prelude cost (no prelude before A1)"
+  ],
+  "graph": {
+    "modules": 40,
+    "checked": 457,
+    "templates": 43
+  },
+  "selected": [
+    {
+      "module": "group_identity",
+      "name": "group_laws_prop",
+      "sourcePath": "web/proofs/group_identity.cubist",
+      "sourceSha256": "c03fabafbfca443f72157bf7f93e9abbdc3b2b1ea0e6ef2fec505b9c066d8eee",
+      "declarationSha256": "c88d6ed233f83528d62c780545144ee12a8afacf22065b4dbcb88a471c941260",
+      "sourceTokens": 544,
+      "sourceLines": 62,
+      "publicType": "Π (A48 : U0), Π (unit49 : A48), Π (multiply52 : (A48 → (A48 → A48))), Π (p53 : GroupLaws(A48, unit49, multiply52)), Π (q54 : GroupLaws(A48, unit49, multiply52)), (p53 =[GroupLaws(A48, unit49, multiply52)] q54)",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 3.11,
+        "nativeCheckingSteps": 1409,
+        "finalCheckSteps": 15,
+        "specializationSteps": 0,
+        "nativeQueries": 305,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 9671,
+        "finalCheckArenaBytes": 2362368
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 3.687,
+        "nativeCheckingSteps": 2392,
+        "finalCheckSteps": 21,
+        "specializationSteps": 0,
+        "nativeQueries": 305,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 31560,
+        "finalCheckArenaBytes": 3938304
+      }
+    },
+    {
+      "module": "group_total_identity",
+      "name": "group_total_laws_path",
+      "sourcePath": "web/proofs/group_total_identity.cubist",
+      "sourceSha256": "4ab013be51f5a9ab3e5f2b4400c5264c56b28ea37e855b3fadfb6eb8805c9a30",
+      "declarationSha256": "8559ad81d3570994438e85f16b6063cdb5f1bb33a748c8971d094bd68489d37e",
+      "sourceTokens": 514,
+      "sourceLines": 60,
+      "publicType": "Π (A7 : U0), Π (unit8 : A7), Π (multiply11 : (A7 → (A7 → A7))), Π (laws12 : GroupLaws(A7, unit8, multiply11)), Π (otherLaws13 : GroupLaws(A7, unit8, multiply11)), Π (iso14 : GroupIso(group_object(A7, unit8, multiply11, laws12), group_object(A7, unit8, multiply11, otherLaws13))), (Π (x15 : group_carrier(group_object(A7, unit8, multiply11, laws12))), (x15 =[group_carrier(group_object(A7, unit8, multiply11, laws12))] group_iso_forward(group_object(A7, unit8, multiply11, laws12), group_object(A7, unit8, multiply11, otherLaws13), iso14, x15)) → (group_iso_center(group_object(A7, unit8, multiply11, laws12)) =[GroupIsoTotal(group_object(A7, unit8, multiply11, laws12))] group_iso_point(group_object(A7, unit8, multiply11, laws12), group_object(A7, unit8, multiply11, otherLaws13), iso14)))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 2.803,
+        "nativeCheckingSteps": 1887,
+        "finalCheckSteps": 15,
+        "specializationSteps": 0,
+        "nativeQueries": 338,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 10880,
+        "finalCheckArenaBytes": 2362368
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 2.806,
+        "nativeCheckingSteps": 3010,
+        "finalCheckSteps": 21,
+        "specializationSteps": 0,
+        "nativeQueries": 338,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 32409,
+        "finalCheckArenaBytes": 3938304
+      }
+    },
+    {
+      "module": "identity_systems",
+      "name": "identity_system_retraction",
+      "sourcePath": "web/proofs/identity_systems.cubist",
+      "sourceSha256": "309f9c8da46f4a6e02204036f4db8a43cff249ce203a86c8dd6175eb4f72d530",
+      "declarationSha256": "7b5dcef137e6faab4cc6dc2b412a1289e9fde3913d47ea4c4bf6f6648c29f2a9",
+      "sourceTokens": 301,
+      "sourceLines": 28,
+      "publicType": "Π (A52 : U1), Π (a53 : A52), Π (R55 : (A52 → U1)), Π (r0_56 : R55(a53)), Π (contraction59 : Π (z57 : IdentityTotal(A52, R55)), (identity_total_point(A52, R55, a53, r0_56) =[IdentityTotal(A52, R55)] z57)), Π (b60 : A52), Π (p62 : (a53 =[A52] b60)), (identity_system_encode(A52, a53, R55, r0_56, contraction59, b60, identity_system_decode(A52, a53, R55, r0_56, b60, p62)) =[(field_first(A52, R55, identity_total_point(A52, R55, a53, r0_56)) =[A52] field_first(A52, R55, identity_total_point(A52, R55, b60, identity_system_decode(A52, a53, R55, r0_56, b60, p62))))] p62)",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 5.064,
+        "nativeCheckingSteps": 2404,
+        "finalCheckSteps": 25,
+        "specializationSteps": 480,
+        "nativeQueries": 213,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 14265,
+        "finalCheckArenaBytes": 2362368
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 3.349,
+        "nativeCheckingSteps": 1921,
+        "finalCheckSteps": 25,
+        "specializationSteps": 0,
+        "nativeQueries": 175,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 33874,
+        "finalCheckArenaBytes": 3944448
+      }
+    },
+    {
+      "module": "circle",
+      "name": "code_upper",
+      "sourcePath": "web/proofs/circle.cubist",
+      "sourceSha256": "b0123769c5130a956253d3f40b3fe2e3355d176e24abe09255a04a23e13f4f32",
+      "declarationSha256": "699b5dd6265b19aa08cecc8d70c9638cc2c2c40a22602561e479ed5bf3ad7cba",
+      "sourceTokens": 106,
+      "sourceLines": 7,
+      "publicType": "Π (z19 : Z), ([d0]. comp(code(at(upper, d0:1)), z19) =[code(at(upper, 1))] successorZ(z19))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 2.548,
+        "nativeCheckingSteps": 827,
+        "finalCheckSteps": 13,
+        "specializationSteps": 0,
+        "nativeQueries": 55,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 17518,
+        "finalCheckArenaBytes": 2889728
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 2.193,
+        "nativeCheckingSteps": 825,
+        "finalCheckSteps": 13,
+        "specializationSteps": 0,
+        "nativeQueries": 55,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 35621,
+        "finalCheckArenaBytes": 3944448
+      }
+    },
+    {
+      "module": "circle",
+      "name": "upper_transition",
+      "sourcePath": "web/proofs/circle.cubist",
+      "sourceSha256": "b0123769c5130a956253d3f40b3fe2e3355d176e24abe09255a04a23e13f4f32",
+      "declarationSha256": "705d668cf0e451ebe20c313fc965de8d7f228154d4307028440da2fe52a5c74b",
+      "sourceTokens": 197,
+      "sourceLines": 21,
+      "publicType": "Π (z148 : Z), (paths__concatenate__U1(S1, base, base, south_pole, integer_loop(predecessorZ(z148)), upper) =[(base =[S1] south_pole)] south_decoder(z148))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 6.138,
+        "nativeCheckingSteps": 1400,
+        "finalCheckSteps": 13,
+        "specializationSteps": 0,
+        "nativeQueries": 127,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 18456,
+        "finalCheckArenaBytes": 3938304
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 6.514,
+        "nativeCheckingSteps": 1383,
+        "finalCheckSteps": 13,
+        "specializationSteps": 0,
+        "nativeQueries": 127,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 36543,
+        "finalCheckArenaBytes": 6041600
+      }
+    },
+    {
+      "module": "equivalence_from_inverse",
+      "name": "adjoint_triangle",
+      "sourcePath": "web/proofs/equivalence_from_inverse.cubist",
+      "sourceSha256": "c41cc6b992bad2403527fb23c4a6d46085fcf1d0fadac29fa17aa53df4e11434",
+      "declarationSha256": "ae1b1c076fbf8810e80037de7cd4cd2250520c34d04ab47c572557d59cdfec02",
+      "sourceTokens": 599,
+      "sourceLines": 31,
+      "publicType": "Π (A156 : U0), Π (B157 : U0), Π (f159 : (A156 → B157)), Π (g161 : (B157 → A156)), Π (eta164 : Π (x162 : A156), (g161(f159(x162)) =[A156] x162)), Π (epsilon167 : Π (y165 : B157), (f159(g161(y165)) =[B157] y165)), Π (x168 : A156), (paths__ap__U0(A156, B157, f159, g161(f159(x168)), x168, eta164(x168)) =[(f159(g161(f159(x168))) =[B157] f159(x168))] equivalence_from_inverse__adjoint_counit__U0(A156, B157, f159, g161, eta164, epsilon167, f159(x168)))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": true,
+      "specializedAt": "U0",
+      "firstSpecialization": {
+        "fresh": {
+          "steps": 8989,
+          "triggeredBy": "binary_equivalence__binary_nat_equiv"
+        },
+        "reused": {
+          "steps": 11361,
+          "triggeredBy": "hott_baseline_reused__adjoint_triangle_U0_reused"
+        }
+      },
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 0.193,
+        "nativeCheckingSteps": 74,
+        "finalCheckSteps": 74,
+        "specializationSteps": 0,
+        "nativeQueries": 2,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 30052,
+        "finalCheckArenaBytes": 3938304
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 44.057,
+        "nativeCheckingSteps": 11370,
+        "finalCheckSteps": 9,
+        "specializationSteps": 11361,
+        "nativeQueries": 979,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 49766,
+        "finalCheckArenaBytes": 6041600
+      }
+    },
+    {
+      "module": "paths",
+      "name": "cancel_left",
+      "sourcePath": "web/proofs/paths.cubist",
+      "sourceSha256": "a8401935192d95e4d2445f8a76c339f4561209d68d1aa91f4ba112f9a89c6e47",
+      "declarationSha256": "854a71594f2a814a6df7a6d652f81b70f014e3cc83f9d7b421a1310a58960c01",
+      "sourceTokens": 243,
+      "sourceLines": 16,
+      "publicType": "Π (A89 : U1), Π (x90 : A89), Π (y91 : A89), Π (p93 : (x90 =[A89] y91)), Π (z94 : A89), Π (q96 : (y91 =[A89] z94)), Π (r98 : (y91 =[A89] z94)), (((λ (ascription14 : (x90 =[A89] z94)). ascription14)(path(λ d0. [d1]. comp(A89, face(d0:0, x90), face(d0:1, at(q96, d1:1)), at(p93, d0:1)))) =[(x90 =[A89] z94)] (λ (ascription17 : (x90 =[A89] z94)). ascription17)(path(λ d0. [d1]. comp(A89, face(d0:0, x90), face(d0:1, at(r98, d1:1)), at(p93, d0:1))))) → (path(λ d1. [d2]. comp(A89, face(d1:0, y91), face(d1:1, at(q96, d2:1)), face(1, at(q96, d1:1 ∧ d2:1)), y91)) =[(y91 =[A89] z94)] path(λ d1. [d2]. comp(A89, face(d1:0, y91), face(d1:1, at(r98, d2:1)), face(1, at(r98, d1:1 ∧ d2:1)), y91))))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 19.635,
+        "nativeCheckingSteps": 2145,
+        "finalCheckSteps": 52,
+        "specializationSteps": 0,
+        "nativeQueries": 171,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 2099,
+        "finalCheckArenaBytes": 1966848
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 13.571,
+        "nativeCheckingSteps": 2852,
+        "finalCheckSteps": 62,
+        "specializationSteps": 0,
+        "nativeQueries": 171,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 39393,
+        "finalCheckArenaBytes": 6041600
+      }
+    },
+    {
+      "module": "paths",
+      "name": "transport_concat",
+      "sourcePath": "web/proofs/paths.cubist",
+      "sourceSha256": "a8401935192d95e4d2445f8a76c339f4561209d68d1aa91f4ba112f9a89c6e47",
+      "declarationSha256": "1d283b51628098509207a6d19c22bee2fd3b20ae46cad449f515fd6e15d7d1ff",
+      "sourceTokens": 987,
+      "sourceLines": 131,
+      "publicType": "Π (A138 : U1), Π (C140 : (A138 → U0)), Π (x141 : A138), Π (y142 : A138), Π (z143 : A138), Π (p145 : (x141 =[A138] y142)), Π (q147 : (y142 =[A138] z143)), Π (v148 : C140(x141)), ([d1]. comp(C140(at(path(λ d0. [d1_]. comp(A138, face(d0:0, x141), face(d0:1, at(q147, d1_:1)), at(p145, d0:1))), d1:1)), face(1, [d2]. comp(C140(at(path(λ d0. [d1_]. comp(A138, face(d0:0, x141), face(d0:1, at(q147, d1_:1)), at(p145, d0:1))), d1:1 ∧ d2:1)), face(d1:0, v148), v148)), face(0, at(path(λ d0. [d1_]. comp(C140([d2]. comp(A138, face(d0:0, x141), face(d0:1, at(q147, d1_:1 ∧ d2:1)), face(d1_:0, at(p145, d0:1)), at(p145, d0:1))), face(d0:0, v148), face(d0:1, [d0_]. comp(C140(at(q147, d0_:1 ∧ d1_:1)), face(d1_:0, [d0__]. comp(C140(at(p145, d0__:1)), v148)), [d0_]. comp(C140(at(p145, d0_:1)), v148))), [d1_]. comp(C140(at(p145, d0:1 ∧ d1_:1)), face(d0:0, v148), v148))), d1:1)), v148) =[C140(at(path(λ d0_. [d1]. comp(A138, face(d0_:0, x141), face(d0_:1, at(q147, d1:1)), at(p145, d0_:1))), 1))] [d1]. comp(C140(at(path(λ d0. [d1_]. comp(A138, face(d0:0, x141), face(d0:1, at(q147, d1_:1)), at(p145, d0:1))), d1:1)), face(0, [d2]. comp(C140(at(path(λ d0. [d1_]. comp(A138, face(d0:0, x141), face(d0:1, at(q147, d1_:1)), at(p145, d0:1))), d1:1 ∧ d2:1)), face(d1:0, v148), v148)), face(1, at(path(λ d0. [d1_]. comp(C140([d2]. comp(A138, face(d0:0, x141), face(d0:1, at(q147, d1_:1 ∧ d2:1)), face(d1_:0, at(p145, d0:1)), at(p145, d0:1))), face(d0:0, v148), face(d0:1, [d0_]. comp(C140(at(q147, d0_:1 ∧ d1_:1)), face(d1_:0, [d0__]. comp(C140(at(p145, d0__:1)), v148)), [d0_]. comp(C140(at(p145, d0_:1)), v148))), [d1_]. comp(C140(at(p145, d0:1 ∧ d1_:1)), face(d0:0, v148), v148))), d1:1)), v148))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 1.806,
+        "nativeCheckingSteps": 307,
+        "finalCheckSteps": 51,
+        "specializationSteps": 0,
+        "nativeQueries": 32,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 906,
+        "finalCheckArenaBytes": 1966848
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 1.824,
+        "nativeCheckingSteps": 738,
+        "finalCheckSteps": 57,
+        "specializationSteps": 0,
+        "nativeQueries": 32,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 38186,
+        "finalCheckArenaBytes": 6041600
+      }
+    },
+    {
+      "module": "paths",
+      "name": "right_unit",
+      "sourcePath": "web/proofs/paths.cubist",
+      "sourceSha256": "a8401935192d95e4d2445f8a76c339f4561209d68d1aa91f4ba112f9a89c6e47",
+      "declarationSha256": "4d658b748fcb9563dee87ffd270cb44f0d768723006008bea888602159ce8f75",
+      "sourceTokens": 134,
+      "sourceLines": 11,
+      "publicType": "Π (A26 : U1), Π (x27 : A26), Π (y28 : A26), Π (p30 : (x27 =[A26] y28)), (path(λ d1. [d2]. comp(A26, face(d1:0, x27), face(d1:1, y28), face(0, at(p30, d1:1)), at(p30, d1:1))) =[(x27 =[A26] y28)] path(λ d1. [d2]. comp(A26, face(d1:0, x27), face(d1:1, y28), face(1, at(p30, d1:1)), at(p30, d1:1))))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 0.593,
+        "nativeCheckingSteps": 38,
+        "finalCheckSteps": 26,
+        "specializationSteps": 0,
+        "nativeQueries": 4,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 150,
+        "finalCheckArenaBytes": 1843968
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 0.266,
+        "nativeCheckingSteps": 188,
+        "finalCheckSteps": 32,
+        "specializationSteps": 0,
+        "nativeQueries": 4,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 37431,
+        "finalCheckArenaBytes": 6041600
+      }
+    },
+    {
+      "module": "paths",
+      "name": "transport_constant",
+      "sourcePath": "web/proofs/paths.cubist",
+      "sourceSha256": "a8401935192d95e4d2445f8a76c339f4561209d68d1aa91f4ba112f9a89c6e47",
+      "declarationSha256": "f8797352d52619fd8bff9cf8e40ca86080305aa4abfaa650ea64573d4b77164a",
+      "sourceTokens": 79,
+      "sourceLines": 5,
+      "publicType": "Π (A1 : U1), Π (B2 : U1), Π (x3 : A1), Π (y4 : A1), ((x3 =[A1] y4) → Π (v7 : B2), ([d1]. comp(B2, face(0, v7), v7) =[B2] [d1]. comp(B2, face(1, v7), v7)))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 4.478,
+        "nativeCheckingSteps": 26,
+        "finalCheckSteps": 21,
+        "specializationSteps": 0,
+        "nativeQueries": 3,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 38,
+        "finalCheckArenaBytes": 1646592
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 0.321,
+        "nativeCheckingSteps": 105,
+        "finalCheckSteps": 27,
+        "specializationSteps": 0,
+        "nativeQueries": 3,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 37320,
+        "finalCheckArenaBytes": 6041600
+      }
+    },
+    {
+      "module": "paths",
+      "name": "transport_ap",
+      "sourcePath": "web/proofs/paths.cubist",
+      "sourceSha256": "a8401935192d95e4d2445f8a76c339f4561209d68d1aa91f4ba112f9a89c6e47",
+      "declarationSha256": "45ff61c7a31f697c489c7b3bc117f887d7f604977c746011c7bc98300c8277e9",
+      "sourceTokens": 51,
+      "sourceLines": 2,
+      "publicType": "Π (A200 : U1), Π (C202 : (A200 → U0)), Π (x203 : A200), Π (y204 : A200), Π (p206 : (x203 =[A200] y204)), Π (v207 : C202(x203)), ([d0]. comp(C202(at(p206, d0:1)), v207) =[C202(at(p206, 1))] [d0]. comp(C202(at(p206, d0:1)), v207))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 0.263,
+        "nativeCheckingSteps": 97,
+        "finalCheckSteps": 20,
+        "specializationSteps": 0,
+        "nativeQueries": 12,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 911,
+        "finalCheckArenaBytes": 1966848
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 0.687,
+        "nativeCheckingSteps": 218,
+        "finalCheckSteps": 26,
+        "specializationSteps": 0,
+        "nativeQueries": 12,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 38191,
+        "finalCheckArenaBytes": 6041600
+      }
+    },
+    {
+      "module": "equivalence_from_inverse",
+      "name": "equiv_from_inverse",
+      "sourcePath": "web/proofs/equivalence_from_inverse.cubist",
+      "sourceSha256": "c41cc6b992bad2403527fb23c4a6d46085fcf1d0fadac29fa17aa53df4e11434",
+      "declarationSha256": "45c40646a3e4ce365323ba65182ecd8e07394ca094909b383d1f87ae10dfdf82",
+      "sourceTokens": 119,
+      "sourceLines": 10,
+      "publicType": "Π (A115 : U0), Π (B116 : U0), Π (f118 : (A115 → B116)), Π (g120 : (B116 → A115)), (Π (x121 : A115), (g120(f118(x121)) =[A115] x121) → (Π (y124 : B116), (f118(g120(y124)) =[B116] y124) → paths__Equiv__U0(A115, B116)))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": true,
+      "specializedAt": "U0",
+      "firstSpecialization": {
+        "fresh": {
+          "steps": 10607,
+          "triggeredBy": "binary_equivalence__binary_nat_equiv"
+        },
+        "reused": {
+          "steps": 547,
+          "triggeredBy": "hott_baseline_reused__equiv_from_inverse_U0_reused"
+        }
+      },
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 0.096,
+        "nativeCheckingSteps": 74,
+        "finalCheckSteps": 74,
+        "specializationSteps": 0,
+        "nativeQueries": 2,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 30053,
+        "finalCheckArenaBytes": 3938304
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 1.527,
+        "nativeCheckingSteps": 556,
+        "finalCheckSteps": 9,
+        "specializationSteps": 547,
+        "nativeQueries": 47,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 42384,
+        "finalCheckArenaBytes": 6041600
+      }
+    },
+    {
+      "module": "binary_univalence_transfer",
+      "name": "univalence_transfer_equality",
+      "sourcePath": "web/proofs/binary_univalence_transfer.cubist",
+      "sourceSha256": "cdf462858a098e8ede397a5c06e8e73934628b8e25995bbee0a32e7e8dc38006",
+      "declarationSha256": "eb75650d9a685b2a968bc8eb5d2c9e7359913782db995c582e007b0a80b4f747",
+      "sourceTokens": 190,
+      "sourceLines": 11,
+      "publicType": "Π (A6 : U0), Π (B7 : U0), Π (e8 : paths__Equiv__U0(A6, B7)), Π (x9 : A6), Π (y10 : A6), ((x9 =[A6] y10) → (number_equivalence_map(A6, B7, e8, x9) =[B7] number_equivalence_map(A6, B7, e8, y10)))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 7.238,
+        "nativeCheckingSteps": 2091,
+        "finalCheckSteps": 23,
+        "specializationSteps": 0,
+        "nativeQueries": 91,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 29268,
+        "finalCheckArenaBytes": 3938304
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 7.92,
+        "nativeCheckingSteps": 2100,
+        "finalCheckSteps": 23,
+        "specializationSteps": 0,
+        "nativeQueries": 91,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 40967,
+        "finalCheckArenaBytes": 6041600
+      }
+    },
+    {
+      "module": "group_hom_universes",
+      "name": "group_hom_ext_at",
+      "sourcePath": "web/proofs/group_hom_universes.cubist",
+      "sourceSha256": "e6e8ea4844b23a15804d9dd2b296fb319b4bcd0051dacdbc3f82972252c34004",
+      "declarationSha256": "22d2eadafe567e90bceb9b435565d6372aa4bd235101792350d6860bdbdecd76",
+      "sourceTokens": 241,
+      "sourceLines": 24,
+      "publicType": "Π (G1 : group_universes__GroupAt__U0), Π (H2 : group_universes__GroupAt__U0), Π (h24 : group_hom_universes__GroupHomAt__U0(G1, H2)), Π (k25 : group_hom_universes__GroupHomAt__U0(G1, H2)), (Π (x26 : group_universes__group_carrier_at__U0(G1)), (group_hom_universes__group_hom_map_at__U0(G1, H2, h24, x26) =[group_universes__group_carrier_at__U0(H2)] group_hom_universes__group_hom_map_at__U0(G1, H2, k25, x26)) → (h24 =[group_hom_universes__GroupHomAt__U0(G1, H2)] k25))",
+      "foldedType": null,
+      "assumptions": [],
+      "template": true,
+      "specializedAt": "U0",
+      "firstSpecialization": {
+        "fresh": {
+          "steps": 2900,
+          "triggeredBy": "hott_baseline__group_hom_ext_at_U0"
+        },
+        "reused": {
+          "steps": 2450,
+          "triggeredBy": "hott_baseline_reused__group_hom_ext_at_U0_reused"
+        }
+      },
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 4.811,
+        "nativeCheckingSteps": 2907,
+        "finalCheckSteps": 7,
+        "specializationSteps": 2900,
+        "nativeQueries": 345,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 31430,
+        "finalCheckArenaBytes": 3938304
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 4.33,
+        "nativeCheckingSteps": 2457,
+        "finalCheckSteps": 7,
+        "specializationSteps": 2450,
+        "nativeQueries": 278,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 42970,
+        "finalCheckArenaBytes": 6041600
+      }
+    },
+    {
+      "module": "quotient_descent",
+      "name": "quotient_rec_beta",
+      "sourcePath": "web/proofs/quotient_descent.cubist",
+      "sourceSha256": "629226b43046132c6dcd673ecc505552dfa175752a9b7e8cd6d4283d5aa6527f",
+      "declarationSha256": "515bef5f31796b60ab88ace985477a8eda9acfa3b9e6d508d0eeb4d20128b321",
+      "sourceTokens": 141,
+      "sourceLines": 12,
+      "publicType": "Π (A173 : U1), Π (relation176 : (A173 → (A173 → U0))), Π (laws177 : EquivalenceRelation(A173, relation176)), Π (B178 : U1), Π (setB179 : FieldSet(B178)), Π (f181 : (A173 → B178)), Π (respects182 : RespectsRelation(A173, relation176, B178, f181)), Π (a183 : A173), (quotient_rec(__assumption_Truncate_U1, __assumption_TruncateElim_U1, A173, relation176, laws177, B178, setB179, f181, respects182, quotient_class(__assumption_Truncate_U1, __assumption_TruncateIntro_U1, A173, relation176, a183)) =[B178] f181(a183))",
+      "foldedType": null,
+      "assumptions": [
+        "Truncate(U1)",
+        "TruncateIntro(U1)",
+        "TruncateElim(U1)"
+      ],
+      "template": false,
+      "fresh": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 1.337,
+        "nativeCheckingSteps": 800,
+        "finalCheckSteps": 27,
+        "specializationSteps": 0,
+        "nativeQueries": 79,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 30721,
+        "finalCheckArenaBytes": 3938304
+      },
+      "reused": {
+        "status": "checked-native-cubical",
+        "elapsedMs": 1.502,
+        "nativeCheckingSteps": 800,
+        "finalCheckSteps": 27,
+        "specializationSteps": 0,
+        "nativeQueries": 79,
+        "budgetRetries": 0,
+        "rewriteWork": {
+          "traversals": 0,
+          "candidateVisits": 0,
+          "eligibleMatches": 0,
+          "successfulRewrites": 0,
+          "premiseAttempts": 0,
+          "premiseProofs": 0,
+          "premiseRewriteSteps": 0
+        },
+        "finalCheckArenaNodes": 41107,
+        "finalCheckArenaBytes": 6041600
+      }
+    }
+  ]
+}

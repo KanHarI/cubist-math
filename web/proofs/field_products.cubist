@@ -22,15 +22,11 @@ def field_pair_path_refl(A : U1, B : U1, u : A and B) =
     ), (fun (a : A) => fun (b : B) => refl(refl(typed(A and B, (a, b))))), u
   );
 
-def field_pair_path_decode(A : U1, B : U1, u : A and B, v : A and B, p : u = v) =
-  path_induction(
-    A and B,
-    (
-      fun (x : A and B) => fun (y : A and B) => fun (r : x = y) => field_pair_path(
-        A, B, x, y, cong(field_fst(A, B), r), cong(field_snd(A, B), r)
-      ) = r
-    ), field_pair_path_refl(A, B), u, v, p
-  );
+// Holds by conversion: pairing a path's projections gives back the path.
+def field_pair_path_decode(A : U1, B : U1, u : A and B, v : A and B, p : u = v) :
+  field_pair_path(A, B, u, v, cong(field_fst(A, B), p), cong(field_snd(A, B), p)) = p {
+  rfl;
+}
 
 def field_product_is_set(A : U1, B : U1, setA : FieldSet(A), setB : FieldSet(B)) : FieldSet(A and B) {
   intro u v p q;

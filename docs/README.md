@@ -19,7 +19,7 @@ Moving these documents does not change their recorded status or resume paused wo
 
 - [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md): first release of explicit rewriting, calculations, `simp`/`simpa` and cubical path syntax delivered; argument inference and structure work remain.
   See the [implementation plan](roadmaps/proof-ergonomics-implementation-plan.md) and [checked/proposed examples](examples/proof-ergonomics/README.md) for concrete work packages and cubical language designs.
-- [HoTT and cubical proof automation](roadmaps/hott-automation-roadmap.md): planning only. It follows the ergonomics roadmap and reorders its remaining work around path operations, path induction, transport, h-levels and dependent paths.
+- [HoTT and cubical proof automation](roadmaps/hott-automation-roadmap.md): A7 (baseline, regressions and canonicity fixture) is delivered; see the [checkpoint](tactical/hott-automation-handoff.md). The rest is planned. It follows the ergonomics roadmap and reorders its remaining work around path operations, path induction, transport, h-levels and dependent paths.
 - [Kernel extensions for computation](roadmaps/cubical-kernel-roadmap.md): planning only. Trusted-kernel changes, led by computational truncation, under the requirement that assumption-free results compute.
   Its [conversion probes](examples/hott-automation/README.md) record what the kernel already computes and which laws it rejects.
 

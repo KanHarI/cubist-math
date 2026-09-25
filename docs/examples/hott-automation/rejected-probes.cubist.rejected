@@ -1,0 +1,100 @@
+// Probes that are rejected today. tests/hott-automation.test.mjs checks each
+// rejection and its reason. The .rejected suffix keeps this file out of globs
+// of checked sources.
+import primes;
+import paths;
+
+// Must stay rejected: these laws do not hold by conversion.
+
+def rejected_right_unit(A : U1, x y : A, p : x = y) : trans(p, refl(y)) = p {
+  rfl;
+}
+
+def rejected_cong_trans(A B : U1, f : A -> B, x y z : A, p : x = y, q : y = z) :
+  cong(f, trans(p, q)) = trans(cong(f, p), cong(f, q)) {
+  rfl;
+}
+
+def rejected_transport_left(A : U1, a x y : A, p : x = y, q : x = a) :
+  transport(fun (t : A) => t = a, x, y, p, q) = trans(sym(p), q) {
+  rfl;
+}
+
+def rejected_constant_refl(A B : U0, x : A, v : B) :
+  transport(fun (t : A) => B, x, x, refl(x), v) = v {
+  rfl;
+}
+
+// Two congruences in sequence are not the simultaneous line by conversion.
+def rejected_sequential_line(
+  A B C : U0, g : A -> B -> C, x x2 : A, y y2 : B, p : x = x2, q : y = y2
+) :
+  trans(cong(fun (a : A) => g(a, y), p), cong(fun (b : B) => g(x2, b), q)) = path i => g(
+    p @ i, q @ i
+  ) {
+  rfl;
+}
+
+// An arbitrary loop omega is not refl, although its endpoints convert.
+def convertible_rule(A : U0, x y : A, p : x = y, omega : p = p) : sym(sym(p)) = p {
+  exact omega;
+}
+
+def rejected_convertible_rule_refl(A : U0, x y : A, p : x = y, omega : p = p) :
+  convertible_rule(A, x, y, p, omega) = refl(p) {
+  rfl;
+}
+
+// E1: filling w independently of v's filler gives an ill-typed family.
+def rejected_independent_fillers(
+  A : U0, B : A -> U0, E : (forall a : A, B(a) -> U0), R : U0,
+  f : (forall a : A, forall b : B(a), E(a, b) -> R), x y : A, p : x = y, v : B(x), w : E(x, v)
+) =
+  path(
+    fun (i : Interval) => R,
+    fun (i : Interval) => f(
+      p @ i, fill(fun (j : Interval) => B(p @ j), v, i),
+      fill(fun (j : Interval) => E(p @ j, v), w, i)
+    )
+  );
+
+// Rejected until a milestone lands; the test names the milestone.
+
+// E0 or A1a: reverse a dependent path, or report a normal diagnostic.
+def rejected_sym_pathp(
+  A : U0, B : A -> U0, x y : A, p : x = y, u : B(x), v : B(y),
+  q : PathP(fun (i : Interval) => B(p @ i), u, v)
+) :
+  PathP(fun (i : Interval) => B(p @ flip(i)), v, u) {
+  exact sym(q);
+}
+
+// A1: the inferred left sides of these lemmas omit A, x and y.
+def rejected_rule_constant(A B : U1, x y : A, p : x = y, v : B) :
+  transport(fun (t : A) => B, x, y, p, v) = v {
+  simp only [transport_constant];
+}
+
+def rejected_rule_ap(A : U1, C : A -> U0, x y : A, p : x = y, v : C(x)) :
+  transport(C, x, y, p, v) = transport(C, x, y, p, v) {
+  simp only [transport_ap];
+}
+
+// A2: rewriting through succ.
+def under_succ(n : Nat) : succ(n + 0) = succ(n) {
+  simp only [nat_add_zero];
+}
+
+// A1: rules stated with trans, including a U1 rule on a U0 carrier.
+def ru(A : U1, x y : A, p : x = y) : trans(p, refl(y)) = p {
+  exact right_unit(A, x, y, p);
+}
+
+def use_ru(A : U1, x y z : A, p : x = y, q : y = z) : trans(trans(p, refl(y)), q) = trans(p, q) {
+  simp only [ru];
+}
+
+def use_ru_at_u0(A : U0, x y z : A, p : x = y, q : y = z) :
+  trans(trans(p, refl(y)), q) = trans(p, q) {
+  simp only [ru];
+}

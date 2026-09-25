@@ -16,66 +16,37 @@ existing lemma:
 | `PropLevel`, `prop_level_zero`, `prop_level_one` | D0a: numeric h-levels agree with `IsProp` and `IsSet` |
 | `reverse_dependent_path`, `dependent_congruence` | E0: dependent path operations |
 
-A7 promotes these probes, and the rejected laws below, to regression tests.
+A7 made these probes regression tests in `tests/hott-automation.test.mjs`,
+together with three further fixtures:
+
+| File | Contents |
+| --- | --- |
+| [cubical-probes.cubist](cubical-probes.cubist) | Accepted constructions from the roadmap's evidence and review probes, the mixed-universe control and E1's ordered fillers; all check |
+| [canonicity.cubist](canonicity.cubist) | Invariant 10: closed assumption-free results, each proved by `rfl` against its canonical value, including winding numbers of loops in the circle |
+| [rejected-probes.cubist.rejected](rejected-probes.cubist.rejected) | Laws that must stay rejected and simplifier probes rejected until a named milestone; the `.rejected` suffix keeps it out of globs of checked sources |
+
+[measure.mjs](measure.mjs) records the A7 baseline in
+[baseline.json](baseline.json). The
+[implementation checkpoint](../../tactical/hott-automation-handoff.md) records
+its results and the expected outcome of each rejected probe.
 
 ## Checks
 
 ```sh
-npm test -- docs/examples/hott-automation/conversion-laws.cubist
-node tools/format-mathscript.mjs --check docs/examples/hott-automation/conversion-laws.cubist
+npm test -- tests/hott-automation.test.mjs
+npm test -- docs/examples/hott-automation/conversion-laws.cubist docs/examples/hott-automation/cubical-probes.cubist docs/examples/hott-automation/canonicity.cubist
+node tools/format-mathscript.mjs --check docs/examples/hott-automation/*.cubist docs/examples/hott-automation/rejected-probes.cubist.rejected
 ```
 
-On 2026-09-24 the first command checked 25 declarations in 89,080 native
-checking steps, with no axioms. The second reported no formatting changes.
+On 2026-09-24, `conversion-laws.cubist` checked 25 declarations in 89,080
+native checking steps, with no axioms. On 2026-09-25 the test file passed, the
+three checked fixtures checked 43 declarations with no axioms, and the
+formatter reported no changes.
 
 ## Rejected laws
 
-Conversion does not establish the first four statements below, and
-elaboration rejects the last three declarations. Saved as a `.cubist` file and
-checked with `node cli/repl.mjs check FILE`, every declaration is rejected:
-
-- the first four with "Type mismatch." at `rfl`;
-- `rejected_sym_pathp` with "Unbound cubical dimension: d0"; the file's
-  `reverse_dependent_path` is the working construction;
-- the last two with "A simplification rule parameter is not determined by the
-  matched side; supply arguments." The inferred left sides of these lemmas
-  omit `A`, `x` and `y`.
-
-```text
-import paths;
-
-def rejected_right_unit(A : U1, x y : A, p : x = y) : trans(p, refl(y)) = p {
-  rfl;
-}
-
-def rejected_cong_trans(A B : U1, f : A -> B, x y z : A, p : x = y, q : y = z) :
-  cong(f, trans(p, q)) = trans(cong(f, p), cong(f, q)) {
-  rfl;
-}
-
-def rejected_transport_left(A : U1, a x y : A, p : x = y, q : x = a) :
-  transport(fun (t : A) => t = a, x, y, p, q) = trans(sym(p), q) {
-  rfl;
-}
-
-def rejected_constant_refl(A B : U0, x : A, v : B) :
-  transport(fun (t : A) => B, x, x, refl(x), v) = v {
-  rfl;
-}
-
-def rejected_sym_pathp(A : U0, B : A -> U0, x y : A, p : x = y, u : B(x), v : B(y),
-  q : PathP(fun (i : Interval) => B(p @ i), u, v)) :
-  PathP(fun (i : Interval) => B(p @ flip(i)), v, u) {
-  exact sym(q);
-}
-
-def rejected_rule_constant(A B : U1, x y : A, p : x = y, v : B) :
-  transport(fun (t : A) => B, x, y, p, v) = v {
-  simp only [transport_constant];
-}
-
-def rejected_rule_ap(A : U1, C : A -> U0, x y : A, p : x = y, v : C(x)) :
-  transport(C, x, y, p, v) = transport(C, x, y, p, v) {
-  simp only [transport_ap];
-}
-```
+[rejected-probes.cubist.rejected](rejected-probes.cubist.rejected) contains
+the laws that conversion does not establish, the review probes that must stay
+rejected, and the simplifier probes waiting for A1, A2 or E0. The test file
+checks each rejection and its reason. When a milestone makes a waiting probe
+check, the test fails and names the probe to move into a checked fixture.
