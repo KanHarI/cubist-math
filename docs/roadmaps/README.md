@@ -20,6 +20,9 @@ target statement or a supplied theorem parameter as an already proved result.
 
 ## Language tooling
 
+- [Language enhancement proposals](language-enhancement-proposals.md):
+  considered and deferred features, each with what would justify it: level
+  constraints (E1) and generic definitions at tier 1 (E2).
 - [Computation notation: monadic do and arrows](computation-notation-roadmap.md):
   planned explicit computation blocks, checked monad and arrow interfaces,
   mathematical examples, and staged elaboration without new kernel rules.

@@ -21,7 +21,10 @@ universe. This revision applies four decisions:
   for level quantification.
 - `LEM`, `Choice` and `Truncate` are generic over small universes only.
 
-Q2 and Q3 are resolved, Q8 is partly resolved, and Q10 is new (section 6).
+Q2 and Q3 are resolved by these decisions. The remaining questions were
+answered on 2026-09-25: Q1, Q4, Q5, Q6, Q8 and Q9 as recommended. Q7 and Q10
+are deferred as [language enhancement proposals](language-enhancement-proposals.md)
+E1 and E2 (section 6).
 
 ## Decisions in brief
 
@@ -620,9 +623,10 @@ Unchanged:
   ```
 
   It is checked once. Its Glue type lives at `max(x, x) = x`. `ua` cannot be
-  instantiated at `ω` in this version. Univalence for a UU-tier universe is
-  the same body written at that constant level, a closed term. It checks by
-  the same Glue rule, and it computes (4.3 and Q10).
+  instantiated at `ω` in this version. Univalence for a UU-tier universe
+  would be the same body written at that constant level, a closed term that
+  checks by the same Glue rule and computes (K10). The source language does
+  not provide it in this version (Q10, proposal E2).
 - **The other composition rules** cover Π, Σ, Path, `Nat`, `Unit`, sums, W,
   pushouts and Glue. Each dispatches on the head former of the family. None
   reads a level.
@@ -1213,11 +1217,9 @@ None has an instance at tier 1 or above.
 
 **Computing builtins.** Builtins such as `ua`, `UnivalenceBeta` and `FunExt`
 take a universe argument and use no assumption. Each becomes one generic
-definition over `U < UU0`. For a constant universe argument of tier 1 or
-above, such as `ua(UU0, A, B, e)`, the elaborator builds the same body at
-that constant level as a closed term. It claims nothing about other levels,
-so it is not a template, and it computes. Q10 asks whether to keep this
-until the extension of 1.5.
+definition over `U < UU0`. A universe argument of tier 1 or above, such as
+`ua(UU0, A, B, e)`, is rejected in this version (Q10). Proposal E2 records how
+the elaborator could build the same closed body at a UU-tier constant.
 
 **Migration of today's templates.**
 
@@ -1410,7 +1412,7 @@ Let `id := λ (x < ω). λ (A : U(x)). λ (a : A). a`.
 | K7 | `f : Π (x < ω). Nat → Nat, i : I ⊢ comp^j (Π (x < ω). Nat → Nat) [i = 0 ↦ f] f` | Accept; reduces to `λ (x < ω). comp^j (Nat → Nat) [i = 0 ↦ f {x}] (f {x})` | The level-Π composition rule. |
 | K8 | `(transport^i (Π (x < ω). (ua {0} Two Two swap) @ i) (λ (x < ω). inl(tt))) {0}`, and the same at `{7}` | Accept; both reduce to `inr(tt)` | A closed transport along a line of generic statements computes pointwise. The family lives in `U(0)`. |
 | K9 | `A : U(ω)`, `E` a line in `U(ω)` with `E(0) ≡ A` on `φ` `⊢ comp^i U(ω) [φ ↦ E(i)] A : U(ω)` | Accept | Universe composition at tier 1; the Glue reduct checks at `U(ω)`. |
-| K10 | the body of `ua` written with `U(ω)` in place of `U(x)`, checked as a closed term of type `Π (A B : U(ω)). Equiv(A, B) → Path(U(ω), A, B)`; transport of `inl(tt)` along it at `Two Two swap` | Accept; reduces to `inr(tt)` | Univalence for `UU0` by the same Glue rule. |
+| K10 | kernel only (the source builtin rejects `UU0`, Q10): the body of `ua` written with `U(ω)` in place of `U(x)`, checked as a closed term of type `Π (A B : U(ω)). Equiv(A, B) → Path(U(ω), A, B)`; transport of `inl(tt)` along it at `Two Two swap` | Accept; reduces to `inr(tt)` | Univalence for `UU0` by the same Glue rule. |
 | K11 | `levelExt` of 2.11 for `B := Nat → Nat`; `(levelExt f f (λ (x < ω). refl(f {x}))) @ 0 ≡ f` | Accept; Accept | Pointwise paths give a path of generic functions, by `∀-η`. |
 
 ### 5.7 Definitions, assumptions and dependencies
@@ -1449,8 +1451,6 @@ declaration. After L1.1:
   - `transport(fun (X : U0) => (forall U < UU0, X), Two, Two, ua(U0, Two, Two, swap), fun (U < UU0) => left(tt))(U3) = right(tt)`.
     This transports along a line of generic statements and instantiates the
     result (K8).
-  - transport of `left(tt)` along `ua(UU0, Two, Two, swap)` equals
-    `right(tt)`: univalence at tier 1 computes (K10).
 - The helpers `generic_identity`, `apply_at_nat`, `Two` and `swap` live in an
   imported support module, because the harness requires every fixture
   declaration to be an `rfl` statement.
@@ -1478,24 +1478,24 @@ The numbers of the first version are kept.
 
 | Question | Status |
 | --- | --- |
-| Q1. Level irrelevance for neutral type formers | Open |
+| Q1. Level irrelevance for neutral type formers | Decided: no |
 | Q2. Named generic statements | Resolved: yes |
 | Q3. Σ, Path and composition at generic statements | Resolved: yes |
-| Q4. How dependencies name generic assumptions | Open |
-| Q5. Truncation between G0 and H1 | Open |
-| Q6. Levels in H signatures | Open |
-| Q7. Level constraints | Open |
-| Q8. Universe binders in source | Partly resolved: spelling decided, placement open |
-| Q9. The level bounds | Open |
-| Q10. Tier-1 uses of generic definitions before the extension | Open, added in the revision |
+| Q4. How dependencies name generic assumptions | Decided: the name only, e.g. `LEM` |
+| Q5. Truncation between G0 and H1 | Decided: keep the archive signature |
+| Q6. Levels in H signatures | Decided as recommended |
+| Q7. Level constraints | Deferred: proposal E1 |
+| Q8. Universe binders in source | Decided as recommended |
+| Q9. The level bounds | Decided: `LEVEL_MAX = 65535`, `TIER_MAX = 255` |
+| Q10. Tier-1 uses of generic definitions before the extension | Deferred: proposal E2 |
 
 **Q1. Level irrelevance for neutral type formers.** `Trunc {0} A` and
 `Trunc {1} A` are distinct, non-convertible types for `A : U(0)`. The same
 holds for assumptions such as `Truncate`. Generic code instantiated at `U1`
 then meets values built at `U0`. Coq's cumulative inductive types make such
 instances convertible when the level only bounds parameters.
-*Recommendation:* not in G0. The elaborator should always pick the least
-level, the principal level of the argument's inferred type, so one type
+*Decided:* no. Different truncations are different types. The elaborator
+always picks the least level, the principal level of the argument's inferred type, so one type
 appears in practice. Revisit at H1 with the rebuild's evidence. The rule
 would need its own soundness argument; it is plausible because the model of
 a higher inductive type does not depend on the ambient universe.
@@ -1511,18 +1511,18 @@ pointwise (2.11), and Glue, univalence and universe composition at UU-tier
 levels come from the level-generic rules.
 
 **Q4. How dependencies name generic assumptions.** Should the dependency
-list say `LEM` or `LEM(U0)`? *Recommendation:* the name only, since it is
+list say `LEM` or `LEM(U0)`? *Decided:* the name only, `LEM`, since it is
 one assumption. The inspector lists the level arguments at each use. The
 error texts quoted in the reference change accordingly.
 
 **Q5. Truncation between G0 and H1.** Should the generic `Truncate` keep the
 archive's resizing signature `Π (x < ω). U(x) → U(0)`, or become
-universe-preserving now? *Recommendation:* keep the archive signature, so
+universe-preserving now? *Decided:* keep the archive signature, so
 that the archive recheck tests G0 alone and changes no statement. H1 and
 G2's policy then replace it with `Trunc : Π (x < ω). U(x) → U(x)`.
 
 **Q6. Levels in H signatures.** Should parameter types count toward a sort's
-level? *Recommendation:*
+level? *Decided:*
 
 - a sort's level is the `max` of its data, arity and index types;
 - index types count, including index types of tier 1 or above;
@@ -1537,15 +1537,16 @@ should drop "parameters" when H is next edited. Read literally, it puts
 
 **Q7. Level constraints.** Should declarations be able to state constraints
 between level variables, such as `x < y`, as Coq allows? A binder's bound is
-not such a constraint. *Recommendation:* no. Unconstrained variables with
-`max` and successor express every signature we know of, as in
+not such a constraint. *Deferred:* not in G0; recorded as proposal E1 in
+the [language enhancement proposals](language-enhancement-proposals.md).
+Unconstrained variables with `max` and successor express every signature we
+know of, as in
 `Group(U) : next(U)` and quotients at `max(U, V)`. Constraints would bring in
 the Bezem–Coquand constraint problem and its loop checking.
 
-**Q8. Universe binders in source. Partly resolved.** The spelling is
-decided: `U < UU0`, with `Universe` removed. Where binders may appear is
-open. The kernel allows a level binder anywhere in a telescope.
-*Recommendation:* in L1.1, keep universe parameters leading in declarations,
+**Q8. Universe binders in source. Decided.** The spelling is
+decided: `U < UU0`, with `Universe` removed. The kernel allows a level
+binder anywhere in a telescope. *Decided:* in L1.1, keep universe parameters leading in declarations,
 as templates require today. Allow `forall U < UU0` anywhere in types, so
 that higher-rank parameters and generic statements can be written. With
 milestone 5, let an unbound universe name in a declaration header become an
@@ -1554,7 +1555,7 @@ inspector shows it.
 
 **Q9. The level bounds.** `LEVEL_MAX = 65535` rejects universes the current
 kernel accepts, such as `U(70000)`; today's native limit is about 2³².
-*Recommendation:* accept the smaller bound. It simplifies overflow reasoning
+*Decided:* accept the smaller bound. It simplifies overflow reasoning
 in the C kernel, and no mathematics uses such levels. The revision adds
 `TIER_MAX = 255` on the same grounds, which lets a level constant fit one
 32-bit payload.
@@ -1563,8 +1564,9 @@ in the C kernel, and no mathematics uses such levels. The revision adds
 version a generic definition cannot be instantiated at `UU0`. A result about
 types in `UU0` can use a generic library definition only through a closed
 copy at a constant level. Cumulativity limits the cost: a definition at
-`UU0` also accepts every type in `U(n)`. *Recommendation:* for the computing
-builtins (`ua`, `UnivalenceBeta`, `FunExt`), the elaborator builds the body
-at the given constant level, as 4.3 specifies. It does not copy library
-definitions. Implement the extension of 1.5 when a library result needs a
-generic definition at both tiers.
+`UU0` also accepts every type in `U(n)`. *Deferred:* not in this version.
+No result needs it yet, so a universe argument of tier 1 or above is
+rejected, including by the computing builtins. Proposal E2 in the
+[language enhancement proposals](language-enhancement-proposals.md) records
+both the extension of 1.5 and building builtin bodies at a UU-tier constant,
+to be taken up when a library result needs them.

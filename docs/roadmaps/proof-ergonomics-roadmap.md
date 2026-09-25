@@ -260,9 +260,10 @@ work. Publish measured examples without claiming an unmeasured percentage gain.
 
 ### 1. Explicit rewriting and calculation chains
 
-- [ ] Moved to HoTT A5: introduce the goal/reconstruction representation. The
-  rewrite service exists in `lib/cubical/proof-rewrite.mjs`; tactics still
-  rebuild proofs through closures.
+- [x] Moved to HoTT A5: introduce the goal/reconstruction representation.
+  Done in PR #15: `rw`, `simp`, `simpa`, `ext`, `intro`, `over` and premise
+  search build their proofs through one plan interface in
+  `lib/cubical/proof-goals.mjs`.
 - [x] Add `rw [p];` and `rw [<- p];`, with rules applied in listed order.
   Initially rewrite the first eligible occurrence in a documented traversal;
   add an explicit occurrence selector before supporting complicated targets.
@@ -514,10 +515,14 @@ holes.
   - `ind_prop` and `rec`.
 - [ ] Nested declarations through strictly positive type constructors,
   elaborated as mutual declarations.
-- [ ] Legacy eliminator syntax (`induction … as … return`, `induct`, the
-  current expression `match` and `cases`, `unpack`) stays parseable, so the
-  archive keeps checking. The rebuilt library and the new reference use only
-  `match`.
+- [ ] Legacy eliminator syntax (`induction … as … return`, the current
+  expression `match`, `unpack`) stays parseable, so the archive keeps
+  checking. The rebuilt library and the new reference use only `match`.
+- [ ] Remove the `cases` statement once `match` is released. `cases` never
+  refines its goal, and `match` supersedes it. Its 24 uses in 11 archive
+  modules are first rewritten to `match`, checked by the migration verifier.
+  Then the parser, elaborator, formatter, highlighter, reference chapter 3
+  and the error tables drop it.
 
 Completion, per release:
 
