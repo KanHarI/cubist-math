@@ -5,6 +5,8 @@ Status: plan of 2026-09-25, after merging PRs #2–#4 into
 - the [kernel roadmap](cubical-kernel-roadmap.md): G0, H1–H4;
 - the [proof ergonomics roadmap](proof-ergonomics-roadmap.md): milestones 5–8;
 - the [HoTT automation roadmap](hott-automation-roadmap.md);
+- the [computation notation roadmap](computation-notation-roadmap.md), an
+  additional language track with milestones N0–N5;
 - the [reals roadmap](reals-roadmap.md);
 - the two adopted designs,
   [higher inductive-inductive types](higher-inductive-types-design.md) and
@@ -307,6 +309,31 @@ modules.
 - HoTT C4 and E1, E3, E4; HoTT F1 and F2 beyond what theories and
   presentations need.
 - The RH roadmap, after stage 5.
+
+## Computation notation track
+
+The [monadic do and arrow roadmap](computation-notation-roadmap.md) adds
+explicitly scoped computation blocks. Its milestones fit alongside the
+existing stages; they add no kernel work or gates to the rebuild:
+
+- **N0, mathematical baselines:** can start with the archive and design
+  examples. Record span closure, free-algebra substitution and a basic-arrow
+  example before changing syntax.
+- **N1, checked interfaces:** after L1.1 (G0) and L2.4 (records/theories).
+  Universe-correct operation and law records are the common foundation.
+- **N2, monadic do, and N4, basic arrows:** after N1, L1.2 (goal layer) and
+  L4.1 (argument inference). The two forms can proceed independently over
+  the shared interfaces; N4 does not wait for all monad instances.
+- **N3, patterns and mathematical instances:** follows N2 and the relevant
+  matching/library work. Native truncation uses B3.1; free-algebra
+  substitution uses L2.6; rebuilt span closure uses B4.1.
+- **N5, choice and dynamic arrow application:** follows N4 with explicit
+  checked capability extensions. Probability instances wait for their
+  finite-distribution and rational arithmetic library; partiality waits
+  for H3. Neither is a prerequisite for the initial notation releases.
+
+Reference examples, rejected programs and a tactical handoff accompany each
+release. Exact syntax remains proposed until its implementation milestone.
 
 ## Documentation track, across stages
 

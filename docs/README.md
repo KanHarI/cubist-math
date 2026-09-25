@@ -33,6 +33,9 @@ They stay paused until the rebuild reaches their prerequisites.
 
 ## Language tooling roadmap
 
+- [Computation notation: monadic do and arrows](roadmaps/computation-notation-roadmap.md):
+  planned blocks for existence proofs, free-algebra substitution and arrow
+  composition, with explicit structures and checked elaboration.
 - [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md):
   - Delivered: rewriting, calculations, `simp`/`simpa` and cubical path
     syntax.

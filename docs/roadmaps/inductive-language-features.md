@@ -358,13 +358,31 @@ checked declarations:
   between theories. Forgetful maps and free-model adjunctions are generated
   from it. This is later work.
 
+## 11. Computation blocks: monadic do and arrows
+
+The [computation notation roadmap](computation-notation-roadmap.md) extends
+this proposal with explicitly scoped blocks. Monadic `do using M` expands
+to the selected record's `bind` and `pure`; `proc using R` generalizes
+sequencing to arrows through checked lifting, composition and product
+operations. Branching and dynamic arrow application require explicit
+additional capabilities. Monad instances supply Kleisli arrows, so these
+are two forms within one design.
+
+The first mathematical examples are closure of linear span under addition
+using truncated witnesses, and substitution in free algebras through
+`fold`. Probability distributions are a later instance. The roadmap states
+the dependent-type boundaries, preserves elimination restrictions and
+computability, and separates laws proved by paths from kernel conversion.
+Its syntax and interfaces are planned, not implemented. No new kernel rule
+is required; particular instances depend on H1 or H3.
+
 ## Priorities
 
 | Tier | Features | Why first |
 | --- | --- | --- |
 | 1 | Theories (models, homomorphisms, identity, initial, fold); cells; relations and bundles; h-levels by proof; obligations; dependent matching without K; `paths`, `decidable_equality`, `universal` derivations | Remove the largest repetitions we measured and make the stages H1–H3 declarations readable |
-| 2 | Canonical quotients; presentations; nested declarations; sections over models | Computation and multi-presentation reasoning for numbers and algebra |
-| 3 | Theory morphisms; reflecting signatures as data | Later, once the generic constructions exist |
+| 2 | Canonical quotients; presentations; nested declarations; sections over models; monadic computation blocks | Computation and multi-presentation reasoning for numbers and algebra; shorter existence and substitution constructions |
+| 3 | Theory morphisms; reflecting signatures as data; arrow blocks and their capability extensions | Later, once the generic constructions exist; broader structured composition |
 
 ## Effect on the other roadmaps
 

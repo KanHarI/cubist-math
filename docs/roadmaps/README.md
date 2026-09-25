@@ -20,6 +20,9 @@ target statement or a supplied theorem parameter as an already proved result.
 
 ## Language tooling
 
+- [Computation notation: monadic do and arrows](computation-notation-roadmap.md):
+  planned explicit computation blocks, checked monad and arrow interfaces,
+  mathematical examples, and staged elaboration without new kernel rules.
 - [Simplification and shorter proofs](proof-ergonomics-roadmap.md):
   - Delivered: `rw`, `calc`, `rfl`, `simp`/`simpa` with registered rule sets
     and conditional rules, and cubical path shorthand.
