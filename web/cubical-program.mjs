@@ -2,6 +2,7 @@ import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator } from "./cubical-elaborator.mjs";
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
+import { Scope } from "./dist/cubical-runtime/elaboration.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
 import { parse } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
@@ -323,7 +324,6 @@ export class CubicalProgram {
         const translator = new Translator({ normalize: false, checker: this.checker,
           simpRegistry:schema.simpRegistry,moduleName:schema.moduleName,freezeSuggestions:false,
           onReference: (node, term, context, dimensions, aliases) => references.push({ node, term, context, dimensions, aliases }) });
-        translator.source = this.sources[info.sourceModule ?? this.main];
         const scope = new Map(schema.env);
         scope.set(schema.parameter, { tag: "U", level: levels[0] });
         references.push({ node: { ...schema.parameterSite, name: schema.parameter, role: "universe argument" },
@@ -334,7 +334,8 @@ export class CubicalProgram {
             term: { tag: "U", level: levels[i] }, context: new Map(), dimensions: new Map(), aliases: [] });
           scope.set(body.name.text, { tag: "U", level: levels[i] }); body = body.body;
         }
-        const term = translator.term(body, new Map(), scope, null);
+        const unit = translator.unit({ source: this.sources[info.sourceModule ?? this.main] });
+        const term = translator.term(body, new Scope(unit, new Map(), scope), null);
         // Inspection must check even a specialization never used by a proof.
         this.checker.infer(term);
         this.declarationBindings.set(instance, references.filter(item => item.node.isBinding));

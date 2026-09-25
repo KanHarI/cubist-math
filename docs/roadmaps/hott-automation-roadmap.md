@@ -318,21 +318,32 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   frozen output. Extract telescope abstraction independently of any tactic so
   registered eliminators and structure descriptions can reuse it.
   - Also replace these elaborator mechanisms, found in the 2026-09-25 review:
-    - One name supply for every generated binder. About a dozen generators
+    - [x] One name supply for every generated binder. About a dozen generators
       share one string namespace with kernel symbols. A generated-name
       collision once captured a variable in a theorem statement; unique
-      `Translator.fresh` names and binding assertions are the interim fix.
-    - Result values for every speculative query. `findRewrite` already
+      `Translator.fresh` names and binding assertions were the interim fix.
+      Delivered in [names.mjs](../../lib/cubical/names.mjs): each source unit
+      (a module, or one template inspection) has one supply, which the
+      translator, the rewriting service and checker queries all use. Its names
+      never spell an assumption or a kernel symbol, and elaborating the same
+      source again repeats them. Stand-alone syntax builders stay hygienic by
+      avoiding every name in their inputs.
+    - [ ] Result values for every speculative query. `findRewrite` already
       returns "no match" as a result; checker queries should report mismatch
       and resource failures as values, so that no control flow depends on the
       kernel's "Type mismatch." message.
-    - One computation of source link sites. The parser records keyword spans,
+    - [ ] One computation of source link sites. The parser records keyword spans,
       as it now does for each `calc` step's `by`; concrete declarations and
       unelaborated templates use the same sites.
-    - An explicit elaboration context passed down, instead of Translator
+    - [x] An explicit elaboration context passed down, instead of Translator
       fields (`source`, `simpRegistry`, `moduleName`, `onReference`,
       `dimensions`, `rewriteWork`) swapped in and out for templates and freeze
-      replays.
+      replays. Delivered in [elaboration.mjs](../../lib/cubical/elaboration.mjs):
+      a `SourceUnit` (source, module, rules, inspector sink, freeze policy,
+      work counters, names) and an immutable `Scope` (telescope, source names,
+      dimensions) are passed down; checker queries take the scope's context,
+      dimensions and names explicitly. A template specialization or a freeze
+      replay elaborates in a derived unit.
   - (H) `match` elaboration (ergonomics milestone 7) is this layer's first
     large client. It needs:
     - motive abstraction over several scrutinees;
