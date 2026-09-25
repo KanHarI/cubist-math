@@ -23,7 +23,7 @@
     {
       "module": "group_identity",
       "name": "group_laws_prop",
-      "sourcePath": "web/proofs/group_identity.cubist",
+      "sourcePath": "archive/first-library/group_identity.cubist",
       "sourceSha256": "c03fabafbfca443f72157bf7f93e9abbdc3b2b1ea0e6ef2fec505b9c066d8eee",
       "declarationSha256": "c88d6ed233f83528d62c780545144ee12a8afacf22065b4dbcb88a471c941260",
       "sourceTokens": 544,
@@ -76,7 +76,7 @@
     {
       "module": "group_total_identity",
       "name": "group_total_laws_path",
-      "sourcePath": "web/proofs/group_total_identity.cubist",
+      "sourcePath": "archive/first-library/group_total_identity.cubist",
       "sourceSha256": "4ab013be51f5a9ab3e5f2b4400c5264c56b28ea37e855b3fadfb6eb8805c9a30",
       "declarationSha256": "8559ad81d3570994438e85f16b6063cdb5f1bb33a748c8971d094bd68489d37e",
       "sourceTokens": 514,
@@ -129,7 +129,7 @@
     {
       "module": "identity_systems",
       "name": "identity_system_retraction",
-      "sourcePath": "web/proofs/identity_systems.cubist",
+      "sourcePath": "archive/first-library/identity_systems.cubist",
       "sourceSha256": "309f9c8da46f4a6e02204036f4db8a43cff249ce203a86c8dd6175eb4f72d530",
       "declarationSha256": "7b5dcef137e6faab4cc6dc2b412a1289e9fde3913d47ea4c4bf6f6648c29f2a9",
       "sourceTokens": 301,
@@ -182,7 +182,7 @@
     {
       "module": "circle",
       "name": "code_upper",
-      "sourcePath": "web/proofs/circle.cubist",
+      "sourcePath": "archive/first-library/circle.cubist",
       "sourceSha256": "b0123769c5130a956253d3f40b3fe2e3355d176e24abe09255a04a23e13f4f32",
       "declarationSha256": "699b5dd6265b19aa08cecc8d70c9638cc2c2c40a22602561e479ed5bf3ad7cba",
       "sourceTokens": 106,
@@ -235,7 +235,7 @@
     {
       "module": "circle",
       "name": "upper_transition",
-      "sourcePath": "web/proofs/circle.cubist",
+      "sourcePath": "archive/first-library/circle.cubist",
       "sourceSha256": "b0123769c5130a956253d3f40b3fe2e3355d176e24abe09255a04a23e13f4f32",
       "declarationSha256": "705d668cf0e451ebe20c313fc965de8d7f228154d4307028440da2fe52a5c74b",
       "sourceTokens": 197,
@@ -288,7 +288,7 @@
     {
       "module": "equivalence_from_inverse",
       "name": "adjoint_triangle",
-      "sourcePath": "web/proofs/equivalence_from_inverse.cubist",
+      "sourcePath": "archive/first-library/equivalence_from_inverse.cubist",
       "sourceSha256": "c41cc6b992bad2403527fb23c4a6d46085fcf1d0fadac29fa17aa53df4e11434",
       "declarationSha256": "ae1b1c076fbf8810e80037de7cd4cd2250520c34d04ab47c572557d59cdfec02",
       "sourceTokens": 599,
@@ -352,7 +352,7 @@
     {
       "module": "paths",
       "name": "cancel_left",
-      "sourcePath": "web/proofs/paths.cubist",
+      "sourcePath": "archive/first-library/paths.cubist",
       "sourceSha256": "a8401935192d95e4d2445f8a76c339f4561209d68d1aa91f4ba112f9a89c6e47",
       "declarationSha256": "854a71594f2a814a6df7a6d652f81b70f014e3cc83f9d7b421a1310a58960c01",
       "sourceTokens": 243,
@@ -405,7 +405,7 @@
     {
       "module": "paths",
       "name": "transport_concat",
-      "sourcePath": "web/proofs/paths.cubist",
+      "sourcePath": "archive/first-library/paths.cubist",
       "sourceSha256": "a8401935192d95e4d2445f8a76c339f4561209d68d1aa91f4ba112f9a89c6e47",
       "declarationSha256": "1d283b51628098509207a6d19c22bee2fd3b20ae46cad449f515fd6e15d7d1ff",
       "sourceTokens": 987,
@@ -458,7 +458,7 @@
     {
       "module": "paths",
       "name": "right_unit",
-      "sourcePath": "web/proofs/paths.cubist",
+      "sourcePath": "archive/first-library/paths.cubist",
       "sourceSha256": "a8401935192d95e4d2445f8a76c339f4561209d68d1aa91f4ba112f9a89c6e47",
       "declarationSha256": "4d658b748fcb9563dee87ffd270cb44f0d768723006008bea888602159ce8f75",
       "sourceTokens": 134,
@@ -511,7 +511,7 @@
     {
       "module": "paths",
       "name": "transport_constant",
-      "sourcePath": "web/proofs/paths.cubist",
+      "sourcePath": "archive/first-library/paths.cubist",
       "sourceSha256": "a8401935192d95e4d2445f8a76c339f4561209d68d1aa91f4ba112f9a89c6e47",
       "declarationSha256": "f8797352d52619fd8bff9cf8e40ca86080305aa4abfaa650ea64573d4b77164a",
       "sourceTokens": 79,
@@ -564,7 +564,7 @@
     {
       "module": "paths",
       "name": "transport_ap",
-      "sourcePath": "web/proofs/paths.cubist",
+      "sourcePath": "archive/first-library/paths.cubist",
       "sourceSha256": "a8401935192d95e4d2445f8a76c339f4561209d68d1aa91f4ba112f9a89c6e47",
       "declarationSha256": "45ff61c7a31f697c489c7b3bc117f887d7f604977c746011c7bc98300c8277e9",
       "sourceTokens": 51,
@@ -617,7 +617,7 @@
     {
       "module": "equivalence_from_inverse",
       "name": "equiv_from_inverse",
-      "sourcePath": "web/proofs/equivalence_from_inverse.cubist",
+      "sourcePath": "archive/first-library/equivalence_from_inverse.cubist",
       "sourceSha256": "c41cc6b992bad2403527fb23c4a6d46085fcf1d0fadac29fa17aa53df4e11434",
       "declarationSha256": "45c40646a3e4ce365323ba65182ecd8e07394ca094909b383d1f87ae10dfdf82",
       "sourceTokens": 119,
@@ -681,7 +681,7 @@
     {
       "module": "binary_univalence_transfer",
       "name": "univalence_transfer_equality",
-      "sourcePath": "web/proofs/binary_univalence_transfer.cubist",
+      "sourcePath": "archive/first-library/binary_univalence_transfer.cubist",
       "sourceSha256": "cdf462858a098e8ede397a5c06e8e73934628b8e25995bbee0a32e7e8dc38006",
       "declarationSha256": "eb75650d9a685b2a968bc8eb5d2c9e7359913782db995c582e007b0a80b4f747",
       "sourceTokens": 190,
@@ -734,7 +734,7 @@
     {
       "module": "group_hom_universes",
       "name": "group_hom_ext_at",
-      "sourcePath": "web/proofs/group_hom_universes.cubist",
+      "sourcePath": "archive/first-library/group_hom_universes.cubist",
       "sourceSha256": "e6e8ea4844b23a15804d9dd2b296fb319b4bcd0051dacdbc3f82972252c34004",
       "declarationSha256": "22d2eadafe567e90bceb9b435565d6372aa4bd235101792350d6860bdbdecd76",
       "sourceTokens": 241,
@@ -798,7 +798,7 @@
     {
       "module": "quotient_descent",
       "name": "quotient_rec_beta",
-      "sourcePath": "web/proofs/quotient_descent.cubist",
+      "sourcePath": "archive/first-library/quotient_descent.cubist",
       "sourceSha256": "629226b43046132c6dcd673ecc505552dfa175752a9b7e8cd6d4283d5aa6527f",
       "declarationSha256": "515bef5f31796b60ab88ace985477a8eda9acfa3b9e6d508d0eeb4d20128b321",
       "sourceTokens": 141,

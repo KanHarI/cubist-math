@@ -5,7 +5,7 @@ import { canonicalHasher, verifyMigration } from "../tools/proof-migration.mjs";
 import { identicalRewrites, rewriteModule, typePreservingRewrites } from "../tools/proof-rewrites.mjs";
 import { formatMathScript } from "../web/mathscript/formatter.mjs";
 
-const library = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+const library = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 const original = `import primes;
 def moved(C : Nat -> U0, p : 0 + 0 = 0, v : C(0 + 0)) : C(0) {
   exact transport(C, 0 + 0, 0, p, v);

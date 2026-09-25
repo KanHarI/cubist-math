@@ -187,7 +187,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   three parts: A1a folds `refl`, `sym`, `trans` and `cong`, with E0's
   dependent reversal and congruence; A1b folds `transport`, `apd_path` and both
   induction forms; A1c adds matching views and aliases.
-  - Arithmetic sources such as [primes](../../web/proofs/primes.cubist) use
+  - Arithmetic sources such as [primes](../../archive/first-library/primes.cubist) use
     these builtins without importing `paths`. The definitions therefore belong
     to a session prelude with a stable logical operation identity across imports.
     Register specializations lazily through declaration transactions; rollback
@@ -563,7 +563,7 @@ Completion:
     `upper_transition`, and the composition steps of `adjoint_triangle`.
 - [ ] **C4. Reflective normalizer for loops at one point.** A variant of C3 for
   loops at a single basepoint, the common case in the fundamental-group files.
-  [loop_words](../../web/proofs/loop_words.cubist) already defines signed
+  [loop_words](../../archive/first-library/loop_words.cubist) already defines signed
   words, `eval_word` and the cancellation step `word_backtrack_cancels`.
   - Add a tree syntax over atom indices whose evaluation is definitionally the
     quoted path, free reduction to a word, and one checked soundness lemma
@@ -575,7 +575,7 @@ Completion:
     rewrite sequence. Changing the normalizer is a library change, rechecked
     like any other.
   - Paths whose atoms have different endpoints stay with C3.
-  - Targets: `integer_loop_successor` in [circle](../../web/proofs/circle.cubist)
+  - Targets: `integer_loop_successor` in [circle](../../archive/first-library/circle.cubist)
     and the word lemmas in `loop_words`; compare proof size and native steps
     with C3.
 
@@ -633,7 +633,7 @@ Completion:
     constructors and projections, and `equiv_from_inverse`. Homotopies and
     coherence witnesses may change; identify and recheck their consumers.
     Canonicalizing `Equiv` does not make `idtoequiv(refl)` compute strictly.
-  - The existing `Fiber` in [maps](../../web/proofs/maps.cubist) is
+  - The existing `Fiber` in [maps](../../archive/first-library/maps.cubist) is
     `exists x : A, f(x) = y`, the opposite orientation, with 83 uses in 19
     files. Choose the surviving name and migrate one orientation, recording
     the changed statements.
@@ -644,7 +644,7 @@ Completion:
     declarations: a documented builtin, as `ua` already is, or source proofs
     once B1 and E2 exist. Printing their raw terms would repeat the generated
     `comp` text that fills most of
-    [equivalence_from_inverse](../../web/proofs/equivalence_from_inverse.cubist)
+    [equivalence_from_inverse](../../archive/first-library/equivalence_from_inverse.cubist)
     (1,893 lines).
   - Before removing an old representation, record its migration map and
     changed computation/assumption behavior. Proving uniqueness of arbitrary
@@ -705,7 +705,7 @@ Completion:
   proves the fibers are propositions. The standalone lemma can land before B3;
   automatic closure follows B3's basic Σ extensionality. Targets:
   `field_subtype_ext`, `sigma_prop`, and equalities of structure laws.
-- [ ] **D3. Identity systems.** [identity_systems](../../web/proofs/identity_systems.cubist)
+- [ ] **D3. Identity systems.** [identity_systems](../../archive/first-library/identity_systems.cubist)
   already proves encode/decode round trips from a contraction of
   `IdentityTotal(A, R)` at `U1`.
   - Add the missing eliminator: from the contraction and `d : P(a, r0)`, prove
@@ -891,7 +891,7 @@ separate work.
     structure to equality of whole structures.
   - Generate preservation predicates and prove the obligations represented by
     `RelationProp`, `RelationIdentity` and `RelationReflects` in
-    [structured_sets](../../web/proofs/structured_sets.cubist). Compose their
+    [structured_sets](../../archive/first-library/structured_sets.cubist). Compose their
     checked proofs to obtain extensionality and, with D4's combinators, the
     total-space contraction. Register the resulting `ext_rule`, h-level rules
     and identity system.
@@ -936,11 +936,11 @@ separate work.
   Boundary diagrams display through E2's square view.
 - [ ] **F4. Pointed types and loop spaces.** A library API for pointed types,
   pointed maps, loop spaces, the action of pointed maps on loops, and rebasing
-  along a path (`rebase_loop` in [homotopy_paths](../../web/proofs/homotopy_paths.cubist)
-  is a start). [fundamental_groups](../../web/proofs/fundamental_groups.cubist)
+  along a path (`rebase_loop` in [homotopy_paths](../../archive/first-library/homotopy_paths.cubist)
+  is a start). [fundamental_groups](../../archive/first-library/fundamental_groups.cubist)
   proves the group laws of loops generically, but only at `U1` (G0 makes
   them universe-generic), so
-  [circle](../../web/proofs/circle.cubist) re-proves them at `U0` as
+  [circle](../../archive/first-library/circle.cubist) re-proves them at `U0` as
   `loop_group`. The loop files also repeat
   `concatenate(U1, S1, base, base, base, …)` and `append_path(…)`.
   - Targets: `loop_group` through the generic laws, then the bouquet and
@@ -988,19 +988,19 @@ The matcher, resource limits and witness reconstruction must support it first.
 | --- | --- |
 | [translator](../../lib/cubical/translate.mjs) | Builtin lowering (A1), goal/scope plans (A5), projections (A8), canonical `ua` input (D0b), new statements; `match` and views are ergonomics milestone 7 |
 | [proof-rewrite.mjs](../../lib/cubical/proof-rewrite.mjs) | Traversal (A2), congruence lines (A3), alias and view matching (A1), fillers (E1) |
-| [path-algebra.mjs](../../lib/cubical/path-algebra.mjs), [paths](../../web/proofs/paths.cubist), [path_actions](../../web/proofs/path_actions.cubist) | Prelude bodies, C3 laws, dependent path operations (E0), double composition and squares (E2), missing lemmas |
-| [suspension_types](../../web/proofs/suspension_types.cubist), [suspension](../../web/proofs/suspension.cubist), [circle](../../web/proofs/circle.cubist) | Evidence only (archived): replaced by H1 declarations in the rebuild |
-| [homotopy_paths](../../web/proofs/homotopy_paths.cubist), [field_extensionality](../../web/proofs/field_extensionality.cubist), [primes](../../web/proofs/primes.cubist) | Conversion audit of proofs by induction (A7) |
-| [loop_words](../../web/proofs/loop_words.cubist) | Reflective loop normalizer (C4) |
+| [path-algebra.mjs](../../lib/cubical/path-algebra.mjs), [paths](../../archive/first-library/paths.cubist), [path_actions](../../archive/first-library/path_actions.cubist) | Prelude bodies, C3 laws, dependent path operations (E0), double composition and squares (E2), missing lemmas |
+| [suspension_types](../../archive/first-library/suspension_types.cubist), [suspension](../../archive/first-library/suspension.cubist), [circle](../../archive/first-library/circle.cubist) | Evidence only (archived): replaced by H1 declarations in the rebuild |
+| [homotopy_paths](../../archive/first-library/homotopy_paths.cubist), [field_extensionality](../../archive/first-library/field_extensionality.cubist), [primes](../../archive/first-library/primes.cubist) | Conversion audit of proofs by induction (A7) |
+| [loop_words](../../archive/first-library/loop_words.cubist) | Reflective loop normalizer (C4) |
 | [simp-registry.mjs](../../lib/cubical/simp-registry.mjs) | Aliases, distinct conversion/equality entries, bounded `hlevel_rule` and `ext_rule` registries |
-| [sets](../../web/proofs/sets.cubist), [truncation](../../web/proofs/truncation.cubist), [bijection_equality](../../web/proofs/bijection_equality.cubist) | Numeric h-level templates and their aliases (D0a) |
-| [equivalence.mjs](../../lib/cubical/equivalence.mjs), [public-equivalence.mjs](../../lib/cubical/public-equivalence.mjs), [paths](../../web/proofs/paths.cubist), [maps](../../web/proofs/maps.cubist) | Canonical public equivalences, `Fiber` orientation and checked univalence API (D0b) |
-| [identity_systems](../../web/proofs/identity_systems.cubist) | Eliminator, computation law and universe templates (D3); contraction combinators (D4) |
-| [fundamental_groups](../../web/proofs/fundamental_groups.cubist) | Pointed types and loop spaces (F4) |
-| [structured_sets](../../web/proofs/structured_sets.cubist), [algebraic_fields](../../web/proofs/algebraic_fields.cubist), [field_embedding_spaces](../../web/proofs/field_embedding_spaces.cubist) | Compositional descriptions, property fields and derived identity (F1) |
-| [quotient_descent](../../web/proofs/quotient_descent.cubist), [quotient_operations](../../web/proofs/quotient_operations.cubist) | Evidence only (archived): replaced by the `Quotient` declaration and milestone 7's multi-argument `match` |
+| [sets](../../archive/first-library/sets.cubist), [truncation](../../archive/first-library/truncation.cubist), [bijection_equality](../../archive/first-library/bijection_equality.cubist) | Numeric h-level templates and their aliases (D0a) |
+| [equivalence.mjs](../../lib/cubical/equivalence.mjs), [public-equivalence.mjs](../../lib/cubical/public-equivalence.mjs), [paths](../../archive/first-library/paths.cubist), [maps](../../archive/first-library/maps.cubist) | Canonical public equivalences, `Fiber` orientation and checked univalence API (D0b) |
+| [identity_systems](../../archive/first-library/identity_systems.cubist) | Eliminator, computation law and universe templates (D3); contraction combinators (D4) |
+| [fundamental_groups](../../archive/first-library/fundamental_groups.cubist) | Pointed types and loop spaces (F4) |
+| [structured_sets](../../archive/first-library/structured_sets.cubist), [algebraic_fields](../../archive/first-library/algebraic_fields.cubist), [field_embedding_spaces](../../archive/first-library/field_embedding_spaces.cubist) | Compositional descriptions, property fields and derived identity (F1) |
+| [quotient_descent](../../archive/first-library/quotient_descent.cubist), [quotient_operations](../../archive/first-library/quotient_operations.cubist) | Evidence only (archived): replaced by the `Quotient` declaration and milestone 7's multi-argument `match` |
 | [native elaborator](../../web/cubical-elaborator.mjs), [kernel adapter](../../web/cubical-kernel.mjs) | Fuel accounting (A4), prelude definitions (A1), face-restricted query (E2) |
-| [assumption schemas](../../web/cubical-assumptions.mjs), [field_logic](../../web/proofs/field_logic.cubist), [kernel](../../kernel/README.md) | Replaced by H1's `Trunc` and `Quotient` and G2's resizing policy ([kernel roadmap](cubical-kernel-roadmap.md)) |
+| [assumption schemas](../../web/cubical-assumptions.mjs), [field_logic](../../archive/first-library/field_logic.cubist), [kernel](../../kernel/README.md) | Replaced by H1's `Trunc` and `Quotient` and G2's resizing policy ([kernel roadmap](cubical-kernel-roadmap.md)) |
 | [parser](../../web/mathscript/parser.mjs), [formatter](../../web/mathscript/formatter.mjs) | New statement syntax, projection syntax (A8), spans and roundtrips |
 | [measurement script](../examples/proof-ergonomics/measure.mjs) | HoTT baseline (A7) |
 | [conversion probes](../examples/hott-automation/conversion-laws.cubist), [rejected laws](../examples/hott-automation/README.md#rejected-laws) | Conversion fixture and expected failures (A7) |
@@ -1079,7 +1079,7 @@ fragment, assumptions, commands run and next unfinished item.
 
 ### Where the library's proof text goes
 
-Approximate occurrence counts over `web/proofs/*.cubist`, comments included
+Approximate occurrence counts over `archive/first-library/*.cubist`, comments included
 (commands in the [measurement record](#measurement-record)):
 
 | Construct | Occurrences |
@@ -1098,18 +1098,18 @@ Approximate occurrence counts over `web/proofs/*.cubist`, comments included
 
 Representative proofs:
 
-- `group_laws_prop` ([group_identity](../../web/proofs/group_identity.cubist)):
+- `group_laws_prop` ([group_identity](../../archive/first-library/group_identity.cubist)):
   about 60 lines of nested `product_prop` and `forall_prop`.
-- `group_total_laws_path` ([group_total_identity](../../web/proofs/group_total_identity.cubist))
-  and `identity_system_retraction` ([identity_systems](../../web/proofs/identity_systems.cubist)):
+- `group_total_laws_path` ([group_total_identity](../../archive/first-library/group_total_identity.cubist))
+  and `identity_system_retraction` ([identity_systems](../../archive/first-library/identity_systems.cubist)):
   each `path_induction`/`based_induction` motive restates the whole goal.
-- `code_upper` and `upper_transition` ([circle](../../web/proofs/circle.cubist)):
+- `code_upper` and `upper_transition` ([circle](../../archive/first-library/circle.cubist)):
   transport, univalence computation and path re-bracketing written by hand.
-- `adjoint_triangle` and `homotopy_natural` ([equivalence_from_inverse](../../web/proofs/equivalence_from_inverse.cubist)):
+- `adjoint_triangle` and `homotopy_natural` ([equivalence_from_inverse](../../archive/first-library/equivalence_from_inverse.cubist)):
   whiskering and naturality; the latter is a large raw `comp` term.
-- `cancel_left` and `transport_concat` ([paths](../../web/proofs/paths.cubist)).
-- `suspension_rec_beta` ([suspension](../../web/proofs/suspension.cubist)) and
-  `transport_path_roundtrip` ([suspension_types](../../web/proofs/suspension_types.cubist)):
+- `cancel_left` and `transport_concat` ([paths](../../archive/first-library/paths.cubist)).
+- `suspension_rec_beta` ([suspension](../../archive/first-library/suspension.cubist)) and
+  `transport_path_roundtrip` ([suspension_types](../../archive/first-library/suspension_types.cubist)):
   25 and 31 lines proving path computation laws, because the eliminators take
   transport equations rather than PathPs.
 
@@ -1192,8 +1192,8 @@ A second file checks three further constructions:
 - `sym(sym(p)) = p` proved by `refl(p)`.
 
 The library also proves some path laws by `refl`: `map_inverse` and
-`inverse_twice` in [path_actions](../../web/proofs/path_actions.cubist), and
-`transport_ap` in [paths](../../web/proofs/paths.cubist).
+`inverse_twice` in [path_actions](../../archive/first-library/path_actions.cubist), and
+`transport_ap` in [paths](../../archive/first-library/paths.cubist).
 
 ### What the kernel computes that the library does not use
 
@@ -1249,17 +1249,17 @@ Transport along a constant family still computes on closed values:
 
 The library proved several of these laws by induction. Since A7,
 `path_map_constant` and `path_map_identity` in
-[homotopy_paths](../../web/proofs/homotopy_paths.cubist), and
-`field_pair_path_decode` in [field_products](../../web/proofs/field_products.cubist),
+[homotopy_paths](../../archive/first-library/homotopy_paths.cubist), and
+`field_pair_path_decode` in [field_products](../../archive/first-library/field_products.cubist),
 use conversion instead. The former `field_sigma_eta` pair-induction helper in
-[field_extensionality](../../web/proofs/field_extensionality.cubist) has been
+[field_extensionality](../../archive/first-library/field_extensionality.cubist) has been
 removed; `field_subtype_ext` now uses judgmental Sigma eta directly.
-[primes](../../web/proofs/primes.cubist) used to define `nat_eq_sym`,
+[primes](../../archive/first-library/primes.cubist) used to define `nat_eq_sym`,
 `nat_eq_trans` and `nat_congruence` by path induction; the historical arithmetic
 measurements in this document include them. The current corpus uses `sym`,
 `trans`, and `cong` directly. A statement that `rfl`
 also proves does not identify witnesses: `close_path` in
-[path_actions](../../web/proofs/path_actions.cubist) has type
+[path_actions](../../archive/first-library/path_actions.cubist) has type
 `origin = origin`, which `rfl` inhabits, but its witness is a nontrivial loop.
 
 **Numeric h-levels can agree with the existing definitions by conversion.**
@@ -1329,14 +1329,14 @@ the same way. There, the ergonomic forms of its arithmetic examples use 1.7 to
 - The kernel adapter's [withGrowingBudget](../../web/cubical-kernel.mjs)
   doubles an exhausted native step budget up to the unsigned 64-bit maximum.
   Frontend fuel alone therefore does not bound native work.
-- Public [Equiv](../../web/proofs/paths.cubist) uses half-adjoint data;
+- Public [Equiv](../../archive/first-library/paths.cubist) uses half-adjoint data;
   [native equivalences](../../lib/cubical/equivalence.mjs) use contractible
   fibers. The native total-space univalence theorem cannot simply be published
   at the existing public type: the reverse public roundtrip remains an
   [open obligation](../cubical/public-equivalence.md#validation-and-remaining-obligations).
 - [Truncate](../../web/cubical-assumptions.mjs) currently maps every `U_l` to
   `U0`. This includes resizing, used explicitly by
-  [small_mere_eliminate](../../web/proofs/field_logic.cubist). Standard
+  [small_mere_eliminate](../../archive/first-library/field_logic.cubist). Standard
   computational truncation preserves the input universe; replacing these
   assumptions requires a separate resizing decision in G.
 - `paths.based_induction` shadows the builtin of the same name wherever
@@ -1345,10 +1345,10 @@ the same way. There, the ergonomic forms of its arithmetic examples use 1.7 to
   `comp`.
 - `opaque def` is accepted syntax with the same checking and unfolding as
   `def` ([language reference](../../web/language.html)).
-- The public `Fiber` in [maps](../../web/proofs/maps.cubist) is
+- The public `Fiber` in [maps](../../archive/first-library/maps.cubist) is
   `exists x : A, f(x) = y`; the native fiber is `y = f(x)`.
-- `fundamental_group_laws` in [fundamental_groups](../../web/proofs/fundamental_groups.cubist)
-  is generic but fixed at `U1`; [circle](../../web/proofs/circle.cubist)
+- `fundamental_group_laws` in [fundamental_groups](../../archive/first-library/fundamental_groups.cubist)
+  is generic but fixed at `U1`; [circle](../../archive/first-library/circle.cubist)
   re-proves the same laws at `U0` as `loop_group`.
 
 ### Proof-construction review probes
@@ -1408,7 +1408,7 @@ declarations in fresh and reused sessions; the
 summarizes them. The original measurements above are kept as historical
 evidence.
 
-Corpus counts use `grep -o PATTERN web/proofs/*.cubist | wc -l` with the
+Corpus counts use `grep -o PATTERN archive/first-library/*.cubist | wc -l` with the
 patterns `'\btrans('`, `'\bcong('`, `'\bsym('`, `'\btransport('`,
 `'induction [a-z_]* as [a-z_]* return'`, `'match [^{]* return'`,
 `'path_induction('`, `'based_induction('` and `'FunExt('`. The h-level

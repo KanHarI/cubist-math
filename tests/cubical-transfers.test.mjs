@@ -17,7 +17,7 @@ test("actual binary and radix factorial proofs transport through native Glue in 
   const translator = new Translator({ normalize: false, checker });
   let env = new Map();
   for (const name of ["primes", "binary_naturals", "binary_arithmetic", "binary_induction", "binary_equivalence", "binary_arithmetic_correct"]) {
-    const source = await readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
     const result = translator.translate(source, env);
     env = result.env;
     for (const declaration of result.declarations) {
@@ -52,7 +52,7 @@ test("actual binary and radix factorial proofs transport through native Glue in 
   env.set("cubical_factorial_ten_via_univalence", natFactorial);
 
   for (const name of ["equivalences", "radix_naturals", "radix_arithmetic", "radix_factorial", "radix_induction", "radix_digit_laws", "radix_decode", "radix_uniqueness", "radix_equivalence", "radix_arithmetic_correct", "radix_binary_equivalence", "radix_univalence_transfer"]) {
-    const source = await readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
     const result = translator.translate(source, env);
     env = result.env;
     for (const declaration of result.declarations) {

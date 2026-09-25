@@ -105,7 +105,7 @@ test("the actual W binary source checks entirely in cubical WASM", async t => {
     try { return { ok: true, ...syntax.check(term, expected, context) }; }
     catch (error) { return { ok: false, error: error.message }; }
   };
-  const source = await readFile(new URL("../web/proofs/binary_naturals.cubist", import.meta.url), "utf8");
+  const source = await readFile(new URL("../archive/first-library/binary_naturals.cubist", import.meta.url), "utf8");
   const result = new Translator({ normalize: false, nativeCheck }).translate(source);
   assert.equal(result.declarations.length, 13);
   for (const declaration of result.declarations)
@@ -149,7 +149,7 @@ test("native elaboration checks all manual factorial sources while retaining che
   const translator = new Translator({ normalize: false, checker });
   let env = new Map(), last;
   for (const name of ["binary_naturals", "binary_arithmetic", "binary_induction", "radix_naturals", "radix_arithmetic", "radix_factorial"]) {
-    const source = await readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
     const result = translator.translate(source, env);
     env = result.env;
     for (const declaration of result.declarations) {
@@ -178,7 +178,7 @@ test("the existing Nat factorial theorem checks cubically without a million-succ
   // Those separate declarations are explicitly rejected as untranslated;
   // no assumptions are registered in their place.
   for (const name of ["primes", "binary_naturals", "binary_arithmetic", "binary_induction", "binary_equivalence", "binary_arithmetic_correct"]) {
-    const source = await readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
     const result = translator.translate(source, env);
     env = result.env;
     for (const d of result.declarations) {
@@ -238,8 +238,8 @@ test("open cubes check dependent contexts and preserve dimension names across de
 test("Cubist expresses cubical paths, composition and pushout induction with checked boundaries", async t => {
   const kernel = session(t), checker = new NativeCubicalElaborator(kernel);
   const translator = new Translator({ checker, normalize: false });
-  const source = await readFile(new URL("../web/proofs/cubical_paths.cubist", import.meta.url), "utf8");
-  const library = translator.translate(await readFile(new URL("../web/proofs/suspension_types.cubist", import.meta.url), "utf8"));
+  const source = await readFile(new URL("../archive/first-library/cubical_paths.cubist", import.meta.url), "utf8");
+  const library = translator.translate(await readFile(new URL("../archive/first-library/suspension_types.cubist", import.meta.url), "utf8"));
   assert.ok(library.declarations.every(d => d.status === "checked-native-cubical"));
   const result = translator.translate(source, library.env);
   assert.deepEqual(result.declarations.filter(d => d.status !== "checked-native-cubical"), []);
@@ -278,7 +278,7 @@ test("WASM round trips pushout boxes and corrected transport across changing map
 test("source-defined suspension induction uses a proved PathP bridge", async t => {
   const kernel = session(t), checker = new NativeCubicalElaborator(kernel);
   const translator = new Translator({ checker, normalize: false });
-  const library = translator.translate(await readFile(new URL("../web/proofs/suspension_types.cubist", import.meta.url), "utf8"));
+  const library = translator.translate(await readFile(new URL("../archive/first-library/suspension_types.cubist", import.meta.url), "utf8"));
   assert.ok(library.declarations.every(d => d.status === "checked-native-cubical"));
   const result = translator.translate(`
     def C = Suspension(Unit);

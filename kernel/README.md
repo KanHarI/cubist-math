@@ -4,7 +4,8 @@ This is the sole trusted checker for Cubist Math. It implements cumulative
 universes, dependent functions and pairs, Nat, Unit, Void, sums, dependent W
 induction, interval paths and composition, Glue, and computational pushouts.
 Suspension is derived from pushouts. The website and CLI use this code through
-WebAssembly; source modules live in `web/proofs/*.cubist`.
+WebAssembly; the archived first library's source modules live in
+`archive/first-library/*.cubist`.
 
 ## Reading the mathematics in the code
 

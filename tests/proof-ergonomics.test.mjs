@@ -9,7 +9,7 @@ import {parse} from "../web/mathscript/parser.mjs";
 import {expandedSyntax} from "../web/mathscript/tuples.mjs";
 import {budget} from "./timing.mjs";
 
-const readLibrary = name => readFile(new URL(`../web/proofs/${name}.cubist`,import.meta.url),"utf8");
+const readLibrary = name => readFile(new URL(`../archive/first-library/${name}.cubist`,import.meta.url),"utf8");
 const sample = name => readFile(new URL(`../docs/examples/proof-ergonomics/implemented/${name}.cubist`,import.meta.url),"utf8");
 
 test("short arithmetic, cubical and dependent examples elaborate to native axiom-free proofs",async t=>{

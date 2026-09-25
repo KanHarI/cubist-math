@@ -10,7 +10,7 @@ import { boundedSyntaxJson } from "../web/cubical-json.mjs";
 import { simplifyTypeApplications } from "../web/cubical-reduction.mjs";
 
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
 const variable = name => ({ tag: "Var", name });
 const nat = { tag: "Nat" };
 

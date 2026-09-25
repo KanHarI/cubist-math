@@ -47,7 +47,7 @@ The handoff records the exact supported fragment.
 | [`build-cubical-runtime.mjs`](../../tools/build-cubical-runtime.mjs) explicitly lists copied runtime modules | Add every new shared module to that list. Never edit generated `web/dist` copies as a second implementation. |
 
 The roadmap's `finite_counting` module no longer exists. Use
-[`finite_dependent_counts`](../../web/proofs/finite_dependent_counts.cubist),
+[`finite_dependent_counts`](../../archive/first-library/finite_dependent_counts.cubist),
 particularly `finite_uniform_fiber_count`, for its finite-counting baseline.
 
 ## PR-sized work packages

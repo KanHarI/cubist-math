@@ -7,7 +7,7 @@ def vector_space_has_basis(K : AlgebraicField, V : VectorSpace(K)) :
   FieldExists(VectorBasis(K, V))
 ```
 
-Read it in `web/proofs/vector_basis_existence.cubist`, or open
+Read it in `archive/first-library/vector_basis_existence.cubist`, or open
 `/proof.html?proof=vector_basis_existence&name=vector_space_has_basis`.
 This is mere existence for every bundled small-carrier vector space, with no
 finite-dimensionality hypothesis and no chosen basis supplied by the caller.

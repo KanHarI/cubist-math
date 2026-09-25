@@ -16,7 +16,7 @@ const selection = [
   ["group_operations", "group_conjugate_multiply"],
   ["field_vector_spaces", "field_scalar_laws"],
 ];
-const readSource = name => readFile(new URL(`web/proofs/${name}.cubist`, root), "utf8");
+const readSource = name => readFile(new URL(`archive/first-library/${name}.cubist`, root), "utf8");
 const report = await benchmark({ modules: selection.map(([module]) => module),
   limitMs: 1000, readSource });
 if (report.importErrors.length || report.counts.failed || report.counts.blocked || report.counts.optimize)
@@ -29,7 +29,7 @@ const selected = await Promise.all(selection.map(async ([module, name]) => {
   const row = report.declarations.find(d => d.module === module && d.name === name);
   if (row?.category !== "checked") throw new Error(`Unchecked baseline ${module}.${name}`);
   const text = source.slice(declaration.start, declaration.end);
-  return { module, name, sourcePath: `web/proofs/${module}.cubist`,
+  return { module, name, sourcePath: `archive/first-library/${module}.cubist`,
     sourceSha256: createHash("sha256").update(source).digest("hex"),
     declarationSha256: createHash("sha256").update(text).digest("hex"),
     sourceTokens: tokenize(text).length - 1,

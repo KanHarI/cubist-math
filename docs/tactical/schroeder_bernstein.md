@@ -2,7 +2,7 @@
 
 Run `make serve` and open
 [Cantor–Schröder–Bernstein · mutual injections](http://127.0.0.1:8088/proof.html?proof=schroeder_bernstein).
-The [Cubist source](../../web/proofs/schroeder_bernstein.cubist) proves:
+The [Cubist source](../../archive/first-library/schroeder_bernstein.cubist) proves:
 
 ```text
 forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) ->
@@ -16,7 +16,7 @@ inverse, both inverse laws, and coherence. It is not a mere existence claim.
 In the CLI:
 
 ```text
-prove web/proofs/schroeder_bernstein.cubist
+prove archive/first-library/schroeder_bernstein.cubist
 check CantorSchroederBernstein cantor_schroeder_bernstein
 ```
 
@@ -40,7 +40,7 @@ This adapts the g-point argument in
 The checked dependencies are excluded middle (`LEM`), function extensionality,
 and the existing truncation constructor and eliminator. The library expresses
 LEM as double negation implying mere inhabitation, so
-[classical.cubist](../../web/proofs/classical.cubist) derives proposition-level
+[classical.cubist](../../archive/first-library/classical.cubist) derives proposition-level
 double-negation elimination and excluded middle from it. The recorded
 name `s0121_Axiom` is an earlier name for the same kernel judgement as
 `lib_Trunc`, used in LEM's original construction; the dependency display

@@ -8,7 +8,7 @@ import { CubicalProgram } from '../web/cubical-program.mjs';
 const args=process.argv.slice(2), all=args.includes('--all');
 const selected=all?[...sourceModules,...cubicalSourceModules]:args.filter(x=>!x.startsWith('--'));
 if(!selected.length)throw Error('Usage: node tools/audit-cubical.mjs MODULE... | --all');
-const program=new CubicalProgram(await createCubical(),name=>readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`,import.meta.url),'utf8'));
+const program=new CubicalProgram(await createCubical(),name=>readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`,import.meta.url),'utf8'));
 const budgetOption=args.find(arg=>arg.startsWith('--diagnostic-budget='));
 const diagnosticBudget=budgetOption?BigInt(budgetOption.split('=')[1]):null;
 if(diagnosticBudget!==null) {

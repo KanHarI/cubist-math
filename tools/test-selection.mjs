@@ -17,7 +17,7 @@ export const help = `Usage: npm test -- [options] [module | file ...]
   npm test -- --cubical cubical_paths    Check selected sources in native cubical C
   npm test -- complex_inverses           Check one proof and its imports
   npm test -- --module ordered_squares   Same, with an explicit module flag
-  npm test -- web/proofs/circle.cubist     Check a proof by path
+  npm test -- archive/first-library/circle.cubist  Check a proof by path
   npm test -- --changed                  Check added/modified .cubist files
   npm test -- --no-reuse-checks complex_inverses  Disable checked-term reuse
   Optimizations default on: --[no-]share-syntax, --[no-]reuse-checks,
@@ -43,7 +43,7 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
   let explicitOptimizations = false;
   let explicitSelection = false;
   const proof = value => {
-    const path = /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? `web/proofs/${value}.cubist` : value;
+    const path = /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? `archive/first-library/${value}.cubist` : value;
     if (!path.endsWith(".cubist")) throw new Error(`Expected a proof module or .cubist path: ${value}`);
     proofs.push(resolve(root, path));
   };
@@ -101,7 +101,7 @@ export async function loadProof(path, root = projectRoot) {
     for (const name of parse(text).imports) {
       if (loading.has(name)) continue;
       loading.add(name);
-      const imported = await readFile(resolve(root, "web/proofs", `${name}.cubist`), "utf8");
+      const imported = await readFile(resolve(root, "archive/first-library", `${name}.cubist`), "utf8");
       sources[name] = imported;
       await visit(imported);
     }

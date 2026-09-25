@@ -14,7 +14,7 @@ export function category(result, elapsedMs, limitMs) {
 
 export async function benchmark({ modules = [...sourceModules, ...cubicalSourceModules], limitMs = 100, optimizations = {},
   readSource = async name => {
-    const response = await fetch(new URL(`./proofs/${cubicalSourceFile(name)}`, import.meta.url));
+    const response = await fetch(new URL(`./archive/first-library/${cubicalSourceFile(name)}`, import.meta.url));
     if (!response.ok) throw Error(`Could not load ${name}: HTTP ${response.status}`);
     return response.text();
   },

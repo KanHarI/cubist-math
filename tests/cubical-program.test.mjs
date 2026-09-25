@@ -22,7 +22,7 @@ test("universe specializations are independently checked once and reused as name
 });
 
 test("the browser program checks Euclid from source and exports a replayable native inspection", async t => {
-  const readSource = name => readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+  const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
   const result = await program.check(await readSource("euclid"), "euclid");
   assert.equal(result.complete, true);
@@ -68,7 +68,7 @@ test("native notation preserves named references and dependent path families", (
 });
 
 test("native path interiors retain their interval context in the inspector and replay", async t => {
-  const readSource = name => readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+  const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
   const source = await readSource("cubical_paths");
   const result = await program.check(source, "cubical_paths");
@@ -274,7 +274,7 @@ test("untyped lambdas in templates report errors without aborting later declarat
 });
 
 test("every named reference in group universe templates is inspectable with source labels", async t => {
-  const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+  const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
   const result = await program.check(await readSource("group_universes"), "group_universes");
   const references = result.links.filter(link => link.role === "template reference");

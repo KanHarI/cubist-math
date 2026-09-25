@@ -3,7 +3,7 @@
 import {readdirSync,readFileSync} from 'node:fs';
 import {parse} from '../web/mathscript/parser.mjs';
 
-const root=new URL('../web/proofs/',import.meta.url);
+const root=new URL('../archive/first-library/',import.meta.url);
 const features=new Map();
 function record(name,file) {
   const entry=features.get(name)??{uses:0,files:new Set()};

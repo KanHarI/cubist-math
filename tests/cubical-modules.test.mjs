@@ -11,11 +11,11 @@ const module = await createCubical();
 for (const path of selected) {
   test(`cubical proof: ${basename(path)}`, async t => {
     const program = new CubicalProgram(module,
-      name => readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url), "utf8"), { optimizations: JSON.parse(process.env.MATHSCRIPT_OPTIMIZATIONS ?? "{}") });
+      name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8"), { optimizations: JSON.parse(process.env.MATHSCRIPT_OPTIMIZATIONS ?? "{}") });
     t.after(() => program.dispose());
     const name = basename(path, ".cubist");
-    const sourcePath = resolve(dirname(path)) === resolve("web/proofs")
-      ? new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url) : path;
+    const sourcePath = resolve(dirname(path)) === resolve("archive/first-library")
+      ? new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url) : path;
     const result = await program.check(await readFile(sourcePath, "utf8"), name);
     assert.equal(result.complete, true, JSON.stringify(result.gaps, null, 2));
     t.diagnostic(`${result.outputs.length} declarations; ${result.instructionCount.toLocaleString()} native C checking steps`);

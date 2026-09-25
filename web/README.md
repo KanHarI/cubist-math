@@ -2,7 +2,7 @@
 
 Run `make serve`, then open http://127.0.0.1:8088/. The site uses the cubical C
 kernel compiled to WebAssembly; there is no alternate checking backend.
-Canonical source modules live in `proofs/*.cubist`.
+The archived first library lives in `../archive/first-library/*.cubist`; the site serves it at `archive/first-library/`.
 
 The source inspector retains definition names, context variables, and axiom
 labels. **Open in workbench** replays the source in a fresh kernel session.

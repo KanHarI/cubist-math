@@ -15,7 +15,7 @@ const backend = "cubical";
 const proofId = choices.some((p) => p.id === query.get("proof"))
   ? query.get("proof")
   : "euclid";
-const sourceURL = `proofs/${choices.find((p) => p.id === proofId).file ?? cubicalSourceFile(proofId)}`;
+const sourceURL = `archive/first-library/${choices.find((p) => p.id === proofId).file ?? cubicalSourceFile(proofId)}`;
 const snapshot = readProofNavigation(query.get("restore"));
 let restoring = snapshot?.proof === proofId ? snapshot : null;
 const crossFileBack = restoring?.back ?? query.get("back");

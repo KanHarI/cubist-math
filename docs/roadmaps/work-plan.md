@@ -42,30 +42,36 @@ packages (HoTT A1, A2, A4, A6) continue alongside stage 2.
 
 | ID | Package | Owner | Depends on | Size |
 | --- | --- | --- | --- | --- |
-| I0.1 | Merge `proof-ergonomics-roadmap` into `main` | — | Maintainer decision | S |
-| I0.2 | Archive the first library | Plan | I0.1 | M |
+| I0.1 | Merge `proof-ergonomics-roadmap` into `main` (deferred: work continues off `main`) | — | Maintainer decision | S |
+| I0.2 | Archive the first library (done) | Plan | — | M |
 | I0.3 | Start the new library tree | Plan | I0.2 | S |
-| I0.4 | Remove local scratch state | — | — | S |
+| I0.4 | Remove local scratch state (done) | — | — | S |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` | Ergonomics 8 | — | M |
 | D0.1 | Checked-example harness for the reference | Plan | — | S |
 | D0.2 | Reference chapters for the stable language | Plan | D0.1 | L |
 
-**I0.2 Archive the first library.**
-- Move `web/proofs/*.cubist` to `archive/first-library/`, with its own source
-  root and module namespace, so rebuilt modules can reuse names.
-- CI keeps checking it as the regression and performance corpus.
-- The site serves it under "Archive" until rebuilt results replace each area.
-- Acceptance:
-  - `npm test`, `npm run test:browser` and `npm run test:site` pass;
-  - the archive still reports 3,761 checked declarations and 43 templates;
-  - benchmark and corpus tests point at the new root.
-- **Decision needed before starting:** confirm that CI and the site keep the
-  archive, and confirm the location.
+**I0.2 Archive the first library.** Done on 2026-09-25, working off `main`
+(I0.1 is deferred by choice).
+- **Move.** The 367 sources moved from `web/proofs/` to
+  `archive/first-library/` with history preserved. They are a closed world
+  under their own source root, so rebuilt modules can reuse their names.
+- **Code paths.** The CLI, tests, tools, benchmark and corpus checks, and the
+  browser loaders read from the new root.
+- **Serving.** The dev server maps `/archive/…` to the directory, and the
+  Pages build copies it into the site. Proof pages say they show the archived
+  library, with a link to the results catalog.
+- **Checks.**
+  - `npm test`: the archive checks 3,761 declarations and 43 templates, with
+    none failed or blocked.
+  - `npm run test:browser`, the landing test, and the site build with
+    `npm run test:site` all pass.
 
-**I0.3 Start the new library tree.** Create `library/`, or reuse `web/proofs/`
-once it is empty, with areas mirroring `library-results.md`. It holds a
-placeholder module per area and the site's topic index. The layout's rules
-are one theme per module and no helper duplication across modules.
+**I0.3 Start the new library tree.** Create the rebuilt library's root,
+proposed `library/`, served the same way as the archive.
+- Its areas mirror `library-results.md`, starting with a placeholder module
+  per area and the site's topic index.
+- Layout rules: one theme per module, and no helper duplicated across
+  modules.
 
 **I0.4 Remove local scratch state.** Delete the unmerged `migration-curated`
 branch and the scratch directories `.migration/` and `.catalog/`. The
@@ -300,11 +306,15 @@ modules.
 
 ## First actions
 
-1. **Decide and merge** (I0.1). Confirm the archive decisions for I0.2.
-2. **Start in parallel:**
-   - L0.1, computability tracking;
-   - D0.1, the reference harness;
-   - K1.1, the G0 specification;
-   - L1.2, the goal layer.
-3. **Then:** I0.2–I0.4 (archive, new tree, cleanup) and D0.2 (reference
-   chapters).
+Stage 0's housekeeping is settled:
+- I0.1 is deferred, because work continues off `main` on
+  `proof-ergonomics-roadmap`;
+- I0.2 and I0.4 are done.
+
+Next, in parallel:
+
+1. L0.1, computability tracking.
+2. D0.1, the reference harness, then D0.2, the reference chapters.
+3. K1.1, the G0 specification.
+4. L1.2, the goal layer.
+5. I0.3, the new library tree, which is needed only when stage 3 starts.

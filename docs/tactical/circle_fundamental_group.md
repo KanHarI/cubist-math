@@ -5,7 +5,7 @@ Open [the circle proof](http://127.0.0.1:8088/proof.html?proof=circle) with
 navigate to their mathematical source. The CLI checks the same program:
 
 ```text
-prove web/proofs/circle.cubist
+prove archive/first-library/circle.cubist
 check FundamentalGroupS1IsZ fundamental_group_of_circle
 ```
 
@@ -17,12 +17,12 @@ ordinary addition, and a multiplication-preserving bijection between them.
 
 | Source | Content |
 | --- | --- |
-| [suspension.cubist](../../web/proofs/suspension.cubist) | `S0 = Unit or Unit`, `S1 = Suspension(S0)`, the generating loop, and a derived recursor with its path computation law |
-| [paths.cubist](../../web/proofs/paths.cubist) | Path algebra, transport, based path induction, and half-adjoint equivalences |
-| [sets.cubist](../../web/proofs/sets.cubist) | Decidable equality and Hedberg's theorem |
-| [groups.cubist](../../web/proofs/groups.cubist) | Group and group-isomorphism statements |
-| [integers.cubist](../../web/proofs/integers.cubist) | Signed integers, successor equivalence, arithmetic addition, and setness |
-| [circle.cubist](../../web/proofs/circle.cubist) | Integer cover, encode/decode, winding, inverse laws, group laws, and the final theorem |
+| [suspension.cubist](../../archive/first-library/suspension.cubist) | `S0 = Unit or Unit`, `S1 = Suspension(S0)`, the generating loop, and a derived recursor with its path computation law |
+| [paths.cubist](../../archive/first-library/paths.cubist) | Path algebra, transport, based path induction, and half-adjoint equivalences |
+| [sets.cubist](../../archive/first-library/sets.cubist) | Decidable equality and Hedberg's theorem |
+| [groups.cubist](../../archive/first-library/groups.cubist) | Group and group-isomorphism statements |
+| [integers.cubist](../../archive/first-library/integers.cubist) | Signed integers, successor equivalence, arithmetic addition, and setness |
+| [circle.cubist](../../archive/first-library/circle.cubist) | Integer cover, encode/decode, winding, inverse laws, group laws, and the final theorem |
 
 Suspending the two-point type gives the circle. Suspending `Unit` alone gives a
 contractible type. Integers use `Nat or Nat`: `left n` represents n, and `right n`

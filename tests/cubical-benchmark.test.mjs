@@ -97,7 +97,7 @@ test("benchmark checks local simp witnesses without collecting inspector referen
     readSource:async name=>{
       const source=await readFile(name==="ergonomics_registered"
         ? new URL("../docs/examples/proof-ergonomics/implemented/registered-simp.cubist",import.meta.url)
-        : new URL(`../web/proofs/${name}.cubist`,import.meta.url),"utf8");
+        : new URL(`../archive/first-library/${name}.cubist`,import.meta.url),"utf8");
       return name==="ergonomics_registered"?`${source}
         def folded(n : Nat) = n + 0;
         def twice(n : Nat) = folded(n);

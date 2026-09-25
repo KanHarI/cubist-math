@@ -2,7 +2,7 @@
 
 `lib/cubical/path-algebra.mjs` provides checked-term builders for the
 path operations and groupoid laws needed by the circle encode/decode proof.
-The current `web/proofs/paths.cubist` defines its operations by identity
+The current `archive/first-library/paths.cubist` defines its operations by identity
 elimination and uses strict reflexivity computation in several proof bodies.
 These helpers instead target the canonical direct cubical operations below.
 Migrating the source requires explicit changes to those operation definitions;

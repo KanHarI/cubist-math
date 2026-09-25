@@ -29,7 +29,7 @@ for (const arg of args) {
 }
 const module = await createCubical();
 let program, view, binding;
-const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 function show() {
   const shown = view.folded ?? view;
   for (const entry of shown.context) console.log(`${entry.label ?? entry.name} : ${cubicalText(entry.type, view.symbols)}`);
