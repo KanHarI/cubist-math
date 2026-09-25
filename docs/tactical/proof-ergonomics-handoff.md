@@ -51,8 +51,9 @@ the C/WASM cubical kernel and report no axiom dependencies.
   equality rules can use an explicitly selected local witness through
   `simp with [h];`, a premise proved reflexive by conversion, or a homogeneous
   equality premise simplified by other selected rules. Premise search has a
-  depth-two limit, 64-attempt budget and shared elapsed-work deadline; active
-  rules cannot justify themselves. The generated witness is checked and passed
+  depth-two limit and shares the enclosing search's time limit. Each distinct
+  premise is searched once per simplification; after 64 searches the rule just
+  does not fire. Active rules cannot justify themselves. The generated witness is checked and passed
   to the theorem. Premise rules appear in the inspector trace and frozen
   `simp only` list. Arbitrary proposition-premise solving remains open.
 - Expected-type `path i => body`, path application `p @ i`, `ext x;` for equality
@@ -64,8 +65,8 @@ the C/WASM cubical kernel and report no axiom dependencies.
   program loads as well as benchmarks. Successful definitions are relocated
   after compaction; failed attempts remove new definitions, specializations,
   assumptions, and encoded-handle caches. Source references for `calc`, `rw`,
-  and `simp` link to their checked constructed witness; `calc` also links each
-  checked step with a distinct expansion identity. The simplifier likewise
+  and `simp` link to their checked constructed witness; each `calc` step's `by`
+  keyword links to that checked step with a distinct expansion identity. The simplifier likewise
   exposes each checked rewrite path and selected rule in the inspector. Its
   “Replace with simp only” action preserves rule order, lists only rules that
   fired, and rechecks the edited source. Before offering a reduced list, the
@@ -359,3 +360,57 @@ expanded syntax, and the full 351-test suite passes. The canonical corpus has
 3,761 checked declarations and 43 templates, with zero failed or blocked
 declarations. The AST usage audit reports exactly two uses of each requested
 feature (`simpOnly`/`simpaOnly` are its names for the explicit `only` forms).
+
+## Review fixes: search scope, dependent matches, premises and names (2026-09-25)
+
+A review of this branch found four elaborator bugs and one older one. None
+changes the kernel or its equality rules.
+
+- Search time limits were taken when `rw`, `simp` or `calc` started and checked
+  again while rebuilding the proof, after the rest of the block had been
+  elaborated. A valid later statement taking over a second failed the tactic
+  with "Path composition elapsed-work budget exceeded." Each rule search now
+  starts its own one-second limit (`SEARCH_TIME_LIMIT_MS` in
+  `lib/cubical/translate.mjs`) after user terms are elaborated. Rebuilding
+  proofs and composing `calc` steps has no search limit: it is bounded by the
+  number of rewrites or steps and still honours declaration cancellation.
+- `simp`, `simpa`, `simp at` and type-goal `simp` failed on any match in a
+  dependent position, even on a goal that already held. `findRewrite` in
+  `lib/cubical/proof-rewrite.mjs` now returns a result instead of throwing
+  for "no match". The simplifier skips such matches, tries the other endpoint,
+  and mentions them only if the goal stays unsolved. `rw` keeps its reported
+  error for an explicit endpoint and combines both sides for the default.
+- Premise search re-searched the same failed premise on every pass and on both
+  endpoints, and 64 attempts aborted the whole simplification. Outcomes are
+  now remembered per rule and premise. Exhausting the limit only stops
+  conditional rules from firing. Node, candidate, rewrite, cycle and size
+  limits met while proving a premise leave that premise unproved; they are
+  `SearchLimit` errors. The shared time limit (`SearchTimeout`) and kernel
+  cancellation still stop the simplification. A freeze replay starts from
+  fresh premise state.
+- In ordinary declarations the `calc` step link started at the left endpoint
+  and was often hidden by a smaller link there. The parser now records each
+  step's `by` token, and both the elaborator and the template link walk use it.
+- Older than this branch: generated names were `stem + serial`, so `a1` with
+  serial 1 and `a` with serial 11 were both `a11`. The second binder captured
+  the first, and `forall a : Nat, a = a1` checked as `forall a, a = a`. The
+  kernel stayed consistent, but the checked statement differed from the
+  source. A stem ending in a digit now gets a separator, making generated
+  names unique, and every binding site asserts that its name is new.
+
+Smaller changes: the formatter prints `simp_set name = [...]` with a space;
+template inspection and specialization skip freeze replays whose result is
+discarded; the elaborator's conversion query avoids live coordinate names; the
+language reference describes the new behaviour. The address-sanitizer stall
+recorded above is environmental on that machine: a trivial `int main(void)`
+built with `-fsanitize=address` also hangs there.
+
+Regression tests in `tests/proof-ergonomics.test.mjs` cover each bug and fail
+on the previous code. The time-limit test advances a fake clock during a later
+statement rather than depending on machine speed.
+
+Remaining design work: tactic search limits are still wall-clock, so a search
+near the one-second limit can pass on a fast machine and fail on a slow one.
+Deterministic work budgets would remove that. Candidate failures are still
+classified by the kernel's "Type mismatch." message, and instantiated rules
+still match by conversion while quantified rules match syntactically.

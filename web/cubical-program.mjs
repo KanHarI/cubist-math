@@ -3,7 +3,7 @@ import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator } from "./cubical-elaborator.mjs";
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
-import { parse, tokenize } from "./mathscript/parser.mjs";
+import { parse } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
@@ -162,7 +162,6 @@ export class CubicalProgram {
           reason:directive.reason,directive:true});
       this.checker.steps = checker.steps;
       const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
-      let sourceTokens;
       for (const d of result.declarations) {
         const syntax = byName.get(d.name), binding = `${name}__${d.name}`;
         const verified = d.status === "checked-native-cubical";
@@ -190,7 +189,6 @@ export class CubicalProgram {
           }
           if (name === main && this.collectReferences) {
             const nodes = [], binders = new Set(info.templateParameters);
-            sourceTokens ??= tokenize(text);
             const visit = node => {
               if (!node || typeof node !== "object") return;
               const tactic = {calc:"calculation witness",rw:"rewrite witness",
@@ -200,11 +198,10 @@ export class CubicalProgram {
                 const keyword = node.kind.replace("Only","");
                 nodes.push({name:keyword,start:node.start,end:node.start+keyword.length,
                   selectionOffset:node.start,role:tactic});
+                // The same `by` site as the elaborator's step reference.
                 if (node.kind === "calc") node.steps.forEach((step,index) => {
-                  const by = sourceTokens.find(token => token.text === "by" &&
-                    token.start >= step.right.end && token.start < step.end);
-                  if (by) nodes.push({name:`calc step ${index+1}`,start:by.start,end:by.end,
-                    selectionOffset:step.start,role:"calculation step",
+                  nodes.push({name:`calc step ${index+1}`,start:step.by.start,end:step.by.end,
+                    selectionOffset:step.by.start,role:"calculation step",
                     expansion:{role:"calculation step",index:index+1}});
                 });
               }
@@ -316,8 +313,10 @@ export class CubicalProgram {
       if (!this.views.has(instance)) {
         const references = [];
         const schema = this.templates.get(binding);
+        // A template edit is never offered (see freeze:null below), so skip
+        // the simplification replays that would compute one.
         const translator = new Translator({ normalize: false, checker: this.checker,
-          simpRegistry:schema.simpRegistry,moduleName:schema.moduleName,
+          simpRegistry:schema.simpRegistry,moduleName:schema.moduleName,freezeSuggestions:false,
           onReference: (node, term, context, dimensions, aliases) => references.push({ node, term, context, dimensions, aliases }) });
         translator.source = this.sources[info.sourceModule ?? this.main];
         const scope = new Map(schema.env);

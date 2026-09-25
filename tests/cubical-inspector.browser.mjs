@@ -280,7 +280,7 @@ try {
     try {
       await program.check(source,"browser_template_calc");
       program.inspect("browser_template_calc__generic",{universes:[0]});
-      const offset=source.indexOf("n + 0 = n by");
+      const offset=source.indexOf("by nat_add_zero");
       const binding=`browser_template_calc__generic__inspect_U0__local_${offset}_calculation_step_1`;
       return saveWorkbenchTransfer(program.export(binding));
     } finally {program.dispose();}

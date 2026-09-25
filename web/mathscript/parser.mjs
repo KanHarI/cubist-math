@@ -362,10 +362,12 @@ export function parse(source, typeOnly = false) {
           const left = expr(5);
           take("=");
           const right = expr();
-          take("by");
+          // The `by` keyword is the source site of this step's checked path.
+          const by = take("by");
           const proof = peek() === "{" ? { kind: "block", body: block() } : { kind: "term", value: expr() };
           if (proof.kind === "term") take(";");
-          steps.push({ left, right, proof, start: left.start, end: ts[i - 1].end });
+          steps.push({ left, right, proof, by: { start: by.start, end: by.end },
+            start: left.start, end: ts[i - 1].end });
         }
         const end = take("}");
         s = { kind: "calc", steps, start: t.start, end: end.end };

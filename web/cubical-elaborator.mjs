@@ -77,7 +77,11 @@ export class NativeCubicalElaborator {
     return this.syntax.decode(this.kernel.head(this.syntax.encode(term, this.dimensions)), this.dimensions);
   }
   equal(left, right, context = new Map()) {
-    const type = this.infer(left, context).type, dim = `conversion${++this.serial}`;
+    const type = this.infer(left, context).type;
+    // This binder scopes over both terms, so it must not capture a live
+    // coordinate; every free coordinate of a checked term is in scope here.
+    let dim = `conversion${++this.serial}`;
+    while (this.dimensions.has(dim)) dim += "_";
     const constant = { tag: "PLam", dim, family: type, body: left };
     const expected = { tag: "Path", dim, family: type, left, right };
     try { this.check(constant, expected, context); return true; }

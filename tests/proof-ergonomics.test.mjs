@@ -796,7 +796,9 @@ test("template inspection keeps calc endpoints separate from step witnesses",asy
   const link=result.links.find(item=>item.role==="template reference"&&item.start===offset);
   assert.ok(link);
   assert.equal(program.inspect(link.binding).type.tag,"Nat");
-  const step=`template_calc__generic__inspect_U0__local_${offset}_calculation_step_1`;
+  // The step's checked path belongs to its `by` keyword, not its left endpoint.
+  const byOffset=source.indexOf("by nat_add_zero");
+  const step=`template_calc__generic__inspect_U0__local_${byOffset}_calculation_step_1`;
   const stepView=program.inspect(step);
   assert.equal(stepView.type.tag,"Path");
   const symbol=program.localSymbols[step];
@@ -914,6 +916,10 @@ test("registered default and named sets retain checked proofs and format stably"
   }
   const formatted=formatMathScript(source);
   assert.equal(expandedSyntax(parse(formatted)),expandedSyntax(parse(source)));
+  // A set assignment is spaced like one; an equality carrier stays attached.
+  assert.equal(formatted,source);
+  assert.match(formatted,/simp_set nat_units = \[nat_add_zero\];/);
+  assert.match(formatMathScript("def t(x : Nat) : x =[Nat] x {\n  rfl;\n}\n"),/x =\[Nat\] x/);
 });
 
 test("imported simp registrations are scoped and conflicting named sets fail only on use",async t=>{
@@ -1113,4 +1119,132 @@ test("rewrite errors identify the selected rule and explain an unproved premise"
     /unproved premise at parameter 2.*simp with \[name\]/);
   assert.match(result.outputs.find(d=>d.name==="bad_rw").reason,/occurrence 2.* at \d+:\d+/);
   assert.match(result.outputs.find(d=>d.name==="bad_simp").reason,/homogeneous equality.* at \d+:\d+/);
+});
+
+test("generated names stay distinct when a source name ends in a digit",async t=>{
+  const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");});
+  t.after(()=>program.dispose());
+  // a1 takes serial 1 and, after eight arrows and q, the quantified a takes
+  // serial 11. Both were once named a11, so this false statement checked as
+  // forall a, a = a.
+  const arrows=Array(9).fill("Nat").join(" -> ");
+  const result=await program.check(`
+    def aliased(a1 : Nat, q : ${arrows}) : forall a : Nat, a = a1 { intro a; exact refl(a); }
+    def distinct(a1 : Nat, q : ${arrows}) : forall a : Nat, a1 = a1 { intro a; exact refl(a1); }
+  `,"generated_names");
+  assert.deepEqual(result.outputs.map(d=>d.verified),[false,true]);
+  assert.match(result.outputs[0].reason,/Type mismatch/);
+});
+
+test("tactic search time limits exclude later statements and calc steps",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  // Checking slow_step advances a fake clock by five seconds, as if that
+  // later statement were slow. No rewrite search runs while it is checked.
+  const now=performance.now.bind(performance);
+  let skew=0;
+  performance.now=()=>now()+skew;
+  t.after(()=>{delete performance.now;});
+  const infer=program.checker.infer;
+  program.checker.infer=function(term,...rest) {
+    if(term?.tag==="App"&&term.fn?.tag==="DefRef"&&term.fn.name.endsWith("__slow_step"))skew+=5000;
+    return infer.call(this,term,...rest);
+  };
+  const result=await program.check(`import primes;
+    def slow_step(n : Nat) : n = n { rfl; }
+    def after_rw(n : Nat) : n + 0 = n {
+      rw [nat_add_zero(n)] at lhs;
+      have s = slow_step(n);
+      rfl;
+    }
+    def after_simp(n : Nat) : n + 0 = n {
+      simp only [nat_add_zero];
+      have s = slow_step(n);
+      rfl;
+    }
+    def inside_calc(n : Nat) : (n + 0) + 0 = n {
+      calc {
+        (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
+        _ = n by {
+          have s = slow_step(n);
+          exact nat_add_zero(n);
+        }
+      }
+    }
+  `,"search_time_scope");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  assert.ok(skew>=15000,"each slow statement advanced the clock");
+});
+
+test("simp skips matches in dependent positions instead of failing",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const params="P : Nat -> U0, f : (forall m : Nat, P(m) -> Nat), n : Nat, v : P(n + 0)";
+  const result=await program.check(`import primes;
+    def reflexive(${params}) : f(n + 0, v) = f(n + 0, v) { simp only [nat_add_zero]; }
+    def after_rewrite(${params}) : add(f(n + 0, v), n + 0) = add(f(n + 0, v), n) {
+      simp only [nat_add_zero];
+    }
+    def supplied(${params}, h : f(n + 0, v) = 3) : f(n + 0, v) = 3 {
+      simpa only [nat_add_zero] using h;
+    }
+    def hypothesis(${params}, h : f(n + 0, v) = 3) : f(n + 0, v) = 3 {
+      simp only [nat_add_zero] at h as h2;
+      exact h2;
+    }
+    def type_goal(${params}, Q : (forall m : Nat, P(m) -> U0), w : Q(n + 0, v)) : Q(n + 0, v) {
+      simp only [nat_add_zero];
+      exact w;
+    }
+    def unsolved(${params}, m : Nat) : f(n + 0, v) = m { simp only [nat_add_zero]; }
+  `,"simp_dependent_positions");
+  assert.deepEqual(result.outputs.map(d=>d.verified),[true,true,true,true,true,false]);
+  assert.match(result.outputs[5].reason,/unresolved equality.*dependent position/);
+});
+
+test("a conditional rule with unprovable premises does not stop simplification",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const goal=count=>{
+    const names=Array.from({length:count},(_,index)=>`b${index}`);
+    const args=names.map(name=>`c(${name})`).join(", ");
+    return {params:`a : Nat, g : ${Array(count+2).fill("Nat").join(" -> ")}, ${names.join(" ")} : Nat`,
+      type:`g(${args}, (a + 0) + 0) = g(${args}, a)`};
+  };
+  const few=goal(20),many=goal(70);
+  const result=await program.check(`import primes;
+    def c(x : Nat) = x;
+    def c_zero(x : Nat, h : x = 0) : c(x) = 0 { rw [h] at lhs; }
+    simp_rule c_zero priority 50;
+    def few(${few.params}) : ${few.type} { simp [nat_add_zero]; }
+    def many(${many.params}) : ${many.type} { simp [nat_add_zero]; }
+  `,"premise_budget");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  // Each c(b_i) premise is searched once, although it recurs on both sides
+  // and in every pass. Past the attempt limit the rule simply does not fire.
+  const attempts=name=>result.outputs.find(d=>d.name===name).rewriteWork.premiseAttempts;
+  assert.equal(attempts("few"),20);
+  assert.equal(attempts("many"),64);
+});
+
+test("each calc by keyword links to its checked step in an ordinary declaration",async t=>{
+  const program=new CubicalProgram(await createCubical(),readLibrary);
+  t.after(()=>program.dispose());
+  const source=`import primes;
+    def ordinary(B : U0, f : Nat -> B, n : Nat) : f((n + 0) + 0) = f(n) {
+      calc {
+        f((n + 0) + 0) = f(n + 0) by cong(f, nat_add_zero(n + 0));
+        _ = f(n) by cong(f, nat_add_zero(n));
+      }
+    }`;
+  const result=await program.check(source,"calc_step_links");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  const byOffsets=[...source.matchAll(/\bby\b/g)].map(match=>match.index);
+  const steps=result.links.filter(link=>link.role==="calculation step");
+  assert.deepEqual(steps.map(link=>[link.start,link.end]),byOffsets.map(start=>[start,start+2]));
+  for(const step of steps) {
+    // No other link starts at `by`, so the source view shows this one.
+    assert.equal(result.links.filter(link=>link.start===step.start).length,1);
+    assert.equal(program.inspect(step.binding).type.tag,"Path");
+  }
 });
