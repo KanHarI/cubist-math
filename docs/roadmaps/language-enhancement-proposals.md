@@ -9,6 +9,7 @@ one up means specifying it in the owning roadmap first, with its own review.
 | --- | --- | --- | --- |
 | E1 | Level constraints between universe variables | G0 question Q7 | Kernel G0 |
 | E2 | Generic definitions and builtins at tier 1 | G0 question Q10 | Kernel G0 |
+| E3 | User-declared assumptions | Removal of the `axiom` keyword | Language, with ergonomics milestone 8 |
 
 ## E1. Level constraints
 
@@ -58,3 +59,26 @@ when a library definition must serve both tiers.
 
 **Reference.** [G0 specification](g0-universe-specification.md), section 1.5
 and Q10.
+
+## E3. User-declared assumptions
+
+**Idea.** Let a source file declare a named assumption, such as a
+principle a development wants to assume, with the same guarantees as the
+library assumptions:
+- it becomes a context entry of the kernel's assumption telescope;
+- every result that uses it lists it among its assumptions;
+- `computable` rejects any result that depends on it.
+
+**Why deferred.** The `axiom` keyword was parsed but always rejected, so it
+was removed. A hypothesis can be taken as a parameter, which keeps it
+visible in every result's type. The library's six assumptions cover
+truncation, excluded middle and choice.
+
+**What would justify it.** A development whose hypothesis would otherwise
+be threaded as a parameter through a large number of declarations, where
+listing it as an assumption is clearer.
+
+**Reference.** [Proof ergonomics roadmap](proof-ergonomics-roadmap.md),
+milestone 8, which already lists user assumptions among the non-computing
+dependencies.
+
