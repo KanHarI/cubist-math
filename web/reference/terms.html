@@ -100,13 +100,30 @@ def twice(A : U0, f : A -&gt; A) := fun (x : A) =&gt; f(f(x));</code></pre>
 def successor_function := typed(Nat -&gt; Nat, fun n =&gt; succ(n));</code></pre>
             <pre><code data-check="reject">def no_expected_type := fun x =&gt; x;  // Error: Untyped lambda requires an expected function type.</code></pre>
             <p>All typed binders go in one parenthesized list, separated by commas, as in parameters. An untyped binder stands alone: <code>fun x => fun y => …</code>.</p>
-            <h3 id="application">Application</h3>
-            <p>Application is curried. <code>f(a, b)</code> means <code>f(a)(b)</code>, and <code>f(a)</code> alone is a function waiting for the rest. All arguments are explicit.</p>
-            <pre><code data-check="accept">def apply_twice(A : U0, f : A -&gt; A, a : A) := f(f(a));
+            <h3 id="currying">Currying</h3>
+            <p>A function of several parameters takes them one at a time. Its type is a chain of arrows, <code>A -> B -> C</code>, which reads <code>A -> (B -> C)</code>: given an <code>A</code>, it returns a function that waits for a <code>B</code>. This is called <strong>currying</strong>. So <code>f(a, b)</code> means <code>f(a)(b)</code>, and <code>f(a)</code> alone is a function waiting for the rest. Arguments can be supplied all at once, one at a time, or a few at a time; every argument is explicit.</p>
+            <pre><code data-check="accept">import naturals;
 
+def apply_twice(A : U0, f : A -&gt; A, a : A) := f(f(a));
+
+// All at once, one at a time, or a few at a time.
+def five := apply_twice(Nat, fun (n : Nat) =&gt; succ(n), 3);
+def five_again := apply_twice(Nat)(fun (n : Nat) =&gt; succ(n))(3);
 def add_two := apply_twice(Nat, fun (n : Nat) =&gt; succ(n));
+def twice_on_nat := apply_twice(Nat);
 
-def five := add_two(3);</code></pre>
+evaluate add_two(3) expecting five;
+evaluate twice_on_nat(fun (n : Nat) =&gt; n + n, 3) expecting 12;</code></pre>
+            <p>Each argument turns the function into one that waits for the remaining ones:</p>
+            <pre><code data-check="repl">&gt; typeof apply_twice;
+forall A : U0. (A -&gt; A) -&gt; A -&gt; A
+&gt; typeof apply_twice(Nat);
+(Nat -&gt; Nat) -&gt; Nat -&gt; Nat
+&gt; typeof add_two;
+Nat -&gt; Nat
+&gt; evaluate add_two;
+fun (a : Nat) =&gt; succ(succ(a))</code></pre>
+            <p><code>apply_twice(Nat)</code> is a function of the other two parameters, and <code>add_two</code>, with a function supplied too, waits only for the number. Evaluating it shows the function it is: it applies <code>succ</code> twice.</p>
             <p>Only a function can be applied:</p>
             <pre><code data-check="reject">def not_a_function := 0(1);  // Error: Source application is not a function.</code></pre>
             <h3 id="dependent-functions">Dependent functions</h3>
