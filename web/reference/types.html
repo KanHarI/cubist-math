@@ -45,7 +45,8 @@
           <ul class="sections">
             <li><a href="#values">Every value has a type</a></li>
             <li><a href="#tour-numbers">Natural numbers</a></li>
-            <li><a href="#tour-unit-and-void">Unit and Void</a></li>
+            <li><a href="#tour-unit">Unit</a></li>
+            <li><a href="#tour-void">Void</a></li>
             <li><a href="#tour-pairs">Pairs: <code>and</code></a></li>
             <li><a href="#tour-choices">Choices: <code>or</code></a></li>
             <li><a href="#tour-functions">Functions: <code>-></code></a></li>
@@ -84,15 +85,30 @@ evaluate 2 * 3 expecting 6;</code></pre>
 
 evaluate 2 + 2 expecting 5;  // Error: The term evaluates to 4, not 5.</code></pre>
           </section>
-          <section id="tour-unit-and-void">
-            <h2>Unit and Void</h2>
-            <p><code>Unit</code> is the type with exactly one value, <code>tt</code>. <code>Void</code> is the type with no values at all: no term of type <code>Void</code> can be written. Both matter once types are read as statements: <code>Unit</code> is a statement that is trivially true, and <code>Void</code> is falsehood.</p>
+          <section id="tour-unit">
+            <h2>Unit</h2>
+            <p><code>Unit</code> is the type with exactly one value, <code>tt</code>. A value of <code>Unit</code> carries no information: there is only one thing it could be. Read as a statement, <code>Unit</code> is trivially true.</p>
             <pre><code data-check="accept">def nothing_much : Unit {
   exact tt;
+}
+
+def forget(n : Nat) : Unit {
+  exact tt;
 }</code></pre>
-            <p>A value of the wrong type is rejected:</p>
+            <p>If you know C, its <code>void</code> corresponds to <code>Unit</code>, not to <code>Void</code>: a C function returning <code>void</code> does return, just without information, like a Cubist function returning <code>tt</code>. A value of another type is not a <code>Unit</code>:</p>
             <pre><code data-check="reject">def not_unit : Unit {
   exact 0;  // Error: Type mismatch: found Nat, expected Unit.
+}</code></pre>
+          </section>
+          <section id="tour-void">
+            <h2>Void</h2>
+            <p><code>Void</code> is the empty type. Like the empty set, it has no values, so no closed term of type <code>Void</code> can be written. Read as a statement, <code>Void</code> is falsehood. Since there is nothing to give, every attempt to produce a <code>Void</code> fails:</p>
+            <pre><code data-check="reject">def something : Void {
+  exact tt;  // Error: Type mismatch: found Unit, expected Void.
+}</code></pre>
+            <p>A value of <code>Void</code> can still be <em>assumed</em>, as a parameter. <code>absurd(v)</code> turns such a value into a value of any type: no case can arise, because no <code>v</code> exists. The chapter on terms uses this for <a href="terms.html#unit-and-void">negation</a>, written <code>A -> Void</code>.</p>
+            <pre><code data-check="accept">def from_nothing(v : Void) : Nat {
+  exact absurd(v);
 }</code></pre>
           </section>
           <section id="tour-pairs">
@@ -165,13 +181,13 @@ def nat_is_a_type : U0 {
             <p>A function’s result type can depend on its argument. <code>forall x : A, B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not.</p>
             <pre><code data-check="accept">// `and` binds tighter than `-&gt;`, so `A -&gt; A and A` means `A -&gt; (A and A)`.
 def duplicate : forall A : U0, A -&gt; A and A {
-  exact fun (A : U0) (a : A) =&gt; (a, a);
+  exact fun (A : U0, a : A) =&gt; (a, a);
 }
 
 def one_one = duplicate(Nat, 1);</code></pre>
             <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type the argument chose:</p>
             <pre><code data-check="reject">def duplicate : forall A : U0, A -&gt; A and A {
-  exact fun (A : U0) (a : A) =&gt; (a, 0);  // Error: Type mismatch: found Nat, expected A.
+  exact fun (A : U0, a : A) =&gt; (a, 0);  // Error: Type mismatch: found Nat, expected A.
 }</code></pre>
             <p>A <code>forall</code> type is itself a value, like every type. Compare a function that builds a type with a single type that quantifies over all types:</p>
             <pre><code data-check="accept">def Twice(A : U0) = A and A;

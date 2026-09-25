@@ -162,7 +162,7 @@ def respects(A : U0, C : A -&gt; U0, f : forall a : A, C(a), x y : A, p : x = y)
             <h2>Path induction</h2>
             <p><code>path_induction(A, motive, base, x, y, p)</code> is the eliminator of the identity type. The motive takes <code>a b : A</code> and <code>q : a = b</code> and returns a type. The base case takes <code>a : A</code> and proves <code>motive(a, a, refl(a))</code>. The result proves <code>motive(x, y, p)</code>. Informally: to prove something about every path, it is enough to prove it for reflexivity, provided both endpoints are free to vary. It uses no assumption.</p>
             <pre><code data-check="accept">def symmetric(A : U0, x y : A, p : x = y) : y = x {
-  exact path_induction(A, fun (a b : A) (q : a = b) =&gt; b = a,
+  exact path_induction(A, fun (a b : A, q : a = b) =&gt; b = a,
     fun (a : A) =&gt; refl(a), x, y, p);
 }</code></pre>
             <p><code>based_induction(U, V, A, x, motive, base, y, p)</code> fixes the left endpoint <code>x</code>. The motive takes <code>b : A</code> and <code>q : x = b</code>. The base proves <code>motive(x, refl(x))</code>, and the result proves <code>motive(y, p)</code>. <code>U</code> is the universe of <code>A</code> and <code>V</code> that of the motive, both written as concrete universes.</p>
@@ -172,7 +172,7 @@ def respects(A : U0, C : A -&gt; U0, f : forall a : A, C(a), x y : A, p : x = y)
 }</code></pre>
             <pre><code data-check="reject">def swapped_endpoints(A : U0, x y : A, p : x = y) : x = y {
   // Error: Path induction endpoints/carrier do not match.
-  exact path_induction(A, fun (a b : A) (q : a = b) =&gt; a = b,
+  exact path_induction(A, fun (a b : A, q : a = b) =&gt; a = b,
     fun (a : A) =&gt; refl(a), y, x, p);
 }</code></pre>
             <pre><code data-check="reject">def not_a_universe(A : U0, x y : A, p : x = y,
