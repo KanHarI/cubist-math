@@ -67,7 +67,8 @@
           </section>
           <section id="tour-numbers">
             <h2>Natural numbers</h2>
-            <p><code>Nat</code> is the type of natural numbers <code>0, 1, 2, …</code>. They are built from <code>0</code> and <code>succ</code>, the successor: <code>succ(n)</code> is <code>n + 1</code>. A numeral such as <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>.</p>
+            <p><code>Nat</code> is the type of natural numbers <code>0, 1, 2, …</code>. They are built from <code>0</code> and <code>succ</code>, the successor: <code>succ(n)</code> is <code>n + 1</code>.</p>
+            <p>By default, a numeral is a <code>Nat</code> in this unary form: <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. It is not a machine integer, so a numeral’s size is the size of its term; numerals go up to 256. Binary literals such as <code>0b110</code> belong to a separate type, <code>BinaryNat</code>, described with the <a href="induction.html#w-types">inductive types</a>.</p>
             <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import primes;</code> at its start. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
             <pre><code data-check="accept">import primes;
 
