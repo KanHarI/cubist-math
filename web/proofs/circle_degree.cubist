@@ -14,7 +14,7 @@ def circle_map_from_loop(X : U0, point : X, p : point = point, x : S1) =
   suspension_rec(S0, X, point, point, circle_map_meridians(X, point, p), x);
 
 def circle_map_generator(X : U0, point : X, p : point = point) :
-  ap(U1, S1, X, circle_map_from_loop(X, point, p), base, base, loop) = p {
+  cong(circle_map_from_loop(X, point, p), loop) = p {
   let f = circle_map_from_loop(X, point, p);
   let upperLaw =
     suspension_rec_beta(S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, left(tt)));
@@ -25,16 +25,10 @@ def circle_map_generator(X : U0, point : X, p : point = point) :
   exact trans(
     map_concat(S1, X, f, base, south_pole, base, upper, lower_inverse),
     trans(
-      cong(
-        (
-          fun (q : point = point) => concatenate(
-            U1, X, point, point, point, q, ap(U1, S1, X, f, south_pole, base, lower_inverse)
-          )
-        ), upperLaw
-      ),
+      cong((fun (q : point = point) => trans(q, cong(f, lower_inverse))), upperLaw),
       trans(
         cong(
-          (fun (q : point = point) => concatenate(U1, X, point, point, point, p, q)),
+          (fun (q : point = point) => trans(p, q)),
           trans(
             map_inverse(S1, X, f, base, south_pole, lower),
             cong(inverse(U1, X, point, point), lowerLaw)
@@ -48,11 +42,11 @@ def circle_map_generator(X : U0, point : X, p : point = point) :
 def circle_power_map(n : Nat, x : S1) = circle_map_from_loop(S1, base, positive_loops(n), x);
 
 def circle_map_degree(f : S1 -> S1, anchor : f(base) = base) =
-  winding(rebase_loop(S1, f(base), base, anchor, ap(U1, S1, S1, f, base, base, loop)));
+  winding(rebase_loop(S1, f(base), base, anchor, cong(f, loop)));
 
 def circle_power_degree(n : Nat) :
   circle_map_degree(circle_power_map(n), refl(base)) = nonnegative(n) {
-  let generator = ap(U1, S1, S1, circle_power_map(n), base, base, loop);
+  let generator = cong(circle_power_map(n), loop);
   // Transport along reflexivity has a cubical computation path.
   let unbase = transport_constant(S1, LoopsS1, base, base, refl(base), generator);
   exact trans(
@@ -68,7 +62,7 @@ def null_homotopic_circle_map_degree_zero(
   exact cong(
     winding,
     rebase_null_loop(
-      S1, f(base), base, anchor, ap(U1, S1, S1, f, base, base, loop),
+      S1, f(base), base, anchor, cong(f, loop),
       null_homotopy_kills_loops(S1, S1, f, point, homotopy, base, loop)
     )
   );
@@ -116,7 +110,7 @@ def positive_degree_no_contractible_extension(
   Void {
   exact homotopic_to_positive_power_not_null(
     n, (fun (x : S1) => value(boundary(x))), comparison, value(center),
-    (fun (x : S1) => ap(U1, X, S1, value, boundary(x), center, contraction(boundary(x))))
+    (fun (x : S1) => cong(value, contraction(boundary(x))))
   );
 }
 
@@ -150,10 +144,6 @@ def circle_no_retraction_from_contractible(
   Void {
   exact circle_not_contractible(
     retraction(center),
-    (
-      fun (x : S1) => trans(
-        sym(retracts(x)), ap(U1, X, S1, retraction, boundary(x), center, contraction(boundary(x)))
-      )
-    )
+    (fun (x : S1) => trans(sym(retracts(x)), cong(retraction, contraction(boundary(x)))))
   );
 }

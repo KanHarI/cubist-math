@@ -132,15 +132,10 @@ def curry_linear_iso(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
     forall v : (I and J) -> X,
     (fun (p : I and J) => v(typed(I and J, (fst(I, J, p), snd(I, J, p))))) = v {
     intro v;
-    exact FunExt(
-      U0, I and J, (fun (p : I and J) => X),
-      (fun (p : I and J) => v(typed(I and J, (fst(I, J, p), snd(I, J, p))))), v,
-      (
-        fun (p : I and J) => pair_induction(
-          (fun (q : I and J) => v(typed(I and J, (fst(I, J, q), snd(I, J, q)))) = v(q)),
-          (fun (i : I) (j : J) => refl(v(typed(I and J, (i, j))))), p
-        )
-      )
+    ext p;
+    exact pair_induction(
+      (fun (q : I and J) => v(typed(I and J, (fst(I, J, q), snd(I, J, q)))) = v(q)),
+      (fun (i : I) (j : J) => refl(v(typed(I and J, (i, j))))), p
     );
   }
   exact (

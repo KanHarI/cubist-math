@@ -42,11 +42,11 @@ def code_lower(z : Z) : (along code by lower from z) = z {
   );
 }
 
-def lower_inverse = inverse(U1, S1, base, south_pole, lower);
+def lower_inverse = sym(lower);
 
-def upper_inverse = inverse(U1, S1, base, south_pole, upper);
+def upper_inverse = sym(upper);
 
-def loop_inverse = inverse(U1, S1, base, base, loop);
+def loop_inverse = sym(loop);
 
 def code_lower_inverse(z : Z) : (along code by lower_inverse from z) = z {
   let back = fun (v : Z) => along code by lower_inverse from v;
@@ -84,12 +84,12 @@ def winding_generator : winding(loop) = nonnegative(1) {
 // Turn an integer into a loop by repeating loop, or its inverse.
 def positive_loops(n : Nat) = induction n as k return (base = base) {
     zero => refl(base);
-    succ previous => concatenate(U1, S1, base, base, base, previous, loop);
+    succ previous => trans(previous, loop);
   };
 
 def negative_loops(n : Nat) = induction n as k return (base = base) {
     zero => loop_inverse;
-    succ previous => concatenate(U1, S1, base, base, base, previous, loop_inverse);
+    succ previous => trans(previous, loop_inverse);
   };
 
 def integer_loop(z : Z) = match z return (base = base) {
@@ -120,14 +120,10 @@ def winding_integer_loop(z : Z) = match z as w return (winding(integer_loop(w)) 
   };
 
 def integer_loop_successor(z : Z) =
-  match z as w return (
-    integer_loop(successorZ(w)) = concatenate(U1, S1, base, base, base, integer_loop(w), loop)
-  ) {
+  match z as w return (integer_loop(successorZ(w)) = trans(integer_loop(w), loop)) {
     left n => refl(positive_loops(succ(n)));
     right n => induction n as k return (
-      integer_loop(successorZ(negative(k))) = concatenate(
-        U1, S1, base, base, base, negative_loops(k), loop
-      )
+      integer_loop(successorZ(negative(k))) = trans(negative_loops(k), loop)
     ) {
       zero => sym(inverse_left(S1, base, base, loop));
       succ previous => sym(append_inverse_cancel(S1, base, base, base, negative_loops(k), loop));
@@ -135,36 +131,29 @@ def integer_loop_successor(z : Z) =
   };
 
 def integer_loop_predecessor(z : Z) :
-  integer_loop(predecessorZ(z)) = concatenate(
-    U1, S1, base, base, base, integer_loop(z), loop_inverse
-  ) {
+  integer_loop(predecessorZ(z)) = trans(integer_loop(z), loop_inverse) {
   let previous = integer_loop(predecessorZ(z));
   let step =
     trans(
       sym(integer_loop_successor(predecessorZ(z))), cong(integer_loop, successor_predecessor(z))
     );
-  let append_inverse =
-    fun (p : base = base) => concatenate(U1, S1, base, base, base, p, loop_inverse);
+  let append_inverse = fun (p : base = base) => trans(p, loop_inverse);
   exact trans(
     sym(append_cancel_inverse(S1, base, base, base, previous, loop)), cong(append_inverse, step)
   );
 }
 
-def south_decoder(z : Z) = concatenate(U1, S1, base, base, south_pole, integer_loop(z), lower);
+def south_decoder(z : Z) = trans(integer_loop(z), lower);
 
-def upper_transition(z : Z) :
-  concatenate(U1, S1, base, base, south_pole, integer_loop(predecessorZ(z)), upper) = south_decoder(
-    z
-  ) {
+def upper_transition(z : Z) : trans(integer_loop(predecessorZ(z)), upper) = south_decoder(z) {
   let previous = integer_loop(predecessorZ(z));
-  let append_previous =
-    fun (p : base = south_pole) => concatenate(U1, S1, base, base, south_pole, previous, p);
+  let append_previous = fun (p : base = south_pole) => trans(previous, p);
   let upper_expansion = sym(append_inverse_cancel(S1, base, south_pole, base, upper, lower));
   let step =
     trans(
       sym(integer_loop_successor(predecessorZ(z))), cong(integer_loop, successor_predecessor(z))
     );
-  let append_lower = fun (p : base = base) => concatenate(U1, S1, base, base, south_pole, p, lower);
+  let append_lower = fun (p : base = base) => trans(p, lower);
   exact trans(
     cong(append_previous, upper_expansion),
     trans(
@@ -180,31 +169,21 @@ def decoder_family(x : S1) = code(x) -> (base = x);
 
 def decoder_upper : (along decoder_family by upper from integer_loop) = south_decoder {
   let transported = along decoder_family by upper from integer_loop;
-  let append_upper =
-    fun (z : Z) => concatenate(U1, S1, base, base, south_pole, integer_loop(z), upper);
-  exact FunExt(
-    U0, Z, (fun (z : Z) => base = south_pole), transported, south_decoder,
-    (
-      fun (z : Z) => trans(
-        transport_decoder(S1, base, code, base, south_pole, upper, integer_loop, z),
-        trans(cong(append_upper, code_upper_inverse(z)), upper_transition(z))
-      )
-    )
+  let append_upper = fun (z : Z) => trans(integer_loop(z), upper);
+  ext z;
+  exact trans(
+    transport_decoder(S1, base, code, base, south_pole, upper, integer_loop, z),
+    trans(cong(append_upper, code_upper_inverse(z)), upper_transition(z))
   );
 }
 
 def decoder_lower : (along decoder_family by lower from integer_loop) = south_decoder {
   let transported = along decoder_family by lower from integer_loop;
-  let append_lower =
-    fun (z : Z) => concatenate(U1, S1, base, base, south_pole, integer_loop(z), lower);
-  exact FunExt(
-    U0, Z, (fun (z : Z) => base = south_pole), transported, south_decoder,
-    (
-      fun (z : Z) => trans(
-        transport_decoder(S1, base, code, base, south_pole, lower, integer_loop, z),
-        cong(append_lower, code_lower_inverse(z))
-      )
-    )
+  let append_lower = fun (z : Z) => trans(integer_loop(z), lower);
+  ext z;
+  exact trans(
+    transport_decoder(S1, base, code, base, south_pole, lower, integer_loop, z),
+    cong(append_lower, code_lower_inverse(z))
   );
 }
 
@@ -268,8 +247,7 @@ def action_integer(x y : Z) =
     right n => action_negative(n, x);
   };
 
-def winding_concatenate(p q : base = base) :
-  winding(concatenate(U1, S1, base, base, base, p, q)) = addZ(winding(p), winding(q)) {
+def winding_concatenate(p q : base = base) : winding(trans(p, q)) = addZ(winding(p), winding(q)) {
   let act = fun (r : base = base) => along code by r from winding(p);
   exact trans(
     transport_concat(S1, code, base, base, base, p, q, zeroZ),
@@ -281,7 +259,7 @@ def winding_concatenate(p q : base = base) :
 // its set-truncation is equivalent to it. No higher paths are silently erased.
 def LoopsS1 = base = base;
 
-def loop_multiply(p q : LoopsS1) = concatenate(U1, S1, base, base, base, p, q);
+def loop_multiply(p q : LoopsS1) = trans(p, q);
 
 def loop_equal_decidable(p q : LoopsS1) =
   match integer_equal_decidable(winding(p), winding(q)) return Decidable(p = q) {

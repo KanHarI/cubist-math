@@ -23,7 +23,7 @@ def swap12 =
 def S3PointStabilizer = PointStabilizer(Fin(3), fin_is_set(3), point0);
 
 def swap12_fixes_point0 : subgroup_members(S3, S3PointStabilizer, swap12) {
-  exact refl(point0);
+  rfl;
 }
 
 def conjugate_swap12_moves_point0 :

@@ -124,5 +124,5 @@ def permutation_conjugate_apply(A : U0, setA : IsSet(A), g f : Bijection(A, A), 
   forward(A, A, group_conjugate(PermutationGroup(A, setA), g, f), a) = forward(
     A, A, g, forward(A, A, f, backward(A, A, g, a))
   ) {
-  exact refl(forward(A, A, g, forward(A, A, f, backward(A, A, g, a))));
+  rfl;
 }

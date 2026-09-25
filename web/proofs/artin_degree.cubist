@@ -231,14 +231,10 @@ def subgroup_evaluation_points_independent(
       )
     );
     obtain (baseZeroMap, baseOne, baseNeg, baseAdd, baseMul) = field_embedding_preserves(R, F, i);
-    exact FunExt(
-      U0, Fin(n), (fun (j : Fin(n)) => af_carrier(R)), a, vector_zero(R, CoordinateSpace(R, n)),
-      (
-        fun (j : Fin(n)) => field_embedding_injective(
-          R, F, i, a(j), field_zero(R),
-          trans(cong((fun (v : Fin(n) -> af_carrier(F)) => v(j)), cZero), sym(baseZeroMap))
-        )
-      )
+    ext j;
+    exact field_embedding_injective(
+      R, F, i, a(j), field_zero(R),
+      trans(cong((fun (v : Fin(n) -> af_carrier(F)) => v(j)), cZero), sym(baseZeroMap))
     );
   }
   exact linear_kernel_injective(R, CoordinateSpace(R, n), V, source, kernel);

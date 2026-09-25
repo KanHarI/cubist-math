@@ -42,13 +42,9 @@ def first_puncture_loop = puncture_loop(2, first_puncture);
 
 def second_puncture_loop = puncture_loop(2, second_puncture);
 
-def two_loop_product(p q : BouquetLoops(Fin(2))) =
-  append_path(
-    PunctureGraph(2), bouquet_base(Fin(2)), bouquet_base(Fin(2)), bouquet_base(Fin(2)), p, q
-  );
+def two_loop_product(p q : BouquetLoops(Fin(2))) = trans(p, q);
 
-def two_loop_inverse(p : BouquetLoops(Fin(2))) =
-  inverse(U1, PunctureGraph(2), bouquet_base(Fin(2)), bouquet_base(Fin(2)), p);
+def two_loop_inverse(p : BouquetLoops(Fin(2))) = sym(p);
 
 def puncture_ab = two_loop_product(first_puncture_loop, second_puncture_loop);
 

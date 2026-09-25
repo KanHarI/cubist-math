@@ -10,5 +10,5 @@ def copy(n : Nat) = induction n as k return Nat {
   };
 
 def copy_of_two : copy(2) = 2 {
-  exact refl(2);
+  rfl;
 }

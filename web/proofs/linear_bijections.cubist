@@ -89,10 +89,8 @@ def linear_empty(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, Coordina
 def linear_empty_injective(K : AlgebraicField, V : VectorSpace(K)) :
   LinearInjective(K, CoordinateSpace(K, 0), V, linear_empty(K, V)) {
   intro v w same;
-  exact FunExt(
-    U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)), v, w,
-    (fun (i : Fin(0)) => typed((v(i) = w(i)), absurd(i)))
-  );
+  ext i;
+  exact typed((v(i) = w(i)), absurd(i));
 }
 
 // Add one generator to an already independent coordinate family.

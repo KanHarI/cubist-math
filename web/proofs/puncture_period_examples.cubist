@@ -25,15 +25,10 @@ def puncture_period_reversed_generator(
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
   i : Fin(n)
 ) :
-  period(
-    inverse(U1, PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), puncture_loop(n, i))
-  ) = negG(period(puncture_loop(n, i))) {
+  period(sym(puncture_loop(n, i))) = negG(period(puncture_loop(n, i))) {
   obtain (assoc, comm, unit, inverseLaw) = laws;
   let positive = period(puncture_loop(n, i));
-  let reversed =
-    period(
-      inverse(U1, PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), puncture_loop(n, i))
-    );
+  let reversed = period(sym(puncture_loop(n, i)));
   exact additive_right_cancellation(
     G, zero, addG, negG, laws, reversed, negG(positive), positive,
     trans(

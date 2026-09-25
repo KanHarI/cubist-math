@@ -26,15 +26,12 @@ def choose_path_constant(A : U0, x y : A, decision : Decidable(x = y), p q : x =
 def path_correction(
   A : U0, decide : (forall x : A, forall y : A, Decidable(x = y)), x y : A, p : x = y
 ) :
-  concatenate(
-    U1, A, x, x, y, inverse(U1, A, x, x, choose_path(A, x, x, decide(x, x), refl(x))),
-    choose_path(A, x, y, decide(x, y), p)
-  ) = p {
+  trans(sym(choose_path(A, x, x, decide(x, x), refl(x))), choose_path(A, x, y, decide(x, y), p)) = p {
   exact based_induction(
     U1, U0, A, x,
     (
-      fun (point : A) (path : x = point) => concatenate(
-        U1, A, x, x, point, inverse(U1, A, x, x, choose_path(A, x, x, decide(x, x), refl(x))),
+      fun (point : A) (path : x = point) => trans(
+        sym(choose_path(A, x, x, decide(x, x), refl(x))),
         choose_path(A, x, point, decide(x, point), path)
       ) = path
     ), inverse_left(A, x, x, choose_path(A, x, x, decide(x, x), refl(x))), y, p
@@ -44,8 +41,8 @@ def path_correction(
 // Hedberg's theorem: decidable equality implies that the type is a set.
 def hedberg(A : U0, decide : (forall x : A, forall y : A, Decidable(x = y))) : IsSet(A) {
   intro x y p q;
-  let first = inverse(U1, A, x, x, choose_path(A, x, x, decide(x, x), refl(x)));
-  let prepend = fun (r : x = y) => concatenate(U1, A, x, x, y, first, r);
+  let first = sym(choose_path(A, x, x, decide(x, x), refl(x)));
+  let prepend = fun (r : x = y) => trans(first, r);
   exact trans(
     sym(path_correction(A, decide, x, y, p)),
     trans(

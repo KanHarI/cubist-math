@@ -14,8 +14,7 @@ def upper = meridian(S0, typed(S0, left(tt)));
 
 def lower = meridian(S0, typed(S0, right(tt)));
 
-def loop =
-  concatenate(U1, S1, base, south_pole, base, upper, inverse(U1, S1, base, south_pole, lower));
+def loop = trans(upper, sym(lower));
 
 // Check dependent elimination and both kinds of computation.
 def unit_unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
@@ -27,11 +26,11 @@ def constant_meridians(a : S0) = unit_unique(along constant_family by meridian(S
 def collapse(x : S1) = suspension_induction(S0, constant_family, tt, tt, constant_meridians, x);
 
 def collapse_north : collapse(base) = tt {
-  exact refl(tt);
+  rfl;
 }
 
 def collapse_south : collapse(south_pole) = tt {
-  exact refl(tt);
+  rfl;
 }
 
 def collapse_meridian(a : S0) =
@@ -39,10 +38,7 @@ def collapse_meridian(a : S0) =
 
 // Ordinary recursion and its path-computation theorem are derived in source.
 def lift_meridian(A : U0, B : U1, n s : B, h : A -> (n = s), a : A) =
-  concatenate(
-    U1, B, along((fun (point : Suspension(A)) => B)) by meridian(A, a) from n, n, s,
-    transport_constant(Suspension(A), B, north(A), south(A), meridian(A, a), n), h(a)
-  );
+  trans(transport_constant(Suspension(A), B, north(A), south(A), meridian(A, a), n), h(a));
 
 def suspension_rec(A : U0, B : U1, n s : B, h : A -> (n = s), x : Suspension(A)) =
   suspension_induction(
@@ -50,27 +46,18 @@ def suspension_rec(A : U0, B : U1, n s : B, h : A -> (n = s), x : Suspension(A))
   );
 
 def suspension_rec_beta(A : U0, B : U1, n s : B, h : A -> (n = s), a : A) :
-  ap(
-    U1, Suspension(A), B, (fun (point : Suspension(A)) => suspension_rec(A, B, n, s, h, point)),
-    north(A), south(A), meridian(A, a)
-  ) = h(a) {
+  cong((fun (point : Suspension(A)) => suspension_rec(A, B, n, s, h, point)), meridian(A, a)) = h(a) {
   let f = fun (point : Suspension(A)) => suspension_rec(A, B, n, s, h, point);
   let p = meridian(A, a);
   let C = fun (point : Suspension(A)) => B;
   let moved = along C by p from n;
   let t = transport_constant(Suspension(A), B, north(A), south(A), p, n);
-  let action = ap(U1, Suspension(A), B, f, north(A), south(A), p);
+  let action = cong(f, p);
   let lifted = fun (label : A) => lift_meridian(A, B, n, s, h, label);
   let beta = suspension_meridian_beta(A, C, n, s, lifted, a);
   let natural = apd_constant(Suspension(A), B, f, north(A), south(A), p);
-  let left_path = concatenate(U1, B, moved, n, s, t, action);
+  let left_path = trans(t, action);
   let middle_path = apd(f, north(A), south(A), p);
-  let right_path = concatenate(U1, B, moved, n, s, t, h(a));
-  exact cancel_left(B, moved, n, t)(
-    s, action, h(a),
-    concatenate(
-      U1, (moved = s), left_path, middle_path, right_path,
-      inverse(U1, (moved = s), middle_path, left_path, natural), beta
-    )
-  );
+  let right_path = trans(t, h(a));
+  exact cancel_left(B, moved, n, t)(s, action, h(a), trans(sym(natural), beta));
 }

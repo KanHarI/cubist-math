@@ -58,9 +58,8 @@ def series_cons_decompose(K : AlgebraicField, f : FormalSeries(K)) :
       succ ignored => refl(f(succ(k)));
     };
   }
-  exact FunExt(
-    U0, Nat, (fun (n : Nat) => af_carrier(K)), series_cons(K, f(0), series_tail(K, f)), f, pointwise
-  );
+  ext x;
+  exact pointwise(x);
 }
 
 def series_from_coordinates_roundtrip(K : AlgebraicField, n : Nat) =

@@ -5,12 +5,12 @@ import paths;
 // the rest are consequences of path induction.
 // Holds by conversion: a constant function maps every path to a constant line.
 def path_map_constant(A B : U1, point : B, x y : A, p : x = y) :
-  ap(U1, A, B, (fun (v : A) => point), x, y, p) = refl(point) {
+  cong((fun (v : A) => point), p) = refl(point) {
   rfl;
 }
 
 // Holds by conversion: the identity function maps a path to itself.
-def path_map_identity(A : U1, x y : A, p : x = y) : ap(U1, A, A, (fun (v : A) => v), x, y, p) = p {
+def path_map_identity(A : U1, x y : A, p : x = y) : cong((fun (v : A) => v), p) = p {
   rfl;
 }
 
@@ -19,11 +19,7 @@ def homotopy_naturality(
 ) =
   path_induction(
     A,
-    (
-      fun (a b : A) (r : a = b) => concatenate(
-        U1, B, f(a), f(b), g(b), ap(U1, A, B, f, a, b, r), homotopy(b)
-      ) = concatenate(U1, B, f(a), g(a), g(b), homotopy(a), ap(U1, A, B, g, a, b, r))
-    ),
+    (fun (a b : A) (r : a = b) => trans(cong(f, r), homotopy(b)) = trans(homotopy(a), cong(g, r))),
     (
       fun (a : A) => trans(
         left_unit(B, f(a), g(a), homotopy(a)), sym(right_unit(B, f(a), g(a), homotopy(a)))
@@ -36,26 +32,25 @@ def cancel_right_path(A : U1, y z : A, r : y = z) =
     A,
     (
       fun (a b : A) (s : a = b) => forall x : A, forall p : x = a, forall q : x = a,
-      (concatenate(U1, A, x, a, b, p, s) = concatenate(U1, A, x, a, b, q, s)) -> (p = q)
+      (trans(p, s) = trans(q, s)) -> (p = q)
     ),
     (
-      fun (a x : A) (p q : x = a) (
-        same : concatenate(U1, A, x, a, a, p, refl(a)) = concatenate(U1, A, x, a, a, q, refl(a))
-      ) => trans(sym(right_unit(A, x, a, p)), trans(same, right_unit(A, x, a, q)))
+      fun (a x : A) (p q : x = a) (same : trans(p, refl(a)) = trans(q, refl(a))) => trans(
+        sym(right_unit(A, x, a, p)), trans(same, right_unit(A, x, a, q))
+      )
     ), y, z, r
   );
 
 def null_homotopy_kills_loops(
   A B : U1, f : A -> B, point : B, homotopy : (forall a : A, f(a) = point), x : A, p : x = x
 ) :
-  ap(U1, A, B, f, x, x, p) = refl(f(x)) {
-  let image = ap(U1, A, B, f, x, x, p);
-  have natural : concatenate(U1, B, f(x), f(x), point, image, homotopy(x)) = homotopy(x) := trans(
+  cong(f, p) = refl(f(x)) {
+  let image = cong(f, p);
+  have natural : trans(image, homotopy(x)) = homotopy(x) := trans(
     homotopy_naturality(A, B, f, (fun (a : A) => point), homotopy, x, x, p),
     trans(
       cong(
-        (fun (q : point = point) => concatenate(U1, B, f(x), point, point, homotopy(x), q)),
-        path_map_constant(A, B, point, x, x, p)
+        (fun (q : point = point) => trans(homotopy(x), q)), path_map_constant(A, B, point, x, x, p)
       ), right_unit(B, f(x), point, homotopy(x))
     )
   );

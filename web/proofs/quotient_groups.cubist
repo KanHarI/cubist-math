@@ -252,5 +252,5 @@ def group_lift(G : Group) : GroupAt(U1) {
 }
 
 def small_group_iso_specialization(G H : Group) : GroupIsoAt(U0, G, H) =[U0] GroupIso(G, H) {
-  exact refl(GroupIso(G, H));
+  rfl;
 }

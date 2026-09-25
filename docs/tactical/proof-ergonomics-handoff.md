@@ -464,3 +464,20 @@ modules identical, with no failures; an independent structural comparison of
 12 randomly chosen declarations agreed. The full JS suite passed 363 tests,
 including the canonical corpus with 3,761 checked declarations, 43 templates,
 and no failed or blocked declarations. Every source is formatter-stable.
+
+### Tier 2: builtin paths, `rfl`, `path i =>` and `ext`
+
+The four type-preserving rewrites changed 61 modules: 205 library wrapper
+calls became `trans`, `sym` or `cong`, 28 `exact refl(x)` statements became
+`rfl`, 7 two-lambda `path` applications became `path i =>`, and 24
+`exact FunExt(...)` statements became `ext`. This settles the migration
+alternative of HoTT A1c: the library no longer applies `concatenate`,
+`append_path`, `inverse` or `ap` fully. Two partial applications remain, and
+the wrappers stay for user code. Nested `FunExt` terms (84) are left for
+curated edits. Source size fell from 650,845 to 646,296 tokens and from 63,262
+to 62,826 lines. `node tools/verify-proof-migration.mjs --base migration-tier1
+--level types` reports all 61 modules with kernel-convertible public types and
+unchanged assumptions. The full JS suite passed, and the canonical corpus
+still checks 3,761 declarations and 43 templates. The Glue transfer test now
+expects `Coherence` and `HalfAdjointLaws` to translate: without `ap` they no
+longer depend on the path library that the test does not import.

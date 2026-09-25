@@ -32,7 +32,7 @@ def embedding_evaluation_dot_is_relation(
   embedding_evaluation_dot(K, L, n, maps, coefficients, x) = hom_family_sum(
     K, L, n, maps, coefficients, x
   ) {
-  exact refl(hom_family_sum(K, L, n, maps, coefficients, x));
+  rfl;
 }
 
 // The annihilator of all evaluation vectors is zero. This is the precise

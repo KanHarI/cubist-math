@@ -186,10 +186,12 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     `opaque def` cannot be an alias. `opaque def` currently behaves exactly as
     `def` ([language reference](../../web/language.html)); invariant 6 gives it
     a matcher-only meaning, which the reference must then document.
-    Alternative: migrate the library's 202 calls of `concatenate`, `inverse`,
-    `append_path` and `ap` to the builtin spellings. They are definitionally
-    equal, so the migration is mechanical, and aliases then serve only user
-    wrappers.
+    The library side is done: the tier 2 migration (2026-09-25,
+    [handoff](../tactical/proof-ergonomics-handoff.md)) replaced all 205 full
+    applications of `concatenate`, `append_path`, `inverse` and `ap` with
+    `trans`, `sym` and `cong`, keeping public types convertible. Two partial
+    applications remain. Aliases now serve only user wrappers and those
+    partial applications.
   - During matching only, recognize a constant line as `refl` and
     `path i => p @ i` as `p`. Recognition proposes a candidate; the
     instantiated rule is still checked.

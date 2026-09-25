@@ -31,7 +31,7 @@ def galois_fixing_prop(
 def galois_fixing_identity(K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0) :
   GaloisFixing(K, E, P, extension_identity_iso(K, E)) {
   intro x member;
-  exact refl(x);
+  rfl;
 }
 
 def galois_fixing_compose(

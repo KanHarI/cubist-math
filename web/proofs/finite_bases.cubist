@@ -61,10 +61,8 @@ def PointwiseGroup(I : U0, G : Group) =
 
 def pointwise_abelian(I : U0, G : Group, comm : IsAbelian(G)) : IsAbelian(PointwiseGroup(I, G)) {
   intro f g;
-  exact FunExt(
-    U0, I, (fun (i : I) => group_carrier(G)), pointwise_add(I, G, f, g), pointwise_add(I, G, g, f),
-    (fun (i : I) => comm(f(i), g(i)))
-  );
+  ext i;
+  exact comm(f(i), g(i));
 }
 
 def pointwise_scale(
@@ -220,10 +218,8 @@ def one_coordinate_roundtrip(
   K : AlgebraicField, V : VectorSpace(K), f : Fin(1) -> vector_carrier(K, V)
 ) :
   (fun (i : Fin(1)) => f(fin_one_center)) = f {
-  exact FunExt(
-    U0, Fin(1), (fun (i : Fin(1)) => vector_carrier(K, V)), (fun (i : Fin(1)) => f(fin_one_center)),
-    f, (fun (i : Fin(1)) => cong(f, fin_one_unique(i)))
-  );
+  ext i;
+  exact cong(f, fin_one_unique(i));
 }
 
 def one_coordinate_iso(K : AlgebraicField, V : VectorSpace(K)) :

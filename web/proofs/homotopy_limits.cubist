@@ -59,10 +59,7 @@ def homotopy_limit_period(
   constantError : FieldAsymptotic(
     F, zero, addF, lt, approximations(constant), (fun (n : Nat) => zero)
   ), join : C -> C -> C,
-  joinPath : (
-    forall c : C, forall d : C,
-    present(join(c, d)) = append_path(X, point, point, point, present(c), present(d))
-  ),
+  joinPath : (forall c : C, forall d : C, present(join(c, d)) = trans(present(c), present(d))),
   joinError : (
     forall c : C, forall d : C,
     FieldAsymptotic(

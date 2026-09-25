@@ -71,7 +71,7 @@ def dyadic_piece_zero(
   dyadic_piece(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, 0, a, b, ordered
   ) = single_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, b) {
-  exact refl(single_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, b));
+  rfl;
 }
 
 def dyadic_piece_succ(
@@ -91,12 +91,7 @@ def dyadic_piece_succ(
   ) = dyadic_children_join(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered
   ) {
-  exact refl(
-    dyadic_children_join(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
-      ordered
-    )
-  );
+  rfl;
 }
 
 def dyadic_piece_count(
