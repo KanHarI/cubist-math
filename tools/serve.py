@@ -10,8 +10,9 @@ from pathlib import Path
 
 REPOSITORY = Path(__file__).resolve().parent.parent
 ROOT = REPOSITORY / "web"
-# Archived libraries live outside web/; the site serves them under /archive/.
+# Libraries live outside web/; the site serves them under /archive/ and /library/.
 ARCHIVE = REPOSITORY / "archive"
+LIBRARY = REPOSITORY / "library"
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -20,11 +21,12 @@ class Handler(SimpleHTTPRequestHandler):
 
     def translate_path(self, path):
         request = urlsplit(path).path
-        if request == "/archive" or request.startswith("/archive/"):
-            candidate = (ARCHIVE / request[len("/archive"):].lstrip("/")).resolve()
-            if candidate == ARCHIVE or ARCHIVE in candidate.parents:
-                return str(candidate)
-            return str(ARCHIVE / "__outside__")
+        for prefix, root in (("/archive", ARCHIVE), ("/library", LIBRARY)):
+            if request == prefix or request.startswith(prefix + "/"):
+                candidate = (root / request[len(prefix):].lstrip("/")).resolve()
+                if candidate == root or root in candidate.parents:
+                    return str(candidate)
+                return str(root / "__outside__")
         return super().translate_path(path)
 
     def end_headers(self):
@@ -34,7 +36,7 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.split("?")[0] == "/mathscript-version":
             paths = sorted((ROOT / "mathscript").glob("*.mjs"))
-            paths += sorted(ARCHIVE.rglob("*.cubist"))
+            paths += sorted(ARCHIVE.rglob("*.cubist")) + sorted(LIBRARY.rglob("*.cubist"))
             paths += [Path(__file__)]
             paths += sorted(ROOT.glob("cubical-*.mjs"))
             paths += sorted((ROOT / "dist/cubical-runtime").glob("*.mjs"))

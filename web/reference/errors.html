@@ -93,7 +93,7 @@
             <div class="table-scroll"><table>
               <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import primes;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type or a <code>_</code> hole outside <code>calc</code>.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
+                <tr><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import naturals;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type or a <code>_</code> hole outside <code>calc</code>.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
                 <tr><td data-message="Untranslated dependency:">“Untranslated dependency: <var>name</var>”</td><td>The named declaration failed, so its users are blocked. Fix the named declaration.</td><td><a href="first-proof.html#checking">checking</a></td></tr>
                 <tr><td data-message="Definition symbol is already registered.">“Definition symbol is already registered.”</td><td>A name is declared twice in one module. Rename one.</td><td><a href="first-proof.html#order">order</a></td></tr>
                 <tr><td data-message="is already registered in this module.">“Simplification rule <var>name</var> is already registered in this module.”</td><td>Register each rule once per module.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
@@ -209,7 +209,7 @@
             <pre><code data-check="reject">def hole : Nat {
   exact _;  // Error: Untranslated name: _
 }</code></pre>
-            <pre><code data-check="reject">import primes;
+            <pre><code data-check="reject">import naturals;
 
 def mixed(a b : Nat, h : a = b) : a &lt;= b {
   calc {

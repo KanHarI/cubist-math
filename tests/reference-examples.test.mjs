@@ -26,7 +26,9 @@ const pages = [
   // Only the quick reference panel of the proof workspace holds examples.
   { file: "proof.html", scope: source => source.slice(source.indexOf('id="language-guide"'), source.indexOf("</details>", source.indexOf('id="language-guide"'))) },
 ];
-const readLibrary = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+// Modules resolve as in the CLI: the rebuilt library first, then the archive.
+const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8")
+  .catch(error => { if (error.code !== "ENOENT") throw error; return readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8"); });
 const squash = text => text.replace(/\s+/g, " ").trim();
 
 async function check(text, name) {

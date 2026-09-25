@@ -235,8 +235,8 @@ def three_is_three : three = 3 {
   exact refl(3);
 }</code></pre>
             <pre><code data-check="reject">def too_big = 257;  // Error: Numerals are limited to 256 in this version.</code></pre>
-            <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines. Import it with <code>import primes;</code>. The operators are not overloaded: they apply to <code>Nat</code> only.</p>
-            <pre><code data-check="accept">import primes;
+            <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines. Import it with <code>import naturals;</code>. The operators are not overloaded: they apply to <code>Nat</code> only.</p>
+            <pre><code data-check="accept">import naturals;
 
 def two_times_three : 2 * 3 = 6 {
   exact refl(6);
@@ -248,7 +248,7 @@ def two_below_three : 2 &lt; 3 {
             <p>Closed arithmetic computes, so <code>refl(6)</code> proves <code>2 * 3 = 6</code>. The order is defined by computation too: <code>2 &lt; 3</code> computes to <code>Unit</code>, proved by <code>tt</code>, and <code>3 &lt; 2</code> computes to <code>Void</code>. Without the import, the notation has no definition:</p>
             <pre><code data-check="reject">def four = 2 + 2;  // Error: Untranslated name: add</code></pre>
             <p>Addition recurses on its first argument. <code>0 + n</code> computes to <code>n</code>, but <code>n + 0</code> is stuck on the variable <code>n</code>, so it needs a proof by induction. The library proves it as <code>nat_add_zero(n)</code>.</p>
-            <pre><code data-check="accept">import primes;
+            <pre><code data-check="accept">import naturals;
 
 def zero_plus(n : Nat) : 0 + n = n {
   exact refl(n);
@@ -257,7 +257,7 @@ def zero_plus(n : Nat) : 0 + n = n {
 def plus_zero(n : Nat) : n + 0 = n {
   exact nat_add_zero(n);
 }</code></pre>
-            <pre><code data-check="reject">import primes;
+            <pre><code data-check="reject">import naturals;
 
 def plus_zero_by_computation(n : Nat) : n + 0 = n {
   exact refl(n);  // Error: Type mismatch: found (n =[Nat] n), expected (add(n, 0) =[Nat] n).
@@ -303,7 +303,7 @@ def and_before_or(A B C : U0, x : A and B or C) : (A and B) or C {
   exact x;
 }</code></pre>
             <p>Comparisons do not chain. <code>1 &lt; 2 &lt; 3</code> means <code>(1 &lt; 2) &lt; 3</code>, which compares a type with a number. Write <code>(1 &lt; 2) and (2 &lt; 3)</code>.</p>
-            <pre><code data-check="reject">import primes;
+            <pre><code data-check="reject">import naturals;
 
 def chained : 1 &lt; 2 &lt; 3 {
   exact tt;  // Error: Type mismatch: found U0, expected Nat.

@@ -40,7 +40,7 @@ Universe templates are checked through their concrete instantiations.
 
 To import another custom source, put `helpers.cubist` beside `example.cubist`
 and write `import helpers;`. Imports resolve beside the root file first, then
-in the bundled `archive/first-library/` library. This same root directory is used for
+in the rebuilt `library/`, then in the archived `archive/first-library/`. This same root directory is used for
 transitive imports; nested module directories are not supported. No extension
 appears in an import statement. A local module can intentionally shadow a
 bundled module of the same name.
