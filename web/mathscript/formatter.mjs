@@ -108,6 +108,8 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
     let previous = null;
     let assignment = -1;
     let annotation = -1, proofBody = -1;
+    // Between fun and its =>, parenthesized binder groups are separated by a space.
+    let funBinders = false;
     function flush() {
       if (statement.length) {
         const parts = statement.splice(0);
@@ -152,8 +154,11 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
       if (!close && ["def", "axiom", "opaque", "construction", "simp_rule", "simp_set"].includes(text) && previous && previous.text !== "opaque") {
         flush(); docs.push(hard, hard); previous = null;
       }
+      const binderGroup = funBinders && text === "(" && previous?.text === ")";
+      if (text === "fun") funBinders = true;
+      else if (text === "=>") funBinders = false;
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
-        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && expressionBlockEnds.has(previous.end)))
+        && (binderGroup || !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && expressionBlockEnds.has(previous.end))))
         && !(text === "[" && previous.text === "=" && !setAssignments.has(previous.start));
       if (space && previous.text !== ",") {
         if (annotationStarts.has(token.start)) annotation = statement.length;
