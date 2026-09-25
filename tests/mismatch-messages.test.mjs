@@ -4,7 +4,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { displayTerm } from "../web/cubical-elaborator.mjs";
 
-test("a type mismatch names the type found and the type expected, in source names", async t => {
+test("a type mismatch names the type found and the type expected, in source syntax", async t => {
   const program = new CubicalProgram(await createCubical(), async () => "", { collectReferences: false });
   t.after(() => program.dispose());
   const result = await program.check(`def Shape(value : Unit or Unit) := match value as z return U0 {
@@ -28,7 +28,7 @@ def refined(value : Unit or Unit) : Shape(value) {
   assert.equal(reason("wrong_index"), "Type mismatch: found P(0), expected P(1).");
   assert.equal(reason("not_unit"), "Type mismatch: found Nat, expected Unit.");
   // Module prefixes, generated suffixes and beta-redexes do not reach the message.
-  assert.equal(reason("refined"), "Type mismatch: found (Unit → Nat), expected (Unit → Shape(value)).");
+  assert.equal(reason("refined"), "Type mismatch: found Unit -> Nat, expected Unit -> Shape(value).");
 });
 
 test("the kernel reports the mismatched handles, and speculative checks stay undescribed", async t => {

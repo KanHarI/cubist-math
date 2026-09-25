@@ -79,7 +79,7 @@ def to_start(A : U0, x y : A, p : x = y) :
 }</code></pre>
             <p><code>value_at_zero</code> holds by computation. In <code>to_start</code>, the square <code>p @ meet(i, j)</code> is <code>refl(x)</code> at <code>j = 0</code> and <code>p</code> at <code>j = 1</code>. The kernel checks every endpoint:</p>
             <pre><code data-check="reject">def wrong_direction(A : U0, x y : A, p : x = y) : x = y {
-  // Error: Type mismatch: found (at(p, 1) =[A] at(p, 0)), expected (x =[A] y).
+  // Error: Type mismatch: found p @ 1 = p @ 0, expected x = y.
   exact path i =&gt; p @ flip(i);
 }</code></pre>
             <p>A coordinate is not a term, and <code>Interval</code> is not a type:</p>

@@ -73,7 +73,7 @@ def path_between_paths(A : U0, x : A) : refl(x) = refl(x) {
   exact refl(refl(x));
 }</code></pre>
             <pre><code data-check="reject">def zero_is_one : 0 = 1 {
-  exact refl(0);  // Error: Type mismatch: found (0 =[Nat] 0), expected (0 =[Nat] 1).
+  exact refl(0);  // Error: Type mismatch: found 0 = 0, expected 0 = 1.
 }</code></pre>
           </section>
           <section id="carriers">
