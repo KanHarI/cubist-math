@@ -7,12 +7,12 @@ existing lemma:
 
 | Declarations | Roadmap item |
 | --- | --- |
-| `bridge_rec`, `bridge_ind` and their `_beta` laws | B0: suspension eliminators with PathP bridges compute on meridians |
-| `bridge_code`, `bridge_code_meridian`, `bridge_code_upper`, `bridge_code_lower` | B0: the circle's cover through the bridge recursion |
+| `bridge_rec`, `bridge_ind` and their `_beta` laws | B0 (superseded by H1, whose generated eliminators behave this way): suspension eliminators with PathP bridges compute on meridians |
+| `bridge_code`, `bridge_code_meridian`, `bridge_code_upper`, `bridge_code_lower` | B0 (superseded by H1): the circle's cover through the bridge recursion |
 | `cong_constant_line`, `cong_identity_line`, `cong_compose_line`, `cong_refl_line`, `cong_sym_line`, `sym_sym_line` | C1 conversion entries |
 | `transport_path_right`, `transport_arrow` | C1 entries moved from the C2 transport rules |
 | `happly_funext`, `sigma_projection_eta`, `naturality_square` | A7's conversion fixture; E2 starts from the naturality square |
-| `closed_constant_transport` | Constant transport computes on closed values (G4) |
+| `closed_constant_transport` | Constant transport computes on closed values (G4, now for all declared data types) |
 | `PropLevel`, `prop_level_zero`, `prop_level_one` | D0a: numeric h-levels agree with `IsProp` and `IsSet` |
 | `reverse_dependent_path`, `dependent_congruence` | E0: dependent path operations |
 

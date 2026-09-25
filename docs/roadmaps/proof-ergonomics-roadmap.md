@@ -12,12 +12,30 @@ name-capture bug; see the [implementation checkpoint](../tactical/proof-ergonomi
 The remaining dependent, cubical, induction and shared elaboration work moved
 to the [HoTT and cubical automation roadmap](hott-automation-roadmap.md), and
 kernel-facing interval work to the [kernel roadmap](cubical-kernel-roadmap.md).
-Each open item below names its new owner. This roadmap keeps general argument
-inference with `apply` and `refine` (milestone 5) and structure and notation
-features (milestone 6); both build on the HoTT roadmap's goal layer (A5).
+Each open item below names its new owner. This roadmap keeps:
+- general argument inference with `apply` and `refine` (milestone 5);
+- theories, structures and notation (milestone 6);
+- inductive declarations and pattern matching (milestone 7);
+- computability as a checked property (milestone 8).
+
+Milestones 5–7 build on the HoTT roadmap's goal layer (A5).
 This document covers language tooling and does not resume any mathematical
 roadmap. Examples below not yet covered by the checked sample files remain
 proposals.
+
+**Restructured later on 2026-09-25.**
+- The first library was migrated to the new syntax: tiers 1–2, merged in PRs
+  #2–#4. It is now to be archived and rebuilt; its results are recorded in
+  [library-results.md](../library-results.md).
+- This roadmap adopted milestones 6–8:
+  - 6: theories, which replace the planned records, notation and sections;
+  - 7: inductive declarations and pattern matching;
+  - 8: computability as a checked property.
+- Milestones 6 and 7 follow the [language feature
+  proposal](inductive-language-features.md). They depend on the kernel's G0
+  and item H ([kernel roadmap](cubical-kernel-roadmap.md),
+  [design](higher-inductive-types-design.md)).
+- The [work plan](work-plan.md) sequences all roadmaps.
 
 Continue with the [PR-sized implementation plan](proof-ergonomics-implementation-plan.md)
 and its [checked and exploratory sample files](../examples/proof-ergonomics/README.md).
@@ -45,7 +63,8 @@ tuple patterns; and equality operations including `refl`, `sym`, `trans`,
 The [language reference](../../web/language.html) is the current syntax authority.
 There is bounded equality-premise simplification, but no general proposition
 premise solver, `apply`, or general implicit argument
-syntax. Universe parameters are explicitly specialized by the elaborator.
+syntax. Universe parameters are explicitly specialized by the elaborator until
+the kernel's G0 makes universe-generic definitions checked kernel terms.
 
 The checker already computes and unfolds definitions on demand.
 `unfold(term)` explicitly normalizes a term and its type;
@@ -98,6 +117,17 @@ type from `G` to `G'` needs a checked reconstruction `G' -> G`; an actual path
 of types can supply that map through transport. A goal stack records those
 reconstructions, local contexts, source locations, and any unresolved subgoals.
 No declaration may escape with unresolved metavariables or subgoals.
+
+Pattern matching (milestone 7) keeps the same boundary. Structural recursion
+and coverage are checked by the untrusted elaborator, which compiles `match` to
+applications of kernel-generated eliminators. The kernel never trusts a
+termination or coverage checker; a non-structural call is rejected before
+checking. Computability is expressible and preserved (milestone 8):
+
+- no convenience adds a non-computing dependency;
+- automatic clauses use proved h-level evidence;
+- `opaque` and unfolding hints never hide computational content from
+  evaluation.
 
 Keep automatic computation demand-driven. Preserve named references and shared
 subterms; do not fully unfold the library to discover matches. Specify which
@@ -187,11 +217,15 @@ relevant source or imported rule changes.
 
 ## Milestones
 
-Milestones 0–3 form the delivered first release. Milestone 4, and the
-induction and extensionality items of 5 and 6, moved to the HoTT roadmap. The
-remaining items of milestone 5 build on its goal layer (A5). Those of 6 follow
-its projections and structure descriptions (A8, F1) and evidence from real
-proof migrations. A box marked moved names the item's new owner.
+Milestones 0–3 form the delivered first release. Milestone 4 and the
+extensionality items moved to the HoTT roadmap. The remaining items build on
+the HoTT roadmap's goal layer (A5):
+- milestone 5's inference is needed before indexed families;
+- milestone 6's theories use A8's projections and F1's structure identity;
+- milestone 7 follows kernel stages H1–H3;
+- milestone 8 can start at once.
+
+A box marked moved names the item's new owner.
 
 ### 0. Establish examples and remove straightforward repetition
 
@@ -376,43 +410,142 @@ Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
 - [ ] Add named arguments and `_` holes for values determined by a known
   function type, supplied arguments, or the expected result type. Implement
   scoped metavariables, occurs checks, and unresolved-hole diagnostics.
-  Builds on the HoTT roadmap's goal layer (A5).
-- [ ] Add opt-in implicit binders and infer universe specializations where
-  constraints determine them. Retain explicit specialization and a way to
-  supply every implicit argument. Reject ambiguous inference and universe
-  lowering; do not silently change existing explicit signatures. The least
-  universe for an omitted template argument moved to HoTT A9; implicit binders
-  stay here.
+  Builds on the HoTT roadmap's goal layer (A5). Needed by kernel H2: indexed
+  families are impractical without implicit indices, as in
+  `cons(x, k + n, append(A, k, n, rest, ys))`.
+- [ ] Add opt-in implicit binders, and infer level arguments where
+  constraints determine them. After G0, universes are level expressions, and
+  this item absorbs HoTT A9. Retain a way to supply every implicit argument
+  explicitly. Reject ambiguous inference and universe lowering.
 - [ ] Add `apply theorem;` and `refine term;` with visible subgoals and explicit
   witness obligations. Reuse the goal machinery (HoTT A5) rather than inventing
   assumed inhabitants for missing arguments.
-- [ ] Moved to HoTT B1, B2 and B5: add induction and case blocks whose motives
-  come from the goal when uniquely recoverable; retain explicit motives and
-  generalization controls for dependent arguments. `constructor`/witness
-  conveniences stay here, as ordinary pair or sum construction respecting
-  truncation elimination restrictions.
+- [ ] Goal-derived induction is milestone 7's `match`; `Path` induction
+  remains HoTT B1. `constructor`/witness conveniences stay here, as ordinary
+  pair or sum construction respecting truncation elimination restrictions.
 
 Completion: representative algebra proofs omit repeated carrier and endpoint
 arguments; inspectors reveal inferred arguments; ambiguity has a local remedy;
 CLI and browser agree; every goal and metavariable is solved before acceptance.
 
-### 6. Structures, notation, and targeted automation
+### 6. Theories, structures and notation
 
-Prioritize these suggestions using the baseline and migration results:
+Structures are theories used for their models
+([proposal §1](inductive-language-features.md#1-theories-one-declaration-for-structures-initial-models-and-universal-properties)).
+Models, homomorphisms, identity, notation and sections need no kernel change.
+Initial and free models need milestone 7 and kernel H.
 
-| Feature | Repetition removed | Design constraint |
-| --- | --- | --- |
-| Named record fields and record literals | Repeated nested projections and positional tuples for fields, groups, and maps | Elaborate to the existing dependent pair representation; honor field dependencies and retain expanded views. Follows HoTT A8 projections and F1 structure descriptions. |
-| Scoped notation for a chosen structure | Repeated `field_add(K, ...)`-style calls | Make the structure explicit in scope and inspectable; preserve current natural-number operators. |
-| Sections with shared parameters | Repeating carriers, structure data, and assumptions on each local lemma | Generalize declarations deterministically, including dependencies appearing in types; expose resulting signatures. |
-| `ext` with selected lemmas | Repeated function/structure equality boilerplate | Moved to HoTT B3 and D2. |
-| Expected-type completion and lemma suggestions | Repeated manual searches and parameter assembly | Suggestions insert checkable source and show the resulting obligations. |
-| Algebraic normalization | Long polynomial or commutative algebra calculations | Separate from generic `simp`; produce checked certificates for a specified algebraic structure. |
+- [ ] `theory` declarations: sorts with h-levels, operations with notation,
+  laws, and `extends`. They generate:
+  - `T.Model` as a Σ record with named fields and eta;
+  - `T.Hom`;
+  - `T.Iso`;
+  - `T.equality : (M = N) ≃ T.Iso(M, N)`, generated through HoTT F1's
+    structure identity machinery;
+  - `T.Displayed`.
+
+  Projections use HoTT A8's syntax.
+- [ ] Scoped notation declared by a theory and opened with `open M`. Keep the
+  current natural-number operators.
+- [ ] `section (M : T.Model) { … }`: shared models and parameters,
+  generalized deterministically, including dependencies that occur in types.
+  Resulting signatures are shown.
+- [ ] `initial T` and `free T on A` with `fold`, `fold_unique` and
+  `universal`. These need milestone 7 and kernel H: H1 for single-sort
+  theories, H3 for theories such as `CauchyStructure` and `CwF`.
+- [ ] Algebraic normalization targets `CommRing.Model` and similar models. It
+  is separate from generic `simp` and produces checked certificates.
+- [ ] Expected-type completion and lemma suggestions insert checkable source
+  and show the resulting obligations.
 
 General typeclass search, implicit coercion networks, unrestricted higher-order
-unification, and broad proof search are deferred until concrete examples
-justify their complexity. Prefer explicit structure scope and predictable
-inference in the first releases.
+unification and broad proof search remain deferred. Structure scope stays
+explicit.
+
+Completion:
+- a ring lemma takes one model argument and uses its notation;
+- group structure identity is a generated instance, not a development;
+- the forgetful map of an `extends` theory is generated;
+- incorrect homomorphism preservation is rejected.
+
+### 7. Inductive declarations and pattern matching
+
+This is the language of the [kernel design](higher-inductive-types-design.md#5-language)
+and of the [feature proposal](inductive-language-features.md). Releases follow
+kernel stages H1–H3. The first release also needs HoTT A5 (motive
+abstraction), D0a and D1's first slice (h-level evidence), and milestone 5's
+holes.
+
+- [ ] `inductive` declarations:
+  - parameters, and indices after the colon;
+  - h-levels, with setness proved from the generated path characterization
+    before a squash constructor is added;
+  - path constructors as equalities, `PathP` or `cell` face systems;
+  - companion sorts with `with`, relations with notation, and argument
+    bundles.
+
+  The elaborator produces H's signature normal form, and errors name the
+  offending argument or face.
+- [ ] `match`:
+  - an expression and a closing proof statement;
+  - several scrutinees, inferred motives with index generalization, and
+    optional `as … return`;
+  - structural recursion by name, across companion functions;
+  - clauses for path constructors that bind interval variables;
+  - automatic clauses for proposition-valued goals and set targets;
+  - `obligations` blocks, with one respect proof per argument for quotients
+    into sets.
+- [ ] Dependent pattern matching on indexed families without K:
+  - index unification by generated injectivity and disjointness;
+  - reflexive equations deleted only with a setness proof;
+  - coverage with impossible branches.
+- [ ] Views: `match … using view` with any checked eliminator. This absorbs
+  HoTT B5. Presentations are views derived from an equivalence.
+- [ ] Canonical quotients: `quotient … canonical f`, represented by normal
+  forms, with the quotient interface as a view.
+- [ ] `deriving`:
+  - `paths` (encode–decode characterization);
+  - `decidable_equality`;
+  - `universal`;
+  - `irrelevance`;
+  - `ind_prop` and `rec`.
+- [ ] Nested declarations through strictly positive type constructors,
+  elaborated as mutual declarations.
+- [ ] Legacy eliminator syntax (`induction … as … return`, `induct`, the
+  current expression `match` and `cases`, `unpack`) stays parseable, so the
+  archive keeps checking. The rebuilt library and the new reference use only
+  `match`.
+
+Completion, per release:
+
+- **H1:** natural numbers, lists, W types, suspensions, the circle, `Trunc`
+  and `Quotient` are declared and matched. The circle's `code` computes, and
+  `code_meridian` holds by `rfl`.
+- **H2:** `Vec`, `Fin`, well-typed syntax and `Id` are declared. `J` on
+  `refl` holds by `rfl`, and `head` needs no `nil` branch.
+- **H3:** `Real = initial CauchyStructure` is declared. `neg` is defined with
+  its companion, and `neg_neg` needs only the point clauses.
+
+At every release, non-structural calls, uncovered constructors, boundary
+mismatches and missing h-level evidence are rejected with precise messages.
+
+### 8. Computability as a checked property
+
+- [ ] Track each declaration's non-computing dependencies: user axioms,
+  excluded middle, choice, resizing and any postulate. Compute them from the
+  checked dependency graph, and show them in the inspector and CLI.
+- [ ] `computable def …`. The checker rejects the declaration unless the set
+  is empty, and names the dependency chain. A `kernel extension: Hn` marker is
+  shown but is not a non-computing dependency.
+- [ ] `evaluate term expecting pattern;`, a checked normal-form test. It
+  reads witnesses from normalized truncations for the CLI's `evaluate`
+  command.
+- [ ] Guarantee that evaluation always unfolds `opaque` definitions and
+  ignores unfolding hints.
+- [ ] Recheck every `computable` and `evaluate` in CI. The migration
+  verifier compares non-computing dependencies.
+
+This milestone needs no kernel change and can start now.
 
 ## Integration map
 
@@ -424,11 +557,13 @@ inference in the first releases.
 | [program](../../web/cubical-program.mjs), [modules](../../web/mathscript/modules.mjs) | Rule registration, import identity, invalidation, and source inspection records. |
 | [kernel adapter](../../web/cubical-kernel.mjs), [syntax codec](../../web/cubical-syntax.mjs) | Preserve native checking, handle ownership, and dimensions through generated terms. |
 | [path library](../../web/proofs/paths.cubist), [path-over builders](../../lib/cubical/path-over.mjs) | Reuse proved congruence, composition, and transport constructions. |
-| [language reference](../../web/language.html), [CLI guide](../guides/cli.md), browser inspector | Document delivered syntax; show goals, inferred arguments, and rewrite witnesses. |
+| New: declaration elaborator and `match` compiler | `inductive`/`theory` to H's signature normal form; motive abstraction, index unification, coverage, structural recursion and obligations to eliminator applications (milestones 6–7). |
+| New: computability tracking | Non-computing dependencies, `computable` and `evaluate` (milestone 8). |
+| [language reference](../../web/language.html), [CLI guide](../guides/cli.md), browser inspector | Document delivered syntax; show goals, inferred arguments, rewrite witnesses, generated eliminators, boundary diagrams and non-computing dependencies. The reference is rewritten into chapters with checked examples (see the [work plan](work-plan.md)). |
 
 New helper modules and test files should be introduced with the milestone that
-needs them. No new C kernel rule is expected; any proposed kernel change needs
-a separate justification beyond convenience of elaboration.
+needs them. This roadmap adds no C kernel rule. Milestones 6–7 rely on the
+kernel roadmap's G0 and H, which carry their own justification and review.
 
 ## Validation and completion
 
@@ -472,7 +607,8 @@ speedups or proof-size reductions.
 The first useful release is milestones 1 and 2 plus their inspection and tests;
 it was delivered together with milestones 0 and 3 on 2026-09-25.
 The broader roadmap is complete when imported rules, dependent support,
-argument inference, and the selected conveniences have documented semantics,
-representative library migrations, and the required validation. Update the
+argument inference, theories, inductive declarations and computability
+checking have documented semantics, uses in the rebuilt library, and the
+required validation. Update the
 checkboxes and add a tactical handoff when implementation starts, recording
 the supported fragment, assumptions, commands run, and next unfinished item.

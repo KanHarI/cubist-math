@@ -19,6 +19,30 @@ kernel-extension investigation, G, now has its own
 [kernel roadmap](cubical-kernel-roadmap.md). It does not resume the paused
 mathematical roadmaps.
 
+**Restructured later on 2026-09-25.**
+- The first library is to be archived and rebuilt; its notable results are
+  recorded in [library-results.md](../library-results.md).
+- The kernel roadmap adopted G0 (universe-generic checking) and item H
+  (inductive signatures, stages H1–H4), from the
+  [higher inductive-inductive type design](higher-inductive-types-design.md).
+- The ergonomics roadmap adopted milestones 6–8: theories, inductive
+  declarations with pattern matching, and computability as a checked
+  property.
+
+Consequences here:
+- B0, B2, B5, F3 and A9 are superseded; they keep their labels as pointers.
+- A2, A5, D0a, D1 and E2 gain requirements, marked "(H)".
+- Targets that name declarations of the first library remain as evidence. For
+  the rebuild they become acceptance examples: the rebuilt counterpart must
+  get the stated benefit.
+
+The [work plan](work-plan.md) sequences this roadmap with the others.
+
+**Terminology.** "Universe template" below means a universe-generic
+definition. Until G0 these are elaborator templates, specialized per
+universe. After G0 they are level-generic kernel definitions checked once.
+Items that ask for templates ask for the latter in the rebuild.
+
 Read the [proof ergonomics checkpoint](../tactical/proof-ergonomics-handoff.md)
 first: it records the supported fragment this roadmap starts from.
 
@@ -27,9 +51,9 @@ first: it records the supported fragment this roadmap starts from.
 Make the language and library effective for homotopy type theory: path algebra,
 transport, path induction, h-levels, dependent paths and structured equivalences.
 The native kernel remains the sole proof authority and paths remain
-proof-relevant data. A–F build on the existing kernel; the separate
-[kernel roadmap](cubical-kernel-roadmap.md) (G) investigates specific new
-computational type formers.
+proof-relevant data. A–F build on the existing kernel. The separate
+[kernel roadmap](cubical-kernel-roadmap.md) owns kernel changes: G0, H1–H4 and
+the remaining G items.
 
 Breaking source/API changes and abstractions that cannot translate back to the
 current core are allowed when their benefit is demonstrated. Preserve explicit
@@ -40,9 +64,9 @@ migration must identify its consumers and the evidence needed to update them.
 
 `Path` and `PathP` remain the primary equality interface. J is compatible with
 cubical type theory and already exists here as derived path induction, with a
-propositional computation law. A separate cubical `Id` with judgmental J
-computation is a lower-priority option in [G3](cubical-kernel-roadmap.md#items); K/UIP for arbitrary types is not
-part of the design.
+propositional computation law. A separate `Id` with judgmental J computation
+is the declared identity family of [H2](cubical-kernel-roadmap.md#items), which
+supersedes G3. K/UIP for arbitrary types is not part of the design.
 
 The first slice serves first-order equational reasoning well, such as
 `simp only [nat_add_zero]` on natural-number arithmetic. It does not yet reach
@@ -80,7 +104,9 @@ changed witnesses, and G's kernel extensions as described here. In addition:
 3. **No regularity is assumed for existing paths.** Transport along `refl` or
    a constant family, and path induction at `refl`, need not compute for neutral
    types or motives. Automation uses checked propositional laws when conversion
-   does not suffice. G does not silently add strict J computation to `Path`.
+   does not suffice. The kernel roadmap does not add strict J computation to
+   `Path`. The separately declared family `Id` (H2) computes J on `refl`; it is
+   a different type, not a change to `Path`.
 4. **Transported data is flagged.** The inspector marks any transport that
    automation inserts into a term whose type is not a checked proposition. Such
    a term may no longer compute to a canonical value. Conversion avoids an
@@ -105,22 +131,29 @@ changed witnesses, and G's kernel extensions as described here. In addition:
    cumulativity nor a new HIT silently supplies resizing.
 9. **Existing computation comes first.** When kernel conversion establishes a
    law, library interfaces and automation use conversion, recorded as a C1
-   entry, rather than a registered equality rule. Eliminators of
-   pushout-derived HITs take PathP bridges, so their path computation is
-   judgmental. Replacing a proof by conversion changes its witness; record
+   entry, rather than a registered equality rule. Eliminators generated for
+   declared higher inductive types (H1) take dependent-path clauses, so their
+   path computation is judgmental. The pushout eliminator already did this. Replacing a proof by conversion changes its witness; record
    that change as for A3. A statement that `rfl` also proves does not license
    replacing a construction: `close_path` has type `origin = origin`, which
    `rfl` inhabits, but its witness is a nontrivial loop.
-10. **Assumption-free results compute.** Every closed term that checks without
-   truncation or any other assumption must reduce to a canonical value by
-   kernel computation. This is a design priority, not only a consistency
-   property. No tactic, library abstraction or elaboration convenience is
-   implemented through an assumption schema. Derived path induction, as used by
-   B1, is acceptable: it computes on closed data, and its computation at `refl`
-   is propositional only for open terms (invariant 3). A library migration must
-   not replace a computing construction by one that uses an assumption. Kernel
-   changes follow the same rule; see the
-   [kernel roadmap](cubical-kernel-roadmap.md#governing-requirement-assumption-free-results-compute).
+10. **Computability is expressible and preserved.** Every closed term that
+   checks without truncation or any other assumption must reduce to a canonical
+   value by kernel computation. This is a design priority, not only a
+   consistency property.
+   - **Expressible.** A result that computes can be declared `computable` and
+     tested with `evaluate`
+     ([ergonomics milestone 8](proof-ergonomics-roadmap.md#8-computability-as-a-checked-property)).
+   - **No tactic, library abstraction or elaboration convenience is
+     implemented through an assumption schema.**
+   - **Derived path induction is acceptable**, as used by B1. It computes on
+     closed data, and its computation at `refl` is propositional only for
+     open terms (invariant 3).
+   - **Migrations and refactorings** must not replace a computing
+     construction by one that uses an assumption. The migration verifier
+     compares non-computing dependencies.
+   - Kernel changes follow the same rule; see the
+     [kernel roadmap](cubical-kernel-roadmap.md#governing-requirement-computability-is-expressible-and-preserved).
 
 ## Milestones
 
@@ -129,14 +162,14 @@ and D0b together:
 
 | Slice | Dependencies and purpose |
 | --- | --- |
-| Library first | B0, E0, D0a and A7's conversion audit need no new tactic and can start now, alongside A5. They remove targets that later milestones would otherwise automate. |
+| Library first | E0, D0a and A7's conversion audit need no new tactic and can start now, alongside A5. B0 is superseded by H1; in the rebuild its benefit comes with the declarations. |
 | Baseline and shared machinery | A7 first; A5/A6 extract goal, scope and diagnostics; A4 uses the baseline to set hard fuel limits. |
-| Path vocabulary and library foundations | A1a–A1c, A2 and A8 use the shared machinery. A9 precedes the templates that D0 adds; D0b migrates the public equivalence type alongside them. |
+| Path vocabulary and library foundations | A1a–A1c, A2 and A8 use the shared machinery. D0b defines the public equivalence type in the rebuild. |
 | First useful automation | B1 follows A5 alone: it needs neither folded heads nor search fuel. B4 also follows A5. D1 uses D0a without waiting for D0b. Basic Σ ext in B3 precedes D2's automatic property-field closure; universe ext follows D0b. These do not wait for C3 or all of E. |
-| Registered induction | B2/B5 share A5's motive abstraction and register B0's eliminators. D3's library eliminator uses D0b and D4; its tactic interface also uses B1/B5. |
+| Induction | `match` (ergonomics milestone 7) uses A5's motive abstraction on H1's generated eliminators. D3's library eliminator uses D0b and D4; its interface is a milestone 7 view, with B1 for `Path`. |
 | Path optimization and dependent geometry | A3/C1 change proof construction explicitly; C3 uses their checked reconstruction. C4 needs only A5 and its library soundness lemma. E1 uses A1/A2/A5/E0, with optional C2 cleanup. E2's square library can start independently of C; E3 follows E0/E2/A5 and E4 follows the simplifier witness interface. C2 adds B1's computation law when available. |
-| Structure descriptions and transfer | F1 can start after D0, D4, B3 and D1/D2; F4 uses D0a's templates. Full record syntax and transfer build on that evidence. |
-| Kernel investigation | G now lives in the [kernel roadmap](cubical-kernel-roadmap.md). Invariant 10 ranks computational truncation (G1) first; no A–F release waits for it. |
+| Structure descriptions and transfer | F1 can start after D0, D4, B3 and D1/D2; F4 uses D0a's h-level definitions. Theories (ergonomics milestone 6) supply record syntax; transfer builds on that evidence. |
+| Kernel work | The [kernel roadmap](cubical-kernel-roadmap.md) ranks G0, then H1–H3. A–F releases do not wait for them, except the (H)-marked requirements, which the [work plan](work-plan.md) sequences. |
 
 The library-first slice can ship before any tooling. The first tooling release
 is A7, A5 and B1, with inspection and tests; the next adds A4, A6, A1/A2 and
@@ -223,6 +256,13 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   dimensions, faces, universe specialization, rule environment and unfolding
   policy. Reuse the witness as well as the result. Explicit occurrence selection
   must still distinguish different occurrences of a shared node.
+  - (H) With H1, every constructor application is one uniform kernel node, so
+    descent through constructors is a single rule. It covers `succ`, pairs,
+    injections, `sup` and user constructors alike. The stopped curated
+    migration found `rw` blocked at `succ`
+    ([findings](../tactical/proof-ergonomics-handoff.md#curated-rwcalcsimp-pass-findings-stopped)).
+    Descent into cubical forms (`trans`, `sym`, `along`) and a statement-level
+    `with unfolding` are further gaps it found; they remain for A2 and C1.
 - [ ] **A3. Congruence lines instead of composition chains.** Use a bottom-up
   traversal with local resimplification of subterms introduced by a rewrite.
   Continue to a fixed point under A4 fuel; one pass alone would miss new redexes
@@ -293,6 +333,14 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
       fields (`source`, `simpRegistry`, `moduleName`, `onReference`,
       `dimensions`, `rewriteWork`) swapped in and out for templates and freeze
       replays.
+  - (H) `match` elaboration (ergonomics milestone 7) is this layer's first
+    large client. It needs:
+    - motive abstraction over several scrutinees;
+    - generalization of hypotheses that depend on the scrutinee;
+    - index generalization for indexed families;
+    - companion motives for inductive-inductive types.
+
+    It is therefore a prerequisite of milestone 7's first release.
 - [ ] **A6. Diagnostics.** Unfinished `rw`, `simp`, `simpa` and `calc` steps
   print the residual goal (bounded in length), the side that changed and the
   rules that fired. A cycle error names the rules involved. The unresolved-goal
@@ -347,13 +395,10 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   (`field_snd`, `field_fst`, `sigma_first`, …); each helper converts to the
   corresponding projection. A2's matcher then sees one head per projection.
   Keep the helpers during migration.
-- [ ] **A9. Least universe for omitted template arguments.** When a call to a
-  universe template omits a universe argument that its explicit arguments
-  determine, specialize at the least level at which they check, as B1 already
-  does for generated terms. This adopts the ergonomics plan's deferred
-  principal-universe policy before D0 adds templates. Show the chosen level in
-  the inspector; explicit levels still take precedence, and an undetermined
-  level remains an error.
+- [ ] **A9. Superseded by G0 and ergonomics milestone 5.** G0 removes
+  templates. Omitted universe arguments become level arguments, inferred from
+  level constraints by milestone 5's argument inference. The inspector still
+  shows the inferred levels, and an undetermined level remains an error.
 
 Completion:
 
@@ -368,36 +413,20 @@ Completion:
 - Fuel defaults are set from measurements.
 - The conversion fixture's positive laws check by `rfl` and its negative laws
   are rejected. Audit replacements record their changed witnesses.
-- Projections convert to the existing helpers. Omitted template universes
-  resolve to their least determined level or report an error.
+- Projections convert to the existing helpers.
 
 ### B. Goal-derived induction and extensionality
 
 Proposed syntax throughout; the final forms must not conflict with the existing
 expression forms such as `induction n as k return C { … }`.
 
-- [ ] **B0. Eliminators with PathP bridges.** The kernel's `pushout_induction`
-  takes each bridge as a PathP over the pushout path and computes on points and
-  paths. [suspension_types](../../web/proofs/suspension_types.cubist) instead
-  takes a transport equation, and [suspension](../../web/proofs/suspension.cubist)
-  adds a `transport_constant` correction to each recursive bridge. Their path
-  computation laws are therefore proved theorems:
-  `suspension_meridian_beta` uses a 31-line cube and `suspension_rec_beta` has
-  25 lines. This library change needs no new tactic.
-  - Make recursion and induction with PathP bridges the primitive suspension
-    eliminators, taking `h(a) : n = s` directly as the non-dependent bridge.
-    Define the transport-equation forms from them with `path_from_transport`
-    for existing callers. Both path computation laws then check by `rfl`
-    ([evidence](#what-the-kernel-computes-that-the-library-does-not-use)).
-  - Migrate the circle's `code` to the new recursion. `code_meridian` then holds
-    by `rfl`, `code_upper(z)` is `UnivalenceBeta(U0, Z, Z, successor_equivalence, z)`
-    and `code_lower(z)` is a single `transport_constant`. Recheck `decode`,
-    `decode_encode` and the winding-number consumers, recording changed
-    witnesses.
-  - B2, B5 and F3 build on these eliminators: for pushout-derived HITs, point
-    and path computation both hold by conversion.
-  - Targets: `suspension_rec_beta`, `suspension_meridian_beta`,
-    `code_meridian`, `code_upper`, `code_lower`.
+- [ ] **B0. Superseded by H1.** Suspensions, the circle and pushouts become
+  declared higher inductive types. Their generated eliminators take
+  dependent-path clauses, so point and path computation hold by conversion.
+  The archived library's transport-equation eliminators remain evidence for
+  why: `suspension_meridian_beta` needed a 31-line cube and
+  `suspension_rec_beta` 25 lines. In the rebuild, `code_meridian` holds by
+  `rfl` and `code_upper(z)` is a single univalence computation.
 - [ ] **B1. Path induction from the goal.** `induction p;` applies to
   `p : a =[A] b` when `b` is a local variable that occurs in neither `A` nor
   `a`. It performs these steps:
@@ -427,15 +456,15 @@ expression forms such as `induction n as k return C { … }`.
   - Targets: `group_total_laws_path`, `group_total_multiplication_path`,
     `identity_system_retraction`, `decode_encode`. The last should become
     `induction p; rfl;`, since its current base case is `refl(refl(base))`.
-- [ ] **B2. Goal-derived eliminators.** This moves the goal-derived induction
-  item of ergonomics milestone 5 forward: it needs abstraction, not
-  metavariables. Explicit `return` motives remain available.
-  - `Nat`: `induction n { zero => { … } succ k ih => { … } }`.
-  - Sums: a dependent `cases` whose branch goals substitute `left(x)` or
-    `right(y)` when the scrutinee is a local variable. Recheck the corpus,
-    because a proof that relies on the current constant motive changes meaning.
-  - Pushouts and suspensions: the bridge goal is the PathP between the named
-    results of the point branches, elaborated to B0's eliminators.
+- [ ] **B2. Superseded by ergonomics milestone 7.** Goal-derived elimination
+  for every declared type is `match`:
+  - inferred motives, with explicit `as … return` available;
+  - dependent branch goals for sums;
+  - index generalization;
+  - dependent-path clauses for path constructors.
+
+  It replaces the per-type interfaces planned here for natural numbers, sums,
+  pushouts and suspensions.
 - [ ] **B3. Type-directed `ext`.** Dispatch on the carrier of an equality goal:
   - dependent functions: the current behavior;
   - Σ and ×: `ext (p : a = a') { … }` proves the first component in the block
@@ -456,36 +485,22 @@ expression forms such as `induction n as k return C { … }`.
   convertible type, checked by conversion. `suffices h : T by term;` (or a
   block) proves the goal from `h`, then continues with goal `T`.
   Reconstruction uses only conversion or application.
-- [ ] **B5. Registered eliminator descriptions.** Describe a checked
-  eliminator's target family, motive telescope, point/path branches, h-level
-  premises and computation laws. Elaborate each use to an application of that
-  checked eliminator with every branch and premise supplied. A descriptor
-  cannot invent a computation rule or bypass a premise.
-  - Use A5's abstraction and dependent continuations for Nat, sums, Σ, paths,
-    pushouts and suspensions; B2 supplies the initial goal-derived interfaces.
-  - Register existing truncation and quotient eliminators. Preserve required
-    proposition/set evidence and respectfulness of the representative map.
-    The `TruncateElim` assumption is non-dependent; first derive dependent
-    elimination into proposition-valued families as a checked lemma.
-    [quotient_rec](../../web/proofs/quotient_descent.cubist) already has a
-    propositional beta law and map extensionality; do not treat its predicate
-    representation as a primitive HIT.
-  - Replace repeated two-/three-class induction in
-    [quotient_operations](../../web/proofs/quotient_operations.cubist) using
-    repeated application of the registered eliminator.
-  - D3 registers identity systems through this interface. Computational HITs
-    from G can later supply new descriptions with their actual beta rules.
+- [ ] **B5. Superseded by H1 and ergonomics milestone 7.** Generated
+  eliminators need no registry, because the kernel signature is the
+  description. What remains of B5 is views, which milestone 7 owns: checked
+  eliminators used with `match … using`. That includes D3's identity systems,
+  quotient-style views and presentations. The truncation and quotient
+  registrations are unnecessary, because `Trunc` and `Quotient` are declared
+  types with dependent eliminators. The two- and three-class inductions in
+  the archived `quotient_operations` become `match` on several values with
+  per-argument respect obligations.
 
 Completion:
 
-- B0's path computation laws check by `rfl`, and callers of the
-  transport-equation forms still check.
 - The B1 targets shorten without changing public types or assumptions.
 - Loops, invalid endpoint variables and dependent hypotheses have focused
   rejection and preservation tests.
 - `ext` on Σ produces the single-line witness.
-- Registered eliminators preserve branch dependencies, h-level premises and
-  propositional versus judgmental computation; missing premises are rejected.
 
 ### C. Path algebra and transport
 
@@ -525,8 +540,8 @@ Completion:
     - the `based_induction` computation law from B1
   - Keep the PathP/transport bridge out of automatic rules in both directions,
     as the ergonomics plan requires.
-  - Targets after B0: `code_loop`, `code_upper_inverse`, `code_lower_inverse`.
-    B0 already reduces `code_upper` and `code_lower` to single lemma
+  - Targets: `code_loop`, `code_upper_inverse`, `code_lower_inverse`. With
+    H1's circle, `code_upper` and `code_lower` are already single lemma
     applications.
 - [ ] **C3. Path-algebra normalizer.** `path_algebra;` proves `P = Q` for paths
   built from atoms with `refl`, `sym`, `trans` and `cong`.
@@ -590,6 +605,9 @@ Completion:
     conversion identifies, rather than names the matcher must register.
     Cubical Agda's `isOfHLevel` uses two base cases to keep `IsContr`
     definitional as well.
+  - (H) Milestone 7's automatic clauses consult these definitions. A clause
+    for a squash constructor is generated when the target's h-level is proved.
+    D0a and D1's first slice therefore precede milestone 7's first release.
 - [ ] **D0b. Canonical equivalences.** Make the public equivalence
   representation agree with the native contractible-fiber type:
 
@@ -674,6 +692,12 @@ Completion:
     hlevel with [setA, group_inverse_evidence_prop(A, unit, multiply, p)];
   }
   ```
+  - (H) `hlevel;` is also the procedure milestone 7 calls:
+    - for automatic clauses, where the target must be a set or a
+      proposition;
+    - for setness proofs of declared data types, before a squash constructor
+      would be added;
+    - for deleting reflexive index equations in dependent pattern matching.
 - [ ] **D2. Subtype extensionality.** Add a checked lemma: given `B : A -> U`
   whose fibers are propositions and a path `p : a = a'`, any `b : B(a)` and
   `b' : B(a')` are connected by `PathP(fun (i : Interval) => B(p @ i), b, b')`.
@@ -691,9 +715,9 @@ Completion:
     restriction of `identity_system_equivalence` using the general checked
     inverse constructor from D0b: the existing section/retraction already work
     without that restriction. This bounded foundation work is in scope.
-  - `induction r using sys;` then applies B1's goal abstraction to `R` in place
-    of the path type, through B5's registered eliminator description. The
-    standalone library eliminator need not wait for the tactic interface.
+  - `match r using sys` then applies the identity system as a milestone 7
+    view, abstracting the goal over `R` in place of the path type. The
+    standalone library eliminator need not wait for the language interface.
   - Instances:
     - based paths;
     - group isomorphisms, from `group_isomorphism_total_contractible`;
@@ -820,6 +844,10 @@ Completion:
   [Automating Boundary Filling in Cubical Type Theories](https://lmcs.episciences.org/18519)
   are a research precedent, not an implementation already present here.
   Targets: `homotopy_natural`, `transport_concat`, `map_concat`.
+  - (H) The same square view is the language's `cell` syntax for
+    two-dimensional constructors and their clauses: the torus surface, and
+    squash clauses that are not generated. Its boundary display is the one the
+    inspector uses for declarations.
 - [ ] **E3. Dependent `calc`.** `calc over C { u =[p] v by α; _ =[q] w by β; }`
   composes PathPs over `trans(p, q)`. Steps over a constant base use E0's `◁`
   and `▷`. Changing to a different but equal base path needs an explicit checked
@@ -848,10 +876,11 @@ Completion:
 ### F. Reusable structures, transfer and selected HIT declarations
 
 F1 starts after D0's foundations, D4, B3 and D1/D2; registration of its
-identity systems additionally uses D3/B5. F2 uses D0b's canonical `Equiv` API,
-including `equiv_eq`, and C2's transport laws. F3 uses B0's eliminators, B5's
-eliminator interface and E's dependent paths. F4 uses D0a's templates. Full
-record syntax and the experiments in G are separate work.
+identity systems additionally uses D3 and milestone 7's views. F2 uses D0b's canonical `Equiv` API,
+including `equiv_eq`, and C2's transport laws. F4 uses D0a's h-level
+definitions. Theories
+(ergonomics milestone 6) are the record syntax. Kernel extensions are
+separate work.
 
 - [ ] **F1. Compositional structure descriptions and SIP.** Implement checked
   descriptions for carrier data, constants, products, function operations and
@@ -877,6 +906,11 @@ record syntax and the experiments in G are separate work.
     be discarded. A nonidentity carrier equivalence exercises the full SIP.
   - [Cubical Agda's structure descriptions](https://agda.github.io/cubical/Cubical.Structures.Auto.html)
     are a precedent for a supported grammar, not a specification to copy.
+  - (H) F1 is the engine behind each theory's generated
+    `T.equality : (M = N) ≃ T.Iso(M, N)`
+    ([theories](inductive-language-features.md#1-theories-one-declaration-for-structures-initial-models-and-universal-properties)).
+    Its descriptions are generated from theory declarations rather than
+    written separately.
 - [ ] **F2. Maps and equivalences for transfer.** Build a checked library API
   before adding `transfer e;`, reusing D0b's identity, inverse, composition,
   product and Π/Σ combinators and h-level preservation lemmas. Add sums and
@@ -893,25 +927,19 @@ record syntax and the experiments in G are separate work.
     algebraic operation with its laws. Acceptance includes reduction of closed
     transferred data and rejection of a wrong map or missing preservation law.
     Do not promise judgmental `idtoequiv(refl)` from the representation change.
-- [ ] **F3. Selected higher inductive declarations.** Specify a first grammar
-  for declarations elaborated into existing pushouts and derived constructions,
-  with generated constructors, eliminators, boundary obligations and computation
-  lemmas. Start with a coequalizer and a suspension-shaped example.
-  - Elaborate declarations to eliminators with PathP bridges (B0), so that
-    point and path computation of pushout-derived declarations hold by
-    conversion. Register the eliminators with B5, and any remaining directed
-    computation lemmas with C. Record which computation laws hold by
-    conversion and which are proved paths. Path constructors expose their PathP
-    branch goals and boundary diagrams.
-  - Acceptance: generated definitions check independently; point and path
-    computation examples pass; incompatible endpoints and unsupported recursive
-    declarations receive precise errors. General recursive HIT support remains
-    an explicit extension to investigate in G.
+  - (H) Presentations (milestone 7), which match on one type with an
+    equivalent type's constructors, reuse these maps.
+- [ ] **F3. Superseded by H1 and ergonomics milestone 7.** Higher inductive
+  declarations are native kernel signatures rather than elaborations into
+  pushouts. They have generated constructors, eliminators with
+  dependent-path clauses, and judgmental computation on points and paths.
+  Boundary diagrams display through E2's square view.
 - [ ] **F4. Pointed types and loop spaces.** A library API for pointed types,
   pointed maps, loop spaces, the action of pointed maps on loops, and rebasing
   along a path (`rebase_loop` in [homotopy_paths](../../web/proofs/homotopy_paths.cubist)
   is a start). [fundamental_groups](../../web/proofs/fundamental_groups.cubist)
-  proves the group laws of loops generically, but only at `U1`, so
+  proves the group laws of loops generically, but only at `U1` (G0 makes
+  them universe-generic), so
   [circle](../../web/proofs/circle.cubist) re-proves them at `U0` as
   `loop_group`. The loop files also repeat
   `concatenate(U1, S1, base, base, base, …)` and `append_path(…)`.
@@ -920,11 +948,15 @@ record syntax and the experiments in G are separate work.
 
 ### G. Kernel extensions (moved)
 
-G1–G4 now live in the [kernel roadmap](cubical-kernel-roadmap.md), together
-with certified interval normalization (G5) from the ergonomics roadmap. They
-change the trusted kernel, and they are ranked by invariant 10: computational
-truncation and quotients (G1) first, with resizing (G2). No A–F release waits
-for them.
+Kernel work lives in the [kernel roadmap](cubical-kernel-roadmap.md):
+- G0, universe-generic checking;
+- H1–H4, inductive signatures, which supersede G1 and G3;
+- G2's resizing policy;
+- G4, optional transport regularity;
+- G5, certified interval normalization.
+
+The kernel roadmap ranks them by invariant 10. Items A–F do not wait for
+them, except where marked (H).
 
 ## Changes to the ergonomics plan
 
@@ -937,14 +969,14 @@ for them.
 | Milestone 4: path, transport and structure simp sets | A1 first, then C1–C2, classified by A7's conversion fixture |
 | Milestone 4: dependent applications, pairs and hypotheses | A2, E1 and B1's `subst` |
 | Milestone 4: cubical constructors | E2 squares and bounded boundary-filling experiments |
-| Milestone 5: goal-derived induction | B1–B2 and B5 registered eliminators, moved before inference |
+| Milestone 5: goal-derived induction | Ergonomics milestone 7 (`match`); B1 remains for `Path` induction |
 | Milestone 5: named and implicit arguments, `apply`, `refine` | Retain scoped-metavariable prerequisites; do not wait for all D–F |
-| Milestone 5: universe specialization inference | A9 adopts the deferred principal-universe policy for omitted template universes, before D0 adds templates |
+| Milestone 5: universe specialization inference | Level-argument inference after G0; A9 superseded |
 | Milestone 6: `ext` with selected lemmas | B3 and D2 |
-| Milestone 6: records, notation, sections, algebra normalization | A8 projections come first; F1 descriptions and derived identity precede full records; other items retain their existing scope |
+| Milestone 6: records, notation, sections, algebra normalization | Ergonomics milestone 6 (theories) supplies records, notation and sections; A8 projections and F1 identity serve it |
 | Implementation plan: box notation (cubical language change 4) | Retained; E2 writes and displays cells with it |
-| Library foundations supporting tactics | B0 eliminators with PathP bridges, D0a h-level templates, D0b canonical equivalences, D3 general identity systems and D4 contraction combinators |
-| Existing-kernel scope | A–F retain it; the [kernel roadmap](cubical-kernel-roadmap.md) (G) separately investigates computational truncation/quotients, explicit resizing and certified interval normalization |
+| Library foundations supporting tactics | D0a h-level definitions, D0b canonical equivalences, D3 general identity systems and D4 contraction combinators; B0's eliminators come from H1 |
+| Existing-kernel scope | A–F retain it except where marked (H); the [kernel roadmap](cubical-kernel-roadmap.md) owns G0, H1–H4, G2, G4 and G5 |
 | Architecture: large interval expressions | [G5](cubical-kernel-roadmap.md#items), certified interval normalization |
 
 Do not broaden generic premise search before A1/A4/A5 and the first D1 slice.
@@ -954,10 +986,10 @@ The matcher, resource limits and witness reconstruction must support it first.
 
 | Existing location | Planned work |
 | --- | --- |
-| [translator](../../lib/cubical/translate.mjs) | Builtin lowering (A1), goal/scope plans (A5), projections (A8), omitted universes (A9), registered eliminators (B5), canonical `ua` input (D0b), new statements |
+| [translator](../../lib/cubical/translate.mjs) | Builtin lowering (A1), goal/scope plans (A5), projections (A8), canonical `ua` input (D0b), new statements; `match` and views are ergonomics milestone 7 |
 | [proof-rewrite.mjs](../../lib/cubical/proof-rewrite.mjs) | Traversal (A2), congruence lines (A3), alias and view matching (A1), fillers (E1) |
 | [path-algebra.mjs](../../lib/cubical/path-algebra.mjs), [paths](../../web/proofs/paths.cubist), [path_actions](../../web/proofs/path_actions.cubist) | Prelude bodies, C3 laws, dependent path operations (E0), double composition and squares (E2), missing lemmas |
-| [suspension_types](../../web/proofs/suspension_types.cubist), [suspension](../../web/proofs/suspension.cubist), [circle](../../web/proofs/circle.cubist) | Eliminators with PathP bridges and the `code` migration (B0) |
+| [suspension_types](../../web/proofs/suspension_types.cubist), [suspension](../../web/proofs/suspension.cubist), [circle](../../web/proofs/circle.cubist) | Evidence only (archived): replaced by H1 declarations in the rebuild |
 | [homotopy_paths](../../web/proofs/homotopy_paths.cubist), [field_extensionality](../../web/proofs/field_extensionality.cubist), [primes](../../web/proofs/primes.cubist) | Conversion audit of proofs by induction (A7) |
 | [loop_words](../../web/proofs/loop_words.cubist) | Reflective loop normalizer (C4) |
 | [simp-registry.mjs](../../lib/cubical/simp-registry.mjs) | Aliases, distinct conversion/equality entries, bounded `hlevel_rule` and `ext_rule` registries |
@@ -966,9 +998,9 @@ The matcher, resource limits and witness reconstruction must support it first.
 | [identity_systems](../../web/proofs/identity_systems.cubist) | Eliminator, computation law and universe templates (D3); contraction combinators (D4) |
 | [fundamental_groups](../../web/proofs/fundamental_groups.cubist) | Pointed types and loop spaces (F4) |
 | [structured_sets](../../web/proofs/structured_sets.cubist), [algebraic_fields](../../web/proofs/algebraic_fields.cubist), [field_embedding_spaces](../../web/proofs/field_embedding_spaces.cubist) | Compositional descriptions, property fields and derived identity (F1) |
-| [quotient_descent](../../web/proofs/quotient_descent.cubist), [quotient_operations](../../web/proofs/quotient_operations.cubist) | Registered eliminators and representative-induction targets (B5) |
+| [quotient_descent](../../web/proofs/quotient_descent.cubist), [quotient_operations](../../web/proofs/quotient_operations.cubist) | Evidence only (archived): replaced by the `Quotient` declaration and milestone 7's multi-argument `match` |
 | [native elaborator](../../web/cubical-elaborator.mjs), [kernel adapter](../../web/cubical-kernel.mjs) | Fuel accounting (A4), prelude definitions (A1), face-restricted query (E2) |
-| [assumption schemas](../../web/cubical-assumptions.mjs), [field_logic](../../web/proofs/field_logic.cubist), [kernel](../../kernel/README.md) | Truncation/quotient experiment, resizing separation and computation rules (G1–G2) |
+| [assumption schemas](../../web/cubical-assumptions.mjs), [field_logic](../../web/proofs/field_logic.cubist), [kernel](../../kernel/README.md) | Replaced by H1's `Trunc` and `Quotient` and G2's resizing policy ([kernel roadmap](cubical-kernel-roadmap.md)) |
 | [parser](../../web/mathscript/parser.mjs), [formatter](../../web/mathscript/formatter.mjs) | New statement syntax, projection syntax (A8), spans and roundtrips |
 | [measurement script](../examples/proof-ergonomics/measure.mjs) | HoTT baseline (A7) |
 | [conversion probes](../examples/hott-automation/conversion-laws.cubist), [rejected laws](../examples/hott-automation/README.md#rejected-laws) | Conversion fixture and expected failures (A7) |
@@ -993,12 +1025,9 @@ Mandatory cases:
 | A4 fuel | CLI/browser and fresh/reused sessions agree on logical fuel outcome; hard native exhaustion is tested independently of frontend exhaustion and wall-clock timeout |
 | A5 plans | Context, face and universe data preserved; occurrence selection survives DAG sharing; generated witnesses checked independently |
 | A7 conversion fixture | Positive laws check by `rfl` and negative laws stay rejected; audit replacements record changed witnesses; a construction whose statement `rfl` also proves, such as `close_path`, keeps its witness |
-| A8, A9 | Projections convert to the existing helpers; an omitted universe that the arguments do not determine is rejected; the chosen level is shown |
-| B0 | Both path computation laws check by `rfl`; transport-equation callers still check; `code` consumers recheck with recorded witness changes |
+| A8 | Projections convert to the existing helpers |
 | B1 induction | A loop `p : x = x` rejected; an endpoint occurring in the other endpoint rejected; dependent hypotheses reverted and restored; no computation at `refl` assumed |
-| B2 `cases` | Branch goals substitute the injections; corpus proofs relying on the constant motive identified |
 | B3 `ext` | Σ second component typed over `p`; the universe case requires an equivalence, not two maps |
-| B5 eliminators | Dependent branch results are named and substituted; missing h-level/respectfulness premises rejected; quotient beta remains propositional |
 | C1 | Invalid conversion entry rejected; an arbitrary `omega : p = p` is retained when applying its equality rule even if endpoints convert; reclassified transport entries hold by conversion |
 | C2 | Nontrivial transport action in the circle code family preserved; constant-family cleanup requires its checked law |
 | C3 | `trans(p, q) = trans(q, p)` for arbitrary neutral loops rejected with normal forms; an arbitrary loop atom is not erased; inverse cancellation uses checked laws |
@@ -1012,7 +1041,7 @@ Mandatory cases:
 | E1 | Ordered fillers handle `v : B(x), w : E(x,v)`; independent ill-typed filler rejected; occurrence conflicts and unsupported binder/dimension positions diagnosed |
 | E2–E4 | Wrong edges/corners rejected; square/equation conversions checked; bounded boundary search preserves faces and records witnesses; persistent freeze pins construction/strategy |
 | F1 | Incorrect operation preservation rejected; property fields require proposition evidence; nonidentity carrier equivalence exercises derived SIP |
-| F2–F3 | Transferred closed data computes; dependent fibers require maps; generated HIT eliminators preserve boundaries and their declared computation behavior |
+| F2 | Transferred closed data computes; dependent fibers require maps |
 | F4 | Generic loop-group laws specialize at `U0` and `U1`; `loop_group` migrates without a local copy |
 | Invariant 10 | Closed assumption-free results in [canonicity.cubist](../examples/hott-automation/canonicity.cubist) still reduce to their stated canonical values after each migration; no tactic or convenience introduces an assumption |
 
@@ -1037,7 +1066,7 @@ future implementation gates.
 
 For each migration, compare against A7: source tokens, native steps, arena use
 and elapsed time. A1 and other definitional refactors compare public statements
-by conversion and require identical assumptions. A3, B0 and the A7 audit record
+by conversion and require identical assumptions. A3 and the A7 audit record
 changed witnesses; D0/F/G may change representations or universes
 intentionally. For those changes, list old/new public types, migration maps or
 comparison paths, actual computation behavior, and removed/retained/new

@@ -126,6 +126,10 @@ A5, the goal and proof-construction layer, together with the elaborator items
 the roadmap adds to it: one name supply, result values instead of message
 matching, one computation of link sites and an explicit elaboration context.
 A4's deterministic fuel can proceed alongside it, using the session
-dependence recorded above. Library-first items B0, E0 and D0a need no new
-tooling and can start now. The kernel roadmap's G1 design comparison is
-independent.
+dependence recorded above. Library-first items E0 and D0a need no new
+tooling and can start now.
+
+Update, 2026-09-25: the library is to be archived and rebuilt.
+- B0 is superseded by the kernel's H1 declarations.
+- G1's design comparison is superseded by item H.
+- The [work plan](../roadmaps/work-plan.md) orders what comes next.

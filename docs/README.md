@@ -6,22 +6,50 @@ current implementation, verification commands, and next steps. Check statements
 against the current source: some notes retain historical implementation details.
 Moving these documents does not change their recorded status or resume paused work.
 
+## Plan
+
+- [Work plan](roadmaps/work-plan.md): staged, dependency-ordered work across the
+  kernel, the language, the library rebuild and the language reference.
+- [Results of the first library](library-results.md): the frontier and iconic
+  theorems of the archived library in mathematical English, with their
+  logical assumptions. It is the specification the rebuild starts from.
+- Adopted designs:
+  - [higher inductive-inductive types](roadmaps/higher-inductive-types-design.md)
+    (kernel);
+  - [theories and inductive declarations](roadmaps/inductive-language-features.md)
+    (language).
+
 ## Mathematical roadmaps
+
+The Galois, complex-analysis and RH developments belong to the first library.
+They stay paused until the rebuild reaches their prerequisites.
 
 | Development | Roadmap | Checkpoint and supporting notes |
 | --- | --- | --- |
 | Galois theory | [Finite Galois development](roadmaps/galois-roadmap.md) | [Resumption checkpoint](tactical/galois-handoff.md), [symmetries as loops](tactical/galois.md), [polynomial algebra](tactical/polynomial-algebra.md), [finite dimension](tactical/finite-dimension.md) |
 | Complex analysis | [Algebraic closure, residues, and Picard](roadmaps/complex-analysis-roadmap.md) | [Paused-development checkpoint](tactical/complex_analysis_handoff.md), [complex curves](tactical/complex_curves.md), [limits](tactical/analysis_limits.md) |
-| Real numbers | [Real-number constructions](roadmaps/reals-roadmap.md) | The roadmap includes the shared interface, checked constructions, assumptions, and remaining construction proofs. |
+| Real numbers | [Number systems for the rebuild](roadmaps/reals-roadmap.md) | Integers, rationals as a canonical quotient, Cauchy reals at kernel H3; the first library's constructions described as archived. |
 | Analytic number theory | [RH and prime-counting error](roadmaps/rh-prime-counting-roadmap.md) | Planning only: precise conditional statement, analytic dependencies, and potential homotopy interpretations. No proof implementation or tactical checkpoint yet. |
 
 ## Language tooling roadmap
 
-- [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md): first release of explicit rewriting, calculations, `simp`/`simpa` and cubical path syntax delivered; argument inference and structure work remain.
-  See the [implementation plan](roadmaps/proof-ergonomics-implementation-plan.md) and [checked/proposed examples](examples/proof-ergonomics/README.md) for concrete work packages and cubical language designs.
-- [HoTT and cubical proof automation](roadmaps/hott-automation-roadmap.md): A7 (baseline, regressions and canonicity fixture) is delivered; see the [checkpoint](tactical/hott-automation-handoff.md). The rest is planned. It follows the ergonomics roadmap and reorders its remaining work around path operations, path induction, transport, h-levels and dependent paths.
-- [Kernel extensions for computation](roadmaps/cubical-kernel-roadmap.md): planning only. Trusted-kernel changes, led by computational truncation, under the requirement that assumption-free results compute.
-  Its [conversion probes](examples/hott-automation/README.md) record what the kernel already computes and which laws it rejects.
+- [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md):
+  - Delivered: rewriting, calculations, `simp`/`simpa` and cubical path
+    syntax.
+  - Remaining: argument inference, theories, inductive declarations with
+    pattern matching, and computability checking.
+  - See the [implementation plan](roadmaps/proof-ergonomics-implementation-plan.md)
+    and [checked/proposed examples](examples/proof-ergonomics/README.md).
+- [HoTT and cubical proof automation](roadmaps/hott-automation-roadmap.md):
+  - Delivered: A7 (baseline, regressions and canonicity fixture); see the
+    [checkpoint](tactical/hott-automation-handoff.md).
+  - Planned: path operations, path induction, transport, h-levels, dependent
+    paths, structure identity and transfer.
+- [Kernel extensions for computation](roadmaps/cubical-kernel-roadmap.md):
+  planning only. G0 (universe-generic checking), then H1–H4 (inductive
+  signatures), under the requirement that computability is expressible and
+  preserved. Its [conversion probes](examples/hott-automation/README.md)
+  record what the kernel already computes and which laws it rejects.
 
 ## Other sections
 
