@@ -2,6 +2,7 @@
 #include "cubical_kernel.h"
 #include <assert.h>
 #include <stdio.h>
+#include <time.h>
 
 static cc_term_kind kind(cc_kernel *k, cc_term term) {
     cc_term_kind result;
@@ -131,9 +132,44 @@ static void open_cube(void) {
     cc_kernel_free(k);
 }
 
+/* Callers classify a rejection by its kind, never by its message. */
+static void error_kinds(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
+    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term free_var = cc_kernel_term(k, CC_VAR, 17, 0, 0, 0, 0);
+    cc_term large = zero;
+    for (unsigned i = 0; i < 64; ++i) large = cc_kernel_term(k, CC_SUCC, 0, large, 0, 0, 0);
+    cc_checked_result result;
+    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+    assert(!cc_kernel_check(k, zero, unit, NULL, 0, &result));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_MISMATCH);
+    cc_kernel_clear_error(k);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+    assert(!cc_kernel_check(k, free_var, nat, NULL, 0, &result));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_OTHER);
+    assert(cc_kernel_check(k, zero, nat, NULL, 0, &result));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+    cc_kernel_set_step_budget(k, 16);
+    assert(!cc_kernel_check(k, large, nat, NULL, 0, &result));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
+    cc_kernel_set_step_budget(k, UINT64_C(1) << 40);
+    cc_kernel_set_deadline_ms(k, 0.01);
+    for (clock_t start = clock(); clock() - start < CLOCKS_PER_SEC / 100;) { /* let it expire */ }
+    assert(!cc_kernel_check(k, large, nat, NULL, 0, &result));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_DEADLINE);
+    cc_kernel_set_deadline_ms(k, 0);
+    assert(cc_kernel_check(k, large, nat, NULL, 0, &result));
+    assert(cc_kernel_error_kind(NULL) == CC_ERROR_OTHER);
+    cc_kernel_free(k);
+}
+
 int main(void) {
     checked_definitions();
     open_cube();
+    error_kinds();
     cc_kernel *kernel = cc_kernel_new();
     assert(kernel);
     cc_term nat = cc_kernel_term(kernel, CC_NAT, 0, 0, 0, 0, 0);
