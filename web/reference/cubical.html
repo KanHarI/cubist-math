@@ -42,41 +42,69 @@
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
-            <li><a href="#cubical">Cubical paths and pushouts</a></li>
+            <li><a href="#cubical">Paths as functions of the interval</a></li>
+            <li><a href="#cubical-shorthand">Shorthand</a></li>
+            <li><a href="#dependent-paths">Dependent paths</a></li>
+            <li><a href="#ext">Function extensionality: <code>ext</code></a></li>
+            <li><a href="#composition">Composition</a></li>
+            <li><a href="#pushouts">Pushouts</a></li>
             <li><a href="#suspensions">Suspensions</a></li>
           </ul>
         </aside>
         <article id="reference">
           <section id="cubical">
-            <h2>Cubical paths and pushouts</h2>
-            <p>All Cubist proofs use the <strong>Cubical C</strong> kernel. A declaration marked “Not checked” has no native certificate.</p>
+            <h2>Paths as functions of the interval</h2>
             <p>In cubical type theory, a path <code>p : x = y</code> in <code>A</code> is a function from an abstract interval into <code>A</code>. Its value at <code>0</code> is definitionally <code>x</code> and its value at <code>1</code> is <code>y</code>. Many path proofs can therefore be written directly, as functions of an interval coordinate, instead of by path induction.</p>
-            <p><code>Interval</code> introduces a coordinate inside the forms below.
-              It is not a type in a universe and cannot be used as an ordinary function domain.
-              Coordinates accept <code>0</code>, <code>1</code>, <code>flip(i)</code> (the reversal <span class="math">1 − i</span>),
-              <code>meet(i, j)</code> (minimum) and <code>join(i, j)</code> (maximum).</p>
-            <pre><code data-check="accept">def reverse_path(A : U0, x : A, y : A, p : x = y) =
-  path(fun (i : Interval) =&gt; A,
-       fun (i : Interval) =&gt; at(p, flip(i)));</code></pre>
-            <p><code>path(family, body)</code> binds a coordinate in both arguments and
-              constructs a path. <code>at(p, i)</code> evaluates a path at a coordinate.
-              <code>PathP(family, left, right)</code> states a dependent
-              path type: at coordinate <code>i</code>, the path lies in the type <code>family(i)</code>. Plain <code>x = y</code> is the case of a constant family. Each family/body is written <code>fun (i : Interval) =&gt; ...</code>;
-              their binder names need not agree. The kernel checks the actual family and endpoints.</p>
-            <h3 id="cubical-shorthand">Shorthand</h3>
+            <p><code>fun (i : Interval) => …</code> binds a coordinate inside the forms below. <code>Interval</code> is not a type: it belongs to no universe and cannot be the domain of an ordinary function. A coordinate can be <code>0</code>, <code>1</code>, a bound coordinate <code>i</code>, <code>flip(i)</code> (the reversal <span class="math">1 − i</span>), <code>meet(i, j)</code> (minimum) or <code>join(i, j)</code> (maximum).</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>path(fun (i : Interval) => A, fun (i : Interval) => body)</code></td><td>The path whose value at <code>i</code> is <code>body</code>, in the family <code>A</code></td></tr>
+                <tr><td><code>at(p, i)</code>, or <code>p @ i</code></td><td>The value of <code>p</code> at coordinate <code>i</code></td></tr>
+                <tr><td><code>PathP(fun (i : Interval) => A(i), a, b)</code></td><td>The type of dependent paths from <code>a : A(0)</code> to <code>b : A(1)</code>. <code>x = y</code> is the case of a constant family.</td></tr>
+              </tbody>
+            </table></div>
+            <pre><code data-check="accept">def reverse_path(A : U0, x y : A, p : x = y) : y = x {
+  exact path(fun (i : Interval) =&gt; A, fun (i : Interval) =&gt; at(p, flip(i)));
+}
+
+def value_at_zero(A : U0, x y : A, p : x = y) : p @ 0 = x {
+  exact refl(x);
+}
+
+def to_start(A : U0, x y : A, p : x = y) :
+  PathP(fun (j : Interval) =&gt; x = p @ j, refl(x), p) {
+  exact path j =&gt; path i =&gt; p @ meet(i, j);
+}</code></pre>
+            <p><code>value_at_zero</code> holds by computation. In <code>to_start</code>, the square <code>p @ meet(i, j)</code> is <code>refl(x)</code> at <code>j = 0</code> and <code>p</code> at <code>j = 1</code>. The kernel checks every endpoint:</p>
+            <pre><code data-check="reject" data-error="Type mismatch.">def wrong_direction(A : U0, x y : A, p : x = y) : x = y {
+  exact path i =&gt; p @ flip(i);
+}</code></pre>
+            <p>A coordinate is not a term, and <code>Interval</code> is not a type:</p>
+            <pre><code data-check="reject" data-error="Interval coordinates can only be used in interval arguments.">def coordinate_as_term(A : U0, x : A) : x = x {
+  exact path i =&gt; typed(Nat, i);
+}</code></pre>
+            <pre><code data-check="reject" data-error="Untranslated name: Interval">def interval_as_type(i : Interval) = i;</code></pre>
+          </section>
+          <section id="cubical-shorthand">
+            <h2>Shorthand</h2>
             <div class="table-scroll"><table>
               <thead><tr><th>Source</th><th>Meaning</th></tr></thead>
               <tbody>
-                <tr><td><code>path i =&gt; body</code></td><td><code>path(family, fun (i : Interval) =&gt; body)</code>, where <code>family</code> comes from the expected <code>Path</code> or <code>PathP</code> type. Without an expected path type it is rejected.</td></tr>
+                <tr><td><code>path i => body</code></td><td><code>path(family, fun (i : Interval) => body)</code>, with <code>family</code> from the expected <code>=</code> or <code>PathP</code> type</td></tr>
                 <tr><td><code>p @ i</code></td><td><code>at(p, i)</code>. Binds tighter than every infix operator except application.</td></tr>
-                <tr><td><code>along C by p from v</code></td><td><code>transport(C, x, y, p, v)</code> with the endpoints <code>x</code>, <code>y</code> read from <code>p : x = y</code>. The family <code>C</code> is always written explicitly.</td></tr>
-                <tr><td><code>apd_path(f, p)</code></td><td>For <code>f : forall a : A, C(a)</code> and <code>p : x = y</code>, the direct dependent path <code>PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y))</code>, which is <code>path i =&gt; f(p @ i)</code>.</td></tr>
-                <tr><td><code>over C along p by { … }</code></td><td>In a block whose goal is <code>PathP(fun (i : Interval) =&gt; C(p @ i), a, b)</code>, prove instead <code>transport(C, x, y, p, a) = b</code> and convert the result. Closing.</td></tr>
-                <tr><td><code>ext x;</code></td><td>For a goal <code>f = g</code> between functions, bind <code>x</code> and continue with <code>f(x) = g(x)</code>.</td></tr>
+                <tr><td><code>along C by p from v</code></td><td><code>transport(C, x, y, p, v)</code>, with <code>x</code> and <code>y</code> read from <code>p : x = y</code>. See <a href="paths.html#transport">transport</a>.</td></tr>
+                <tr><td><code>apd_path(f, p)</code></td><td>For <code>f : forall a : A, C(a)</code> and <code>p : x = y</code>, the dependent path <code>path i => f(p @ i)</code></td></tr>
+                <tr><td><code>over C along p by { … }</code></td><td>Proves a <code>PathP</code> over <code>p</code> from an equality after transport. Closing.</td></tr>
+                <tr><td><code>ext x;</code></td><td>For a goal <code>f = g</code> between functions, continue with <code>f(x) = g(x)</code></td></tr>
               </tbody>
             </table></div>
             <pre><code data-check="accept">def reverse_again(A : U0, x y : A, p : x = y) : y = x {
   exact path i =&gt; p @ flip(i);
+}
+
+def constant_path(A : U0, x : A) : x = x {
+  exact path i =&gt; x;
 }
 
 def naturality_square(A B : U0, f g : A -&gt; B,
@@ -84,15 +112,20 @@ def naturality_square(A B : U0, f g : A -&gt; B,
   PathP(fun (j : Interval) =&gt; H(x) @ j = H(y) @ j, cong(f, p), cong(g, p)) {
   exact path j =&gt; path i =&gt; H(p @ i) @ j;
 }</code></pre>
-            <p><code>reverse_again</code> is the same term as <code>reverse_path</code> above, with the family read from the goal. <code>naturality_square</code> fills a square whose sides are <code>cong(f, p)</code>, <code>cong(g, p)</code>, <code>H(x)</code> and <code>H(y)</code>. The outer <code>path j</code> gets its family from the <code>PathP</code> goal. Each inner <code>path i</code> gets its family from the equality at <code>j</code>. The kernel then checks all four edges.</p>
-            <h3 id="dependent-paths">Dependent paths and transport</h3>
-            <pre><code data-check="accept">def move_in_fiber(A : U0, C : A -&gt; U0, x y : A, p : x = y, v : C(x)) : C(y) {
-  exact along C by p from v;
-}
-
-def section_path(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)), x y : A, p : x = y) :
+            <p><code>reverse_again</code> is the same term as <code>reverse_path</code>, with the family read from the goal. <code>naturality_square</code> fills a square whose sides are <code>cong(f, p)</code>, <code>cong(g, p)</code>, <code>H(x)</code> and <code>H(y)</code>. The outer <code>path j</code> gets its family from the <code>PathP</code> goal, and each inner <code>path i</code> from the equality at <code>j</code>. The kernel then checks all four edges.</p>
+            <p>The shorthand needs an expected path type to supply the family:</p>
+            <pre><code data-check="reject" data-error="path i =&gt; ... needs an expected Path or PathP type.">def no_expected_type(A : U0, x : A) = path i =&gt; x;</code></pre>
+          </section>
+          <section id="dependent-paths">
+            <h2>Dependent paths</h2>
+            <pre><code data-check="accept">def section_path(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)), x y : A, p : x = y) :
   PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
   exact apd_path(f, p);
+}
+
+def section_by_hand(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)), x y : A, p : x = y) :
+  PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
+  exact path i =&gt; f(p @ i);
 }
 
 def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)),
@@ -102,51 +135,105 @@ def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)),
     exact apd(f, x, y, p);   // goal: transport(C, x, y, p, f(x)) = f(y)
   }
 }</code></pre>
-            <p>There are two standard ways to state that a dependent function respects a path. A <code>PathP</code> states it directly, as a path lying over <code>p</code>. The transported equality <code>transport(C, x, y, p, f(x)) = f(y)</code> states it in one fiber. <code>apd_path</code> produces the first; the older <code>apd</code> produces the second. <code>over</code> lets you prove a <code>PathP</code> goal by proving the transported equality, when that is easier. The family <code>C</code> is never inferred: the elaborator does not search for a family that fits.</p>
-            <h3 id="ext">Function extensionality: <code>ext</code></h3>
+            <p>There are two standard ways to state that a dependent function respects a path. A <code>PathP</code> states it directly, as a path lying over <code>p</code>. The transported equality <code>transport(C, x, y, p, f(x)) = f(y)</code> states it in one fiber. <code>apd_path</code> produces the first and <code>apd</code> the second. <code>over</code> proves a <code>PathP</code> goal from the transported equality, when that is easier. The family <code>C</code> is never inferred: the elaborator does not search for a family that fits.</p>
+            <pre><code data-check="reject" data-error="over requires an expected PathP goal.">def not_a_path_goal(A : U0, C : A -&gt; U0, x y : A, p : x = y) : Nat {
+  over C along p by {
+    exact 0;
+  }
+}</code></pre>
+          </section>
+          <section id="ext">
+            <h2>Function extensionality: <code>ext</code></h2>
             <pre><code data-check="accept">def pointwise_path(A B : U0, f g : A -&gt; B, h : (forall x : A, f(x) = g(x))) : f = g {
   ext x;
   exact h(x);
+}
+
+def dependent_pointwise(A : U0, C : A -&gt; U0, f g : forall a : A, C(a),
+    h : forall a : A, f(a) = g(a)) : f = g {
+  ext a;
+  exact h(a);
 }</code></pre>
-            <p>Cubical paths make function extensionality provable: <code>path i =&gt; fun x =&gt; h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the function type is fixed, meaning the goal is <code>f = g</code> with <code>f g : forall x : A, C(x)</code>. It uses no axiom, unlike the <a href="assumptions.html#axioms"><code>FunExt</code></a> interface.</p>
-            <h3>Composition</h3>
-            <pre><code data-check="fragment" data-reason="An expression inside a path body; p, q, x, i and A are bound by the surrounding proof.">comp(fun (j : Interval) =&gt; A, at(p, i),
-  face(i, 0, fun (j : Interval) =&gt; x),
-  face(i, 1, fun (j : Interval) =&gt; at(q, j)))</code></pre>
-            <p><code>comp</code> fills from coordinate 0 to coordinate 1, starting at the
-              supplied base. Optional walls have the displayed <code>face</code> syntax;
-              their coordinate belongs to the outer scope. The kernel checks that the
-              walls match the base and agree on overlaps. With no walls, this is transport.
-              Picture a square with the base as its bottom edge and the walls as its sides. <code>comp</code> produces the top edge. This is how <code>trans</code> is built.</p>
+            <p>Cubical paths make function extensionality provable: <code>path i => fun x => h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the goal is <code>f = g</code> with <code>f g : forall x : A, C(x)</code>. It uses no assumption, unlike the <a href="assumptions.html#axioms"><code>FunExt</code></a> interface. Unlike <code>rw</code>, <code>ext</code> never closes the block: a statement proving <code>f(x) = g(x)</code> must follow, even when that holds by <code>rfl</code>.</p>
+            <pre><code data-check="reject" data-error="ext requires equality of functions.">def not_functions(n : Nat) : n = n {
+  ext x;
+  rfl;
+}</code></pre>
+          </section>
+          <section id="composition">
+            <h2>Composition</h2>
+            <p><code>comp(family, base, walls…)</code> fills from coordinate 0 to coordinate 1, starting at <code>base</code>. Picture a square with the base as its bottom edge and the walls as its sides: <code>comp</code> produces the top edge. A wall <code>face(i, 0, fun (j : Interval) => …)</code> gives the side where the outer coordinate <code>i</code> is 0, and likewise for 1. The kernel checks that each wall starts on the base and that walls agree where they meet. With no walls, <code>comp</code> is transport.</p>
+            <pre><code data-check="accept">def join(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
+  exact path i =&gt; comp(fun (j : Interval) =&gt; A, p @ i,
+    face(i, 0, fun (j : Interval) =&gt; x),
+    face(i, 1, fun (j : Interval) =&gt; q @ j));
+}
+
+def move(A : U0, C : A -&gt; U0, x y : A, p : x = y, v : C(x)) : C(y) {
+  exact comp(fun (j : Interval) =&gt; C(p @ j), v);
+}</code></pre>
+            <p><code>join</code> is how <code>trans</code> is built: the bottom edge is <code>p</code>, the left wall stays at <code>x</code>, and the right wall follows <code>q</code>. A wall that does not start on the base is rejected. Here the left wall starts at <code>y</code>, but the base starts at <code>x</code>:</p>
+            <pre><code data-check="reject" data-error="Composition tube disagrees with its base.">def misplaced_wall(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
+  exact path i =&gt; comp(fun (j : Interval) =&gt; A, p @ i,
+    face(i, 0, fun (j : Interval) =&gt; y),
+    face(i, 1, fun (j : Interval) =&gt; q @ j));
+}</code></pre>
+            <p><code>fill(family, base, level, walls…)</code> is the same filling stopped at the coordinate <code>level</code>, so it gives the whole square rather than its top edge. <code>face_when(formula, wall)</code> states a wall’s face as a formula built from <code>on(i, 0)</code>, <code>on(i, 1)</code>, <code>and</code> and <code>or</code>:</p>
+            <pre><code data-check="accept">def filler(A : U0, x y z : A, p : x = y, q : y = z) :
+  PathP(fun (j : Interval) =&gt; x = q @ j, p, trans(p, q)) {
+  exact path j =&gt; path i =&gt; fill(fun (k : Interval) =&gt; A, p @ i, j,
+    face(i, 0, fun (k : Interval) =&gt; x),
+    face(i, 1, fun (k : Interval) =&gt; q @ k));
+}
+
+def join_by_formulas(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
+  exact path i =&gt; comp(fun (j : Interval) =&gt; A, p @ i,
+    face_when(on(i, 0), fun (j : Interval) =&gt; x),
+    face_when(on(i, 1), fun (j : Interval) =&gt; q @ j));
+}</code></pre>
             <p>Interval and face formulas are kept in a normal form of joins of meets. Some compact formulas have exponentially large normal forms. Rather than exhaust memory, the checker refuses any expansion beyond 4,096 clauses or a fixed work budget, with a lattice budget error. Split such a proof into smaller named steps.</p>
-            <h3>Pushouts</h3>
-            <pre><code data-check="fragment" data-reason="A signature summary: S, A, B, f and g stand for any span.">def P = Pushout(S, A, B, f, g);
-// f : S -&gt; A; g : S -&gt; B
-// push_left(P, a) : P
-// push_right(P, b) : P
-// push_path(P, s) : push_left(P, f(s)) =[P] push_right(P, g(s))</code></pre>
-            <p><code>pushout_induction(motive, leftCase, rightCase, bridgeCase, value)</code>
-              eliminates a pushout. The motive is a type family over the pushout;
-              the bridge case supplies a dependent path over each gluing path, with
-              endpoints given by the two point cases. Constructor computations are checked in C.</p>
-            <p><code>Suspension(A)</code> is the pushout of the two constant maps
-              <code>A -&gt; Unit</code>. <code>north(A)</code>, <code>south(A)</code>, and
-              <code>meridian(A, a)</code> use its point and path constructors.
-              <a href="../proof.html?proof=cubical_paths">Open the checked examples</a>.</p>
+          </section>
+          <section id="pushouts">
+            <h2>Pushouts</h2>
+            <p><code>Pushout(S, A, B, f, g)</code>, for <code>f : S -> A</code> and <code>g : S -> B</code>, glues <code>A</code> and <code>B</code> along <code>S</code>. Its constructors are <code>push_left(P, a)</code>, <code>push_right(P, b)</code> and, for each <code>s : S</code>, the path <code>push_path(P, s) : push_left(P, f(s)) = push_right(P, g(s))</code>, where <code>P</code> is the pushout type.</p>
+            <pre><code data-check="accept">def TwoPoints = Pushout(Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
+
+def west = push_left(TwoPoints, tt);
+
+def east = push_right(TwoPoints, tt);
+
+def bridge(n : Nat) : west = east {
+  exact push_path(TwoPoints, n);
+}
+
+def collapse(value : TwoPoints) : Unit {
+  exact pushout_induction(fun (s : TwoPoints) =&gt; Unit,
+    fun (a : Unit) =&gt; tt, fun (b : Unit) =&gt; tt, fun (n : Nat) =&gt; refl(tt), value);
+}</code></pre>
+            <p><code>pushout_induction(motive, leftCase, rightCase, bridgeCase, value)</code> eliminates a pushout into a family over it. The bridge case gives, for each <code>s</code>, a path over <code>push_path(P, s)</code> between the two point cases. The constructor computations are checked by the kernel. Pushouts are built into the kernel today; user-declared higher inductive types are planned for stage 2 of the work plan.</p>
           </section>
           <section id="suspensions">
             <h2>Suspensions</h2>
-            <p>Suspension is derived from the kernel’s pushout type. Its operations are ordinary definitions in <a href="../proof.html?proof=suspension_types&amp;name=Suspension">the suspension library</a>. Import <code>suspension_types</code> to use them; click their names to inspect their definitions. <code>Suspension(A)</code> has points <code>north(A)</code> and <code>south(A)</code>, and, for every <code>a : A</code>, a path <code>meridian(A, a) : north(A) = south(A)</code>. The circle and puncture models build on these operations.</p>
+            <p>The suspension of <code>A</code> is the pushout of the two maps <code>A -> Unit</code>. Its operations are ordinary definitions in <a href="../proof.html?proof=suspension_types&amp;name=Suspension">the suspension library</a>, so they are written with the pushout constructors:</p>
             <pre><code data-check="accept">def Suspension(A : U0) = Pushout(A, Unit, Unit,
   fun (_ : A) =&gt; tt, fun (_ : A) =&gt; tt);
 def north(A : U0) = push_left(Suspension(A), tt);
 def south(A : U0) = push_right(Suspension(A), tt);
 def meridian(A : U0, a : A) = push_path(Suspension(A), a);</code></pre>
-            <p><code>suspension_induction(A, C, atNorth, atSouth, coherence, point)</code> eliminates into a family <code>C</code> on the suspension. The coherence argument takes <code>a : A</code> and proves</p>
-            <pre><code data-check="fragment" data-reason="The statement a coherence argument proves; its names are the eliminator arguments described above.">transport(C, north(A), south(A), meridian(A, a), atNorth)
-  = atSouth</code></pre>
-            <p>The result has type <code>C(point)</code>. <code>suspension_meridian_beta(A, C, atNorth, atSouth, coherence, a)</code> gives the propositional computation law on the meridian: dependent application of the constructed section to that path equals <code>coherence(a)</code>. See the <a href="../proof.html?proof=suspension">suspension examples</a> and <a href="../proof.html?proof=circle">circle proof</a>.</p>
+            <p>After <code>import suspension_types;</code>, <code>Suspension(A)</code> has the points <code>north(A)</code> and <code>south(A)</code> and, for every <code>a : A</code>, a path <code>meridian(A, a) : north(A) = south(A)</code>. <code>suspension_induction(A, C, atNorth, atSouth, coherence, point)</code> eliminates into a family <code>C</code> over the suspension. The coherence case takes <code>a : A</code> and proves <code>transport(C, north(A), south(A), meridian(A, a), atNorth) = atSouth</code>.</p>
+            <pre><code data-check="accept">import suspension_types;
+
+def pole_path(A : U0, a : A) : north(A) = south(A) {
+  exact meridian(A, a);
+}
+
+def to_unit(A : U0, point : Suspension(A)) : Unit {
+  exact suspension_induction(A, fun (s : Suspension(A)) =&gt; Unit, tt, tt,
+    fun (a : A) =&gt; refl(tt), point);
+}</code></pre>
+            <p><code>suspension_meridian_beta(A, C, atNorth, atSouth, coherence, a)</code> is the computation law on a meridian, stated as an equality: the constructed section maps <code>meridian(A, a)</code> to <code>coherence(a)</code>. The circle and puncture models build on these operations; see the <a href="../proof.html?proof=suspension">suspension examples</a> and the <a href="../proof.html?proof=circle">circle proof</a>.</p>
           </section>
+
           <nav class="pager" aria-label="Chapter navigation">
             <a class="previous" href="rewriting.html">← 7. Equational reasoning and simplification</a>
             <a class="next" href="conversion.html">9. Conversion and opacity →</a>
