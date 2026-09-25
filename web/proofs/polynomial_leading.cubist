@@ -3,13 +3,11 @@ import polynomial_division;
 // A polynomial with support below 1 is a constant coefficient function.
 def series_support_one(K : AlgebraicField, f : FormalSeries(K), support : SeriesSupport(K, f, 1)) :
   f = series_constant(K, f(0)) {
-  exact FunExt(
-    U0, Nat, (fun (n : Nat) => af_carrier(K)), f, series_constant(K, f(0)),
-    (fun (n : Nat) => induction n as k return (f(k) = series_constant(K, f(0), k)) {
-        zero => refl(f(0));
-        succ ignored => support(succ(k), tt);
-      })
-  );
+  ext n;
+  exact induction n as k return (f(k) = series_constant(K, f(0), k)) {
+    zero => refl(f(0));
+    succ ignored => support(succ(k), tt);
+  };
 }
 
 def convolution_constant_left(K : AlgebraicField, a : af_carrier(K), n : Nat, f : FormalSeries(K)) :

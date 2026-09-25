@@ -30,23 +30,19 @@ def transport_path_roundtrip(
     fun (i : Interval) => C(p @ i), n, s,
     path_from_transport(fun (i : Interval) => C(p @ i), n, s, q)
   ) = q {
-  exact path(
-    fun (k : Interval) => (along C by p from n) = s,
-    fun (k : Interval) => path(
-      fun (j : Interval) => C(y),
-      fun (j : Interval) => comp(
-        fun (i : Interval) => C(p @ i), n,
-        face(j, 0, fun (i : Interval) => fill(fun (r : Interval) => C(p @ r), n, i)),
-        face(
-          j, 1,
-          fun (i : Interval) => path_from_transport(fun (r : Interval) => C(p @ r), n, s, q) @ i
-        ),
-        face(
-          k, 1,
-          fun (i : Interval) => fill(
-            fun (r : Interval) => C(p @ i), fill(fun (r : Interval) => C(p @ r), n, i), j,
-            face(i, 0, fun (r : Interval) => n), face(i, 1, fun (r : Interval) => q @ r)
-          )
+  exact path k => path(
+    fun (j : Interval) => C(y),
+    fun (j : Interval) => comp(
+      fun (i : Interval) => C(p @ i), n,
+      face(j, 0, fun (i : Interval) => fill(fun (r : Interval) => C(p @ r), n, i)),
+      face(
+        j, 1, fun (i : Interval) => path_from_transport(fun (r : Interval) => C(p @ r), n, s, q) @ i
+      ),
+      face(
+        k, 1,
+        fun (i : Interval) => fill(
+          fun (r : Interval) => C(p @ i), fill(fun (r : Interval) => C(p @ r), n, i), j,
+          face(i, 0, fun (r : Interval) => n), face(i, 1, fun (r : Interval) => q @ r)
         )
       )
     )

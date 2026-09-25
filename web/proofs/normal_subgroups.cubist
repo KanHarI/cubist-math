@@ -77,7 +77,7 @@ def group_kernel_identity(G : Group) :
 
 def group_kernel_trivial_member(G H : Group, x : group_carrier(G)) :
   subgroup_members(G, group_kernel(G, H, group_hom_trivial(G, H)), x) {
-  exact refl(group_unit(H));
+  rfl;
 }
 
 def group_kernel_trivial(G H : Group) :

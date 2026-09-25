@@ -26,7 +26,7 @@ def cauchy_approximation_period_laws(
   appendApproximation : (
     forall p : point = point, forall q : point = point,
     FieldAsymptotic(
-      F, zero, addF, lt, approximations(append_path(X, point, point, point, p, q)),
+      F, zero, addF, lt, approximations(trans(p, q)),
       (fun (n : Nat) => addF(approximations(p, n), approximations(q, n)))
     )
   )
@@ -50,9 +50,9 @@ def cauchy_approximation_period_laws(
   );
   have appendLaw :
     forall p : point = point, forall q : point = point,
-    period(append_path(X, point, point, point, p, q)) = addF(period(p), period(q)) {
+    period(trans(p, q)) = addF(period(p), period(q)) {
     intro p q;
-    let joined = append_path(X, point, point, point, p, q);
+    let joined = trans(p, q);
     exact field_asymptotic_limits_equal(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, approximations(joined),
       (fun (n : Nat) => addF(approximations(p, n), approximations(q, n))),

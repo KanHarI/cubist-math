@@ -93,16 +93,11 @@ def field_or_elim(
 }
 
 def field_and_prop(P Q : U1, propP : FieldProp(P), propQ : FieldProp(Q), a b : P and Q) : a = b {
-  exact path(
-    (fun (t : Interval) => P and Q),
+  exact path t => typed(
+    P and Q,
     (
-      fun (t : Interval) => typed(
-        P and Q,
-        (
-          propP(field_fst(P, Q, a), field_fst(P, Q, b)) @ t,
-          propQ(field_snd(P, Q, a), field_snd(P, Q, b)) @ t
-        )
-      )
+      propP(field_fst(P, Q, a), field_fst(P, Q, b)) @ t,
+      propQ(field_snd(P, Q, a), field_snd(P, Q, b)) @ t
     )
   );
 }

@@ -198,11 +198,11 @@ def f4_frobenius_square :
 def f4_root_polynomial(x : F4Carrier) = f4_add(f4_add(f4_mul(x, x), x), f4_1);
 
 def f4_alpha_root : f4_root_polynomial(f4_2) = f4_0 {
-  exact refl(f4_0);
+  rfl;
 }
 
 def f4_other_root : f4_root_polynomial(f4_3) = f4_0 {
-  exact refl(f4_0);
+  rfl;
 }
 
 def f4_3_not_2(p : f4_3 = f4_2) =

@@ -43,16 +43,13 @@ def successor_predecessor(z : Z) = match z as w return (successorZ(predecessorZ(
 
 def successor_triangle(z : Z) =
   match z as w return (
-    ap(U1, Z, Z, successorZ, predecessorZ(successorZ(w)), w, predecessor_successor(w)) = successor_predecessor(
-      successorZ(w)
-    )
+    cong(successorZ, predecessor_successor(w)) = successor_predecessor(successorZ(w))
   ) {
     left n => refl(refl(nonnegative(succ(n))));
     right n => induction n as k return (
-      ap(
-        U1, Z, Z, successorZ, predecessorZ(successorZ(negative(k))), negative(k),
-        predecessor_successor(negative(k))
-      ) = successor_predecessor(successorZ(negative(k)))
+      cong(successorZ, predecessor_successor(negative(k))) = successor_predecessor(
+        successorZ(negative(k))
+      )
     ) {
       zero => refl(refl(zeroZ));
       succ previous => refl(refl(negative(k)));

@@ -22,14 +22,10 @@ def field_predicate_ext(
   propQ : (forall a : A, FieldProp(Q(a))), same : (forall a : A, FieldIff(P(a), Q(a)))
 ) :
   P = Q {
-  exact FunExt(
-    U1, A, (fun (a : A) => typed(U1, U0)), P, Q,
-    (
-      fun (a : A) => field_prop_ext(
-        P(a), Q(a), propP(a), propQ(a), field_fst(P(a) -> Q(a), Q(a) -> P(a), same(a)),
-        field_snd(P(a) -> Q(a), Q(a) -> P(a), same(a))
-      )
-    )
+  ext a;
+  exact field_prop_ext(
+    P(a), Q(a), propP(a), propQ(a), field_fst(P(a) -> Q(a), Q(a) -> P(a), same(a)),
+    field_snd(P(a) -> Q(a), Q(a) -> P(a), same(a))
   );
 }
 

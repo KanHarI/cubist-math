@@ -215,25 +215,25 @@ def kernel_image_adjoint_triangle(
   A B : U1, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
   epsilon : (forall y : B, f(g(y)) = y), x : A
 ) :
-  ap(U1, A, B, f, g(f(x)), x, eta(x)) = kernel_image_adjoint_counit(A, B, f, g, eta, epsilon, f(x)) {
+  cong(f, eta(x)) = kernel_image_adjoint_counit(A, B, f, g, eta, epsilon, f(x)) {
   let a = f(g(f(g(f(x)))));
   let b = f(g(f(x)));
   let c = f(x);
   let p = epsilon(b);
-  let q = ap(U1, A, B, f, g(f(g(f(x)))), g(f(x)), eta(g(f(x))));
-  let s = ap(U1, A, B, f, g(f(x)), x, eta(x));
-  let act = (fun (r : g(f(g(f(x)))) = g(f(x))) => ap(U1, A, B, f, g(f(g(f(x)))), g(f(x)), r));
-  have exchange : q = ap(U1, B, B, (fun (v : B) => f(g(v))), b, c, s) := trans(
+  let q = cong(f, eta(g(f(x))));
+  let s = cong(f, eta(x));
+  let act = (fun (r : g(f(g(f(x)))) = g(f(x))) => cong(f, r));
+  have exchange : q = cong((fun (v : B) => f(g(v))), s) := trans(
     sym(cong(act, kernel_image_homotopy_self(A, (fun (v : A) => g(f(v))), eta, x))),
     kernel_image_ap_interchange(A, B, f, g, g(f(x)), x, eta(x))
   );
-  have middle : concatenate(U1, B, a, b, c, q, epsilon(c)) = concatenate(U1, B, a, b, c, p, s) := trans(
-    cong((fun (r : a = b) => concatenate(U1, B, a, b, c, r, epsilon(c))), exchange),
+  have middle : trans(q, epsilon(c)) = trans(p, s) := trans(
+    cong((fun (r : a = b) => trans(r, epsilon(c))), exchange),
     kernel_image_homotopy_natural(B, (fun (v : B) => f(g(v))), epsilon, b, c, s)
   );
   exact sym(
     trans(
-      cong((fun (r : a = c) => concatenate(U1, B, b, a, c, inverse(U1, B, a, b, p), r)), middle),
+      cong((fun (r : a = c) => trans(sym(p), r)), middle),
       kernel_image_path_prepend_inverse_cancel_at(B, a, b, c, p, s)
     )
   );

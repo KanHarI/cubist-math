@@ -71,5 +71,5 @@ def f4_add_derivation_rank :
   sigma_first(
     Nat, (fun (n : Nat) => FieldClosureStage(F4, F4AlphaGenerator, n, f4_0)), f4_add_derivation
   ) = 2 {
-  exact refl(2);
+  rfl;
 }

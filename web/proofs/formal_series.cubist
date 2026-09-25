@@ -196,18 +196,13 @@ def convolution_shift_right(K : AlgebraicField, n : Nat) =
 
 def series_decompose(K : AlgebraicField, f : FormalSeries(K)) :
   f = series_add(K, series_constant(K, f(0)), series_shift(K, series_tail(K, f))) {
-  exact FunExt(
-    U0, Nat, (fun (n : Nat) => af_carrier(K)), f,
-    series_add(K, series_constant(K, f(0)), series_shift(K, series_tail(K, f))),
-    (
-      fun (n : Nat) => induction n as k return (
-        f(k) = field_add(K, series_constant(K, f(0), k), series_shift(K, series_tail(K, f), k))
-      ) {
-        zero => sym(scalar_add_zero_right(K, f(0)));
-        succ ignored => sym(scalar_add_zero(K, f(succ(k))));
-      }
-    )
-  );
+  ext n;
+  exact induction n as k return (
+    f(k) = field_add(K, series_constant(K, f(0), k), series_shift(K, series_tail(K, f), k))
+  ) {
+    zero => sym(scalar_add_zero_right(K, f(0)));
+    succ ignored => sym(scalar_add_zero(K, f(succ(k))));
+  };
 }
 
 def convolution_right_step(K : AlgebraicField, n : Nat, f g : FormalSeries(K)) :
@@ -259,9 +254,7 @@ def series_mul_tail(K : AlgebraicField, f g : FormalSeries(K)) :
   series_tail(K, series_mul(K, f, g)) = series_add(
     K, series_scale(K, f(0), series_tail(K, g)), series_mul(K, series_tail(K, f), g)
   ) {
-  exact refl(
-    series_add(K, series_scale(K, f(0), series_tail(K, g)), series_mul(K, series_tail(K, f), g))
-  );
+  rfl;
 }
 
 def convolution_assoc_step(

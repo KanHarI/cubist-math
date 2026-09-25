@@ -34,12 +34,7 @@ def weighted_winding_laws(
   );
   have append :
     forall p : BouquetLoops(Fin(n)), forall q : BouquetLoops(Fin(n)),
-    weighted_winding_sum(
-      n, G, zero, addG, negG, values,
-      append_path(
-        PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p, q
-      )
-    ) = addG(
+    weighted_winding_sum(n, G, zero, addG, negG, values, trans(p, q)) = addG(
       weighted_winding_sum(n, G, zero, addG, negG, values, p),
       weighted_winding_sum(n, G, zero, addG, negG, values, q)
     ) {
@@ -54,13 +49,7 @@ def weighted_winding_laws(
       );
     let total =
       fun (i : Fin(n)) => integer_multiple(
-        G, zero, addG, negG, values(i),
-        puncture_winding(
-          n, i,
-          append_path(
-            PunctureGraph(n), bouquet_base(Fin(n)), bouquet_base(Fin(n)), bouquet_base(Fin(n)), p, q
-          )
-        )
+        G, zero, addG, negG, values(i), puncture_winding(n, i, trans(p, q))
       );
     exact trans(
       finite_sum_cong(

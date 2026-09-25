@@ -26,8 +26,8 @@ def paired_complex_period_laws(
     field_pair_path(F, F, period(refl(point)), complex_zero(F, zero), realZero, imagZero),
     (
       fun (p q : point = point) => field_pair_path(
-        F, F, period(append_path(X, point, point, point, p, q)),
-        complex_add(F, addF, period(p), period(q)), realAppend(p, q), imagAppend(p, q)
+        F, F, period(trans(p, q)), complex_add(F, addF, period(p), period(q)), realAppend(p, q),
+        imagAppend(p, q)
       )
     )
   );
@@ -42,7 +42,7 @@ def PeriodApproximationLaws(
   and (
     forall p : point = point, forall q : point = point,
     FieldAsymptotic(
-      F, zero, addF, lt, approximations(append_path(X, point, point, point, p, q)),
+      F, zero, addF, lt, approximations(trans(p, q)),
       (fun (n : Nat) => addF(approximations(p, n), approximations(q, n)))
     )
   );

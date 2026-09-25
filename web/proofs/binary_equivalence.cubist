@@ -17,19 +17,19 @@ opaque def binary_to_nat(n : BinaryNat) = match n return Nat {
   };
 
 def binary_decode_one : binary_positive_to_nat(binary_one) = 1 {
-  exact refl(1);
+  rfl;
 }
 
 def binary_decode_even(p : BinaryPositive) :
   binary_positive_to_nat(binary_bit0(p)) = binary_positive_to_nat(p) + binary_positive_to_nat(p) {
-  exact refl(binary_positive_to_nat(p) + binary_positive_to_nat(p));
+  rfl;
 }
 
 def binary_decode_odd(p : BinaryPositive) :
   binary_positive_to_nat(binary_bit1(p)) = succ(
     binary_positive_to_nat(p) + binary_positive_to_nat(p)
   ) {
-  exact refl(succ(binary_positive_to_nat(p) + binary_positive_to_nat(p)));
+  rfl;
 }
 
 def binary_decode_positive_succ(p : BinaryPositive) :

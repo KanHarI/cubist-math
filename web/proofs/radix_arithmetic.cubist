@@ -104,7 +104,7 @@ def radix_factorial_step(extra n : Nat) :
   radix_factorial(extra, succ(n)) = radix_mul(
     extra, radix_of_nat(extra, succ(n)), radix_factorial(extra, n)
   ) {
-  exact refl(radix_mul(extra, radix_of_nat(extra, succ(n)), radix_factorial(extra, n)));
+  rfl;
 }
 
 def radix_factorial_value_step(
@@ -119,5 +119,5 @@ def radix_factorial_value_step(
 
 def radix_factorial_zero(extra : Nat) :
   radix_factorial(extra, 0) = radix_positive(extra, radix_one(extra)) {
-  exact refl(radix_positive(extra, radix_one(extra)));
+  rfl;
 }

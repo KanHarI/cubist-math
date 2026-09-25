@@ -29,7 +29,7 @@ def letter_path(
 ) =
   match letter return (basepoint = basepoint) {
     left a => generators(a);
-    right a => inverse(U1, X, basepoint, basepoint, generators(a));
+    right a => sym(generators(a));
   };
 
 def eval_word_of(A X : U0, basepoint : X, generators : A -> (basepoint = basepoint), n : Nat) =
@@ -38,10 +38,7 @@ def eval_word_of(A X : U0, basepoint : X, generators : A -> (basepoint = basepoi
     succ previous => fun (word : WordOf(A, succ(k))) => unpack typed(
       WordOf(A, k) and Signed(A), word
     ) as (prefix, letter) return (basepoint = basepoint) {
-      append_path(
-        X, basepoint, basepoint, basepoint, previous(prefix),
-        letter_path(A, X, basepoint, generators, letter)
-      );
+      trans(previous(prefix), letter_path(A, X, basepoint, generators, letter));
     };
   };
 
@@ -54,21 +51,19 @@ def eval_snoc(
   A X : U0, basepoint : X, generators : A -> (basepoint = basepoint), word : Word(A),
   letter : Signed(A)
 ) :
-  eval_word(A, X, basepoint, generators, word_snoc(A, word, letter)) = append_path(
-    X, basepoint, basepoint, basepoint, eval_word(A, X, basepoint, generators, word),
-    letter_path(A, X, basepoint, generators, letter)
+  eval_word(A, X, basepoint, generators, word_snoc(A, word, letter)) = trans(
+    eval_word(A, X, basepoint, generators, word), letter_path(A, X, basepoint, generators, letter)
   ) {
   exact pair_induction(
     (
-      fun (w : Word(A)) => eval_word(A, X, basepoint, generators, word_snoc(A, w, letter)) = append_path(
-        X, basepoint, basepoint, basepoint, eval_word(A, X, basepoint, generators, w),
-        letter_path(A, X, basepoint, generators, letter)
+      fun (w : Word(A)) => eval_word(A, X, basepoint, generators, word_snoc(A, w, letter)) = trans(
+        eval_word(A, X, basepoint, generators, w), letter_path(A, X, basepoint, generators, letter)
       )
     ),
     (
       fun (n : Nat) (letters : WordOf(A, n)) => refl(
-        append_path(
-          X, basepoint, basepoint, basepoint, eval_word_of(A, X, basepoint, generators, n, letters),
+        trans(
+          eval_word_of(A, X, basepoint, generators, n, letters),
           letter_path(A, X, basepoint, generators, letter)
         )
       )
@@ -100,17 +95,14 @@ def generated_snoc(
   represented : GeneratedLoop(A, X, basepoint, generators, p), letter : Signed(A)
 ) :
   GeneratedLoop(
-    A, X, basepoint, generators,
-    append_path(
-      X, basepoint, basepoint, basepoint, p, letter_path(A, X, basepoint, generators, letter)
-    )
+    A, X, basepoint, generators, trans(p, letter_path(A, X, basepoint, generators, letter))
   ) {
   exact mere_map(
     (exists word : Word(A), eval_word(A, X, basepoint, generators, word) = p),
     (
       exists word : Word(A),
-      eval_word(A, X, basepoint, generators, word) = append_path(
-        X, basepoint, basepoint, basepoint, p, letter_path(A, X, basepoint, generators, letter)
+      eval_word(A, X, basepoint, generators, word) = trans(
+        p, letter_path(A, X, basepoint, generators, letter)
       )
     ),
     (
@@ -118,8 +110,8 @@ def generated_snoc(
         word, same
       ) return (
         exists word : Word(A),
-        eval_word(A, X, basepoint, generators, word) = append_path(
-          X, basepoint, basepoint, basepoint, p, letter_path(A, X, basepoint, generators, letter)
+        eval_word(A, X, basepoint, generators, word) = trans(
+          p, letter_path(A, X, basepoint, generators, letter)
         )
       ) {
         (
@@ -128,9 +120,8 @@ def generated_snoc(
             eval_snoc(A, X, basepoint, generators, word, letter),
             cong(
               (
-                fun (q : basepoint = basepoint) => append_path(
-                  X, basepoint, basepoint, basepoint, q,
-                  letter_path(A, X, basepoint, generators, letter)
+                fun (q : basepoint = basepoint) => trans(
+                  q, letter_path(A, X, basepoint, generators, letter)
                 )
               ), same
             )
@@ -144,15 +135,15 @@ def generated_snoc(
 def reverse_letter_path(
   A X : U0, basepoint : X, generators : A -> (basepoint = basepoint), letter : Signed(A)
 ) :
-  letter_path(A, X, basepoint, generators, reverse_letter(A, letter)) = inverse(
-    U1, X, basepoint, basepoint, letter_path(A, X, basepoint, generators, letter)
+  letter_path(A, X, basepoint, generators, reverse_letter(A, letter)) = sym(
+    letter_path(A, X, basepoint, generators, letter)
   ) {
   exact match letter as s return (
-    letter_path(A, X, basepoint, generators, reverse_letter(A, s)) = inverse(
-      U1, X, basepoint, basepoint, letter_path(A, X, basepoint, generators, s)
+    letter_path(A, X, basepoint, generators, reverse_letter(A, s)) = sym(
+      letter_path(A, X, basepoint, generators, s)
     )
   ) {
-    left a => refl(inverse(U1, X, basepoint, basepoint, generators(a)));
+    left a => refl(sym(generators(a)));
     right a => sym(inverse_twice(X, basepoint, basepoint, generators(a)));
   };
 }
@@ -171,20 +162,13 @@ def word_backtrack_cancels(
     eval_snoc(A, X, basepoint, generators, word_snoc(A, word, letter), reverse_letter(A, letter)),
     trans(
       cong(
-        (
-          fun (q : basepoint = basepoint) => append_path(
-            X, basepoint, basepoint, basepoint, q, back
-          )
-        ), eval_snoc(A, X, basepoint, generators, word, letter)
+        (fun (q : basepoint = basepoint) => trans(q, back)),
+        eval_snoc(A, X, basepoint, generators, word, letter)
       ),
       trans(
         cong(
-          (
-            fun (q : basepoint = basepoint) => append_path(
-              X, basepoint, basepoint, basepoint,
-              append_path(X, basepoint, basepoint, basepoint, p, edge), q
-            )
-          ), reverse_letter_path(A, X, basepoint, generators, letter)
+          (fun (q : basepoint = basepoint) => trans(trans(p, edge), q)),
+          reverse_letter_path(A, X, basepoint, generators, letter)
         ), append_path_left_inverse(X, basepoint, basepoint, basepoint, edge, p)
       )
     )
@@ -212,10 +196,7 @@ def LoopMapLaws(
   X : U0, point : X, G : U1, unit : G, multiply : G -> G -> G, h : (point = point) -> G
 ) =
   (h(refl(point)) = unit)
-  and (
-    forall p : point = point, forall q : point = point,
-    h(append_path(X, point, point, point, p, q)) = multiply(h(p), h(q))
-  );
+  and (forall p : point = point, forall q : point = point, h(trans(p, q)) = multiply(h(p), h(q)));
 
 def loop_map_word_of(
   A X : U0, point : X, generators : A -> (point = point), G : U1, unit : G, multiply : G -> G -> G,

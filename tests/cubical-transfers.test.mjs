@@ -60,11 +60,11 @@ test("actual binary and radix factorial proofs transport through native Glue in 
         assert.equal(declaration.status, "not-translated");
         continue;
       }
-      // The elementary bijections and pair eliminations also check. These ten
-      // declarations depend on the still-untranslated generic half-adjoint API.
-      if (name === "equivalences" && ["Coherence", "HalfAdjointLaws", "equivalence_function",
-        "equivalence_inverse_data", "equivalence_inverse", "equivalence_laws",
-        "equivalence_left", "equivalence_right", "bijection_equiv", "equiv_bijection"].includes(declaration.name)) {
+      // The elementary bijections, pair eliminations and half-adjoint laws also
+      // check. These eight declarations depend on the still-untranslated
+      // generic Equiv API.
+      if (name === "equivalences" && ["equivalence_function", "equivalence_inverse_data",
+        "equivalence_inverse", "equivalence_laws", "equivalence_left", "equivalence_right", "bijection_equiv", "equiv_bijection"].includes(declaration.name)) {
         assert.equal(declaration.status, "not-translated");
         continue;
       }

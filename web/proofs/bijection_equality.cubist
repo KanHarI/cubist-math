@@ -120,22 +120,18 @@ def sigma_prop(
 
 // Being a set is itself a proposition; this does not depend on any group laws.
 def is_set_prop(A : U0, p q : IsSet(A)) : p = q {
+  ext x;
   exact FunExt(
-    U0, A, (fun (x : A) => forall y : A, Proposition(x = y)), p, q,
+    U0, A, (fun (y : A) => Proposition(x = y)), p(x), q(x),
     (
-      fun (x : A) => FunExt(
-        U0, A, (fun (y : A) => Proposition(x = y)), p(x), q(x),
+      fun (y : A) => FunExt(
+        U0, (x = y), (fun (r : x = y) => forall t : x = y, r = t), p(x, y), q(x, y),
         (
-          fun (y : A) => FunExt(
-            U0, (x = y), (fun (r : x = y) => forall t : x = y, r = t), p(x, y), q(x, y),
+          fun (r : x = y) => FunExt(
+            U0, (x = y), (fun (t : x = y) => r = t), p(x, y, r), q(x, y, r),
             (
-              fun (r : x = y) => FunExt(
-                U0, (x = y), (fun (t : x = y) => r = t), p(x, y, r), q(x, y, r),
-                (
-                  fun (t : x = y) => proposition_is_set(
-                    (x = y), p(x, y), r, t, p(x, y, r, t), q(x, y, r, t)
-                  )
-                )
+              fun (t : x = y) => proposition_is_set(
+                (x = y), p(x, y), r, t, p(x, y, r, t), q(x, y, r, t)
               )
             )
           )
@@ -154,10 +150,10 @@ def coherence_prop(
 ) :
   Proposition(Coherence(A, B, f, g, eta, eps)) {
   exact forall_prop(
-    A, (fun (x : A) => typed((f(g(f(x))) = f(x)), ap(U1, A, B, f, g(f(x)), x, eta(x))) = eps(f(x))),
+    A, (fun (x : A) => typed((f(g(f(x))) = f(x)), cong(f, eta(x))) = eps(f(x))),
     (
       fun (x : A) => proposition_is_set(
-        (f(g(f(x))) = f(x)), setB(f(g(f(x))), f(x)), ap(U1, A, B, f, g(f(x)), x, eta(x)), eps(f(x))
+        (f(g(f(x))) = f(x)), setB(f(g(f(x))), f(x)), cong(f, eta(x)), eps(f(x))
       )
     )
   );
@@ -227,14 +223,10 @@ def equivalences_are_bijections(A B : U0, setA : IsSet(A), setB : IsSet(B)) :
 
 // Propositionality evidence has no further choices once the proposition is known.
 def is_prop_prop(P : U0, p q : Proposition(P)) : p = q {
+  ext x;
   exact FunExt(
-    U0, P, (fun (x : P) => forall y : P, x = y), p, q,
-    (
-      fun (x : P) => FunExt(
-        U0, P, (fun (y : P) => x = y), p(x), q(x),
-        (fun (y : P) => proposition_is_set(P, p, x, y, p(x, y), q(x, y)))
-      )
-    )
+    U0, P, (fun (y : P) => x = y), p(x), q(x),
+    (fun (y : P) => proposition_is_set(P, p, x, y, p(x, y), q(x, y)))
   );
 }
 

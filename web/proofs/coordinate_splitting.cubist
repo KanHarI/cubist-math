@@ -22,16 +22,14 @@ def finite_function_ext(
   rest : finite_tail(A, n, f) = finite_tail(A, n, g)
 ) :
   f = g {
-  exact FunExt(
-    U0, Fin(succ(n)), (fun (i : Fin(succ(n))) => A), f, g,
-    (fun (i : Fin(succ(n))) => match i as index return (f(index) = g(index)) {
-        left u => trans(
-          sym(cong((fun (w : Unit) => f(typed(Fin(succ(n)), left(w)))), unit_equal(u))),
-          trans(first, cong((fun (w : Unit) => g(typed(Fin(succ(n)), left(w)))), unit_equal(u)))
-        );
-        right j => cong((fun (v : Fin(n) -> A) => v(j)), rest);
-      })
-  );
+  ext i;
+  exact match i as index return (f(index) = g(index)) {
+    left u => trans(
+      sym(cong((fun (w : Unit) => f(typed(Fin(succ(n)), left(w)))), unit_equal(u))),
+      trans(first, cong((fun (w : Unit) => g(typed(Fin(succ(n)), left(w)))), unit_equal(u)))
+    );
+    right j => cong((fun (v : Fin(n) -> A) => v(j)), rest);
+  };
 }
 
 def scalar_mul_one_right(K : AlgebraicField, a : af_carrier(K)) :

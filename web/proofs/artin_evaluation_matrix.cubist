@@ -198,12 +198,10 @@ def coordinate_rows_separating_injective(
     forall a : vector_carrier(K, C), linear_map(K, C, D, h, a) = vector_zero(K, D)
     -> a = vector_zero(K, C) {
     intro a vanishes;
-    exact FunExt(
-      U0, Fin(n), (fun (i : Fin(n)) => af_carrier(K)), a, vector_zero(K, C),
-      separates(
-        a, (fun (j : Fin(m)) => cong((fun (v : Fin(m) -> af_carrier(K)) => v(j)), vanishes))
-      )
-    );
+    ext x;
+    exact separates(
+      a, (fun (j : Fin(m)) => cong((fun (v : Fin(m) -> af_carrier(K)) => v(j)), vanishes))
+    )(x);
   }
   exact linear_kernel_injective(K, C, D, h, kernel);
 }

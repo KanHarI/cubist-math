@@ -179,13 +179,11 @@ def quotient_maps_ext(
   atClass : (forall a : A, f(quotient_class(A, relation, a)) = g(quotient_class(A, relation, a)))
 ) :
   f = g {
-  exact FunExt(
-    U1, SetQuotient(A, relation), (fun (q : SetQuotient(A, relation)) => B), f, g,
-    quotient_induction_prop(
-      A, relation, (fun (q : SetQuotient(A, relation)) => typed(U1, f(q) = g(q))),
-      (fun (q : SetQuotient(A, relation)) => setB(f(q), g(q))), atClass
-    )
-  );
+  ext x;
+  exact quotient_induction_prop(
+    A, relation, (fun (q : SetQuotient(A, relation)) => typed(U1, f(q) = g(q))),
+    (fun (q : SetQuotient(A, relation)) => setB(f(q), g(q))), atClass
+  )(x);
 }
 
 // The descended map is the unique map whose composite with the class map is f.

@@ -79,14 +79,11 @@ def identity_system_equivalence(
 def constant_path_correction(
   A : U1, choose : (forall x : A, forall y : A, (x = y) -> (x = y)), x y : A, p : x = y
 ) :
-  concatenate(U1, A, x, x, y, inverse(U1, A, x, x, choose(x, x, refl(x))), choose(x, y, p)) = p {
+  trans(sym(choose(x, x, refl(x))), choose(x, y, p)) = p {
   exact based_induction(
     U1, U1, A, x,
-    (
-      fun (y : A) (p : x = y) => concatenate(
-        U1, A, x, x, y, inverse(U1, A, x, x, choose(x, x, refl(x))), choose(x, y, p)
-      ) = p
-    ), inverse_left(A, x, x, choose(x, x, refl(x))), y, p
+    (fun (y : A) (p : x = y) => trans(sym(choose(x, x, refl(x))), choose(x, y, p)) = p),
+    inverse_left(A, x, x, choose(x, x, refl(x))), y, p
   );
 }
 
@@ -102,13 +99,8 @@ def constant_paths_are_set(
   exact trans(
     sym(constant_path_correction(A, choose, x, y, p)),
     trans(
-      cong(
-        (
-          fun (r : x = y) => concatenate(
-            U1, A, x, x, y, inverse(U1, A, x, x, choose(x, x, refl(x))), r
-          )
-        ), constant(x, y, p, q)
-      ), constant_path_correction(A, choose, x, y, q)
+      cong((fun (r : x = y) => trans(sym(choose(x, x, refl(x))), r)), constant(x, y, p, q)),
+      constant_path_correction(A, choose, x, y, q)
     )
   );
 }

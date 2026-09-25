@@ -193,7 +193,7 @@ def radix_binary_leading_beta(extra : Nat, d : RadixDigit(succ(extra))) :
   radix_positive_to_binary(extra, radix_leading(extra, d)) = binary_of_nat(
     succ(radix_digit_value(succ(extra), d))
   ) {
-  exact refl(binary_of_nat(succ(radix_digit_value(succ(extra), d))));
+  rfl;
 }
 
 def radix_binary_append_beta(
@@ -203,12 +203,7 @@ def radix_binary_append_beta(
     binary_mul(binary_of_nat(succ(succ(extra))), radix_positive_to_binary(extra, p)),
     binary_of_nat(radix_digit_value(succ(succ(extra)), d))
   ) {
-  exact refl(
-    binary_add(
-      binary_mul(binary_of_nat(succ(succ(extra))), radix_positive_to_binary(extra, p)),
-      binary_of_nat(radix_digit_value(succ(succ(extra)), d))
-    )
-  );
+  rfl;
 }
 
 def radix_binary_append_value(
@@ -234,5 +229,5 @@ def radix_binary_append_value(
 
 def radix_binary_positive_beta(extra : Nat, p : RadixPositive(extra)) :
   radix_to_binary(extra, radix_positive(extra, p)) = radix_positive_to_binary(extra, p) {
-  exact refl(radix_positive_to_binary(extra, p));
+  rfl;
 }

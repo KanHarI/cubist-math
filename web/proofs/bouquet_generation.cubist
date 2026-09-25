@@ -10,20 +10,10 @@ def bouquet_generated_prop(A : U0, p : BouquetLoops(A)) =
 
 def bouquet_generated_unappend(
   A : U0, a : A, p : BouquetLoops(A),
-  represented : BouquetGenerated(
-    A,
-    append_path(
-      Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), p,
-      inverse(U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a))
-    )
-  )
+  represented : BouquetGenerated(A, trans(p, sym(bouquet_generator(A, a))))
 ) :
   BouquetGenerated(A, p) {
-  let before =
-    append_path(
-      Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), p,
-      inverse(U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a))
-    );
+  let before = trans(p, sym(bouquet_generator(A, a)));
   exact along BouquetGenerated(A) by append_path_right_inverse(
     Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a), p
   ) from generated_snoc(
@@ -38,18 +28,12 @@ def bouquet_generation_spoke(A : U0) :
   (along bouquet_generation_family(A) by bouquet_spoke(A) from BouquetGenerated(A)) = BouquetGenerated(
     A
   ) {
-  exact FunExt(
-    U1, BouquetLoops(A), (fun (p : BouquetLoops(A)) => typed(U1, U0)),
-    along bouquet_generation_family(A) by bouquet_spoke(A) from BouquetGenerated(A),
-    BouquetGenerated(A),
-    (
-      fun (p : BouquetLoops(A)) => trans(
-        transport_predicate(
-          Bouquet(A), bouquet_code(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A),
-          BouquetGenerated(A), p
-        ), cong(BouquetGenerated(A), bouquet_spoke_backward(A, p))
-      )
-    )
+  ext p;
+  exact trans(
+    transport_predicate(
+      Bouquet(A), bouquet_code(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A),
+      BouquetGenerated(A), p
+    ), cong(BouquetGenerated(A), bouquet_spoke_backward(A, p))
   );
 }
 
@@ -57,39 +41,22 @@ def bouquet_generation_edge(A : U0, a : A) :
   (along bouquet_generation_family(A) by bouquet_edge(A, a) from BouquetGenerated(A)) = BouquetGenerated(
     A
   ) {
-  exact FunExt(
-    U1, BouquetLoops(A), (fun (p : BouquetLoops(A)) => typed(U1, U0)),
-    along bouquet_generation_family(A) by bouquet_edge(A, a) from BouquetGenerated(A),
-    BouquetGenerated(A),
-    (
-      fun (p : BouquetLoops(A)) => trans(
-        transport_predicate(
-          Bouquet(A), bouquet_code(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a),
-          BouquetGenerated(A), p
-        ),
-        trans(
-          cong(BouquetGenerated(A), bouquet_edge_backward(A, a, p)),
-          field_prop_ext(
-            BouquetGenerated(
-              A,
-              append_path(
-                Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), p,
-                inverse(U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a))
-              )
-            ), BouquetGenerated(A, p),
-            bouquet_generated_prop(
-              A,
-              append_path(
-                Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), p,
-                inverse(U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a))
-              )
-            ), bouquet_generated_prop(A, p), bouquet_generated_unappend(A, a, p),
-            (
-              fun (represented : BouquetGenerated(A, p)) => generated_snoc(
-                A, Bouquet(A), bouquet_base(A), bouquet_generator(A), p, represented,
-                typed(Signed(A), right(a))
-              )
-            )
+  ext p;
+  exact trans(
+    transport_predicate(
+      Bouquet(A), bouquet_code(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a),
+      BouquetGenerated(A), p
+    ),
+    trans(
+      cong(BouquetGenerated(A), bouquet_edge_backward(A, a, p)),
+      field_prop_ext(
+        BouquetGenerated(A, trans(p, sym(bouquet_generator(A, a)))), BouquetGenerated(A, p),
+        bouquet_generated_prop(A, trans(p, sym(bouquet_generator(A, a)))),
+        bouquet_generated_prop(A, p), bouquet_generated_unappend(A, a, p),
+        (
+          fun (represented : BouquetGenerated(A, p)) => generated_snoc(
+            A, Bouquet(A), bouquet_base(A), bouquet_generator(A), p, represented,
+            typed(Signed(A), right(a))
           )
         )
       )

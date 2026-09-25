@@ -19,15 +19,13 @@ def append_path_right_inverse_raw(A : U0, x y z : A, q : y = z) =
 // triangle holds for the actual cubical composition operation.
 def append_path_right_inverse(A : U0, x y z : A, q : y = z) =
   adjoint_counit(
-    U0, (x = y), (x = z), (fun (p : x = y) => append_path(A, x, y, z, p, q)),
-    (fun (p : x = z) => append_path(A, x, z, y, p, inverse(U1, A, y, z, q))),
+    U0, (x = y), (x = z), (fun (p : x = y) => trans(p, q)), (fun (p : x = z) => trans(p, sym(q))),
     append_path_left_inverse(A, x, y, z, q), append_path_right_inverse_raw(A, x, y, z, q)
   );
 
 def append_path_triangle(A : U0, x y z : A, q : y = z) =
   adjoint_triangle(
-    U0, (x = y), (x = z), (fun (p : x = y) => append_path(A, x, y, z, p, q)),
-    (fun (p : x = z) => append_path(A, x, z, y, p, inverse(U1, A, y, z, q))),
+    U0, (x = y), (x = z), (fun (p : x = y) => trans(p, q)), (fun (p : x = z) => trans(p, sym(q))),
     append_path_left_inverse(A, x, y, z, q), append_path_right_inverse_raw(A, x, y, z, q)
   );
 
@@ -35,8 +33,7 @@ def append_path_equivalence(A : U0, x y z : A, q : y = z) =
   typed(
     Equiv(U0, (x = y), (x = z)),
     (
-      (fun (p : x = y) => append_path(A, x, y, z, p, q)),
-      (fun (p : x = z) => append_path(A, x, z, y, p, inverse(U1, A, y, z, q))),
+      (fun (p : x = y) => trans(p, q)), (fun (p : x = z) => trans(p, sym(q))),
       append_path_left_inverse(A, x, y, z, q), append_path_right_inverse(A, x, y, z, q),
       append_path_triangle(A, x, y, z, q)
     )
@@ -82,10 +79,8 @@ def inverse_twice(A : U0, x y : A, p : x = y) = refl(p);
 // Pi composition precomposes the predicate with inverse transport. Its
 // universe-valued output then needs the explicit constant-transport path.
 def transport_predicate(A : U0, C : A -> U0, x y : A, p : x = y, P : C(x) -> U0, v : C(y)) :
-  (along((fun (point : A) => C(point) -> U0)) by p from P)(v) = P(
-    along C by inverse(U1, A, x, y, p) from v
-  ) {
-  exact transport_constant(A, U0, x, y, p, P(along C by inverse(U1, A, x, y, p) from v));
+  (along((fun (point : A) => C(point) -> U0)) by p from P)(v) = P(along C by sym(p) from v) {
+  exact transport_constant(A, U0, x, y, p, P(along C by sym(p) from v));
 }
 
 def close_path(

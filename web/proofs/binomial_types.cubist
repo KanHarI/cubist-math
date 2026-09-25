@@ -113,10 +113,8 @@ def predicate_normal(A : U0, p : (Unit or A) -> Bool) =
   predicate_join(A, p(head(A)), predicate_tail(A, p));
 
 def predicate_eta(A : U0, p : (Unit or A) -> Bool) : predicate_normal(A, p) = p {
-  exact FunExt(
-    U0, Unit or A, (fun (x : Unit or A) => Bool), predicate_normal(A, p), p,
-    function_join_split_point(A, Bool, p)
-  );
+  ext x;
+  exact function_join_split_point(A, Bool, p)(x);
 }
 
 def type_path_bijection(A B : U0, path : A = B) =

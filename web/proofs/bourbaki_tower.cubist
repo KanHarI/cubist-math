@@ -147,12 +147,7 @@ def tower_stable_prop(
 ) :
   FieldProp(TowerStable(A, le, complete, f, a)) {
   intro p q;
-  exact path(
-    (fun (t : Interval) => TowerStable(A, le, complete, f, a)),
-    (
-      fun (t : Interval) (b : A) (tb : TowerMember(A, le, complete, f, b)) (ba : le(b, a)) (
-        strict : le(a, b) -> Void
-      ) => order_prop(A, le, laws, f(b), a, p(b, tb, ba, strict), q(b, tb, ba, strict)) @ t
-    )
-  );
+  exact path t => fun (b : A) (tb : TowerMember(A, le, complete, f, b)) (ba : le(b, a)) (
+    strict : le(a, b) -> Void
+  ) => order_prop(A, le, laws, f(b), a, p(b, tb, ba, strict), q(b, tb, ba, strict)) @ t;
 }

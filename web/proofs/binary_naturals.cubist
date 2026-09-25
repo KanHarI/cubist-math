@@ -54,9 +54,9 @@ def binary_positive_cases(R : U0, one : R, even odd : BinaryPositive -> R, p : B
 
 // These examples reduce using only W, sum, unit and function computation.
 def binary_literal_digits : 0b110 = binary_positive(binary_bit0(binary_bit1(binary_one))) {
-  exact refl(0b110);
+  rfl;
 }
 
 def binary_literal_leading_zeroes : 0b000110 = 0b110 {
-  exact refl(0b110);
+  rfl;
 }

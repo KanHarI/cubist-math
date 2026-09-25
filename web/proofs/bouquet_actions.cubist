@@ -48,15 +48,8 @@ def action_spoke(A F : U0, actions : A -> Equiv(U0, F, F), v : F) :
 }
 
 def action_spoke_inverse(A F : U0, actions : A -> Equiv(U0, F, F), v : F) :
-  (
-    along action_family(A, F, actions) by inverse(
-      U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)
-    ) from v
-  ) = v {
-  let before =
-    along action_family(A, F, actions) by inverse(
-      U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)
-    ) from v;
+  (along action_family(A, F, actions) by sym(bouquet_spoke(A)) from v) = v {
+  let before = along action_family(A, F, actions) by sym(bouquet_spoke(A)) from v;
   exact trans(
     sym(action_spoke(A, F, actions, before)),
     transport_after_inverse(
@@ -93,8 +86,7 @@ def loop_action_generator(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F
   exact trans(
     transport_concat(
       Bouquet(A), action_family(A, F, actions), bouquet_base(A), bouquet_tip(A), bouquet_base(A),
-      bouquet_edge(A, a),
-      inverse(U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)), v
+      bouquet_edge(A, a), sym(bouquet_spoke(A)), v
     ),
     trans(
       action_spoke_inverse(
@@ -105,15 +97,8 @@ def loop_action_generator(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F
 }
 
 def loop_action_inverse(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
-  loop_action(
-    A, F, actions,
-    inverse(U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a)), v
-  ) = action_backward(F, actions(a), v) {
-  let before =
-    loop_action(
-      A, F, actions,
-      inverse(U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a)), v
-    );
+  loop_action(A, F, actions, sym(bouquet_generator(A, a)), v) = action_backward(F, actions(a), v) {
+  let before = loop_action(A, F, actions, sym(bouquet_generator(A, a)), v);
   let same =
     trans(
       sym(loop_action_generator(A, F, actions, a, before)),
@@ -128,10 +113,9 @@ def loop_action_inverse(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) 
 }
 
 def loop_action_append(A F : U0, actions : A -> Equiv(U0, F, F), p q : BouquetLoops(A), v : F) :
-  loop_action(
-    A, F, actions, append_path(Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), p, q),
-    v
-  ) = loop_action(A, F, actions, q, loop_action(A, F, actions, p, v)) {
+  loop_action(A, F, actions, trans(p, q), v) = loop_action(
+    A, F, actions, q, loop_action(A, F, actions, p, v)
+  ) {
   exact trans(
     cong(
       (fun (r : BouquetLoops(A)) => loop_action(A, F, actions, r, v)),

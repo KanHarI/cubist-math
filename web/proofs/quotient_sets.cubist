@@ -86,14 +86,11 @@ def quotient_is_set(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(
 def dependent_functions_are_set(A : U1, B : A -> U1, setB : (forall a : A, FieldSet(B(a)))) :
   FieldSet(forall a : A, B(a)) {
   intro f g p q;
-  exact path(
-    fun (j : Interval) => f = g,
-    fun (j : Interval) => path(
-      fun (i : Interval) => forall a : A, B(a),
-      fun (i : Interval) (a : A) => setB(
-        a, f(a), g(a), cong((fun (h : (forall a : A, B(a))) => h(a)), p),
-        cong((fun (h : (forall a : A, B(a))) => h(a)), q)
-      ) @ j @ i
-    )
+  exact path j => path(
+    fun (i : Interval) => forall a : A, B(a),
+    fun (i : Interval) (a : A) => setB(
+      a, f(a), g(a), cong((fun (h : (forall a : A, B(a))) => h(a)), p),
+      cong((fun (h : (forall a : A, B(a))) => h(a)), q)
+    ) @ j @ i
   );
 }

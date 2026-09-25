@@ -305,7 +305,7 @@ def RightLaw(A B : U0, f : A -> B, g : B -> A) = forall y : B, f(g(y)) = y;
 def Coherence(
   A B : U0, f : A -> B, g : B -> A, eta : LeftLaw(A, B, f, g), eps : RightLaw(A, B, f, g)
 ) =
-  forall x : A, typed((f(g(f(x))) = f(x)), ap(U1, A, B, f, g(f(x)), x, eta(x))) = eps(f(x));
+  forall x : A, typed((f(g(f(x))) = f(x)), cong(f, eta(x))) = eps(f(x));
 
 def HalfAdjointLaws(A B : U0, f : A -> B, g : B -> A) =
   exists eta : LeftLaw(A, B, f, g), exists eps : RightLaw(A, B, f, g),
