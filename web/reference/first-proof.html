@@ -88,11 +88,11 @@ def five = identity(Nat, 5);</code></pre>
             <p>A convenience that the kernel cannot check makes the declaration fail. It never turns into an assumption. The only assumptions are the explicit library ones described in chapter 10, <a href="assumptions.html#axioms">assumptions and computability</a>, and each theorem lists the ones it uses.</p>
             <p>Each declaration is checked on its own. A rejected declaration is not added, so a later declaration that uses it fails too, with a message naming the missing dependency:</p>
             <pre><code data-check="reject">def wrong : Nat {
-  exact tt;  // Error: Type mismatch.
+  exact Nat;  // Error: Type mismatch.
 }
 
-def uses_wrong = succ(wrong);  // Error: Untranslated dependency: wrong</code></pre>
-            <p>Here <code>wrong</code> fails with “Type mismatch.”, because <code>tt</code> is not a number, and <code>uses_wrong</code> fails because <code>wrong</code> does not exist. Chapter 11, <a href="checking.html#inspection">checking and inspection</a>, shows where to run the checker and how to read its results.</p>
+def uses_wrong = wrong;  // Error: Untranslated dependency: wrong</code></pre>
+            <p>Here <code>wrong</code> fails because <code>Nat</code> is a type, not a number, and <code>uses_wrong</code> fails because <code>wrong</code> does not exist. Chapter 11, <a href="checking.html#inspection">checking and inspection</a>, shows where to run the checker and how to read its results.</p>
           </section>
           <section id="files">
             <h2>Files and imports</h2>
@@ -101,24 +101,20 @@ def uses_wrong = succ(wrong);  // Error: Untranslated dependency: wrong</code></
 import sets;
 
 // Declarations and directives follow the imports.
-def four = 2 + 2;</code></pre>
+def seven = 7;</code></pre>
             <p>An import names a module without quotes or a file extension. <code>import primes;</code> loads <code>primes.cubist</code>. The command-line checker looks first in the directory of the file being checked, then in the library. The imported module is checked too, along with everything it imports.</p>
             <p>An import makes every checked declaration of the module available, and so do the modules it imports in turn. It also brings the <a href="rewriting.html#simp-registration">simplification rules and sets</a> that those modules register. Importing a module does not make a theorem depend on that module’s assumptions. Each theorem’s assumptions are computed from its own checked term.</p>
             <p>Imports must come first. An import after a declaration is a syntax error:</p>
             <pre><code data-check="reject">def zero_again = 0;
 
-import primes;  // Error: Expected def or axiom.</code></pre>
+import primes;  // Error: Imports must come before declarations.</code></pre>
           </section>
           <section id="names">
             <h2>Names and comments</h2>
             <p>A name starts with a letter or an underscore, followed by letters, digits and underscores. Names are case-sensitive: <code>value</code> and <code>Value</code> are different names.</p>
             <pre><code data-check="accept">def value = 0;
 
-def Value = 1;
-
-def value_is_zero : value = 0 {
-  exact refl(0);
-}</code></pre>
+def Value = 1;</code></pre>
             <p>Comments run from <code>//</code> to the end of the line. There are no block comments and no string literals. Source is plain ASCII: write <code>-></code>, <code>forall</code> and <code>exists</code>, not arrows or quantifier symbols. The inspector can display mathematical symbols, but the source cannot contain them:</p>
             <pre><code data-check="reject">def arrow(A : U0) : A → A {  // Error: Unexpected character →
   intro a;
@@ -128,12 +124,12 @@ def value_is_zero : value = 0 {
             <pre><code data-check="reject">def 2nd = 0;  // Error: Expected a name.</code></pre>
             <h3 id="descriptions">Descriptions</h3>
             <p><code>//</code> comments directly above a declaration become its description in the inspector, including when the declaration is imported. Consecutive comment lines join into one paragraph, and an empty <code>//</code> line starts another. A blank line separates a section comment from the declaration that follows it. A comment at the end of a line does not describe the next declaration. Descriptions are plain text and do not affect checking.</p>
-            <pre><code data-check="accept">// Section: successors.
+            <pre><code data-check="accept">// Section: small functions.
 
-// The successor of a number.
+// The identity on numbers.
 //
 // A second paragraph of the same description.
-def next(n : Nat) = succ(n);</code></pre>
+def same_number(n : Nat) = n;</code></pre>
             <p>Here the first comment is a section comment, because a blank line follows it. The next three lines are the description of <code>next</code>.</p>
           </section>
           <section id="declarations">
@@ -152,17 +148,15 @@ def same(A : U0, x : A) : A {
   exact x;
 }
 
-def self_equal(A : U0, x : A) : x = x {
-  exact refl(x);
+def second_of_two(A : U0, x y : A) : A {
+  exact y;
 }</code></pre>
             <p>A term declaration ends with <code>;</code>. A block declaration ends with <code>}</code>. There is no form with both a stated type and a term: in <code>def four : Nat = 4;</code> the checker reads <code>Nat = 4</code> as the type, an equation, and then expects a block:</p>
             <pre><code data-check="reject">def four : Nat = 4;  // Error: Expected '{', found ';'.</code></pre>
-            <p>To state the type of a short term, use a block with <code>exact</code>, or <a href="terms.html#typed"><code>typed</code></a>:</p>
+            <p>To state the type of a short term, use a block with <code>exact</code>. Chapter 2 adds <a href="terms.html#typed"><code>typed</code></a> for the same purpose inside a term.</p>
             <pre><code data-check="accept">def four : Nat {
   exact 4;
-}
-
-def also_four = typed(Nat, 4);</code></pre>
+}</code></pre>
             <p>A missing semicolon is reported at the next token:</p>
             <pre><code data-check="reject">def one = 1
 def two = 2;  // Error: Expected ';', found 'def'.</code></pre>
@@ -174,14 +168,16 @@ def two = 2;  // Error: Expected ';', found 'def'.</code></pre>
                 <tr><td><code>computable def name …</code></td><td>A definition that must use no assumption. See <a href="assumptions.html#computability">computability</a>.</td></tr>
                 <tr><td><code>evaluate term expecting value;</code></td><td>A directive that checks what a closed term computes to. See <a href="assumptions.html#evaluate">evaluate</a>.</td></tr>
                 <tr><td><code>simp_rule name priority N;</code><br /><code>simp_set name = [rule, …];</code></td><td>Directives that register checked equalities for simplification. See <a href="rewriting.html#simp-registration">registering rules</a>.</td></tr>
-                <tr><td><code>axiom name(params) : T;</code></td><td>Parsed, but always rejected. See below.</td></tr>
               </tbody>
             </table></div>
-            <p>A source file cannot introduce its own assumptions. <code>axiom</code> declarations are parsed and then rejected, and declarations that use them are blocked. The available assumptions are the library’s fixed schemas, such as truncation and excluded middle, described in <a href="assumptions.html#axioms">assumptions</a>.</p>
-            <pre><code data-check="reject">// Error: Axiom declarations require an explicit assumption policy; not translated.
-axiom Oracle : Nat -&gt; Nat;
+            <p>There is no <code>axiom</code> declaration: a source file cannot introduce assumptions of its own. To reason under a hypothesis, take it as a parameter. The result then holds for every value of the hypothesis, and the hypothesis stays visible in its type:</p>
+            <pre><code data-check="accept">def ask(oracle : Nat -&gt; Nat) = oracle(3);
 
-def ask = Oracle(3);  // Error: Untranslated dependency: Oracle</code></pre>
+def ask_again(oracle : Nat -&gt; Nat) = oracle(ask(oracle));</code></pre>
+            <p>The only assumptions are the library’s fixed schemas, such as truncation and excluded middle, described in <a href="assumptions.html#axioms">assumptions</a>. <code>axiom</code> is an ordinary name, so a declaration cannot start with it:</p>
+            <pre><code data-check="reject">// Error: Expected a declaration or directive: def, opaque def, computable def, evaluate, simp_rule or
+//   simp_set.
+axiom Oracle : Nat -&gt; Nat;</code></pre>
           </section>
           <section id="parameters">
             <h2>Parameters</h2>
@@ -193,16 +189,14 @@ def ask = Oracle(3);  // Error: Untranslated dependency: Oracle</code></pre>
 
 def pick_second(A B : U0, x y : A, b : B) = y;
 
-def picked = pick_second(Nat, Unit, 1, 2, tt);</code></pre>
-            <p>A declaration with parameters is a function of them. Every argument is written at each use: there are no implicit arguments, so <code>pick_second</code> takes the types <code>Nat</code> and <code>Unit</code> explicitly. Arguments can also be supplied a few at a time:</p>
-            <pre><code data-check="accept">def pair_up(A B : U0, a : A, b : B) : A and B {
-  exact (a, b);
-}
+def picked = pick_second(Nat, Nat, 1, 2, 3);</code></pre>
+            <p>A declaration with parameters is a function of them. Every argument is written at each use: there are no implicit arguments, so <code>pick_second</code> takes both types explicitly, here <code>Nat</code> twice. Arguments can also be supplied a few at a time:</p>
+            <pre><code data-check="accept">def first(A B : U0, a : A, b : B) = a;
 
-def with_zero = pair_up(Nat, Unit, 0);
+def first_number = first(Nat, Nat, 5);
 
-def completed = with_zero(tt);</code></pre>
-            <p><code>with_zero</code> has type <code>Unit -> Nat and Unit</code>. Supplying more arguments than a function takes is an error:</p>
+def five = first_number(7);</code></pre>
+            <p><code>first_number</code> has type <code>Nat -> Nat</code>: it waits for the last argument. Supplying more arguments than a function takes is an error:</p>
             <pre><code data-check="reject">def pick_first(A B : U0, a : A, b : B) = a;
 
 def too_many = pick_first(Nat, Nat, 1, 2, 3);  // Error: Source application is not a function.</code></pre>

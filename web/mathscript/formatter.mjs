@@ -89,7 +89,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
     if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === "=")
       assignmentTokens.add(tokenBefore.get(valueStart).start);
-    if (node.type && ["def", "axiom", "have"].includes(node.kind)) {
+    if (node.type && ["def", "have"].includes(node.kind)) {
       annotationStarts.add(node.type.start);
       const next = tokenAfter.get(node.type.end);
       if (next?.text === "{") proofBodyStarts.add(next.start);
@@ -157,7 +157,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         if (!close && trailing && preceding && declarationEnds.has(preceding.end)) docs.push(hard);
         previous = null; continue;
       }
-      const itemStart = ["def", "axiom", "opaque", "construction", "simp_rule", "simp_set"].includes(text)
+      const itemStart = ["def", "opaque", "construction", "simp_rule", "simp_set"].includes(text)
         || itemStarts.has(token.start);
       if (!close && itemStart && previous && !(["opaque", "computable"].includes(previous.text) && text === "def")
         && !(previous.text === "computable" && text === "opaque")) {

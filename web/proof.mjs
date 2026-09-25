@@ -392,7 +392,6 @@ const keywords = new Set([
   "verify",
   "with",
   "unfolding",
-  "axiom",
   "computable",
   "evaluate",
   "expecting",

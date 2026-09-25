@@ -550,13 +550,14 @@ export function parse(source, typeOnly = false) {
     if (computable) t = take();
     const opaque = t.text === "opaque";
     if (opaque) t = take("def");
-    if (!["def", "axiom"].includes(t.text))
-      throw Object.assign(new Error("Expected def or axiom."), {
+    if (t.text !== "def")
+      throw Object.assign(new Error(t.text === "import" ? "Imports must come before declarations."
+        : "Expected a declaration or directive: def, opaque def, computable def, evaluate, simp_rule or simp_set."), {
         offset: t.start,
       });
     const n = name(),
       params = [];
-    if (peek() === "=" && t.text !== "axiom") {
+    if (peek() === "=") {
       take("=");
       const value = expr();
       const end = take(";").end;
@@ -591,7 +592,7 @@ export function parse(source, typeOnly = false) {
       }
       take(")");
     }
-    if (peek() === "=" && t.text !== "axiom") {
+    if (peek() === "=") {
       take("=");
       let value = expr();
       const valueStart = value.start, valueEnd = value.end;
@@ -622,7 +623,7 @@ export function parse(source, typeOnly = false) {
     }
     take(":");
     const type = expr();
-    const body = t.text === "axiom" ? (take(";"), null) : block();
+    const body = block();
     declarations.push({
       kind: t.text,
       opaque,

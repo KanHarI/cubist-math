@@ -18,8 +18,6 @@ def detached = 0; // Trailing comment belongs to this line.
 def next = 0;
 // Proof documentation.
 def proof : Nat { exact 0; }
-// Explicit assumption documentation.
-axiom assumed : Nat;
 `;
   for (const newline of ["\n", "\r\n"]) {
     const text = source.replaceAll("\n", newline);
@@ -27,7 +25,7 @@ axiom assumed : Nat;
       [d.name.text, leadingDocumentation(text, d.start)?.text ?? ""]));
     assert.deepEqual(docs, {
       documented: "First paragraph wraps across two lines.\n\nSecond paragraph: <b>plain text</b>.",
-      detached: "", next: "", proof: "Proof documentation.", assumed: "Explicit assumption documentation.",
+      detached: "", next: "", proof: "Proof documentation.",
     });
   }
   const inline = "// Header\ndef first = 0; def second = 0;";

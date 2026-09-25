@@ -10,9 +10,16 @@ test("removed theorem declarations are rejected in both source forms", () => {
     "theorem identity(A : U0, x : A) = x;",
     "theorem identity : forall A : U0, A -> A { intro A; intro x; exact x; }",
   ]) {
-    assert.throws(() => parse(source), /Expected def or axiom/);
-    assert.throws(() => formatMathScript(source), /Expected def or axiom/);
+    assert.throws(() => parse(source), /Expected a declaration or directive/);
+    assert.throws(() => formatMathScript(source), /Expected a declaration or directive/);
   }
+});
+
+test("axiom is not a declaration, and imports come first", () => {
+  assert.throws(() => parse("axiom assumed : Nat;"), /Expected a declaration or directive: def, opaque def/);
+  assert.throws(() => parse("def zero_again = 0;\nimport primes;"), /^Error: Imports must come before declarations\.$/);
+  // `axiom` is an ordinary name elsewhere.
+  assert.equal(parse("def axiom(n : Nat) = n;").declarations[0].name.text, "axiom");
 });
 
 test("definitions check constructions and proofs and expose their checked bodies", async t => {
