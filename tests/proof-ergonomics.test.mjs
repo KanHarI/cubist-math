@@ -7,6 +7,7 @@ import {CubicalProgram} from "../web/cubical-program.mjs";
 import {formatMathScript} from "../web/mathscript/formatter.mjs";
 import {parse} from "../web/mathscript/parser.mjs";
 import {expandedSyntax} from "../web/mathscript/tuples.mjs";
+import {budget} from "./timing.mjs";
 
 const readLibrary = name => readFile(new URL(`../web/proofs/${name}.cubist`,import.meta.url),"utf8");
 const sample = name => readFile(new URL(`../docs/examples/proof-ergonomics/implemented/${name}.cubist`,import.meta.url),"utf8");
@@ -99,7 +100,7 @@ test("constant path reversal avoids exponential native interval expansion",async
   const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");},
     {collectReferences:false});
   t.after(()=>program.dispose());
-  program.kernel.setDeadline(500);
+  program.kernel.setDeadline(budget(500));
   const result=await program.check(source,"constant_path_reverse");
   assert.equal(result.outputs[0].verified,true,result.outputs[0].reason);
   const neutral=source.replace("def native_interval_budget :",
@@ -111,12 +112,12 @@ test("constant path reversal avoids exponential native interval expansion",async
     import {CubicalProgram} from ${JSON.stringify(programPath)};
     const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");},
       {collectReferences:false});
-    program.kernel.setDeadline(1000);
+    program.kernel.setDeadline(${budget(1000)});
     try { const result=await program.check(process.argv[1],"neutral_path_reverse");
       console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));
     } finally { program.dispose(); }`;
   const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script,neutral],
-    {encoding:"utf8",timeout:2500});
+    {encoding:"utf8",timeout:budget(2500)});
   assert.equal(child.error,undefined,child.stderr);
   assert.equal(child.status,0,child.stderr);
   const outputs=JSON.parse(child.stdout.trim());
@@ -143,7 +144,7 @@ test("positive composition faces use only the needed endpoint of a compact inter
   const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");},
     {collectReferences:false});
   t.after(()=>program.dispose());
-  program.kernel.setDeadline(1000);
+  program.kernel.setDeadline(budget(1000));
   const result=await program.check(source,"positive_face_budget");
   assert.equal(result.outputs[0].verified,true,result.outputs[0].reason);
 });
@@ -160,12 +161,12 @@ test("pushout construction visits shared source types within the proof deadline"
     import {CubicalProgram} from ${JSON.stringify(programPath)};
     const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import");},
       {collectReferences:false});
-    program.kernel.setDeadline(100);
+    program.kernel.setDeadline(${budget(100)});
     try { const result=await program.check(process.argv[1],"shared_pushout");
       console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));
     } finally {program.dispose();}`;
   const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script,source],
-    {encoding:"utf8",timeout:2500});
+    {encoding:"utf8",timeout:budget(2500)});
   assert.equal(child.error,undefined,child.stderr);
   assert.equal(child.status,0,child.stderr);
   assert.deepEqual(JSON.parse(child.stdout.trim()).map(output=>output.verified),[true,true]);
@@ -185,7 +186,7 @@ test("incomplete grouped binders and introductions fail without hanging the pars
     "def f : Nat { intro x"]) {
     const script=`import {parse} from ${JSON.stringify(parser)}; parse(process.argv[1]);`;
     const child=spawnSync(process.execPath,["--input-type=module","-e",script,source],
-      {encoding:"utf8",timeout:1000});
+      {encoding:"utf8",timeout:budget(1000)});
     assert.equal(child.error,undefined,source);
     assert.notEqual(child.status,0,source);
     assert.match(child.stderr,/Expected a name\./,source);
@@ -249,7 +250,7 @@ test("simp size budget interrupts serialization of a compact shared term",()=>{
       console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));
     } finally {checker.dispose();}`;
   const child=spawnSync(process.execPath,["--max-old-space-size=96","--input-type=module","-e",script],
-    {encoding:"utf8",timeout:1000});
+    {encoding:"utf8",timeout:budget(1000)});
   assert.equal(child.error,undefined,child.stderr);
   assert.equal(child.status,0,child.stderr);
   assert.deepEqual(JSON.parse(child.stdout.trim()).map(output=>output.verified),[false]);
@@ -272,7 +273,7 @@ test("simp rule selection and exclusion bound compact shared identities",()=>{
         console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));
       } finally {checker.dispose();}`;
     const child=spawnSync(process.execPath,["--max-old-space-size=96","--input-type=module","-e",script],
-      {encoding:"utf8",timeout:1500});
+      {encoding:"utf8",timeout:budget(1500)});
     assert.equal(child.error,undefined,`${tactic}: ${child.stderr}`);
     assert.equal(child.status,0,`${tactic}: ${child.stderr}`);
     assert.deepEqual(JSON.parse(child.stdout.trim()).map(output=>output.verified),[false]);
@@ -296,7 +297,7 @@ test("quantified simp rules scan each shared pattern node once",()=>{
         console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));
       } finally {checker.dispose();}`;
     const child=spawnSync(process.execPath,["--max-old-space-size=96","--input-type=module","-e",script],
-      {encoding:"utf8",timeout:1500});
+      {encoding:"utf8",timeout:budget(1500)});
     assert.equal(child.error,undefined,`${tactic}: ${child.stderr}`);
     assert.equal(child.status,0,`${tactic}: ${child.stderr}`);
     assert.deepEqual(JSON.parse(child.stdout.trim()).map(output=>output.verified),[true],tactic);
@@ -324,13 +325,13 @@ test("path reconstruction preserves compact shared terms within the proof deadli
       source+=${JSON.stringify(suffix)};
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
         {collectReferences:false});
-      checker.kernel.setDeadline(100);
+      checker.kernel.setDeadline(${budget(100)});
       try {
         const result=await checker.check(source,"shared_path_reconstruction");
         console.log(JSON.stringify(result.outputs.map(({verified,reason,axioms})=>({verified,reason,axioms}))));
       } finally {checker.dispose();}`;
     const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script],
-      {encoding:"utf8",timeout:2500});
+      {encoding:"utf8",timeout:budget(2500)});
     assert.equal(child.error,undefined,`${name}: ${child.stderr}`);
     assert.equal(child.status,0,`${name}: ${child.stderr}`);
     assert.deepEqual(JSON.parse(child.stdout.trim()),[{verified:true,axioms:[]}],name);
@@ -355,13 +356,13 @@ test("path abstraction and dependent-path transport keep shared inputs compact",
       }
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
         {collectReferences:false});
-      checker.kernel.setDeadline(100);
+      checker.kernel.setDeadline(${budget(100)});
       try {
         const result=await checker.check(source,"shared_cubical_syntax");
         console.log(JSON.stringify(result.outputs.map(({verified,reason,axioms})=>({verified,reason,axioms}))));
       } finally {checker.dispose();}`;
     const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script],
-      {encoding:"utf8",timeout:2500});
+      {encoding:"utf8",timeout:budget(2500)});
     assert.equal(child.error,undefined,`${mode}: ${child.stderr}`);
     assert.equal(child.status,0,`${mode}: ${child.stderr}`);
     assert.deepEqual(JSON.parse(child.stdout.trim()),[{verified:true,axioms:[]}],mode);
@@ -386,14 +387,14 @@ test("interval expansion is bounded while later declarations still elaborate",()
     import {CubicalProgram} from ${JSON.stringify(program)};
     const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
       {collectReferences:false});
-    checker.kernel.setDeadline(1000);
+    checker.kernel.setDeadline(${budget(1000)});
     try {
       const result=await checker.check(process.argv[1],"interval_budget");
       console.log(JSON.stringify(result.outputs.map(({verified,reason,axioms})=>({verified,reason,axioms}))));
     } finally {checker.dispose();}`;
   for(const [pairs,expected] of [[8,true],[14,false]]) {
     const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script,sourceFor(pairs)],
-      {encoding:"utf8",timeout:2500});
+      {encoding:"utf8",timeout:budget(2500)});
     assert.equal(child.error,undefined,`${pairs}: ${child.stderr}`);
     assert.equal(child.status,0,`${pairs}: ${child.stderr}`);
     const outputs=JSON.parse(child.stdout.trim());
@@ -423,7 +424,7 @@ test("shared path and transport proofs remain inspectable without expanding raw 
       import {CubicalProgram} from ${JSON.stringify(program)};
       import {boundedSyntaxJson} from ${JSON.stringify(json)};
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");});
-      checker.kernel.setDeadline(100);
+      checker.kernel.setDeadline(${budget(100)});
       try {
         const result=await checker.check(process.argv[1],"shared_inspection");
         const h=result.links.find(link=>link.name==="h");
@@ -433,7 +434,7 @@ test("shared path and transport proofs remain inspectable without expanding raw 
           rawLimited:boundedSyntaxJson(view.expression)===null}));
       } finally {checker.dispose();}`;
     const child=spawnSync(process.execPath,["--max-old-space-size=128","--input-type=module","-e",script,source],
-      {encoding:"utf8",timeout:2500});
+      {encoding:"utf8",timeout:budget(2500)});
     assert.equal(child.error,undefined,`${mode}: ${child.stderr}`);
     assert.equal(child.status,0,`${mode}: ${child.stderr}`);
     assert.deepEqual(JSON.parse(child.stdout.trim()),
