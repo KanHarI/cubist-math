@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="The basic types and the terms that build and use them: functions, pairs, sums, Unit and Void, and numbers." />
-    <title>Cubist · 2. Terms, functions and pairs</title>
+    <title>Cubist · 3. Terms, functions and pairs</title>
     <link rel="stylesheet" href="../language.css" />
   </head>
   <body>
@@ -19,7 +19,7 @@
     </header>
     <main>
       <div class="introduction">
-        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 2</p>
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 3</p>
         <h1>Terms, functions and pairs</h1>
         <p class="lead">The basic types and the terms that build and use them: functions, pairs, sums, Unit and Void, and numbers.</p>
       </div>
@@ -27,6 +27,7 @@
         <aside class="contents" aria-label="Chapters and sections">
           <h2><a href="../language.html">Chapters</a></h2>
           <ol class="chapters">
+            <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
             <li class="current"><a href="terms.html" aria-current="page">Terms, functions and pairs</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
@@ -261,7 +262,7 @@ def plus_zero(n : Nat) : n + 0 = n {
 def plus_zero_by_computation(n : Nat) : n + 0 = n {
   exact refl(n);  // Error: Type mismatch.
 }</code></pre>
-            <p>Induction on <code>Nat</code> and binary numerals are described in chapter 5, <a href="induction.html#induction">natural numbers and inductive types</a>.</p>
+            <p>Induction on <code>Nat</code> and binary numerals are described in <a href="induction.html#induction">natural numbers and inductive types</a>.</p>
           </section>
           <section id="typed">
             <h2>Expected types and <code>typed</code></h2>
@@ -311,8 +312,8 @@ def chained : 1 &lt; 2 &lt; 3 {
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="first-proof.html">← 1. A first proof and files</a>
-            <a class="next" href="proof-blocks.html">3. Proof blocks →</a>
+            <a class="previous" href="first-proof.html">← 2. A first proof and files</a>
+            <a class="next" href="proof-blocks.html">4. Proof blocks →</a>
           </nav>
         </article>
       </div>

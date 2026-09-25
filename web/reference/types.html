@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="The basic types and their values: numbers, Unit and Void, pairs, choices, functions, and types themselves." />
+    <title>Cubist · 1. Types and values</title>
+    <link rel="stylesheet" href="../language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 1</p>
+        <h1>Types and values</h1>
+        <p class="lead">The basic types and their values: numbers, Unit and Void, pairs, choices, functions, and types themselves.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li class="current"><a href="types.html" aria-current="page">Types and values</a></li>
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
+            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Error messages</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#values">Every value has a type</a></li>
+            <li><a href="#tour-numbers">Natural numbers</a></li>
+            <li><a href="#tour-unit-and-void">Unit and Void</a></li>
+            <li><a href="#tour-pairs">Pairs: <code>and</code></a></li>
+            <li><a href="#tour-choices">Choices: <code>or</code></a></li>
+            <li><a href="#tour-functions">Functions: <code>-></code></a></li>
+            <li><a href="#tour-types">Types are values too</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="values">
+            <h2>Every value has a type</h2>
+            <p>A Cubist file is a list of declarations. The simplest names a value:</p>
+            <pre><code data-check="accept">def seven = 7;</code></pre>
+            <p><code>def seven = 7;</code> names the value <code>7</code>. The checker works out its type, <code>Nat</code>, the type of natural numbers. Read <code>x : T</code> as “<code>x</code> has type <code>T</code>”: here <code>seven : Nat</code>.</p>
+            <h3 id="exact-intro">Stating the type: <code>exact</code></h3>
+            <p>A declaration can also state its type, after a colon. The value then goes in a <strong>block</strong> between braces, and the statement <code>exact value;</code> gives it:</p>
+            <pre><code data-check="accept">def seven_again : Nat {
+  exact 7;
+}</code></pre>
+            <p>The checker accepts the declaration only when the value really has the stated type. <code>exact</code> is the simplest statement a block can hold. The following chapters use blocks to build proofs one step at a time, and the chapter on <a href="proof-blocks.html#goals">proof blocks</a> lists every statement. This chapter introduces the basic types and their values; the next one writes a first proof.</p>
+          </section>
+          <section id="tour-numbers">
+            <h2>Natural numbers</h2>
+            <p><code>Nat</code> is the type of natural numbers <code>0, 1, 2, …</code>. They are built from <code>0</code> and <code>succ</code>, the successor: <code>succ(n)</code> is <code>n + 1</code>.</p>
+            <p>By default, a numeral is a <code>Nat</code> in this unary form: <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. It is not a machine integer, so a numeral’s size is the size of its term; numerals go up to 256. Binary literals such as <code>0b110</code> belong to a separate type, <code>BinaryNat</code>, described with the <a href="induction.html#w-types">inductive types</a>.</p>
+            <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import primes;</code> at its start. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
+            <pre><code data-check="accept">import primes;
+
+def three = succ(succ(succ(0)));
+
+evaluate three expecting 3;
+evaluate 2 + 3 expecting 5;
+evaluate 2 * 3 expecting 6;</code></pre>
+            <p>Without the import, <code>+</code> has no definition. A wrong expectation is reported with the actual value:</p>
+            <pre><code data-check="reject">def five = 2 + 3;  // Error: Untranslated name: add</code></pre>
+            <pre><code data-check="reject">import primes;
+
+evaluate 2 + 2 expecting 5;  // Error: The term evaluates to 4, not 5.</code></pre>
+          </section>
+          <section id="tour-unit-and-void">
+            <h2>Unit and Void</h2>
+            <p><code>Unit</code> is the type with exactly one value, <code>tt</code>. <code>Void</code> is the type with no values at all: no term of type <code>Void</code> can be written. Both matter once types are read as statements: <code>Unit</code> is a statement that is trivially true, and <code>Void</code> is falsehood.</p>
+            <pre><code data-check="accept">def nothing_much : Unit {
+  exact tt;
+}</code></pre>
+            <p>A value of the wrong type is rejected:</p>
+            <pre><code data-check="reject">def not_unit : Unit {
+  exact 0;  // Error: Type mismatch.
+}</code></pre>
+          </section>
+          <section id="tour-pairs">
+            <h2>Pairs: <code>and</code></h2>
+            <p><code>A and B</code> is the type of pairs <code>(a, b)</code> with <code>a : A</code> and <code>b : B</code>. Three or more components are written in one tuple, <code>(1, 2, 3)</code>, with the type <code>Nat and Nat and Nat</code>.</p>
+            <pre><code data-check="accept">def pair : Nat and Unit {
+  exact (3, tt);
+}
+
+def triple : Nat and Nat and Nat {
+  exact (1, 2, 3);
+}</code></pre>
+            <p>A pair needs its type stated: the checker does not guess it.</p>
+            <pre><code data-check="reject">def loose = (3, tt);  // Error: Pair requires an expected type.</code></pre>
+          </section>
+          <section id="tour-choices">
+            <h2>Choices: <code>or</code></h2>
+            <p><code>A or B</code> is the type of values that are either a value of <code>A</code>, written <code>left(a)</code>, or a value of <code>B</code>, written <code>right(b)</code>. A value remembers which side it came from. The chapter on terms shows how to <a href="terms.html#match">take a choice apart</a>.</p>
+            <pre><code data-check="accept">def a_number : Nat or Unit {
+  exact left(3);
+}
+
+def no_number : Nat or Unit {
+  exact right(tt);
+}</code></pre>
+          </section>
+          <section id="tour-functions">
+            <h2>Functions: <code>-></code></h2>
+            <p><code>A -> B</code> is the type of functions from <code>A</code> to <code>B</code>. <code>fun (n : Nat) => n + n</code> is the function that doubles a number, of type <code>Nat -> Nat</code>. A declaration with parameters defines a function in one step, and <code>f(x)</code> applies it:</p>
+            <pre><code data-check="accept">import primes;
+
+def double(n : Nat) = n + n;
+
+def double_again = fun (n : Nat) =&gt; n + n;
+
+evaluate double(4) expecting 8;
+evaluate double_again(4) expecting 8;</code></pre>
+            <pre><code data-check="reject">import primes;
+
+def double(n : Nat) = n + n;
+
+def wrong_argument = double(tt);  // Error: Type mismatch.</code></pre>
+            <p>The argument <code>tt</code> has type <code>Unit</code>, but <code>double</code> takes a <code>Nat</code>.</p>
+          </section>
+          <section id="tour-types">
+            <h2>Types are values too</h2>
+            <p>A type is itself a value, of a type called a <strong>universe</strong>. <code>Nat</code>, <code>Unit</code> and <code>Nat and Unit</code> have type <code>U0</code>, the universe of small types. <code>U0</code> itself has type <code>U1</code>, the next universe. So types can be named, and functions can build them:</p>
+            <pre><code data-check="accept">def Pair = Nat and Unit;
+
+def p : Pair {
+  exact (1, tt);
+}
+
+def Twice(A : U0) = A and A;
+
+def q : Twice(Nat) {
+  exact (1, 2);
+}
+
+def nat_is_a_type : U0 {
+  exact Nat;
+}</code></pre>
+            <p>A universe does not contain itself:</p>
+            <pre><code data-check="reject">def too_big : U0 {
+  exact U0;  // Error: Type mismatch.
+}</code></pre>
+            <p>A function’s result type can depend on its argument. <code>forall A : U0, A -> A</code> is the type of functions that take a type <code>A</code> and a value of <code>A</code>, and return a value of <code>A</code>. Read as a statement, it says that every type implies itself. The <a href="first-proof.html#first-proof">next chapter</a> proves it.</p>
+          </section>
+
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="next" href="first-proof.html">2. A first proof and files →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+  </body>
+</html>

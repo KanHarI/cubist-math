@@ -50,7 +50,7 @@ packages (HoTT A1, A2, A4, A6) continue alongside stage 2.
 | I0.4 | Remove local scratch state (done) | — | — | S |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` (done) | Ergonomics 8 | — | M |
 | D0.1 | Checked-example harness for the reference (done) | Plan | — | S |
-| D0.2 | Reference chapters for the stable language (chapters 1–3 and 6–12 rewritten) | Plan | D0.1 | L |
+| D0.2 | Reference chapters for the stable language (all but chapters 5–6 rewritten) | Plan | D0.1 | L |
 
 **I0.2 Archive the first library.** Done on 2026-09-25, working off `main`
 (I0.1 is deferred by choice).
@@ -108,26 +108,27 @@ examples run under the harness, with failures fixed or removed.
 
 **D0.2 Reference chapters.** The reference is one page per chapter under
 `web/reference/`, with `language.html` as the index. Anchors of the former
-single page redirect to their chapters. The split and the rewrite of chapters
-1–3 and 6–12 were done on 2026-09-25. Each chapter has several checked
+single page redirect to their chapters. The split and the rewrite of every chapter
+but 5 and 6 were done on 2026-09-25. Each chapter has several checked
 examples per construct, including rejected ones. A rejected example states
 every error it causes as a `// Error:` comment on the failing line, and the
 harness checks both directions. Command-line sessions are run against the
 real CLI. The chapters are:
-1. A first proof and files (rewritten);
-2. Terms, functions and pairs (rewritten);
-3. Proof blocks (rewritten);
-4. Universes;
-5. Natural numbers and inductive types;
-6. Equality and paths (rewritten);
-7. Equational reasoning and simplification (rewritten);
-8. Cubical paths, pushouts and suspensions (rewritten);
-9. Conversion and opacity (rewritten);
-10. Assumptions and computability (rewritten);
-11. Checking and inspection (rewritten);
-12. Error messages (rewritten).
+1. Types and values (new: the basic types before the first proof);
+2. A first proof and files (rewritten);
+3. Terms, functions and pairs (rewritten);
+4. Proof blocks (rewritten);
+5. Universes;
+6. Natural numbers and inductive types;
+7. Equality and paths (rewritten);
+8. Equational reasoning and simplification (rewritten);
+9. Cubical paths, pushouts and suspensions (rewritten);
+10. Conversion and opacity (rewritten);
+11. Assumptions and computability (rewritten);
+12. Checking and inspection (rewritten);
+13. Error messages (rewritten).
 
-Chapters 4 and 5 describe today's syntax and are rewritten in stages 1–2.
+Chapters 5 and 6 describe today's syntax and are rewritten in stages 1–2.
 Writing the chapters against the checker found documented features that do
 not exist, among them user `axiom` declarations and a univalence axiom:
 function extensionality and univalence are constructions that compute.
