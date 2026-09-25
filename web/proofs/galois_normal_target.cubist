@@ -6,9 +6,8 @@ import embedding_counts;
 // comparison embedding j. The image of j is a field; no closure of the target
 // is needed for this factorization.
 def normal_target_factor(
-  K : AlgebraicField, F : AlgebraicField, e : FieldEmbedding(K, F),
-  normal : NormalEmbeddingLaw(K, F, e), T : AlgebraicField, j : FieldEmbedding(F, T),
-  h : FieldEmbedding(F, T),
+  K F : AlgebraicField, e : FieldEmbedding(K, F), normal : NormalEmbeddingLaw(K, F, e),
+  T : AlgebraicField, j h : FieldEmbedding(F, T),
   same : field_embedding_compose(K, F, T, e, h) = field_embedding_compose(K, F, T, e, j)
 ) :
   exists g : FieldEmbedding(F, F), forall x : af_carrier(F),
@@ -46,8 +45,7 @@ def normal_target_factor(
 def normal_target_automorphism_factor(
   K : AlgebraicField, E : FieldExt(K),
   normal : NormalEmbeddingLaw(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
-  T : AlgebraicField, j : FieldEmbedding(extension_field(K, E), T),
-  h : FieldEmbedding(extension_field(K, E), T),
+  T : AlgebraicField, j h : FieldEmbedding(extension_field(K, E), T),
   same : field_embedding_compose(
     K, extension_field(K, E), T, extension_inclusion_embedding(K, E), h
   ) = field_embedding_compose(K, extension_field(K, E), T, extension_inclusion_embedding(K, E), j)
@@ -200,7 +198,7 @@ def finite_normal_separable_automorphism_count(
 // The counting induction only needs separability of minimal polynomials in
 // the chosen closed target. This form is stable under intermediate base change.
 def finite_separable_elements_embedding_count(
-  K : AlgebraicField, F : AlgebraicField, e : FieldEmbedding(K, F),
+  K F : AlgebraicField, e : FieldEmbedding(K, F),
   finite : FiniteExtension(K, embedding_as_extension(K, F, e)), T : AlgebraicField,
   closed : AlgebraicallyClosed(T), separable : SeparableElementsIn(K, F, e, T),
   j : FieldEmbedding(K, T)
@@ -251,8 +249,8 @@ def finite_normal_separable_target_automorphism_count(
 }
 
 def normal_target_embeddings_self(
-  K : AlgebraicField, F : AlgebraicField, e : FieldEmbedding(K, F),
-  normal : NormalEmbeddingLaw(K, F, e), T : AlgebraicField, j : FieldEmbedding(F, T)
+  K F : AlgebraicField, e : FieldEmbedding(K, F), normal : NormalEmbeddingLaw(K, F, e),
+  T : AlgebraicField, j : FieldEmbedding(F, T)
 ) :
   Bijection(
     EmbeddingsOver(K, F, e, T, field_embedding_compose(K, F, T, e, j)),

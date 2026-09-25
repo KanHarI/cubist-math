@@ -3,28 +3,22 @@ import polynomial_leading;
 
 // Roots may live in an arbitrary extension through its specified embedding.
 def PolynomialRoot(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  x : af_carrier(L)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
 ) =
   polynomial_eval(K, L, e, p, x) = field_zero(L);
 
 def polynomial_root_prop(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  x : af_carrier(L)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
 ) =
   af_set(L, polynomial_eval(K, L, e, p, x), field_zero(L));
 
-def polynomial_eval_one(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)
-) :
+def polynomial_eval_one(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
   polynomial_eval(K, L, e, polynomial_one(K), x) = field_one(L) {
   obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
   exact trans(polynomial_eval_constant(K, L, e, field_one(K), x), one);
 }
 
-def polynomial_eval_variable(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)
-) :
+def polynomial_eval_variable(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
   polynomial_eval(K, L, e, polynomial_variable(K), x) = x {
   exact trans(
     polynomial_eval_shift(K, L, e, polynomial_one(K), x),
@@ -33,19 +27,16 @@ def polynomial_eval_variable(
 }
 
 def polynomial_eval_neg(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  x : af_carrier(L)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_neg(K, p), x) = field_neg(L, polynomial_eval(K, L, e, p, x)) {
   let E = fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
-  have inverse : field_add(L, E(polynomial_neg(K, p)), E(p)) = field_zero(L) {
-    exact with unfolding [] {
-      trans(
-        sym(polynomial_eval_add(K, L, e, polynomial_neg(K, p), p, x)),
-        trans(cong(E, polynomial_add_inverse(K, p)), polynomial_eval_zero(K, L, e, x))
-      )
-    };
-  }
+  have inverse : field_add(L, E(polynomial_neg(K, p)), E(p)) = field_zero(L) := with unfolding [] {
+    trans(
+      sym(polynomial_eval_add(K, L, e, polynomial_neg(K, p), p, x)),
+      trans(cong(E, polynomial_add_inverse(K, p)), polynomial_eval_zero(K, L, e, x))
+    )
+  };
   exact group_inverse_unique(
     af_carrier(L), field_zero(L), field_add(L), group_laws(FieldAdditiveGroup(L)), E(p),
     E(polynomial_neg(K, p)), field_neg(L, E(p)), inverse, scalar_add_inverse_right(L, E(p))
@@ -94,7 +85,7 @@ def linear_factor_nonzero(
   );
 }
 
-def linear_factor_eval(K : AlgebraicField, r : af_carrier(K), x : af_carrier(K)) :
+def linear_factor_eval(K : AlgebraicField, r x : af_carrier(K)) :
   polynomial_eval(K, K, field_embedding_identity(K), polynomial_linear_factor(K, r), x) = field_add(
     K, x, field_neg(K, r)
   ) {
@@ -145,35 +136,33 @@ def polynomial_factor_theorem(
   let e = field_embedding_identity(K);
   let E = fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, r);
   obtain (q, s, equation, support) = divide_by_degree(K, p, factor, 1, linear_factor_degree(K, r));
-  have evaluated : E(p) = E(s) {
-    exact with unfolding [] {
+  have evaluated : E(p) = E(s) := with unfolding [] {
+    trans(
+      cong(E, equation),
       trans(
-        cong(E, equation),
+        polynomial_eval_add(K, K, e, polynomial_mul(K, q, factor), s, r),
         trans(
-          polynomial_eval_add(K, K, e, polynomial_mul(K, q, factor), s, r),
+          cong(
+            (fun (a : af_carrier(K)) => field_add(K, a, E(s))),
+            polynomial_eval_mul(K, K, e, q, factor, r)
+          ),
           trans(
             cong(
-              (fun (a : af_carrier(K)) => field_add(K, a, E(s))),
-              polynomial_eval_mul(K, K, e, q, factor, r)
+              (fun (a : af_carrier(K)) => field_add(K, field_mul(K, E(q), a), E(s))),
+              linear_factor_root(K, r)
             ),
             trans(
-              cong(
-                (fun (a : af_carrier(K)) => field_add(K, field_mul(K, E(q), a), E(s))),
-                linear_factor_root(K, r)
-              ),
-              trans(
-                cong((fun (a : af_carrier(K)) => field_add(K, a, E(s))), scalar_mul_zero(K, E(q))),
-                scalar_add_zero(K, E(s))
-              )
+              cong((fun (a : af_carrier(K)) => field_add(K, a, E(s))), scalar_mul_zero(K, E(q))),
+              scalar_add_zero(K, E(s))
             )
           )
         )
       )
-    };
-  }
-  have constantZero : polynomial_coefficients(K, s, 0) = field_zero(K) {
-    exact trans(sym(support_one_eval(K, s, support, r)), trans(sym(evaluated), root));
-  }
+    )
+  };
+  have constantZero : polynomial_coefficients(K, s, 0) = field_zero(K) := trans(
+    sym(support_one_eval(K, s, support, r)), trans(sym(evaluated), root)
+  );
   let zero =
     support_zero_polynomial(
       K, s, support_predecessor(K, polynomial_coefficients(K, s), 0, support, constantZero)

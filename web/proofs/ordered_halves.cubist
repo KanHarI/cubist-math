@@ -7,27 +7,24 @@ def Halving(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0) =
   and (forall epsilon : F, lt(zero, epsilon) -> lt(zero, half(epsilon)));
 
 def half_sum_from_inverse_two(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), reciprocal : F,
   inverseTwo : mulF(addF(one, one), reciprocal) = one, epsilon : F
 ) :
   addF(mulF(epsilon, reciprocal), mulF(epsilon, reciprocal)) = epsilon {
-  have twiceReciprocal : addF(reciprocal, reciprocal) = one {
-    exact trans(
-      sym(
+  have twiceReciprocal : addF(reciprocal, reciprocal) = one := trans(
+    sym(
+      trans(
+        ring_distribute_left(F, zero, one, addF, mulF, negF, ring, one, one, reciprocal),
         trans(
-          ring_distribute_left(F, zero, one, addF, mulF, negF, ring, one, one, reciprocal),
-          trans(
-            cong(
-              (fun (x : F) => addF(x, mulF(one, reciprocal))),
-              ring_mul_one(F, zero, one, addF, mulF, negF, ring, reciprocal)
-            ),
-            cong(addF(reciprocal), ring_mul_one(F, zero, one, addF, mulF, negF, ring, reciprocal))
-          )
+          cong(
+            (fun (x : F) => addF(x, mulF(one, reciprocal))),
+            ring_mul_one(F, zero, one, addF, mulF, negF, ring, reciprocal)
+          ), cong(addF(reciprocal), ring_mul_one(F, zero, one, addF, mulF, negF, ring, reciprocal))
         )
-      ), inverseTwo
-    );
-  }
+      )
+    ), inverseTwo
+  );
   exact trans(
     sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, epsilon, reciprocal, reciprocal)),
     trans(
@@ -38,15 +35,14 @@ def half_sum_from_inverse_two(
 }
 
 def positive_half_from_sum(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  epsilon : F, half : F, sum : addF(half, half) = epsilon, positive : lt(zero, epsilon)
+  F : U1, zero one : F, addF mulF : F -> F -> F, lt : F -> F -> U0, order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), epsilon half : F,
+  sum : addF(half, half) = epsilon, positive : lt(zero, epsilon)
 ) :
   lt(zero, half) {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let alternatives =
-    splitPositive(half, half, transport(lt(zero), epsilon, addF(half, half), sym(sum), positive));
+  let alternatives = splitPositive(half, half, along lt(zero) by sym(sum) from positive);
   exact field_exists_elim(
     (lt(zero, half) or lt(zero, half)), lt(zero, half), prop(zero, half),
     (fun (side : lt(zero, half) or lt(zero, half)) => match side return lt(zero, half) {
@@ -57,8 +53,8 @@ def positive_half_from_sum(
 }
 
 def ordered_field_halving(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt)
 ) :
@@ -73,21 +69,19 @@ def ordered_field_halving(
       )
     );
   obtain (forward, backward) = inverses(two);
-  have actualInverse : exists reciprocal : F, mulF(two, reciprocal) = one {
-    exact forward(
-      field_exists_intro(
-        (lt(two, zero) or lt(zero, two)),
-        typed((lt(two, zero) or lt(zero, two)), right(positiveTwo))
-      )
-    );
-  }
+  have actualInverse : exists reciprocal : F,
+  mulF(two, reciprocal) = one := forward(
+    field_exists_intro(
+      (lt(two, zero) or lt(zero, two)), typed((lt(two, zero) or lt(zero, two)), right(positiveTwo))
+    )
+  );
   obtain (reciprocal, inverseTwo) = actualInverse;
   let half = fun (epsilon : F) => mulF(epsilon, reciprocal);
   let sum = half_sum_from_inverse_two(F, zero, one, addF, mulF, negF, ring, reciprocal, inverseTwo);
   exact (
     half, sum,
     (
-      fun (epsilon : F) => fun (positive : lt(zero, epsilon)) => positive_half_from_sum(
+      fun (epsilon : F) (positive : lt(zero, epsilon)) => positive_half_from_sum(
         F, zero, one, addF, mulF, lt, order, arithmetic, epsilon, half(epsilon), sum(epsilon),
         positive
       )

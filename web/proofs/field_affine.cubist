@@ -2,7 +2,7 @@ import field_scale_limits;
 
 // A canonical bound uses the lattice, not a decision about the sign of x.
 def field_lattice_magnitude(
-  F : U1, negF : F -> F, lt : F -> F -> U0, minF : F -> F -> F, maxF : F -> F -> F,
+  F : U1, negF : F -> F, lt : F -> F -> U0, minF maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), x : F
 ) :
   FieldMagnitudeBound(F, negF, lt, x, maxF(x, negF(x))) {
@@ -11,9 +11,9 @@ def field_lattice_magnitude(
 }
 
 def field_close_difference_bound(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s : F, t : F, delta : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s t delta : F,
   close : FieldClose(F, addF, lt, s, t, delta)
 ) :
   FieldMagnitudeBound(F, negF, lt, addF(negF(t), s), delta) {
@@ -22,10 +22,9 @@ def field_close_difference_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, s, t, delta, negF(t), close
     );
   let centered =
-    transport(
-      (fun (v : F) => FieldClose(F, addF, lt, addF(negF(t), s), v, delta)), addF(negF(t), t), zero,
-      ring_add_inverse(F, zero, one, addF, mulF, negF, ring, t), shifted
-    );
+    along((fun (v : F) => FieldClose(F, addF, lt, addF(negF(t), s), v, delta))) by ring_add_inverse(
+      F, zero, one, addF, mulF, negF, ring, t
+    ) from shifted;
   exact field_close_zero_magnitude(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, addF(negF(t), s), delta, centered
   );
@@ -33,21 +32,18 @@ def field_close_difference_bound(
 
 // The increment formula used to turn a parameter bound into a curve bound.
 def field_affine_increment(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, d : F, s : F, t : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a d s t : F
 ) :
   addF(a, mulF(s, d)) = addF(addF(a, mulF(t, d)), mulF(addF(negF(t), s), d)) {
-  have recover : addF(t, addF(negF(t), s)) = s {
-    exact trans(
-      sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, t, negF(t), s)),
-      trans(
-        cong(
-          (fun (v : F) => addF(v, s)),
-          ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, t)
-        ), ring_add_zero(F, zero, one, addF, mulF, negF, ring, s)
-      )
-    );
-  }
+  have recover : addF(t, addF(negF(t), s)) = s := trans(
+    sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, t, negF(t), s)),
+    trans(
+      cong(
+        (fun (v : F) => addF(v, s)), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, t)
+      ), ring_add_zero(F, zero, one, addF, mulF, negF, ring, s)
+    )
+  );
   exact trans(
     cong((fun (v : F) => addF(a, mulF(v, d))), sym(recover)),
     trans(
@@ -64,10 +60,10 @@ def field_affine_increment(
 }
 
 def field_affine_close(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a : F, d : F, length : F,
-  bounded : FieldMagnitudeBound(F, negF, lt, d, length), s : F, t : F, delta : F, epsilon : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a d length : F,
+  bounded : FieldMagnitudeBound(F, negF, lt, d, length), s t delta epsilon : F,
   close : FieldClose(F, addF, lt, s, t, delta), small : lt(mulF(delta, length), epsilon)
 ) :
   FieldClose(F, addF, lt, addF(a, mulF(s, d)), addF(a, mulF(t, d)), epsilon) {

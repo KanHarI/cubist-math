@@ -44,7 +44,7 @@ def intermediate_contains_base(
 
 def intermediate_laws_prop(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0,
-  p : IntermediateFieldLaws(K, E, P), q : IntermediateFieldLaws(K, E, P)
+  p q : IntermediateFieldLaws(K, E, P)
 ) :
   p = q {
   let F = extension_field(K, E);
@@ -61,7 +61,7 @@ def intermediate_laws_prop(
 
 // Membership equality determines equality as intermediate fields over K.
 def intermediate_ext(
-  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), N : IntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E),
   same : intermediate_members(K, E, M) = intermediate_members(K, E, N)
 ) :
   M =[IntermediateField(K, E)] N {

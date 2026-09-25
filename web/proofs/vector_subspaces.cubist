@@ -54,7 +54,7 @@ def subspace_scale(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
   exact scale;
 }
 
-def SubspaceIncluded(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), T : Subspace(K, V)) =
+def SubspaceIncluded(K : AlgebraicField, V : VectorSpace(K), S T : Subspace(K, V)) =
   forall x : vector_carrier(K, V), subspace_members(K, V, S, x) -> subspace_members(K, V, T, x);
 
 // Every finite combination of members stays in the subspace.
@@ -64,12 +64,12 @@ def combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace
     (forall i : Fin(k), subspace_members(K, V, S, v(i)))
     -> subspace_members(K, V, S, linear_combination(K, V, k, v, a))
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (a : Fin(0) -> af_carrier(K)) => fun (
+    zero => fun (v : Fin(0) -> vector_carrier(K, V)) (a : Fin(0) -> af_carrier(K)) (
       members : (forall i : Fin(0), subspace_members(K, V, S, v(i)))
     ) => subspace_zero(K, V, S);
-    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) (
       a : Fin(succ(k)) -> af_carrier(K)
-    ) => fun (members : (forall i : Fin(succ(k)), subspace_members(K, V, S, v(i)))) => subspace_add(
+    ) (members : (forall i : Fin(succ(k)), subspace_members(K, V, S, v(i)))) => subspace_add(
       K, V, S,
       vector_scale(K, V, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v)),
       linear_combination(
@@ -97,11 +97,8 @@ def span_least(
   have descend : SpanWitness(K, V, P, x) -> subspace_members(K, V, S, x) {
     intro witness;
     obtain (n, vectors, coefficients, members, sum) = witness;
-    exact transport(
-      subspace_members(K, V, S), linear_combination(K, V, n, vectors, coefficients), x, sum,
-      combination_in_subspace(
-        K, V, S, n, vectors, coefficients, (fun (i : Fin(n)) => included(vectors(i), members(i)))
-      )
+    exact along subspace_members(K, V, S) by sum from combination_in_subspace(
+      K, V, S, n, vectors, coefficients, (fun (i : Fin(n)) => included(vectors(i), members(i)))
     );
   }
   exact TruncateElim(

@@ -36,45 +36,34 @@ def binary_one_branch(
   P : BinaryPositive -> U0, one : P(binary_one), children : Void -> BinaryPositive,
   ih : forall v : Void, P(children(v))
 ) =
-  transport(
-    P, binary_one, sup(BinaryPositive, typed(BinaryLabel, left(tt)), children),
-    cong(
-      (fun (f : Void -> BinaryPositive) => sup(BinaryPositive, typed(BinaryLabel, left(tt)), f)),
-      binary_empty_children(children)
-    ), one
-  );
+  along P by cong(
+    (fun (f : Void -> BinaryPositive) => sup(BinaryPositive, typed(BinaryLabel, left(tt)), f)),
+    binary_empty_children(children)
+  ) from one;
 
 def binary_even_branch(
   P : BinaryPositive -> U0, even : (forall p : BinaryPositive, P(p) -> P(binary_bit0(p))),
   children : Unit -> BinaryPositive, ih : forall u : Unit, P(children(u))
 ) =
-  transport(
-    P, binary_bit0(children(tt)),
-    sup(BinaryPositive, typed(BinaryLabel, right(left(tt))), children),
-    cong(
-      (
-        fun (f : Unit -> BinaryPositive) => sup(
-          BinaryPositive, typed(BinaryLabel, right(left(tt))), f
-        )
-      ), binary_unit_children(children)
-    ), even(children(tt), ih(tt))
-  );
+  along P by cong(
+    (
+      fun (f : Unit -> BinaryPositive) => sup(
+        BinaryPositive, typed(BinaryLabel, right(left(tt))), f
+      )
+    ), binary_unit_children(children)
+  ) from even(children(tt), ih(tt));
 
 def binary_odd_branch(
   P : BinaryPositive -> U0, odd : (forall p : BinaryPositive, P(p) -> P(binary_bit1(p))),
   children : Unit -> BinaryPositive, ih : forall u : Unit, P(children(u))
 ) =
-  transport(
-    P, binary_bit1(children(tt)),
-    sup(BinaryPositive, typed(BinaryLabel, right(right(tt))), children),
-    cong(
-      (
-        fun (f : Unit -> BinaryPositive) => sup(
-          BinaryPositive, typed(BinaryLabel, right(right(tt))), f
-        )
-      ), binary_unit_children(children)
-    ), odd(children(tt), ih(tt))
-  );
+  along P by cong(
+    (
+      fun (f : Unit -> BinaryPositive) => sup(
+        BinaryPositive, typed(BinaryLabel, right(right(tt))), f
+      )
+    ), binary_unit_children(children)
+  ) from odd(children(tt), ih(tt));
 
 // Dependent induction in the familiar one / even / odd presentation.
 def binary_positive_induction(

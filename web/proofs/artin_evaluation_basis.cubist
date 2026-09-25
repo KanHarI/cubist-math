@@ -1,8 +1,6 @@
 import artin_evaluation_matrix;
 
-def EmbeddingEvaluationFrame(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
-) =
+def EmbeddingEvaluationFrame(K L : AlgebraicField, n m : Nat, maps : Fin(n) -> FieldEmbedding(K, L)) =
   exists points : Fin(m) -> af_carrier(K),
   LinearInjective(
     L, CoordinateSpace(L, m), CoordinateSpace(L, n),
@@ -13,7 +11,7 @@ def EmbeddingEvaluationFrame(
   );
 
 def embedding_evaluation_frame_zero(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
+  K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
 ) :
   EmbeddingEvaluationFrame(K, L, n, 0, maps) {
   exact (
@@ -29,8 +27,8 @@ def embedding_evaluation_frame_build_step(
   forall m : Nat, forall maps : Fin(n) -> FieldEmbedding(K, L),
   PairwiseDistinctEmbeddings(K, L, n, maps) -> n = add_count(k, m)
   -> EmbeddingEvaluationFrame(K, L, n, m, maps)
-  -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps)), K : AlgebraicField,
-  L : AlgebraicField, n : Nat, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps)), K L : AlgebraicField,
+  n m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps), total : n = add_count(succ(k), m),
   frame : EmbeddingEvaluationFrame(K, L, n, m, maps)
 ) :
@@ -38,7 +36,7 @@ def embedding_evaluation_frame_build_step(
   obtain (points, independent) = frame;
   have tooSmall : le(n, m) -> Void {
     intro small;
-    let bound = transport((fun (v : Nat) => le(v, m)), n, add_count(succ(k), m), total, small);
+    let bound = along((fun (v : Nat) => le(v, m))) by total from small;
     exact successor_not_le_self(
       m, nat_le_trans(succ(m), add_count(succ(k), m), m, nat_le_add(k, m), bound)
     );
@@ -52,10 +50,9 @@ def embedding_evaluation_frame_build_step(
     exact mere_map(
       EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps), Final,
       (
-        fun (f : EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps)) => transport(
-          (fun (index : Nat) => EmbeddingEvaluationFrame(K, L, n, index, maps)),
-          add_count(k, succ(m)), add_count(succ(k), m), nat_add_succ(k, m), f
-        )
+        fun (f : EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps)) => along(
+          (fun (index : Nat) => EmbeddingEvaluationFrame(K, L, n, index, maps))
+        ) by nat_add_succ(k, m) from f
       ), done
     );
   }
@@ -74,11 +71,9 @@ def embedding_evaluation_frame_build(fuel : Nat) =
     -> n = add_count(k, m) -> EmbeddingEvaluationFrame(K, L, n, m, maps)
     -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps))
   ) {
-    zero => fun (K : AlgebraicField) => fun (L : AlgebraicField) => fun (n : Nat) => fun (m : Nat) => fun (
-      maps : Fin(n) -> FieldEmbedding(K, L)
-    ) => fun (distinct : PairwiseDistinctEmbeddings(K, L, n, maps)) => fun (
-      total : n = add_count(0, m)
-    ) => fun (frame : EmbeddingEvaluationFrame(K, L, n, m, maps)) => merely(
+    zero => fun (K L : AlgebraicField) (n m : Nat) (maps : Fin(n) -> FieldEmbedding(K, L)) (
+      distinct : PairwiseDistinctEmbeddings(K, L, n, maps)
+    ) (total : n = add_count(0, m)) (frame : EmbeddingEvaluationFrame(K, L, n, m, maps)) => merely(
       EmbeddingEvaluationFrame(K, L, n, m, maps), frame
     );
     succ previous => embedding_evaluation_frame_build_step(k, previous);
@@ -88,7 +83,7 @@ def embedding_evaluation_frame_build(fuel : Nat) =
 // whose evaluation vectors form a basis of L^n. No point tuple is selected
 // globally; the matrix and its inverse live in a mere existence statement.
 def distinct_embeddings_evaluation_basis(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps)
 ) :
   Mere(
@@ -107,8 +102,7 @@ def distinct_embeddings_evaluation_basis(
   let atN =
     mere_map(
       Frame(add_count(n, 0)), Frame(n),
-      (fun (f : Frame(add_count(n, 0))) => transport(Frame, add_count(n, 0), n, nat_add_zero(n), f)),
-      atSum
+      (fun (f : Frame(add_count(n, 0))) => along Frame by nat_add_zero(n) from f), atSum
     );
   have make :
     Frame(n)
@@ -143,7 +137,7 @@ def loop_evaluation_vector(
   x : extension_carrier(K, E)
 ) :
   vector_carrier(extension_field(K, E), CoordinateSpace(extension_field(K, E), n)) {
-  exact fun (i : Fin(n)) => transport(extension_carrier(K), E, E, loops(i), x);
+  exact fun (i : Fin(n)) => along extension_carrier(K) by loops(i) from x;
 }
 
 // The same evaluation basis exists for the actual loop action on an extension.
@@ -165,9 +159,7 @@ def distinct_extension_loops_evaluation_basis(
   let maps =
     fun (i : Fin(n)) => galois_field_embedding(K, E, extension_path_iso(K, E, E, loops(i)));
   have mapsDistinct : PairwiseDistinctEmbeddings(F, F, n, maps) {
-    intro i;
-    intro j;
-    intro same;
+    intro i j same;
     exact distinct(i, j, extension_loop_embedding_injective(K, E, loops(i), loops(j), same));
   }
   let Source =
@@ -183,23 +175,18 @@ def distinct_extension_loops_evaluation_basis(
     obtain (points, basis) = witness;
     let embeddingRows = fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j));
     let loopRows = fun (j : Fin(n)) => loop_evaluation_vector(K, E, n, loops, points(j));
-    have sameRows : embeddingRows = loopRows {
-      exact FunExt(
-        U0, Fin(n), (fun (j : Fin(n)) => Fin(n) -> af_carrier(F)), embeddingRows, loopRows,
-        (
-          fun (j : Fin(n)) => FunExt(
-            U0, Fin(n), (fun (i : Fin(n)) => af_carrier(F)), embeddingRows(j), loopRows(j),
-            (fun (i : Fin(n)) => extension_loop_embedding_action(K, E, loops(i), points(j)))
-          )
+    have sameRows : embeddingRows = loopRows := FunExt(
+      U0, Fin(n), (fun (j : Fin(n)) => Fin(n) -> af_carrier(F)), embeddingRows, loopRows,
+      (
+        fun (j : Fin(n)) => FunExt(
+          U0, Fin(n), (fun (i : Fin(n)) => af_carrier(F)), embeddingRows(j), loopRows(j),
+          (fun (i : Fin(n)) => extension_loop_embedding_action(K, E, loops(i), points(j)))
         )
-      );
-    }
+      )
+    );
     exact (
       points,
-      transport(
-        (fun (rows : Fin(n) -> (Fin(n) -> af_carrier(F))) => FamilyBasis(F, C, n, rows)),
-        embeddingRows, loopRows, sameRows, basis
-      )
+      along((fun (rows : Fin(n) -> (Fin(n) -> af_carrier(F))) => FamilyBasis(F, C, n, rows))) by sameRows from basis
     );
   }
   exact mere_map(

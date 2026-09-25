@@ -3,26 +3,22 @@ import complex_polynomials;
 // The algebraic step in Horner division by X - r.
 
 def polynomial_difference_step(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, x : F, r : F, q : F, d : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a x r q d : F
 ) :
   addF(a, mulF(x, addF(q, mulF(addF(x, negF(r)), d)))) = addF(
     addF(a, mulF(r, q)), mulF(addF(x, negF(r)), addF(q, mulF(x, d)))
   ) {
   let difference = addF(x, negF(r));
   // First write x = r + (x-r), so xq = rq + (x-r)q.
-  have recombine : addF(r, difference) = x {
-    exact trans(
-      cong(addF(r), ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, negF(r))),
-      ring_add_cancel_prefix(F, zero, one, addF, mulF, negF, ring, r, x)
-    );
-  }
-  have split : mulF(x, q) = addF(mulF(r, q), mulF(difference, q)) {
-    exact trans(
-      cong((fun (v : F) => mulF(v, q)), sym(recombine)),
-      ring_distribute_left(F, zero, one, addF, mulF, negF, ring, r, difference, q)
-    );
-  }
+  have recombine : addF(r, difference) = x := trans(
+    cong(addF(r), ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, negF(r))),
+    ring_add_cancel_prefix(F, zero, one, addF, mulF, negF, ring, r, x)
+  );
+  have split : mulF(x, q) = addF(mulF(r, q), mulF(difference, q)) := trans(
+    cong((fun (v : F) => mulF(v, q)), sym(recombine)),
+    ring_distribute_left(F, zero, one, addF, mulF, negF, ring, r, difference, q)
+  );
   // Distribute once, move x past (x-r), then factor (x-r) back out.
   let distribute =
     cong(addF(a), ring_distribute(F, zero, one, addF, mulF, negF, ring, x, q, mulF(difference, d)));
@@ -57,9 +53,7 @@ def polynomial_difference_step(
 }
 
 // This is a polynomial expression, defined by recursion, with no division.
-def monic_divided_difference(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, x : F, r : F, n : Nat
-) =
+def monic_divided_difference(F : U1, zero one : F, addF mulF : F -> F -> F, x r : F, n : Nat) =
   induction n as k return (MonicCoefficients(F, k) -> F) {
     zero => fun (u : Unit) => zero;
     succ previous => fun (coefficients : MonicCoefficients(F, succ(k))) => unpack typed(
@@ -70,8 +64,8 @@ def monic_divided_difference(
   };
 
 def monic_difference_identity(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F, r : F, n : Nat
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), x r : F, n : Nat
 ) :
   forall coefficients : MonicCoefficients(F, n),
   monic_eval(F, one, addF, mulF, n, coefficients, x) = addF(
@@ -105,7 +99,7 @@ def monic_difference_identity(
         )
       ),
       (
-        fun (constant : F) => fun (tail : MonicCoefficients(F, k)) => trans(
+        fun (constant : F) (tail : MonicCoefficients(F, k)) => trans(
           cong((fun (v : F) => addF(constant, mulF(x, v))), previous(tail)),
           polynomial_difference_step(
             F, zero, one, addF, mulF, negF, ring, constant, x, r,
@@ -121,7 +115,7 @@ def monic_difference_identity(
 // Once an exact root r is supplied, this proves the pointwise factor identity
 // p(x) = (x-r) q(x). It does not assert that a root exists.
 def monic_factor_at_root(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : Nat,
   coefficients : MonicCoefficients(F, n), r : F,
   root : monic_eval(F, one, addF, mulF, n, coefficients, r) = zero, x : F

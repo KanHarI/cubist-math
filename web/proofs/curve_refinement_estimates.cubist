@@ -5,16 +5,14 @@ import subdivision_refinement;
 // identifies its sum with the specified fine samples; equal sample lists are
 // not required. Transport only the value of the fine contour sum.
 def curve_refinement_partition_estimate(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F)
-  -> Complex(F),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
   condition : (
     forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
     FieldUnitInterval(F, zero, one, lt)
     -> SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b) -> U1
-  ), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
-  coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
-  fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), radius : F,
+  ), a b : FieldUnitInterval(F, zero, one, lt),
+  coarse fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), radius : F,
   refinement : SubdivisionRefinementSum(
     FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF),
     parameter_contour_edge(
@@ -63,7 +61,7 @@ def curve_refinement_partition_estimate(
       subdivision_vertices(I, a, b, fine), subdivision_tags(I, a, b, fine)
     );
   let identifies = trans(flatComputes, trans(sym(computes), mappedFine));
-  exact transport(
+  exact along(
     (
       fun (sum : Complex(F)) => ComplexPerturbation(
         F, addF, negF, lt,
@@ -71,22 +69,18 @@ def curve_refinement_partition_estimate(
           F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, coarse
         ), sum, radius
       )
-    ),
-    curve_subdivision_samples(
-      F, zero, one, addF, mulF, negF, lt, curve, integrand, first, last, flat
-    ), curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, fine),
-    identifies, bounded
-  );
+    )
+  ) by identifies from bounded;
 }
 
 // The error estimate now applies to a specified actual fine sample, rather
 // than only the fresh flattening returned by the partition estimate.
 def affine_refinement_sum_estimate(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -178,11 +172,7 @@ def affine_refinement_sum_estimate(
         )
       )
     ) {
-    intro a;
-    intro b;
-    intro coarse;
-    intro fine;
-    intro refinement;
+    intro a b coarse fine refinement;
     let n = subdivision_count(I, a, b, coarse);
     let vertices = subdivision_vertices(I, a, b, coarse);
     let tags = subdivision_tags(I, a, b, coarse);
@@ -195,16 +185,16 @@ def affine_refinement_sum_estimate(
         IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine, oldRadius,
         refinement, estimates(n, vertices, tags)
       );
-    have firstPath : first = a {
-      exact field_fst((first = a), (last = b), subdivision_endpoints(I, a, b, coarse));
-    }
-    have lastPath : last = b {
-      exact field_snd((first = a), (last = b), subdivision_endpoints(I, a, b, coarse));
-    }
+    have firstPath : first = a := field_fst(
+      (first = a), (last = b), subdivision_endpoints(I, a, b, coarse)
+    );
+    have lastPath : last = b := field_snd(
+      (first = a), (last = b), subdivision_endpoints(I, a, b, coarse)
+    );
     let widthPath =
       trans(cong((fun (v : I) => width(v, last)), firstPath), cong(width(a), lastPath));
     let radiusPath = cong((fun (v : F) => mulF(delta, mulF(v, length))), widthPath);
-    exact transport(
+    exact along(
       (
         fun (radius : F) => ComplexPerturbation(
           F, addF, negF, lt,
@@ -215,8 +205,8 @@ def affine_refinement_sum_estimate(
             F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, fine
           ), radius
         )
-      ), oldRadius, mulF(delta, mulF(width(a, b), length)), radiusPath, bounded
-    );
+      )
+    ) by radiusPath from bounded;
   }
   exact (mesh, positiveMesh, actual);
 }

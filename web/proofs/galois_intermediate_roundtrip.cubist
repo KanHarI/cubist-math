@@ -7,7 +7,7 @@ import equivalence_from_inverse;
 import finite_decidable_subtypes;
 
 def intermediate_inclusion_embedding(
-  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), N : IntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E),
   included : IntermediateIncluded(K, E, M, N)
 ) :
   FieldEmbedding(intermediate_as_field(K, E, M), intermediate_as_field(K, E, N)) {
@@ -25,7 +25,7 @@ def intermediate_inclusion_embedding(
 }
 
 def intermediate_inclusion_triangle(
-  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), N : IntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E),
   included : IntermediateIncluded(K, E, M, N)
 ) :
   FieldTower(
@@ -47,7 +47,7 @@ def intermediate_inclusion_triangle(
 }
 
 def intermediate_inclusion_surjective_equal(
-  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), N : IntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E),
   included : IntermediateIncluded(K, E, M, N),
   onto : Surjective(
     af_carrier(intermediate_as_field(K, E, M)), af_carrier(intermediate_as_field(K, E, N)),
@@ -65,13 +65,11 @@ def intermediate_inclusion_surjective_equal(
   let Q = intermediate_as_field(K, E, N);
   let i = intermediate_inclusion_embedding(K, E, M, N, included);
   have reverse : IntermediateIncluded(K, E, N, M) {
-    intro x;
-    intro member;
+    intro x member;
     let target = typed(af_carrier(Q), (x, member));
     obtain (a, same) = field_embedding_preimage(R, Q, i, onto, target);
-    exact transport(
-      intermediate_members(K, E, M), subfield_value(F, S, a), x, cong(subfield_value(F, T), same),
-      subfield_evidence(F, S, a)
+    exact along intermediate_members(K, E, M) by cong(subfield_value(F, T), same) from subfield_evidence(
+      F, S, a
     );
   }
   exact intermediate_inclusion_antisym(K, E, M, N, included, reverse);
@@ -111,13 +109,12 @@ def finite_normal_separable_fixed_fixing_intermediate(
     );
   let m = extension_degree(R, embedding_as_extension(R, Q, i), lower);
   let towerDegree = tower_law(R, Q, F, i, h, e, triangle, lower, upperN, upperM);
-  have product : multiply_count(d, m) = d {
-    exact trans(sym(cong((fun (q : Nat) => multiply_count(q, m)), degreeN)), sym(towerDegree));
-  }
+  have product : multiply_count(d, m) = d := trans(
+    sym(cong((fun (q : Nat) => multiply_count(q, m)), degreeN)), sym(towerDegree)
+  );
   let nonempty = subgroup_carrier_unit(G, H);
   obtain (k, positive) = inhabited_cardinality_positive(SubgroupCarrier(G, H), d, countH, nonempty);
-  let productPositive =
-    transport((fun (q : Nat) => multiply_count(q, m) = q), d, succ(k), positive, product);
+  let productPositive = along((fun (q : Nat) => multiply_count(q, m) = q)) by positive from product;
   let degreeOne = positive_product_unit(k, m, productPositive);
   let onto = degree_one_embedding_surjective(R, Q, i, lower, degreeOne);
   exact sym(intermediate_inclusion_surjective_equal(K, E, M, N, included, onto));
@@ -240,18 +237,14 @@ def base_image_fixing_is_full_group(K : AlgebraicField, E : FieldExt(K)) :
   let M = base_image_intermediate(K, E);
   let H = fixing_galois_subgroup(K, E, M);
   have fullFixes : GaloisSubgroupIncluded(K, E, subgroup_top(G), H) {
-    intro g;
-    intro member;
-    intro x;
-    intro inBase;
+    intro g member x inBase;
     obtain (a, unit, same) = inBase;
     exact trans(
       cong(extension_iso_forward(K, E, E, g), sym(same)), trans(galois_fixes_base(K, E, g, a), same)
     );
   }
   have included : GaloisSubgroupIncluded(K, E, H, subgroup_top(G)) {
-    intro g;
-    intro member;
+    intro g member;
     exact tt;
   }
   exact galois_subgroup_inclusion_antisym(K, E, H, subgroup_top(G), included, fullFixes);

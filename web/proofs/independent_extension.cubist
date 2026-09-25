@@ -6,20 +6,18 @@ import classical;
 // Adjoining one vector gives a proposition-valued subset. Membership is
 // truncated; it does not expose a chosen side of the disjunction.
 def AdjoinVector(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
-  y : vector_carrier(K, V)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x y : vector_carrier(K, V)
 ) =
   Truncate(U0, P(y) or (y = x));
 
 def adjoin_vector_prop(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
-  y : vector_carrier(K, V)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x y : vector_carrier(K, V)
 ) =
   TruncateProp(U0, P(y) or (y = x));
 
 def adjoin_vector_old(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
-  y : vector_carrier(K, V), member : P(y)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
+  x y : vector_carrier(K, V), member : P(y)
 ) :
   AdjoinVector(K, V, P, x, y) {
   exact TruncateIntro(U0, P(y) or (y = x), left(member));
@@ -34,8 +32,8 @@ def adjoin_vector_new(
 
 def adjoin_vector_other(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
-  prop : (forall y : vector_carrier(K, V), Proposition(P(y))), x : vector_carrier(K, V),
-  y : vector_carrier(K, V), different : (y = x) -> Void, member : AdjoinVector(K, V, P, x, y)
+  prop : (forall y : vector_carrier(K, V), Proposition(P(y))), x y : vector_carrier(K, V),
+  different : (y = x) -> Void, member : AdjoinVector(K, V, P, x, y)
 ) :
   P(y) {
   exact TruncateElim(
@@ -61,34 +59,29 @@ def independent_zero_omission(
   let X = vector_carrier(K, V);
   let omit = fin_omit(n, i);
   let rest = linear_remainder(K, V, succ(n), v, a, i);
-  have headZero : vector_scale(K, V, a(i), v(i)) = vector_zero(K, V) {
-    exact trans(
-      cong((fun (b : af_carrier(K)) => vector_scale(K, V, b, v(i))), zero),
-      vector_zero_scale(K, V, v(i))
-    );
-  }
-  have restZero : rest = vector_zero(K, V) {
-    exact trans(
-      sym(group_unit_left(vector_group(K, V), rest)),
-      trans(
-        cong((fun (z : X) => vector_add(K, V, z, rest)), sym(headZero)),
-        trans(sym(linear_combination_split(K, V, succ(n), v, a, i)), vanishes)
-      )
-    );
-  }
+  have headZero : vector_scale(K, V, a(i), v(i)) = vector_zero(K, V) := trans(
+    cong((fun (b : af_carrier(K)) => vector_scale(K, V, b, v(i))), zero),
+    vector_zero_scale(K, V, v(i))
+  );
+  have restZero : rest = vector_zero(K, V) := trans(
+    sym(group_unit_left(vector_group(K, V), rest)),
+    trans(
+      cong((fun (z : X) => vector_add(K, V, z, rest)), sym(headZero)),
+      trans(sym(linear_combination_split(K, V, succ(n), v, a, i)), vanishes)
+    )
+  );
   let omittedV = fun (t : Fin(n)) => v(omit(t));
   let omittedA = fun (t : Fin(n)) => a(omit(t));
-  have omittedZero : forall t : Fin(n), omittedA(t) = af_zero(af_carrier(K), af_operations(K)) {
-    exact independent(
-      n, omittedV,
-      (
-        fun (s : Fin(n)) => fun (t : Fin(n)) => fun (same : omittedV(s) = omittedV(t)) => fin_omit_injective(
-          n, i, s, t, distinct(omit(s), omit(t), same)
-        )
-      ), (fun (t : Fin(n)) => others(omit(t), fin_omit_avoids(n, i, t))), omittedA,
-      trans(linear_combination_omit(K, V, n, v, a, i), restZero)
-    );
-  }
+  have omittedZero : forall t : Fin(n),
+  omittedA(t) = af_zero(af_carrier(K), af_operations(K)) := independent(
+    n, omittedV,
+    (
+      fun (s t : Fin(n)) (same : omittedV(s) = omittedV(t)) => fin_omit_injective(
+        n, i, s, t, distinct(omit(s), omit(t), same)
+      )
+    ), (fun (t : Fin(n)) => others(omit(t), fin_omit_avoids(n, i, t))), omittedA,
+    trans(linear_combination_omit(K, V, n, v, a, i), restZero)
+  );
   cases fin_omit_cover(n, i, j) {
     left same => {
       exact trans(cong(a, same), zero);
@@ -132,15 +125,14 @@ def adjoin_dependence_at_new(
 ) :
   a(j) = af_zero(af_carrier(K), af_operations(K)) {
   have others : forall t : Fin(succ(n)), ((t = i) -> Void) -> P(v(t)) {
-    intro t;
-    intro different;
+    intro t different;
     exact adjoin_vector_other(
       K, V, P, prop, x, v(t),
       (fun (equal : v(t) = x) => different(distinct(t, i, trans(equal, sym(same))))), members(t)
     );
   }
   let outsideHere =
-    fun (member : Span(K, V, P, v(i))) => outside(transport(Span(K, V, P), v(i), x, same, member));
+    fun (member : Span(K, V, P, v(i))) => outside(along Span(K, V, P) by same from member);
   exact independent_zero_omission(
     K, V, P, independent, n, v, distinct, a, i,
     outside_span_coefficient_zero(K, V, P, succ(n), v, a, i, outsideHere, others, vanishes), others,
@@ -200,13 +192,11 @@ def adjoin_independent_finite(
     linear_combination(K, V, k, v, a) = vector_zero(K, V) -> forall i : Fin(k),
     a(i) = af_zero(af_carrier(K), af_operations(K))
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (
+    zero => fun (v : Fin(0) -> vector_carrier(K, V)) (
       distinct : (forall i : Fin(0), forall j : Fin(0), v(i) = v(j) -> i = j)
-    ) => fun (members : (forall i : Fin(0), AdjoinVector(K, V, P, x, v(i)))) => fun (
-      a : Fin(0) -> af_carrier(K)
-    ) => fun (vanishes : linear_combination(K, V, 0, v, a) = vector_zero(K, V)) => fun (i : Fin(0)) => typed(
-      (a(i) = af_zero(af_carrier(K), af_operations(K))), absurd(i)
-    );
+    ) (members : (forall i : Fin(0), AdjoinVector(K, V, P, x, v(i)))) (a : Fin(0) -> af_carrier(K)) (
+      vanishes : linear_combination(K, V, 0, v, a) = vector_zero(K, V)
+    ) (i : Fin(0)) => typed((a(i) = af_zero(af_carrier(K), af_operations(K))), absurd(i));
     succ previous => adjoin_independent_step(K, V, P, prop, independent, x, outside, k);
   };
 

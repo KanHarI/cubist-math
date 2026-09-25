@@ -73,7 +73,7 @@ try {
   assert.match(await page.locator("#status").textContent(), /Cubical C · checked/);
   assert.equal(await page.locator("#inspect-name").textContent(), "reverse_twice");
   // Select p inside the interval body, rather than its declaration outside it.
-  await page.locator('.source-line').filter({ hasText: "fun (i : Interval) => at(p," }).locator('[data-name="p"]').click();
+  await page.locator('.source-line').filter({ hasText: "fun (i : Interval) => p @ flip(i)" }).locator('[data-name="p"]').click();
   await idle();
   assert.match(await page.locator("#kernel-context-list").textContent(), /Interval coordinates/);
   const intervalOpened = page.waitForEvent("popup");

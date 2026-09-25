@@ -23,8 +23,8 @@ def field_sum_zero(
 }
 
 def field_sum_cong(
-  L : AlgebraicField, n : Nat, values : Fin(n) -> af_carrier(L), other : Fin(n) -> af_carrier(L),
-  same : forall i : Fin(n), values(i) = other(i)
+  L : AlgebraicField, n : Nat, values other : Fin(n) -> af_carrier(L), same : forall i : Fin(n),
+  values(i) = other(i)
 ) :
   field_sum(L, n, values) = field_sum(L, n, other) {
   exact finite_sum_cong(
@@ -33,9 +33,7 @@ def field_sum_cong(
   );
 }
 
-def field_sum_add(
-  L : AlgebraicField, n : Nat, values : Fin(n) -> af_carrier(L), other : Fin(n) -> af_carrier(L)
-) :
+def field_sum_add(L : AlgebraicField, n : Nat, values other : Fin(n) -> af_carrier(L)) :
   field_sum(L, n, (fun (i : Fin(n)) => field_add(L, values(i), other(i)))) = field_add(
     L, field_sum(L, n, values), field_sum(L, n, other)
   ) {
@@ -92,7 +90,7 @@ def field_sum_neg(L : AlgebraicField, n : Nat) =
   };
 
 def hom_family_sum(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   coefficients : Fin(n) -> af_carrier(L), x : af_carrier(K)
 ) =
   field_sum(
@@ -101,8 +99,8 @@ def hom_family_sum(
 
 // Evaluating a relation at tx is the relation at x with coefficient c_i f_i(t).
 def hom_family_sum_product(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
-  coefficients : Fin(n) -> af_carrier(L), t : af_carrier(K), x : af_carrier(K)
+  K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L), coefficients : Fin(n)
+  -> af_carrier(L), t x : af_carrier(K)
 ) :
   hom_family_sum(K, L, n, maps, coefficients, field_mul(K, t, x)) = hom_family_sum(
     K, L, n, maps,
@@ -143,8 +141,8 @@ def hom_family_sum_product(
 }
 
 def hom_family_sum_scaled(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
-  coefficients : Fin(n) -> af_carrier(L), b : af_carrier(L), x : af_carrier(K)
+  K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L), coefficients : Fin(n)
+  -> af_carrier(L), b : af_carrier(L), x : af_carrier(K)
 ) :
   hom_family_sum(K, L, n, maps, (fun (i : Fin(n)) => field_mul(L, b, coefficients(i))), x) = field_mul(
     L, b, hom_family_sum(K, L, n, maps, coefficients, x)
@@ -169,8 +167,8 @@ def hom_family_sum_scaled(
 }
 
 def hom_family_sum_at_one(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
-  coefficients : Fin(n) -> af_carrier(L)
+  K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L), coefficients : Fin(n)
+  -> af_carrier(L)
 ) :
   hom_family_sum(K, L, n, maps, coefficients, field_one(K)) = field_sum(L, n, coefficients) {
   have same :
@@ -193,8 +191,8 @@ def hom_family_sum_at_one(
 }
 
 def hom_family_difference(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
-  first : Fin(n) -> af_carrier(L), second : Fin(n) -> af_carrier(L), x : af_carrier(K)
+  K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L), first second : Fin(n)
+  -> af_carrier(L), x : af_carrier(K)
 ) :
   hom_family_sum(
     K, L, n, maps, (fun (i : Fin(n)) => field_add(L, first(i), field_neg(L, second(i)))), x
@@ -230,8 +228,8 @@ def hom_family_difference(
 }
 
 def hom_family_twisted_relation(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
-  coefficients : Fin(n) -> af_carrier(L), relation : forall x : af_carrier(K),
+  K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L), coefficients : Fin(n)
+  -> af_carrier(L), relation : forall x : af_carrier(K),
   hom_family_sum(K, L, n, maps, coefficients, x) = field_zero(L), t : af_carrier(K),
   b : af_carrier(L), x : af_carrier(K)
 ) :
@@ -276,9 +274,7 @@ def hom_family_twisted_relation(
   );
 }
 
-def PairwiseDistinctEmbeddings(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
-) =
+def PairwiseDistinctEmbeddings(K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)) =
   forall i : Fin(n), forall j : Fin(n), maps(i) = maps(j) -> i = j;
 
 def HomFamilyIndependent(n : Nat) =
@@ -289,18 +285,12 @@ def HomFamilyIndependent(n : Nat) =
   -> forall i : Fin(n), coefficients(i) = field_zero(L);
 
 def hom_family_independent_zero : HomFamilyIndependent(0) {
-  intro K;
-  intro L;
-  intro maps;
-  intro distinct;
-  intro coefficients;
-  intro relation;
-  intro i;
+  intro K L maps distinct coefficients relation i;
   exact absurd(i);
 }
 
 def hom_family_twisted_head_zero(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(succ(n)) -> FieldEmbedding(K, L),
+  K L : AlgebraicField, n : Nat, maps : Fin(succ(n)) -> FieldEmbedding(K, L),
   coefficients : Fin(succ(n)) -> af_carrier(L), t : af_carrier(K)
 ) :
   field_add(
@@ -328,23 +318,20 @@ def hom_family_twisted_head_zero(
 }
 
 def hom_family_tail_distinct(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(succ(n)) -> FieldEmbedding(K, L),
+  K L : AlgebraicField, n : Nat, maps : Fin(succ(n)) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, succ(n), maps)
 ) :
   PairwiseDistinctEmbeddings(K, L, n, finite_tail(FieldEmbedding(K, L), n, maps)) {
-  intro i;
-  intro j;
-  intro same;
+  intro i j same;
   exact tail_injective(
     Fin(n), i, j, distinct(typed(Fin(succ(n)), right(i)), typed(Fin(succ(n)), right(j)), same)
   );
 }
 
 def hom_family_twisted_tail_relation(
-  K : AlgebraicField, L : AlgebraicField, n : Nat, maps : Fin(succ(n)) -> FieldEmbedding(K, L),
+  K L : AlgebraicField, n : Nat, maps : Fin(succ(n)) -> FieldEmbedding(K, L),
   coefficients : Fin(succ(n)) -> af_carrier(L), relation : forall x : af_carrier(K),
-  hom_family_sum(K, L, succ(n), maps, coefficients, x) = field_zero(L), t : af_carrier(K),
-  x : af_carrier(K)
+  hom_family_sum(K, L, succ(n), maps, coefficients, x) = field_zero(L), t x : af_carrier(K)
 ) :
   hom_family_sum(
     K, L, n, finite_tail(FieldEmbedding(K, L), n, maps),
@@ -392,10 +379,9 @@ def hom_family_twisted_tail_relation(
 }
 
 def hom_family_tail_coefficient_zero(
-  n : Nat, previous : HomFamilyIndependent(n), K : AlgebraicField, L : AlgebraicField,
-  maps : Fin(succ(n)) -> FieldEmbedding(K, L),
-  distinct : PairwiseDistinctEmbeddings(K, L, succ(n), maps), coefficients : Fin(succ(n))
-  -> af_carrier(L), relation : forall x : af_carrier(K),
+  n : Nat, previous : HomFamilyIndependent(n), K L : AlgebraicField, maps : Fin(succ(n))
+  -> FieldEmbedding(K, L), distinct : PairwiseDistinctEmbeddings(K, L, succ(n), maps),
+  coefficients : Fin(succ(n)) -> af_carrier(L), relation : forall x : af_carrier(K),
   hom_family_sum(K, L, succ(n), maps, coefficients, x) = field_zero(L), i : Fin(n)
 ) :
   coefficients(typed(Fin(succ(n)), right(i))) = field_zero(L) {
@@ -455,26 +441,23 @@ def hom_family_tail_coefficient_zero(
 }
 
 def hom_family_head_coefficient_zero(
-  n : Nat, previous : HomFamilyIndependent(n), K : AlgebraicField, L : AlgebraicField,
-  maps : Fin(succ(n)) -> FieldEmbedding(K, L),
-  distinct : PairwiseDistinctEmbeddings(K, L, succ(n), maps), coefficients : Fin(succ(n))
-  -> af_carrier(L), relation : forall x : af_carrier(K),
+  n : Nat, previous : HomFamilyIndependent(n), K L : AlgebraicField, maps : Fin(succ(n))
+  -> FieldEmbedding(K, L), distinct : PairwiseDistinctEmbeddings(K, L, succ(n), maps),
+  coefficients : Fin(succ(n)) -> af_carrier(L), relation : forall x : af_carrier(K),
   hom_family_sum(K, L, succ(n), maps, coefficients, x) = field_zero(L)
 ) :
   coefficients(typed(Fin(succ(n)), left(tt))) = field_zero(L) {
   let c = finite_head(af_carrier(L), n, coefficients);
   let tail = finite_tail(af_carrier(L), n, coefficients);
   let tailSum = field_sum(L, n, tail);
-  have tailZero : tailSum = field_zero(L) {
-    exact field_sum_zero(
-      L, n, tail,
-      (
-        fun (i : Fin(n)) => hom_family_tail_coefficient_zero(
-          n, previous, K, L, maps, distinct, coefficients, relation, i
-        )
+  have tailZero : tailSum = field_zero(L) := field_sum_zero(
+    L, n, tail,
+    (
+      fun (i : Fin(n)) => hom_family_tail_coefficient_zero(
+        n, previous, K, L, maps, distinct, coefficients, relation, i
       )
-    );
-  }
+    )
+  );
   exact trans(
     sym(scalar_add_zero_right(L, c)),
     trans(
@@ -486,19 +469,14 @@ def hom_family_head_coefficient_zero(
 
 def hom_family_independent_step(n : Nat, previous : HomFamilyIndependent(n)) :
   HomFamilyIndependent(succ(n)) {
-  intro K;
-  intro L;
-  intro maps;
-  intro distinct;
-  intro coefficients;
-  intro relation;
-  intro index;
+  intro K L maps distinct coefficients relation index;
   exact match index as i return coefficients(i) = field_zero(L) {
-    left u => transport(
-      (fun (j : Fin(succ(n))) => coefficients(j) = field_zero(L)), typed(Fin(succ(n)), left(tt)),
-      typed(Fin(succ(n)), left(u)),
-      cong((fun (v : Unit) => typed(Fin(succ(n)), left(v))), unit_equal(u)),
-      hom_family_head_coefficient_zero(n, previous, K, L, maps, distinct, coefficients, relation)
+    left u => (
+      along((fun (j : Fin(succ(n))) => coefficients(j) = field_zero(L))) by cong(
+        (fun (v : Unit) => typed(Fin(succ(n)), left(v))), unit_equal(u)
+      ) from hom_family_head_coefficient_zero(
+        n, previous, K, L, maps, distinct, coefficients, relation
+      )
     );
     right j => hom_family_tail_coefficient_zero(
       n, previous, K, L, maps, distinct, coefficients, relation, j

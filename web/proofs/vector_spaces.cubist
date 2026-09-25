@@ -41,7 +41,7 @@ def vector_group(K : AlgebraicField, V : VectorSpace(K)) = unpack V as (G, data)
 def vector_data(K : AlgebraicField, V : VectorSpace(K)) : VectorData(K, vector_group(K, V)) {
   exact pair_induction(
     (fun (W : VectorSpace(K)) => VectorData(K, vector_group(K, W))),
-    (fun (G : Group) => fun (data : VectorData(K, G)) => data), V
+    (fun (G : Group) (data : VectorData(K, G)) => data), V
   );
 }
 

@@ -24,9 +24,7 @@ def subgroup_evaluation_maps_distinct(
   let G = GaloisGroup(K, E);
   let A = SubgroupCarrier(G, H);
   let f = forward(Fin(n), A, enumeration);
-  intro i;
-  intro j;
-  intro same;
+  intro i j same;
   exact inverse_injective(
     Fin(n), A, f, backward(Fin(n), A, enumeration), left_inverse(Fin(n), A, enumeration), i, j,
     subgroup_value_ext(

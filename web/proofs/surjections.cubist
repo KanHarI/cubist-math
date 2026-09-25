@@ -3,20 +3,20 @@ import truncation;
 
 // A surjection has merely inhabited fibers. A right inverse includes a map
 // g : B -> A and the pointwise law f(g(y)) = y (not g(f(x)) = x).
-def Surjective(A : U0, B : U0, f : A -> B) = forall y : B, Mere(Fiber(A, B, f, y));
+def Surjective(A B : U0, f : A -> B) = forall y : B, Mere(Fiber(A, B, f, y));
 
-def RightInverse(A : U0, B : U0, f : A -> B) = exists g : B -> A, forall y : B, f(g(y)) = y;
+def RightInverse(A B : U0, f : A -> B) = exists g : B -> A, forall y : B, f(g(y)) = y;
 
 // Explicit preimages already contain the data of a right inverse: no choice.
 def right_inverse_from_preimages(
-  A : U0, B : U0, f : A -> B, preimages : (forall y : B, Fiber(A, B, f, y))
+  A B : U0, f : A -> B, preimages : (forall y : B, Fiber(A, B, f, y))
 ) :
   RightInverse(A, B, f) {
   let g = fun (y : B) => sigma_first(A, (fun (x : A) => f(x) = y), preimages(y));
   exact (g, (fun (y : B) => sigma_second(A, (fun (x : A) => f(x) = y), preimages(y))));
 }
 
-def fiber_is_set(A : U0, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, y : B) :
+def fiber_is_set(A B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, y : B) :
   IsSet(Fiber(A, B, f, y)) {
   exact subtype_is_set(A, (fun (x : A) => f(x) = y), setA, (fun (x : A) => setB(f(x), y)));
 }

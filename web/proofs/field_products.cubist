@@ -1,34 +1,34 @@
 import field_logic;
 
 // Products and their equality proofs at the universe used by real carriers.
-def field_pair_eta(A : U1, B : U1, u : A and B) =
+def field_pair_eta(A B : U1, u : A and B) =
   pair_induction(
     (fun (v : A and B) => typed(A and B, (field_fst(A, B, v), field_snd(A, B, v))) = v),
-    (fun (a : A) => fun (b : B) => refl(typed(A and B, (a, b)))), u
+    (fun (a : A) (b : B) => refl(typed(A and B, (a, b)))), u
   );
 
 def field_pair_path(
-  A : U1, B : U1, u : A and B, v : A and B, p : field_fst(A, B, u) = field_fst(A, B, v),
+  A B : U1, u v : A and B, p : field_fst(A, B, u) = field_fst(A, B, v),
   q : field_snd(A, B, u) = field_snd(A, B, v)
 ) =
-  path(fun (i : Interval) => A and B, fun (i : Interval) => typed(A and B, (at(p, i), at(q, i))));
+  path(fun (i : Interval) => A and B, fun (i : Interval) => typed(A and B, (p @ i, q @ i)));
 
-def field_pair_path_refl(A : U1, B : U1, u : A and B) =
+def field_pair_path_refl(A B : U1, u : A and B) =
   pair_induction(
     (
       fun (v : A and B) => field_pair_path(
         A, B, v, v, refl(field_fst(A, B, v)), refl(field_snd(A, B, v))
       ) = refl(v)
-    ), (fun (a : A) => fun (b : B) => refl(refl(typed(A and B, (a, b))))), u
+    ), (fun (a : A) (b : B) => refl(refl(typed(A and B, (a, b))))), u
   );
 
 // Holds by conversion: pairing a path's projections gives back the path.
-def field_pair_path_decode(A : U1, B : U1, u : A and B, v : A and B, p : u = v) :
+def field_pair_path_decode(A B : U1, u v : A and B, p : u = v) :
   field_pair_path(A, B, u, v, cong(field_fst(A, B), p), cong(field_snd(A, B), p)) = p {
   rfl;
 }
 
-def field_product_is_set(A : U1, B : U1, setA : FieldSet(A), setB : FieldSet(B)) : FieldSet(A and B) {
+def field_product_is_set(A B : U1, setA : FieldSet(A), setB : FieldSet(B)) : FieldSet(A and B) {
   intro u v p q;
   let sameFirst =
     setA(field_fst(A, B, u), field_fst(A, B, v), cong(field_fst(A, B), p), cong(field_fst(A, B), q));

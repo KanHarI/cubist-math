@@ -6,10 +6,10 @@ def linear_combination(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
   induction n as k return (
     (Fin(k) -> vector_carrier(K, V)) -> (Fin(k) -> af_carrier(K)) -> vector_carrier(K, V)
   ) {
-    zero => fun (vectors : Fin(0) -> vector_carrier(K, V)) => fun (
-      coefficients : Fin(0) -> af_carrier(K)
-    ) => vector_zero(K, V);
-    succ previous => fun (vectors : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
+    zero => fun (vectors : Fin(0) -> vector_carrier(K, V)) (coefficients : Fin(0) -> af_carrier(K)) => vector_zero(
+      K, V
+    );
+    succ previous => fun (vectors : Fin(succ(k)) -> vector_carrier(K, V)) (
       coefficients : Fin(succ(k)) -> af_carrier(K)
     ) => vector_add(
       K, V,
@@ -82,8 +82,8 @@ def span_generator(
 }
 
 def span_included(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, Q : vector_carrier(K, V)
-  -> U0, included : (forall x : vector_carrier(K, V), P(x) -> Q(x)), x : vector_carrier(K, V),
+  K : AlgebraicField, V : VectorSpace(K), P Q : vector_carrier(K, V) -> U0,
+  included : (forall x : vector_carrier(K, V), P(x) -> Q(x)), x : vector_carrier(K, V),
   member : Span(K, V, P, x)
 ) :
   Span(K, V, Q, x) {
@@ -124,13 +124,7 @@ def VectorBasis(K : AlgebraicField, V : VectorSpace(K)) =
 // The empty subset is independent, constructively.
 def empty_linearly_independent(K : AlgebraicField, V : VectorSpace(K)) :
   LinearlyIndependent(K, V, (fun (x : vector_carrier(K, V)) => Void)) {
-  intro n;
-  intro vectors;
-  intro distinct;
-  intro members;
-  intro coefficients;
-  intro vanishes;
-  intro i;
+  intro n vectors distinct members coefficients vanishes i;
   exact absurd(members(i));
 }
 
@@ -144,23 +138,18 @@ def independent_excludes_zero(
   let ops = af_operations(K);
   let zero = vector_zero(K, V);
   obtain (ring, nontrivial, inverses) = af_laws(K);
-  have vanishes :
-    linear_combination(K, V, 1, (fun (i : Fin(1)) => zero), (fun (i : Fin(1)) => af_one(A, ops))) = zero {
-    exact trans(
-      cong(
-        (fun (x : vector_carrier(K, V)) => vector_add(K, V, x, zero)), vector_scale_one(K, V, zero)
-      ), group_unit_right(vector_group(K, V), zero)
-    );
-  }
+  have vanishes : linear_combination(
+    K, V, 1, (fun (i : Fin(1)) => zero), (fun (i : Fin(1)) => af_one(A, ops))
+  ) = zero := trans(
+    cong(
+      (fun (x : vector_carrier(K, V)) => vector_add(K, V, x, zero)), vector_scale_one(K, V, zero)
+    ), group_unit_right(vector_group(K, V), zero)
+  );
   exact nontrivial(
     independent(
       1, (fun (i : Fin(1)) => zero),
-      (
-        fun (i : Fin(1)) => fun (j : Fin(1)) => fun (same : zero = zero) => trans(
-          sym(fin_one_unique(i)), fin_one_unique(j)
-        )
-      ), (fun (i : Fin(1)) => member), (fun (i : Fin(1)) => af_one(A, ops)), vanishes,
-      fin_one_center
+      (fun (i j : Fin(1)) (same : zero = zero) => trans(sym(fin_one_unique(i)), fin_one_unique(j))),
+      (fun (i : Fin(1)) => member), (fun (i : Fin(1)) => af_one(A, ops)), vanishes, fin_one_center
     )
   );
 }

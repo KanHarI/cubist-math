@@ -18,8 +18,8 @@ def FiniteSplittingField(K : AlgebraicField, p : Polynomial(K), n : Nat) =
   );
 
 def root_generated_factorization(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat,
-  roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat, roots : Fin(n)
+  -> af_carrier(L), a : af_carrier(L),
   equation : polynomial_map(K, L, e, p) = polynomial_mul(
     L, polynomial_constant(L, a), linear_factor_product(L, n, roots)
   )
@@ -49,12 +49,10 @@ def root_generated_factorization(
   let b = field_embedding_map(K, T, d, polynomial_coefficients(K, p, n));
   let left = polynomial_map(K, T, d, p);
   let right = polynomial_mul(T, polynomial_constant(T, b), linear_factor_product(T, n, rs));
-  have mappedLeft : polynomial_map(T, L, j, left) = polynomial_map(K, L, e, p) {
-    exact trans(
-      polynomial_map_composition(K, T, L, d, j, p),
-      cong((fun (h : FieldEmbedding(K, L)) => polynomial_map(K, L, h, p)), triangle)
-    );
-  }
+  have mappedLeft : polynomial_map(T, L, j, left) = polynomial_map(K, L, e, p) := trans(
+    polynomial_map_composition(K, T, L, d, j, p),
+    cong((fun (h : FieldEmbedding(K, L)) => polynomial_map(K, L, h, p)), triangle)
+  );
   have mappedRight :
     polynomial_map(T, L, j, right) = polynomial_mul(
       L, polynomial_constant(L, a), linear_factor_product(L, n, roots)

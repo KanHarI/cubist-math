@@ -3,7 +3,7 @@ import binary_arithmetic_correct;
 // This is ordinary HoTT univalence transport on the current kernel. The
 // cubical migration must derive its univalence computationally before this
 // becomes the native cubical transport acceptance test.
-def number_equivalence_map(A : U0, B : U0, e : Equiv(U0, A, B)) : A -> B {
+def number_equivalence_map(A B : U0, e : Equiv(U0, A, B)) : A -> B {
   exact unpack e as (f, laws) return (A -> B) {
     f;
   };
@@ -11,15 +11,11 @@ def number_equivalence_map(A : U0, B : U0, e : Equiv(U0, A, B)) : A -> B {
 
 // First transport the endpoints and their path along ua(e), then use the
 // univalence computation law to express the endpoints through the forward map.
-def univalence_transfer_equality(A : U0, B : U0, e : Equiv(U0, A, B), x : A, y : A, same : x = y) :
+def univalence_transfer_equality(A B : U0, e : Equiv(U0, A, B), x y : A, same : x = y) :
   number_equivalence_map(A, B, e, x) = number_equivalence_map(A, B, e, y) {
-  let moved = fun (v : A) => transport((fun (T : U0) => T), A, B, ua(U0, A, B, e), v);
-  have betaX : moved(x) = number_equivalence_map(A, B, e, x) {
-    exact UnivalenceBeta(U0, A, B, e, x);
-  }
-  have betaY : moved(y) = number_equivalence_map(A, B, e, y) {
-    exact UnivalenceBeta(U0, A, B, e, y);
-  }
+  let moved = fun (v : A) => along((fun (T : U0) => T)) by ua(U0, A, B, e) from v;
+  have betaX : moved(x) = number_equivalence_map(A, B, e, x) := UnivalenceBeta(U0, A, B, e, x);
+  have betaY : moved(y) = number_equivalence_map(A, B, e, y) := UnivalenceBeta(U0, A, B, e, y);
   exact trans(sym(betaX), trans(cong(moved, same), betaY));
 }
 

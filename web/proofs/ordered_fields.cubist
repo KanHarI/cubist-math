@@ -7,19 +7,17 @@ def AddLaws(F : U1, zero : F, addF : F -> F -> F, negF : F -> F) =
   and (forall x : F, forall y : F, addF(x, y) = addF(y, x)) and (forall x : F, addF(zero, x) = x)
   and (forall x : F, addF(negF(x), x) = zero);
 
-def MulLaws(F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F) =
+def MulLaws(F : U1, one : F, addF mulF : F -> F -> F) =
   (forall x : F, forall y : F, forall z : F, mulF(mulF(x, y), z) = mulF(x, mulF(y, z)))
   and (forall x : F, forall y : F, mulF(x, y) = mulF(y, x)) and (forall x : F, mulF(one, x) = x)
   and (forall x : F, forall y : F, forall z : F, mulF(x, addF(y, z)) = addF(mulF(x, y), mulF(x, z)));
 
-def CommutativeRing(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F
-) =
+def CommutativeRing(F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F) =
   FieldSet(F) and AddLaws(F, zero, addF, negF) and MulLaws(F, one, addF, mulF);
 
-def FieldLe(F : U1, lt : F -> F -> U0, x : F, y : F) = lt(y, x) -> Void;
+def FieldLe(F : U1, lt : F -> F -> U0, x y : F) = lt(y, x) -> Void;
 
-def FieldApart(F : U1, lt : F -> F -> U0, x : F, y : F) = FieldOr(lt(x, y), lt(y, x));
+def FieldApart(F : U1, lt : F -> F -> U0, x y : F) = FieldOr(lt(x, y), lt(y, x));
 
 // Cotransitivity is the constructive order law, not decidable trichotomy.
 def StrictOrder(F : U1, lt : F -> F -> U0) =
@@ -28,7 +26,7 @@ def StrictOrder(F : U1, lt : F -> F -> U0) =
   and (forall x : F, forall y : F, forall z : F, lt(x, y) -> FieldOr(lt(x, z), lt(z, y)))
   and (forall x : F, forall y : F, FieldLe(F, lt, x, y) -> FieldLe(F, lt, y, x) -> x = y);
 
-def FieldLattice(F : U1, lt : F -> F -> U0, minF : F -> F -> F, maxF : F -> F -> F) =
+def FieldLattice(F : U1, lt : F -> F -> U0, minF maxF : F -> F -> F) =
   (forall x : F, forall y : F, FieldLe(F, lt, minF(x, y), x))
   and (forall x : F, forall y : F, FieldLe(F, lt, minF(x, y), y))
   and (
@@ -41,9 +39,7 @@ def FieldLattice(F : U1, lt : F -> F -> U0, minF : F -> F -> F, maxF : F -> F ->
     -> FieldLe(F, lt, maxF(x, y), z)
   );
 
-def OrderedArithmetic(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0
-) =
+def OrderedArithmetic(F : U1, zero one : F, addF mulF : F -> F -> F, lt : F -> F -> U0) =
   lt(zero, one)
   and (forall x : F, forall y : F, forall z : F, FieldIff(lt(x, y), lt(addF(x, z), addF(y, z))))
   and (
@@ -57,12 +53,12 @@ def OrderedArithmetic(
   and (forall x : F, forall y : F, forall z : F, FieldLe(F, lt, x, y) -> lt(y, z) -> lt(x, z))
   and (forall x : F, forall y : F, lt(zero, addF(x, y)) -> FieldOr(lt(zero, x), lt(zero, y)));
 
-def FieldInverses(F : U1, zero : F, one : F, mulF : F -> F -> F, lt : F -> F -> U0) =
+def FieldInverses(F : U1, zero one : F, mulF : F -> F -> F, lt : F -> F -> U0) =
   forall x : F, FieldIff(FieldApart(F, lt, x, zero), (exists y : F, mulF(x, y) = one));
 
 def OrderedField(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> U0
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, minF maxF : F -> F -> F,
+  lt : F -> F -> U0
 ) =
   CommutativeRing(F, zero, one, addF, mulF, negF) and StrictOrder(F, lt)
   and FieldLattice(F, lt, minF, maxF) and OrderedArithmetic(F, zero, one, addF, mulF, lt)
@@ -78,8 +74,8 @@ def field_add_right_unit(
 }
 
 def field_add_cancel(
-  F : U1, zero : F, addF : F -> F -> F, negF : F -> F, laws : AddLaws(F, zero, addF, negF), x : F,
-  y : F, z : F, same : addF(x, y) = addF(x, z)
+  F : U1, zero : F, addF : F -> F -> F, negF : F -> F, laws : AddLaws(F, zero, addF, negF),
+  x y z : F, same : addF(x, y) = addF(x, z)
 ) :
   y = z {
   obtain (assoc, comm, unit, additiveInverse) = laws;
@@ -87,8 +83,8 @@ def field_add_cancel(
 }
 
 def field_inverse_unique(
-  F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F, laws : MulLaws(F, one, addF, mulF),
-  x : F, y : F, z : F, leftLaw : mulF(x, y) = one, rightLaw : mulF(x, z) = one
+  F : U1, one : F, addF mulF : F -> F -> F, laws : MulLaws(F, one, addF, mulF), x y z : F,
+  leftLaw : mulF(x, y) = one, rightLaw : mulF(x, z) = one
 ) :
   y = z {
   obtain (assoc, comm, unit, distribute) = laws;
@@ -96,10 +92,10 @@ def field_inverse_unique(
 }
 
 def field_zero_not_one(
-  F : U1, zero : F, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), positive : lt(zero, one)
+  F : U1, zero one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), positive : lt(zero, one)
 ) :
   (zero = one) -> Void {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
   intro same;
-  exact irreflexive(zero, transport((fun (x : F) => lt(zero, x)), one, zero, sym(same), positive));
+  exact irreflexive(zero, along((fun (x : F) => lt(zero, x))) by sym(same) from positive);
 }

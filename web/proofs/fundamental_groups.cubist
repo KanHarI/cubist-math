@@ -9,19 +9,16 @@ def LoopSpaceIsSet(X : U1, basepoint : X) =
   forall p : LoopSpace(X, basepoint), forall q : LoopSpace(X, basepoint), forall r : p = q,
   forall s : p = q, r = s;
 
-def loop_concatenate(
-  X : U1, basepoint : X, p : LoopSpace(X, basepoint), q : LoopSpace(X, basepoint)
-) =
-  trans(p, q);
+def loop_concatenate(X : U1, basepoint : X, p q : LoopSpace(X, basepoint)) = trans(p, q);
 
 def fundamental_group_laws(X : U1, basepoint : X, loops_are_set : LoopSpaceIsSet(X, basepoint)) :
   GroupLawsAt(U1, LoopSpace(X, basepoint), refl(basepoint), loop_concatenate(X, basepoint)) {
   exact (
     loops_are_set,
     (
-      fun (p : LoopSpace(X, basepoint)) => fun (q : LoopSpace(X, basepoint)) => fun (
-        r : LoopSpace(X, basepoint)
-      ) => path_associative(X, basepoint, basepoint, basepoint, basepoint, p, q, r)
+      fun (p q r : LoopSpace(X, basepoint)) => path_associative(
+        X, basepoint, basepoint, basepoint, basepoint, p, q, r
+      )
     ), (fun (p : LoopSpace(X, basepoint)) => left_unit(X, basepoint, basepoint, p)),
     (fun (p : LoopSpace(X, basepoint)) => right_unit(X, basepoint, basepoint, p)),
     (

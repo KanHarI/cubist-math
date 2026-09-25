@@ -5,14 +5,11 @@ import field_closeness;
 // radius makes the strict inequality valid also for the empty sum.
 
 def SampleCloseBounds(
-  C : U1, F : U1, addF : F -> F -> F, lt : F -> F -> U0, edge : C -> C -> C -> F,
-  other : C -> C -> C -> F, radius : C -> C -> C -> F, n : Nat
+  C F : U1, addF : F -> F -> F, lt : F -> F -> U0, edge other radius : C -> C -> C -> F, n : Nat
 ) =
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
-    zero => fun (vertices : C) => fun (tags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
-      tags : SampleTags(C, succ(k))
-    ) => FieldClose(
+    zero => fun (vertices : C) (tags : Unit) => Unit;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) => FieldClose(
       F, addF, lt,
       edge(
         field_fst(C, SampleVertices(C, k), vertices),
@@ -34,10 +31,10 @@ def SampleCloseBounds(
   };
 
 def sample_sum_error_bound(
-  C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F
-  -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> F, other : C
-  -> C -> C -> F, radius : C -> C -> C -> F, n : Nat
+  C F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge other radius : C -> C -> C
+  -> F, n : Nat
 ) :
   forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
   SampleCloseBounds(C, F, addF, lt, edge, other, radius, n, vertices, tags) -> forall epsilon : F,
@@ -57,98 +54,91 @@ def sample_sum_error_bound(
       addF(sample_sum(C, F, zero, addF, radius, k, vertices, tags), epsilon)
     )
   ) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (bounds : Unit) => fun (epsilon : F) => fun (
-      positive : lt(zero, epsilon)
-    ) => transport(
-      (fun (r : F) => FieldClose(F, addF, lt, zero, zero, r)), epsilon, addF(zero, epsilon),
-      sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)),
-      field_close_self(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, positive
-      )
+    zero => fun (vertices : C) (tags bounds : Unit) (epsilon : F) (positive : lt(zero, epsilon)) => along(
+      (fun (r : F) => FieldClose(F, addF, lt, zero, zero, r))
+    ) by sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)) from field_close_self(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, positive
     );
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
-      tags : SampleTags(C, succ(k))
-    ) => fun (
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
       bounds : SampleCloseBounds(C, F, addF, lt, edge, other, radius, succ(k), vertices, tags)
-    ) => fun (epsilon : F) => fun (positive : lt(zero, epsilon)) => transport(
+    ) (epsilon : F) (positive : lt(zero, epsilon)) => along(
       (
         fun (r : F) => FieldClose(
           F, addF, lt, sample_sum(C, F, zero, addF, edge, succ(k), vertices, tags),
           sample_sum(C, F, zero, addF, other, succ(k), vertices, tags), r
         )
-      ),
-      addF(
+      )
+    ) by sym(
+      ring_add_assoc(
+        F, zero, one, addF, mulF, negF, ring,
         radius(
           field_fst(C, SampleVertices(C, k), vertices),
           sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
           field_fst(C, SampleTags(C, k), tags)
         ),
-        addF(
-          sample_sum(
-            C, F, zero, addF, radius, k, field_snd(C, SampleVertices(C, k), vertices),
-            field_snd(C, SampleTags(C, k), tags)
-          ), epsilon
-        )
+        sample_sum(
+          C, F, zero, addF, radius, k, field_snd(C, SampleVertices(C, k), vertices),
+          field_snd(C, SampleTags(C, k), tags)
+        ), epsilon
+      )
+    ) from field_close_add(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
+      edge(
+        field_fst(C, SampleVertices(C, k), vertices),
+        sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+        field_fst(C, SampleTags(C, k), tags)
+      ),
+      other(
+        field_fst(C, SampleVertices(C, k), vertices),
+        sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+        field_fst(C, SampleTags(C, k), tags)
+      ),
+      sample_sum(
+        C, F, zero, addF, edge, k, field_snd(C, SampleVertices(C, k), vertices),
+        field_snd(C, SampleTags(C, k), tags)
+      ),
+      sample_sum(
+        C, F, zero, addF, other, k, field_snd(C, SampleVertices(C, k), vertices),
+        field_snd(C, SampleTags(C, k), tags)
+      ),
+      radius(
+        field_fst(C, SampleVertices(C, k), vertices),
+        sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+        field_fst(C, SampleTags(C, k), tags)
       ),
       addF(
-        addF(
-          radius(
-            field_fst(C, SampleVertices(C, k), vertices),
-            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
-            field_fst(C, SampleTags(C, k), tags)
-          ),
-          sample_sum(
-            C, F, zero, addF, radius, k, field_snd(C, SampleVertices(C, k), vertices),
-            field_snd(C, SampleTags(C, k), tags)
-          )
+        sample_sum(
+          C, F, zero, addF, radius, k, field_snd(C, SampleVertices(C, k), vertices),
+          field_snd(C, SampleTags(C, k), tags)
         ), epsilon
       ),
-      sym(
-        ring_add_assoc(
-          F, zero, one, addF, mulF, negF, ring,
-          radius(
+      field_fst(
+        FieldClose(
+          F, addF, lt,
+          edge(
             field_fst(C, SampleVertices(C, k), vertices),
             sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
             field_fst(C, SampleTags(C, k), tags)
           ),
-          sample_sum(
-            C, F, zero, addF, radius, k, field_snd(C, SampleVertices(C, k), vertices),
-            field_snd(C, SampleTags(C, k), tags)
-          ), epsilon
-        )
+          other(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), tags)
+          ),
+          radius(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), tags)
+          )
+        ),
+        SampleCloseBounds(
+          C, F, addF, lt, edge, other, radius, k, field_snd(C, SampleVertices(C, k), vertices),
+          field_snd(C, SampleTags(C, k), tags)
+        ), bounds
       ),
-      field_close_add(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
-        edge(
-          field_fst(C, SampleVertices(C, k), vertices),
-          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
-          field_fst(C, SampleTags(C, k), tags)
-        ),
-        other(
-          field_fst(C, SampleVertices(C, k), vertices),
-          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
-          field_fst(C, SampleTags(C, k), tags)
-        ),
-        sample_sum(
-          C, F, zero, addF, edge, k, field_snd(C, SampleVertices(C, k), vertices),
-          field_snd(C, SampleTags(C, k), tags)
-        ),
-        sample_sum(
-          C, F, zero, addF, other, k, field_snd(C, SampleVertices(C, k), vertices),
-          field_snd(C, SampleTags(C, k), tags)
-        ),
-        radius(
-          field_fst(C, SampleVertices(C, k), vertices),
-          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
-          field_fst(C, SampleTags(C, k), tags)
-        ),
-        addF(
-          sample_sum(
-            C, F, zero, addF, radius, k, field_snd(C, SampleVertices(C, k), vertices),
-            field_snd(C, SampleTags(C, k), tags)
-          ), epsilon
-        ),
-        field_fst(
+      previous(
+        field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags),
+        field_snd(
           FieldClose(
             F, addF, lt,
             edge(
@@ -171,34 +161,7 @@ def sample_sum_error_bound(
             C, F, addF, lt, edge, other, radius, k, field_snd(C, SampleVertices(C, k), vertices),
             field_snd(C, SampleTags(C, k), tags)
           ), bounds
-        ),
-        previous(
-          field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), tags),
-          field_snd(
-            FieldClose(
-              F, addF, lt,
-              edge(
-                field_fst(C, SampleVertices(C, k), vertices),
-                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
-                field_fst(C, SampleTags(C, k), tags)
-              ),
-              other(
-                field_fst(C, SampleVertices(C, k), vertices),
-                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
-                field_fst(C, SampleTags(C, k), tags)
-              ),
-              radius(
-                field_fst(C, SampleVertices(C, k), vertices),
-                sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
-                field_fst(C, SampleTags(C, k), tags)
-              )
-            ),
-            SampleCloseBounds(
-              C, F, addF, lt, edge, other, radius, k, field_snd(C, SampleVertices(C, k), vertices),
-              field_snd(C, SampleTags(C, k), tags)
-            ), bounds
-          ), epsilon, positive
-        )
+        ), epsilon, positive
       )
     );
   };

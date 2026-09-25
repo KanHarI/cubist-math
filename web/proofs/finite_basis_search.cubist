@@ -23,9 +23,7 @@ def classical_counterexample(
   );
 }
 
-def linear_surjective_prop(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W)
-) =
+def linear_surjective_prop(K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W)) =
   forall_prop(
     vector_carrier(K, W),
     (
@@ -46,7 +44,7 @@ def NoIndependent(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
   -> Void;
 
 def finite_basis_search_step(
-  K : AlgebraicField, V : VectorSpace(K), fuel : Nat, m : Nat,
+  K : AlgebraicField, V : VectorSpace(K), fuel m : Nat,
   previous : (
     forall k : Nat, forall f : LinearMap(K, CoordinateSpace(K, k), V),
     LinearInjective(K, CoordinateSpace(K, k), V, f) -> NoIndependent(K, V, add_count(fuel, k))
@@ -66,10 +64,7 @@ def finite_basis_search_step(
     exact previous(
       succ(m), adjoin_linear(K, V, m, f, x),
       adjoin_linear_injective(K, V, m, f, injective, x, outside),
-      transport(
-        NoIndependent(K, V), succ(add_count(fuel, m)), add_count(fuel, succ(m)),
-        sym(nat_add_succ(fuel, m)), bound
-      )
+      along NoIndependent(K, V) by sym(nat_add_succ(fuel, m)) from bound
     );
   }
   exact match excluded_middle(
@@ -95,14 +90,14 @@ def finite_basis_search(K : AlgebraicField, V : VectorSpace(K), fuel : Nat) =
     LinearInjective(K, CoordinateSpace(K, m), V, f) -> NoIndependent(K, V, add_count(k, m))
     -> FiniteDimensional(K, V)
   ) {
-    zero => fun (m : Nat) => fun (f : LinearMap(K, CoordinateSpace(K, m), V)) => fun (
+    zero => fun (m : Nat) (f : LinearMap(K, CoordinateSpace(K, m), V)) (
       injective : LinearInjective(K, CoordinateSpace(K, m), V, f)
-    ) => fun (bound : NoIndependent(K, V, add_count(0, m))) => typed(
+    ) (bound : NoIndependent(K, V, add_count(0, m))) => typed(
       FiniteDimensional(K, V), absurd(bound(f, injective))
     );
-    succ previous => fun (m : Nat) => fun (f : LinearMap(K, CoordinateSpace(K, m), V)) => fun (
+    succ previous => fun (m : Nat) (f : LinearMap(K, CoordinateSpace(K, m), V)) (
       injective : LinearInjective(K, CoordinateSpace(K, m), V, f)
-    ) => fun (bound : NoIndependent(K, V, add_count(succ(k), m))) => finite_basis_search_step(
+    ) (bound : NoIndependent(K, V, add_count(succ(k), m))) => finite_basis_search_step(
       K, V, k, m, previous, f, injective, bound
     );
   };
@@ -113,7 +108,7 @@ def finite_dimensional_from_bound(
   FiniteDimensional(K, V) {
   exact finite_basis_search(
     K, V, n, 0, linear_empty(K, V), linear_empty_injective(K, V),
-    transport(NoIndependent(K, V), n, add_count(n, 0), sym(nat_add_zero(n)), bound)
+    along NoIndependent(K, V) by sym(nat_add_zero(n)) from bound
   );
 }
 
@@ -127,14 +122,11 @@ def coordinate_embedding_bound(
   injective : LinearInjective(K, V, CoordinateSpace(K, n), h)
 ) :
   NoIndependent(K, V, succ(n)) {
-  intro f;
-  intro independent;
+  intro f independent;
   let C = CoordinateSpace(K, succ(n));
   let N = CoordinateSpace(K, n);
   have composite : CoordinateInjection(K, succ(n), n, linear_compose(K, C, V, N, f, h)) {
-    intro x;
-    intro y;
-    intro same;
+    intro x y same;
     exact independent(x, y, injective(linear_map(K, C, V, f, x), linear_map(K, C, V, f, y), same));
   }
   exact successor_not_le_self(
@@ -153,7 +145,7 @@ def finite_dimensional_coordinates_injection(
 }
 
 def finite_dimensional_injection_basis(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
+  K : AlgebraicField, V W : VectorSpace(K), h : LinearMap(K, V, W),
   injective : LinearInjective(K, V, W, h), n : Nat, basis : FiniteBasis(K, W, n)
 ) :
   FiniteDimensional(K, V) {
@@ -161,9 +153,7 @@ def finite_dimensional_injection_basis(
   let inverse = linear_iso_inverse(K, N, W, basis);
   let coordinates = linear_iso_forward(K, W, N, inverse);
   have composite : LinearInjective(K, V, N, linear_compose(K, V, W, N, h, coordinates)) {
-    intro x;
-    intro y;
-    intro same;
+    intro x y same;
     exact injective(
       x, y,
       linear_iso_injective(
@@ -179,7 +169,7 @@ def finite_dimensional_injection_basis(
 // Subobjects of finite-dimensional vector spaces are finite-dimensional.
 // The injective-map form applies without a chosen subtype presentation.
 def finite_dimensional_injection(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), h : LinearMap(K, V, W),
+  K : AlgebraicField, V W : VectorSpace(K), h : LinearMap(K, V, W),
   injective : LinearInjective(K, V, W, h), finite : FiniteDimensional(K, W)
 ) :
   FiniteDimensional(K, V) {

@@ -29,34 +29,27 @@ def group_map_laws_prop(
 
 def group_map_evidence_prop(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(A),
-  setB : IsSet(B), f : A -> B, p : GroupMapEvidence(A, multiplyA, B, multiplyB, f),
-  q : GroupMapEvidence(A, multiplyA, B, multiplyB, f)
+  setB : IsSet(B), f : A -> B, p q : GroupMapEvidence(A, multiplyA, B, multiplyB, f)
 ) :
   p = q {
   let g = typed((B -> A), sigma_first((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), p));
   let h = typed((B -> A), sigma_first((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), q));
   let pg = sigma_second((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), p);
   let qh = sigma_second((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), q);
-  have eta : LeftLaw(A, B, f, h) {
-    exact fst(
-      LeftLaw(A, B, f, h),
-      (RightLaw(A, B, f, h) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)), qh
-    );
-  }
-  have eps : RightLaw(A, B, f, g) {
-    exact fst(
-      RightLaw(A, B, f, g), GroupMultiplicative(A, multiplyA, B, multiplyB, f),
-      snd(
-        LeftLaw(A, B, f, g),
-        (RightLaw(A, B, f, g) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)), pg
-      )
-    );
-  }
-  have same : g = h {
-    exact FunExt(
-      U0, B, (fun (y : B) => A), g, h, (fun (y : B) => trans(sym(eta(g(y))), cong(h, eps(y))))
-    );
-  }
+  have eta : LeftLaw(A, B, f, h) := fst(
+    LeftLaw(A, B, f, h),
+    (RightLaw(A, B, f, h) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)), qh
+  );
+  have eps : RightLaw(A, B, f, g) := fst(
+    RightLaw(A, B, f, g), GroupMultiplicative(A, multiplyA, B, multiplyB, f),
+    snd(
+      LeftLaw(A, B, f, g),
+      (RightLaw(A, B, f, g) and GroupMultiplicative(A, multiplyA, B, multiplyB, f)), pg
+    )
+  );
+  have same : g = h := FunExt(
+    U0, B, (fun (y : B) => A), g, h, (fun (y : B) => trans(sym(eta(g(y))), cong(h, eps(y))))
+  );
   exact subtype_ext(
     (B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f),
     group_map_laws_prop(A, multiplyA, B, multiplyB, setA, setB, f), p, q, same
@@ -64,7 +57,7 @@ def group_map_evidence_prop(
 }
 
 def group_iso_ext(
-  G : Group, H : Group, p : GroupIso(G, H), q : GroupIso(G, H), same : forall x : group_carrier(G),
+  G H : Group, p q : GroupIso(G, H), same : forall x : group_carrier(G),
   group_iso_forward(G, H, p, x) = group_iso_forward(G, H, q, x)
 ) :
   p = q {

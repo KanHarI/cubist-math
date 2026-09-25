@@ -4,8 +4,8 @@ import interval_subdivisions;
 
 // Coarse width bounds and fine admissibility refer to the same actual family.
 def interval_refinement_mesh(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), radius : F, mesh : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), radius mesh : F,
   small : lt(radius, mesh), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
@@ -31,12 +31,7 @@ def interval_refinement_mesh(
   have combine :
     forall a : I, forall b : I, forall tag : I, forall piece : SampleSubdivision(I, a, b),
     coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece) {
-    intro a;
-    intro b;
-    intro tag;
-    intro piece;
-    intro coarseData;
-    intro fineData;
+    intro a b tag piece coarseData fineData;
     obtain (within, bounded) = coarseData;
     exact (
       within,
@@ -52,15 +47,15 @@ def interval_refinement_mesh(
 // Once this dyadic level meets the mesh bound, every later level gives a
 // refinement certificate satisfying the hypotheses of the analytic estimates.
 def dyadic_samples_refine_below_mesh(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
   halfSum : (forall x : F, addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
   leftUnit : (forall x : G, addG(zeroG, x) = x), rightUnit : (forall x : G, addG(x, zeroG) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
-  -> FieldUnitInterval(F, zero, one, lt) -> G, depth : Nat, extra : Nat,
-  a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  -> FieldUnitInterval(F, zero, one, lt) -> G, depth extra : Nat,
+  a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)

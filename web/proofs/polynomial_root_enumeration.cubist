@@ -46,7 +46,7 @@ def linear_factor_product_root_index(K : AlgebraicField, n : Nat) :
     PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, k, roots), x)
     -> Mere(exists i : Fin(k), roots(i) = x)
   ) {
-    zero => fun (roots : Fin(0) -> af_carrier(K)) => fun (x : af_carrier(K)) => fun (
+    zero => fun (roots : Fin(0) -> af_carrier(K)) (x : af_carrier(K)) (
       root : PolynomialRoot(K, K, field_embedding_identity(K), polynomial_one(K), x)
     ) => typed(
       Mere(exists i : Fin(0), roots(i) = x),
@@ -73,9 +73,7 @@ def linear_factor_product_listed_step(
   let q = linear_factor_product(K, n, tail);
   let P = linear_factor_product(K, succ(n), roots);
   let e = field_embedding_identity(K);
-  have headRoot : PolynomialRoot(K, K, e, P, h) {
-    exact polynomial_factor_root(K, P, h, q, refl(P));
-  }
+  have headRoot : PolynomialRoot(K, K, e, P, h) := polynomial_factor_root(K, P, h, q, refl(P));
   have tailRoot : forall j : Fin(n), PolynomialRoot(K, K, e, P, tail(j)) {
     intro j;
     let x = tail(j);
@@ -92,9 +90,10 @@ def linear_factor_product_listed_step(
     };
   }
   exact match i as index return PolynomialRoot(K, K, e, P, roots(index)) {
-    left u => transport(
-      PolynomialRoot(K, K, e, P), h, roots(typed(Fin(succ(n)), left(u))),
-      cong((fun (v : Unit) => roots(typed(Fin(succ(n)), left(v)))), unit_equal(u)), headRoot
+    left u => (
+      along PolynomialRoot(K, K, e, P) by cong(
+        (fun (v : Unit) => roots(typed(Fin(succ(n)), left(v)))), unit_equal(u)
+      ) from headRoot
     );
     right j => tailRoot(j);
   };
@@ -105,7 +104,7 @@ def linear_factor_product_listed_root(K : AlgebraicField, n : Nat) =
     forall roots : Fin(k) -> af_carrier(K), forall i : Fin(k),
     PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, k, roots), roots(i))
   ) {
-    zero => fun (roots : Fin(0) -> af_carrier(K)) => fun (i : Fin(0)) => typed(
+    zero => fun (roots : Fin(0) -> af_carrier(K)) (i : Fin(0)) => typed(
       PolynomialRoot(
         K, K, field_embedding_identity(K), linear_factor_product(K, 0, roots), roots(i)
       ), absurd(i)
@@ -165,20 +164,18 @@ def splitting_root_index(
       )
     );
   }
-  have product : field_mul(K, a, E(q)) = field_zero(K) {
-    exact with unfolding [] {
+  have product : field_mul(K, a, E(q)) = field_zero(K) := with unfolding [] {
+    trans(
+      cong(
+        (fun (b : af_carrier(K)) => field_mul(K, b, E(q))),
+        sym(polynomial_eval_constant(K, K, e, a, x))
+      ),
       trans(
-        cong(
-          (fun (b : af_carrier(K)) => field_mul(K, b, E(q))),
-          sym(polynomial_eval_constant(K, K, e, a, x))
-        ),
-        trans(
-          sym(polynomial_eval_mul(K, K, e, polynomial_constant(K, a), q, x)),
-          trans(cong(E, sym(equation)), root)
-        )
+        sym(polynomial_eval_mul(K, K, e, polynomial_constant(K, a), q, x)),
+        trans(cong(E, sym(equation)), root)
       )
-    };
-  }
+    )
+  };
   let rq =
     vector_scale_injective(
       K, ScalarSpace(K), a, na, E(q), field_zero(K), trans(product, sym(scalar_mul_zero(K, a)))
@@ -208,9 +205,7 @@ def distinct_splitting_roots_bijection(
   let P = PolynomialRoot(K, K, field_embedding_identity(K), p);
   let f = splitting_root_map(K, p, n, roots, a, equation);
   have injective : Injective(Fin(n), R, f) {
-    intro i;
-    intro j;
-    intro same;
+    intro i j same;
     exact distinct(i, j, cong(sigma_first(af_carrier(K), P), same));
   }
   have onto : Surjective(Fin(n), R, f) {

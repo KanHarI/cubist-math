@@ -3,18 +3,14 @@ import surjections;
 
 // Injectivity and surjectivity refer to the underlying map of a checked
 // linear map. Surjectivity promises only truncated preimages.
-def LinearInjective(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W)
-) =
+def LinearInjective(K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W)) =
   Injective(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
 
-def LinearSurjective(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W)
-) =
+def LinearSurjective(K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W)) =
   Surjective(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
 
 def linear_unique_preimage(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
   injective : LinearInjective(K, V, W, f), onto : LinearSurjective(K, V, W, f),
   y : vector_carrier(K, W)
 ) :
@@ -30,7 +26,7 @@ def linear_unique_preimage(
 }
 
 def linear_bijective_iso(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
   injective : LinearInjective(K, V, W, f), onto : LinearSurjective(K, V, W, f)
 ) :
   LinearIso(K, V, W) {
@@ -47,8 +43,7 @@ def linear_bijective_iso(
     );
   have additive :
     forall y : Y, forall z : Y, g(vector_add(K, W, y, z)) = vector_add(K, V, g(y), g(z)) {
-    intro y;
-    intro z;
+    intro y z;
     exact injective(
       g(vector_add(K, W, y, z)), vector_add(K, V, g(y), g(z)),
       trans(
@@ -68,8 +63,7 @@ def linear_bijective_iso(
   have scalar :
     forall a : af_carrier(K), forall y : Y,
     g(vector_scale(K, W, a, y)) = vector_scale(K, V, a, g(y)) {
-    intro a;
-    intro y;
+    intro a y;
     exact injective(
       g(vector_scale(K, W, a, y)), vector_scale(K, V, a, g(y)),
       trans(
@@ -85,23 +79,16 @@ def linear_empty(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, Coordina
   exact (
     (fun (v : Fin(0) -> af_carrier(K)) => vector_zero(K, V)),
     (
-      fun (v : Fin(0) -> af_carrier(K)) => fun (w : Fin(0) -> af_carrier(K)) => sym(
+      fun (v w : Fin(0) -> af_carrier(K)) => sym(
         group_unit_left(vector_group(K, V), vector_zero(K, V))
       )
-    ),
-    (
-      fun (a : af_carrier(K)) => fun (v : Fin(0) -> af_carrier(K)) => sym(
-        vector_scale_zero(K, V, a)
-      )
-    )
+    ), (fun (a : af_carrier(K)) (v : Fin(0) -> af_carrier(K)) => sym(vector_scale_zero(K, V, a)))
   );
 }
 
 def linear_empty_injective(K : AlgebraicField, V : VectorSpace(K)) :
   LinearInjective(K, CoordinateSpace(K, 0), V, linear_empty(K, V)) {
-  intro v;
-  intro w;
-  intro same;
+  intro v w same;
   exact FunExt(
     U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)), v, w,
     (fun (i : Fin(0)) => typed((v(i) = w(i)), absurd(i)))
@@ -147,24 +134,18 @@ def adjoin_nonzero_impossible(
   obtain (addLaws, assoc, comm, one, distribute) = ring;
   obtain (b, inverse) = inverses(a, nonzero);
   let leftInverse = trans(comm(b, a), inverse);
-  have solve : vector_scale(K, V, a, x) = vector_neg(K, V, y) {
-    exact group_inverse_unique(
-      vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), group_laws(G), y,
-      vector_scale(K, V, a, x), vector_neg(K, V, y), vanishes, group_inverse_right(G, y)
-    );
-  }
+  have solve : vector_scale(K, V, a, x) = vector_neg(K, V, y) := group_inverse_unique(
+    vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), group_laws(G), y,
+    vector_scale(K, V, a, x), vector_neg(K, V, y), vanishes, group_inverse_right(G, y)
+  );
   let preimage = vector_scale(K, C, b, vector_neg(K, C, rest));
-  have image : F(preimage) = x {
-    exact trans(
-      linear_scale(K, C, V, f, b, vector_neg(K, C, rest)),
-      trans(
-        cong(vector_scale(K, V, b), linear_neg(K, C, V, f, rest)),
-        trans(
-          sym(cong(vector_scale(K, V, b), solve)), vector_scale_undo(K, V, a, b, leftInverse, x)
-        )
-      )
-    );
-  }
+  have image : F(preimage) = x := trans(
+    linear_scale(K, C, V, f, b, vector_neg(K, C, rest)),
+    trans(
+      cong(vector_scale(K, V, b), linear_neg(K, C, V, f, rest)),
+      trans(sym(cong(vector_scale(K, V, b), solve)), vector_scale_undo(K, V, a, b, leftInverse, x))
+    )
+  );
   exact outside(
     merely(
       Fiber(vector_carrier(K, C), vector_carrier(K, V), F, x),
@@ -196,30 +177,26 @@ def adjoin_linear_kernel(
   let rest = finite_tail(A, m, v);
   let y = F(rest);
   let G = vector_group(K, V);
-  have coefficient_zero : a = af_zero(A, ops) {
-    exact double_negation(
-      a = af_zero(A, ops), af_set(K, a, af_zero(A, ops)),
-      (
-        fun (nonzero : (a = af_zero(A, ops)) -> Void) => adjoin_nonzero_impossible(
-          K, V, m, f, x, outside, a, rest, vanishes, nonzero
+  have coefficient_zero : a = af_zero(A, ops) := double_negation(
+    a = af_zero(A, ops), af_set(K, a, af_zero(A, ops)),
+    (
+      fun (nonzero : (a = af_zero(A, ops)) -> Void) => adjoin_nonzero_impossible(
+        K, V, m, f, x, outside, a, rest, vanishes, nonzero
+      )
+    )
+  );
+  have rest_zero : rest = vector_zero(K, C) {
+    have image_zero : y = vector_zero(K, V) := trans(
+      sym(group_unit_left(G, y)),
+      trans(
+        cong((fun (z : X) => vector_add(K, V, z, y)), sym(vector_zero_scale(K, V, x))),
+        trans(
+          cong(
+            (fun (b : A) => vector_add(K, V, vector_scale(K, V, b, x), y)), sym(coefficient_zero)
+          ), vanishes
         )
       )
     );
-  }
-  have rest_zero : rest = vector_zero(K, C) {
-    have image_zero : y = vector_zero(K, V) {
-      exact trans(
-        sym(group_unit_left(G, y)),
-        trans(
-          cong((fun (z : X) => vector_add(K, V, z, y)), sym(vector_zero_scale(K, V, x))),
-          trans(
-            cong(
-              (fun (b : A) => vector_add(K, V, vector_scale(K, V, b, x), y)), sym(coefficient_zero)
-            ), vanishes
-          )
-        )
-      );
-    }
     exact injective(rest, vector_zero(K, C), trans(image_zero, sym(linear_zero(K, C, V, f))));
   }
   exact finite_function_ext(

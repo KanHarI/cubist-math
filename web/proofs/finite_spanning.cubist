@@ -20,10 +20,10 @@ def family_linear_evaluation(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
       K, V, k, vectors, a
     )
   ) {
-    zero => fun (vectors : Fin(0) -> vector_carrier(K, V)) => fun (a : Fin(0) -> af_carrier(K)) => refl(
+    zero => fun (vectors : Fin(0) -> vector_carrier(K, V)) (a : Fin(0) -> af_carrier(K)) => refl(
       vector_zero(K, V)
     );
-    succ previous => fun (vectors : Fin(succ(k)) -> vector_carrier(K, V)) => fun (
+    succ previous => fun (vectors : Fin(succ(k)) -> vector_carrier(K, V)) (
       a : Fin(succ(k)) -> af_carrier(K)
     ) => cong(
       vector_add(

@@ -11,14 +11,12 @@ def polynomial_eval_remainder(
   let q = polynomial_quotient(K, M, p);
   let r = polynomial_remainder(K, M, p);
   let E = fun (s : Polynomial(K)) => polynomial_eval(K, L, e, s, x);
-  have product : E(polynomial_mul(K, q, D)) = field_zero(L) {
-    exact with unfolding [] {
-      trans(
-        polynomial_eval_mul(K, L, e, q, D, x),
-        trans(cong(field_mul(L, E(q)), root), scalar_mul_zero(L, E(q)))
-      )
-    };
-  }
+  have product : E(polynomial_mul(K, q, D)) = field_zero(L) := with unfolding [] {
+    trans(
+      polynomial_eval_mul(K, L, e, q, D, x),
+      trans(cong(field_mul(L, E(q)), root), scalar_mul_zero(L, E(q)))
+    )
+  };
   exact with unfolding [] {
     sym(
       trans(

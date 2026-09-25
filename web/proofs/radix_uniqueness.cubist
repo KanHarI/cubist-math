@@ -9,22 +9,17 @@ def radix_nat_no_smaller_self(n : Nat) : (succ(n) <= n) -> Void {
   };
 }
 
-def radix_nat_small_not_large(r : Nat, d : Nat, e : Nat, small : succ(d) <= r, same : d = r + e) :
-  Void {
+def radix_nat_small_not_large(r d e : Nat, small : succ(d) <= r, same : d = r + e) : Void {
   let large =
-    transport(
-      (fun (v : Nat) => r <= v), e + r, d, trans(nat_add_comm(e, r), sym(same)), nat_le_add(e, r)
-    );
+    along((fun (v : Nat) => r <= v)) by trans(nat_add_comm(e, r), sym(same)) from nat_le_add(e, r);
   exact radix_nat_no_smaller_self(d, nat_le_trans(succ(d), r, d, small, large));
 }
 
-def radix_eval_succ(r : Nat, n : Nat, d : Nat) : r * succ(n) + d = r + (r * n + d) {
+def radix_eval_succ(r n d : Nat) : r * succ(n) + d = r + (r * n + d) {
   exact trans(cong((fun (v : Nat) => v + d), nat_mul_succ(r, n)), nat_add_assoc(r, r * n, d));
 }
 
-def radix_cancel_block(
-  r : Nat, a : Nat, b : Nat, d : Nat, e : Nat, same : r * succ(a) + d = r * succ(b) + e
-) :
+def radix_cancel_block(r a b d e : Nat, same : r * succ(a) + d = r * succ(b) + e) :
   r * a + d = r * b + e {
   exact nat_add_cancel(
     r, r * a + d, r * b + e,
@@ -32,7 +27,7 @@ def radix_cancel_block(
   );
 }
 
-def radix_division_zero(r : Nat, d : Nat, e : Nat, small : succ(d) <= r, b : Nat) :
+def radix_division_zero(r d e : Nat, small : succ(d) <= r, b : Nat) :
   (d = r * b + e) -> ((0 = b) and (d = e)) {
   exact induction b as k return ((d = r * k + e) -> ((0 = k) and (d = e))) {
     zero => fun (same : d = r * 0 + e) => typed(
@@ -48,7 +43,7 @@ def radix_division_zero(r : Nat, d : Nat, e : Nat, small : succ(d) <= r, b : Nat
 }
 
 def radix_division_successor(
-  r : Nat, d : Nat, e : Nat, smallE : succ(e) <= r, a : Nat,
+  r d e : Nat, smallE : succ(e) <= r, a : Nat,
   ih : (forall b : Nat, (r * a + d = r * b + e) -> ((a = b) and (d = e))), b : Nat
 ) :
   (r * succ(a) + d = r * b + e) -> ((succ(a) = b) and (d = e)) {
@@ -73,12 +68,10 @@ def radix_division_successor(
   };
 }
 
-def radix_division_unique(
-  r : Nat, d : Nat, e : Nat, smallD : succ(d) <= r, smallE : succ(e) <= r, a : Nat
-) :
+def radix_division_unique(r d e : Nat, smallD : succ(d) <= r, smallE : succ(e) <= r, a : Nat) :
   forall b : Nat, (r * a + d = r * b + e) -> ((a = b) and (d = e)) {
   exact induction a as k return (forall b : Nat, (r * k + d = r * b + e) -> ((k = b) and (d = e))) {
-    zero => fun (b : Nat) => fun (same : r * 0 + d = r * b + e) => radix_division_zero(
+    zero => fun (b : Nat) (same : r * 0 + d = r * b + e) => radix_division_zero(
       r, d, e, smallD, b, trans(sym(cong((fun (v : Nat) => v + d), nat_mul_zero(r))), same)
     );
     succ previous => radix_division_successor(r, d, e, smallE, k, previous);
@@ -117,9 +110,8 @@ def radix_digit_top_unique(n : Nat, u : Unit, e : RadixDigit(succ(n))) :
       absurd(
         radix_nat_no_smaller_self(
           radix_digit_value(n, lower),
-          transport(
-            (fun (bound : Nat) => succ(radix_digit_value(n, lower)) <= bound), n,
-            radix_digit_value(n, lower), same, radix_digit_bound(n, lower)
+          along((fun (bound : Nat) => succ(radix_digit_value(n, lower)) <= bound)) by same from radix_digit_bound(
+            n, lower
           )
         )
       )

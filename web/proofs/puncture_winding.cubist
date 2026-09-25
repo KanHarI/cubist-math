@@ -9,7 +9,7 @@ def decision_circle_loop(P : U0, decision : Decidable(P)) = match decision retur
     right no => refl(base);
   };
 
-def selected_circle_loop(n : Nat, selected : Fin(n), label : Fin(n)) =
+def selected_circle_loop(n : Nat, selected label : Fin(n)) =
   decision_circle_loop((selected = label), fin_decidable(n, selected, label));
 
 def selected_circle_self(n : Nat, selected : Fin(n)) :
@@ -22,9 +22,7 @@ def selected_circle_self(n : Nat, selected : Fin(n)) :
   };
 }
 
-def selected_circle_other(
-  n : Nat, selected : Fin(n), label : Fin(n), different : (selected = label) -> Void
-) :
+def selected_circle_other(n : Nat, selected label : Fin(n), different : (selected = label) -> Void) :
   selected_circle_loop(n, selected, label) = refl(base) {
   exact match fin_decidable(n, selected, label) as decision return (
     decision_circle_loop((selected = label), decision) = refl(base)
@@ -54,9 +52,7 @@ def puncture_winding_self(n : Nat, selected : Fin(n)) :
   );
 }
 
-def puncture_winding_other(
-  n : Nat, selected : Fin(n), label : Fin(n), different : (selected = label) -> Void
-) :
+def puncture_winding_other(n : Nat, selected label : Fin(n), different : (selected = label) -> Void) :
   puncture_winding(n, selected, puncture_loop(n, label)) = zeroZ {
   exact trans(
     cong(winding, bouquet_map_generator(Fin(n), S1, base, selected_circle_loop(n, selected), label)),
@@ -64,9 +60,7 @@ def puncture_winding_other(
   );
 }
 
-def puncture_winding_append(
-  n : Nat, selected : Fin(n), p : BouquetLoops(Fin(n)), q : BouquetLoops(Fin(n))
-) :
+def puncture_winding_append(n : Nat, selected : Fin(n), p q : BouquetLoops(Fin(n))) :
   puncture_winding(
     n, selected,
     append_path(
@@ -127,7 +121,7 @@ def puncture_generator_nontrivial(n : Nat, selected : Fin(n)) :
 }
 
 def puncture_generators_distinct(
-  n : Nat, selected : Fin(n), label : Fin(n), different : (selected = label) -> Void
+  n : Nat, selected label : Fin(n), different : (selected = label) -> Void
 ) :
   (puncture_loop(n, selected) = puncture_loop(n, label)) -> Void {
   intro same;
@@ -156,7 +150,7 @@ def puncture_winding_reverse_self(n : Nat, selected : Fin(n)) :
 }
 
 def puncture_winding_reverse_other(
-  n : Nat, selected : Fin(n), label : Fin(n), different : (selected = label) -> Void
+  n : Nat, selected label : Fin(n), different : (selected = label) -> Void
 ) :
   puncture_winding(
     n, selected,
@@ -171,7 +165,7 @@ def puncture_winding_reverse_other(
 }
 
 def puncture_winding_append_values(
-  n : Nat, selected : Fin(n), p : BouquetLoops(Fin(n)), q : BouquetLoops(Fin(n)), a : Z, b : Z,
+  n : Nat, selected : Fin(n), p q : BouquetLoops(Fin(n)), a b : Z,
   leftValue : puncture_winding(n, selected, p) = a,
   rightValue : puncture_winding(n, selected, q) = b
 ) :

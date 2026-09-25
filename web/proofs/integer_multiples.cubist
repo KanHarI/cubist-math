@@ -13,8 +13,7 @@ def additive_right_zero(
 }
 
 def additive_cancel_last(
-  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
-  y : G
+  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x y : G
 ) :
   addG(addG(x, y), negG(y)) = x {
   obtain (assoc, comm, unit, inverseLaw) = laws;
@@ -28,8 +27,7 @@ def additive_cancel_last(
 }
 
 def additive_cancel_negative_last(
-  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
-  y : G
+  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x y : G
 ) :
   addG(addG(x, negG(y)), y) = x {
   obtain (assoc, comm, unit, inverseLaw) = laws;
@@ -40,8 +38,8 @@ def additive_cancel_negative_last(
 }
 
 def additive_shuffle(
-  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
-  y : G, u : G, v : G
+  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
+  x y u v : G
 ) :
   addG(addG(x, y), addG(u, v)) = addG(addG(x, u), addG(y, v)) {
   obtain (assoc, comm, unit, inverseLaw) = laws;
@@ -189,7 +187,7 @@ def integer_multiple_add_negative(
 
 def integer_multiple_add(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
-  z : Z, w : Z
+  z w : Z
 ) :
   integer_multiple(G, zero, addG, negG, x, addZ(z, w)) = addG(
     integer_multiple(G, zero, addG, negG, x, z), integer_multiple(G, zero, addG, negG, x, w)

@@ -12,7 +12,7 @@ def GroupLeftUnitAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) =
 def GroupRightUnitAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) =
   forall x : A, multiply(x, unit) = x;
 
-def GroupInverseLawsAt(U : Universe, A : U, unit : A, multiply : A -> A -> A, x : A, y : A) =
+def GroupInverseLawsAt(U : Universe, A : U, unit : A, multiply : A -> A -> A, x y : A) =
   (multiply(y, x) = unit) and (multiply(x, y) = unit);
 
 def GroupInversesAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) =
@@ -40,7 +40,7 @@ def group_carrier_at(U : Universe, G : GroupAt(U)) = unpack G as (A, structure) 
 def group_structure_at(U : Universe, G : GroupAt(U)) =
   pair_induction(
     (fun (H : GroupAt(U)) => GroupStructureAt(U, group_carrier_at(U, H))),
-    (fun (A : U) => fun (structure : GroupStructureAt(U, A)) => structure), G
+    (fun (A : U) (structure : GroupStructureAt(U, A)) => structure), G
   );
 
 def group_unit_at(U : Universe, G : GroupAt(U)) : group_carrier_at(U, G) {
@@ -62,7 +62,7 @@ def group_laws_at(U : Universe, G : GroupAt(U)) :
 
 // Carriers can be repackaged in a common larger universe by cumulativity.
 // Isomorphism still includes inverse data and multiplication preservation.
-def GroupIsoAt(U : Universe, G : GroupAt(U), H : GroupAt(U)) =
+def GroupIsoAt(U : Universe, G H : GroupAt(U)) =
   exists f : group_carrier_at(U, G) -> group_carrier_at(U, H),
   exists g : group_carrier_at(U, H) -> group_carrier_at(U, G),
   (forall x : group_carrier_at(U, G), g(f(x)) = x)

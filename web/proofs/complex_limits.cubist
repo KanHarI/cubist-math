@@ -41,13 +41,12 @@ def complex_converges_coordinates(
       FieldConverges(
         F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, limit)
       ) {
-      intro epsilon;
-      intro positive;
+      intro epsilon positive;
       obtain (bound, close) = given(epsilon, positive);
       exact (
         bound,
         (
-          fun (n : Nat) => fun (large : IndexLE(bound, n)) => field_fst(
+          fun (n : Nat) (large : IndexLE(bound, n)) => field_fst(
             FieldClose(F, addF, lt, complex_real(F, sequence(n)), complex_real(F, limit), epsilon),
             FieldClose(F, addF, lt, complex_imag(F, sequence(n)), complex_imag(F, limit), epsilon),
             close(n, large)
@@ -59,13 +58,12 @@ def complex_converges_coordinates(
       FieldConverges(
         F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, limit)
       ) {
-      intro epsilon;
-      intro positive;
+      intro epsilon positive;
       obtain (bound, close) = given(epsilon, positive);
       exact (
         bound,
         (
-          fun (n : Nat) => fun (large : IndexLE(bound, n)) => field_snd(
+          fun (n : Nat) (large : IndexLE(bound, n)) => field_snd(
             FieldClose(F, addF, lt, complex_real(F, sequence(n)), complex_real(F, limit), epsilon),
             FieldClose(F, addF, lt, complex_imag(F, sequence(n)), complex_imag(F, limit), epsilon),
             close(n, large)
@@ -86,15 +84,14 @@ def complex_converges_coordinates(
     ) -> ComplexConverges(F, zero, addF, lt, sequence, limit) {
     intro coordinates;
     obtain (realPart, imagPart) = coordinates;
-    intro epsilon;
-    intro positive;
+    intro epsilon positive;
     obtain (realBound, realClose) = realPart(epsilon, positive);
     obtain (imagBound, imagClose) = imagPart(epsilon, positive);
     let bound = realBound + imagBound;
     exact (
       bound,
       (
-        fun (n : Nat) => fun (large : IndexLE(bound, n)) => typed(
+        fun (n : Nat) (large : IndexLE(bound, n)) => typed(
           ComplexClose(F, addF, lt, sequence(n), limit, epsilon),
           (
             realClose(
@@ -135,15 +132,12 @@ def complex_cauchy_coordinates(
     ) {
     intro given;
     have realPart : FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n)))) {
-      intro epsilon;
-      intro positive;
+      intro epsilon positive;
       obtain (bound, close) = given(epsilon, positive);
       exact (
         bound,
         (
-          fun (m : Nat) => fun (n : Nat) => fun (largeM : IndexLE(bound, m)) => fun (
-            largeN : IndexLE(bound, n)
-          ) => field_fst(
+          fun (m n : Nat) (largeM : IndexLE(bound, m)) (largeN : IndexLE(bound, n)) => field_fst(
             FieldClose(
               F, addF, lt, complex_real(F, sequence(m)), complex_real(F, sequence(n)), epsilon
             ),
@@ -155,15 +149,12 @@ def complex_cauchy_coordinates(
       );
     }
     have imagPart : FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n)))) {
-      intro epsilon;
-      intro positive;
+      intro epsilon positive;
       obtain (bound, close) = given(epsilon, positive);
       exact (
         bound,
         (
-          fun (m : Nat) => fun (n : Nat) => fun (largeM : IndexLE(bound, m)) => fun (
-            largeN : IndexLE(bound, n)
-          ) => field_snd(
+          fun (m n : Nat) (largeM : IndexLE(bound, m)) (largeN : IndexLE(bound, n)) => field_snd(
             FieldClose(
               F, addF, lt, complex_real(F, sequence(m)), complex_real(F, sequence(n)), epsilon
             ),
@@ -183,17 +174,14 @@ def complex_cauchy_coordinates(
     ) -> ComplexCauchy(F, zero, addF, lt, sequence) {
     intro coordinates;
     obtain (realPart, imagPart) = coordinates;
-    intro epsilon;
-    intro positive;
+    intro epsilon positive;
     obtain (realBound, realClose) = realPart(epsilon, positive);
     obtain (imagBound, imagClose) = imagPart(epsilon, positive);
     let bound = realBound + imagBound;
     exact (
       bound,
       (
-        fun (m : Nat) => fun (n : Nat) => fun (largeM : IndexLE(bound, m)) => fun (
-          largeN : IndexLE(bound, n)
-        ) => typed(
+        fun (m n : Nat) (largeM : IndexLE(bound, m)) (largeN : IndexLE(bound, n)) => typed(
           ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon),
           (
             realClose(
@@ -220,23 +208,22 @@ def complex_cauchy_complete(
 ) :
   exists limit : Complex(F), ComplexConverges(F, zero, addF, lt, sequence, limit) {
   obtain (split, combine) = complex_cauchy_coordinates(F, zero, addF, lt, sequence);
-  have coordinateCauchy :
-    FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))))
-    and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n)))) {
-    exact split(cauchy);
-  }
+  have coordinateCauchy : FieldCauchy(
+    F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n)))
+  )
+  and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n)))) := split(
+    cauchy
+  );
   obtain (cauchyReal, cauchyImag) = coordinateCauchy;
-  have realData :
-    exists limit : F,
-    FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), limit) {
-    exact complete((fun (n : Nat) => complex_real(F, sequence(n))), cauchyReal);
-  }
+  have realData : exists limit : F,
+  FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), limit) := complete(
+    (fun (n : Nat) => complex_real(F, sequence(n))), cauchyReal
+  );
   obtain (realLimit, realConverges) = realData;
-  have imagData :
-    exists limit : F,
-    FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), limit) {
-    exact complete((fun (n : Nat) => complex_imag(F, sequence(n))), cauchyImag);
-  }
+  have imagData : exists limit : F,
+  FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), limit) := complete(
+    (fun (n : Nat) => complex_imag(F, sequence(n))), cauchyImag
+  );
   obtain (imagLimit, imagConverges) = imagData;
   let limit = typed(Complex(F), (realLimit, imagLimit));
   obtain (project, assemble) = complex_converges_coordinates(F, zero, addF, lt, sequence, limit);
@@ -258,35 +245,29 @@ def complex_cauchy_complete(
 }
 
 def complex_limit_unique(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  halving : Halving(F, zero, addF, lt), sequence : Nat -> Complex(F), x : Complex(F),
-  y : Complex(F), toX : ComplexConverges(F, zero, addF, lt, sequence, x),
+  halving : Halving(F, zero, addF, lt), sequence : Nat -> Complex(F), x y : Complex(F),
+  toX : ComplexConverges(F, zero, addF, lt, sequence, x),
   toY : ComplexConverges(F, zero, addF, lt, sequence, y)
 ) :
   x = y {
   obtain (splitX, combineX) = complex_converges_coordinates(F, zero, addF, lt, sequence, x);
   obtain (splitY, combineY) = complex_converges_coordinates(F, zero, addF, lt, sequence, y);
-  have coordinatesX :
-    FieldConverges(
-      F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, x)
-    )
-    and FieldConverges(
-      F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, x)
-    ) {
-    exact splitX(toX);
-  }
+  have coordinatesX : FieldConverges(
+    F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, x)
+  )
+  and FieldConverges(
+    F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, x)
+  ) := splitX(toX);
   obtain (realX, imagX) = coordinatesX;
-  have coordinatesY :
-    FieldConverges(
-      F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, y)
-    )
-    and FieldConverges(
-      F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, y)
-    ) {
-    exact splitY(toY);
-  }
+  have coordinatesY : FieldConverges(
+    F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, y)
+  )
+  and FieldConverges(
+    F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, y)
+  ) := splitY(toY);
   obtain (realY, imagY) = coordinatesY;
   exact field_pair_path(
     F, F, x, y,
@@ -304,12 +285,11 @@ def complex_limit_unique(
 }
 
 def complex_converges_add(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  halving : Halving(F, zero, addF, lt), xs : Nat -> Complex(F), ys : Nat -> Complex(F),
-  x : Complex(F), y : Complex(F), toX : ComplexConverges(F, zero, addF, lt, xs, x),
-  toY : ComplexConverges(F, zero, addF, lt, ys, y)
+  halving : Halving(F, zero, addF, lt), xs ys : Nat -> Complex(F), x y : Complex(F),
+  toX : ComplexConverges(F, zero, addF, lt, xs, x), toY : ComplexConverges(F, zero, addF, lt, ys, y)
 ) :
   ComplexConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_add(F, addF, xs(n), ys(n))),
@@ -317,21 +297,19 @@ def complex_converges_add(
   ) {
   obtain (splitX, combineX) = complex_converges_coordinates(F, zero, addF, lt, xs, x);
   obtain (splitY, combineY) = complex_converges_coordinates(F, zero, addF, lt, ys, y);
-  have coordinatesX :
-    FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, xs(n))), complex_real(F, x))
-    and FieldConverges(
-      F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, xs(n))), complex_imag(F, x)
-    ) {
-    exact splitX(toX);
-  }
+  have coordinatesX : FieldConverges(
+    F, zero, addF, lt, (fun (n : Nat) => complex_real(F, xs(n))), complex_real(F, x)
+  )
+  and FieldConverges(
+    F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, xs(n))), complex_imag(F, x)
+  ) := splitX(toX);
   obtain (realX, imagX) = coordinatesX;
-  have coordinatesY :
-    FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, ys(n))), complex_real(F, y))
-    and FieldConverges(
-      F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, ys(n))), complex_imag(F, y)
-    ) {
-    exact splitY(toY);
-  }
+  have coordinatesY : FieldConverges(
+    F, zero, addF, lt, (fun (n : Nat) => complex_real(F, ys(n))), complex_real(F, y)
+  )
+  and FieldConverges(
+    F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, ys(n))), complex_imag(F, y)
+  ) := splitY(toY);
   obtain (realY, imagY) = coordinatesY;
   obtain (project, assemble) = complex_converges_coordinates(
     F, zero, addF, lt, (fun (n : Nat) => complex_add(F, addF, xs(n), ys(n))),
@@ -368,23 +346,20 @@ def complex_converges_add(
 }
 
 def complex_converges_is_cauchy(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   halving : Halving(F, zero, addF, lt), sequence : Nat -> Complex(F), limit : Complex(F),
   converges : ComplexConverges(F, zero, addF, lt, sequence, limit)
 ) :
   ComplexCauchy(F, zero, addF, lt, sequence) {
   obtain (project, assemble) = complex_converges_coordinates(F, zero, addF, lt, sequence, limit);
-  have coordinatesLimit :
-    FieldConverges(
-      F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, limit)
-    )
-    and FieldConverges(
-      F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, limit)
-    ) {
-    exact project(converges);
-  }
+  have coordinatesLimit : FieldConverges(
+    F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, limit)
+  )
+  and FieldConverges(
+    F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, limit)
+  ) := project(converges);
   obtain (realPart, imagPart) = coordinatesLimit;
   obtain (split, combine) = complex_cauchy_coordinates(F, zero, addF, lt, sequence);
   exact combine(
@@ -409,21 +384,19 @@ def complex_converges_is_cauchy(
 
 // Equality of sequence terms transfers the existing convergence certificate.
 def complex_converges_pointwise(
-  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs : Nat -> Complex(F), ys : Nat
-  -> Complex(F), same : (forall n : Nat, xs(n) = ys(n)), value : Complex(F),
+  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs ys : Nat -> Complex(F),
+  same : (forall n : Nat, xs(n) = ys(n)), value : Complex(F),
   converges : ComplexConverges(F, zero, addF, lt, xs, value)
 ) :
   ComplexConverges(F, zero, addF, lt, ys, value) {
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   obtain (bound, close) = converges(epsilon, positive);
   exact (
     bound,
     (
-      fun (n : Nat) => fun (large : IndexLE(bound, n)) => transport(
-        (fun (term : Complex(F)) => ComplexClose(F, addF, lt, term, value, epsilon)), xs(n), ys(n),
-        same(n), close(n, large)
-      )
+      fun (n : Nat) (large : IndexLE(bound, n)) => along(
+        (fun (term : Complex(F)) => ComplexClose(F, addF, lt, term, value, epsilon))
+      ) by same(n) from close(n, large)
     )
   );
 }

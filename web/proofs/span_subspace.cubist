@@ -2,26 +2,25 @@ import vector_subspaces;
 
 // Add the two finite witnesses before eliminating their truncations.
 def span_add_witnesses(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
-  y : vector_carrier(K, V), hx : SpanWitness(K, V, P, x), hy : SpanWitness(K, V, P, y)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
+  x y : vector_carrier(K, V), hx : SpanWitness(K, V, P, x), hy : SpanWitness(K, V, P, y)
 ) :
   Span(K, V, P, vector_add(K, V, x, y)) {
   obtain (n, v, a, membersV, sumX) = hx;
   obtain (m, w, b, membersW, sumY) = hy;
   let vectors = fin_append(vector_carrier(K, V), n, m, v, w);
   let coefficients = fin_append(af_carrier(K), n, m, a, b);
-  have sum :
-    linear_combination(K, V, add_count(n, m), vectors, coefficients) = vector_add(K, V, x, y) {
-    exact trans(
-      linear_combination_append(K, V, n, m, v, w, a, b),
-      trans(
-        cong(
-          (fun (z : vector_carrier(K, V)) => vector_add(K, V, z, linear_combination(K, V, m, w, b))),
-          sumX
-        ), cong(vector_add(K, V, x), sumY)
-      )
-    );
-  }
+  have sum : linear_combination(K, V, add_count(n, m), vectors, coefficients) = vector_add(
+    K, V, x, y
+  ) := trans(
+    linear_combination_append(K, V, n, m, v, w, a, b),
+    trans(
+      cong(
+        (fun (z : vector_carrier(K, V)) => vector_add(K, V, z, linear_combination(K, V, m, w, b))),
+        sumX
+      ), cong(vector_add(K, V, x), sumY)
+    )
+  );
   exact TruncateIntro(
     U0, SpanWitness(K, V, P, vector_add(K, V, x, y)),
     typed(
@@ -35,8 +34,8 @@ def span_add_witnesses(
 }
 
 def span_add(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V),
-  y : vector_carrier(K, V), hx : Span(K, V, P, x), hy : Span(K, V, P, y)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
+  x y : vector_carrier(K, V), hx : Span(K, V, P, x), hy : Span(K, V, P, y)
 ) :
   Span(K, V, P, vector_add(K, V, x, y)) {
   exact TruncateElim(
@@ -100,7 +99,7 @@ def span_idempotent(
     (
       fun (member : Span(K, V, Span(K, V, P), x)) => span_least(
         K, V, Span(K, V, P), SpanSubspace(K, V, P),
-        (fun (y : vector_carrier(K, V)) => fun (hy : Span(K, V, P, y)) => hy), x, member
+        (fun (y : vector_carrier(K, V)) (hy : Span(K, V, P, y)) => hy), x, member
       )
     ), span_generator(K, V, Span(K, V, P), x)
   );

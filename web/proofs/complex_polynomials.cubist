@@ -7,10 +7,10 @@ def MonicCoefficients(F : U1, n : Nat) = induction n as k return U1 {
     succ previous => F and previous;
   };
 
-def monic_eval(F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F, n : Nat) =
+def monic_eval(F : U1, one : F, addF mulF : F -> F -> F, n : Nat) =
   induction n as k return (MonicCoefficients(F, k) -> F -> F) {
-    zero => fun (u : Unit) => fun (z : F) => one;
-    succ previous => fun (coefficients : MonicCoefficients(F, succ(k))) => fun (z : F) => unpack typed(
+    zero => fun (u : Unit) (z : F) => one;
+    succ previous => fun (coefficients : MonicCoefficients(F, succ(k))) (z : F) => unpack typed(
       F and MonicCoefficients(F, k), coefficients
     ) as (constant, tail) return F {
       addF(constant, mulF(z, previous(tail, z)));
@@ -18,15 +18,14 @@ def monic_eval(F : U1, one : F, addF : F -> F -> F, mulF : F -> F -> F, n : Nat)
   };
 
 def MonicRoot(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, n : Nat,
-  coefficients : MonicCoefficients(F, n)
+  F : U1, zero one : F, addF mulF : F -> F -> F, n : Nat, coefficients : MonicCoefficients(F, n)
 ) =
   exists z : F, monic_eval(F, one, addF, mulF, n, coefficients, z) = zero;
 
 // This is a target PROPERTY, not an axiom or a proof of algebraic closure.
 // Mere existence per polynomial does not choose roots simultaneously.
 // Over a field, an invertible leading coefficient permits monic normalization.
-def MonicAlgebraicClosure(F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F) =
+def MonicAlgebraicClosure(F : U1, zero one : F, addF mulF : F -> F -> F) =
   forall n : Nat, forall coefficients : MonicCoefficients(F, succ(n)),
   FieldExists(MonicRoot(F, zero, one, addF, mulF, succ(n), coefficients));
 
@@ -39,15 +38,15 @@ def square_root_coefficients(F : U1, zero : F, negF : F -> F, a : F) : MonicCoef
 }
 
 def monic_linear_eval(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a z : F
 ) :
   monic_eval(F, one, addF, mulF, 1, linear_coefficients(F, a), z) = addF(a, z) {
   exact cong(addF(a), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, z));
 }
 
 def monic_linear_root(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F
 ) :
   MonicRoot(F, zero, one, addF, mulF, 1, linear_coefficients(F, a)) {
@@ -61,8 +60,8 @@ def monic_linear_root(
 }
 
 def monic_linear_root_unique(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a z : F,
   root : monic_eval(F, one, addF, mulF, 1, linear_coefficients(F, a), z) = zero
 ) :
   z = negF(a) {
@@ -73,8 +72,8 @@ def monic_linear_root_unique(
 }
 
 def monic_square_eval(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a z : F
 ) :
   monic_eval(F, one, addF, mulF, 2, square_root_coefficients(F, zero, negF, a), z) = addF(
     negF(a), mulF(z, z)
@@ -89,8 +88,8 @@ def monic_square_eval(
 }
 
 def monic_square_root_equation(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, z : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a z : F,
   root : monic_eval(F, one, addF, mulF, 2, square_root_coefficients(F, zero, negF, a), z) = zero
 ) :
   mulF(z, z) = a {
@@ -107,7 +106,7 @@ def monic_square_root_equation(
 // Even the degree-two consequence demands exact roots. This implication does
 // not assert that its algebraic-closure hypothesis is available for any model.
 def algebraic_closure_implies_square_roots(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   closed : MonicAlgebraicClosure(F, zero, one, addF, mulF), a : F
 ) :

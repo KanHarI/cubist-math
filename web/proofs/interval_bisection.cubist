@@ -3,8 +3,8 @@ import ordered_halves;
 
 // If a + increment = b, the oriented difference from a to b is increment.
 def difference_from_increment(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F, increment : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b increment : F,
   sums : addF(a, increment) = b
 ) :
   coordinate_difference(F, addF, negF, a, b) = increment {
@@ -29,9 +29,9 @@ def difference_from_increment(
 // A weakly nonnegative quantity has a weakly nonnegative half, including
 // zero-width intervals. No decision whether that width is zero is required.
 def nonnegative_half_from_sum(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), epsilon : F, half : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), epsilon half : F,
   sum : addF(half, half) = epsilon, nonnegativeEpsilon : FieldLe(F, lt, zero, epsilon)
 ) :
   FieldLe(F, lt, zero, half) {
@@ -40,24 +40,20 @@ def nonnegative_half_from_sum(
   intro belowZero;
   obtain (forward, backward) = translate(half, zero, half);
   let belowHalf =
-    transport(
-      lt(addF(half, half)), addF(zero, half), half,
-      ring_add_zero(F, zero, one, addF, mulF, negF, ring, half), forward(belowZero)
+    along lt(addF(half, half)) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, half) from forward(
+      belowZero
     );
   let sumNegative = transitive(addF(half, half), half, zero, belowHalf, belowZero);
-  exact nonnegativeEpsilon(
-    transport((fun (v : F) => lt(v, zero)), addF(half, half), epsilon, sum, sumNegative)
-  );
+  exact nonnegativeEpsilon(along((fun (v : F) => lt(v, zero))) by sum from sumNegative);
 }
 
 // Construct a midpoint in the interval subtype, with proofs that both
 // subinterval widths are the prescribed half of the original width.
 def interval_midpoint(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), a : FieldUnitInterval(F, zero, one, lt),
-  b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -94,30 +90,22 @@ def interval_midpoint(
     order_le_add_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, h, nonnegativeHalf
     );
-  have completes : addF(m, h) = y {
-    exact trans(
-      ring_add_assoc(F, zero, one, addF, mulF, negF, ring, x, h, h),
-      trans(
-        cong(addF(x), halfSum(width)),
-        difference_add_back(F, zero, one, addF, mulF, negF, ring, x, y)
-      )
-    );
-  }
+  have completes : addF(m, h) = y := trans(
+    ring_add_assoc(F, zero, one, addF, mulF, negF, ring, x, h, h),
+    trans(
+      cong(addF(x), halfSum(width)), difference_add_back(F, zero, one, addF, mulF, negF, ring, x, y)
+    )
+  );
   let rightBound =
-    transport(
-      FieldLe(F, lt, m), addF(m, h), y, completes,
-      order_le_add_nonnegative(
-        F, zero, one, addF, mulF, negF, lt, ring, arithmetic, m, h, nonnegativeHalf
-      )
+    along FieldLe(F, lt, m) by completes from order_le_add_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, m, h, nonnegativeHalf
     );
   obtain (lowerA, upperA) = field_interval_bounds(F, zero, one, lt, a);
   obtain (lowerB, upperB) = field_interval_bounds(F, zero, one, lt, b);
-  have midpoint : FieldUnitInterval(F, zero, one, lt) {
-    exact (
-      m, order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, zero, x, m, lowerA, leftBound),
-      order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, m, y, one, rightBound, upperB)
-    );
-  }
+  have midpoint : FieldUnitInterval(F, zero, one, lt) := (
+    m, order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, zero, x, m, lowerA, leftBound),
+    order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, m, y, one, rightBound, upperB)
+  );
   exact (
     midpoint, (leftBound, rightBound),
     difference_from_increment(F, zero, one, addF, mulF, negF, ring, x, m, h, refl(m)),
@@ -126,7 +114,7 @@ def interval_midpoint(
 }
 
 // The concrete two-edge subdivision uses left endpoint tags.
-def two_edge_subdivision(C : U1, a : C, midpoint : C, b : C) : SampleSubdivision(C, a, b) {
+def two_edge_subdivision(C : U1, a midpoint b : C) : SampleSubdivision(C, a, b) {
   exact (
     2, typed((C and C and C), (a, midpoint, b)), typed((C and C and Unit), (a, midpoint, tt)),
     refl(a), refl(b)
@@ -134,9 +122,8 @@ def two_edge_subdivision(C : U1, a : C, midpoint : C, b : C) : SampleSubdivision
 }
 
 def two_edge_subdivision_admissible(
-  F : U1, zero : F, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt),
-  a : FieldUnitInterval(F, zero, one, lt), midpoint : FieldUnitInterval(F, zero, one, lt),
-  b : FieldUnitInterval(F, zero, one, lt),
+  F : U1, zero one : F, lt : F -> F -> U0, order : StrictOrder(F, lt),
+  a midpoint b : FieldUnitInterval(F, zero, one, lt),
   within : IntervalTagWithin(F, zero, one, lt, a, b, midpoint)
 ) :
   IntervalAdmissibleTags(
@@ -169,11 +156,10 @@ def two_edge_subdivision_admissible(
 // Supply the halving operation from the ordered field itself, then construct
 // both admissible samples. This requires no midpoint or sampling oracle.
 def ordered_interval_bisection(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), a : FieldUnitInterval(F, zero, one, lt),
-  b : FieldUnitInterval(F, zero, one, lt),
+  inverses : FieldInverses(F, zero, one, mulF, lt), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt, a),
     field_interval_coordinate(F, zero, one, lt, b)

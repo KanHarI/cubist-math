@@ -71,8 +71,7 @@ def coordinate_search(K : AlgebraicField, n : Nat) =
   };
 
 def CoordinateInjection(
-  K : AlgebraicField, m : Nat, n : Nat,
-  f : LinearMap(K, CoordinateSpace(K, m), CoordinateSpace(K, n))
+  K : AlgebraicField, m n : Nat, f : LinearMap(K, CoordinateSpace(K, m), CoordinateSpace(K, n))
 ) =
   Injective(
     vector_carrier(K, CoordinateSpace(K, m)), vector_carrier(K, CoordinateSpace(K, n)),
@@ -80,7 +79,7 @@ def CoordinateInjection(
   );
 
 def first_image_nonzero(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, n)),
   injective : CoordinateInjection(K, succ(m), n, f),
   zeroImage : linear_map(
@@ -105,7 +104,7 @@ def coordinate_swap_iso(K : AlgebraicField, n : Nat, i : Fin(succ(n))) =
   );
 
 def coordinate_pivot_map(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), i : Fin(succ(n))
 ) =
   linear_compose(
@@ -116,14 +115,12 @@ def coordinate_pivot_map(
   );
 
 def coordinate_pivot_injective(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
   injective : CoordinateInjection(K, succ(m), succ(n), f), i : Fin(succ(n))
 ) :
   CoordinateInjection(K, succ(m), succ(n), coordinate_pivot_map(K, m, n, f, i)) {
-  intro x;
-  intro y;
-  intro same;
+  intro x y same;
   let S = CoordinateSpace(K, succ(m));
   let T = CoordinateSpace(K, succ(n));
   let F = linear_map(K, S, T, f);
@@ -133,7 +130,7 @@ def coordinate_pivot_injective(
 }
 
 def coordinate_injection_pivot_bound(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
   injective : CoordinateInjection(K, succ(m), succ(n), f),
   previous : (
@@ -154,9 +151,7 @@ def coordinate_injection_pivot_bound(
   let u = linear_map(K, S, T, f, coordinate_first(K, m));
   let h = coordinate_pivot_map(K, m, n, f, i);
   let a = finite_head(A, n, linear_map(K, S, T, h, coordinate_first(K, m)));
-  have at_pivot : a = u(i) {
-    exact cong(u, swap_head(Fin(n), fin_decidable(n), i));
-  }
+  have at_pivot : a = u(i) := cong(u, swap_head(Fin(n), fin_decidable(n), i));
   obtain (ring, nontrivial, inverses) = af_laws(K);
   obtain (b, inv) = inverses(
     a, (fun (zero : a = af_zero(A, af_operations(K))) => nonzero(trans(sym(at_pivot), zero)))
@@ -170,7 +165,7 @@ def coordinate_injection_pivot_bound(
 }
 
 def coordinate_injection_step(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
   injective : CoordinateInjection(K, succ(m), succ(n), f),
   previous : (
@@ -208,12 +203,12 @@ def coordinate_injection_bound(K : AlgebraicField, n : Nat) =
       forall f : LinearMap(K, CoordinateSpace(K, source), CoordinateSpace(K, 0)),
       CoordinateInjection(K, source, 0, f) -> le(source, 0)
     ) {
-      zero => fun (f : LinearMap(K, CoordinateSpace(K, 0), CoordinateSpace(K, 0))) => fun (
+      zero => fun (f : LinearMap(K, CoordinateSpace(K, 0), CoordinateSpace(K, 0))) (
         injective : CoordinateInjection(K, 0, 0, f)
       ) => tt;
       succ ignored => fun (
         f : LinearMap(K, CoordinateSpace(K, succ(source)), CoordinateSpace(K, 0))
-      ) => fun (injective : CoordinateInjection(K, succ(source), 0, f)) => first_image_nonzero(
+      ) (injective : CoordinateInjection(K, succ(source), 0, f)) => first_image_nonzero(
         K, source, 0, f, injective,
         FunExt(
           U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)),
@@ -238,12 +233,12 @@ def coordinate_injection_bound(K : AlgebraicField, n : Nat) =
       forall f : LinearMap(K, CoordinateSpace(K, source), CoordinateSpace(K, succ(target))),
       CoordinateInjection(K, source, succ(target), f) -> le(source, succ(target))
     ) {
-      zero => fun (f : LinearMap(K, CoordinateSpace(K, 0), CoordinateSpace(K, succ(target)))) => fun (
+      zero => fun (f : LinearMap(K, CoordinateSpace(K, 0), CoordinateSpace(K, succ(target)))) (
         injective : CoordinateInjection(K, 0, succ(target), f)
       ) => tt;
       succ ignored => fun (
         f : LinearMap(K, CoordinateSpace(K, succ(source)), CoordinateSpace(K, succ(target)))
-      ) => fun (injective : CoordinateInjection(K, succ(source), succ(target), f)) => coordinate_injection_step(
+      ) (injective : CoordinateInjection(K, succ(source), succ(target), f)) => coordinate_injection_step(
         K, source, target, f, injective, previous
       );
     };
@@ -251,16 +246,16 @@ def coordinate_injection_bound(K : AlgebraicField, n : Nat) =
 
 def dimension_order_antisymmetric(m : Nat) =
   induction m as k return (forall n : Nat, le(k, n) -> le(n, k) -> k = n) {
-    zero => fun (n : Nat) => fun (forward : le(0, n)) => fun (backward : le(n, 0)) => sym(
+    zero => fun (n : Nat) (forward : le(0, n)) (backward : le(n, 0)) => sym(
       nat_le_zero(n, backward)
     );
     succ previous => fun (n : Nat) => induction n as j return (
       le(succ(k), j) -> le(j, succ(k)) -> succ(k) = j
     ) {
-      zero => fun (impossible : le(succ(k), 0)) => fun (other : le(0, succ(k))) => typed(
+      zero => fun (impossible : le(succ(k), 0)) (other : le(0, succ(k))) => typed(
         (succ(k) = 0), absurd(impossible)
       );
-      succ ignored => fun (forward : le(succ(k), succ(j))) => fun (backward : le(succ(j), succ(k))) => cong(
+      succ ignored => fun (forward : le(succ(k), succ(j))) (backward : le(succ(j), succ(k))) => cong(
         (fun (x : Nat) => succ(x)), previous(j, forward, backward)
       );
     };
@@ -268,8 +263,7 @@ def dimension_order_antisymmetric(m : Nat) =
 
 // Dimension is invariant under linear isomorphism, not arbitrary bijection.
 def coordinate_dimension_invariant(
-  K : AlgebraicField, m : Nat, n : Nat,
-  e : LinearIso(K, CoordinateSpace(K, m), CoordinateSpace(K, n))
+  K : AlgebraicField, m n : Nat, e : LinearIso(K, CoordinateSpace(K, m), CoordinateSpace(K, n))
 ) :
   m = n {
   let S = CoordinateSpace(K, m);
@@ -288,7 +282,7 @@ def coordinate_dimension_invariant(
 
 // Any two finite bases of the same vector space have the same number of vectors.
 def finite_dimension_invariance(
-  K : AlgebraicField, V : VectorSpace(K), m : Nat, n : Nat, first : FiniteBasis(K, V, m),
+  K : AlgebraicField, V : VectorSpace(K), m n : Nat, first : FiniteBasis(K, V, m),
   second : FiniteBasis(K, V, n)
 ) :
   m = n {

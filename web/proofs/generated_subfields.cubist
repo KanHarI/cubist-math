@@ -38,8 +38,8 @@ def field_derivation_neg(
 // The ranks need not agree. Padding both derivations to n+m gives a common
 // stage, without deciding an order on the ranks or choosing a new witness.
 def field_derivation_add(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
-  dx : FieldDerivation(F, P, x), dy : FieldDerivation(F, P, y)
+  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), dx : FieldDerivation(F, P, x),
+  dy : FieldDerivation(F, P, y)
 ) :
   FieldDerivation(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
   obtain (n, px) = dx;
@@ -54,8 +54,8 @@ def field_derivation_add(
 }
 
 def field_derivation_mul(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
-  dx : FieldDerivation(F, P, x), dy : FieldDerivation(F, P, y)
+  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), dx : FieldDerivation(F, P, x),
+  dy : FieldDerivation(F, P, y)
 ) :
   FieldDerivation(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
   obtain (n, px) = dx;
@@ -70,8 +70,7 @@ def field_derivation_mul(
 }
 
 def field_derivation_inverse(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
-  dx : FieldDerivation(F, P, x),
+  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), dx : FieldDerivation(F, P, x),
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
   )
@@ -118,8 +117,8 @@ def generated_field_neg(
 }
 
 def generated_field_add(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
-  px : GeneratedField(F, P, x), py : GeneratedField(F, P, y)
+  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), px : GeneratedField(F, P, x),
+  py : GeneratedField(F, P, y)
 ) :
   GeneratedField(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
   let target = af_add(af_carrier(F), af_operations(F), x, y);
@@ -135,8 +134,8 @@ def generated_field_add(
 }
 
 def generated_field_mul(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
-  px : GeneratedField(F, P, x), py : GeneratedField(F, P, y)
+  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), px : GeneratedField(F, P, x),
+  py : GeneratedField(F, P, y)
 ) :
   GeneratedField(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
   let target = af_mul(af_carrier(F), af_operations(F), x, y);
@@ -152,8 +151,7 @@ def generated_field_mul(
 }
 
 def generated_field_inverse(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F),
-  px : GeneratedField(F, P, x),
+  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), px : GeneratedField(F, P, x),
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
   )
@@ -182,7 +180,7 @@ def generated_subfield(F : AlgebraicField, P : af_carrier(F) -> U0) : Subfield(F
 // Elimination of truncated derivations is only into the membership proposition
 // of an already supplied subfield. No arbitrary derivation is extracted.
 def generated_field_least(
-  F : AlgebraicField, P : af_carrier(F) -> U0, Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
+  F : AlgebraicField, P Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
   included : PredicateIncluded(af_carrier(F), P, Q), x : af_carrier(F),
   member : GeneratedField(F, P, x)
 ) :

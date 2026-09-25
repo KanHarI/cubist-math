@@ -28,20 +28,17 @@ def binary_zero = typed(BinaryNat, left(tt));
 def binary_positive(p : BinaryPositive) = typed(BinaryNat, right(p));
 
 // The recursive result and original child are both available in a digit case.
-def binary_positive_rec(
-  R : U0, one : R, even : BinaryPositive -> R -> R, odd : BinaryPositive -> R -> R,
-  p : BinaryPositive
-) =
+def binary_positive_rec(R : U0, one : R, even odd : BinaryPositive -> R -> R, p : BinaryPositive) =
   wrec(
     BinaryPositive, fun (tree : BinaryPositive) => R,
-    fun (tag : BinaryLabel) => fun (children : BinaryArity(tag) -> BinaryPositive) => fun (
+    fun (tag : BinaryLabel) (children : BinaryArity(tag) -> BinaryPositive) (
       ih : BinaryArity(tag) -> R
     ) => (
       match tag as label return (
         (BinaryArity(label) -> BinaryPositive) -> (BinaryArity(label) -> R) -> R
       ) {
-        left leaf => fun (f : Void -> BinaryPositive) => fun (h : Void -> R) => one;
-        right bit => fun (f : Unit -> BinaryPositive) => fun (h : Unit -> R) => match bit return R {
+        left leaf => fun (f : Void -> BinaryPositive) (h : Void -> R) => one;
+        right bit => fun (f : Unit -> BinaryPositive) (h : Unit -> R) => match bit return R {
           left zeroBit => even(f(tt), h(tt));
           right oneBit => odd(f(tt), h(tt));
         };
@@ -49,12 +46,10 @@ def binary_positive_rec(
     )(children, ih), p
   );
 
-def binary_positive_cases(
-  R : U0, one : R, even : BinaryPositive -> R, odd : BinaryPositive -> R, p : BinaryPositive
-) =
+def binary_positive_cases(R : U0, one : R, even odd : BinaryPositive -> R, p : BinaryPositive) =
   binary_positive_rec(
-    R, one, fun (child : BinaryPositive) => fun (ignored : R) => even(child),
-    fun (child : BinaryPositive) => fun (ignored : R) => odd(child), p
+    R, one, fun (child : BinaryPositive) (ignored : R) => even(child),
+    fun (child : BinaryPositive) (ignored : R) => odd(child), p
   );
 
 // These examples reduce using only W, sum, unit and function computation.

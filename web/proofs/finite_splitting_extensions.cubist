@@ -15,10 +15,9 @@ def finite_splitting_zero(
   let e = field_embedding_identity(K);
   exact (
     K, e, identity_extension_finite(K),
-    transport(
-      (fun (q : Polynomial(K)) => PolynomialSplitting(K, q, 0)), p, polynomial_map(K, K, e, p),
-      sym(polynomial_map_identity(K, p)), polynomial_splitting_zero_degree(K, p, degree)
-    )
+    along((fun (q : Polynomial(K)) => PolynomialSplitting(K, q, 0))) by sym(
+      polynomial_map_identity(K, p)
+    ) from polynomial_splitting_zero_degree(K, p, degree)
   );
 }
 
@@ -35,21 +34,19 @@ def splitting_extension_compose(
   let y = field_embedding_map(L, T, h, x);
   let mappedP = polynomial_map(K, T, c, p);
   let mappedQ = polynomial_map(L, T, h, q);
-  have equation : mappedP = polynomial_mul(T, polynomial_linear_factor(T, y), mappedQ) {
-    exact trans(
-      sym(polynomial_map_composition(K, L, T, e, h, p)),
+  have equation : mappedP = polynomial_mul(T, polynomial_linear_factor(T, y), mappedQ) := trans(
+    sym(polynomial_map_composition(K, L, T, e, h, p)),
+    trans(
+      cong(polynomial_map(L, T, h), factor),
       trans(
-        cong(polynomial_map(L, T, h), factor),
-        trans(
-          polynomial_map_mul(L, T, h, polynomial_linear_factor(L, x), q),
-          cong(
-            (fun (r : Polynomial(T)) => polynomial_mul(T, r, mappedQ)),
-            polynomial_map_linear_factor(L, T, h, x)
-          )
+        polynomial_map_mul(L, T, h, polynomial_linear_factor(L, x), q),
+        cong(
+          (fun (r : Polynomial(T)) => polynomial_mul(T, r, mappedQ)),
+          polynomial_map_linear_factor(L, T, h, x)
         )
       )
-    );
-  }
+    )
+  );
   exact (
     T, c, finite_extension_tower(K, L, T, e, h, c, refl(c), finite, finiteT),
     polynomial_splitting_prepend(T, mappedP, mappedQ, y, equation, n, splitting)
@@ -103,9 +100,9 @@ def finite_splitting_by_degree(n : Nat) =
     forall K : AlgebraicField, forall p : Polynomial(K), polynomial_cutoff(K, p) = succ(k)
     -> FieldExists(FiniteSplittingExtension(K, p, k))
   ) {
-    zero => fun (K : AlgebraicField) => fun (p : Polynomial(K)) => fun (
-      degree : polynomial_cutoff(K, p) = 1
-    ) => field_exists_intro(FiniteSplittingExtension(K, p, 0), finite_splitting_zero(K, p, degree));
+    zero => fun (K : AlgebraicField) (p : Polynomial(K)) (degree : polynomial_cutoff(K, p) = 1) => field_exists_intro(
+      FiniteSplittingExtension(K, p, 0), finite_splitting_zero(K, p, degree)
+    );
     succ previous => finite_splitting_step(k, previous);
   };
 
@@ -114,8 +111,7 @@ def finite_splitting_extension_exists(
 ) :
   FieldExists(FiniteSplittingExtension(K, p, polynomial_degree(K, p))) {
   obtain (n, degree) = polynomial_nonzero_degree(K, p, nonzero);
-  exact transport(
-    (fun (d : Nat) => FieldExists(FiniteSplittingExtension(K, p, d))), n, polynomial_degree(K, p),
-    sym(cong(natural_predecessor, degree)), finite_splitting_by_degree(n, K, p, degree)
-  );
+  exact along((fun (d : Nat) => FieldExists(FiniteSplittingExtension(K, p, d)))) by sym(
+    cong(natural_predecessor, degree)
+  ) from finite_splitting_by_degree(n, K, p, degree);
 }

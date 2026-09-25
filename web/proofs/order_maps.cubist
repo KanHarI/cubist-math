@@ -19,36 +19,33 @@ def OrderAntisymmetric(A : U1, le : OrderRelation(A)) =
 def PartialOrderLaws(A : U1, le : OrderRelation(A)) =
   PreorderLaws(A, le) and OrderAntisymmetric(A, le);
 
-def order_dual(A : U1, le : OrderRelation(A), a : A, b : A) = le(b, a);
+def order_dual(A : U1, le : OrderRelation(A), a b : A) = le(b, a);
 
-def Monotone(A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B) =
+def Monotone(A B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B) =
   forall a : A, forall b : A, leA(a, b) -> leB(f(a), f(b));
 
-def Antitone(A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B) =
+def Antitone(A B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B) =
   Monotone(A, B, leA, order_dual(B, leB), f);
 
 // An order-reversing Galois connection: b <= f(a) exactly when a <= g(b).
 // This is an ordinary adjunction after reversing the order on B.
 def AntitoneConnection(
-  A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A
+  A B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A
 ) =
   forall a : A, forall b : B, (leB(b, f(a)) -> leA(a, g(b))) and (leA(a, g(b)) -> leB(b, f(a)));
 
 def antitone_compose(
-  A : U1, B : U1, C : U1, leA : OrderRelation(A), leB : OrderRelation(B), leC : OrderRelation(C),
-  f : A -> B, g : B -> C, reversesF : Antitone(A, B, leA, leB, f),
-  reversesG : Antitone(B, C, leB, leC, g)
+  A B C : U1, leA : OrderRelation(A), leB : OrderRelation(B), leC : OrderRelation(C), f : A -> B,
+  g : B -> C, reversesF : Antitone(A, B, leA, leB, f), reversesG : Antitone(B, C, leB, leC, g)
 ) :
   Monotone(A, C, leA, leC, (fun (a : A) => g(f(a)))) {
-  intro a;
-  intro b;
-  intro included;
+  intro a b included;
   exact reversesG(f(b), f(a), reversesF(a, b, included));
 }
 
 // Extensivity follows just by transposing reflexivity.
 def antitone_connection_extensive(
-  A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
+  A B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g), reflexiveB : OrderReflexive(B, leB), a : A
 ) :
   leA(a, g(f(a))) {
@@ -57,14 +54,12 @@ def antitone_connection_extensive(
 }
 
 def antitone_connection_reverses(
-  A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
+  A B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g), transitiveA : OrderTransitive(A, leA),
   reflexiveB : OrderReflexive(B, leB)
 ) :
   Antitone(A, B, leA, leB, f) {
-  intro a;
-  intro b;
-  intro included;
+  intro a b included;
   obtain (toA, toB) = connection(a, f(b));
   exact toB(
     transitiveA(
@@ -76,19 +71,18 @@ def antitone_connection_reverses(
 
 // Swapping the two sides preserves the antitone form of the connection.
 def antitone_connection_swap(
-  A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
+  A B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g)
 ) :
   AntitoneConnection(B, A, leB, leA, g, f) {
-  intro b;
-  intro a;
+  intro b a;
   obtain (toA, toB) = connection(a, b);
   exact (toB, toA);
 }
 
 // In a partial order, the induced closure is idempotent as an actual equality.
 def antitone_connection_closure_idempotent(
-  A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
+  A B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A,
   connection : AntitoneConnection(A, B, leA, leB, f, g), reflexiveA : OrderReflexive(A, leA),
   reflexiveB : OrderReflexive(B, leB), transitiveB : OrderTransitive(B, leB),
   antisymmetricA : OrderAntisymmetric(A, leA), a : A
@@ -107,11 +101,11 @@ def antitone_connection_closure_idempotent(
 }
 
 // Inclusion of small-valued predicates, without assuming membership decidable.
-def PredicateIncluded(A : U0, P : A -> U0, Q : A -> U0) = forall x : A, P(x) -> Q(x);
+def PredicateIncluded(A : U0, P Q : A -> U0) = forall x : A, P(x) -> Q(x);
 
 // An ordinary order adjunction is the same connection with the second order
 // reversed: f(a) <= b iff a <= g(b). Both maps preserve their original orders.
 def OrderAdjunction(
-  A : U1, B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A
+  A B : U1, leA : OrderRelation(A), leB : OrderRelation(B), f : A -> B, g : B -> A
 ) =
   AntitoneConnection(A, B, leA, order_dual(B, leB), f, g);

@@ -3,7 +3,7 @@ import field_magnitude;
 
 // Coordinate boxes avoid square roots and work over constructive scalars.
 def ComplexRectangleBound(
-  F : U1, negF : F -> F, lt : F -> F -> U0, z : Complex(F), realRadius : F, imagRadius : F
+  F : U1, negF : F -> F, lt : F -> F -> U0, z : Complex(F), realRadius imagRadius : F
 ) =
   FieldMagnitudeBound(F, negF, lt, complex_real(F, z), realRadius)
   and FieldMagnitudeBound(F, negF, lt, complex_imag(F, z), imagRadius);
@@ -12,11 +12,10 @@ def ComplexBoxBound(F : U1, negF : F -> F, lt : F -> F -> U0, z : Complex(F), ra
   ComplexRectangleBound(F, negF, lt, z, radius, radius);
 
 def complex_box_add(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F),
-  r : F, s : F, boundZ : ComplexBoxBound(F, negF, lt, z, r),
-  boundW : ComplexBoxBound(F, negF, lt, w, s)
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z w : Complex(F), r s : F,
+  boundZ : ComplexBoxBound(F, negF, lt, z, r), boundW : ComplexBoxBound(F, negF, lt, w, s)
 ) :
   ComplexBoxBound(F, negF, lt, complex_add(F, addF, z, w), addF(r, s)) {
   obtain (zr, zi) = boundZ;
@@ -34,10 +33,10 @@ def complex_box_add(
 }
 
 def complex_box_mul_rectangle(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F),
-  delta : F, r : F, s : F, boundZ : ComplexBoxBound(F, negF, lt, z, delta),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z w : Complex(F), delta r s : F,
+  boundZ : ComplexBoxBound(F, negF, lt, z, delta),
   boundW : ComplexRectangleBound(F, negF, lt, w, r, s)
 ) :
   ComplexBoxBound(F, negF, lt, complex_mul(F, addF, mulF, negF, z, w), mulF(delta, addF(r, s))) {
@@ -78,18 +77,12 @@ def complex_box_mul_rectangle(
       mulF(delta, s), mulF(delta, r), ad, bc
     );
   exact (
-    transport(
-      FieldMagnitudeBound(F, negF, lt, addF(mulF(a, c), negF(mulF(b, d)))),
-      addF(mulF(delta, r), mulF(delta, s)), mulF(delta, addF(r, s)),
-      sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, r, s)), realBound
-    ),
-    transport(
-      FieldMagnitudeBound(F, negF, lt, addF(mulF(a, d), mulF(b, c))),
-      addF(mulF(delta, s), mulF(delta, r)), mulF(delta, addF(r, s)),
-      trans(
-        ring_add_comm(F, zero, one, addF, mulF, negF, ring, mulF(delta, s), mulF(delta, r)),
-        sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, r, s))
-      ), imagBound
-    )
+    along FieldMagnitudeBound(F, negF, lt, addF(mulF(a, c), negF(mulF(b, d)))) by sym(
+      ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, r, s)
+    ) from realBound,
+    along FieldMagnitudeBound(F, negF, lt, addF(mulF(a, d), mulF(b, c))) by trans(
+      ring_add_comm(F, zero, one, addF, mulF, negF, ring, mulF(delta, s), mulF(delta, r)),
+      sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, r, s))
+    ) from imagBound
   );
 }

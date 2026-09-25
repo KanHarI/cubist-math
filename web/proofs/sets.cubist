@@ -5,13 +5,13 @@ def Decidable(P : U0) = P or (P -> Void);
 def IsSet(A : U0) = forall x : A, forall y : A, forall p : x = y, forall q : x = y, p = q;
 
 // A decision provides a weakly constant map on each path space.
-def choose_path(A : U0, x : A, y : A, decision : Decidable(x = y), p : x = y) =
+def choose_path(A : U0, x y : A, decision : Decidable(x = y), p : x = y) =
   match decision return (x = y) {
     left chosen => chosen;
     right impossible => typed((x = y), absurd(impossible(p)));
   };
 
-def choose_path_constant(A : U0, x : A, y : A, decision : Decidable(x = y), p : x = y, q : x = y) =
+def choose_path_constant(A : U0, x y : A, decision : Decidable(x = y), p q : x = y) =
   match decision as d return (choose_path(A, x, y, d, p) = choose_path(A, x, y, d, q)) {
     left chosen => refl(chosen);
     right impossible => typed(
@@ -24,7 +24,7 @@ def choose_path_constant(A : U0, x : A, y : A, decision : Decidable(x = y), p : 
   };
 
 def path_correction(
-  A : U0, decide : (forall x : A, forall y : A, Decidable(x = y)), x : A, y : A, p : x = y
+  A : U0, decide : (forall x : A, forall y : A, Decidable(x = y)), x y : A, p : x = y
 ) :
   concatenate(
     U1, A, x, x, y, inverse(U1, A, x, x, choose_path(A, x, x, decide(x, x), refl(x))),
@@ -33,7 +33,7 @@ def path_correction(
   exact based_induction(
     U1, U0, A, x,
     (
-      fun (point : A) => fun (path : x = point) => concatenate(
+      fun (point : A) (path : x = point) => concatenate(
         U1, A, x, x, point, inverse(U1, A, x, x, choose_path(A, x, x, decide(x, x), refl(x))),
         choose_path(A, x, point, decide(x, point), path)
       ) = path
@@ -43,10 +43,7 @@ def path_correction(
 
 // Hedberg's theorem: decidable equality implies that the type is a set.
 def hedberg(A : U0, decide : (forall x : A, forall y : A, Decidable(x = y))) : IsSet(A) {
-  intro x;
-  intro y;
-  intro p;
-  intro q;
+  intro x y p q;
   let first = inverse(U1, A, x, x, choose_path(A, x, x, decide(x, x), refl(x)));
   let prepend = fun (r : x = y) => concatenate(U1, A, x, x, y, first, r);
   exact trans(

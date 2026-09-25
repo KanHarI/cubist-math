@@ -35,8 +35,7 @@ def fin_prepend_injective(
 ) :
   Injective(Fin(succ(n)), A, fin_prepend(A, n, first, rest)) {
   let f = fin_prepend(A, n, first, rest);
-  intro i;
-  intro j;
+  intro i j;
   exact match i as x return (f(x) = f(j) -> x = j) {
     left u => match j as y return (
       f(typed(Fin(succ(n)), left(u))) = f(y) -> typed(Fin(succ(n)), left(u)) = y
@@ -74,8 +73,7 @@ def outside_generator_fresh(
   ) -> Void
 ) :
   forall j : Fin(m), i = chosen(j) -> Void {
-  intro j;
-  intro same;
+  intro j same;
   let w = fun (k : Fin(m)) => v(chosen(k));
   let F = linear_map(K, CoordinateSpace(K, m), V, family_linear(K, V, m, w));
   let FiberF = Fiber((Fin(m) -> af_carrier(K)), vector_carrier(K, V), F);
@@ -120,10 +118,7 @@ def spanning_subfamily_step(
       fin_prepend_injective(
         Fin(n), m, i, chosen, distinct, outside_generator_fresh(K, V, n, v, m, chosen, i, outside)
       ), adjoin_linear_injective(K, V, m, f, independent, v(i), outside),
-      transport(
-        NoIndependent(K, V), succ(add_count(fuel, m)), add_count(fuel, succ(m)),
-        sym(nat_add_succ(fuel, m)), bound
-      )
+      along NoIndependent(K, V) by sym(nat_add_succ(fuel, m)) from bound
     );
   }
   exact match excluded_middle(LinearSurjective(K, C, V, f), linear_surjective_prop(K, C, V, f)) return Mere(
@@ -155,13 +150,11 @@ def spanning_subfamily_search(
       K, CoordinateSpace(K, m), V, family_linear(K, V, m, (fun (i : Fin(m)) => v(chosen(i))))
     ) -> NoIndependent(K, V, add_count(k, m)) -> Mere(SubfamilyBasis(K, V, n, v))
   ) {
-    zero => fun (m : Nat) => fun (chosen : Fin(m) -> Fin(n)) => fun (
-      distinct : Injective(Fin(m), Fin(n), chosen)
-    ) => fun (
+    zero => fun (m : Nat) (chosen : Fin(m) -> Fin(n)) (distinct : Injective(Fin(m), Fin(n), chosen)) (
       independent : LinearInjective(
         K, CoordinateSpace(K, m), V, family_linear(K, V, m, (fun (i : Fin(m)) => v(chosen(i))))
       )
-    ) => fun (bound : NoIndependent(K, V, add_count(0, m))) => typed(
+    ) (bound : NoIndependent(K, V, add_count(0, m))) => typed(
       Mere(SubfamilyBasis(K, V, n, v)),
       absurd(bound(family_linear(K, V, m, (fun (i : Fin(m)) => v(chosen(i)))), independent))
     );
@@ -182,13 +175,7 @@ def finite_spanning_subfamily_basis(
     );
   exact spanning_subfamily_search(
     K, V, n, v, spanning, succ(n), 0, empty,
-    (
-      fun (i : Fin(0)) => fun (j : Fin(0)) => fun (same : empty(i) = empty(j)) => typed(
-        (i = j), absurd(i)
-      )
-    ), linear_empty_injective(K, V),
-    transport(
-      NoIndependent(K, V), succ(n), add_count(succ(n), 0), sym(nat_add_zero(succ(n))), bound
-    )
+    (fun (i j : Fin(0)) (same : empty(i) = empty(j)) => typed((i = j), absurd(i))),
+    linear_empty_injective(K, V), along NoIndependent(K, V) by sym(nat_add_zero(succ(n))) from bound
   );
 }

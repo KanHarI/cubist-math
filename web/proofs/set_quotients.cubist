@@ -35,7 +35,7 @@ def quotient_class(A : U1, relation : A -> A -> U0, a : A) =
   );
 
 def quotient_ext(
-  A : U1, relation : A -> A -> U0, x : SetQuotient(A, relation), y : SetQuotient(A, relation),
+  A : U1, relation : A -> A -> U0, x y : SetQuotient(A, relation),
   same : quotient_predicate(A, relation, x) = quotient_predicate(A, relation, y)
 ) :
   x = y {
@@ -83,7 +83,7 @@ def EquivalenceRelation(A : U1, relation : A -> A -> U0) =
   and (forall x : A, forall y : A, forall z : A, relation(x, y) -> relation(y, z) -> relation(x, z));
 
 def related_classes_equal(
-  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), x : A, y : A,
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), x y : A,
   related : relation(x, y)
 ) :
   quotient_class(A, relation, x) = quotient_class(A, relation, y) {
@@ -106,15 +106,14 @@ def related_classes_equal(
 }
 
 def equal_classes_related(
-  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), x : A, y : A,
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), x y : A,
   same : quotient_class(A, relation, x) = quotient_class(A, relation, y)
 ) :
   relation(x, y) {
   obtain (prop, reflexive, symmetric, transitive) = laws;
-  exact transport(
-    (fun (q : SetQuotient(A, relation)) => quotient_predicate(A, relation, q, y)),
-    quotient_class(A, relation, y), quotient_class(A, relation, x), sym(same), reflexive(y)
-  );
+  exact along((fun (q : SetQuotient(A, relation)) => quotient_predicate(A, relation, q, y))) by sym(
+    same
+  ) from reflexive(y);
 }
 
 // The exact countable choice instance used to lift a sequence of classes.

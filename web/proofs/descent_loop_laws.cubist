@@ -16,14 +16,13 @@ def descended_loop_map_laws(
   ), joinValue : (forall c : C, forall d : C, value(join(c, d)) = multiply(value(c), value(d)))
 ) :
   LoopMapLaws(X, point, G, unit, multiply, period) {
-  have unitLaw : period(refl(point)) = unit {
-    exact trans(sym(cong(period, constantPath)), trans(computes(constant), constantValue));
-  }
+  have unitLaw : period(refl(point)) = unit := trans(
+    sym(cong(period, constantPath)), trans(computes(constant), constantValue)
+  );
   have multiplyLaw :
     forall p : point = point, forall q : point = point,
     period(append_path(X, point, point, point, p, q)) = multiply(period(p), period(q)) {
-    intro p;
-    intro q;
+    intro p q;
     let result = period(append_path(X, point, point, point, p, q)) = multiply(period(p), period(q));
     let resultProp =
       setG(period(append_path(X, point, point, point, p, q)), multiply(period(p), period(q)));
@@ -33,23 +32,16 @@ def descended_loop_map_laws(
       have useRight : (exists d : C, present(d) = q) -> result {
         intro rightRepresentative;
         obtain (d, pathD) = rightRepresentative;
-        have joined : present(join(c, d)) = append_path(X, point, point, point, p, q) {
-          exact trans(
-            joinPath(c, d),
-            trans(
-              cong(
-                (fun (r : point = point) => append_path(X, point, point, point, r, present(d))),
-                pathC
-              ), cong(append_path(X, point, point, point, p), pathD)
-            )
-          );
-        }
-        have valueC : value(c) = period(p) {
-          exact trans(sym(computes(c)), cong(period, pathC));
-        }
-        have valueD : value(d) = period(q) {
-          exact trans(sym(computes(d)), cong(period, pathD));
-        }
+        have joined : present(join(c, d)) = append_path(X, point, point, point, p, q) := trans(
+          joinPath(c, d),
+          trans(
+            cong(
+              (fun (r : point = point) => append_path(X, point, point, point, r, present(d))), pathC
+            ), cong(append_path(X, point, point, point, p), pathD)
+          )
+        );
+        have valueC : value(c) = period(p) := trans(sym(computes(c)), cong(period, pathC));
+        have valueD : value(d) = period(q) := trans(sym(computes(d)), cong(period, pathD));
         exact trans(
           sym(cong(period, joined)),
           trans(

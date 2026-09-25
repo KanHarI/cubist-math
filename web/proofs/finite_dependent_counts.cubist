@@ -21,11 +21,10 @@ def finite_mere_choice_step(
   have chooseHead : P(h) -> Mere(Goal) {
     intro first;
     have join : (forall i : Fin(n), Q(i)) -> Goal {
-      intro rest;
-      intro i;
+      intro rest i;
       exact match i as j return P(j) {
-        left u => transport(
-          (fun (v : Unit) => P(typed(Fin(succ(n)), left(v)))), tt, u, unit_equal(u), first
+        left u => (
+          along((fun (v : Unit) => P(typed(Fin(succ(n)), left(v))))) by unit_equal(u) from first
         );
         right k => rest(k);
       };
@@ -46,13 +45,13 @@ def finite_mere_choice(n : Nat) =
     succ previous => finite_mere_choice_step(k, previous);
   };
 
-def UniformFiberCount(A : U0, n : Nat, m : Nat) =
+def UniformFiberCount(A : U0, n m : Nat) =
   forall B : A -> U0, (forall a : A, IsSet(B(a))) -> (forall a : A, HasCardinality(B(a), m))
   -> HasCardinality((exists a : A, B(a)), multiply_count(n, m));
 
 // Equal-size finite fibers multiply their size by the size of the base.
 // The family is identified with the constant Fin(m) family by univalence.
-def finite_uniform_fiber_count(n : Nat, m : Nat) : UniformFiberCount(Fin(n), n, m) {
+def finite_uniform_fiber_count(n m : Nat) : UniformFiberCount(Fin(n), n, m) {
   intro B sets counts;
   let A = (exists i : Fin(n), B(i));
   let C = Fin(n) and Fin(m);
@@ -79,16 +78,17 @@ def finite_uniform_fiber_count(n : Nat, m : Nat) : UniformFiberCount(Fin(n), n, 
   );
 }
 
-def uniform_fiber_count(A : U0, setA : IsSet(A), n : Nat, m : Nat, countA : HasCardinality(A, n)) :
+def uniform_fiber_count(A : U0, setA : IsSet(A), n m : Nat, countA : HasCardinality(A, n)) :
   UniformFiberCount(A, n, m) {
   intro B sets counts;
   let Goal = HasCardinality((exists a : A, B(a)), multiply_count(n, m));
   have useEnumeration : Bijection(Fin(n), A) -> Goal {
     intro e;
     let same = ua(U0, Fin(n), A, bijection_equiv(Fin(n), A, setA, e));
-    exact transport(
-      (fun (X : U0) => UniformFiberCount(X, n, m)), Fin(n), A, same,
-      finite_uniform_fiber_count(n, m)
+    exact (
+      along((fun (X : U0) => UniformFiberCount(X, n, m))) by same from finite_uniform_fiber_count(
+        n, m
+      )
     )(B, sets, counts);
   }
   exact mere_eliminate(

@@ -1,7 +1,7 @@
 import radix_decode;
 
 // Ring-like natural-number rearrangements, proved from the existing arithmetic.
-def radix_nat_distribute(r : Nat, a : Nat, b : Nat) : r * (a + b) = r * a + r * b {
+def radix_nat_distribute(r a b : Nat) : r * (a + b) = r * a + r * b {
   exact trans(
     nat_mul_comm(r, a + b),
     trans(
@@ -13,7 +13,7 @@ def radix_nat_distribute(r : Nat, a : Nat, b : Nat) : r * (a + b) = r * a + r * 
   );
 }
 
-def radix_nat_add_cross(e : Nat, x : Nat, y : Nat, d : Nat) : e + ((x + y) + d) = (x + d) + (y + e) {
+def radix_nat_add_cross(e x y d : Nat) : e + ((x + y) + d) = (x + d) + (y + e) {
   exact trans(
     nat_add_comm(e, (x + y) + d),
     trans(
@@ -28,7 +28,7 @@ def radix_nat_add_cross(e : Nat, x : Nat, y : Nat, d : Nat) : e + ((x + y) + d) 
   );
 }
 
-def radix_decode_add_small(extra : Nat, count : Nat, p : RadixPositive(extra)) :
+def radix_decode_add_small(extra count : Nat, p : RadixPositive(extra)) :
   radix_positive_to_nat(extra, radix_add_small(extra, count, p)) = count + radix_positive_to_nat(
     extra, p
   ) {
@@ -42,7 +42,7 @@ def radix_decode_add_small(extra : Nat, count : Nat, p : RadixPositive(extra)) :
   };
 }
 
-def RadixAddCorrect(extra : Nat, p : RadixPositive(extra), q : RadixPositive(extra)) =
+def RadixAddCorrect(extra : Nat, p q : RadixPositive(extra)) =
   radix_positive_to_nat(extra, radix_positive_add(extra, p, q)) = radix_positive_to_nat(extra, p) + radix_positive_to_nat(
     extra, q
   );
@@ -102,7 +102,7 @@ def radix_add_append_correct(
     extra, RadixAddCorrect(extra, radix_append(extra, d, p)),
     radix_add_append_leading_correct(extra, d, p),
     (
-      fun (e : RadixDigit(succ(succ(extra)))) => fun (r : RadixPositive(extra)) => fun (
+      fun (e : RadixDigit(succ(succ(extra)))) (r : RadixPositive(extra)) (
         ignored : RadixAddCorrect(extra, radix_append(extra, d, p), r)
       ) => radix_add_append_append_correct(extra, d, p, e, r, ih(r))
     ), q
@@ -120,7 +120,7 @@ def radix_decode_positive_add(extra : Nat, p : RadixPositive(extra)) :
   );
 }
 
-def radix_decode_add(extra : Nat, a : RadixNat(extra), b : RadixNat(extra)) :
+def radix_decode_add(extra : Nat, a b : RadixNat(extra)) :
   radix_to_nat(extra, radix_add(extra, a, b)) = radix_to_nat(extra, a) + radix_to_nat(extra, b) {
   exact match a as x return (
     radix_to_nat(extra, radix_add(extra, x, b)) = radix_to_nat(extra, x) + radix_to_nat(extra, b)
@@ -137,9 +137,7 @@ def radix_decode_add(extra : Nat, a : RadixNat(extra), b : RadixNat(extra)) :
   };
 }
 
-def radix_decode_add_copies(
-  extra : Nat, count : Nat, a : RadixPositive(extra), b : RadixPositive(extra)
-) :
+def radix_decode_add_copies(extra count : Nat, a b : RadixPositive(extra)) :
   radix_positive_to_nat(extra, radix_add_copies(extra, count, a, b)) = radix_positive_to_nat(
     extra, a
   ) + count * radix_positive_to_nat(extra, b) {
@@ -159,7 +157,7 @@ def radix_decode_add_copies(
   };
 }
 
-def RadixMulCorrect(extra : Nat, p : RadixPositive(extra), q : RadixPositive(extra)) =
+def RadixMulCorrect(extra : Nat, p q : RadixPositive(extra)) =
   radix_positive_to_nat(extra, radix_positive_mul(extra, p, q)) = radix_positive_to_nat(extra, p) * radix_positive_to_nat(
     extra, q
   );
@@ -170,8 +168,8 @@ def radix_mul_leading_correct(extra : Nat, d : RadixDigit(succ(extra)), q : Radi
 }
 
 def radix_mul_append_correct(
-  extra : Nat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra),
-  q : RadixPositive(extra), ih : RadixMulCorrect(extra, p, q)
+  extra : Nat, d : RadixDigit(succ(succ(extra))), p q : RadixPositive(extra),
+  ih : RadixMulCorrect(extra, p, q)
 ) :
   RadixMulCorrect(extra, radix_append(extra, d, p), q) {
   let base = succ(succ(extra));
@@ -199,20 +197,20 @@ def radix_mul_append_correct(
   );
 }
 
-def radix_decode_positive_mul(extra : Nat, p : RadixPositive(extra), q : RadixPositive(extra)) :
+def radix_decode_positive_mul(extra : Nat, p q : RadixPositive(extra)) :
   RadixMulCorrect(extra, p, q) {
   exact radix_positive_induction(
     extra, (fun (a : RadixPositive(extra)) => RadixMulCorrect(extra, a, q)),
     (fun (d : RadixDigit(succ(extra))) => radix_mul_leading_correct(extra, d, q)),
     (
-      fun (d : RadixDigit(succ(succ(extra)))) => fun (a : RadixPositive(extra)) => fun (
+      fun (d : RadixDigit(succ(succ(extra)))) (a : RadixPositive(extra)) (
         ih : RadixMulCorrect(extra, a, q)
       ) => radix_mul_append_correct(extra, d, a, q, ih)
     ), p
   );
 }
 
-def radix_decode_mul(extra : Nat, a : RadixNat(extra), b : RadixNat(extra)) :
+def radix_decode_mul(extra : Nat, a b : RadixNat(extra)) :
   radix_to_nat(extra, radix_mul(extra, a, b)) = radix_to_nat(extra, a) * radix_to_nat(extra, b) {
   exact match a as x return (
     radix_to_nat(extra, radix_mul(extra, x, b)) = radix_to_nat(extra, x) * radix_to_nat(extra, b)
@@ -229,7 +227,7 @@ def radix_decode_mul(extra : Nat, a : RadixNat(extra), b : RadixNat(extra)) :
   };
 }
 
-def radix_factorial_correct(extra : Nat, n : Nat) :
+def radix_factorial_correct(extra n : Nat) :
   radix_to_nat(extra, radix_factorial(extra, n)) = factorial(n) {
   exact induction n as k return (radix_to_nat(extra, radix_factorial(extra, k)) = factorial(k)) {
     zero => radix_decode_one(extra);

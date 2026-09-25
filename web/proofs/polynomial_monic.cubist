@@ -7,8 +7,8 @@ def PolynomialMonic(K : AlgebraicField, p : Polynomial(K)) =
   polynomial_coefficients(K, p, polynomial_degree(K, p)) = field_one(K);
 
 def polynomial_scalar_inverse(
-  K : AlgebraicField, a : af_carrier(K), b : af_carrier(K),
-  inverse : field_mul(K, b, a) = field_one(K), p : Polynomial(K)
+  K : AlgebraicField, a b : af_carrier(K), inverse : field_mul(K, b, a) = field_one(K),
+  p : Polynomial(K)
 ) :
   polynomial_scale(K, b, polynomial_scale(K, a, p)) = p {
   exact trans(
@@ -23,8 +23,8 @@ def polynomial_scalar_inverse(
 }
 
 def polynomial_scale_divides(
-  K : AlgebraicField, a : af_carrier(K), b : af_carrier(K),
-  inverse : field_mul(K, b, a) = field_one(K), p : Polynomial(K)
+  K : AlgebraicField, a b : af_carrier(K), inverse : field_mul(K, b, a) = field_one(K),
+  p : Polynomial(K)
 ) :
   PolynomialDivides(K, polynomial_scale(K, a, p), p) {
   let q = polynomial_scale(K, a, p);
@@ -50,10 +50,7 @@ def polynomial_normalize_degree(
   polynomial_cutoff(K, polynomial_scale(K, a, p)) = succ(d) {
   let q = polynomial_scale(K, a, p);
   let f = polynomial_coefficients(K, p);
-  let support =
-    transport(
-      SeriesSupport(K, f), polynomial_cutoff(K, p), succ(d), degree, polynomial_cutoff_support(K, p)
-    );
+  let support = along SeriesSupport(K, f) by degree from polynomial_cutoff_support(K, p);
   let leading =
     trans(polynomial_scale_coefficient(K, a, p, d), trans(scalar_mul_comm(K, a, f(d)), inverse));
   have nonzero : FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, q, d)) {
@@ -95,7 +92,7 @@ def polynomial_normalize_nonzero(
 }
 
 def polynomial_divides_cutoff_le(
-  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), nonzeroP : PolynomialNonzero(K, p),
+  K : AlgebraicField, p q : Polynomial(K), nonzeroP : PolynomialNonzero(K, p),
   nonzeroQ : PolynomialNonzero(K, q), divides : PolynomialDivides(K, p, q)
 ) :
   le(polynomial_cutoff(K, p), polynomial_cutoff(K, q)) {
@@ -114,13 +111,9 @@ def polynomial_divides_cutoff_le(
     obtain (n, dr) = polynomial_nonzero_degree(K, r, nonzeroR);
     let dq =
       trans(cong(polynomial_cutoff(K), equation), polynomial_product_degree(K, p, r, m, n, dp, dr));
-    exact transport(
-      (fun (i : Nat) => le(i, polynomial_cutoff(K, q))), succ(m), polynomial_cutoff(K, p), sym(dp),
-      transport(
-        (fun (j : Nat) => le(succ(m), j)), succ(add_count(m, n)), polynomial_cutoff(K, q), sym(dq),
-        natural_le_add_left(m, n)
-      )
-    );
+    exact along((fun (i : Nat) => le(i, polynomial_cutoff(K, q)))) by sym(dp) from along(
+      (fun (j : Nat) => le(succ(m), j))
+    ) by sym(dq) from natural_le_add_left(m, n);
   }
   exact mere_eliminate(
     (exists r : Polynomial(K), q = polynomial_mul(K, p, r)),
@@ -130,32 +123,24 @@ def polynomial_divides_cutoff_le(
 }
 
 def monic_difference_support(
-  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), d : Nat,
-  dp : polynomial_cutoff(K, p) = succ(d), dq : polynomial_cutoff(K, q) = succ(d),
-  monicP : PolynomialMonic(K, p), monicQ : PolynomialMonic(K, q)
+  K : AlgebraicField, p q : Polynomial(K), d : Nat, dp : polynomial_cutoff(K, p) = succ(d),
+  dq : polynomial_cutoff(K, q) = succ(d), monicP : PolynomialMonic(K, p),
+  monicQ : PolynomialMonic(K, q)
 ) :
   SeriesSupport(K, polynomial_coefficients(K, polynomial_subtract(K, p, q)), d) {
   let f = polynomial_coefficients(K, p);
   let g = polynomial_coefficients(K, q);
-  let sp =
-    transport(
-      SeriesSupport(K, f), polynomial_cutoff(K, p), succ(d), dp, polynomial_cutoff_support(K, p)
-    );
-  let sq =
-    transport(
-      SeriesSupport(K, g), polynomial_cutoff(K, q), succ(d), dq, polynomial_cutoff_support(K, q)
-    );
+  let sp = along SeriesSupport(K, f) by dp from polynomial_cutoff_support(K, p);
+  let sq = along SeriesSupport(K, g) by dq from polynomial_cutoff_support(K, q);
   let p1 = trans(cong(f, sym(cong(natural_predecessor, dp))), monicP);
   let q1 = trans(cong(g, sym(cong(natural_predecessor, dq))), monicQ);
-  have topZero : field_add(K, f(d), field_neg(K, g(d))) = field_zero(K) {
-    exact trans(
-      cong((fun (a : af_carrier(K)) => field_add(K, a, field_neg(K, g(d)))), p1),
-      trans(
-        cong((fun (a : af_carrier(K)) => field_add(K, field_one(K), field_neg(K, a))), q1),
-        scalar_add_inverse_right(K, field_one(K))
-      )
-    );
-  }
+  have topZero : field_add(K, f(d), field_neg(K, g(d))) = field_zero(K) := trans(
+    cong((fun (a : af_carrier(K)) => field_add(K, a, field_neg(K, g(d)))), p1),
+    trans(
+      cong((fun (a : af_carrier(K)) => field_add(K, field_one(K), field_neg(K, a))), q1),
+      scalar_add_inverse_right(K, field_one(K))
+    )
+  );
   exact support_predecessor(
     K, polynomial_coefficients(K, polynomial_subtract(K, p, q)), d,
     support_add_same(

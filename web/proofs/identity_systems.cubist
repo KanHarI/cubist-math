@@ -7,7 +7,7 @@ def IdentityTotal(A : U1, R : A -> U1) = exists b : A, R(b);
 def identity_total_point(A : U1, R : A -> U1, b : A, r : R(b)) = typed(IdentityTotal(A, R), (b, r));
 
 def identity_system_decode(A : U1, a : A, R : A -> U1, r0 : R(a), b : A, p : a = b) =
-  transport(R, a, b, p, r0);
+  along R by p from r0;
 
 def identity_system_encode(
   A : U1, a : A, R : A -> U1, r0 : R(a),
@@ -16,12 +16,8 @@ def identity_system_encode(
 ) =
   cong(field_first(A, R), contraction(identity_total_point(A, R, b, r)));
 
-def identity_total_second_path(
-  A : U1, R : A -> U1, x : IdentityTotal(A, R), y : IdentityTotal(A, R), p : x = y
-) :
-  transport(
-    R, field_first(A, R, x), field_first(A, R, y), cong(field_first(A, R), p), field_second(A, R, x)
-  ) = field_second(A, R, y) {
+def identity_total_second_path(A : U1, R : A -> U1, x y : IdentityTotal(A, R), p : x = y) :
+  (along R by cong(field_first(A, R), p) from field_second(A, R, x)) = field_second(A, R, y) {
   exact apd(field_second(A, R), x, y, p);
 }
 
@@ -44,16 +40,14 @@ def identity_system_retraction(
 ) :
   identity_system_encode(A, a, R, r0, contraction, b, identity_system_decode(A, a, R, r0, b, p)) = p {
   let center = identity_total_point(A, R, a, r0);
-  have atCenter : contraction(center) = refl(center) {
-    exact contractible_loops_are_null(
-      IdentityTotal(A, R), center, (fun (z : IdentityTotal(A, R)) => sym(contraction(z))), center,
-      contraction(center)
-    );
-  }
+  have atCenter : contraction(center) = refl(center) := contractible_loops_are_null(
+    IdentityTotal(A, R), center, (fun (z : IdentityTotal(A, R)) => sym(contraction(z))), center,
+    contraction(center)
+  );
   exact based_induction(
     U1, U1, A, a,
     (
-      fun (b : A) => fun (p : a = b) => identity_system_encode(
+      fun (b : A) (p : a = b) => identity_system_encode(
         A, a, R, r0, contraction, b, identity_system_decode(A, a, R, r0, b, p)
       ) = p
     ),
@@ -83,13 +77,13 @@ def identity_system_equivalence(
 
 // The weakly constant path-map form of Hedberg's argument.
 def constant_path_correction(
-  A : U1, choose : (forall x : A, forall y : A, (x = y) -> (x = y)), x : A, y : A, p : x = y
+  A : U1, choose : (forall x : A, forall y : A, (x = y) -> (x = y)), x y : A, p : x = y
 ) :
   concatenate(U1, A, x, x, y, inverse(U1, A, x, x, choose(x, x, refl(x))), choose(x, y, p)) = p {
   exact based_induction(
     U1, U1, A, x,
     (
-      fun (y : A) => fun (p : x = y) => concatenate(
+      fun (y : A) (p : x = y) => concatenate(
         U1, A, x, x, y, inverse(U1, A, x, x, choose(x, x, refl(x))), choose(x, y, p)
       ) = p
     ), inverse_left(A, x, x, choose(x, x, refl(x))), y, p
@@ -104,10 +98,7 @@ def constant_paths_are_set(
   )
 ) :
   FieldSet(A) {
-  intro x;
-  intro y;
-  intro p;
-  intro q;
+  intro x y p q;
   exact trans(
     sym(constant_path_correction(A, choose, x, y, p)),
     trans(

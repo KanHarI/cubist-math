@@ -4,9 +4,8 @@ import interval_sampling;
 // Coarse tags remain in their own coarse intervals; every refined tag lies
 // within its refined interval. The mesh restriction is on coarse widths.
 def IntervalSubdivisionFine(
-  F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
-  a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
-  tag : FieldUnitInterval(F, zero, one, lt),
+  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
+  a b tag : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) =
   typed(
@@ -20,17 +19,16 @@ def IntervalSubdivisionFine(
   );
 
 def interval_refinement_radius(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, delta : F, length : F, a : FieldUnitInterval(F, zero, one, lt),
-  b : FieldUnitInterval(F, zero, one, lt), tag : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, delta length : F,
+  a b tag : FieldUnitInterval(F, zero, one, lt)
 ) =
   mulF(delta, interval_weight(F, zero, one, addF, mulF, negF, lt, length, a, b, tag));
 
 // The sum of all coarse radii is delta times outer width times length,
 // with no factor for the number of coarse intervals or refined samples.
 def interval_refinement_radius_sum(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), delta : F, length : F, n : Nat,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), delta length : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
 ) :

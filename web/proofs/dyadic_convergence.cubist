@@ -3,11 +3,11 @@ import dyadic_tails;
 // Actual Archimedean witnesses, kept separate from the merely existential
 // Archimedean property of CompleteOrderedField. No principle extracting
 // this stronger data is assumed here.
-def ArchimedeanBounds(F : U1, zero : F, one : F, addF : F -> F -> F, lt : F -> F -> U0) =
+def ArchimedeanBounds(F : U1, zero one : F, addF : F -> F -> F, lt : F -> F -> U0) =
   forall x : F, exists n : Nat, lt(x, field_natural(F, zero, one, addF)(n));
 
 def archimedean_bounds_forget(
-  F : U1, zero : F, one : F, addF : F -> F -> F, lt : F -> F -> U0,
+  F : U1, zero one : F, addF : F -> F -> F, lt : F -> F -> U0,
   bounds : ArchimedeanBounds(F, zero, one, addF, lt)
 ) :
   Archimedean(F, zero, one, addF, lt) {
@@ -18,8 +18,8 @@ def archimedean_bounds_forget(
 // A small width at one index supplies the actual FieldClose tail required
 // by the existing convergence interface.
 def dyadic_width_close_tail(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
   halfSum : (forall x : F, addF(half(x), half(x)) = x), width : F,
   nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, bound : Nat,
@@ -27,8 +27,7 @@ def dyadic_width_close_tail(
 ) :
   forall n : Nat, IndexLE(bound, n)
   -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon) {
-  intro n;
-  intro later;
+  intro n later;
   let radius = dyadic_width(F, half, n, width);
   let nonnegativeRadius =
     dyadic_width_nonnegative(
@@ -50,8 +49,8 @@ def dyadic_width_close_tail(
 // The bound is computed from bounds(width / epsilon). This is an actual
 // convergence proof, conditional on explicitly supplied actual bounds.
 def dyadic_width_converges_from_bounds(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
   halfSum : (forall x : F, addF(half(x), half(x)) = x),
   inverses : FieldInverses(F, zero, one, mulF, lt),
@@ -59,8 +58,7 @@ def dyadic_width_converges_from_bounds(
   nonnegativeWidth : FieldLe(F, lt, zero, width)
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => dyadic_width(F, half, n, width)), zero) {
-  intro epsilon;
-  intro positiveEpsilon;
+  intro epsilon positiveEpsilon;
   obtain (reciprocal, positiveReciprocal, inverseLaw) = field_positive_reciprocal(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, epsilon, positiveEpsilon
   );
@@ -82,8 +80,8 @@ def dyadic_width_converges_from_bounds(
 // Under ordinary Archimedeanness the order of forall and truncation remains
 // explicit: every positive tolerance merely has a suitable tail bound.
 def dyadic_width_mere_close_tail(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
   halfSum : (forall x : F, addF(half(x), half(x)) = x),
   inverses : FieldInverses(F, zero, one, mulF, lt),

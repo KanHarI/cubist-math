@@ -4,9 +4,8 @@ import paths;
 // Increment follows a carry only through trailing one bits.
 def binary_positive_succ(p : BinaryPositive) =
   binary_positive_rec(
-    BinaryPositive, binary_bit0(binary_one),
-    fun (child : BinaryPositive) => fun (ih : BinaryPositive) => binary_bit1(child),
-    fun (child : BinaryPositive) => fun (ih : BinaryPositive) => binary_bit0(ih), p
+    BinaryPositive, binary_bit0(binary_one), fun (child ih : BinaryPositive) => binary_bit1(child),
+    fun (child ih : BinaryPositive) => binary_bit0(ih), p
   );
 
 def binary_succ(n : BinaryNat) = match n return BinaryNat {
@@ -18,15 +17,11 @@ def binary_succ(n : BinaryNat) = match n return BinaryNat {
 def binary_positive_add(a : BinaryPositive) : BinaryPositive -> BinaryPositive {
   exact binary_positive_rec(
     BinaryPositive -> BinaryPositive, binary_positive_succ,
-    fun (child : BinaryPositive) => fun (ih : BinaryPositive -> BinaryPositive) => fun (
-      other : BinaryPositive
-    ) => binary_positive_cases(
+    fun (child : BinaryPositive) (ih : BinaryPositive -> BinaryPositive) (other : BinaryPositive) => binary_positive_cases(
       BinaryPositive, binary_bit1(child), fun (tail : BinaryPositive) => binary_bit0(ih(tail)),
       fun (tail : BinaryPositive) => binary_bit1(ih(tail)), other
     ),
-    fun (child : BinaryPositive) => fun (ih : BinaryPositive -> BinaryPositive) => fun (
-      other : BinaryPositive
-    ) => binary_positive_cases(
+    fun (child : BinaryPositive) (ih : BinaryPositive -> BinaryPositive) (other : BinaryPositive) => binary_positive_cases(
       BinaryPositive, binary_bit0(binary_positive_succ(child)),
       fun (tail : BinaryPositive) => binary_bit1(ih(tail)),
       fun (tail : BinaryPositive) => binary_bit0(binary_positive_succ(ih(tail))), other
@@ -34,7 +29,7 @@ def binary_positive_add(a : BinaryPositive) : BinaryPositive -> BinaryPositive {
   );
 }
 
-def binary_add(a : BinaryNat, b : BinaryNat) = match a return BinaryNat {
+def binary_add(a b : BinaryNat) = match a return BinaryNat {
     left zero => b;
     right positive => match b return BinaryNat {
       left zero => a;
@@ -46,16 +41,16 @@ def binary_add(a : BinaryNat, b : BinaryNat) = match a return BinaryNat {
 def binary_positive_mul(a : BinaryPositive) : BinaryPositive -> BinaryPositive {
   exact binary_positive_rec(
     BinaryPositive -> BinaryPositive, fun (other : BinaryPositive) => other,
-    fun (child : BinaryPositive) => fun (ih : BinaryPositive -> BinaryPositive) => fun (
-      other : BinaryPositive
-    ) => binary_bit0(ih(other)),
-    fun (child : BinaryPositive) => fun (ih : BinaryPositive -> BinaryPositive) => fun (
-      other : BinaryPositive
-    ) => binary_positive_add(other, binary_bit0(ih(other))), a
+    fun (child : BinaryPositive) (ih : BinaryPositive -> BinaryPositive) (other : BinaryPositive) => binary_bit0(
+      ih(other)
+    ),
+    fun (child : BinaryPositive) (ih : BinaryPositive -> BinaryPositive) (other : BinaryPositive) => binary_positive_add(
+      other, binary_bit0(ih(other))
+    ), a
   );
 }
 
-def binary_mul(a : BinaryNat, b : BinaryNat) = match a return BinaryNat {
+def binary_mul(a b : BinaryNat) = match a return BinaryNat {
     left zero => binary_zero;
     right positive => match b return BinaryNat {
       left zero => binary_zero;

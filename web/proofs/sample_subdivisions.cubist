@@ -2,39 +2,39 @@ import sample_sum_laws;
 
 // One finite subdivision with specified outer endpoints. This is sampling
 // data; it does not assert geometric continuity or homotopy invariance.
-def SampleSubdivision(C : U1, a : C, b : C) =
+def SampleSubdivision(C : U1, a b : C) =
   exists n : Nat, exists vertices : SampleVertices(C, n), exists tags : SampleTags(C, n),
   (sample_first(C, n, vertices) = a) and (sample_last(C, n, vertices) = b);
 
 // Explicit projections keep later identities dependent on the original data.
-def SubdivisionEndpoints(C : U1, a : C, b : C, n : Nat, vertices : SampleVertices(C, n)) =
+def SubdivisionEndpoints(C : U1, a b : C, n : Nat, vertices : SampleVertices(C, n)) =
   (sample_first(C, n, vertices) = a) and (sample_last(C, n, vertices) = b);
 
-def SubdivisionTags(C : U1, a : C, b : C, n : Nat, vertices : SampleVertices(C, n)) =
+def SubdivisionTags(C : U1, a b : C, n : Nat, vertices : SampleVertices(C, n)) =
   exists tags : SampleTags(C, n), SubdivisionEndpoints(C, a, b, n, vertices);
 
-def SubdivisionSamples(C : U1, a : C, b : C, n : Nat) =
+def SubdivisionSamples(C : U1, a b : C, n : Nat) =
   exists vertices : SampleVertices(C, n), SubdivisionTags(C, a, b, n, vertices);
 
-def subdivision_count(C : U1, a : C, b : C, piece : SampleSubdivision(C, a, b)) =
+def subdivision_count(C : U1, a b : C, piece : SampleSubdivision(C, a, b)) =
   field_first(Nat, SubdivisionSamples(C, a, b), piece);
 
-def subdivision_samples(C : U1, a : C, b : C, piece : SampleSubdivision(C, a, b)) =
+def subdivision_samples(C : U1, a b : C, piece : SampleSubdivision(C, a, b)) =
   field_second(Nat, SubdivisionSamples(C, a, b), piece);
 
-def subdivision_vertices(C : U1, a : C, b : C, piece : SampleSubdivision(C, a, b)) =
+def subdivision_vertices(C : U1, a b : C, piece : SampleSubdivision(C, a, b)) =
   field_first(
     SampleVertices(C, subdivision_count(C, a, b, piece)),
     SubdivisionTags(C, a, b, subdivision_count(C, a, b, piece)), subdivision_samples(C, a, b, piece)
   );
 
-def subdivision_tag_data(C : U1, a : C, b : C, piece : SampleSubdivision(C, a, b)) =
+def subdivision_tag_data(C : U1, a b : C, piece : SampleSubdivision(C, a, b)) =
   field_second(
     SampleVertices(C, subdivision_count(C, a, b, piece)),
     SubdivisionTags(C, a, b, subdivision_count(C, a, b, piece)), subdivision_samples(C, a, b, piece)
   );
 
-def subdivision_tags(C : U1, a : C, b : C, piece : SampleSubdivision(C, a, b)) =
+def subdivision_tags(C : U1, a b : C, piece : SampleSubdivision(C, a, b)) =
   field_first(
     SampleTags(C, subdivision_count(C, a, b, piece)),
     (
@@ -44,7 +44,7 @@ def subdivision_tags(C : U1, a : C, b : C, piece : SampleSubdivision(C, a, b)) =
     ), subdivision_tag_data(C, a, b, piece)
   );
 
-def subdivision_endpoints(C : U1, a : C, b : C, piece : SampleSubdivision(C, a, b)) =
+def subdivision_endpoints(C : U1, a b : C, piece : SampleSubdivision(C, a, b)) =
   field_second(
     SampleTags(C, subdivision_count(C, a, b, piece)),
     (
@@ -55,7 +55,7 @@ def subdivision_endpoints(C : U1, a : C, b : C, piece : SampleSubdivision(C, a, 
   );
 
 def subdivision_sum(
-  C : U1, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, a : C, b : C,
+  C G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, a b : C,
   piece : SampleSubdivision(C, a, b)
 ) =
   sample_sum(
@@ -68,7 +68,7 @@ def empty_subdivision(C : U1, a : C) : SampleSubdivision(C, a, a) {
 }
 
 def join_subdivisions(
-  C : U1, a : C, b : C, c : C, left : SampleSubdivision(C, a, b), right : SampleSubdivision(C, b, c)
+  C : U1, a b c : C, left : SampleSubdivision(C, a, b), right : SampleSubdivision(C, b, c)
 ) :
   SampleSubdivision(C, a, c) {
   let n = subdivision_count(C, a, b, left);
@@ -77,30 +77,22 @@ def join_subdivisions(
   let m = subdivision_count(C, b, c, right);
   let rightVertices = subdivision_vertices(C, b, c, right);
   let rightTags = subdivision_tags(C, b, c, right);
-  have firstLeft : sample_first(C, n, vertices) = a {
-    exact field_fst(
-      (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left)
-    );
-  }
-  have lastLeft : sample_last(C, n, vertices) = b {
-    exact field_snd(
-      (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left)
-    );
-  }
-  have firstRight : sample_first(C, m, rightVertices) = b {
-    exact field_fst(
-      (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right)
-    );
-  }
-  have lastRight : sample_last(C, m, rightVertices) = c {
-    exact field_snd(
-      (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right)
-    );
-  }
+  have firstLeft : sample_first(C, n, vertices) = a := field_fst(
+    (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
+    subdivision_endpoints(C, a, b, left)
+  );
+  have lastLeft : sample_last(C, n, vertices) = b := field_snd(
+    (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
+    subdivision_endpoints(C, a, b, left)
+  );
+  have firstRight : sample_first(C, m, rightVertices) = b := field_fst(
+    (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
+    subdivision_endpoints(C, b, c, right)
+  );
+  have lastRight : sample_last(C, m, rightVertices) = c := field_snd(
+    (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
+    subdivision_endpoints(C, b, c, right)
+  );
   let same = trans(lastLeft, sym(firstRight));
   exact (
     n + m, join_vertices(C, n, vertices, m, rightVertices), join_tags(C, n, tags, m, rightTags),
@@ -110,9 +102,9 @@ def join_subdivisions(
 }
 
 def subdivision_sum_join(
-  C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
+  C G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
-  edge : C -> C -> C -> G, a : C, b : C, c : C, left : SampleSubdivision(C, a, b),
+  edge : C -> C -> C -> G, a b c : C, left : SampleSubdivision(C, a, b),
   right : SampleSubdivision(C, b, c)
 ) :
   subdivision_sum(C, G, zero, addG, edge, a, c, join_subdivisions(C, a, b, c, left, right)) = addG(
@@ -125,18 +117,14 @@ def subdivision_sum_join(
   let m = subdivision_count(C, b, c, right);
   let rightVertices = subdivision_vertices(C, b, c, right);
   let rightTags = subdivision_tags(C, b, c, right);
-  have lastLeft : sample_last(C, n, vertices) = b {
-    exact field_snd(
-      (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left)
-    );
-  }
-  have firstRight : sample_first(C, m, rightVertices) = b {
-    exact field_fst(
-      (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right)
-    );
-  }
+  have lastLeft : sample_last(C, n, vertices) = b := field_snd(
+    (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
+    subdivision_endpoints(C, a, b, left)
+  );
+  have firstRight : sample_first(C, m, rightVertices) = b := field_fst(
+    (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
+    subdivision_endpoints(C, b, c, right)
+  );
   exact sample_sum_join(
     C, G, zero, addG, unitLaw, assoc, edge, n, vertices, tags, m, rightVertices, rightTags,
     trans(lastLeft, sym(firstRight))
@@ -153,14 +141,12 @@ def SampleSubdivisions(C : U1, n : Nat) = induction n as k return (SampleVertice
     ) and previous(field_snd(C, SampleVertices(C, k), vertices));
   };
 
-def subdivision_total(
-  C : U1, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, n : Nat
-) =
+def subdivision_total(C G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, n : Nat) =
   induction n as k return (
     forall vertices : SampleVertices(C, k), SampleSubdivisions(C, k, vertices) -> G
   ) {
-    zero => fun (vertices : C) => fun (pieces : Unit) => zero;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+    zero => fun (vertices : C) (pieces : Unit) => zero;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (
       pieces : SampleSubdivisions(C, succ(k), vertices)
     ) => addG(
       subdivision_sum(
@@ -186,7 +172,7 @@ def subdivision_total(
   };
 
 def FlattenedSubdivision(
-  C : U1, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, n : Nat,
+  C G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, n : Nat,
   vertices : SampleVertices(C, n), pieces : SampleSubdivisions(C, n, vertices)
 ) =
   exists flat : SampleSubdivision(C, sample_first(C, n, vertices), sample_last(C, n, vertices)),
@@ -195,7 +181,7 @@ def FlattenedSubdivision(
   ) = subdivision_total(C, G, zero, addG, edge, n, vertices, pieces);
 
 def sample_subdivisions_flatten_step(
-  C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
+  C G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat,
   previous : (
@@ -223,7 +209,7 @@ def sample_subdivisions_flatten_step(
 // Construct an actual single list of samples with the same endpoints and
 // exactly the sum of all per-edge subdivisions. No choice is used.
 def sample_subdivisions_flatten(
-  C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
+  C G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat
 ) :
@@ -233,7 +219,7 @@ def sample_subdivisions_flatten(
     forall vertices : SampleVertices(C, k), forall pieces : SampleSubdivisions(C, k, vertices),
     FlattenedSubdivision(C, G, zero, addG, edge, k, vertices, pieces)
   ) {
-    zero => fun (vertices : C) => fun (pieces : Unit) => typed(
+    zero => fun (vertices : C) (pieces : Unit) => typed(
       FlattenedSubdivision(C, G, zero, addG, edge, 0, vertices, pieces),
       (empty_subdivision(C, vertices), refl(zero))
     );

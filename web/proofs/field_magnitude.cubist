@@ -1,46 +1,44 @@
 import ordered_bounds;
 
 // Two weak inequalities express |x| <= radius without deciding any sign.
-def FieldMagnitudeBound(F : U1, negF : F -> F, lt : F -> F -> U0, x : F, radius : F) =
+def FieldMagnitudeBound(F : U1, negF : F -> F, lt : F -> F -> U0, x radius : F) =
   FieldLe(F, lt, x, radius) and FieldLe(F, lt, negF(x), radius);
 
 def field_magnitude_zero(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)
 ) :
   FieldMagnitudeBound(F, negF, lt, zero, zero) {
   let same = order_le_refl(F, lt, order, zero);
   exact (
     same,
-    transport(
-      (fun (x : F) => FieldLe(F, lt, x, zero)), zero, negF(zero),
-      sym(ring_neg_zero(F, zero, one, addF, mulF, negF, ring)), same
-    )
+    along((fun (x : F) => FieldLe(F, lt, x, zero))) by sym(
+      ring_neg_zero(F, zero, one, addF, mulF, negF, ring)
+    ) from same
   );
 }
 
 def field_magnitude_neg(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x radius : F,
   bound : FieldMagnitudeBound(F, negF, lt, x, radius)
 ) :
   FieldMagnitudeBound(F, negF, lt, negF(x), radius) {
   obtain (upper, lower) = bound;
   exact (
     lower,
-    transport(
-      (fun (v : F) => FieldLe(F, lt, v, radius)), x, negF(negF(x)),
-      sym(ring_neg_neg(F, zero, one, addF, mulF, negF, ring, x)), upper
-    )
+    along((fun (v : F) => FieldLe(F, lt, v, radius))) by sym(
+      ring_neg_neg(F, zero, one, addF, mulF, negF, ring, x)
+    ) from upper
   );
 }
 
 def field_magnitude_radius_nonnegative(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x radius : F,
   bound : FieldMagnitudeBound(F, negF, lt, x, radius)
 ) :
   FieldLe(F, lt, zero, radius) {
@@ -56,9 +54,9 @@ def field_magnitude_radius_nonnegative(
 }
 
 def field_magnitude_enlarge(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F, larger : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x radius larger : F,
   bound : FieldMagnitudeBound(F, negF, lt, x, radius), grows : FieldLe(F, lt, radius, larger)
 ) :
   FieldMagnitudeBound(F, negF, lt, x, larger) {
@@ -70,9 +68,9 @@ def field_magnitude_enlarge(
 }
 
 def field_magnitude_add(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, r : F, s : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y r s : F,
   boundX : FieldMagnitudeBound(F, negF, lt, x, r), boundY : FieldMagnitudeBound(F, negF, lt, y, s)
 ) :
   FieldMagnitudeBound(F, negF, lt, addF(x, y), addF(r, s)) {
@@ -80,20 +78,18 @@ def field_magnitude_add(
   obtain (upperY, lowerY) = boundY;
   exact (
     order_le_add(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, r, y, s, upperX, upperY),
-    transport(
-      (fun (v : F) => FieldLe(F, lt, v, addF(r, s))), addF(negF(x), negF(y)), negF(addF(x, y)),
-      sym(ring_neg_add(F, zero, one, addF, mulF, negF, ring, x, y)),
-      order_le_add(
-        F, zero, one, addF, mulF, negF, lt, ring, arithmetic, negF(x), r, negF(y), s, lowerX, lowerY
-      )
+    along((fun (v : F) => FieldLe(F, lt, v, addF(r, s)))) by sym(
+      ring_neg_add(F, zero, one, addF, mulF, negF, ring, x, y)
+    ) from order_le_add(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, negF(x), r, negF(y), s, lowerX, lowerY
     )
   );
 }
 
 def order_product_upper_nonnegative(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, r : F, s : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y r s : F,
   upperX : FieldLe(F, lt, x, r), upperY : FieldLe(F, lt, y, s),
   nonnegativeR : FieldLe(F, lt, zero, r), nonnegativeY : FieldLe(F, lt, zero, y)
 ) :
@@ -102,24 +98,20 @@ def order_product_upper_nonnegative(
   let first = weakScale(x, r, y, upperX, nonnegativeY);
   let second = weakScale(y, s, r, upperY, nonnegativeR);
   let swapped =
-    transport(
-      (fun (v : F) => FieldLe(F, lt, v, mulF(s, r))), mulF(y, r), mulF(r, y),
-      ring_mul_comm(F, zero, one, addF, mulF, negF, ring, y, r), second
-    );
+    along((fun (v : F) => FieldLe(F, lt, v, mulF(s, r)))) by ring_mul_comm(
+      F, zero, one, addF, mulF, negF, ring, y, r
+    ) from second;
   let last =
-    transport(
-      FieldLe(F, lt, mulF(r, y)), mulF(s, r), mulF(r, s),
-      ring_mul_comm(F, zero, one, addF, mulF, negF, ring, s, r), swapped
-    );
+    along FieldLe(F, lt, mulF(r, y)) by ring_mul_comm(F, zero, one, addF, mulF, negF, ring, s, r) from swapped;
   exact order_le_trans(
     F, zero, one, addF, mulF, lt, arithmetic, mulF(x, y), mulF(r, y), mulF(r, s), first, last
   );
 }
 
 def field_magnitude_product_upper(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, r : F, s : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y r s : F,
   boundX : FieldMagnitudeBound(F, negF, lt, x, r), boundY : FieldMagnitudeBound(F, negF, lt, y, s)
 ) :
   FieldLe(F, lt, mulF(x, y), mulF(r, s)) {
@@ -147,20 +139,15 @@ def field_magnitude_product_upper(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), negF(y), r, s, lowerX,
         lowerY, nonnegativeR, nonnegativeNegY
       );
-    have doubleNegative : mulF(negF(x), negF(y)) = mulF(x, y) {
-      exact trans(
-        ring_neg_mul(F, zero, one, addF, mulF, negF, ring, x, negF(y)),
-        trans(
-          cong(negF, ring_mul_neg(F, zero, one, addF, mulF, negF, ring, x, y)),
-          ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(x, y))
-        )
-      );
-    }
+    have doubleNegative : mulF(negF(x), negF(y)) = mulF(x, y) := trans(
+      ring_neg_mul(F, zero, one, addF, mulF, negF, ring, x, negF(y)),
+      trans(
+        cong(negF, ring_mul_neg(F, zero, one, addF, mulF, negF, ring, x, y)),
+        ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(x, y))
+      )
+    );
     let bound =
-      transport(
-        (fun (v : F) => FieldLe(F, lt, v, mulF(r, s))), mulF(negF(x), negF(y)), mulF(x, y),
-        doubleNegative, negBound
-      );
+      along((fun (v : F) => FieldLe(F, lt, v, mulF(r, s)))) by doubleNegative from negBound;
     exact bound(tooLarge);
   }
   exact order_product_upper_nonnegative(
@@ -170,9 +157,9 @@ def field_magnitude_product_upper(
 }
 
 def field_magnitude_mul(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, r : F, s : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y r s : F,
   boundX : FieldMagnitudeBound(F, negF, lt, x, r), boundY : FieldMagnitudeBound(F, negF, lt, y, s)
 ) :
   FieldMagnitudeBound(F, negF, lt, mulF(x, y), mulF(r, s)) {
@@ -188,9 +175,8 @@ def field_magnitude_mul(
     );
   exact (
     upper,
-    transport(
-      (fun (v : F) => FieldLe(F, lt, v, mulF(r, s))), mulF(negF(x), y), negF(mulF(x, y)),
-      ring_neg_mul(F, zero, one, addF, mulF, negF, ring, x, y), lower
-    )
+    along((fun (v : F) => FieldLe(F, lt, v, mulF(r, s)))) by ring_neg_mul(
+      F, zero, one, addF, mulF, negF, ring, x, y
+    ) from lower
   );
 }

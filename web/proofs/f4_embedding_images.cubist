@@ -12,16 +12,14 @@ def f2_embedding_image_is_base :
   subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2)) =[Subfield(F4)] f4_base_subfield {
   let image = subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2));
   have intoBase : SubfieldIncluded(F4, image, f4_base_subfield) {
-    intro y;
-    intro member;
+    intro y member;
     obtain (k, unit, same) = typed(
       SubfieldImage(F2, F4, f2_f4_embedding, subfield_top(F2), y), member
     );
     exact typed(F2Image(y), (k, same));
   }
   have intoImage : SubfieldIncluded(F4, f4_base_subfield, image) {
-    intro y;
-    intro member;
+    intro y member;
     obtain (k, same) = typed(F2Image(y), member);
     exact typed(SubfieldImage(F2, F4, f2_f4_embedding, subfield_top(F2), y), (k, tt, same));
   }

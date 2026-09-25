@@ -15,7 +15,7 @@ def subfield_evidence(F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F
 }
 
 def subfield_value_ext(
-  F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S),
+  F : AlgebraicField, S : Subfield(F), x y : SubfieldCarrier(F, S),
   same : subfield_value(F, S, x) = subfield_value(F, S, y)
 ) :
   x = y {
@@ -57,9 +57,7 @@ def subfield_carrier_neg(F : AlgebraicField, S : Subfield(F), x : SubfieldCarrie
   );
 }
 
-def subfield_carrier_add(
-  F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S)
-) :
+def subfield_carrier_add(F : AlgebraicField, S : Subfield(F), x y : SubfieldCarrier(F, S)) :
   SubfieldCarrier(F, S) {
   exact (
     af_add(af_carrier(F), af_operations(F), subfield_value(F, S, x), subfield_value(F, S, y)),
@@ -70,9 +68,7 @@ def subfield_carrier_add(
   );
 }
 
-def subfield_carrier_mul(
-  F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S)
-) :
+def subfield_carrier_mul(F : AlgebraicField, S : Subfield(F), x y : SubfieldCarrier(F, S)) :
   SubfieldCarrier(F, S) {
   exact (
     af_mul(af_carrier(F), af_operations(F), subfield_value(F, S, x), subfield_value(F, S, y)),
@@ -89,10 +85,7 @@ def subfield_carrier_ops(F : AlgebraicField, S : Subfield(F)) =
     subfield_carrier_neg(F, S), subfield_carrier_add(F, S), subfield_carrier_mul(F, S)
   );
 
-def subfield_carrier_add_assoc(
-  F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S),
-  z : SubfieldCarrier(F, S)
-) :
+def subfield_carrier_add_assoc(F : AlgebraicField, S : Subfield(F), x y z : SubfieldCarrier(F, S)) :
   subfield_carrier_add(F, S, subfield_carrier_add(F, S, x, y), z) = subfield_carrier_add(
     F, S, x, subfield_carrier_add(F, S, y, z)
   ) {
@@ -109,9 +102,7 @@ def subfield_carrier_add_assoc(
   );
 }
 
-def subfield_carrier_add_comm(
-  F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S)
-) :
+def subfield_carrier_add_comm(F : AlgebraicField, S : Subfield(F), x y : SubfieldCarrier(F, S)) :
   subfield_carrier_add(F, S, x, y) = subfield_carrier_add(F, S, y, x) {
   obtain (addLaws, mulLaws) = typed(
     FieldRingLaws(af_carrier(F), af_operations(F)),
@@ -153,10 +144,7 @@ def subfield_carrier_add_inverse(F : AlgebraicField, S : Subfield(F), x : Subfie
   );
 }
 
-def subfield_carrier_mul_assoc(
-  F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S),
-  z : SubfieldCarrier(F, S)
-) :
+def subfield_carrier_mul_assoc(F : AlgebraicField, S : Subfield(F), x y z : SubfieldCarrier(F, S)) :
   subfield_carrier_mul(F, S, subfield_carrier_mul(F, S, x, y), z) = subfield_carrier_mul(
     F, S, x, subfield_carrier_mul(F, S, y, z)
   ) {
@@ -173,9 +161,7 @@ def subfield_carrier_mul_assoc(
   );
 }
 
-def subfield_carrier_mul_comm(
-  F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S)
-) :
+def subfield_carrier_mul_comm(F : AlgebraicField, S : Subfield(F), x y : SubfieldCarrier(F, S)) :
   subfield_carrier_mul(F, S, x, y) = subfield_carrier_mul(F, S, y, x) {
   obtain (addLaws, mulLaws) = typed(
     FieldRingLaws(af_carrier(F), af_operations(F)),
@@ -203,10 +189,7 @@ def subfield_carrier_mul_one(F : AlgebraicField, S : Subfield(F), x : SubfieldCa
   );
 }
 
-def subfield_carrier_distribute(
-  F : AlgebraicField, S : Subfield(F), x : SubfieldCarrier(F, S), y : SubfieldCarrier(F, S),
-  z : SubfieldCarrier(F, S)
-) :
+def subfield_carrier_distribute(F : AlgebraicField, S : Subfield(F), x y z : SubfieldCarrier(F, S)) :
   subfield_carrier_mul(F, S, x, subfield_carrier_add(F, S, y, z)) = subfield_carrier_add(
     F, S, subfield_carrier_mul(F, S, x, y), subfield_carrier_mul(F, S, x, z)
   ) {
@@ -265,15 +248,13 @@ def subfield_carrier_inverse(
   );
   let value = subfield_value(F, S, x);
   obtain (ambientInverse, inverseLaw) = inverses(value, subfield_carrier_nonzero(F, S, x, nonzero));
-  have result : SubfieldCarrier(F, S) {
-    exact (
-      ambientInverse,
-      subfield_inverse(
-        F, subfield_members(F, S), subfield_laws(F, S), value, ambientInverse,
-        subfield_evidence(F, S, x), inverseLaw
-      )
-    );
-  }
+  have result : SubfieldCarrier(F, S) := (
+    ambientInverse,
+    subfield_inverse(
+      F, subfield_members(F, S), subfield_laws(F, S), value, ambientInverse,
+      subfield_evidence(F, S, x), inverseLaw
+    )
+  );
   exact (
     result,
     subfield_value_ext(
@@ -308,12 +289,12 @@ def subfield_inclusion(F : AlgebraicField, S : Subfield(F)) :
       refl(af_zero(A, ops)), refl(af_one(A, ops)),
       (fun (x : SubfieldCarrier(F, S)) => refl(af_neg(A, ops, subfield_value(F, S, x)))),
       (
-        fun (x : SubfieldCarrier(F, S)) => fun (y : SubfieldCarrier(F, S)) => refl(
+        fun (x y : SubfieldCarrier(F, S)) => refl(
           af_add(A, ops, subfield_value(F, S, x), subfield_value(F, S, y))
         )
       ),
       (
-        fun (x : SubfieldCarrier(F, S)) => fun (y : SubfieldCarrier(F, S)) => refl(
+        fun (x y : SubfieldCarrier(F, S)) => refl(
           af_mul(A, ops, subfield_value(F, S, x), subfield_value(F, S, y))
         )
       )

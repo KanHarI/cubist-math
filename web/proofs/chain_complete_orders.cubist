@@ -83,8 +83,7 @@ def Progressive(A : U1, le : OrderRelation(A), f : A -> A) = forall x : A, le(x,
 
 // Binary propositional elimination, allowing a U1 target.
 def field_or_elim(
-  P : U1, Q : U1, R : U1, prop : FieldProp(R), leftCase : P -> R, rightCase : Q -> R,
-  h : FieldOr(P, Q)
+  P Q R : U1, prop : FieldProp(R), leftCase : P -> R, rightCase : Q -> R, h : FieldOr(P, Q)
 ) :
   R {
   exact field_exists_elim(P or Q, R, prop, (fun (side : P or Q) => match side return R {
@@ -93,18 +92,15 @@ def field_or_elim(
       }), h);
 }
 
-def field_and_prop(
-  P : U1, Q : U1, propP : FieldProp(P), propQ : FieldProp(Q), a : P and Q, b : P and Q
-) :
-  a = b {
+def field_and_prop(P Q : U1, propP : FieldProp(P), propQ : FieldProp(Q), a b : P and Q) : a = b {
   exact path(
     (fun (t : Interval) => P and Q),
     (
       fun (t : Interval) => typed(
         P and Q,
         (
-          at(propP(field_fst(P, Q, a), field_fst(P, Q, b)), t),
-          at(propQ(field_snd(P, Q, a), field_snd(P, Q, b)), t)
+          propP(field_fst(P, Q, a), field_fst(P, Q, b)) @ t,
+          propQ(field_snd(P, Q, a), field_snd(P, Q, b)) @ t
         )
       )
     )
@@ -113,17 +109,15 @@ def field_and_prop(
 
 // A weakly constant family of maps on paths makes the carrier a set.
 // Normalization at reflexivity is proved by path induction, not assumed.
-def collapse_path(
-  A : U1, h : (forall x : A, forall y : A, (x = y) -> (x = y)), x : A, y : A, p : x = y
-) =
+def collapse_path(A : U1, h : (forall x : A, forall y : A, (x = y) -> (x = y)), x y : A, p : x = y) =
   trans(sym(h(x, x, refl(x))), h(x, y, p));
 
 def collapse_path_recovers(
-  A : U1, h : (forall x : A, forall y : A, (x = y) -> (x = y)), x : A, y : A, p : x = y
+  A : U1, h : (forall x : A, forall y : A, (x = y) -> (x = y)), x y : A, p : x = y
 ) :
   collapse_path(A, h, x, y, p) = p {
   exact based_induction(
-    U1, U1, A, x, (fun (z : A) => fun (q : x = z) => collapse_path(A, h, x, z, q) = q),
+    U1, U1, A, x, (fun (z : A) (q : x = z) => collapse_path(A, h, x, z, q) = q),
     inverse_left(A, x, x, h(x, x, refl(x))), y, p
   );
 }
@@ -135,10 +129,7 @@ def weak_path_collapser_set(
   )
 ) :
   FieldSet(A) {
-  intro x;
-  intro y;
-  intro p;
-  intro q;
+  intro x y p q;
   exact trans(
     sym(collapse_path_recovers(A, h, x, y, p)),
     trans(
@@ -149,11 +140,11 @@ def weak_path_collapser_set(
 }
 
 def order_path_collapse(
-  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x : A, y : A, p : x = y
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x y : A, p : x = y
 ) =
   order_antisym(
-    A, le, laws, x, y, transport(le(x), x, y, p, order_refl(A, le, laws, x)),
-    transport((fun (z : A) => le(z, x)), x, y, p, order_refl(A, le, laws, x))
+    A, le, laws, x, y, along le(x) by p from order_refl(A, le, laws, x),
+    along((fun (z : A) => le(z, x))) by p from order_refl(A, le, laws, x)
   );
 
 def partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
@@ -161,13 +152,10 @@ def partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(
   have constant :
     forall x : A, forall y : A, forall p : x = y, forall q : x = y,
     order_path_collapse(A, le, laws, x, y, p) = order_path_collapse(A, le, laws, x, y, q) {
-    intro x;
-    intro y;
-    intro p;
-    intro q;
-    let forward = fun (r : x = y) => transport(le(x), x, y, r, order_refl(A, le, laws, x));
+    intro x y p q;
+    let forward = fun (r : x = y) => along le(x) by r from order_refl(A, le, laws, x);
     let backward =
-      fun (r : x = y) => transport((fun (z : A) => le(z, x)), x, y, r, order_refl(A, le, laws, x));
+      fun (r : x = y) => along((fun (z : A) => le(z, x))) by r from order_refl(A, le, laws, x);
     exact trans(
       cong(
         (fun (a : le(x, y)) => order_antisym(A, le, laws, x, y, a, backward(p))),
@@ -188,14 +176,11 @@ def field_subtype_is_set(
   FieldSet(exists x : A, P(x)) {
   let S = exists x : A, P(x);
   let first = field_first(A, P);
-  let h =
-    fun (x : S) => fun (y : S) => fun (p : x = y) => field_subtype_ext(
-      A, P, prop, x, y, cong(first, p)
-    );
+  let h = fun (x y : S) (p : x = y) => field_subtype_ext(A, P, prop, x, y, cong(first, p));
   exact weak_path_collapser_set(
     S, h,
     (
-      fun (x : S) => fun (y : S) => fun (p : x = y) => fun (q : x = y) => cong(
+      fun (x y : S) (p q : x = y) => cong(
         field_subtype_ext(A, P, prop, x, y),
         setA(first(x), first(y), cong(first, p), cong(first, q))
       )

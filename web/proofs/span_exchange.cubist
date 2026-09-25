@@ -8,9 +8,8 @@ def subspace_neg(
 ) :
   subspace_members(K, V, S, vector_neg(K, V, x)) {
   let minusOne = af_neg(af_carrier(K), af_operations(K), af_one(af_carrier(K), af_operations(K)));
-  exact transport(
-    subspace_members(K, V, S), vector_scale(K, V, minusOne, x), vector_neg(K, V, x),
-    vector_minus_one_scale(K, V, x), subspace_scale(K, V, S, minusOne, x, member)
+  exact along subspace_members(K, V, S) by vector_minus_one_scale(K, V, x) from subspace_scale(
+    K, V, S, minusOne, x, member
   );
 }
 
@@ -19,8 +18,8 @@ def subspace_neg(
 // belongs to it as well. The inverse is actual field data, not an axiom.
 def subspace_solve_nonzero(
   K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), a : af_carrier(K),
-  nonzero : FieldNonzero(af_carrier(K), af_operations(K), a), x : vector_carrier(K, V),
-  y : vector_carrier(K, V), member : subspace_members(K, V, S, y),
+  nonzero : FieldNonzero(af_carrier(K), af_operations(K), a), x y : vector_carrier(K, V),
+  member : subspace_members(K, V, S, y),
   vanishes : vector_add(K, V, vector_scale(K, V, a, x), y) = vector_zero(K, V)
 ) :
   subspace_members(K, V, S, x) {
@@ -31,20 +30,15 @@ def subspace_solve_nonzero(
   let leftInverse = trans(comm(b, a), inverse);
   let G = vector_group(K, V);
   let scaled = vector_scale(K, V, a, x);
-  have solve : scaled = vector_neg(K, V, y) {
-    exact group_inverse_unique(
-      vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), group_laws(G), y, scaled,
-      vector_neg(K, V, y), vanishes, group_inverse_right(G, y)
-    );
-  }
-  have unscaled : vector_scale(K, V, b, vector_neg(K, V, y)) = x {
-    exact trans(
-      sym(cong(vector_scale(K, V, b), solve)), vector_scale_undo(K, V, a, b, leftInverse, x)
-    );
-  }
-  exact transport(
-    subspace_members(K, V, S), vector_scale(K, V, b, vector_neg(K, V, y)), x, unscaled,
-    subspace_scale(K, V, S, b, vector_neg(K, V, y), subspace_neg(K, V, S, y, member))
+  have solve : scaled = vector_neg(K, V, y) := group_inverse_unique(
+    vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), group_laws(G), y, scaled,
+    vector_neg(K, V, y), vanishes, group_inverse_right(G, y)
+  );
+  have unscaled : vector_scale(K, V, b, vector_neg(K, V, y)) = x := trans(
+    sym(cong(vector_scale(K, V, b), solve)), vector_scale_undo(K, V, a, b, leftInverse, x)
+  );
+  exact along subspace_members(K, V, S) by unscaled from subspace_scale(
+    K, V, S, b, vector_neg(K, V, y), subspace_neg(K, V, S, y, member)
   );
 }
 
@@ -66,7 +60,7 @@ def nonzero_coefficient_in_span(
     remainder_in_subspace(
       K, V, S, n, v, a, i,
       (
-        fun (j : Fin(n)) => fun (different : (j = i) -> Void) => span_generator(
+        fun (j : Fin(n)) (different : (j = i) -> Void) => span_generator(
           K, V, P, v(j), others(j, different)
         )
       )

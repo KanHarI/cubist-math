@@ -3,7 +3,7 @@ import interval_refinement;
 import curve_contour_estimates;
 
 def sample_interval_width(
-  F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, n : Nat,
+  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n)
 ) =
   interval_difference(
@@ -22,17 +22,15 @@ def affine_coordinate_length(
 // The total affine weight depends on the outer endpoints, not the number
 // of refined intervals. Ordering is only needed when using it as a bound.
 def affine_sample_variation_sum(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), r : F, s : F, n : Nat,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), r s : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
 ) :
   sample_sum(
     FieldUnitInterval(F, zero, one, lt), F, zero, addF,
     (
-      fun (a : FieldUnitInterval(F, zero, one, lt)) => fun (b : FieldUnitInterval(F, zero, one, lt)) => fun (
-        tag : FieldUnitInterval(F, zero, one, lt)
-      ) => addF(
+      fun (a b tag : FieldUnitInterval(F, zero, one, lt)) => addF(
         interval_weight(F, zero, one, addF, mulF, negF, lt, r, a, b, tag),
         interval_weight(F, zero, one, addF, mulF, negF, lt, s, a, b, tag)
       )
@@ -62,10 +60,10 @@ def affine_sample_variation_sum(
 }
 
 def affine_refinement_error_bound(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F),
   values : FieldUnitInterval(F, zero, one, lt) -> Complex(F), delta : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   coarseTag : FieldUnitInterval(F, zero, one, lt),
@@ -123,30 +121,21 @@ def affine_refinement_error_bound(
     );
   let totalWeight =
     sample_sum(
-      I, F, zero, addF,
-      (
-        fun (a : I) => fun (b : I) => fun (tag : I) => addF(
-          realWeight(a, b, tag), imagWeight(a, b, tag)
-        )
-      ), n, vertices, oldTags
+      I, F, zero, addF, (fun (a b tag : I) => addF(realWeight(a, b, tag), imagWeight(a, b, tag))),
+      n, vertices, oldTags
     );
-  exact transport(
-    ComplexBoxBound(F, negF, lt, errorSum), mulF(delta, totalWeight),
-    mulF(delta, mulF(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), addF(r, s))),
-    cong(
-      mulF(delta),
-      affine_sample_variation_sum(
-        F, zero, one, addF, mulF, negF, lt, ring, r, s, n, vertices, oldTags
-      )
-    ), localBound
-  );
+  exact along ComplexBoxBound(F, negF, lt, errorSum) by cong(
+    mulF(delta),
+    affine_sample_variation_sum(
+      F, zero, one, addF, mulF, negF, lt, ring, r, s, n, vertices, oldTags
+    )
+  ) from localBound;
 }
 
 def curve_coarse_contribution(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  integrand : Complex(F) -> Complex(F), n : Nat,
-  vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
+  n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   coarseTag : FieldUnitInterval(F, zero, one, lt)
 ) =
   parameter_contour_edge(
@@ -161,11 +150,11 @@ def curve_coarse_contribution(
 // interval. Every admissible finite refinement then has this width-scaled
 // error certificate for the actual mapped contour sum.
 def affine_refinement_uniform_estimate(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -256,13 +245,7 @@ def affine_refinement_uniform_estimate(
         )
       )
     ) {
-    intro n;
-    intro vertices;
-    intro coarseTag;
-    intro tags;
-    intro valid;
-    intro coarseWithin;
-    intro small;
+    intro n vertices coarseTag tags valid coarseWithin small;
     let oldTags = sample_repeat_tags(I, n, coarseTag);
     let errorSum =
       complex_parameter_tag_error_sum(

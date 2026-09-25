@@ -41,16 +41,14 @@ def join_subdivision_families(C : U1, n : Nat) =
     (sample_last(C, k, vertices) = sample_first(C, m, rightVertices))
     -> SampleSubdivisions(C, k + m, join_vertices(C, k, vertices, m, rightVertices))
   ) {
-    zero => fun (vertices : C) => fun (pieces : Unit) => fun (m : Nat) => fun (
-      rightVertices : SampleVertices(C, m)
-    ) => fun (rightPieces : SampleSubdivisions(C, m, rightVertices)) => fun (
-      same : vertices = sample_first(C, m, rightVertices)
-    ) => rightPieces;
+    zero => fun (vertices : C) (pieces : Unit) (m : Nat) (rightVertices : SampleVertices(C, m)) (
+      rightPieces : SampleSubdivisions(C, m, rightVertices)
+    ) (same : vertices = sample_first(C, m, rightVertices)) => rightPieces;
     succ previous => join_subdivision_families_step(C, k, previous);
   };
 
 def subdivision_total_join_step(
-  C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
+  C G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat,
   previous : (
@@ -107,7 +105,7 @@ def subdivision_total_join_step(
 // The equality retains the actual supplied families and their order;
 // no commutativity assumption or choice of a replacement sum is used.
 def subdivision_total_join(
-  C : U1, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
+  C G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G, addG(zero, x) = x),
   assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : C -> C -> C -> G, n : Nat
 ) :
@@ -135,11 +133,11 @@ def subdivision_total_join(
       subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)
     )
   ) {
-    zero => fun (vertices : C) => fun (pieces : Unit) => fun (m : Nat) => fun (
-      rightVertices : SampleVertices(C, m)
-    ) => fun (rightPieces : SampleSubdivisions(C, m, rightVertices)) => fun (
-      same : vertices = sample_first(C, m, rightVertices)
-    ) => sym(unitLaw(subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)));
+    zero => fun (vertices : C) (pieces : Unit) (m : Nat) (rightVertices : SampleVertices(C, m)) (
+      rightPieces : SampleSubdivisions(C, m, rightVertices)
+    ) (same : vertices = sample_first(C, m, rightVertices)) => sym(
+      unitLaw(subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces))
+    );
     succ previous => subdivision_total_join_step(
       C, G, zero, addG, unitLaw, assoc, edge, k, previous
     );

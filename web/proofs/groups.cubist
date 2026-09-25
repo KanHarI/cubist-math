@@ -30,7 +30,7 @@ def group_carrier(G : Group) = unpack G as (A, structure) return U0 {
 def group_structure(G : Group) =
   pair_induction(
     (fun (H : Group) => GroupStructure(group_carrier(H))),
-    (fun (A : U0) => fun (structure : GroupStructure(A)) => structure), G
+    (fun (A : U0) (structure : GroupStructure(A)) => structure), G
   );
 
 def group_unit(G : Group) =
@@ -85,11 +85,10 @@ def GroupIsomorphism(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B
   exists f : A -> B, GroupMapEvidence(A, multiplyA, B, multiplyB, f);
 
 // Isomorphisms of bundled groups, with the carriers and operations inferred.
-def GroupIso(G : Group, H : Group) =
+def GroupIso(G H : Group) =
   GroupIsomorphism(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H));
 
-def group_iso_forward(G : Group, H : Group, iso : GroupIso(G, H)) :
-  group_carrier(G) -> group_carrier(H) {
+def group_iso_forward(G H : Group, iso : GroupIso(G, H)) : group_carrier(G) -> group_carrier(H) {
   exact sigma_first(
     (group_carrier(G) -> group_carrier(H)),
     GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H)), iso
@@ -152,19 +151,17 @@ def group_induction(
   exact pair_induction(
     P,
     (
-      fun (A : U0) => fun (ops : GroupStructure(A)) => pair_induction(
+      fun (A : U0) (ops : GroupStructure(A)) => pair_induction(
         (fun (ops : GroupStructure(A)) => P(typed(Group, (A, ops)))),
         (
-          fun (unit : A) => fun (
-            data : (exists multiply : A -> A -> A, GroupLaws(A, unit, multiply))
-          ) => pair_induction(
+          fun (unit : A) (data : (exists multiply : A -> A -> A, GroupLaws(A, unit, multiply))) => pair_induction(
             (
               fun (data : (exists multiply : A -> A -> A, GroupLaws(A, unit, multiply))) => P(
                 typed(Group, (A, unit, data))
               )
             ),
             (
-              fun (multiply : A -> A -> A) => fun (laws : GroupLaws(A, unit, multiply)) => step(
+              fun (multiply : A -> A -> A) (laws : GroupLaws(A, unit, multiply)) => step(
                 A, unit, multiply, laws
               )
             ), data
@@ -185,9 +182,9 @@ def group_object_eta(G : Group) :
       ) = H
     ),
     (
-      fun (A : U0) => fun (unit : A) => fun (multiply : A -> A -> A) => fun (
-        laws : GroupLaws(A, unit, multiply)
-      ) => refl(group_object(A, unit, multiply, laws))
+      fun (A : U0) (unit : A) (multiply : A -> A -> A) (laws : GroupLaws(A, unit, multiply)) => refl(
+        group_object(A, unit, multiply, laws)
+      )
     ), G
   );
 }
@@ -196,13 +193,12 @@ def group_object_eta(G : Group) :
 def group_identity_iso(G : Group) : GroupIso(G, G) {
   let identity = fun (x : group_carrier(G)) => x;
   let identityLaw = fun (x : group_carrier(G)) => refl(x);
-  let preserves =
-    fun (x : group_carrier(G)) => fun (y : group_carrier(G)) => refl(group_multiply(G, x, y));
+  let preserves = fun (x y : group_carrier(G)) => refl(group_multiply(G, x, y));
   exact (identity, identity, identityLaw, identityLaw, preserves);
 }
 
 // The canonical map from equality to isomorphism. It computes at reflexivity
 // and uses only transport; univalence is needed for its inverse, not this map.
-def group_idtoiso(G : Group, H : Group, p : G =[Group] H) : GroupIso(G, H) {
-  exact transport(GroupIso(G), G, H, p, group_identity_iso(G));
+def group_idtoiso(G H : Group, p : G =[Group] H) : GroupIso(G, H) {
+  exact along GroupIso(G) by p from group_identity_iso(G);
 }

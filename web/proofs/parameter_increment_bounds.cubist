@@ -2,19 +2,19 @@ import parameter_contour_bounds;
 import sample_magnitude;
 
 def parameter_real_increment(
-  C : U1, F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a : C, b : C, tag : C
+  C F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a b tag : C
 ) =
   coordinate_difference(F, addF, negF, complex_real(F, curve(a)), complex_real(F, curve(b)));
 
 def parameter_imag_increment(
-  C : U1, F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a : C, b : C, tag : C
+  C F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a b tag : C
 ) =
   coordinate_difference(F, addF, negF, complex_imag(F, curve(a)), complex_imag(F, curve(b)));
 
 // Repackage separately proved coordinate bounds for the contour estimate.
 def parameter_coordinate_increment_bounds(
-  C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
-  realWeight : C -> C -> C -> F, imagWeight : C -> C -> C -> F, n : Nat
+  C F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
+  realWeight imagWeight : C -> C -> C -> F, n : Nat
 ) :
   forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
   SampleMagnitudeBounds(
@@ -40,17 +40,13 @@ def parameter_coordinate_increment_bounds(
       C, F, addF, negF, lt, curve, realWeight, imagWeight, k, vertices, tags
     )
   ) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (realBounds : Unit) => fun (
-      imagBounds : Unit
-    ) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
-      tags : SampleTags(C, succ(k))
-    ) => fun (
+    zero => fun (vertices : C) (tags realBounds imagBounds : Unit) => tt;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
       realBounds : SampleMagnitudeBounds(
         C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, succ(k),
         vertices, tags
       )
-    ) => fun (
+    ) (
       imagBounds : SampleMagnitudeBounds(
         C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, succ(k),
         vertices, tags

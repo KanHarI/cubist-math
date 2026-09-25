@@ -4,8 +4,8 @@ import bijection_equality;
 // A left inverse and a right inverse of the same element agree:
 // y = y·1 = y·(x·z) = (y·x)·z = 1·z = z.
 def group_inverse_unique(
-  A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply), x : A, y : A,
-  z : A, leftLaw : multiply(y, x) = unit, rightLaw : multiply(x, z) = unit
+  A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply), x y z : A,
+  leftLaw : multiply(y, x) = unit, rightLaw : multiply(x, z) = unit
 ) :
   y = z {
   exact trans(
@@ -25,8 +25,7 @@ def group_inverse_unique(
 
 def group_inverse_evidence_prop(
   A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply), x : A,
-  p : (exists y : A, GroupInverseLaws(A, unit, multiply, x, y)),
-  q : (exists y : A, GroupInverseLaws(A, unit, multiply, x, y))
+  p q : (exists y : A, GroupInverseLaws(A, unit, multiply, x, y))
 ) :
   p = q {
   let y = sigma_first(A, GroupInverseLaws(A, unit, multiply, x), p);
@@ -51,10 +50,7 @@ def group_inverse_evidence_prop(
 
 // Once the carrier, unit and multiplication are fixed, the law evidence
 // carries no further information. Function extensionality compares laws.
-def group_laws_prop(
-  A : U0, unit : A, multiply : A -> A -> A, p : GroupLaws(A, unit, multiply),
-  q : GroupLaws(A, unit, multiply)
-) :
+def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A, p q : GroupLaws(A, unit, multiply)) :
   p = q {
   let setA = group_set_law(A, unit, multiply, p);
   let assocProp =
@@ -114,8 +110,7 @@ def group_laws_prop(
   )(p, q);
 }
 
-def group_carrier_transport(A : U0, B : U0, p : A = B, x : A) =
-  transport((fun (T : U0) => T), A, B, p, x);
+def group_carrier_transport(A B : U0, p : A = B, x : A) = along((fun (T : U0) => T)) by p from x;
 
 // Multiplication-preserving equivalences preserve units; this is derived, not required.
 def group_isomorphism_preserves_unit(

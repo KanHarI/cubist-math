@@ -1,6 +1,6 @@
 import polynomial_leading;
 
-def polynomial_constant_mul(K : AlgebraicField, a : af_carrier(K), b : af_carrier(K)) :
+def polynomial_constant_mul(K : AlgebraicField, a b : af_carrier(K)) :
   polynomial_constant(K, field_mul(K, a, b)) = polynomial_mul(
     K, polynomial_constant(K, a), polynomial_constant(K, b)
   ) {
@@ -10,15 +10,14 @@ def polynomial_constant_mul(K : AlgebraicField, a : af_carrier(K), b : af_carrie
       K, polynomial_mul(K, polynomial_constant(K, a), polynomial_constant(K, b)), n
     ) {
     intro n;
-    have scaled :
-      series_constant(K, field_mul(K, a, b), n) = field_mul(K, a, series_constant(K, b, n)) {
-      exact induction n as k return (
-        series_constant(K, field_mul(K, a, b), k) = field_mul(K, a, series_constant(K, b, k))
-      ) {
-        zero => refl(field_mul(K, a, b));
-        succ ignored => sym(scalar_mul_zero(K, a));
-      };
-    }
+    have scaled : series_constant(K, field_mul(K, a, b), n) = field_mul(
+      K, a, series_constant(K, b, n)
+    ) := induction n as k return (
+      series_constant(K, field_mul(K, a, b), k) = field_mul(K, a, series_constant(K, b, k))
+    ) {
+      zero => refl(field_mul(K, a, b));
+      succ ignored => sym(scalar_mul_zero(K, a));
+    };
     exact trans(scaled, sym(convolution_constant_left(K, a, n, series_constant(K, b))));
   }
   exact polynomial_coefficient_ext(

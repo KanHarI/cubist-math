@@ -2,13 +2,13 @@ import finite;
 import bijection_equality;
 
 // Transport a decision along two implications; no excluded middle is used.
-def decision_transfer(P : U0, Q : U0, toQ : P -> Q, toP : Q -> P, decision : Decidable(P)) =
+def decision_transfer(P Q : U0, toQ : P -> Q, toP : Q -> P, decision : Decidable(P)) =
   match decision return Decidable(Q) {
     left p => left(toQ(p));
     right noP => right(fun (q : Q) => noP(toP(q)));
   };
 
-def decision_implies(P : U0, Q : U0, decideP : Decidable(P), decideQ : Decidable(Q)) =
+def decision_implies(P Q : U0, decideP : Decidable(P), decideQ : Decidable(Q)) =
   match decideP return Decidable(P -> Q) {
     left p => match decideQ return Decidable(P -> Q) {
       left q => left(fun (ignored : P) => q);
@@ -18,8 +18,7 @@ def decision_implies(P : U0, Q : U0, decideP : Decidable(P), decideQ : Decidable
   };
 
 // A proposition has at most one decision, including the negative evidence.
-def decision_prop(P : U0, prop : Proposition(P), d : Decidable(P), e : Decidable(P)) =
-  match d as v return (v = e) {
+def decision_prop(P : U0, prop : Proposition(P), d e : Decidable(P)) = match d as v return (v = e) {
     left p => match e as w return (typed(Decidable(P), left(p)) = w) {
       left q => cong((fun (r : P) => typed(Decidable(P), left(r))), prop(p, q));
       right noP => typed(
@@ -48,8 +47,8 @@ def finite_decision_step(
   match head return Decidable(forall x : Fin(succ(n)), P(x)) {
     left first => match tail return Decidable(forall x : Fin(succ(n)), P(x)) {
       left rest => left(fun (x : Fin(succ(n))) => match typed(Unit or Fin(n), x) as z return P(z) {
-          left u => transport(
-            (fun (v : Unit) => P(typed(Unit or Fin(n), left(v)))), tt, u, unit_equal(u), first
+          left u => (
+            along((fun (v : Unit) => P(typed(Unit or Fin(n), left(v))))) by unit_equal(u) from first
           );
           right y => typed((forall t : Fin(n), P(typed(Unit or Fin(n), right(t)))), rest)(y);
         });
@@ -71,10 +70,10 @@ def finite_forall_decidable(n : Nat) =
     forall P : Fin(k) -> U0, (forall x : Fin(k), Decidable(P(x)))
     -> Decidable(forall x : Fin(k), P(x))
   ) {
-    zero => fun (P : Fin(0) -> U0) => fun (decide : (forall x : Fin(0), Decidable(P(x)))) => typed(
+    zero => fun (P : Fin(0) -> U0) (decide : (forall x : Fin(0), Decidable(P(x)))) => typed(
       Decidable(forall x : Fin(0), P(x)), left(fun (x : Fin(0)) => typed(P(x), absurd(x)))
     );
-    succ previous => fun (P : Fin(succ(k)) -> U0) => fun (
+    succ previous => fun (P : Fin(succ(k)) -> U0) (
       decide : (forall x : Fin(succ(k)), Decidable(P(x)))
     ) => finite_decision_step(
       k, P, decide(typed(Unit or Fin(k), left(tt))),

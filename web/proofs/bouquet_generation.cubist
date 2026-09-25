@@ -24,34 +24,24 @@ def bouquet_generated_unappend(
       Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), p,
       inverse(U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a))
     );
-  exact transport(
-    BouquetGenerated(A),
-    append_path(
-      Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), before, bouquet_generator(A, a)
-    ), p,
-    append_path_right_inverse(
-      Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a), p
-    ),
-    generated_snoc(
-      A, Bouquet(A), bouquet_base(A), bouquet_generator(A), before, represented,
-      typed(Signed(A), left(a))
-    )
+  exact along BouquetGenerated(A) by append_path_right_inverse(
+    Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a), p
+  ) from generated_snoc(
+    A, Bouquet(A), bouquet_base(A), bouquet_generator(A), before, represented,
+    typed(Signed(A), left(a))
   );
 }
 
 def bouquet_generation_family(A : U0, x : Bouquet(A)) = bouquet_code(A, x) -> U0;
 
 def bouquet_generation_spoke(A : U0) :
-  transport(
-    bouquet_generation_family(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A),
-    BouquetGenerated(A)
-  ) = BouquetGenerated(A) {
+  (along bouquet_generation_family(A) by bouquet_spoke(A) from BouquetGenerated(A)) = BouquetGenerated(
+    A
+  ) {
   exact FunExt(
     U1, BouquetLoops(A), (fun (p : BouquetLoops(A)) => typed(U1, U0)),
-    transport(
-      bouquet_generation_family(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A),
-      BouquetGenerated(A)
-    ), BouquetGenerated(A),
+    along bouquet_generation_family(A) by bouquet_spoke(A) from BouquetGenerated(A),
+    BouquetGenerated(A),
     (
       fun (p : BouquetLoops(A)) => trans(
         transport_predicate(
@@ -64,16 +54,13 @@ def bouquet_generation_spoke(A : U0) :
 }
 
 def bouquet_generation_edge(A : U0, a : A) :
-  transport(
-    bouquet_generation_family(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a),
-    BouquetGenerated(A)
-  ) = BouquetGenerated(A) {
+  (along bouquet_generation_family(A) by bouquet_edge(A, a) from BouquetGenerated(A)) = BouquetGenerated(
+    A
+  ) {
   exact FunExt(
     U1, BouquetLoops(A), (fun (p : BouquetLoops(A)) => typed(U1, U0)),
-    transport(
-      bouquet_generation_family(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a),
-      BouquetGenerated(A)
-    ), BouquetGenerated(A),
+    along bouquet_generation_family(A) by bouquet_edge(A, a) from BouquetGenerated(A),
+    BouquetGenerated(A),
     (
       fun (p : BouquetLoops(A)) => trans(
         transport_predicate(
@@ -112,16 +99,16 @@ def bouquet_generation_edge(A : U0, a : A) :
 
 def bouquet_generation_edges(A : U0, label : Unit or A) =
   match label as e return (
-    transport(
-      bouquet_generation_family(A), bouquet_base(A), bouquet_tip(A), meridian(Unit or A, e),
-      BouquetGenerated(A)
-    ) = BouquetGenerated(A)
+    (along bouquet_generation_family(A) by meridian(Unit or A, e) from BouquetGenerated(A)) = BouquetGenerated(
+      A
+    )
   ) {
     left u => unit_induction(
       (
-        fun (v : Unit) => transport(
-          bouquet_generation_family(A), bouquet_base(A), bouquet_tip(A),
-          meridian(Unit or A, typed(Unit or A, left(v))), BouquetGenerated(A)
+        fun (v : Unit) => (
+          along bouquet_generation_family(A) by meridian(Unit or A, typed(Unit or A, left(v))) from BouquetGenerated(
+            A
+          )
         ) = BouquetGenerated(A)
       ), bouquet_generation_spoke(A), u
     );
@@ -139,20 +126,16 @@ def bouquet_encoded_generated(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :
   exact based_induction(
     U1, U0, Bouquet(A), bouquet_base(A),
     (
-      fun (point : Bouquet(A)) => fun (path : bouquet_base(A) = point) => bouquet_generation_predicate(
+      fun (point : Bouquet(A)) (path : bouquet_base(A) = point) => bouquet_generation_predicate(
         A, point, bouquet_encode(A, point, path)
       )
     ),
-    transport(
-      BouquetGenerated(A), refl(bouquet_base(A)),
-      bouquet_encode(A, bouquet_base(A), refl(bouquet_base(A))),
-      sym(
-        transport_constant(
-          Bouquet(A), BouquetLoops(A), bouquet_base(A), bouquet_base(A), refl(bouquet_base(A)),
-          refl(bouquet_base(A))
-        )
-      ), generated_identity(A, Bouquet(A), bouquet_base(A), bouquet_generator(A))
-    ), x, p
+    along BouquetGenerated(A) by sym(
+      transport_constant(
+        Bouquet(A), BouquetLoops(A), bouquet_base(A), bouquet_base(A), refl(bouquet_base(A)),
+        refl(bouquet_base(A))
+      )
+    ) from generated_identity(A, Bouquet(A), bouquet_base(A), bouquet_generator(A)), x, p
   );
 }
 
@@ -163,9 +146,8 @@ def every_bouquet_loop_generated(A : U0, p : BouquetLoops(A)) :
   Mere(
     exists word : Word(A), eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word) = p
   ) {
-  exact transport(
-    BouquetGenerated(A), bouquet_encode(A, bouquet_base(A), p), p,
-    bouquet_decode_encode(A, bouquet_base(A), p), bouquet_encoded_generated(A, bouquet_base(A), p)
+  exact along BouquetGenerated(A) by bouquet_decode_encode(A, bouquet_base(A), p) from bouquet_encoded_generated(
+    A, bouquet_base(A), p
   );
 }
 
@@ -184,9 +166,8 @@ def bouquet_connection_family(A : U0, x : Bouquet(A)) = Mere(bouquet_base(A) = x
 def bouquet_connection_edges(A : U0, label : Unit or A) =
   mere_is_prop(
     (bouquet_base(A) = bouquet_tip(A)),
-    transport(
-      bouquet_connection_family(A), bouquet_base(A), bouquet_tip(A), meridian(Unit or A, label),
-      merely((bouquet_base(A) = bouquet_base(A)), refl(bouquet_base(A)))
+    along bouquet_connection_family(A) by meridian(Unit or A, label) from merely(
+      (bouquet_base(A) = bouquet_base(A)), refl(bouquet_base(A))
     ), merely((bouquet_base(A) = bouquet_tip(A)), bouquet_spoke(A))
   );
 
@@ -199,7 +180,7 @@ def bouquet_connected(A : U0, x : Bouquet(A)) : Mere(bouquet_base(A) = x) {
 }
 
 def bouquet_path_generated(
-  A : U0, x : Bouquet(A), y : Bouquet(A), leftConnector : bouquet_base(A) = x,
+  A : U0, x y : Bouquet(A), leftConnector : bouquet_base(A) = x,
   rightConnector : bouquet_base(A) = y, p : x = y
 ) :
   Mere(

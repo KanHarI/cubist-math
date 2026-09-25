@@ -12,8 +12,8 @@ def CutTruth(b : CutBool) = match b return U0 {
   };
 
 def cut_truth_prop(b : CutBool) = match b as value return FieldProp(CutTruth(value)) {
-    left yes => fun (u : Unit) => fun (v : Unit) => trans(sym(unit_equal(u)), unit_equal(v));
-    right no => fun (u : Void) => fun (v : Void) => typed((u = v), absurd(u));
+    left yes => fun (u v : Unit) => trans(sym(unit_equal(u)), unit_equal(v));
+    right no => fun (u v : Void) => typed((u = v), absurd(u));
   };
 
 def truth_of_decision(P : U0, decision : Decidable(P)) = match decision return CutBool {
@@ -121,16 +121,12 @@ def dedekind_to_boolean(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) :
   let lowerPath = classical_cut_predicate_correct(Q, lower, cut_lower_prop(Q, ltQ, cut));
   let upperPath = classical_cut_predicate_correct(Q, upper, cut_upper_prop(Q, ltQ, cut));
   let lowerLaws =
-    transport(
-      (fun (predicate : Q -> U0) => CutLaws(Q, ltQ, predicate, upper)), lower,
-      decoded_cut_predicate(Q, lowerBool), sym(lowerPath), cut_laws(Q, ltQ, cut)
+    along((fun (predicate : Q -> U0) => CutLaws(Q, ltQ, predicate, upper))) by sym(lowerPath) from cut_laws(
+      Q, ltQ, cut
     );
   exact (
     lowerBool, upperBool,
-    transport(
-      CutLaws(Q, ltQ, decoded_cut_predicate(Q, lowerBool)), upper,
-      decoded_cut_predicate(Q, upperBool), sym(upperPath), lowerLaws
-    )
+    along CutLaws(Q, ltQ, decoded_cut_predicate(Q, lowerBool)) by sym(upperPath) from lowerLaws
   );
 }
 

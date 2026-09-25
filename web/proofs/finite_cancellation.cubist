@@ -6,12 +6,12 @@ def head(A : U0) = typed(Unit or A, left(tt));
 
 def tail(A : U0, a : A) = typed(Unit or A, right(a));
 
-def swap_tail(A : U0, a : A, b : A, d : Decidable(a = b)) = match d return (Unit or A) {
+def swap_tail(A : U0, a b : A, d : Decidable(a = b)) = match d return (Unit or A) {
     left p => head(A);
     right no => tail(A, b);
   };
 
-def swap_tail_equal(A : U0, a : A, b : A, d : Decidable(a = b), p : a = b) =
+def swap_tail_equal(A : U0, a b : A, d : Decidable(a = b), p : a = b) =
   match d as decision return (swap_tail(A, a, b, decision) = head(A)) {
     left yes => refl(head(A));
     right no => typed(
@@ -19,7 +19,7 @@ def swap_tail_equal(A : U0, a : A, b : A, d : Decidable(a = b), p : a = b) =
     );
   };
 
-def swap_tail_different(A : U0, a : A, b : A, d : Decidable(a = b), no : (a = b) -> Void) =
+def swap_tail_different(A : U0, a b : A, d : Decidable(a = b), no : (a = b) -> Void) =
   match d as decision return (swap_tail(A, a, b, decision) = tail(A, b)) {
     left yes => typed(
       (swap_tail(A, a, b, typed(Decidable(a = b), left(yes))) = tail(A, b)), absurd(no(yes))
@@ -57,16 +57,14 @@ def swap_right_twice(
     };
   };
 
-def swap(
-  A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A, x : Unit or A
-) =
+def swap(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen x : Unit or A) =
   match chosen return (Unit or A) {
     left u => x;
     right a => swap_right(A, decide, a, x);
   };
 
 def swap_twice(
-  A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A, x : Unit or A
+  A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen x : Unit or A
 ) =
   match chosen as c return (swap(A, decide, c, swap(A, decide, c, x)) = x) {
     left u => refl(x);
@@ -114,13 +112,12 @@ def not_head_tail_path(A : U0, x : Unit or A) =
   };
 
 def inverse_injective(
-  A : U0, B : U0, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x), x : A, y : A,
-  p : f(x) = f(y)
+  A B : U0, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x), x y : A, p : f(x) = f(y)
 ) =
   trans(sym(eta(x)), trans(cong(g, p), eta(y)));
 
 def preserves_tail(
-  A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+  A B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A,
   bad : f(tail(A, a)) = head(B)
 ) =
@@ -134,19 +131,19 @@ def preserves_tail(
   );
 
 def restrict_tail(
-  A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+  A B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A
 ) =
   not_head_tail(B, f(tail(A, a)), preserves_tail(A, B, f, g, eta, fixed, a));
 
 def restrict_tail_path(
-  A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+  A B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A
 ) =
   not_head_tail_path(B, f(tail(A, a)), preserves_tail(A, B, f, g, eta, fixed, a));
 
 def restriction_inverse(
-  A : U0, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+  A B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
   eta : (forall x : Unit or A, g(f(x)) = x), eps : (forall y : Unit or B, f(g(y)) = y),
   fixed_f : f(head(A)) = head(B), fixed_g : g(head(B)) = head(A), a : A
 ) :
@@ -162,7 +159,7 @@ def restriction_inverse(
 }
 
 def restrict_bijection(
-  A : U0, B : U0, e : Bijection(Unit or A, Unit or B),
+  A B : U0, e : Bijection(Unit or A, Unit or B),
   fixed : forward(Unit or A, Unit or B, e, head(A)) = head(B)
 ) :
   Bijection(A, B) {
@@ -170,9 +167,7 @@ def restrict_bijection(
   let g = backward(Unit or A, Unit or B, e);
   let eta = left_inverse(Unit or A, Unit or B, e);
   let eps = right_inverse(Unit or A, Unit or B, e);
-  have fixed_g : g(head(B)) = head(A) {
-    exact trans(sym(cong(g, fixed)), eta(head(A)));
-  }
+  have fixed_g : g(head(B)) = head(A) := trans(sym(cong(g, fixed)), eta(head(A)));
   exact (
     restrict_tail(A, B, f, g, eta, fixed), restrict_tail(B, A, g, f, eps, fixed_g),
     restriction_inverse(A, B, f, g, eta, eps, fixed, fixed_g),
@@ -180,7 +175,7 @@ def restrict_bijection(
   );
 }
 
-def cancel_finite_successor(n : Nat, m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m)))) :
+def cancel_finite_successor(n m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m)))) :
   Bijection(Fin(n), Fin(m)) {
   let image = forward(Fin(succ(n)), Fin(succ(m)), e, head(Fin(n)));
   let adjusted =

@@ -42,9 +42,7 @@ def polynomial_from_coordinates_zero(
   );
 }
 
-def polynomial_from_coordinates_add(
-  K : AlgebraicField, n : Nat, a : Fin(n) -> af_carrier(K), b : Fin(n) -> af_carrier(K)
-) :
+def polynomial_from_coordinates_add(K : AlgebraicField, n : Nat, a b : Fin(n) -> af_carrier(K)) :
   polynomial_from_coordinates(K, n, (fun (i : Fin(n)) => field_add(K, a(i), b(i)))) = polynomial_add(
     K, polynomial_from_coordinates(K, n, a), polynomial_from_coordinates(K, n, b)
   ) {
@@ -55,24 +53,22 @@ def polynomial_from_coordinates_add(
     series_coordinates(K, n, series_from_coordinates(K, n, sum)) = series_coordinates(
       K, n, series_add(K, f, g)
     ) {
-    have right : series_coordinates(K, n, series_add(K, f, g)) = sum {
-      exact trans(
-        series_coordinates_add(K, n, f, g),
-        trans(
-          cong(
-            (
-              fun (u : Fin(n) -> af_carrier(K)) => fun (i : Fin(n)) => field_add(
-                K, u(i), series_coordinates(K, n, g, i)
-              )
-            ), series_coordinates_roundtrip(K, n, a)
-          ),
-          cong(
-            (fun (v : Fin(n) -> af_carrier(K)) => fun (i : Fin(n)) => field_add(K, a(i), v(i))),
-            series_coordinates_roundtrip(K, n, b)
-          )
+    have right : series_coordinates(K, n, series_add(K, f, g)) = sum := trans(
+      series_coordinates_add(K, n, f, g),
+      trans(
+        cong(
+          (
+            fun (u : Fin(n) -> af_carrier(K)) (i : Fin(n)) => field_add(
+              K, u(i), series_coordinates(K, n, g, i)
+            )
+          ), series_coordinates_roundtrip(K, n, a)
+        ),
+        cong(
+          (fun (v : Fin(n) -> af_carrier(K)) (i : Fin(n)) => field_add(K, a(i), v(i))),
+          series_coordinates_roundtrip(K, n, b)
         )
-      );
-    }
+      )
+    );
     exact trans(series_coordinates_roundtrip(K, n, sum), sym(right));
   }
   exact polynomial_ext(
@@ -98,25 +94,20 @@ def polynomial_from_coordinates_scale(
   let f = series_from_coordinates(K, n, b);
   let scaled = fun (i : Fin(n)) => field_mul(K, a, b(i));
   let q = polynomial_scale(K, a, polynomial_from_coordinates(K, n, b));
-  have coefficientsQ : polynomial_coefficients(K, q) = series_scale(K, a, f) {
-    exact FunExt(
-      U0, Nat, (fun (j : Nat) => af_carrier(K)), polynomial_coefficients(K, q),
-      series_scale(K, a, f),
-      polynomial_scale_coefficient(K, a, polynomial_from_coordinates(K, n, b))
-    );
-  }
-  have coordinatesQ : series_coordinates(K, n, polynomial_coefficients(K, q)) = scaled {
-    exact trans(
-      cong(series_coordinates(K, n), coefficientsQ),
-      trans(
-        series_coordinates_scale(K, a, n, f),
-        cong(
-          (fun (v : Fin(n) -> af_carrier(K)) => fun (i : Fin(n)) => field_mul(K, a, v(i))),
-          series_coordinates_roundtrip(K, n, b)
-        )
+  have coefficientsQ : polynomial_coefficients(K, q) = series_scale(K, a, f) := FunExt(
+    U0, Nat, (fun (j : Nat) => af_carrier(K)), polynomial_coefficients(K, q), series_scale(K, a, f),
+    polynomial_scale_coefficient(K, a, polynomial_from_coordinates(K, n, b))
+  );
+  have coordinatesQ : series_coordinates(K, n, polynomial_coefficients(K, q)) = scaled := trans(
+    cong(series_coordinates(K, n), coefficientsQ),
+    trans(
+      series_coordinates_scale(K, a, n, f),
+      cong(
+        (fun (v : Fin(n) -> af_carrier(K)) (i : Fin(n)) => field_mul(K, a, v(i))),
+        series_coordinates_roundtrip(K, n, b)
       )
-    );
-  }
+    )
+  );
   exact polynomial_ext(
     K, polynomial_from_coordinates(K, n, scaled), q,
     series_coordinates_injective(
@@ -130,7 +121,7 @@ def polynomial_from_coordinates_scale(
 }
 
 def polynomial_evaluation_linear(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat
+  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat
 ) :
   LinearMap(K, CoordinateSpace(K, n), field_vector_space(K, L, e)) {
   let F =
@@ -141,8 +132,7 @@ def polynomial_evaluation_linear(
   have additive :
     forall a : Fin(n) -> af_carrier(K), forall b : Fin(n) -> af_carrier(K),
     F((fun (i : Fin(n)) => field_add(K, a(i), b(i)))) = field_add(L, F(a), F(b)) {
-    intro a;
-    intro b;
+    intro a b;
     exact with unfolding [] {
       trans(
         cong(E, polynomial_from_coordinates_add(K, n, a, b)),
@@ -157,8 +147,7 @@ def polynomial_evaluation_linear(
     F((fun (i : Fin(n)) => field_mul(K, a, b(i)))) = field_mul(
       L, field_embedding_map(K, L, e, a), F(b)
     ) {
-    intro a;
-    intro b;
+    intro a b;
     exact with unfolding [] {
       trans(
         cong(E, polynomial_from_coordinates_scale(K, n, a, b)),

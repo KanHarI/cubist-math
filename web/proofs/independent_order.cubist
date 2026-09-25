@@ -4,25 +4,21 @@ import independent_unions;
 // its proofs come from the scalar field being a set.
 def independence_is_prop(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
-  p : LinearlyIndependent(K, V, P), q : LinearlyIndependent(K, V, P)
+  p q : LinearlyIndependent(K, V, P)
 ) :
   p = q {
   exact path(
     (fun (t : Interval) => LinearlyIndependent(K, V, P)),
     (
-      fun (t : Interval) => fun (n : Nat) => fun (vectors : Fin(n) -> vector_carrier(K, V)) => fun (
+      fun (t : Interval) (n : Nat) (vectors : Fin(n) -> vector_carrier(K, V)) (
         distinct : (forall i : Fin(n), forall j : Fin(n), vectors(i) = vectors(j) -> i = j)
-      ) => fun (members : (forall i : Fin(n), P(vectors(i)))) => fun (
-        coefficients : Fin(n) -> af_carrier(K)
-      ) => fun (vanishes : linear_combination(K, V, n, vectors, coefficients) = vector_zero(K, V)) => fun (
-        i : Fin(n)
-      ) => at(
-        af_set(
-          K, coefficients(i), af_zero(af_carrier(K), af_operations(K)),
-          p(n, vectors, distinct, members, coefficients, vanishes, i),
-          q(n, vectors, distinct, members, coefficients, vanishes, i)
-        ), t
-      )
+      ) (members : (forall i : Fin(n), P(vectors(i)))) (coefficients : Fin(n) -> af_carrier(K)) (
+        vanishes : linear_combination(K, V, n, vectors, coefficients) = vector_zero(K, V)
+      ) (i : Fin(n)) => af_set(
+        K, coefficients(i), af_zero(af_carrier(K), af_operations(K)),
+        p(n, vectors, distinct, members, coefficients, vanishes, i),
+        q(n, vectors, distinct, members, coefficients, vanishes, i)
+      ) @ t
     )
   );
 }
@@ -47,7 +43,7 @@ def independent_prop(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubs
 }
 
 def independent_ext(
-  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V), T : IndependentSubset(K, V),
+  K : AlgebraicField, V : VectorSpace(K), S T : IndependentSubset(K, V),
   same : independent_members(K, V, S) = independent_members(K, V, T)
 ) :
   S =[IndependentSubset(K, V)] T {
@@ -61,15 +57,13 @@ def independent_ext(
   );
 }
 
-def IndependentIncluded(
-  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V), T : IndependentSubset(K, V)
-) =
+def IndependentIncluded(K : AlgebraicField, V : VectorSpace(K), S T : IndependentSubset(K, V)) =
   PredicateIncluded(
     vector_carrier(K, V), independent_members(K, V, S), independent_members(K, V, T)
   );
 
 def independent_inclusion_prop(
-  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V), T : IndependentSubset(K, V)
+  K : AlgebraicField, V : VectorSpace(K), S T : IndependentSubset(K, V)
 ) :
   Proposition(IndependentIncluded(K, V, S, T)) {
   exact forall_prop(
@@ -90,26 +84,23 @@ def independent_inclusion_prop(
 
 def independent_inclusion_refl(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) :
   IndependentIncluded(K, V, S, S) {
-  intro x;
-  intro member;
+  intro x member;
   exact member;
 }
 
 def independent_inclusion_trans(
-  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V), T : IndependentSubset(K, V),
-  R : IndependentSubset(K, V), st : IndependentIncluded(K, V, S, T),
-  tr : IndependentIncluded(K, V, T, R)
+  K : AlgebraicField, V : VectorSpace(K), S T R : IndependentSubset(K, V),
+  st : IndependentIncluded(K, V, S, T), tr : IndependentIncluded(K, V, T, R)
 ) :
   IndependentIncluded(K, V, S, R) {
-  intro x;
-  intro member;
+  intro x member;
   exact tr(x, st(x, member));
 }
 
 // Univalence identifies mutually included predicates; proof irrelevance then
 // identifies the complete independent-subset records, including their laws.
 def independent_inclusion_antisymmetric(
-  K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V), T : IndependentSubset(K, V),
+  K : AlgebraicField, V : VectorSpace(K), S T : IndependentSubset(K, V),
   st : IndependentIncluded(K, V, S, T), ts : IndependentIncluded(K, V, T, S)
 ) :
   S =[IndependentSubset(K, V)] T {

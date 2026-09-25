@@ -31,10 +31,8 @@ def sample_tagged_join_step(
   let tailTags = field_snd(C, SampleTags(C, n), tags);
   let joined = join_vertices(C, n, tail, m, rightVertices);
   let joinedTags = join_tags(C, n, tailTags, m, rightTags);
-  have data :
-    condition(a, sample_first(C, n, tail), tag) and SampleTagged(C, condition, n, tail, tailTags) {
-    exact valid;
-  }
+  have data : condition(a, sample_first(C, n, tail), tag)
+  and SampleTagged(C, condition, n, tail, tailTags) := valid;
   obtain (headValid, tailValid) = data;
   let firstPath = join_vertices_first(C, n, tail, m, rightVertices, same);
   exact typed(
@@ -43,10 +41,8 @@ def sample_tagged_join_step(
       and SampleTagged(C, condition, n + m, joined, joinedTags)
     ),
     (
-      transport(
-        (fun (b : C) => condition(a, b, tag)), sample_first(C, n, tail),
-        sample_first(C, n + m, joined), sym(firstPath), headValid
-      ), previous(tail, tailTags, m, rightVertices, rightTags, same, tailValid, rightValid)
+      along((fun (b : C) => condition(a, b, tag))) by sym(firstPath) from headValid,
+      previous(tail, tailTags, m, rightVertices, rightTags, same, tailValid, rightValid)
     )
   );
 }
@@ -72,11 +68,9 @@ def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
       join_tags(C, k, tags, m, rightTags)
     )
   ) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (m : Nat) => fun (
-      rightVertices : SampleVertices(C, m)
-    ) => fun (rightTags : SampleTags(C, m)) => fun (
-      same : vertices = sample_first(C, m, rightVertices)
-    ) => fun (valid : Unit) => fun (
+    zero => fun (vertices : C) (tags : Unit) (m : Nat) (rightVertices : SampleVertices(C, m)) (
+      rightTags : SampleTags(C, m)
+    ) (same : vertices = sample_first(C, m, rightVertices)) (valid : Unit) (
       rightValid : SampleTagged(C, condition, m, rightVertices, rightTags)
     ) => rightValid;
     succ previous => sample_tagged_join_step(C, condition, k, previous);
@@ -84,7 +78,7 @@ def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
 }
 
 def SubdivisionTaggedValid(
-  C : U1, condition : C -> C -> C -> U0, a : C, b : C, piece : SampleSubdivision(C, a, b)
+  C : U1, condition : C -> C -> C -> U0, a b : C, piece : SampleSubdivision(C, a, b)
 ) =
   SampleTagged(
     C, condition, subdivision_count(C, a, b, piece), subdivision_vertices(C, a, b, piece),
@@ -92,7 +86,7 @@ def SubdivisionTaggedValid(
   );
 
 def subdivision_tagged_valid_join(
-  C : U1, condition : C -> C -> C -> U0, a : C, b : C, c : C, left : SampleSubdivision(C, a, b),
+  C : U1, condition : C -> C -> C -> U0, a b c : C, left : SampleSubdivision(C, a, b),
   right : SampleSubdivision(C, b, c), validLeft : SubdivisionTaggedValid(C, condition, a, b, left),
   validRight : SubdivisionTaggedValid(C, condition, b, c, right)
 ) :
@@ -101,18 +95,14 @@ def subdivision_tagged_valid_join(
   let vertices = subdivision_vertices(C, a, b, left);
   let m = subdivision_count(C, b, c, right);
   let rightVertices = subdivision_vertices(C, b, c, right);
-  have lastLeft : sample_last(C, n, vertices) = b {
-    exact field_snd(
-      (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left)
-    );
-  }
-  have firstRight : sample_first(C, m, rightVertices) = b {
-    exact field_fst(
-      (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right)
-    );
-  }
+  have lastLeft : sample_last(C, n, vertices) = b := field_snd(
+    (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
+    subdivision_endpoints(C, a, b, left)
+  );
+  have firstRight : sample_first(C, m, rightVertices) = b := field_fst(
+    (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
+    subdivision_endpoints(C, b, c, right)
+  );
   exact sample_tagged_join(
     C, condition, n, vertices, subdivision_tags(C, a, b, left), m, rightVertices,
     subdivision_tags(C, b, c, right), trans(lastLeft, sym(firstRight)), validLeft, validRight

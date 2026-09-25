@@ -18,7 +18,7 @@ def extension_degree_specification(
   dimension_specification(K, ExtensionVectorSpace(K, E), finite);
 
 def extension_degree_unique(
-  K : AlgebraicField, E : FieldExt(K), m : Nat, n : Nat, first : ExtensionDegree(K, E, m),
+  K : AlgebraicField, E : FieldExt(K), m n : Nat, first : ExtensionDegree(K, E, m),
   second : ExtensionDegree(K, E, n)
 ) :
   m = n {
@@ -29,7 +29,7 @@ def finite_extension_prop(K : AlgebraicField, E : FieldExt(K)) =
   finite_dimensional_prop(K, ExtensionVectorSpace(K, E));
 
 def extension_degree_evidence_independent(
-  K : AlgebraicField, E : FieldExt(K), first : FiniteExtension(K, E), second : FiniteExtension(K, E)
+  K : AlgebraicField, E : FieldExt(K), first second : FiniteExtension(K, E)
 ) :
   extension_degree(K, E, first) = extension_degree(K, E, second) {
   exact dimension_evidence_independent(K, ExtensionVectorSpace(K, E), first, second);
@@ -63,28 +63,27 @@ def identity_extension_finite(K : AlgebraicField) :
 // The triangle is a path of embeddings. Transporting the product basis
 // along that path handles a specified K -> M embedding coherently.
 def field_tower_basis_triangle(
-  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
-  d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c),
-  m : Nat, n : Nat, lower : FiniteBasis(K, field_vector_space(K, L, e), m),
+  K L M : AlgebraicField, e : FieldEmbedding(K, L), d : FieldEmbedding(L, M),
+  c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c), m n : Nat,
+  lower : FiniteBasis(K, field_vector_space(K, L, e), m),
   upper : FiniteBasis(L, field_vector_space(L, M, d), n)
 ) :
   FiniteBasis(K, field_vector_space(K, M, c), multiply_count(n, m)) {
-  exact transport(
+  exact along(
     (
       fun (embedding : FieldEmbedding(K, M)) => FiniteBasis(
         K, field_vector_space(K, M, embedding), multiply_count(n, m)
       )
-    ), field_embedding_compose(K, L, M, e, d), c, triangle,
-    field_tower_basis(K, L, M, e, d, m, n, lower, upper)
-  );
+    )
+  ) by triangle from field_tower_basis(K, L, M, e, d, m, n, lower, upper);
 }
 
 // The tower law first holds as a proposition about degrees. Truncated basis
 // witnesses are eliminated only into this proposition; no basis is selected.
 def extension_degree_tower(
-  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
-  d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c),
-  m : Nat, n : Nat, lower : ExtensionDegree(K, embedding_as_extension(K, L, e), m),
+  K L M : AlgebraicField, e : FieldEmbedding(K, L), d : FieldEmbedding(L, M),
+  c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c), m n : Nat,
+  lower : ExtensionDegree(K, embedding_as_extension(K, L, e), m),
   upper : ExtensionDegree(L, embedding_as_extension(L, M, d), n)
 ) :
   ExtensionDegree(K, embedding_as_extension(K, M, c), multiply_count(n, m)) {
@@ -109,8 +108,8 @@ def extension_degree_tower(
 }
 
 def finite_extension_tower(
-  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
-  d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c),
+  K L M : AlgebraicField, e : FieldEmbedding(K, L), d : FieldEmbedding(L, M),
+  c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c),
   lower : FiniteExtension(K, embedding_as_extension(K, L, e)),
   upper : FiniteExtension(L, embedding_as_extension(L, M, d))
 ) :
@@ -130,8 +129,8 @@ def finite_extension_tower(
 // [M:K] = [M:L] * [L:K], for any evidence that the three extensions are finite.
 // In particular the evidence for M/K may be the one just constructed above.
 def tower_law(
-  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
-  d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c),
+  K L M : AlgebraicField, e : FieldEmbedding(K, L), d : FieldEmbedding(L, M),
+  c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c),
   lower : FiniteExtension(K, embedding_as_extension(K, L, e)),
   upper : FiniteExtension(L, embedding_as_extension(L, M, d)),
   whole : FiniteExtension(K, embedding_as_extension(K, M, c))
@@ -156,8 +155,8 @@ def tower_law(
 // Degree respects paths of complete extensions, including those obtained
 // by univalence from an isomorphism over the base field.
 def extension_degree_path(
-  K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), p : E =[FieldExt(K)] F,
-  finiteE : FiniteExtension(K, E), finiteF : FiniteExtension(K, F)
+  K : AlgebraicField, E F : FieldExt(K), p : E =[FieldExt(K)] F, finiteE : FiniteExtension(K, E),
+  finiteF : FiniteExtension(K, F)
 ) :
   extension_degree(K, E, finiteE) = extension_degree(K, F, finiteF) {
   exact dimension_path(
@@ -169,7 +168,7 @@ def extension_degree_path(
 // Univalence applies to the full extension structure, so this comparison
 // preserves the distinguished embedding of the base field as well.
 def extension_degree_iso(
-  K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), iso : ExtensionIso(K, E, F),
+  K : AlgebraicField, E F : FieldExt(K), iso : ExtensionIso(K, E, F),
   finiteE : FiniteExtension(K, E), finiteF : FiniteExtension(K, F)
 ) :
   extension_degree(K, E, finiteE) = extension_degree(K, F, finiteF) {
@@ -177,14 +176,13 @@ def extension_degree_iso(
 }
 
 def finite_extension_iso(
-  K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), iso : ExtensionIso(K, E, F),
-  finite : FiniteExtension(K, E)
+  K : AlgebraicField, E F : FieldExt(K), iso : ExtensionIso(K, E, F), finite : FiniteExtension(K, E)
 ) :
   FiniteExtension(K, F) {
-  exact transport(FiniteExtension(K), E, F, extension_iso_path(K, E, F, iso), finite);
+  exact along FiniteExtension(K) by extension_iso_path(K, E, F, iso) from finite;
 }
 
-def field_embedding_linear(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def field_embedding_linear(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
   LinearMap(K, ScalarSpace(K), field_vector_space(K, L, e)) {
   obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
   exact (field_embedding_map(K, L, e), add, mul);
@@ -205,9 +203,7 @@ def extension_basis_positive(
   let outV = basis_coordinates(K, V, n, basis);
   let h = linear_compose(K, C, V, N, intoV, outV);
   have injective : CoordinateInjection(K, 1, n, h) {
-    intro x;
-    intro y;
-    intro same;
+    intro x y same;
     let sameV =
       linear_iso_injective(
         K, V, N, linear_iso_inverse(K, N, V, basis), linear_map(K, C, V, intoV, x),
@@ -228,8 +224,7 @@ def extension_dimension_not_zero(
 ) :
   Void {
   exact mere_eliminate(
-    ExtensionDegreeWitness(K, E, 0), Void,
-    (fun (a : Void) => fun (b : Void) => typed((a = b), absurd(a))),
+    ExtensionDegreeWitness(K, E, 0), Void, (fun (a b : Void) => typed((a = b), absurd(a))),
     extension_basis_positive(K, E, 0), degree
   );
 }

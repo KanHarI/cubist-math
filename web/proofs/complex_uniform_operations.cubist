@@ -3,11 +3,11 @@ import complex_curves;
 import complex_limits;
 
 def complex_close_add(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : Complex(F), y : Complex(F),
-  u : Complex(F), v : Complex(F), epsilon : F, delta : F,
-  xy : ComplexClose(F, addF, lt, x, y, epsilon), uv : ComplexClose(F, addF, lt, u, v, delta)
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y u v : Complex(F),
+  epsilon delta : F, xy : ComplexClose(F, addF, lt, x, y, epsilon),
+  uv : ComplexClose(F, addF, lt, u, v, delta)
 ) :
   ComplexClose(
     F, addF, lt, complex_add(F, addF, x, u), complex_add(F, addF, y, v), addF(epsilon, delta)
@@ -29,12 +29,11 @@ def complex_close_add(
 // The common input radius is constructed from the two supplied moduli.
 // There is no comparison or choice of which modulus is smaller.
 def complex_uniform_curve_add(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), f : FieldUnitInterval(F, zero, one, lt)
-  -> Complex(F), g : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  uniformF : ComplexUniformCurve(F, zero, one, addF, lt, f),
+  inverses : FieldInverses(F, zero, one, mulF, lt), f g : FieldUnitInterval(F, zero, one, lt)
+  -> Complex(F), uniformF : ComplexUniformCurve(F, zero, one, addF, lt, f),
   uniformG : ComplexUniformCurve(F, zero, one, addF, lt, g)
 ) :
   ComplexUniformCurve(
@@ -44,8 +43,7 @@ def complex_uniform_curve_add(
   obtain (half, halfSum, halfPositive) = ordered_field_halving(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
   );
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   let smaller = half(epsilon);
   let positiveSmaller = halfPositive(epsilon, positive);
   obtain (r, positiveR, closeF) = uniformF(smaller, positiveSmaller);
@@ -63,9 +61,7 @@ def complex_uniform_curve_add(
     -> ComplexClose(
       F, addF, lt, complex_add(F, addF, f(a), g(a)), complex_add(F, addF, f(b), g(b)), epsilon
     ) {
-    intro a;
-    intro b;
-    intro nearby;
+    intro a b nearby;
     let x = field_interval_coordinate(F, zero, one, lt)(a);
     let y = field_interval_coordinate(F, zero, one, lt)(b);
     let first =
@@ -84,16 +80,15 @@ def complex_uniform_curve_add(
           nearby
         )
       );
-    exact transport(
+    exact along(
       (
         fun (radius : F) => ComplexClose(
           F, addF, lt, complex_add(F, addF, f(a), g(a)), complex_add(F, addF, f(b), g(b)), radius
         )
-      ), addF(smaller, smaller), epsilon, halfSum(epsilon),
-      complex_close_add(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f(a), f(b), g(a), g(b),
-        smaller, smaller, first, second
       )
+    ) by halfSum(epsilon) from complex_close_add(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f(a), f(b), g(a), g(b), smaller,
+      smaller, first, second
     );
   }
   exact (delta, positiveDelta, close);

@@ -5,12 +5,11 @@ import complex_refinement_cauchy;
 // This sequence is the actual recursively constructed sampling, with all
 // vertices, tags and endpoint proofs retained in each dyadic piece.
 def affine_dyadic_sum(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  half : F -> F, halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F),
-  slope : Complex(F), integrand : Complex(F) -> Complex(F), a : FieldUnitInterval(F, zero, one, lt),
-  b : FieldUnitInterval(F, zero, one, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F),
+  integrand : Complex(F) -> Complex(F), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -26,10 +25,10 @@ def affine_dyadic_sum(
   );
 
 def affine_coordinate_length_nonnegative(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), slope : Complex(F)
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), slope : Complex(F)
 ) :
   FieldLe(F, lt, zero, affine_coordinate_length(F, addF, negF, maxF, slope)) {
   let real = complex_real(F, slope);
@@ -46,26 +45,24 @@ def affine_coordinate_length_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, imag, s,
       field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, imag)
     );
-  exact transport(
-    (fun (v : F) => FieldLe(F, lt, v, addF(r, s))), addF(zero, zero), zero,
-    ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero),
-    order_le_add(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, zero, r, zero, s, nonnegativeR,
-      nonnegativeS
-    )
+  exact along((fun (v : F) => FieldLe(F, lt, v, addF(r, s)))) by ring_add_zero(
+    F, zero, one, addF, mulF, negF, ring, zero
+  ) from order_le_add(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, zero, r, zero, s, nonnegativeR,
+    nonnegativeS
   );
 }
 
 // Actual Archimedean bounds and uniform continuity compute a Cauchy modulus.
 // No Cauchy or convergence hypothesis about the contour sums is supplied.
 def affine_dyadic_cauchy(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -73,7 +70,7 @@ def affine_dyadic_cauchy(
         complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
       )
     )
-  ), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  ), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -117,8 +114,7 @@ def affine_dyadic_cauchy(
   have refines :
     forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat, forall n : Nat, forall extra : Nat,
     IndexLE(bound, n) -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
-    intro epsilon;
-    intro positive;
+    intro epsilon positive;
     obtain (delta, positiveDelta, smallRadius) = field_small_scaled_radius(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, scale,
       nonnegativeScale, epsilon, positive
@@ -131,15 +127,12 @@ def affine_dyadic_cauchy(
     have tail :
       forall n : Nat, forall extra : Nat, IndexLE(bound, n)
       -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
-      intro n;
-      intro extra;
-      intro later;
+      intro n extra later;
       obtain (upper, lower) = closeWidths(n, later);
       let smallMesh =
-        transport(
-          lt(dyadic_width(F, half, n, width)), addF(zero, mesh), mesh,
-          ring_add_zero(F, zero, one, addF, mulF, negF, ring, mesh), upper
-        );
+        along lt(dyadic_width(F, half, n, width)) by ring_add_zero(
+          F, zero, one, addF, mulF, negF, ring, mesh
+        ) from upper;
       let perturbation = estimates(n, extra, a, b, ordered, smallMesh);
       exact complex_perturbation_close(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, sequence(n),
@@ -150,7 +143,7 @@ def affine_dyadic_cauchy(
   }
   let positiveHalf =
     (
-      fun (epsilon : F) => fun (positive : lt(zero, epsilon)) => positive_half_from_sum(
+      fun (epsilon : F) (positive : lt(zero, epsilon)) => positive_half_from_sum(
         F, zero, one, addF, mulF, lt, order, arithmetic, epsilon, half(epsilon), halfSum(epsilon),
         positive
       )

@@ -8,7 +8,7 @@ def cyclic_two_abelian : IsAbelian(CyclicTwo) {
 // Equality of groups transports the group property itself. No repeated
 // case analysis of F4 automorphisms is needed to prove commutativity here.
 def f4_galois_abelian : IsAbelian(F4GaloisGroup) {
-  exact transport(IsAbelian, CyclicTwo, F4GaloisGroup, f4_galois_group_equality, cyclic_two_abelian);
+  exact along IsAbelian by f4_galois_group_equality from cyclic_two_abelian;
 }
 
 // All subgroups are normal, without assuming their membership decidable.

@@ -4,7 +4,7 @@ import finite_basis_search;
 // surjection and extend linearly. The result is truncated; finite recursion
 // needs no axiom of choice.
 def FiniteLinearLift(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
   h : LinearMap(K, CoordinateSpace(K, m), W)
 ) =
   exists lift : LinearMap(K, CoordinateSpace(K, m), V), forall v : Fin(m) -> af_carrier(K),
@@ -45,7 +45,7 @@ def linear_first_tail(
 }
 
 def finite_linear_lift_assemble(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
   h : LinearMap(K, CoordinateSpace(K, succ(m)), W), x : vector_carrier(K, V),
   first : linear_map(K, V, W, f, x) = linear_map(
     K, CoordinateSpace(K, succ(m)), W, h, coordinate_first(K, m)
@@ -93,7 +93,7 @@ def finite_linear_lift_assemble(
 }
 
 def finite_linear_lift_zero(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
   h : LinearMap(K, CoordinateSpace(K, 0), W)
 ) :
   FiniteLinearLift(K, V, W, f, 0, h) {
@@ -120,7 +120,7 @@ def finite_linear_lift_zero(
 }
 
 def finite_linear_lift_step(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
   onto : LinearSurjective(K, V, W, f), m : Nat,
   previous : (
     forall h : LinearMap(K, CoordinateSpace(K, m), W), Mere(FiniteLinearLift(K, V, W, f, m, h))
@@ -150,7 +150,7 @@ def finite_linear_lift_step(
 }
 
 def finite_linear_lift(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
   onto : LinearSurjective(K, V, W, f), m : Nat
 ) =
   induction m as k return (
@@ -167,8 +167,7 @@ def coordinate_surjection_bound(
   onto : LinearSurjective(K, CoordinateSpace(K, n), V, f)
 ) :
   NoIndependent(K, V, succ(n)) {
-  intro h;
-  intro independent;
+  intro h independent;
   let N = CoordinateSpace(K, n);
   let C = CoordinateSpace(K, succ(n));
   let F = linear_map(K, N, V, f);
@@ -176,17 +175,14 @@ def coordinate_surjection_bound(
     intro witness;
     obtain (l, square) = witness;
     have injective : CoordinateInjection(K, succ(n), n, l) {
-      intro x;
-      intro y;
-      intro same;
+      intro x y same;
       exact independent(x, y, trans(sym(square(x)), trans(cong(F, same), square(y))));
     }
     exact successor_not_le_self(n, coordinate_injection_bound(K, n, succ(n), l, injective));
   }
   exact mere_eliminate(
-    FiniteLinearLift(K, N, V, f, succ(n), h), Void,
-    (fun (x : Void) => fun (y : Void) => typed((x = y), absurd(x))), noLift,
-    finite_linear_lift(K, N, V, f, onto, succ(n), h)
+    FiniteLinearLift(K, N, V, f, succ(n), h), Void, (fun (x y : Void) => typed((x = y), absurd(x))),
+    noLift, finite_linear_lift(K, N, V, f, onto, succ(n), h)
   );
 }
 

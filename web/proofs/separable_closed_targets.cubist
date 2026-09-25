@@ -4,7 +4,7 @@ import splitting_fields;
 
 // Embeddings preserve both the coefficient factorization and distinctness.
 def distinct_polynomial_splitting_map(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat,
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat,
   splitting : DistinctPolynomialSplitting(K, p, n)
 ) :
   DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n) {
@@ -15,7 +15,7 @@ def distinct_polynomial_splitting_map(
   exact (
     mappedRoots, b, mappedEquation,
     (
-      fun (i : Fin(n)) => fun (j : Fin(n)) => fun (same : mappedRoots(i) = mappedRoots(j)) => distinct(
+      fun (i j : Fin(n)) (same : mappedRoots(i) = mappedRoots(j)) => distinct(
         i, j, field_embedding_injective(K, L, e, roots(i), roots(j), same)
       )
     )
@@ -23,7 +23,7 @@ def distinct_polynomial_splitting_map(
 }
 
 def generated_splitting_roots_algebraic(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
   equation : polynomial_map(K, L, e, p) = polynomial_mul(
     L, polynomial_constant(L, a), linear_factor_product(L, n, roots)
@@ -57,7 +57,7 @@ def generated_splitting_roots_algebraic(
 // Only the finitely generated root field must be embedded in T; the originally
 // supplied splitting field may be arbitrarily large.
 def distinct_splitting_to_closed(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), n : Nat,
   splitting : DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n), T : AlgebraicField,
   closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
@@ -73,9 +73,7 @@ def distinct_splitting_to_closed(
     generated_field_generators(K, R, d, n, rs, root_generated_generates(K, L, e, n, roots));
   let algebraic = generated_splitting_roots_algebraic(K, L, e, p, nonzero, n, roots, a, equation);
   have distinctR : Injective(Fin(n), af_carrier(R), rs) {
-    intro i;
-    intro k;
-    intro same;
+    intro i k same;
     exact distinct(i, k, cong(subfield_value(L, S), same));
   }
   let b = field_embedding_map(K, R, d, polynomial_coefficients(K, p, n));
@@ -94,9 +92,8 @@ def distinct_splitting_to_closed(
         polynomial_map_composition(K, R, T, d, h, p),
         cong((fun (i : FieldEmbedding(K, T)) => polynomial_map(K, T, i, p)), tower)
       );
-    exact transport(
-      (fun (s : Polynomial(T)) => DistinctPolynomialSplitting(T, s, n)), polynomial_map(R, T, h, q),
-      polynomial_map(K, T, j, p), same, distinct_polynomial_splitting_map(R, T, h, q, n, factor)
+    exact along((fun (s : Polynomial(T)) => DistinctPolynomialSplitting(T, s, n))) by same from distinct_polynomial_splitting_map(
+      R, T, h, q, n, factor
     );
   }
   exact mere_map(
