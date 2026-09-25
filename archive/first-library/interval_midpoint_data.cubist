@@ -3,8 +3,8 @@ import interval_bisection;
 // Named dependent projections expose the same constructed midpoint and laws.
 // They do not choose another midpoint or assume proof irrelevance.
 def IntervalMidpointLaws(
-  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, half : F -> F,
-  a b midpoint : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, half : F -> F,
+  a, b, midpoint : FieldUnitInterval(F, zero, one, lt)
 ) :=
   IntervalTagWithin(F, zero, one, lt, a, b, midpoint)
   and (
@@ -19,10 +19,10 @@ def IntervalMidpointLaws(
   );
 
 def interval_midpoint_point(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), a b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -37,10 +37,10 @@ def interval_midpoint_point(
   );
 
 def interval_midpoint_laws(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), a b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -55,10 +55,10 @@ def interval_midpoint_laws(
   );
 
 def interval_midpoint_within(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), a b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -95,10 +95,10 @@ def interval_midpoint_within(
 }
 
 def interval_midpoint_left_order(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), a b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -127,10 +127,10 @@ def interval_midpoint_left_order(
   );
 
 def interval_midpoint_right_order(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), a b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -159,10 +159,10 @@ def interval_midpoint_right_order(
   );
 
 def interval_midpoint_widths(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), a b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)

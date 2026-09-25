@@ -4,7 +4,7 @@ import radix_factorial;
 
 // Compatibility identifies each transported algorithm with the already proved
 // factorial on its target representation, rather than silently redefining it.
-def binary_to_radix_factorial(extra n : Nat) :
+def binary_to_radix_factorial(extra, n : Nat) :
   binary_to_radix(extra, binary_factorial(n)) = radix_factorial(extra, n) {
   exact radix_injective(
     extra, binary_to_radix(extra, binary_factorial(n)), radix_factorial(extra, n),
@@ -15,7 +15,7 @@ def binary_to_radix_factorial(extra n : Nat) :
   );
 }
 
-def radix_to_binary_factorial(extra n : Nat) :
+def radix_to_binary_factorial(extra, n : Nat) :
   radix_to_binary(extra, radix_factorial(extra, n)) = binary_factorial(n) {
   exact binary_injective(
     radix_to_binary(extra, radix_factorial(extra, n)), binary_factorial(n),

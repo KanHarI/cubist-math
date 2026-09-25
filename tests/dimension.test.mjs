@@ -31,7 +31,7 @@ test("finite dimensions include zero, are unique for arbitrary bases, and need n
     def scalar_dimension(K : AlgebraicField, n : Nat, basis : FiniteBasis(K, ScalarSpace(K), n)) : n = 1 {
       exact finite_dimension_invariance(K, ScalarSpace(K), n, 1, basis, scalar_space_basis(K));
     }
-    def mere_coordinates_suffice(K : AlgebraicField, V : VectorSpace(K), finite : Mere(exists n : Nat, FiniteBasis(K, V, n))) : FiniteDimensional(K, V) {
+    def mere_coordinates_suffice(K : AlgebraicField, V : VectorSpace(K), finite : Mere(exists n : Nat. FiniteBasis(K, V, n))) : FiniteDimensional(K, V) {
       exact finite_dimensional_from_mere(K, V, finite);
     }
     def swap_coordinates(K : AlgebraicField, n : Nat, i : Fin(succ(n)), finite : FiniteDimensional(K, CoordinateSpace(K, succ(n)))) :

@@ -5,11 +5,11 @@ import complex_refinement_cauchy;
 // This sequence is the actual recursively constructed sampling, with all
 // vertices, tags and endpoint proofs retained in each dyadic piece.
 def affine_dyadic_sum(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F),
-  integrand : Complex(F) -> Complex(F), a b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), z, slope : Complex(F),
+  integrand : Complex(F) -> Complex(F), a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -25,9 +25,9 @@ def affine_dyadic_sum(
   );
 
 def affine_coordinate_length_nonnegative(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), slope : Complex(F)
 ) :
   FieldLe(F, lt, zero, affine_coordinate_length(F, addF, negF, maxF, slope)) {
@@ -56,12 +56,12 @@ def affine_coordinate_length_nonnegative(
 // Actual Archimedean bounds and uniform continuity compute a Cauchy modulus.
 // No Cauchy or convergence hypothesis about the contour sums is supplied.
 def affine_dyadic_cauchy(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F), integrand : Complex(F)
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), z, slope : Complex(F), integrand : Complex(F)
   -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
@@ -70,7 +70,7 @@ def affine_dyadic_cauchy(
         complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
       )
     )
-  ), a b : FieldUnitInterval(F, zero, one, lt),
+  ), a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -112,9 +112,9 @@ def affine_dyadic_cauchy(
       width, nonnegativeWidth
     );
   have refines :
-    forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat, forall n : Nat, forall extra : Nat,
+    forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall n : Nat. forall extra : Nat.
     IndexLE(bound, n) -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
-    intro epsilon positive;
+    intro epsilon, positive;
     obtain (delta, positiveDelta, smallRadius) := field_small_scaled_radius(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, scale,
       nonnegativeScale, epsilon, positive
@@ -125,9 +125,9 @@ def affine_dyadic_cauchy(
     );
     obtain (bound, closeWidths) := widthsVanish(mesh, positiveMesh);
     have tail :
-      forall n : Nat, forall extra : Nat, IndexLE(bound, n)
+      forall n : Nat. forall extra : Nat. IndexLE(bound, n)
       -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
-      intro n extra later;
+      intro n, extra, later;
       obtain (upper, lower) := closeWidths(n, later);
       let smallMesh :=
         along lt(dyadic_width(F, half, n, width)) by ring_add_zero(

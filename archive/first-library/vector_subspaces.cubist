@@ -3,17 +3,17 @@ import finite_combinations;
 // A subspace is a proposition-valued subset containing zero and closed under
 // addition and scalar multiplication. Membership evidence is not extra data.
 def SubspaceLaws(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :=
-  (forall x : vector_carrier(K, V), Proposition(P(x))) and P(vector_zero(K, V))
+  (forall x : vector_carrier(K, V). Proposition(P(x))) and P(vector_zero(K, V))
   and (
-    forall x : vector_carrier(K, V), forall y : vector_carrier(K, V), P(x) -> P(y)
+    forall x : vector_carrier(K, V). forall y : vector_carrier(K, V). P(x) -> P(y)
     -> P(vector_add(K, V, x, y))
   )
   and (
-    forall a : af_carrier(K), forall x : vector_carrier(K, V), P(x) -> P(vector_scale(K, V, a, x))
+    forall a : af_carrier(K). forall x : vector_carrier(K, V). P(x) -> P(vector_scale(K, V, a, x))
   );
 
 def Subspace(K : AlgebraicField, V : VectorSpace(K)) :=
-  exists P : vector_carrier(K, V) -> U0, SubspaceLaws(K, V, P);
+  exists P : vector_carrier(K, V) -> U0. SubspaceLaws(K, V, P);
 
 def subspace_members(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :=
   unpack S as (P, laws) return (vector_carrier(K, V) -> U0) {
@@ -29,7 +29,7 @@ def subspace_laws(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
 }
 
 def subspace_prop(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
-  forall x : vector_carrier(K, V), Proposition(subspace_members(K, V, S, x)) {
+  forall x : vector_carrier(K, V). Proposition(subspace_members(K, V, S, x)) {
   obtain (prop, zero, add, scale) := subspace_laws(K, V, S);
   exact prop;
 }
@@ -41,36 +41,36 @@ def subspace_zero(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
 }
 
 def subspace_add(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
-  forall x : vector_carrier(K, V), forall y : vector_carrier(K, V), subspace_members(K, V, S, x)
+  forall x : vector_carrier(K, V). forall y : vector_carrier(K, V). subspace_members(K, V, S, x)
   -> subspace_members(K, V, S, y) -> subspace_members(K, V, S, vector_add(K, V, x, y)) {
   obtain (prop, zero, add, scale) := subspace_laws(K, V, S);
   exact add;
 }
 
 def subspace_scale(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
-  forall a : af_carrier(K), forall x : vector_carrier(K, V), subspace_members(K, V, S, x)
+  forall a : af_carrier(K). forall x : vector_carrier(K, V). subspace_members(K, V, S, x)
   -> subspace_members(K, V, S, vector_scale(K, V, a, x)) {
   obtain (prop, zero, add, scale) := subspace_laws(K, V, S);
   exact scale;
 }
 
-def SubspaceIncluded(K : AlgebraicField, V : VectorSpace(K), S T : Subspace(K, V)) :=
-  forall x : vector_carrier(K, V), subspace_members(K, V, S, x) -> subspace_members(K, V, T, x);
+def SubspaceIncluded(K : AlgebraicField, V : VectorSpace(K), S, T : Subspace(K, V)) :=
+  forall x : vector_carrier(K, V). subspace_members(K, V, S, x) -> subspace_members(K, V, T, x);
 
 // Every finite combination of members stays in the subspace.
 def combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) :=
   induction n as k return (
-    forall v : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
-    (forall i : Fin(k), subspace_members(K, V, S, v(i)))
+    forall v : Fin(k) -> vector_carrier(K, V). forall a : Fin(k) -> af_carrier(K).
+    (forall i : Fin(k). subspace_members(K, V, S, v(i)))
     -> subspace_members(K, V, S, linear_combination(K, V, k, v, a))
   ) {
     zero => fun (
       v : Fin(0) -> vector_carrier(K, V), a : Fin(0) -> af_carrier(K),
-      members : (forall i : Fin(0), subspace_members(K, V, S, v(i)))
+      members : (forall i : Fin(0). subspace_members(K, V, S, v(i)))
     ) => subspace_zero(K, V, S);
     succ previous => fun (
       v : Fin(succ(k)) -> vector_carrier(K, V), a : Fin(succ(k)) -> af_carrier(K),
-      members : (forall i : Fin(succ(k)), subspace_members(K, V, S, v(i)))
+      members : (forall i : Fin(succ(k)). subspace_members(K, V, S, v(i)))
     ) => subspace_add(
       K, V, S,
       vector_scale(K, V, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v)),
@@ -92,7 +92,7 @@ def combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace
 // witnesses are eliminated only into proposition-valued membership.
 def span_least(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, S : Subspace(K, V),
-  included : (forall x : vector_carrier(K, V), P(x) -> subspace_members(K, V, S, x)),
+  included : (forall x : vector_carrier(K, V). P(x) -> subspace_members(K, V, S, x)),
   x : vector_carrier(K, V), member : Span(K, V, P, x)
 ) :
   subspace_members(K, V, S, x) {

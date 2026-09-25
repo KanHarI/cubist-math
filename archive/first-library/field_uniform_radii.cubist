@@ -2,9 +2,9 @@ import field_scale_limits;
 
 // Widening a two-sided order ball preserves closeness.
 def field_close_enlarge(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y delta epsilon : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, delta, epsilon : F,
   smaller : FieldLe(F, lt, delta, epsilon), close : FieldClose(F, addF, lt, x, y, delta)
 ) :
   FieldClose(F, addF, lt, x, y, epsilon) {
@@ -29,13 +29,13 @@ def field_close_enlarge(
 // An actual common positive radius without comparing r and s or deciding
 // which is smaller. Choose delta with delta*(r+s) < r*s, then cancel r+s.
 def field_common_positive_radius(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), r s : F, positiveR : lt(zero, r),
+  inverses : FieldInverses(F, zero, one, mulF, lt), r, s : F, positiveR : lt(zero, r),
   positiveS : lt(zero, s)
 ) :
-  exists delta : F, lt(zero, delta) and FieldLe(F, lt, delta, r) and FieldLe(F, lt, delta, s) {
+  exists delta : F. lt(zero, delta) and FieldLe(F, lt, delta, r) and FieldLe(F, lt, delta, s) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, rest) := arithmetic;
   let nonnegativeR :=
     ordered_lt_implies_le(

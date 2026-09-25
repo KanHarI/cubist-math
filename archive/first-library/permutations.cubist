@@ -35,7 +35,7 @@ def permutation_join(n : Nat, p : Fin(succ(n)) and Permutations(n)) :=
   );
 
 def extension_restriction_point(
-  A B : U0, e : Bijection(Unit or A, Unit or B),
+  A, B : U0, e : Bijection(Unit or A, Unit or B),
   fixed : forward(Unit or A, Unit or B, e, head(A)) = head(B), x : Unit or A
 ) :=
   match x as z return (

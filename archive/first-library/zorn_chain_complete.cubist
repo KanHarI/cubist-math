@@ -1,9 +1,9 @@
 import bourbaki_witt;
 
-def OrderMaximal(A : U1, le : OrderRelation(A), x : A) := forall y : A, le(x, y) -> le(y, x);
+def OrderMaximal(A : U1, le : OrderRelation(A), x : A) := forall y : A. le(x, y) -> le(y, x);
 
 def StrictlyAbove(A : U1, le : OrderRelation(A), x : A) :=
-  exists y : A, le(x, y) and (le(y, x) -> Void);
+  exists y : A. le(x, y) and (le(y, x) -> Void);
 
 def strict_above_point(A : U1, le : OrderRelation(A), x : A, witness : StrictlyAbove(A, le, x)) :=
   field_first(A, (fun (y : A) => typed(U1, le(x, y) and (le(y, x) -> Void))), witness);
@@ -28,13 +28,13 @@ def strict_above_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A
 // At this stage there is no selected successor function.
 def no_maximal_strict_successor(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le),
-  none : FieldExists(exists x : A, OrderMaximal(A, le, x)) -> Void, x : A
+  none : FieldExists(exists x : A. OrderMaximal(A, le, x)) -> Void, x : A
 ) :
   FieldExists(StrictlyAbove(A, le, x)) {
   have contradiction : (FieldExists(StrictlyAbove(A, le, x)) -> Void) -> Void {
     intro noSuccessor;
     have maximal : OrderMaximal(A, le, x) {
-      intro y xy;
+      intro y, xy;
       exact double_negation(
         le(y, x), order_prop(A, le, laws, y, x),
         (
@@ -44,7 +44,7 @@ def no_maximal_strict_successor(
         )
       );
     }
-    exact none(field_exists_intro((exists a : A, OrderMaximal(A, le, a)), (x, maximal)));
+    exact none(field_exists_intro((exists a : A. OrderMaximal(A, le, a)), (x, maximal)));
   }
   exact double_negation(
     FieldExists(StrictlyAbove(A, le, x)), field_exists_prop(StrictlyAbove(A, le, x)), contradiction
@@ -54,7 +54,7 @@ def no_maximal_strict_successor(
 // A selected strict-successor function contradicts the fixed-point theorem.
 def no_strict_successor_function(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
-  choose : (forall x : A, StrictlyAbove(A, le, x))
+  choose : (forall x : A. StrictlyAbove(A, le, x))
 ) :
   Void {
   let f := fun (x : A) => strict_above_point(A, le, x, choose(x));
@@ -74,8 +74,8 @@ def no_strict_successor_function(
 def zorn_chain_complete(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le)
 ) :
-  FieldExists(exists x : A, OrderMaximal(A, le, x)) {
-  let Result := exists x : A, OrderMaximal(A, le, x);
+  FieldExists(exists x : A. OrderMaximal(A, le, x)) {
+  let Result := exists x : A. OrderMaximal(A, le, x);
   have contradiction : (FieldExists(Result) -> Void) -> Void {
     intro none;
     let successors :=
@@ -84,8 +84,8 @@ def zorn_chain_complete(
         strict_above_is_set(A, le, laws), no_maximal_strict_successor(A, le, laws, none)
       );
     exact field_exists_elim(
-      (forall x : A, StrictlyAbove(A, le, x)), Void,
-      (fun (p q : Void) => typed((p = q), absurd(p))),
+      (forall x : A. StrictlyAbove(A, le, x)), Void,
+      (fun (p, q : Void) => typed((p = q), absurd(p))),
       no_strict_successor_function(A, le, laws, complete), successors
     );
   }

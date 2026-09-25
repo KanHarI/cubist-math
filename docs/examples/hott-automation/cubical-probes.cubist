@@ -5,27 +5,27 @@ import paths;
 
 // Sigma extensionality: the second component is a PathP over the first.
 def sigma_line(
-  A : U0, B : A -> U0, a a2 : A, b : B(a), b2 : B(a2), p : a = a2,
+  A : U0, B : A -> U0, a, a2 : A, b : B(a), b2 : B(a2), p : a = a2,
   q : PathP(fun (i : Interval) => B(p @ i), b, b2)
 ) :
-  typed(exists x : A, B(x), (a, b)) = typed(exists x : A, B(x), (a2, b2)) {
-  exact path i => typed(exists x : A, B(x), (p @ i, q @ i));
+  typed(exists x : A. B(x), (a, b)) = typed(exists x : A. B(x), (a2, b2)) {
+  exact path i => typed(exists x : A. B(x), (p @ i, q @ i));
 }
 
 // Rewriting in a dependent position: the dependent argument follows its
 // transport filler. One line, no composition.
-def filler_rewrite(B : Nat -> U0, R : U0, f : (forall a : Nat, B(a) -> R), n : Nat, v : B(n + 0)) :
+def filler_rewrite(B : Nat -> U0, R : U0, f : (forall a : Nat. B(a) -> R), n : Nat, v : B(n + 0)) :
   f(n + 0, v) = f(n, transport(B, n + 0, n, nat_add_zero(n), v)) {
   exact path i => f(nat_add_zero(n) @ i, fill(fun (j : Interval) => B(nat_add_zero(n) @ j), v, i));
 }
 
 // Several positions rewritten at once.
-def multi_hole(g : Nat -> Nat -> Nat, n m : Nat) : g(n + 0, m + 0) = g(n, m) {
+def multi_hole(g : Nat -> Nat -> Nat, n, m : Nat) : g(n + 0, m + 0) = g(n, m) {
   exact path i => g(nat_add_zero(n) @ i, nat_add_zero(m) @ i);
 }
 
 // l = r rebuilt from l = l2, r = r2 and l2 = r2 by one composition.
-def square_rebuild(A : U0, l l2 r r2 : A, pl : l = l2, pr : r = r2, s : l2 = r2) : l = r {
+def square_rebuild(A : U0, l, l2, r, r2 : A, pl : l = l2, pr : r = r2, s : l2 = r2) : l = r {
   exact path i => comp(
     fun (j : Interval) => A, s @ i, face(i, 0, fun (j : Interval) => pl @ flip(j)),
     face(i, 1, fun (j : Interval) => pr @ flip(j))
@@ -33,7 +33,7 @@ def square_rebuild(A : U0, l l2 r r2 : A, pl : l = l2, pr : r = r2, s : l2 = r2)
 }
 
 // trans is that composition with a constant first edge.
-def trans_as_composition(A : U0, x y z : A, p : x = y, q : y = z) :
+def trans_as_composition(A : U0, x, y, z : A, p : x = y, q : y = z) :
   trans(p, q) = path i => comp(
     fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
     face(i, 1, fun (j : Interval) => q @ j)
@@ -41,30 +41,30 @@ def trans_as_composition(A : U0, x y z : A, p : x = y, q : y = z) :
   rfl;
 }
 
-def sym_sym_refl(A : U0, x y : A, p : x = y) : sym(sym(p)) = p {
+def sym_sym_refl(A : U0, x, y : A, p : x = y) : sym(sym(p)) = p {
   exact refl(p);
 }
 
 // Convertible endpoints do not determine a witness: omega is an arbitrary
 // loop, and the rejected-probe regression checks it is not refl(p).
-def convertible_rule(A : U0, x y : A, p : x = y, omega : p = p) : sym(sym(p)) = p {
+def convertible_rule(A : U0, x, y : A, p : x = y, omega : p = p) : sym(sym(p)) = p {
   exact omega;
 }
 
 // A rule stated at U1 applies to a U0 carrier by cumulativity when its
 // arguments are supplied. The quantified simp form waits for A1.
-def right_unit_at_u1(A : U1, x y : A, p : x = y) : trans(p, refl(y)) = p {
+def right_unit_at_u1(A : U1, x, y : A, p : x = y) : trans(p, refl(y)) = p {
   exact right_unit(A, x, y, p);
 }
 
-def right_unit_at_u0(A : U0, x y : A, p : x = y) : trans(p, refl(y)) = p {
+def right_unit_at_u0(A : U0, x, y : A, p : x = y) : trans(p, refl(y)) = p {
   exact right_unit_at_u1(A, x, y, p);
 }
 
 // E1: for v : B(x) and w : E(x, v), the filler of w follows the filler of v.
 def ordered_fillers(
-  A : U0, B : A -> U0, E : (forall a : A, B(a) -> U0), R : U0,
-  f : (forall a : A, forall b : B(a), E(a, b) -> R), x y : A, p : x = y, v : B(x), w : E(x, v)
+  A : U0, B : A -> U0, E : (forall a : A. B(a) -> U0), R : U0,
+  f : (forall a : A. forall b : B(a). E(a, b) -> R), x, y : A, p : x = y, v : B(x), w : E(x, v)
 ) :=
   path(
     fun (i : Interval) => R,

@@ -5,8 +5,8 @@ Run `make serve` and open
 The [Cubist source](../../archive/first-library/schroeder_bernstein.cubist) proves:
 
 ```text
-forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) ->
-  forall f : A -> B, forall g : B -> A,
+forall A : U0. forall B : U0. IsSet(A) -> IsSet(B) ->
+  forall f : A -> B. forall g : B -> A.
     Injective(A, B, f) -> Injective(B, A, g) -> Equiv(U0, A, B)
 ```
 

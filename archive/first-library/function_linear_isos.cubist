@@ -1,7 +1,7 @@
 import linear_constructions;
 import function_counting;
 
-def function_linear_map(K : AlgebraicField, I : U0, V W : VectorSpace(K), h : LinearMap(K, V, W)) :
+def function_linear_map(K : AlgebraicField, I : U0, V, W : VectorSpace(K), h : LinearMap(K, V, W)) :
   LinearMap(K, FunctionSpace(K, I, V), FunctionSpace(K, I, W)) {
   let f := linear_map(K, V, W, h);
   let X := vector_carrier(K, V);
@@ -9,7 +9,7 @@ def function_linear_map(K : AlgebraicField, I : U0, V W : VectorSpace(K), h : Li
   exact (
     (fun (v : I -> X, i : I) => f(v(i))),
     (
-      fun (v w : I -> X) => FunExt(
+      fun (v, w : I -> X) => FunExt(
         U0, I, (fun (i : I) => Y), (fun (i : I) => f(vector_add(K, V, v(i), w(i)))),
         (fun (i : I) => vector_add(K, W, f(v(i)), f(w(i)))),
         (fun (i : I) => linear_add(K, V, W, h, v(i), w(i)))
@@ -25,7 +25,7 @@ def function_linear_map(K : AlgebraicField, I : U0, V W : VectorSpace(K), h : Li
   );
 }
 
-def function_linear_iso(K : AlgebraicField, I : U0, V W : VectorSpace(K), e : LinearIso(K, V, W)) :
+def function_linear_iso(K : AlgebraicField, I : U0, V, W : VectorSpace(K), e : LinearIso(K, V, W)) :
   LinearIso(K, FunctionSpace(K, I, V), FunctionSpace(K, I, W)) {
   obtain (f, g, left, right) := e;
   let F := linear_map(K, V, W, f);
@@ -49,17 +49,17 @@ def function_linear_iso(K : AlgebraicField, I : U0, V W : VectorSpace(K), e : Li
 
 // Reindex coordinates along an actual bijection; no cardinality equality
 // or arbitrary ordering of a finite set is assumed.
-def reindex_linear(K : AlgebraicField, I J : U0, V : VectorSpace(K), f : J -> I) :
+def reindex_linear(K : AlgebraicField, I, J : U0, V : VectorSpace(K), f : J -> I) :
   LinearMap(K, FunctionSpace(K, I, V), FunctionSpace(K, J, V)) {
   let X := vector_carrier(K, V);
   exact (
     (fun (v : I -> X, j : J) => v(f(j))),
-    (fun (v w : I -> X) => refl((fun (j : J) => vector_add(K, V, v(f(j)), w(f(j)))))),
+    (fun (v, w : I -> X) => refl((fun (j : J) => vector_add(K, V, v(f(j)), w(f(j)))))),
     (fun (a : af_carrier(K), v : I -> X) => refl((fun (j : J) => vector_scale(K, V, a, v(f(j))))))
   );
 }
 
-def reindex_linear_iso(K : AlgebraicField, I J : U0, V : VectorSpace(K), e : Bijection(J, I)) :
+def reindex_linear_iso(K : AlgebraicField, I, J : U0, V : VectorSpace(K), e : Bijection(J, I)) :
   LinearIso(K, FunctionSpace(K, I, V), FunctionSpace(K, J, V)) {
   let X := vector_carrier(K, V);
   let f := forward(J, I, e);
@@ -81,13 +81,13 @@ def reindex_linear_iso(K : AlgebraicField, I J : U0, V : VectorSpace(K), e : Bij
   );
 }
 
-def curry_linear(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
+def curry_linear(K : AlgebraicField, I, J : U0, V : VectorSpace(K)) :
   LinearMap(K, FunctionSpace(K, I and J, V), FunctionSpace(K, I, FunctionSpace(K, J, V))) {
   let X := vector_carrier(K, V);
   exact (
     (fun (v : (I and J) -> X, i : I, j : J) => v(typed(I and J, (i, j)))),
     (
-      fun (v w : (I and J) -> X) => refl(
+      fun (v, w : (I and J) -> X) => refl(
         (
           fun (i : I, j : J) => vector_add(
             K, V, v(typed(I and J, (i, j))), w(typed(I and J, (i, j)))
@@ -103,13 +103,13 @@ def curry_linear(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
   );
 }
 
-def uncurry_linear(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
+def uncurry_linear(K : AlgebraicField, I, J : U0, V : VectorSpace(K)) :
   LinearMap(K, FunctionSpace(K, I, FunctionSpace(K, J, V)), FunctionSpace(K, I and J, V)) {
   let X := vector_carrier(K, V);
   exact (
     (fun (v : I -> J -> X, p : I and J) => v(fst(I, J, p), snd(I, J, p))),
     (
-      fun (v w : I -> J -> X) => refl(
+      fun (v, w : I -> J -> X) => refl(
         (
           fun (p : I and J) => vector_add(
             K, V, v(fst(I, J, p), snd(I, J, p)), w(fst(I, J, p), snd(I, J, p))
@@ -125,11 +125,11 @@ def uncurry_linear(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
   );
 }
 
-def curry_linear_iso(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
+def curry_linear_iso(K : AlgebraicField, I, J : U0, V : VectorSpace(K)) :
   LinearIso(K, FunctionSpace(K, I and J, V), FunctionSpace(K, I, FunctionSpace(K, J, V))) {
   let X := vector_carrier(K, V);
   have left :
-    forall v : (I and J) -> X,
+    forall v : (I and J) -> X.
     (fun (p : I and J) => v(typed(I and J, (fst(I, J, p), snd(I, J, p))))) = v {
     intro v;
     ext p;
@@ -143,7 +143,7 @@ def curry_linear_iso(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
   );
 }
 
-def coordinate_product_iso(K : AlgebraicField, n m : Nat) :
+def coordinate_product_iso(K : AlgebraicField, n, m : Nat) :
   LinearIso(
     K, CoordinateSpace(K, multiply_count(n, m)), FunctionSpace(K, Fin(n), CoordinateSpace(K, m))
   ) {

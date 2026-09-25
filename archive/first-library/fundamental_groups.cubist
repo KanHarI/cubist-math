@@ -6,17 +6,17 @@ def LoopSpace(X : U1, basepoint : X) := basepoint =[X] basepoint;
 // When the loop space is already a set, its set truncation changes nothing.
 // This hypothesis lets us construct pi_1 directly, without a set-truncation axiom.
 def LoopSpaceIsSet(X : U1, basepoint : X) :=
-  forall p : LoopSpace(X, basepoint), forall q : LoopSpace(X, basepoint), forall r : p = q,
-  forall s : p = q, r = s;
+  forall p : LoopSpace(X, basepoint). forall q : LoopSpace(X, basepoint). forall r : p = q.
+  forall s : p = q. r = s;
 
-def loop_concatenate(X : U1, basepoint : X, p q : LoopSpace(X, basepoint)) := trans(p, q);
+def loop_concatenate(X : U1, basepoint : X, p, q : LoopSpace(X, basepoint)) := trans(p, q);
 
 def fundamental_group_laws(X : U1, basepoint : X, loops_are_set : LoopSpaceIsSet(X, basepoint)) :
   GroupLawsAt(U1, LoopSpace(X, basepoint), refl(basepoint), loop_concatenate(X, basepoint)) {
   exact (
     loops_are_set,
     (
-      fun (p q r : LoopSpace(X, basepoint)) => path_associative(
+      fun (p, q, r : LoopSpace(X, basepoint)) => path_associative(
         X, basepoint, basepoint, basepoint, basepoint, p, q, r
       )
     ), (fun (p : LoopSpace(X, basepoint)) => left_unit(X, basepoint, basepoint, p)),
@@ -24,7 +24,7 @@ def fundamental_group_laws(X : U1, basepoint : X, loops_are_set : LoopSpaceIsSet
     (
       fun (p : LoopSpace(X, basepoint)) => typed(
         (
-          exists q : LoopSpace(X, basepoint), (trans(q, p) = refl(basepoint))
+          exists q : LoopSpace(X, basepoint). (trans(q, p) = refl(basepoint))
           and (trans(p, q) = refl(basepoint))
         ),
         (

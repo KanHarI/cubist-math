@@ -80,7 +80,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
         for (const item of run) seen.add(item.start);
         if (run.length > 1) {
           count("intro");
-          units.push({ start: run[0].start, end: run.at(-1).end, text: () => `intro ${names.join(" ")};` });
+          units.push({ start: run[0].start, end: run.at(-1).end, text: () => `intro ${names.join(", ")};` });
         } else units.push({ start: statement.start, end: statement.end, text: () => source.slice(statement.start, statement.end) });
         index = cursor - 1;
         continue;
@@ -170,7 +170,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
   function funStart(node) {
     return node.start + /^[(\s]*/.exec(source.slice(node.start, node.start + 64))[0].length;
   }
-  // fun (x : A) => fun (y : A) => body  becomes  fun (x y : A) => body.
+  // fun (x : A) => fun (y : A) => body  becomes  fun (x, y : A) => body.
   // Parentheses around the whole lambda are kept.
   function funChain(node) {
     const groups = [];
@@ -189,7 +189,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
     const merged = mergeGroups(groups.map(group => ({ ...group, text: squash(render(group.domain, "delimited")) })));
     if (!separate && merged.length === groups.length) return null;
     const lead = source.slice(node.start, funStart(node)), trail = source.slice(body.end, node.end);
-    return `${lead}fun (${merged.map(group => `${group.names.join(" ")} : ${group.text}`).join(", ")}) => ${
+    return `${lead}fun (${merged.map(group => `${group.names.join(", ")} : ${group.text}`).join(", ")}) => ${
       render(body, "delimited")}${trail}`;
   }
   // Adjacent binders share a group when their domains are the same text and
@@ -229,7 +229,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
       if (merged.length < rendered.length) count("params");
       // Regenerate the list only when it changes; comments keep it in place.
       if (!comment(start, end) && (merged.length < rendered.length || retyped)) edits.push({ start, end,
-        text: `(${merged.map(group => `${group.names.join(" ")} : ${group.text}`).join(", ")})` });
+        text: `(${merged.map(group => `${group.names.join(", ")} : ${group.text}`).join(", ")})` });
       else if (retyped) for (const group of groups) edits.push({ start: group.domain.start, end: group.domain.end,
         text: render(group.domain, "delimited") });
     }

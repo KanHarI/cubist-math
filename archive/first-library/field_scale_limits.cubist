@@ -2,7 +2,7 @@ import field_magnitude_close;
 
 // Constructive moduli for multiplication by a fixed bounded scalar.
 def field_nonnegative_magnitude(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F,
   aboveZero : FieldLe(F, lt, zero, x)
@@ -25,9 +25,9 @@ def field_nonnegative_magnitude(
 }
 
 def field_close_zero_magnitude(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x radius : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, radius : F,
   close : FieldClose(F, addF, lt, x, zero, radius)
 ) :
   FieldMagnitudeBound(F, negF, lt, x, radius) {
@@ -64,9 +64,9 @@ def field_close_zero_magnitude(
 }
 
 def field_positive_product(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F, positiveX : lt(zero, x),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y : F, positiveX : lt(zero, x),
   positiveY : lt(zero, y)
 ) :
   lt(zero, mulF(x, y)) {
@@ -78,19 +78,19 @@ def field_positive_product(
 }
 
 def field_positive_reciprocal(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), x : F, positive : lt(zero, x)
 ) :
-  exists reciprocal : F, lt(zero, reciprocal) and (mulF(x, reciprocal) = one) {
+  exists reciprocal : F. lt(zero, reciprocal) and (mulF(x, reciprocal) = one) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   obtain (getInverse, getApart) := inverses(x);
   let apart :=
     field_exists_intro(
       (lt(x, zero) or lt(zero, x)), typed((lt(x, zero) or lt(zero, x)), right(positive))
     );
-  have inverseData : exists reciprocal : F, mulF(x, reciprocal) = one := getInverse(apart);
+  have inverseData : exists reciprocal : F. mulF(x, reciprocal) = one := getInverse(apart);
   obtain (reciprocal, inverseLaw) := inverseData;
   obtain (forward, backward) := scale(zero, reciprocal, x, positive);
   let productOne :=
@@ -104,13 +104,13 @@ def field_positive_reciprocal(
 }
 
 def field_small_scaled_radius(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length), epsilon : F, positive : lt(zero, epsilon)
 ) :
-  exists delta : F, lt(zero, delta) and lt(mulF(delta, length), epsilon) {
+  exists delta : F. lt(zero, delta) and lt(mulF(delta, length), epsilon) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   let denominator := addF(one, length);
   let positiveDenominator :=
@@ -159,15 +159,15 @@ def field_small_scaled_radius(
 }
 
 def field_bounded_scale_zero_converges(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), factor length : F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), factor, length : F,
   boundedFactor : FieldMagnitudeBound(F, negF, lt, factor, length), xs : Nat -> F,
   vanishes : FieldConverges(F, zero, addF, lt, xs, zero)
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => mulF(xs(n), factor)), zero) {
-  intro epsilon positive;
+  intro epsilon, positive;
   let nonnegativeLength :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, factor, length, boundedFactor
@@ -178,8 +178,8 @@ def field_bounded_scale_zero_converges(
   );
   obtain (bound, close) := vanishes(delta, positiveDelta);
   have tail :
-    forall n : Nat, IndexLE(bound, n) -> FieldClose(F, addF, lt, mulF(xs(n), factor), zero, epsilon) {
-    intro n large;
+    forall n : Nat. IndexLE(bound, n) -> FieldClose(F, addF, lt, mulF(xs(n), factor), zero, epsilon) {
+    intro n, large;
     let boundedX :=
       field_close_zero_magnitude(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(n), delta, close(n, large)
@@ -198,7 +198,7 @@ def field_bounded_scale_zero_converges(
 }
 
 def field_nonnegative_scale_zero_converges(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), length : F,

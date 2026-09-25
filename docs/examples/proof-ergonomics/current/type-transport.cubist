@@ -1,11 +1,11 @@
 // Explicit predecessors for checked type-goal simpa.
 import primes;
 
-def move_type(A B : U0, p : A = B, a : A) : B {
+def move_type(A, B : U0, p : A = B, a : A) : B {
   exact transport(fun (X : U0) => X, A, B, p, a);
 }
 
-def move_type_back(A B : U0, p : A = B, b : B) : A {
+def move_type_back(A, B : U0, p : A = B, b : B) : A {
   exact transport(fun (X : U0) => X, B, A, sym(p), b);
 }
 

@@ -35,7 +35,7 @@ def f4_alpha_generates_field :
 def f4_base_subfield := intermediate_subfield(F2, F4OverF2, f4_base_intermediate);
 
 def f4_base_in_prime : SubfieldIncluded(F4, f4_base_subfield, prime_subfield(F4)) {
-  intro x member;
+  intro x, member;
   obtain (k, same) := typed(F2Image(x), member);
   exact along GeneratedField(F4, (fun (x : F4Carrier) => Void)) by same from f4_generated_contains_base(
     (fun (x : F4Carrier) => Void), k

@@ -6,16 +6,16 @@ import extension_degree;
 // A linear map on finite coordinates lands in a subspace as soon as all of
 // its coordinate-unit images do. This avoids choosing coefficients anew.
 def CoordinatesInSubspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) :=
-  forall h : LinearMap(K, CoordinateSpace(K, n), V),
+  forall h : LinearMap(K, CoordinateSpace(K, n), V).
   (
-    forall i : Fin(n),
+    forall i : Fin(n).
     subspace_members(K, V, S, linear_map(K, CoordinateSpace(K, n), V, h, coordinate_unit(K, n, i)))
-  ) -> forall a : Fin(n) -> af_carrier(K),
+  ) -> forall a : Fin(n) -> af_carrier(K).
   subspace_members(K, V, S, linear_map(K, CoordinateSpace(K, n), V, h, a));
 
 def coordinates_in_subspace_zero(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
   CoordinatesInSubspace(K, V, S, 0) {
-  intro h units a;
+  intro h, units, a;
   let z := vector_zero(K, CoordinateSpace(K, 0));
   have same : a = z := FunExt(
     U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)), a, z,
@@ -34,7 +34,7 @@ def coordinates_in_subspace_step(
   previous : CoordinatesInSubspace(K, V, S, n)
 ) :
   CoordinatesInSubspace(K, V, S, succ(n)) {
-  intro h units a;
+  intro h, units, a;
   let C := CoordinateSpace(K, succ(n));
   let f := linear_map(K, C, V, h);
   let b := finite_head(af_carrier(K), n, a);
@@ -71,7 +71,7 @@ def basis_columns(
 
 def basis_columns_span(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n), S : Subspace(K, V),
-  contains : (forall i : Fin(n), subspace_members(K, V, S, basis_columns(K, V, n, basis, i))),
+  contains : (forall i : Fin(n). subspace_members(K, V, S, basis_columns(K, V, n, basis, i))),
   y : vector_carrier(K, V)
 ) :
   subspace_members(K, V, S, y) {
@@ -83,8 +83,8 @@ def basis_columns_span(
 
 // A subfield containing the base is a vector subspace over that base.
 def subfield_base_subspace(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
-  contains : (forall a : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, a)))
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
+  contains : (forall a : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, a)))
 ) :
   Subspace(K, field_vector_space(K, L, e)) {
   let P := subfield_members(L, S);
@@ -102,7 +102,7 @@ def subfield_base_subspace(
 // Consequently every finite extension has finitely many field generators:
 // any supplied vector basis supplies them, with no primitive-element theorem.
 def finite_basis_field_generators(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
   basis : FiniteBasis(K, field_vector_space(K, L, e), n), y : af_carrier(L)
 ) :
   GeneratedField(
@@ -112,16 +112,16 @@ def finite_basis_field_generators(
   let roots := basis_columns(K, V, n, basis);
   let P := RootFieldGenerators(K, L, e, n, roots);
   let S := generated_subfield(L, P);
-  have base : forall a : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, a)) {
+  have base : forall a : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, a)) {
     intro a;
     exact root_generated_contains_base(K, L, e, n, roots, a);
   }
-  have columns : forall i : Fin(n), subfield_members(L, S, roots(i)) {
+  have columns : forall i : Fin(n). subfield_members(L, S, roots(i)) {
     intro i;
     exact generated_field_contains(
       L, P, roots(i),
       typed(
-        P(roots(i)), right(typed((exists j : Fin(n), roots(j) = roots(i)), (i, refl(roots(i)))))
+        P(roots(i)), right(typed((exists j : Fin(n). roots(j) = roots(i)), (i, refl(roots(i)))))
       )
     );
   }

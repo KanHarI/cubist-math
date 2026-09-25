@@ -2,7 +2,7 @@ import field_scale_limits;
 
 // A canonical bound uses the lattice, not a decision about the sign of x.
 def field_lattice_magnitude(
-  F : U1, negF : F -> F, lt : F -> F -> U0, minF maxF : F -> F -> F,
+  F : U1, negF : F -> F, lt : F -> F -> U0, minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), x : F
 ) :
   FieldMagnitudeBound(F, negF, lt, x, maxF(x, negF(x))) {
@@ -11,9 +11,9 @@ def field_lattice_magnitude(
 }
 
 def field_close_difference_bound(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s t delta : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s, t, delta : F,
   close : FieldClose(F, addF, lt, s, t, delta)
 ) :
   FieldMagnitudeBound(F, negF, lt, addF(negF(t), s), delta) {
@@ -32,8 +32,8 @@ def field_close_difference_bound(
 
 // The increment formula used to turn a parameter bound into a curve bound.
 def field_affine_increment(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a d s t : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, d, s, t : F
 ) :
   addF(a, mulF(s, d)) = addF(addF(a, mulF(t, d)), mulF(addF(negF(t), s), d)) {
   have recover : addF(t, addF(negF(t), s)) = s := trans(
@@ -60,10 +60,10 @@ def field_affine_increment(
 }
 
 def field_affine_close(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a d length : F,
-  bounded : FieldMagnitudeBound(F, negF, lt, d, length), s t delta epsilon : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a, d, length : F,
+  bounded : FieldMagnitudeBound(F, negF, lt, d, length), s, t, delta, epsilon : F,
   close : FieldClose(F, addF, lt, s, t, delta), small : lt(mulF(delta, length), epsilon)
 ) :
   FieldClose(F, addF, lt, addF(a, mulF(s, d)), addF(a, mulF(t, d)), epsilon) {

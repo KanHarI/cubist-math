@@ -6,15 +6,15 @@ import predicate_chains;
 def directed_union_independent(
   K : AlgebraicField, V : VectorSpace(K), I : U1, P : I -> vector_carrier(K, V) -> U0,
   directed : PredicateDirected(I, vector_carrier(K, V), P),
-  independent : (forall j : I, LinearlyIndependent(K, V, P(j)))
+  independent : (forall j : I. LinearlyIndependent(K, V, P(j)))
 ) :
   LinearlyIndependent(K, V, PredicateUnion(I, vector_carrier(K, V), P)) {
-  intro n vectors distinct members coefficients vanishes i;
+  intro n, vectors, distinct, members, coefficients, vanishes, i;
   let A := vector_carrier(K, V);
   let zero := af_zero(af_carrier(K), af_operations(K));
   let Goal := coefficients(i) = zero;
   let prop := af_set(K, coefficients(i), zero);
-  have fromSeed : (exists j : I, P(j, vectors(i))) -> Goal {
+  have fromSeed : (exists j : I. P(j, vectors(i))) -> Goal {
     intro seedWitness;
     obtain (seed, member) := seedWitness;
     have fromCover : FiniteFamilyCover(I, A, P, n, vectors) -> Goal {
@@ -27,13 +27,13 @@ def directed_union_independent(
       finite_directed_union_cover(I, A, P, directed, seed, n, vectors, members)
     );
   }
-  exact field_exists_elim((exists j : I, P(j, vectors(i))), Goal, prop, fromSeed, members(i));
+  exact field_exists_elim((exists j : I. P(j, vectors(i))), Goal, prop, fromSeed, members(i));
 }
 
 def chain_union_independent(
   K : AlgebraicField, V : VectorSpace(K), I : U1, P : I -> vector_carrier(K, V) -> U0,
   chain : PredicateChain(I, vector_carrier(K, V), P),
-  independent : (forall j : I, LinearlyIndependent(K, V, P(j)))
+  independent : (forall j : I. LinearlyIndependent(K, V, P(j)))
 ) :
   LinearlyIndependent(K, V, PredicateUnion(I, vector_carrier(K, V), P)) {
   exact directed_union_independent(
@@ -44,7 +44,7 @@ def chain_union_independent(
 // The actual candidates for Zorn form a type in U1: a small membership
 // predicate together with its proposition and independence evidence.
 def IndependentSubset(K : AlgebraicField, V : VectorSpace(K)) :=
-  exists P : vector_carrier(K, V) -> U0, (forall x : vector_carrier(K, V), Proposition(P(x)))
+  exists P : vector_carrier(K, V) -> U0. (forall x : vector_carrier(K, V). Proposition(P(x)))
   and LinearlyIndependent(K, V, P);
 
 def independent_members(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) :=
@@ -53,13 +53,13 @@ def independent_members(K : AlgebraicField, V : VectorSpace(K), S : IndependentS
   };
 
 def independent_evidence(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) :
-  (forall x : vector_carrier(K, V), Proposition(independent_members(K, V, S, x)))
+  (forall x : vector_carrier(K, V). Proposition(independent_members(K, V, S, x)))
   and LinearlyIndependent(K, V, independent_members(K, V, S)) {
   exact field_second(
     (vector_carrier(K, V) -> U0),
     (
       fun (P : vector_carrier(K, V) -> U0) => typed(
-        U1, (forall x : vector_carrier(K, V), Proposition(P(x))) and LinearlyIndependent(K, V, P)
+        U1, (forall x : vector_carrier(K, V). Proposition(P(x))) and LinearlyIndependent(K, V, P)
       )
     ), S
   );
@@ -76,7 +76,7 @@ def EmptyIndependentSubset(K : AlgebraicField, V : VectorSpace(K)) :=
     IndependentSubset(K, V),
     (
       (fun (x : vector_carrier(K, V)) => Void),
-      (fun (x : vector_carrier(K, V), p q : Void) => typed((p = q), absurd(p))),
+      (fun (x : vector_carrier(K, V), p, q : Void) => typed((p = q), absurd(p))),
       empty_linearly_independent(K, V)
     )
   );

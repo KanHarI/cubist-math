@@ -7,17 +7,17 @@ import primes;
 def FieldClosureStep(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) :=
   P(x) or (x = af_zero(af_carrier(F), af_operations(F)))
   or (x = af_one(af_carrier(F), af_operations(F)))
-  or (exists y : af_carrier(F), P(y) and (af_neg(af_carrier(F), af_operations(F), y) = x))
+  or (exists y : af_carrier(F). P(y) and (af_neg(af_carrier(F), af_operations(F), y) = x))
   or (
-    exists y : af_carrier(F), exists z : af_carrier(F), P(y) and P(z)
+    exists y : af_carrier(F). exists z : af_carrier(F). P(y) and P(z)
     and (af_add(af_carrier(F), af_operations(F), y, z) = x)
   )
   or (
-    exists y : af_carrier(F), exists z : af_carrier(F), P(y) and P(z)
+    exists y : af_carrier(F). exists z : af_carrier(F). P(y) and P(z)
     and (af_mul(af_carrier(F), af_operations(F), y, z) = x)
   )
   or (
-    exists y : af_carrier(F), P(y)
+    exists y : af_carrier(F). P(y)
     and (af_mul(af_carrier(F), af_operations(F), y, x) = af_one(af_carrier(F), af_operations(F)))
   );
 
@@ -46,7 +46,7 @@ def field_closure_step_neg(
 }
 
 def field_closure_step_add(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), px : P(x), py : P(y)
+  F : AlgebraicField, P : af_carrier(F) -> U0, x, y : af_carrier(F), px : P(x), py : P(y)
 ) :
   FieldClosureStep(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
   exact right(
@@ -55,7 +55,7 @@ def field_closure_step_add(
 }
 
 def field_closure_step_mul(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), px : P(x), py : P(y)
+  F : AlgebraicField, P : af_carrier(F) -> U0, x, y : af_carrier(F), px : P(x), py : P(y)
 ) :
   FieldClosureStep(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
   exact right(
@@ -66,7 +66,7 @@ def field_closure_step_mul(
 }
 
 def field_closure_step_inverse(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), px : P(x),
+  F : AlgebraicField, P : af_carrier(F) -> U0, x, y : af_carrier(F), px : P(x),
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
   )
@@ -77,7 +77,7 @@ def field_closure_step_inverse(
 
 // A subfield containing P contains the result of every single closure step.
 def field_closure_step_into_subfield(
-  F : AlgebraicField, P Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
+  F : AlgebraicField, P, Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
   included : PredicateIncluded(af_carrier(F), P, Q), x : af_carrier(F),
   step : FieldClosureStep(F, P, x)
 ) :
@@ -145,7 +145,7 @@ def FieldClosureStage(F : AlgebraicField, P : af_carrier(F) -> U0, n : Nat) :=
 // Padding a derivation by m keep-steps raises its rank from n to m+n.
 def field_closure_pad(F : AlgebraicField, P : af_carrier(F) -> U0, m : Nat) :=
   induction m as k return (
-    forall n : Nat, forall x : af_carrier(F), FieldClosureStage(F, P, n, x)
+    forall n : Nat. forall x : af_carrier(F). FieldClosureStage(F, P, n, x)
     -> FieldClosureStage(F, P, k + n, x)
   ) {
     zero => (fun (n : Nat, x : af_carrier(F), member : FieldClosureStage(F, P, n, x)) => member);
@@ -157,7 +157,7 @@ def field_closure_pad(F : AlgebraicField, P : af_carrier(F) -> U0, m : Nat) :=
   };
 
 def field_closure_pad_right(
-  F : AlgebraicField, P : af_carrier(F) -> U0, n m : Nat, x : af_carrier(F),
+  F : AlgebraicField, P : af_carrier(F) -> U0, n, m : Nat, x : af_carrier(F),
   member : FieldClosureStage(F, P, n, x)
 ) :
   FieldClosureStage(F, P, n + m, x) {
@@ -168,10 +168,10 @@ def field_closure_pad_right(
 
 // Every finite derivation lies in any subfield containing the generators.
 def field_closure_stage_least(
-  F : AlgebraicField, P Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
+  F : AlgebraicField, P, Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
   included : PredicateIncluded(af_carrier(F), P, Q), n : Nat
 ) :=
-  induction n as k return (forall x : af_carrier(F), FieldClosureStage(F, P, k, x) -> Q(x)) {
+  induction n as k return (forall x : af_carrier(F). FieldClosureStage(F, P, k, x) -> Q(x)) {
     zero => included;
     succ previous => field_closure_step_into_subfield(
       F, FieldClosureStage(F, P, k), Q, laws, previous

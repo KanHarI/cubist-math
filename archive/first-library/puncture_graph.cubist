@@ -30,16 +30,16 @@ def bouquet_generator_spoke(A : U0, a : A) :
   );
 }
 
-def bouquet_map_edges(A X : U0, point : X, loops : A -> (point = point), label : Unit or A) :=
+def bouquet_map_edges(A, X : U0, point : X, loops : A -> (point = point), label : Unit or A) :=
   match label return (point = point) {
     left u => refl(point);
     right a => loops(a);
   };
 
-def bouquet_map(A X : U0, point : X, loops : A -> (point = point)) :=
+def bouquet_map(A, X : U0, point : X, loops : A -> (point = point)) :=
   suspension_rec(Unit or A, X, point, point, bouquet_map_edges(A, X, point, loops));
 
-def bouquet_map_generator(A X : U0, point : X, loops : A -> (point = point), a : A) :
+def bouquet_map_generator(A, X : U0, point : X, loops : A -> (point = point), a : A) :
   cong(bouquet_map(A, X, point, loops), bouquet_generator(A, a)) = loops(a) {
   let map := bouquet_map(A, X, point, loops);
   let back := cong(map, sym(bouquet_spoke(A)));

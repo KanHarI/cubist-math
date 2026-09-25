@@ -38,7 +38,7 @@ def group_unit(G : Group) :=
     group_carrier(G),
     (
       fun (unit : group_carrier(G)) => exists multiply : group_carrier(G) -> group_carrier(G)
-      -> group_carrier(G), GroupLaws(group_carrier(G), unit, multiply)
+      -> group_carrier(G). GroupLaws(group_carrier(G), unit, multiply)
     ), group_structure(G)
   );
 
@@ -47,7 +47,7 @@ def group_multiplication_data(G : Group) :=
     group_carrier(G),
     (
       fun (unit : group_carrier(G)) => exists multiply : group_carrier(G) -> group_carrier(G)
-      -> group_carrier(G), GroupLaws(group_carrier(G), unit, multiply)
+      -> group_carrier(G). GroupLaws(group_carrier(G), unit, multiply)
     ), group_structure(G)
   );
 
@@ -67,7 +67,7 @@ def group_laws(G : Group) :=
 def GroupMultiplicative(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, f : A -> B
 ) :=
-  forall x : A, forall y : A, f(multiplyA(x, y)) = multiplyB(f(x), f(y));
+  forall x : A. forall y : A. f(multiplyA(x, y)) = multiplyB(f(x), f(y));
 
 def GroupMapLaws(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, f : A -> B, g : B -> A
@@ -76,19 +76,19 @@ def GroupMapLaws(
   and GroupMultiplicative(A, multiplyA, B, multiplyB, f);
 
 def GroupMapEvidence(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, f : A -> B) :=
-  exists g : B -> A, GroupMapLaws(A, multiplyA, B, multiplyB, f, g);
+  exists g : B -> A. GroupMapLaws(A, multiplyA, B, multiplyB, f, g);
 
 // An isomorphism is a multiplication-preserving map with a specified inverse.
 // On group carriers (sets), inverse evidence is a proposition. Unit preservation
 // follows from the laws and is proved later, rather than stored twice.
 def GroupIsomorphism(A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B) :=
-  exists f : A -> B, GroupMapEvidence(A, multiplyA, B, multiplyB, f);
+  exists f : A -> B. GroupMapEvidence(A, multiplyA, B, multiplyB, f);
 
 // Isomorphisms of bundled groups, with the carriers and operations inferred.
-def GroupIso(G H : Group) :=
+def GroupIso(G, H : Group) :=
   GroupIsomorphism(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H));
 
-def group_iso_forward(G H : Group, iso : GroupIso(G, H)) : group_carrier(G) -> group_carrier(H) {
+def group_iso_forward(G, H : Group, iso : GroupIso(G, H)) : group_carrier(G) -> group_carrier(H) {
   exact sigma_first(
     (group_carrier(G) -> group_carrier(H)),
     GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H)), iso
@@ -143,8 +143,8 @@ def group_is_set(G : Group) : IsSet(group_carrier(G)) {
 def group_induction(
   P : Group -> U1,
   step : (
-    forall A : U0, forall unit : A, forall multiply : A -> A -> A,
-    forall laws : GroupLaws(A, unit, multiply), P(group_object(A, unit, multiply, laws))
+    forall A : U0. forall unit : A. forall multiply : A -> A -> A.
+    forall laws : GroupLaws(A, unit, multiply). P(group_object(A, unit, multiply, laws))
   ), G : Group
 ) :
   P(G) {
@@ -154,9 +154,9 @@ def group_induction(
       fun (A : U0, ops : GroupStructure(A)) => pair_induction(
         (fun (ops : GroupStructure(A)) => P(typed(Group, (A, ops)))),
         (
-          fun (unit : A, data : (exists multiply : A -> A -> A, GroupLaws(A, unit, multiply))) => pair_induction(
+          fun (unit : A, data : (exists multiply : A -> A -> A. GroupLaws(A, unit, multiply))) => pair_induction(
             (
-              fun (data : (exists multiply : A -> A -> A, GroupLaws(A, unit, multiply))) => P(
+              fun (data : (exists multiply : A -> A -> A. GroupLaws(A, unit, multiply))) => P(
                 typed(Group, (A, unit, data))
               )
             ),
@@ -193,12 +193,12 @@ def group_object_eta(G : Group) :
 def group_identity_iso(G : Group) : GroupIso(G, G) {
   let identity := fun (x : group_carrier(G)) => x;
   let identityLaw := fun (x : group_carrier(G)) => refl(x);
-  let preserves := fun (x y : group_carrier(G)) => refl(group_multiply(G, x, y));
+  let preserves := fun (x, y : group_carrier(G)) => refl(group_multiply(G, x, y));
   exact (identity, identity, identityLaw, identityLaw, preserves);
 }
 
 // The canonical map from equality to isomorphism. It computes at reflexivity
 // and uses only transport; univalence is needed for its inverse, not this map.
-def group_idtoiso(G H : Group, p : G =[Group] H) : GroupIso(G, H) {
+def group_idtoiso(G, H : Group, p : G =[Group] H) : GroupIso(G, H) {
   exact along GroupIso(G) by p from group_identity_iso(G);
 }

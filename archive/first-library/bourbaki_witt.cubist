@@ -1,6 +1,6 @@
 import bourbaki_tower;
 
-def TowerSeparation(A : U1, le : OrderRelation(A), f : A -> A, a b : A) :=
+def TowerSeparation(A : U1, le : OrderRelation(A), f : A -> A, a, b : A) :=
   FieldOr(le(b, a), le(f(a), b));
 
 def tower_separation_step(
@@ -42,7 +42,7 @@ def tower_separation_step(
 def tower_separation_sup(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, a : A, C : A -> U0, chain : OrderChain(A, le, C),
-  separated : (forall b : A, C(b) -> TowerSeparation(A, le, f, a, b))
+  separated : (forall b : A. C(b) -> TowerSeparation(A, le, f, a, b))
 ) :
   TowerSeparation(A, le, f, a, chain_sup(A, le, complete, C, chain)) {
   let s := chain_sup(A, le, complete, C, chain);
@@ -53,8 +53,8 @@ def tower_separation_sup(
     right notsa => {
       have contradiction : (le(f(a), s) -> Void) -> Void {
         intro notAbove;
-        have bounded : forall b : A, C(b) -> le(b, a) {
-          intro b cb;
+        have bounded : forall b : A. C(b) -> le(b, a) {
+          intro b, cb;
           exact field_or_elim(
             le(b, a), le(f(a), b), le(b, a), order_prop(A, le, laws, b, a),
             (fun (ba : le(b, a)) => ba),
@@ -97,7 +97,7 @@ def tower_separation(
     (
       fun (
         C : A -> U0, chain : OrderChain(A, le, C),
-        members : (forall y : A, C(y) -> TowerMember(A, le, complete, f, y))
+        members : (forall y : A. C(y) -> TowerMember(A, le, complete, f, y))
       ) => tower_separation_sup(A, le, laws, complete, f, a, C, chain)
     ), b, tb
   );
@@ -109,7 +109,7 @@ def tower_stable_step(
   stable : TowerStable(A, le, complete, f, a)
 ) :
   TowerStable(A, le, complete, f, f(a)) {
-  intro b tb below strict;
+  intro b, tb, below, strict;
   have lower : le(b, a) -> le(f(b), f(a)) {
     intro ba;
     cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
@@ -132,15 +132,15 @@ def tower_stable_step(
 def tower_stable_sup(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, progressive : Progressive(A, le, f), C : A -> U0, chain : OrderChain(A, le, C),
-  stable : (forall a : A, C(a) -> TowerStable(A, le, complete, f, a))
+  stable : (forall a : A. C(a) -> TowerStable(A, le, complete, f, a))
 ) :
   TowerStable(A, le, complete, f, chain_sup(A, le, complete, C, chain)) {
   let s := chain_sup(A, le, complete, C, chain);
-  intro b tb below strict;
+  intro b, tb, below, strict;
   have contradiction : (le(f(b), s) -> Void) -> Void {
     intro notBelow;
-    have bounded : forall a : A, C(a) -> le(a, b) {
-      intro a ca;
+    have bounded : forall a : A. C(a) -> le(a, b) {
+      intro a, ca;
       have lower : le(b, a) -> le(a, b) {
         intro ba;
         cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
@@ -186,7 +186,7 @@ def tower_is_stable(
     (
       fun (
         C : A -> U0, chain : OrderChain(A, le, C),
-        members : (forall x : A, C(x) -> TowerMember(A, le, complete, f, x))
+        members : (forall x : A. C(x) -> TowerMember(A, le, complete, f, x))
       ) => tower_stable_sup(A, le, laws, complete, f, progressive, C, chain)
     ), a, ta
   );
@@ -197,7 +197,7 @@ def tower_is_chain(
   f : A -> A, progressive : Progressive(A, le, f)
 ) :
   OrderChain(A, le, TowerMember(A, le, complete, f)) {
-  intro x y tx ty;
+  intro x, y, tx, ty;
   exact field_or_elim(
     le(x, y), le(f(y), x), FieldOr(le(x, y), le(y, x)), field_exists_prop(le(x, y) or le(y, x)),
     (fun (xy : le(x, y)) => field_exists_intro(le(x, y) or le(y, x), left(xy))),
@@ -219,7 +219,7 @@ def bourbaki_witt(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, progressive : Progressive(A, le, f)
 ) :
-  exists x : A, f(x) = x {
+  exists x : A. f(x) = x {
   let T := TowerMember(A, le, complete, f);
   let chain := tower_is_chain(A, le, laws, complete, f, progressive);
   let s := chain_sup(A, le, complete, T, chain);

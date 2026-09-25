@@ -79,9 +79,9 @@ repeating the finite classification of automorphisms.
 bundles the carrier as well:
 
 ```
-Group = exists A : U0,
-  exists unit : A,
-    exists multiply : A -> A -> A,
+Group = exists A : U0.
+  exists unit : A.
+    exists multiply : A -> A -> A.
       GroupLaws(A, unit, multiply)
 ```
 
@@ -117,7 +117,7 @@ collapse them. The function used to generate these paths is
 - [group_isomorphisms.cubist](../../archive/first-library/group_isomorphisms.cubist): an
   isomorphism is determined by its underlying function.
 - [group_total_identity.cubist](../../archive/first-library/group_total_identity.cubist): the
-  total space `exists H : Group, GroupIso(G,H)` is contractible, with center
+  total space `exists H : Group. GroupIso(G,H)` is contractible, with center
   `(G, identity)`.
 - [identity_systems.cubist](../../archive/first-library/identity_systems.cubist): a reusable
   identity-system construction, inverse laws, and an equivalence when the

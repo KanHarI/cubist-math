@@ -4,12 +4,12 @@ export function tokenize(source) {
     throw new Error("Source exceeds 1 MB.");
   const tokens = [];
   const re =
-    /\s+|\/\/[^\n]*|(?:<=|=>|->|:=|<-)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;+*<=>@]|./gy;
+    /\s+|\/\/[^\n]*|(?:<=|=>|->|:=|<-)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*<=>@]|./gy;
   for (const match of source.matchAll(re)) {
     const text = match[0];
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|:=|<-|[\[\](){}:,;+*<=>@])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|:=|<-|[\[\](){}:,;.+*<=>@])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: match.index,
@@ -45,6 +45,14 @@ export function parse(source, typeOnly = false) {
     if (t.text === "EOF" || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
       throw Object.assign(new Error("Expected a name."), { offset: t.start });
     return t;
+  }
+  // Names that share a type are separated by commas: (n, m : Nat).
+  function sharedNames(example = "(n, m : Nat)") {
+    const names = [name()];
+    while (peek() === ",") { take(","); names.push(name()); }
+    if (/^[A-Za-z_]/.test(peek()) && peek() !== "EOF")
+      throw Object.assign(new Error(`Separate names with commas: ${example}`), { offset: ts[i].start });
+    return names;
   }
   const prec = {
     "->": 1,
@@ -195,12 +203,11 @@ export function parse(source, typeOnly = false) {
     } else if (t.text === "fun") {
       const binders = [];
       // Binder groups are one comma-separated list, like parameters:
-      // fun (x y : A, b : B) => body.
+      // fun (x, y : A, b : B) => body.
       if (peek() === "(") {
         take("(");
         while (true) {
-          const names = [name()];
-          while (peek() !== ":") names.push(name());
+          const names = sharedNames();
           take(":");
           const domain = expr();
           binders.push({ names, domain });
@@ -225,11 +232,16 @@ export function parse(source, typeOnly = false) {
         };
       }
     } else if (t.text === "forall" || t.text === "exists") {
-      const names = [name()];
-      while (peek() !== ":") names.push(name());
+      const names = sharedNames(`${t.text} n, m : Nat. P(n, m)`);
       take(":");
       const domain = expr();
-      take(",");
+      // `.` ends the type: forall n : Nat. P(n). A space follows it, so a
+      // tight x.y stays free for projections.
+      if (peek() !== ".")
+        throw Object.assign(new Error(`End ${t.text}'s type with a dot: ${t.text} n : Nat. P(n)`), { offset: ts[i].start });
+      const dot = take(".");
+      if (!/\s/.test(source[dot.end] ?? " "))
+        throw Object.assign(new Error(`Write a space after the . that ends ${t.text}'s type: ${t.text} n : Nat. P(n)`), { offset: dot.start });
       const body = expr();
       a = {
         kind: names.length === 1 ? t.text : "binderGroup",
@@ -325,8 +337,11 @@ export function parse(source, typeOnly = false) {
       const t = take();
       let s;
       if (t.text === "intro") {
+        // intro m, n; takes several inputs, named in order.
         const names = [name()];
-        while (peek() !== ";") names.push(name());
+        while (peek() === ",") { take(","); names.push(name()); }
+        if (/^[A-Za-z_]/.test(peek()) && peek() !== "EOF")
+          throw Object.assign(new Error("Separate names with commas: intro m, n;"), { offset: ts[i].start });
         const end = take(";");
         s = names.map(n => ({ kind: "intro", name: n, start: t.start, end: end.end }));
       } else if (t.text === "let" || t.text === "obtain") {
@@ -595,8 +610,7 @@ export function parse(source, typeOnly = false) {
       take("(");
       if (peek() !== ")") {
         while (true) {
-          const names = [name()];
-          while (peek() !== ":") names.push(name());
+          const names = sharedNames();
           take(":");
           const type = expr();
           const group = params.length;

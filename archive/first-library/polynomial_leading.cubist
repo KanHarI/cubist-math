@@ -20,18 +20,18 @@ def convolution_constant_left(K : AlgebraicField, a : af_carrier(K), n : Nat, f 
 
 def convolution_top(K : AlgebraicField, m : Nat) :=
   induction m as k return (
-    forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat,
+    forall f : FormalSeries(K). forall g : FormalSeries(K). forall n : Nat.
     SeriesSupport(K, f, succ(k)) -> SeriesSupport(K, g, succ(n))
     -> convolution(K, add_count(k, n), f, g) = field_mul(K, f(k), g(n))
   ) {
     zero => fun (
-      f g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, 1), sg : SeriesSupport(K, g, succ(n))
+      f, g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, 1), sg : SeriesSupport(K, g, succ(n))
     ) => trans(
       cong((fun (s : FormalSeries(K)) => convolution(K, n, s, g)), series_support_one(K, f, sf)),
       convolution_constant_left(K, f(0), n, g)
     );
     succ previous => fun (
-      f g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, succ(succ(k))),
+      f, g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, succ(succ(k))),
       sg : SeriesSupport(K, g, succ(n))
     ) => trans(
       cong(
@@ -61,11 +61,11 @@ def convolution_top(K : AlgebraicField, m : Nat) :=
   };
 
 def support_product_degrees_zero(
-  K : AlgebraicField, f g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, 1),
+  K : AlgebraicField, f, g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, 1),
   sg : SeriesSupport(K, g, succ(n))
 ) :
   SeriesSupport(K, series_mul(K, f, g), succ(n)) {
-  intro k above;
+  intro k, above;
   exact trans(
     cong((fun (s : FormalSeries(K)) => convolution(K, k, s, g)), series_support_one(K, f, sf)),
     trans(
@@ -78,10 +78,10 @@ def support_product_degrees_zero(
 def support_product_degrees_step(
   K : AlgebraicField, m : Nat,
   previous : (
-    forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat,
+    forall f : FormalSeries(K). forall g : FormalSeries(K). forall n : Nat.
     SeriesSupport(K, f, succ(m)) -> SeriesSupport(K, g, succ(n))
     -> SeriesSupport(K, series_mul(K, f, g), succ(add_count(m, n)))
-  ), f g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, succ(succ(m))),
+  ), f, g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, succ(succ(m))),
   sg : SeriesSupport(K, g, succ(n))
 ) :
   SeriesSupport(K, series_mul(K, f, g), succ(succ(add_count(m, n)))) {
@@ -127,7 +127,7 @@ def support_product_degrees_step(
 
 def support_product_degrees(K : AlgebraicField, m : Nat) :=
   induction m as k return (
-    forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat,
+    forall f : FormalSeries(K). forall g : FormalSeries(K). forall n : Nat.
     SeriesSupport(K, f, succ(k)) -> SeriesSupport(K, g, succ(n))
     -> SeriesSupport(K, series_mul(K, f, g), succ(add_count(k, n)))
   ) {
@@ -136,7 +136,7 @@ def support_product_degrees(K : AlgebraicField, m : Nat) :=
   };
 
 def scalar_product_nonzero(
-  K : AlgebraicField, a b : af_carrier(K), na : FieldNonzero(af_carrier(K), af_operations(K), a),
+  K : AlgebraicField, a, b : af_carrier(K), na : FieldNonzero(af_carrier(K), af_operations(K), a),
   nb : FieldNonzero(af_carrier(K), af_operations(K), b)
 ) :
   FieldNonzero(af_carrier(K), af_operations(K), field_mul(K, a, b)) {
@@ -149,7 +149,7 @@ def scalar_product_nonzero(
 }
 
 def polynomial_product_degree(
-  K : AlgebraicField, p q : Polynomial(K), m n : Nat, dp : polynomial_cutoff(K, p) = succ(m),
+  K : AlgebraicField, p, q : Polynomial(K), m, n : Nat, dp : polynomial_cutoff(K, p) = succ(m),
   dq : polynomial_cutoff(K, q) = succ(n)
 ) :
   polynomial_cutoff(K, polynomial_mul(K, p, q)) = succ(add_count(m, n)) {
@@ -175,24 +175,24 @@ def polynomial_product_degree(
 def polynomial_nonzero_degree(
   K : AlgebraicField, p : Polynomial(K), nonzero : (p = polynomial_zero(K)) -> Void
 ) :
-  exists n : Nat, polynomial_cutoff(K, p) = succ(n) {
+  exists n : Nat. polynomial_cutoff(K, p) = succ(n) {
   exact (
     induction polynomial_cutoff(K, p) as k return (
-      (polynomial_cutoff(K, p) = k) -> exists n : Nat, polynomial_cutoff(K, p) = succ(n)
+      (polynomial_cutoff(K, p) = k) -> exists n : Nat. polynomial_cutoff(K, p) = succ(n)
     ) {
       zero => fun (same : polynomial_cutoff(K, p) = 0) => typed(
-        (exists n : Nat, polynomial_cutoff(K, p) = succ(n)),
+        (exists n : Nat. polynomial_cutoff(K, p) = succ(n)),
         absurd(nonzero(polynomial_cutoff_zero(K, p, same)))
       );
       succ ignored => fun (same : polynomial_cutoff(K, p) = succ(k)) => typed(
-        (exists n : Nat, polynomial_cutoff(K, p) = succ(n)), (k, same)
+        (exists n : Nat. polynomial_cutoff(K, p) = succ(n)), (k, same)
       );
     }
   )(refl(polynomial_cutoff(K, p)));
 }
 
 def polynomial_product_nonzero(
-  K : AlgebraicField, p q : Polynomial(K), np : (p = polynomial_zero(K)) -> Void,
+  K : AlgebraicField, p, q : Polynomial(K), np : (p = polynomial_zero(K)) -> Void,
   nq : (q = polynomial_zero(K)) -> Void, zero : polynomial_mul(K, p, q) = polynomial_zero(K)
 ) :
   Void {

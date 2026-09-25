@@ -60,9 +60,9 @@
                 <tr><td><code>Truncate(U0, A)</code></td><td>The propositional truncation of <code>A : U0</code>, a type in <code>U0</code></td></tr>
                 <tr><td><code>TruncateIntro(U0, A, a)</code></td><td>Sends <code>a : A</code> into <code>Truncate(U0, A)</code></td></tr>
                 <tr><td><code>TruncateProp(U0, A, x, y)</code></td><td>Any two elements <code>x y</code> of the truncation are equal</td></tr>
-                <tr><td><code>TruncateElim(U0, A, P, proposition, map, t)</code></td><td>Given <code>proposition : forall x y : P, x = y</code> and <code>map : A -> P</code>, maps <code>t : Truncate(U0, A)</code> to <code>P</code></td></tr>
+                <tr><td><code>TruncateElim(U0, A, P, proposition, map, t)</code></td><td>Given <code>proposition : forall x, y : P. x = y</code> and <code>map : A -> P</code>, maps <code>t : Truncate(U0, A)</code> to <code>P</code></td></tr>
                 <tr><td><code>LEM(U0, A, doubleNegation)</code></td><td>Excluded middle: from <code>(A -> Void) -> Void</code>, an element of <code>Truncate(U0, A)</code></td></tr>
-                <tr><td><code>Choice(U0, A, B, setA, setFibers, inhabited)</code></td><td>The axiom of choice for a set <code>A</code> and a family of sets <code>B</code>: from <code>inhabited : forall a : A, Truncate(U0, B(a))</code>, an element of <code>Truncate(U0, forall a : A, B(a))</code></td></tr>
+                <tr><td><code>Choice(U0, A, B, setA, setFibers, inhabited)</code></td><td>The axiom of choice for a set <code>A</code> and a family of sets <code>B</code>: from <code>inhabited : forall a : A. Truncate(U0, B(a))</code>, an element of <code>Truncate(U0, forall a : A. B(a))</code></td></tr>
               </tbody>
             </table></div>
             <p><code>Truncate(U0, A)</code>, which the library often names <code>Mere(A)</code>, says that <code>A</code> is inhabited without giving access to a chosen element. The inspector displays it as <span class="math">‖A‖</span>; that is display notation, not source syntax.</p>
@@ -70,11 +70,11 @@
   exact TruncateIntro(U0, A, a);
 }
 
-def all_equal(A : U0, x y : Truncate(U0, A)) : x = y {
+def all_equal(A : U0, x, y : Truncate(U0, A)) : x = y {
   exact TruncateProp(U0, A, x, y);
 }
 
-def into_a_proposition(A P : U0, proposition : forall x : P, forall y : P, x = y,
+def into_a_proposition(A, P : U0, proposition : forall x : P. forall y : P. x = y,
     map : A -&gt; P, t : Truncate(U0, A)) : P {
   exact TruncateElim(U0, A, P, proposition, map, t);
 }</code></pre>
@@ -84,8 +84,8 @@ def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
   exact LEM(U0, A, nn);
 }
 
-def choose(A : U0, B : A -&gt; U0, setA : IsSet(A), setB : forall a : A, IsSet(B(a)),
-    inhabited : forall a : A, Truncate(U0, B(a))) : Truncate(U0, forall a : A, B(a)) {
+def choose(A : U0, B : A -&gt; U0, setA : IsSet(A), setB : forall a : A. IsSet(B(a)),
+    inhabited : forall a : A. Truncate(U0, B(a))) : Truncate(U0, forall a : A. B(a)) {
   exact Choice(U0, A, B, setA, setB, inhabited);
 }</code></pre>
             <p>The inspector lists every assumption a theorem uses, computed from its checked term, type and the definitions they mention. The assumptions are independent: using truncation does not by itself request excluded middle or choice.</p>
@@ -111,7 +111,7 @@ def extra_argument(A : U0, a : A) := TruncateIntro(U0, A, a, a);</code></pre>
             <p>Function extensionality and univalence are not assumptions. In cubical type theory both are constructions, and the checker builds them from the kernel’s own rules:</p>
             <dl>
               <dt><code>FunExt(U, A, B, f, g, pointwise)</code></dt>
-              <dd>For <code>B : A -> U</code>, dependent functions <code>f</code> and <code>g</code>, and <code>pointwise : forall x : A, f(x) = g(x)</code>, the path <code>f = g</code>. It builds the same term as <a href="cubical.html#ext"><code>ext</code></a>, which is usually shorter.</dd>
+              <dd>For <code>B : A -> U</code>, dependent functions <code>f</code> and <code>g</code>, and <code>pointwise : forall x : A. f(x) = g(x)</code>, the path <code>f = g</code>. It builds the same term as <a href="cubical.html#ext"><code>ext</code></a>, which is usually shorter.</dd>
               <dt><code>ua(U, A, B, equivalence)</code></dt>
               <dd>A path <code>A = B</code> from an equivalence <code>equivalence : Equiv(U, A, B)</code>, defined by <code>import paths;</code>. An equivalence is a function with an inverse, two homotopies and the triangle law; a pair of maps is not enough.</dd>
               <dt><code>UnivalenceBeta(U, A, B, equivalence, x)</code></dt>
@@ -135,8 +135,8 @@ computable def swapped : (Unit and Nat) = (Nat and Unit) {
 
 evaluate along (fun (T : U0) =&gt; T) by swapped from typed(Unit and Nat, (tt, 3))
   expecting typed(Nat and Unit, (3, tt));</code></pre>
-            <pre><code data-check="accept">computable def extensional(A : U0, B : A -&gt; U0, f g : forall a : A, B(a),
-    h : forall a : A, f(a) = g(a)) : f = g {
+            <pre><code data-check="accept">computable def extensional(A : U0, B : A -&gt; U0, f, g : forall a : A. B(a),
+    h : forall a : A. f(a) = g(a)) : f = g {
   exact FunExt(U0, A, B, f, g, h);
 }</code></pre>
           </section>

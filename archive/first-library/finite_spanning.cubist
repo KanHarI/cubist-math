@@ -15,7 +15,7 @@ def family_linear(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
 
 def family_linear_evaluation(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
-    forall vectors : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
+    forall vectors : Fin(k) -> vector_carrier(K, V). forall a : Fin(k) -> af_carrier(K).
     linear_map(K, CoordinateSpace(K, k), V, family_linear(K, V, k, vectors), a) = linear_combination(
       K, V, k, vectors, a
     )
@@ -38,8 +38,8 @@ def family_linear_evaluation(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
 def FiniteSpanningFamily(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V)
 ) :=
-  forall x : vector_carrier(K, V),
-  Mere(exists a : Fin(n) -> af_carrier(K), linear_combination(K, V, n, vectors, a) = x);
+  forall x : vector_carrier(K, V).
+  Mere(exists a : Fin(n) -> af_carrier(K). linear_combination(K, V, n, vectors, a) = x);
 
 def family_linear_surjective(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
@@ -50,13 +50,13 @@ def family_linear_surjective(
   let C := Fin(n) -> af_carrier(K);
   let X := vector_carrier(K, V);
   let f := linear_map(K, CoordinateSpace(K, n), V, family_linear(K, V, n, vectors));
-  have convert : (exists a : C, linear_combination(K, V, n, vectors, a) = x) -> Fiber(C, X, f, x) {
+  have convert : (exists a : C. linear_combination(K, V, n, vectors, a) = x) -> Fiber(C, X, f, x) {
     intro witness;
     obtain (a, sum) := witness;
     exact (a, trans(family_linear_evaluation(K, V, n, vectors, a), sum));
   }
   exact mere_map(
-    (exists a : C, linear_combination(K, V, n, vectors, a) = x), Fiber(C, X, f, x), convert,
+    (exists a : C. linear_combination(K, V, n, vectors, a) = x), Fiber(C, X, f, x), convert,
     spanning(x)
   );
 }
@@ -77,6 +77,6 @@ def finite_spanning_basis(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
   spanning : FiniteSpanningFamily(K, V, n, vectors)
 ) :
-  Mere(exists m : Nat, FiniteBasis(K, V, m)) {
+  Mere(exists m : Nat. FiniteBasis(K, V, m)) {
   exact finite_basis_exists(K, V, finite_spanning_dimension(K, V, n, vectors, spanning));
 }

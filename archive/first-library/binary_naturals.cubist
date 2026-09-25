@@ -28,7 +28,7 @@ def binary_zero := typed(BinaryNat, left(tt));
 def binary_positive(p : BinaryPositive) := typed(BinaryNat, right(p));
 
 // The recursive result and original child are both available in a digit case.
-def binary_positive_rec(R : U0, one : R, even odd : BinaryPositive -> R -> R, p : BinaryPositive) :=
+def binary_positive_rec(R : U0, one : R, even, odd : BinaryPositive -> R -> R, p : BinaryPositive) :=
   wrec(
     BinaryPositive, fun (tree : BinaryPositive) => R,
     fun (
@@ -46,7 +46,7 @@ def binary_positive_rec(R : U0, one : R, even odd : BinaryPositive -> R -> R, p 
     )(children, ih), p
   );
 
-def binary_positive_cases(R : U0, one : R, even odd : BinaryPositive -> R, p : BinaryPositive) :=
+def binary_positive_cases(R : U0, one : R, even, odd : BinaryPositive -> R, p : BinaryPositive) :=
   binary_positive_rec(
     R, one, fun (child : BinaryPositive, ignored : R) => even(child),
     fun (child : BinaryPositive, ignored : R) => odd(child), p

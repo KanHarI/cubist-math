@@ -10,11 +10,11 @@ const original = `import primes;
 def moved(C : Nat -> U0, p : 0 + 0 = 0, v : C(0 + 0)) : C(0) {
   exact transport(C, 0 + 0, 0, p, v);
 }
-def evaluated(A : U0, x y : A, p : x = y) := at(p, 0);
+def evaluated(A : U0, x, y : A, p : x = y) := at(p, 0);
 def two : 1 + 1 = 2 {
   exact refl(2);
 }
-def mirror(U : Universe, A : U, x y : A, p : x = y) : y = x {
+def mirror(U : Universe, A : U, x, y : A, p : x = y) : y = x {
   exact path(fun (i : Interval) => A, fun (i : Interval) => at(p, flip(i)));
 }
 `;
@@ -62,13 +62,13 @@ test("a changed proof passes only the type level, and a changed statement fails"
   assert.equal(typed.typesPreserved, 1);
   // 2 = 2 would still convert to 1 + 1 = 2; this statement genuinely differs.
   const statement = await verify(original.replace("def two : 1 + 1 = 2 {\n  exact refl(2);",
-    "def two : forall n : Nat, n = n {\n  intro n;\n  rfl;"), "types");
+    "def two : forall n : Nat. n = n {\n  intro n;\n  rfl;"), "types");
   assert.match(statement.failures.find(failure => failure.name === "two")?.reason ?? "", /public type changed/);
 });
 
 test("syntax rewrites keep comments and verify at their declared level", async () => {
   const source = `import paths;
-def moved(C : Nat -> U0, p : 0 = 0, q : 0 = 0, v : C(0)) : forall a b c : Nat, C(0) {
+def moved(C : Nat -> U0, p : 0 = 0, q : 0 = 0, v : C(0)) : forall a, b, c : Nat. C(0) {
   intro a;
   intro b; // kept apart by this comment
   intro c;
@@ -77,8 +77,8 @@ def moved(C : Nat -> U0, p : 0 = 0, q : 0 = 0, v : C(0)) : forall a b c : Nat, C
   }
   exact h;
 }
-def pick(A : U0, x y : A, p : x = y) := (fun (a : A) => fun (b : A) => a)(at(p, 0), y);
-def loop(A : U0, x y : A, p : x = y) : x = x {
+def pick(A : U0, x, y : A, p : x = y) := (fun (a : A) => fun (b : A) => a)(at(p, 0), y);
+def loop(A : U0, x, y : A, p : x = y) : x = x {
   exact concatenate(U0, A, x, y, x, p, inverse(U0, A, x, y, p));
 }
 def still(A : U0, x : A) : x = x {
@@ -93,10 +93,10 @@ def pointwise(A : U0, f : A -> A) : f = f {
 `;
   const identical = rewriteModule(source, { rewrites: identicalRewrites });
   assert.deepEqual(identical.applied, { params: 1, intro: 1, have: 1, along: 1, "path-apply": 1, fun: 1 });
-  assert.match(identical.source, /\(C : Nat -> U0, p q : 0 = 0, v : C\(0\)\)/);
-  assert.match(identical.source, /intro a b; \/\/ kept apart by this comment\n  intro c;/);
+  assert.match(identical.source, /\(C : Nat -> U0, p, q : 0 = 0, v : C\(0\)\)/);
+  assert.match(identical.source, /intro a, b; \/\/ kept apart by this comment\n  intro c;/);
   assert.match(identical.source, /have h : C\(0\) := along C by p from v;/);
-  assert.match(identical.source, /\(fun \(a b : A\) => a\)\(p @ 0, y\)/);
+  assert.match(identical.source, /\(fun \(a, b : A\) => a\)\(p @ 0, y\)/);
   const typed = rewriteModule(source, { rewrites: typePreservingRewrites });
   assert.deepEqual(typed.applied, { wrappers: 2, "path-lambda": 2, ext: 1, rfl: 1 });
   assert.match(typed.source, /exact trans\(p, sym\(p\)\);/);

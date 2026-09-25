@@ -13,9 +13,9 @@ def polynomial_degree_zero_unit(
   obtain (ring, nontrivial, inverses) := af_laws(K);
   obtain (b, inverse) := inverses(a, polynomial_leading_nonzero(K, p, 0, degree));
   exact merely(
-    (exists q : Polynomial(K), polynomial_mul(K, p, q) = polynomial_one(K)),
+    (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K)),
     typed(
-      (exists q : Polynomial(K), polynomial_mul(K, p, q) = polynomial_one(K)),
+      (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K)),
       (
         polynomial_constant(K, b),
         trans(
@@ -29,7 +29,7 @@ def polynomial_degree_zero_unit(
 }
 
 def polynomial_factor_nonzero_left(
-  K : AlgebraicField, p a b : Polynomial(K), nonzero : PolynomialNonzero(K, p),
+  K : AlgebraicField, p, a, b : Polynomial(K), nonzero : PolynomialNonzero(K, p),
   equation : p = polynomial_mul(K, a, b)
 ) :
   PolynomialNonzero(K, a) {
@@ -45,7 +45,7 @@ def polynomial_factor_nonzero_left(
 }
 
 def polynomial_factor_nonzero_right(
-  K : AlgebraicField, p a b : Polynomial(K), nonzero : PolynomialNonzero(K, p),
+  K : AlgebraicField, p, a, b : Polynomial(K), nonzero : PolynomialNonzero(K, p),
   equation : p = polynomial_mul(K, a, b)
 ) :
   PolynomialNonzero(K, b) {
@@ -55,30 +55,30 @@ def polynomial_factor_nonzero_right(
 }
 
 def natural_sum_le_left_zero(m : Nat) :=
-  induction m as k return (forall n : Nat, le(add_count(k, n), k) -> n = 0) {
+  induction m as k return (forall n : Nat. le(add_count(k, n), k) -> n = 0) {
     zero => fun (n : Nat, above : le(n, 0)) => dimension_order_antisymmetric(n, 0, above, tt);
     succ previous => previous;
   };
 
-def NonunitDivisor(K : AlgebraicField, p g : Polynomial(K)) :=
+def NonunitDivisor(K : AlgebraicField, p, g : Polynomial(K)) :=
   PolynomialNonzero(K, g) and (PolynomialUnit(K, g) -> Void) and PolynomialDivides(K, g, p);
 
 def IrreducibleFactor(K : AlgebraicField, p : Polynomial(K)) :=
-  exists g : Polynomial(K), PolynomialIrreducible(K, g) and PolynomialDivides(K, g, p);
+  exists g : Polynomial(K). PolynomialIrreducible(K, g) and PolynomialDivides(K, g, p);
 
 def least_nonunit_divisor_irreducible(
-  K : AlgebraicField, p g : Polynomial(K), divisor : NonunitDivisor(K, p, g),
+  K : AlgebraicField, p, g : Polynomial(K), divisor : NonunitDivisor(K, p, g),
   least : (
-    forall a : Polynomial(K), NonunitDivisor(K, p, a)
+    forall a : Polynomial(K). NonunitDivisor(K, p, a)
     -> le(polynomial_cutoff(K, g), polynomial_cutoff(K, a))
   )
 ) :
   PolynomialIrreducible(K, g) {
   obtain (nonzero, nonunit, divides) := divisor;
   have factors :
-    forall a : Polynomial(K), forall b : Polynomial(K), g = polynomial_mul(K, a, b)
+    forall a : Polynomial(K). forall b : Polynomial(K). g = polynomial_mul(K, a, b)
     -> Mere(PolynomialUnit(K, a) or PolynomialUnit(K, b)) {
-    intro a b equation;
+    intro a, b, equation;
     let Result := PolynomialUnit(K, a) or PolynomialUnit(K, b);
     have noLeft : (PolynomialUnit(K, a) -> Void) -> Mere(Result) {
       intro nonunitA;
@@ -86,8 +86,8 @@ def least_nonunit_divisor_irreducible(
       let nb := polynomial_factor_nonzero_right(K, g, a, b, nonzero, equation);
       let ag :=
         merely(
-          (exists q : Polynomial(K), g = polynomial_mul(K, a, q)),
-          typed((exists q : Polynomial(K), g = polynomial_mul(K, a, q)), (b, equation))
+          (exists q : Polynomial(K). g = polynomial_mul(K, a, q)),
+          typed((exists q : Polynomial(K). g = polynomial_mul(K, a, q)), (b, equation))
         );
       let ap := polynomial_divides_trans(K, a, g, p, ag, divides);
       obtain (m, da) := polynomial_nonzero_degree(K, a, na);
@@ -118,7 +118,7 @@ def least_nonunit_divisor_irreducible(
 }
 
 def NonunitDivisorAt(K : AlgebraicField, p : Polynomial(K), n : Nat) :=
-  exists g : Polynomial(K), NonunitDivisor(K, p, g) and (polynomial_cutoff(K, g) = n);
+  exists g : Polynomial(K). NonunitDivisor(K, p, g) and (polynomial_cutoff(K, g) = n);
 
 // The least-degree nonunit divisor is irreducible. This avoids assuming
 // factorization, maximal ideals, or an algebraic closure as an axiom.
@@ -132,7 +132,7 @@ def polynomial_irreducible_factor(
   let cp := polynomial_cutoff(K, p);
   let witness :=
     merely(NonunitDivisorAt(K, p, cp), typed(NonunitDivisorAt(K, p, cp), (p, self, refl(cp))));
-  let inhabited := merely((exists n : Nat, P(n)), typed((exists n : Nat, P(n)), (cp, witness)));
+  let inhabited := merely((exists n : Nat. P(n)), typed((exists n : Nat. P(n)), (cp, witness)));
   obtain (n, candidate, least) := natural_minimum(
     P, (fun (i : Nat) => mere_is_prop(NonunitDivisorAt(K, p, i))), inhabited
   );
@@ -140,9 +140,9 @@ def polynomial_irreducible_factor(
     intro data;
     obtain (g, divisor, degree) := data;
     have minimum :
-      forall a : Polynomial(K), NonunitDivisor(K, p, a)
+      forall a : Polynomial(K). NonunitDivisor(K, p, a)
       -> le(polynomial_cutoff(K, g), polynomial_cutoff(K, a)) {
-      intro a da;
+      intro a, da;
       let ca := polynomial_cutoff(K, a);
       let wa :=
         merely(NonunitDivisorAt(K, p, ca), typed(NonunitDivisorAt(K, p, ca), (a, da, refl(ca))));
@@ -167,16 +167,16 @@ def polynomial_unit_cutoff(
 ) :
   polynomial_cutoff(K, p) = 1 {
   have divideOne :
-    (exists q : Polynomial(K), polynomial_mul(K, p, q) = polynomial_one(K))
-    -> (exists q : Polynomial(K), polynomial_one(K) = polynomial_mul(K, p, q)) {
+    (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K))
+    -> (exists q : Polynomial(K). polynomial_one(K) = polynomial_mul(K, p, q)) {
     intro witness;
     obtain (q, inverse) := witness;
     exact (q, sym(inverse));
   }
   let divides :=
     mere_map(
-      (exists q : Polynomial(K), polynomial_mul(K, p, q) = polynomial_one(K)),
-      (exists q : Polynomial(K), polynomial_one(K) = polynomial_mul(K, p, q)), divideOne, unit
+      (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K)),
+      (exists q : Polynomial(K). polynomial_one(K) = polynomial_mul(K, p, q)), divideOne, unit
     );
   let bound :=
     polynomial_divides_cutoff_le(

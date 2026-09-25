@@ -2,7 +2,7 @@ import paths;
 
 // Universe-polymorphic path algebra needed for adjointification. These laws
 // are derived by identity elimination, with no extensionality axiom.
-def path_right_unit_at(U : Universe, A : U, x y : A, p : x = y) :=
+def path_right_unit_at(U : Universe, A : U, x, y : A, p : x = y) :=
   path(
     fun (interval_law : Interval) => PathP(fun (interval_path : Interval) => A, x, y),
     fun (interval_law : Interval) => path(
@@ -17,7 +17,7 @@ def path_right_unit_at(U : Universe, A : U, x y : A, p : x = y) :=
   );
 
 def path_cancel_right_at(
-  U : Universe, A : U, x y z : A, p q : x = y, r : y = z, same : trans(p, r) = trans(q, r)
+  U : Universe, A : U, x, y, z : A, p, q : x = y, r : y = z, same : trans(p, r) = trans(q, r)
 ) :
   p = q {
   exact path interval_path_____ => comp(
@@ -507,7 +507,7 @@ def path_cancel_right_at(
   );
 }
 
-def path_prepend_inverse_cancel_at(U : Universe, A : U, x y z : A, p : x = y, q : y = z) :=
+def path_prepend_inverse_cancel_at(U : Universe, A : U, x, y, z : A, p : x = y, q : y = z) :=
   path(
     fun (interval_path___ : Interval) => PathP(fun (interval_equality : Interval) => A, y, z),
     fun (interval_path___ : Interval) => comp(
@@ -719,7 +719,7 @@ def path_prepend_inverse_cancel_at(U : Universe, A : U, x y z : A, p : x = y, q 
 
 // Naturality of a homotopy from f to the identity.
 def homotopy_natural(
-  U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x), x y : A, p : x = y
+  U : Universe, A : U, f : A -> A, h : (forall x : A. f(x) = x), x, y : A, p : x = y
 ) :=
   path(
     fun (interval_path_ : Interval) => PathP(fun (interval_equality : Interval) => A, f(x), y),
@@ -793,7 +793,7 @@ def homotopy_natural(
     )
   );
 
-def homotopy_self(U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x), x : A) :
+def homotopy_self(U : Universe, A : U, f : A -> A, h : (forall x : A. f(x) = x), x : A) :
   cong(f, h(x)) = h(f(x)) {
   exact path interval_path_____ => comp(
     fun (interval_compose_____ : Interval) => PathP(
@@ -1456,20 +1456,20 @@ def homotopy_self(U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x),
 }
 
 // Applying f commutes with the actions of g∘f and f∘g on paths.
-def ap_interchange(U : Universe, A B : U, f : A -> B, g : B -> A, x y : A, p : x = y) :=
+def ap_interchange(U : Universe, A, B : U, f : A -> B, g : B -> A, x, y : A, p : x = y) :=
   refl(apd_path((fun (a : A) => f(g(f(a)))), p));
 
 // Keep f, g and eta. Correct epsilon so that the half-adjoint triangle holds:
 // epsilon'(y) = epsilon(f(g(y)))⁻¹ · ap(f, eta(g(y))) · epsilon(y).
 def adjoint_counit(
-  U : Universe, A B : U, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
-  epsilon : (forall y : B, f(g(y)) = y), y : B
+  U : Universe, A, B : U, f : A -> B, g : B -> A, eta : (forall x : A. g(f(x)) = x),
+  epsilon : (forall y : B. f(g(y)) = y), y : B
 ) :=
   trans(sym(epsilon(f(g(y)))), trans(cong(f, eta(g(y))), epsilon(y)));
 
 def adjoint_triangle(
-  U : Universe, A B : U, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
-  epsilon : (forall y : B, f(g(y)) = y), x : A
+  U : Universe, A, B : U, f : A -> B, g : B -> A, eta : (forall x : A. g(f(x)) = x),
+  epsilon : (forall y : B. f(g(y)) = y), x : A
 ) :
   cong(f, eta(x)) = adjoint_counit(U, A, B, f, g, eta, epsilon, f(x)) {
   let a := f(g(f(g(f(x)))));
@@ -1498,8 +1498,8 @@ def adjoint_triangle(
 // Two inverse homotopies imply the existing full IsEquiv, for arbitrary
 // types and universes. The supplied forward map and inverse remain unchanged.
 def equiv_from_inverse(
-  U : Universe, A B : U, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
-  epsilon : (forall y : B, f(g(y)) = y)
+  U : Universe, A, B : U, f : A -> B, g : B -> A, eta : (forall x : A. g(f(x)) = x),
+  epsilon : (forall y : B. f(g(y)) = y)
 ) :
   Equiv(U, A, B) {
   exact (

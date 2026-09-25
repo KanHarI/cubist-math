@@ -3,8 +3,8 @@ import polynomial_support;
 // Equality is coefficientwise equality of formal polynomials, with support
 // evidence removed by subtype extensionality.
 def polynomial_coefficient_ext(
-  K : AlgebraicField, p q : Polynomial(K),
-  same : (forall n : Nat, polynomial_coefficients(K, p, n) = polynomial_coefficients(K, q, n))
+  K : AlgebraicField, p, q : Polynomial(K),
+  same : (forall n : Nat. polynomial_coefficients(K, p, n) = polynomial_coefficients(K, q, n))
 ) :
   p = q {
   exact polynomial_ext(
@@ -16,7 +16,7 @@ def polynomial_coefficient_ext(
   );
 }
 
-def polynomial_add_assoc(K : AlgebraicField, p q r : Polynomial(K)) :
+def polynomial_add_assoc(K : AlgebraicField, p, q, r : Polynomial(K)) :
   polynomial_add(K, polynomial_add(K, p, q), r) = polynomial_add(K, p, polynomial_add(K, q, r)) {
   exact polynomial_coefficient_ext(
     K, polynomial_add(K, polynomial_add(K, p, q), r), polynomial_add(K, p, polynomial_add(K, q, r)),
@@ -29,7 +29,7 @@ def polynomial_add_assoc(K : AlgebraicField, p q r : Polynomial(K)) :
   );
 }
 
-def polynomial_add_comm(K : AlgebraicField, p q : Polynomial(K)) :
+def polynomial_add_comm(K : AlgebraicField, p, q : Polynomial(K)) :
   polynomial_add(K, p, q) = polynomial_add(K, q, p) {
   exact polynomial_coefficient_ext(
     K, polynomial_add(K, p, q), polynomial_add(K, q, p),
@@ -57,7 +57,7 @@ def polynomial_add_inverse(K : AlgebraicField, p : Polynomial(K)) :
   );
 }
 
-def polynomial_mul_assoc(K : AlgebraicField, p q r : Polynomial(K)) :
+def polynomial_mul_assoc(K : AlgebraicField, p, q, r : Polynomial(K)) :
   polynomial_mul(K, polynomial_mul(K, p, q), r) = polynomial_mul(K, p, polynomial_mul(K, q, r)) {
   exact polynomial_coefficient_ext(
     K, polynomial_mul(K, polynomial_mul(K, p, q), r), polynomial_mul(K, p, polynomial_mul(K, q, r)),
@@ -70,7 +70,7 @@ def polynomial_mul_assoc(K : AlgebraicField, p q r : Polynomial(K)) :
   );
 }
 
-def polynomial_mul_comm(K : AlgebraicField, p q : Polynomial(K)) :
+def polynomial_mul_comm(K : AlgebraicField, p, q : Polynomial(K)) :
   polynomial_mul(K, p, q) = polynomial_mul(K, q, p) {
   exact polynomial_coefficient_ext(
     K, polynomial_mul(K, p, q), polynomial_mul(K, q, p),
@@ -96,7 +96,7 @@ def polynomial_mul_one(K : AlgebraicField, p : Polynomial(K)) :
   );
 }
 
-def polynomial_distribute(K : AlgebraicField, p q r : Polynomial(K)) :
+def polynomial_distribute(K : AlgebraicField, p, q, r : Polynomial(K)) :
   polynomial_mul(K, p, polynomial_add(K, q, r)) = polynomial_add(
     K, polynomial_mul(K, p, q), polynomial_mul(K, p, r)
   ) {
@@ -129,7 +129,7 @@ def polynomial_ring(K : AlgebraicField) :
 }
 
 def polynomial_constant_injective(
-  K : AlgebraicField, a b : af_carrier(K),
+  K : AlgebraicField, a, b : af_carrier(K),
   same : polynomial_constant(K, a) = polynomial_constant(K, b)
 ) :
   a = b {

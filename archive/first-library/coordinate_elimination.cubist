@@ -5,7 +5,7 @@ import maps;
 // Gaussian elimination removes one source and one target coordinate.
 // The pivot inverse is supplied explicitly; the algebra itself is constructive.
 def pivot_coefficient(
-  K : AlgebraicField, m n : Nat,
+  K : AlgebraicField, m, n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
 ) :=
   linear_compose(
@@ -20,7 +20,7 @@ def pivot_coefficient(
   );
 
 def pivot_corrected(
-  K : AlgebraicField, m n : Nat,
+  K : AlgebraicField, m, n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
 ) :=
   linear_subtract(
@@ -42,7 +42,7 @@ def pivot_corrected(
   );
 
 def pivot_reduced(
-  K : AlgebraicField, m n : Nat,
+  K : AlgebraicField, m, n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
 ) :=
   linear_compose(
@@ -51,7 +51,7 @@ def pivot_reduced(
   );
 
 def scalar_pivot_cancel(
-  K : AlgebraicField, a b : af_carrier(K),
+  K : AlgebraicField, a, b : af_carrier(K),
   inv : af_mul(af_carrier(K), af_operations(K), a, b) = af_one(af_carrier(K), af_operations(K)),
   x : af_carrier(K)
 ) :
@@ -67,7 +67,7 @@ def scalar_pivot_cancel(
 }
 
 def pivot_corrected_head(
-  K : AlgebraicField, m n : Nat,
+  K : AlgebraicField, m, n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K),
   inv : af_mul(
     af_carrier(K), af_operations(K),
@@ -98,7 +98,7 @@ def pivot_corrected_head(
 }
 
 def pivot_reduced_kernel(
-  K : AlgebraicField, m n : Nat,
+  K : AlgebraicField, m, n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
   injective : Injective(
     vector_carrier(K, CoordinateSpace(K, succ(m))), vector_carrier(K, CoordinateSpace(K, succ(n))),
@@ -152,7 +152,7 @@ def pivot_reduced_kernel(
 }
 
 def pivot_reduced_injective(
-  K : AlgebraicField, m n : Nat,
+  K : AlgebraicField, m, n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
   injective : Injective(
     vector_carrier(K, CoordinateSpace(K, succ(m))), vector_carrier(K, CoordinateSpace(K, succ(n))),

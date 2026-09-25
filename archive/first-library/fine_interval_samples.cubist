@@ -4,10 +4,10 @@ import dyadic_decay;
 // Ordinary data for one sufficiently fine dyadic subdivision. The existence
 // theorem below deliberately keeps the Archimedean witness truncated.
 def FineIntervalSamples(
-  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
-  a b : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
+  a, b : FieldUnitInterval(F, zero, one, lt)
 ) :=
-  exists depth : Nat, exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+  exists depth : Nat. exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
   (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
   and IntervalAdmissibleTags(
     F, zero, one, lt, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
@@ -24,11 +24,11 @@ def FineIntervalSamples(
 // samples. Midpoints, tags, counts and widths are all supplied by checked
 // constructions. Neither a partition oracle nor choice/LEM is assumed.
 def archimedean_interval_fine_samples(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt),
-  archimedean : Archimedean(F, zero, one, addF, lt), a b : FieldUnitInterval(F, zero, one, lt),
+  archimedean : Archimedean(F, zero, one, addF, lt), a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -50,7 +50,7 @@ def archimedean_interval_fine_samples(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses,
       archimedean, width, nonnegativeWidth, mesh, positiveMesh
     );
-  let A := (exists depth : Nat, lt(dyadic_width(F, half, depth, width), mesh));
+  let A := (exists depth : Nat. lt(dyadic_width(F, half, depth, width), mesh));
   let B := FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b);
   have mapping : A -> B {
     intro data;

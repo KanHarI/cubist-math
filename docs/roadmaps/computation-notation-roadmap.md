@@ -131,8 +131,8 @@ interface has the schematic fields:
 
 ```text
 Carrier : U -> U
-pure    : forall A : U, A -> Carrier(A)
-bind    : forall A B : U, Carrier(A) -> (A -> Carrier(B)) -> Carrier(B)
+pure    : forall A : U. A -> Carrier(A)
+bind    : forall A, B : U. Carrier(A) -> (A -> Carrier(B)) -> Carrier(B)
 ```
 
 `do using M` selects one such record. In the mathematical signatures below,
@@ -208,7 +208,7 @@ introducing a separate monadic branching capability.
 The `B` in ordinary `bind` is fixed outside its continuation. Terms and
 local types in the continuation may depend on `x`, but that `x` cannot escape
 into the enclosing result type. For example, a block can return
-`M(exists x : A, P(x))` by constructing a dependent pair. It cannot return
+`M(exists x : A. P(x))` by constructing a dependent pair. It cannot return
 `M(P(x))` with a locally bound `x` escaping its scope.
 
 Bind patterns retain dependencies between pair components. Reuse dependent

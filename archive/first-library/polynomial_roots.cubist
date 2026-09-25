@@ -3,22 +3,22 @@ import polynomial_leading;
 
 // Roots may live in an arbitrary extension through its specified embedding.
 def PolynomialRoot(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
 ) :=
   polynomial_eval(K, L, e, p, x) = field_zero(L);
 
 def polynomial_root_prop(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
 ) :=
   af_set(L, polynomial_eval(K, L, e, p, x), field_zero(L));
 
-def polynomial_eval_one(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
+def polynomial_eval_one(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
   polynomial_eval(K, L, e, polynomial_one(K), x) = field_one(L) {
   obtain (zero, one, neg, add, mul) := field_embedding_preserves(K, L, e);
   exact trans(polynomial_eval_constant(K, L, e, field_one(K), x), one);
 }
 
-def polynomial_eval_variable(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
+def polynomial_eval_variable(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
   polynomial_eval(K, L, e, polynomial_variable(K), x) = x {
   exact trans(
     polynomial_eval_shift(K, L, e, polynomial_one(K), x),
@@ -27,7 +27,7 @@ def polynomial_eval_variable(K L : AlgebraicField, e : FieldEmbedding(K, L), x :
 }
 
 def polynomial_eval_neg(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_neg(K, p), x) = field_neg(L, polynomial_eval(K, L, e, p, x)) {
   let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
@@ -85,7 +85,7 @@ def linear_factor_nonzero(
   );
 }
 
-def linear_factor_eval(K : AlgebraicField, r x : af_carrier(K)) :
+def linear_factor_eval(K : AlgebraicField, r, x : af_carrier(K)) :
   polynomial_eval(K, K, field_embedding_identity(K), polynomial_linear_factor(K, r), x) = field_add(
     K, x, field_neg(K, r)
   ) {
@@ -131,7 +131,7 @@ def polynomial_factor_theorem(
   K : AlgebraicField, p : Polynomial(K), r : af_carrier(K),
   root : PolynomialRoot(K, K, field_embedding_identity(K), p, r)
 ) :
-  exists q : Polynomial(K), p = polynomial_mul(K, polynomial_linear_factor(K, r), q) {
+  exists q : Polynomial(K). p = polynomial_mul(K, polynomial_linear_factor(K, r), q) {
   let factor := polynomial_linear_factor(K, r);
   let e := field_embedding_identity(K);
   let E := fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, r);

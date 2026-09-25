@@ -28,8 +28,8 @@ def linear_remainder(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
 // The full combination is the selected summand plus its remainder.
 def linear_combination_split(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
-    forall v : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
-    forall i : Fin(k),
+    forall v : Fin(k) -> vector_carrier(K, V). forall a : Fin(k) -> af_carrier(K).
+    forall i : Fin(k).
     linear_combination(K, V, k, v, a) = vector_add(
       K, V, vector_scale(K, V, a(i), v(i)), linear_remainder(K, V, k, v, a, i)
     )
@@ -84,23 +84,23 @@ def linear_combination_split(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
 // If all the other vectors belong to a subspace, their remainder does too.
 def remainder_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) :=
   induction n as k return (
-    forall v : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
-    forall i : Fin(k), (forall j : Fin(k), ((j = i) -> Void) -> subspace_members(K, V, S, v(j)))
+    forall v : Fin(k) -> vector_carrier(K, V). forall a : Fin(k) -> af_carrier(K).
+    forall i : Fin(k). (forall j : Fin(k). ((j = i) -> Void) -> subspace_members(K, V, S, v(j)))
     -> subspace_members(K, V, S, linear_remainder(K, V, k, v, a, i))
   ) {
     zero => fun (
       v : Fin(0) -> vector_carrier(K, V), a : Fin(0) -> af_carrier(K), i : Fin(0),
-      members : (forall j : Fin(0), ((j = i) -> Void) -> subspace_members(K, V, S, v(j)))
+      members : (forall j : Fin(0). ((j = i) -> Void) -> subspace_members(K, V, S, v(j)))
     ) => typed(subspace_members(K, V, S, linear_remainder(K, V, 0, v, a, i)), absurd(i));
     succ previous => fun (
       v : Fin(succ(k)) -> vector_carrier(K, V), a : Fin(succ(k)) -> af_carrier(K), i : Fin(succ(k))
     ) => match i as index return (
-      (forall j : Fin(succ(k)), ((j = index) -> Void) -> subspace_members(K, V, S, v(j)))
+      (forall j : Fin(succ(k)). ((j = index) -> Void) -> subspace_members(K, V, S, v(j)))
       -> subspace_members(K, V, S, linear_remainder(K, V, succ(k), v, a, index))
     ) {
       left u => fun (
         members : (
-          forall j : Fin(succ(k)), ((j = typed(Fin(succ(k)), left(u))) -> Void)
+          forall j : Fin(succ(k)). ((j = typed(Fin(succ(k)), left(u))) -> Void)
           -> subspace_members(K, V, S, v(j))
         )
       ) => combination_in_subspace(
@@ -118,7 +118,7 @@ def remainder_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K
       );
       right iTail => fun (
         members : (
-          forall j : Fin(succ(k)), ((j = typed(Fin(succ(k)), right(iTail))) -> Void)
+          forall j : Fin(succ(k)). ((j = typed(Fin(succ(k)), right(iTail))) -> Void)
           -> subspace_members(K, V, S, v(j))
         )
       ) => subspace_add(

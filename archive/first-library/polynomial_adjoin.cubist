@@ -20,7 +20,7 @@ def residue_constant_neg(K : AlgebraicField, M : PolynomialModulus(K), a : af_ca
   );
 }
 
-def residue_constant_add(K : AlgebraicField, M : PolynomialModulus(K), a b : af_carrier(K)) :
+def residue_constant_add(K : AlgebraicField, M : PolynomialModulus(K), a, b : af_carrier(K)) :
   residue_constant(K, M, field_add(K, a, b)) = residue_add(
     K, M, residue_constant(K, M, a), residue_constant(K, M, b)
   ) {
@@ -30,7 +30,7 @@ def residue_constant_add(K : AlgebraicField, M : PolynomialModulus(K), a b : af_
   );
 }
 
-def residue_constant_mul(K : AlgebraicField, M : PolynomialModulus(K), a b : af_carrier(K)) :
+def residue_constant_mul(K : AlgebraicField, M : PolynomialModulus(K), a, b : af_carrier(K)) :
   residue_constant(K, M, field_mul(K, a, b)) = residue_mul(
     K, M, residue_constant(K, M, a), residue_constant(K, M, b)
   ) {

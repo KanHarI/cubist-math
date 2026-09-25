@@ -4,8 +4,8 @@ import ring_laws;
 
 // A checked segment of the polynomial expansion.
 def complex_norm_expansion_1(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d : F
 ) :=
   trans(
     (
@@ -189,8 +189,8 @@ def complex_norm_expansion_1(
 
 // A checked segment of the polynomial expansion.
 def complex_norm_expansion_2(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d : F
 ) :=
   trans(
     (
@@ -413,8 +413,8 @@ def complex_norm_expansion_2(
 
 // A checked segment of the polynomial expansion.
 def complex_norm_expansion_3(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d : F
 ) :=
   trans(
     (
@@ -604,8 +604,8 @@ def complex_norm_expansion_3(
 
 // A checked segment of the polynomial expansion.
 def complex_norm_expansion_4(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d : F
 ) :=
   trans(
     (
@@ -838,8 +838,8 @@ def complex_norm_expansion_4(
 
 // A checked segment of the polynomial expansion.
 def complex_norm_expansion_5(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d : F
 ) :=
   trans(
     (
@@ -1012,8 +1012,8 @@ def complex_norm_expansion_5(
 
 // A checked segment of the polynomial expansion.
 def complex_norm_expansion_6(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d : F
 ) :=
   trans(
     (
@@ -1143,8 +1143,8 @@ def complex_norm_expansion_6(
 
 // A checked segment of the polynomial expansion.
 def complex_norm_right_expansion(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d : F
 ) :=
   trans(
     (
@@ -1236,8 +1236,8 @@ def complex_norm_right_expansion(
   );
 
 def complex_coordinate_norm_product(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d : F
 ) :
   addF(
     mulF(addF(mulF(a, c), negF(mulF(b, d))), addF(mulF(a, c), negF(mulF(b, d)))),
@@ -1264,7 +1264,7 @@ def complex_coordinate_norm_product(
 }
 
 def complex_coordinate_norm_one(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :
   addF(mulF(one, one), mulF(zero, zero)) = one {

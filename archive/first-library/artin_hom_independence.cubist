@@ -4,14 +4,14 @@ import field_arithmetic;
 // Multiplication by a nonzero field element is injective. The inverse is used
 // only after the explicit nonzero hypothesis has been supplied.
 def field_mul_left_cancel_nonzero(
-  L : AlgebraicField, a x y : af_carrier(L),
+  L : AlgebraicField, a, x, y : af_carrier(L),
   nonzero : FieldNonzero(af_carrier(L), af_operations(L), a),
   same : field_mul(L, a, x) = field_mul(L, a, y)
 ) :
   x = y {
   obtain (ring, nontrivial, inverses) := af_laws(L);
   obtain (b, inverse) := inverses(a, nonzero);
-  have reduce : forall z : af_carrier(L), field_mul(L, b, field_mul(L, a, z)) = z {
+  have reduce : forall z : af_carrier(L). field_mul(L, b, field_mul(L, a, z)) = z {
     intro z;
     exact trans(
       sym(scalar_mul_assoc(L, b, a, z)),
@@ -27,8 +27,8 @@ def field_mul_left_cancel_nonzero(
 // Dedekind independence, in the two-map case. The coefficient relation is
 // pointwise on the source field; no vector-space presentation is assumed.
 def distinct_embeddings_two_independent(
-  K L : AlgebraicField, f g : FieldEmbedding(K, L), different : (f = g) -> Void,
-  a b : af_carrier(L), relation : forall x : af_carrier(K),
+  K, L : AlgebraicField, f, g : FieldEmbedding(K, L), different : (f = g) -> Void,
+  a, b : af_carrier(L), relation : forall x : af_carrier(K).
   field_add(
     L, field_mul(L, a, field_embedding_map(K, L, f, x)),
     field_mul(L, b, field_embedding_map(K, L, g, x))
@@ -69,7 +69,7 @@ def distinct_embeddings_two_independent(
   );
   have equalIfNonzero : FieldNonzero(af_carrier(L), af_operations(L), a) -> f = g {
     intro nonzero;
-    have equalPointwise : forall x : af_carrier(K), F(x) = G(x) {
+    have equalPointwise : forall x : af_carrier(K). F(x) = G(x) {
       intro x;
       let fx := F(x);
       let gx := G(x);

@@ -7,7 +7,7 @@ import equivalence_from_inverse;
 import finite_decidable_subtypes;
 
 def intermediate_inclusion_embedding(
-  K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), M, N : IntermediateField(K, E),
   included : IntermediateIncluded(K, E, M, N)
 ) :
   FieldEmbedding(intermediate_as_field(K, E, M), intermediate_as_field(K, E, N)) {
@@ -25,7 +25,7 @@ def intermediate_inclusion_embedding(
 }
 
 def intermediate_inclusion_triangle(
-  K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), M, N : IntermediateField(K, E),
   included : IntermediateIncluded(K, E, M, N)
 ) :
   FieldTower(
@@ -47,7 +47,7 @@ def intermediate_inclusion_triangle(
 }
 
 def intermediate_inclusion_surjective_equal(
-  K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), M, N : IntermediateField(K, E),
   included : IntermediateIncluded(K, E, M, N),
   onto : Surjective(
     af_carrier(intermediate_as_field(K, E, M)), af_carrier(intermediate_as_field(K, E, N)),
@@ -65,7 +65,7 @@ def intermediate_inclusion_surjective_equal(
   let Q := intermediate_as_field(K, E, N);
   let i := intermediate_inclusion_embedding(K, E, M, N, included);
   have reverse : IntermediateIncluded(K, E, N, M) {
-    intro x member;
+    intro x, member;
     let target := typed(af_carrier(Q), (x, member));
     obtain (a, same) := field_embedding_preimage(R, Q, i, onto, target);
     exact along intermediate_members(K, E, M) by cong(subfield_value(F, T), same) from subfield_evidence(
@@ -129,7 +129,7 @@ def finite_galois_correspondence_with_finite_subgroups(
   normal : NormalEmbeddingLaw(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
   separable : SeparableExtension(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
   T : AlgebraicField, closed : AlgebraicallyClosed(T), j : FieldEmbedding(extension_field(K, E), T),
-  finiteAll : forall H : GaloisSubgroup(K, E), exists n : Nat,
+  finiteAll : forall H : GaloisSubgroup(K, E). exists n : Nat.
   HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n)
 ) :
   Equiv(U1, GaloisSubgroup(K, E), IntermediateField(K, E)) {
@@ -192,7 +192,7 @@ def finite_galois_cardinality_tower_law(
   separable : SeparableExtension(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
   T : AlgebraicField, closed : AlgebraicallyClosed(T), j : FieldEmbedding(extension_field(K, E), T)
 ) :
-  exists lower : FiniteExtension(K, intermediate_as_extension(K, E, M)), exists h : Nat,
+  exists lower : FiniteExtension(K, intermediate_as_extension(K, E, M)). exists h : Nat.
   HasCardinality(SubgroupCarrier(GaloisGroup(K, E), fixing_galois_subgroup(K, E, M)), h)
   and (
     extension_degree(K, E, finite) = multiply_count(
@@ -238,14 +238,14 @@ def base_image_fixing_is_full_group(K : AlgebraicField, E : FieldExt(K)) :
   let M := base_image_intermediate(K, E);
   let H := fixing_galois_subgroup(K, E, M);
   have fullFixes : GaloisSubgroupIncluded(K, E, subgroup_top(G), H) {
-    intro g member x inBase;
+    intro g, member, x, inBase;
     obtain (a, unit, same) := inBase;
     exact trans(
       cong(extension_iso_forward(K, E, E, g), sym(same)), trans(galois_fixes_base(K, E, g, a), same)
     );
   }
   have included : GaloisSubgroupIncluded(K, E, H, subgroup_top(G)) {
-    intro g member;
+    intro g, member;
     exact tt;
   }
   exact galois_subgroup_inclusion_antisym(K, E, H, subgroup_top(G), included, fullFixes);

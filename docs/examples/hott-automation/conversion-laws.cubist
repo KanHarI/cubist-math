@@ -22,7 +22,7 @@ def bridge_rec_beta(A : U0, B : U1, n : B, s : B, h : A -> (n = s), a : A) :
 // Dependent suspension elimination with PathP bridges.
 def bridge_ind(
   A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)),
-  m : (forall a : A, PathP(fun (i : Interval) => C(meridian(A, a) @ i), n, s)), x : Suspension(A)
+  m : (forall a : A. PathP(fun (i : Interval) => C(meridian(A, a) @ i), n, s)), x : Suspension(A)
 ) :=
   pushout_induction(
     C, fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_left(Suspension(A), v)), n, u),
@@ -32,7 +32,7 @@ def bridge_ind(
 // Its dependent meridian computation law also holds by conversion.
 def bridge_ind_beta(
   A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)),
-  m : (forall a : A, PathP(fun (i : Interval) => C(meridian(A, a) @ i), n, s)), a : A
+  m : (forall a : A. PathP(fun (i : Interval) => C(meridian(A, a) @ i), n, s)), a : A
 ) :
   apd_path(fun (x : Suspension(A)) => bridge_ind(A, C, n, s, m, x), meridian(A, a)) = m(a) {
   rfl;
@@ -98,21 +98,21 @@ def transport_arrow(A : U1, B : A -> U0, C : A -> U0, x : A, y : A, p : x = y, f
 }
 
 def happly_funext(
-  A : U0, P : A -> U0, f : (forall a : A, P(a)), g : (forall a : A, P(a)),
-  h : (forall a : A, f(a) = g(a)), a : A
+  A : U0, P : A -> U0, f : (forall a : A. P(a)), g : (forall a : A. P(a)),
+  h : (forall a : A. f(a) = g(a)), a : A
 ) :
-  cong(fun (k : (forall b : A, P(b))) => k(a), FunExt(U0, A, P, f, g, h)) = h(a) {
+  cong(fun (k : (forall b : A. P(b))) => k(a), FunExt(U0, A, P, f, g, h)) = h(a) {
   rfl;
 }
 
-def sigma_projection_eta(A : U1, P : A -> U1, u : (exists x : A, P(x))) :
-  typed((exists x : A, P(x)), (field_first(A, P, u), field_second(A, P, u))) = u {
+def sigma_projection_eta(A : U1, P : A -> U1, u : (exists x : A. P(x))) :
+  typed((exists x : A. P(x)), (field_first(A, P, u), field_second(A, P, u))) = u {
   rfl;
 }
 
 // A homotopy's naturality square, stated as a nested PathP.
 def naturality_square(
-  A : U1, B : U1, f : A -> B, g : A -> B, h : (forall a : A, f(a) = g(a)), x : A, y : A, p : x = y
+  A : U1, B : U1, f : A -> B, g : A -> B, h : (forall a : A. f(a) = g(a)), x : A, y : A, p : x = y
 ) :
   PathP(fun (i : Interval) => f(p @ i) = g(p @ i), h(x), h(y)) {
   exact path i => h(p @ i);
@@ -126,7 +126,7 @@ def closed_constant_transport(x : Nat) : transport(fun (t : Nat) => Nat, x, x, r
 // Truncation levels counted from propositions: 0 is IsProp and 1 is IsSet.
 def PropLevel(n : Nat) := induction n as k return (U0 -> U0) {
     zero => fun (A : U0) => IsProp(A);
-    succ previous => fun (A : U0) => forall x : A, forall y : A, previous(x = y);
+    succ previous => fun (A : U0) => forall x : A. forall y : A. previous(x = y);
   };
 
 def prop_level_zero(A : U0) : PropLevel(0, A) =[U0] IsProp(A) {
@@ -148,7 +148,7 @@ def reverse_dependent_path(
 
 // Dependent congruence over a base path and a dependent path.
 def dependent_congruence(
-  A : U0, B : A -> U0, C : U0, f : (forall a : A, B(a) -> C), x : A, y : A, p : x = y, u : B(x),
+  A : U0, B : A -> U0, C : U0, f : (forall a : A. B(a) -> C), x : A, y : A, p : x = y, u : B(x),
   v : B(y), q : PathP(fun (i : Interval) => B(p @ i), u, v)
 ) :
   f(x, u) = f(y, v) {

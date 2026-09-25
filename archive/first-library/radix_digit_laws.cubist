@@ -28,9 +28,9 @@ def radix_digit_lift_law(n : Nat, d : RadixDigit(n), result : RadixDigit(n) or U
 }
 
 def radix_digit_succ_law(n : Nat) :
-  forall d : RadixDigit(n), RadixDigitStepLaw(n, d, radix_digit_succ(n, d)) {
+  forall d : RadixDigit(n). RadixDigitStepLaw(n, d, radix_digit_succ(n, d)) {
   exact induction n as k return (
-    forall d : RadixDigit(k), RadixDigitStepLaw(k, d, radix_digit_succ(k, d))
+    forall d : RadixDigit(k). RadixDigitStepLaw(k, d, radix_digit_succ(k, d))
   ) {
     zero => fun (d : Void) => typed(RadixDigitStepLaw(0, d, radix_digit_succ(0, d)), absurd(d));
     succ previous => fun (d : RadixDigit(succ(k))) => match typed(Unit or RadixDigit(k), d) as digit return RadixDigitStepLaw(

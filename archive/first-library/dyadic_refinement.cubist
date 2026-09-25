@@ -3,7 +3,7 @@ import subdivision_refinement;
 
 // The fine samples on each coarse edge remain inside that edge.
 def IntervalRefinementAdmissible(
-  F : U1, zero one : F, lt : F -> F -> U0, a b tag : FieldUnitInterval(F, zero, one, lt),
+  F : U1, zero, one : F, lt : F -> F -> U0, a, b, tag : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :=
   typed(
@@ -16,15 +16,15 @@ def IntervalRefinementAdmissible(
   );
 
 def dyadic_refinement_zero(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
-  leftUnit : (forall x : G, addG(zeroG, x) = x), rightUnit : (forall x : G, addG(x, zeroG) = x),
-  assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
+  leftUnit : (forall x : G. addG(zeroG, x) = x), rightUnit : (forall x : G. addG(x, zeroG) = x),
+  assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
   -> FieldUnitInterval(F, zero, one, lt) -> G, extra : Nat,
-  a b : FieldUnitInterval(F, zero, one, lt),
+  a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -71,21 +71,21 @@ def dyadic_refinement_zero(
 }
 
 def dyadic_refinement_step(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
-  leftUnit : (forall x : G, addG(zeroG, x) = x), rightUnit : (forall x : G, addG(x, zeroG) = x),
-  assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
+  leftUnit : (forall x : G. addG(zeroG, x) = x), rightUnit : (forall x : G. addG(x, zeroG) = x),
+  assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
   -> FieldUnitInterval(F, zero, one, lt) -> G, depth : Nat,
   previous : (
-    forall extra : Nat, forall a : FieldUnitInterval(F, zero, one, lt),
-    forall b : FieldUnitInterval(F, zero, one, lt),
+    forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
+    forall b : FieldUnitInterval(F, zero, one, lt).
     forall ordered : FieldLe(
       F, lt, field_interval_coordinate(F, zero, one, lt)(a),
       field_interval_coordinate(F, zero, one, lt)(b)
-    ),
+    ).
     SubdivisionRefinementSum(
       FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
       IntervalRefinementAdmissible(F, zero, one, lt), a, b,
@@ -98,7 +98,7 @@ def dyadic_refinement_step(
         a, b, ordered
       )
     )
-  ), extra : Nat, a b : FieldUnitInterval(F, zero, one, lt),
+  ), extra : Nat, a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -192,21 +192,21 @@ def dyadic_refinement_step(
 // Any later level is an actual admissible per-edge refinement of this one.
 // The target sum may be noncommutative: concatenation order is preserved.
 def dyadic_samples_refine(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
-  leftUnit : (forall x : G, addG(zeroG, x) = x), rightUnit : (forall x : G, addG(x, zeroG) = x),
-  assoc : (forall x : G, forall y : G, forall z : G, addG(addG(x, y), z) = addG(x, addG(y, z))),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), G : U1, zeroG : G, addG : G -> G -> G,
+  leftUnit : (forall x : G. addG(zeroG, x) = x), rightUnit : (forall x : G. addG(x, zeroG) = x),
+  assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
   -> FieldUnitInterval(F, zero, one, lt) -> G, depth : Nat
 ) :
-  forall extra : Nat, forall a : FieldUnitInterval(F, zero, one, lt),
-  forall b : FieldUnitInterval(F, zero, one, lt),
+  forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
+  forall b : FieldUnitInterval(F, zero, one, lt).
   forall ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
-  ),
+  ).
   SubdivisionRefinementSum(
     FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
     IntervalRefinementAdmissible(F, zero, one, lt), a, b,
@@ -220,12 +220,12 @@ def dyadic_samples_refine(
     )
   ) {
   exact induction depth as k return (
-    forall extra : Nat, forall a : FieldUnitInterval(F, zero, one, lt),
-    forall b : FieldUnitInterval(F, zero, one, lt),
+    forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
+    forall b : FieldUnitInterval(F, zero, one, lt).
     forall ordered : FieldLe(
       F, lt, field_interval_coordinate(F, zero, one, lt)(a),
       field_interval_coordinate(F, zero, one, lt)(b)
-    ),
+    ).
     SubdivisionRefinementSum(
       FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
       IntervalRefinementAdmissible(F, zero, one, lt), a, b,

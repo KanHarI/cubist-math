@@ -114,8 +114,8 @@ The target `MonicAlgebraicClosure(F, ...)` says that every monic polynomial of
 positive degree merely has an exact root:
 
 ```text
-forall n, forall coefficients : MonicCoefficients(F, succ(n)),
-  FieldExists(exists z : F, monic_eval(..., coefficients, z) = zero)
+forall n : Nat. forall coefficients : MonicCoefficients(F, succ(n)).
+  FieldExists(exists z : F. monic_eval(..., coefficients, z) = zero)
 ```
 
 It is a definition of a property, **not an axiom and not a theorem that complex

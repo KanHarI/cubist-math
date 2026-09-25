@@ -4,14 +4,14 @@ import polynomial_residue_basis;
 // Finite generation plus algebraicity implies finite vector-space dimension.
 // The finite bound is built by adjoining the supplied generators successively.
 def GeneratedAlgebraicFinite(n : Nat) :=
-  forall K : AlgebraicField, forall L : AlgebraicField, forall e : FieldEmbedding(K, L),
-  forall generators : Fin(n) -> af_carrier(L),
-  (forall i : Fin(n), AlgebraicElement(K, L, e, generators(i)))
+  forall K : AlgebraicField. forall L : AlgebraicField. forall e : FieldEmbedding(K, L).
+  forall generators : Fin(n) -> af_carrier(L).
+  (forall i : Fin(n). AlgebraicElement(K, L, e, generators(i)))
   -> FieldGeneratedBy(K, L, e, n, generators)
   -> FiniteExtension(K, embedding_as_extension(K, L, e));
 
 def generated_algebraic_finite_zero : GeneratedAlgebraicFinite(0) {
-  intro K L e generators algebraic generates;
+  intro K, L, e, generators, algebraic, generates;
   let V := field_vector_space(K, L, e);
   let onto := field_generated_empty_surjective(K, L, e, generators, generates);
   let iso :=
@@ -27,7 +27,7 @@ def generated_algebraic_finite_zero : GeneratedAlgebraicFinite(0) {
 
 def generated_algebraic_finite_step(n : Nat, previous : GeneratedAlgebraicFinite(n)) :
   GeneratedAlgebraicFinite(succ(n)) {
-  intro K L e generators algebraic generates;
+  intro K, L, e, generators, algebraic, generates;
   let x := finite_head(af_carrier(L), n, generators);
   let alg := algebraic(typed(Fin(succ(n)), left(tt)));
   let M := minimal_polynomial_modulus(K, L, e, x, alg);
@@ -62,12 +62,12 @@ def finitely_generated_algebraic_is_finite(n : Nat) :=
     succ previous => generated_algebraic_finite_step(k, previous);
   };
 
-def FiniteFieldGeneration(K L : AlgebraicField, e : FieldEmbedding(K, L)) :=
-  exists n : Nat, exists generators : Fin(n) -> af_carrier(L),
+def FiniteFieldGeneration(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :=
+  exists n : Nat. exists generators : Fin(n) -> af_carrier(L).
   FieldGeneratedBy(K, L, e, n, generators);
 
 def finite_extension_finitely_generated(
-  K L : AlgebraicField, e : FieldEmbedding(K, L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e))
 ) :
   FieldExists(FiniteFieldGeneration(K, L, e)) {
@@ -86,7 +86,7 @@ def finite_extension_finitely_generated(
 }
 
 def algebraic_finitely_generated_extension_finite(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), algebraic : AlgebraicExtension(K, L, e),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), algebraic : AlgebraicExtension(K, L, e),
   generated : FieldExists(FiniteFieldGeneration(K, L, e))
 ) :
   FiniteExtension(K, embedding_as_extension(K, L, e)) {

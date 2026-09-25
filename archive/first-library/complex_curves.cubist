@@ -5,12 +5,12 @@ import complex_affine;
 // A comparison with paths in the punctured-plane homotopy type remains to
 // be constructed. No map from these curves to that type is postulated here.
 def ComplexUniformCurve(
-  F : U1, zero one : F, addF : F -> F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF : F -> F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F)
 ) :=
-  forall epsilon : F, lt(zero, epsilon) -> exists delta : F, lt(zero, delta)
+  forall epsilon : F. lt(zero, epsilon) -> exists delta : F. lt(zero, delta)
   and (
-    forall s : FieldUnitInterval(F, zero, one, lt), forall t : FieldUnitInterval(F, zero, one, lt),
+    forall s : FieldUnitInterval(F, zero, one, lt). forall t : FieldUnitInterval(F, zero, one, lt).
     FieldClose(
       F, addF, lt, field_interval_coordinate(F, zero, one, lt, s),
       field_interval_coordinate(F, zero, one, lt, t), delta
@@ -18,7 +18,7 @@ def ComplexUniformCurve(
   );
 
 def complex_interval_deformation(
-  F : U1, zero one : F, addF mulF : F -> F -> F, lt : F -> F -> U0, z error : Complex(F),
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, lt : F -> F -> U0, z, error : Complex(F),
   t : FieldUnitInterval(F, zero, one, lt)
 ) :=
   complex_linear_deformation(
@@ -26,7 +26,7 @@ def complex_interval_deformation(
   );
 
 def complex_line_restrict_uniform(
-  F : U1, zero one : F, addF : F -> F -> F, lt : F -> F -> U0, curve : F -> Complex(F),
+  F : U1, zero, one : F, addF : F -> F -> F, lt : F -> F -> U0, curve : F -> Complex(F),
   uniform : ComplexUniformLine(F, zero, addF, lt, curve)
 ) :
   ComplexUniformCurve(
@@ -37,12 +37,12 @@ def complex_line_restrict_uniform(
       )
     )
   ) {
-  intro epsilon positive;
+  intro epsilon, positive;
   obtain (delta, positiveDelta, close) := uniform(epsilon, positive);
   exact (
     delta, positiveDelta,
     (
-      fun (s t : FieldUnitInterval(F, zero, one, lt)) => close(
+      fun (s, t : FieldUnitInterval(F, zero, one, lt)) => close(
         field_interval_coordinate(F, zero, one, lt, s),
         field_interval_coordinate(F, zero, one, lt, t)
       )
@@ -51,11 +51,11 @@ def complex_line_restrict_uniform(
 }
 
 def complex_interval_deformation_uniform(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z error : Complex(F)
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, error : Complex(F)
 ) :
   ComplexUniformCurve(
     F, zero, one, addF, lt, complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error)
@@ -70,18 +70,18 @@ def complex_interval_deformation_uniform(
 }
 
 def complex_straight_curve(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, a b : Complex(F)
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, a, b : Complex(F)
 ) :=
   complex_interval_deformation(
     F, zero, one, addF, mulF, lt, a, complex_add(F, addF, complex_neg(F, negF, a), b)
   );
 
 def complex_straight_curve_uniform(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), a b : Complex(F)
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), a, b : Complex(F)
 ) :
   ComplexUniformCurve(
     F, zero, one, addF, lt, complex_straight_curve(F, zero, one, addF, mulF, negF, lt, a, b)
@@ -93,10 +93,10 @@ def complex_straight_curve_uniform(
 }
 
 def complex_straight_curve_endpoints(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  zeroBelowOne : FieldLe(F, lt, zero, one), a b : Complex(F)
+  zeroBelowOne : FieldLe(F, lt, zero, one), a, b : Complex(F)
 ) :
   (
     complex_straight_curve(
@@ -141,12 +141,12 @@ def complex_straight_curve_endpoints(
 // These same continuous interval curves avoid the origin whenever the
 // existing squared-norm domination estimate applies at the starting point.
 def complex_interval_deformation_avoids_zero(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z error : Complex(F),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z, error : Complex(F),
   dominates : lt(complex_norm_squared(F, addF, mulF, error), complex_norm_squared(F, addF, mulF, z))
 ) :
-  forall t : FieldUnitInterval(F, zero, one, lt),
+  forall t : FieldUnitInterval(F, zero, one, lt).
   (complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error, t) = complex_zero(F, zero))
   -> Void {
   intro t;

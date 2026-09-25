@@ -10,9 +10,9 @@ def complex_box_radius(F : U1, negF : F -> F, maxF : F -> F -> F, z : Complex(F)
   );
 
 def complex_lattice_box_bound(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F)
 ) :
   ComplexBoxBound(F, negF, lt, z, complex_box_radius(F, negF, maxF, z)) {
@@ -38,23 +38,23 @@ def complex_lattice_box_bound(
 def ComplexUniformLine(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, curve : F -> Complex(F)
 ) :=
-  forall epsilon : F, lt(zero, epsilon) -> exists delta : F, lt(zero, delta)
+  forall epsilon : F. lt(zero, epsilon) -> exists delta : F. lt(zero, delta)
   and (
-    forall s : F, forall t : F, FieldClose(F, addF, lt, s, t, delta)
+    forall s : F. forall t : F. FieldClose(F, addF, lt, s, t, delta)
     -> ComplexClose(F, addF, lt, curve(s), curve(t), epsilon)
   );
 
 def complex_linear_deformation_uniform(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z error : Complex(F)
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, error : Complex(F)
 ) :
   ComplexUniformLine(
     F, zero, addF, lt, (fun (t : F) => complex_linear_deformation(F, addF, mulF, t, z, error))
   ) {
-  intro epsilon positive;
+  intro epsilon, positive;
   let length := complex_box_radius(F, negF, maxF, error);
   obtain (boundReal, boundImag) := complex_lattice_box_bound(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, error
@@ -69,12 +69,12 @@ def complex_linear_deformation_uniform(
     nonnegativeLength, epsilon, positive
   );
   have close :
-    forall s : F, forall t : F, FieldClose(F, addF, lt, s, t, delta)
+    forall s : F. forall t : F. FieldClose(F, addF, lt, s, t, delta)
     -> ComplexClose(
       F, addF, lt, complex_linear_deformation(F, addF, mulF, s, z, error),
       complex_linear_deformation(F, addF, mulF, t, z, error), epsilon
     ) {
-    intro s t nearby;
+    intro s, t, nearby;
     exact (
       field_affine_close(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z),

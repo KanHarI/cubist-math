@@ -13,7 +13,7 @@ def galois_field_embedding(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)
   exact (
     f, galois_preserves_field_ops(K, E, e),
     (
-      fun (x y : A, same : f(x) = f(y)) => trans(
+      fun (x, y : A, same : f(x) = f(y)) => trans(
         sym(left_inverse(A, A, bijection, x)),
         trans(cong(backward(A, A, bijection), same), left_inverse(A, A, bijection, y))
       )
@@ -39,7 +39,7 @@ def fixing_automorphism_over_intermediate(
 
 // Distinct automorphisms remain distinct after forgetting their inverse maps.
 def galois_field_embedding_injective(
-  K : AlgebraicField, E : FieldExt(K), e d : Galois(K, E),
+  K : AlgebraicField, E : FieldExt(K), e, d : Galois(K, E),
   same : galois_field_embedding(K, E, e) = galois_field_embedding(K, E, d)
 ) :
   e = d {
@@ -58,7 +58,7 @@ def galois_field_embedding_injective(
 }
 
 def fixing_automorphism_over_intermediate_injective(
-  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), e d : Galois(K, E),
+  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), e, d : Galois(K, E),
   fixesE : GaloisFixing(K, E, intermediate_members(K, E, M), e),
   fixesD : GaloisFixing(K, E, intermediate_members(K, E, M), d),
   same : fixing_automorphism_over_intermediate(K, E, M, e, fixesE) = fixing_automorphism_over_intermediate(
@@ -112,7 +112,7 @@ def fixed_subgroup_embedding(
 
 def fixed_subgroup_embedding_injective(
   K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E),
-  h k : SubgroupCarrier(GaloisGroup(K, E), H),
+  h, k : SubgroupCarrier(GaloisGroup(K, E), H),
   same : fixed_subgroup_embedding(K, E, H, h) = fixed_subgroup_embedding(K, E, H, k)
 ) :
   h = k {
@@ -172,7 +172,7 @@ def fixed_subgroup_loop_embedding_action(
 }
 
 def fixed_subgroup_loop_embedding_injective(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), p q : E =[FieldExt(K)] E,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), p, q : E =[FieldExt(K)] E,
   memberP : subgroup_members(GaloisGroup(K, E), H, extension_path_iso(K, E, E, p)),
   memberQ : subgroup_members(GaloisGroup(K, E), H, extension_path_iso(K, E, E, q)),
   same : fixed_subgroup_loop_embedding(K, E, H, p, memberP) = fixed_subgroup_loop_embedding(
@@ -228,7 +228,7 @@ def fixed_subgroup_distinct_embeddings(
         K, E, H, forward(Fin(n), A, enumeration, index)
       );
     have injective : Injective(Fin(n), B, f) {
-      intro x y same;
+      intro x, y, same;
       exact inverse_injective(
         Fin(n), A, forward(Fin(n), A, enumeration), backward(Fin(n), A, enumeration),
         left_inverse(Fin(n), A, enumeration), x, y,

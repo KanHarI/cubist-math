@@ -6,7 +6,7 @@ import galois_orders;
 // Fixedness can be checked on the two representatives of the automorphism
 // type. The classification path transports the result to any automorphism.
 def F4FixedOnRepresentatives(H : F4Automorphism -> U0, x : F4Carrier) :=
-  forall b : F2Carrier, H(f4_symmetry(b)) -> (f4_auto_apply(f4_symmetry(b), x) = x);
+  forall b : F2Carrier. H(f4_symmetry(b)) -> (f4_auto_apply(f4_symmetry(b), x) = x);
 
 def f4_fixed_from_representatives(
   H : F4Automorphism -> U0, x : F4Carrier, tested : F4FixedOnRepresentatives(H, x)
@@ -19,7 +19,7 @@ def f4_fixed_from_representatives(
 }
 
 def f4_fixed_decision(
-  H : F4Automorphism -> U0, decide : (forall e : F4Automorphism, Decidable(H(e))), x : F4Carrier
+  H : F4Automorphism -> U0, decide : (forall e : F4Automorphism. Decidable(H(e))), x : F4Carrier
 ) :
   Decidable(GaloisFixed(F2, F4OverF2, H, x)) {
   let tested :=
@@ -40,7 +40,7 @@ def f4_fixed_decision(
 }
 
 def f4_fixing_decision(
-  P : F4Carrier -> U0, decide : (forall x : F4Carrier, Decidable(P(x))), e : F4Automorphism
+  P : F4Carrier -> U0, decide : (forall x : F4Carrier. Decidable(P(x))), e : F4Automorphism
 ) :
   Decidable(GaloisFixing(F2, F4OverF2, P, e)) {
   exact finite_forall_decidable(
@@ -108,12 +108,12 @@ def f4_galois_correspondence :
   );
 }
 
-def F4DecidableSubgroupIncluded(D E : DecidableSubgroup(F4GaloisGroup)) :=
+def F4DecidableSubgroupIncluded(D, E : DecidableSubgroup(F4GaloisGroup)) :=
   SubgroupIncluded(
     F4GaloisGroup, decidable_subgroup(F4GaloisGroup, D), decidable_subgroup(F4GaloisGroup, E)
   );
 
-def F4DecidableIntermediateIncluded(D E : DecidableIntermediateField(F2, F4OverF2)) :=
+def F4DecidableIntermediateIncluded(D, E : DecidableIntermediateField(F2, F4OverF2)) :=
   IntermediateIncluded(
     F2, F4OverF2, decidable_intermediate(F2, F4OverF2, D), decidable_intermediate(F2, F4OverF2, E)
   );
@@ -123,7 +123,7 @@ def f4_decidable_fixed_antitone :
     DecidableSubgroup(F4GaloisGroup), DecidableIntermediateField(F2, F4OverF2),
     F4DecidableSubgroupIncluded, F4DecidableIntermediateIncluded, f4_decidable_fixed
   ) {
-  intro D E included;
+  intro D, E, included;
   exact fixed_field_reverses_inclusion(
     F2, F4OverF2, decidable_subgroup(F4GaloisGroup, D), decidable_subgroup(F4GaloisGroup, E),
     included
@@ -135,7 +135,7 @@ def f4_decidable_fixing_antitone :
     DecidableIntermediateField(F2, F4OverF2), DecidableSubgroup(F4GaloisGroup),
     F4DecidableIntermediateIncluded, F4DecidableSubgroupIncluded, f4_decidable_fixing
   ) {
-  intro D E included;
+  intro D, E, included;
   exact fixing_group_reverses_inclusion(
     F2, F4OverF2, decidable_intermediate(F2, F4OverF2, D), decidable_intermediate(F2, F4OverF2, E),
     included

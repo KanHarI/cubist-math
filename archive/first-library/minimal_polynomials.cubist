@@ -4,38 +4,38 @@ import polynomial_monic;
 // The minimal polynomial is the unique monic generator of the annihilator.
 // This specification does not choose an arbitrary irreducible associate.
 def MinimalPolynomialSpec(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p : Polynomial(K)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p : Polynomial(K)
 ) :=
   PolynomialNonzero(K, p) and PolynomialMonic(K, p) and PolynomialRoot(K, L, e, p, x)
-  and (forall q : Polynomial(K), PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q));
+  and (forall q : Polynomial(K). PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q));
 
-def MinimalPolynomialData(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :=
-  exists p : Polynomial(K), MinimalPolynomialSpec(K, L, e, x, p);
+def MinimalPolynomialData(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :=
+  exists p : Polynomial(K). MinimalPolynomialSpec(K, L, e, x, p);
 
 def polynomial_nonzero_prop(K : AlgebraicField, p : Polynomial(K)) :=
   forall_prop(
     (p = polynomial_zero(K)), (fun (same : p = polynomial_zero(K)) => Void),
-    (fun (same : p = polynomial_zero(K), v w : Void) => typed((v = w), absurd(v)))
+    (fun (same : p = polynomial_zero(K), v, w : Void) => typed((v = w), absurd(v)))
   );
 
 def minimal_polynomial_spec_prop(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p : Polynomial(K)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p : Polynomial(K)
 ) :=
   product_prop(
     PolynomialNonzero(K, p),
     (
       PolynomialMonic(K, p) and PolynomialRoot(K, L, e, p, x)
-      and (forall q : Polynomial(K), PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q))
+      and (forall q : Polynomial(K). PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q))
     ), polynomial_nonzero_prop(K, p),
     product_prop(
       PolynomialMonic(K, p),
       (
         PolynomialRoot(K, L, e, p, x)
-        and (forall q : Polynomial(K), PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q))
+        and (forall q : Polynomial(K). PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q))
       ), af_set(K, polynomial_coefficients(K, p, polynomial_degree(K, p)), field_one(K)),
       product_prop(
         PolynomialRoot(K, L, e, p, x),
-        (forall q : Polynomial(K), PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q)),
+        (forall q : Polynomial(K). PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q)),
         polynomial_root_prop(K, L, e, p, x),
         forall_prop(
           Polynomial(K),
@@ -55,7 +55,7 @@ def minimal_polynomial_spec_prop(
 // Two monic generators have equal degree. Their difference has smaller
 // degree and is still annihilating, hence must be zero.
 def minimal_polynomial_unique(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p q : Polynomial(K),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p, q : Polynomial(K),
   hp : MinimalPolynomialSpec(K, L, e, x, p), hq : MinimalPolynomialSpec(K, L, e, x, q)
 ) :
   p = q {
@@ -82,9 +82,9 @@ def minimal_polynomial_unique(
   );
 }
 
-def minimal_polynomial_data_prop(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
+def minimal_polynomial_data_prop(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
   Proposition(MinimalPolynomialData(K, L, e, x)) {
-  intro a b;
+  intro a, b;
   let P := MinimalPolynomialSpec(K, L, e, x);
   exact subtype_ext(
     Polynomial(K), P, minimal_polynomial_spec_prop(K, L, e, x), a, b,
@@ -96,7 +96,7 @@ def minimal_polynomial_data_prop(K L : AlgebraicField, e : FieldEmbedding(K, L),
 }
 
 def normalize_annihilator_generator(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   generator : IdealPrincipalGenerator(K, PolynomialAnnihilator(K, L, e, x))
 ) :
   MinimalPolynomialData(K, L, e, x) {
@@ -116,8 +116,8 @@ def normalize_annihilator_generator(
     )
   };
   have generatesP :
-    forall q : Polynomial(K), PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q) {
-    intro q rq;
+    forall q : Polynomial(K). PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q) {
+    intro q, rq;
     exact polynomial_divides_trans(
       K, p, g, q, polynomial_scale_divides(K, a, leading, inverse, g), generates(q, rq)
     );
@@ -131,7 +131,7 @@ def normalize_annihilator_generator(
 // Unique existence removes the truncation without selecting a basis or
 // invoking a choice axiom. The resulting polynomial is canonical.
 def minimal_polynomial_data(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x)
 ) :
   MinimalPolynomialData(K, L, e, x) {
@@ -144,7 +144,7 @@ def minimal_polynomial_data(
 }
 
 def minimal_polynomial(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x)
 ) :=
   sigma_first(
@@ -152,7 +152,7 @@ def minimal_polynomial(
   );
 
 def minimal_polynomial_spec(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x)
 ) :=
   sigma_second(
@@ -160,7 +160,7 @@ def minimal_polynomial_spec(
   );
 
 def minimal_polynomial_irreducible(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x)
 ) :
   PolynomialIrreducible(K, minimal_polynomial(K, L, e, x, algebraic)) {
@@ -171,7 +171,7 @@ def minimal_polynomial_irreducible(
 }
 
 def minimal_polynomial_divides(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x), q : Polynomial(K), root : PolynomialRoot(K, L, e, q, x)
 ) :
   PolynomialDivides(K, minimal_polynomial(K, L, e, x, algebraic), q) {

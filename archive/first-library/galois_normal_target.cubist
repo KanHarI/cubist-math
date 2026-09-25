@@ -6,16 +6,16 @@ import embedding_counts;
 // comparison embedding j. The image of j is a field; no closure of the target
 // is needed for this factorization.
 def normal_target_factor(
-  K F : AlgebraicField, e : FieldEmbedding(K, F), normal : NormalEmbeddingLaw(K, F, e),
-  T : AlgebraicField, j h : FieldEmbedding(F, T),
+  K, F : AlgebraicField, e : FieldEmbedding(K, F), normal : NormalEmbeddingLaw(K, F, e),
+  T : AlgebraicField, j, h : FieldEmbedding(F, T),
   same : field_embedding_compose(K, F, T, e, h) = field_embedding_compose(K, F, T, e, j)
 ) :
-  exists g : FieldEmbedding(F, F), forall x : af_carrier(F),
+  exists g : FieldEmbedding(F, F). forall x : af_carrier(F).
   field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(F, T, h, x) {
   let S := subfield_image(F, T, j, subfield_top(F));
   let I := embedding_image_field(F, T, j);
   let jFactor := embedding_image_factor(F, T, j);
-  have lands : forall x : af_carrier(F), subfield_members(T, S, field_embedding_map(F, T, h, x)) {
+  have lands : forall x : af_carrier(F). subfield_members(T, S, field_embedding_map(F, T, h, x)) {
     intro x;
     obtain (z, value) := normal(T, j, h, same, x);
     exact (z, tt, value);
@@ -31,7 +31,7 @@ def normal_target_factor(
   let inverse := field_embedding_inverse(F, I, jFactor, onto);
   let g := field_embedding_compose(F, I, F, hFactor, inverse);
   have triangle :
-    forall x : af_carrier(F),
+    forall x : af_carrier(F).
     field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(F, T, h, x) {
     intro x;
     exact cong(
@@ -45,12 +45,12 @@ def normal_target_factor(
 def normal_target_automorphism_factor(
   K : AlgebraicField, E : FieldExt(K),
   normal : NormalEmbeddingLaw(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
-  T : AlgebraicField, j h : FieldEmbedding(extension_field(K, E), T),
+  T : AlgebraicField, j, h : FieldEmbedding(extension_field(K, E), T),
   same : field_embedding_compose(
     K, extension_field(K, E), T, extension_inclusion_embedding(K, E), h
   ) = field_embedding_compose(K, extension_field(K, E), T, extension_inclusion_embedding(K, E), j)
 ) :
-  exists g : Galois(K, E), forall x : extension_carrier(K, E),
+  exists g : Galois(K, E). forall x : extension_carrier(K, E).
   field_embedding_map(extension_field(K, E), T, j, extension_iso_forward(K, E, E, g, x)) = field_embedding_map(
     extension_field(K, E), T, h, x
   ) {
@@ -58,7 +58,7 @@ def normal_target_automorphism_factor(
   let e := extension_inclusion_embedding(K, E);
   obtain (factor, triangle) := normal_target_factor(K, F, e, normal, T, j, h, same);
   have overK :
-    forall a : af_carrier(K),
+    forall a : af_carrier(K).
     field_embedding_map(F, F, factor, extension_inclusion(K, E, a)) = extension_inclusion(K, E, a) {
     intro a;
     exact field_embedding_injective(
@@ -103,7 +103,7 @@ def normal_target_embeddings_automorphisms(
     fun (d : A) => sigma_first(
       B,
       (
-        fun (g : B) => forall x : extension_carrier(K, E),
+        fun (g : B) => forall x : extension_carrier(K, E).
         field_embedding_map(F, T, j, extension_iso_forward(K, E, E, g, x)) = field_embedding_map(
           F, T, embedding_over(K, F, e, T, base, d), x
         )
@@ -121,14 +121,14 @@ def normal_target_embeddings_automorphisms(
         )
       )
     );
-  have leftInverse : forall d : A, backwardMap(forwardMap(d)) = d {
+  have leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
     intro d;
     let h := embedding_over(K, F, e, T, base, d);
     let triangle :=
       sigma_second(
         B,
         (
-          fun (g : B) => forall x : extension_carrier(K, E),
+          fun (g : B) => forall x : extension_carrier(K, E).
           field_embedding_map(F, T, j, extension_iso_forward(K, E, E, g, x)) = field_embedding_map(
             F, T, h, x
           )
@@ -141,7 +141,7 @@ def normal_target_embeddings_automorphisms(
       )
     );
   }
-  have rightInverse : forall g : B, forwardMap(backwardMap(g)) = g {
+  have rightInverse : forall g : B. forwardMap(backwardMap(g)) = g {
     intro g;
     let d := backwardMap(g);
     let h := embedding_over(K, F, e, T, base, d);
@@ -149,7 +149,7 @@ def normal_target_embeddings_automorphisms(
       sigma_second(
         B,
         (
-          fun (q : B) => forall x : extension_carrier(K, E),
+          fun (q : B) => forall x : extension_carrier(K, E).
           field_embedding_map(F, T, j, extension_iso_forward(K, E, E, q, x)) = field_embedding_map(
             F, T, h, x
           )
@@ -198,7 +198,7 @@ def finite_normal_separable_automorphism_count(
 // The counting induction only needs separability of minimal polynomials in
 // the chosen closed target. This form is stable under intermediate base change.
 def finite_separable_elements_embedding_count(
-  K F : AlgebraicField, e : FieldEmbedding(K, F),
+  K, F : AlgebraicField, e : FieldEmbedding(K, F),
   finite : FiniteExtension(K, embedding_as_extension(K, F, e)), T : AlgebraicField,
   closed : AlgebraicallyClosed(T), separable : SeparableElementsIn(K, F, e, T),
   j : FieldEmbedding(K, T)
@@ -249,7 +249,7 @@ def finite_normal_separable_target_automorphism_count(
 }
 
 def normal_target_embeddings_self(
-  K F : AlgebraicField, e : FieldEmbedding(K, F), normal : NormalEmbeddingLaw(K, F, e),
+  K, F : AlgebraicField, e : FieldEmbedding(K, F), normal : NormalEmbeddingLaw(K, F, e),
   T : AlgebraicField, j : FieldEmbedding(F, T)
 ) :
   Bijection(
@@ -274,7 +274,7 @@ def normal_target_embeddings_self(
         sigma_first(
           FieldEmbedding(F, F),
           (
-            fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F),
+            fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
             field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
               F, T, embedding_over(K, F, e, T, base, d), x
             )
@@ -288,7 +288,7 @@ def normal_target_embeddings_self(
               sigma_first(
                 FieldEmbedding(F, F),
                 (
-                  fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F),
+                  fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
                   field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
                     F, T, embedding_over(K, F, e, T, base, d), x
                   )
@@ -299,7 +299,7 @@ def normal_target_embeddings_self(
               sigma_second(
                 FieldEmbedding(F, F),
                 (
-                  fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F),
+                  fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
                   field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
                     F, T, embedding_over(K, F, e, T, base, d), x
                   )
@@ -322,14 +322,14 @@ def normal_target_embeddings_self(
         )
       )
     );
-  have leftInverse : forall d : A, backwardMap(forwardMap(d)) = d {
+  have leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
     intro d;
     let h := embedding_over(K, F, e, T, base, d);
     let triangle :=
       sigma_second(
         FieldEmbedding(F, F),
         (
-          fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F),
+          fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
           field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
             F, T, h, x
           )
@@ -342,7 +342,7 @@ def normal_target_embeddings_self(
       )
     );
   }
-  have rightInverse : forall d : B, forwardMap(backwardMap(d)) = d {
+  have rightInverse : forall d : B. forwardMap(backwardMap(d)) = d {
     intro d;
     let mapped := backwardMap(d);
     let h := embedding_over(K, F, e, T, base, mapped);
@@ -350,7 +350,7 @@ def normal_target_embeddings_self(
       sigma_second(
         FieldEmbedding(F, F),
         (
-          fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F),
+          fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
           field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
             F, T, h, x
           )
@@ -382,7 +382,7 @@ def finite_normal_separable_intermediate_automorphism_count(
   separable : SeparableExtension(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
   T : AlgebraicField, closed : AlgebraicallyClosed(T), j : FieldEmbedding(extension_field(K, E), T)
 ) :
-  exists upper : FiniteExtension(intermediate_as_field(K, E, M), intermediate_overfield(K, E, M)),
+  exists upper : FiniteExtension(intermediate_as_field(K, E, M), intermediate_overfield(K, E, M)).
   HasCardinality(
     SubgroupCarrier(GaloisGroup(K, E), fixing_galois_subgroup(K, E, M)),
     extension_degree(intermediate_as_field(K, E, M), intermediate_overfield(K, E, M), upper)

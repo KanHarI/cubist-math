@@ -3,7 +3,7 @@ import field_extensionality;
 import classical;
 
 def order_prop(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
-  forall x : A, forall y : A, FieldProp(le(x, y)) {
+  forall x : A. forall y : A. FieldProp(le(x, y)) {
   obtain ((prop, reflexive, transitive), antisymmetric) := laws;
   exact prop;
 }
@@ -27,15 +27,15 @@ def order_antisym(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le))
 }
 
 def OrderChain(A : U1, le : OrderRelation(A), C : A -> U0) :=
-  forall x : A, forall y : A, C(x) -> C(y) -> FieldOr(le(x, y), le(y, x));
+  forall x : A. forall y : A. C(x) -> C(y) -> FieldOr(le(x, y), le(y, x));
 
 def ChainSupremum(A : U1, le : OrderRelation(A), C : A -> U0) :=
-  exists s : A, (forall x : A, C(x) -> le(x, s))
-  and (forall z : A, (forall x : A, C(x) -> le(x, z)) -> le(s, z));
+  exists s : A. (forall x : A. C(x) -> le(x, s))
+  and (forall z : A. (forall x : A. C(x) -> le(x, z)) -> le(s, z));
 
 // Includes the empty chain. Its supremum is the least element.
 def ChainComplete(A : U1, le : OrderRelation(A)) :=
-  forall C : A -> U0, OrderChain(A, le, C) -> ChainSupremum(A, le, C);
+  forall C : A -> U0. OrderChain(A, le, C) -> ChainSupremum(A, le, C);
 
 def chain_sup(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), C : A -> U0,
@@ -44,8 +44,8 @@ def chain_sup(
   field_first(
     A,
     (
-      fun (s : A) => (forall x : A, C(x) -> le(x, s))
-      and (forall z : A, (forall x : A, C(x) -> le(x, z)) -> le(s, z))
+      fun (s : A) => (forall x : A. C(x) -> le(x, s))
+      and (forall z : A. (forall x : A. C(x) -> le(x, z)) -> le(s, z))
     ), complete(C, chain)
   );
 
@@ -56,8 +56,8 @@ def chain_sup_laws(
   field_second(
     A,
     (
-      fun (s : A) => (forall x : A, C(x) -> le(x, s))
-      and (forall z : A, (forall x : A, C(x) -> le(x, z)) -> le(s, z))
+      fun (s : A) => (forall x : A. C(x) -> le(x, s))
+      and (forall z : A. (forall x : A. C(x) -> le(x, z)) -> le(s, z))
     ), complete(C, chain)
   );
 
@@ -65,7 +65,7 @@ def chain_sup_upper(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), C : A -> U0,
   chain : OrderChain(A, le, C)
 ) :
-  forall x : A, C(x) -> le(x, chain_sup(A, le, complete, C, chain)) {
+  forall x : A. C(x) -> le(x, chain_sup(A, le, complete, C, chain)) {
   obtain (upper, least) := chain_sup_laws(A, le, complete, C, chain);
   exact upper;
 }
@@ -74,16 +74,16 @@ def chain_sup_least(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), C : A -> U0,
   chain : OrderChain(A, le, C)
 ) :
-  forall z : A, (forall x : A, C(x) -> le(x, z)) -> le(chain_sup(A, le, complete, C, chain), z) {
+  forall z : A. (forall x : A. C(x) -> le(x, z)) -> le(chain_sup(A, le, complete, C, chain), z) {
   obtain (upper, least) := chain_sup_laws(A, le, complete, C, chain);
   exact least;
 }
 
-def Progressive(A : U1, le : OrderRelation(A), f : A -> A) := forall x : A, le(x, f(x));
+def Progressive(A : U1, le : OrderRelation(A), f : A -> A) := forall x : A. le(x, f(x));
 
 // Binary propositional elimination, allowing a U1 target.
 def field_or_elim(
-  P Q R : U1, prop : FieldProp(R), leftCase : P -> R, rightCase : Q -> R, h : FieldOr(P, Q)
+  P, Q, R : U1, prop : FieldProp(R), leftCase : P -> R, rightCase : Q -> R, h : FieldOr(P, Q)
 ) :
   R {
   exact field_exists_elim(P or Q, R, prop, (fun (side : P or Q) => match side return R {
@@ -92,7 +92,7 @@ def field_or_elim(
       }), h);
 }
 
-def field_and_prop(P Q : U1, propP : FieldProp(P), propQ : FieldProp(Q), a b : P and Q) : a = b {
+def field_and_prop(P, Q : U1, propP : FieldProp(P), propQ : FieldProp(Q), a, b : P and Q) : a = b {
   exact path t => typed(
     P and Q,
     (
@@ -104,11 +104,11 @@ def field_and_prop(P Q : U1, propP : FieldProp(P), propQ : FieldProp(Q), a b : P
 
 // A weakly constant family of maps on paths makes the carrier a set.
 // Normalization at reflexivity is proved by path induction, not assumed.
-def collapse_path(A : U1, h : (forall x : A, forall y : A, (x = y) -> (x = y)), x y : A, p : x = y) :=
+def collapse_path(A : U1, h : (forall x : A. forall y : A. (x = y) -> (x = y)), x, y : A, p : x = y) :=
   trans(sym(h(x, x, refl(x))), h(x, y, p));
 
 def collapse_path_recovers(
-  A : U1, h : (forall x : A, forall y : A, (x = y) -> (x = y)), x y : A, p : x = y
+  A : U1, h : (forall x : A. forall y : A. (x = y) -> (x = y)), x, y : A, p : x = y
 ) :
   collapse_path(A, h, x, y, p) = p {
   exact based_induction(
@@ -118,13 +118,13 @@ def collapse_path_recovers(
 }
 
 def weak_path_collapser_set(
-  A : U1, h : (forall x : A, forall y : A, (x = y) -> (x = y)),
+  A : U1, h : (forall x : A. forall y : A. (x = y) -> (x = y)),
   constant : (
-    forall x : A, forall y : A, forall p : x = y, forall q : x = y, h(x, y, p) = h(x, y, q)
+    forall x : A. forall y : A. forall p : x = y. forall q : x = y. h(x, y, p) = h(x, y, q)
   )
 ) :
   FieldSet(A) {
-  intro x y p q;
+  intro x, y, p, q;
   exact trans(
     sym(collapse_path_recovers(A, h, x, y, p)),
     trans(
@@ -135,7 +135,7 @@ def weak_path_collapser_set(
 }
 
 def order_path_collapse(
-  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x y : A, p : x = y
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x, y : A, p : x = y
 ) :=
   order_antisym(
     A, le, laws, x, y, along le(x) by p from order_refl(A, le, laws, x),
@@ -145,9 +145,9 @@ def order_path_collapse(
 def partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
   FieldSet(A) {
   have constant :
-    forall x : A, forall y : A, forall p : x = y, forall q : x = y,
+    forall x : A. forall y : A. forall p : x = y. forall q : x = y.
     order_path_collapse(A, le, laws, x, y, p) = order_path_collapse(A, le, laws, x, y, q) {
-    intro x y p q;
+    intro x, y, p, q;
     let forward := fun (r : x = y) => along le(x) by r from order_refl(A, le, laws, x);
     let backward :=
       fun (r : x = y) => along((fun (z : A) => le(z, x))) by r from order_refl(A, le, laws, x);
@@ -166,16 +166,16 @@ def partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(
 }
 
 def field_subtype_is_set(
-  A : U1, P : A -> U1, setA : FieldSet(A), prop : (forall x : A, FieldProp(P(x)))
+  A : U1, P : A -> U1, setA : FieldSet(A), prop : (forall x : A. FieldProp(P(x)))
 ) :
-  FieldSet(exists x : A, P(x)) {
-  let S := exists x : A, P(x);
+  FieldSet(exists x : A. P(x)) {
+  let S := exists x : A. P(x);
   let first := field_first(A, P);
-  let h := fun (x y : S, p : x = y) => field_subtype_ext(A, P, prop, x, y, cong(first, p));
+  let h := fun (x, y : S, p : x = y) => field_subtype_ext(A, P, prop, x, y, cong(first, p));
   exact weak_path_collapser_set(
     S, h,
     (
-      fun (x y : S, p q : x = y) => cong(
+      fun (x, y : S, p, q : x = y) => cong(
         field_subtype_ext(A, P, prop, x, y),
         setA(first(x), first(y), cong(first, p), cong(first, q))
       )

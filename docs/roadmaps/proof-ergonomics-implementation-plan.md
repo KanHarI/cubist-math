@@ -89,7 +89,7 @@ in PR 6. Keep ASCII canonical initially. Optional Unicode aliases can later
 render path concatenation as `p · q`, inversion as `p⁻¹`, and transport as
 `p_* v`, with explicit elaborated meanings and precedence tests.
 
-Elaborate the shared domain of `(x y : A)` in the surrounding scope before
+Elaborate the shared domain of `(x, y : A)` in the surrounding scope before
 binding either name. Sequentially reparsing that domain after binding `x`
 could change its meaning under shadowing. Generated inspector identities need
 an origin span **and** expansion index; several generated nodes at one offset
@@ -306,7 +306,7 @@ be smaller than the existing direct cubical expansion.
 
 ### 2. Keep dependent proofs as paths until transport is actually needed
 
-Given `p : x = y` and `f : forall a : A, C(a)`, expose
+Given `p : x = y` and `f : forall a : A. C(a)`, expose
 `apd_path(f,p) : PathP(i => C(p @ i), f(x), f(y))`, lowering directly to
 `path i => f(p @ i)`. Preserve existing `apd`, whose result is equality **after
 transport** and which currently invokes the path-over bridge.
@@ -329,7 +329,7 @@ provides higher paths witnessing them.
 
 ### 3. Naturality squares as nested paths — high priority, no new primitive
 
-With `H : forall a : A, f(a) = g(a)` and `p : x = y`, write the square as
+With `H : forall a : A. f(a) = g(a)` and `p : x = y`, write the square as
 `path j => path i => H(p @ i) @ j`. Its outer family is
 `H(x) @ j = H(y) @ j`; the outer endpoints are `cong(f,p)` and `cong(g,p)`.
 This states the two-dimensional object directly rather than first choosing a

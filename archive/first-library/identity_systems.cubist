@@ -2,7 +2,7 @@ import field_logic;
 import homotopy_paths;
 
 // A reusable U1 version of the identity-system argument.
-def IdentityTotal(A : U1, R : A -> U1) := exists b : A, R(b);
+def IdentityTotal(A : U1, R : A -> U1) := exists b : A. R(b);
 
 def identity_total_point(A : U1, R : A -> U1, b : A, r : R(b)) :=
   typed(IdentityTotal(A, R), (b, r));
@@ -12,19 +12,19 @@ def identity_system_decode(A : U1, a : A, R : A -> U1, r0 : R(a), b : A, p : a =
 
 def identity_system_encode(
   A : U1, a : A, R : A -> U1, r0 : R(a),
-  contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
+  contraction : (forall z : IdentityTotal(A, R). identity_total_point(A, R, a, r0) = z), b : A,
   r : R(b)
 ) :=
   cong(field_first(A, R), contraction(identity_total_point(A, R, b, r)));
 
-def identity_total_second_path(A : U1, R : A -> U1, x y : IdentityTotal(A, R), p : x = y) :
+def identity_total_second_path(A : U1, R : A -> U1, x, y : IdentityTotal(A, R), p : x = y) :
   (along R by cong(field_first(A, R), p) from field_second(A, R, x)) = field_second(A, R, y) {
   exact apd(field_second(A, R), x, y, p);
 }
 
 def identity_system_section(
   A : U1, a : A, R : A -> U1, r0 : R(a),
-  contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
+  contraction : (forall z : IdentityTotal(A, R). identity_total_point(A, R, a, r0) = z), b : A,
   r : R(b)
 ) :
   identity_system_decode(A, a, R, r0, b, identity_system_encode(A, a, R, r0, contraction, b, r)) = r {
@@ -36,7 +36,7 @@ def identity_system_section(
 
 def identity_system_retraction(
   A : U1, a : A, R : A -> U1, r0 : R(a),
-  contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
+  contraction : (forall z : IdentityTotal(A, R). identity_total_point(A, R, a, r0) = z), b : A,
   p : a = b
 ) :
   identity_system_encode(A, a, R, r0, contraction, b, identity_system_decode(A, a, R, r0, b, p)) = p {
@@ -65,7 +65,7 @@ def identity_system_retraction(
 // half-adjoint triangle law; the encode/decode round trips above do not need it.
 def identity_system_equivalence(
   A : U1, a : A, R : A -> U1, r0 : R(a),
-  contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
+  contraction : (forall z : IdentityTotal(A, R). identity_total_point(A, R, a, r0) = z), b : A,
   setR : FieldSet(R(b))
 ) :
   Equiv(U1, (a = b), R(b)) {
@@ -78,7 +78,7 @@ def identity_system_equivalence(
 
 // The weakly constant path-map form of Hedberg's argument.
 def constant_path_correction(
-  A : U1, choose : (forall x : A, forall y : A, (x = y) -> (x = y)), x y : A, p : x = y
+  A : U1, choose : (forall x : A. forall y : A. (x = y) -> (x = y)), x, y : A, p : x = y
 ) :
   trans(sym(choose(x, x, refl(x))), choose(x, y, p)) = p {
   exact based_induction(
@@ -89,14 +89,14 @@ def constant_path_correction(
 }
 
 def constant_paths_are_set(
-  A : U1, choose : (forall x : A, forall y : A, (x = y) -> (x = y)),
+  A : U1, choose : (forall x : A. forall y : A. (x = y) -> (x = y)),
   constant : (
-    forall x : A, forall y : A, forall p : x = y, forall q : x = y,
+    forall x : A. forall y : A. forall p : x = y. forall q : x = y.
     choose(x, y, p) = choose(x, y, q)
   )
 ) :
   FieldSet(A) {
-  intro x y p q;
+  intro x, y, p, q;
   exact trans(
     sym(constant_path_correction(A, choose, x, y, p)),
     trans(

@@ -67,20 +67,20 @@
                 <tr><td><code>PathP(fun (i : Interval) => A(i), a, b)</code></td><td>The type of dependent paths from <code>a : A(0)</code> to <code>b : A(1)</code>. <code>x = y</code> is the case of a constant family.</td></tr>
               </tbody>
             </table></div>
-            <pre><code data-check="accept">def reverse_path(A : U0, x y : A, p : x = y) : y = x {
+            <pre><code data-check="accept">def reverse_path(A : U0, x, y : A, p : x = y) : y = x {
   exact path(fun (i : Interval) =&gt; A, fun (i : Interval) =&gt; at(p, flip(i)));
 }
 
-def value_at_zero(A : U0, x y : A, p : x = y) : p @ 0 = x {
+def value_at_zero(A : U0, x, y : A, p : x = y) : p @ 0 = x {
   exact refl(x);
 }
 
-def to_start(A : U0, x y : A, p : x = y) :
+def to_start(A : U0, x, y : A, p : x = y) :
   PathP(fun (j : Interval) =&gt; x = p @ j, refl(x), p) {
   exact path j =&gt; path i =&gt; p @ meet(i, j);
 }</code></pre>
             <p><code>value_at_zero</code> holds by computation. In <code>to_start</code>, the square <code>p @ meet(i, j)</code> is <code>refl(x)</code> at <code>j = 0</code> and <code>p</code> at <code>j = 1</code>. The kernel checks every endpoint:</p>
-            <pre><code data-check="reject">def wrong_direction(A : U0, x y : A, p : x = y) : x = y {
+            <pre><code data-check="reject">def wrong_direction(A : U0, x, y : A, p : x = y) : x = y {
   // Error: Type mismatch: found p @ 1 = p @ 0, expected x = y.
   exact path i =&gt; p @ flip(i);
 }</code></pre>
@@ -99,12 +99,12 @@ def to_start(A : U0, x y : A, p : x = y) :
                 <tr><td><code>path i => body</code></td><td><code>path(family, fun (i : Interval) => body)</code>, with <code>family</code> from the expected <code>=</code> or <code>PathP</code> type</td></tr>
                 <tr><td><code>p @ i</code></td><td><code>at(p, i)</code>. Binds tighter than every infix operator except application.</td></tr>
                 <tr><td><code>along C by p from v</code></td><td><code>transport(C, x, y, p, v)</code>, with <code>x</code> and <code>y</code> read from <code>p : x = y</code>. See <a href="paths.html#transport">transport</a>.</td></tr>
-                <tr><td><code>apd_path(f, p)</code></td><td>For <code>f : forall a : A, C(a)</code> and <code>p : x = y</code>, the dependent path <code>path i => f(p @ i)</code></td></tr>
+                <tr><td><code>apd_path(f, p)</code></td><td>For <code>f : forall a : A. C(a)</code> and <code>p : x = y</code>, the dependent path <code>path i => f(p @ i)</code></td></tr>
                 <tr><td><code>over C along p by { … }</code></td><td>Proves a <code>PathP</code> over <code>p</code> from an equality after transport. Closing.</td></tr>
                 <tr><td><code>ext x;</code></td><td>For a goal <code>f = g</code> between functions, continue with <code>f(x) = g(x)</code></td></tr>
               </tbody>
             </table></div>
-            <pre><code data-check="accept">def reverse_again(A : U0, x y : A, p : x = y) : y = x {
+            <pre><code data-check="accept">def reverse_again(A : U0, x, y : A, p : x = y) : y = x {
   exact path i =&gt; p @ flip(i);
 }
 
@@ -112,8 +112,8 @@ def constant_path(A : U0, x : A) : x = x {
   exact path i =&gt; x;
 }
 
-def naturality_square(A B : U0, f g : A -&gt; B,
-    H : (forall a : A, f(a) = g(a)), x y : A, p : x = y) :
+def naturality_square(A, B : U0, f, g : A -&gt; B,
+    H : (forall a : A. f(a) = g(a)), x, y : A, p : x = y) :
   PathP(fun (j : Interval) =&gt; H(x) @ j = H(y) @ j, cong(f, p), cong(g, p)) {
   exact path j =&gt; path i =&gt; H(p @ i) @ j;
 }</code></pre>
@@ -124,25 +124,25 @@ def no_expected_type(A : U0, x : A) := path i =&gt; x;</code></pre>
           </section>
           <section id="dependent-paths">
             <h2>Dependent paths</h2>
-            <pre><code data-check="accept">def section_path(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)), x y : A, p : x = y) :
+            <pre><code data-check="accept">def section_path(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)), x, y : A, p : x = y) :
   PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
   exact apd_path(f, p);
 }
 
-def section_by_hand(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)), x y : A, p : x = y) :
+def section_by_hand(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)), x, y : A, p : x = y) :
   PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
   exact path i =&gt; f(p @ i);
 }
 
-def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)),
-    x y : A, p : x = y) :
+def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)),
+    x, y : A, p : x = y) :
   PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
   over C along p by {
     exact apd(f, x, y, p);   // goal: transport(C, x, y, p, f(x)) = f(y)
   }
 }</code></pre>
             <p>There are two standard ways to state that a dependent function respects a path. A <code>PathP</code> states it directly, as a path lying over <code>p</code>. The transported equality <code>transport(C, x, y, p, f(x)) = f(y)</code> states it in one fiber. <code>apd_path</code> produces the first and <code>apd</code> the second. <code>over</code> proves a <code>PathP</code> goal from the transported equality, when that is easier. The family <code>C</code> is never inferred: the elaborator does not search for a family that fits.</p>
-            <pre><code data-check="reject">def not_a_path_goal(A : U0, C : A -&gt; U0, x y : A, p : x = y) : Nat {
+            <pre><code data-check="reject">def not_a_path_goal(A : U0, C : A -&gt; U0, x, y : A, p : x = y) : Nat {
   over C along p by {  // Error: over requires an expected PathP goal.
     exact 0;
   }
@@ -150,17 +150,17 @@ def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A, C(a)),
           </section>
           <section id="ext">
             <h2>Function extensionality: <code>ext</code></h2>
-            <pre><code data-check="accept">def pointwise_path(A B : U0, f g : A -&gt; B, h : (forall x : A, f(x) = g(x))) : f = g {
+            <pre><code data-check="accept">def pointwise_path(A, B : U0, f, g : A -&gt; B, h : (forall x : A. f(x) = g(x))) : f = g {
   ext x;
   exact h(x);
 }
 
-def dependent_pointwise(A : U0, C : A -&gt; U0, f g : forall a : A, C(a),
-    h : forall a : A, f(a) = g(a)) : f = g {
+def dependent_pointwise(A : U0, C : A -&gt; U0, f, g : forall a : A. C(a),
+    h : forall a : A. f(a) = g(a)) : f = g {
   ext a;
   exact h(a);
 }</code></pre>
-            <p>Cubical paths make function extensionality provable: <code>path i => fun x => h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the goal is <code>f = g</code> with <code>f g : forall x : A, C(x)</code>. It uses no assumption; <a href="assumptions.html#univalence"><code>FunExt</code></a> builds the same term. Unlike <code>rw</code>, <code>ext</code> never closes the block: a statement proving <code>f(x) = g(x)</code> must follow, even when that holds by <code>rfl</code>.</p>
+            <p>Cubical paths make function extensionality provable: <code>path i => fun x => h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the goal is <code>f = g</code> with <code>f, g : forall x : A. C(x)</code>. It uses no assumption; <a href="assumptions.html#univalence"><code>FunExt</code></a> builds the same term. Unlike <code>rw</code>, <code>ext</code> never closes the block: a statement proving <code>f(x) = g(x)</code> must follow, even when that holds by <code>rfl</code>.</p>
             <pre><code data-check="reject">def not_functions(n : Nat) : n = n {
   ext x;  // Error: ext requires equality of functions.
   rfl;
@@ -169,30 +169,30 @@ def dependent_pointwise(A : U0, C : A -&gt; U0, f g : forall a : A, C(a),
           <section id="composition">
             <h2>Composition</h2>
             <p><code>comp(family, base, walls…)</code> fills from coordinate 0 to coordinate 1, starting at <code>base</code>. Picture a square with the base as its bottom edge and the walls as its sides: <code>comp</code> produces the top edge. A wall <code>face(i, 0, fun (j : Interval) => …)</code> gives the side where the outer coordinate <code>i</code> is 0, and likewise for 1. The kernel checks that each wall starts on the base and that walls agree where they meet. With no walls, <code>comp</code> is transport.</p>
-            <pre><code data-check="accept">def join(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
+            <pre><code data-check="accept">def join(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
   exact path i =&gt; comp(fun (j : Interval) =&gt; A, p @ i,
     face(i, 0, fun (j : Interval) =&gt; x),
     face(i, 1, fun (j : Interval) =&gt; q @ j));
 }
 
-def move(A : U0, C : A -&gt; U0, x y : A, p : x = y, v : C(x)) : C(y) {
+def move(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(x)) : C(y) {
   exact comp(fun (j : Interval) =&gt; C(p @ j), v);
 }</code></pre>
             <p><code>join</code> is how <code>trans</code> is built: the bottom edge is <code>p</code>, the left wall stays at <code>x</code>, and the right wall follows <code>q</code>. A wall that does not start on the base is rejected. Here the left wall starts at <code>y</code>, but the base starts at <code>x</code>:</p>
-            <pre><code data-check="reject">def misplaced_wall(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
+            <pre><code data-check="reject">def misplaced_wall(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
   exact path i =&gt; comp(fun (j : Interval) =&gt; A, p @ i,
     face(i, 0, fun (j : Interval) =&gt; y),  // Error: Composition tube disagrees with its base.
     face(i, 1, fun (j : Interval) =&gt; q @ j));
 }</code></pre>
             <p><code>fill(family, base, level, walls…)</code> is the same filling stopped at the coordinate <code>level</code>, so it gives the whole square rather than its top edge. <code>face_when(formula, wall)</code> states a wall’s face as a formula built from <code>on(i, 0)</code>, <code>on(i, 1)</code>, <code>and</code> and <code>or</code>:</p>
-            <pre><code data-check="accept">def filler(A : U0, x y z : A, p : x = y, q : y = z) :
+            <pre><code data-check="accept">def filler(A : U0, x, y, z : A, p : x = y, q : y = z) :
   PathP(fun (j : Interval) =&gt; x = q @ j, p, trans(p, q)) {
   exact path j =&gt; path i =&gt; fill(fun (k : Interval) =&gt; A, p @ i, j,
     face(i, 0, fun (k : Interval) =&gt; x),
     face(i, 1, fun (k : Interval) =&gt; q @ k));
 }
 
-def join_by_formulas(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
+def join_by_formulas(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
   exact path i =&gt; comp(fun (j : Interval) =&gt; A, p @ i,
     face_when(on(i, 0), fun (j : Interval) =&gt; x),
     face_when(on(i, 1), fun (j : Interval) =&gt; q @ j));

@@ -3,10 +3,10 @@ import subgroup_constructions;
 
 // Subobject inclusion is a partial order; its antisymmetry is univalent
 // equality of the complete membership-and-laws bundles.
-def GaloisSubgroupIncluded(K : AlgebraicField, E : FieldExt(K), H J : GaloisSubgroup(K, E)) :=
+def GaloisSubgroupIncluded(K : AlgebraicField, E : FieldExt(K), H, J : GaloisSubgroup(K, E)) :=
   SubgroupIncluded(GaloisGroup(K, E), H, J);
 
-def IntermediateIncluded(K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E)) :=
+def IntermediateIncluded(K : AlgebraicField, E : FieldExt(K), M, N : IntermediateField(K, E)) :=
   PredicateIncluded(
     extension_carrier(K, E), intermediate_members(K, E, M), intermediate_members(K, E, N)
   );
@@ -18,12 +18,12 @@ def galois_subgroup_inclusion_refl(K : AlgebraicField, E : FieldExt(K), H : Galo
 
 def intermediate_inclusion_refl(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
   IntermediateIncluded(K, E, M, M) {
-  intro x member;
+  intro x, member;
   exact member;
 }
 
 def galois_subgroup_inclusion_trans(
-  K : AlgebraicField, E : FieldExt(K), H J L : GaloisSubgroup(K, E),
+  K : AlgebraicField, E : FieldExt(K), H, J, L : GaloisSubgroup(K, E),
   hj : GaloisSubgroupIncluded(K, E, H, J), jl : GaloisSubgroupIncluded(K, E, J, L)
 ) :
   GaloisSubgroupIncluded(K, E, H, L) {
@@ -31,16 +31,16 @@ def galois_subgroup_inclusion_trans(
 }
 
 def intermediate_inclusion_trans(
-  K : AlgebraicField, E : FieldExt(K), M N P : IntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), M, N, P : IntermediateField(K, E),
   mn : IntermediateIncluded(K, E, M, N), np : IntermediateIncluded(K, E, N, P)
 ) :
   IntermediateIncluded(K, E, M, P) {
-  intro x member;
+  intro x, member;
   exact np(x, mn(x, member));
 }
 
 def galois_subgroup_inclusion_antisym(
-  K : AlgebraicField, E : FieldExt(K), H J : GaloisSubgroup(K, E),
+  K : AlgebraicField, E : FieldExt(K), H, J : GaloisSubgroup(K, E),
   hj : GaloisSubgroupIncluded(K, E, H, J), jh : GaloisSubgroupIncluded(K, E, J, H)
 ) :
   H =[GaloisSubgroup(K, E)] J {
@@ -48,7 +48,7 @@ def galois_subgroup_inclusion_antisym(
 }
 
 def intermediate_inclusion_antisym(
-  K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), M, N : IntermediateField(K, E),
   mn : IntermediateIncluded(K, E, M, N), nm : IntermediateIncluded(K, E, N, M)
 ) :
   M =[IntermediateField(K, E)] N {
@@ -74,7 +74,7 @@ def galois_order_connection(K : AlgebraicField, E : FieldExt(K)) :
     GaloisSubgroup(K, E), IntermediateField(K, E), GaloisSubgroupIncluded(K, E),
     IntermediateIncluded(K, E), fixed_intermediate_field(K, E), fixing_galois_subgroup(K, E)
   ) {
-  intro H M;
+  intro H, M;
   obtain (toFixed, toFixing) := intermediate_galois_connection(K, E, H, M);
   exact (toFixing, toFixed);
 }
@@ -144,12 +144,12 @@ def intermediate_galois_closure_idempotent(
 }
 
 // Inclusion proofs are propositions even though subobjects themselves live in U1.
-def galois_subgroup_inclusion_prop(K : AlgebraicField, E : FieldExt(K), H J : GaloisSubgroup(K, E)) :
+def galois_subgroup_inclusion_prop(K : AlgebraicField, E : FieldExt(K), H, J : GaloisSubgroup(K, E)) :
   Proposition(GaloisSubgroupIncluded(K, E, H, J)) {
   exact subgroup_inclusion_prop(GaloisGroup(K, E), H, J);
 }
 
-def intermediate_inclusion_prop(K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E)) :
+def intermediate_inclusion_prop(K : AlgebraicField, E : FieldExt(K), M, N : IntermediateField(K, E)) :
   Proposition(IntermediateIncluded(K, E, M, N)) {
   let P := intermediate_members(K, E, M);
   let Q := intermediate_members(K, E, N);

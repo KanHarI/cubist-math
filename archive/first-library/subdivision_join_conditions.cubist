@@ -3,13 +3,13 @@ import subdivision_join;
 // The condition can depend on the actual fine subdivision, not just on
 // endpoints. Transport along the endpoint path preserves this dependency.
 def subdivision_tagged_join_step(
-  C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), n : Nat,
+  C : U1, condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), n : Nat,
   previous : (
-    forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-    forall pieces : SampleSubdivisions(C, n, vertices), forall m : Nat,
-    forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m),
-    forall rightPieces : SampleSubdivisions(C, m, rightVertices),
-    forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices),
+    forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
+    forall pieces : SampleSubdivisions(C, n, vertices). forall m : Nat.
+    forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
+    forall rightPieces : SampleSubdivisions(C, m, rightVertices).
+    forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices).
     SubdivisionTagged(C, condition, n, vertices, tags, pieces)
     -> SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces)
     -> SubdivisionTagged(
@@ -64,13 +64,13 @@ def subdivision_tagged_join_step(
 }
 
 def subdivision_tagged_join(
-  C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), n : Nat
+  C : U1, condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), n : Nat
 ) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-  forall pieces : SampleSubdivisions(C, n, vertices), forall m : Nat,
-  forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m),
-  forall rightPieces : SampleSubdivisions(C, m, rightVertices),
-  forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices),
+  forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
+  forall pieces : SampleSubdivisions(C, n, vertices). forall m : Nat.
+  forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
+  forall rightPieces : SampleSubdivisions(C, m, rightVertices).
+  forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices).
   SubdivisionTagged(C, condition, n, vertices, tags, pieces)
   -> SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces)
   -> SubdivisionTagged(
@@ -79,11 +79,11 @@ def subdivision_tagged_join(
     join_subdivision_families(C, n, vertices, pieces, m, rightVertices, rightPieces, same)
   ) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
-    forall pieces : SampleSubdivisions(C, k, vertices), forall m : Nat,
-    forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m),
-    forall rightPieces : SampleSubdivisions(C, m, rightVertices),
-    forall same : sample_last(C, k, vertices) = sample_first(C, m, rightVertices),
+    forall vertices : SampleVertices(C, k). forall tags : SampleTags(C, k).
+    forall pieces : SampleSubdivisions(C, k, vertices). forall m : Nat.
+    forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
+    forall rightPieces : SampleSubdivisions(C, m, rightVertices).
+    forall same : sample_last(C, k, vertices) = sample_first(C, m, rightVertices).
     SubdivisionTagged(C, condition, k, vertices, tags, pieces)
     -> SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces)
     -> SubdivisionTagged(
@@ -93,7 +93,7 @@ def subdivision_tagged_join(
     )
   ) {
     zero => fun (
-      vertices : C, tags pieces : Unit, m : Nat, rightVertices : SampleVertices(C, m),
+      vertices : C, tags, pieces : Unit, m : Nat, rightVertices : SampleVertices(C, m),
       rightTags : SampleTags(C, m), rightPieces : SampleSubdivisions(C, m, rightVertices),
       same : vertices = sample_first(C, m, rightVertices), valid : Unit,
       rightValid : SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces)

@@ -2,28 +2,28 @@ import subfield_images;
 import field_embedding_factorization;
 
 // The image field uses the whole source field as its generating subfield.
-def embedding_image_field(K L : AlgebraicField, e : FieldEmbedding(K, L)) :=
+def embedding_image_field(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :=
   subfield_as_field(L, subfield_image(K, L, e, subfield_top(K)));
 
 def field_embedding_lands_in_image(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K)
 ) :
   SubfieldImage(K, L, e, subfield_top(K), field_embedding_map(K, L, e, x)) {
   exact (x, tt, refl(field_embedding_map(K, L, e, x)));
 }
 
-def embedding_image_factor(K L : AlgebraicField, e : FieldEmbedding(K, L)) :=
+def embedding_image_factor(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :=
   field_embedding_factor(
     K, L, e, subfield_image(K, L, e, subfield_top(K)), field_embedding_lands_in_image(K, L, e)
   );
 
-def embedding_image_forward(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def embedding_image_forward(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   af_carrier(K) -> af_carrier(embedding_image_field(K, L, e)) {
   exact field_embedding_map(K, embedding_image_field(K, L, e), embedding_image_factor(K, L, e));
 }
 
 def embedding_image_inverse(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), y : af_carrier(embedding_image_field(K, L, e))
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), y : af_carrier(embedding_image_field(K, L, e))
 ) :
   af_carrier(K) {
   let S := subfield_image(K, L, e, subfield_top(K));
@@ -37,7 +37,7 @@ def embedding_image_inverse(
 
 // The inverse returns the preimage stored in the image-membership witness.
 def embedding_image_inverse_spec(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), y : af_carrier(embedding_image_field(K, L, e))
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), y : af_carrier(embedding_image_field(K, L, e))
 ) :
   field_embedding_map(K, L, e, embedding_image_inverse(K, L, e, y)) = subfield_value(
     L, subfield_image(K, L, e, subfield_top(K)), y
@@ -50,7 +50,7 @@ def embedding_image_inverse_spec(
   exact snd(Unit, (f(x) = value), sigma_second(af_carrier(K), fiber, subfield_evidence(L, S, y)));
 }
 
-def embedding_image_left_inverse(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K)) :
+def embedding_image_left_inverse(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(K)) :
   embedding_image_inverse(K, L, e, embedding_image_forward(K, L, e, x)) = x {
   exact field_embedding_injective(
     K, L, e, embedding_image_inverse(K, L, e, embedding_image_forward(K, L, e, x)), x,
@@ -59,7 +59,7 @@ def embedding_image_left_inverse(K L : AlgebraicField, e : FieldEmbedding(K, L),
 }
 
 def embedding_image_right_inverse(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), y : af_carrier(embedding_image_field(K, L, e))
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), y : af_carrier(embedding_image_field(K, L, e))
 ) :
   embedding_image_forward(K, L, e, embedding_image_inverse(K, L, e, y)) = y {
   exact subfield_value_ext(
@@ -70,7 +70,7 @@ def embedding_image_right_inverse(
 }
 
 // Every field embedding is an isomorphism onto its image, constructively.
-def field_embedding_image_iso(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def field_embedding_image_iso(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   FieldIso(K, embedding_image_field(K, L, e)) {
   exact (
     embedding_image_forward(K, L, e),
@@ -83,7 +83,7 @@ def field_embedding_image_iso(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
 
 // Univalence now identifies the source field with its image as a field type.
 // This does not identify the source with the entire codomain of an embedding.
-def field_embedding_image_equality(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def field_embedding_image_equality(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   K =[AlgebraicField] embedding_image_field(K, L, e) {
   exact field_isotoid(K, embedding_image_field(K, L, e), field_embedding_image_iso(K, L, e));
 }

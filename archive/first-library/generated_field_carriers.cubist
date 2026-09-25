@@ -15,7 +15,7 @@ def generated_carrier_least(
   F : AlgebraicField, P : af_carrier(F) -> U0,
   H : Subfield(subfield_as_field(F, generated_subfield(F, P))),
   contains : (
-    forall x : af_carrier(F), forall member : P(x),
+    forall x : af_carrier(F). forall member : P(x).
     subfield_members(
       subfield_as_field(F, generated_subfield(F, P)), H,
       generated_carrier_generator(F, P, x, member)
@@ -27,8 +27,8 @@ def generated_carrier_least(
   let T := subfield_as_field(F, S);
   let j := subfield_inclusion(F, S);
   let Q := SubfieldImage(T, F, j, H);
-  have containsImage : forall x : af_carrier(F), P(x) -> Q(x) {
-    intro x member;
+  have containsImage : forall x : af_carrier(F). P(x) -> Q(x) {
+    intro x, member;
     exact (generated_carrier_generator(F, P, x, member), contains(x, member), refl(x));
   }
   obtain (y, hy, same) := generated_field_least(

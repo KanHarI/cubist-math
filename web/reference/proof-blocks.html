@@ -65,7 +65,7 @@
               <li>it <strong>changes the goal</strong> and continues with the new one: <code>intro</code>, <code>rw</code>, <code>simp</code>, <code>ext</code>;</li>
               <li>it <strong>closes the goal</strong> and ends the block: <code>exact</code>, <code>cases</code>, <code>rfl</code>, <code>calc</code>, <code>simpa</code>, <code>over</code>.</li>
             </ul>
-            <pre><code data-check="accept">def swap_product(A B : U0) : (A and B) -&gt; (B and A) {
+            <pre><code data-check="accept">def swap_product(A, B : U0) : (A and B) -&gt; (B and A) {
   intro pair;            // goal: B and A
   obtain (a, b) := pair;  // context: a : A, b : B
   let saved := a;
@@ -90,7 +90,7 @@
             <div class="table-scroll"><table>
               <thead><tr><th>Statement</th><th>Effect</th><th>Described in</th></tr></thead>
               <tbody>
-                <tr><td><code>intro x y;</code></td><td>Changes the goal</td><td><a href="#intro">intro</a></td></tr>
+                <tr><td><code>intro x, y;</code></td><td>Changes the goal</td><td><a href="#intro">intro</a></td></tr>
                 <tr><td><code>exact term;</code></td><td>Closes</td><td><a href="#exact">exact</a></td></tr>
                 <tr><td><code>have name : T { … }</code>, <code>have name := term;</code>, <code>have name : T := term;</code></td><td>Extends the context</td><td><a href="#have">have</a></td></tr>
                 <tr><td><code>let name := term;</code></td><td>Extends the context</td><td><a href="#let">let</a></td></tr>
@@ -108,15 +108,15 @@
           </section>
           <section id="intro">
             <h2><code>intro</code></h2>
-            <p><code>intro x;</code> takes the next input of a function goal. For a goal <code>forall x : A, B(x)</code>, it adds <code>x : A</code> to the context and leaves <code>B(x)</code>. For an implication <code>P -> Q</code>, it adds a proof of <code>P</code> and leaves <code>Q</code>. <code>intro x y h;</code> is three introductions in a row; the inspector shows the context after each one.</p>
-            <pre><code data-check="accept">def curry(A B C : U0) : ((A and B) -&gt; C) -&gt; A -&gt; B -&gt; C {
-  intro f a b;
+            <p><code>intro x;</code> takes the next input of a function goal. For a goal <code>forall x : A. B(x)</code>, it adds <code>x : A</code> to the context and leaves <code>B(x)</code>. For an implication <code>P -> Q</code>, it adds a proof of <code>P</code> and leaves <code>Q</code>. <code>intro x, y, h;</code> is three introductions in a row; the inspector shows the context after each one.</p>
+            <pre><code data-check="accept">def curry(A, B, C : U0) : ((A and B) -&gt; C) -&gt; A -&gt; B -&gt; C {
+  intro f, a, b;
   exact f((a, b));
 }</code></pre>
             <p>The goal’s type is computed first, so <code>intro</code> works on a named definition that unfolds to a function type:</p>
             <pre><code data-check="accept">def Endo(A : U0) := A -&gt; A;
 
-def compose_endo(A : U0, f g : Endo(A)) : Endo(A) {
+def compose_endo(A : U0, f, g : Endo(A)) : Endo(A) {
   intro a;
   exact f(g(a));
 }</code></pre>
@@ -126,14 +126,14 @@ def compose_endo(A : U0, f g : Endo(A)) : Endo(A) {
   exact n;
 }</code></pre>
             <pre><code data-check="reject">def one_input_only(A : U0) : A -&gt; A {
-  intro a b;  // Error: intro requires a dependent function goal.
+  intro a, b;  // Error: intro requires a dependent function goal.
   exact a;
 }</code></pre>
             <p>A function goal can also be closed without <code>intro</code>, by giving the function: <code>exact fun (a : A) => a;</code>.</p>
             <p>The name after <code>intro</code> is chosen by the author. Its spelling does not determine its type; the goal does. Here <code>setA</code> gets the type <code>IsSet(A)</code> because that is the next input of the goal:</p>
             <pre><code data-check="accept">import sets;
 
-def SetAssumption := forall A : U0, IsSet(A) -&gt; IsSet(A);
+def SetAssumption := forall A : U0. IsSet(A) -&gt; IsSet(A);
 
 def use_set_assumption : SetAssumption {
   intro A;       // A : U0, from the forall
@@ -153,7 +153,7 @@ def by_computation : 2 + 2 = 4 {
 def identity_function(A : U0) : A -&gt; A {
   exact fun (a : A) =&gt; a;
 }</code></pre>
-            <pre><code data-check="reject">def wrong_type(A B : U0, a : A) : B {
+            <pre><code data-check="reject">def wrong_type(A, B : U0, a : A) : B {
   exact a;  // Error: Type mismatch: found A, expected B.
 }</code></pre>
           </section>
@@ -177,14 +177,14 @@ def identity_function(A : U0) : A -&gt; A {
   exact r;
 }
 
-def from_context(A B : U0, a : A, b : B) : A and B {
+def from_context(A, B : U0, a : A, b : B) : A and B {
   have pair : A and B {
     exact (a, b);
   }
   exact pair;
 }</code></pre>
             <p>Use <code>have</code> to split a long argument into named steps, and to state an equality whose endpoints the elaborator cannot infer. Without a type, <code>have name := term;</code> gives the term no expected type, so a pair is rejected:</p>
-            <pre><code data-check="reject">def untyped_pair(a b : Nat) : Nat and Nat {
+            <pre><code data-check="reject">def untyped_pair(a, b : Nat) : Nat and Nat {
   have p := (a, b);  // Error: Pair requires an expected type.
   exact p;
 }</code></pre>
@@ -216,7 +216,7 @@ def with_type(n : Nat) : Nat and Nat {
           <section id="obtain">
             <h2><code>obtain</code></h2>
             <p><code>obtain (a, b) := pair;</code> names the components of a pair or dependent pair. Patterns can be tuples and can nest, following the shape of the type.</p>
-            <pre><code data-check="accept">def witness(t : exists n : Nat, (n = n) and Unit) : Nat {
+            <pre><code data-check="accept">def witness(t : exists n : Nat. (n = n) and Unit) : Nat {
   obtain (n, same, u) := t;
   exact n;
 }
@@ -226,8 +226,8 @@ def inner_unit(t : (Nat and Unit) and Nat) : Unit {
   exact u;
 }</code></pre>
             <p>Like <code>let</code>, <code>obtain</code> introduces no new variables. Each name stands for a component of the pair, so <code>(n, q)</code> is equal to <code>p</code> by computation. A goal that mentions the original pair therefore still works:</p>
-            <pre><code data-check="accept">def about_the_pair(P : (exists n : Nat, n = n) -&gt; U0,
-    h : forall n : Nat, forall q : n = n, P((n, q)), p : exists n : Nat, n = n) : P(p) {
+            <pre><code data-check="accept">def about_the_pair(P : (exists n : Nat. n = n) -&gt; U0,
+    h : forall n : Nat. forall q : n = n. P((n, q)), p : exists n : Nat. n = n) : P(p) {
   obtain (n, q) := p;
   exact h(n, q);
 }</code></pre>
@@ -249,14 +249,14 @@ def inner_unit(t : (Nat and Unit) and Nat) : Unit {
           <section id="cases">
             <h2><code>cases</code></h2>
             <p><code>cases value { left x => { … } right y => { … } }</code> proves the goal once for each side of a sum. Each branch is a block with the side’s component in its context. <code>cases</code> closes the goal.</p>
-            <pre><code data-check="accept">def swap_sum(A B : U0, value : A or B) : B or A {
+            <pre><code data-check="accept">def swap_sum(A, B : U0, value : A or B) : B or A {
   cases value {
     left a =&gt; { exact right(a); }
     right b =&gt; { exact left(b); }
   }
 }
 
-def reassociate(A B C : U0, value : A or (B or C)) : (A or B) or C {
+def reassociate(A, B, C : U0, value : A or (B or C)) : (A or B) or C {
   cases value {
     left a =&gt; { exact left(left(a)); }
     right rest =&gt; {
@@ -317,12 +317,12 @@ def rewrite_then_finish(n : Nat) : (n + 0) + 0 = n {
   exact nat_add_zero(n);
 }
 
-def pointwise(A B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
+def pointwise(A, B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
   ext x;
   rfl;
 }</code></pre>
             <p>In <code>rewrite_then_finish</code>, <code>rw</code> turns the goal into <code>n + 0 = n</code>, which <code>exact</code> then proves. In <code>pointwise</code>, <code>ext x</code> turns the goal into <code>f(x) = f(x)</code>, which still needs <code>rfl</code>:</p>
-            <pre><code data-check="reject">def pointwise(A B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
+            <pre><code data-check="reject">def pointwise(A, B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
   ext x;  // Error: Proof block has no conclusion.
 }</code></pre>
           </section>

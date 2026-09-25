@@ -221,7 +221,7 @@
           type. <code>def name(params) : T { … }</code> checks a proof of
           <code>T</code>. Use <code>def</code> for both constructions and proofs.
           Parameters have explicit types; consecutive ones may share a type, as in
-          <code>(A B : U0, x y : A)</code>. Imports come first: <code>import paths;</code>.
+          <code>(A, B : U0, x, y : A)</code>. Imports come first: <code>import paths;</code>.
           Comments start with <code>//</code>.
         </p>
         <p>
@@ -260,14 +260,14 @@
           with no additional axioms. See <a href="reference/paths.html#paths">equality and paths</a>.
         </p>
         <p>
-          <code>intro name;</code> (or <code>intro x y h;</code> for several) introduces the next input or assumption from
-          the current goal. For <code>forall x : A, B</code>, it names an input
+          <code>intro name;</code> (or <code>intro x, y, h;</code> for several) introduces the next input or assumption from
+          the current goal. For <code>forall x : A. B</code>, it names an input
           of type <code>A</code>; for <code>P -> Q</code>, it names evidence of
           <code>P</code> and leaves <code>Q</code> to prove. The type comes from
           the goal, including when the goal is a named definition.
         </p>
         <pre data-check="accept">import sets;
-def use_assumption : forall A : U0, IsSet(A) -&gt; IsSet(A) {
+def use_assumption : forall A : U0. IsSet(A) -&gt; IsSet(A) {
   intro A;       // A : U0
   intro setA;    // setA : IsSet(A)
   exact setA;
@@ -288,7 +288,7 @@ def use_assumption : forall A : U0, IsSet(A) -&gt; IsSet(A) {
           <code>absurd</code> eliminates a contradiction.
         </p>
         <p>
-          Types use <code>forall x : A, B</code>, <code>exists x : A, B</code>,
+          Types use <code>forall x : A. B</code>, <code>exists x : A. B</code>,
           <code>and</code>, <code>or</code>, and <code>-></code>. Natural-number
           expressions use <code>+</code>, <code>*</code>, <code>=</code>,
           <code>&lt;</code>, and <code>&lt;=</code>.
@@ -323,7 +323,7 @@ def pair_first : Nat {
 }</pre>
         <p>
           <code>fun (x : A) => body</code> constructs a function;
-          <code>fun (x y : A) => body</code> and <code>fun (a : A, b : B) => body</code>
+          <code>fun (x, y : A) => body</code> and <code>fun (a : A, b : B) => body</code>
           take several arguments, and <code>fun x => body</code> reads the domain from
           an expected function type. <code>f(a, b)</code> means <code>f(a)(b)</code>.
           <code>(a, b, c, d)</code> expands to <code>(a, (b, (c, d)))</code>;
@@ -378,7 +378,7 @@ def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
     _ = n by nat_add_zero(n);
   }
 }
-def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
+def rewrite_then_finish(n, m : Nat, h : n = m) : n + 0 = m {
   rw [nat_add_zero(n)];   // goal: n = m
   exact h;
 }</pre>

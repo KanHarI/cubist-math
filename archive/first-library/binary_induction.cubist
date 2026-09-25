@@ -28,13 +28,13 @@ def binary_label_induction(
   };
 
 def BinaryBranch(P : BinaryPositive -> U0, label : BinaryLabel) :=
-  forall children : BinaryArity(label) -> BinaryPositive,
-  (forall branch : BinaryArity(label), P(children(branch)))
+  forall children : BinaryArity(label) -> BinaryPositive.
+  (forall branch : BinaryArity(label). P(children(branch)))
   -> P(sup(BinaryPositive, label, children));
 
 def binary_one_branch(
   P : BinaryPositive -> U0, one : P(binary_one), children : Void -> BinaryPositive,
-  ih : forall v : Void, P(children(v))
+  ih : forall v : Void. P(children(v))
 ) :=
   along P by cong(
     (fun (f : Void -> BinaryPositive) => sup(BinaryPositive, typed(BinaryLabel, left(tt)), f)),
@@ -42,8 +42,8 @@ def binary_one_branch(
   ) from one;
 
 def binary_even_branch(
-  P : BinaryPositive -> U0, even : (forall p : BinaryPositive, P(p) -> P(binary_bit0(p))),
-  children : Unit -> BinaryPositive, ih : forall u : Unit, P(children(u))
+  P : BinaryPositive -> U0, even : (forall p : BinaryPositive. P(p) -> P(binary_bit0(p))),
+  children : Unit -> BinaryPositive, ih : forall u : Unit. P(children(u))
 ) :=
   along P by cong(
     (
@@ -54,8 +54,8 @@ def binary_even_branch(
   ) from even(children(tt), ih(tt));
 
 def binary_odd_branch(
-  P : BinaryPositive -> U0, odd : (forall p : BinaryPositive, P(p) -> P(binary_bit1(p))),
-  children : Unit -> BinaryPositive, ih : forall u : Unit, P(children(u))
+  P : BinaryPositive -> U0, odd : (forall p : BinaryPositive. P(p) -> P(binary_bit1(p))),
+  children : Unit -> BinaryPositive, ih : forall u : Unit. P(children(u))
 ) :=
   along P by cong(
     (
@@ -68,8 +68,8 @@ def binary_odd_branch(
 // Dependent induction in the familiar one / even / odd presentation.
 def binary_positive_induction(
   P : BinaryPositive -> U0, one : P(binary_one),
-  even : (forall p : BinaryPositive, P(p) -> P(binary_bit0(p))),
-  odd : (forall p : BinaryPositive, P(p) -> P(binary_bit1(p))), p : BinaryPositive
+  even : (forall p : BinaryPositive. P(p) -> P(binary_bit0(p))),
+  odd : (forall p : BinaryPositive. P(p) -> P(binary_bit1(p))), p : BinaryPositive
 ) :=
   wrec(
     BinaryPositive, P,

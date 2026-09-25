@@ -11,22 +11,22 @@ def SampleAdjacent(C : U1, related : C -> C -> U0, n : Nat) :=
   };
 
 def sample_adjacent_magnitude(
-  C F : U1, negF : F -> F, lt : F -> F -> U0, related : C -> C -> U0, edge radius : C -> C -> C
+  C, F : U1, negF : F -> F, lt : F -> F -> U0, related : C -> C -> U0, edge, radius : C -> C -> C
   -> F,
   bounded : (
-    forall a : C, forall b : C, forall tag : C, related(a, b)
+    forall a : C. forall b : C. forall tag : C. related(a, b)
     -> FieldMagnitudeBound(F, negF, lt, edge(a, b, tag), radius(a, b, tag))
   ), n : Nat
 ) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   SampleAdjacent(C, related, n, vertices)
   -> SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
+    forall vertices : SampleVertices(C, k). forall tags : SampleTags(C, k).
     SampleAdjacent(C, related, k, vertices)
     -> SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, vertices, tags)
   ) {
-    zero => fun (vertices : C, tags adjacent : Unit) => tt;
+    zero => fun (vertices : C, tags, adjacent : Unit) => tt;
     succ previous => fun (
       vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)),
       adjacent : SampleAdjacent(C, related, succ(k), vertices)

@@ -72,11 +72,12 @@
                 <tr><td data-message="Expected a declaration or directive:">“Expected a declaration or directive: …”</td><td>A top-level item must be a declaration (<code>def</code>, <code>opaque def</code>, <code>computable def</code>) or a directive (<code>evaluate</code>, <code>simp_rule</code>, <code>simp_set</code>). There is no <code>axiom</code> declaration: take a hypothesis as a parameter.</td><td><a href="first-proof.html#other-declarations">declarations</a></td></tr>
                 <tr><td data-message="Imports must come before declarations.">“Imports must come before declarations.”</td><td>Move every <code>import</code> to the start of the file.</td><td><a href="first-proof.html#files">files</a></td></tr>
                 <tr><td data-message="Unexpected character">“Unexpected character <var>c</var>”</td><td>Source is ASCII. Write <code>-></code>, <code>forall</code> and <code>exists</code> instead of symbols.</td><td><a href="first-proof.html#names">names</a></td></tr>
-                <tr><td data-message="Expected a name.">“Expected a name.”</td><td>A name cannot start with a digit, and every parameter needs a type.</td><td><a href="first-proof.html#names">names</a>, <a href="first-proof.html#parameters">parameters</a></td></tr>
+                <tr><td data-message="Expected a name.">“Expected a name.”</td><td>A name cannot start with a digit.</td><td><a href="first-proof.html#names">names</a></td></tr>
+                <tr><td data-message="Expected ':', found">“Expected ':', found <var>token</var>”</td><td>Every parameter needs a type, after a colon.</td><td><a href="first-proof.html#parameters">parameters</a></td></tr>
                 <tr><td data-message="Write := to give a value">“Write := to give a value: …”</td><td>A binding (<code>def</code>, <code>have</code>, <code>let</code>, <code>obtain</code>, <code>simp_set</code>) gives its value with <code>:=</code>; <code>=</code> is the equality type. The message shows the form to use.</td><td><a href="first-proof.html#declarations">declarations</a></td></tr>
                 <tr><td data-message="Expected ';', found">“Expected ';', found <var>token</var>”</td><td>A missing semicolon, reported at the next token.</td><td><a href="first-proof.html#declarations">declarations</a></td></tr>
-                <tr><td data-message="Separate binder groups with commas">“Separate binder groups with commas: fun (a : A, b : B) => …”</td><td>A <code>fun</code> takes one parenthesized binder list, like a parameter list.</td><td><a href="terms.html#functions">functions</a></td></tr>
-                <tr><td data-message="Expected '=>', found">“Expected '=>', found <var>token</var>”</td><td>Untyped binders cannot share a group. Write <code>fun x => fun y => …</code>, or give the binders a type.</td><td><a href="terms.html#functions">functions</a></td></tr>
+                <tr><td data-message="Separate names with commas">“Separate names with commas: (n, m : Nat)”</td><td>Names that share a type are separated by commas, in parameters, <code>fun</code> binders and after <code>forall</code> or <code>exists</code>.</td><td><a href="types.html#tour-parameters">several parameters</a></td></tr>
+                <tr><td data-message="End forall's type with a dot">“End forall's type with a dot: forall n : Nat. P(n)”</td><td>A dot, followed by a space, separates a quantifier’s type from its body; the same holds for <code>exists</code>. A comma would read as the next parameter.</td><td><a href="types.html#tour-dependent">forall and exists</a></td></tr>
                 <tr><td data-message="Expected '}', found ';'.">“Expected '}', found ';'.”</td><td>The braces of <code>with unfolding</code> hold one expression, without a semicolon.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
                 <tr><td data-message="Expected '=', found">“Expected '=', found <var>token</var>”</td><td>A <code>calc</code> step is an equality; other relations cannot be chained yet.</td><td><a href="#not-yet-available">not yet available</a></td></tr>
                 <tr><td data-message="Expected a proof statement; found">“Expected a proof statement; found <var>word</var>”</td><td>The word is not a statement. <code>apply</code>, <code>refine</code> and <code>sorry</code> do not exist yet.</td><td><a href="proof-blocks.html#goals">statements</a>, <a href="#not-yet-available">not yet available</a></td></tr>
@@ -202,7 +203,7 @@
           <section id="not-yet-available">
             <h2>Not yet available</h2>
             <p>These are planned; see the work plan. Until then, they are rejected:</p>
-            <pre><code data-check="reject">def uses_apply(A B : U0, f : A -&gt; B, a : A) : B {
+            <pre><code data-check="reject">def uses_apply(A, B : U0, f : A -&gt; B, a : A) : B {
   apply f;  // Error: Expected a proof statement; found 'apply'.
   exact a;
 }</code></pre>
@@ -214,7 +215,7 @@
 }</code></pre>
             <pre><code data-check="reject">import naturals;
 
-def mixed(a b : Nat, h : a = b) : a &lt;= b {
+def mixed(a, b : Nat, h : a = b) : a &lt;= b {
   calc {
     a = b by h;
     _ &lt;= b by tt;  // Error: Expected '=', found '&lt;='.

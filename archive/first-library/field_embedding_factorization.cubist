@@ -3,8 +3,8 @@ import subfield_carriers;
 
 // An embedding whose values lie in S factors through S as an actual field.
 def field_embedding_lift(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
-  lands : (forall x : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, x))),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
+  lands : (forall x : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, x))),
   x : af_carrier(K)
 ) :
   SubfieldCarrier(L, S) {
@@ -12,8 +12,8 @@ def field_embedding_lift(
 }
 
 def field_embedding_lift_preserves(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
-  lands : (forall x : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, x)))
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
+  lands : (forall x : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, x)))
 ) :
   FieldOpsPreserved(
     af_carrier(K), SubfieldCarrier(L, S), field_embedding_lift(K, L, e, S, lands), af_operations(K),
@@ -34,12 +34,12 @@ def field_embedding_lift_preserves(
       )
     ),
     (
-      fun (x y : A) => subfield_value_ext(
+      fun (x, y : A) => subfield_value_ext(
         L, S, lift(af_add(A, opsA, x, y)), af_add(B, opsB, lift(x), lift(y)), pa(x, y)
       )
     ),
     (
-      fun (x y : A) => subfield_value_ext(
+      fun (x, y : A) => subfield_value_ext(
         L, S, lift(af_mul(A, opsA, x, y)), af_mul(B, opsB, lift(x), lift(y)), pm(x, y)
       )
     )
@@ -47,15 +47,15 @@ def field_embedding_lift_preserves(
 }
 
 def field_embedding_factor(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
-  lands : (forall x : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, x)))
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
+  lands : (forall x : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, x)))
 ) :
   FieldEmbedding(K, subfield_as_field(L, S)) {
   exact (
     field_embedding_lift(K, L, e, S, lands), field_embedding_lift_preserves(K, L, e, S, lands),
     (
       fun (
-        x y : af_carrier(K),
+        x, y : af_carrier(K),
         same : field_embedding_lift(K, L, e, S, lands, x) = field_embedding_lift(
           K, L, e, S, lands, y
         )
@@ -65,8 +65,8 @@ def field_embedding_factor(
 }
 
 def field_embedding_factor_triangle(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
-  lands : (forall x : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, x)))
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
+  lands : (forall x : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, x)))
 ) :
   FieldTower(
     K, subfield_as_field(L, S), L, field_embedding_factor(K, L, e, S, lands),
@@ -82,11 +82,11 @@ def field_embedding_factor_triangle(
 }
 
 def field_embedding_factor_unique(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
-  lands : (forall x : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, x))),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
+  lands : (forall x : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, x))),
   d : FieldEmbedding(K, subfield_as_field(L, S)),
   triangle : (
-    forall x : af_carrier(K),
+    forall x : af_carrier(K).
     subfield_value(L, S, field_embedding_map(K, subfield_as_field(L, S), d, x)) = field_embedding_map(
       K, L, e, x
     )

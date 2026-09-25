@@ -4,7 +4,7 @@ import zorn_chain_complete;
 // A chain presented as a predicate gives the indexed family used by the
 // previously checked independent-union construction. Its indices live in U1.
 def IndependentChainIndex(K : AlgebraicField, V : VectorSpace(K), C : IndependentSubset(K, V) -> U0) :=
-  exists S : IndependentSubset(K, V), C(S);
+  exists S : IndependentSubset(K, V). C(S);
 
 def independent_chain_member(
   K : AlgebraicField, V : VectorSpace(K), C : IndependentSubset(K, V) -> U0,
@@ -30,7 +30,7 @@ def independent_indexed_chain(
       )
     )
   ) {
-  intro i j;
+  intro i, j;
   exact chain(
     independent_chain_member(K, V, C, i), independent_chain_member(K, V, C, j),
     independent_chain_evidence(K, V, C, i), independent_chain_evidence(K, V, C, j)
@@ -39,20 +39,20 @@ def independent_indexed_chain(
 
 def independent_chain_complete(K : AlgebraicField, V : VectorSpace(K)) :
   ChainComplete(IndependentSubset(K, V), IndependentIncluded(K, V)) {
-  intro C chain;
+  intro C, chain;
   let A := IndependentSubset(K, V);
   let I := IndependentChainIndex(K, V, C);
   let family := independent_chain_member(K, V, C);
   let indexed := independent_indexed_chain(K, V, C, chain);
   let union := IndependentUnion(K, V, I, family, indexed);
-  have upper : forall S : A, C(S) -> IndependentIncluded(K, V, S, union) {
-    intro S cs;
+  have upper : forall S : A. C(S) -> IndependentIncluded(K, V, S, union) {
+    intro S, cs;
     exact independent_union_upper(K, V, I, family, indexed, typed(I, (S, cs)));
   }
   have least :
-    forall T : A, (forall S : A, C(S) -> IndependentIncluded(K, V, S, T))
+    forall T : A. (forall S : A. C(S) -> IndependentIncluded(K, V, S, T))
     -> IndependentIncluded(K, V, union, T) {
-    intro T bound;
+    intro T, bound;
     exact independent_union_least(
       K, V, I, family, indexed, T,
       (fun (i : I) => bound(family(i), independent_chain_evidence(K, V, C, i)))
@@ -68,7 +68,7 @@ def independent_chain_complete(K : AlgebraicField, V : VectorSpace(K)) :
 def vector_space_has_basis(K : AlgebraicField, V : VectorSpace(K)) : FieldExists(VectorBasis(K, V)) {
   let A := IndependentSubset(K, V);
   let le := IndependentIncluded(K, V);
-  let Maximal := exists S : A, OrderMaximal(A, le, S);
+  let Maximal := exists S : A. OrderMaximal(A, le, S);
   have toBasis : Maximal -> VectorBasis(K, V) {
     intro witness;
     obtain (S, maximal) := witness;

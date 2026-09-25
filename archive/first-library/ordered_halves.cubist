@@ -3,11 +3,11 @@ import ordered_squares;
 // Positive error radii can be halved constructively. The inverse of 1+1
 // exists from its positive apartness; no sign decision or choice is needed.
 def Halving(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0) :=
-  exists half : F -> F, (forall epsilon : F, addF(half(epsilon), half(epsilon)) = epsilon)
-  and (forall epsilon : F, lt(zero, epsilon) -> lt(zero, half(epsilon)));
+  exists half : F -> F. (forall epsilon : F. addF(half(epsilon), half(epsilon)) = epsilon)
+  and (forall epsilon : F. lt(zero, epsilon) -> lt(zero, half(epsilon)));
 
 def half_sum_from_inverse_two(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), reciprocal : F,
   inverseTwo : mulF(addF(one, one), reciprocal) = one, epsilon : F
 ) :
@@ -35,8 +35,8 @@ def half_sum_from_inverse_two(
 }
 
 def positive_half_from_sum(
-  F : U1, zero one : F, addF mulF : F -> F -> F, lt : F -> F -> U0, order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), epsilon half : F,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, lt : F -> F -> U0, order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), epsilon, half : F,
   sum : addF(half, half) = epsilon, positive : lt(zero, epsilon)
 ) :
   lt(zero, half) {
@@ -53,7 +53,7 @@ def positive_half_from_sum(
 }
 
 def ordered_field_halving(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt)
@@ -69,7 +69,7 @@ def ordered_field_halving(
       )
     );
   obtain (forward, backward) := inverses(two);
-  have actualInverse : exists reciprocal : F,
+  have actualInverse : exists reciprocal : F.
   mulF(two, reciprocal) = one := forward(
     field_exists_intro(
       (lt(two, zero) or lt(zero, two)), typed((lt(two, zero) or lt(zero, two)), right(positiveTwo))

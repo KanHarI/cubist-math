@@ -5,7 +5,7 @@ import finite_omission;
 // their original order. The index map records exactly which factor was removed.
 def linear_factor_product_omit(K : AlgebraicField, n : Nat) :=
   induction n as k return (
-    forall roots : Fin(succ(k)) -> af_carrier(K), forall i : Fin(succ(k)),
+    forall roots : Fin(succ(k)) -> af_carrier(K). forall i : Fin(succ(k)).
     linear_factor_product(K, succ(k), roots) = polynomial_mul(
       K, polynomial_linear_factor(K, roots(i)),
       linear_factor_product(K, k, (fun (j : Fin(k)) => roots(fin_omit(k, i, j))))
@@ -63,7 +63,7 @@ def distinct_roots_omit(
   distinct : Injective(Fin(succ(n)), af_carrier(K), roots), i : Fin(succ(n))
 ) :
   Injective(Fin(n), af_carrier(K), (fun (j : Fin(n)) => roots(fin_omit(n, i, j)))) {
-  intro j k same;
+  intro j, k, same;
   exact fin_omit_injective(n, i, j, k, distinct(fin_omit(n, i, j), fin_omit(n, i, k), same));
 }
 
@@ -79,10 +79,10 @@ def distinct_roots_omit_avoid(
 def distinct_roots_prepend(
   K : AlgebraicField, n : Nat, x : af_carrier(K), roots : Fin(n) -> af_carrier(K),
   distinct : Injective(Fin(n), af_carrier(K), roots),
-  avoids : (forall i : Fin(n), (roots(i) = x) -> Void)
+  avoids : (forall i : Fin(n). (roots(i) = x) -> Void)
 ) :
   Injective(Fin(succ(n)), af_carrier(K), coordinate_cons(K, n, x, roots)) {
-  intro i j same;
+  intro i, j, same;
   exact match i as a return (
     coordinate_cons(K, n, x, roots, a) = coordinate_cons(K, n, x, roots, j) -> a = j
   ) {

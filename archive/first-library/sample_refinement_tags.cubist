@@ -8,15 +8,15 @@ def sample_repeat_tags(C : U1, n : Nat) := induction n as k return (C -> SampleT
   };
 
 def sample_adjacent_endpoints(
-  C : U1, related : C -> C -> U0, reflexivity : (forall x : C, related(x, x)),
+  C : U1, related : C -> C -> U0, reflexivity : (forall x : C. related(x, x)),
   transitiveRelation : (
-    forall x : C, forall y : C, forall z : C, related(x, y) -> related(y, z) -> related(x, z)
+    forall x : C. forall y : C. forall z : C. related(x, y) -> related(y, z) -> related(x, z)
   ), n : Nat
 ) :
-  forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices)
+  forall vertices : SampleVertices(C, n). SampleAdjacent(C, related, n, vertices)
   -> related(sample_first(C, n, vertices), sample_last(C, n, vertices)) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices)
+    forall vertices : SampleVertices(C, k). SampleAdjacent(C, related, k, vertices)
     -> related(sample_first(C, k, vertices), sample_last(C, k, vertices))
   ) {
     zero => fun (vertices : C, ordered : Unit) => reflexivity(vertices);
@@ -46,33 +46,33 @@ def sample_adjacent_endpoints(
 }
 
 def sample_adjacent_constant(C : U1, P : U0, witness : P, n : Nat) :
-  forall vertices : SampleVertices(C, n), SampleAdjacent(C, (fun (a b : C) => P), n, vertices) {
+  forall vertices : SampleVertices(C, n). SampleAdjacent(C, (fun (a, b : C) => P), n, vertices) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k), SampleAdjacent(C, (fun (a b : C) => P), k, vertices)
+    forall vertices : SampleVertices(C, k). SampleAdjacent(C, (fun (a, b : C) => P), k, vertices)
   ) {
     zero => fun (vertices : C) => tt;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => typed(
       (
         P
-        and SampleAdjacent(C, (fun (a b : C) => P), k, field_snd(C, SampleVertices(C, k), vertices))
+        and SampleAdjacent(C, (fun (a, b : C) => P), k, field_snd(C, SampleVertices(C, k), vertices))
       ), (witness, previous(field_snd(C, SampleVertices(C, k), vertices)))
     );
   };
 }
 
 def sample_repeat_tags_valid(C : U1, P : C -> U0, tag : C, valid : P(tag), n : Nat) :
-  forall vertices : SampleVertices(C, n),
-  SampleTagged(C, (fun (a b : C) => P), n, vertices, sample_repeat_tags(C, n, tag)) {
+  forall vertices : SampleVertices(C, n).
+  SampleTagged(C, (fun (a, b : C) => P), n, vertices, sample_repeat_tags(C, n, tag)) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k),
-    SampleTagged(C, (fun (a b : C) => P), k, vertices, sample_repeat_tags(C, k, tag))
+    forall vertices : SampleVertices(C, k).
+    SampleTagged(C, (fun (a, b : C) => P), k, vertices, sample_repeat_tags(C, k, tag))
   ) {
     zero => fun (vertices : C) => tt;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => typed(
       (
         P(tag)
         and SampleTagged(
-          C, (fun (a b : C) => P), k, field_snd(C, SampleVertices(C, k), vertices),
+          C, (fun (a, b : C) => P), k, field_snd(C, SampleVertices(C, k), vertices),
           sample_repeat_tags(C, k, tag)
         )
       ), (valid, previous(field_snd(C, SampleVertices(C, k), vertices)))
@@ -81,43 +81,43 @@ def sample_repeat_tags_valid(C : U1, P : C -> U0, tag : C, valid : P(tag), n : N
 }
 
 def SampleBetween(C : U1, related : C -> C -> U0, n : Nat) :=
-  SampleTagged(C, (fun (a b tag : C) => related(a, tag) and related(tag, b)), n);
+  SampleTagged(C, (fun (a, b, tag : C) => related(a, tag) and related(tag, b)), n);
 
 def sample_between_ordered(
   C : U1, related : C -> C -> U0,
   transitiveRelation : (
-    forall x : C, forall y : C, forall z : C, related(x, y) -> related(y, z) -> related(x, z)
+    forall x : C. forall y : C. forall z : C. related(x, y) -> related(y, z) -> related(x, z)
   ), n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n),
   valid : SampleBetween(C, related, n, vertices, tags)
 ) :
   SampleAdjacent(C, related, n, vertices) {
   have orders :
-    forall a : C, forall b : C, forall tag : C, (related(a, tag) and related(tag, b))
+    forall a : C. forall b : C. forall tag : C. (related(a, tag) and related(tag, b))
     -> related(a, b) {
-    intro a b tag within;
+    intro a, b, tag, within;
     obtain (lower, upper) := within;
     exact transitiveRelation(a, tag, b, lower, upper);
   }
   exact sample_tagged_adjacent(
-    C, (fun (a b tag : C) => related(a, tag) and related(tag, b)), related, orders, n, vertices,
+    C, (fun (a, b, tag : C) => related(a, tag) and related(tag, b)), related, orders, n, vertices,
     tags, valid
   );
 }
 
 def SampleBetweenGlobal(C : U1, related : C -> C -> U0, n : Nat) :=
-  forall a : C, forall b : C, forall vertices : SampleVertices(C, n),
-  forall tags : SampleTags(C, n), related(a, sample_first(C, n, vertices))
+  forall a : C. forall b : C. forall vertices : SampleVertices(C, n).
+  forall tags : SampleTags(C, n). related(a, sample_first(C, n, vertices))
   -> related(sample_last(C, n, vertices), b) -> SampleBetween(C, related, n, vertices, tags)
-  -> SampleTagged(C, (fun (x y tag : C) => related(a, tag) and related(tag, b)), n, vertices, tags);
+  -> SampleTagged(C, (fun (x, y, tag : C) => related(a, tag) and related(tag, b)), n, vertices, tags);
 
 def sample_between_global_step(
-  C : U1, related : C -> C -> U0, reflexivity : (forall x : C, related(x, x)),
+  C : U1, related : C -> C -> U0, reflexivity : (forall x : C. related(x, x)),
   transitiveRelation : (
-    forall x : C, forall y : C, forall z : C, related(x, y) -> related(y, z) -> related(x, z)
+    forall x : C. forall y : C. forall z : C. related(x, y) -> related(y, z) -> related(x, z)
   ), n : Nat, tailResult : SampleBetweenGlobal(C, related, n)
 ) :
   SampleBetweenGlobal(C, related, succ(n)) {
-  intro a b vertices tags lowerFirst upperLast valid;
+  intro a, b, vertices, tags, lowerFirst, upperLast, valid;
   let headVertex := field_fst(C, SampleVertices(C, n), vertices);
   let tailVertices := field_snd(C, SampleVertices(C, n), vertices);
   let headTag := field_fst(C, SampleTags(C, n), tags);
@@ -142,7 +142,7 @@ def sample_between_global_step(
     (
       (related(a, headTag) and related(headTag, b))
       and SampleTagged(
-        C, (fun (x y tag : C) => related(a, tag) and related(tag, b)), n, tailVertices, tailTags
+        C, (fun (x, y, tag : C) => related(a, tag) and related(tag, b)), n, tailVertices, tailTags
       )
     ),
     (
@@ -153,15 +153,15 @@ def sample_between_global_step(
 }
 
 def sample_between_global(
-  C : U1, related : C -> C -> U0, reflexivity : (forall x : C, related(x, x)),
+  C : U1, related : C -> C -> U0, reflexivity : (forall x : C. related(x, x)),
   transitiveRelation : (
-    forall x : C, forall y : C, forall z : C, related(x, y) -> related(y, z) -> related(x, z)
+    forall x : C. forall y : C. forall z : C. related(x, y) -> related(y, z) -> related(x, z)
   ), n : Nat
 ) :
   SampleBetweenGlobal(C, related, n) {
   exact induction n as k return SampleBetweenGlobal(C, related, k) {
     zero => fun (
-      a b vertices : C, tags : Unit, lowerFirst : related(a, vertices),
+      a, b, vertices : C, tags : Unit, lowerFirst : related(a, vertices),
       upperLast : related(vertices, b), valid : Unit
     ) => tt;
     succ previous => sample_between_global_step(
@@ -172,19 +172,19 @@ def sample_between_global(
 
 // A constant tag turns subdivision into an exact telescoping identity.
 def sample_repeat_sum_telescopes(
-  C G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, tag : C,
-  diagonal : (forall a : C, edge(a, a, tag) = zero),
+  C, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, tag : C,
+  diagonal : (forall a : C. edge(a, a, tag) = zero),
   composeEdges : (
-    forall a : C, forall b : C, forall c : C,
+    forall a : C. forall b : C. forall c : C.
     addG(edge(a, b, tag), edge(b, c, tag)) = edge(a, c, tag)
   ), n : Nat
 ) :
-  forall vertices : SampleVertices(C, n),
+  forall vertices : SampleVertices(C, n).
   sample_sum(C, G, zero, addG, edge, n, vertices, sample_repeat_tags(C, n, tag)) = edge(
     sample_first(C, n, vertices), sample_last(C, n, vertices), tag
   ) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k),
+    forall vertices : SampleVertices(C, k).
     sample_sum(C, G, zero, addG, edge, k, vertices, sample_repeat_tags(C, k, tag)) = edge(
       sample_first(C, k, vertices), sample_last(C, k, vertices), tag
     )

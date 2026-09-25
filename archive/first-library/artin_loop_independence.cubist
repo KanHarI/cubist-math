@@ -14,7 +14,7 @@ def extension_loop_embedding_action(
 }
 
 def extension_loop_embeddings_distinct(
-  K : AlgebraicField, E : FieldExt(K), p q : E =[FieldExt(K)] E, different : (p = q) -> Void
+  K : AlgebraicField, E : FieldExt(K), p, q : E =[FieldExt(K)] E, different : (p = q) -> Void
 ) :
   (
     galois_field_embedding(K, E, extension_path_iso(K, E, E, p)) = galois_field_embedding(
@@ -38,7 +38,7 @@ def extension_loop_embeddings_distinct(
 }
 
 def extension_loop_embedding_injective(
-  K : AlgebraicField, E : FieldExt(K), p q : E =[FieldExt(K)] E,
+  K : AlgebraicField, E : FieldExt(K), p, q : E =[FieldExt(K)] E,
   same : galois_field_embedding(K, E, extension_path_iso(K, E, E, p)) = galois_field_embedding(
     K, E, extension_path_iso(K, E, E, q)
   )
@@ -58,8 +58,8 @@ def extension_loop_embedding_injective(
 }
 
 def extension_loop_relation_to_embeddings(
-  K : AlgebraicField, E : FieldExt(K), p q : E =[FieldExt(K)] E, a b : extension_carrier(K, E),
-  relation : forall x : extension_carrier(K, E),
+  K : AlgebraicField, E : FieldExt(K), p, q : E =[FieldExt(K)] E, a, b : extension_carrier(K, E),
+  relation : forall x : extension_carrier(K, E).
   field_add(
     extension_field(K, E),
     field_mul(extension_field(K, E), a, along extension_carrier(K) by p from x),
@@ -108,8 +108,8 @@ def extension_loop_relation_to_embeddings(
 // Two genuinely different extension loops act as linearly independent field
 // maps on the extension carrier. The action is transport in FieldExt(K).
 def distinct_extension_loops_two_independent(
-  K : AlgebraicField, E : FieldExt(K), p q : E =[FieldExt(K)] E, different : (p = q) -> Void,
-  a b : extension_carrier(K, E), relation : forall x : extension_carrier(K, E),
+  K : AlgebraicField, E : FieldExt(K), p, q : E =[FieldExt(K)] E, different : (p = q) -> Void,
+  a, b : extension_carrier(K, E), relation : forall x : extension_carrier(K, E).
   field_add(
     extension_field(K, E),
     field_mul(extension_field(K, E), a, along extension_carrier(K) by p from x),
@@ -124,7 +124,7 @@ def distinct_extension_loops_two_independent(
   let g := galois_field_embedding(K, E, d);
   let distinct := extension_loop_embeddings_distinct(K, E, p, q, different);
   have embeddingRelation :
-    forall x : af_carrier(F),
+    forall x : af_carrier(F).
     field_add(
       F, field_mul(F, a, field_embedding_map(F, F, f, x)),
       field_mul(F, b, field_embedding_map(F, F, g, x))
@@ -139,8 +139,8 @@ def distinct_extension_loops_two_independent(
 // The loop action is the actual carrier transport, with no truncation of paths.
 def distinct_extension_loops_independent(
   n : Nat, K : AlgebraicField, E : FieldExt(K), loops : Fin(n) -> (E =[FieldExt(K)] E),
-  distinct : forall i : Fin(n), forall j : Fin(n), loops(i) = loops(j) -> i = j,
-  coefficients : Fin(n) -> extension_carrier(K, E), relation : forall x : extension_carrier(K, E),
+  distinct : forall i : Fin(n). forall j : Fin(n). loops(i) = loops(j) -> i = j,
+  coefficients : Fin(n) -> extension_carrier(K, E), relation : forall x : extension_carrier(K, E).
   field_sum(
     extension_field(K, E), n,
     (
@@ -150,16 +150,16 @@ def distinct_extension_loops_independent(
     )
   ) = field_zero(extension_field(K, E))
 ) :
-  forall i : Fin(n), coefficients(i) = field_zero(extension_field(K, E)) {
+  forall i : Fin(n). coefficients(i) = field_zero(extension_field(K, E)) {
   let F := extension_field(K, E);
   let maps :=
     fun (i : Fin(n)) => galois_field_embedding(K, E, extension_path_iso(K, E, E, loops(i)));
   have mapsDistinct : PairwiseDistinctEmbeddings(F, F, n, maps) {
-    intro i j same;
+    intro i, j, same;
     exact distinct(i, j, extension_loop_embedding_injective(K, E, loops(i), loops(j), same));
   }
   have embeddingRelation :
-    forall x : af_carrier(F), hom_family_sum(F, F, n, maps, coefficients, x) = field_zero(F) {
+    forall x : af_carrier(F). hom_family_sum(F, F, n, maps, coefficients, x) = field_zero(F) {
     intro x;
     exact trans(
       field_sum_cong(

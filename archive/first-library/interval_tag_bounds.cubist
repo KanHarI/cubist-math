@@ -3,7 +3,7 @@ import complete_fields;
 
 // Inclusive endpoint bounds allow left and right endpoint tags.
 def IntervalTagWithin(
-  F : U1, zero one : F, lt : F -> F -> U0, a b tag : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero, one : F, lt : F -> F -> U0, a, b, tag : FieldUnitInterval(F, zero, one, lt)
 ) :=
   FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt, a),
@@ -15,9 +15,9 @@ def IntervalTagWithin(
   );
 
 def field_between_close(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a b x y : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a, b, x, y : F,
   lowerX : FieldLe(F, lt, a, x), upperX : FieldLe(F, lt, x, b), lowerY : FieldLe(F, lt, a, y),
   upperY : FieldLe(F, lt, y, b), radius : F,
   small : lt(coordinate_difference(F, addF, negF, a, b), radius)
@@ -49,10 +49,10 @@ def field_between_close(
 }
 
 def interval_tags_close(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  a b x y : FieldUnitInterval(F, zero, one, lt),
+  a, b, x, y : FieldUnitInterval(F, zero, one, lt),
   withinX : IntervalTagWithin(F, zero, one, lt, a, b, x),
   withinY : IntervalTagWithin(F, zero, one, lt, a, b, y), radius : F,
   small : lt(interval_difference(F, zero, one, addF, negF, lt, a, b), radius)

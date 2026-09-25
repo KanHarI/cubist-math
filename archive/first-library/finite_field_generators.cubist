@@ -4,30 +4,30 @@ import algebraic_base_change;
 
 // The list need not be independent or a primitive-element presentation.
 def FieldGeneratedBy(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, generators : Fin(n) -> af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, generators : Fin(n) -> af_carrier(L)
 ) :=
-  forall S : Subfield(L),
-  (forall a : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, a)))
-  -> (forall i : Fin(n), subfield_members(L, S, generators(i))) -> forall y : af_carrier(L),
+  forall S : Subfield(L).
+  (forall a : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, a)))
+  -> (forall i : Fin(n). subfield_members(L, S, generators(i))) -> forall y : af_carrier(L).
   subfield_members(L, S, y);
 
 def finite_basis_generates_field(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
   basis : FiniteBasis(K, field_vector_space(K, L, e), n)
 ) :
   FieldGeneratedBy(K, L, e, n, basis_columns(K, field_vector_space(K, L, e), n, basis)) {
-  intro S base members y;
+  intro S, base, members, y;
   let roots := basis_columns(K, field_vector_space(K, L, e), n, basis);
   let P := RootFieldGenerators(K, L, e, n, roots);
   let Q := subfield_members(L, S);
-  have contains : forall x : af_carrier(L), P(x) -> Q(x) {
-    intro x witness;
-    have fromBase : (exists a : af_carrier(K), field_embedding_map(K, L, e, a) = x) -> Q(x) {
+  have contains : forall x : af_carrier(L). P(x) -> Q(x) {
+    intro x, witness;
+    have fromBase : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = x) -> Q(x) {
       intro w;
       obtain (a, same) := w;
       exact along Q by same from base(a);
     }
-    have fromList : (exists i : Fin(n), roots(i) = x) -> Q(x) {
+    have fromList : (exists i : Fin(n). roots(i) = x) -> Q(x) {
       intro w;
       obtain (i, same) := w;
       exact along Q by same from members(i);
@@ -43,7 +43,7 @@ def finite_basis_generates_field(
 }
 
 def field_generated_empty_surjective(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), generators : Fin(0) -> af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), generators : Fin(0) -> af_carrier(L),
   generates : FieldGeneratedBy(K, L, e, 0, generators)
 ) :
   Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e)) {
@@ -62,21 +62,21 @@ def field_generated_empty_surjective(
 
 // After adjoining the first generator, the tail generates over the new base.
 def field_generated_adjoin_tail(
-  K R L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
+  K, R, L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
   e : FieldEmbedding(K, L), triangle : EmbeddingOverLaw(K, R, i, L, e, h), n : Nat,
   generators : Fin(succ(n)) -> af_carrier(L),
   generates : FieldGeneratedBy(K, L, e, succ(n), generators), r : af_carrier(R),
   first : field_embedding_map(R, L, h, r) = finite_head(af_carrier(L), n, generators)
 ) :
   FieldGeneratedBy(R, L, h, n, finite_tail(af_carrier(L), n, generators)) {
-  intro S base members y;
+  intro S, base, members, y;
   let P := subfield_members(L, S);
-  have oldBase : forall a : af_carrier(K), P(field_embedding_map(K, L, e, a)) {
+  have oldBase : forall a : af_carrier(K). P(field_embedding_map(K, L, e, a)) {
     intro a;
     exact along P by triangle(a) from base(field_embedding_map(K, R, i, a));
   }
   let head := along P by first from base(r);
-  have all : forall j : Fin(succ(n)), P(generators(j)) {
+  have all : forall j : Fin(succ(n)). P(generators(j)) {
     intro j;
     exact match j as v return P(generators(v)) {
       left u => (
@@ -89,23 +89,23 @@ def field_generated_adjoin_tail(
 }
 
 def generated_field_generators(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, roots : Fin(n) -> af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, roots : Fin(n) -> af_carrier(L),
   generates : (
-    forall y : af_carrier(L), GeneratedField(L, RootFieldGenerators(K, L, e, n, roots), y)
+    forall y : af_carrier(L). GeneratedField(L, RootFieldGenerators(K, L, e, n, roots), y)
   )
 ) :
   FieldGeneratedBy(K, L, e, n, roots) {
-  intro S base members y;
+  intro S, base, members, y;
   let P := RootFieldGenerators(K, L, e, n, roots);
   let Q := subfield_members(L, S);
-  have contains : forall x : af_carrier(L), P(x) -> Q(x) {
-    intro x witness;
-    have fromBase : (exists a : af_carrier(K), field_embedding_map(K, L, e, a) = x) -> Q(x) {
+  have contains : forall x : af_carrier(L). P(x) -> Q(x) {
+    intro x, witness;
+    have fromBase : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = x) -> Q(x) {
       intro w;
       obtain (a, same) := w;
       exact along Q by same from base(a);
     }
-    have fromList : (exists i : Fin(n), roots(i) = x) -> Q(x) {
+    have fromList : (exists i : Fin(n). roots(i) = x) -> Q(x) {
       intro w;
       obtain (i, same) := w;
       exact along Q by same from members(i);

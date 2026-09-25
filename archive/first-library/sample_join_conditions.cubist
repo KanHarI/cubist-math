@@ -6,8 +6,8 @@ import sample_subdivisions;
 def sample_tagged_join_step(
   C : U1, condition : C -> C -> C -> U0, n : Nat,
   previous : (
-    forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall m : Nat,
-    forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m),
+    forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n). forall m : Nat.
+    forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
     (sample_last(C, n, vertices) = sample_first(C, m, rightVertices))
     -> SampleTagged(C, condition, n, vertices, tags)
     -> SampleTagged(C, condition, m, rightVertices, rightTags)
@@ -48,8 +48,8 @@ def sample_tagged_join_step(
 }
 
 def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n), forall m : Nat,
-  forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m),
+  forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n). forall m : Nat.
+  forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
   (sample_last(C, n, vertices) = sample_first(C, m, rightVertices))
   -> SampleTagged(C, condition, n, vertices, tags)
   -> SampleTagged(C, condition, m, rightVertices, rightTags)
@@ -58,8 +58,8 @@ def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
     join_tags(C, n, tags, m, rightTags)
   ) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k), forall m : Nat,
-    forall rightVertices : SampleVertices(C, m), forall rightTags : SampleTags(C, m),
+    forall vertices : SampleVertices(C, k). forall tags : SampleTags(C, k). forall m : Nat.
+    forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
     (sample_last(C, k, vertices) = sample_first(C, m, rightVertices))
     -> SampleTagged(C, condition, k, vertices, tags)
     -> SampleTagged(C, condition, m, rightVertices, rightTags)
@@ -78,7 +78,7 @@ def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
 }
 
 def SubdivisionTaggedValid(
-  C : U1, condition : C -> C -> C -> U0, a b : C, piece : SampleSubdivision(C, a, b)
+  C : U1, condition : C -> C -> C -> U0, a, b : C, piece : SampleSubdivision(C, a, b)
 ) :=
   SampleTagged(
     C, condition, subdivision_count(C, a, b, piece), subdivision_vertices(C, a, b, piece),
@@ -86,7 +86,7 @@ def SubdivisionTaggedValid(
   );
 
 def subdivision_tagged_valid_join(
-  C : U1, condition : C -> C -> C -> U0, a b c : C, left : SampleSubdivision(C, a, b),
+  C : U1, condition : C -> C -> C -> U0, a, b, c : C, left : SampleSubdivision(C, a, b),
   right : SampleSubdivision(C, b, c), validLeft : SubdivisionTaggedValid(C, condition, a, b, left),
   validRight : SubdivisionTaggedValid(C, condition, b, c, right)
 ) :

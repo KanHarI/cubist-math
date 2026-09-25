@@ -15,7 +15,7 @@ def group_map_laws_prop(
       RightLaw(A, B, f, g), GroupMultiplicative(A, multiplyA, B, multiplyB, f),
       forall_prop(B, (fun (y : B) => f(g(y)) = y), (fun (y : B) => setB(f(g(y)), y))),
       forall_prop(
-        A, (fun (x : A) => forall y : A, f(multiplyA(x, y)) = multiplyB(f(x), f(y))),
+        A, (fun (x : A) => forall y : A. f(multiplyA(x, y)) = multiplyB(f(x), f(y))),
         (
           fun (x : A) => forall_prop(
             A, (fun (y : A) => f(multiplyA(x, y)) = multiplyB(f(x), f(y))),
@@ -29,7 +29,7 @@ def group_map_laws_prop(
 
 def group_map_evidence_prop(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(A),
-  setB : IsSet(B), f : A -> B, p q : GroupMapEvidence(A, multiplyA, B, multiplyB, f)
+  setB : IsSet(B), f : A -> B, p, q : GroupMapEvidence(A, multiplyA, B, multiplyB, f)
 ) :
   p = q {
   let g := typed((B -> A), sigma_first((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), p));
@@ -57,7 +57,7 @@ def group_map_evidence_prop(
 }
 
 def group_iso_ext(
-  G H : Group, p q : GroupIso(G, H), same : forall x : group_carrier(G),
+  G, H : Group, p, q : GroupIso(G, H), same : forall x : group_carrier(G).
   group_iso_forward(G, H, p, x) = group_iso_forward(G, H, q, x)
 ) :
   p = q {

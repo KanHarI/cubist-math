@@ -3,19 +3,19 @@ import separable_divisors;
 
 // The embedding into the target varies: all conjugate coefficient embeddings
 // are needed when counting the branches of an extension tower.
-def SeparableElementsIn(K L : AlgebraicField, e : FieldEmbedding(K, L), T : AlgebraicField) :=
-  forall j : FieldEmbedding(K, T), forall x : af_carrier(L),
-  forall algebraic : AlgebraicElement(K, L, e, x),
+def SeparableElementsIn(K, L : AlgebraicField, e : FieldEmbedding(K, L), T : AlgebraicField) :=
+  forall j : FieldEmbedding(K, T). forall x : af_carrier(L).
+  forall algebraic : AlgebraicElement(K, L, e, x).
   SeparableIn(K, T, j, minimal_polynomial(K, L, e, x, algebraic));
 
 def separable_extension_in_closed(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), separable : SeparableExtension(K, L, e),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), separable : SeparableExtension(K, L, e),
   T : AlgebraicField, closed : AlgebraicallyClosed(T)
 ) :
   SeparableElementsIn(K, L, e, T) {
-  intro j x algebraic;
+  intro j, x, algebraic;
   obtain (chosen, sep) := separable(x);
-  let W := (exists p : Polynomial(K), PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
+  let W := (exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
   let same := cong(minimal_polynomial(K, L, e, x), mere_is_prop(W, chosen, algebraic));
   let p := minimal_polynomial(K, L, e, x, algebraic);
   exact separable_polynomial_splits_in_closed(
@@ -24,15 +24,15 @@ def separable_extension_in_closed(
 }
 
 def polynomial_map_divides(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), q p : Polynomial(K),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), q, p : Polynomial(K),
   divides : PolynomialDivides(K, q, p)
 ) :
   PolynomialDivides(L, polynomial_map(K, L, e, q), polynomial_map(K, L, e, p)) {
   let Q := polynomial_map(K, L, e, q);
   let P := polynomial_map(K, L, e, p);
   have send :
-    (exists w : Polynomial(K), p = polynomial_mul(K, q, w))
-    -> (exists w : Polynomial(L), P = polynomial_mul(L, Q, w)) {
+    (exists w : Polynomial(K). p = polynomial_mul(K, q, w))
+    -> (exists w : Polynomial(L). P = polynomial_mul(L, Q, w)) {
     intro witness;
     obtain (w, eq) := witness;
     exact (
@@ -41,8 +41,8 @@ def polynomial_map_divides(
     );
   }
   exact mere_map(
-    (exists w : Polynomial(K), p = polynomial_mul(K, q, w)),
-    (exists w : Polynomial(L), P = polynomial_mul(L, Q, w)), send, divides
+    (exists w : Polynomial(K). p = polynomial_mul(K, q, w)),
+    (exists w : Polynomial(L). P = polynomial_mul(L, Q, w)), send, divides
   );
 }
 
@@ -50,13 +50,13 @@ def polynomial_map_divides(
 // after changing its coefficients. Distinct-root factorization descends to
 // this divisor, which is the separability fact used in a tower.
 def separable_elements_enlarge_base(
-  K R L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
+  K, R, L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
   e : FieldEmbedding(K, L), triangle : FieldTower(K, R, L, i, h, e),
   algebraicK : AlgebraicExtension(K, L, e), T : AlgebraicField, closed : AlgebraicallyClosed(T),
   separable : SeparableElementsIn(K, L, e, T)
 ) :
   SeparableElementsIn(R, L, h, T) {
-  intro j x algebraicR;
+  intro j, x, algebraicR;
   let alg := algebraicK(x);
   let p := minimal_polynomial(K, L, e, x, alg);
   let q := minimal_polynomial(R, L, h, x, algebraicR);

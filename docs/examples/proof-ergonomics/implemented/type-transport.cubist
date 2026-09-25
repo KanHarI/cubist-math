@@ -4,11 +4,11 @@ import primes;
 simp_rule nat_add_zero;
 
 // A path A = B is proof data, so its direction controls transport.
-def move_type(A B : U0, p : A = B, a : A) : B {
+def move_type(A, B : U0, p : A = B, a : A) : B {
   simpa only [p] using a;
 }
 
-def move_type_back(A B : U0, p : A = B, b : B) : A {
+def move_type_back(A, B : U0, p : A = B, b : B) : A {
   simpa only [p] using b;
 }
 

@@ -9,7 +9,7 @@ def FamilyBasis(K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> v
 def SubfamilyBasis(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V)
 ) :=
-  exists m : Nat, exists chosen : Fin(m) -> Fin(n), Injective(Fin(m), Fin(n), chosen)
+  exists m : Nat. exists chosen : Fin(m) -> Fin(n). Injective(Fin(m), Fin(n), chosen)
   and FamilyBasis(K, V, m, (fun (i : Fin(m)) => v(chosen(i))));
 
 def family_basis_coordinates(
@@ -31,11 +31,11 @@ def fin_prepend(A : U0, n : Nat, first : A, rest : Fin(n) -> A, i : Fin(succ(n))
 
 def fin_prepend_injective(
   A : U0, n : Nat, first : A, rest : Fin(n) -> A, injective : Injective(Fin(n), A, rest),
-  fresh : (forall j : Fin(n), first = rest(j) -> Void)
+  fresh : (forall j : Fin(n). first = rest(j) -> Void)
 ) :
   Injective(Fin(succ(n)), A, fin_prepend(A, n, first, rest)) {
   let f := fin_prepend(A, n, first, rest);
-  intro i j;
+  intro i, j;
   exact match i as x return (f(x) = f(j) -> x = j) {
     left u => match j as y return (
       f(typed(Fin(succ(n)), left(u))) = f(y) -> typed(Fin(succ(n)), left(u)) = y
@@ -72,8 +72,8 @@ def outside_generator_fresh(
     )
   ) -> Void
 ) :
-  forall j : Fin(m), i = chosen(j) -> Void {
-  intro j same;
+  forall j : Fin(m). i = chosen(j) -> Void {
+  intro j, same;
   let w := fun (k : Fin(m)) => v(chosen(k));
   let F := linear_map(K, CoordinateSpace(K, m), V, family_linear(K, V, m, w));
   let FiberF := Fiber((Fin(m) -> af_carrier(K)), vector_carrier(K, V), F);
@@ -92,7 +92,7 @@ def spanning_subfamily_step(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
   spanning : FiniteSpanningFamily(K, V, n, v), fuel : Nat,
   previous : (
-    forall m : Nat, forall chosen : Fin(m) -> Fin(n), Injective(Fin(m), Fin(n), chosen)
+    forall m : Nat. forall chosen : Fin(m) -> Fin(n). Injective(Fin(m), Fin(n), chosen)
     -> LinearInjective(
       K, CoordinateSpace(K, m), V, family_linear(K, V, m, (fun (i : Fin(m)) => v(chosen(i))))
     ) -> NoIndependent(K, V, add_count(fuel, m)) -> Mere(SubfamilyBasis(K, V, n, v))
@@ -109,7 +109,7 @@ def spanning_subfamily_step(
   let F := linear_map(K, C, V, f);
   let Member := fun (i : Fin(n)) => Mere(Fiber((Fin(m) -> af_carrier(K)), X, F, v(i)));
   let Result := SubfamilyBasis(K, V, n, v);
-  have extend : (exists i : Fin(n), Member(i) -> Void) -> Mere(Result) {
+  have extend : (exists i : Fin(n). Member(i) -> Void) -> Mere(Result) {
     intro witness;
     obtain (i, outside) := witness;
     let selected := fin_prepend(Fin(n), m, i, chosen);
@@ -126,12 +126,12 @@ def spanning_subfamily_step(
   ) {
     left onto => merely(Result, typed(Result, (m, chosen, distinct, independent, onto)));
     right notOnto => mere_eliminate(
-      (exists i : Fin(n), Member(i) -> Void), Mere(Result), mere_is_prop(Result), extend,
+      (exists i : Fin(n). Member(i) -> Void), Mere(Result), mere_is_prop(Result), extend,
       classical_counterexample(
         Fin(n), Member,
         (fun (i : Fin(n)) => mere_is_prop(Fiber((Fin(m) -> af_carrier(K)), X, F, v(i)))),
         (
-          fun (members : (forall i : Fin(n), Member(i))) => notOnto(
+          fun (members : (forall i : Fin(n). Member(i))) => notOnto(
             spanning_family_in_image(K, C, V, f, n, v, spanning, members)
           )
         )
@@ -145,7 +145,7 @@ def spanning_subfamily_search(
   spanning : FiniteSpanningFamily(K, V, n, v), fuel : Nat
 ) :=
   induction fuel as k return (
-    forall m : Nat, forall chosen : Fin(m) -> Fin(n), Injective(Fin(m), Fin(n), chosen)
+    forall m : Nat. forall chosen : Fin(m) -> Fin(n). Injective(Fin(m), Fin(n), chosen)
     -> LinearInjective(
       K, CoordinateSpace(K, m), V, family_linear(K, V, m, (fun (i : Fin(m)) => v(chosen(i))))
     ) -> NoIndependent(K, V, add_count(k, m)) -> Mere(SubfamilyBasis(K, V, n, v))
@@ -176,7 +176,7 @@ def finite_spanning_subfamily_basis(
     );
   exact spanning_subfamily_search(
     K, V, n, v, spanning, succ(n), 0, empty,
-    (fun (i j : Fin(0), same : empty(i) = empty(j)) => typed((i = j), absurd(i))),
+    (fun (i, j : Fin(0), same : empty(i) = empty(j)) => typed((i = j), absurd(i))),
     linear_empty_injective(K, V), along NoIndependent(K, V) by sym(nat_add_zero(succ(n))) from bound
   );
 }

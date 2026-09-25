@@ -5,13 +5,13 @@ import order_maps;
 def GaloisFixed(
   K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E)
 ) :=
-  forall e : Galois(K, E), H(e) -> (extension_iso_forward(K, E, E, e, x) = x);
+  forall e : Galois(K, E). H(e) -> (extension_iso_forward(K, E, E, e, x) = x);
 
 // Automorphisms fixing every element belonging to P, pointwise.
 def GaloisFixing(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E)
 ) :=
-  forall x : extension_carrier(K, E), P(x) -> (extension_iso_forward(K, E, E, e, x) = x);
+  forall x : extension_carrier(K, E). P(x) -> (extension_iso_forward(K, E, E, e, x) = x);
 
 // H fixes P exactly when every element of P is fixed by H. This is the
 // order-reversing Galois connection, before any finiteness or Galois hypothesis.
@@ -49,7 +49,7 @@ def galois_connection(
 
 // Enlarging a family of automorphisms can only shrink its fixed elements.
 def galois_fixed_antitone(
-  K : AlgebraicField, E : FieldExt(K), H J : Galois(K, E) -> U0,
+  K : AlgebraicField, E : FieldExt(K), H, J : Galois(K, E) -> U0,
   included : PredicateIncluded(Galois(K, E), H, J)
 ) :
   PredicateIncluded(extension_carrier(K, E), GaloisFixed(K, E, J), GaloisFixed(K, E, H)) {
@@ -62,7 +62,7 @@ def galois_fixed_antitone(
 
 // Enlarging the subset to be fixed can only shrink its fixing automorphisms.
 def galois_fixing_antitone(
-  K : AlgebraicField, E : FieldExt(K), P Q : extension_carrier(K, E) -> U0,
+  K : AlgebraicField, E : FieldExt(K), P, Q : extension_carrier(K, E) -> U0,
   included : PredicateIncluded(extension_carrier(K, E), P, Q)
 ) :
   PredicateIncluded(Galois(K, E), GaloisFixing(K, E, Q), GaloisFixing(K, E, P)) {
@@ -121,7 +121,7 @@ def galois_fixing_closure_idempotent(
 def GaloisLoopInvariant(
   K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E)
 ) :=
-  forall e : Galois(K, E), H(e)
+  forall e : Galois(K, E). H(e)
   -> ((along extension_carrier(K) by extension_iso_path(K, E, E, e) from x) = x);
 
 def galois_fixed_is_loop_invariant(
@@ -129,7 +129,7 @@ def galois_fixed_is_loop_invariant(
   fixed : GaloisFixed(K, E, H, x)
 ) :
   GaloisLoopInvariant(K, E, H, x) {
-  intro e member;
+  intro e, member;
   exact trans(galois_loop_action(K, E, e, x), fixed(e, member));
 }
 
@@ -138,6 +138,6 @@ def galois_loop_invariant_is_fixed(
   invariant : GaloisLoopInvariant(K, E, H, x)
 ) :
   GaloisFixed(K, E, H, x) {
-  intro e member;
+  intro e, member;
   exact trans(sym(galois_loop_action(K, E, e, x)), invariant(e, member));
 }

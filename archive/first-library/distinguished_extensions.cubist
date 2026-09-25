@@ -3,18 +3,18 @@ import embedded_composita;
 // Fixed-universe scope: fields have carriers in U0; bundled fields and
 // extensions lie in U1. Membership may be a proposition in U1. This leaves
 // room for algebraic properties without asserting propositional resizing.
-def ExtensionClass := forall K : AlgebraicField, FieldExt(K) -> U1;
+def ExtensionClass := forall K : AlgebraicField. FieldExt(K) -> U1;
 
 def ExtensionClassProp(C : ExtensionClass) :=
-  forall K : AlgebraicField, forall E : FieldExt(K), FieldProp(C(K, E));
+  forall K : AlgebraicField. forall E : FieldExt(K). FieldProp(C(K, E));
 
-def ExtensionMember(C : ExtensionClass, K L : AlgebraicField, e : FieldEmbedding(K, L)) :=
+def ExtensionMember(C : ExtensionClass, K, L : AlgebraicField, e : FieldEmbedding(K, L)) :=
   C(K, embedding_as_extension(K, L, e));
 
 // Isomorphism invariance comes from transport on the univalent extension
 // type. It is not an extra law imposed on each class of extensions.
 def extension_class_iso(
-  C : ExtensionClass, K : AlgebraicField, E F : FieldExt(K), e : ExtensionIso(K, E, F),
+  C : ExtensionClass, K : AlgebraicField, E, F : FieldExt(K), e : ExtensionIso(K, E, F),
   member : C(K, E)
 ) :
   C(K, F) {
@@ -22,7 +22,7 @@ def extension_class_iso(
 }
 
 def extension_class_iso_iff(
-  C : ExtensionClass, K : AlgebraicField, E F : FieldExt(K), e : ExtensionIso(K, E, F)
+  C : ExtensionClass, K : AlgebraicField, E, F : FieldExt(K), e : ExtensionIso(K, E, F)
 ) :
   FieldIff(C(K, E), C(K, F)) {
   let path := extension_iso_path(K, E, F, e);
@@ -34,9 +34,9 @@ def extension_class_iso_iff(
 
 // Lang's first condition is an iff along a specified commutative tower.
 def DistinguishedTower(C : ExtensionClass) :=
-  forall B : AlgebraicField, forall K : AlgebraicField, forall L : AlgebraicField,
-  forall bk : FieldEmbedding(B, K), forall kl : FieldEmbedding(K, L),
-  forall bl : FieldEmbedding(B, L), FieldTower(B, K, L, bk, kl, bl)
+  forall B : AlgebraicField. forall K : AlgebraicField. forall L : AlgebraicField.
+  forall bk : FieldEmbedding(B, K). forall kl : FieldEmbedding(K, L).
+  forall bl : FieldEmbedding(B, L). FieldTower(B, K, L, bk, kl, bl)
   -> FieldIff(
     ExtensionMember(C, B, L, bl), ExtensionMember(C, B, K, bk) and ExtensionMember(C, K, L, kl)
   );
@@ -44,10 +44,10 @@ def DistinguishedTower(C : ExtensionClass) :=
 // Lang's second condition is base change inside a specified common field.
 // No tensor-product field or unspecified choice of embeddings is assumed.
 def DistinguishedBaseChange(C : ExtensionClass) :=
-  forall B : AlgebraicField, forall K : AlgebraicField, forall L : AlgebraicField,
-  forall O : AlgebraicField, forall bk : FieldEmbedding(B, K), forall bl : FieldEmbedding(B, L),
-  forall bo : FieldEmbedding(B, O), forall ko : FieldEmbedding(K, O),
-  forall lo : FieldEmbedding(L, O), FieldTower(B, K, O, bk, ko, bo)
+  forall B : AlgebraicField. forall K : AlgebraicField. forall L : AlgebraicField.
+  forall O : AlgebraicField. forall bk : FieldEmbedding(B, K). forall bl : FieldEmbedding(B, L).
+  forall bo : FieldEmbedding(B, O). forall ko : FieldEmbedding(K, O).
+  forall lo : FieldEmbedding(L, O). FieldTower(B, K, O, bk, ko, bo)
   -> FieldTower(B, L, O, bl, lo, bo) -> ExtensionMember(C, B, K, bk)
   -> ExtensionMember(
     C, L, EmbeddedCompositum(K, L, O, ko, lo), embedded_compositum_right(K, L, O, ko, lo)
@@ -55,10 +55,10 @@ def DistinguishedBaseChange(C : ExtensionClass) :=
 
 // Lang's third condition keeps the original base and forms the compositum.
 def DistinguishedComposita(C : ExtensionClass) :=
-  forall B : AlgebraicField, forall K : AlgebraicField, forall L : AlgebraicField,
-  forall O : AlgebraicField, forall bk : FieldEmbedding(B, K), forall bl : FieldEmbedding(B, L),
-  forall bo : FieldEmbedding(B, O), forall ko : FieldEmbedding(K, O),
-  forall lo : FieldEmbedding(L, O), FieldTower(B, K, O, bk, ko, bo)
+  forall B : AlgebraicField. forall K : AlgebraicField. forall L : AlgebraicField.
+  forall O : AlgebraicField. forall bk : FieldEmbedding(B, K). forall bl : FieldEmbedding(B, L).
+  forall bo : FieldEmbedding(B, O). forall ko : FieldEmbedding(K, O).
+  forall lo : FieldEmbedding(L, O). FieldTower(B, K, O, bk, ko, bo)
   -> FieldTower(B, L, O, bl, lo, bo) -> ExtensionMember(C, B, K, bk) -> ExtensionMember(C, B, L, bl)
   -> ExtensionMember(
     C, B, EmbeddedCompositum(K, L, O, ko, lo), embedded_compositum_base(B, K, L, O, bk, ko, lo)
@@ -76,7 +76,7 @@ def distinguished_composita_from_tower_base_change(
   C : ExtensionClass, towerLaw : DistinguishedTower(C), baseChange : DistinguishedBaseChange(C)
 ) :
   DistinguishedComposita(C) {
-  intro B K L O bk bl bo ko lo leftTower rightTower inK inL;
+  intro B, K, L, O, bk, bl, bo, ko, lo, leftTower, rightTower, inK, inL;
   let M := EmbeddedCompositum(K, L, O, ko, lo);
   let lm := embedded_compositum_right(K, L, O, ko, lo);
   let bm := embedded_compositum_base(B, K, L, O, bk, ko, lo);

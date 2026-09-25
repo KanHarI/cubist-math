@@ -69,7 +69,7 @@ test("computable and evaluate parse, format stably and stay ordinary names elsew
   const source = `import primes;
 computable def one := 1;
 computable opaque def two := 2;
-def uses_names(evaluate computable : Nat) : Nat {
+def uses_names(evaluate, computable : Nat) : Nat {
   have expecting : Nat := evaluate;
   exact expecting;
 }

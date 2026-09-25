@@ -82,7 +82,7 @@ def binomial_empty_ambient(k : Nat) :=
 
 // Pascal's bijection and its boundary cases agree with the Nat recurrence.
 def finite_binomial_cardinality(n : Nat) :=
-  induction n as row return (forall k : Nat, Bijection(FiniteBinomial(row, k), Fin(choose(row, k)))) {
+  induction n as row return (forall k : Nat. Bijection(FiniteBinomial(row, k), Fin(choose(row, k)))) {
     zero => fun (k : Nat) => induction k as column return Bijection(
       FiniteBinomial(0, column), Fin(choose(0, column))
     ) {
@@ -115,7 +115,7 @@ def finite_binomial_cardinality(n : Nat) :=
   };
 
 // The requested theorem for Rijke's actual binomial type.
-def finite_binomial_count(n k : Nat) : Bijection(Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) {
+def finite_binomial_count(n, k : Nat) : Bijection(Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) {
   exact compose_bijection(
     Binomial(Fin(n), Fin(k)), FiniteBinomial(n, k), Fin(choose(n, k)),
     finite_binomial_presentation(n, k), finite_binomial_cardinality(n, k)
@@ -130,7 +130,7 @@ def choose_too_many : Bijection(Binomial(Fin(2), Fin(3)), Fin(0)) {
   exact finite_binomial_count(2, 3);
 }
 
-def finite_binomial_equivalence(n k : Nat) : Equiv(U0, Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) {
+def finite_binomial_equivalence(n, k : Nat) : Equiv(U0, Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) {
   exact bijection_equiv(
     Binomial(Fin(n), Fin(k)), Fin(choose(n, k)), fin_is_set(choose(n, k)),
     finite_binomial_count(n, k)

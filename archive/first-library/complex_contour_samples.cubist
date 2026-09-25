@@ -3,7 +3,7 @@ import contour_refinement;
 
 // Complex-valued finite sampling operations, separate from their laws.
 def complex_contour_sum(
-  F : U1, zero : F, addF mulF : F -> F -> F, negF : F -> F, f : Complex(F) -> Complex(F), n : Nat
+  F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, f : Complex(F) -> Complex(F), n : Nat
 ) :=
   contour_sum(
     Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),

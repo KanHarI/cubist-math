@@ -27,7 +27,7 @@ test("arbitrary finite subspaces have bases and finiteness descends both ways in
   const p = create(t);
   const result = await p.check(`import subspace_carriers;
     import finite_towers;
-    def subspace_basis(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), S : Subspace(K, V)) : Mere(exists n : Nat, FiniteBasis(K, SubspaceVectorSpace(K, V, S), n)) {
+    def subspace_basis(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), S : Subspace(K, V)) : Mere(exists n : Nat. FiniteBasis(K, SubspaceVectorSpace(K, V, S), n)) {
       exact finite_subspace_basis(K, V, finite, S);
     }
     def tower_converse(K : AlgebraicField, L : AlgebraicField, M : AlgebraicField,

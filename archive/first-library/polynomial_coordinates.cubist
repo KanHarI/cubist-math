@@ -39,7 +39,7 @@ def series_cons_support(
 
 def series_from_coordinates_support(K : AlgebraicField, n : Nat) :=
   induction n as k return (
-    forall a : Fin(k) -> af_carrier(K), SeriesSupport(K, series_from_coordinates(K, k, a), k)
+    forall a : Fin(k) -> af_carrier(K). SeriesSupport(K, series_from_coordinates(K, k, a), k)
   ) {
     zero => fun (a : Fin(0) -> af_carrier(K), j : Nat, above : le(0, j)) => refl(field_zero(K));
     succ previous => fun (a : Fin(succ(k)) -> af_carrier(K)) => series_cons_support(
@@ -51,7 +51,7 @@ def series_from_coordinates_support(K : AlgebraicField, n : Nat) :=
 
 def series_cons_decompose(K : AlgebraicField, f : FormalSeries(K)) :
   series_cons(K, f(0), series_tail(K, f)) = f {
-  have pointwise : forall n : Nat, series_cons(K, f(0), series_tail(K, f), n) = f(n) {
+  have pointwise : forall n : Nat. series_cons(K, f(0), series_tail(K, f), n) = f(n) {
     intro n;
     exact induction n as k return (series_cons(K, f(0), series_tail(K, f), k) = f(k)) {
       zero => refl(f(0));
@@ -64,7 +64,7 @@ def series_cons_decompose(K : AlgebraicField, f : FormalSeries(K)) :
 
 def series_from_coordinates_roundtrip(K : AlgebraicField, n : Nat) :=
   induction n as k return (
-    forall f : FormalSeries(K), SeriesSupport(K, f, k)
+    forall f : FormalSeries(K). SeriesSupport(K, f, k)
     -> series_from_coordinates(K, k, series_coordinates(K, k, f)) = f
   ) {
     zero => fun (f : FormalSeries(K), support : SeriesSupport(K, f, 0)) => FunExt(
@@ -81,7 +81,7 @@ def series_from_coordinates_roundtrip(K : AlgebraicField, n : Nat) :=
 
 def series_coordinates_roundtrip(K : AlgebraicField, n : Nat) :=
   induction n as k return (
-    forall a : Fin(k) -> af_carrier(K),
+    forall a : Fin(k) -> af_carrier(K).
     series_coordinates(K, k, series_from_coordinates(K, k, a)) = a
   ) {
     zero => fun (a : Fin(0) -> af_carrier(K)) => FunExt(
@@ -100,7 +100,7 @@ def series_coordinates_roundtrip(K : AlgebraicField, n : Nat) :=
   };
 
 def series_coordinates_injective(
-  K : AlgebraicField, n : Nat, f g : FormalSeries(K), sf : SeriesSupport(K, f, n),
+  K : AlgebraicField, n : Nat, f, g : FormalSeries(K), sf : SeriesSupport(K, f, n),
   sg : SeriesSupport(K, g, n), same : series_coordinates(K, n, f) = series_coordinates(K, n, g)
 ) :
   f = g {
@@ -112,14 +112,14 @@ def series_coordinates_injective(
 
 def series_coordinates_add(K : AlgebraicField, n : Nat) :=
   induction n as k return (
-    forall f : FormalSeries(K), forall g : FormalSeries(K),
+    forall f : FormalSeries(K). forall g : FormalSeries(K).
     series_coordinates(K, k, series_add(K, f, g)) = (
       fun (i : Fin(k)) => field_add(
         K, series_coordinates(K, k, f, i), series_coordinates(K, k, g, i)
       )
     )
   ) {
-    zero => fun (f g : FormalSeries(K)) => FunExt(
+    zero => fun (f, g : FormalSeries(K)) => FunExt(
       U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)),
       series_coordinates(K, 0, series_add(K, f, g)),
       (
@@ -137,7 +137,7 @@ def series_coordinates_add(K : AlgebraicField, n : Nat) :=
         )
       )
     );
-    succ previous => fun (f g : FormalSeries(K)) => finite_function_ext(
+    succ previous => fun (f, g : FormalSeries(K)) => finite_function_ext(
       af_carrier(K), k, series_coordinates(K, succ(k), series_add(K, f, g)),
       (
         fun (i : Fin(succ(k))) => field_add(
@@ -149,7 +149,7 @@ def series_coordinates_add(K : AlgebraicField, n : Nat) :=
 
 def series_coordinates_scale(K : AlgebraicField, a : af_carrier(K), n : Nat) :=
   induction n as k return (
-    forall f : FormalSeries(K),
+    forall f : FormalSeries(K).
     series_coordinates(K, k, series_scale(K, a, f)) = (
       fun (i : Fin(k)) => field_mul(K, a, series_coordinates(K, k, f, i))
     )

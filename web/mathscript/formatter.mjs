@@ -8,7 +8,8 @@ const indent = body => ({ kind: "indent", body });
 // A paragraph packs complete phrases, instead of breaking every separator when
 // the whole statement exceeds the width. Nested delimiters still have groups.
 const flow = body => ({ kind: "flow", body });
-const punctuation = new Set([",", ";", ")", "]", "}"]);
+// A quantifier's `.` ends its type like a comma: no space before, a break after.
+const punctuation = new Set([",", ".", ";", ")", "]", "}"]);
 const operators = new Set(["=", "->", "=>", "+", "*", "<", "<=", "and", "or"]);
 
 function render(document, width) {
@@ -72,7 +73,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
     ...(syntax?.declarations ?? []).map(node => node.modifierStart).filter(Number.isInteger),
     ...(syntax?.directives ?? []).filter(node => node.kind === "evaluate").map(node => node.start),
   ]);
-  // A binder's short domain is one phrase: `forall f : A -> B,` must not
+  // A binder's short domain is one phrase: `forall f : A -> B.` must not
   // split the arrow merely because the surrounding theorem is long.
   const domains = [];
   const expressionBlockEnds = new Set();
@@ -158,7 +159,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
         && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && expressionBlockEnds.has(previous.end)))
         && !(text === "[" && previous.text === "=");
-      if (space && previous.text !== ",") {
+      if (space && ![",", "."].includes(previous.text)) {
         if (annotationStarts.has(token.start)) annotation = statement.length;
         else if (proofBodyStarts.has(token.start)) proofBody = statement.length;
         else if (assignmentTokens.has(previous.start) && assignment < 0) assignment = statement.length;
@@ -192,7 +193,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         }
       } else {
         statement.push(text);
-        if (text === ",") statement.push(line);
+        if (text === "," || text === ".") statement.push(line);
         previous = token;
       }
     }

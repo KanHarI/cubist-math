@@ -5,7 +5,7 @@ import field_arithmetic;
 // Surjectivity of an embedding has unique witnesses. Its inverse is therefore
 // an actual function, even when surjectivity was supplied only propositionally.
 def field_embedding_preimage(
-  K L : AlgebraicField, e : FieldEmbedding(K, L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L),
   onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e)), y : af_carrier(L)
 ) :
   Fiber(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e), y) {
@@ -20,7 +20,7 @@ def field_embedding_preimage(
 }
 
 def field_inverse_map(
-  K L : AlgebraicField, e : FieldEmbedding(K, L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L),
   onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e)), y : af_carrier(L)
 ) :=
   sigma_first(
@@ -29,7 +29,7 @@ def field_inverse_map(
   );
 
 def field_inverse_right(
-  K L : AlgebraicField, e : FieldEmbedding(K, L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L),
   onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e)), y : af_carrier(L)
 ) :=
   sigma_second(
@@ -38,7 +38,7 @@ def field_inverse_right(
   );
 
 def field_inverse_left(
-  K L : AlgebraicField, e : FieldEmbedding(K, L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L),
   onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e)), x : af_carrier(K)
 ) :=
   field_embedding_injective(
@@ -47,7 +47,7 @@ def field_inverse_left(
   );
 
 def field_inverse_preserves(
-  K L : AlgebraicField, e : FieldEmbedding(K, L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L),
   onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e))
 ) :
   FieldOpsPreserved(
@@ -69,7 +69,7 @@ def field_inverse_preserves(
       )
     ),
     (
-      fun (x y : af_carrier(L)) => injective(
+      fun (x, y : af_carrier(L)) => injective(
         g(field_add(L, x, y)), field_add(K, g(x), g(y)),
         trans(
           right(field_add(L, x, y)),
@@ -86,7 +86,7 @@ def field_inverse_preserves(
       )
     ),
     (
-      fun (x y : af_carrier(L)) => injective(
+      fun (x, y : af_carrier(L)) => injective(
         g(field_mul(L, x, y)), field_mul(K, g(x), g(y)),
         trans(
           right(field_mul(L, x, y)),
@@ -106,7 +106,7 @@ def field_inverse_preserves(
 }
 
 def field_embedding_inverse(
-  K L : AlgebraicField, e : FieldEmbedding(K, L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L),
   onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e))
 ) :
   FieldEmbedding(L, K) {
@@ -116,7 +116,7 @@ def field_embedding_inverse(
   exact (
     g, field_inverse_preserves(K, L, e, onto),
     (
-      fun (x y : af_carrier(L), same : g(x) = g(y)) => trans(
+      fun (x, y : af_carrier(L), same : g(x) = g(y)) => trans(
         sym(right(x)), trans(cong(f, same), right(y))
       )
     )
@@ -124,7 +124,7 @@ def field_embedding_inverse(
 }
 
 def field_embedding_surjective_iso(
-  K L : AlgebraicField, e : FieldEmbedding(K, L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L),
   onto : Surjective(af_carrier(K), af_carrier(L), field_embedding_map(K, L, e))
 ) :
   FieldIso(K, L) {

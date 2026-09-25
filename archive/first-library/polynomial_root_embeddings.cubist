@@ -32,7 +32,7 @@ def residue_evaluate_neg(
 
 def residue_evaluate_add(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
-  x : af_carrier(L), r s : PolynomialResidue(K, M)
+  x : af_carrier(L), r, s : PolynomialResidue(K, M)
 ) :
   residue_evaluate(K, M, L, e, x, residue_add(K, M, r, s)) = field_add(
     L, residue_evaluate(K, M, L, e, x, r), residue_evaluate(K, M, L, e, x, s)
@@ -43,7 +43,7 @@ def residue_evaluate_add(
 def residue_evaluate_mul(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x),
-  r s : PolynomialResidue(K, M)
+  r, s : PolynomialResidue(K, M)
 ) :
   residue_evaluate(K, M, L, e, x, residue_mul(K, M, r, s)) = field_mul(
     L, residue_evaluate(K, M, L, e, x, r), residue_evaluate(K, M, L, e, x, s)

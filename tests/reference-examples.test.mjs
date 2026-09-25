@@ -150,7 +150,7 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
   const page = `
 <pre><code data-check="accept">def one := succ(0);</code></pre>
 <pre data-check="reject">def wrong : 0 = 1 { exact refl(0); }  // Error: Type mismatch: found 0 = 0, expected 0 = 1.</pre>
-<pre><code data-check="excerpt" data-module="primes">def Divides(d n : Nat) :=</code></pre>
+<pre><code data-check="excerpt" data-module="primes">def Divides(d, n : Nat) :=</code></pre>
 <pre><code>def unmarked := 0;</code></pre>`;
   const [accepted, rejected, excerpt, unmarked] = referenceExamples("sample.html", page);
   await verify(accepted, 0);

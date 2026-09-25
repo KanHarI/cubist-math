@@ -323,7 +323,7 @@ inductive Trunc(A : U) : prop { point(a : A); }
 
 inductive Quotient(A : U, R : A -> A -> U) : set {
   class(a : A);
-  glue(a b : A, r : R(a, b)) : class(a) = class(b);
+  glue(a, b : A, r : R(a, b)) : class(a) = class(b);
 }
 
 // Indexed families: parameters in parentheses, indices after the colon.
@@ -334,30 +334,30 @@ inductive Vec(A : U) : Nat -> type {
 
 inductive Id(A : U, a : A) : A -> type { refl : Id(A, a, a); }
 
-inductive Ty { base; arrow(a b : Ty); }
+inductive Ty { base; arrow(a, b : Ty); }
 inductive Ctx { empty; extend(g : Ctx, a : Ty); }
 inductive Var : Ctx -> Ty -> type {
   here(g : Ctx, a : Ty) : Var(extend(g, a), a);
-  there(g : Ctx, a b : Ty, v : Var(g, a)) : Var(extend(g, b), a);
+  there(g : Ctx, a, b : Ty, v : Var(g, a)) : Var(extend(g, b), a);
 }
 inductive Tm : Ctx -> Ty -> type {             // intrinsically typed terms
   var(g : Ctx, a : Ty, v : Var(g, a)) : Tm(g, a);
-  lam(g : Ctx, a b : Ty, body : Tm(extend(g, a), b)) : Tm(g, arrow(a, b));
-  app(g : Ctx, a b : Ty, f : Tm(g, arrow(a, b)), x : Tm(g, a)) : Tm(g, b);
+  lam(g : Ctx, a, b : Ty, body : Tm(extend(g, a), b)) : Tm(g, arrow(a, b));
+  app(g : Ctx, a, b : Ty, f : Tm(g, arrow(a, b)), x : Tm(g, a)) : Tm(g, b);
 }
 
 inductive Real : set with Close : Pos -> Real -> Real -> prop {
   rat(q : Rat) : Real;
-  lim(x : Pos -> Real, cauchy : forall δ ε : Pos, Close(δ + ε, x(δ), x(ε))) : Real;
-  eq(u v : Real, near : forall ε : Pos, Close(ε, u, v)) : u = v;
+  lim(x : Pos -> Real, cauchy : forall δ, ε : Pos. Close(δ + ε, x(δ), x(ε))) : Real;
+  eq(u, v : Real, near : forall ε : Pos. Close(ε, u, v)) : u = v;
 
-  rat_rat(q r : Rat, ε : Pos, bound : abs(q - r) < ε) : Close(ε, rat(q), rat(r));
-  rat_lim(q : Rat, y : Pos -> Real, cy : forall δ ε : Pos, Close(δ + ε, y(δ), y(ε)),
+  rat_rat(q, r : Rat, ε : Pos, bound : abs(q - r) < ε) : Close(ε, rat(q), rat(r));
+  rat_lim(q : Rat, y : Pos -> Real, cy : forall δ, ε : Pos. Close(δ + ε, y(δ), y(ε)),
           δ η : Pos, h : Close(η, rat(q), y(δ))) : Close(δ + η, rat(q), lim(y, cy));
-  lim_rat(x : Pos -> Real, cx : forall δ ε : Pos, Close(δ + ε, x(δ), x(ε)), r : Rat,
+  lim_rat(x : Pos -> Real, cx : forall δ, ε : Pos. Close(δ + ε, x(δ), x(ε)), r : Rat,
           δ η : Pos, h : Close(η, x(δ), rat(r))) : Close(δ + η, lim(x, cx), rat(r));
-  lim_lim(x : Pos -> Real, cx : forall δ ε : Pos, Close(δ + ε, x(δ), x(ε)),
-          y : Pos -> Real, cy : forall δ ε : Pos, Close(δ + ε, y(δ), y(ε)),
+  lim_lim(x : Pos -> Real, cx : forall δ, ε : Pos. Close(δ + ε, x(δ), x(ε)),
+          y : Pos -> Real, cy : forall δ, ε : Pos. Close(δ + ε, y(δ), y(ε)),
           δ η θ : Pos, h : Close(θ, x(δ), y(η))) : Close(δ + η + θ, lim(x, cx), lim(y, cy));
 }
 ```
@@ -386,7 +386,7 @@ indices.
 
 ```
 def neg(u : Real) : Real
-  with neg_close(ε : Pos, u v : Real, h : Close(ε, u, v)) : Close(ε, neg(u), neg(v))
+  with neg_close(ε : Pos, u, v : Real, h : Close(ε, u, v)) : Close(ε, neg(u), neg(v))
 = match {
   rat(q) => rat(-q);
   lim(x, c) => lim(fun δ => neg(x(δ)), fun δ ε => neg_close(c(δ, ε)));
@@ -449,17 +449,17 @@ indices. Each branch's goal therefore uses the constructor's own result
 indices:
 
 ```
-computable def append(A : U, m n : Nat, xs : Vec(A, m), ys : Vec(A, n)) : Vec(A, m + n)
+computable def append(A : U, m, n : Nat, xs : Vec(A, m), ys : Vec(A, n)) : Vec(A, m + n)
 = match xs {
   nil => ys;                                                      // goal: Vec(A, 0 + n) ≡ Vec(A, n)
   cons(x, k, rest) => cons(x, k + n, append(A, k, n, rest, ys));  // goal: Vec(A, succ(k) + n)
 };
 
-computable def J(A : U, a : A, C : forall b : A, Id(A, a, b) -> U, base : C(a, refl),
+computable def J(A : U, a : A, C : forall b : A. Id(A, a, b) -> U, base : C(a, refl),
                  b : A, p : Id(A, a, b)) : C(b, p)
 = match p { refl => base; };
 
-def J_on_refl(A : U, a : A, C : forall b : A, Id(A, a, b) -> U, base : C(a, refl)) :
+def J_on_refl(A : U, a : A, C : forall b : A. Id(A, a, b) -> U, base : C(a, refl)) :
   J(A, a, C, base, a, refl) = base { rfl; }                       // J computes on refl
 
 def Sem(a : Ty) : U = match a { base => Nat; arrow(a, b) => Sem(a) -> Sem(b); };
@@ -490,7 +490,7 @@ evaluate append(Nat, 1, 1, cons(1, 0, nil), cons(2, 0, nil)) expecting cons(1, _
 - `cli evaluate` normalizes a closed term. For a truncated existential it
   reads the witness off the base of the normal form. For example, it reports
   a rational within 10⁻⁶ of √2 from a closed proof of
-  `Trunc(exists q : Rat, Close(1/1000000, sqrt(2), rat(q)))`.
+  `Trunc(exists q : Rat. Close(1/1000000, sqrt(2), rat(q)))`.
 
 Higher-level features built on this design are proposed separately in
 [inductive-language-features.md](inductive-language-features.md). They

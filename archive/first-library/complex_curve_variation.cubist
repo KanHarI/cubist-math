@@ -2,16 +2,16 @@ import complex_curves;
 import affine_variation;
 
 def curve_real_increment(
-  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  s t tag : FieldUnitInterval(F, zero, one, lt)
+  s, t, tag : FieldUnitInterval(F, zero, one, lt)
 ) :=
   coordinate_difference(F, addF, negF, complex_real(F, curve(s)), complex_real(F, curve(t)));
 
 def curve_imag_increment(
-  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  s t tag : FieldUnitInterval(F, zero, one, lt)
+  s, t, tag : FieldUnitInterval(F, zero, one, lt)
 ) :=
   coordinate_difference(F, addF, negF, complex_imag(F, curve(s)), complex_imag(F, curve(t)));
 
@@ -19,13 +19,13 @@ def curve_imag_increment(
 // The weights bound individual coordinate increments; their combined sum
 // is bounded independently of the number of samples.
 def ComplexCurveVariation(
-  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  realWeight imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
+  realWeight, imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
   -> FieldUnitInterval(F, zero, one, lt) -> F, length : F
 ) :=
-  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+  forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
   IntervalOrderedSamples(F, zero, one, lt, n, vertices)
   -> SampleMagnitudeBounds(
     FieldUnitInterval(F, zero, one, lt), F, negF, lt,
@@ -40,7 +40,7 @@ def ComplexCurveVariation(
     sample_sum(
       FieldUnitInterval(F, zero, one, lt), F, zero, addF,
       (
-        fun (s t tag : FieldUnitInterval(F, zero, one, lt)) => addF(
+        fun (s, t, tag : FieldUnitInterval(F, zero, one, lt)) => addF(
           realWeight(s, t, tag), imagWeight(s, t, tag)
         )
       ), n, vertices, tags
@@ -48,10 +48,10 @@ def ComplexCurveVariation(
   );
 
 def complex_interval_deformation_variation(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z error : Complex(F)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, error : Complex(F)
 ) :
   ComplexCurveVariation(
     F, zero, one, addF, negF, lt,
@@ -67,7 +67,7 @@ def complex_interval_deformation_variation(
       maxF(complex_imag(F, error), negF(complex_imag(F, error)))
     )
   ) {
-  intro n vertices tags ordered;
+  intro n, vertices, tags, ordered;
   obtain (setF, addLaws, mulLaws) := ring;
   let I := FieldUnitInterval(F, zero, one, lt);
   let r := maxF(complex_real(F, error), negF(complex_real(F, error)));
@@ -103,7 +103,7 @@ def complex_interval_deformation_variation(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, realSum, r, imagSum, s, realBelow,
       imagBelow
     );
-  let sumWeight := (fun (a b tag : I) => addF(realWeight(a, b, tag), imagWeight(a, b, tag)));
+  let sumWeight := (fun (a, b, tag : I) => addF(realWeight(a, b, tag), imagWeight(a, b, tag)));
   have combined : FieldLe(
     F, lt, sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags), addF(r, s)
   ) := along((fun (v : F) => FieldLe(F, lt, v, addF(r, s)))) by sym(

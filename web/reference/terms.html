@@ -63,9 +63,9 @@
               <thead><tr><th>Source</th><th>Meaning</th><th>Build an element</th><th>Use an element</th></tr></thead>
               <tbody>
                 <tr><td><code>A -> B</code></td><td>Functions, and implication</td><td><code>fun (a : A) => b</code>, or <code>intro a;</code></td><td>Application <code>f(a)</code></td></tr>
-                <tr><td><code>forall x : A, B(x)</code></td><td>Dependent functions, <span class="math">Π<sub>x:A</sub> B(x)</span></td><td>The same as for <code>-></code></td><td>Application <code>f(a) : B(a)</code></td></tr>
+                <tr><td><code>forall x : A. B(x)</code></td><td>Dependent functions, <span class="math">Π<sub>x:A</sub> B(x)</span></td><td>The same as for <code>-></code></td><td>Application <code>f(a) : B(a)</code></td></tr>
                 <tr><td><code>A and B</code></td><td>Pairs, <span class="math">A × B</span></td><td><code>(a, b)</code></td><td><code>obtain</code>, <code>unpack</code></td></tr>
-                <tr><td><code>exists x : A, B(x)</code></td><td>Dependent pairs, <span class="math">Σ<sub>x:A</sub> B(x)</span></td><td><code>(witness, evidence)</code></td><td><code>obtain</code>, <code>unpack</code>, <code>pair_induction</code></td></tr>
+                <tr><td><code>exists x : A. B(x)</code></td><td>Dependent pairs, <span class="math">Σ<sub>x:A</sub> B(x)</span></td><td><code>(witness, evidence)</code></td><td><code>obtain</code>, <code>unpack</code>, <code>pair_induction</code></td></tr>
                 <tr><td><code>A or B</code></td><td>Disjoint sums, <span class="math">A + B</span></td><td><code>left(a)</code>, <code>right(b)</code></td><td><code>match</code>, <code>cases</code></td></tr>
                 <tr><td><code>Unit</code></td><td>The one-element type</td><td><code>tt</code></td><td><code>unit_induction</code></td></tr>
                 <tr><td><code>Void</code></td><td>The empty type, falsehood</td><td>None</td><td><code>absurd</code></td></tr>
@@ -78,34 +78,28 @@
           </section>
           <section id="functions">
             <h2>Functions</h2>
-            <p><code>fun (x : A) => body</code> is the function sending <code>x</code> to <code>body</code>. Its type is <code>A -> B</code> when <code>body : B</code> does not mention <code>x</code>, and <code>forall x : A, B(x)</code> when it does. Binders can be grouped like parameters:</p>
+            <p><code>fun (x : A) => body</code> is the function sending <code>x</code> to <code>body</code>. Its type is <code>A -> B</code> when <code>body : B</code> does not mention <code>x</code>, and <code>forall x : A. B(x)</code> when it does. Binders can be grouped like parameters:</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Source</th><th>Means</th></tr></thead>
               <tbody>
-                <tr><td><code>fun (x y : A) => body</code></td><td><code>fun (x : A) => fun (y : A) => body</code></td></tr>
+                <tr><td><code>fun (x, y : A) => body</code></td><td><code>fun (x : A) => fun (y : A) => body</code></td></tr>
                 <tr><td><code>fun (a : A, b : B) => body</code></td><td>Binders with different types, separated by commas, exactly as in a parameter list</td></tr>
                 <tr><td><code>fun x => body</code></td><td>One binder whose type is taken from the expected function type</td></tr>
               </tbody>
             </table></div>
-            <pre><code data-check="accept">def constant(A B : U0) := fun (a : A, b : B) =&gt; a;
+            <pre><code data-check="accept">def constant(A, B : U0) := fun (a : A, b : B) =&gt; a;
 
-def second(A : U0) := fun (x y : A) =&gt; y;
+def second(A : U0) := fun (x, y : A) =&gt; y;
 
 def twice(A : U0, f : A -&gt; A) := fun (x : A) =&gt; f(f(x));</code></pre>
             <p>A binder without a type needs an expected function type, from a stated result type, an <code>exact</code> goal or <code>typed</code>. In <code>compose</code>, each untyped binder reads its type from the goal: <code>g : B -> C</code>, then <code>f : A -> B</code>, then <code>x : A</code>.</p>
-            <pre><code data-check="accept">def compose(A B C : U0) : (B -&gt; C) -&gt; (A -&gt; B) -&gt; A -&gt; C {
+            <pre><code data-check="accept">def compose(A, B, C : U0) : (B -&gt; C) -&gt; (A -&gt; B) -&gt; A -&gt; C {
   exact fun g =&gt; fun f =&gt; fun x =&gt; g(f(x));
 }
 
 def successor_function := typed(Nat -&gt; Nat, fun n =&gt; succ(n));</code></pre>
             <pre><code data-check="reject">def no_expected_type := fun x =&gt; x;  // Error: Untyped lambda requires an expected function type.</code></pre>
-            <p>All typed binders go in one parenthesized list, separated by commas, as in parameters. Separate parenthesized groups are not a form:</p>
-            <pre><code data-check="reject">// Error: Separate binder groups with commas: fun (a : A, b : B) =&gt; …
-def two_groups(A B : U0) := fun (a : A) (b : B) =&gt; a;</code></pre>
-            <p>An untyped binder stands alone. Write <code>fun x => fun y => …</code>, not <code>fun x y => …</code>; only typed binders can share a group:</p>
-            <pre><code data-check="reject">def pair_of_binders(A : U0) : A -&gt; A -&gt; A {
-  exact fun x y =&gt; x;  // Error: Expected '=&gt;', found 'y'.
-}</code></pre>
+            <p>All typed binders go in one parenthesized list, separated by commas, as in parameters. An untyped binder stands alone: <code>fun x => fun y => …</code>.</p>
             <h3 id="application">Application</h3>
             <p>Application is curried. <code>f(a, b)</code> means <code>f(a)(b)</code>, and <code>f(a)</code> alone is a function waiting for the rest. All arguments are explicit.</p>
             <pre><code data-check="accept">def apply_twice(A : U0, f : A -&gt; A, a : A) := f(f(a));
@@ -116,26 +110,26 @@ def five := add_two(3);</code></pre>
             <p>Only a function can be applied:</p>
             <pre><code data-check="reject">def not_a_function := 0(1);  // Error: Source application is not a function.</code></pre>
             <h3 id="dependent-functions">Dependent functions</h3>
-            <p>In <code>forall x : A, B(x)</code>, the result type depends on the argument. Applying <code>f : forall n : Nat, P(n)</code> to <code>0</code> gives an element of <code>P(0)</code>. <code>forall x y : A, B</code> abbreviates two nested quantifiers over the same type.</p>
-            <pre><code data-check="accept">def apply_at_zero(P : Nat -&gt; U0, f : forall n : Nat, P(n)) : P(0) {
+            <p>In <code>forall x : A. B(x)</code>, the result type depends on the argument. Applying <code>f : forall n : Nat. P(n)</code> to <code>0</code> gives an element of <code>P(0)</code>. <code>forall x, y : A. B</code> abbreviates two nested quantifiers over the same type.</p>
+            <pre><code data-check="accept">def apply_at_zero(P : Nat -&gt; U0, f : forall n : Nat. P(n)) : P(0) {
   exact f(0);
 }
 
-def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x y : A, P(x, y)) : forall y x : A, P(x, y) {
-  intro y x;
+def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x, y : A. P(x, y)) : forall y, x : A. P(x, y) {
+  intro y, x;
   exact f(x, y);
 }</code></pre>
             <p>The argument decides the result type, so <code>f(0)</code> does not prove <code>P(1)</code>:</p>
-            <pre><code data-check="reject">def wrong_index(P : Nat -&gt; U0, f : forall n : Nat, P(n)) : P(1) {
+            <pre><code data-check="reject">def wrong_index(P : Nat -&gt; U0, f : forall n : Nat. P(n)) : P(1) {
   exact f(0);  // Error: Type mismatch: found P(0), expected P(1).
 }</code></pre>
           </section>
           <section id="pairs">
             <h2>Pairs and dependent pairs</h2>
-            <p><code>(a, b)</code> builds an element of <code>A and B</code>, or of <code>exists x : A, B(x)</code> when <code>b : B(a)</code>. For an existential, the first component is the witness and the second is the evidence about it.</p>
+            <p><code>(a, b)</code> builds an element of <code>A and B</code>, or of <code>exists x : A. B(x)</code> when <code>b : B(a)</code>. For an existential, the first component is the witness and the second is the evidence about it.</p>
             <pre><code data-check="accept">def two_units := typed(Unit and Unit, (tt, tt));
 
-def two_exists : exists n : Nat, n = 2 {
+def two_exists : exists n : Nat. n = 2 {
   exact (2, refl(2));
 }</code></pre>
             <p>A pair needs an expected type. <code>(1, 2)</code> could belong to <code>Nat and Nat</code> or to many <code>exists</code> types, and the elaborator does not guess. The expected type comes from a stated result type, a <code>have</code> type, a function argument’s type or <a href="#typed"><code>typed</code></a>.</p>
@@ -170,10 +164,10 @@ def swap(pair : Nat and Unit) :=
   unpack pair as (n, u) return Unit and Nat { typed(Unit and Nat, (u, n)); };</code></pre>
             <pre><code data-check="reject">// Error: unpack requires a dependent pair.
 def not_a_pair(n : Nat) := unpack n as (a, b) return Nat { a; };</code></pre>
-            <p>When the result type depends on the pair itself, use <code>pair_induction(motive, branch, pair)</code>. For <code>pair : exists x : A, B(x)</code>, the branch takes <code>x : A</code> and <code>y : B(x)</code> and proves <code>motive((x, y))</code>. The result proves <code>motive(pair)</code>.</p>
-            <pre><code data-check="accept">def pair_is_itself(A : U0, B : A -&gt; U0, p : exists x : A, B(x)) : p = p {
-  exact pair_induction(fun (q : exists x : A, B(x)) =&gt; q = q,
-    fun (x : A, y : B(x)) =&gt; refl(typed(exists x : A, B(x), (x, y))), p);
+            <p>When the result type depends on the pair itself, use <code>pair_induction(motive, branch, pair)</code>. For <code>pair : exists x : A. B(x)</code>, the branch takes <code>x : A</code> and <code>y : B(x)</code> and proves <code>motive((x, y))</code>. The result proves <code>motive(pair)</code>.</p>
+            <pre><code data-check="accept">def pair_is_itself(A : U0, B : A -&gt; U0, p : exists x : A. B(x)) : p = p {
+  exact pair_induction(fun (q : exists x : A. B(x)) =&gt; q = q,
+    fun (x : A, y : B(x)) =&gt; refl(typed(exists x : A. B(x), (x, y))), p);
 }</code></pre>
           </section>
           <section id="sums">
@@ -192,7 +186,7 @@ def choose_right : Unit or Nat {
   right n =&gt; n;
 };
 
-def swap_sides(A B : U0, value : A or B) := match value return B or A {
+def swap_sides(A, B : U0, value : A or B) := match value return B or A {
   left a =&gt; right(a);
   right b =&gt; left(b);
 };</code></pre>
@@ -299,12 +293,12 @@ def choice := typed(Nat or Unit, right(tt));</code></pre>
               <li><code>or</code>;</li>
               <li><code>-></code>.</li>
             </ol>
-            <p><code>-></code>, <code>and</code> and <code>or</code> group to the right. The other operators group to the left. The body of <code>fun</code>, <code>forall</code> and <code>exists</code> extends as far as possible. So <code>A -> B -> C</code> means <code>A -> (B -> C)</code>, and <code>forall x : A, P(x) -> Q(x)</code> means <code>forall x : A, (P(x) -> Q(x))</code>.</p>
-            <pre><code data-check="accept">def arrows_group_right(A B C : U0, f : A -&gt; B -&gt; C) : A -&gt; (B -&gt; C) {
+            <p><code>-></code>, <code>and</code> and <code>or</code> group to the right. The other operators group to the left. The body of <code>fun</code>, <code>forall</code> and <code>exists</code> extends as far as possible. So <code>A -> B -> C</code> means <code>A -> (B -> C)</code>, and <code>forall x : A. P(x) -> Q(x)</code> means <code>forall x : A. (P(x) -> Q(x))</code>.</p>
+            <pre><code data-check="accept">def arrows_group_right(A, B, C : U0, f : A -&gt; B -&gt; C) : A -&gt; (B -&gt; C) {
   exact f;
 }
 
-def and_before_or(A B C : U0, x : A and B or C) : (A and B) or C {
+def and_before_or(A, B, C : U0, x : A and B or C) : (A and B) or C {
   exact x;
 }</code></pre>
             <p>Comparisons do not chain. <code>1 &lt; 2 &lt; 3</code> means <code>(1 &lt; 2) &lt; 3</code>, which compares a type with a number. Write <code>(1 &lt; 2) and (2 &lt; 3)</code>.</p>

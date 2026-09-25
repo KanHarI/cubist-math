@@ -53,8 +53,8 @@ section 17.6](https://arxiv.org/pdf/2212.11082#page=238).
 
 ```text
 Bool = Unit or Unit
-Selected(A, predicate) = exists a : A, Truth(predicate(a))
-Binomial(A, B) = exists predicate : A -> Bool,
+Selected(A, predicate) = exists a : A. Truth(predicate(a))
+Binomial(A, B) = exists predicate : A -> Bool.
   Mere(Equiv(U0, B, Selected(A, predicate)))
 ```
 

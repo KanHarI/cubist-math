@@ -56,7 +56,7 @@ def circle_power_degree(n : Nat) :
 }
 
 def null_homotopic_circle_map_degree_zero(
-  f : S1 -> S1, anchor : f(base) = base, point : S1, homotopy : (forall x : S1, f(x) = point)
+  f : S1 -> S1, anchor : f(base) = base, point : S1, homotopy : (forall x : S1. f(x) = point)
 ) :
   circle_map_degree(f, anchor) = zeroZ {
   exact cong(
@@ -70,14 +70,14 @@ def null_homotopic_circle_map_degree_zero(
 
 def nonzero_degree_not_null_homotopic(
   f : S1 -> S1, anchor : f(base) = base, nonzero : (circle_map_degree(f, anchor) = zeroZ) -> Void,
-  point : S1, homotopy : (forall x : S1, f(x) = point)
+  point : S1, homotopy : (forall x : S1. f(x) = point)
 ) :
   Void {
   exact nonzero(null_homotopic_circle_map_degree_zero(f, anchor, point, homotopy));
 }
 
 def positive_circle_power_not_null_homotopic(
-  n : Nat, point : S1, homotopy : (forall x : S1, circle_power_map(succ(n), x) = point)
+  n : Nat, point : S1, homotopy : (forall x : S1. circle_power_map(succ(n), x) = point)
 ) :
   Void {
   let zeroDegree :=
@@ -91,8 +91,8 @@ def positive_circle_power_not_null_homotopic(
 // The homotopy need not fix the basepoint. Its value at base is tracked by
 // naturality, so an arbitrary contraction point is allowed.
 def homotopic_to_positive_power_not_null(
-  n : Nat, f : S1 -> S1, comparison : (forall x : S1, f(x) = circle_power_map(succ(n), x)),
-  point : S1, contraction : (forall x : S1, f(x) = point)
+  n : Nat, f : S1 -> S1, comparison : (forall x : S1. f(x) = circle_power_map(succ(n), x)),
+  point : S1, contraction : (forall x : S1. f(x) = point)
 ) :
   Void {
   exact positive_circle_power_not_null_homotopic(
@@ -104,8 +104,8 @@ def homotopic_to_positive_power_not_null(
 // type. Applying this to polynomials still needs the geometric circle/disk
 // comparison and the leading-term homotopy; neither is assumed as an axiom.
 def positive_degree_no_contractible_extension(
-  n : Nat, X : U1, center : X, contraction : (forall x : X, x = center), boundary : S1 -> X,
-  value : X -> S1, comparison : (forall x : S1, value(boundary(x)) = circle_power_map(succ(n), x))
+  n : Nat, X : U1, center : X, contraction : (forall x : X. x = center), boundary : S1 -> X,
+  value : X -> S1, comparison : (forall x : S1. value(boundary(x)) = circle_power_map(succ(n), x))
 ) :
   Void {
   exact homotopic_to_positive_power_not_null(
@@ -127,7 +127,7 @@ def positive_loop_not_null(n : Nat, null : positive_loops(succ(n)) = refl(base))
   exact positive_winding_loop_not_null(n, positive_loops(succ(n)), winding_positive(succ(n)), null);
 }
 
-def circle_not_contractible(point : S1, contraction : (forall x : S1, x = point)) : Void {
+def circle_not_contractible(point : S1, contraction : (forall x : S1. x = point)) : Void {
   exact positive_loop_not_null(
     0,
     trans(
@@ -138,8 +138,8 @@ def circle_not_contractible(point : S1, contraction : (forall x : S1, x = point)
 }
 
 def circle_no_retraction_from_contractible(
-  X : U1, center : X, contraction : (forall x : X, x = center), boundary : S1 -> X, retraction : X
-  -> S1, retracts : (forall x : S1, retraction(boundary(x)) = x)
+  X : U1, center : X, contraction : (forall x : X. x = center), boundary : S1 -> X, retraction : X
+  -> S1, retracts : (forall x : S1. retraction(boundary(x)) = x)
 ) :
   Void {
   exact circle_not_contractible(

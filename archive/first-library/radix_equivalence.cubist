@@ -27,13 +27,13 @@ def radix_decode_positive(extra : Nat, p : RadixPositive(extra)) :
   );
 }
 
-def radix_nat_positive_decompose(n : Nat) : (1 <= n) -> (exists k : Nat, n = succ(k)) {
-  exact induction n as k return ((1 <= k) -> (exists predecessor : Nat, k = succ(predecessor))) {
+def radix_nat_positive_decompose(n : Nat) : (1 <= n) -> (exists k : Nat. n = succ(k)) {
+  exact induction n as k return ((1 <= k) -> (exists predecessor : Nat. k = succ(predecessor))) {
     zero => fun (impossible : Void) => typed(
-      (exists predecessor : Nat, 0 = succ(predecessor)), absurd(impossible)
+      (exists predecessor : Nat. 0 = succ(predecessor)), absurd(impossible)
     );
     succ previous => fun (positive : 1 <= succ(k)) => typed(
-      (exists predecessor : Nat, succ(k) = succ(predecessor)), (k, refl(succ(k)))
+      (exists predecessor : Nat. succ(k) = succ(predecessor)), (k, refl(succ(k)))
     );
   };
 }
@@ -62,7 +62,7 @@ def radix_leading_not_append(
 }
 
 def RadixPositiveInjectiveAt(extra : Nat, p : RadixPositive(extra)) :=
-  forall q : RadixPositive(extra),
+  forall q : RadixPositive(extra).
   (radix_positive_to_nat(extra, p) = radix_positive_to_nat(extra, q)) -> (p = q);
 
 def radix_leading_injective(extra : Nat, d : RadixDigit(succ(extra)), q : RadixPositive(extra)) :
@@ -210,7 +210,7 @@ def radix_nonzero_injective(extra : Nat, p : RadixPositive(extra), b : RadixNat(
   };
 }
 
-def radix_injective(extra : Nat, a b : RadixNat(extra)) :
+def radix_injective(extra : Nat, a, b : RadixNat(extra)) :
   (radix_to_nat(extra, a) = radix_to_nat(extra, b)) -> (a = b) {
   exact match a as x return ((radix_to_nat(extra, x) = radix_to_nat(extra, b)) -> (x = b)) {
     left zero => radix_zero_injective(extra, zero, b);

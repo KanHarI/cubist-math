@@ -1,7 +1,7 @@
 import artin_evaluation_matrix;
 
-def EmbeddingEvaluationFrame(K L : AlgebraicField, n m : Nat, maps : Fin(n) -> FieldEmbedding(K, L)) :=
-  exists points : Fin(m) -> af_carrier(K),
+def EmbeddingEvaluationFrame(K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L)) :=
+  exists points : Fin(m) -> af_carrier(K).
   LinearInjective(
     L, CoordinateSpace(L, m), CoordinateSpace(L, n),
     family_linear(
@@ -11,7 +11,7 @@ def EmbeddingEvaluationFrame(K L : AlgebraicField, n m : Nat, maps : Fin(n) -> F
   );
 
 def embedding_evaluation_frame_zero(
-  K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
+  K, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
 ) :
   EmbeddingEvaluationFrame(K, L, n, 0, maps) {
   exact (
@@ -23,12 +23,12 @@ def embedding_evaluation_frame_zero(
 // Iterate the checked rank-growth step. Each extension merely chooses its
 // next point, so the final family also remains under propositional truncation.
 def embedding_evaluation_frame_build_step(
-  k : Nat, previous : forall K : AlgebraicField, forall L : AlgebraicField, forall n : Nat,
-  forall m : Nat, forall maps : Fin(n) -> FieldEmbedding(K, L),
+  k : Nat, previous : forall K : AlgebraicField. forall L : AlgebraicField. forall n : Nat.
+  forall m : Nat. forall maps : Fin(n) -> FieldEmbedding(K, L).
   PairwiseDistinctEmbeddings(K, L, n, maps) -> n = add_count(k, m)
   -> EmbeddingEvaluationFrame(K, L, n, m, maps)
-  -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps)), K L : AlgebraicField,
-  n m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps)), K, L : AlgebraicField,
+  n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps), total : n = add_count(succ(k), m),
   frame : EmbeddingEvaluationFrame(K, L, n, m, maps)
 ) :
@@ -66,13 +66,13 @@ def embedding_evaluation_frame_build_step(
 
 def embedding_evaluation_frame_build(fuel : Nat) :=
   induction fuel as k return (
-    forall K : AlgebraicField, forall L : AlgebraicField, forall n : Nat, forall m : Nat,
-    forall maps : Fin(n) -> FieldEmbedding(K, L), PairwiseDistinctEmbeddings(K, L, n, maps)
+    forall K : AlgebraicField. forall L : AlgebraicField. forall n : Nat. forall m : Nat.
+    forall maps : Fin(n) -> FieldEmbedding(K, L). PairwiseDistinctEmbeddings(K, L, n, maps)
     -> n = add_count(k, m) -> EmbeddingEvaluationFrame(K, L, n, m, maps)
     -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps))
   ) {
     zero => fun (
-      K L : AlgebraicField, n m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+      K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
       distinct : PairwiseDistinctEmbeddings(K, L, n, maps), total : n = add_count(0, m),
       frame : EmbeddingEvaluationFrame(K, L, n, m, maps)
     ) => merely(EmbeddingEvaluationFrame(K, L, n, m, maps), frame);
@@ -83,11 +83,11 @@ def embedding_evaluation_frame_build(fuel : Nat) :=
 // whose evaluation vectors form a basis of L^n. No point tuple is selected
 // globally; the matrix and its inverse live in a mere existence statement.
 def distinct_embeddings_evaluation_basis(
-  K L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  K, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps)
 ) :
   Mere(
-    exists points : Fin(n) -> af_carrier(K),
+    exists points : Fin(n) -> af_carrier(K).
     FamilyBasis(
       L, CoordinateSpace(L, n), n,
       (fun (j : Fin(n)) => embedding_evaluation_vector(K, L, n, maps, points(j)))
@@ -107,7 +107,7 @@ def distinct_embeddings_evaluation_basis(
   have make :
     Frame(n)
     -> (
-      exists points : Fin(n) -> af_carrier(K),
+      exists points : Fin(n) -> af_carrier(K).
       FamilyBasis(
         L, CoordinateSpace(L, n), n,
         (fun (j : Fin(n)) => embedding_evaluation_vector(K, L, n, maps, points(j)))
@@ -123,7 +123,7 @@ def distinct_embeddings_evaluation_basis(
   exact mere_map(
     Frame(n),
     (
-      exists points : Fin(n) -> af_carrier(K),
+      exists points : Fin(n) -> af_carrier(K).
       FamilyBasis(
         L, CoordinateSpace(L, n), n,
         (fun (j : Fin(n)) => embedding_evaluation_vector(K, L, n, maps, points(j)))
@@ -145,10 +145,10 @@ def loop_evaluation_vector(
 // postulated automorphism action.
 def distinct_extension_loops_evaluation_basis(
   K : AlgebraicField, E : FieldExt(K), n : Nat, loops : Fin(n) -> (E =[FieldExt(K)] E),
-  distinct : forall i : Fin(n), forall j : Fin(n), loops(i) = loops(j) -> i = j
+  distinct : forall i : Fin(n). forall j : Fin(n). loops(i) = loops(j) -> i = j
 ) :
   Mere(
-    exists points : Fin(n) -> extension_carrier(K, E),
+    exists points : Fin(n) -> extension_carrier(K, E).
     FamilyBasis(
       extension_field(K, E), CoordinateSpace(extension_field(K, E), n), n,
       (fun (j : Fin(n)) => loop_evaluation_vector(K, E, n, loops, points(j)))
@@ -159,16 +159,16 @@ def distinct_extension_loops_evaluation_basis(
   let maps :=
     fun (i : Fin(n)) => galois_field_embedding(K, E, extension_path_iso(K, E, E, loops(i)));
   have mapsDistinct : PairwiseDistinctEmbeddings(F, F, n, maps) {
-    intro i j same;
+    intro i, j, same;
     exact distinct(i, j, extension_loop_embedding_injective(K, E, loops(i), loops(j), same));
   }
   let Source :=
-    exists points : Fin(n) -> extension_carrier(K, E),
+    exists points : Fin(n) -> extension_carrier(K, E).
     FamilyBasis(
       F, C, n, (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
     );
   let Target :=
-    exists points : Fin(n) -> extension_carrier(K, E),
+    exists points : Fin(n) -> extension_carrier(K, E).
     FamilyBasis(F, C, n, (fun (j : Fin(n)) => loop_evaluation_vector(K, E, n, loops, points(j))));
   have convert : Source -> Target {
     intro witness;

@@ -1,25 +1,25 @@
 import interval_tag_bounds;
 import sample_tagged;
 
-def IntervalAdmissibleTags(F : U1, zero one : F, lt : F -> F -> U0, n : Nat) :=
+def IntervalAdmissibleTags(F : U1, zero, one : F, lt : F -> F -> U0, n : Nat) :=
   SampleTagged(FieldUnitInterval(F, zero, one, lt), IntervalTagWithin(F, zero, one, lt), n);
 
 def IntervalMeshBelow(
-  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F, n : Nat
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F, n : Nat
 ) :=
   SampleAdjacent(
     FieldUnitInterval(F, zero, one, lt),
     (
-      fun (a b : FieldUnitInterval(F, zero, one, lt)) => lt(
+      fun (a, b : FieldUnitInterval(F, zero, one, lt)) => lt(
         interval_difference(F, zero, one, addF, negF, lt, a, b), radius
       )
     ), n
   );
 
 def interval_tag_orders_endpoints(
-  F : U1, zero one : F, addF mulF : F -> F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  a b tag : FieldUnitInterval(F, zero, one, lt),
+  a, b, tag : FieldUnitInterval(F, zero, one, lt),
   within : IntervalTagWithin(F, zero, one, lt, a, b, tag)
 ) :
   FieldLe(
@@ -35,7 +35,7 @@ def interval_tag_orders_endpoints(
 }
 
 def interval_admissible_samples_ordered(
-  F : U1, zero one : F, addF mulF : F -> F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
@@ -44,7 +44,7 @@ def interval_admissible_samples_ordered(
   SampleAdjacent(
     FieldUnitInterval(F, zero, one, lt),
     (
-      fun (a b : FieldUnitInterval(F, zero, one, lt)) => FieldLe(
+      fun (a, b : FieldUnitInterval(F, zero, one, lt)) => FieldLe(
         F, lt, field_interval_coordinate(F, zero, one, lt, a),
         field_interval_coordinate(F, zero, one, lt, b)
       )
@@ -54,9 +54,9 @@ def interval_admissible_samples_ordered(
   let coordinate := field_interval_coordinate(F, zero, one, lt);
   exact sample_tagged_adjacent(
     I, IntervalTagWithin(F, zero, one, lt),
-    (fun (a b : I) => FieldLe(F, lt, coordinate(a), coordinate(b))),
+    (fun (a, b : I) => FieldLe(F, lt, coordinate(a), coordinate(b))),
     (
-      fun (a b tag : I) => interval_tag_orders_endpoints(
+      fun (a, b, tag : I) => interval_tag_orders_endpoints(
         F, zero, one, addF, mulF, lt, arithmetic, a, b, tag
       )
     ), n, vertices, tags, valid
@@ -64,12 +64,12 @@ def interval_admissible_samples_ordered(
 }
 
 def interval_endpoint_tags_admissible(
-  F : U1, zero one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), n : Nat,
+  F : U1, zero, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   ordered : SampleAdjacent(
     FieldUnitInterval(F, zero, one, lt),
     (
-      fun (a b : FieldUnitInterval(F, zero, one, lt)) => FieldLe(
+      fun (a, b : FieldUnitInterval(F, zero, one, lt)) => FieldLe(
         F, lt, field_interval_coordinate(F, zero, one, lt, a),
         field_interval_coordinate(F, zero, one, lt, b)
       )
@@ -86,15 +86,15 @@ def interval_endpoint_tags_admissible(
   ) {
   let I := FieldUnitInterval(F, zero, one, lt);
   let coordinate := field_interval_coordinate(F, zero, one, lt);
-  let related := (fun (a b : I) => FieldLe(F, lt, coordinate(a), coordinate(b)));
+  let related := (fun (a, b : I) => FieldLe(F, lt, coordinate(a), coordinate(b)));
   have leftAllowed :
-    forall a : I, forall b : I, related(a, b) -> IntervalTagWithin(F, zero, one, lt, a, b, a) {
-    intro a b ab;
+    forall a : I. forall b : I. related(a, b) -> IntervalTagWithin(F, zero, one, lt, a, b, a) {
+    intro a, b, ab;
     exact (order_le_refl(F, lt, order, coordinate(a)), ab);
   }
   have rightAllowed :
-    forall a : I, forall b : I, related(a, b) -> IntervalTagWithin(F, zero, one, lt, a, b, b) {
-    intro a b ab;
+    forall a : I. forall b : I. related(a, b) -> IntervalTagWithin(F, zero, one, lt, a, b, b) {
+    intro a, b, ab;
     exact (ab, order_le_refl(F, lt, order, coordinate(b)));
   }
   exact (

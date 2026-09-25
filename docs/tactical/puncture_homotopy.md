@@ -40,7 +40,7 @@ particular, removing points from a set type does not create identity loops.
 ```text
 def every_puncture_loop_generated(
   n : Nat, p : bouquet_base(Fin(n)) = bouquet_base(Fin(n))) :
-  Mere(exists word : Word(Fin(n)),
+  Mere(exists word : Word(Fin(n)).
     eval_word(Fin(n), PunctureGraph(n), bouquet_base(Fin(n)),
       puncture_loop(n), word) = p)
 ```

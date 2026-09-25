@@ -190,28 +190,30 @@ def double(n : Nat) := n + n;
 def wrong_argument := double(tt);  // Error: Type mismatch: found Unit, expected Nat.</code></pre>
             <p>The argument <code>tt</code> has type <code>Unit</code>, but <code>double</code> takes a <code>Nat</code>.</p>
             <h3 id="tour-parameters">Several parameters</h3>
-            <p>A function can take several parameters, separated by commas, and <code>f(a, b)</code> applies it to all of them. Consecutive parameters of the same type can share it: <code>(m n : Nat)</code> means <code>(m : Nat, n : Nat)</code>. The same works in <code>fun</code>:</p>
+            <p>A function can take several parameters, separated by commas, and <code>f(a, b)</code> applies it to all of them. Consecutive parameters of the same type can share it: <code>(m, n : Nat)</code> means <code>(m : Nat, n : Nat)</code>. The same works in <code>fun</code>:</p>
             <pre><code data-check="accept">import naturals;
 
 def sum(m : Nat, n : Nat) := m + n;
 
-def sum_again(m n : Nat) := m + n;
+def sum_again(m, n : Nat) := m + n;
 
-def sum_fun := fun (m n : Nat) =&gt; m + n;
+def sum_fun := fun (m, n : Nat) =&gt; m + n;
 
 evaluate sum(3, 4) expecting 7;
 evaluate sum_again(3, 4) expecting 7;
 evaluate sum_fun(3, 4) expecting 7;</code></pre>
+            <p>The comma between names is required:</p>
+            <pre><code data-check="reject">def sum_spaced(m n : Nat) := m + n;  // Error: Separate names with commas: (n, m : Nat)</code></pre>
             <p>A function of two numbers has type <code>Nat -> Nat -> Nat</code>: given <code>m</code>, it returns a function that waits for <code>n</code>. So arguments can be supplied a few at a time, and <code>sum(3)</code> is the function that adds <code>3</code>:</p>
             <pre><code data-check="accept">import naturals;
 
-def sum(m n : Nat) := m + n;
+def sum(m, n : Nat) := m + n;
 
 def add_three := sum(3);
 
 evaluate add_three(4) expecting 7;</code></pre>
             <h3 id="tour-intro">Functions in a block: <code>intro</code></h3>
-            <p>A function can also be built in a block, like any other value. When the type to give is a function type <code>A -> B</code>, <code>intro a;</code> takes the input: it names it <code>a</code>, of type <code>A</code>, and what remains to give is a value of <code>B</code>, which can use <code>a</code>. With several names, <code>intro</code> takes several inputs at once:</p>
+            <p>A function can also be built in a block, like any other value. When the type to give is a function type <code>A -> B</code>, <code>intro a;</code> takes the input: it names it <code>a</code>, of type <code>A</code>, and what remains to give is a value of <code>B</code>, which can use <code>a</code>. With several names, separated by commas, <code>intro</code> takes several inputs at once:</p>
             <pre><code data-check="accept">import naturals;
 
 def double : Nat -&gt; Nat {
@@ -220,7 +222,7 @@ def double : Nat -&gt; Nat {
 }
 
 def sum : Nat -&gt; Nat -&gt; Nat {
-  intro m n;      // m : Nat and n : Nat; what remains to give is a Nat
+  intro m, n;     // m : Nat and n : Nat; what remains to give is a Nat
   exact m + n;
 }
 
@@ -278,43 +280,46 @@ def wrong_sum : 2 + 2 = 5 {
           </section>
           <section id="tour-dependent">
             <h2>Dependent types: <code>forall</code> and <code>exists</code></h2>
-            <p>A function’s result type can depend on its argument. <code>forall x : A, B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not.</p>
+            <p>A function’s result type can depend on its argument. <code>forall x : A. B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not. The dot ends the type of <code>x</code>, and the body follows it. Several names can share the type, as parameters do: <code>forall x, y : A. B</code>.</p>
             <pre><code data-check="accept">// `and` binds tighter than `-&gt;`, so `A -&gt; A and A` means `A -&gt; (A and A)`.
-def duplicate : forall A : U0, A -&gt; A and A {
+def duplicate : forall A : U0. A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, a);
 }
 
 // The same function, built with intro.
-def duplicate_again : forall A : U0, A -&gt; A and A {
-  intro A a;      // A : U0 and a : A; what remains to give is A and A
+def duplicate_again : forall A : U0. A -&gt; A and A {
+  intro A, a;     // A : U0 and a : A; what remains to give is A and A
   exact (a, a);
 }
 
 def one_one := duplicate(Nat, 1);</code></pre>
-            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type; <code>intro A a;</code> takes the two inputs of <code>duplicate_again</code> in the same order. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type the argument chose:</p>
-            <pre><code data-check="reject">def duplicate : forall A : U0, A -&gt; A and A {
+            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type; <code>intro A, a;</code> takes the two inputs of <code>duplicate_again</code> in the same order. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type the argument chose:</p>
+            <pre><code data-check="reject">def duplicate : forall A : U0. A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, 0);  // Error: Type mismatch: found Nat, expected A.
 }</code></pre>
+            <p>A comma cannot end the type. In a parameter list such as <code>(P : Nat -> U0, f : forall n : Nat. P(n))</code>, a comma separates parameters, so it would read as the start of the next one:</p>
+            <pre><code data-check="reject">// Error: End forall's type with a dot: forall n : Nat. P(n)
+def identity_on_nat : forall n : Nat, Nat := fun (n : Nat) =&gt; n;</code></pre>
             <p>A <code>forall</code> type is itself a value, like every type. Compare a function that builds a type with a single type that quantifies over all types:</p>
             <pre><code data-check="accept">def Twice(A : U0) := A and A;
 
 def AlsoTwice : U1 {
-  exact forall A : U0, A and A;
+  exact forall A : U0. A and A;
 }</code></pre>
             <p><code>Twice</code> is a function from types to types: <code>Twice(Nat)</code> is <code>Nat and Nat</code>. <code>AlsoTwice</code> is one type: the type of functions that give a pair of values in every type. It quantifies over all of <code>U0</code>, so it lives in the next universe, <code>U1</code>. It has no values, because <code>Void</code> has no pair of values.</p>
-            <p><code>exists x : A, B</code> is the type of pairs whose second component’s type depends on the first: a value <code>x : A</code>, together with a value of <code>B</code> for that <code>x</code>.</p>
-            <pre><code data-check="accept">def pointed : exists A : U0, A {
+            <p><code>exists x : A. B</code> is the type of pairs whose second component’s type depends on the first: a value <code>x : A</code>, together with a value of <code>B</code> for that <code>x</code>.</p>
+            <pre><code data-check="accept">def pointed : exists A : U0. A {
   exact (Nat, 3);
 }
 
-def two_of_a_kind : exists A : U0, A and A {
+def two_of_a_kind : exists A : U0. A and A {
   exact (Nat, (1, 2));
 }</code></pre>
             <p>The first component decides the type of the second:</p>
-            <pre><code data-check="reject">def pointed : exists A : U0, A {
+            <pre><code data-check="reject">def pointed : exists A : U0. A {
   exact (Nat, tt);  // Error: Type mismatch: found Unit, expected Nat.
 }</code></pre>
-            <p>Read as statements, <code>forall</code> and <code>exists</code> are the quantifiers “for all” and “there exists”. A value of <code>exists n : Nat, P(n)</code> is a witness <code>n</code> together with evidence that <code>P(n)</code> holds. The <a href="first-proof.html#first-proof">next chapter</a> proves a first statement with both: <code>forall n : Nat, exists m : Nat, lt(n, m)</code>, every number has a greater one.</p>
+            <p>Read as statements, <code>forall</code> and <code>exists</code> are the quantifiers “for all” and “there exists”. A value of <code>exists n : Nat. P(n)</code> is a witness <code>n</code> together with evidence that <code>P(n)</code> holds. The <a href="first-proof.html#first-proof">next chapter</a> proves a first statement with both: <code>forall n : Nat. exists m : Nat. lt(n, m)</code>, every number has a greater one.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">

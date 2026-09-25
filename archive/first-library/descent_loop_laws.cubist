@@ -6,27 +6,27 @@ import loop_words;
 def descended_loop_map_laws(
   C : U1, X : U0, point : X, G : U1, setG : FieldSet(G), unit : G, multiply : G -> G -> G,
   present : C -> (point = point),
-  covered : (forall p : point = point, FieldExists(exists c : C, present(c) = p)), value : C -> G,
-  period : (point = point) -> G, computes : (forall c : C, period(present(c)) = value(c)),
+  covered : (forall p : point = point. FieldExists(exists c : C. present(c) = p)), value : C -> G,
+  period : (point = point) -> G, computes : (forall c : C. period(present(c)) = value(c)),
   constant : C, constantPath : present(constant) = refl(point),
   constantValue : value(constant) = unit, join : C -> C -> C,
-  joinPath : (forall c : C, forall d : C, present(join(c, d)) = trans(present(c), present(d))),
-  joinValue : (forall c : C, forall d : C, value(join(c, d)) = multiply(value(c), value(d)))
+  joinPath : (forall c : C. forall d : C. present(join(c, d)) = trans(present(c), present(d))),
+  joinValue : (forall c : C. forall d : C. value(join(c, d)) = multiply(value(c), value(d)))
 ) :
   LoopMapLaws(X, point, G, unit, multiply, period) {
   have unitLaw : period(refl(point)) = unit := trans(
     sym(cong(period, constantPath)), trans(computes(constant), constantValue)
   );
   have multiplyLaw :
-    forall p : point = point, forall q : point = point,
+    forall p : point = point. forall q : point = point.
     period(trans(p, q)) = multiply(period(p), period(q)) {
-    intro p q;
+    intro p, q;
     let result := period(trans(p, q)) = multiply(period(p), period(q));
     let resultProp := setG(period(trans(p, q)), multiply(period(p), period(q)));
-    have useLeft : (exists c : C, present(c) = p) -> result {
+    have useLeft : (exists c : C. present(c) = p) -> result {
       intro leftRepresentative;
       obtain (c, pathC) := leftRepresentative;
-      have useRight : (exists d : C, present(d) = q) -> result {
+      have useRight : (exists d : C. present(d) = q) -> result {
         intro rightRepresentative;
         obtain (d, pathD) := rightRepresentative;
         have joined : present(join(c, d)) = trans(p, q) := trans(
@@ -53,10 +53,10 @@ def descended_loop_map_laws(
         );
       }
       exact field_exists_elim(
-        (exists d : C, present(d) = q), result, resultProp, useRight, covered(q)
+        (exists d : C. present(d) = q), result, resultProp, useRight, covered(q)
       );
     }
-    exact field_exists_elim((exists c : C, present(c) = p), result, resultProp, useLeft, covered(p));
+    exact field_exists_elim((exists c : C. present(c) = p), result, resultProp, useLeft, covered(p));
   }
   exact (unitLaw, multiplyLaw);
 }

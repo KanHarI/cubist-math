@@ -4,43 +4,43 @@ import order_maps;
 
 // Families may be indexed in U1, since the collection of small subsets is
 // itself large. The union uses the existing U1 truncation signature explicitly.
-def PredicateUnion(I : U1, A : U0, P : I -> A -> U0, x : A) := FieldExists(exists i : I, P(i, x));
+def PredicateUnion(I : U1, A : U0, P : I -> A -> U0, x : A) := FieldExists(exists i : I. P(i, x));
 
 def PredicateChain(I : U1, A : U0, P : I -> A -> U0) :=
-  forall i : I, forall j : I,
+  forall i : I. forall j : I.
   FieldOr(PredicateIncluded(A, P(i), P(j)), PredicateIncluded(A, P(j), P(i)));
 
 def PredicateDirected(I : U1, A : U0, P : I -> A -> U0) :=
-  forall i : I, forall j : I,
-  FieldExists(exists k : I, PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k)));
+  forall i : I. forall j : I.
+  FieldExists(exists k : I. PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k)));
 
 def predicate_union_prop(I : U1, A : U0, P : I -> A -> U0, x : A) :=
-  field_exists_prop(exists i : I, P(i, x));
+  field_exists_prop(exists i : I. P(i, x));
 
 def predicate_union_upper(I : U1, A : U0, P : I -> A -> U0, i : I) :
   PredicateIncluded(A, P(i), PredicateUnion(I, A, P)) {
-  intro x member;
-  exact field_exists_intro((exists j : I, P(j, x)), typed((exists j : I, P(j, x)), (i, member)));
+  intro x, member;
+  exact field_exists_intro((exists j : I. P(j, x)), typed((exists j : I. P(j, x)), (i, member)));
 }
 
 def predicate_union_least(
-  I : U1, A : U0, P : I -> A -> U0, Q : A -> U0, propQ : (forall x : A, Proposition(Q(x))),
-  included : (forall i : I, PredicateIncluded(A, P(i), Q))
+  I : U1, A : U0, P : I -> A -> U0, Q : A -> U0, propQ : (forall x : A. Proposition(Q(x))),
+  included : (forall i : I. PredicateIncluded(A, P(i), Q))
 ) :
   PredicateIncluded(A, PredicateUnion(I, A, P), Q) {
-  intro x member;
-  have fromMember : (exists i : I, P(i, x)) -> Q(x) {
+  intro x, member;
+  have fromMember : (exists i : I. P(i, x)) -> Q(x) {
     intro witness;
     obtain (i, hx) := witness;
     exact included(i, x, hx);
   }
-  exact field_exists_elim((exists i : I, P(i, x)), Q(x), propQ(x), fromMember, member);
+  exact field_exists_elim((exists i : I. P(i, x)), Q(x), propQ(x), fromMember, member);
 }
 
 def predicate_chain_directed(I : U1, A : U0, P : I -> A -> U0, chain : PredicateChain(I, A, P)) :
   PredicateDirected(I, A, P) {
-  intro i j;
-  let Upper := exists k : I, PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k));
+  intro i, j;
+  let Upper := exists k : I. PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k));
   let Either := PredicateIncluded(A, P(i), P(j)) or PredicateIncluded(A, P(j), P(i));
   have chooseUpper : Either -> FieldExists(Upper) {
     intro comparison;
@@ -61,7 +61,7 @@ def predicate_chain_directed(I : U1, A : U0, P : I -> A -> U0, chain : Predicate
 // A finite list in a directed union lies in one family member. A seed handles
 // the empty list; without it an empty family would have no covering member.
 def FiniteFamilyCover(I : U1, A : U0, P : I -> A -> U0, n : Nat, v : Fin(n) -> A) :=
-  exists j : I, forall i : Fin(n), P(j, v(i));
+  exists j : I. forall i : Fin(n). P(j, v(i));
 
 def finite_cover_step(
   I : U1, A : U0, P : I -> A -> U0, directed : PredicateDirected(I, A, P), n : Nat, v : Fin(succ(n))
@@ -71,18 +71,18 @@ def finite_cover_step(
   FieldExists(FiniteFamilyCover(I, A, P, succ(n), v)) {
   let Cover := FiniteFamilyCover(I, A, P, succ(n), v);
   let h := finite_head(A, n, v);
-  have fromHead : (exists i : I, P(i, h)) -> FieldExists(Cover) {
+  have fromHead : (exists i : I. P(i, h)) -> FieldExists(Cover) {
     intro headWitness;
     obtain (i, headInI) := headWitness;
     have fromTail : FiniteFamilyCover(I, A, P, n, finite_tail(A, n, v)) -> FieldExists(Cover) {
       intro tailWitness;
       obtain (j, tailInJ) := tailWitness;
       let Upper :=
-        exists k : I, PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k));
+        exists k : I. PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k));
       have fromUpper : Upper -> FieldExists(Cover) {
         intro upperWitness;
         obtain (k, ik, jk) := upperWitness;
-        have allMembers : forall index : Fin(succ(n)), P(k, v(index)) {
+        have allMembers : forall index : Fin(succ(n)). P(k, v(index)) {
           intro index;
           exact match index as z return P(k, v(z)) {
             left u => (
@@ -105,7 +105,7 @@ def finite_cover_step(
     );
   }
   exact field_exists_elim(
-    (exists i : I, P(i, h)), FieldExists(Cover), field_exists_prop(Cover), fromHead, headMember
+    (exists i : I. P(i, h)), FieldExists(Cover), field_exists_prop(Cover), fromHead, headMember
   );
 }
 
@@ -113,10 +113,10 @@ def finite_directed_union_cover(
   I : U1, A : U0, P : I -> A -> U0, directed : PredicateDirected(I, A, P), seed : I, n : Nat
 ) :=
   induction n as k return (
-    forall v : Fin(k) -> A, (forall i : Fin(k), PredicateUnion(I, A, P, v(i)))
+    forall v : Fin(k) -> A. (forall i : Fin(k). PredicateUnion(I, A, P, v(i)))
     -> FieldExists(FiniteFamilyCover(I, A, P, k, v))
   ) {
-    zero => fun (v : Fin(0) -> A, members : (forall i : Fin(0), PredicateUnion(I, A, P, v(i)))) => field_exists_intro(
+    zero => fun (v : Fin(0) -> A, members : (forall i : Fin(0). PredicateUnion(I, A, P, v(i)))) => field_exists_intro(
       FiniteFamilyCover(I, A, P, 0, v),
       typed(
         FiniteFamilyCover(I, A, P, 0, v),
@@ -124,7 +124,7 @@ def finite_directed_union_cover(
       )
     );
     succ previous => fun (
-      v : Fin(succ(k)) -> A, members : (forall i : Fin(succ(k)), PredicateUnion(I, A, P, v(i)))
+      v : Fin(succ(k)) -> A, members : (forall i : Fin(succ(k)). PredicateUnion(I, A, P, v(i)))
     ) => finite_cover_step(
       I, A, P, directed, k, v, members(typed(Fin(succ(k)), left(tt))),
       previous(finite_tail(A, k, v), (fun (i : Fin(k)) => members(typed(Fin(succ(k)), right(i)))))

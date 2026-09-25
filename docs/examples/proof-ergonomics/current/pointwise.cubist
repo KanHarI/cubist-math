@@ -1,23 +1,23 @@
 // A pointwise proof becomes a function path by swapping term and interval binders.
 // No function-extensionality axiom is introduced.
-def pointwise_path(A : U0, B : U0, f : A -> B, g : A -> B, h : (forall x : A, f(x) = g(x))) : f = g {
+def pointwise_path(A : U0, B : U0, f : A -> B, g : A -> B, h : (forall x : A. f(x) = g(x))) : f = g {
   exact path(fun (i : Interval) => A -> B, fun (i : Interval) => fun (x : A) => at(h(x), i));
 }
 
 // The same construction works for dependent sections in a fixed family.
 def pointwise_section_path(
-  A : U0, C : A -> U0, f : (forall x : A, C(x)), g : (forall x : A, C(x)),
-  h : (forall x : A, f(x) = g(x))
+  A : U0, C : A -> U0, f : (forall x : A. C(x)), g : (forall x : A. C(x)),
+  h : (forall x : A. f(x) = g(x))
 ) :
   f = g {
   exact path(
-    fun (i : Interval) => forall x : A, C(x), fun (i : Interval) => fun (x : A) => at(h(x), i)
+    fun (i : Interval) => forall x : A. C(x), fun (i : Interval) => fun (x : A) => at(h(x), i)
   );
 }
 
 // The pointwise witness survives evaluation, rather than being replaced by refl.
 def pointwise_evaluation(
-  A : U0, B : U0, f : A -> B, g : A -> B, h : (forall x : A, f(x) = g(x)), x : A
+  A : U0, B : U0, f : A -> B, g : A -> B, h : (forall x : A. f(x) = g(x)), x : A
 ) :
   cong(fun (k : A -> B) => k(x), pointwise_path(A, B, f, g, h)) = h(x) {
   exact refl(h(x));
@@ -26,7 +26,7 @@ def pointwise_evaluation(
 // A homotopy's naturality square retains all four edges as checked boundaries.
 // j varies the homotopy; i varies the supplied base path p.
 def naturality_square(
-  A : U0, B : U0, f : A -> B, g : A -> B, H : (forall a : A, f(a) = g(a)), x : A, y : A, p : x = y
+  A : U0, B : U0, f : A -> B, g : A -> B, H : (forall a : A. f(a) = g(a)), x : A, y : A, p : x = y
 ) :
   PathP(fun (j : Interval) => at(H(x), j) = at(H(y), j), cong(f, p), cong(g, p)) {
   exact path(

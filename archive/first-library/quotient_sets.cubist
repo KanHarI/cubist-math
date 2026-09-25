@@ -3,13 +3,13 @@ import identity_systems;
 
 // Pointwise logical comparison of two class predicates is a proposition.
 // This is smaller than choosing a path between the predicates.
-def QuotientComparison(A : U1, relation : A -> A -> U0, q r : SetQuotient(A, relation)) :=
-  forall a : A,
+def QuotientComparison(A : U1, relation : A -> A -> U0, q, r : SetQuotient(A, relation)) :=
+  forall a : A.
   FieldIff(quotient_predicate(A, relation, q, a), quotient_predicate(A, relation, r, a));
 
 def quotient_comparison_prop(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
-  q r : SetQuotient(A, relation)
+  q, r : SetQuotient(A, relation)
 ) :
   FieldProp(QuotientComparison(A, relation, q, r)) {
   let P := quotient_predicate(A, relation, q);
@@ -33,7 +33,7 @@ def quotient_comparison_prop(
 }
 
 def quotient_path_comparison(
-  A : U1, relation : A -> A -> U0, q r : SetQuotient(A, relation), p : q = r
+  A : U1, relation : A -> A -> U0, q, r : SetQuotient(A, relation), p : q = r
 ) :
   QuotientComparison(A, relation, q, r) {
   intro a;
@@ -46,7 +46,7 @@ def quotient_path_comparison(
 
 def quotient_comparison_path(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
-  q r : SetQuotient(A, relation), same : QuotientComparison(A, relation, q, r)
+  q, r : SetQuotient(A, relation), same : QuotientComparison(A, relation, q, r)
 ) :
   q = r {
   exact quotient_ext(
@@ -64,13 +64,13 @@ def quotient_comparison_path(
 def quotient_is_set(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation)) :
   FieldSet(SetQuotient(A, relation)) {
   let choose :=
-    fun (q r : SetQuotient(A, relation), p : q = r) => quotient_comparison_path(
+    fun (q, r : SetQuotient(A, relation), p : q = r) => quotient_comparison_path(
       A, relation, laws, q, r, quotient_path_comparison(A, relation, q, r, p)
     );
   exact constant_paths_are_set(
     SetQuotient(A, relation), choose,
     (
-      fun (q r : SetQuotient(A, relation), p s : q = r) => cong(
+      fun (q, r : SetQuotient(A, relation), p, s : q = r) => cong(
         quotient_comparison_path(A, relation, laws, q, r),
         quotient_comparison_prop(
           A, relation, laws, q, r, quotient_path_comparison(A, relation, q, r, p),
@@ -83,14 +83,14 @@ def quotient_is_set(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(
 
 // Dependent functions into sets are a set. The square is pointwise: both
 // path coordinates are retained, rather than postulating proof irrelevance.
-def dependent_functions_are_set(A : U1, B : A -> U1, setB : (forall a : A, FieldSet(B(a)))) :
-  FieldSet(forall a : A, B(a)) {
-  intro f g p q;
+def dependent_functions_are_set(A : U1, B : A -> U1, setB : (forall a : A. FieldSet(B(a)))) :
+  FieldSet(forall a : A. B(a)) {
+  intro f, g, p, q;
   exact path j => path(
-    fun (i : Interval) => forall a : A, B(a),
+    fun (i : Interval) => forall a : A. B(a),
     fun (i : Interval, a : A) => setB(
-      a, f(a), g(a), cong((fun (h : (forall a : A, B(a))) => h(a)), p),
-      cong((fun (h : (forall a : A, B(a))) => h(a)), q)
+      a, f(a), g(a), cong((fun (h : (forall a : A. B(a))) => h(a)), p),
+      cong((fun (h : (forall a : A. B(a))) => h(a)), q)
     ) @ j @ i
   );
 }

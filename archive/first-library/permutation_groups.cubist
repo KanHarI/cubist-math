@@ -3,9 +3,9 @@ import quotient_sets;
 
 // Permutations of a set form a group. Multiplication is ordinary function
 // composition: (f * g)(a) = f(g(a)), with the right factor acting first.
-def permutation_multiply(A : U0, f g : Bijection(A, A)) := compose_bijection(A, A, A, g, f);
+def permutation_multiply(A : U0, f, g : Bijection(A, A)) := compose_bijection(A, A, A, g, f);
 
-def bijections_are_set(A B : U0, setA : IsSet(A), setB : IsSet(B)) : IsSet(Bijection(A, B)) {
+def bijections_are_set(A, B : U0, setA : IsSet(A), setB : IsSet(B)) : IsSet(Bijection(A, B)) {
   exact subtype_is_set(
     A -> B, InverseData(A, B),
     dependent_functions_are_set(A, (fun (a : A) => typed(U1, B)), (fun (a : A) => setB)),
@@ -14,8 +14,8 @@ def bijections_are_set(A B : U0, setA : IsSet(A), setB : IsSet(B)) : IsSet(Bijec
 }
 
 def permutation_ext(
-  A : U0, setA : IsSet(A), f g : Bijection(A, A),
-  same : (forall a : A, forward(A, A, f, a) = forward(A, A, g, a))
+  A : U0, setA : IsSet(A), f, g : Bijection(A, A),
+  same : (forall a : A. forward(A, A, f, a) = forward(A, A, g, a))
 ) :
   f = g {
   exact bijection_ext(
@@ -24,7 +24,7 @@ def permutation_ext(
   );
 }
 
-def permutation_associative(A : U0, setA : IsSet(A), f g h : Bijection(A, A)) :
+def permutation_associative(A : U0, setA : IsSet(A), f, g, h : Bijection(A, A)) :
   permutation_multiply(A, permutation_multiply(A, f, g), h) = permutation_multiply(
     A, f, permutation_multiply(A, g, h)
   ) {
@@ -75,7 +75,7 @@ def permutation_group_laws(A : U0, setA : IsSet(A)) :
     (
       fun (f : Bijection(A, A)) => typed(
         (
-          exists g : Bijection(A, A),
+          exists g : Bijection(A, A).
           GroupInverseLaws(Bijection(A, A), identity_bijection(A), permutation_multiply(A), f, g)
         ),
         (
@@ -101,13 +101,13 @@ def point_stabilizer_laws(A : U0, setA : IsSet(A), a : A) :
   exact (
     (fun (f : Bijection(A, A)) => setA(forward(A, A, f, a), a)), refl(a),
     (
-      fun (f g : Bijection(A, A), hf : FixesPoint(A, a, f), hg : FixesPoint(A, a, g)) => trans(
+      fun (f, g : Bijection(A, A), hf : FixesPoint(A, a, f), hg : FixesPoint(A, a, g)) => trans(
         cong(forward(A, A, f), hg), hf
       )
     ),
     (
       fun (
-        f g : Bijection(A, A), hf : FixesPoint(A, a, f),
+        f, g : Bijection(A, A), hf : FixesPoint(A, a, f),
         inverseLaw : permutation_multiply(A, g, f) = identity_bijection(A)
       ) => trans(
         sym(cong(forward(A, A, g), hf)),
@@ -121,7 +121,7 @@ def PointStabilizer(A : U0, setA : IsSet(A), a : A) :=
   typed(Subgroup(PermutationGroup(A, setA)), (FixesPoint(A, a), point_stabilizer_laws(A, setA, a)));
 
 // Conjugation in this group really is the usual permutation action.
-def permutation_conjugate_apply(A : U0, setA : IsSet(A), g f : Bijection(A, A), a : A) :
+def permutation_conjugate_apply(A : U0, setA : IsSet(A), g, f : Bijection(A, A), a : A) :
   forward(A, A, group_conjugate(PermutationGroup(A, setA), g, f), a) = forward(
     A, A, g, forward(A, A, f, backward(A, A, g, a))
   ) {

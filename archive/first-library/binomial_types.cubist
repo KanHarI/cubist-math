@@ -14,26 +14,26 @@ def Truth(b : Bool) := match b return U0 {
     right u => Void;
   };
 
-def Selected(A : U0, p : A -> Bool) := exists a : A, Truth(p(a));
+def Selected(A : U0, p : A -> Bool) := exists a : A. Truth(p(a));
 
 // Rijke's binomial type: decidable subtypes merely equivalent to B.
-def Binomial(A B : U0) := exists p : A -> Bool, Mere(Equiv(U0, B, Selected(A, p)));
+def Binomial(A, B : U0) := exists p : A -> Bool. Mere(Equiv(U0, B, Selected(A, p)));
 
 // An internal presentation convenient for finite sets; the bridge below checks
 // that using full equivalences or bijections gives equivalent binomial types.
-def FiniteBinomial(n k : Nat) :=
-  exists p : Fin(n) -> Bool, Mere(Bijection(Fin(k), Selected(Fin(n), p)));
+def FiniteBinomial(n, k : Nat) :=
+  exists p : Fin(n) -> Bool. Mere(Bijection(Fin(k), Selected(Fin(n), p)));
 
 def truth_prop(b : Bool) := match b as c return Proposition(Truth(c)) {
-    left u => fun (x y : Unit) => trans(sym(unit_equal(x)), unit_equal(y));
-    right u => fun (x y : Void) => typed((x = y), absurd(x));
+    left u => fun (x, y : Unit) => trans(sym(unit_equal(x)), unit_equal(y));
+    right u => fun (x, y : Void) => typed((x = y), absurd(x));
   };
 
-def void_prop(x y : Void) := typed((x = y), absurd(x));
+def void_prop(x, y : Void) := typed((x = y), absurd(x));
 
 def selected_decidable(
-  A : U0, decide : (forall x : A, forall y : A, Decidable(x = y)), p : A -> Bool,
-  u v : Selected(A, p)
+  A : U0, decide : (forall x : A. forall y : A. Decidable(x = y)), p : A -> Bool,
+  u, v : Selected(A, p)
 ) :
   Decidable(u = v) {
   let P := fun (x : A) => Truth(p(x));
@@ -49,32 +49,32 @@ def selected_decidable(
   }
 }
 
-def selected_is_set(A : U0, decide : (forall x : A, forall y : A, Decidable(x = y)), p : A -> Bool) :
+def selected_is_set(A : U0, decide : (forall x : A. forall y : A. Decidable(x = y)), p : A -> Bool) :
   IsSet(Selected(A, p)) {
   exact hedberg(Selected(A, p), selected_decidable(A, decide, p));
 }
 
-def subtype_map(A : U0, P Q : A -> U0, f : (forall x : A, P(x) -> Q(x)), u : (exists x : A, P(x))) :=
+def subtype_map(A : U0, P, Q : A -> U0, f : (forall x : A. P(x) -> Q(x)), u : (exists x : A. P(x))) :=
   typed(
-    (exists x : A, Q(x)), (sigma_first(A, P, u), f(sigma_first(A, P, u), sigma_second(A, P, u)))
+    (exists x : A. Q(x)), (sigma_first(A, P, u), f(sigma_first(A, P, u), sigma_second(A, P, u)))
   );
 
 def subtype_bijection(
-  A : U0, P Q : A -> U0, propP : (forall x : A, Proposition(P(x))),
-  propQ : (forall x : A, Proposition(Q(x))), f : (forall x : A, P(x) -> Q(x)),
-  g : (forall x : A, Q(x) -> P(x))
+  A : U0, P, Q : A -> U0, propP : (forall x : A. Proposition(P(x))),
+  propQ : (forall x : A. Proposition(Q(x))), f : (forall x : A. P(x) -> Q(x)),
+  g : (forall x : A. Q(x) -> P(x))
 ) :
-  Bijection((exists x : A, P(x)), (exists x : A, Q(x))) {
+  Bijection((exists x : A. P(x)), (exists x : A. Q(x))) {
   exact (
     subtype_map(A, P, Q, f), subtype_map(A, Q, P, g),
     (
-      fun (u : (exists x : A, P(x))) => subtype_ext(
+      fun (u : (exists x : A. P(x))) => subtype_ext(
         A, P, propP, subtype_map(A, Q, P, g, subtype_map(A, P, Q, f, u)), u,
         refl(sigma_first(A, P, u))
       )
     ),
     (
-      fun (v : (exists x : A, Q(x))) => subtype_ext(
+      fun (v : (exists x : A. Q(x))) => subtype_ext(
         A, Q, propQ, subtype_map(A, P, Q, f, subtype_map(A, Q, P, g, v)), v,
         refl(sigma_first(A, Q, v))
       )
@@ -82,7 +82,7 @@ def subtype_bijection(
   );
 }
 
-def finite_binomial_presentation(n k : Nat) :
+def finite_binomial_presentation(n, k : Nat) :
   Bijection(Binomial(Fin(n), Fin(k)), FiniteBinomial(n, k)) {
   exact subtype_bijection(
     Fin(n) -> Bool, (fun (p : Fin(n) -> Bool) => Mere(Equiv(U0, Fin(k), Selected(Fin(n), p)))),
@@ -117,9 +117,9 @@ def predicate_eta(A : U0, p : (Unit or A) -> Bool) : predicate_normal(A, p) = p 
   exact function_join_split_point(A, Bool, p)(x);
 }
 
-def type_path_bijection(A B : U0, path : A = B) :=
+def type_path_bijection(A, B : U0, path : A = B) :=
   path_induction(
-    U0, (fun (X Y : U0, q : X = Y) => Bijection(X, Y)), (fun (X : U0) => identity_bijection(X)), A,
+    U0, (fun (X, Y : U0, q : X = Y) => Bijection(X, Y)), (fun (X : U0) => identity_bijection(X)), A,
     B, path
   );
 
@@ -129,14 +129,14 @@ def selected_normalize(A : U0, p : (Unit or A) -> Bool) :=
     sym(cong(Selected(Unit or A), predicate_eta(A, p)))
   );
 
-def cardinal_compose(A B C : U0, h : Mere(Bijection(A, B)), e : Bijection(B, C)) :=
+def cardinal_compose(A, B, C : U0, h : Mere(Bijection(A, B)), e : Bijection(B, C)) :=
   mere_map(
     Bijection(A, B), Bijection(A, C),
     (fun (d : Bijection(A, B)) => compose_bijection(A, B, C, d, e)), h
   );
 
 def cancel_unit_bijection(
-  A B : U0, decide : (forall x : B, forall y : B, Decidable(x = y)),
+  A, B : U0, decide : (forall x : B. forall y : B. Decidable(x = y)),
   e : Bijection(Unit or A, Unit or B)
 ) :
   Bijection(A, B) {
@@ -176,7 +176,7 @@ def selected_true_in(A : U0, p : A -> Bool, x : Unit or Selected(A, p)) :=
 
 def selected_true_index_path(A : U0, p : A -> Bool, x : Unit or A) :=
   match x as z return (
-    forall h : Truth(predicate_join(A, yes, p, z)),
+    forall h : Truth(predicate_join(A, yes, p, z)).
     selected_index(
       Unit or A, predicate_join(A, yes, p), selected_true_in(A, p, selected_true_out_at(A, p, z, h))
     ) = z
@@ -235,7 +235,7 @@ def selected_false_in(A : U0, p : A -> Bool, s : Selected(A, p)) :=
 
 def selected_false_index_path(A : U0, p : A -> Bool, x : Unit or A) :=
   match x as z return (
-    forall h : Truth(predicate_join(A, no, p, z)),
+    forall h : Truth(predicate_join(A, no, p, z)).
     selected_index(
       Unit or A, predicate_join(A, no, p),
       selected_false_in(A, p, selected_false_out_at(A, p, z, h))

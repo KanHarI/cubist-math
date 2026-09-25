@@ -1,7 +1,7 @@
 import polynomial_irreducible;
 
 def polynomial_cancel_nonzero(
-  K : AlgebraicField, a b c : Polynomial(K), nonzero : PolynomialNonzero(K, a),
+  K : AlgebraicField, a, b, c : Polynomial(K), nonzero : PolynomialNonzero(K, a),
   same : polynomial_mul(K, a, b) = polynomial_mul(K, a, c)
 ) :
   b = c {
@@ -30,13 +30,13 @@ def polynomial_cancel_nonzero(
 }
 
 def polynomial_multiple_factor_unit(
-  K : AlgebraicField, p a b : Polynomial(K), nonzero : PolynomialNonzero(K, p),
+  K : AlgebraicField, p, a, b : Polynomial(K), nonzero : PolynomialNonzero(K, p),
   equation : p = polynomial_mul(K, a, b), divides : PolynomialDivides(K, p, a)
 ) :
   PolynomialUnit(K, b) {
   have invert :
-    (exists q : Polynomial(K), a = polynomial_mul(K, p, q))
-    -> (exists q : Polynomial(K), polynomial_mul(K, b, q) = polynomial_one(K)) {
+    (exists q : Polynomial(K). a = polynomial_mul(K, p, q))
+    -> (exists q : Polynomial(K). polynomial_mul(K, b, q) = polynomial_one(K)) {
     intro witness;
     obtain (q, factor) := witness;
     have product : polynomial_mul(K, p, polynomial_mul(K, q, b)) = polynomial_mul(
@@ -59,20 +59,20 @@ def polynomial_multiple_factor_unit(
     );
   }
   exact mere_map(
-    (exists q : Polynomial(K), a = polynomial_mul(K, p, q)),
-    (exists q : Polynomial(K), polynomial_mul(K, b, q) = polynomial_one(K)), invert, divides
+    (exists q : Polynomial(K). a = polynomial_mul(K, p, q)),
+    (exists q : Polynomial(K). polynomial_mul(K, b, q) = polynomial_one(K)), invert, divides
   );
 }
 
 def polynomial_small_divisible_zero(
-  K : AlgebraicField, p divisor : Polynomial(K), d : Nat,
+  K : AlgebraicField, p, divisor : Polynomial(K), d : Nat,
   degree : polynomial_cutoff(K, divisor) = succ(d),
   support : SeriesSupport(K, polynomial_coefficients(K, p), d),
   divides : PolynomialDivides(K, divisor, p)
 ) :
   p = polynomial_zero(K) {
   have useQuotient :
-    (exists q : Polynomial(K), p = polynomial_mul(K, divisor, q)) -> p = polynomial_zero(K) {
+    (exists q : Polynomial(K). p = polynomial_mul(K, divisor, q)) -> p = polynomial_zero(K) {
     intro witness;
     obtain (q, equation) := witness;
     let product := trans(equation, polynomial_mul_comm(K, divisor, q));
@@ -88,7 +88,7 @@ def polynomial_small_divisible_zero(
     );
   }
   exact mere_eliminate(
-    (exists q : Polynomial(K), p = polynomial_mul(K, divisor, q)), (p = polynomial_zero(K)),
+    (exists q : Polynomial(K). p = polynomial_mul(K, divisor, q)), (p = polynomial_zero(K)),
     polynomial_set(K, p, polynomial_zero(K)), useQuotient, divides
   );
 }

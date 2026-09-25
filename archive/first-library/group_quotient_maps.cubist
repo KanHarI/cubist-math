@@ -3,22 +3,22 @@ import quotient_descent;
 
 // A homomorphism factors through cosets precisely when it kills the subgroup.
 // Normality is not needed for this map of sets; it is needed for quotient multiplication.
-def KillsSubgroup(G H : Group, h : GroupHom(G, H), S : Subgroup(G)) :=
-  forall n : group_carrier(G), subgroup_members(G, S, n)
+def KillsSubgroup(G, H : Group, h : GroupHom(G, H), S : Subgroup(G)) :=
+  forall n : group_carrier(G). subgroup_members(G, S, n)
   -> group_hom_map(G, H, h, n) = group_unit(H);
 
 def killing_subgroup_respects_cosets(
-  G H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
+  G, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
 ) :
   RespectsRelation(group_carrier(G), SameLeftCoset(G, S), group_carrier(H), group_hom_map(G, H, h)) {
-  intro x y same;
+  intro x, y, same;
   exact kernel_coset_equal_images(
     G, H, h, x, y, kills(group_multiply(G, group_inverse(G, x), y), same)
   );
 }
 
 def group_quotient_map(
-  G H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
+  G, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
 ) :=
   quotient_rec(
     group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), group_carrier(H),
@@ -26,7 +26,7 @@ def group_quotient_map(
   );
 
 def group_quotient_map_beta(
-  G H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
+  G, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
   x : group_carrier(G)
 ) :
   group_quotient_map(G, H, h, S, kills, left_coset(G, S, x)) = group_hom_map(G, H, h, x) {
@@ -37,9 +37,9 @@ def group_quotient_map_beta(
 }
 
 def group_quotient_map_unique(
-  G H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
+  G, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
   g : LeftCosets(G, S) -> group_carrier(H),
-  triangle : (forall x : group_carrier(G), g(left_coset(G, S, x)) = group_hom_map(G, H, h, x))
+  triangle : (forall x : group_carrier(G). g(left_coset(G, S, x)) = group_hom_map(G, H, h, x))
 ) :
   g = group_quotient_map(G, H, h, S, kills) {
   exact quotient_rec_unique(
@@ -50,7 +50,7 @@ def group_quotient_map_unique(
 }
 
 def group_quotient_map_unit(
-  G H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
+  G, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
 ) :
   group_quotient_map(G, H, h, S, kills, left_coset(G, S, group_unit(G))) = group_unit(H) {
   exact trans(group_quotient_map_beta(G, H, h, S, kills, group_unit(G)), group_hom_unit(G, H, h));
@@ -59,8 +59,8 @@ def group_quotient_map_unit(
 // Multiplicativity on classes of representatives. An operation on arbitrary
 // quotient elements is a separate construction, not implicit in this statement.
 def group_quotient_map_multiply(
-  G H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
-  x y : group_carrier(G)
+  G, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
+  x, y : group_carrier(G)
 ) :
   group_quotient_map(G, H, h, S, kills, left_coset(G, S, group_multiply(G, x, y))) = group_multiply(
     H, group_quotient_map(G, H, h, S, kills, left_coset(G, S, x)),
@@ -87,11 +87,11 @@ def group_quotient_map_multiply(
 }
 
 def quotient_factor_kills_subgroup(
-  G H : Group, h : GroupHom(G, H), S : Subgroup(G), g : LeftCosets(G, S) -> group_carrier(H),
-  triangle : (forall x : group_carrier(G), g(left_coset(G, S, x)) = group_hom_map(G, H, h, x))
+  G, H : Group, h : GroupHom(G, H), S : Subgroup(G), g : LeftCosets(G, S) -> group_carrier(H),
+  triangle : (forall x : group_carrier(G). g(left_coset(G, S, x)) = group_hom_map(G, H, h, x))
 ) :
   KillsSubgroup(G, H, h, S) {
-  intro n member;
+  intro n, member;
   let same := same_coset_from_factor(G, S, group_unit(G), n, n, member, group_unit_left(G, n));
   exact trans(
     sym(triangle(n)),

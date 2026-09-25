@@ -4,10 +4,10 @@ import minimal_polynomials;
 import root_generated_fields;
 
 // Least-subfield formulation of L = K(x), independent of any presentation.
-def SimpleGenerated(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :=
-  forall S : Subfield(L),
-  (forall a : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, a)))
-  -> subfield_members(L, S, x) -> forall y : af_carrier(L), subfield_members(L, S, y);
+def SimpleGenerated(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :=
+  forall S : Subfield(L).
+  (forall a : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, a)))
+  -> subfield_members(L, S, x) -> forall y : af_carrier(L). subfield_members(L, S, y);
 
 def simple_root_embedding_surjective(
   K : AlgebraicField, M : PolynomialModulus(K),
@@ -27,7 +27,7 @@ def simple_root_embedding_surjective(
   let h := adjoin_root_embedding(K, M, irreducible, L, e, x, root);
   let f := field_embedding_map(R, L, h);
   let S := subfield_image(R, L, h, subfield_top(R));
-  have base : forall a : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, a)) {
+  have base : forall a : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, a)) {
     intro a;
     exact (residue_constant(K, M, a), tt, residue_evaluate_constant(K, M, L, e, x, root, a));
   }
@@ -71,7 +71,7 @@ def simple_root_field_equality(
 // The modulus is the canonical monic minimal polynomial; its degree evidence
 // is recovered from its nonzeroness, rather than supplied by the caller.
 def minimal_polynomial_modulus(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x)
 ) :
   PolynomialModulus(K) {
@@ -82,7 +82,7 @@ def minimal_polynomial_modulus(
 }
 
 def simple_algebraic_residue_iso(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x), generates : SimpleGenerated(K, L, e, x)
 ) :
   FieldIso(

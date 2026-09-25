@@ -4,14 +4,14 @@ import polynomial_root_existence;
 
 // Cancellation of a common linear factor also cancels divisibility evidence.
 def polynomial_factor_divisibility_cancel(
-  K : AlgebraicField, F : Polynomial(K), nonzero : PolynomialNonzero(K, F), p q a b : Polynomial(K),
+  K : AlgebraicField, F : Polynomial(K), nonzero : PolynomialNonzero(K, F), p, q, a, b : Polynomial(K),
   ep : p = polynomial_mul(K, F, a), eq : q = polynomial_mul(K, F, b),
   divides : PolynomialDivides(K, q, p)
 ) :
   PolynomialDivides(K, b, a) {
   have send :
-    (exists w : Polynomial(K), p = polynomial_mul(K, q, w))
-    -> (exists w : Polynomial(K), a = polynomial_mul(K, b, w)) {
+    (exists w : Polynomial(K). p = polynomial_mul(K, q, w))
+    -> (exists w : Polynomial(K). a = polynomial_mul(K, b, w)) {
     intro witness;
     obtain (w, same) := witness;
     exact (
@@ -32,8 +32,8 @@ def polynomial_factor_divisibility_cancel(
     );
   }
   exact mere_map(
-    (exists w : Polynomial(K), p = polynomial_mul(K, q, w)),
-    (exists w : Polynomial(K), a = polynomial_mul(K, b, w)), send, divides
+    (exists w : Polynomial(K). p = polynomial_mul(K, q, w)),
+    (exists w : Polynomial(K). a = polynomial_mul(K, b, w)), send, divides
   );
 }
 
@@ -47,14 +47,14 @@ def unit_distinct_splitting(
   let splitting :=
     typed(
       DistinctPolynomialSplitting(K, p, 0),
-      (roots, a, eq, (fun (i j : Fin(0), same : roots(i) = roots(j)) => typed((i = j), absurd(i))))
+      (roots, a, eq, (fun (i, j : Fin(0), same : roots(i) = roots(j)) => typed((i = j), absurd(i))))
     );
   exact along DistinctPolynomialSplitting(K, p) by sym(cong(natural_predecessor, degree)) from splitting;
 }
 
 def DistinctSplittingDivisors(K : AlgebraicField, n : Nat) :=
-  forall p : Polynomial(K), PolynomialNonzero(K, p) -> DistinctPolynomialSplitting(K, p, n)
-  -> forall q : Polynomial(K), PolynomialNonzero(K, q) -> PolynomialDivides(K, q, p)
+  forall p : Polynomial(K). PolynomialNonzero(K, p) -> DistinctPolynomialSplitting(K, p, n)
+  -> forall q : Polynomial(K). PolynomialNonzero(K, q) -> PolynomialDivides(K, q, p)
   -> Mere(DistinctPolynomialSplitting(K, q, polynomial_degree(K, q)));
 
 // The selected root is absent from every root of the remaining divisor.
@@ -72,13 +72,13 @@ def omitted_divisor_roots_avoid(
   Void {
   let rs := fun (j : Fin(n)) => roots(fin_omit(n, index, j));
   let rp := polynomial_divisor_root(K, K, field_embedding_identity(K), p, q, divides, x, root);
-  have contradict : (exists j : Fin(n), rs(j) = x) -> Void {
+  have contradict : (exists j : Fin(n). rs(j) = x) -> Void {
     intro w;
     obtain (j, eq) := w;
     exact distinct_roots_omit_avoid(K, n, roots, distinct, index, j, trans(eq, same));
   }
   exact mere_eliminate(
-    (exists j : Fin(n), rs(j) = x), Void, (fun (u v : Void) => typed((u = v), absurd(u))),
+    (exists j : Fin(n). rs(j) = x), Void, (fun (u, v : Void) => typed((u = v), absurd(u))),
     contradict, splitting_root_index(K, p, n, rs, a, equation, nonzero, x, rp)
   );
 }
@@ -124,8 +124,8 @@ def distinct_splitting_divisor_at_root(
   have extend : DistinctPolynomialSplitting(K, tailQ, m) -> Goal {
     intro splitting;
     obtain (rs, b, fact, distinctQ) := splitting;
-    have avoids : forall i : Fin(m), (rs(i) = x) -> Void {
-      intro i same;
+    have avoids : forall i : Fin(m). (rs(i) = x) -> Void {
+      intro i, same;
       exact omitted_divisor_roots_avoid(
         K, n, roots, distinct, index, a, tailP, refl(tailP), nzP, tailQ, divided, rs(i),
         splitting_listed_root(K, tailQ, m, rs, b, fact, i), same
@@ -160,34 +160,34 @@ def distinct_splitting_divisor_at_root(
 
 def distinct_splitting_divisor_zero(K : AlgebraicField, closed : AlgebraicallyClosed(K)) :
   DistinctSplittingDivisors(K, 0) {
-  intro p nonzero splitting q nonzeroQ divides;
+  intro p, nonzero, splitting, q, nonzeroQ, divides;
   obtain (roots, a, equation, distinct) := splitting;
   let Goal := DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
   have nonunit : (PolynomialUnit(K, q) -> Void) -> Mere(Goal) {
     intro nu;
     have rootImpossible :
-      (exists x : af_carrier(K), PolynomialRoot(K, K, field_embedding_identity(K), q, x))
+      (exists x : af_carrier(K). PolynomialRoot(K, K, field_embedding_identity(K), q, x))
       -> Mere(Goal) {
       intro w;
       obtain (x, root) := w;
       let rp := polynomial_divisor_root(K, K, field_embedding_identity(K), p, q, divides, x, root);
       exact mere_eliminate(
-        (exists i : Fin(0), roots(i) = x), Mere(Goal), mere_is_prop(Goal),
+        (exists i : Fin(0). roots(i) = x), Mere(Goal), mere_is_prop(Goal),
         (
-          fun (w : (exists i : Fin(0), roots(i) = x)) => typed(
+          fun (w : (exists i : Fin(0). roots(i) = x)) => typed(
             Mere(Goal), absurd(sigma_first(Fin(0), (fun (i : Fin(0)) => roots(i) = x), w))
           )
         ), splitting_root_index(K, p, 0, roots, a, equation, nonzero, x, rp)
       );
     }
     exact mere_eliminate(
-      (exists x : af_carrier(K), PolynomialRoot(K, K, field_embedding_identity(K), q, x)),
+      (exists x : af_carrier(K). PolynomialRoot(K, K, field_embedding_identity(K), q, x)),
       Mere(Goal), mere_is_prop(Goal), rootImpossible, closed(q, nonzeroQ, nu)
     );
   }
   exact match excluded_middle(
     PolynomialUnit(K, q),
-    mere_is_prop(exists r : Polynomial(K), polynomial_mul(K, q, r) = polynomial_one(K))
+    mere_is_prop(exists r : Polynomial(K). polynomial_mul(K, q, r) = polynomial_one(K))
   ) return Mere(Goal) {
     left unit => merely(Goal, unit_distinct_splitting(K, q, nonzeroQ, unit));
     right nu => nonunit(nu);
@@ -199,18 +199,18 @@ def distinct_splitting_divisor_step(
   previous : DistinctSplittingDivisors(K, n)
 ) :
   DistinctSplittingDivisors(K, succ(n)) {
-  intro p nonzero splitting q nonzeroQ divides;
+  intro p, nonzero, splitting, q, nonzeroQ, divides;
   obtain (roots, a, equation, distinct) := splitting;
   let Goal := DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
   have nonunit : (PolynomialUnit(K, q) -> Void) -> Mere(Goal) {
     intro nu;
     have useRoot :
-      (exists x : af_carrier(K), PolynomialRoot(K, K, field_embedding_identity(K), q, x))
+      (exists x : af_carrier(K). PolynomialRoot(K, K, field_embedding_identity(K), q, x))
       -> Mere(Goal) {
       intro w;
       obtain (x, root) := w;
       let rp := polynomial_divisor_root(K, K, field_embedding_identity(K), p, q, divides, x, root);
-      have locate : (exists i : Fin(succ(n)), roots(i) = x) -> Mere(Goal) {
+      have locate : (exists i : Fin(succ(n)). roots(i) = x) -> Mere(Goal) {
         intro witness;
         obtain (i, same) := witness;
         exact distinct_splitting_divisor_at_root(
@@ -219,18 +219,18 @@ def distinct_splitting_divisor_step(
         );
       }
       exact mere_eliminate(
-        (exists i : Fin(succ(n)), roots(i) = x), Mere(Goal), mere_is_prop(Goal), locate,
+        (exists i : Fin(succ(n)). roots(i) = x), Mere(Goal), mere_is_prop(Goal), locate,
         splitting_root_index(K, p, succ(n), roots, a, equation, nonzero, x, rp)
       );
     }
     exact mere_eliminate(
-      (exists x : af_carrier(K), PolynomialRoot(K, K, field_embedding_identity(K), q, x)),
+      (exists x : af_carrier(K). PolynomialRoot(K, K, field_embedding_identity(K), q, x)),
       Mere(Goal), mere_is_prop(Goal), useRoot, closed(q, nonzeroQ, nu)
     );
   }
   exact match excluded_middle(
     PolynomialUnit(K, q),
-    mere_is_prop(exists r : Polynomial(K), polynomial_mul(K, q, r) = polynomial_one(K))
+    mere_is_prop(exists r : Polynomial(K). polynomial_mul(K, q, r) = polynomial_one(K))
   ) return Mere(Goal) {
     left unit => merely(Goal, unit_distinct_splitting(K, q, nonzeroQ, unit));
     right nu => nonunit(nu);

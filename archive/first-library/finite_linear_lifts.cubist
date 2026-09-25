@@ -4,10 +4,10 @@ import finite_basis_search;
 // surjection and extend linearly. The result is truncated; finite recursion
 // needs no axiom of choice.
 def FiniteLinearLift(
-  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
   h : LinearMap(K, CoordinateSpace(K, m), W)
 ) :=
-  exists lift : LinearMap(K, CoordinateSpace(K, m), V), forall v : Fin(m) -> af_carrier(K),
+  exists lift : LinearMap(K, CoordinateSpace(K, m), V). forall v : Fin(m) -> af_carrier(K).
   linear_map(K, V, W, f, linear_map(K, CoordinateSpace(K, m), V, lift, v)) = linear_map(
     K, CoordinateSpace(K, m), W, h, v
   );
@@ -45,7 +45,7 @@ def linear_first_tail(
 }
 
 def finite_linear_lift_assemble(
-  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
   h : LinearMap(K, CoordinateSpace(K, succ(m)), W), x : vector_carrier(K, V),
   first : linear_map(K, V, W, f, x) = linear_map(
     K, CoordinateSpace(K, succ(m)), W, h, coordinate_first(K, m)
@@ -64,7 +64,7 @@ def finite_linear_lift_assemble(
   let L := linear_map(K, CoordinateSpace(K, m), V, l);
   let H := linear_map(K, CoordinateSpace(K, succ(m)), W, h);
   have square :
-    forall v : Fin(succ(m)) -> A,
+    forall v : Fin(succ(m)) -> A.
     F(linear_map(K, CoordinateSpace(K, succ(m)), V, adjoin_linear(K, V, m, l, x), v)) = H(v) {
     intro v;
     let a := finite_head(A, m, v);
@@ -93,14 +93,14 @@ def finite_linear_lift_assemble(
 }
 
 def finite_linear_lift_zero(
-  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W),
   h : LinearMap(K, CoordinateSpace(K, 0), W)
 ) :
   FiniteLinearLift(K, V, W, f, 0, h) {
   let A := af_carrier(K);
   let C := CoordinateSpace(K, 0);
   let H := linear_map(K, C, W, h);
-  have square : forall v : Fin(0) -> A, linear_map(K, V, W, f, vector_zero(K, V)) = H(v) {
+  have square : forall v : Fin(0) -> A. linear_map(K, V, W, f, vector_zero(K, V)) = H(v) {
     intro v;
     exact trans(
       linear_zero(K, V, W, f),
@@ -120,10 +120,10 @@ def finite_linear_lift_zero(
 }
 
 def finite_linear_lift_step(
-  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W),
   onto : LinearSurjective(K, V, W, f), m : Nat,
   previous : (
-    forall h : LinearMap(K, CoordinateSpace(K, m), W), Mere(FiniteLinearLift(K, V, W, f, m, h))
+    forall h : LinearMap(K, CoordinateSpace(K, m), W). Mere(FiniteLinearLift(K, V, W, f, m, h))
   ), h : LinearMap(K, CoordinateSpace(K, succ(m)), W)
 ) :
   Mere(FiniteLinearLift(K, V, W, f, succ(m), h)) {
@@ -150,11 +150,11 @@ def finite_linear_lift_step(
 }
 
 def finite_linear_lift(
-  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W),
   onto : LinearSurjective(K, V, W, f), m : Nat
 ) :=
   induction m as k return (
-    forall h : LinearMap(K, CoordinateSpace(K, k), W), Mere(FiniteLinearLift(K, V, W, f, k, h))
+    forall h : LinearMap(K, CoordinateSpace(K, k), W). Mere(FiniteLinearLift(K, V, W, f, k, h))
   ) {
     zero => fun (h : LinearMap(K, CoordinateSpace(K, 0), W)) => merely(
       FiniteLinearLift(K, V, W, f, 0, h), finite_linear_lift_zero(K, V, W, f, h)
@@ -167,7 +167,7 @@ def coordinate_surjection_bound(
   onto : LinearSurjective(K, CoordinateSpace(K, n), V, f)
 ) :
   NoIndependent(K, V, succ(n)) {
-  intro h independent;
+  intro h, independent;
   let N := CoordinateSpace(K, n);
   let C := CoordinateSpace(K, succ(n));
   let F := linear_map(K, N, V, f);
@@ -175,13 +175,13 @@ def coordinate_surjection_bound(
     intro witness;
     obtain (l, square) := witness;
     have injective : CoordinateInjection(K, succ(n), n, l) {
-      intro x y same;
+      intro x, y, same;
       exact independent(x, y, trans(sym(square(x)), trans(cong(F, same), square(y))));
     }
     exact successor_not_le_self(n, coordinate_injection_bound(K, n, succ(n), l, injective));
   }
   exact mere_eliminate(
-    FiniteLinearLift(K, N, V, f, succ(n), h), Void, (fun (x y : Void) => typed((x = y), absurd(x))),
+    FiniteLinearLift(K, N, V, f, succ(n), h), Void, (fun (x, y : Void) => typed((x = y), absurd(x))),
     noLift, finite_linear_lift(K, N, V, f, onto, succ(n), h)
   );
 }
