@@ -8,6 +8,9 @@ import { T, Checker } from "../lib/cubical/core.mjs";
 import { interval as I, face as F } from "../lib/cubical/lattice.mjs";
 import { identityEquivalence } from "../lib/cubical/equivalence.mjs";
 import { Translator } from "../lib/cubical/translate.mjs";
+import { Scope, SourceUnit } from "../lib/cubical/elaboration.mjs";
+import { Goal, reflexivity } from "../lib/cubical/proof-goals.mjs";
+import { abstractMotive } from "../lib/cubical/motives.mjs";
 import { readFile } from "node:fs/promises";
 
 const module = await createCubical();
@@ -353,4 +356,25 @@ test("the core checker classifies a mismatch like the native kernel", () => {
   const result = checker.attempt(T.zero, T.unit);
   assert.equal(result.failure, "mismatch");
   assert.match(result.error.message, /Type mismatch/);
+});
+
+test("the native kernel checks an elimination through an abstracted motive", t => {
+  const checker = new NativeCubicalElaborator(session(t)), v = T.variable;
+  const sum = T.sum(v("A"), v("B")), same = value => T.path("i", sum, value, value);
+  // s : A + B and h : s = s; the goal s = s is proved by cases on s.
+  const scope = [["A", T.universe(0)], ["B", T.universe(0)], ["s", sum], ["h", same(v("s"))]]
+    .reduce((scope, [name, type]) => scope.bind(name, type), new Scope(new SourceUnit({ checker })));
+  const goal = new Goal(same(v("s")), scope), motive = abstractMotive(goal, [v("s")]);
+  assert.deepEqual(motive.generalized.map(hypothesis => hypothesis.name), ["h"]);
+  const branch = (side, domain) => {
+    const name = scope.fresh(side), inner = scope.bind(name, domain), value = T[side](sum, v(name));
+    const { transition } = motive.introduce(motive.instance([value], inner));
+    return T.lam(name, domain, transition.rebuild(reflexivity(transition.next)));
+  };
+  const proof = motive.apply(T.sumrec(motive.term, branch("inl", v("A")), branch("inr", v("B")), v("s")));
+  assert.doesNotThrow(() => scope.check(proof, goal.target));
+  // A branch proof of the unrefined goal is rejected.
+  const unrefined = T.lam("a", v("A"), T.lam("h2", same(v("s")), T.variable("h2")));
+  assert.throws(() => scope.check(motive.apply(T.sumrec(motive.term, unrefined, branch("inr", v("B")), v("s"))),
+    goal.target), error => error instanceof KernelError);
 });
