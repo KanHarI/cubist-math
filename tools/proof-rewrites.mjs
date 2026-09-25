@@ -101,7 +101,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
       if (name === "path" && args.length === 2 && enabled.has("path-lambda")
         && args.every(arg => arg.kind === "lambda" && arg.domain?.kind === "name" && arg.domain.name === "Interval")) {
         count("path-lambda");
-        return `exact path ${args[1].name.text} => ${render(args[1].body, "delimited")};`;
+        return `exact path ${args[1].name.text} => ${lambdaBody(args[1])};`;
       }
       if (name === "FunExt" && args.length === 6 && enabled.has("ext")) {
         const proof = args[5];
@@ -110,7 +110,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
           const body = proof.body, closed = enabled.has("rfl") && body.kind === "call" && body.fn.kind === "name"
             && body.fn.name === "refl" && body.args.length === 1;
           if (closed) count("rfl");
-          return `ext ${proof.name.text};\n${closed ? "rfl;" : `exact ${render(body, "delimited")};`}`;
+          return `ext ${proof.name.text};\n${closed ? "rfl;" : `exact ${lambdaBody(proof)};`}`;
         }
         const used = identifiers(source.slice(proof.start, proof.end));
         const point = ["x", "a", "v", "w", "t", "z"].find(name => !used.has(name)) ?? "x_ext";
@@ -157,6 +157,14 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
       if (text !== null) { count("fun"); return text; }
     }
     return null;
+  }
+  // The body of a one-name lambda. When later binder groups share its fun
+  // token, the body is those groups: fun (x : A) (y : B) => e  gives
+  // fun (y : B) => e.
+  function lambdaBody(lambda) {
+    if (!lambda.body.generatedBinder) return render(lambda.body, "delimited");
+    const close = tokens.find(token => token.start >= lambda.domain.end);
+    return `fun ${splice(lambda.body, close.end).trimStart()}`;
   }
   // A parenthesized lambda's span starts at its opening parenthesis.
   function funStart(node) {

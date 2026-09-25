@@ -84,6 +84,9 @@ def loop(A : U0, x y : A, p : x = y) : x = x {
 def still(A : U0, x : A) : x = x {
   exact path(fun (i : Interval) => A, fun (i : Interval) => x);
 }
+def pointed(A : U0, f : A -> A) : f = f {
+  exact path(fun (t : Interval) => A -> A, fun (t : Interval) (x : A) => f(x));
+}
 def pointwise(A : U0, f : A -> A) : f = f {
   exact FunExt(U0, A, (fun (a : A) => A), f, f, fun (a : A) => refl(f(a)));
 }
@@ -95,15 +98,17 @@ def pointwise(A : U0, f : A -> A) : f = f {
   assert.match(identical.source, /have h : C\(0\) := along C by p from v;/);
   assert.match(identical.source, /\(fun \(a b : A\) => a\)\(p @ 0, y\)/);
   const typed = rewriteModule(source, { rewrites: typePreservingRewrites });
-  assert.deepEqual(typed.applied, { wrappers: 2, "path-lambda": 1, ext: 1, rfl: 1 });
+  assert.deepEqual(typed.applied, { wrappers: 2, "path-lambda": 2, ext: 1, rfl: 1 });
   assert.match(typed.source, /exact trans\(p, sym\(p\)\);/);
   assert.match(typed.source, /exact path i => x;/);
+  // Binder groups sharing the interval's fun token stay in a lambda.
+  assert.match(typed.source, /exact path t => fun \(x : A\) => f\(x\);/);
   assert.match(typed.source, /ext a;\s+rfl;/);
   const check = async (edited, level) => (await verifyMigration({ modules: ["rewrite_fixture"], level,
     readOriginal: name => name === "rewrite_fixture" ? source : library(name),
     readEdited: async () => formatMathScript(edited) }))[0];
   const exact = await check(identical.source, "identical");
   assert.deepEqual(exact.failures, []);
-  assert.equal(exact.identical, 5);
+  assert.equal(exact.identical, 6);
   assert.deepEqual((await check(typed.source, "types")).failures, []);
 });
