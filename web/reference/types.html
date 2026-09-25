@@ -51,6 +51,7 @@
             <li><a href="#tour-choices">Choices: <code>or</code></a></li>
             <li><a href="#tour-functions">Functions: <code>-></code></a></li>
             <li><a href="#tour-types">Types are values too</a></li>
+            <li><a href="#tour-equality">Equality: <code>=</code></a></li>
             <li><a href="#tour-dependent">Dependent types: <code>forall</code> and <code>exists</code></a></li>
           </ul>
         </aside>
@@ -197,6 +198,26 @@ def nat_is_a_type : U0 {
   exact U0;  // Error: Type mismatch: found U1, expected U0.
 }</code></pre>
           </section>
+          <section id="tour-equality">
+            <h2>Equality: <code>=</code></h2>
+            <p>For two values <code>x</code> and <code>y</code> of the same type, <code>x = y</code> is a type: the statement that they are equal. Its values are evidence of that equality. <code>refl(x)</code> is evidence that <code>x = x</code>, and the checker also accepts it as evidence of <code>x = y</code> whenever <code>x</code> and <code>y</code> compute to the same value:</p>
+            <pre><code data-check="accept">import naturals;
+
+def two_plus_two : 2 + 2 = 4 {
+  exact refl(4);
+}
+
+def seven_is_seven : 7 = 7 {
+  exact refl(7);
+}</code></pre>
+            <p><code>2 + 2</code> computes to <code>4</code>, so <code>refl(4)</code> proves <code>2 + 2 = 4</code>. Values that are not equal have no such evidence:</p>
+            <pre><code data-check="reject">import naturals;
+
+def wrong_sum : 2 + 2 = 5 {
+  exact refl(4);  // Error: Type mismatch: found (4 =[Nat] 4), expected (add(2, 2) =[Nat] 5).
+}</code></pre>
+            <p>The message writes each equality with its type: <code>x =[T] y</code> is <code>x = y</code> with both sides of type <code>T</code>, and <code>add(2, 2)</code> is <code>2 + 2</code>. An equality is a type like any other, so it can be a parameter, an assumption to reason from, or part of a larger type. Equalities that do not hold by computation, such as <code>n + 0 = n</code> for a variable <code>n</code>, need a proof; the chapter on <a href="paths.html#paths">equality and paths</a> describes the tools.</p>
+          </section>
           <section id="tour-dependent">
             <h2>Dependent types: <code>forall</code> and <code>exists</code></h2>
             <p>A function’s result type can depend on its argument. <code>forall x : A, B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not.</p>
@@ -229,7 +250,7 @@ def two_of_a_kind : exists A : U0, A and A {
             <pre><code data-check="reject">def pointed : exists A : U0, A {
   exact (Nat, tt);  // Error: Type mismatch: found Unit, expected Nat.
 }</code></pre>
-            <p>Read as statements, <code>forall</code> and <code>exists</code> are the quantifiers “for all” and “there exists”. A value of <code>exists n : Nat, P(n)</code> is a witness <code>n</code> together with evidence that <code>P(n)</code> holds. A value of <code>forall A : U0, A -> A</code> is evidence that every type implies itself: the <a href="first-proof.html#first-proof">next chapter</a> constructs it as a first proof.</p>
+            <p>Read as statements, <code>forall</code> and <code>exists</code> are the quantifiers “for all” and “there exists”. A value of <code>exists n : Nat, P(n)</code> is a witness <code>n</code> together with evidence that <code>P(n)</code> holds. The <a href="first-proof.html#first-proof">next chapter</a> proves a first statement with both: <code>forall n : Nat, exists m : Nat, lt(n, m)</code>, every number has a greater one.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">

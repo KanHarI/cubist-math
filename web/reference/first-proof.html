@@ -55,32 +55,51 @@
         <article id="reference">
           <section id="first-proof">
             <h2>A first proof</h2>
-            <pre><code data-check="accept">def identity : forall A : U0, A -&gt; A {
-  intro A;       // A : U0
-  intro value;   // value : A
-  exact value;
+            <p>Every natural number has a greater one. As a type, the statement is <code>forall n : Nat, exists m : Nat, lt(n, m)</code>: for every <code>n</code> there is an <code>m</code> with <code>n &lt; m</code>. First define <code>lt</code>, then prove the statement.</p>
+            <pre><code data-check="accept">import naturals;
+
+// n &lt; m: m is n plus a positive number, succ(k) for some k.
+def lt(n m : Nat) := exists k : Nat, succ(k) + n = m;
+
+// succ(n) is greater than n: take k = 0.
+def lt_succ(n : Nat) : lt(n, succ(n)) {
+  exact (0, refl(succ(n)));
+}
+
+// Every number has a greater one.
+def exists_greater_number : forall n : Nat, exists m : Nat, lt(n, m) {
+  intro n;                       // n : Nat
+  exact (succ(n), lt_succ(n));   // the number succ(n), and why it is greater
 }</code></pre>
-            <p>A theorem proves its stated type by constructing a term of that type. Here the statement <code>forall A : U0, A -> A</code> says: for every type <code>A</code>, there is a function from <code>A</code> to <code>A</code>. The proof constructs that function. No axioms or imports are needed.</p>
-            <p>At every point in a proof block there is a <strong>goal</strong>, the type still to be proved, and a <strong>context</strong>, the names available and their types. At the start the goal is the whole statement and the context is empty.</p>
+            <p><code>lt</code> is a function that returns a type: <code>lt(n, m)</code> is the statement that <code>n</code> is less than <code>m</code>. A value of it is evidence: a number <code>k</code> together with a proof that <code>succ(k) + n = m</code>.</p>
+            <p><code>lt_succ</code> proves <code>lt(n, succ(n))</code>, which unfolds to <code>exists k : Nat, succ(k) + n = succ(n)</code>. The pair <code>(0, refl(succ(n)))</code> takes <code>k = 0</code>, and <code>refl(succ(n))</code> is accepted as evidence because <code>succ(0) + n</code> computes to <code>succ(0 + n)</code> and then to <code>succ(n)</code>.</p>
+            <p><code>exists_greater_number</code> is proved in a block. At every point in a block there is a <strong>goal</strong>, the type still to be proved, and a <strong>context</strong>, the names available and their types. At the start the goal is the whole statement and the context is empty.</p>
             <ul>
-              <li><code>intro A;</code> takes the first input from the goal and adds it to the context. The goal becomes <code>A -> A</code> and the context holds <code>A : U0</code>.</li>
-              <li><code>intro value;</code> does the same again. The goal becomes <code>A</code> and the context also holds <code>value : A</code>.</li>
-              <li><code>exact value;</code> supplies a term of exactly the goal type and finishes the proof.</li>
+              <li><code>intro n;</code> takes the input of the <code>forall</code> and adds it to the context. The context holds <code>n : Nat</code>, and the goal becomes <code>exists m : Nat, lt(n, m)</code>.</li>
+              <li><code>exact (succ(n), lt_succ(n));</code> gives a value of exactly the goal type: the witness <code>succ(n)</code>, and the evidence <code>lt_succ(n) : lt(n, succ(n))</code>. It finishes the proof.</li>
             </ul>
-            <p>In the proof workspace, click a proof-step line number to see its goal and context.</p>
+            <p>In the proof workspace, or in any example here, click a proof-step line number to see its goal and context.</p>
             <h3 id="blocks-and-terms">The same proof as a term</h3>
-            <p>A proof block is a readable way to build a term. The same function can be written directly:</p>
-            <pre><code data-check="accept">def identity(A : U0, value : A) := value;
+            <p>A proof block is a readable way to build a term. A proof of a <code>forall</code> statement is a function: given <code>n</code>, it returns the witness and the evidence. It can be written directly:</p>
+            <pre><code data-check="accept">import naturals;
 
-def identity_on_numbers := identity(Nat);
+def lt(n m : Nat) := exists k : Nat, succ(k) + n = m;
 
-def five := identity(Nat, 5);</code></pre>
-            <p>Both forms produce the same kind of kernel term: a function taking a type and an element of it. The second <code>identity</code> is used twice: <code>identity(Nat)</code> is the identity function on <code>Nat</code>, and <code>identity(Nat, 5)</code> is the number <code>5</code>. The chapter on <a href="proof-blocks.html#goals">proof blocks</a> describes every statement a block can contain.</p>
-            <p>A wrong proof is rejected with a message, and nothing is added. Here the last step offers the type <code>A</code> where an element of <code>A</code> is needed:</p>
-            <pre><code data-check="reject">def not_identity : forall A : U0, A -&gt; A {
-  intro A;
-  intro value;
-  exact A;  // Error: Type mismatch: found Π (A : U0), (A → U0), expected Π (A : U0), (A → A).
+def exists_greater_number : forall n : Nat, exists m : Nat, lt(n, m) :=
+  fun (n : Nat) =&gt; (succ(n), (0, refl(succ(n))));</code></pre>
+            <p>Both forms produce the same kind of kernel term. The chapter on <a href="proof-blocks.html#goals">proof blocks</a> describes every statement a block can contain.</p>
+            <p>A wrong proof is rejected with a message, and nothing is added. Here the witness is <code>n</code> itself, which is not greater than <code>n</code>: the evidence <code>lt_succ(n)</code> is about <code>succ(n)</code>.</p>
+            <pre><code data-check="reject">import naturals;
+
+def lt(n m : Nat) := exists k : Nat, succ(k) + n = m;
+
+def lt_succ(n : Nat) : lt(n, succ(n)) {
+  exact (0, refl(succ(n)));
+}
+
+def not_greater : forall n : Nat, exists m : Nat, lt(n, m) {
+  intro n;
+  exact (n, lt_succ(n));  // Error: Type mismatch: found lt(n, succ(n)), expected lt(n, n).
 }</code></pre>
           </section>
           <section id="checking">
