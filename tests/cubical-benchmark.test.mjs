@@ -4,6 +4,7 @@ import {readFile} from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { benchmark, category } from "../web/benchmark-runner.mjs";
+import { budget } from "./timing.mjs";
 
 test("benchmark distinguishes invalid proofs, blocked uses, and independent checked declarations", async () => {
   const report = await benchmark({ modules: ["sample"], readSource: async () =>
@@ -92,7 +93,7 @@ test("benchmark reports the selected deadline and optimizations and rejects inva
 });
 
 test("benchmark checks local simp witnesses without collecting inspector references",async()=>{
-  const report=await benchmark({modules:["ergonomics_registered"],limitMs:1000,
+  const report=await benchmark({modules:["ergonomics_registered"],limitMs:budget(1000),
     readSource:async name=>{
       const source=await readFile(name==="ergonomics_registered"
         ? new URL("../docs/examples/proof-ergonomics/implemented/registered-simp.cubist",import.meta.url)
