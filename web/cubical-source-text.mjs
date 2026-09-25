@@ -62,6 +62,24 @@ export function sourceText(term, symbols = {}, limit = 4000) {
     }
     return null;
   };
+  // A motive's variable shown under another name; a binder of the same name
+  // inside shadows the renaming.
+  const renames = new Map();
+  const renaming = (from, to, fn) => {
+    if (from === to) return fn();
+    renames.set(from, to);
+    try { return fn(); } finally { renames.delete(from); }
+  };
+  const under = (names, fn) => {
+    const shadowed = [names].flat().filter(name => renames.has(name)).map(name => [name, renames.get(name)]);
+    for (const [name] of shadowed) renames.delete(name);
+    try { return fn(); } finally { for (const [name, to] of shadowed) renames.set(name, to); }
+  };
+  // A bound name that also occurs in `outside` gets a numbered variant.
+  const apart = (name, outside, whole) => {
+    if (!mentions(outside, name)) return name;
+    for (let i = 1; ; i++) if (!mentions(whole, `${name}${i}`)) return `${name}${i}`;
+  };
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
   const atom = text => [text, LEVEL.atom];
@@ -77,13 +95,14 @@ export function sourceText(term, symbols = {}, limit = 4000) {
         const n = numeral(t);
         return atom(n !== null ? String(n) : `succ(${show(t.value)})`);
       }
-      case "Var": case "DefRef": return atom(label(t.name));
+      case "Var": return atom(renames.get(t.name) ?? label(t.name));
+      case "DefRef": return atom(label(t.name));
       case "Pi": case "Sigma": {
         const pi = t.tag === "Pi";
         if (mentions(t.body, t.name))
-          return [`${pi ? "forall" : "exists"} ${t.name} : ${show(t.domain)}, ${show(t.body)}`, LEVEL.binder];
+          return [`${pi ? "forall" : "exists"} ${t.name} : ${show(t.domain)}, ${under(t.name, () => show(t.body))}`, LEVEL.binder];
         const level = pi ? LEVEL.arrow : LEVEL.and;
-        return [`${sub(t.domain, level + 1)} ${pi ? "->" : "and"} ${sub(t.body, level)}`, level];
+        return [`${sub(t.domain, level + 1)} ${pi ? "->" : "and"} ${under(t.name, () => sub(t.body, level))}`, level];
       }
       case "Sum": return [`${sub(t.left, LEVEL.or + 1)} or ${sub(t.right, LEVEL.or)}`, LEVEL.or];
       case "Lam": {
@@ -97,7 +116,27 @@ export function sourceText(term, symbols = {}, limit = 4000) {
           body = body.body;
         }
         const binders = groups.map(group => `${group.names.join(" ")} : ${group.domain}`).join(", ");
-        return [`fun (${binders}) => ${show(body)}`, LEVEL.binder];
+        return [`fun (${binders}) => ${under(groups.flatMap(group => group.names), () => show(body))}`, LEVEL.binder];
+      }
+      // Eliminators print as the source forms that build them. The motive's
+      // bound name is shown as the one the branches bind: `as k` binds both.
+      case "NatRec": {
+        const { motive, step } = t;
+        if (motive?.tag !== "Lam" || step?.tag !== "Lam" || step.body?.tag !== "Lam") return fallback(t);
+        // `induction k as k` would be correct but hard to read.
+        const k = apart(step.name, t.value, t), h = apart(step.body.name, t.value, t);
+        const type = under(motive.name, () => renaming(motive.name, k, () => show(motive.body)));
+        const successor = under([step.name, step.body.name], () =>
+          renaming(step.name, k, () => renaming(step.body.name, h, () => show(step.body.body))));
+        return [`induction ${show(t.value)} as ${k} return ${type} { zero => ${show(t.zero)}; `
+          + `succ ${h} => ${successor}; }`, LEVEL.binder];
+      }
+      case "SumRec": {
+        const { motive, left, right } = t;
+        if ([motive, left, right].some(branch => branch?.tag !== "Lam")) return fallback(t);
+        return [`match ${show(t.value)} as ${motive.name} return ${under(motive.name, () => show(motive.body))} { `
+          + `left ${left.name} => ${under(left.name, () => show(left.body))}; `
+          + `right ${right.name} => ${under(right.name, () => show(right.body))}; }`, LEVEL.binder];
       }
       case "App": {
         const args = [];

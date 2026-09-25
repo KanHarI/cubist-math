@@ -92,3 +92,17 @@ test("binary numbers print as binary literals", () => {
   // Anything else in the same type prints as it is built.
   assert.match(sourceText({ tag: "Inr", as: binaryNat, value: variable("p") }), /^right\(p\)$/);
 });
+
+test("recursion and case analysis print as induction and match", () => {
+  const recursion = { tag: "NatRec", motive: { tag: "Lam", name: "b", domain: nat, body: nat }, zero: variable("n"),
+    step: { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "h", domain: nat, body: { tag: "Succ", value: variable("h") } } },
+    value: variable("m") };
+  assert.equal(sourceText(recursion), "induction m as k return Nat { zero => n; succ h => succ(h); }");
+  // The motive's variable reads as the name `as` binds.
+  const dependent = { ...recursion, motive: { tag: "Lam", name: "b", domain: nat, body: equal(variable("b"), variable("b")) } };
+  assert.match(sourceText(dependent), /^induction m as k return k = k \{/);
+  const cases = { tag: "SumRec", motive: { tag: "Lam", name: "z", domain: sum(unit, unit), body: U0 },
+    left: { tag: "Lam", name: "a", domain: unit, body: nat }, right: { tag: "Lam", name: "b", domain: unit, body: unit }, value: variable("v") };
+  assert.equal(sourceText(cases), "match v as z return U0 { left a => Nat; right b => Unit; }");
+  assert.equal(sourceText(add(recursion, number(1))), "(induction m as k return Nat { zero => n; succ h => succ(h); }) + 1");
+});
