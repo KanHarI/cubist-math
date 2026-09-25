@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalKernel } from "../web/cubical-kernel.mjs";
+import { CubicalKernel, KernelError } from "../web/cubical-kernel.mjs";
 import { CubicalSyntax } from "../web/cubical-syntax.mjs";
 import { NativeCubicalElaborator } from "../web/cubical-elaborator.mjs";
 import { T, Checker } from "../lib/cubical/core.mjs";
@@ -321,4 +321,36 @@ test("browser dimension allocation reuses slots without capturing outer coordina
   const line = T.line("j", T.nat, T.at(p, I.variable("outside")));
   const checked = syntax.check(line, null, [["p", P]], new Map([["outside", 0]]));
   assert.throws(() => syntax.check(checked.term, null, [["p", P]]), /dimension/);
+});
+
+test("kernel rejections are classified by kind, and speculative checks answer with values", t => {
+  const k = session(t), checker = new NativeCubicalElaborator(k);
+  const nat = k.term("Nat"), zero = k.term("Zero");
+  assert.throws(() => k.check(zero, k.term("Unit")), error => error instanceof KernelError && error.kind === "mismatch");
+  assert.throws(() => k.check(k.term("Var", k.symbol("free")), nat), error => error.kind === "other");
+  assert.equal(checker.attempt(T.zero, T.nat).ok, true);
+  assert.equal(checker.attempt(T.zero, T.unit).failure, "mismatch");
+  assert.equal(checker.equal(T.zero, T.succ(T.zero)), false);
+  // Set C's deadline directly so this exercises C, not the JS preflight guard.
+  module._cb_deadline_ms(k.handle, .01);
+  let until = performance.now() + 2;
+  while (performance.now() < until) { /* let the native deadline expire */ }
+  assert.equal(checker.attempt(T.succ(T.zero), T.nat).failure, "deadline");
+  module._cb_deadline_ms(k.handle, 0);
+  // Running out of time is no answer: equal() must not report inequality.
+  k.setDeadline(0.001);
+  until = performance.now() + 2;
+  while (performance.now() < until) { /* let the JavaScript deadline expire */ }
+  assert.equal(checker.attempt(T.zero, T.nat).failure, "deadline");
+  assert.throws(() => checker.equal(T.zero, T.zero), error => error instanceof KernelError && error.kind === "deadline");
+  k.setDeadline();
+  assert.equal(checker.equal(T.zero, T.zero), true);
+});
+
+test("the core checker classifies a mismatch like the native kernel", () => {
+  const checker = new Checker();
+  assert.equal(checker.attempt(T.zero, T.nat).ok, true);
+  const result = checker.attempt(T.zero, T.unit);
+  assert.equal(result.failure, "mismatch");
+  assert.match(result.error.message, /Type mismatch/);
 });

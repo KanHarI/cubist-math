@@ -6,9 +6,9 @@ import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 
 export function category(result, elapsedMs, limitMs) {
-  if (result.reason?.startsWith("Universe schema:")) return "template";
-  if (result.blockedBy || result.reason?.startsWith("Untranslated dependency:")) return "blocked";
-  if (result.reason?.includes("Declaration time limit exceeded") || elapsedMs > limitMs) return "optimize";
+  if (result.template) return "template";
+  if (result.blockedBy) return "blocked";
+  if (result.failure === "deadline" || elapsedMs > limitMs) return "optimize";
   return result.status === "checked-native-cubical" ? "checked" : "failed";
 }
 

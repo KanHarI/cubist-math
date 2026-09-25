@@ -3,6 +3,8 @@ import { T } from "./dist/cubical-runtime/core.mjs";
 import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
 import { NameSupply } from "./dist/cubical-runtime/names.mjs";
 
+const speculativeFailures = new Set(["mismatch", "budget", "deadline"]);
+
 // Elaboration queries use the native checker and demand only a type's outer
 // constructor. JavaScript neither normalizes proofs nor approves conversions.
 export class NativeCubicalElaborator {
@@ -86,10 +88,19 @@ export class NativeCubicalElaborator {
     const dim = names.fresh("conversion");
     const constant = { tag: "PLam", dim, family: type, body: left };
     const expected = { tag: "Path", dim, family: type, left, right };
-    try { this.check(constant, expected, context, dimensions); return true; }
+    const result = this.attempt(constant, expected, context, dimensions);
+    if (result.ok) return true;
+    if (result.failure === "mismatch") return false;
+    throw result.error;
+  }
+  // A speculative check answers with a value: {ok: true, term}, or
+  // {ok: false, failure, error} when the kernel reports a type mismatch or
+  // runs out of steps or time. Any other rejection throws, as in check().
+  attempt(term, expected, context = new Map(), dimensions = this.dimensions) {
+    try { return { ok: true, term: this.check(term, expected, context, dimensions) }; }
     catch (error) {
-      if (error.message === "Type mismatch.") return false;
-      throw error;
+      if (!speculativeFailures.has(error?.kind)) throw error;
+      return { ok: false, failure: error.kind, error };
     }
   }
   expect(actual, expected, context = new Map(), dimensions = this.dimensions, names = this.names) {

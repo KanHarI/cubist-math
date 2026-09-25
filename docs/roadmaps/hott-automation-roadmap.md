@@ -328,10 +328,16 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
       never spell an assumption or a kernel symbol, and elaborating the same
       source again repeats them. Stand-alone syntax builders stay hygienic by
       avoiding every name in their inputs.
-    - [ ] Result values for every speculative query. `findRewrite` already
+    - [x] Result values for every speculative query. `findRewrite` already
       returns "no match" as a result; checker queries should report mismatch
       and resource failures as values, so that no control flow depends on the
-      kernel's "Type mismatch." message.
+      kernel's "Type mismatch." message. Delivered: the kernel records a
+      `cc_error_kind` with each error (mismatch, budget, deadline, other), the
+      JS wrapper throws a `KernelError` carrying it, and a speculative check
+      (`attempt`) answers `{ok, term}` or `{ok: false, failure}`. Budget
+      retries, conversion queries, rewriting, benchmark categories and the
+      migration verifier use these kinds; declaration results record
+      `failure` and `template` instead of being classified by their reason.
     - [ ] One computation of source link sites. The parser records keyword spans,
       as it now does for each `calc` step's `by`; concrete declarations and
       unelaborated templates use the same sites.

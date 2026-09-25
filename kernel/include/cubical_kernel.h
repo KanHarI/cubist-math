@@ -45,6 +45,14 @@ void cc_kernel_set_optimizations(cc_kernel *, unsigned flags);
  * Expiry only rejects work; it can never make a judgement succeed. */
 void cc_kernel_set_deadline_ms(cc_kernel *, double duration_ms);
 const char *cc_kernel_error(const cc_kernel *);
+/* The class of the recorded error, so callers need not read its text.
+ * MISMATCH: a type is not convertible to, or cumulative with, the expected
+ * type. BUDGET, DEADLINE: the step budget or the deadline ran out, so no
+ * judgement was made. OTHER: any other rejection. NONE: no error. */
+typedef enum {
+    CC_ERROR_NONE, CC_ERROR_MISMATCH, CC_ERROR_BUDGET, CC_ERROR_DEADLINE, CC_ERROR_OTHER
+} cc_error_kind;
+cc_error_kind cc_kernel_error_kind(const cc_kernel *);
 /* Clear a rejected request before constructing corrected raw syntax. */
 void cc_kernel_clear_error(cc_kernel *);
 /* Diagnostic transactions. Abort invalidates ALL handles made since begin.

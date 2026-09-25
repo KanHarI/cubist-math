@@ -56,6 +56,13 @@ const char *cb_error(uint32_t token) {
     return s->error ? s->error : cc_kernel_error(s->kernel);
 }
 
+/* The class of cb_error's error: a cc_error_kind. */
+unsigned cb_error_kind(uint32_t token) {
+    browser_session *s = lookup(token);
+    if (!s || s->error) return CC_ERROR_OTHER;
+    return cc_kernel_error_kind(s->kernel);
+}
+
 void cb_optimizations(uint32_t token, unsigned flags) {
     browser_session *s = lookup(token);
     if (s) cc_kernel_set_optimizations(s->kernel, flags);

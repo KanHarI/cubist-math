@@ -2,12 +2,18 @@
  * Handle zero denotes absence/failure, never a type or term. */
 #include "term_internal.h"
 
-bool ck_fail(cc_kernel *k, const char *message) {
+/* The first error of an operation is kept, with its class. */
+bool ck_fail_as(cc_kernel *k, cc_error_kind kind, const char *message) {
     if (!k->error[0]) {
         strncpy(k->error, message, sizeof k->error - 1);
         k->error[sizeof k->error - 1] = '\0';
+        k->error_kind = kind;
     }
     return false;
+}
+
+bool ck_fail(cc_kernel *k, const char *message) {
+    return ck_fail_as(k, CC_ERROR_OTHER, message);
 }
 
 bool ck_tick(cc_kernel *k, bool checking) {
@@ -18,7 +24,7 @@ bool ck_tick(cc_kernel *k, bool checking) {
         if (!ck_deadline(k)) return false;
     }
     if (!k->budget)
-        return ck_fail(k, "Kernel checking/reduction budget exhausted.");
+        return ck_fail_as(k, CC_ERROR_BUDGET, "Kernel checking/reduction budget exhausted.");
     --k->budget;
     if (checking)
         ++k->checking_steps;
@@ -92,6 +98,11 @@ void cc_kernel_free(cc_kernel *k) {
 
 const char *cc_kernel_error(const cc_kernel *k) {
     return k ? k->error : "Kernel allocation failed.";
+}
+
+cc_error_kind cc_kernel_error_kind(const cc_kernel *k) {
+    if (!k) return CC_ERROR_OTHER;
+    return k->error[0] ? k->error_kind : CC_ERROR_NONE;
 }
 
 cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,

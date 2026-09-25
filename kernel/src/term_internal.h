@@ -96,6 +96,7 @@ struct cc_kernel {
     unsigned deadline_ticks;
     unsigned recursion;
     char error[192];
+    cc_error_kind error_kind; /* meaningful only while error is set */
 };
 
 cc_context ck_extend(cc_kernel *, uint32_t, cc_term, const cc_context *);
@@ -106,6 +107,7 @@ void ck_inference_put(cc_kernel *, cc_term, const cc_context *, uint64_t, cc_jud
 bool ck_memo_get(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_term value, uint64_t *result);
 void ck_memo_put(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_term value, uint64_t result);
 bool ck_fail(cc_kernel *, const char *);
+bool ck_fail_as(cc_kernel *, cc_error_kind, const char *);
 bool ck_tick(cc_kernel *, bool checking);
 bool ck_deadline(cc_kernel *);
 unsigned ck_arity(cc_term_kind);
