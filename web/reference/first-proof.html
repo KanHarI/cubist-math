@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Write a first proof, then learn how a source file is laid out: imports, names, comments and declarations." />
-    <title>Cubist · 1. A first proof and files</title>
+    <title>Cubist · 2. A first proof and files</title>
     <link rel="stylesheet" href="../language.css" />
   </head>
   <body>
@@ -19,7 +19,7 @@
     </header>
     <main>
       <div class="introduction">
-        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 1</p>
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 2</p>
         <h1>A first proof and files</h1>
         <p class="lead">Write a first proof, then learn how a source file is laid out: imports, names, comments and declarations.</p>
       </div>
@@ -27,6 +27,7 @@
         <aside class="contents" aria-label="Chapters and sections">
           <h2><a href="../language.html">Chapters</a></h2>
           <ol class="chapters">
+            <li><a href="types.html">Types and values</a></li>
             <li class="current"><a href="first-proof.html" aria-current="page">A first proof and files</a></li>
             <li><a href="terms.html">Terms, functions and pairs</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
@@ -74,7 +75,7 @@
 def identity_on_numbers = identity(Nat);
 
 def five = identity(Nat, 5);</code></pre>
-            <p>Both forms produce the same kind of kernel term: a function taking a type and an element of it. The second <code>identity</code> is used twice: <code>identity(Nat)</code> is the identity function on <code>Nat</code>, and <code>identity(Nat, 5)</code> is the number <code>5</code>. Chapter 3, <a href="proof-blocks.html#goals">proof blocks</a>, describes every statement a block can contain.</p>
+            <p>Both forms produce the same kind of kernel term: a function taking a type and an element of it. The second <code>identity</code> is used twice: <code>identity(Nat)</code> is the identity function on <code>Nat</code>, and <code>identity(Nat, 5)</code> is the number <code>5</code>. The chapter on <a href="proof-blocks.html#goals">proof blocks</a> describes every statement a block can contain.</p>
             <p>A wrong proof is rejected with a message, and nothing is added. Here the last step offers the type <code>A</code> where an element of <code>A</code> is needed:</p>
             <pre><code data-check="reject">def not_identity : forall A : U0, A -&gt; A {
   intro A;
@@ -85,14 +86,14 @@ def five = identity(Nat, 5);</code></pre>
           <section id="checking">
             <h2>What checking means</h2>
             <p>Cubist has two parts. The <strong>elaborator</strong>, written in JavaScript, reads source and builds kernel terms. It expands notation, finds rewrite positions and chooses simplification rules. It is not trusted. The <strong>kernel</strong>, written in C, checks every term the elaborator produces. A declaration is accepted only when the kernel accepts its term at its stated type.</p>
-            <p>A convenience that the kernel cannot check makes the declaration fail. It never turns into an assumption. The only assumptions are the explicit library ones described in chapter 10, <a href="assumptions.html#axioms">assumptions and computability</a>, and each theorem lists the ones it uses.</p>
+            <p>A convenience that the kernel cannot check makes the declaration fail. It never turns into an assumption. The only assumptions are the explicit library ones described in <a href="assumptions.html#axioms">assumptions and computability</a>, and each theorem lists the ones it uses.</p>
             <p>Each declaration is checked on its own. A rejected declaration is not added, so a later declaration that uses it fails too, with a message naming the missing dependency:</p>
             <pre><code data-check="reject">def wrong : Nat {
   exact Nat;  // Error: Type mismatch.
 }
 
 def uses_wrong = wrong;  // Error: Untranslated dependency: wrong</code></pre>
-            <p>Here <code>wrong</code> fails because <code>Nat</code> is a type, not a number, and <code>uses_wrong</code> fails because <code>wrong</code> does not exist. Chapter 11, <a href="checking.html#inspection">checking and inspection</a>, shows where to run the checker and how to read its results.</p>
+            <p>Here <code>wrong</code> fails because <code>Nat</code> is a type, not a number, and <code>uses_wrong</code> fails because <code>wrong</code> does not exist. The chapter on <a href="checking.html#inspection">checking and inspection</a> shows where to run the checker and how to read its results.</p>
           </section>
           <section id="files">
             <h2>Files and imports</h2>
@@ -153,7 +154,7 @@ def second_of_two(A : U0, x y : A) : A {
 }</code></pre>
             <p>A term declaration ends with <code>;</code>. A block declaration ends with <code>}</code>. There is no form with both a stated type and a term: in <code>def four : Nat = 4;</code> the checker reads <code>Nat = 4</code> as the type, an equation, and then expects a block:</p>
             <pre><code data-check="reject">def four : Nat = 4;  // Error: Expected '{', found ';'.</code></pre>
-            <p>To state the type of a short term, use a block with <code>exact</code>. Chapter 2 adds <a href="terms.html#typed"><code>typed</code></a> for the same purpose inside a term.</p>
+            <p>To state the type of a short term, use a block with <code>exact</code>. The next chapter adds <a href="terms.html#typed"><code>typed</code></a> for the same purpose inside a term.</p>
             <pre><code data-check="accept">def four : Nat {
   exact 4;
 }</code></pre>
@@ -232,7 +233,8 @@ def twice_named = 1;  // Error: Definition symbol is already registered.</code><
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="next" href="terms.html">2. Terms, functions and pairs →</a>
+            <a class="previous" href="types.html">← 1. Types and values</a>
+            <a class="next" href="terms.html">3. Terms, functions and pairs →</a>
           </nav>
         </article>
       </div>
