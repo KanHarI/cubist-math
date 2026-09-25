@@ -122,9 +122,7 @@ def polynomial_map_neg(
   );
 }
 
-def convolution_embedding(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat
-) :
+def convolution_embedding(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat) :
   forall a : FormalSeries(K), forall b : FormalSeries(K),
   field_embedding_map(K, L, e, convolution(K, n, a, b)) = convolution(
     L, n, (fun (j : Nat) => field_embedding_map(K, L, e, a(j))),

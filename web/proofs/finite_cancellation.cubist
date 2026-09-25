@@ -73,17 +73,13 @@ def swap_twice(
     right a => swap_right_twice(A, decide, a, x);
   };
 
-def swap_head(
-  A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A
-) =
+def swap_head(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A) =
   match chosen as c return (swap(A, decide, c, head(A)) = c) {
     left u => cong((fun (v : Unit) => typed(Unit or A, left(v))), unit_equal(u));
     right a => refl(tail(A, a));
   };
 
-def swap_chosen(
-  A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A
-) =
+def swap_chosen(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A) =
   trans(
     sym(cong(swap(A, decide, chosen), swap_head(A, decide, chosen))),
     swap_twice(A, decide, chosen, head(A))

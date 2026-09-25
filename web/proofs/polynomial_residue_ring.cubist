@@ -106,9 +106,7 @@ def residue_mul(
 ) =
   residue_reduce(K, M, polynomial_mul(K, residue_polynomial(K, M, x), residue_polynomial(K, M, y)));
 
-def residue_reduce_value(
-  K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M)
-) :
+def residue_reduce_value(K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M)) :
   residue_reduce(K, M, residue_polynomial(K, M, x)) = x {
   exact residue_ext(
     K, M, residue_reduce(K, M, residue_polynomial(K, M, x)), x,
@@ -149,9 +147,7 @@ def residue_add_zero(K : AlgebraicField, M : PolynomialModulus(K), x : Polynomia
   );
 }
 
-def residue_add_inverse(
-  K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M)
-) :
+def residue_add_inverse(K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M)) :
   residue_add(K, M, residue_neg(K, M, x), x) = residue_zero(K, M) {
   exact residue_ext(
     K, M, residue_add(K, M, residue_neg(K, M, x), x), residue_zero(K, M),

@@ -143,9 +143,7 @@ def polynomial_remainder_add(
   );
 }
 
-def polynomial_remainder_multiple(
-  K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)
-) :
+def polynomial_remainder_multiple(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
   polynomial_remainder(K, M, polynomial_mul(K, p, modulus_polynomial(K, M))) = polynomial_zero(K) {
   exact polynomial_remainder_unique(
     K, M, polynomial_mul(K, p, modulus_polynomial(K, M)), p, polynomial_zero(K),

@@ -32,9 +32,7 @@ def kernel_quotient_to_image(G : Group, H : Group, h : GroupHom(G, H)) =
     image_map_respects_kernel(G, H, h)
   );
 
-def kernel_quotient_to_image_beta(
-  G : Group, H : Group, h : GroupHom(G, H), x : group_carrier(G)
-) :
+def kernel_quotient_to_image_beta(G : Group, H : Group, h : GroupHom(G, H), x : group_carrier(G)) :
   kernel_quotient_to_image(G, H, h, left_coset(G, group_kernel(G, H, h), x)) = group_image_map(
     G, H, h, x
   ) {

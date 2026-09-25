@@ -63,9 +63,7 @@ def intermediate_decisions(
   );
 }
 
-def intermediate_decisions_prop(
-  K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)
-) :
+def intermediate_decisions_prop(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
   Proposition(IntermediateDecisions(K, E, M)) {
   obtain (closure, base) = intermediate_laws(K, E, M);
   exact forall_prop(

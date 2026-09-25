@@ -179,8 +179,7 @@ def upper_transition(z : Z) :
 // coherence proofs say that it agrees across upper and lower meridians.
 def decoder_family(x : S1) = code(x) -> (base = x);
 
-def decoder_upper :
-  transport(decoder_family, base, south_pole, upper, integer_loop) = south_decoder {
+def decoder_upper : transport(decoder_family, base, south_pole, upper, integer_loop) = south_decoder {
   let transported = transport(decoder_family, base, south_pole, upper, integer_loop);
   let append_upper =
     fun (z : Z) => concatenate(U1, S1, base, base, south_pole, integer_loop(z), upper);
@@ -195,8 +194,7 @@ def decoder_upper :
   );
 }
 
-def decoder_lower :
-  transport(decoder_family, base, south_pole, lower, integer_loop) = south_decoder {
+def decoder_lower : transport(decoder_family, base, south_pole, lower, integer_loop) = south_decoder {
   let transported = transport(decoder_family, base, south_pole, lower, integer_loop);
   let append_lower =
     fun (z : Z) => concatenate(U1, S1, base, base, south_pole, integer_loop(z), lower);

@@ -103,9 +103,7 @@ def field_embedding_ext(
   );
 }
 
-def field_embedding_left_identity(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
-) :
+def field_embedding_left_identity(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   field_embedding_compose(K, K, L, field_embedding_identity(K), e) = e {
   exact field_embedding_ext(
     K, L, field_embedding_compose(K, K, L, field_embedding_identity(K), e), e,
@@ -113,9 +111,7 @@ def field_embedding_left_identity(
   );
 }
 
-def field_embedding_right_identity(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
-) :
+def field_embedding_right_identity(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   field_embedding_compose(K, L, L, e, field_embedding_identity(L)) = e {
   exact field_embedding_ext(
     K, L, field_embedding_compose(K, L, L, e, field_embedding_identity(L)), e,

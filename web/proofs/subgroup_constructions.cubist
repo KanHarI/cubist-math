@@ -106,8 +106,7 @@ def subgroup_bottom(G : Group) : Subgroup(G) {
   exact (SubgroupBottom(G), subgroup_bottom_laws(G));
 }
 
-def subgroup_bottom_least(G : Group, S : Subgroup(G)) :
-  SubgroupIncluded(G, subgroup_bottom(G), S) {
+def subgroup_bottom_least(G : Group, S : Subgroup(G)) : SubgroupIncluded(G, subgroup_bottom(G), S) {
   intro x;
   intro same;
   exact transport(

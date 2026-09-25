@@ -69,8 +69,7 @@ def independent_chain_complete(K : AlgebraicField, V : VectorSpace(K)) :
 // mere: the theorem does not select coordinates or a preferred basis.
 // The only classical assumptions are the existing Choice and LEM schemas;
 // maximality is proved through the chain-complete form of Zorn above.
-def vector_space_has_basis(K : AlgebraicField, V : VectorSpace(K)) :
-  FieldExists(VectorBasis(K, V)) {
+def vector_space_has_basis(K : AlgebraicField, V : VectorSpace(K)) : FieldExists(VectorBasis(K, V)) {
   let A = IndependentSubset(K, V);
   let le = IndependentIncluded(K, V);
   let Maximal = exists S : A, OrderMaximal(A, le, S);

@@ -81,8 +81,7 @@ def puncture_ab_action : three_state_action(puncture_ab, state_zero) = state_one
   );
 }
 
-def puncture_aba_inverse_action :
-  three_state_action(puncture_aba_inverse, state_zero) = state_zero {
+def puncture_aba_inverse_action : three_state_action(puncture_aba_inverse, state_zero) = state_zero {
   exact trans(
     loop_action_append(
       Fin(2), Fin(3), puncture_permutations, puncture_ab, two_loop_inverse(first_puncture_loop),
@@ -171,8 +170,7 @@ def puncture_generators_do_not_commute :
   );
 }
 
-def commutator_first_winding_zero :
-  puncture_winding(2, first_puncture, puncture_commutator) = zeroZ {
+def commutator_first_winding_zero : puncture_winding(2, first_puncture, puncture_commutator) = zeroZ {
   let abValue =
     puncture_winding_append_values(
       2, first_puncture, first_puncture_loop, second_puncture_loop, nonnegative(1), zeroZ,
