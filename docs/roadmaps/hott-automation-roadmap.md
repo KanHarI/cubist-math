@@ -317,6 +317,16 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   with Σ extensionality, hypothesis substitution, inspection and persistent
   frozen output. Extract telescope abstraction independently of any tactic so
   registered eliminators and structure descriptions can reuse it.
+  - Interim state: [proof-goals.mjs](../../lib/cubical/proof-goals.mjs)
+    defines `Goal`, a target at a scope (term and interval context), and
+    `Transition`: a goal, the goal that remains, a plan and the search trace.
+    Plan steps are composition, transport, congruence, abstraction and lemma
+    application; conversion closes a goal with a checked constant path.
+    `rw`, `simp`, `simpa`, `ext`, `intro` and `over` rebuild through the
+    plan's one interface, and `calc` shares its path composition. Tactics
+    share inspector records. Filling steps, face restrictions, source spans in
+    the plan, telescope abstraction, and `induction` and `hlevel` as tactics
+    remain.
   - Also replace these elaborator mechanisms, found in the 2026-09-25 review:
     - [x] One name supply for every generated binder. About a dozen generators
       share one string namespace with kernel symbols. A generated-name
