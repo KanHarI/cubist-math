@@ -61,9 +61,9 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
     grow();
   };
 
-  // Run an entry as if typed. Quietly, only its errors are shown.
-  async function execute(text, { quiet = false } = {}) {
-    if (!quiet) {
+  // Run an entry as if typed. Without echo, only its results are shown.
+  async function execute(text, { echo = true } = {}) {
+    if (echo) {
       history.push(text);
       recalled = history.length;
       const entry = element("pre", "repl-entry");
@@ -76,8 +76,8 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
     scroll();
     try {
       const results = await run(text);
-      for (const result of results) if (!quiet || result.kind === "error") show(result);
-      if (!results.length && !quiet) show({ kind: "info", text: "Nothing to run." });
+      for (const result of results) show(result);
+      if (!results.length && echo) show({ kind: "info", text: "Nothing to run." });
     } catch (error) {
       show({ kind: "error", text: error.message });
     } finally {
@@ -121,7 +121,7 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
     }
   });
   return { input, log, show, focus: () => input.focus(), enter: execute, restart,
-    load: text => execute(text, { quiet: true }) };
+    load: text => execute(text, { echo: false }) };
 }
 
 // A REPL with its own worker and an empty program, for pages without a proof.

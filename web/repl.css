@@ -138,10 +138,12 @@ body.repl-docked.repl-open { padding-bottom: calc(36vh + 120px); }
 .repl-commands td:first-child { white-space: nowrap; }
 
 /* A read-only REPL transcript in the reference (examples.mjs). */
-pre.repl-transcript { background: #fbfcfa; }
+pre.repl-transcript { background: #fbfcfa; white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.repl-transcript code { overflow-wrap: anywhere; }
 .repl-transcript-entry, .repl-transcript-result { display: block; }
 .repl-transcript-result { padding-left: 1.4em; color: #346447; }
 .repl-transcript-entry + .repl-transcript-entry, .repl-transcript-result + .repl-transcript-entry { margin-top: 6px; }
+.example-bar .repl-fork + a { margin-left: 0; }
 .repl-fork {
   margin-left: auto;
   padding: 2px 10px;
