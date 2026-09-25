@@ -89,79 +89,100 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
 
 ## Items
 
-- [ ] **G0. Check universe-generic definitions once, with `Uω` only as a type.**
+- [ ] **G0. Check universe-generic definitions once, over tiered universes.**
   Today a declaration with a `U : Universe` parameter is a template. The
   elaborator specializes it at each universe where it is used, and the kernel
   checks only those copies. So a generic result is never itself a checked term,
   and it is unchecked at every level no one has used yet. G0 makes universe
   variables genuine kernel binders and checks each generic definition once, for
   every level.
-  - **Specification.** [g0-universe-specification.md](g0-universe-specification.md) (K1.1): rules, consistency note, acceptance cases and open questions.
-  - **Levels.** Level expressions are `0`, `ℓ + 1`, `max(ℓ, ℓ')` and universe
-    variables, with `U(ℓ) : U(ℓ + 1)`. Two levels are equal when their normal
-    forms agree: for each variable its largest offset, plus a constant. `ℓ ≤ ℓ'`
-    is decided on those normal forms, so for example `max(x, x) = x` and
-    `max(x + 1, x) = x + 1`. Existing cumulativity becomes symbolic:
-    `U(ℓ) ≤ U(ℓ')` exactly when `ℓ ≤ ℓ'`, as in `U0 ≤ U(x) ≤ U(max(x, y))`.
-  - **`Uω` is a type, never a term.** Its elements are the universes: `U0`,
-    `U1`, universe variables and level expressions over them. `Uω` may only be
-    the type of a binder (Π, λ or a declaration parameter). It cannot be an
-    argument, occur in an expression, be compared, or have a type.
-  - **Large types.** A Π over `Uω`, or a Π whose domain or codomain is large,
-    is a large type. A large type may be the statement of a definition, or the
-    type of a parameter (so a result can take a universe-generic function as an
-    argument). It may be built further with Π. It is never an element of a
-    universe, and never an argument to `Path`, `PathP`, Σ, W, Glue, composition
-    or truncation. Large types are classified by a judgment, not by a universe,
-    so no universe above `Uω` is needed. Nothing contains itself: in a model,
-    levels are natural numbers, `U(n)` is the n-th of ω universes, and large
-    types are sets above all of them that are never internalized.
-  - **Instantiation** is application to a level expression. Its β-rule
-    substitutes the level, avoiding capture of level binders.
-  - **Cubical rules stay small-only.** `Path`, composition, transport and Glue
-    work at `U(ℓ)` for every level expression; the CCHM rules are uniform in
-    the level. Only level comparisons become symbolic, such as Glue's check
-    that its partial types fit its base universe. Large types get no fibrancy
-    structure, so G0 adds no composition rule.
-  - **Computation.** Instantiation is β-reduction plus level substitution. Closed
-    assumption-free results at small types still reduce to canonical values
-    (invariant 10). A large type is never the type of a canonical value.
-  - **Kernel scope.** Every typing rule now computes a concrete level: Π, Σ, W,
-    Glue, pushouts and composition. Each must compute a level expression, or
-    report "large". Conversion compares universes by level normal form.
-    Serialization, the ABI and the reference checker gain level expressions
-    and level binders.
-  - **Language.** `U : Universe` becomes a real parameter of type `Uω`; the
-    source spelling may stay `Universe`. Source gains level expressions, for
-    example `next(U)` and `max(U, V)`, so that `Group(U)` can live in
-    `next(U)`. Universe arguments stay explicit at first. Inferring them from
-    level constraints belongs with argument inference in the ergonomics
-    roadmap.
+  - **Specification.** [g0-universe-specification.md](g0-universe-specification.md) (K1.1, revised on 2026-09-25 for tiered universes): rules, consistency note, acceptance cases and open questions.
+  - **Tiered universes.** Universes are indexed by ordinals below ω². The
+    constants are `U0, U1, …` (level `n`), `UU0, UU1, …` (level `ω + n`),
+    `UUU0, UUU1, …` (level `ω·2 + n`), and so on, one more `U` per tier. A
+    constant always carries its index. Names of the shape `U+[0-9]+` are
+    reserved, and `U`, `UU` and `UUU` stay free for user variables. Every
+    universe is an ordinary term: `U_n : U_{n+1}`, `UU0 : UU1`. Cumulativity
+    crosses tiers: `U_n ≤ UU0 ≤ UU1 ≤ … ≤ UUU0 ≤ …`.
+  - **Levels.** Level expressions are constants, `ℓ + 1`, `max(ℓ, ℓ')` and
+    universe variables. A normal form is either a tier-0 constant plus an
+    offset per variable, or a constant of tier 1 or above, which absorbs
+    every variable. Equality and `ℓ ≤ ℓ'` are decided on normal forms, so for
+    example `max(x, x) = x`, `max(x + 1, x) = x + 1` and `max(x, ω) = ω`.
+    Existing cumulativity becomes symbolic: `U(ℓ) ≤ U(ℓ')` exactly when
+    `ℓ ≤ ℓ'`, as in `U0 ≤ U(x) ≤ U(max(x, y)) ≤ UU0`.
+  - **Universe binders.** `U < UU0` binds a universe variable that ranges
+    over the universes below `UU0`: `U0, U1, …`. Examples are
+    `def identity(U < UU0, A : U, x : A) = x;`, `forall U < UU0, B` and
+    `fun (U < UU0) => t`. The bound is binder syntax, never a term, and only
+    tier bases (`UU0`, `UUU0`, …) may be bounds. The word `Universe` is
+    removed. G0 implements only `< UU0`, so universe variables denote natural
+    numbers. `V < UUU0`, ranging over every `U_n` and `UU_n`, is admitted by
+    the design and left as a later extension.
+  - **Generic statements are ordinary types.** `forall U < UU0, B` lives in
+    `UU0` when `U` occurs in the level of `B`, and at the level of `B`
+    otherwise. So every type lives in some universe. A generic statement may
+    be the statement or the value of a definition, the type of a parameter
+    (so a result can take a universe-generic function as an argument), and an
+    argument of Σ, `Path`, Glue, sums and composition.
+  - **Instantiation** is application to a level expression below `UU0`. Its
+    β-rule substitutes the level, avoiding capture of level binders.
+    `identity(UU0, T, x)` is rejected.
+  - **Cubical rules.** `Path`, composition, transport and Glue work at every
+    level and tier; the CCHM rules are uniform in the level, so `UU0` is a
+    fibrant universe like any other. One composition rule is added:
+    composition at a level quantification is the level abstraction of
+    composition at its body. It is sound because levels never vary along the
+    interval. Otherwise only level comparisons become symbolic, such as the
+    `max` of levels that Glue computes.
+  - **Computation.** Instantiation is β-reduction plus level substitution. No
+    reduction rule reads a level. Closed assumption-free results still reduce
+    to canonical values (invariant 10), including results at UU-tier types
+    and transports along lines of generic statements.
+  - **Consistency.** Levels are modelled as ordinals below ω², with a
+    Grothendieck universe for each, from ω² inaccessible cardinals. A level
+    quantification is an ℕ-indexed product, which lies in `U_ω`. No binder
+    ranges over all tiers and no bound is a term, so no universe above all
+    tiers is needed.
+  - **Kernel scope.** Every typing rule that computes a level (Π, Σ, W, sums,
+    `Path`, Glue, pushouts, `U`) computes a level expression, and level
+    quantification uses the rule above. Conversion compares universes by
+    level normal form. Serialization, the ABI and the reference checker gain
+    level expressions, bounds and level binders.
+  - **Language.** `U < UU0` elaborates to a kernel level binder. Source gains
+    `next(E)` and `max(E, F)`, so that `Group(U)` can live in `next(U)`.
+    Universe arguments stay explicit at first. Inferring them from level
+    constraints belongs with argument inference in the ergonomics roadmap.
   - **What G0 deletes.** It removes schema specialization and the
     per-universe builtins (`builtin__ua__U<n>`). It also removes the
     per-universe assumption schemas (`Choice(U0)`, `Truncate(U1)`, …), the
     specialization bindings, template inspection, and the migration verifier's
     specialization probes. Univalence, function extensionality, choice,
-    excluded middle and truncation each become one assumption or definition
-    with a large type. With H1, truncation is the declaration
-    `Trunc : ∀ U : Uω, U → U`, universe-preserving by construction.
+    excluded middle and truncation each become one assumption or definition,
+    generic over `U < UU0`. `LEM`, `Choice` and `Truncate` have no instances
+    at UU-tier universes. With H1, truncation is the declaration
+    `Trunc(U < UU0, A : U) : U`, universe-preserving by construction.
   - **Precedent.** The Rust THTH kernel (`KanHarI/thth`) had universe variables
     `U_X : UUOmega` with `U0 ≤ U_X`. There, however, `UUOmega` was a term of a
-    further universe `UUKappa`, and universe variables had no successor. G0
-    removes the need for `UUKappa` by keeping `Uω` out of term position. It
+    further universe `UUKappa`, and universe variables had no successor. In
+    G0, `UU0 : UU1` is an ordinary successor inside the hierarchy. Because no
+    binder ranges over all tiers, nothing needs a universe above them. G0 also
     adds successor and `max`, which families such as groups over `U` need.
   - **Acceptance.**
     - Reject:
-      - `Uω` as an argument, in an expression, or with a type;
-      - a large type as a universe element, or as an argument to `Path`, Σ,
-        Glue or truncation;
+      - a bound as a term, an argument or with a type; a bound that is not a
+        tier base; the word `Universe`;
+      - a generic statement in a universe below `UU0`;
+      - instantiation at `UU0` or above, including `LEM` at `UU0`;
       - a universe variable used at a smaller universe;
-      - downward lifting.
+      - downward lifting, within a tier and across tiers.
     - Check:
-      - level normalization and symbolic cumulativity;
+      - level normalization across tiers and symbolic cumulativity;
       - capture-avoiding level substitution under binders;
-      - Glue and composition at a variable level;
-      - computation of instantiated closed results in the canonicity fixture.
+      - generic statements in `UU0` under Σ, `Path`, Glue and composition;
+      - Glue and composition at a variable level and at `UU0`;
+      - computation of instantiated closed results, and of a transport along
+        a line of generic statements, in the canonicity fixture.
     - The native and reference checkers must agree on all of these.
     - Recheck the archived library's templates generically. Record each one
       that only checked at particular levels, rather than weakening the rules
@@ -277,7 +298,7 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
 
 | Item | Must be rejected or preserved |
 | --- | --- |
-| G0 | `Uω` only as a binder's type; large types never universe elements or arguments to small type formers; level equality by normal form; symbolic cumulativity; capture-avoiding level substitution; instantiated closed results compute; both checkers agree |
+| G0 | Bounds only in universe binders, never terms; generic statements live in `UU0` or at their body's level; instantiation only below `UU0`; level equality by normal form across tiers; symbolic cumulativity across tiers; capture-avoiding level substitution; composition at a level quantification is pointwise; instantiated closed results compute; both checkers agree |
 | H1–H4 | Each stage's gate opens only with its soundness note; generated rules agree between checkers; hand-coded rules agree with H1 before retirement; positivity, boundary, h-level and index-level errors rejected; closed data results normalize through formal compositions; the stage showcase computes |
 | G2 | Universe preservation distinguished from resizing; implicit downward resizing rejected; retained resizing named and reported |
 | G3 (as H2's `Id`) | J computes on `refl`; checked connection to `Path`; no UIP or collapse of nontrivial loops |
