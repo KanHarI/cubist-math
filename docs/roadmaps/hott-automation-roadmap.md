@@ -324,9 +324,14 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     application; conversion closes a goal with a checked constant path.
     `rw`, `simp`, `simpa`, `ext`, `intro` and `over` rebuild through the
     plan's one interface, and `calc` shares its path composition. Tactics
-    share inspector records. Filling steps, face restrictions, source spans in
-    the plan, telescope abstraction, and `induction` and `hlevel` as tactics
-    remain.
+    share inspector records.
+    [motives.mjs](../../lib/cubical/motives.mjs) abstracts a goal over
+    several scrutinees, independently of any tactic. It generalizes the
+    hypotheses that depend on them and introduces them again in each branch.
+    No statement uses it yet: `cases` keeps its constant motive, and `match`
+    (L2.2) will be its first client. Filling steps, face restrictions, source
+    spans in the plan, index generalization, companion motives, and
+    `induction` and `hlevel` as tactics remain.
   - Also replace these elaborator mechanisms, found in the 2026-09-25 review:
     - [x] One name supply for every generated binder. About a dozen generators
       share one string namespace with kernel symbols. A generated-name
