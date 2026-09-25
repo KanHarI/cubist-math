@@ -126,44 +126,7 @@
             <button id="back" hidden>← Back</button>
           </div>
           <p id="inspect-kind" class="eyebrow"></p>
-          <p id="inspect-statement-label" class="hint" hidden>Conclusion</p>
-          <pre id="inspect-type"></pre>
-          <details id="inspect-parameters" hidden>
-            <summary id="inspect-parameters-label">Parameters and hypotheses</summary>
-            <div id="inspect-parameters-list"></div>
-          </details>
-          <p id="inspect-description" class="description"></p>
-          <div id="rewrite-trace" hidden></div>
-          <button id="freeze-simp" hidden>Replace with simp only</button>
-          <div id="inspect-universes" hidden></div>
-          <a id="view-source" class="source-link" hidden>View source →</a>
-          <div id="inspect-axioms" class="axiom-dependencies"></div>
-          <div id="locals"></div>
-          <details id="kernel-details" open>
-            <summary>Checked kernel details</summary>
-            <p id="kernel-inference" class="hint"></p>
-            <button id="open-kernel-assembly" hidden disabled>Open assembly view ↗</button>
-            <div id="kernel-premises"></div>
-            <section id="kernel-specialization" class="specialization" hidden></section>
-            <label for="kernel-view">Representation</label>
-            <select id="kernel-view">
-              <option value="notation">Kernel notation (folded)</option>
-              <option value="expanded" hidden>Kernel notation (stored)</option>
-              <option value="raw">Raw kernel term</option>
-            </select>
-            <label id="kernel-binder-options" class="hint">
-              <input id="kernel-group-binders" type="checkbox" />
-              Group independent binders
-            </label>
-            <label id="kernel-truncation-options" class="hint">
-              <input id="kernel-truncation-sugar" type="checkbox" checked />
-              Truncation notation ‖A‖
-            </label>
-            <label id="kernel-identity-options" class="hint" title="Display equality with its carrier as a subscript; uncheck to show Id with carrier T">
-              <input id="kernel-identity-sugar" type="checkbox" checked />
-              Equality notation <math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mo>=</mo><mi>T</mi></msub></math>
-            </label>
-            <p id="kernel-view-note" class="hint"></p>
+          <section id="kernel-terms" aria-label="Checked kernel term">
             <section id="kernel-context" aria-labelledby="kernel-context-label">
               <strong id="kernel-context-label">Context</strong>
               <p id="kernel-context-note" class="hint"></p>
@@ -187,6 +150,45 @@
             </div>
             <div id="kernel-type" class="kernel-term"></div>
             <button id="expand-kernel" hidden>Show full term</button>
+          </section>
+          <p id="inspect-statement-label" class="hint" hidden>Conclusion</p>
+          <pre id="inspect-type"></pre>
+          <details id="inspect-parameters" hidden>
+            <summary id="inspect-parameters-label">Parameters and hypotheses</summary>
+            <div id="inspect-parameters-list"></div>
+          </details>
+          <p id="inspect-description" class="description"></p>
+          <div id="rewrite-trace" hidden></div>
+          <button id="freeze-simp" hidden>Replace with simp only</button>
+          <div id="inspect-universes" hidden></div>
+          <a id="view-source" class="source-link" hidden>View source →</a>
+          <div id="inspect-axioms" class="axiom-dependencies"></div>
+          <div id="locals"></div>
+          <details id="kernel-details" open>
+            <summary>Kernel representation</summary>
+            <p id="kernel-inference" class="hint"></p>
+            <button id="open-kernel-assembly" hidden disabled>Open assembly view ↗</button>
+            <div id="kernel-premises"></div>
+            <section id="kernel-specialization" class="specialization" hidden></section>
+            <label for="kernel-view">Representation</label>
+            <select id="kernel-view">
+              <option value="notation">Kernel notation (folded)</option>
+              <option value="expanded" hidden>Kernel notation (stored)</option>
+              <option value="raw">Raw kernel term</option>
+            </select>
+            <label id="kernel-binder-options" class="hint">
+              <input id="kernel-group-binders" type="checkbox" />
+              Group independent binders
+            </label>
+            <label id="kernel-truncation-options" class="hint">
+              <input id="kernel-truncation-sugar" type="checkbox" checked />
+              Truncation notation ‖A‖
+            </label>
+            <label id="kernel-identity-options" class="hint" title="Display equality with its carrier as a subscript; uncheck to show Id with carrier T">
+              <input id="kernel-identity-sugar" type="checkbox" checked />
+              Equality notation <math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mo>=</mo><mi>T</mi></msub></math>
+            </label>
+            <p id="kernel-view-note" class="hint"></p>
           </details>
           <p class="hint">
             Inspection never changes the proof. Definitions and local

@@ -637,7 +637,14 @@ select {
 
 /* Embedded in a reference page: only the checked source and the inspector. */
 body.embedded > header, body.embedded .introduction, body.embedded .toolbar,
-body.embedded .compiler-options, body.embedded .hint, body.embedded #language-guide,
+body.embedded .compiler-options, body.embedded #source-notice, body.embedded #development-note,
+body.embedded #puncture-note, body.embedded #complex-note, body.embedded #language-guide,
 body.embedded footer { display: none; }
 body.embedded main { padding-top: 12px; }
 body.embedded .workspace { grid-template-columns: minmax(0, 1fr); }
+
+/* The checked term comes first in the inspector: context, expression, type. */
+#kernel-terms { margin: 4px 0 18px; }
+#kernel-terms[hidden] { display: none; }
+/* Embedded, the inspector comes before the source it inspects. */
+body.embedded .workspace > .inspector { order: -1; }

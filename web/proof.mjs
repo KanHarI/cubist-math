@@ -279,7 +279,8 @@ async function check() {
       focusOffset = null;
       if (focus) await inspect({ ...decorate(focus), line: result.source.slice(0, focus.start).split("\n").length }, false);
       else if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
-      if (focus) revealSource(focus);
+      // Embedded, the inspector is on top and the source below stays in place.
+      if (focus && !embedded) revealSource(focus);
       else if (info) revealSource(info);
     }
     rememberDraft();
@@ -583,6 +584,7 @@ async function inspect(info, remember = true) {
   $("inspect-axioms").replaceChildren();
   $("locals").replaceChildren();
   $("kernel-details").hidden = info.kind === "goal";
+  $("kernel-terms").hidden = info.kind === "goal";
   $("kernel-details").open = true;
   $("open-kernel-expression").disabled = true;
   $("open-kernel-type").disabled = true;
@@ -629,6 +631,7 @@ async function inspect(info, remember = true) {
   } else {
     if (last.backend === "cubical" && info.verified === false && !templateBinding) {
       $("kernel-details").hidden = true;
+      $("kernel-terms").hidden = true;
       $("inspect-description").textContent = info.template
         ? `Library universe template. Each concrete specialization is checked by cubical C when used. ${info.description ?? ""}`
         : `Not checked by cubical C: ${info.reason}`;
@@ -657,7 +660,8 @@ async function inspect(info, remember = true) {
       if (sequence === inspectSerial) diagnostic(e);
     }
   }
-  if (matchMedia("(max-width:1150px)").matches)
+  if (embedded) scrollTo(0, 0);
+  else if (matchMedia("(max-width:1150px)").matches)
     $("inspect-name").scrollIntoView({ block: "center" });
 }
 function renderStatement(view) {
