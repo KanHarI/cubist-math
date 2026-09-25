@@ -5,7 +5,7 @@ import scalar_restriction;
 // coefficients are extended along K -> L; vectors themselves do not move.
 def extend_coordinate_linear(
   K L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat
-) =
+) :=
   induction n as k return (
     LinearMap(K, CoordinateSpace(K, k), RestrictScalars(K, L, e, V))
     -> LinearMap(L, CoordinateSpace(L, k), V)
@@ -31,7 +31,7 @@ def extend_coordinate_linear(
 
 def extend_coefficients(
   K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, a : Fin(n) -> af_carrier(K)
-) =
+) :=
   fun (i : Fin(n)) => field_embedding_map(K, L, e, a(i));
 
 def extend_coordinate_zero(
@@ -39,9 +39,9 @@ def extend_coordinate_zero(
   h : LinearMap(K, CoordinateSpace(K, 0), RestrictScalars(K, L, e, V)), a : Fin(0) -> af_carrier(K)
 ) :
   vector_zero(L, V) = linear_map(K, CoordinateSpace(K, 0), RestrictScalars(K, L, e, V), h, a) {
-  let C = CoordinateSpace(K, 0);
-  let R = RestrictScalars(K, L, e, V);
-  let H = linear_map(K, C, R, h);
+  let C := CoordinateSpace(K, 0);
+  let R := RestrictScalars(K, L, e, V);
+  let H := linear_map(K, C, R, h);
   exact trans(
     sym(linear_zero(K, C, R, h)),
     cong(
@@ -56,7 +56,7 @@ def extend_coordinate_zero(
 
 def extend_coordinate_square(
   K L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat
-) =
+) :=
   induction n as k return (
     forall h : LinearMap(K, CoordinateSpace(K, k), RestrictScalars(K, L, e, V)),
     forall a : Fin(k) -> af_carrier(K),
@@ -95,12 +95,12 @@ def scalar_extension_basis_finite(
   basis : FiniteBasis(K, RestrictScalars(K, L, e, V), n)
 ) :
   FiniteDimensional(L, V) {
-  let R = RestrictScalars(K, L, e, V);
-  let h = basis_expansion(K, R, n, basis);
-  let extended = extend_coordinate_linear(K, L, e, V, n, h);
+  let R := RestrictScalars(K, L, e, V);
+  let h := basis_expansion(K, R, n, basis);
+  let extended := extend_coordinate_linear(K, L, e, V, n, h);
   have onto : LinearSurjective(L, CoordinateSpace(L, n), V, extended) {
     intro x;
-    let a = linear_map(K, R, CoordinateSpace(K, n), basis_coordinates(K, R, n, basis), x);
+    let a := linear_map(K, R, CoordinateSpace(K, n), basis_coordinates(K, R, n, basis), x);
     exact merely(
       Fiber(
         (Fin(n) -> af_carrier(L)), vector_carrier(L, V),
@@ -129,8 +129,8 @@ def finite_dimensional_of_restriction(
   finite : FiniteDimensional(K, RestrictScalars(K, L, e, V))
 ) :
   FiniteDimensional(L, V) {
-  let R = RestrictScalars(K, L, e, V);
-  let n = dimension(K, R, finite);
+  let R := RestrictScalars(K, L, e, V);
+  let n := dimension(K, R, finite);
   exact mere_eliminate(
     FiniteBasis(K, R, n), FiniteDimensional(L, V), finite_dimensional_prop(L, V),
     scalar_extension_basis_finite(K, L, e, V, n), dimension_specification(K, R, finite)

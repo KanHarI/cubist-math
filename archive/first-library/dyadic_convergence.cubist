@@ -3,7 +3,7 @@ import dyadic_tails;
 // Actual Archimedean witnesses, kept separate from the merely existential
 // Archimedean property of CompleteOrderedField. No principle extracting
 // this stronger data is assumed here.
-def ArchimedeanBounds(F : U1, zero one : F, addF : F -> F -> F, lt : F -> F -> U0) =
+def ArchimedeanBounds(F : U1, zero one : F, addF : F -> F -> F, lt : F -> F -> U0) :=
   forall x : F, exists n : Nat, lt(x, field_natural(F, zero, one, addF)(n));
 
 def archimedean_bounds_forget(
@@ -28,8 +28,8 @@ def dyadic_width_close_tail(
   forall n : Nat, IndexLE(bound, n)
   -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon) {
   intro n later;
-  let radius = dyadic_width(F, half, n, width);
-  let nonnegativeRadius =
+  let radius := dyadic_width(F, half, n, width);
+  let nonnegativeRadius :=
     dyadic_width_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, n, width,
       nonnegativeWidth
@@ -59,11 +59,11 @@ def dyadic_width_converges_from_bounds(
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => dyadic_width(F, half, n, width)), zero) {
   intro epsilon positiveEpsilon;
-  obtain (reciprocal, positiveReciprocal, inverseLaw) = field_positive_reciprocal(
+  obtain (reciprocal, positiveReciprocal, inverseLaw) := field_positive_reciprocal(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, epsilon, positiveEpsilon
   );
-  obtain (bound, large) = bounds(mulF(width, reciprocal));
-  let small =
+  obtain (bound, large) := bounds(mulF(width, reciprocal));
+  let small :=
     dyadic_width_small_from_natural_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width,
       nonnegativeWidth, epsilon, positiveEpsilon, reciprocal, inverseLaw, bound, large
@@ -92,15 +92,15 @@ def dyadic_width_mere_close_tail(
     exists bound : Nat, forall n : Nat, IndexLE(bound, n)
     -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon)
   ) {
-  let A = (exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon));
-  let B =
+  let A := (exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon));
+  let B :=
     (
       exists bound : Nat, forall n : Nat, IndexLE(bound, n)
       -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon)
     );
   have mapping : A -> B {
     intro data;
-    obtain (bound, small) = data;
+    obtain (bound, small) := data;
     exact (
       bound,
       dyadic_width_close_tail(

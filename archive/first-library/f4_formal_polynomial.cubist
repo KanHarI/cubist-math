@@ -3,7 +3,7 @@ import f4_embedding_images;
 
 // The earlier F4 calculation is now connected to formal coefficient
 // polynomials, not just a function having the desired values on four points.
-def f2_quadratic =
+def f2_quadratic :=
   polynomial_add(
     F2,
     polynomial_add(
@@ -14,17 +14,17 @@ def f2_quadratic =
 
 def f2_quadratic_evaluation(x : F4Carrier) :
   polynomial_eval(F2, F4, f2_f4_embedding, f2_quadratic, x) = f4_root_polynomial(x) {
-  let X = polynomial_variable(F2);
-  let S = polynomial_mul(F2, X, X);
-  let e = f2_f4_embedding;
-  let E = (fun (p : Polynomial(F2)) => polynomial_eval(F2, F4, e, p, x));
-  let variable = polynomial_eval_variable(F2, F4, e, x);
-  let square =
+  let X := polynomial_variable(F2);
+  let S := polynomial_mul(F2, X, X);
+  let e := f2_f4_embedding;
+  let E := (fun (p : Polynomial(F2)) => polynomial_eval(F2, F4, e, p, x));
+  let variable := polynomial_eval_variable(F2, F4, e, x);
+  let square :=
     trans(
       polynomial_eval_mul(F2, F4, e, X, X, x),
       trans(cong((fun (a : F4Carrier) => f4_mul(a, E(X))), variable), cong(f4_mul(x), variable))
     );
-  let linear =
+  let linear :=
     trans(
       polynomial_eval_add(F2, F4, e, S, X, x),
       trans(
@@ -49,7 +49,7 @@ def f2_quadratic_other_root : PolynomialRoot(F2, F4, f2_f4_embedding, f2_quadrat
 }
 
 def f2_quadratic_nonzero(zero : f2_quadratic = polynomial_zero(F2)) : Void {
-  let E = (fun (p : Polynomial(F2)) => polynomial_eval(F2, F4, f2_f4_embedding, p, f4_0));
+  let E := (fun (p : Polynomial(F2)) => polynomial_eval(F2, F4, f2_f4_embedding, p, f4_0));
   exact f4_nontrivial(
     trans(
       sym(f2_quadratic_evaluation(f4_0)),

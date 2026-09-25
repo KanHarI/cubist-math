@@ -6,7 +6,7 @@ import quotient_sets;
 def EmbeddingOverLaw(
   K R : AlgebraicField, inclusion : FieldEmbedding(K, R), L : AlgebraicField,
   e : FieldEmbedding(K, L), h : FieldEmbedding(R, L)
-) =
+) :=
   forall a : af_carrier(K),
   field_embedding_map(R, L, h, field_embedding_map(K, R, inclusion, a)) = field_embedding_map(
     K, L, e, a
@@ -15,25 +15,25 @@ def EmbeddingOverLaw(
 def EmbeddingsOver(
   K R : AlgebraicField, inclusion : FieldEmbedding(K, R), L : AlgebraicField,
   e : FieldEmbedding(K, L)
-) =
+) :=
   exists h : FieldEmbedding(R, L), EmbeddingOverLaw(K, R, inclusion, L, e, h);
 
 def embedding_over(
   K R : AlgebraicField, inclusion : FieldEmbedding(K, R), L : AlgebraicField,
   e : FieldEmbedding(K, L), h : EmbeddingsOver(K, R, inclusion, L, e)
-) =
+) :=
   sigma_first(FieldEmbedding(R, L), EmbeddingOverLaw(K, R, inclusion, L, e), h);
 
 def embedding_over_law(
   K R : AlgebraicField, inclusion : FieldEmbedding(K, R), L : AlgebraicField,
   e : FieldEmbedding(K, L), h : EmbeddingsOver(K, R, inclusion, L, e)
-) =
+) :=
   sigma_second(FieldEmbedding(R, L), EmbeddingOverLaw(K, R, inclusion, L, e), h);
 
 def embedding_over_law_prop(
   K R : AlgebraicField, inclusion : FieldEmbedding(K, R), L : AlgebraicField,
   e : FieldEmbedding(K, L), h : FieldEmbedding(R, L)
-) =
+) :=
   forall_prop(
     af_carrier(K),
     (
@@ -51,7 +51,7 @@ def embedding_over_law_prop(
 
 // The only extra data in an embedding over a base is a proposition-valued
 // commuting triangle. The embedding space is a set.
-def field_embeddings_are_set(K L : AlgebraicField) =
+def field_embeddings_are_set(K L : AlgebraicField) :=
   subtype_is_set(
     (af_carrier(K) -> af_carrier(L)),
     FieldEmbeddingLaws(K, af_carrier(L), structure_data(FieldData, L)),
@@ -63,7 +63,7 @@ def field_embeddings_are_set(K L : AlgebraicField) =
 
 def embeddings_over_are_set(
   K L : AlgebraicField, e : FieldEmbedding(K, L), T : AlgebraicField, j : FieldEmbedding(K, T)
-) =
+) :=
   subtype_is_set(
     FieldEmbedding(L, T), EmbeddingOverLaw(K, L, e, T, j), field_embeddings_are_set(L, T),
     embedding_over_law_prop(K, L, e, T, j)
@@ -73,7 +73,7 @@ def embeddings_over_ext(
   K L : AlgebraicField, e : FieldEmbedding(K, L), T : AlgebraicField, j : FieldEmbedding(K, T),
   a b : EmbeddingsOver(K, L, e, T, j),
   same : embedding_over(K, L, e, T, j, a) = embedding_over(K, L, e, T, j, b)
-) =
+) :=
   subtype_ext(
     FieldEmbedding(L, T), EmbeddingOverLaw(K, L, e, T, j), embedding_over_law_prop(K, L, e, T, j),
     a, b, same

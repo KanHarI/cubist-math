@@ -4,12 +4,12 @@ import circle;
 
 // Collapse all but one labelled generator to the constant loop of S1.
 // Finite equality is decided constructively, without excluded middle.
-def decision_circle_loop(P : U0, decision : Decidable(P)) = match decision return LoopsS1 {
+def decision_circle_loop(P : U0, decision : Decidable(P)) := match decision return LoopsS1 {
     left yes => loop;
     right no => refl(base);
   };
 
-def selected_circle_loop(n : Nat, selected label : Fin(n)) =
+def selected_circle_loop(n : Nat, selected label : Fin(n)) :=
   decision_circle_loop((selected = label), fin_decidable(n, selected, label));
 
 def selected_circle_self(n : Nat, selected : Fin(n)) :
@@ -32,10 +32,10 @@ def selected_circle_other(n : Nat, selected label : Fin(n), different : (selecte
   };
 }
 
-def puncture_circle_map(n : Nat, selected : Fin(n)) =
+def puncture_circle_map(n : Nat, selected : Fin(n)) :=
   bouquet_map(Fin(n), S1, base, selected_circle_loop(n, selected));
 
-def puncture_winding(n : Nat, selected : Fin(n), p : BouquetLoops(Fin(n))) =
+def puncture_winding(n : Nat, selected : Fin(n), p : BouquetLoops(Fin(n))) :=
   winding(cong(puncture_circle_map(n, selected), p));
 
 def puncture_winding_self(n : Nat, selected : Fin(n)) :
@@ -59,8 +59,8 @@ def puncture_winding_append(n : Nat, selected : Fin(n), p q : BouquetLoops(Fin(n
   puncture_winding(n, selected, trans(p, q)) = addZ(
     puncture_winding(n, selected, p), puncture_winding(n, selected, q)
   ) {
-  let point = bouquet_base(Fin(n));
-  let map = puncture_circle_map(n, selected);
+  let point := bouquet_base(Fin(n));
+  let map := puncture_circle_map(n, selected);
   exact trans(
     cong(
       puncture_winding(n, selected), append_path_agrees(PunctureGraph(n), point, point, point, p, q)
@@ -74,7 +74,7 @@ def puncture_winding_append(n : Nat, selected : Fin(n), p q : BouquetLoops(Fin(n
 
 def puncture_winding_inverse(n : Nat, selected : Fin(n), p : BouquetLoops(Fin(n))) :
   puncture_winding(n, selected, sym(p)) = inverse_integer(puncture_winding(n, selected, p)) {
-  let mapped = cong(puncture_circle_map(n, selected), p);
+  let mapped := cong(puncture_circle_map(n, selected), p);
   exact trans(
     cong(
       winding,
@@ -94,7 +94,7 @@ def puncture_winding_laws(n : Nat, selected : Fin(n)) :
 def puncture_generator_nontrivial(n : Nat, selected : Fin(n)) :
   (puncture_loop(n, selected) = refl(bouquet_base(Fin(n)))) -> Void {
   intro same;
-  let falseInteger =
+  let falseInteger :=
     trans(sym(puncture_winding_self(n, selected)), cong(puncture_winding(n, selected), same));
   exact zero_not_successor(0, sym(cong(magnitude, falseInteger)));
 }
@@ -104,7 +104,7 @@ def puncture_generators_distinct(
 ) :
   (puncture_loop(n, selected) = puncture_loop(n, label)) -> Void {
   intro same;
-  let falseInteger =
+  let falseInteger :=
     trans(
       sym(puncture_winding_self(n, selected)),
       trans(

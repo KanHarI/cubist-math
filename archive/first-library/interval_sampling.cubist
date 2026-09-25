@@ -1,12 +1,12 @@
 import interval_tag_bounds;
 import sample_tagged;
 
-def IntervalAdmissibleTags(F : U1, zero one : F, lt : F -> F -> U0, n : Nat) =
+def IntervalAdmissibleTags(F : U1, zero one : F, lt : F -> F -> U0, n : Nat) :=
   SampleTagged(FieldUnitInterval(F, zero, one, lt), IntervalTagWithin(F, zero, one, lt), n);
 
 def IntervalMeshBelow(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F, n : Nat
-) =
+) :=
   SampleAdjacent(
     FieldUnitInterval(F, zero, one, lt),
     (
@@ -26,8 +26,8 @@ def interval_tag_orders_endpoints(
     F, lt, field_interval_coordinate(F, zero, one, lt, a),
     field_interval_coordinate(F, zero, one, lt, b)
   ) {
-  obtain (lower, upper) = within;
-  let coordinate = field_interval_coordinate(F, zero, one, lt);
+  obtain (lower, upper) := within;
+  let coordinate := field_interval_coordinate(F, zero, one, lt);
   exact order_le_trans(
     F, zero, one, addF, mulF, lt, arithmetic, coordinate(a), coordinate(tag), coordinate(b), lower,
     upper
@@ -50,8 +50,8 @@ def interval_admissible_samples_ordered(
       )
     ), n, vertices
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let coordinate = field_interval_coordinate(F, zero, one, lt);
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let coordinate := field_interval_coordinate(F, zero, one, lt);
   exact sample_tagged_adjacent(
     I, IntervalTagWithin(F, zero, one, lt),
     (fun (a b : I) => FieldLe(F, lt, coordinate(a), coordinate(b))),
@@ -84,9 +84,9 @@ def interval_endpoint_tags_admissible(
     F, zero, one, lt, n, vertices,
     sample_right_tags(FieldUnitInterval(F, zero, one, lt), n, vertices)
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let coordinate = field_interval_coordinate(F, zero, one, lt);
-  let related = (fun (a b : I) => FieldLe(F, lt, coordinate(a), coordinate(b)));
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let coordinate := field_interval_coordinate(F, zero, one, lt);
+  let related := (fun (a b : I) => FieldLe(F, lt, coordinate(a), coordinate(b)));
   have leftAllowed :
     forall a : I, forall b : I, related(a, b) -> IntervalTagWithin(F, zero, one, lt, a, b, a) {
     intro a b ab;

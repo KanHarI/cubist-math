@@ -2,7 +2,7 @@ import puncture_graph;
 
 // An auxiliary family whose fiber is the existing loop space. Its meridians
 // act by appending generators. This is not an assertion of freeness.
-def bouquet_code_edges(A : U0, label : Unit or A) =
+def bouquet_code_edges(A : U0, label : Unit or A) :=
   match label return (BouquetLoops(A) = BouquetLoops(A)) {
     left u => refl(BouquetLoops(A));
     right a => ua(
@@ -13,7 +13,7 @@ def bouquet_code_edges(A : U0, label : Unit or A) =
     );
   };
 
-def bouquet_code(A : U0) =
+def bouquet_code(A : U0) :=
   suspension_rec(Unit or A, U0, BouquetLoops(A), BouquetLoops(A), bouquet_code_edges(A));
 
 def bouquet_univalent_action(A : U0, a : A, p : BouquetLoops(A)) :
@@ -74,7 +74,7 @@ def bouquet_edge_action(A : U0, a : A, p : BouquetLoops(A)) :
 
 def bouquet_spoke_backward(A : U0, p : BouquetLoops(A)) :
   (along bouquet_code(A) by sym(bouquet_spoke(A)) from p) = p {
-  let before = along bouquet_code(A) by sym(bouquet_spoke(A)) from p;
+  let before := along bouquet_code(A) by sym(bouquet_spoke(A)) from p;
   exact trans(
     sym(bouquet_spoke_action(A, before)),
     transport_after_inverse(
@@ -85,9 +85,9 @@ def bouquet_spoke_backward(A : U0, p : BouquetLoops(A)) :
 
 def bouquet_edge_backward(A : U0, a : A, p : BouquetLoops(A)) :
   (along bouquet_code(A) by sym(bouquet_edge(A, a)) from p) = trans(p, sym(bouquet_generator(A, a))) {
-  let before = along bouquet_code(A) by sym(bouquet_edge(A, a)) from p;
-  let undo = fun (q : BouquetLoops(A)) => trans(q, sym(bouquet_generator(A, a)));
-  let forwardSame =
+  let before := along bouquet_code(A) by sym(bouquet_edge(A, a)) from p;
+  let undo := fun (q : BouquetLoops(A)) => trans(q, sym(bouquet_generator(A, a)));
+  let forwardSame :=
     trans(
       sym(bouquet_edge_action(A, a, before)),
       transport_after_inverse(
@@ -104,16 +104,16 @@ def bouquet_edge_backward(A : U0, a : A, p : BouquetLoops(A)) :
   );
 }
 
-def bouquet_south_decoder(A : U0, p : BouquetLoops(A)) = trans(p, bouquet_spoke(A));
+def bouquet_south_decoder(A : U0, p : BouquetLoops(A)) := trans(p, bouquet_spoke(A));
 
 def bouquet_decoder_edge(A : U0, a : A, p : BouquetLoops(A)) :
   trans(trans(p, sym(bouquet_generator(A, a))), bouquet_edge(A, a)) = bouquet_south_decoder(A, p) {
-  let X = Bouquet(A);
-  let n = bouquet_base(A);
-  let s = bouquet_tip(A);
-  let g = bouquet_generator(A, a);
-  let r = bouquet_spoke(A);
-  let before = trans(p, sym(g));
+  let X := Bouquet(A);
+  let n := bouquet_base(A);
+  let s := bouquet_tip(A);
+  let g := bouquet_generator(A, a);
+  let r := bouquet_spoke(A);
+  let before := trans(p, sym(g));
   exact trans(
     cong(
       (fun (q : n = n) => trans(q, bouquet_edge(A, a))), append_path_agrees(X, n, n, n, p, sym(g))
@@ -128,7 +128,7 @@ def bouquet_decoder_edge(A : U0, a : A, p : BouquetLoops(A)) :
   );
 }
 
-def bouquet_decoder_family(A : U0, x : Bouquet(A)) = bouquet_code(A, x) -> (bouquet_base(A) = x);
+def bouquet_decoder_family(A : U0, x : Bouquet(A)) := bouquet_code(A, x) -> (bouquet_base(A) = x);
 
 def bouquet_decoder_spoke(A : U0) :
   (along bouquet_decoder_family(A) by bouquet_spoke(A) from(fun (p : BouquetLoops(A)) => p)) = bouquet_south_decoder(
@@ -162,7 +162,7 @@ def bouquet_decoder_meridian(A : U0, a : A) :
   );
 }
 
-def bouquet_decoder_edges(A : U0, label : Unit or A) =
+def bouquet_decoder_edges(A : U0, label : Unit or A) :=
   match label as e return (
     (along bouquet_decoder_family(A) by meridian(Unit or A, e) from(fun (p : BouquetLoops(A)) => p)) = bouquet_south_decoder(
       A
@@ -180,13 +180,13 @@ def bouquet_decoder_edges(A : U0, label : Unit or A) =
     right a => bouquet_decoder_meridian(A, a);
   };
 
-def bouquet_decode(A : U0, x : Bouquet(A)) =
+def bouquet_decode(A : U0, x : Bouquet(A)) :=
   suspension_induction(
     (Unit or A), bouquet_decoder_family(A), (fun (p : BouquetLoops(A)) => p),
     bouquet_south_decoder(A), bouquet_decoder_edges(A), x
   );
 
-def bouquet_encode(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) =
+def bouquet_encode(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :=
   along bouquet_code(A) by p from refl(bouquet_base(A));
 
 def bouquet_decode_encode(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :

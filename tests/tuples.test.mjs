@@ -21,9 +21,9 @@ test("tuples expand to right-associated pairs without changing comparison syntax
 
 test("tuple formatting preserves nested delimiters, comments, comparisons and patterns", () => {
   const source = `def build(a:Nat,b:Nat):Nat and Nat and Nat{exact (a, // saved
-b,0);} def unpacked : Nat { obtain (a,b,c) = build(0,0); exact c; }
-  def nested = typed((Nat and Nat) and Nat and Nat, ((0,1),2,3));
-  def relation(a:Nat,b:Nat) = a < b;
+b,0);} def unpacked : Nat { obtain (a,b,c) := build(0,0); exact c; }
+  def nested := typed((Nat and Nat) and Nat and Nat, ((0,1),2,3));
+  def relation(a:Nat,b:Nat) := a < b;
 `;
   for (const printWidth of [40, 80, 100]) {
     const formatted = formatMathScript(source, { printWidth });
@@ -41,8 +41,8 @@ test("AST linearization preserves comments, grouping, left components and applic
       exact ((0, 1), (2, // keep the tail note
         ((3, 4))));
     }
-    def use : Nat { obtain ((a, b), (c, (d, e))) = build; exact e; }
-    def call = f(a, b, c);
+    def use : Nat { obtain ((a, b), (c, (d, e))) := build; exact e; }
+    def call := f(a, b, c);
   `;
   const raw = linearizeTuples(source);
   const result = { ...raw, source: formatMathScript(raw.source) };

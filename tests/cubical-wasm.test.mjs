@@ -122,10 +122,10 @@ test("dependent pair induction checks its motive and both branch arguments nativ
   const k = session(t), checker = new NativeCubicalElaborator(k);
   const translator = new Translator({ normalize: false, checker });
   const result = translator.translate(`
-    def second(A : U0, B : A -> U0, p : (exists x : A, B(x))) =
+    def second(A : U0, B : A -> U0, p : (exists x : A, B(x))) :=
       pair_induction((fun (q : (exists x : A, B(x))) => B(unpack q as (a, b) return A { a; })),
         (fun (a : A) => fun (b : B(a)) => b), p);
-    def wrong(p : Nat and Nat) = pair_induction(
+    def wrong(p : Nat and Nat) := pair_induction(
       (fun (q : Nat and Nat) => Nat), (fun (a : Nat) => fun (b : Unit) => a), p);
   `);
   assert.equal(result.declarations[0].status, "checked-native-cubical", result.declarations[0].reason);
@@ -248,10 +248,10 @@ test("Cubist expresses cubical paths, composition and pushout induction with che
   assert.deepEqual(result.declarations.filter(d => d.status !== "checked-native-cubical"), []);
   assert.equal(result.declarations.length, 15);
   const invalid = translator.translate(`
-    def escaped = path(fun (i : Interval) => Nat, fun (i : Interval) => i);
+    def escaped := path(fun (i : Interval) => Nat, fun (i : Interval) => i);
     def wrong : 0 = 1 { exact path(fun (i : Interval) => Nat, fun (i : Interval) => 0); }
-    def malformed = comp(fun (i : Interval) => Nat, 0, face(i, 0, fun (j : Interval) => 0));
-    def bad_bridge = pushout_induction(fun (p : Susp(Unit)) => Nat,
+    def malformed := comp(fun (i : Interval) => Nat, 0, face(i, 0, fun (j : Interval) => 0));
+    def bad_bridge := pushout_induction(fun (p : Susp(Unit)) => Nat,
       fun (a : Unit) => 0, fun (b : Unit) => 1,
       fun (a : Unit) => refl(0), push_left(Susp(Unit), tt));
   `, result.env);
@@ -284,11 +284,11 @@ test("source-defined suspension induction uses a proved PathP bridge", async t =
   const library = translator.translate(await readFile(new URL("../archive/first-library/suspension_types.cubist", import.meta.url), "utf8"));
   assert.ok(library.declarations.every(d => d.status === "checked-native-cubical"));
   const result = translator.translate(`
-    def C = Suspension(Unit);
-    def family(p : C) = Unit;
-    def unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
-    def boundary(a : Unit) = unique(transport(family, north(Unit), south(Unit), meridian(Unit, a), tt));
-    def collapse(p : C) = suspension_induction(Unit, family, tt, tt, boundary, p);
+    def C := Suspension(Unit);
+    def family(p : C) := Unit;
+    def unique(u : Unit) := unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
+    def boundary(a : Unit) := unique(transport(family, north(Unit), south(Unit), meridian(Unit, a), tt));
+    def collapse(p : C) := suspension_induction(Unit, family, tt, tt, boundary, p);
     def point_beta : collapse(north(Unit)) = tt { exact refl(tt); }
     def bridge_beta(a : Unit) :
       apd(collapse, north(Unit), south(Unit), meridian(Unit, a)) = boundary(a) {

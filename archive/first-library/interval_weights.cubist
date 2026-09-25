@@ -5,7 +5,7 @@ import sample_sum_laws;
 def interval_difference(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   s t : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   coordinate_difference(
     F, addF, negF, field_interval_coordinate(F, zero, one, lt, s),
     field_interval_coordinate(F, zero, one, lt, t)
@@ -14,7 +14,7 @@ def interval_difference(
 def interval_weight(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, length : F,
   s t tag : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   mulF(interval_difference(F, zero, one, addF, negF, lt, s, t), length);
 
 def field_difference_nonnegative(
@@ -36,17 +36,17 @@ def interval_difference_le_one(
   s t : FieldUnitInterval(F, zero, one, lt)
 ) :
   FieldLe(F, lt, interval_difference(F, zero, one, addF, negF, lt, s, t), one) {
-  let x = field_interval_coordinate(F, zero, one, lt, s);
-  let y = field_interval_coordinate(F, zero, one, lt, t);
-  obtain (lowerS, upperS) = field_interval_bounds(F, zero, one, lt, s);
-  obtain (lowerT, upperT) = field_interval_bounds(F, zero, one, lt, t);
-  let shifted =
+  let x := field_interval_coordinate(F, zero, one, lt, s);
+  let y := field_interval_coordinate(F, zero, one, lt, t);
+  obtain (lowerS, upperS) := field_interval_bounds(F, zero, one, lt, s);
+  obtain (lowerT, upperT) := field_interval_bounds(F, zero, one, lt, t);
+  let shifted :=
     order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, x, negF(x), lowerS);
-  let removeZero =
+  let removeZero :=
     along((fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x))))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, negF(x)
     ) from shifted;
-  let negativeBelowZero =
+  let negativeBelowZero :=
     along FieldLe(F, lt, negF(x)) by ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x) from removeZero;
   exact along FieldLe(F, lt, addF(y, negF(x))) by ring_add_zero_right(
     F, zero, one, addF, mulF, negF, ring, one
@@ -73,11 +73,11 @@ def interval_weight_sum(
       sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
     ), length
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let coordinate = field_interval_coordinate(F, zero, one, lt);
-  let delta = interval_difference(F, zero, one, addF, negF, lt);
-  let edge = (fun (s t tag : I) => delta(s, t));
-  let telescope =
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let coordinate := field_interval_coordinate(F, zero, one, lt);
+  let delta := interval_difference(F, zero, one, addF, negF, lt);
+  let edge := (fun (s t tag : I) => delta(s, t));
+  let telescope :=
     sample_sum_telescopes(
       I, F, zero, addF, delta,
       (fun (s : I) => ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, coordinate(s))),
@@ -87,7 +87,7 @@ def interval_weight_sum(
         )
       ), n, vertices, tags
     );
-  let mapping = (fun (v : F) => mulF(v, length));
+  let mapping := (fun (v : F) => mulF(v, length));
   exact trans(
     sym(
       sample_sum_map(
@@ -115,18 +115,18 @@ def interval_weight_sum_bound(
       interval_weight(F, zero, one, addF, mulF, negF, lt, length), n, vertices, tags
     ), length
   ) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let first = sample_first(I, n, vertices);
-  let last = sample_last(I, n, vertices);
-  let delta = interval_difference(F, zero, one, addF, negF, lt, first, last);
-  let bounded =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let first := sample_first(I, n, vertices);
+  let last := sample_last(I, n, vertices);
+  let delta := interval_difference(F, zero, one, addF, negF, lt, first, last);
+  let bounded :=
     weakScale(
       delta, one, length,
       interval_difference_le_one(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, first, last),
       nonnegativeLength
     );
-  let removeOne =
+  let removeOne :=
     along FieldLe(F, lt, mulF(delta, length)) by ring_mul_one(
       F, zero, one, addF, mulF, negF, ring, length
     ) from bounded;

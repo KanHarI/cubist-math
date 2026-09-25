@@ -15,7 +15,7 @@ def complex_constant_contour_closed(
   complex_contour_sum(
     F, zero, addF, mulF, negF, (fun (z : Complex(F)) => coefficient), n, vertices, tags
   ) = complex_zero(F, zero) {
-  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
   exact contour_sum_constant_closed(
     Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
     complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, coefficient, n, vertices, tags,
@@ -37,7 +37,7 @@ def complex_contour_composes(
     F, addF, complex_contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags),
     complex_contour_sum(F, zero, addF, mulF, negF, f, m, rightVertices, rightTags)
   ) {
-  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
   exact contour_sum_join(
     Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
     complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, f, n, vertices, tags, m,
@@ -54,7 +54,7 @@ def complex_identity_backtrack_sum(
     backtrack_vertices(Complex(F), complex_zero(F, zero), complex_one(F, zero, one)),
     backtrack_tags(Complex(F), complex_zero(F, zero), complex_one(F, zero, one))
   ) = complex_neg(F, negF, complex_one(F, zero, one)) {
-  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
   exact identity_backtrack_sum(
     Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
     complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC
@@ -72,7 +72,7 @@ def complex_identity_backtrack_nonzero(
       backtrack_tags(Complex(F), complex_zero(F, zero), complex_one(F, zero, one))
     ) = complex_zero(F, zero)
   ) -> Void {
-  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
   exact identity_backtrack_sum_nonzero(
     Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
     complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC,

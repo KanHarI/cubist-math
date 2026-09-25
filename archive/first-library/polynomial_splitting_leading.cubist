@@ -7,7 +7,7 @@ def linear_factor_leading(K : AlgebraicField, x : af_carrier(K)) :
   exact scalar_add_zero_right(K, field_one(K));
 }
 
-def MonicLinearProduct(K : AlgebraicField, n : Nat, roots : Fin(n) -> af_carrier(K)) =
+def MonicLinearProduct(K : AlgebraicField, n : Nat, roots : Fin(n) -> af_carrier(K)) :=
   (polynomial_cutoff(K, linear_factor_product(K, n, roots)) = succ(n))
   and (polynomial_coefficients(K, linear_factor_product(K, n, roots), n) = field_one(K));
 
@@ -17,16 +17,16 @@ def monic_linear_product_step(
   roots : Fin(succ(n)) -> af_carrier(K)
 ) :
   MonicLinearProduct(K, succ(n), roots) {
-  let x = finite_head(af_carrier(K), n, roots);
-  let tail = finite_tail(af_carrier(K), n, roots);
-  let A = polynomial_linear_factor(K, x);
-  let B = linear_factor_product(K, n, tail);
-  obtain (db, lb) = previous(tail);
-  let da = linear_factor_degree(K, x);
-  let fa = polynomial_coefficients(K, A);
-  let fb = polynomial_coefficients(K, B);
-  let sa = along SeriesSupport(K, fa) by da from polynomial_cutoff_support(K, A);
-  let sb = along SeriesSupport(K, fb) by db from polynomial_cutoff_support(K, B);
+  let x := finite_head(af_carrier(K), n, roots);
+  let tail := finite_tail(af_carrier(K), n, roots);
+  let A := polynomial_linear_factor(K, x);
+  let B := linear_factor_product(K, n, tail);
+  obtain (db, lb) := previous(tail);
+  let da := linear_factor_degree(K, x);
+  let fa := polynomial_coefficients(K, A);
+  let fb := polynomial_coefficients(K, B);
+  let sa := along SeriesSupport(K, fa) by da from polynomial_cutoff_support(K, A);
+  let sb := along SeriesSupport(K, fb) by db from polynomial_cutoff_support(K, B);
   have leading : polynomial_coefficients(K, polynomial_mul(K, A, B), succ(n)) = field_one(K) := trans(
     convolution_top(K, 1, fa, fb, n, sa, sb),
     trans(
@@ -37,7 +37,7 @@ def monic_linear_product_step(
   exact (polynomial_product_degree(K, A, B, 1, n, da, db), leading);
 }
 
-def monic_linear_product(K : AlgebraicField, n : Nat) =
+def monic_linear_product(K : AlgebraicField, n : Nat) :=
   induction n as k return (forall roots : Fin(k) -> af_carrier(K), MonicLinearProduct(K, k, roots)) {
     zero => fun (roots : Fin(0) -> af_carrier(K)) => typed(
       MonicLinearProduct(K, 0, roots), (polynomial_one_cutoff(K), refl(field_one(K)))
@@ -51,7 +51,7 @@ def polynomial_splitting_leading(
   equation : p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots))
 ) :
   polynomial_coefficients(K, p, n) = a {
-  obtain (degree, leading) = monic_linear_product(K, n, roots);
+  obtain (degree, leading) := monic_linear_product(K, n, roots);
   exact trans(
     cong((fun (q : Polynomial(K)) => polynomial_coefficients(K, q, n)), equation),
     trans(

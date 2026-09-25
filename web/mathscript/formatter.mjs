@@ -87,7 +87,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
     // Only declaration/let assignments introduce an indented right-hand side.
     // An equality inside an annotated definition's type is not an assignment.
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
-    if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === "=")
+    if (valueStart !== undefined && [":=", "="].includes(tokenBefore.get(valueStart)?.text))
       assignmentTokens.add(tokenBefore.get(valueStart).start);
     if (node.type && ["def", "have"].includes(node.kind)) {
       annotationStarts.add(node.type.start);

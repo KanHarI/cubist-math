@@ -2,9 +2,9 @@ import finite_fields;
 import galois_paths;
 
 // The extension F4/F2, with its concrete inclusion and Frobenius symmetry.
-def f2_into_f4(x : F2Carrier) = f2_induction((fun (x : F2Carrier) => F4Carrier), f4_0, f4_1, x);
+def f2_into_f4(x : F2Carrier) := f2_induction((fun (x : F2Carrier) => F4Carrier), f4_0, f4_1, x);
 
-def f4_retract_f2(x : F4Carrier) =
+def f4_retract_f2(x : F4Carrier) :=
   f4_induction((fun (x : F4Carrier) => F2Carrier), f2_0, f2_1, f2_0, f2_1, x);
 
 def f2_inclusion_retraction(x : F2Carrier) : f4_retract_f2(f2_into_f4(x)) = x {
@@ -63,10 +63,10 @@ def f4_extension_data : ExtensionData(F2, F4Carrier) {
   );
 }
 
-def F4OverF2 = structure_object(ExtensionData(F2), F4Carrier, f4_extension_data, fin_is_set(4));
+def F4OverF2 := structure_object(ExtensionData(F2), F4Carrier, f4_extension_data, fin_is_set(4));
 
 // Frobenius x |-> x^2 fixes 0 and 1 and exchanges alpha with alpha+1.
-def f4_frobenius(x : F4Carrier) = f4_mul(x, x);
+def f4_frobenius(x : F4Carrier) := f4_mul(x, x);
 
 def f4_frobenius_add(x y : F4Carrier) :
   f4_frobenius(f4_add(x, y)) = f4_add(f4_frobenius(x), f4_frobenius(y)) {
@@ -180,7 +180,7 @@ def f4_frobenius_automorphism : Galois(F2, F4OverF2) {
   );
 }
 
-def f4_identity_automorphism = extension_identity_iso(F2, F4OverF2);
+def f4_identity_automorphism := extension_identity_iso(F2, F4OverF2);
 
 def f4_frobenius_square :
   extension_iso_compose(
@@ -195,7 +195,7 @@ def f4_frobenius_square :
 }
 
 // Both roots exist in the constructed field; they are distinct.
-def f4_root_polynomial(x : F4Carrier) = f4_add(f4_add(f4_mul(x, x), x), f4_1);
+def f4_root_polynomial(x : F4Carrier) := f4_add(f4_add(f4_mul(x, x), x), f4_1);
 
 def f4_alpha_root : f4_root_polynomial(f4_2) = f4_0 {
   rfl;
@@ -205,7 +205,7 @@ def f4_other_root : f4_root_polynomial(f4_3) = f4_0 {
   rfl;
 }
 
-def f4_3_not_2(p : f4_3 = f4_2) =
+def f4_3_not_2(p : f4_3 = f4_2) :=
   sum_disjoint(
     Fin(1), tt, typed((Unit or Fin(0)), left(tt)),
     sym(
@@ -223,12 +223,12 @@ def f4_3_not_2(p : f4_3 = f4_2) =
     )
   );
 
-def f4_2_not_0(p : f4_2 = f4_0) =
+def f4_2_not_0(p : f4_2 = f4_0) :=
   sum_disjoint(
     Fin(3), tt, typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))), sym(p)
   );
 
-def f4_2_not_1(p : f4_2 = f4_1) =
+def f4_2_not_1(p : f4_2 = f4_1) :=
   sum_disjoint(
     Fin(2), tt, typed((Unit or Fin(1)), left(tt)),
     sym(
@@ -240,7 +240,7 @@ def f4_2_not_1(p : f4_2 = f4_1) =
   );
 
 // This is a path of whole field extensions, not a path between field elements.
-def f4_galois_loop = extension_iso_path(F2, F4OverF2, F4OverF2, f4_frobenius_automorphism);
+def f4_galois_loop := extension_iso_path(F2, F4OverF2, F4OverF2, f4_frobenius_automorphism);
 
 def f4_loop_exchanges_roots : (along extension_carrier(F2) by f4_galois_loop from f4_2) = f4_3 {
   exact galois_loop_action(F2, F4OverF2, f4_frobenius_automorphism, f4_2);

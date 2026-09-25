@@ -2,9 +2,9 @@ import circle;
 import group_univalence;
 
 // The existing winding isomorphism now gives a path in the type of groups.
-def CircleLoopGroup = group_object(LoopsS1, refl(base), loop_multiply, loop_group);
+def CircleLoopGroup := group_object(LoopsS1, refl(base), loop_multiply, loop_group);
 
-def IntegerGroup = group_object(Z, zeroZ, addZ, integer_group);
+def IntegerGroup := group_object(Z, zeroZ, addZ, integer_group);
 
 // Winding number is a group isomorphism from the circle's loops to the integers.
 // Its inverse sends an integer to that many turns around the circle.

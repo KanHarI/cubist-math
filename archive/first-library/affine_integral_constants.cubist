@@ -18,31 +18,31 @@ def curve_subdivision_constant(
       Complex(F), complex_add(F, addF), complex_neg(F, negF), curve(a), curve(b)
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let addC = complex_add(F, addF);
-  let mulC = complex_mul(F, addF, mulF, negF);
-  let negC = complex_neg(F, negF);
-  let zeroC = complex_zero(F, zero);
-  let oneC = complex_one(F, zero, one);
-  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-  let n = subdivision_count(I, a, b, piece);
-  let vertices = subdivision_vertices(I, a, b, piece);
-  let tags = subdivision_tags(I, a, b, piece);
-  let imageVertices = map_sample_vertices(I, Complex(F), curve, n, vertices);
-  let imageTags = map_sample_tags(I, Complex(F), curve, n, tags);
-  let first = sample_first(I, n, vertices);
-  let last = sample_last(I, n, vertices);
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let addC := complex_add(F, addF);
+  let mulC := complex_mul(F, addF, mulF, negF);
+  let negC := complex_neg(F, negF);
+  let zeroC := complex_zero(F, zero);
+  let oneC := complex_one(F, zero, one);
+  let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let n := subdivision_count(I, a, b, piece);
+  let vertices := subdivision_vertices(I, a, b, piece);
+  let tags := subdivision_tags(I, a, b, piece);
+  let imageVertices := map_sample_vertices(I, Complex(F), curve, n, vertices);
+  let imageTags := map_sample_tags(I, Complex(F), curve, n, tags);
+  let first := sample_first(I, n, vertices);
+  let last := sample_last(I, n, vertices);
   have firstPath : first = a := field_fst(
     (first = a), (last = b), subdivision_endpoints(I, a, b, piece)
   );
   have lastPath : last = b := field_snd(
     (first = a), (last = b), subdivision_endpoints(I, a, b, piece)
   );
-  let firstImage =
+  let firstImage :=
     trans(map_sample_first(I, Complex(F), curve, n, vertices), cong(curve, firstPath));
-  let lastImage = trans(map_sample_last(I, Complex(F), curve, n, vertices), cong(curve, lastPath));
-  let difference = coordinate_difference(Complex(F), addC, negC);
-  let endpoints =
+  let lastImage := trans(map_sample_last(I, Complex(F), curve, n, vertices), cong(curve, lastPath));
+  let difference := coordinate_difference(Complex(F), addC, negC);
+  let endpoints :=
     trans(
       cong(
         (fun (v : Complex(F)) => difference(v, sample_last(Complex(F), n, imageVertices))),
@@ -65,8 +65,8 @@ def complex_constant_curve_uniform(
     F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => value)
   ) {
   intro epsilon positive;
-  obtain (positiveOne, rest) = arithmetic;
-  let close =
+  obtain (positiveOne, rest) := arithmetic;
+  let close :=
     typed(
       ComplexClose(F, addF, lt, value, value, epsilon),
       (
@@ -101,7 +101,7 @@ def complex_constant_sequence_converges(
 ) :
   ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => value), value) {
   intro epsilon positive;
-  let close =
+  let close :=
     typed(
       ComplexClose(F, addF, lt, value, value, epsilon),
       (
@@ -147,20 +147,20 @@ def affine_dyadic_integral_constant(
       complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(b)
     )
   ) {
-  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
-  let value =
+  let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
+  let value :=
     complex_mul(
       F, addF, mulF, negF, coefficient,
       coordinate_difference(
         Complex(F), complex_add(F, addF), complex_neg(F, negF), curve(a), curve(b)
       )
     );
-  let sequence =
+  let sequence :=
     affine_dyadic_sum(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
       (fun (x : Complex(F)) => coefficient), a, b, ordered
     );
-  let constant = (fun (n : Nat) => value);
+  let constant := (fun (n : Nat) => value);
   have computes : forall n : Nat, constant(n) = sequence(n) {
     intro n;
     exact sym(
@@ -173,7 +173,7 @@ def affine_dyadic_integral_constant(
       )
     );
   }
-  let converges =
+  let converges :=
     complex_converges_pointwise(
       F, zero, addF, lt, constant, sequence, computes, value,
       complex_constant_sequence_converges(

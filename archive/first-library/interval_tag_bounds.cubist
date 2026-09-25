@@ -4,7 +4,7 @@ import complete_fields;
 // Inclusive endpoint bounds allow left and right endpoint tags.
 def IntervalTagWithin(
   F : U1, zero one : F, lt : F -> F -> U0, a b tag : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt, a),
     field_interval_coordinate(F, zero, one, lt, tag)
@@ -23,19 +23,19 @@ def field_between_close(
   small : lt(coordinate_difference(F, addF, negF, a, b), radius)
 ) :
   FieldClose(F, addF, lt, x, y, radius) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let delta = coordinate_difference(F, addF, negF, a, b);
-  obtain (forward, backward) = translate(delta, radius, a);
-  let leftIdentity =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let delta := coordinate_difference(F, addF, negF, a, b);
+  obtain (forward, backward) := translate(delta, radius, a);
+  let leftIdentity :=
     trans(
       ring_add_comm(F, zero, one, addF, mulF, negF, ring, delta, a),
       difference_add_back(F, zero, one, addF, mulF, negF, ring, a, b)
     );
-  let shifted = along((fun (v : F) => lt(v, addF(radius, a)))) by leftIdentity from forward(small);
-  let gap =
+  let shifted := along((fun (v : F) => lt(v, addF(radius, a)))) by leftIdentity from forward(small);
+  let gap :=
     along lt(b) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, radius, a) from shifted;
-  let xBelow = leLt(x, b, addF(a, radius), upperX, gap);
-  let yBelow = leLt(y, b, addF(a, radius), upperY, gap);
+  let xBelow := leLt(x, b, addF(a, radius), upperX, gap);
+  let yBelow := leLt(y, b, addF(a, radius), upperY, gap);
   exact (
     ltLe(
       x, addF(a, radius), addF(y, radius), xBelow,
@@ -61,9 +61,9 @@ def interval_tags_close(
     F, addF, lt, field_interval_coordinate(F, zero, one, lt, x),
     field_interval_coordinate(F, zero, one, lt, y), radius
   ) {
-  obtain (lowerX, upperX) = withinX;
-  obtain (lowerY, upperY) = withinY;
-  let coordinate = field_interval_coordinate(F, zero, one, lt);
+  obtain (lowerX, upperX) := withinX;
+  obtain (lowerY, upperY) := withinY;
+  let coordinate := field_interval_coordinate(F, zero, one, lt);
   exact field_between_close(
     F, zero, one, addF, mulF, negF, lt, ring, arithmetic, coordinate(a), coordinate(b),
     coordinate(x), coordinate(y), lowerX, upperX, lowerY, upperY, radius, small

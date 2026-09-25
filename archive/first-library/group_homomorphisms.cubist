@@ -3,9 +3,9 @@ import group_hom_universes;
 
 // A homomorphism preserves multiplication. Preservation of the identity and
 // inverse follows from the group laws, so it is not stored redundantly.
-def GroupHomLaws = GroupHomLawsAt(U0);
+def GroupHomLaws := GroupHomLawsAt(U0);
 
-def GroupHom = GroupHomAt(U0);
+def GroupHom := GroupHomAt(U0);
 
 def group_hom_map(G H : Group, h : GroupHom(G, H)) : group_carrier(G) -> group_carrier(H) {
   exact sigma_first((group_carrier(G) -> group_carrier(H)), GroupHomLaws(G, H), h);
@@ -17,8 +17,8 @@ def group_hom_multiply(G H : Group, h : GroupHom(G, H)) : GroupHomLaws(G, H, gro
 
 def group_hom_unit(G H : Group, h : GroupHom(G, H)) :
   group_hom_map(G, H, h, group_unit(G)) = group_unit(H) {
-  let f = group_hom_map(G, H, h);
-  let one = group_unit(G);
+  let f := group_hom_map(G, H, h);
+  let one := group_unit(G);
   exact group_cancel_left(
     H, f(one), f(one), group_unit(H),
     trans(
@@ -30,7 +30,7 @@ def group_hom_unit(G H : Group, h : GroupHom(G, H)) :
 
 def group_hom_inverse(G H : Group, h : GroupHom(G, H), x : group_carrier(G)) :
   group_hom_map(G, H, h, group_inverse(G, x)) = group_inverse(H, group_hom_map(G, H, h, x)) {
-  let f = group_hom_map(G, H, h);
+  let f := group_hom_map(G, H, h);
   exact group_inverse_unique(
     group_carrier(H), group_unit(H), group_multiply(H), group_laws(H), f(x), f(group_inverse(G, x)),
     group_inverse(H, f(x)),
@@ -45,8 +45,8 @@ def group_hom_conjugate(G H : Group, h : GroupHom(G, H), g x : group_carrier(G))
   group_hom_map(G, H, h, group_conjugate(G, g, x)) = group_conjugate(
     H, group_hom_map(G, H, h, g), group_hom_map(G, H, h, x)
   ) {
-  let f = group_hom_map(G, H, h);
-  let m = group_multiply(H);
+  let f := group_hom_map(G, H, h);
+  let m := group_multiply(H);
   exact trans(
     group_hom_multiply(G, H, h, group_multiply(G, g, x), group_inverse(G, g)),
     trans(
@@ -74,8 +74,8 @@ def group_hom_trivial(G H : Group) : GroupHom(G, H) {
 
 // As for field embeddings, composition is in traversal order: h then k.
 def group_hom_compose(G H K : Group, h : GroupHom(G, H), k : GroupHom(H, K)) : GroupHom(G, K) {
-  let f = group_hom_map(G, H, h);
-  let g = group_hom_map(H, K, k);
+  let f := group_hom_map(G, H, h);
+  let g := group_hom_map(H, K, k);
   exact (
     (fun (x : group_carrier(G)) => g(f(x))),
     (
@@ -157,14 +157,14 @@ def group_hom_associative(
 
 def group_iso_multiply(G H : Group, iso : GroupIso(G, H)) :
   GroupHomLaws(G, H, group_iso_forward(G, H, iso)) {
-  let f = group_iso_forward(G, H, iso);
-  let evidence =
+  let f := group_iso_forward(G, H, iso);
+  let evidence :=
     sigma_second(
       (group_carrier(G) -> group_carrier(H)),
       GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H)),
       iso
     );
-  obtain (g, leftLaw, rightLaw, multiplicative) = typed(
+  obtain (g, leftLaw, rightLaw, multiplicative) := typed(
     GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H), f),
     evidence
   );

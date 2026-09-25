@@ -9,8 +9,8 @@ def field_mul_left_cancel_nonzero(
   same : field_mul(L, a, x) = field_mul(L, a, y)
 ) :
   x = y {
-  obtain (ring, nontrivial, inverses) = af_laws(L);
-  obtain (b, inverse) = inverses(a, nonzero);
+  obtain (ring, nontrivial, inverses) := af_laws(L);
+  obtain (b, inverse) := inverses(a, nonzero);
   have reduce : forall z : af_carrier(L), field_mul(L, b, field_mul(L, a, z)) = z {
     intro z;
     exact trans(
@@ -35,10 +35,10 @@ def distinct_embeddings_two_independent(
   ) = field_zero(L)
 ) :
   (a = field_zero(L)) and (b = field_zero(L)) {
-  let F = field_embedding_map(K, L, f);
-  let G = field_embedding_map(K, L, g);
-  obtain (f0, f1, fn, fa, fm) = field_embedding_preserves(K, L, f);
-  obtain (g0, g1, gn, ga, gm) = field_embedding_preserves(K, L, g);
+  let F := field_embedding_map(K, L, f);
+  let G := field_embedding_map(K, L, g);
+  obtain (f0, f1, fn, fa, fm) := field_embedding_preserves(K, L, f);
+  obtain (g0, g1, gn, ga, gm) := field_embedding_preserves(K, L, g);
   have sumZero : field_add(L, a, b) = field_zero(L) := trans(
     sym(
       trans(
@@ -71,16 +71,16 @@ def distinct_embeddings_two_independent(
     intro nonzero;
     have equalPointwise : forall x : af_carrier(K), F(x) = G(x) {
       intro x;
-      let fx = F(x);
-      let gx = G(x);
-      let c = field_mul(L, b, gx);
+      let fx := F(x);
+      let gx := G(x);
+      let c := field_mul(L, b, gx);
       have alternate : field_add(L, field_mul(L, a, gx), c) = field_zero(L) := trans(
         sym(scalar_distribute_left(L, a, b, gx)),
         trans(
           cong((fun (z : af_carrier(L)) => field_mul(L, z, gx)), sumZero), scalar_zero_mul(L, gx)
         )
       );
-      let equalProducts =
+      let equalProducts :=
         group_cancel_right(
           FieldAdditiveGroup(L), field_mul(L, a, fx), field_mul(L, a, gx), c,
           trans(relation(x), sym(alternate))

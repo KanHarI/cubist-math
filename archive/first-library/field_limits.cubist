@@ -2,10 +2,10 @@ import field_closeness;
 import primes;
 
 // Actual natural moduli are combined explicitly. No countable choice is used.
-def index_sum_left(n m : Nat) =
+def index_sum_left(n m : Nat) :=
   along((fun (k : Nat) => IndexLE(n, k))) by nat_add_comm(m, n) from nat_le_add(m, n);
 
-def index_sum_right(n m : Nat) = typed(IndexLE(m, n + m), nat_le_add(n, m));
+def index_sum_right(n m : Nat) := typed(IndexLE(m, n + m), nat_le_add(n, m));
 
 def field_converges_constant(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
@@ -33,12 +33,12 @@ def field_limit_unique(
   toY : FieldConverges(F, zero, addF, lt, sequence, y)
 ) :
   x = y {
-  obtain (half, halfSum, halfPositive) = halving;
+  obtain (half, halfSum, halfPositive) := halving;
   have close : forall epsilon : F, lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon) {
     intro epsilon positive;
-    obtain (leftBound, leftClose) = toX(half(epsilon), halfPositive(epsilon, positive));
-    obtain (rightBound, rightClose) = toY(half(epsilon), halfPositive(epsilon, positive));
-    let bound = leftBound + rightBound;
+    obtain (leftBound, leftClose) := toX(half(epsilon), halfPositive(epsilon, positive));
+    obtain (rightBound, rightClose) := toY(half(epsilon), halfPositive(epsilon, positive));
+    let bound := leftBound + rightBound;
     exact field_close_halved_triangle(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, x,
       sequence(bound), y, epsilon,
@@ -61,11 +61,11 @@ def field_converges_add(
   toX : FieldConverges(F, zero, addF, lt, xs, x), toY : FieldConverges(F, zero, addF, lt, ys, y)
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => addF(xs(n), ys(n))), addF(x, y)) {
-  obtain (half, halfSum, halfPositive) = halving;
+  obtain (half, halfSum, halfPositive) := halving;
   intro epsilon positive;
-  obtain (leftBound, leftClose) = toX(half(epsilon), halfPositive(epsilon, positive));
-  obtain (rightBound, rightClose) = toY(half(epsilon), halfPositive(epsilon, positive));
-  let bound = leftBound + rightBound;
+  obtain (leftBound, leftClose) := toX(half(epsilon), halfPositive(epsilon, positive));
+  obtain (rightBound, rightClose) := toY(half(epsilon), halfPositive(epsilon, positive));
+  let bound := leftBound + rightBound;
   exact (
     bound,
     (
@@ -93,9 +93,9 @@ def field_converges_is_cauchy(
   converges : FieldConverges(F, zero, addF, lt, sequence, limit)
 ) :
   FieldCauchy(F, zero, addF, lt, sequence) {
-  obtain (half, halfSum, halfPositive) = halving;
+  obtain (half, halfSum, halfPositive) := halving;
   intro epsilon positive;
-  obtain (bound, close) = converges(half(epsilon), halfPositive(epsilon, positive));
+  obtain (bound, close) := converges(half(epsilon), halfPositive(epsilon, positive));
   exact (
     bound,
     (
@@ -116,11 +116,11 @@ def field_cauchy_add(
   cauchyX : FieldCauchy(F, zero, addF, lt, xs), cauchyY : FieldCauchy(F, zero, addF, lt, ys)
 ) :
   FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => addF(xs(n), ys(n)))) {
-  obtain (half, halfSum, halfPositive) = halving;
+  obtain (half, halfSum, halfPositive) := halving;
   intro epsilon positive;
-  obtain (leftBound, leftClose) = cauchyX(half(epsilon), halfPositive(epsilon, positive));
-  obtain (rightBound, rightClose) = cauchyY(half(epsilon), halfPositive(epsilon, positive));
-  let bound = leftBound + rightBound;
+  obtain (leftBound, leftClose) := cauchyX(half(epsilon), halfPositive(epsilon, positive));
+  obtain (rightBound, rightClose) := cauchyY(half(epsilon), halfPositive(epsilon, positive));
+  let bound := leftBound + rightBound;
   exact (
     bound,
     (
@@ -154,7 +154,7 @@ def field_converges_pointwise(
 ) :
   FieldConverges(F, zero, addF, lt, ys, limit) {
   intro epsilon positive;
-  obtain (bound, close) = converges(epsilon, positive);
+  obtain (bound, close) := converges(epsilon, positive);
   exact (
     bound,
     (

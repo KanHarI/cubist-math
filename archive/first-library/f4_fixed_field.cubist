@@ -2,11 +2,11 @@ import f4_galois_group;
 import galois_fixing_subgroups;
 
 // The whole automorphism group; no decision about an arbitrary subgroup occurs.
-def F4AllAutomorphisms(e : F4Automorphism) = Unit;
+def F4AllAutomorphisms(e : F4Automorphism) := Unit;
 
-def F4Fixed(x : F4Carrier) = GaloisFixed(F2, F4OverF2, F4AllAutomorphisms, x);
+def F4Fixed(x : F4Carrier) := GaloisFixed(F2, F4OverF2, F4AllAutomorphisms, x);
 
-def F2Image(x : F4Carrier) = exists k : F2Carrier, f2_into_f4(k) = x;
+def F2Image(x : F4Carrier) := exists k : F2Carrier, f2_into_f4(k) = x;
 
 // Frobenius exchanges alpha and alpha+1. A point fixed by Frobenius
 // must therefore be 0 or 1. The proof returns its actual base-field preimage.
@@ -29,7 +29,7 @@ def f4_fixed_in_base(x : F4Carrier, fixed : F4Fixed(x)) : F2Image(x) {
 }
 
 def f4_base_is_fixed(x : F4Carrier, member : F2Image(x)) : F4Fixed(x) {
-  obtain (k, same) = member;
+  obtain (k, same) := member;
   exact along F4Fixed by same from galois_fixed_contains_base(F2, F4OverF2, F4AllAutomorphisms, k);
 }
 
@@ -43,9 +43,9 @@ def f4_fixed_field_is_base(x : F4Carrier) :
 // The embedding is injective, so its actual fibers are propositions. No
 // truncation is required when expressing membership in this base-field image.
 def f2_image_prop(x : F4Carrier, p q : F2Image(x)) : p = q {
-  let fiber = (fun (k : F2Carrier) => f2_into_f4(k) = x);
-  let k = sigma_first(F2Carrier, fiber, p);
-  let l = sigma_first(F2Carrier, fiber, q);
+  let fiber := (fun (k : F2Carrier) => f2_into_f4(k) = x);
+  let k := sigma_first(F2Carrier, fiber, p);
+  let l := sigma_first(F2Carrier, fiber, q);
   have pk : f2_into_f4(k) = x := sigma_second(F2Carrier, fiber, p);
   have ql : f2_into_f4(l) = x := sigma_second(F2Carrier, fiber, q);
   exact subtype_ext(
@@ -63,7 +63,7 @@ def f4_fixed_predicate_is_base : F4Fixed = F2Image {
 
 // Transport the fixed-field laws across the equality of membership predicates.
 def f4_base_intermediate : IntermediateField(F2, F4OverF2) {
-  let fixedLaws =
+  let fixedLaws :=
     intermediate_laws(F2, F4OverF2, galois_fixed_field(F2, F4OverF2, F4AllAutomorphisms));
   exact (
     F2Image,

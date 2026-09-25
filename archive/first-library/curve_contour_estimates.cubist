@@ -9,7 +9,7 @@ def curve_contour_samples(
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
   n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
-) =
+) :=
   complex_contour_sum(
     F, zero, addF, mulF, negF, integrand, n,
     map_sample_vertices(FieldUnitInterval(F, zero, one, lt), Complex(F), curve, n, vertices),
@@ -44,43 +44,43 @@ def curve_contour_tag_change_close(
       F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, oldTags
     ), epsilon
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let values = (fun (t : I) => integrand(curve(t)));
-  obtain (realBounds, imagBounds, totalBound) = variation(n, vertices, oldTags, ordered);
-  let increments =
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let values := (fun (t : I) => integrand(curve(t)));
+  obtain (realBounds, imagBounds, totalBound) := variation(n, vertices, oldTags, ordered);
+  let increments :=
     parameter_coordinate_increment_bounds(
       I, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, oldTags, realBounds,
       imagBounds
     );
-  let close =
+  let close :=
     complex_parameter_tag_change_close(
       I, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight,
       imagWeight, delta, length, nonnegativeDelta, n, vertices, oldTags, newTags, errors,
       increments, totalBound, epsilon, small
     );
-  let oldParam =
+  let oldParam :=
     complex_parameter_contour_sum(I, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags);
-  let newParam =
+  let newParam :=
     complex_parameter_contour_sum(I, F, zero, addF, mulF, negF, curve, values, n, vertices, newTags);
-  let oldMapped =
+  let oldMapped :=
     curve_contour_samples(
       F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, oldTags
     );
-  let newMapped =
+  let newMapped :=
     curve_contour_samples(
       F, zero, one, addF, mulF, negF, lt, curve, integrand, n, vertices, newTags
     );
-  let oldSame =
+  let oldSame :=
     parameter_contour_sum_is_mapped(
       I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
       complex_neg(F, negF), curve, integrand, n, vertices, oldTags
     );
-  let newSame =
+  let newSame :=
     parameter_contour_sum_is_mapped(
       I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
       complex_neg(F, negF), curve, integrand, n, vertices, newTags
     );
-  let changeFirst =
+  let changeFirst :=
     along((fun (v : Complex(F)) => ComplexClose(F, addF, lt, v, oldParam, epsilon))) by newSame from close;
   exact along((fun (v : Complex(F)) => ComplexClose(F, addF, lt, newMapped, v, epsilon))) by oldSame from changeFirst;
 }

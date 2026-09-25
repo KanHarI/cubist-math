@@ -3,12 +3,12 @@ import set_quotients;
 
 // x and y belong to the same left coset xS exactly when x⁻¹y belongs to S.
 // This is a small proposition even though the predicate-based quotient is in U1.
-def SameLeftCoset(G : Group, S : Subgroup(G), x y : group_carrier(G)) =
+def SameLeftCoset(G : Group, S : Subgroup(G), x y : group_carrier(G)) :=
   subgroup_members(G, S, group_multiply(G, group_inverse(G, x), y));
 
 def coset_factor(G : Group, x y : group_carrier(G)) :
   group_multiply(G, x, group_multiply(G, group_inverse(G, x), y)) = y {
-  let m = group_multiply(G);
+  let m := group_multiply(G);
   exact trans(
     sym(group_associative(G, x, group_inverse(G, x), y)),
     trans(
@@ -40,8 +40,8 @@ def same_coset_sym(
   G : Group, S : Subgroup(G), x y : group_carrier(G), same : SameLeftCoset(G, S, x, y)
 ) :
   SameLeftCoset(G, S, y, x) {
-  let m = group_multiply(G);
-  let n = m(group_inverse(G, x), y);
+  let m := group_multiply(G);
+  let n := m(group_inverse(G, x), y);
   exact same_coset_from_factor(
     G, S, y, x, group_inverse(G, n),
     subgroup_inverse(
@@ -60,9 +60,9 @@ def same_coset_trans(
   yz : SameLeftCoset(G, S, y, z)
 ) :
   SameLeftCoset(G, S, x, z) {
-  let m = group_multiply(G);
-  let n = m(group_inverse(G, x), y);
-  let p = m(group_inverse(G, y), z);
+  let m := group_multiply(G);
+  let n := m(group_inverse(G, x), y);
+  let p := m(group_inverse(G, y), z);
   exact same_coset_from_factor(
     G, S, x, z, m(n, p),
     subgroup_multiply(G, subgroup_members(G, S), subgroup_laws(G, S), n, p, xy, yz),
@@ -91,7 +91,7 @@ def same_coset_multiply_left(
   G : Group, S : Subgroup(G), a x y : group_carrier(G), same : SameLeftCoset(G, S, x, y)
 ) :
   SameLeftCoset(G, S, group_multiply(G, a, x), group_multiply(G, a, y)) {
-  let n = group_multiply(G, group_inverse(G, x), y);
+  let n := group_multiply(G, group_inverse(G, x), y);
   exact same_coset_from_factor(
     G, S, group_multiply(G, a, x), group_multiply(G, a, y), n, same,
     trans(group_associative(G, a, x, n), cong(group_multiply(G, a), coset_factor(G, x, y)))
@@ -100,8 +100,8 @@ def same_coset_multiply_left(
 
 def group_conjugate_shift(G : Group, a n : group_carrier(G)) :
   group_multiply(G, a, group_conjugate(G, group_inverse(G, a), n)) = group_multiply(G, n, a) {
-  let m = group_multiply(G);
-  let i = group_inverse(G, a);
+  let m := group_multiply(G);
+  let i := group_inverse(G, a);
   exact trans(
     cong(m(a), cong(m(m(i, n)), group_inverse_involutive(G, a))),
     trans(
@@ -117,9 +117,9 @@ def same_coset_multiply_right(
   same : SameLeftCoset(G, S, x, y)
 ) :
   SameLeftCoset(G, S, group_multiply(G, x, a), group_multiply(G, y, a)) {
-  let m = group_multiply(G);
-  let n = m(group_inverse(G, x), y);
-  let conjugated = group_conjugate(G, group_inverse(G, a), n);
+  let m := group_multiply(G);
+  let n := m(group_inverse(G, x), y);
+  let conjugated := group_conjugate(G, group_inverse(G, a), n);
   exact same_coset_from_factor(
     G, S, m(x, a), m(y, a), conjugated, normal(group_inverse(G, a), n, same),
     trans(
@@ -151,7 +151,7 @@ def same_coset_unit_member(
   G : Group, S : Subgroup(G), x : group_carrier(G), same : SameLeftCoset(G, S, group_unit(G), x)
 ) :
   subgroup_members(G, S, x) {
-  let n = group_multiply(G, group_inverse(G, group_unit(G)), x);
+  let n := group_multiply(G, group_inverse(G, group_unit(G)), x);
   exact along subgroup_members(G, S) by trans(
     sym(group_unit_left(G, n)), coset_factor(G, group_unit(G), x)
   ) from same;
@@ -168,9 +168,9 @@ def right_coset_compatibility_implies_normal(
 ) :
   IsNormal(G, S) {
   intro g n member;
-  let m = group_multiply(G);
-  let related = same_coset_from_factor(G, S, g, m(g, n), n, member, refl(m(g, n)));
-  let shifted = compatible(g, m(g, n), group_inverse(G, g), related);
+  let m := group_multiply(G);
+  let related := same_coset_from_factor(G, S, g, m(g, n), n, member, refl(m(g, n)));
+  let shifted := compatible(g, m(g, n), group_inverse(G, g), related);
   exact same_coset_unit_member(
     G, S, group_conjugate(G, g, n),
     along((fun (a : group_carrier(G)) => SameLeftCoset(G, S, a, group_conjugate(G, g, n)))) by group_inverse_right(
@@ -184,18 +184,18 @@ def normal_coset_inverse(
   same : SameLeftCoset(G, S, x, y)
 ) :
   SameLeftCoset(G, S, group_inverse(G, x), group_inverse(G, y)) {
-  let m = group_multiply(G);
-  let ix = group_inverse(G, x);
-  let iy = group_inverse(G, y);
-  let shifted =
+  let m := group_multiply(G);
+  let ix := group_inverse(G, x);
+  let iy := group_inverse(G, y);
+  let shifted :=
     same_coset_multiply_left(
       G, S, ix, m(x, iy), m(y, iy), same_coset_multiply_right(G, S, normal, x, y, iy, same)
     );
-  let first =
+  let first :=
     along((fun (a : group_carrier(G)) => SameLeftCoset(G, S, a, m(ix, m(y, iy))))) by group_cancel_left_value(
       G, x, iy
     ) from shifted;
-  let second =
+  let second :=
     along SameLeftCoset(G, S, iy) by trans(
       cong(m(ix), group_inverse_right(G, y)), group_unit_right(G, ix)
     ) from first;
@@ -208,7 +208,7 @@ def group_hom_difference(G H : Group, h : GroupHom(G, H), x y : group_carrier(G)
   group_hom_map(G, H, h, group_multiply(G, group_inverse(G, x), y)) = group_multiply(
     H, group_inverse(H, group_hom_map(G, H, h, x)), group_hom_map(G, H, h, y)
   ) {
-  let f = group_hom_map(G, H, h);
+  let f := group_hom_map(G, H, h);
   exact trans(
     group_hom_multiply(G, H, h, group_inverse(G, x), y),
     cong((fun (a : group_carrier(H)) => group_multiply(H, a, f(y))), group_hom_inverse(G, H, h, x))
@@ -220,7 +220,7 @@ def kernel_coset_of_equal_images(
   same : group_hom_map(G, H, h, x) = group_hom_map(G, H, h, y)
 ) :
   SameLeftCoset(G, group_kernel(G, H, h), x, y) {
-  let f = group_hom_map(G, H, h);
+  let f := group_hom_map(G, H, h);
   exact trans(
     group_hom_difference(G, H, h, x, y),
     trans(cong(group_multiply(H, group_inverse(H, f(x))), sym(same)), group_inverse_left(H, f(x)))
@@ -232,8 +232,8 @@ def kernel_coset_equal_images(
   same : SameLeftCoset(G, group_kernel(G, H, h), x, y)
 ) :
   group_hom_map(G, H, h, x) = group_hom_map(G, H, h, y) {
-  let f = group_hom_map(G, H, h);
-  let equalUnit =
+  let f := group_hom_map(G, H, h);
+  let equalUnit :=
     trans(
       sym(group_hom_difference(G, H, h, x, y)),
       typed((f(group_multiply(G, group_inverse(G, x), y)) = group_unit(H)), same)
@@ -244,9 +244,9 @@ def kernel_coset_equal_images(
 }
 
 // The existing quotient is a U1 type. This definition asserts no resizing into U0.
-def LeftCosets(G : Group, S : Subgroup(G)) = SetQuotient(group_carrier(G), SameLeftCoset(G, S));
+def LeftCosets(G : Group, S : Subgroup(G)) := SetQuotient(group_carrier(G), SameLeftCoset(G, S));
 
-def left_coset(G : Group, S : Subgroup(G), x : group_carrier(G)) =
+def left_coset(G : Group, S : Subgroup(G), x : group_carrier(G)) :=
   quotient_class(group_carrier(G), SameLeftCoset(G, S), x);
 
 def same_coset_path(

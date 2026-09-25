@@ -4,19 +4,19 @@ import classical;
 
 // A Boolean representation is classical only in the direction from arbitrary
 // proposition-valued cuts. Decoding a Boolean cut is entirely constructive.
-def CutBool = Unit or Unit;
+def CutBool := Unit or Unit;
 
-def CutTruth(b : CutBool) = match b return U0 {
+def CutTruth(b : CutBool) := match b return U0 {
     left yes => Unit;
     right no => Void;
   };
 
-def cut_truth_prop(b : CutBool) = match b as value return FieldProp(CutTruth(value)) {
+def cut_truth_prop(b : CutBool) := match b as value return FieldProp(CutTruth(value)) {
     left yes => fun (u v : Unit) => trans(sym(unit_equal(u)), unit_equal(v));
     right no => fun (u v : Void) => typed((u = v), absurd(u));
   };
 
-def truth_of_decision(P : U0, decision : Decidable(P)) = match decision return CutBool {
+def truth_of_decision(P : U0, decision : Decidable(P)) := match decision return CutBool {
     left yes => left(tt);
     right no => right(tt);
   };
@@ -29,7 +29,7 @@ def decision_truth(P : U0, decision : Decidable(P)) :
   };
 }
 
-def classical_truth(P : U0, prop : FieldProp(P)) = truth_of_decision(P, excluded_middle(P, prop));
+def classical_truth(P : U0, prop : FieldProp(P)) := truth_of_decision(P, excluded_middle(P, prop));
 
 def classical_truth_correct(P : U0, prop : FieldProp(P)) :
   FieldIff(CutTruth(classical_truth(P, prop)), P) {
@@ -40,7 +40,7 @@ def decoded_cut_predicate(Q : U0, predicate : Q -> CutBool) : Q -> U0 {
   exact fun (q : Q) => CutTruth(predicate(q));
 }
 
-def BooleanCut(Q : U0, ltQ : Q -> Q -> U0) =
+def BooleanCut(Q : U0, ltQ : Q -> Q -> U0) :=
   exists lower : Q -> CutBool, exists upper : Q -> CutBool,
   CutLaws(Q, ltQ, decoded_cut_predicate(Q, lower), decoded_cut_predicate(Q, upper));
 
@@ -54,7 +54,7 @@ def boolean_cut_lower(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) : Q 
   );
 }
 
-def boolean_cut_rest(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) =
+def boolean_cut_rest(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) :=
   field_second(
     Q -> CutBool,
     (
@@ -75,7 +75,7 @@ def boolean_cut_upper(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) : Q 
   );
 }
 
-def boolean_cut_laws(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) =
+def boolean_cut_laws(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) :=
   field_second(
     Q -> CutBool,
     (
@@ -86,7 +86,7 @@ def boolean_cut_laws(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) =
     ), boolean_cut_rest(Q, ltQ, cut)
   );
 
-def boolean_to_dedekind(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) =
+def boolean_to_dedekind(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) :=
   typed(
     DedekindCut(Q, ltQ),
     (
@@ -99,7 +99,7 @@ def boolean_to_dedekind(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) =
 // No cut law or completeness claim is introduced as an axiom.
 def classical_cut_predicate(
   Q : U0, predicate : Q -> U0, prop : (forall q : Q, FieldProp(predicate(q)))
-) =
+) :=
   fun (q : Q) => classical_truth(predicate(q), prop(q));
 
 def classical_cut_predicate_correct(
@@ -114,13 +114,13 @@ def classical_cut_predicate_correct(
 }
 
 def dedekind_to_boolean(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) : BooleanCut(Q, ltQ) {
-  let lower = cut_lower(Q, ltQ, cut);
-  let upper = cut_upper(Q, ltQ, cut);
-  let lowerBool = classical_cut_predicate(Q, lower, cut_lower_prop(Q, ltQ, cut));
-  let upperBool = classical_cut_predicate(Q, upper, cut_upper_prop(Q, ltQ, cut));
-  let lowerPath = classical_cut_predicate_correct(Q, lower, cut_lower_prop(Q, ltQ, cut));
-  let upperPath = classical_cut_predicate_correct(Q, upper, cut_upper_prop(Q, ltQ, cut));
-  let lowerLaws =
+  let lower := cut_lower(Q, ltQ, cut);
+  let upper := cut_upper(Q, ltQ, cut);
+  let lowerBool := classical_cut_predicate(Q, lower, cut_lower_prop(Q, ltQ, cut));
+  let upperBool := classical_cut_predicate(Q, upper, cut_upper_prop(Q, ltQ, cut));
+  let lowerPath := classical_cut_predicate_correct(Q, lower, cut_lower_prop(Q, ltQ, cut));
+  let upperPath := classical_cut_predicate_correct(Q, upper, cut_upper_prop(Q, ltQ, cut));
+  let lowerLaws :=
     along((fun (predicate : Q -> U0) => CutLaws(Q, ltQ, predicate, upper))) by sym(lowerPath) from cut_laws(
       Q, ltQ, cut
     );

@@ -3,10 +3,10 @@ import subgroup_constructions;
 
 // Subobject inclusion is a partial order; its antisymmetry is univalent
 // equality of the complete membership-and-laws bundles.
-def GaloisSubgroupIncluded(K : AlgebraicField, E : FieldExt(K), H J : GaloisSubgroup(K, E)) =
+def GaloisSubgroupIncluded(K : AlgebraicField, E : FieldExt(K), H J : GaloisSubgroup(K, E)) :=
   SubgroupIncluded(GaloisGroup(K, E), H, J);
 
-def IntermediateIncluded(K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E)) =
+def IntermediateIncluded(K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E)) :=
   PredicateIncluded(
     extension_carrier(K, E), intermediate_members(K, E, M), intermediate_members(K, E, N)
   );
@@ -52,11 +52,11 @@ def intermediate_inclusion_antisym(
   mn : IntermediateIncluded(K, E, M, N), nm : IntermediateIncluded(K, E, N, M)
 ) :
   M =[IntermediateField(K, E)] N {
-  let F = extension_field(K, E);
-  let P = intermediate_members(K, E, M);
-  let Q = intermediate_members(K, E, N);
-  obtain (closureM, baseM) = intermediate_laws(K, E, M);
-  obtain (closureN, baseN) = intermediate_laws(K, E, N);
+  let F := extension_field(K, E);
+  let P := intermediate_members(K, E, M);
+  let Q := intermediate_members(K, E, N);
+  obtain (closureM, baseM) := intermediate_laws(K, E, M);
+  obtain (closureN, baseN) := intermediate_laws(K, E, N);
   have same : P = Q := field_predicate_ext(
     extension_carrier(K, E), P, Q, subfield_prop(F, P, closureM), subfield_prop(F, Q, closureN),
     (
@@ -75,7 +75,7 @@ def galois_order_connection(K : AlgebraicField, E : FieldExt(K)) :
     IntermediateIncluded(K, E), fixed_intermediate_field(K, E), fixing_galois_subgroup(K, E)
   ) {
   intro H M;
-  obtain (toFixed, toFixing) = intermediate_galois_connection(K, E, H, M);
+  obtain (toFixed, toFixing) := intermediate_galois_connection(K, E, H, M);
   exact (toFixing, toFixed);
 }
 
@@ -109,7 +109,7 @@ def fixing_group_reverses_inclusion(K : AlgebraicField, E : FieldExt(K)) :
 }
 
 // Two order reversals give a covariant (inclusion-preserving) closure.
-def intermediate_galois_closure(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
+def intermediate_galois_closure(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :=
   fixed_intermediate_field(K, E, fixing_galois_subgroup(K, E, M));
 
 def intermediate_galois_closure_monotone(K : AlgebraicField, E : FieldExt(K)) :
@@ -151,9 +151,9 @@ def galois_subgroup_inclusion_prop(K : AlgebraicField, E : FieldExt(K), H J : Ga
 
 def intermediate_inclusion_prop(K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E)) :
   Proposition(IntermediateIncluded(K, E, M, N)) {
-  let P = intermediate_members(K, E, M);
-  let Q = intermediate_members(K, E, N);
-  obtain (closure, base) = intermediate_laws(K, E, N);
+  let P := intermediate_members(K, E, M);
+  let Q := intermediate_members(K, E, N);
+  obtain (closure, base) := intermediate_laws(K, E, N);
   exact forall_prop(
     extension_carrier(K, E), (fun (x : extension_carrier(K, E)) => P(x) -> Q(x)),
     (

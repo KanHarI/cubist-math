@@ -2,19 +2,19 @@ import function_linear_isos;
 
 def coordinate_cons(
   K : AlgebraicField, n : Nat, a : af_carrier(K), v : Fin(n) -> af_carrier(K), i : Fin(succ(n))
-) =
+) :=
   match i return af_carrier(K) {
     left u => a;
     right j => v(j);
   };
 
-def coordinate_first(K : AlgebraicField, n : Nat) =
+def coordinate_first(K : AlgebraicField, n : Nat) :=
   coordinate_cons(
     K, n, af_one(af_carrier(K), af_operations(K)),
     (fun (i : Fin(n)) => af_zero(af_carrier(K), af_operations(K)))
   );
 
-def coordinate_insert(K : AlgebraicField, n : Nat, v : Fin(n) -> af_carrier(K)) =
+def coordinate_insert(K : AlgebraicField, n : Nat, v : Fin(n) -> af_carrier(K)) :=
   coordinate_cons(K, n, af_zero(af_carrier(K), af_operations(K)), v);
 
 def finite_function_ext(
@@ -34,15 +34,15 @@ def finite_function_ext(
 
 def scalar_mul_one_right(K : AlgebraicField, a : af_carrier(K)) :
   af_mul(af_carrier(K), af_operations(K), a, af_one(af_carrier(K), af_operations(K))) = a {
-  obtain (addLaws, mulLaws) = field_ring_data(af_carrier(K), af_operations(K), af_laws(K));
-  obtain (assoc, comm, one, distribute) = mulLaws;
+  obtain (addLaws, mulLaws) := field_ring_data(af_carrier(K), af_operations(K), af_laws(K));
+  obtain (assoc, comm, one, distribute) := mulLaws;
   exact trans(comm(a, af_one(af_carrier(K), af_operations(K))), one(a));
 }
 
 def coordinate_insert_linear(K : AlgebraicField, n : Nat) :
   LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, succ(n))) {
-  let A = af_carrier(K);
-  let zero = af_zero(A, af_operations(K));
+  let A := af_carrier(K);
+  let zero := af_zero(A, af_operations(K));
   have additive :
     forall v : Fin(n) -> A, forall w : Fin(n) -> A,
     coordinate_insert(K, n, vector_add(K, CoordinateSpace(K, n), v, w)) = vector_add(
@@ -87,10 +87,10 @@ def coordinate_decompose(K : AlgebraicField, n : Nat, v : Fin(succ(n)) -> af_car
       K, CoordinateSpace(K, succ(n)), finite_head(af_carrier(K), n, v), coordinate_first(K, n)
     ), coordinate_insert(K, n, finite_tail(af_carrier(K), n, v))
   ) = v {
-  let A = af_carrier(K);
-  let S = CoordinateSpace(K, succ(n));
-  let a = finite_head(A, n, v);
-  let f =
+  let A := af_carrier(K);
+  let S := CoordinateSpace(K, succ(n));
+  let a := finite_head(A, n, v);
+  let f :=
     vector_add(
       K, S, vector_scale(K, S, a, coordinate_first(K, n)),
       coordinate_insert(K, n, finite_tail(A, n, v))

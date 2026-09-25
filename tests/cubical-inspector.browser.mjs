@@ -157,11 +157,11 @@ try {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator("#edit-mode").click();
-  await page.locator("#editor").fill(`def N = Nat;
-    def IdentityType(A : U0) = A;
-    def Alias = IdentityType(N);
-    def id(n : Nat) = n;
-    def value = typed(Alias, id(0));`);
+  await page.locator("#editor").fill(`def N := Nat;
+    def IdentityType(A : U0) := A;
+    def Alias := IdentityType(N);
+    def id(n : Nat) := n;
+    def value := typed(Alias, id(0));`);
   await page.locator("#check").click(); await idle(); await inspected("value");
   const reductionPopup = page.waitForEvent("popup");
   await page.locator("#open-kernel-expression").click();
@@ -292,7 +292,7 @@ try {
   const sharedTransfer=await page.evaluate(async()=>{
     const [{default:createCubical},{CubicalProgram},{saveWorkbenchTransfer}]=await Promise.all([
       import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
-    let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 = A;";
+    let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
     for(let i=1;i<=28;i++)source+=`let T${i} = F(T${i-1},T${i-1});`;
     source+="have h : forall x : T28, x = x { intro x; exact path i => x; } rfl; }";
     const program=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");});

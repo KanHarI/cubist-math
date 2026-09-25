@@ -10,7 +10,7 @@ const original = `import primes;
 def moved(C : Nat -> U0, p : 0 + 0 = 0, v : C(0 + 0)) : C(0) {
   exact transport(C, 0 + 0, 0, p, v);
 }
-def evaluated(A : U0, x y : A, p : x = y) = at(p, 0);
+def evaluated(A : U0, x y : A, p : x = y) := at(p, 0);
 def two : 1 + 1 = 2 {
   exact refl(2);
 }
@@ -77,7 +77,7 @@ def moved(C : Nat -> U0, p : 0 = 0, q : 0 = 0, v : C(0)) : forall a b c : Nat, C
   }
   exact h;
 }
-def pick(A : U0, x y : A, p : x = y) = (fun (a : A) => fun (b : A) => a)(at(p, 0), y);
+def pick(A : U0, x y : A, p : x = y) := (fun (a : A) => fun (b : A) => a)(at(p, 0), y);
 def loop(A : U0, x y : A, p : x = y) : x = x {
   exact concatenate(U0, A, x, y, x, p, inverse(U0, A, x, y, p));
 }
@@ -118,11 +118,11 @@ test("dependents are checked against edited definitions they mention", async () 
     // n + 0 does not reduce for a variable n, so the edited pick is not
     // convertible with the original.
     dependency_fixture: `import primes;
-def double(n : Nat) = n + n;
+def double(n : Nat) := n + n;
 def four : double(2) = 4 {
   exact refl(4);
 }
-def pick(n : Nat) = n + 0;
+def pick(n : Nat) := n + 0;
 `,
     dependent_fixture: `import dependency_fixture;
 def same(n : Nat) : pick(n) = pick(n) {

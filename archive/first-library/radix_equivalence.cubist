@@ -46,11 +46,11 @@ def radix_leading_not_append(
   )
 ) :
   Void {
-  obtain (predecessor, next) = radix_nat_positive_decompose(
+  obtain (predecessor, next) := radix_nat_positive_decompose(
     radix_positive_to_nat(extra, q), radix_decode_positive(extra, q)
   );
-  let base = succ(succ(extra));
-  let ev = radix_digit_value(base, e);
+  let base := succ(succ(extra));
+  let ev := radix_digit_value(base, e);
   exact radix_nat_small_not_large(
     base, succ(radix_digit_value(succ(extra), d)), base * predecessor + ev,
     radix_digit_bound(succ(extra), d),
@@ -61,7 +61,7 @@ def radix_leading_not_append(
   );
 }
 
-def RadixPositiveInjectiveAt(extra : Nat, p : RadixPositive(extra)) =
+def RadixPositiveInjectiveAt(extra : Nat, p : RadixPositive(extra)) :=
   forall q : RadixPositive(extra),
   (radix_positive_to_nat(extra, p) = radix_positive_to_nat(extra, q)) -> (p = q);
 
@@ -117,8 +117,8 @@ def radix_append_append_injective(
   )
 ) :
   radix_append(extra, d, p) = radix_append(extra, e, q) {
-  let base = succ(succ(extra));
-  obtain (quotient, remainder) = radix_division_unique(
+  let base := succ(succ(extra));
+  obtain (quotient, remainder) := radix_division_unique(
     base, radix_digit_value(base, d), radix_digit_value(base, e), radix_digit_bound(base, d),
     radix_digit_bound(base, e), radix_positive_to_nat(extra, p), radix_positive_to_nat(extra, q),
     same
@@ -226,13 +226,13 @@ def radix_roundtrip(extra : Nat, a : RadixNat(extra)) :
   );
 }
 
-def radix_nat_equiv(extra : Nat) =
+def radix_nat_equiv(extra : Nat) :=
   equiv_from_inverse(
     U0, RadixNat(extra), Nat, radix_to_nat(extra), radix_of_nat(extra), radix_roundtrip(extra),
     radix_nat_roundtrip(extra)
   );
 
-def nat_radix_equiv(extra : Nat) =
+def nat_radix_equiv(extra : Nat) :=
   equiv_from_inverse(
     U0, Nat, RadixNat(extra), radix_of_nat(extra), radix_to_nat(extra), radix_nat_roundtrip(extra),
     radix_roundtrip(extra)

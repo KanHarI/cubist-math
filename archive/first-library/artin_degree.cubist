@@ -11,14 +11,14 @@ def finite_spanning_basis_size_bound(
   spanning : FiniteSpanningFamily(K, V, n, vectors), m : Nat, basis : FiniteBasis(K, V, m)
 ) :
   le(m, n) {
-  let C = CoordinateSpace(K, n);
-  let D = CoordinateSpace(K, m);
-  let f = family_linear(K, V, n, vectors);
-  let h = basis_expansion(K, V, m, basis);
-  let X = FiniteLinearLift(K, C, V, f, m, h);
+  let C := CoordinateSpace(K, n);
+  let D := CoordinateSpace(K, m);
+  let f := family_linear(K, V, n, vectors);
+  let h := basis_expansion(K, V, m, basis);
+  let X := FiniteLinearLift(K, C, V, f, m, h);
   have bound : X -> le(m, n) {
     intro witness;
-    obtain (lift, commute) = witness;
+    obtain (lift, commute) := witness;
     have injective : CoordinateInjection(K, m, n, lift) {
       intro x y same;
       exact linear_iso_injective(
@@ -66,15 +66,15 @@ def finite_subgroup_fixed_degree_upper_bound(
       intermediate_overfield(K, E, fixed_intermediate_field(K, E, H)), finiteExtension
     ), n
   ) {
-  let M = fixed_intermediate_field(K, E, H);
-  let R = intermediate_as_field(K, E, M);
-  let F = extension_field(K, E);
-  let i = intermediate_ambient_embedding(K, E, M);
-  let V = field_vector_space(R, F, i);
-  let Result =
+  let M := fixed_intermediate_field(K, E, H);
+  let R := intermediate_as_field(K, E, M);
+  let F := extension_field(K, E);
+  let i := intermediate_ambient_embedding(K, E, M);
+  let V := field_vector_space(R, F, i);
+  let Result :=
     exists finiteExtension : FiniteExtension(R, intermediate_overfield(K, E, M)),
     le(extension_degree(R, intermediate_overfield(K, E, M), finiteExtension), n);
-  let Basis =
+  let Basis :=
     exists enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)),
     exists points : Fin(n) -> extension_carrier(K, E),
     FamilyBasis(
@@ -87,10 +87,10 @@ def finite_subgroup_fixed_degree_upper_bound(
     );
   have fromBasis : Basis -> Result {
     intro witness;
-    obtain (enumeration, points, basis) = witness;
-    let spanning = subgroup_evaluation_spans_fixed_field(K, E, H, n, enumeration, points, basis);
-    let finiteExtension = finite_spanning_dimension(R, V, n, points, spanning);
-    let bound =
+    obtain (enumeration, points, basis) := witness;
+    let spanning := subgroup_evaluation_spans_fixed_field(K, E, H, n, enumeration, points, basis);
+    let finiteExtension := finite_spanning_dimension(R, V, n, points, spanning);
+    let bound :=
       finite_spanning_dimension_bound(
         R, V, n, points, spanning,
         extension_degree(R, intermediate_overfield(K, E, M), finiteExtension),
@@ -148,24 +148,24 @@ def subgroup_evaluation_points_independent(
       ), n, points
     )
   ) {
-  let M = fixed_intermediate_field(K, E, H);
-  let R = intermediate_as_field(K, E, M);
-  let F = extension_field(K, E);
-  let i = intermediate_ambient_embedding(K, E, M);
-  let V = field_vector_space(R, F, i);
-  let C = CoordinateSpace(F, n);
-  let maps = subgroup_evaluation_maps(K, E, H, n, enumeration);
-  let rows = fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j));
-  let source = family_linear(R, V, n, points);
-  let eval = family_linear(F, C, n, rows);
-  let indexed = forward(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H), enumeration);
-  obtain (evalInjective, evalOnto) = basis;
+  let M := fixed_intermediate_field(K, E, H);
+  let R := intermediate_as_field(K, E, M);
+  let F := extension_field(K, E);
+  let i := intermediate_ambient_embedding(K, E, M);
+  let V := field_vector_space(R, F, i);
+  let C := CoordinateSpace(F, n);
+  let maps := subgroup_evaluation_maps(K, E, H, n, enumeration);
+  let rows := fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j));
+  let source := family_linear(R, V, n, points);
+  let eval := family_linear(F, C, n, rows);
+  let indexed := forward(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H), enumeration);
+  obtain (evalInjective, evalOnto) := basis;
   have kernel :
     forall a : Fin(n) -> af_carrier(R),
     linear_map(R, CoordinateSpace(R, n), V, source, a) = vector_zero(R, V)
     -> a = vector_zero(R, CoordinateSpace(R, n)) {
     intro a vanishes;
-    let c = fun (j : Fin(n)) => field_embedding_map(R, F, i, a(j));
+    let c := fun (j : Fin(n)) => field_embedding_map(R, F, i, a(j));
     have baseZero : field_sum(F, n, (fun (j : Fin(n)) => field_mul(F, c(j), points(j)))) = field_zero(
       F
     ) := trans(
@@ -179,14 +179,14 @@ def subgroup_evaluation_points_independent(
         (fun (j : Fin(n)) => field_mul(F, c(j), field_embedding_map(F, F, maps(t), points(j))))
       ) = field_zero(F) {
       intro t;
-      let h = indexed(t);
-      let e = maps(t);
-      obtain (zero, one, neg, add, mul) = field_embedding_preserves(F, F, e);
-      let mapped =
+      let h := indexed(t);
+      let e := maps(t);
+      obtain (zero, one, neg, add, mul) := field_embedding_preserves(F, F, e);
+      let mapped :=
         fun (j : Fin(n)) => field_mul(
           F, field_embedding_map(F, F, e, c(j)), field_embedding_map(F, F, e, points(j))
         );
-      let raw = fun (j : Fin(n)) => field_mul(F, c(j), field_embedding_map(F, F, e, points(j)));
+      let raw := fun (j : Fin(n)) => field_mul(F, c(j), field_embedding_map(F, F, e, points(j)));
       have fixed : forall j : Fin(n), field_embedding_map(F, F, e, c(j)) = c(j) {
         intro j;
         exact subgroup_member_fixes_intermediate(
@@ -230,7 +230,7 @@ def subgroup_evaluation_points_independent(
         trans(combinationZero, sym(linear_zero(F, C, C, eval)))
       )
     );
-    obtain (baseZeroMap, baseOne, baseNeg, baseAdd, baseMul) = field_embedding_preserves(R, F, i);
+    obtain (baseZeroMap, baseOne, baseNeg, baseAdd, baseMul) := field_embedding_preserves(R, F, i);
     ext j;
     exact field_embedding_injective(
       R, F, i, a(j), field_zero(R),
@@ -246,12 +246,12 @@ def finite_independent_basis_size_bound(
   m : Nat, basis : FiniteBasis(K, V, m)
 ) :
   le(n, m) {
-  let C = CoordinateSpace(K, n);
-  let D = CoordinateSpace(K, m);
-  let f = family_linear(K, V, n, vectors);
-  let inverse = linear_iso_inverse(K, D, V, basis);
-  let coordinates = linear_iso_forward(K, V, D, inverse);
-  let composite = linear_compose(K, C, V, D, f, coordinates);
+  let C := CoordinateSpace(K, n);
+  let D := CoordinateSpace(K, m);
+  let f := family_linear(K, V, n, vectors);
+  let inverse := linear_iso_inverse(K, D, V, basis);
+  let coordinates := linear_iso_forward(K, V, D, inverse);
+  let composite := linear_compose(K, C, V, D, f, coordinates);
   have injective : CoordinateInjection(K, n, m, composite) {
     intro x y same;
     exact independent(
@@ -295,13 +295,13 @@ def finite_subgroup_fixed_degree_lower_bound(
       intermediate_overfield(K, E, fixed_intermediate_field(K, E, H)), finiteExtension
     )
   ) {
-  let M = fixed_intermediate_field(K, E, H);
-  let R = intermediate_as_field(K, E, M);
-  let F = extension_field(K, E);
-  let i = intermediate_ambient_embedding(K, E, M);
-  let V = field_vector_space(R, F, i);
-  let d = extension_degree(R, intermediate_overfield(K, E, M), finiteExtension);
-  let Basis =
+  let M := fixed_intermediate_field(K, E, H);
+  let R := intermediate_as_field(K, E, M);
+  let F := extension_field(K, E);
+  let i := intermediate_ambient_embedding(K, E, M);
+  let V := field_vector_space(R, F, i);
+  let d := extension_degree(R, intermediate_overfield(K, E, M), finiteExtension);
+  let Basis :=
     exists enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)),
     exists points : Fin(n) -> extension_carrier(K, E),
     FamilyBasis(
@@ -314,8 +314,8 @@ def finite_subgroup_fixed_degree_lower_bound(
     );
   have fromBasis : Basis -> le(n, d) {
     intro witness;
-    obtain (enumeration, points, basis) = witness;
-    let independent =
+    obtain (enumeration, points, basis) := witness;
+    let independent :=
       subgroup_evaluation_points_independent(K, E, H, n, enumeration, points, basis);
     exact finite_independent_dimension_bound(
       R, V, n, points, independent, d,
@@ -343,8 +343,8 @@ def artin_fixed_field_degree(
     intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)),
     intermediate_overfield(K, E, fixed_intermediate_field(K, E, H)), finiteExtension
   ) = n {
-  obtain (finiteExtension, upper) = finite_subgroup_fixed_degree_upper_bound(K, E, H, n, finite);
-  let lower = finite_subgroup_fixed_degree_lower_bound(K, E, H, n, finite, finiteExtension);
+  obtain (finiteExtension, upper) := finite_subgroup_fixed_degree_upper_bound(K, E, H, n, finite);
+  let lower := finite_subgroup_fixed_degree_lower_bound(K, E, H, n, finite, finiteExtension);
   exact (
     finiteExtension,
     dimension_order_antisymmetric(

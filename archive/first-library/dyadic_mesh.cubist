@@ -11,9 +11,9 @@ def interval_tagged_width_admissible(
   )
 ) :
   IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let condition = IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
-  let other = IntervalTagWithin(F, zero, one, lt);
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let condition := IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
+  let other := IntervalTagWithin(F, zero, one, lt);
   have mapping :
     forall a : I, forall b : I, forall tag : I, condition(a, b, tag) -> other(a, b, tag) {
     intro a b tag data;
@@ -37,14 +37,14 @@ def interval_tagged_width_mesh(
   )
 ) :
   IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let condition = IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
-  let width = interval_difference(F, zero, one, addF, negF, lt);
-  let related = (fun (a b : I) => lt(width(a, b), mesh));
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let condition := IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
+  let width := interval_difference(F, zero, one, addF, negF, lt);
+  let related := (fun (a b : I) => lt(width(a, b), mesh));
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   have mapping : forall a : I, forall b : I, forall tag : I, condition(a, b, tag) -> related(a, b) {
     intro a b tag data;
-    obtain (within, bounded) = data;
+    obtain (within, bounded) := data;
     exact leLt(width(a, b), radius, mesh, bounded, small);
   }
   exact sample_tagged_adjacent(I, condition, related, mapping, n, vertices, tags, valid);
@@ -79,14 +79,14 @@ def dyadic_interval_samples_fine(
     subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
     subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, piece)
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  obtain (piece, count, valid) = dyadic_interval_samples(
+  let I := FieldUnitInterval(F, zero, one, lt);
+  obtain (piece, count, valid) := dyadic_interval_samples(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered
   );
-  let n = subdivision_count(I, a, b, piece);
-  let vertices = subdivision_vertices(I, a, b, piece);
-  let tags = subdivision_tags(I, a, b, piece);
-  let radius =
+  let n := subdivision_count(I, a, b, piece);
+  let vertices := subdivision_vertices(I, a, b, piece);
+  let tags := subdivision_tags(I, a, b, piece);
+  let radius :=
     dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b));
   exact (
     piece, count,

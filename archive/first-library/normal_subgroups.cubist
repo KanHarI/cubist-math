@@ -3,15 +3,15 @@ import group_univalence;
 
 // Normality means closure under conjugation by every ambient group element.
 // It is a property of the subgroup, not extra operations on its carrier.
-def IsNormal(G : Group, S : Subgroup(G)) =
+def IsNormal(G : Group, S : Subgroup(G)) :=
   forall g : group_carrier(G), forall x : group_carrier(G), subgroup_members(G, S, x)
   -> subgroup_members(G, S, group_conjugate(G, g, x));
 
-def NormalSubgroup(G : Group) = exists S : Subgroup(G), IsNormal(G, S);
+def NormalSubgroup(G : Group) := exists S : Subgroup(G), IsNormal(G, S);
 
 def normal_subgroup_prop(G : Group, S : Subgroup(G)) : Proposition(IsNormal(G, S)) {
-  let A = group_carrier(G);
-  let P = subgroup_members(G, S);
+  let A := group_carrier(G);
+  let P := subgroup_members(G, S);
   exact forall_prop(
     A, (fun (g : A) => forall x : A, P(x) -> P(group_conjugate(G, g, x))),
     (
@@ -54,13 +54,13 @@ def subgroup_preimage_normal(
 ) :
   IsNormal(G, subgroup_preimage(G, H, h, S)) {
   intro g x member;
-  let f = group_hom_map(G, H, h);
-  let P = subgroup_members(H, S);
+  let f := group_hom_map(G, H, h);
+  let P := subgroup_members(H, S);
   exact along P by sym(group_hom_conjugate(G, H, h, g, x)) from normal(f(g), f(x), member);
 }
 
 // The kernel is the inverse image of the identity subgroup, hence normal.
-def group_kernel(G H : Group, h : GroupHom(G, H)) = subgroup_preimage(G, H, h, subgroup_bottom(H));
+def group_kernel(G H : Group, h : GroupHom(G, H)) := subgroup_preimage(G, H, h, subgroup_bottom(H));
 
 def group_kernel_normal(G H : Group, h : GroupHom(G, H)) : IsNormal(G, group_kernel(G, H, h)) {
   exact subgroup_preimage_normal(G, H, h, subgroup_bottom(H), subgroup_bottom_normal(H));
@@ -94,7 +94,7 @@ def subgroup_intersection_normal(
 ) :
   IsNormal(G, subgroup_intersection(G, I, family)) {
   intro g x member;
-  let all = typed(SubgroupIntersection(G, I, family, x), member);
+  let all := typed(SubgroupIntersection(G, I, family, x), member);
   exact (fun (i : I) => normals(i, g, x, all(i)));
 }
 
@@ -105,7 +105,7 @@ def normal_members_conjugate(
 ) :
   (subgroup_members(G, S, group_conjugate(G, g, x)) -> subgroup_members(G, S, x))
   and (subgroup_members(G, S, x) -> subgroup_members(G, S, group_conjugate(G, g, x))) {
-  let P = subgroup_members(G, S);
+  let P := subgroup_members(G, S);
   exact (
     (
       fun (member : P(group_conjugate(G, g, x))) => along P by group_conjugate_undo(G, g, x) from normal(
@@ -121,13 +121,13 @@ def normal_subgroup_conjugation_invariant(
   G : Group, S : Subgroup(G), normal : IsNormal(G, S), g : group_carrier(G)
 ) :
   subgroup_preimage(G, G, group_iso_hom(G, G, group_conjugation_iso(G, g)), S) =[Subgroup(G)] S {
-  let h = group_iso_hom(G, G, group_conjugation_iso(G, g));
-  let preimage = subgroup_preimage(G, G, h, S);
+  let h := group_iso_hom(G, G, group_conjugation_iso(G, g));
+  let preimage := subgroup_preimage(G, G, h, S);
   have same :
     forall x : group_carrier(G),
     FieldIff(subgroup_members(G, preimage, x), subgroup_members(G, S, x)) {
     intro x;
-    obtain (backwardConj, forwardConj) = normal_members_conjugate(G, S, normal, g, x);
+    obtain (backwardConj, forwardConj) := normal_members_conjugate(G, S, normal, g, x);
     exact (backwardConj, forwardConj);
   }
   exact subgroup_ext(
@@ -140,7 +140,7 @@ def normal_subgroup_conjugation_invariant(
   );
 }
 
-def subgroup_transport(G H : Group, path : G =[Group] H, S : Subgroup(G)) =
+def subgroup_transport(G H : Group, path : G =[Group] H, S : Subgroup(G)) :=
   along Subgroup by path from S;
 
 // Path induction transports normality across equality of groups. Univalence
@@ -155,7 +155,7 @@ def normal_subgroup_transport(
   );
 }
 
-def subgroup_along_iso(G H : Group, iso : GroupIso(G, H), S : Subgroup(G)) =
+def subgroup_along_iso(G H : Group, iso : GroupIso(G, H), S : Subgroup(G)) :=
   subgroup_transport(G, H, group_isotoid(G, H, iso), S);
 
 def normal_subgroup_along_iso(
@@ -167,7 +167,7 @@ def normal_subgroup_along_iso(
 
 // Inner automorphisms are loops in the type of groups. Decoding this loop
 // recovers the actual conjugation isomorphism, not merely its existence.
-def group_conjugation_path(G : Group, g : group_carrier(G)) =
+def group_conjugation_path(G : Group, g : group_carrier(G)) :=
   group_isotoid(G, G, group_conjugation_iso(G, g));
 
 def group_conjugation_path_roundtrip(G : Group, g : group_carrier(G)) :

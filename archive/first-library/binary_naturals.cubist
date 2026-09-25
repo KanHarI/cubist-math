@@ -1,34 +1,34 @@
 // Binary positive integers are W trees with a leaf for one and a unary node
 // for each trailing digit. They have no leading-zero representation.
-def BinaryLabel = Unit or (Unit or Unit);
+def BinaryLabel := Unit or (Unit or Unit);
 
-def BinaryArity(tag : BinaryLabel) = match tag return U0 {
+def BinaryArity(tag : BinaryLabel) := match tag return U0 {
     left one => Void;
     right bit => Unit;
   };
 
-def BinaryPositive = W(BinaryLabel, BinaryArity);
+def BinaryPositive := W(BinaryLabel, BinaryArity);
 
-def binary_one =
+def binary_one :=
   sup(
     BinaryPositive, typed(BinaryLabel, left(tt)), fun (v : Void) => typed(BinaryPositive, absurd(v))
   );
 
-def binary_bit0(p : BinaryPositive) =
+def binary_bit0(p : BinaryPositive) :=
   sup(BinaryPositive, typed(BinaryLabel, right(left(tt))), fun (u : Unit) => p);
 
-def binary_bit1(p : BinaryPositive) =
+def binary_bit1(p : BinaryPositive) :=
   sup(BinaryPositive, typed(BinaryLabel, right(right(tt))), fun (u : Unit) => p);
 
 // Zero is separate, so every nonzero numeral ends at the one leaf.
-def BinaryNat = Unit or BinaryPositive;
+def BinaryNat := Unit or BinaryPositive;
 
-def binary_zero = typed(BinaryNat, left(tt));
+def binary_zero := typed(BinaryNat, left(tt));
 
-def binary_positive(p : BinaryPositive) = typed(BinaryNat, right(p));
+def binary_positive(p : BinaryPositive) := typed(BinaryNat, right(p));
 
 // The recursive result and original child are both available in a digit case.
-def binary_positive_rec(R : U0, one : R, even odd : BinaryPositive -> R -> R, p : BinaryPositive) =
+def binary_positive_rec(R : U0, one : R, even odd : BinaryPositive -> R -> R, p : BinaryPositive) :=
   wrec(
     BinaryPositive, fun (tree : BinaryPositive) => R,
     fun (
@@ -46,7 +46,7 @@ def binary_positive_rec(R : U0, one : R, even odd : BinaryPositive -> R -> R, p 
     )(children, ih), p
   );
 
-def binary_positive_cases(R : U0, one : R, even odd : BinaryPositive -> R, p : BinaryPositive) =
+def binary_positive_cases(R : U0, one : R, even odd : BinaryPositive -> R, p : BinaryPositive) :=
   binary_positive_rec(
     R, one, fun (child : BinaryPositive, ignored : R) => even(child),
     fun (child : BinaryPositive, ignored : R) => odd(child), p

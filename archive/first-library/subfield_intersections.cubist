@@ -3,13 +3,13 @@ import subfields;
 // Only small-indexed intersections are taken here: the result remains U0-valued.
 // Intersecting all subfields (a U1-sized family) requires a separate universe
 // argument or a small presentation of the generated subfield.
-def SubfieldIntersection(F : AlgebraicField, I : U0, family : I -> Subfield(F), x : af_carrier(F)) =
+def SubfieldIntersection(F : AlgebraicField, I : U0, family : I -> Subfield(F), x : af_carrier(F)) :=
   forall i : I, subfield_members(F, family(i), x);
 
 def subfield_intersection_laws(F : AlgebraicField, I : U0, family : I -> Subfield(F)) :
   SubfieldLaws(F, SubfieldIntersection(F, I, family)) {
-  let A = af_carrier(F);
-  let ops = af_operations(F);
+  let A := af_carrier(F);
+  let ops := af_operations(F);
   have prop : forall x : A, Proposition(SubfieldIntersection(F, I, family, x)) {
     intro x;
     exact forall_prop(

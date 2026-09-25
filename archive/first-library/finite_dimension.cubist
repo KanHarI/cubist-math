@@ -4,7 +4,7 @@ import finite_cancellation;
 
 // Searching for a nonzero coordinate uses LEM only for scalar equality.
 // No choice of a basis or well-ordering of the field is needed.
-def CoordinateSearch(K : AlgebraicField, n : Nat, v : Fin(n) -> af_carrier(K)) =
+def CoordinateSearch(K : AlgebraicField, n : Nat, v : Fin(n) -> af_carrier(K)) :=
   (v = vector_zero(K, CoordinateSpace(K, n)))
   or (exists i : Fin(n), FieldNonzero(af_carrier(K), af_operations(K), v(i)));
 
@@ -13,8 +13,8 @@ def coordinate_search_step(
   rest : CoordinateSearch(K, n, finite_tail(af_carrier(K), n, v))
 ) :
   CoordinateSearch(K, succ(n), v) {
-  let A = af_carrier(K);
-  let zero = af_zero(A, af_operations(K));
+  let A := af_carrier(K);
+  let zero := af_zero(A, af_operations(K));
   exact match excluded_middle(finite_head(A, n, v) = zero, af_set(K, finite_head(A, n, v), zero)) return CoordinateSearch(
     K, succ(n), v
   ) {
@@ -54,7 +54,7 @@ def coordinate_search_step(
   };
 }
 
-def coordinate_search(K : AlgebraicField, n : Nat) =
+def coordinate_search(K : AlgebraicField, n : Nat) :=
   induction n as k return (forall v : Fin(k) -> af_carrier(K), CoordinateSearch(K, k, v)) {
     zero => fun (v : Fin(0) -> af_carrier(K)) => typed(
       CoordinateSearch(K, 0, v),
@@ -72,7 +72,7 @@ def coordinate_search(K : AlgebraicField, n : Nat) =
 
 def CoordinateInjection(
   K : AlgebraicField, m n : Nat, f : LinearMap(K, CoordinateSpace(K, m), CoordinateSpace(K, n))
-) =
+) :=
   Injective(
     vector_carrier(K, CoordinateSpace(K, m)), vector_carrier(K, CoordinateSpace(K, n)),
     linear_map(K, CoordinateSpace(K, m), CoordinateSpace(K, n), f)
@@ -87,18 +87,18 @@ def first_image_nonzero(
   ) = vector_zero(K, CoordinateSpace(K, n))
 ) :
   Void {
-  let A = af_carrier(K);
-  let S = CoordinateSpace(K, succ(m));
-  let T = CoordinateSpace(K, n);
-  obtain (ring, nontrivial, inverses) = af_laws(K);
-  let same =
+  let A := af_carrier(K);
+  let S := CoordinateSpace(K, succ(m));
+  let T := CoordinateSpace(K, n);
+  obtain (ring, nontrivial, inverses) := af_laws(K);
+  let same :=
     injective(
       coordinate_first(K, m), vector_zero(K, S), trans(zeroImage, sym(linear_zero(K, S, T, f)))
     );
   exact nontrivial(cong(finite_head(A, m), same));
 }
 
-def coordinate_swap_iso(K : AlgebraicField, n : Nat, i : Fin(succ(n))) =
+def coordinate_swap_iso(K : AlgebraicField, n : Nat, i : Fin(succ(n))) :=
   reindex_linear_iso(
     K, Fin(succ(n)), Fin(succ(n)), ScalarSpace(K), swap_bijection(Fin(n), fin_decidable(n), i)
   );
@@ -106,7 +106,7 @@ def coordinate_swap_iso(K : AlgebraicField, n : Nat, i : Fin(succ(n))) =
 def coordinate_pivot_map(
   K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), i : Fin(succ(n))
-) =
+) :=
   linear_compose(
     K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), CoordinateSpace(K, succ(n)), f,
     linear_iso_forward(
@@ -121,9 +121,9 @@ def coordinate_pivot_injective(
 ) :
   CoordinateInjection(K, succ(m), succ(n), coordinate_pivot_map(K, m, n, f, i)) {
   intro x y same;
-  let S = CoordinateSpace(K, succ(m));
-  let T = CoordinateSpace(K, succ(n));
-  let F = linear_map(K, S, T, f);
+  let S := CoordinateSpace(K, succ(m));
+  let T := CoordinateSpace(K, succ(n));
+  let F := linear_map(K, S, T, f);
   exact injective(
     x, y, linear_iso_injective(K, T, T, coordinate_swap_iso(K, n, i), F(x), F(y), same)
   );
@@ -145,15 +145,15 @@ def coordinate_injection_pivot_bound(
   )
 ) :
   le(m, n) {
-  let A = af_carrier(K);
-  let S = CoordinateSpace(K, succ(m));
-  let T = CoordinateSpace(K, succ(n));
-  let u = linear_map(K, S, T, f, coordinate_first(K, m));
-  let h = coordinate_pivot_map(K, m, n, f, i);
-  let a = finite_head(A, n, linear_map(K, S, T, h, coordinate_first(K, m)));
+  let A := af_carrier(K);
+  let S := CoordinateSpace(K, succ(m));
+  let T := CoordinateSpace(K, succ(n));
+  let u := linear_map(K, S, T, f, coordinate_first(K, m));
+  let h := coordinate_pivot_map(K, m, n, f, i);
+  let a := finite_head(A, n, linear_map(K, S, T, h, coordinate_first(K, m)));
   have at_pivot : a = u(i) := cong(u, swap_head(Fin(n), fin_decidable(n), i));
-  obtain (ring, nontrivial, inverses) = af_laws(K);
-  obtain (b, inv) = inverses(
+  obtain (ring, nontrivial, inverses) := af_laws(K);
+  obtain (b, inv) := inverses(
     a, (fun (zero : a = af_zero(A, af_operations(K))) => nonzero(trans(sym(at_pivot), zero)))
   );
   exact previous(
@@ -174,8 +174,8 @@ def coordinate_injection_step(
   )
 ) :
   le(m, n) {
-  let A = af_carrier(K);
-  let u =
+  let A := af_carrier(K);
+  let u :=
     linear_map(
       K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f, coordinate_first(K, m)
     );
@@ -194,7 +194,7 @@ def coordinate_injection_step(
 }
 
 // An injective linear map cannot increase the number of independent coordinates.
-def coordinate_injection_bound(K : AlgebraicField, n : Nat) =
+def coordinate_injection_bound(K : AlgebraicField, n : Nat) :=
   induction n as target return (
     forall m : Nat, forall f : LinearMap(K, CoordinateSpace(K, m), CoordinateSpace(K, target)),
     CoordinateInjection(K, m, target, f) -> le(m, target)
@@ -246,7 +246,7 @@ def coordinate_injection_bound(K : AlgebraicField, n : Nat) =
     };
   };
 
-def dimension_order_antisymmetric(m : Nat) =
+def dimension_order_antisymmetric(m : Nat) :=
   induction m as k return (forall n : Nat, le(k, n) -> le(n, k) -> k = n) {
     zero => fun (n : Nat, forward : le(0, n), backward : le(n, 0)) => sym(nat_le_zero(n, backward));
     succ previous => fun (n : Nat) => induction n as j return (
@@ -266,9 +266,9 @@ def coordinate_dimension_invariant(
   K : AlgebraicField, m n : Nat, e : LinearIso(K, CoordinateSpace(K, m), CoordinateSpace(K, n))
 ) :
   m = n {
-  let S = CoordinateSpace(K, m);
-  let T = CoordinateSpace(K, n);
-  let inverse = linear_iso_inverse(K, S, T, e);
+  let S := CoordinateSpace(K, m);
+  let T := CoordinateSpace(K, n);
+  let inverse := linear_iso_inverse(K, S, T, e);
   exact dimension_order_antisymmetric(
     m, n,
     coordinate_injection_bound(

@@ -2,7 +2,7 @@ import finite_linear_lifts;
 
 // The linear map associated with a finite family is constructed by adjoining
 // generators. Its evaluation is the existing finite linear combination.
-def family_linear(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def family_linear(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
     (Fin(k) -> vector_carrier(K, V)) -> LinearMap(K, CoordinateSpace(K, k), V)
   ) {
@@ -13,7 +13,7 @@ def family_linear(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
     );
   };
 
-def family_linear_evaluation(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def family_linear_evaluation(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
     forall vectors : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
     linear_map(K, CoordinateSpace(K, k), V, family_linear(K, V, k, vectors), a) = linear_combination(
@@ -37,7 +37,7 @@ def family_linear_evaluation(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
 
 def FiniteSpanningFamily(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V)
-) =
+) :=
   forall x : vector_carrier(K, V),
   Mere(exists a : Fin(n) -> af_carrier(K), linear_combination(K, V, n, vectors, a) = x);
 
@@ -47,12 +47,12 @@ def family_linear_surjective(
 ) :
   LinearSurjective(K, CoordinateSpace(K, n), V, family_linear(K, V, n, vectors)) {
   intro x;
-  let C = Fin(n) -> af_carrier(K);
-  let X = vector_carrier(K, V);
-  let f = linear_map(K, CoordinateSpace(K, n), V, family_linear(K, V, n, vectors));
+  let C := Fin(n) -> af_carrier(K);
+  let X := vector_carrier(K, V);
+  let f := linear_map(K, CoordinateSpace(K, n), V, family_linear(K, V, n, vectors));
   have convert : (exists a : C, linear_combination(K, V, n, vectors, a) = x) -> Fiber(C, X, f, x) {
     intro witness;
-    obtain (a, sum) = witness;
+    obtain (a, sum) := witness;
     exact (a, trans(family_linear_evaluation(K, V, n, vectors, a), sum));
   }
   exact mere_map(

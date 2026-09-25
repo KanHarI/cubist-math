@@ -7,7 +7,7 @@ import complex_affine;
 def ComplexUniformCurve(
   F : U1, zero one : F, addF : F -> F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F)
-) =
+) :=
   forall epsilon : F, lt(zero, epsilon) -> exists delta : F, lt(zero, delta)
   and (
     forall s : FieldUnitInterval(F, zero, one, lt), forall t : FieldUnitInterval(F, zero, one, lt),
@@ -20,7 +20,7 @@ def ComplexUniformCurve(
 def complex_interval_deformation(
   F : U1, zero one : F, addF mulF : F -> F -> F, lt : F -> F -> U0, z error : Complex(F),
   t : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   complex_linear_deformation(
     F, addF, mulF, field_interval_coordinate(F, zero, one, lt, t), z, error
   );
@@ -38,7 +38,7 @@ def complex_line_restrict_uniform(
     )
   ) {
   intro epsilon positive;
-  obtain (delta, positiveDelta, close) = uniform(epsilon, positive);
+  obtain (delta, positiveDelta, close) := uniform(epsilon, positive);
   exact (
     delta, positiveDelta,
     (
@@ -71,7 +71,7 @@ def complex_interval_deformation_uniform(
 
 def complex_straight_curve(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, a b : Complex(F)
-) =
+) :=
   complex_interval_deformation(
     F, zero, one, addF, mulF, lt, a, complex_add(F, addF, complex_neg(F, negF, a), b)
   );
@@ -110,13 +110,13 @@ def complex_straight_curve_endpoints(
       field_interval_one(F, zero, one, lt, order, zeroBelowOne)
     ) = b
   ) {
-  let error = complex_add(F, addF, complex_neg(F, negF, a), b);
-  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-  let addC = complex_add(F, addF);
-  let mulC = complex_mul(F, addF, mulF, negF);
-  let negC = complex_neg(F, negF);
-  let zeroC = complex_zero(F, zero);
-  let oneC = complex_one(F, zero, one);
+  let error := complex_add(F, addF, complex_neg(F, negF, a), b);
+  let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let addC := complex_add(F, addF);
+  let mulC := complex_mul(F, addF, mulF, negF);
+  let negC := complex_neg(F, negF);
+  let zeroC := complex_zero(F, zero);
+  let oneC := complex_one(F, zero, one);
   have recover : addC(a, error) = b := trans(
     sym(ring_add_assoc(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, a, negC(a), b)),
     trans(
@@ -150,7 +150,7 @@ def complex_interval_deformation_avoids_zero(
   (complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error, t) = complex_zero(F, zero))
   -> Void {
   intro t;
-  obtain (lower, upper) = field_interval_bounds(F, zero, one, lt, t);
+  obtain (lower, upper) := field_interval_bounds(F, zero, one, lt, t);
   exact complex_linear_deformation_nonzero(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     field_interval_coordinate(F, zero, one, lt, t), z, error, lower, upper, dominates

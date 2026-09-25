@@ -3,12 +3,12 @@ import embedded_composita;
 // Fixed-universe scope: fields have carriers in U0; bundled fields and
 // extensions lie in U1. Membership may be a proposition in U1. This leaves
 // room for algebraic properties without asserting propositional resizing.
-def ExtensionClass = forall K : AlgebraicField, FieldExt(K) -> U1;
+def ExtensionClass := forall K : AlgebraicField, FieldExt(K) -> U1;
 
-def ExtensionClassProp(C : ExtensionClass) =
+def ExtensionClassProp(C : ExtensionClass) :=
   forall K : AlgebraicField, forall E : FieldExt(K), FieldProp(C(K, E));
 
-def ExtensionMember(C : ExtensionClass, K L : AlgebraicField, e : FieldEmbedding(K, L)) =
+def ExtensionMember(C : ExtensionClass, K L : AlgebraicField, e : FieldEmbedding(K, L)) :=
   C(K, embedding_as_extension(K, L, e));
 
 // Isomorphism invariance comes from transport on the univalent extension
@@ -25,7 +25,7 @@ def extension_class_iso_iff(
   C : ExtensionClass, K : AlgebraicField, E F : FieldExt(K), e : ExtensionIso(K, E, F)
 ) :
   FieldIff(C(K, E), C(K, F)) {
-  let path = extension_iso_path(K, E, F, e);
+  let path := extension_iso_path(K, E, F, e);
   exact (
     (fun (member : C(K, E)) => along C(K) by path from member),
     (fun (member : C(K, F)) => along C(K) by sym(path) from member)
@@ -33,7 +33,7 @@ def extension_class_iso_iff(
 }
 
 // Lang's first condition is an iff along a specified commutative tower.
-def DistinguishedTower(C : ExtensionClass) =
+def DistinguishedTower(C : ExtensionClass) :=
   forall B : AlgebraicField, forall K : AlgebraicField, forall L : AlgebraicField,
   forall bk : FieldEmbedding(B, K), forall kl : FieldEmbedding(K, L),
   forall bl : FieldEmbedding(B, L), FieldTower(B, K, L, bk, kl, bl)
@@ -43,7 +43,7 @@ def DistinguishedTower(C : ExtensionClass) =
 
 // Lang's second condition is base change inside a specified common field.
 // No tensor-product field or unspecified choice of embeddings is assumed.
-def DistinguishedBaseChange(C : ExtensionClass) =
+def DistinguishedBaseChange(C : ExtensionClass) :=
   forall B : AlgebraicField, forall K : AlgebraicField, forall L : AlgebraicField,
   forall O : AlgebraicField, forall bk : FieldEmbedding(B, K), forall bl : FieldEmbedding(B, L),
   forall bo : FieldEmbedding(B, O), forall ko : FieldEmbedding(K, O),
@@ -54,7 +54,7 @@ def DistinguishedBaseChange(C : ExtensionClass) =
   );
 
 // Lang's third condition keeps the original base and forms the compositum.
-def DistinguishedComposita(C : ExtensionClass) =
+def DistinguishedComposita(C : ExtensionClass) :=
   forall B : AlgebraicField, forall K : AlgebraicField, forall L : AlgebraicField,
   forall O : AlgebraicField, forall bk : FieldEmbedding(B, K), forall bl : FieldEmbedding(B, L),
   forall bo : FieldEmbedding(B, O), forall ko : FieldEmbedding(K, O),
@@ -66,7 +66,7 @@ def DistinguishedComposita(C : ExtensionClass) =
 
 // Expose all three clauses of Lang's definition, and require membership to
 // be propositional. Chosen bases and splitting witnesses are separate data.
-def Distinguished(C : ExtensionClass) =
+def Distinguished(C : ExtensionClass) :=
   ExtensionClassProp(C) and DistinguishedTower(C) and DistinguishedBaseChange(C)
   and DistinguishedComposita(C);
 
@@ -77,13 +77,13 @@ def distinguished_composita_from_tower_base_change(
 ) :
   DistinguishedComposita(C) {
   intro B K L O bk bl bo ko lo leftTower rightTower inK inL;
-  let M = EmbeddedCompositum(K, L, O, ko, lo);
-  let lm = embedded_compositum_right(K, L, O, ko, lo);
-  let bm = embedded_compositum_base(B, K, L, O, bk, ko, lo);
-  let commute =
+  let M := EmbeddedCompositum(K, L, O, ko, lo);
+  let lm := embedded_compositum_right(K, L, O, ko, lo);
+  let bm := embedded_compositum_base(B, K, L, O, bk, ko, lo);
+  let commute :=
     sym(embedded_compositum_base_agreement(B, K, L, O, bk, bl, bo, ko, lo, leftTower, rightTower));
-  let inLM = baseChange(B, K, L, O, bk, bl, bo, ko, lo, leftTower, rightTower, inK);
-  obtain (decompose, combine) = typed(
+  let inLM := baseChange(B, K, L, O, bk, bl, bo, ko, lo, leftTower, rightTower, inK);
+  obtain (decompose, combine) := typed(
     FieldIff(
       ExtensionMember(C, B, M, bm), ExtensionMember(C, B, L, bl) and ExtensionMember(C, L, M, lm)
     ), towerLaw(B, L, M, bl, lm, bm, commute)

@@ -59,11 +59,11 @@ def vector_scale_injective(
   same : vector_scale(K, V, a, x) = vector_scale(K, V, a, y)
 ) :
   x = y {
-  obtain (ring, nontrivial, inverses) = af_laws(K);
-  obtain (addLaws, mulLaws) = ring;
-  obtain (assoc, comm, one, distribute) = mulLaws;
-  obtain (b, inverse) = inverses(a, nonzero);
-  let leftInverse = trans(comm(b, a), inverse);
+  obtain (ring, nontrivial, inverses) := af_laws(K);
+  obtain (addLaws, mulLaws) := ring;
+  obtain (assoc, comm, one, distribute) := mulLaws;
+  obtain (b, inverse) := inverses(a, nonzero);
+  let leftInverse := trans(comm(b, a), inverse);
   exact trans(
     sym(vector_scale_undo(K, V, a, b, leftInverse, x)),
     trans(cong(vector_scale(K, V, b), same), vector_scale_undo(K, V, a, b, leftInverse, y))

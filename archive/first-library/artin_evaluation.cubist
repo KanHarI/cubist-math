@@ -125,8 +125,8 @@ def loop_evaluations_detect_nonzero(
       ) = field_zero(extension_field(K, E))
     ) -> Void
   ) {
-  let F = extension_field(K, E);
-  let dot =
+  let F := extension_field(K, E);
+  let dot :=
     fun (x : extension_carrier(K, E)) => field_sum(
       F, n,
       (

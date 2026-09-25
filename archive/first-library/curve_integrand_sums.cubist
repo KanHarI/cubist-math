@@ -10,13 +10,13 @@ def contour_sum_scale(
   contour_sum(
     F, zero, addF, mulF, negF, (fun (x : F) => mulF(f(x), coefficient)), n, vertices, tags
   ) = mulF(contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags), coefficient) {
-  let original = contour_edge(F, addF, mulF, negF, f);
-  let scaled = contour_edge(F, addF, mulF, negF, (fun (x : F) => mulF(f(x), coefficient)));
-  let mapping = mulF(coefficient);
-  let mapped = (fun (a b tag : F) => mapping(original(a, b, tag)));
+  let original := contour_edge(F, addF, mulF, negF, f);
+  let scaled := contour_edge(F, addF, mulF, negF, (fun (x : F) => mulF(f(x), coefficient)));
+  let mapping := mulF(coefficient);
+  let mapped := (fun (a b tag : F) => mapping(original(a, b, tag)));
   have edgePath : forall a : F, forall b : F, forall tag : F, scaled(a, b, tag) = mapped(a, b, tag) {
     intro a b tag;
-    let difference = coordinate_difference(F, addF, negF, a, b);
+    let difference := coordinate_difference(F, addF, negF, a, b);
     exact trans(
       cong(
         (fun (v : F) => mulF(v, difference)),
@@ -57,8 +57,8 @@ def curve_subdivision_samples_add(
     F, addF, curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece),
     curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, g, a, b, piece)
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let n = subdivision_count(I, a, b, piece);
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let n := subdivision_count(I, a, b, piece);
   exact contour_sum_add(
     Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
     complex_mul(F, addF, mulF, negF), complex_neg(F, negF),
@@ -83,8 +83,8 @@ def curve_subdivision_samples_scale(
     curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece),
     coefficient
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let n = subdivision_count(I, a, b, piece);
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let n := subdivision_count(I, a, b, piece);
   exact contour_sum_scale(
     Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
     complex_mul(F, addF, mulF, negF), complex_neg(F, negF),
@@ -106,14 +106,14 @@ def curve_subdivision_samples_cong(
   curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece) = curve_subdivision_samples(
     F, zero, one, addF, mulF, negF, lt, curve, g, a, b, piece
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let addC = complex_add(F, addF);
-  let mulC = complex_mul(F, addF, mulF, negF);
-  let negC = complex_neg(F, negF);
-  let zeroC = complex_zero(F, zero);
-  let edgeF =
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let addC := complex_add(F, addF);
+  let mulC := complex_mul(F, addF, mulF, negF);
+  let negC := complex_neg(F, negF);
+  let zeroC := complex_zero(F, zero);
+  let edgeF :=
     parameter_contour_edge(I, Complex(F), addC, mulC, negC, curve, (fun (t : I) => f(curve(t))));
-  let edgeG =
+  let edgeG :=
     parameter_contour_edge(I, Complex(F), addC, mulC, negC, curve, (fun (t : I) => g(curve(t))));
   have edges : forall x : I, forall y : I, forall tag : I, edgeF(x, y, tag) = edgeG(x, y, tag) {
     intro x y tag;
@@ -125,7 +125,7 @@ def curve_subdivision_samples_cong(
       ), same(tag)
     );
   }
-  let sums =
+  let sums :=
     sample_sum_cong(
       I, Complex(F), zeroC, addC, edgeF, edgeG, edges, subdivision_count(I, a, b, piece),
       subdivision_vertices(I, a, b, piece), subdivision_tags(I, a, b, piece)

@@ -9,9 +9,9 @@ const module = await createCubical();
 
 test("universe specializations are independently checked once and reused as named definitions", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  await program.check(`def identity(U : Universe, A : U, x : A) = x;
-    def first = identity(U0, Nat, 0); def second = identity(U0, Nat, 1);
-    def higher = identity(U1, U0, Nat);
+  await program.check(`def identity(U : Universe, A : U, x : A) := x;
+    def first := identity(U0, Nat, 0); def second := identity(U0, Nat, 1);
+    def higher := identity(U1, U0, Nat);
     def wrong : 0 = 1 { exact refl(identity(U0, Nat, 0)); }`, "specialization");
   assert.deepEqual([...program.checker.schemaSpecializations.keys()], ["specialization__identity__U0", "specialization__identity__U1"]);
   assert.equal(program.symbols.specialization__identity.verified, false);
@@ -40,7 +40,7 @@ test("the browser program checks Euclid from source and exports a replayable nat
 });
 
 test("module shadowing cannot retarget earlier checked native definitions", async t => {
-  const sources = { first: "def value = 0; def remembered = value;", second: "def value = 1;" };
+  const sources = { first: "def value := 0; def remembered := value;", second: "def value := 1;" };
   const program = new CubicalProgram(module, async name => sources[name]); t.after(() => program.dispose());
   const result = await program.check("import first; import second; def preserved : remembered = 0 { exact refl(0); }", "example");
   assert.equal(result.complete, true);
@@ -51,7 +51,7 @@ test("module shadowing cannot retarget earlier checked native definitions", asyn
 
 test("unsupported foundations and invalid proofs remain explicitly unverified", async t => {
   const program = new CubicalProgram(module, async () => { throw new Error("Source unavailable"); }); t.after(() => program.dispose());
-  const result = await program.check("import missing; def wrong : 0 = 1 { exact refl(0); } def dependent = wrong; def fine = 0;", "example");
+  const result = await program.check("import missing; def wrong : 0 = 1 { exact refl(0); } def dependent := wrong; def fine := 0;", "example");
   assert.equal(result.complete, false);
   assert.deepEqual(result.outputs.map(d => d.verified), [false, false, true]);
   assert.ok(result.gaps.some(g => g.module === "missing"));
@@ -86,8 +86,8 @@ test("native path interiors retain their interval context in the inspector and r
 test("logical assumptions remain explicit, minimal, and inspectable after native closure", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const result = await program.check(`
-    def Mere(A : U1) = Truncate(U1, A);
-    def introduction(A : U1, a : A) = TruncateIntro(U1, A, a);
+    def Mere(A : U1) := Truncate(U1, A);
+    def introduction(A : U1, a : A) := TruncateIntro(U1, A, a);
     def innocent : 0 = 0 { exact refl(0); }
     def wrong : 0 = 1 { exact refl(0); }
   `, "assumptions");
@@ -108,7 +108,7 @@ test("logical assumptions remain explicit, minimal, and inspectable after native
 test("source unfolding hints name checked definitions, remain scoped, and cannot prove false paths", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const source = `
-    def id(n : Nat) = n;
+    def id(n : Nat) := n;
     def hinted : id(0) = 0 { exact with unfolding [id] { refl(0) }; }
     def ordinary : 0 = 0 { exact refl(0); }
     def false_hint : id(0) = 1 { exact with unfolding [id] { refl(0) }; }
@@ -132,7 +132,7 @@ test("source unfolding hints name checked definitions, remain scoped, and cannot
 test("native progress identifies the active declaration before it is checked", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const progress = [];
-  await program.check("def first = 0; def second = 1;", "progress", event => progress.push(event));
+  await program.check("def first := 0; def second := 1;", "progress", event => progress.push(event));
   const checking = progress.filter(p => p.phase !== "loading");
   assert.ok(checking.every(p => p.total === 2));
   assert.deepEqual(checking.map(p => [p.current, p.phase, p.completed]), [
@@ -144,9 +144,9 @@ test("native progress identifies the active declaration before it is checked", a
 test("unfolding scopes close local variables and interval coordinates without leaking hints", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const result = await program.check(`
-    def id(n : Nat) = n;
+    def id(n : Nat) := n;
     def local(n : Nat) : id(n) = n { exact with unfolding [id] { refl(n) }; }
-    def scoped_path(n : Nat, p : n = n) = path(
+    def scoped_path(n : Nat, p : n = n) := path(
       fun (i : Interval) => Nat,
       fun (i : Interval) => with unfolding [id] { at(p, i) }
     );
@@ -159,15 +159,15 @@ test("unfolding scopes close local variables and interval coordinates without le
 
 test("progress totals count a shared import once, including universe templates", async t => {
   const sources = {
-    common: "def generic(U : Universe, A : U, a : A) = a; def shared = 0;",
-    left: "import common; def fromLeft = shared;",
-    right: "import common; def fromRight = shared;",
+    common: "def generic(U : Universe, A : U, a : A) := a; def shared := 0;",
+    left: "import common; def fromLeft := shared;",
+    right: "import common; def fromRight := shared;",
   };
   const reads = [];
   const program = new CubicalProgram(module, async name => { reads.push(name); return sources[name]; });
   t.after(() => program.dispose());
   const progress = [];
-  const result = await program.check("import left; import right; def final = fromLeft;", "root", p => progress.push(p));
+  const result = await program.check("import left; import right; def final := fromLeft;", "root", p => progress.push(p));
   assert.equal(result.declarationCount, 5);
   assert.equal(reads.filter(name => name === "common").length, 1);
   assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.total === 5));
@@ -194,11 +194,11 @@ test("native optimization switches preserve path proofs and rejection independen
 });
 
 test("universe-template calls link to checked specializations and their library source", async t => {
-  const sources = { generic: "def identity(U : Universe, A : U, x : A) = x;" };
+  const sources = { generic: "def identity(U : Universe, A : U, x : A) := x;" };
   for (const reuseChecks of [true, false]) {
     const program = new CubicalProgram(module, async name => sources[name], { optimizations: { reuseChecks } });
     t.after(() => program.dispose());
-    const source = "import generic; def zero = identity(U0, Nat, 0); def identity1 = identity(U1);";
+    const source = "import generic; def zero := identity(U0, Nat, 0); def identity1 := identity(U1);";
     const result = await program.check(source, "caller");
     assert.equal(result.complete, true, JSON.stringify(result.gaps));
     const references = result.links.filter(link => link.role === "universe specialization");
@@ -221,8 +221,8 @@ test("universe-template calls link to checked specializations and their library 
 });
 
 test("inspect checks unused templates at selected universes and replays local context", async t => {
-  const source = `def identity(U : Universe, A : U, x : A) = x;
-    def constant(U : Universe, V : Universe, A : U, B : V, x : A, y : B) = x;
+  const source = `def identity(U : Universe, A : U, x : A) := x;
+    def constant(U : Universe, V : Universe, A : U, B : V, x : A, y : B) := x;
     def invalid(U : Universe, A : U, x : A) : Void { exact x; }`;
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const result = await program.check(source, "templates");
@@ -259,11 +259,11 @@ test("inspect checks unused templates at selected universes and replays local co
 test("untyped lambdas in templates report errors without aborting later declarations",async t=>{
   const program=new CubicalProgram(module,async()=>""); t.after(()=>program.dispose());
   const result=await program.check(`
-    def generic(U : Universe) = fun x => x;
-    def use = generic(U0);
-    def good = 0;
-    def ordinary = fun x => x;
-    def after = 1;
+    def generic(U : Universe) := fun x => x;
+    def use := generic(U0);
+    def good := 0;
+    def ordinary := fun x => x;
+    def after := 1;
   `,"untyped_templates");
   assert.deepEqual(result.outputs.map(item=>item.verified),[false,false,true,false,true]);
   assert.equal(result.outputs[0].template,true);
@@ -292,7 +292,7 @@ test("every named reference in group universe templates is inspectable with sour
   }
   // The stored specialization used by an ordinary checked source also retains
   // source binder names; this path does not rely on the inspector's re-elaboration.
-  await program.check("import groups; def associativity = GroupAssociative;", "ordinary");
+  await program.check("import groups; def associativity := GroupAssociative;", "ordinary");
   const stored = program.inspect("group_universes__GroupAssociativeAt__U0");
   assert.equal(stored.symbols[stored.name].name, "GroupAssociativeAt_U0");
   assert.doesNotMatch(JSON.stringify(cubicalMathTree(stored.expression, stored.symbols)), /"name":"(?:A|multiply|x|y|z)[0-9]+"/);

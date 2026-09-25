@@ -8,11 +8,11 @@ def polynomial_divisor_root(
   divides : PolynomialDivides(K, g, p), x : af_carrier(L), root : PolynomialRoot(K, L, e, g, x)
 ) :
   PolynomialRoot(K, L, e, p, x) {
-  let E = fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
+  let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
   have useFactor :
     (exists q : Polynomial(K), p = polynomial_mul(K, g, q)) -> PolynomialRoot(K, L, e, p, x) {
     intro witness;
-    obtain (q, equation) = witness;
+    obtain (q, equation) := witness;
     exact with unfolding [] {
       trans(
         cong(E, equation),
@@ -31,7 +31,7 @@ def polynomial_divisor_root(
   );
 }
 
-def RootAdjunction(K : AlgebraicField, p : Polynomial(K)) =
+def RootAdjunction(K : AlgebraicField, p : Polynomial(K)) :=
   exists L : AlgebraicField, exists e : FieldEmbedding(K, L), exists x : af_carrier(L),
   FiniteExtension(K, embedding_as_extension(K, L, e)) and PolynomialRoot(K, L, e, p, x);
 
@@ -39,14 +39,14 @@ def root_adjunction_from_factor(
   K : AlgebraicField, p : Polynomial(K), factor : IrreducibleFactor(K, p)
 ) :
   RootAdjunction(K, p) {
-  obtain (g, irreducible, divides) = factor;
-  obtain (d, degree) = polynomial_nonzero_degree(
+  obtain (g, irreducible, divides) := factor;
+  obtain (d, degree) := polynomial_nonzero_degree(
     K, g, polynomial_irreducible_nonzero(K, g, irreducible)
   );
-  let M = typed(PolynomialModulus(K), (g, d, degree));
-  let L = PolynomialResidueField(K, M, irreducible);
-  let e = residue_embedding(K, M, irreducible);
-  let x = adjoined_root(K, M);
+  let M := typed(PolynomialModulus(K), (g, d, degree));
+  let L := PolynomialResidueField(K, M, irreducible);
+  let e := residue_embedding(K, M, irreducible);
+  let x := adjoined_root(K, M);
   exact (
     L, e, x, adjoined_extension_finite(K, M, irreducible),
     polynomial_divisor_root(K, L, e, p, g, divides, x, adjoined_root_is_root(K, M, irreducible))

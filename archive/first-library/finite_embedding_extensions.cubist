@@ -2,7 +2,7 @@ import finite_field_generators;
 
 // Algebraic extensions with n specified field generators admit extensions
 // of their base embeddings into any algebraically closed target field.
-def FiniteEmbeddingExtension(n : Nat) =
+def FiniteEmbeddingExtension(n : Nat) :=
   forall K : AlgebraicField, forall L : AlgebraicField, forall e : FieldEmbedding(K, L),
   forall generators : Fin(n) -> af_carrier(L),
   (forall i : Fin(n), AlgebraicElement(K, L, e, generators(i)))
@@ -11,8 +11,8 @@ def FiniteEmbeddingExtension(n : Nat) =
 
 def finite_embedding_extension_zero : FiniteEmbeddingExtension(0) {
   intro K L e generators algebraic generates T closed j;
-  let onto = field_generated_empty_surjective(K, L, e, generators, generates);
-  let extension =
+  let onto := field_generated_empty_surjective(K, L, e, generators, generates);
+  let extension :=
     embedding_over_surjective_source(
       K, K, L, field_embedding_identity(K), e, e,
       (fun (a : af_carrier(K)) => refl(field_embedding_map(K, L, e, a))), onto, T, j,
@@ -27,39 +27,39 @@ def finite_embedding_extension_zero : FiniteEmbeddingExtension(0) {
 def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension(n)) :
   FiniteEmbeddingExtension(succ(n)) {
   intro K L e generators algebraic generates T closed j;
-  let x = finite_head(af_carrier(L), n, generators);
-  let alg = algebraic(typed(Fin(succ(n)), left(tt)));
-  let p = minimal_polynomial(K, L, e, x, alg);
-  let M = minimal_polynomial_modulus(K, L, e, x, alg);
-  let irr = minimal_polynomial_irreducible(K, L, e, x, alg);
-  obtain (nonzero, monic, root, divides) = minimal_polynomial_spec(K, L, e, x, alg);
-  let R = PolynomialResidueField(K, M, irr);
-  let i = residue_embedding(K, M, irr);
-  let h = adjoin_root_embedding(K, M, irr, L, e, x, root);
-  let triangle = residue_evaluate_constant(K, M, L, e, x, root);
+  let x := finite_head(af_carrier(L), n, generators);
+  let alg := algebraic(typed(Fin(succ(n)), left(tt)));
+  let p := minimal_polynomial(K, L, e, x, alg);
+  let M := minimal_polynomial_modulus(K, L, e, x, alg);
+  let irr := minimal_polynomial_irreducible(K, L, e, x, alg);
+  obtain (nonzero, monic, root, divides) := minimal_polynomial_spec(K, L, e, x, alg);
+  let R := PolynomialResidueField(K, M, irr);
+  let i := residue_embedding(K, M, irr);
+  let h := adjoin_root_embedding(K, M, irr, L, e, x, root);
+  let triangle := residue_evaluate_constant(K, M, L, e, x, root);
   have tower : FieldTower(K, R, L, i, h, e) := with unfolding [FieldTower] {
     field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle)
   };
-  let algebraicR =
+  let algebraicR :=
     (
       fun (index : Fin(n)) => algebraic_element_enlarge_base(
         K, R, L, i, h, e, tower, generators(typed(Fin(succ(n)), right(index))),
         algebraic(typed(Fin(succ(n)), right(index)))
       )
     );
-  let tail = finite_tail(af_carrier(L), n, generators);
-  let generatesR =
+  let tail := finite_tail(af_carrier(L), n, generators);
+  let generatesR :=
     field_generated_adjoin_tail(
       K, R, L, i, h, e, triangle, n, generators, generates, adjoined_root(K, M),
       residue_evaluate_generator(K, M, L, e, x, root)
     );
-  let W = PolynomialRoots(K, T, j, p);
-  let Goal = EmbeddingsOver(K, L, e, T, j);
+  let W := PolynomialRoots(K, T, j, p);
+  let Goal := EmbeddingsOver(K, L, e, T, j);
   have chooseRoot : W -> Mere(Goal) {
     intro witness;
-    obtain (y, rootY) = witness;
-    let d = adjoin_root_embedding(K, M, irr, T, j, y, rootY);
-    let base = residue_evaluate_constant(K, M, T, j, y, rootY);
+    obtain (y, rootY) := witness;
+    let d := adjoin_root_embedding(K, M, irr, T, j, y, rootY);
+    let base := residue_evaluate_constant(K, M, T, j, y, rootY);
     exact mere_map(
       EmbeddingsOver(R, L, h, T, d), Goal,
       embedding_over_restrict_base(K, R, L, T, i, h, e, triangle, j, d, base),
@@ -74,7 +74,7 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
   );
 }
 
-def finitely_generated_embedding_extension(n : Nat) =
+def finitely_generated_embedding_extension(n : Nat) :=
   induction n as k return FiniteEmbeddingExtension(k) {
     zero => finite_embedding_extension_zero;
     succ previous => finite_embedding_extension_step(k, previous);
@@ -88,9 +88,9 @@ def finite_extension_embedding_exists(
   closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
 ) :
   Mere(EmbeddingsOver(K, L, e, T, j)) {
-  let V = field_vector_space(K, L, e);
-  let algebraic = finite_extension_algebraic(K, L, e, finite);
-  obtain (n, basis) = finite;
+  let V := field_vector_space(K, L, e);
+  let algebraic := finite_extension_algebraic(K, L, e, finite);
+  obtain (n, basis) := finite;
   exact mere_eliminate(
     FiniteBasis(K, V, n), Mere(EmbeddingsOver(K, L, e, T, j)),
     mere_is_prop(EmbeddingsOver(K, L, e, T, j)),

@@ -35,15 +35,15 @@ def nonnegative_half_from_sum(
   sum : addF(half, half) = epsilon, nonnegativeEpsilon : FieldLe(F, lt, zero, epsilon)
 ) :
   FieldLe(F, lt, zero, half) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   intro belowZero;
-  obtain (forward, backward) = translate(half, zero, half);
-  let belowHalf =
+  obtain (forward, backward) := translate(half, zero, half);
+  let belowHalf :=
     along lt(addF(half, half)) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, half) from forward(
       belowZero
     );
-  let sumNegative = transitive(addF(half, half), half, zero, belowHalf, belowZero);
+  let sumNegative := transitive(addF(half, half), half, zero, belowHalf, belowZero);
   exact nonnegativeEpsilon(along((fun (v : F) => lt(v, zero))) by sum from sumNegative);
 }
 
@@ -71,22 +71,22 @@ def interval_midpoint(
       interval_difference(F, zero, one, addF, negF, lt)(a, b)
     )
   ) {
-  let coordinate = field_interval_coordinate(F, zero, one, lt);
-  let x = coordinate(a);
-  let y = coordinate(b);
-  let width = coordinate_difference(F, addF, negF, x, y);
-  let h = half(width);
-  let m = addF(x, h);
-  let nonnegativeWidth =
+  let coordinate := field_interval_coordinate(F, zero, one, lt);
+  let x := coordinate(a);
+  let y := coordinate(b);
+  let width := coordinate_difference(F, addF, negF, x, y);
+  let h := half(width);
+  let m := addF(x, h);
+  let nonnegativeWidth :=
     field_difference_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, y, ordered
     );
-  let nonnegativeHalf =
+  let nonnegativeHalf :=
     nonnegative_half_from_sum(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, h, halfSum(width),
       nonnegativeWidth
     );
-  let leftBound =
+  let leftBound :=
     order_le_add_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, h, nonnegativeHalf
     );
@@ -96,12 +96,12 @@ def interval_midpoint(
       cong(addF(x), halfSum(width)), difference_add_back(F, zero, one, addF, mulF, negF, ring, x, y)
     )
   );
-  let rightBound =
+  let rightBound :=
     along FieldLe(F, lt, m) by completes from order_le_add_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, m, h, nonnegativeHalf
     );
-  obtain (lowerA, upperA) = field_interval_bounds(F, zero, one, lt, a);
-  obtain (lowerB, upperB) = field_interval_bounds(F, zero, one, lt, b);
+  obtain (lowerA, upperA) := field_interval_bounds(F, zero, one, lt, a);
+  obtain (lowerB, upperB) := field_interval_bounds(F, zero, one, lt, b);
   have midpoint : FieldUnitInterval(F, zero, one, lt) := (
     m, order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, zero, x, m, lowerA, leftBound),
     order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, m, y, one, rightBound, upperB)
@@ -137,7 +137,7 @@ def two_edge_subdivision_admissible(
       two_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, midpoint, b)
     )
   ) {
-  obtain (leftBound, rightBound) = within;
+  obtain (leftBound, rightBound) := within;
   exact typed(
     (
       IntervalTagWithin(F, zero, one, lt, a, midpoint, a)
@@ -183,10 +183,10 @@ def ordered_interval_bisection(
       two_edge_subdivision(FieldUnitInterval(F, zero, one, lt), a, midpoint, b)
     )
   ) {
-  obtain (half, halfSum, halfPositive) = ordered_field_halving(
+  obtain (half, halfSum, halfPositive) := ordered_field_halving(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
   );
-  obtain (midpoint, within, leftWidth, rightWidth) = interval_midpoint(
+  obtain (midpoint, within, leftWidth, rightWidth) := interval_midpoint(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
   );
   exact (

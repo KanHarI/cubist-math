@@ -5,19 +5,19 @@ import field_embeddings;
 // ambient field and covariant in inclusion of subfields of the target.
 def SubfieldPreimage(
   K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L), x : af_carrier(K)
-) =
+) :=
   subfield_members(L, S, field_embedding_map(K, L, e, x));
 
 def subfield_preimage_laws(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L)) :
   SubfieldLaws(K, SubfieldPreimage(K, L, e, S)) {
-  let A = af_carrier(K);
-  let B = af_carrier(L);
-  let opsA = af_operations(K);
-  let opsB = af_operations(L);
-  let f = field_embedding_map(K, L, e);
-  let Q = subfield_members(L, S);
-  let laws = subfield_laws(L, S);
-  obtain (p0, p1, pn, pa, pm) = field_embedding_preserves(K, L, e);
+  let A := af_carrier(K);
+  let B := af_carrier(L);
+  let opsA := af_operations(K);
+  let opsB := af_operations(L);
+  let f := field_embedding_map(K, L, e);
+  let Q := subfield_members(L, S);
+  let laws := subfield_laws(L, S);
+  obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
     (fun (x : A) => subfield_prop(L, Q, laws, f(x))),
     along Q by sym(p0) from subfield_zero(L, Q, laws),
@@ -48,7 +48,7 @@ def subfield_preimage(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfie
 // The laws of a contravariant operation are equalities of subfield bundles.
 def subfield_preimage_identity(K : AlgebraicField, S : Subfield(K)) :
   subfield_preimage(K, K, field_embedding_identity(K), S) =[Subfield(K)] S {
-  let P = subfield_members(K, S);
+  let P := subfield_members(K, S);
   exact subfield_ext(
     K, subfield_preimage(K, K, field_embedding_identity(K), S), S,
     (
@@ -66,7 +66,7 @@ def subfield_preimage_composite(
   subfield_preimage(K, M, field_embedding_compose(K, L, M, e, d), S) =[Subfield(K)] subfield_preimage(
     K, L, e, subfield_preimage(L, M, d, S)
   ) {
-  let P =
+  let P :=
     (
       fun (x : af_carrier(K)) => subfield_members(
         M, S, field_embedding_map(L, M, d, field_embedding_map(K, L, e, x))

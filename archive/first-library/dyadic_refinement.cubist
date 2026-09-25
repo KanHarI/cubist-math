@@ -5,7 +5,7 @@ import subdivision_refinement;
 def IntervalRefinementAdmissible(
   F : U1, zero one : F, lt : F -> F -> U0, a b tag : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
-) =
+) :=
   typed(
     U1,
     IntervalAdmissibleTags(
@@ -41,17 +41,17 @@ def dyadic_refinement_zero(
       ordered
     )
   ) {
-  let fine =
+  let fine :=
     dyadic_piece(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, extra, a, b,
       ordered
     );
-  let valid =
+  let valid :=
     dyadic_piece_admissible(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, extra, a, b,
       ordered
     );
-  let initial =
+  let initial :=
     subdivision_refinement_sum_single(
       FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, rightUnit, edge,
       IntervalRefinementAdmissible(F, zero, one, lt), a, b, fine, valid
@@ -116,22 +116,22 @@ def dyadic_refinement_step(
       succ(depth) + extra, a, b, ordered
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let midpoint =
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let midpoint :=
     interval_midpoint_point(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
-  let leftOrdered =
+  let leftOrdered :=
     interval_midpoint_left_order(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
-  let rightOrdered =
+  let rightOrdered :=
     interval_midpoint_right_order(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
-  let left = previous(extra, a, midpoint, leftOrdered);
-  let right = previous(extra, midpoint, b, rightOrdered);
-  let joined =
+  let left := previous(extra, a, midpoint, leftOrdered);
+  let right := previous(extra, midpoint, b, rightOrdered);
+  let joined :=
     subdivision_refinement_sum_join(
       I, G, zeroG, addG, leftUnit, assoc, edge, IntervalRefinementAdmissible(F, zero, one, lt), a,
       midpoint, b,
@@ -152,17 +152,17 @@ def dyadic_refinement_step(
         midpoint, b, rightOrdered
       ), left, right
     );
-  let coarsePath =
+  let coarsePath :=
     dyadic_piece_succ(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
       ordered
     );
-  let finePath =
+  let finePath :=
     dyadic_piece_succ(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth + extra, a,
       b, ordered
     );
-  let withCoarse =
+  let withCoarse :=
     along(
       (
         fun (coarse : SampleSubdivision(I, a, b)) => SubdivisionRefinementSum(

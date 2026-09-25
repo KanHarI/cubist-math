@@ -84,7 +84,7 @@ def polynomial_mul_comm(K : AlgebraicField, p q : Polynomial(K)) :
 
 def polynomial_mul_one(K : AlgebraicField, p : Polynomial(K)) :
   polynomial_mul(K, polynomial_one(K), p) = p {
-  let f = polynomial_coefficients(K, p);
+  let f := polynomial_coefficients(K, p);
   exact polynomial_coefficient_ext(
     K, polynomial_mul(K, polynomial_one(K), p), p,
     (
@@ -138,6 +138,6 @@ def polynomial_constant_injective(
 
 def polynomial_one_not_zero(K : AlgebraicField, same : polynomial_one(K) = polynomial_zero(K)) :
   Void {
-  obtain (ring, nontrivial, inverses) = af_laws(K);
+  obtain (ring, nontrivial, inverses) := af_laws(K);
   exact nontrivial(cong((fun (p : Polynomial(K)) => polynomial_coefficients(K, p, 0)), same));
 }

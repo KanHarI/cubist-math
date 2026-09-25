@@ -3,7 +3,7 @@ import complex_magnitude;
 import complex_convergence;
 import complex_deformation;
 
-def complex_box_radius(F : U1, negF : F -> F, maxF : F -> F -> F, z : Complex(F)) =
+def complex_box_radius(F : U1, negF : F -> F, maxF : F -> F -> F, z : Complex(F)) :=
   maxF(
     maxF(complex_real(F, z), negF(complex_real(F, z))),
     maxF(complex_imag(F, z), negF(complex_imag(F, z)))
@@ -16,11 +16,11 @@ def complex_lattice_box_bound(
   lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F)
 ) :
   ComplexBoxBound(F, negF, lt, z, complex_box_radius(F, negF, maxF, z)) {
-  obtain (minLeft, minRight, minGreatest, maxLeft, maxRight, maxLeast) = lattice;
-  let x = complex_real(F, z);
-  let y = complex_imag(F, z);
-  let r = maxF(x, negF(x));
-  let s = maxF(y, negF(y));
+  obtain (minLeft, minRight, minGreatest, maxLeft, maxRight, maxLeast) := lattice;
+  let x := complex_real(F, z);
+  let y := complex_imag(F, z);
+  let r := maxF(x, negF(x));
+  let s := maxF(y, negF(y));
   exact (
     field_magnitude_enlarge(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, r, maxF(r, s),
@@ -37,7 +37,7 @@ def complex_lattice_box_bound(
 // is in complex_curves. The radius is actual data, not mere existence.
 def ComplexUniformLine(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, curve : F -> Complex(F)
-) =
+) :=
   forall epsilon : F, lt(zero, epsilon) -> exists delta : F, lt(zero, delta)
   and (
     forall s : F, forall t : F, FieldClose(F, addF, lt, s, t, delta)
@@ -55,16 +55,16 @@ def complex_linear_deformation_uniform(
     F, zero, addF, lt, (fun (t : F) => complex_linear_deformation(F, addF, mulF, t, z, error))
   ) {
   intro epsilon positive;
-  let length = complex_box_radius(F, negF, maxF, error);
-  obtain (boundReal, boundImag) = complex_lattice_box_bound(
+  let length := complex_box_radius(F, negF, maxF, error);
+  obtain (boundReal, boundImag) := complex_lattice_box_bound(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, error
   );
-  let nonnegativeLength =
+  let nonnegativeLength :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), length,
       boundReal
     );
-  obtain (delta, positiveDelta, small) = field_small_scaled_radius(
+  obtain (delta, positiveDelta, small) := field_small_scaled_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
     nonnegativeLength, epsilon, positive
   );

@@ -26,9 +26,9 @@ def puncture_period_reversed_generator(
   i : Fin(n)
 ) :
   period(sym(puncture_loop(n, i))) = negG(period(puncture_loop(n, i))) {
-  obtain (assoc, comm, unit, inverseLaw) = laws;
-  let positive = period(puncture_loop(n, i));
-  let reversed = period(sym(puncture_loop(n, i)));
+  obtain (assoc, comm, unit, inverseLaw) := laws;
+  let positive := period(puncture_loop(n, i));
+  let reversed := period(sym(puncture_loop(n, i)));
   exact additive_right_cancellation(
     G, zero, addG, negG, laws, reversed, negG(positive), positive,
     trans(

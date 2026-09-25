@@ -12,13 +12,13 @@ def sample_tagged_map_step(
   valid : SampleTagged(C, condition, succ(n), vertices, tags)
 ) :
   SampleTagged(C, other, succ(n), vertices, tags) {
-  let a = field_fst(C, SampleVertices(C, n), vertices);
-  let tail = field_snd(C, SampleVertices(C, n), vertices);
-  let b = sample_first(C, n, tail);
-  let tag = field_fst(C, SampleTags(C, n), tags);
-  let tailTags = field_snd(C, SampleTags(C, n), tags);
+  let a := field_fst(C, SampleVertices(C, n), vertices);
+  let tail := field_snd(C, SampleVertices(C, n), vertices);
+  let b := sample_first(C, n, tail);
+  let tag := field_fst(C, SampleTags(C, n), tags);
+  let tailTags := field_snd(C, SampleTags(C, n), tags);
   have data : condition(a, b, tag) and SampleTagged(C, condition, n, tail, tailTags) := valid;
-  obtain (headValid, tailValid) = data;
+  obtain (headValid, tailValid) := data;
   exact typed(
     (other(a, b, tag) and SampleTagged(C, other, n, tail, tailTags)),
     (mapping(a, b, tag, headValid), previous(tail, tailTags, tailValid))

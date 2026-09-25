@@ -13,7 +13,7 @@ def polynomial_factor_divisibility_cancel(
     (exists w : Polynomial(K), p = polynomial_mul(K, q, w))
     -> (exists w : Polynomial(K), a = polynomial_mul(K, b, w)) {
     intro witness;
-    obtain (w, same) = witness;
+    obtain (w, same) := witness;
     exact (
       w,
       polynomial_cancel_nonzero(
@@ -42,9 +42,9 @@ def unit_distinct_splitting(
   unit : PolynomialUnit(K, p)
 ) :
   DistinctPolynomialSplitting(K, p, polynomial_degree(K, p)) {
-  let degree = polynomial_unit_cutoff(K, p, nonzero, unit);
-  obtain (roots, a, eq) = polynomial_splitting_zero_degree(K, p, degree);
-  let splitting =
+  let degree := polynomial_unit_cutoff(K, p, nonzero, unit);
+  obtain (roots, a, eq) := polynomial_splitting_zero_degree(K, p, degree);
+  let splitting :=
     typed(
       DistinctPolynomialSplitting(K, p, 0),
       (roots, a, eq, (fun (i j : Fin(0), same : roots(i) = roots(j)) => typed((i = j), absurd(i))))
@@ -52,7 +52,7 @@ def unit_distinct_splitting(
   exact along DistinctPolynomialSplitting(K, p) by sym(cong(natural_predecessor, degree)) from splitting;
 }
 
-def DistinctSplittingDivisors(K : AlgebraicField, n : Nat) =
+def DistinctSplittingDivisors(K : AlgebraicField, n : Nat) :=
   forall p : Polynomial(K), PolynomialNonzero(K, p) -> DistinctPolynomialSplitting(K, p, n)
   -> forall q : Polynomial(K), PolynomialNonzero(K, q) -> PolynomialDivides(K, q, p)
   -> Mere(DistinctPolynomialSplitting(K, q, polynomial_degree(K, q)));
@@ -70,11 +70,11 @@ def omitted_divisor_roots_avoid(
   same : x = roots(index)
 ) :
   Void {
-  let rs = fun (j : Fin(n)) => roots(fin_omit(n, index, j));
-  let rp = polynomial_divisor_root(K, K, field_embedding_identity(K), p, q, divides, x, root);
+  let rs := fun (j : Fin(n)) => roots(fin_omit(n, index, j));
+  let rp := polynomial_divisor_root(K, K, field_embedding_identity(K), p, q, divides, x, root);
   have contradict : (exists j : Fin(n), rs(j) = x) -> Void {
     intro w;
-    obtain (j, eq) = w;
+    obtain (j, eq) := w;
     exact distinct_roots_omit_avoid(K, n, roots, distinct, index, j, trans(eq, same));
   }
   exact mere_eliminate(
@@ -93,13 +93,13 @@ def distinct_splitting_divisor_at_root(
   rootQ : PolynomialRoot(K, K, field_embedding_identity(K), q, roots(index))
 ) :
   Mere(DistinctPolynomialSplitting(K, q, polynomial_degree(K, q))) {
-  let x = roots(index);
-  let F = polynomial_linear_factor(K, x);
-  let rest = (fun (j : Fin(n)) => roots(fin_omit(n, index, j)));
-  let P = linear_factor_product(K, n, rest);
-  let C = polynomial_constant(K, a);
-  let tailP = polynomial_mul(K, C, P);
-  let ep =
+  let x := roots(index);
+  let F := polynomial_linear_factor(K, x);
+  let rest := (fun (j : Fin(n)) => roots(fin_omit(n, index, j)));
+  let P := linear_factor_product(K, n, rest);
+  let C := polynomial_constant(K, a);
+  let tailP := polynomial_mul(K, C, P);
+  let ep :=
     trans(
       equation,
       trans(
@@ -107,23 +107,23 @@ def distinct_splitting_divisor_at_root(
         polynomial_mul_swap(K, C, F, P)
       )
     );
-  let nzP = factor_quotient_nonzero(K, p, F, tailP, ep, nonzero);
-  obtain (tailQ, eq) = polynomial_factor_theorem(K, q, x, rootQ);
-  let nzQ = factor_quotient_nonzero(K, q, F, tailQ, eq, nonzeroQ);
-  let divided =
+  let nzP := factor_quotient_nonzero(K, p, F, tailP, ep, nonzero);
+  obtain (tailQ, eq) := polynomial_factor_theorem(K, q, x, rootQ);
+  let nzQ := factor_quotient_nonzero(K, q, F, tailQ, eq, nonzeroQ);
+  let divided :=
     polynomial_factor_divisibility_cancel(
       K, F, linear_factor_nonzero(K, x), p, q, tailP, tailQ, ep, eq, divides
     );
-  let splitP =
+  let splitP :=
     typed(
       DistinctPolynomialSplitting(K, tailP, n),
       (rest, a, refl(tailP), distinct_roots_omit(K, n, roots, distinct, index))
     );
-  let m = polynomial_degree(K, tailQ);
-  let Goal = DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
+  let m := polynomial_degree(K, tailQ);
+  let Goal := DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
   have extend : DistinctPolynomialSplitting(K, tailQ, m) -> Goal {
     intro splitting;
-    obtain (rs, b, fact, distinctQ) = splitting;
+    obtain (rs, b, fact, distinctQ) := splitting;
     have avoids : forall i : Fin(m), (rs(i) = x) -> Void {
       intro i same;
       exact omitted_divisor_roots_avoid(
@@ -131,21 +131,21 @@ def distinct_splitting_divisor_at_root(
         splitting_listed_root(K, tailQ, m, rs, b, fact, i), same
       );
     }
-    obtain (newRoots, scalar, factor) = polynomial_splitting_prepend(
+    obtain (newRoots, scalar, factor) := polynomial_splitting_prepend(
       K, q, tailQ, x, eq, m, typed(PolynomialSplitting(K, tailQ, m), (rs, b, fact))
     );
-    let result =
+    let result :=
       typed(
         DistinctPolynomialSplitting(K, q, succ(m)),
         (newRoots, scalar, factor, distinct_roots_prepend(K, m, x, rs, distinctQ, avoids))
       );
-    obtain (d, degree) = polynomial_nonzero_degree(K, tailQ, nzQ);
-    let productDegree =
+    obtain (d, degree) := polynomial_nonzero_degree(K, tailQ, nzQ);
+    let productDegree :=
       trans(
         cong(polynomial_cutoff(K), eq),
         polynomial_product_degree(K, F, tailQ, 1, d, linear_factor_degree(K, x), degree)
       );
-    let size =
+    let size :=
       trans(
         cong(natural_predecessor, productDegree),
         sym(cong((fun (k : Nat) => succ(natural_predecessor(k))), degree))
@@ -161,16 +161,16 @@ def distinct_splitting_divisor_at_root(
 def distinct_splitting_divisor_zero(K : AlgebraicField, closed : AlgebraicallyClosed(K)) :
   DistinctSplittingDivisors(K, 0) {
   intro p nonzero splitting q nonzeroQ divides;
-  obtain (roots, a, equation, distinct) = splitting;
-  let Goal = DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
+  obtain (roots, a, equation, distinct) := splitting;
+  let Goal := DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
   have nonunit : (PolynomialUnit(K, q) -> Void) -> Mere(Goal) {
     intro nu;
     have rootImpossible :
       (exists x : af_carrier(K), PolynomialRoot(K, K, field_embedding_identity(K), q, x))
       -> Mere(Goal) {
       intro w;
-      obtain (x, root) = w;
-      let rp = polynomial_divisor_root(K, K, field_embedding_identity(K), p, q, divides, x, root);
+      obtain (x, root) := w;
+      let rp := polynomial_divisor_root(K, K, field_embedding_identity(K), p, q, divides, x, root);
       exact mere_eliminate(
         (exists i : Fin(0), roots(i) = x), Mere(Goal), mere_is_prop(Goal),
         (
@@ -200,19 +200,19 @@ def distinct_splitting_divisor_step(
 ) :
   DistinctSplittingDivisors(K, succ(n)) {
   intro p nonzero splitting q nonzeroQ divides;
-  obtain (roots, a, equation, distinct) = splitting;
-  let Goal = DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
+  obtain (roots, a, equation, distinct) := splitting;
+  let Goal := DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
   have nonunit : (PolynomialUnit(K, q) -> Void) -> Mere(Goal) {
     intro nu;
     have useRoot :
       (exists x : af_carrier(K), PolynomialRoot(K, K, field_embedding_identity(K), q, x))
       -> Mere(Goal) {
       intro w;
-      obtain (x, root) = w;
-      let rp = polynomial_divisor_root(K, K, field_embedding_identity(K), p, q, divides, x, root);
+      obtain (x, root) := w;
+      let rp := polynomial_divisor_root(K, K, field_embedding_identity(K), p, q, divides, x, root);
       have locate : (exists i : Fin(succ(n)), roots(i) = x) -> Mere(Goal) {
         intro witness;
-        obtain (i, same) = witness;
+        obtain (i, same) := witness;
         exact distinct_splitting_divisor_at_root(
           K, n, previous, p, nonzero, roots, a, equation, distinct, q, nonzeroQ, divides, i,
           along PolynomialRoot(K, K, field_embedding_identity(K), q) by sym(same) from root
@@ -237,7 +237,7 @@ def distinct_splitting_divisor_step(
   };
 }
 
-def distinct_splitting_divisor(K : AlgebraicField, closed : AlgebraicallyClosed(K), n : Nat) =
+def distinct_splitting_divisor(K : AlgebraicField, closed : AlgebraicallyClosed(K), n : Nat) :=
   induction n as k return DistinctSplittingDivisors(K, k) {
     zero => distinct_splitting_divisor_zero(K, closed);
     succ previous => distinct_splitting_divisor_step(K, closed, k, previous);

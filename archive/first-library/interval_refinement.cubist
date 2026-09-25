@@ -18,9 +18,9 @@ def interval_refinement_tags_global(
       )
     ), n, vertices, tags
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let coordinate = field_interval_coordinate(F, zero, one, lt);
-  let related = (fun (a b : I) => FieldLe(F, lt, coordinate(a), coordinate(b)));
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let coordinate := field_interval_coordinate(F, zero, one, lt);
+  let related := (fun (a b : I) => FieldLe(F, lt, coordinate(a), coordinate(b)));
   exact sample_between_global(
     I, related, (fun (x : I) => order_le_refl(F, lt, order, coordinate(x))),
     (
@@ -65,8 +65,8 @@ def uniform_refinement_tag_bounds(
       sample_repeat_tags(FieldUnitInterval(F, zero, one, lt), n, coarseTag), tags
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  obtain (mesh, positiveMesh, closeValues) = uniform(epsilon, positive);
+  let I := FieldUnitInterval(F, zero, one, lt);
+  obtain (mesh, positiveMesh, closeValues) := uniform(epsilon, positive);
   have estimates :
     forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
     forall coarseTag : FieldUnitInterval(F, zero, one, lt),
@@ -88,10 +88,10 @@ def uniform_refinement_tag_bounds(
       sample_repeat_tags(FieldUnitInterval(F, zero, one, lt), n, coarseTag), tags
     ) {
     intro n vertices coarseTag tags valid coarseWithin small;
-    let a = sample_first(I, n, vertices);
-    let b = sample_last(I, n, vertices);
-    let within = IntervalTagWithin(F, zero, one, lt, a, b);
-    let constantCondition = (fun (x y : I) => within);
+    let a := sample_first(I, n, vertices);
+    let b := sample_last(I, n, vertices);
+    let within := IntervalTagWithin(F, zero, one, lt, a, b);
+    let constantCondition := (fun (x y : I) => within);
     have localBound :
       forall x : I, forall y : I, forall oldTag : I, forall newTag : I, Unit -> within(oldTag)
       -> within(newTag)
@@ -102,7 +102,7 @@ def uniform_refinement_tag_bounds(
         ), epsilon
       ) {
       intro x y oldTag newTag unitWitness oldWithin newWithin;
-      let closeParameters =
+      let closeParameters :=
         interval_tags_close(
           F, zero, one, addF, mulF, negF, lt, ring, arithmetic, a, b, newTag, oldTag, newWithin,
           oldWithin, mesh, small
@@ -112,8 +112,8 @@ def uniform_refinement_tag_bounds(
         epsilon, closeValues(newTag, oldTag, closeParameters)
       );
     }
-    let oldValid = sample_repeat_tags_valid(I, within, coarseTag, coarseWithin, n, vertices);
-    let newValid =
+    let oldValid := sample_repeat_tags_valid(I, within, coarseTag, coarseWithin, n, vertices);
+    let newValid :=
       interval_refinement_tags_global(
         F, zero, one, addF, mulF, lt, order, arithmetic, n, vertices, tags, valid
       );

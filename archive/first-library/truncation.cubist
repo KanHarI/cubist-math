@@ -1,18 +1,18 @@
 import paths;
 
 // Reuse the original library truncation type, unit, and proposition axiom.
-def IsProp(A : U0) = forall x : A, forall y : A, x = y;
+def IsProp(A : U0) := forall x : A, forall y : A, x = y;
 
-def Mere(A : U0) = Truncate(U0, A);
+def Mere(A : U0) := Truncate(U0, A);
 
-def merely(A : U0, a : A) = TruncateIntro(U0, A, a);
+def merely(A : U0, a : A) := TruncateIntro(U0, A, a);
 
-def mere_is_prop(A : U0) = TruncateProp(U0, A);
+def mere_is_prop(A : U0) := TruncateProp(U0, A);
 
 // The library supplies the standard elimination axiom. This checked wrapper
 // rearranges its premises; it introduces no additional axiom.
-def mere_eliminate(A P : U0, proposition : IsProp(P), f : A -> P) =
+def mere_eliminate(A P : U0, proposition : IsProp(P), f : A -> P) :=
   TruncateElim(U0, A, P, proposition, f);
 
-def mere_map(A B : U0, f : A -> B, h : Mere(A)) =
+def mere_map(A B : U0, f : A -> B, h : Mere(A)) :=
   mere_eliminate(A, Mere(B), mere_is_prop(B), (fun (a : A) => merely(B, f(a))), h);

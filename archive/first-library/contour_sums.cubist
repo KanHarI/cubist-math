@@ -31,10 +31,10 @@ def contour_sum_add(
     contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags),
     contour_sum(F, zero, addF, mulF, negF, g, n, vertices, tags)
   ) {
-  obtain (setF, additive, multiplicative) = ring;
-  let edgeF = contour_edge(F, addF, mulF, negF, f);
-  let edgeG = contour_edge(F, addF, mulF, negF, g);
-  let sumEdge = fun (a b tag : F) => addF(edgeF(a, b, tag), edgeG(a, b, tag));
+  obtain (setF, additive, multiplicative) := ring;
+  let edgeF := contour_edge(F, addF, mulF, negF, f);
+  let edgeG := contour_edge(F, addF, mulF, negF, g);
+  let sumEdge := fun (a b tag : F) => addF(edgeF(a, b, tag), edgeG(a, b, tag));
   exact trans(
     sample_sum_cong(
       F, F, zero, addF, contour_edge(F, addF, mulF, negF, (fun (x : F) => addF(f(x), g(x)))),
@@ -84,7 +84,7 @@ def contour_sum_constant(
     coefficient,
     coordinate_difference(F, addF, negF, sample_first(F, n, vertices), sample_last(F, n, vertices))
   ) {
-  let deltaEdge = fun (a b tag : F) => coordinate_difference(F, addF, negF, a, b);
+  let deltaEdge := fun (a b tag : F) => coordinate_difference(F, addF, negF, a, b);
   exact trans(
     sym(
       sample_sum_map(
@@ -110,7 +110,7 @@ def contour_sum_constant_closed(
   closed : sample_last(F, n, vertices) = sample_first(F, n, vertices)
 ) :
   contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => coefficient), n, vertices, tags) = zero {
-  let first = sample_first(F, n, vertices);
+  let first := sample_first(F, n, vertices);
   exact trans(
     contour_sum_constant(F, zero, one, addF, mulF, negF, ring, coefficient, n, vertices, tags),
     trans(

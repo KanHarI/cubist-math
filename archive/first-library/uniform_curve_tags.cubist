@@ -12,11 +12,11 @@ def complex_close_difference_bound(
     F, negF, lt,
     coordinate_difference(Complex(F), complex_add(F, addF), complex_neg(F, negF), z, w), radius
   ) {
-  obtain (realClose, imagClose) = close;
-  let zr = complex_real(F, z);
-  let zi = complex_imag(F, z);
-  let wr = complex_real(F, w);
-  let wi = complex_imag(F, w);
+  obtain (realClose, imagClose) := close;
+  let zr := complex_real(F, z);
+  let zi := complex_imag(F, z);
+  let wr := complex_real(F, w);
+  let wi := complex_imag(F, w);
   exact (
     along((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius))) by ring_add_comm(
       F, zero, one, addF, mulF, negF, ring, negF(zr), wr
@@ -54,9 +54,9 @@ def uniform_curve_tag_bounds(
       newTags
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  obtain (mesh, positiveMesh, closeValues) = uniform(epsilon, positive);
-  let smallEdge =
+  let I := FieldUnitInterval(F, zero, one, lt);
+  obtain (mesh, positiveMesh, closeValues) := uniform(epsilon, positive);
+  let smallEdge :=
     (fun (a b : I) => lt(interval_difference(F, zero, one, addF, negF, lt, a, b), mesh));
   have localBound :
     forall a : I, forall b : I, forall x : I, forall y : I, smallEdge(a, b)
@@ -68,7 +68,7 @@ def uniform_curve_tag_bounds(
       ), epsilon
     ) {
     intro a b x y small withinX withinY;
-    let closeParameters =
+    let closeParameters :=
       interval_tags_close(
         F, zero, one, addF, mulF, negF, lt, ring, arithmetic, a, b, y, x, withinY, withinX, mesh,
         small

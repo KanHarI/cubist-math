@@ -282,16 +282,16 @@ def sample_weighted_sum_bound(
       C, F, zero, addF, (fun (a b t : C) => mulF(edge(a, b, t), other(a, b, t))), n, vertices, tags
     ), mulF(delta, length)
   ) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let radii = (fun (a b t : C) => mulF(delta, weight(a, b, t)));
-  let products = (fun (a b t : C) => mulF(edge(a, b, t), other(a, b, t)));
-  let totalWeight = sample_sum(C, F, zero, addF, weight, n, vertices, tags);
-  let bounds =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let radii := (fun (a b t : C) => mulF(delta, weight(a, b, t)));
+  let products := (fun (a b t : C) => mulF(edge(a, b, t), other(a, b, t)));
+  let totalWeight := sample_sum(C, F, zero, addF, weight, n, vertices, tags);
+  let bounds :=
     sample_magnitude_product(
       C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, edge, other,
       (fun (a b t : C) => delta), weight, n, vertices, tags, errors, increments
     );
-  let total =
+  let total :=
     sample_sum_magnitude_bound(
       C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, products, radii, n, vertices,
       tags, bounds
@@ -304,16 +304,16 @@ def sample_weighted_sum_bound(
       n, vertices, tags
     )
   );
-  let factored =
+  let factored :=
     along FieldMagnitudeBound(
       F, negF, lt, sample_sum(C, F, zero, addF, products, n, vertices, tags)
     ) by factors from total;
-  let rightScaled = weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
-  let leftScaled =
+  let rightScaled := weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
+  let leftScaled :=
     along((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta)))) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, totalWeight, delta
     ) from rightScaled;
-  let grows =
+  let grows :=
     along FieldLe(F, lt, mulF(delta, totalWeight)) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, length, delta
     ) from leftScaled;

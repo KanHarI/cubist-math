@@ -4,7 +4,7 @@ import sample_magnitude;
 // The uniform change in f is required only at the old/new sampled tags.
 def ContourTagBounds(
   F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, f : F -> F, delta : F, n : Nat
-) =
+) :=
   induction n as k return (SampleVertices(F, k) -> SampleTags(F, k) -> SampleTags(F, k) -> U0) {
     zero => fun (vertices : F, oldTags newTags : Unit) => Unit;
     succ previous => fun (
@@ -209,19 +209,19 @@ def contour_tag_error_length_bound(
     F, negF, lt, contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags),
     mulF(delta, length)
   ) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let totalWeight = sample_sum(F, F, zero, addF, weight, n, vertices, oldTags);
-  let bounded =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let totalWeight := sample_sum(F, F, zero, addF, weight, n, vertices, oldTags);
+  let bounded :=
     contour_tag_error_variation_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, weight, delta, n, vertices,
       oldTags, newTags, errors, increments
     );
-  let rightScaled = weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
-  let leftScaled =
+  let rightScaled := weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
+  let leftScaled :=
     along((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta)))) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, totalWeight, delta
     ) from rightScaled;
-  let grows =
+  let grows :=
     along FieldLe(F, lt, mulF(delta, totalWeight)) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, length, delta
     ) from leftScaled;

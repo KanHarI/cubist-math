@@ -3,10 +3,10 @@ import truncation;
 
 // Both the rank and the finite derivation are small. Only their existence is
 // retained as membership; no intersection over the U1 type of all subfields.
-def FieldDerivation(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) =
+def FieldDerivation(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) :=
   exists n : Nat, FieldClosureStage(F, P, n, x);
 
-def GeneratedField(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) =
+def GeneratedField(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) :=
   Mere(FieldDerivation(F, P, x));
 
 def field_derivation_generator(
@@ -31,7 +31,7 @@ def field_derivation_neg(
   derivation : FieldDerivation(F, P, x)
 ) :
   FieldDerivation(F, P, af_neg(af_carrier(F), af_operations(F), x)) {
-  obtain (n, member) = derivation;
+  obtain (n, member) := derivation;
   exact (succ(n), field_closure_step_neg(F, FieldClosureStage(F, P, n), x, member));
 }
 
@@ -42,8 +42,8 @@ def field_derivation_add(
   dy : FieldDerivation(F, P, y)
 ) :
   FieldDerivation(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
-  obtain (n, px) = dx;
-  obtain (m, py) = dy;
+  obtain (n, px) := dx;
+  obtain (m, py) := dy;
   exact (
     succ(n + m),
     field_closure_step_add(
@@ -58,8 +58,8 @@ def field_derivation_mul(
   dy : FieldDerivation(F, P, y)
 ) :
   FieldDerivation(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
-  obtain (n, px) = dx;
-  obtain (m, py) = dy;
+  obtain (n, px) := dx;
+  obtain (m, py) := dy;
   exact (
     succ(n + m),
     field_closure_step_mul(
@@ -76,7 +76,7 @@ def field_derivation_inverse(
   )
 ) :
   FieldDerivation(F, P, y) {
-  obtain (n, px) = dx;
+  obtain (n, px) := dx;
   exact (succ(n), field_closure_step_inverse(F, FieldClosureStage(F, P, n), x, y, px, inverseLaw));
 }
 
@@ -121,7 +121,7 @@ def generated_field_add(
   py : GeneratedField(F, P, y)
 ) :
   GeneratedField(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
-  let target = af_add(af_carrier(F), af_operations(F), x, y);
+  let target := af_add(af_carrier(F), af_operations(F), x, y);
   exact mere_eliminate(
     FieldDerivation(F, P, x), GeneratedField(F, P, target), generated_field_prop(F, P, target),
     (
@@ -138,7 +138,7 @@ def generated_field_mul(
   py : GeneratedField(F, P, y)
 ) :
   GeneratedField(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
-  let target = af_mul(af_carrier(F), af_operations(F), x, y);
+  let target := af_mul(af_carrier(F), af_operations(F), x, y);
   exact mere_eliminate(
     FieldDerivation(F, P, x), GeneratedField(F, P, target), generated_field_prop(F, P, target),
     (
@@ -187,7 +187,7 @@ def generated_field_least(
   Q(x) {
   have evaluate : FieldDerivation(F, P, x) -> Q(x) {
     intro derivation;
-    obtain (n, raw) = derivation;
+    obtain (n, raw) := derivation;
     exact field_closure_stage_least(F, P, Q, laws, included, n, x, raw);
   }
   exact mere_eliminate(

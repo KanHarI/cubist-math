@@ -2,10 +2,10 @@ import subgroup_constructions;
 
 // A predicate subgroup becomes a group on its subtype. Its elements retain
 // their ambient values; membership evidence does not distinguish elements.
-def SubgroupCarrier(G : Group, S : Subgroup(G)) =
+def SubgroupCarrier(G : Group, S : Subgroup(G)) :=
   exists x : group_carrier(G), subgroup_members(G, S, x);
 
-def subgroup_value(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S)) =
+def subgroup_value(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S)) :=
   sigma_first(group_carrier(G), subgroup_members(G, S), x);
 
 def subgroup_evidence(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S)) :
@@ -48,7 +48,7 @@ def subgroup_carrier_multiply(G : Group, S : Subgroup(G), x y : SubgroupCarrier(
 
 def subgroup_carrier_inverse(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, S)) :
   SubgroupCarrier(G, S) {
-  let a = subgroup_value(G, S, x);
+  let a := subgroup_value(G, S, x);
   exact (
     group_inverse(G, a),
     subgroup_inverse(
@@ -60,11 +60,11 @@ def subgroup_carrier_inverse(G : Group, S : Subgroup(G), x : SubgroupCarrier(G, 
 
 def subgroup_carrier_group_laws(G : Group, S : Subgroup(G)) :
   GroupLaws(SubgroupCarrier(G, S), subgroup_carrier_unit(G, S), subgroup_carrier_multiply(G, S)) {
-  let A = SubgroupCarrier(G, S);
-  let value = subgroup_value(G, S);
-  let one = subgroup_carrier_unit(G, S);
-  let m = subgroup_carrier_multiply(G, S);
-  let inv = subgroup_carrier_inverse(G, S);
+  let A := SubgroupCarrier(G, S);
+  let value := subgroup_value(G, S);
+  let one := subgroup_carrier_unit(G, S);
+  let m := subgroup_carrier_multiply(G, S);
+  let inv := subgroup_carrier_inverse(G, S);
   exact (
     subgroup_carrier_is_set(G, S),
     (
@@ -85,7 +85,7 @@ def subgroup_carrier_group_laws(G : Group, S : Subgroup(G)) :
   );
 }
 
-def subgroup_as_group(G : Group, S : Subgroup(G)) =
+def subgroup_as_group(G : Group, S : Subgroup(G)) :=
   group_object(
     SubgroupCarrier(G, S), subgroup_carrier_unit(G, S), subgroup_carrier_multiply(G, S),
     subgroup_carrier_group_laws(G, S)
@@ -127,7 +127,7 @@ def subgroup_factor(
   lands : (forall x : group_carrier(K), subgroup_members(G, S, group_hom_map(K, G, h, x)))
 ) :
   GroupHom(K, subgroup_as_group(G, S)) {
-  let lift = subgroup_factor_map(K, G, h, S, lands);
+  let lift := subgroup_factor_map(K, G, h, S, lands);
   exact (
     lift,
     (

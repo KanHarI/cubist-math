@@ -55,22 +55,22 @@ def affine_dyadic_refinement_estimate(
       )
     )
   ) {
-  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
-  let zeroC = complex_zero(F, zero);
-  let addC = complex_add(F, addF);
-  let edge =
+  let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
+  let zeroC := complex_zero(F, zero);
+  let addC := complex_add(F, addF);
+  let edge :=
     parameter_contour_edge(
       FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF),
       complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve,
       (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t)))
     );
-  let leftUnit = complex_add_zero(F, zero, one, addF, mulF, negF, ring);
-  let assoc = complex_add_assoc(F, zero, one, addF, mulF, negF, ring);
+  let leftUnit := complex_add_zero(F, zero, one, addF, mulF, negF, ring);
+  let assoc := complex_add_assoc(F, zero, one, addF, mulF, negF, ring);
   have rightUnit : forall x : Complex(F), addC(x, zeroC) = x {
     intro x;
     exact trans(complex_add_comm(F, zero, one, addF, mulF, negF, ring, x, zeroC), leftUnit(x));
   }
-  obtain (mesh, positiveMesh, estimates) = affine_refinement_sum_estimate(
+  obtain (mesh, positiveMesh, estimates) := affine_refinement_sum_estimate(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
     integrand, uniform, delta, positiveDelta
   );
@@ -109,7 +109,7 @@ def affine_dyadic_refinement_estimate(
       )
     ) {
     intro depth extra a b ordered small;
-    let refinement =
+    let refinement :=
       dyadic_samples_refine_below_mesh(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, Complex(F),
         zeroC, addC, leftUnit, rightUnit, assoc, edge, depth, extra, a, b, ordered, mesh, small

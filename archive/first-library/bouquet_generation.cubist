@@ -2,10 +2,10 @@ import bouquet_cover;
 import loop_words;
 import field_extensionality;
 
-def BouquetGenerated(A : U0, p : BouquetLoops(A)) =
+def BouquetGenerated(A : U0, p : BouquetLoops(A)) :=
   GeneratedLoop(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), p);
 
-def bouquet_generated_prop(A : U0, p : BouquetLoops(A)) =
+def bouquet_generated_prop(A : U0, p : BouquetLoops(A)) :=
   generated_prop(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), p);
 
 def bouquet_generated_unappend(
@@ -13,7 +13,7 @@ def bouquet_generated_unappend(
   represented : BouquetGenerated(A, trans(p, sym(bouquet_generator(A, a))))
 ) :
   BouquetGenerated(A, p) {
-  let before = trans(p, sym(bouquet_generator(A, a)));
+  let before := trans(p, sym(bouquet_generator(A, a)));
   exact along BouquetGenerated(A) by append_path_right_inverse(
     Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a), p
   ) from generated_snoc(
@@ -22,7 +22,7 @@ def bouquet_generated_unappend(
   );
 }
 
-def bouquet_generation_family(A : U0, x : Bouquet(A)) = bouquet_code(A, x) -> U0;
+def bouquet_generation_family(A : U0, x : Bouquet(A)) := bouquet_code(A, x) -> U0;
 
 def bouquet_generation_spoke(A : U0) :
   (along bouquet_generation_family(A) by bouquet_spoke(A) from BouquetGenerated(A)) = BouquetGenerated(
@@ -64,7 +64,7 @@ def bouquet_generation_edge(A : U0, a : A) :
   );
 }
 
-def bouquet_generation_edges(A : U0, label : Unit or A) =
+def bouquet_generation_edges(A : U0, label : Unit or A) :=
   match label as e return (
     (along bouquet_generation_family(A) by meridian(Unit or A, e) from BouquetGenerated(A)) = BouquetGenerated(
       A
@@ -82,7 +82,7 @@ def bouquet_generation_edges(A : U0, label : Unit or A) =
     right a => bouquet_generation_edge(A, a);
   };
 
-def bouquet_generation_predicate(A : U0, x : Bouquet(A)) =
+def bouquet_generation_predicate(A : U0, x : Bouquet(A)) :=
   suspension_induction(
     (Unit or A), bouquet_generation_family(A), BouquetGenerated(A), BouquetGenerated(A),
     bouquet_generation_edges(A), x
@@ -128,9 +128,9 @@ def every_puncture_loop_generated(n : Nat, p : bouquet_base(Fin(n)) = bouquet_ba
 
 // Connectedness is mere existence of connecting paths, not a simultaneous
 // choice of a path from the base to every point.
-def bouquet_connection_family(A : U0, x : Bouquet(A)) = Mere(bouquet_base(A) = x);
+def bouquet_connection_family(A : U0, x : Bouquet(A)) := Mere(bouquet_base(A) = x);
 
-def bouquet_connection_edges(A : U0, label : Unit or A) =
+def bouquet_connection_edges(A : U0, label : Unit or A) :=
   mere_is_prop(
     (bouquet_base(A) = bouquet_tip(A)),
     along bouquet_connection_family(A) by meridian(Unit or A, label) from merely(
@@ -157,7 +157,7 @@ def bouquet_path_generated(
       eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word)
     ) = p
   ) {
-  let closed = close_path(Bouquet(A), bouquet_base(A), x, y, leftConnector, rightConnector, p);
+  let closed := close_path(Bouquet(A), bouquet_base(A), x, y, leftConnector, rightConnector, p);
   exact mere_map(
     (
       exists word : Word(A),

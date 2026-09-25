@@ -1,13 +1,13 @@
 import subgroups;
 import group_homomorphisms;
 
-def SubgroupIncluded(G : Group, S T : Subgroup(G)) =
+def SubgroupIncluded(G : Group, S T : Subgroup(G)) :=
   forall x : group_carrier(G), subgroup_members(G, S, x) -> subgroup_members(G, T, x);
 
 def subgroup_inclusion_prop(G : Group, S T : Subgroup(G)) : Proposition(SubgroupIncluded(G, S, T)) {
-  let A = group_carrier(G);
-  let P = subgroup_members(G, S);
-  let Q = subgroup_members(G, T);
+  let A := group_carrier(G);
+  let P := subgroup_members(G, S);
+  let Q := subgroup_members(G, T);
   exact forall_prop(
     A, (fun (x : A) => P(x) -> Q(x)),
     (
@@ -52,7 +52,7 @@ def subgroup_inclusion_antisymmetric(
   );
 }
 
-def SubgroupTop(G : Group, x : group_carrier(G)) = Unit;
+def SubgroupTop(G : Group, x : group_carrier(G)) := Unit;
 
 def subgroup_top_laws(G : Group) : SubgroupLaws(G, SubgroupTop(G)) {
   exact (
@@ -66,12 +66,12 @@ def subgroup_top(G : Group) : Subgroup(G) {
   exact (SubgroupTop(G), subgroup_top_laws(G));
 }
 
-def SubgroupBottom(G : Group, x : group_carrier(G)) = x = group_unit(G);
+def SubgroupBottom(G : Group, x : group_carrier(G)) := x = group_unit(G);
 
 def subgroup_bottom_laws(G : Group) : SubgroupLaws(G, SubgroupBottom(G)) {
-  let A = group_carrier(G);
-  let one = group_unit(G);
-  let m = group_multiply(G);
+  let A := group_carrier(G);
+  let one := group_unit(G);
+  let m := group_multiply(G);
   exact (
     (fun (x : A) => group_is_set(G, x, one)), refl(one),
     (
@@ -104,15 +104,15 @@ def subgroup_top_greatest(G : Group, S : Subgroup(G)) : SubgroupIncluded(G, S, s
 
 // Inverse images are contravariant in homomorphisms and require no
 // surjectivity or decision of subgroup membership.
-def SubgroupPreimage(G H : Group, h : GroupHom(G, H), S : Subgroup(H), x : group_carrier(G)) =
+def SubgroupPreimage(G H : Group, h : GroupHom(G, H), S : Subgroup(H), x : group_carrier(G)) :=
   subgroup_members(H, S, group_hom_map(G, H, h, x));
 
 def subgroup_preimage_laws(G H : Group, h : GroupHom(G, H), S : Subgroup(H)) :
   SubgroupLaws(G, SubgroupPreimage(G, H, h, S)) {
-  let A = group_carrier(G);
-  let f = group_hom_map(G, H, h);
-  let P = subgroup_members(H, S);
-  let laws = subgroup_laws(H, S);
+  let A := group_carrier(G);
+  let f := group_hom_map(G, H, h);
+  let P := subgroup_members(H, S);
+  let laws := subgroup_laws(H, S);
   exact (
     (fun (x : A) => subgroup_prop(H, P, laws, f(x))),
     along P by sym(group_hom_unit(G, H, h)) from subgroup_unit(H, P, laws),
@@ -160,12 +160,12 @@ def subgroup_preimage_composite(
 }
 
 // Small-indexed intersections remain small predicates, as for subfields.
-def SubgroupIntersection(G : Group, I : U0, family : I -> Subgroup(G), x : group_carrier(G)) =
+def SubgroupIntersection(G : Group, I : U0, family : I -> Subgroup(G), x : group_carrier(G)) :=
   forall i : I, subgroup_members(G, family(i), x);
 
 def subgroup_intersection_laws(G : Group, I : U0, family : I -> Subgroup(G)) :
   SubgroupLaws(G, SubgroupIntersection(G, I, family)) {
-  let A = group_carrier(G);
+  let A := group_carrier(G);
   exact (
     (
       fun (x : A) => forall_prop(

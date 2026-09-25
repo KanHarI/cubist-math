@@ -2,7 +2,7 @@ import paths;
 
 // Universe-polymorphic path algebra needed for adjointification. These laws
 // are derived by identity elimination, with no extensionality axiom.
-def path_right_unit_at(U : Universe, A : U, x y : A, p : x = y) =
+def path_right_unit_at(U : Universe, A : U, x y : A, p : x = y) :=
   path(
     fun (interval_law : Interval) => PathP(fun (interval_path : Interval) => A, x, y),
     fun (interval_law : Interval) => path(
@@ -507,7 +507,7 @@ def path_cancel_right_at(
   );
 }
 
-def path_prepend_inverse_cancel_at(U : Universe, A : U, x y z : A, p : x = y, q : y = z) =
+def path_prepend_inverse_cancel_at(U : Universe, A : U, x y z : A, p : x = y, q : y = z) :=
   path(
     fun (interval_path___ : Interval) => PathP(fun (interval_equality : Interval) => A, y, z),
     fun (interval_path___ : Interval) => comp(
@@ -720,7 +720,7 @@ def path_prepend_inverse_cancel_at(U : Universe, A : U, x y z : A, p : x = y, q 
 // Naturality of a homotopy from f to the identity.
 def homotopy_natural(
   U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x), x y : A, p : x = y
-) =
+) :=
   path(
     fun (interval_path_ : Interval) => PathP(fun (interval_equality : Interval) => A, f(x), y),
     fun (interval_path_ : Interval) => comp(
@@ -1456,7 +1456,7 @@ def homotopy_self(U : Universe, A : U, f : A -> A, h : (forall x : A, f(x) = x),
 }
 
 // Applying f commutes with the actions of g∘f and f∘g on paths.
-def ap_interchange(U : Universe, A B : U, f : A -> B, g : B -> A, x y : A, p : x = y) =
+def ap_interchange(U : Universe, A B : U, f : A -> B, g : B -> A, x y : A, p : x = y) :=
   refl(apd_path((fun (a : A) => f(g(f(a)))), p));
 
 // Keep f, g and eta. Correct epsilon so that the half-adjoint triangle holds:
@@ -1464,7 +1464,7 @@ def ap_interchange(U : Universe, A B : U, f : A -> B, g : B -> A, x y : A, p : x
 def adjoint_counit(
   U : Universe, A B : U, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
   epsilon : (forall y : B, f(g(y)) = y), y : B
-) =
+) :=
   trans(sym(epsilon(f(g(y)))), trans(cong(f, eta(g(y))), epsilon(y)));
 
 def adjoint_triangle(
@@ -1472,13 +1472,13 @@ def adjoint_triangle(
   epsilon : (forall y : B, f(g(y)) = y), x : A
 ) :
   cong(f, eta(x)) = adjoint_counit(U, A, B, f, g, eta, epsilon, f(x)) {
-  let a = f(g(f(g(f(x)))));
-  let b = f(g(f(x)));
-  let c = f(x);
-  let p = epsilon(b);
-  let q = cong(f, eta(g(f(x))));
-  let s = cong(f, eta(x));
-  let act = (fun (r : g(f(g(f(x)))) = g(f(x))) => cong(f, r));
+  let a := f(g(f(g(f(x)))));
+  let b := f(g(f(x)));
+  let c := f(x);
+  let p := epsilon(b);
+  let q := cong(f, eta(g(f(x))));
+  let s := cong(f, eta(x));
+  let act := (fun (r : g(f(g(f(x)))) = g(f(x))) => cong(f, r));
   have exchange : q = cong((fun (v : B) => f(g(v))), s) := trans(
     sym(cong(act, homotopy_self(U, A, (fun (v : A) => g(f(v))), eta, x))),
     ap_interchange(U, A, B, f, g, g(f(x)), x, eta(x))

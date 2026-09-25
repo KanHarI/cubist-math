@@ -5,7 +5,7 @@ import field_magnitude_close;
 
 def complex_contour_tag_error_sum(
   F : U1, zero : F, addF mulF : F -> F -> F, negF : F -> F, f : Complex(F) -> Complex(F), n : Nat
-) =
+) :=
   contour_tag_error_sum(
     Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
     complex_neg(F, negF), f, n
@@ -17,7 +17,7 @@ def complex_box_zero(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)
 ) :
   ComplexBoxBound(F, negF, lt, complex_zero(F, zero), zero) {
-  let bound = field_magnitude_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic);
+  let bound := field_magnitude_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic);
   exact (bound, bound);
 }
 
@@ -29,7 +29,7 @@ def complex_box_enlarge(
   grows : FieldLe(F, lt, radius, larger)
 ) :
   ComplexBoxBound(F, negF, lt, value, larger) {
-  obtain (realBound, imagBound) = bound;
+  obtain (realBound, imagBound) := bound;
   exact (
     field_magnitude_enlarge(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, value), radius,
@@ -51,15 +51,15 @@ def complex_box_squeeze(
 ) :
   ComplexConverges(F, zero, addF, lt, errors, complex_zero(F, zero)) {
   intro epsilon positive;
-  obtain (bound, close) = vanishes(epsilon, positive);
+  obtain (bound, close) := vanishes(epsilon, positive);
   have tail :
     forall n : Nat, IndexLE(bound, n)
     -> ComplexClose(F, addF, lt, errors(n), complex_zero(F, zero), epsilon) {
     intro n large;
-    obtain (upper, lower) = close(n, large);
-    let small =
+    obtain (upper, lower) := close(n, large);
+    let small :=
       along lt(radii(n)) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon) from upper;
-    obtain (realBound, imagBound) = bounds(n);
+    obtain (realBound, imagBound) := bounds(n);
     exact (
       field_magnitude_small_close(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, errors(n)),
@@ -78,7 +78,7 @@ def complex_box_squeeze(
 def ComplexContourTagBounds(
   F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, f : Complex(F) -> Complex(F),
   delta : F, n : Nat
-) =
+) :=
   induction n as k return (
     SampleVertices(Complex(F), k) -> SampleTags(Complex(F), k) -> SampleTags(Complex(F), k) -> U0
   ) {
@@ -104,7 +104,7 @@ def ComplexContourTagBounds(
 def ComplexContourIncrementBounds(
   F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   realWeight imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, n : Nat
-) =
+) :=
   induction n as k return (SampleVertices(Complex(F), k) -> SampleTags(Complex(F), k) -> U0) {
     zero => fun (vertices : Complex(F), oldTags : Unit) => Unit;
     succ previous => fun (
@@ -410,24 +410,24 @@ def complex_contour_tag_error_length_bound(
     complex_contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags),
     mulF(delta, length)
   ) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let totalWeight =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let totalWeight :=
     sample_sum(
       Complex(F), F, zero, addF,
       (fun (a b t : Complex(F)) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n, vertices,
       oldTags
     );
-  let bound =
+  let bound :=
     complex_contour_tag_error_variation_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, realWeight, imagWeight, delta,
       n, vertices, oldTags, newTags, errors, increments
     );
-  let rightScaled = weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
-  let leftScaled =
+  let rightScaled := weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
+  let leftScaled :=
     along((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta)))) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, totalWeight, delta
     ) from rightScaled;
-  let grows =
+  let grows :=
     along FieldLe(F, lt, mulF(delta, totalWeight)) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, length, delta
     ) from leftScaled;

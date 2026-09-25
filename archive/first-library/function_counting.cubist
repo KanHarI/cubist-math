@@ -1,17 +1,17 @@
 import finite;
 
 // Multiplication and exponentiation are recurrences on ordinary Nat.
-def multiply_count(n m : Nat) = induction n as k return Nat {
+def multiply_count(n m : Nat) := induction n as k return Nat {
     zero => 0;
     succ previous => add_count(m, previous);
   };
 
-def power_count(m n : Nat) = induction n as k return Nat {
+def power_count(m n : Nat) := induction n as k return Nat {
     zero => 1;
     succ previous => multiply_count(m, previous);
   };
 
-def fin_product(n m : Nat) =
+def fin_product(n m : Nat) :=
   induction n as k return Bijection(Fin(k) and Fin(m), Fin(multiply_count(k, m))) {
     zero => impossible_bijection(Void and Fin(m), fst(Void, Fin(m)));
     succ previous => compose_bijection(
@@ -29,7 +29,7 @@ def fin_product(n m : Nat) =
   };
 
 // A function on n+1 alternatives is one output and a function on n alternatives.
-def finite_function_count(n m : Nat) =
+def finite_function_count(n m : Nat) :=
   induction n as k return Bijection(Fin(k) -> Fin(m), Fin(power_count(m, k))) {
     zero => compose_bijection(
       Void -> Fin(m), Unit, Fin(1), empty_functions(Fin(m)), unit_to_fin_one

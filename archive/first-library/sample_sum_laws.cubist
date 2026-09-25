@@ -147,7 +147,7 @@ def sample_sum_add(
     sample_sum(C, G, zero, addG, edge, n, vertices, tags),
     sample_sum(C, G, zero, addG, other, n, vertices, tags)
   ) {
-  obtain (assoc, comm, unitLaw, inverseLaw) = laws;
+  obtain (assoc, comm, unitLaw, inverseLaw) := laws;
   exact induction n as k return (
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     sample_sum(

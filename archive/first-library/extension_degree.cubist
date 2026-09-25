@@ -3,18 +3,18 @@ import scalar_restriction;
 
 // The degree is the unique finite dimension of the extension as a vector
 // space over its base. Infinite extensions are not assigned a default value.
-def ExtensionDegree(K : AlgebraicField, E : FieldExt(K), n : Nat) =
+def ExtensionDegree(K : AlgebraicField, E : FieldExt(K), n : Nat) :=
   HasDimension(K, ExtensionVectorSpace(K, E), n);
 
-def FiniteExtension(K : AlgebraicField, E : FieldExt(K)) =
+def FiniteExtension(K : AlgebraicField, E : FieldExt(K)) :=
   FiniteDimensional(K, ExtensionVectorSpace(K, E));
 
-def extension_degree(K : AlgebraicField, E : FieldExt(K), finite : FiniteExtension(K, E)) =
+def extension_degree(K : AlgebraicField, E : FieldExt(K), finite : FiniteExtension(K, E)) :=
   dimension(K, ExtensionVectorSpace(K, E), finite);
 
 def extension_degree_specification(
   K : AlgebraicField, E : FieldExt(K), finite : FiniteExtension(K, E)
-) =
+) :=
   dimension_specification(K, ExtensionVectorSpace(K, E), finite);
 
 def extension_degree_unique(
@@ -25,7 +25,7 @@ def extension_degree_unique(
   exact dimension_unique(K, ExtensionVectorSpace(K, E), m, n, first, second);
 }
 
-def finite_extension_prop(K : AlgebraicField, E : FieldExt(K)) =
+def finite_extension_prop(K : AlgebraicField, E : FieldExt(K)) :=
   finite_dimensional_prop(K, ExtensionVectorSpace(K, E));
 
 def extension_degree_evidence_independent(
@@ -87,10 +87,10 @@ def extension_degree_tower(
   upper : ExtensionDegree(L, embedding_as_extension(L, M, d), n)
 ) :
   ExtensionDegree(K, embedding_as_extension(K, M, c), multiply_count(n, m)) {
-  let Lower = field_vector_space(K, L, e);
-  let Upper = field_vector_space(L, M, d);
-  let Whole = field_vector_space(K, M, c);
-  let Result = HasDimension(K, Whole, multiply_count(n, m));
+  let Lower := field_vector_space(K, L, e);
+  let Upper := field_vector_space(L, M, d);
+  let Whole := field_vector_space(K, M, c);
+  let Result := HasDimension(K, Whole, multiply_count(n, m));
   exact mere_eliminate(
     FiniteBasis(K, Lower, m), Result, has_dimension_prop(K, Whole, multiply_count(n, m)),
     (
@@ -114,8 +114,8 @@ def finite_extension_tower(
   upper : FiniteExtension(L, embedding_as_extension(L, M, d))
 ) :
   FiniteExtension(K, embedding_as_extension(K, M, c)) {
-  let m = extension_degree(K, embedding_as_extension(K, L, e), lower);
-  let n = extension_degree(L, embedding_as_extension(L, M, d), upper);
+  let m := extension_degree(K, embedding_as_extension(K, L, e), lower);
+  let n := extension_degree(L, embedding_as_extension(L, M, d), upper);
   exact (
     multiply_count(n, m),
     extension_degree_tower(
@@ -139,8 +139,8 @@ def tower_law(
     extension_degree(L, embedding_as_extension(L, M, d), upper),
     extension_degree(K, embedding_as_extension(K, L, e), lower)
   ) {
-  let m = extension_degree(K, embedding_as_extension(K, L, e), lower);
-  let n = extension_degree(L, embedding_as_extension(L, M, d), upper);
+  let m := extension_degree(K, embedding_as_extension(K, L, e), lower);
+  let n := extension_degree(L, embedding_as_extension(L, M, d), upper);
   exact extension_degree_unique(
     K, embedding_as_extension(K, M, c), extension_degree(K, embedding_as_extension(K, M, c), whole),
     multiply_count(n, m), extension_degree_specification(K, embedding_as_extension(K, M, c), whole),
@@ -184,7 +184,7 @@ def finite_extension_iso(
 
 def field_embedding_linear(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
   LinearMap(K, ScalarSpace(K), field_vector_space(K, L, e)) {
-  obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
+  obtain (zero, one, neg, add, mul) := field_embedding_preserves(K, L, e);
   exact (field_embedding_map(K, L, e), add, mul);
 }
 
@@ -192,24 +192,24 @@ def extension_basis_positive(
   K : AlgebraicField, E : FieldExt(K), n : Nat, basis : ExtensionDegreeWitness(K, E, n)
 ) :
   le(1, n) {
-  let V = ExtensionVectorSpace(K, E);
-  let L = extension_field(K, E);
-  let e = extension_inclusion_embedding(K, E);
-  let C = CoordinateSpace(K, 1);
-  let N = CoordinateSpace(K, n);
-  let scalar = basis_expansion(K, ScalarSpace(K), 1, scalar_space_basis(K));
-  let embed = field_embedding_linear(K, L, e);
-  let intoV = linear_compose(K, C, ScalarSpace(K), V, scalar, embed);
-  let outV = basis_coordinates(K, V, n, basis);
-  let h = linear_compose(K, C, V, N, intoV, outV);
+  let V := ExtensionVectorSpace(K, E);
+  let L := extension_field(K, E);
+  let e := extension_inclusion_embedding(K, E);
+  let C := CoordinateSpace(K, 1);
+  let N := CoordinateSpace(K, n);
+  let scalar := basis_expansion(K, ScalarSpace(K), 1, scalar_space_basis(K));
+  let embed := field_embedding_linear(K, L, e);
+  let intoV := linear_compose(K, C, ScalarSpace(K), V, scalar, embed);
+  let outV := basis_coordinates(K, V, n, basis);
+  let h := linear_compose(K, C, V, N, intoV, outV);
   have injective : CoordinateInjection(K, 1, n, h) {
     intro x y same;
-    let sameV =
+    let sameV :=
       linear_iso_injective(
         K, V, N, linear_iso_inverse(K, N, V, basis), linear_map(K, C, V, intoV, x),
         linear_map(K, C, V, intoV, y), same
       );
-    let sameK =
+    let sameK :=
       field_embedding_injective(
         K, L, e, linear_map(K, C, ScalarSpace(K), scalar, x),
         linear_map(K, C, ScalarSpace(K), scalar, y), sameV

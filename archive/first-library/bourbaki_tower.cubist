@@ -5,19 +5,19 @@ import chain_complete_orders;
 // membership small; elimination is always into a proved proposition.
 def TowerLaws(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, P : A -> U0
-) =
+) :=
   (forall x : A, FieldProp(P(x))) and (forall x : A, P(x) -> P(f(x)))
   and (
     forall C : A -> U0, forall chain : OrderChain(A, le, C), (forall x : A, C(x) -> P(x))
     -> P(chain_sup(A, le, complete, C, chain))
   );
 
-def TowerMember(A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, x : A) =
+def TowerMember(A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, x : A) :=
   FieldExists(forall P : A -> U0, TowerLaws(A, le, complete, f, P) -> P(x));
 
 def tower_member_prop(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, x : A
-) =
+) :=
   field_exists_prop(forall P : A -> U0, TowerLaws(A, le, complete, f, P) -> P(x));
 
 def tower_contains(
@@ -25,7 +25,7 @@ def tower_contains(
   laws : TowerLaws(A, le, complete, f, P), x : A, member : TowerMember(A, le, complete, f, x)
 ) :
   P(x) {
-  obtain (prop, step, supremum) = laws;
+  obtain (prop, step, supremum) := laws;
   exact field_exists_elim(
     (forall Q : A -> U0, TowerLaws(A, le, complete, f, Q) -> Q(x)), P(x), prop(x),
     (
@@ -43,7 +43,7 @@ def tower_step(
   TowerMember(A, le, complete, f, f(x)) {
   have universal : forall P : A -> U0, TowerLaws(A, le, complete, f, P) -> P(f(x)) {
     intro P laws;
-    obtain (prop, step, supremum) = laws;
+    obtain (prop, step, supremum) := laws;
     exact step(x, tower_contains(A, le, complete, f, P, laws, x, member));
   }
   exact field_exists_intro(
@@ -59,7 +59,7 @@ def tower_sup(
   have universal :
     forall P : A -> U0, TowerLaws(A, le, complete, f, P) -> P(chain_sup(A, le, complete, C, chain)) {
     intro P laws;
-    obtain (prop, step, supremum) = laws;
+    obtain (prop, step, supremum) := laws;
     exact supremum(
       C, chain,
       (fun (x : A, cx : C(x)) => tower_contains(A, le, complete, f, P, laws, x, members(x, cx)))
@@ -84,8 +84,8 @@ def tower_induction_large(
   ), x : A, member : TowerMember(A, le, complete, f, x)
 ) :
   P(x) {
-  let Q = fun (y : A) => FieldExists(P(y));
-  let unwrap = fun (y : A) => field_exists_elim(P(y), P(y), prop(y), (fun (p : P(y)) => p));
+  let Q := fun (y : A) => FieldExists(P(y));
+  let unwrap := fun (y : A) => field_exists_elim(P(y), P(y), prop(y), (fun (p : P(y)) => p));
   have laws : TowerLaws(A, le, complete, f, Q) := (
     (fun (y : A) => field_exists_prop(P(y))),
     (fun (y : A) => field_exists_map(P(y), P(f(y)), step(y))),
@@ -111,19 +111,19 @@ def tower_relative_induction(
   ), x : A, member : TowerMember(A, le, complete, f, x)
 ) :
   P(x) {
-  let T = TowerMember(A, le, complete, f);
-  let Q = fun (y : A) => T(y) and P(y);
+  let T := TowerMember(A, le, complete, f);
+  let Q := fun (y : A) => T(y) and P(y);
   have next : forall y : A, Q(y) -> Q(f(y)) {
     intro y pair;
-    obtain (ty, py) = pair;
+    obtain (ty, py) := pair;
     exact (tower_step(A, le, complete, f, y, ty), step(y, ty, py));
   }
   have limit :
     forall C : A -> U0, forall chain : OrderChain(A, le, C), (forall y : A, C(y) -> Q(y))
     -> Q(chain_sup(A, le, complete, C, chain)) {
     intro C chain members;
-    let inTower = fun (y : A, cy : C(y)) => field_fst(T(y), P(y), members(y, cy));
-    let inP = fun (y : A, cy : C(y)) => field_snd(T(y), P(y), members(y, cy));
+    let inTower := fun (y : A, cy : C(y)) => field_fst(T(y), P(y), members(y, cy));
+    let inP := fun (y : A, cy : C(y)) => field_snd(T(y), P(y), members(y, cy));
     exact (tower_sup(A, le, complete, f, C, chain, inTower), supremum(C, chain, inTower, inP));
   }
   exact field_snd(
@@ -138,7 +138,7 @@ def tower_relative_induction(
 
 // An element is stable from below if every earlier tower point advances
 // no further than it. Strictness is expressed using the reverse inequality.
-def TowerStable(A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, a : A) =
+def TowerStable(A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, a : A) :=
   forall b : A, TowerMember(A, le, complete, f, b) -> le(b, a) -> (le(a, b) -> Void) -> le(f(b), a);
 
 def tower_stable_prop(

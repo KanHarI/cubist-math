@@ -2,7 +2,7 @@ import sample_tagged;
 
 // Repeat one coarse tag on every refined edge. It need not lie inside each
 // refined edge: its membership in the containing coarse interval is enough.
-def sample_repeat_tags(C : U1, n : Nat) = induction n as k return (C -> SampleTags(C, k)) {
+def sample_repeat_tags(C : U1, n : Nat) := induction n as k return (C -> SampleTags(C, k)) {
     zero => fun (tag : C) => tt;
     succ previous => fun (tag : C) => typed((C and SampleTags(C, k)), (tag, previous(tag)));
   };
@@ -80,7 +80,7 @@ def sample_repeat_tags_valid(C : U1, P : C -> U0, tag : C, valid : P(tag), n : N
   };
 }
 
-def SampleBetween(C : U1, related : C -> C -> U0, n : Nat) =
+def SampleBetween(C : U1, related : C -> C -> U0, n : Nat) :=
   SampleTagged(C, (fun (a b tag : C) => related(a, tag) and related(tag, b)), n);
 
 def sample_between_ordered(
@@ -95,7 +95,7 @@ def sample_between_ordered(
     forall a : C, forall b : C, forall tag : C, (related(a, tag) and related(tag, b))
     -> related(a, b) {
     intro a b tag within;
-    obtain (lower, upper) = within;
+    obtain (lower, upper) := within;
     exact transitiveRelation(a, tag, b, lower, upper);
   }
   exact sample_tagged_adjacent(
@@ -104,7 +104,7 @@ def sample_between_ordered(
   );
 }
 
-def SampleBetweenGlobal(C : U1, related : C -> C -> U0, n : Nat) =
+def SampleBetweenGlobal(C : U1, related : C -> C -> U0, n : Nat) :=
   forall a : C, forall b : C, forall vertices : SampleVertices(C, n),
   forall tags : SampleTags(C, n), related(a, sample_first(C, n, vertices))
   -> related(sample_last(C, n, vertices), b) -> SampleBetween(C, related, n, vertices, tags)
@@ -118,26 +118,26 @@ def sample_between_global_step(
 ) :
   SampleBetweenGlobal(C, related, succ(n)) {
   intro a b vertices tags lowerFirst upperLast valid;
-  let headVertex = field_fst(C, SampleVertices(C, n), vertices);
-  let tailVertices = field_snd(C, SampleVertices(C, n), vertices);
-  let headTag = field_fst(C, SampleTags(C, n), tags);
-  let tailTags = field_snd(C, SampleTags(C, n), tags);
+  let headVertex := field_fst(C, SampleVertices(C, n), vertices);
+  let tailVertices := field_snd(C, SampleVertices(C, n), vertices);
+  let headTag := field_fst(C, SampleTags(C, n), tags);
+  let tailTags := field_snd(C, SampleTags(C, n), tags);
   have validData : (
     related(headVertex, headTag) and related(headTag, sample_first(C, n, tailVertices))
   ) and SampleBetween(C, related, n, tailVertices, tailTags) := valid;
-  obtain ((lowerTag, upperTag), tailValid) = validData;
-  let nextVertex = sample_first(C, n, tailVertices);
-  let lastVertex = sample_last(C, n, tailVertices);
-  let tailOrdered =
+  obtain ((lowerTag, upperTag), tailValid) := validData;
+  let nextVertex := sample_first(C, n, tailVertices);
+  let lastVertex := sample_last(C, n, tailVertices);
+  let tailOrdered :=
     sample_between_ordered(C, related, transitiveRelation, n, tailVertices, tailTags, tailValid);
-  let tailEndpoints =
+  let tailEndpoints :=
     sample_adjacent_endpoints(
       C, related, reflexivity, transitiveRelation, n, tailVertices, tailOrdered
     );
-  let lowerHeadTag = transitiveRelation(a, headVertex, headTag, lowerFirst, lowerTag);
-  let nextBelowB = transitiveRelation(nextVertex, lastVertex, b, tailEndpoints, upperLast);
-  let upperHeadTag = transitiveRelation(headTag, nextVertex, b, upperTag, nextBelowB);
-  let lowerNext = transitiveRelation(a, headTag, nextVertex, lowerHeadTag, upperTag);
+  let lowerHeadTag := transitiveRelation(a, headVertex, headTag, lowerFirst, lowerTag);
+  let nextBelowB := transitiveRelation(nextVertex, lastVertex, b, tailEndpoints, upperLast);
+  let upperHeadTag := transitiveRelation(headTag, nextVertex, b, upperTag, nextBelowB);
+  let lowerNext := transitiveRelation(a, headTag, nextVertex, lowerHeadTag, upperTag);
   exact typed(
     (
       (related(a, headTag) and related(headTag, b))

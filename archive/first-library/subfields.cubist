@@ -4,7 +4,7 @@ import field_extensionality;
 // A subfield is a proposition-valued subset closed under the field operations.
 // The inverse clause closes under any witnessed inverse; no total inverse or
 // decidable test for zero is needed. Existence comes from the ambient field.
-def SubfieldLaws(F : AlgebraicField, P : af_carrier(F) -> U0) =
+def SubfieldLaws(F : AlgebraicField, P : af_carrier(F) -> U0) :=
   (forall x : af_carrier(F), Proposition(P(x))) and P(af_zero(af_carrier(F), af_operations(F)))
   and P(af_one(af_carrier(F), af_operations(F)))
   and (forall x : af_carrier(F), P(x) -> P(af_neg(af_carrier(F), af_operations(F), x)))
@@ -22,10 +22,10 @@ def SubfieldLaws(F : AlgebraicField, P : af_carrier(F) -> U0) =
     -> P(y)
   );
 
-def Subfield(F : AlgebraicField) = exists P : af_carrier(F) -> U0, SubfieldLaws(F, P);
+def Subfield(F : AlgebraicField) := exists P : af_carrier(F) -> U0, SubfieldLaws(F, P);
 
 // Membership remains U0-valued; the type of subfields itself is in U1.
-def subfield_members(F : AlgebraicField, S : Subfield(F)) =
+def subfield_members(F : AlgebraicField, S : Subfield(F)) :=
   unpack S as (P, laws) return (af_carrier(F) -> U0) {
     P;
   };
@@ -42,19 +42,19 @@ def subfield_prop(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F)
 ) :
   Proposition(P(x)) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
+  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact prop(x);
 }
 
 def subfield_zero(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) :
   P(af_zero(af_carrier(F), af_operations(F))) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
+  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact zero;
 }
 
 def subfield_one(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) :
   P(af_one(af_carrier(F), af_operations(F))) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
+  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact one;
 }
 
@@ -63,7 +63,7 @@ def subfield_neg(
   member : P(x)
 ) :
   P(af_neg(af_carrier(F), af_operations(F), x)) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
+  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact negateLocal(x, member);
 }
 
@@ -72,7 +72,7 @@ def subfield_add(
   px : P(x), py : P(y)
 ) :
   P(af_add(af_carrier(F), af_operations(F), x, y)) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
+  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact addLocal(x, y, px, py);
 }
 
@@ -81,7 +81,7 @@ def subfield_mul(
   px : P(x), py : P(y)
 ) :
   P(af_mul(af_carrier(F), af_operations(F), x, y)) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
+  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact multiplyLocal(x, y, px, py);
 }
 
@@ -93,25 +93,25 @@ def subfield_inverse(
   )
 ) :
   P(y) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
+  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact invClosed(x, y, px, inverseLaw);
 }
 
 // Closure laws and membership proposition evidence are properties, not extra data.
 def subfield_laws_prop(F : AlgebraicField, P : af_carrier(F) -> U0, p q : SubfieldLaws(F, P)) :
   p = q {
-  let A = af_carrier(F);
-  let ops = af_operations(F);
-  let known = subfield_prop(F, P, p);
-  let membershipLaw = (forall x : A, Proposition(P(x)));
-  let membershipUnique =
+  let A := af_carrier(F);
+  let ops := af_operations(F);
+  let known := subfield_prop(F, P, p);
+  let membershipLaw := (forall x : A, Proposition(P(x)));
+  let membershipUnique :=
     forall_prop(A, (fun (x : A) => Proposition(P(x))), (fun (x : A) => is_prop_prop(P(x))));
-  let zeroLaw = P(af_zero(A, ops));
-  let zeroUnique = known(af_zero(A, ops));
-  let oneLaw = P(af_one(A, ops));
-  let oneUnique = known(af_one(A, ops));
-  let negationLaw = (forall x : A, (forall px : P(x), P(af_neg(A, ops, x))));
-  let negationUnique =
+  let zeroLaw := P(af_zero(A, ops));
+  let zeroUnique := known(af_zero(A, ops));
+  let oneLaw := P(af_one(A, ops));
+  let oneUnique := known(af_one(A, ops));
+  let negationLaw := (forall x : A, (forall px : P(x), P(af_neg(A, ops, x))));
+  let negationUnique :=
     forall_prop(
       A, (fun (x : A) => (forall px : P(x), P(af_neg(A, ops, x)))),
       (
@@ -121,9 +121,9 @@ def subfield_laws_prop(F : AlgebraicField, P : af_carrier(F) -> U0, p q : Subfie
         )
       )
     );
-  let additionLaw =
+  let additionLaw :=
     (forall x : A, (forall y : A, (forall px : P(x), (forall py : P(y), P(af_add(A, ops, x, y))))));
-  let additionUnique =
+  let additionUnique :=
     forall_prop(
       A,
       (
@@ -148,9 +148,9 @@ def subfield_laws_prop(F : AlgebraicField, P : af_carrier(F) -> U0, p q : Subfie
         )
       )
     );
-  let multiplicationLaw =
+  let multiplicationLaw :=
     (forall x : A, (forall y : A, (forall px : P(x), (forall py : P(y), P(af_mul(A, ops, x, y))))));
-  let multiplicationUnique =
+  let multiplicationUnique :=
     forall_prop(
       A,
       (
@@ -175,7 +175,7 @@ def subfield_laws_prop(F : AlgebraicField, P : af_carrier(F) -> U0, p q : Subfie
         )
       )
     );
-  let inversionLaw =
+  let inversionLaw :=
     (
       forall x : A,
       (
@@ -183,7 +183,7 @@ def subfield_laws_prop(F : AlgebraicField, P : af_carrier(F) -> U0, p q : Subfie
         (forall px : P(x), (forall inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops), P(y)))
       )
     );
-  let inversionUnique =
+  let inversionUnique :=
     forall_prop(
       A,
       (
@@ -216,20 +216,20 @@ def subfield_laws_prop(F : AlgebraicField, P : af_carrier(F) -> U0, p q : Subfie
         )
       )
     );
-  let multiplicationTail = multiplicationLaw and inversionLaw;
-  let multiplicationTailUnique =
+  let multiplicationTail := multiplicationLaw and inversionLaw;
+  let multiplicationTailUnique :=
     product_prop(multiplicationLaw, inversionLaw, multiplicationUnique, inversionUnique);
-  let additionTail = additionLaw and multiplicationTail;
-  let additionTailUnique =
+  let additionTail := additionLaw and multiplicationTail;
+  let additionTailUnique :=
     product_prop(additionLaw, multiplicationTail, additionUnique, multiplicationTailUnique);
-  let negationTail = negationLaw and additionTail;
-  let negationTailUnique =
+  let negationTail := negationLaw and additionTail;
+  let negationTailUnique :=
     product_prop(negationLaw, additionTail, negationUnique, additionTailUnique);
-  let oneTail = oneLaw and negationTail;
-  let oneTailUnique = product_prop(oneLaw, negationTail, oneUnique, negationTailUnique);
-  let zeroTail = zeroLaw and oneTail;
-  let zeroTailUnique = product_prop(zeroLaw, oneTail, zeroUnique, oneTailUnique);
-  let membershipTailUnique =
+  let oneTail := oneLaw and negationTail;
+  let oneTailUnique := product_prop(oneLaw, negationTail, oneUnique, negationTailUnique);
+  let zeroTail := zeroLaw and oneTail;
+  let zeroTailUnique := product_prop(zeroLaw, oneTail, zeroUnique, oneTailUnique);
+  let membershipTailUnique :=
     product_prop(membershipLaw, zeroTail, membershipUnique, zeroTailUnique);
   exact membershipTailUnique(p, q);
 }
@@ -243,8 +243,8 @@ def subfield_ext(
   )
 ) :
   S =[Subfield(F)] T {
-  let P = subfield_members(F, S);
-  let Q = subfield_members(F, T);
+  let P := subfield_members(F, S);
+  let Q := subfield_members(F, T);
   have membership : P = Q := field_predicate_ext(
     af_carrier(F), P, Q, subfield_prop(F, P, subfield_laws(F, S)),
     subfield_prop(F, Q, subfield_laws(F, T)), same
@@ -256,11 +256,11 @@ def subfield_ext(
 }
 
 // The whole ambient field is the greatest subfield.
-def SubfieldTop(F : AlgebraicField, x : af_carrier(F)) = Unit;
+def SubfieldTop(F : AlgebraicField, x : af_carrier(F)) := Unit;
 
 def subfield_top_laws(F : AlgebraicField) : SubfieldLaws(F, SubfieldTop(F)) {
-  let A = af_carrier(F);
-  let ops = af_operations(F);
+  let A := af_carrier(F);
+  let ops := af_operations(F);
   exact (
     (fun (x : A, p q : Unit) => trans(sym(unit_equal(p)), unit_equal(q))), tt, tt,
     (fun (x : A, px : Unit) => tt), (fun (x y : A, px py : Unit) => tt),
@@ -273,7 +273,7 @@ def subfield_top(F : AlgebraicField) : Subfield(F) {
   exact (SubfieldTop(F), subfield_top_laws(F));
 }
 
-def SubfieldIncluded(F : AlgebraicField, S T : Subfield(F)) =
+def SubfieldIncluded(F : AlgebraicField, S T : Subfield(F)) :=
   forall x : af_carrier(F), subfield_members(F, S, x) -> subfield_members(F, T, x);
 
 // Antisymmetry is equality of bundled subfields, using their univalent predicates.

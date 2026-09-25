@@ -3,10 +3,10 @@ import field_extensionality;
 // Construct a function on a type from fiber-constant values on a merely
 // surjective presentation. Only the unique VALUE is extracted, never a
 // representative. The presented type B need not be a set.
-def DescentValue(A B G : U1, present : A -> B, value : A -> G, b : B, v : G) =
+def DescentValue(A B G : U1, present : A -> B, value : A -> G, b : B, v : G) :=
   forall a : A, (present(a) = b) -> value(a) = v;
 
-def DescentData(A B G : U1, present : A -> B, value : A -> G, b : B) =
+def DescentData(A B G : U1, present : A -> B, value : A -> G, b : B) :=
   exists v : G, DescentValue(A, B, G, present, value, b, v);
 
 def descent_value_prop(
@@ -30,9 +30,9 @@ def descent_data_prop(
 ) :
   FieldProp(DescentData(A, B, G, present, value, b)) {
   intro u v;
-  let family = DescentValue(A, B, G, present, value, b);
-  let first = field_first(G, family, u);
-  let second = field_first(G, family, v);
+  let family := DescentValue(A, B, G, present, value, b);
+  let first := field_first(G, family, u);
+  let second := field_first(G, family, v);
   have firstLaw : forall a : A, (present(a) = b) -> value(a) = first := field_second(G, family, u);
   have secondLaw : forall a : A, (present(a) = b)
   -> value(a) = second := field_second(G, family, v);
@@ -79,7 +79,7 @@ def surjective_descent(
   covered : (forall b : B, FieldExists(exists a : A, present(a) = b)),
   consistent : (forall a : A, forall a2 : A, (present(a) = present(a2)) -> value(a) = value(a2)),
   b : B
-) =
+) :=
   field_first(
     G, DescentValue(A, B, G, present, value, b),
     surjective_descent_data(A, B, G, setG, present, value, covered, consistent, b)
@@ -92,7 +92,7 @@ def surjective_descent_beta(
   a : A
 ) :
   surjective_descent(A, B, G, setG, present, value, covered, consistent, present(a)) = value(a) {
-  let data =
+  let data :=
     surjective_descent_data(A, B, G, setG, present, value, covered, consistent, present(a));
   have law : forall a2 : A, (present(a2) = present(a))
   -> value(a2) = field_first(G, DescentValue(A, B, G, present, value, present(a)), data) := field_second(

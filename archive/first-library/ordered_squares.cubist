@@ -8,7 +8,7 @@ def ordered_lt_implies_le(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F, less : lt(x, y)
 ) :
   FieldLe(F, lt, x, y) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
   intro backward;
   exact irreflexive(x, transitive(x, y, x, less, backward));
 }
@@ -19,10 +19,10 @@ def ordered_neg_positive(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, belowZero : lt(x, zero)
 ) :
   lt(zero, negF(x)) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  obtain (forward, backward) = translate(x, zero, negF(x));
-  let shifted = forward(belowZero);
-  let first =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (forward, backward) := translate(x, zero, negF(x));
+  let shifted := forward(belowZero);
+  let first :=
     along((fun (v : F) => lt(v, addF(zero, negF(x))))) by ring_add_inverse_right(
       F, zero, one, addF, mulF, negF, ring, x
     ) from shifted;
@@ -51,8 +51,8 @@ def ordered_square_of_nonnegative(
   aboveZeroWeak : FieldLe(F, lt, zero, x)
 ) :
   FieldLe(F, lt, zero, mulF(x, x)) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let comparison = weakScale(zero, x, x, aboveZeroWeak, aboveZeroWeak);
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let comparison := weakScale(zero, x, x, aboveZeroWeak, aboveZeroWeak);
   exact along((fun (v : F) => FieldLe(F, lt, v, mulF(x, x)))) by ring_zero_mul(
     F, zero, one, addF, mulF, negF, ring, x
   ) from comparison;
@@ -64,8 +64,8 @@ def ordered_square_of_positive(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, positive : lt(zero, x)
 ) :
   lt(zero, mulF(x, x)) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  obtain (forward, backward) = scale(zero, x, x, positive);
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (forward, backward) := scale(zero, x, x, positive);
   exact along((fun (v : F) => lt(v, mulF(x, x)))) by ring_zero_mul(
     F, zero, one, addF, mulF, negF, ring, x
   ) from forward(positive);
@@ -80,19 +80,19 @@ def ordered_square_nonnegative(
   intro negativeSquare;
   have aboveZeroWeak : FieldLe(F, lt, zero, x) {
     intro belowZero;
-    let positiveNeg =
+    let positiveNeg :=
       ordered_neg_positive(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, belowZero
       );
-    let nonnegativeNeg =
+    let nonnegativeNeg :=
       ordered_lt_implies_le(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, negF(x), positiveNeg
       );
-    let squareNeg =
+    let squareNeg :=
       ordered_square_of_nonnegative(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), nonnegativeNeg
       );
-    let square =
+    let square :=
       along((fun (v : F) => FieldLe(F, lt, zero, v))) by ordered_negative_square(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x
       ) from squareNeg;
@@ -110,7 +110,7 @@ def ordered_square_of_apart(
   apart : FieldApart(F, lt, x, zero)
 ) :
   lt(zero, mulF(x, x)) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
   exact field_exists_elim(
     (lt(x, zero) or lt(zero, x)), lt(zero, mulF(x, x)), prop(zero, mulF(x, x)),
     (fun (side : lt(x, zero) or lt(zero, x)) => match side return lt(zero, mulF(x, x)) {
@@ -138,9 +138,9 @@ def ordered_positive_plus_nonnegative(
   aboveZeroWeak : FieldLe(F, lt, zero, y)
 ) :
   lt(zero, addF(x, y)) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  obtain (forward, backward) = translate(zero, x, y);
-  let shifted =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (forward, backward) := translate(zero, x, y);
+  let shifted :=
     along((fun (v : F) => lt(v, addF(x, y)))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, y
     ) from forward(positive);
@@ -154,13 +154,13 @@ def ordered_sum_nonnegative(
   nonnegativeX : FieldLe(F, lt, zero, x), nonnegativeY : FieldLe(F, lt, zero, y)
 ) :
   FieldLe(F, lt, zero, addF(x, y)) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   intro belowZero;
   have nonnegativeSum : FieldLe(F, lt, x, addF(x, y)) {
     intro less;
-    obtain (forward, backward) = translate(y, zero, x);
-    let swapped =
+    obtain (forward, backward) := translate(y, zero, x);
+    let swapped :=
       along((fun (v : F) => lt(v, addF(zero, x)))) by ring_add_comm(
         F, zero, one, addF, mulF, negF, ring, x, y
       ) from along lt(addF(x, y)) by sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, x)) from less;

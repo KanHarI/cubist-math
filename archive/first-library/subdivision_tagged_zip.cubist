@@ -21,18 +21,18 @@ def subdivision_tagged_zip_step(
   fineValid : SubdivisionTagged(C, fine, succ(n), vertices, tags, pieces)
 ) :
   SubdivisionTagged(C, other, succ(n), vertices, tags, pieces) {
-  let a = field_fst(C, SampleVertices(C, n), vertices);
-  let tail = field_snd(C, SampleVertices(C, n), vertices);
-  let b = sample_first(C, n, tail);
-  let tag = field_fst(C, SampleTags(C, n), tags);
-  let tailTags = field_snd(C, SampleTags(C, n), tags);
-  let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let a := field_fst(C, SampleVertices(C, n), vertices);
+  let tail := field_snd(C, SampleVertices(C, n), vertices);
+  let b := sample_first(C, n, tail);
+  let tag := field_fst(C, SampleTags(C, n), tags);
+  let tailTags := field_snd(C, SampleTags(C, n), tags);
+  let headPiece := field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let tailPieces := field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
   have coarseData : coarse(a, b, tag) and SampleTagged(C, coarse, n, tail, tailTags) := coarseValid;
   have fineData : fine(a, b, tag, headPiece)
   and SubdivisionTagged(C, fine, n, tail, tailTags, tailPieces) := fineValid;
-  obtain (headCoarse, tailCoarse) = coarseData;
-  obtain (headFine, tailFine) = fineData;
+  obtain (headCoarse, tailCoarse) := coarseData;
+  obtain (headFine, tailFine) := fineData;
   exact typed(
     (other(a, b, tag, headPiece) and SubdivisionTagged(C, other, n, tail, tailTags, tailPieces)),
     (

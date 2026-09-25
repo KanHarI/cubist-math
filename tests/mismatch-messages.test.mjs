@@ -7,7 +7,7 @@ import { displayTerm } from "../web/cubical-elaborator.mjs";
 test("a type mismatch names the type found and the type expected, in source names", async t => {
   const program = new CubicalProgram(await createCubical(), async () => "", { collectReferences: false });
   t.after(() => program.dispose());
-  const result = await program.check(`def Shape(value : Unit or Unit) = match value as z return U0 {
+  const result = await program.check(`def Shape(value : Unit or Unit) := match value as z return U0 {
   left a => Nat;
   right b => Unit;
 };

@@ -6,18 +6,18 @@ import polynomial_splitting;
 def RootFieldGenerators(
   K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, roots : Fin(n) -> af_carrier(L),
   y : af_carrier(L)
-) =
+) :=
   (exists a : af_carrier(K), field_embedding_map(K, L, e, a) = y)
   or (exists i : Fin(n), roots(i) = y);
 
 def RootGeneratedSubfield(
   K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, roots : Fin(n) -> af_carrier(L)
-) =
+) :=
   generated_subfield(L, RootFieldGenerators(K, L, e, n, roots));
 
 def RootGeneratedField(
   K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, roots : Fin(n) -> af_carrier(L)
-) =
+) :=
   subfield_as_field(L, RootGeneratedSubfield(K, L, e, n, roots));
 
 def root_generated_contains_base(
@@ -25,7 +25,7 @@ def root_generated_contains_base(
   a : af_carrier(K)
 ) :
   subfield_members(L, RootGeneratedSubfield(K, L, e, n, roots), field_embedding_map(K, L, e, a)) {
-  let y = field_embedding_map(K, L, e, a);
+  let y := field_embedding_map(K, L, e, a);
   exact generated_field_contains(
     L, RootFieldGenerators(K, L, e, n, roots), y,
     typed(
@@ -37,7 +37,7 @@ def root_generated_contains_base(
 
 def root_generated_embedding(
   K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, roots : Fin(n) -> af_carrier(L)
-) =
+) :=
   field_embedding_factor(
     K, L, e, RootGeneratedSubfield(K, L, e, n, roots),
     root_generated_contains_base(K, L, e, n, roots)
@@ -48,7 +48,7 @@ def root_generated_root(
   i : Fin(n)
 ) :
   af_carrier(RootGeneratedField(K, L, e, n, roots)) {
-  let x = roots(i);
+  let x := roots(i);
   exact (
     x,
     generated_field_contains(
@@ -73,25 +73,25 @@ def root_generated_generates(
       root_generated_root(K, L, e, n, roots)
     ), z
   ) {
-  let P = RootFieldGenerators(K, L, e, n, roots);
-  let S = RootGeneratedSubfield(K, L, e, n, roots);
-  let T = RootGeneratedField(K, L, e, n, roots);
-  let d = root_generated_embedding(K, L, e, n, roots);
-  let rs = root_generated_root(K, L, e, n, roots);
-  let Q = RootFieldGenerators(K, T, d, n, rs);
-  let H = generated_subfield(T, Q);
+  let P := RootFieldGenerators(K, L, e, n, roots);
+  let S := RootGeneratedSubfield(K, L, e, n, roots);
+  let T := RootGeneratedField(K, L, e, n, roots);
+  let d := root_generated_embedding(K, L, e, n, roots);
+  let rs := root_generated_root(K, L, e, n, roots);
+  let Q := RootFieldGenerators(K, T, d, n, rs);
+  let H := generated_subfield(T, Q);
   have contains :
     forall y : af_carrier(L), forall member : P(y),
     subfield_members(T, H, generated_carrier_generator(L, P, y, member)) {
     intro y member;
-    let target = generated_carrier_generator(L, P, y, member);
+    let target := generated_carrier_generator(L, P, y, member);
     have baseCase :
       (exists a : af_carrier(K), field_embedding_map(K, L, e, a) = y)
       -> subfield_members(T, H, target) {
       intro witness;
-      obtain (a, same) = witness;
-      let u = field_embedding_map(K, T, d, a);
-      let generator =
+      obtain (a, same) := witness;
+      let u := field_embedding_map(K, T, d, a);
+      let generator :=
         typed(
           Q(u),
           left(typed((exists b : af_carrier(K), field_embedding_map(K, T, d, b) = u), (a, refl(u))))
@@ -102,9 +102,9 @@ def root_generated_generates(
     }
     have rootCase : (exists i : Fin(n), roots(i) = y) -> subfield_members(T, H, target) {
       intro witness;
-      obtain (i, same) = witness;
-      let u = rs(i);
-      let generator = typed(Q(u), right(typed((exists j : Fin(n), rs(j) = u), (i, refl(u)))));
+      obtain (i, same) := witness;
+      let u := rs(i);
+      let generator := typed(Q(u), right(typed((exists j : Fin(n), rs(j) = u), (i, refl(u)))));
       exact along subfield_members(T, H) by subfield_value_ext(L, S, u, target, same) from generated_field_contains(
         T, Q, u, generator
       );

@@ -5,13 +5,13 @@ import equivalence_from_inverse;
 
 // Keep evaluation into unary Nat folded. A compact binary input can denote a
 // huge unary result without materializing that result during proof transport.
-opaque def binary_positive_to_nat(p : BinaryPositive) =
+opaque def binary_positive_to_nat(p : BinaryPositive) :=
   binary_positive_rec(
     Nat, 1, fun (child : BinaryPositive, ih : Nat) => ih + ih,
     fun (child : BinaryPositive, ih : Nat) => succ(ih + ih), p
   );
 
-opaque def binary_to_nat(n : BinaryNat) = match n return Nat {
+opaque def binary_to_nat(n : BinaryNat) := match n return Nat {
     left zero => 0;
     right p => binary_positive_to_nat(p);
   };
@@ -75,7 +75,7 @@ def binary_nat_roundtrip(n : Nat) : binary_to_nat(binary_of_nat(n)) = n {
   };
 }
 
-def binary_double(n : BinaryNat) = match n return BinaryNat {
+def binary_double(n : BinaryNat) := match n return BinaryNat {
     left zero => binary_zero;
     right p => binary_positive(binary_bit0(p));
   };
@@ -136,12 +136,12 @@ def binary_roundtrip(n : BinaryNat) : binary_of_nat(binary_to_nat(n)) = n {
 }
 
 // Full equivalences retain both round trips and the half-adjoint coherence.
-def binary_nat_equiv =
+def binary_nat_equiv :=
   equiv_from_inverse(
     U0, BinaryNat, Nat, binary_to_nat, binary_of_nat, binary_roundtrip, binary_nat_roundtrip
   );
 
-def nat_binary_equiv =
+def nat_binary_equiv :=
   equiv_from_inverse(
     U0, Nat, BinaryNat, binary_of_nat, binary_to_nat, binary_nat_roundtrip, binary_roundtrip
   );

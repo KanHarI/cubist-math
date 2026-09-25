@@ -34,7 +34,7 @@ def independent_evidence_prop(
 
 def independent_prop(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) :
   forall x : vector_carrier(K, V), Proposition(independent_members(K, V, S, x)) {
-  obtain (prop, law) = independent_evidence(K, V, S);
+  obtain (prop, law) := independent_evidence(K, V, S);
   exact prop;
 }
 
@@ -53,7 +53,7 @@ def independent_ext(
   );
 }
 
-def IndependentIncluded(K : AlgebraicField, V : VectorSpace(K), S T : IndependentSubset(K, V)) =
+def IndependentIncluded(K : AlgebraicField, V : VectorSpace(K), S T : IndependentSubset(K, V)) :=
   PredicateIncluded(
     vector_carrier(K, V), independent_members(K, V, S), independent_members(K, V, T)
   );

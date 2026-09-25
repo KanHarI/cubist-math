@@ -23,15 +23,15 @@ def generated_carrier_least(
   ), z : SubfieldCarrier(F, generated_subfield(F, P))
 ) :
   subfield_members(subfield_as_field(F, generated_subfield(F, P)), H, z) {
-  let S = generated_subfield(F, P);
-  let T = subfield_as_field(F, S);
-  let j = subfield_inclusion(F, S);
-  let Q = SubfieldImage(T, F, j, H);
+  let S := generated_subfield(F, P);
+  let T := subfield_as_field(F, S);
+  let j := subfield_inclusion(F, S);
+  let Q := SubfieldImage(T, F, j, H);
   have containsImage : forall x : af_carrier(F), P(x) -> Q(x) {
     intro x member;
     exact (generated_carrier_generator(F, P, x, member), contains(x, member), refl(x));
   }
-  obtain (y, hy, same) = generated_field_least(
+  obtain (y, hy, same) := generated_field_least(
     F, P, Q, subfield_image_laws(T, F, j, H), containsImage, subfield_value(F, S, z),
     subfield_evidence(F, S, z)
   );

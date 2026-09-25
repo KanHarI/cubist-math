@@ -2,7 +2,7 @@ import primes;
 
 // Registrations refer to already checked equality proofs.
 simp_rule nat_add_zero priority 10;
-simp_set nat_units = [nat_add_zero];
+simp_set nat_units := [nat_add_zero];
 
 def default_rewrite(n : Nat) : n + 0 = n {
   simp;

@@ -2,10 +2,10 @@ import field_embedding_spaces;
 import polynomial_adjoin_universal;
 import polynomial_extension_roots;
 
-def PolynomialRoots(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) =
+def PolynomialRoots(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) :=
   exists x : af_carrier(L), PolynomialRoot(K, L, e, p, x);
 
-def polynomial_roots_set(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) =
+def polynomial_roots_set(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) :=
   subtype_is_set(
     af_carrier(L), PolynomialRoot(K, L, e, p), af_set(L), polynomial_root_prop(K, L, e, p)
   );
@@ -14,7 +14,7 @@ def AdjoinedEmbeddings(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L)
-) =
+) :=
   EmbeddingsOver(
     K, PolynomialResidueField(K, M, irreducible), residue_embedding(K, M, irreducible), L, e
   );
@@ -25,7 +25,7 @@ def root_to_embedding(
   e : FieldEmbedding(K, L), root : PolynomialRoots(K, L, e, modulus_polynomial(K, M))
 ) :
   AdjoinedEmbeddings(K, M, irreducible, L, e) {
-  obtain (x, rx) = root;
+  obtain (x, rx) := root;
   exact (
     adjoin_root_embedding(K, M, irreducible, L, e, x, rx),
     residue_evaluate_constant(K, M, L, e, x, rx)
@@ -44,14 +44,14 @@ def embedding_generator_root(
     K, L, e, modulus_polynomial(K, M),
     field_embedding_map(PolynomialResidueField(K, M, irreducible), L, h, adjoined_root(K, M))
   ) {
-  let R = PolynomialResidueField(K, M, irreducible);
-  let inclusion = residue_embedding(K, M, irreducible);
-  let D = modulus_polynomial(K, M);
-  let x = adjoined_root(K, M);
-  let f = field_embedding_map(R, L, h);
-  let c = field_embedding_compose(K, R, L, inclusion, h);
-  let triangle = field_embedding_ext(K, L, c, e, over);
-  obtain (zero, one, neg, add, mul) = field_embedding_preserves(R, L, h);
+  let R := PolynomialResidueField(K, M, irreducible);
+  let inclusion := residue_embedding(K, M, irreducible);
+  let D := modulus_polynomial(K, M);
+  let x := adjoined_root(K, M);
+  let f := field_embedding_map(R, L, h);
+  let c := field_embedding_compose(K, R, L, inclusion, h);
+  let triangle := field_embedding_ext(K, L, c, e, over);
+  obtain (zero, one, neg, add, mul) := field_embedding_preserves(R, L, h);
   exact with unfolding [] {
     trans(
       cong((fun (d : FieldEmbedding(K, L)) => polynomial_eval(K, L, d, D, f(x))), sym(triangle)),
@@ -69,7 +69,7 @@ def embedding_to_root(
   e : FieldEmbedding(K, L), h : AdjoinedEmbeddings(K, M, irreducible, L, e)
 ) :
   PolynomialRoots(K, L, e, modulus_polynomial(K, M)) {
-  obtain (f, over) = h;
+  obtain (f, over) := h;
   exact (
     field_embedding_map(PolynomialResidueField(K, M, irreducible), L, f, adjoined_root(K, M)),
     embedding_generator_root(K, M, irreducible, L, e, f, over)
@@ -82,7 +82,7 @@ def root_embedding_roundtrip(
   e : FieldEmbedding(K, L), root : PolynomialRoots(K, L, e, modulus_polynomial(K, M))
 ) :
   embedding_to_root(K, M, irreducible, L, e, root_to_embedding(K, M, irreducible, L, e, root)) = root {
-  obtain (x, rx) = root;
+  obtain (x, rx) := root;
   exact subtype_ext(
     af_carrier(L), PolynomialRoot(K, L, e, modulus_polynomial(K, M)),
     polynomial_root_prop(K, L, e, modulus_polynomial(K, M)),
@@ -99,12 +99,12 @@ def embedding_root_roundtrip(
   e : FieldEmbedding(K, L), h : AdjoinedEmbeddings(K, M, irreducible, L, e)
 ) :
   root_to_embedding(K, M, irreducible, L, e, embedding_to_root(K, M, irreducible, L, e, h)) = h {
-  let R = PolynomialResidueField(K, M, irreducible);
-  let inclusion = residue_embedding(K, M, irreducible);
-  let f = embedding_over(K, R, inclusion, L, e, h);
-  let over = embedding_over_law(K, R, inclusion, L, e, h);
-  let x = field_embedding_map(R, L, f, adjoined_root(K, M));
-  let root = embedding_generator_root(K, M, irreducible, L, e, f, over);
+  let R := PolynomialResidueField(K, M, irreducible);
+  let inclusion := residue_embedding(K, M, irreducible);
+  let f := embedding_over(K, R, inclusion, L, e, h);
+  let over := embedding_over_law(K, R, inclusion, L, e, h);
+  let x := field_embedding_map(R, L, f, adjoined_root(K, M));
+  let root := embedding_generator_root(K, M, irreducible, L, e, f, over);
   exact with unfolding [
     root_to_embedding, embedding_to_root, embedding_over, embedding_over_law, sigma_first,
     sigma_second
@@ -138,7 +138,7 @@ def adjoined_embeddings_roots_equiv(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L)
-) =
+) :=
   bijection_equiv(
     AdjoinedEmbeddings(K, M, irreducible, L, e), PolynomialRoots(K, L, e, modulus_polynomial(K, M)),
     polynomial_roots_set(K, L, e, modulus_polynomial(K, M)),

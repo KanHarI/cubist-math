@@ -8,7 +8,7 @@ import { budget } from "./timing.mjs";
 
 test("benchmark distinguishes invalid proofs, blocked uses, and independent checked declarations", async () => {
   const report = await benchmark({ modules: ["sample"], readSource: async () =>
-    "def good = 0; def bad : 0 = 1 { exact refl(0); } def dependent = bad; def independent = 2;" });
+    "def good := 0; def bad : 0 = 1 { exact refl(0); } def dependent := bad; def independent := 2;" });
   assert.deepEqual(report.declarations.map(d => d.category), ["checked", "failed", "blocked", "checked"]);
   assert.equal(report.declarations[2].rootBlocker, "sample__bad");
   for(const row of report.declarations) {
@@ -85,7 +85,7 @@ test("successful compaction retains definitions and translates references while 
 
 test("benchmark reports the selected deadline and optimizations and rejects invalid deadlines", async () => {
   const optimizations = { shareSyntax: false, reuseChecks: false, compactPaths: false };
-  const report = await benchmark({ modules: ["sample"], limitMs: 250, optimizations, readSource: async () => "def one = 1;" });
+  const report = await benchmark({ modules: ["sample"], limitMs: 250, optimizations, readSource: async () => "def one := 1;" });
   assert.equal(report.limitMs, 250);
   assert.deepEqual(report.optimizations, optimizations);
   assert.equal(report.counts.checked, 1);
@@ -99,8 +99,8 @@ test("benchmark checks local simp witnesses without collecting inspector referen
         ? new URL("../docs/examples/proof-ergonomics/implemented/registered-simp.cubist",import.meta.url)
         : new URL(`../archive/first-library/${name}.cubist`,import.meta.url),"utf8");
       return name==="ergonomics_registered"?`${source}
-        def folded(n : Nat) = n + 0;
-        def twice(n : Nat) = folded(n);
+        def folded(n : Nat) := n + 0;
+        def twice(n : Nat) := folded(n);
         def inner(n : Nat, h : n + 0 = n) : folded(n) = n { exact h; }
         def outer(n : Nat, h : folded(n) = n) : twice(n) = n { exact h; }
         def nested(n : Nat) : twice(n) = n { simp only [outer, inner, nat_add_zero]; }

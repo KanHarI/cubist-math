@@ -7,7 +7,7 @@ def tower_middle_linear(K L M : AlgebraicField, e : FieldEmbedding(K, L), d : Fi
   LinearMap(
     K, field_vector_space(K, L, e), field_vector_space(K, M, field_embedding_compose(K, L, M, e, d))
   ) {
-  obtain (zero, one, neg, add, mul) = field_embedding_preserves(L, M, d);
+  obtain (zero, one, neg, add, mul) := field_embedding_preserves(L, M, d);
   exact (
     field_embedding_map(L, M, d), add,
     (fun (a : af_carrier(K)) => mul(field_embedding_map(K, L, e, a)))
@@ -31,10 +31,10 @@ def finite_tower_upper(
   whole : FiniteExtension(K, embedding_as_extension(K, M, field_embedding_compose(K, L, M, e, d)))
 ) :
   FiniteExtension(L, embedding_as_extension(L, M, d)) {
-  let V = field_vector_space(L, M, d);
-  let R = RestrictScalars(K, L, e, V);
-  let W = field_vector_space(K, M, field_embedding_compose(K, L, M, e, d));
-  let comparison = linear_iso_inverse(K, R, W, restrict_field_tower_iso(K, L, M, e, d));
+  let V := field_vector_space(L, M, d);
+  let R := RestrictScalars(K, L, e, V);
+  let W := field_vector_space(K, M, field_embedding_compose(K, L, M, e, d));
+  let comparison := linear_iso_inverse(K, R, W, restrict_field_tower_iso(K, L, M, e, d));
   exact finite_dimensional_of_restriction(
     K, L, e, V, finite_dimensional_iso(K, W, R, comparison, whole)
   );
@@ -49,8 +49,8 @@ def finite_extension_tower_converse(
 ) :
   FiniteExtension(K, embedding_as_extension(K, L, e))
   and FiniteExtension(L, embedding_as_extension(L, M, d)) {
-  let composite = field_embedding_compose(K, L, M, e, d);
-  let finite =
+  let composite := field_embedding_compose(K, L, M, e, d);
+  let finite :=
     along((fun (f : FieldEmbedding(K, M)) => FiniteExtension(K, embedding_as_extension(K, M, f)))) by sym(
       triangle
     ) from whole;
@@ -67,8 +67,8 @@ def finite_extension_tower_iff(
     FiniteExtension(K, embedding_as_extension(K, L, e))
     and FiniteExtension(L, embedding_as_extension(L, M, d))
   ) {
-  let Lower = FiniteExtension(K, embedding_as_extension(K, L, e));
-  let Upper = FiniteExtension(L, embedding_as_extension(L, M, d));
+  let Lower := FiniteExtension(K, embedding_as_extension(K, L, e));
+  let Upper := FiniteExtension(L, embedding_as_extension(L, M, d));
   exact (
     finite_extension_tower_converse(K, L, M, e, d, c, triangle),
     (

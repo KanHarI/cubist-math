@@ -9,12 +9,12 @@ def field_magnitude_small_close(
   bound : FieldMagnitudeBound(F, negF, lt, x, radius), small : lt(radius, epsilon)
 ) :
   FieldClose(F, addF, lt, x, zero, epsilon) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  obtain (upper, lower) = bound;
-  let less = leLt(x, radius, epsilon, upper, small);
-  let negLess = leLt(negF(x), radius, epsilon, lower, small);
-  obtain (shiftForward, shiftBackward) = translate(negF(x), epsilon, x);
-  let shifted =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (upper, lower) := bound;
+  let less := leLt(x, radius, epsilon, upper, small);
+  let negLess := leLt(negF(x), radius, epsilon, lower, small);
+  obtain (shiftForward, shiftBackward) := translate(negF(x), epsilon, x);
+  let shifted :=
     along lt(addF(negF(x), x)) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, epsilon, x) from shiftForward(
       negLess
     );
@@ -33,12 +33,12 @@ def field_close_translate(
   close : FieldClose(F, addF, lt, x, y, epsilon)
 ) :
   FieldClose(F, addF, lt, addF(shift, x), addF(shift, y), epsilon) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  obtain (upper, lower) = close;
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (upper, lower) := close;
   have shiftLess : forall u : F, forall v : F, lt(u, v) -> lt(addF(shift, u), addF(shift, v)) {
     intro u v less;
-    obtain (forward, backward) = translate(u, v, shift);
-    let first =
+    obtain (forward, backward) := translate(u, v, shift);
+    let first :=
       along((fun (a : F) => lt(a, addF(v, shift)))) by ring_add_comm(
         F, zero, one, addF, mulF, negF, ring, u, shift
       ) from forward(less);
@@ -62,16 +62,16 @@ def field_magnitude_perturbation_close(
   small : lt(radius, epsilon)
 ) :
   FieldClose(F, addF, lt, y, x, epsilon) {
-  let close =
+  let close :=
     field_magnitude_small_close(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, radius, epsilon, bound,
       small
     );
-  let shifted =
+  let shifted :=
     field_close_translate(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, zero, epsilon, x, close
     );
-  let unitRemoved =
+  let unitRemoved :=
     along((fun (v : F) => FieldClose(F, addF, lt, addF(x, error), v, epsilon))) by ring_add_zero_right(
       F, zero, one, addF, mulF, negF, ring, x
     ) from shifted;
@@ -88,11 +88,11 @@ def field_magnitude_squeeze(
 ) :
   FieldConverges(F, zero, addF, lt, errors, zero) {
   intro epsilon positive;
-  obtain (bound, close) = vanishes(epsilon, positive);
+  obtain (bound, close) := vanishes(epsilon, positive);
   have tail : forall n : Nat, IndexLE(bound, n) -> FieldClose(F, addF, lt, errors(n), zero, epsilon) {
     intro n large;
-    obtain (upper, lower) = close(n, large);
-    let small =
+    obtain (upper, lower) := close(n, large);
+    let small :=
       along lt(radii(n)) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon) from upper;
     exact field_magnitude_small_close(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, errors(n), radii(n), epsilon,

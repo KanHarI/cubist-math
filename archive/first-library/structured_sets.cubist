@@ -4,47 +4,47 @@ import identity_systems;
 // Structures on small sets. S contains the operations and their law evidence.
 // R states preservation by a function; the hypotheses below are proved for
 // each signature, never postulated as axioms.
-def Structure(S : U0 -> U0) = exists A : U0, S(A) and IsSet(A);
+def Structure(S : U0 -> U0) := exists A : U0, S(A) and IsSet(A);
 
-def structure_object(S : U0 -> U0, A : U0, data : S(A), setA : IsSet(A)) =
+def structure_object(S : U0 -> U0, A : U0, data : S(A), setA : IsSet(A)) :=
   typed(Structure(S), (A, data, setA));
 
-def structure_carrier(S : U0 -> U0, X : Structure(S)) =
+def structure_carrier(S : U0 -> U0, X : Structure(S)) :=
   field_first(U0, (fun (A : U0) => typed(U1, S(A) and IsSet(A))), X);
 
-def structure_bundle(S : U0 -> U0, X : Structure(S)) =
+def structure_bundle(S : U0 -> U0, X : Structure(S)) :=
   field_second(U0, (fun (A : U0) => typed(U1, S(A) and IsSet(A))), X);
 
-def structure_data(S : U0 -> U0, X : Structure(S)) =
+def structure_data(S : U0 -> U0, X : Structure(S)) :=
   fst(S(structure_carrier(S, X)), IsSet(structure_carrier(S, X)), structure_bundle(S, X));
 
 def structure_set(S : U0 -> U0, X : Structure(S)) : IsSet(structure_carrier(S, X)) {
   exact snd(S(structure_carrier(S, X)), IsSet(structure_carrier(S, X)), structure_bundle(S, X));
 }
 
-def StructureRelation(S : U0 -> U0) = forall A : U0, forall B : U0, (A -> B) -> S(A) -> S(B) -> U0;
+def StructureRelation(S : U0 -> U0) := forall A : U0, forall B : U0, (A -> B) -> S(A) -> S(B) -> U0;
 
-def RelationProp(S : U0 -> U0, R : StructureRelation(S)) =
+def RelationProp(S : U0 -> U0, R : StructureRelation(S)) :=
   forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) -> forall f : A -> B, forall a : S(A),
   forall b : S(B), Proposition(R(A, B, f, a, b));
 
-def RelationIdentity(S : U0 -> U0, R : StructureRelation(S)) =
+def RelationIdentity(S : U0 -> U0, R : StructureRelation(S)) :=
   forall A : U0, forall a : S(A), R(A, A, (fun (x : A) => x), a, a);
 
-def RelationReflects(S : U0 -> U0, R : StructureRelation(S)) =
+def RelationReflects(S : U0 -> U0, R : StructureRelation(S)) :=
   forall A : U0, IsSet(A) -> forall a : S(A), forall b : S(A), R(A, A, (fun (x : A) => x), a, b)
   -> (a = b);
 
 def StructureMapLaws(
   S : U0 -> U0, R : StructureRelation(S), X Y : Structure(S), f : structure_carrier(S, X)
   -> structure_carrier(S, Y)
-) =
+) :=
   InverseData(structure_carrier(S, X), structure_carrier(S, Y), f)
   and R(
     structure_carrier(S, X), structure_carrier(S, Y), f, structure_data(S, X), structure_data(S, Y)
   );
 
-def StructureIso(S : U0 -> U0, R : StructureRelation(S), X Y : Structure(S)) =
+def StructureIso(S : U0 -> U0, R : StructureRelation(S), X Y : Structure(S)) :=
   exists f : structure_carrier(S, X) -> structure_carrier(S, Y), StructureMapLaws(S, R, X, Y, f);
 
 def structure_iso_forward(
@@ -58,14 +58,14 @@ def structure_iso_forward(
 
 def structure_iso_evidence(
   S : U0 -> U0, R : StructureRelation(S), X Y : Structure(S), e : StructureIso(S, R, X, Y)
-) =
+) :=
   sigma_second(
     (structure_carrier(S, X) -> structure_carrier(S, Y)), StructureMapLaws(S, R, X, Y), e
   );
 
 def structure_iso_bijection(
   S : U0 -> U0, R : StructureRelation(S), X Y : Structure(S), e : StructureIso(S, R, X, Y)
-) =
+) :=
   typed(
     Bijection(structure_carrier(S, X), structure_carrier(S, Y)),
     (
@@ -84,7 +84,7 @@ def structure_iso_bijection(
 
 def structure_iso_preserves(
   S : U0 -> U0, R : StructureRelation(S), X Y : Structure(S), e : StructureIso(S, R, X, Y)
-) =
+) :=
   snd(
     InverseData(
       structure_carrier(S, X), structure_carrier(S, Y), structure_iso_forward(S, R, X, Y, e)
@@ -137,7 +137,7 @@ def structure_iso_ext(
 
 def structure_identity_iso(
   S : U0 -> U0, R : StructureRelation(S), identity : RelationIdentity(S, R), X : Structure(S)
-) =
+) :=
   typed(
     StructureIso(S, R, X, X),
     (
@@ -149,17 +149,17 @@ def structure_identity_iso(
     )
   );
 
-def StructureIsoTotal(S : U0 -> U0, R : StructureRelation(S), X : Structure(S)) =
+def StructureIsoTotal(S : U0 -> U0, R : StructureRelation(S), X : Structure(S)) :=
   exists Y : Structure(S), StructureIso(S, R, X, Y);
 
 def structure_iso_point(
   S : U0 -> U0, R : StructureRelation(S), X Y : Structure(S), e : StructureIso(S, R, X, Y)
-) =
+) :=
   typed(StructureIsoTotal(S, R, X), (Y, e));
 
 def structure_iso_center(
   S : U0 -> U0, R : StructureRelation(S), identity : RelationIdentity(S, R), X : Structure(S)
-) =
+) :=
   structure_iso_point(S, R, X, X, structure_identity_iso(S, R, identity, X));
 
 // At a fixed carrier and fixed data, sethood evidence contributes no extra paths.
@@ -272,11 +272,11 @@ def structure_total_same_carrier(
   structure_iso_center(S, R, identity, structure_object(S, A, a, setA)) = structure_iso_point(
     S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB), e
   ) {
-  let f =
+  let f :=
     structure_iso_forward(S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB), e);
-  let id = fun (x : A) => x;
-  let sameFunction = FunExt(U0, A, (fun (x : A) => A), id, f, same);
-  let preserves =
+  let id := fun (x : A) => x;
+  let sameFunction := FunExt(U0, A, (fun (x : A) => A), id, f, same);
+  let preserves :=
     along((fun (f : A -> A) => R(A, A, f, a, b))) by sym(sameFunction) from structure_iso_preserves(
       S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB), e
     );
@@ -289,7 +289,7 @@ def structure_total_same_carrier(
 def structure_total_constant_transport(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R)
-) =
+) :=
   (
     fun (
       A : U0, a b : S(A), setA setB : IsSet(A),
@@ -356,14 +356,14 @@ def structure_objects_total(
   structure_iso_center(S, R, identity, structure_object(S, A, a, setA)) = structure_iso_point(
     S, R, structure_object(S, A, a, setA), structure_object(S, B, b, setB), e
   ) {
-  let equivalence =
+  let equivalence :=
     bijection_equiv(
       A, B, setB,
       structure_iso_bijection(
         S, R, structure_object(S, A, a, setA), structure_object(S, B, b, setB), e
       )
     );
-  let p = ua(U0, A, B, equivalence);
+  let p := ua(U0, A, B, equivalence);
   exact structure_total_transport(
     S, R, prop, identity, reflects, A, B, p, a, b, setA, setB, e,
     (fun (x : A) => UnivalenceBeta(U0, A, B, equivalence, x))
@@ -424,7 +424,7 @@ def structure_total_contraction(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), X : Structure(S),
   z : StructureIsoTotal(S, R, X)
-) =
+) :=
   pair_induction(
     (fun (z : StructureIsoTotal(S, R, X)) => structure_iso_center(S, R, identity, X) = z),
     structure_total_contractible(S, R, prop, identity, reflects, X), z
@@ -433,7 +433,7 @@ def structure_total_contraction(
 def structure_iso_path_data(
   S : U0 -> U0, R : StructureRelation(S), X Y : Structure(S), e d : StructureIso(S, R, X, Y),
   p : e = d
-) =
+) :=
   fun (x : structure_carrier(S, X)) => cong(
     (fun (e : StructureIso(S, R, X, Y)) => structure_iso_forward(S, R, X, Y, e, x)), p
   );
@@ -441,7 +441,7 @@ def structure_iso_path_data(
 def structure_iso_choose_path(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R), X Y : Structure(S),
   e d : StructureIso(S, R, X, Y), p : e = d
-) =
+) :=
   structure_iso_ext(S, R, prop, X, Y, e, d, structure_iso_path_data(S, R, X, Y, e, d, p));
 
 def structure_iso_set(
@@ -455,7 +455,7 @@ def structure_iso_set(
       S, R, prop, X, Y, e, d, q
     ) {
     intro e d p q;
-    let sameData =
+    let sameData :=
       FunExt(
         U0, structure_carrier(S, X),
         (
@@ -479,7 +479,7 @@ def structure_iso_set(
   );
 }
 
-def structure_identity_family(S : U0 -> U0, R : StructureRelation(S), X Y : Structure(S)) =
+def structure_identity_family(S : U0 -> U0, R : StructureRelation(S), X Y : Structure(S)) :=
   typed(U1, StructureIso(S, R, X, Y));
 
 // The forward map is canonical: transport of the identity isomorphism.

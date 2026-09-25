@@ -5,7 +5,7 @@ import f4_embedding_images;
 // Equality is equality of bundled fields, obtained from the image isomorphism.
 def f2_embedded_compositum_is_f2 :
   EmbeddedCompositum(F2, F2, F4, f2_f4_embedding, f2_f4_embedding) =[AlgebraicField] F2 {
-  let S = subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2));
+  let S := subfield_image(F2, F4, f2_f4_embedding, subfield_top(F2));
   exact with unfolding [
     AlgebraicField, EmbeddedCompositum, embedded_compositum_subfield, embedding_image_field
   ] {

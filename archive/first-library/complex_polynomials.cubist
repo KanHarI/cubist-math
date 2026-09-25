@@ -2,12 +2,12 @@ import ring_laws;
 
 // Lower coefficients of a monic polynomial, constant coefficient first.
 // The implicit leading coefficient is one, so its formal degree is n.
-def MonicCoefficients(F : U1, n : Nat) = induction n as k return U1 {
+def MonicCoefficients(F : U1, n : Nat) := induction n as k return U1 {
     zero => Unit;
     succ previous => F and previous;
   };
 
-def monic_eval(F : U1, one : F, addF mulF : F -> F -> F, n : Nat) =
+def monic_eval(F : U1, one : F, addF mulF : F -> F -> F, n : Nat) :=
   induction n as k return (MonicCoefficients(F, k) -> F -> F) {
     zero => fun (u : Unit, z : F) => one;
     succ previous => fun (coefficients : MonicCoefficients(F, succ(k)), z : F) => unpack typed(
@@ -19,13 +19,13 @@ def monic_eval(F : U1, one : F, addF mulF : F -> F -> F, n : Nat) =
 
 def MonicRoot(
   F : U1, zero one : F, addF mulF : F -> F -> F, n : Nat, coefficients : MonicCoefficients(F, n)
-) =
+) :=
   exists z : F, monic_eval(F, one, addF, mulF, n, coefficients, z) = zero;
 
 // This is a target PROPERTY, not an axiom or a proof of algebraic closure.
 // Mere existence per polynomial does not choose roots simultaneously.
 // Over a field, an invertible leading coefficient permits monic normalization.
-def MonicAlgebraicClosure(F : U1, zero one : F, addF mulF : F -> F -> F) =
+def MonicAlgebraicClosure(F : U1, zero one : F, addF mulF : F -> F -> F) :=
   forall n : Nat, forall coefficients : MonicCoefficients(F, succ(n)),
   FieldExists(MonicRoot(F, zero, one, addF, mulF, succ(n), coefficients));
 
@@ -93,7 +93,7 @@ def monic_square_root_equation(
   root : monic_eval(F, one, addF, mulF, 2, square_root_coefficients(F, zero, negF, a), z) = zero
 ) :
   mulF(z, z) = a {
-  obtain (setF, additive, multiplicative) = ring;
+  obtain (setF, additive, multiplicative) := ring;
   exact field_add_cancel(
     F, zero, addF, negF, additive, negF(a), mulF(z, z), a,
     trans(
@@ -111,7 +111,7 @@ def algebraic_closure_implies_square_roots(
   closed : MonicAlgebraicClosure(F, zero, one, addF, mulF), a : F
 ) :
   FieldExists(exists z : F, mulF(z, z) = a) {
-  let coefficients = square_root_coefficients(F, zero, negF, a);
+  let coefficients := square_root_coefficients(F, zero, negF, a);
   exact field_exists_map(
     MonicRoot(F, zero, one, addF, mulF, 2, coefficients), (exists z : F, mulF(z, z) = a),
     (

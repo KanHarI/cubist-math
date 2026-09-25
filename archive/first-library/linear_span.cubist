@@ -2,7 +2,7 @@ import finite_bases;
 
 // A finite linear combination has an explicit list of vectors and scalars.
 // Fin(n) supplies its indices, including the empty combination when n = 0.
-def linear_combination(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def linear_combination(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
     (Fin(k) -> vector_carrier(K, V)) -> (Fin(k) -> af_carrier(K)) -> vector_carrier(K, V)
   ) {
@@ -25,7 +25,7 @@ def linear_combination(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
 
 def SpanWitness(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
-) =
+) :=
   exists n : Nat, exists vectors : Fin(n) -> vector_carrier(K, V),
   exists coefficients : Fin(n) -> af_carrier(K), (forall i : Fin(n), P(vectors(i)))
   and (linear_combination(K, V, n, vectors, coefficients) = x);
@@ -34,12 +34,12 @@ def SpanWitness(
 // coordinates and cannot be eliminated into an arbitrary data type.
 def Span(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
-) =
+) :=
   Truncate(U0, SpanWitness(K, V, P, x));
 
 def span_prop(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
-) =
+) :=
   TruncateProp(U0, SpanWitness(K, V, P, x));
 
 def span_zero(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :
@@ -89,7 +89,7 @@ def span_included(
   Span(K, V, Q, x) {
   have mapWitness : SpanWitness(K, V, P, x) -> Span(K, V, Q, x) {
     intro witness;
-    obtain (n, vectors, coefficients, members, sum) = witness;
+    obtain (n, vectors, coefficients, members, sum) := witness;
     exact TruncateIntro(
       U0, SpanWitness(K, V, Q, x),
       typed(
@@ -105,19 +105,19 @@ def span_included(
 
 // Independence quantifies over distinct finite lists of members. Distinctness
 // is essential: repeated vectors can otherwise cancel with nonzero coefficients.
-def LinearlyIndependent(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) =
+def LinearlyIndependent(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :=
   forall n : Nat, forall vectors : Fin(n) -> vector_carrier(K, V),
   (forall i : Fin(n), forall j : Fin(n), vectors(i) = vectors(j) -> i = j)
   -> (forall i : Fin(n), P(vectors(i))) -> forall coefficients : Fin(n) -> af_carrier(K),
   linear_combination(K, V, n, vectors, coefficients) = vector_zero(K, V) -> forall i : Fin(n),
   coefficients(i) = af_zero(af_carrier(K), af_operations(K));
 
-def Spans(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) =
+def Spans(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :=
   forall x : vector_carrier(K, V), Span(K, V, P, x);
 
 // A general basis is a proposition-valued subset, not necessarily finite.
 // This is the target interface for the proof via Zorn derived from choice.
-def VectorBasis(K : AlgebraicField, V : VectorSpace(K)) =
+def VectorBasis(K : AlgebraicField, V : VectorSpace(K)) :=
   exists P : vector_carrier(K, V) -> U0, (forall x : vector_carrier(K, V), Proposition(P(x)))
   and LinearlyIndependent(K, V, P) and Spans(K, V, P);
 
@@ -134,10 +134,10 @@ def independent_excludes_zero(
   independent : LinearlyIndependent(K, V, P), member : P(vector_zero(K, V))
 ) :
   Void {
-  let A = af_carrier(K);
-  let ops = af_operations(K);
-  let zero = vector_zero(K, V);
-  obtain (ring, nontrivial, inverses) = af_laws(K);
+  let A := af_carrier(K);
+  let ops := af_operations(K);
+  let zero := vector_zero(K, V);
+  obtain (ring, nontrivial, inverses) := af_laws(K);
   have vanishes : linear_combination(
     K, V, 1, (fun (i : Fin(1)) => zero), (fun (i : Fin(1)) => af_one(A, ops))
   ) = zero := trans(

@@ -1,14 +1,14 @@
 import quotient_sets;
 
 // Binary operations must respect the relation in both arguments.
-def RespectsBinaryRelation(A : U1, relation : A -> A -> U0, B : U1, f : A -> A -> B) =
+def RespectsBinaryRelation(A : U1, relation : A -> A -> U0, B : U1, f : A -> A -> B) :=
   forall x : A, forall x2 : A, forall y : A, forall y2 : A, relation(x, x2) -> relation(y, y2)
   -> f(x, y) = f(x2, y2);
 
 def quotient_binary_right(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
   setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a : A
-) =
+) :=
   unpack laws as (prop, rest) return (SetQuotient(A, relation) -> B) {
     unpack rest as (reflexive, rest2) return (SetQuotient(A, relation) -> B) {
       quotient_rec(
@@ -24,7 +24,7 @@ def quotient_binary_right_beta(
   quotient_binary_right(A, relation, laws, B, setB, f, respects, a, quotient_class(A, relation, b)) = f(
     a, b
   ) {
-  obtain (prop, reflexive, symmetric, transitive) = laws;
+  obtain (prop, reflexive, symmetric, transitive) := laws;
   exact quotient_rec_beta(
     A, relation, laws, B, setB, f(a), (fun (y y2 : A) => respects(a, a, y, y2, reflexive(a))), b
   );
@@ -39,7 +39,7 @@ def quotient_binary_left_respects(
     quotient_binary_right(A, relation, laws, B, setB, f, respects)
   ) {
   intro a a2 same;
-  obtain (prop, reflexive, symmetric, transitive) = laws;
+  obtain (prop, reflexive, symmetric, transitive) := laws;
   exact quotient_maps_ext(
     A, relation, B, setB, quotient_binary_right(A, relation, laws, B, setB, f, respects, a),
     quotient_binary_right(A, relation, laws, B, setB, f, respects, a2),
@@ -59,7 +59,7 @@ def quotient_binary_left_respects(
 def quotient_binary_rec(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
   setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f)
-) =
+) :=
   quotient_rec(
     A, relation, laws, (SetQuotient(A, relation) -> B),
     dependent_functions_are_set(
@@ -77,7 +77,7 @@ def quotient_binary_rec_beta(
     A, relation, laws, B, setB, f, respects, quotient_class(A, relation, a),
     quotient_class(A, relation, b)
   ) = f(a, b) {
-  let qb = quotient_class(A, relation, b);
+  let qb := quotient_class(A, relation, b);
   exact trans(
     cong(
       (fun (g : SetQuotient(A, relation) -> B) => g(qb)),

@@ -8,7 +8,7 @@ def complex_scale(F : U1, mulF : F -> F -> F, t : F, z : Complex(F)) : Complex(F
   exact (mulF(t, complex_real(F, z)), mulF(t, complex_imag(F, z)));
 }
 
-def complex_linear_deformation(F : U1, addF mulF : F -> F -> F, t : F, z error : Complex(F)) =
+def complex_linear_deformation(F : U1, addF mulF : F -> F -> F, t : F, z error : Complex(F)) :=
   complex_add(F, addF, z, complex_scale(F, mulF, t, error));
 
 def ordered_le_transitive(
@@ -18,7 +18,7 @@ def ordered_le_transitive(
   xy : FieldLe(F, lt, x, y), yz : FieldLe(F, lt, y, z)
 ) :
   FieldLe(F, lt, x, z) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   intro zx;
   exact yz(ltLe(z, x, y, zx, xy));
 }
@@ -30,8 +30,8 @@ def ordered_unit_interval_square(
   lower : FieldLe(F, lt, zero, t), upper : FieldLe(F, lt, t, one)
 ) :
   FieldLe(F, lt, mulF(t, t), one) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let step =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let step :=
     along((fun (v : F) => FieldLe(F, lt, mulF(t, t), v))) by ring_mul_one(
       F, zero, one, addF, mulF, negF, ring, t
     ) from weakScale(t, one, t, upper, lower);
@@ -121,9 +121,9 @@ def complex_scale_norm_bound(
     F, lt, complex_norm_squared(F, addF, mulF, complex_scale(F, mulF, t, z)),
     complex_norm_squared(F, addF, mulF, z)
   ) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let n = complex_norm_squared(F, addF, mulF, z);
-  let nonnegativeNorm =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let n := complex_norm_squared(F, addF, mulF, z);
+  let nonnegativeNorm :=
     ordered_sum_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
       mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)),
@@ -134,11 +134,11 @@ def complex_scale_norm_bound(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z)
       )
     );
-  let upperSquare =
+  let upperSquare :=
     ordered_unit_interval_square(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, lower, upper
     );
-  let step =
+  let step :=
     along((fun (v : F) => FieldLe(F, lt, mulF(mulF(t, t), n), v))) by ring_mul_one(
       F, zero, one, addF, mulF, negF, ring, n
     ) from weakScale(mulF(t, t), one, n, upperSquare, nonnegativeNorm);
@@ -156,14 +156,14 @@ def complex_linear_deformation_nonzero(
 ) :
   (complex_linear_deformation(F, addF, mulF, t, z, error) = complex_zero(F, zero)) -> Void {
   intro vanishes;
-  let scaled = complex_scale(F, mulF, t, error);
-  let addC = complex_add(F, addF);
-  let mulC = complex_mul(F, addF, mulF, negF);
-  let negC = complex_neg(F, negF);
-  let zeroC = complex_zero(F, zero);
-  let oneC = complex_one(F, zero, one);
-  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-  let opposite =
+  let scaled := complex_scale(F, mulF, t, error);
+  let addC := complex_add(F, addF);
+  let mulC := complex_mul(F, addF, mulF, negF);
+  let negC := complex_neg(F, negF);
+  let zeroC := complex_zero(F, zero);
+  let oneC := complex_one(F, zero, one);
+  let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let opposite :=
     ring_neg_unique(
       Complex(F), zeroC, oneC, addC, mulC, negC, ringC, scaled, z,
       trans(complex_add_comm(F, zero, one, addF, mulF, negF, ring, scaled, z), vanishes)
@@ -174,7 +174,7 @@ def complex_linear_deformation_nonzero(
     cong(complex_norm_squared(F, addF, mulF), opposite),
     complex_negative_norm(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, scaled)
   );
-  let impossible = along lt(complex_norm_squared(F, addF, mulF, error)) by sameNorm from dominates;
+  let impossible := along lt(complex_norm_squared(F, addF, mulF, error)) by sameNorm from dominates;
   exact complex_scale_norm_bound(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, error, lower, upper, impossible
   );

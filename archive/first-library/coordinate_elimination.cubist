@@ -7,7 +7,7 @@ import maps;
 def pivot_coefficient(
   K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
-) =
+) :=
   linear_compose(
     K, CoordinateSpace(K, m), ScalarSpace(K), ScalarSpace(K),
     linear_compose(
@@ -22,7 +22,7 @@ def pivot_coefficient(
 def pivot_corrected(
   K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
-) =
+) :=
   linear_subtract(
     K, CoordinateSpace(K, m), CoordinateSpace(K, succ(n)),
     linear_compose(
@@ -44,7 +44,7 @@ def pivot_corrected(
 def pivot_reduced(
   K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
-) =
+) :=
   linear_compose(
     K, CoordinateSpace(K, m), CoordinateSpace(K, succ(n)), CoordinateSpace(K, n),
     pivot_corrected(K, m, n, f, b), coordinate_tail_linear(K, n)
@@ -56,10 +56,10 @@ def scalar_pivot_cancel(
   x : af_carrier(K)
 ) :
   af_mul(af_carrier(K), af_operations(K), af_mul(af_carrier(K), af_operations(K), b, x), a) = x {
-  let A = af_carrier(K);
-  let ops = af_operations(K);
-  let mul = af_mul(A, ops);
-  obtain (addLaws, assoc, comm, one, distribute) = field_ring_data(A, ops, af_laws(K));
+  let A := af_carrier(K);
+  let ops := af_operations(K);
+  let mul := af_mul(A, ops);
+  obtain (addLaws, assoc, comm, one, distribute) := field_ring_data(A, ops, af_laws(K));
   exact trans(
     comm(mul(b, x), a),
     trans(sym(assoc(a, b, x)), trans(cong((fun (z : A) => mul(z, x)), inv), one(x)))
@@ -85,11 +85,11 @@ def pivot_corrected_head(
       K, CoordinateSpace(K, m), CoordinateSpace(K, succ(n)), pivot_corrected(K, m, n, f, b), v
     )
   ) = af_zero(af_carrier(K), af_operations(K)) {
-  let A = af_carrier(K);
-  let ops = af_operations(K);
-  let F = linear_map(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f);
-  let a = finite_head(A, n, F(coordinate_first(K, m)));
-  let x = finite_head(A, n, F(coordinate_insert(K, m, v)));
+  let A := af_carrier(K);
+  let ops := af_operations(K);
+  let F := linear_map(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f);
+  let a := finite_head(A, n, F(coordinate_first(K, m)));
+  let x := finite_head(A, n, F(coordinate_insert(K, m, v)));
   exact trans(
     cong(
       (fun (z : A) => af_add(A, ops, x, af_neg(A, ops, z))), scalar_pivot_cancel(K, a, b, inv, x)
@@ -118,14 +118,15 @@ def pivot_reduced_kernel(
   ) = vector_zero(K, CoordinateSpace(K, n))
 ) :
   v = vector_zero(K, CoordinateSpace(K, m)) {
-  let A = af_carrier(K);
-  let S = CoordinateSpace(K, succ(m));
-  let T = CoordinateSpace(K, succ(n));
-  let F = linear_map(K, S, T, f);
-  let c = linear_map(K, CoordinateSpace(K, m), ScalarSpace(K), pivot_coefficient(K, m, n, f, b), v);
-  let u = F(coordinate_first(K, m));
-  let h = F(coordinate_insert(K, m, v));
-  let cu = vector_scale(K, T, c, u);
+  let A := af_carrier(K);
+  let S := CoordinateSpace(K, succ(m));
+  let T := CoordinateSpace(K, succ(n));
+  let F := linear_map(K, S, T, f);
+  let c :=
+    linear_map(K, CoordinateSpace(K, m), ScalarSpace(K), pivot_coefficient(K, m, n, f, b), v);
+  let u := F(coordinate_first(K, m));
+  let h := F(coordinate_insert(K, m, v));
+  let cu := vector_scale(K, T, c, u);
   have corrected_zero : vector_add(K, T, h, vector_neg(K, T, cu)) = vector_zero(K, T) := finite_function_ext(
     A, n, vector_add(K, T, h, vector_neg(K, T, cu)), vector_zero(K, T),
     pivot_corrected_head(K, m, n, f, b, inv, v), vanishes

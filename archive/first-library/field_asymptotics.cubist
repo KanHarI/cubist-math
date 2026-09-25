@@ -3,7 +3,7 @@ import field_products;
 
 // Mere eventual closeness is enough to identify limits. No selection of a
 // bound for every radius is needed when the conclusion is an equality.
-def FieldAsymptotic(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs ys : Nat -> F) =
+def FieldAsymptotic(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs ys : Nat -> F) :=
   forall epsilon : F, lt(zero, epsilon)
   -> FieldExists(
     exists bound : Nat, forall n : Nat, IndexLE(bound, n)
@@ -14,9 +14,9 @@ def field_close_prop(
   F : U1, addF : F -> F -> F, lt : F -> F -> U0, order : StrictOrder(F, lt), x y epsilon : F
 ) :
   FieldProp(FieldClose(F, addF, lt, x, y, epsilon)) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
-  let upper = lt(x, addF(y, epsilon));
-  let lower = lt(y, addF(x, epsilon));
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  let upper := lt(x, addF(y, epsilon));
+  let lower := lt(y, addF(x, epsilon));
   intro p q;
   exact field_pair_path(
     upper, lower, p, q,
@@ -34,35 +34,35 @@ def field_asymptotic_limits_equal(
   toX : FieldConverges(F, zero, addF, lt, xs, x), toY : FieldConverges(F, zero, addF, lt, ys, y)
 ) :
   x = y {
-  obtain (half, halfSum, halfPositive) = halving;
+  obtain (half, halfSum, halfPositive) := halving;
   have close : forall epsilon : F, lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon) {
     intro epsilon positive;
-    let delta = half(epsilon);
-    let quarter = half(delta);
-    let positiveDelta = halfPositive(epsilon, positive);
-    let positiveQuarter = halfPositive(delta, positiveDelta);
-    obtain (leftBound, leftClose) = toX(delta, positiveDelta);
-    obtain (rightBound, rightClose) = toY(quarter, positiveQuarter);
-    let tails =
+    let delta := half(epsilon);
+    let quarter := half(delta);
+    let positiveDelta := halfPositive(epsilon, positive);
+    let positiveQuarter := halfPositive(delta, positiveDelta);
+    obtain (leftBound, leftClose) := toX(delta, positiveDelta);
+    obtain (rightBound, rightClose) := toY(quarter, positiveQuarter);
+    let tails :=
       exists bound : Nat, forall n : Nat, IndexLE(bound, n)
       -> FieldClose(F, addF, lt, xs(n), ys(n), quarter);
     have useTail : tails -> FieldClose(F, addF, lt, x, y, epsilon) {
       intro tail;
-      obtain (tailBound, tailClose) = tail;
-      let convergenceBound = leftBound + rightBound;
-      let bound = tailBound + convergenceBound;
-      let largeConvergence = index_sum_right(tailBound, convergenceBound);
-      let largeLeft =
+      obtain (tailBound, tailClose) := tail;
+      let convergenceBound := leftBound + rightBound;
+      let bound := tailBound + convergenceBound;
+      let largeConvergence := index_sum_right(tailBound, convergenceBound);
+      let largeLeft :=
         nat_le_trans(
           leftBound, convergenceBound, bound, index_sum_left(leftBound, rightBound),
           largeConvergence
         );
-      let largeRight =
+      let largeRight :=
         nat_le_trans(
           rightBound, convergenceBound, bound, index_sum_right(leftBound, rightBound),
           largeConvergence
         );
-      let inner =
+      let inner :=
         field_close_halved_triangle(
           F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, xs(bound),
           ys(bound), y, delta, tailClose(bound, index_sum_left(tailBound, convergenceBound)),
@@ -90,12 +90,12 @@ def field_sequence_limit(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> F,
   cauchy : FieldCauchy(F, zero, addF, lt, sequence)
-) =
+) :=
   field_first(F, FieldConverges(F, zero, addF, lt, sequence), complete(sequence, cauchy));
 
 def field_sequence_limit_converges(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
   complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> F,
   cauchy : FieldCauchy(F, zero, addF, lt, sequence)
-) =
+) :=
   field_second(F, FieldConverges(F, zero, addF, lt, sequence), complete(sequence, cauchy));

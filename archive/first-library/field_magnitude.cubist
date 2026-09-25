@@ -1,7 +1,7 @@
 import ordered_bounds;
 
 // Two weak inequalities express |x| <= radius without deciding any sign.
-def FieldMagnitudeBound(F : U1, negF : F -> F, lt : F -> F -> U0, x radius : F) =
+def FieldMagnitudeBound(F : U1, negF : F -> F, lt : F -> F -> U0, x radius : F) :=
   FieldLe(F, lt, x, radius) and FieldLe(F, lt, negF(x), radius);
 
 def field_magnitude_zero(
@@ -10,7 +10,7 @@ def field_magnitude_zero(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)
 ) :
   FieldMagnitudeBound(F, negF, lt, zero, zero) {
-  let same = order_le_refl(F, lt, order, zero);
+  let same := order_le_refl(F, lt, order, zero);
   exact (
     same,
     along((fun (x : F) => FieldLe(F, lt, x, zero))) by sym(
@@ -26,7 +26,7 @@ def field_magnitude_neg(
   bound : FieldMagnitudeBound(F, negF, lt, x, radius)
 ) :
   FieldMagnitudeBound(F, negF, lt, negF(x), radius) {
-  obtain (upper, lower) = bound;
+  obtain (upper, lower) := bound;
   exact (
     lower,
     along((fun (v : F) => FieldLe(F, lt, v, radius))) by sym(
@@ -42,13 +42,13 @@ def field_magnitude_radius_nonnegative(
   bound : FieldMagnitudeBound(F, negF, lt, x, radius)
 ) :
   FieldLe(F, lt, zero, radius) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  obtain (upper, lower) = bound;
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (upper, lower) := bound;
   intro negativeRadius;
-  let negativeX = leLt(x, radius, zero, upper, negativeRadius);
-  let negativeNegX = leLt(negF(x), radius, zero, lower, negativeRadius);
-  let positiveNegX =
+  let negativeX := leLt(x, radius, zero, upper, negativeRadius);
+  let negativeNegX := leLt(negF(x), radius, zero, lower, negativeRadius);
+  let positiveNegX :=
     ordered_neg_positive(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, negativeX);
   exact irreflexive(zero, transitive(zero, negF(x), zero, positiveNegX, negativeNegX));
 }
@@ -60,7 +60,7 @@ def field_magnitude_enlarge(
   bound : FieldMagnitudeBound(F, negF, lt, x, radius), grows : FieldLe(F, lt, radius, larger)
 ) :
   FieldMagnitudeBound(F, negF, lt, x, larger) {
-  obtain (upper, lower) = bound;
+  obtain (upper, lower) := bound;
   exact (
     order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, x, radius, larger, upper, grows),
     order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, negF(x), radius, larger, lower, grows)
@@ -74,8 +74,8 @@ def field_magnitude_add(
   boundX : FieldMagnitudeBound(F, negF, lt, x, r), boundY : FieldMagnitudeBound(F, negF, lt, y, s)
 ) :
   FieldMagnitudeBound(F, negF, lt, addF(x, y), addF(r, s)) {
-  obtain (upperX, lowerX) = boundX;
-  obtain (upperY, lowerY) = boundY;
+  obtain (upperX, lowerX) := boundX;
+  obtain (upperY, lowerY) := boundY;
   exact (
     order_le_add(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, r, y, s, upperX, upperY),
     along((fun (v : F) => FieldLe(F, lt, v, addF(r, s)))) by sym(
@@ -94,14 +94,14 @@ def order_product_upper_nonnegative(
   nonnegativeR : FieldLe(F, lt, zero, r), nonnegativeY : FieldLe(F, lt, zero, y)
 ) :
   FieldLe(F, lt, mulF(x, y), mulF(r, s)) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let first = weakScale(x, r, y, upperX, nonnegativeY);
-  let second = weakScale(y, s, r, upperY, nonnegativeR);
-  let swapped =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let first := weakScale(x, r, y, upperX, nonnegativeY);
+  let second := weakScale(y, s, r, upperY, nonnegativeR);
+  let swapped :=
     along((fun (v : F) => FieldLe(F, lt, v, mulF(s, r)))) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, y, r
     ) from second;
-  let last =
+  let last :=
     along FieldLe(F, lt, mulF(r, y)) by ring_mul_comm(F, zero, one, addF, mulF, negF, ring, s, r) from swapped;
   exact order_le_trans(
     F, zero, one, addF, mulF, lt, arithmetic, mulF(x, y), mulF(r, y), mulF(r, s), first, last
@@ -115,9 +115,9 @@ def field_magnitude_product_upper(
   boundX : FieldMagnitudeBound(F, negF, lt, x, r), boundY : FieldMagnitudeBound(F, negF, lt, y, s)
 ) :
   FieldLe(F, lt, mulF(x, y), mulF(r, s)) {
-  obtain (upperX, lowerX) = boundX;
-  obtain (upperY, lowerY) = boundY;
-  let nonnegativeR =
+  obtain (upperX, lowerX) := boundX;
+  obtain (upperY, lowerY) := boundY;
+  let nonnegativeR :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, r, boundX
     );
@@ -126,15 +126,15 @@ def field_magnitude_product_upper(
   // nonnegativity of y, so no sign decision or excluded middle is needed.
   have nonnegativeY : FieldLe(F, lt, zero, y) {
     intro negativeY;
-    let positiveNegY =
+    let positiveNegY :=
       ordered_neg_positive(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, negativeY
       );
-    let nonnegativeNegY =
+    let nonnegativeNegY :=
       ordered_lt_implies_le(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, negF(y), positiveNegY
       );
-    let negBound =
+    let negBound :=
       order_product_upper_nonnegative(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), negF(y), r, s, lowerX,
         lowerY, nonnegativeR, nonnegativeNegY
@@ -146,7 +146,7 @@ def field_magnitude_product_upper(
         ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(x, y))
       )
     );
-    let bound =
+    let bound :=
       along((fun (v : F) => FieldLe(F, lt, v, mulF(r, s)))) by doubleNegative from negBound;
     exact bound(tooLarge);
   }
@@ -163,11 +163,11 @@ def field_magnitude_mul(
   boundX : FieldMagnitudeBound(F, negF, lt, x, r), boundY : FieldMagnitudeBound(F, negF, lt, y, s)
 ) :
   FieldMagnitudeBound(F, negF, lt, mulF(x, y), mulF(r, s)) {
-  let upper =
+  let upper :=
     field_magnitude_product_upper(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, r, s, boundX, boundY
     );
-  let lower =
+  let lower :=
     field_magnitude_product_upper(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), y, r, s,
       field_magnitude_neg(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, r, boundX),

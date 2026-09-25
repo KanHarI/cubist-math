@@ -44,27 +44,27 @@ def curve_contour_tag_independent_limit(
       )
     ), value
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let values = (fun (t : I) => integrand(curve(t)));
-  let oldMapped =
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let values := (fun (t : I) => integrand(curve(t)));
+  let oldMapped :=
     (
       fun (n : Nat) => curve_contour_samples(
         F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), oldTags(n)
       )
     );
-  let newMapped =
+  let newMapped :=
     (
       fun (n : Nat) => curve_contour_samples(
         F, zero, one, addF, mulF, negF, lt, curve, integrand, count(n), vertices(n), newTags(n)
       )
     );
-  let oldParam =
+  let oldParam :=
     (
       fun (n : Nat) => complex_parameter_contour_sum(
         I, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n)
       )
     );
-  let newParam =
+  let newParam :=
     (
       fun (n : Nat) => complex_parameter_contour_sum(
         I, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n)
@@ -76,7 +76,7 @@ def curve_contour_tag_independent_limit(
       I, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n)
     ) {
     intro n;
-    obtain (realBounds, imagBounds, totalBound) = variation(
+    obtain (realBounds, imagBounds, totalBound) := variation(
       count(n), vertices(n), oldTags(n), ordered(n)
     );
     exact parameter_coordinate_increment_bounds(
@@ -94,7 +94,7 @@ def curve_contour_tag_independent_limit(
       ), length
     ) {
     intro n;
-    obtain (realBounds, imagBounds, totalBound) = variation(
+    obtain (realBounds, imagBounds, totalBound) := variation(
       count(n), vertices(n), oldTags(n), ordered(n)
     );
     exact totalBound;
@@ -116,11 +116,11 @@ def curve_contour_tag_independent_limit(
       complex_neg(F, negF), curve, integrand, count(n), vertices(n), newTags(n)
     );
   }
-  let oldLimit =
+  let oldLimit :=
     complex_converges_pointwise(
       F, zero, addF, lt, oldMapped, oldParam, oldSame, value, oldConverges
     );
-  let newLimit =
+  let newLimit :=
     complex_parameter_tag_independent_limit(
       I, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, curve, values,
       realWeight, imagWeight, count, vertices, oldTags, newTags, delta, length, nonnegativeLength,
@@ -177,26 +177,28 @@ def affine_curve_contour_tag_independent_limit(
       )
     ), value
   ) {
-  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error);
-  let r = maxF(complex_real(F, error), negF(complex_real(F, error)));
-  let s = maxF(complex_imag(F, error), negF(complex_imag(F, error)));
-  let boundReal = field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_real(F, error));
-  let boundImag = field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_imag(F, error));
-  let nonnegativeR =
+  let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error);
+  let r := maxF(complex_real(F, error), negF(complex_real(F, error)));
+  let s := maxF(complex_imag(F, error), negF(complex_imag(F, error)));
+  let boundReal :=
+    field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_real(F, error));
+  let boundImag :=
+    field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_imag(F, error));
+  let nonnegativeR :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), r,
       boundReal
     );
-  let nonnegativeS =
+  let nonnegativeS :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, error), s,
       boundImag
     );
-  let nonnegativeLength =
+  let nonnegativeLength :=
     ordered_sum_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, nonnegativeR, nonnegativeS
     );
-  let variation =
+  let variation :=
     complex_interval_deformation_variation(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, error
     );

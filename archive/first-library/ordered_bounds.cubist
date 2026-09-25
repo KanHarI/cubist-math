@@ -3,7 +3,7 @@ import ordered_squares;
 // Weak inequalities derived from the constructive ordered-ring interface.
 def order_le_refl(F : U1, lt : F -> F -> U0, order : StrictOrder(F, lt), x : F) :
   FieldLe(F, lt, x, x) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
   exact irreflexive(x);
 }
 
@@ -13,7 +13,7 @@ def order_le_trans(
   xy : FieldLe(F, lt, x, y), yz : FieldLe(F, lt, y, z)
 ) :
   FieldLe(F, lt, x, z) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   intro zx;
   exact yz(ltLe(z, x, y, zx, xy));
 }
@@ -23,8 +23,8 @@ def order_le_translate(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y z : F, xy : FieldLe(F, lt, x, y)
 ) :
   FieldLe(F, lt, addF(x, z), addF(y, z)) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  obtain (forward, backward) = translate(y, x, z);
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (forward, backward) := translate(y, x, z);
   intro reversed;
   exact xy(backward(reversed));
 }
@@ -36,13 +36,13 @@ def order_le_add(
   xy : FieldLe(F, lt, x, y), uv : FieldLe(F, lt, u, v)
 ) :
   FieldLe(F, lt, addF(x, u), addF(y, v)) {
-  let first = order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, x, y, u, xy);
-  let shifted = order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, u, v, y, uv);
-  let second =
+  let first := order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, x, y, u, xy);
+  let shifted := order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, u, v, y, uv);
+  let second :=
     along((fun (a : F) => FieldLe(F, lt, a, addF(v, y)))) by ring_add_comm(
       F, zero, one, addF, mulF, negF, ring, u, y
     ) from shifted;
-  let third =
+  let third :=
     along FieldLe(F, lt, addF(y, u)) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, v, y) from second;
   exact order_le_trans(
     F, zero, one, addF, mulF, lt, arithmetic, addF(x, u), addF(y, u), addF(y, v), first, third
@@ -56,9 +56,9 @@ def order_le_add_nonnegative(
   aboveZeroWeak : FieldLe(F, lt, zero, y)
 ) :
   FieldLe(F, lt, x, addF(x, y)) {
-  let shifted =
+  let shifted :=
     order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, y, x, aboveZeroWeak);
-  let first =
+  let first :=
     along((fun (a : F) => FieldLe(F, lt, a, addF(y, x)))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, x
     ) from shifted;
@@ -72,7 +72,7 @@ def order_mul_nonnegative(
   nx : FieldLe(F, lt, zero, x), ny : FieldLe(F, lt, zero, y)
 ) :
   FieldLe(F, lt, zero, mulF(x, y)) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   exact along((fun (a : F) => FieldLe(F, lt, a, mulF(x, y)))) by ring_zero_mul(
     F, zero, one, addF, mulF, negF, ring, y
   ) from weakScale(zero, x, y, nx, ny);

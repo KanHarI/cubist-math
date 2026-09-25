@@ -15,9 +15,9 @@ def finite_mere_choice_step(
   ), P : Fin(succ(n)) -> U0, inhabited : forall i : Fin(succ(n)), Mere(P(i))
 ) :
   Mere(forall i : Fin(succ(n)), P(i)) {
-  let h = typed(Fin(succ(n)), left(tt));
-  let Q = fun (i : Fin(n)) => P(typed(Fin(succ(n)), right(i)));
-  let Goal = (forall i : Fin(succ(n)), P(i));
+  let h := typed(Fin(succ(n)), left(tt));
+  let Q := fun (i : Fin(n)) => P(typed(Fin(succ(n)), right(i)));
+  let Goal := (forall i : Fin(succ(n)), P(i));
   have chooseHead : P(h) -> Mere(Goal) {
     intro first;
     have join : (forall i : Fin(n), Q(i)) -> Goal {
@@ -37,7 +37,7 @@ def finite_mere_choice_step(
   exact mere_eliminate(P(h), Mere(Goal), mere_is_prop(Goal), chooseHead, inhabited(h));
 }
 
-def finite_mere_choice(n : Nat) =
+def finite_mere_choice(n : Nat) :=
   induction n as k return (
     forall P : Fin(k) -> U0, (forall i : Fin(k), Mere(P(i))) -> Mere(forall i : Fin(k), P(i))
   ) {
@@ -45,7 +45,7 @@ def finite_mere_choice(n : Nat) =
     succ previous => finite_mere_choice_step(k, previous);
   };
 
-def UniformFiberCount(A : U0, n m : Nat) =
+def UniformFiberCount(A : U0, n m : Nat) :=
   forall B : A -> U0, (forall a : A, IsSet(B(a))) -> (forall a : A, HasCardinality(B(a), m))
   -> HasCardinality((exists a : A, B(a)), multiply_count(n, m));
 
@@ -53,13 +53,13 @@ def UniformFiberCount(A : U0, n m : Nat) =
 // The family is identified with the constant Fin(m) family by univalence.
 def finite_uniform_fiber_count(n m : Nat) : UniformFiberCount(Fin(n), n, m) {
   intro B sets counts;
-  let A = (exists i : Fin(n), B(i));
-  let C = Fin(n) and Fin(m);
-  let k = multiply_count(n, m);
-  let P = fun (i : Fin(n)) => Bijection(Fin(m), B(i));
+  let A := (exists i : Fin(n), B(i));
+  let C := Fin(n) and Fin(m);
+  let k := multiply_count(n, m);
+  let P := fun (i : Fin(n)) => Bijection(Fin(m), B(i));
   have enumerate : (forall i : Fin(n), P(i)) -> HasCardinality(A, k) {
     intro e;
-    let same =
+    let same :=
       FunExt(
         U1, Fin(n), (fun (i : Fin(n)) => U0), B, (fun (i : Fin(n)) => Fin(m)),
         (
@@ -68,8 +68,8 @@ def finite_uniform_fiber_count(n m : Nat) : UniformFiberCount(Fin(n), n, m) {
           )
         )
       );
-    let path = cong((fun (F : Fin(n) -> U0) => (exists i : Fin(n), F(i))), same);
-    let product = merely(Bijection(Fin(k), C), reverse_bijection(C, Fin(k), fin_product(n, m)));
+    let path := cong((fun (F : Fin(n) -> U0) => (exists i : Fin(n), F(i))), same);
+    let product := merely(Bijection(Fin(k), C), reverse_bijection(C, Fin(k), fin_product(n, m)));
     exact cardinality_path(C, A, sym(path), k, product);
   }
   exact mere_eliminate(
@@ -81,10 +81,10 @@ def finite_uniform_fiber_count(n m : Nat) : UniformFiberCount(Fin(n), n, m) {
 def uniform_fiber_count(A : U0, setA : IsSet(A), n m : Nat, countA : HasCardinality(A, n)) :
   UniformFiberCount(A, n, m) {
   intro B sets counts;
-  let Goal = HasCardinality((exists a : A, B(a)), multiply_count(n, m));
+  let Goal := HasCardinality((exists a : A, B(a)), multiply_count(n, m));
   have useEnumeration : Bijection(Fin(n), A) -> Goal {
     intro e;
-    let same = ua(U0, Fin(n), A, bijection_equiv(Fin(n), A, setA, e));
+    let same := ua(U0, Fin(n), A, bijection_equiv(Fin(n), A, setA, e));
     exact (
       along((fun (X : U0) => UniformFiberCount(X, n, m))) by same from finite_uniform_fiber_count(
         n, m

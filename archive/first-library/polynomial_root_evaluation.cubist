@@ -7,10 +7,10 @@ def polynomial_eval_remainder(
   x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x), p : Polynomial(K)
 ) :
   polynomial_eval(K, L, e, polynomial_remainder(K, M, p), x) = polynomial_eval(K, L, e, p, x) {
-  let D = modulus_polynomial(K, M);
-  let q = polynomial_quotient(K, M, p);
-  let r = polynomial_remainder(K, M, p);
-  let E = fun (s : Polynomial(K)) => polynomial_eval(K, L, e, s, x);
+  let D := modulus_polynomial(K, M);
+  let q := polynomial_quotient(K, M, p);
+  let r := polynomial_remainder(K, M, p);
+  let E := fun (s : Polynomial(K)) => polynomial_eval(K, L, e, s, x);
   have product : E(polynomial_mul(K, q, D)) = field_zero(L) := with unfolding [] {
     trans(
       polynomial_eval_mul(K, L, e, q, D, x),

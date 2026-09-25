@@ -2,7 +2,7 @@ import sample_subdivision_conditions;
 
 // Endpoint paths transport the dependent subdivision data. These are
 // identities of endpoints, not geometric contour paths or homotopies.
-def subdivision_move_end(C : U1, a b c : C, p : b = c, piece : SampleSubdivision(C, a, b)) =
+def subdivision_move_end(C : U1, a b c : C, p : b = c, piece : SampleSubdivision(C, a, b)) :=
   along((fun (endpoint : C) => SampleSubdivision(C, a, endpoint))) by p from piece;
 
 def subdivision_sum_move_end(

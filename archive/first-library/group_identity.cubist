@@ -28,11 +28,11 @@ def group_inverse_evidence_prop(
   p q : (exists y : A, GroupInverseLaws(A, unit, multiply, x, y))
 ) :
   p = q {
-  let y = sigma_first(A, GroupInverseLaws(A, unit, multiply, x), p);
-  let z = sigma_first(A, GroupInverseLaws(A, unit, multiply, x), q);
-  let py = sigma_second(A, GroupInverseLaws(A, unit, multiply, x), p);
-  let qz = sigma_second(A, GroupInverseLaws(A, unit, multiply, x), q);
-  let setA = group_set_law(A, unit, multiply, laws);
+  let y := sigma_first(A, GroupInverseLaws(A, unit, multiply, x), p);
+  let z := sigma_first(A, GroupInverseLaws(A, unit, multiply, x), q);
+  let py := sigma_second(A, GroupInverseLaws(A, unit, multiply, x), p);
+  let qz := sigma_second(A, GroupInverseLaws(A, unit, multiply, x), q);
+  let setA := group_set_law(A, unit, multiply, laws);
   exact subtype_ext(
     A, GroupInverseLaws(A, unit, multiply, x),
     (
@@ -52,8 +52,8 @@ def group_inverse_evidence_prop(
 // carries no further information. Function extensionality compares laws.
 def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A, p q : GroupLaws(A, unit, multiply)) :
   p = q {
-  let setA = group_set_law(A, unit, multiply, p);
-  let assocProp =
+  let setA := group_set_law(A, unit, multiply, p);
+  let assocProp :=
     forall_prop(
       A,
       (
@@ -73,15 +73,15 @@ def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A, p q : GroupLaws(A,
         )
       )
     );
-  let leftProp =
+  let leftProp :=
     forall_prop(
       A, (fun (x : A) => multiply(unit, x) = x), (fun (x : A) => setA(multiply(unit, x), x))
     );
-  let rightProp =
+  let rightProp :=
     forall_prop(
       A, (fun (x : A) => multiply(x, unit) = x), (fun (x : A) => setA(multiply(x, unit), x))
     );
-  let inverseProp =
+  let inverseProp :=
     forall_prop(
       A, (fun (x : A) => exists y : A, GroupInverseLaws(A, unit, multiply, x, y)),
       group_inverse_evidence_prop(A, unit, multiply, p)
@@ -110,7 +110,7 @@ def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A, p q : GroupLaws(A,
   )(p, q);
 }
 
-def group_carrier_transport(A B : U0, p : A = B, x : A) = along((fun (T : U0) => T)) by p from x;
+def group_carrier_transport(A B : U0, p : A = B, x : A) := along((fun (T : U0) => T)) by p from x;
 
 // Multiplication-preserving equivalences preserve units; this is derived, not required.
 def group_isomorphism_preserves_unit(

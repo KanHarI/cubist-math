@@ -9,12 +9,12 @@ def field_hom_kernel_zero(
   a : af_carrier(K), zero : f(a) = field_zero(L)
 ) :
   a = field_zero(K) {
-  obtain (f0, f1, fn, fa, fm) = preserves;
+  obtain (f0, f1, fn, fa, fm) := preserves;
   have impossible : FieldNonzero(af_carrier(K), af_operations(K), a) -> Void {
     intro nonzero;
-    obtain (ring, nontrivial, inverses) = af_laws(K);
-    obtain (b, inverse) = inverses(a, nonzero);
-    obtain (ringL, nontrivialL, inversesL) = af_laws(L);
+    obtain (ring, nontrivial, inverses) := af_laws(K);
+    obtain (b, inverse) := inverses(a, nonzero);
+    obtain (ringL, nontrivialL, inversesL) := af_laws(L);
     exact nontrivialL(
       trans(
         sym(f1),
@@ -40,8 +40,8 @@ def field_hom_injective(
   x y : af_carrier(K), same : f(x) = f(y)
 ) :
   x = y {
-  obtain (f0, f1, fn, fa, fm) = preserves;
-  let difference = field_add(K, x, field_neg(K, y));
+  obtain (f0, f1, fn, fa, fm) := preserves;
+  let difference := field_add(K, x, field_neg(K, y));
   have vanishes : f(difference) = field_zero(L) := trans(
     fa(x, field_neg(K, y)),
     trans(

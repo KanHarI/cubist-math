@@ -4,11 +4,11 @@ import field_magnitude;
 // Coordinate boxes avoid square roots and work over constructive scalars.
 def ComplexRectangleBound(
   F : U1, negF : F -> F, lt : F -> F -> U0, z : Complex(F), realRadius imagRadius : F
-) =
+) :=
   FieldMagnitudeBound(F, negF, lt, complex_real(F, z), realRadius)
   and FieldMagnitudeBound(F, negF, lt, complex_imag(F, z), imagRadius);
 
-def ComplexBoxBound(F : U1, negF : F -> F, lt : F -> F -> U0, z : Complex(F), radius : F) =
+def ComplexBoxBound(F : U1, negF : F -> F, lt : F -> F -> U0, z : Complex(F), radius : F) :=
   ComplexRectangleBound(F, negF, lt, z, radius, radius);
 
 def complex_box_add(
@@ -18,8 +18,8 @@ def complex_box_add(
   boundZ : ComplexBoxBound(F, negF, lt, z, r), boundW : ComplexBoxBound(F, negF, lt, w, s)
 ) :
   ComplexBoxBound(F, negF, lt, complex_add(F, addF, z, w), addF(r, s)) {
-  obtain (zr, zi) = boundZ;
-  obtain (wr, wi) = boundW;
+  obtain (zr, zi) := boundZ;
+  obtain (wr, wi) := boundW;
   exact (
     field_magnitude_add(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z),
@@ -40,38 +40,38 @@ def complex_box_mul_rectangle(
   boundW : ComplexRectangleBound(F, negF, lt, w, r, s)
 ) :
   ComplexBoxBound(F, negF, lt, complex_mul(F, addF, mulF, negF, z, w), mulF(delta, addF(r, s))) {
-  obtain (zr, zi) = boundZ;
-  obtain (wr, wi) = boundW;
-  let a = complex_real(F, z);
-  let b = complex_imag(F, z);
-  let c = complex_real(F, w);
-  let d = complex_imag(F, w);
-  let ac =
+  obtain (zr, zi) := boundZ;
+  obtain (wr, wi) := boundW;
+  let a := complex_real(F, z);
+  let b := complex_imag(F, z);
+  let c := complex_real(F, w);
+  let d := complex_imag(F, w);
+  let ac :=
     field_magnitude_mul(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, a, c, delta, r, zr, wr
     );
-  let bd =
+  let bd :=
     field_magnitude_mul(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, b, d, delta, s, zi, wi
     );
-  let ad =
+  let ad :=
     field_magnitude_mul(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, a, d, delta, s, zr, wi
     );
-  let bc =
+  let bc :=
     field_magnitude_mul(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, b, c, delta, r, zi, wr
     );
-  let minusBd =
+  let minusBd :=
     field_magnitude_neg(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(b, d), mulF(delta, s), bd
     );
-  let realBound =
+  let realBound :=
     field_magnitude_add(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(a, c), negF(mulF(b, d)),
       mulF(delta, r), mulF(delta, s), ac, minusBd
     );
-  let imagBound =
+  let imagBound :=
     field_magnitude_add(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(a, d), mulF(b, c),
       mulF(delta, s), mulF(delta, r), ad, bc

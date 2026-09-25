@@ -3,10 +3,10 @@ import surjections;
 
 // Injectivity and surjectivity refer to the underlying map of a checked
 // linear map. Surjectivity promises only truncated preimages.
-def LinearInjective(K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W)) =
+def LinearInjective(K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W)) :=
   Injective(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
 
-def LinearSurjective(K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W)) =
+def LinearSurjective(K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W)) :=
   Surjective(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
 
 def linear_unique_preimage(
@@ -15,9 +15,9 @@ def linear_unique_preimage(
   y : vector_carrier(K, W)
 ) :
   Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y) {
-  let X = vector_carrier(K, V);
-  let Y = vector_carrier(K, W);
-  let F = linear_map(K, V, W, f);
+  let X := vector_carrier(K, V);
+  let Y := vector_carrier(K, W);
+  let F := linear_map(K, V, W, f);
   exact mere_eliminate(
     Fiber(X, Y, F, y), Fiber(X, Y, F, y),
     injection_is_embedding(X, Y, group_is_set(vector_group(K, W)), F, injective, y),
@@ -30,14 +30,14 @@ def linear_bijective_iso(
   injective : LinearInjective(K, V, W, f), onto : LinearSurjective(K, V, W, f)
 ) :
   LinearIso(K, V, W) {
-  let X = vector_carrier(K, V);
-  let Y = vector_carrier(K, W);
-  let F = linear_map(K, V, W, f);
-  let g =
+  let X := vector_carrier(K, V);
+  let Y := vector_carrier(K, W);
+  let F := linear_map(K, V, W, f);
+  let g :=
     fun (y : Y) => sigma_first(
       X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
     );
-  let right =
+  let right :=
     fun (y : Y) => sigma_second(
       X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
     );
@@ -97,7 +97,7 @@ def linear_empty_injective(K : AlgebraicField, V : VectorSpace(K)) :
 def adjoin_linear(
   K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
   x : vector_carrier(K, V)
-) =
+) :=
   linear_sum(
     K, CoordinateSpace(K, succ(m)), V,
     linear_compose(
@@ -124,19 +124,19 @@ def adjoin_nonzero_impossible(
   ) = vector_zero(K, V), nonzero : FieldNonzero(af_carrier(K), af_operations(K), a)
 ) :
   Void {
-  let C = CoordinateSpace(K, m);
-  let F = linear_map(K, C, V, f);
-  let y = F(rest);
-  let G = vector_group(K, V);
-  obtain (ring, nontrivial, inverses) = af_laws(K);
-  obtain (addLaws, assoc, comm, one, distribute) = ring;
-  obtain (b, inverse) = inverses(a, nonzero);
-  let leftInverse = trans(comm(b, a), inverse);
+  let C := CoordinateSpace(K, m);
+  let F := linear_map(K, C, V, f);
+  let y := F(rest);
+  let G := vector_group(K, V);
+  obtain (ring, nontrivial, inverses) := af_laws(K);
+  obtain (addLaws, assoc, comm, one, distribute) := ring;
+  obtain (b, inverse) := inverses(a, nonzero);
+  let leftInverse := trans(comm(b, a), inverse);
   have solve : vector_scale(K, V, a, x) = vector_neg(K, V, y) := group_inverse_unique(
     vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), group_laws(G), y,
     vector_scale(K, V, a, x), vector_neg(K, V, y), vanishes, group_inverse_right(G, y)
   );
-  let preimage = vector_scale(K, C, b, vector_neg(K, C, rest));
+  let preimage := vector_scale(K, C, b, vector_neg(K, C, rest));
   have image : F(preimage) = x := trans(
     linear_scale(K, C, V, f, b, vector_neg(K, C, rest)),
     trans(
@@ -166,15 +166,15 @@ def adjoin_linear_kernel(
   )
 ) :
   v = vector_zero(K, CoordinateSpace(K, succ(m))) {
-  let A = af_carrier(K);
-  let ops = af_operations(K);
-  let X = vector_carrier(K, V);
-  let C = CoordinateSpace(K, m);
-  let F = linear_map(K, C, V, f);
-  let a = finite_head(A, m, v);
-  let rest = finite_tail(A, m, v);
-  let y = F(rest);
-  let G = vector_group(K, V);
+  let A := af_carrier(K);
+  let ops := af_operations(K);
+  let X := vector_carrier(K, V);
+  let C := CoordinateSpace(K, m);
+  let F := linear_map(K, C, V, f);
+  let a := finite_head(A, m, v);
+  let rest := finite_tail(A, m, v);
+  let y := F(rest);
+  let G := vector_group(K, V);
   have coefficient_zero : a = af_zero(A, ops) := double_negation(
     a = af_zero(A, ops), af_set(K, a, af_zero(A, ops)),
     (

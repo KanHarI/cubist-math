@@ -8,7 +8,7 @@ def nonnegative_half_le(
   sum : addF(halfWidth, halfWidth) = width, nonnegativeWidth : FieldLe(F, lt, zero, width)
 ) :
   FieldLe(F, lt, halfWidth, width) {
-  let nonnegativeHalf =
+  let nonnegativeHalf :=
     nonnegative_half_from_sum(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, halfWidth, sum,
       nonnegativeWidth
@@ -122,7 +122,7 @@ def dyadic_width_small_tail(
   small : lt(dyadic_width(F, half, bound, width), epsilon)
 ) :
   forall n : Nat, IndexLE(bound, n) -> lt(dyadic_width(F, half, n, width), epsilon) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   intro n later;
   exact leLt(
     dyadic_width(F, half, n, width), dyadic_width(F, half, bound, width), epsilon,
@@ -148,15 +148,15 @@ def dyadic_width_eventually_small(
     exists bound : Nat, forall n : Nat, IndexLE(bound, n)
     -> lt(dyadic_width(F, half, n, width), epsilon)
   ) {
-  let A = (exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon));
-  let B =
+  let A := (exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon));
+  let B :=
     (
       exists bound : Nat, forall n : Nat, IndexLE(bound, n)
       -> lt(dyadic_width(F, half, n, width), epsilon)
     );
   have mapping : A -> B {
     intro data;
-    obtain (bound, small) = data;
+    obtain (bound, small) := data;
     exact (
       bound,
       dyadic_width_small_tail(

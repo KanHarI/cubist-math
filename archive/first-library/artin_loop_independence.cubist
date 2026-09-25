@@ -83,8 +83,8 @@ def extension_loop_relation_to_embeddings(
       )
     )
   ) = field_zero(extension_field(K, E)) {
-  let F = extension_field(K, E);
-  let g = galois_field_embedding(K, E, extension_path_iso(K, E, E, q));
+  let F := extension_field(K, E);
+  let g := galois_field_embedding(K, E, extension_path_iso(K, E, E, q));
   exact trans(
     cong(
       (
@@ -117,12 +117,12 @@ def distinct_extension_loops_two_independent(
   ) = field_zero(extension_field(K, E))
 ) :
   (a = field_zero(extension_field(K, E))) and (b = field_zero(extension_field(K, E))) {
-  let F = extension_field(K, E);
-  let e = extension_path_iso(K, E, E, p);
-  let d = extension_path_iso(K, E, E, q);
-  let f = galois_field_embedding(K, E, e);
-  let g = galois_field_embedding(K, E, d);
-  let distinct = extension_loop_embeddings_distinct(K, E, p, q, different);
+  let F := extension_field(K, E);
+  let e := extension_path_iso(K, E, E, p);
+  let d := extension_path_iso(K, E, E, q);
+  let f := galois_field_embedding(K, E, e);
+  let g := galois_field_embedding(K, E, d);
+  let distinct := extension_loop_embeddings_distinct(K, E, p, q, different);
   have embeddingRelation :
     forall x : af_carrier(F),
     field_add(
@@ -151,8 +151,8 @@ def distinct_extension_loops_independent(
   ) = field_zero(extension_field(K, E))
 ) :
   forall i : Fin(n), coefficients(i) = field_zero(extension_field(K, E)) {
-  let F = extension_field(K, E);
-  let maps =
+  let F := extension_field(K, E);
+  let maps :=
     fun (i : Fin(n)) => galois_field_embedding(K, E, extension_path_iso(K, E, E, loops(i)));
   have mapsDistinct : PairwiseDistinctEmbeddings(F, F, n, maps) {
     intro i j same;

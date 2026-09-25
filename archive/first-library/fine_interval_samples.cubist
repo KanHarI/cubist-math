@@ -6,7 +6,7 @@ import dyadic_decay;
 def FineIntervalSamples(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
   a b : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   exists depth : Nat, exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
   (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
   and IntervalAdmissibleTags(
@@ -35,26 +35,26 @@ def archimedean_interval_fine_samples(
   ), mesh : F, positiveMesh : lt(zero, mesh)
 ) :
   FieldExists(FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b)) {
-  let width = interval_difference(F, zero, one, addF, negF, lt, a, b);
-  let nonnegativeWidth =
+  let width := interval_difference(F, zero, one, addF, negF, lt, a, b);
+  let nonnegativeWidth :=
     field_difference_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic,
       field_interval_coordinate(F, zero, one, lt)(a),
       field_interval_coordinate(F, zero, one, lt)(b), ordered
     );
-  obtain (half, halfSum, halfPositive) = ordered_field_halving(
+  obtain (half, halfSum, halfPositive) := ordered_field_halving(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
   );
-  let smallWidth =
+  let smallWidth :=
     dyadic_width_arbitrarily_small(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses,
       archimedean, width, nonnegativeWidth, mesh, positiveMesh
     );
-  let A = (exists depth : Nat, lt(dyadic_width(F, half, depth, width), mesh));
-  let B = FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b);
+  let A := (exists depth : Nat, lt(dyadic_width(F, half, depth, width), mesh));
+  let B := FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b);
   have mapping : A -> B {
     intro data;
-    obtain (depth, small) = data;
+    obtain (depth, small) := data;
     exact (
       depth,
       dyadic_interval_samples_fine(

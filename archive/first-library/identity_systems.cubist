@@ -2,18 +2,19 @@ import field_logic;
 import homotopy_paths;
 
 // A reusable U1 version of the identity-system argument.
-def IdentityTotal(A : U1, R : A -> U1) = exists b : A, R(b);
+def IdentityTotal(A : U1, R : A -> U1) := exists b : A, R(b);
 
-def identity_total_point(A : U1, R : A -> U1, b : A, r : R(b)) = typed(IdentityTotal(A, R), (b, r));
+def identity_total_point(A : U1, R : A -> U1, b : A, r : R(b)) :=
+  typed(IdentityTotal(A, R), (b, r));
 
-def identity_system_decode(A : U1, a : A, R : A -> U1, r0 : R(a), b : A, p : a = b) =
+def identity_system_decode(A : U1, a : A, R : A -> U1, r0 : R(a), b : A, p : a = b) :=
   along R by p from r0;
 
 def identity_system_encode(
   A : U1, a : A, R : A -> U1, r0 : R(a),
   contraction : (forall z : IdentityTotal(A, R), identity_total_point(A, R, a, r0) = z), b : A,
   r : R(b)
-) =
+) :=
   cong(field_first(A, R), contraction(identity_total_point(A, R, b, r)));
 
 def identity_total_second_path(A : U1, R : A -> U1, x y : IdentityTotal(A, R), p : x = y) :
@@ -39,7 +40,7 @@ def identity_system_retraction(
   p : a = b
 ) :
   identity_system_encode(A, a, R, r0, contraction, b, identity_system_decode(A, a, R, r0, b, p)) = p {
-  let center = identity_total_point(A, R, a, r0);
+  let center := identity_total_point(A, R, a, r0);
   have atCenter : contraction(center) = refl(center) := contractible_loops_are_null(
     IdentityTotal(A, R), center, (fun (z : IdentityTotal(A, R)) => sym(contraction(z))), center,
     contraction(center)
@@ -68,10 +69,10 @@ def identity_system_equivalence(
   setR : FieldSet(R(b))
 ) :
   Equiv(U1, (a = b), R(b)) {
-  let f = identity_system_decode(A, a, R, r0, b);
-  let g = identity_system_encode(A, a, R, r0, contraction, b);
-  let eta = identity_system_retraction(A, a, R, r0, contraction, b);
-  let eps = identity_system_section(A, a, R, r0, contraction, b);
+  let f := identity_system_decode(A, a, R, r0, b);
+  let g := identity_system_encode(A, a, R, r0, contraction, b);
+  let eta := identity_system_retraction(A, a, R, r0, contraction, b);
+  let eps := identity_system_section(A, a, R, r0, contraction, b);
   exact equiv_from_inverse_into_set(U1, (a = b), R(b), setR, f, g, eta, eps);
 }
 

@@ -2,14 +2,14 @@ import set_quotients;
 
 // A map out of a quotient must give equal values on related representatives.
 // The target may live in U1, but must be a set, not an arbitrary higher type.
-def RespectsRelation(A : U1, relation : A -> A -> U0, B : U1, f : A -> B) =
+def RespectsRelation(A : U1, relation : A -> A -> U0, B : U1, f : A -> B) :=
   forall x : A, forall y : A, relation(x, y) -> f(x) = f(y);
 
 // A value of a quotient class is characterized by all of its representatives.
 // Uniqueness of this value will justify eliminating truncation without choice.
 def QuotientValue(
   A : U1, relation : A -> A -> U0, B : U1, f : A -> B, q : SetQuotient(A, relation), b : B
-) =
+) :=
   forall a : A, quotient_predicate(A, relation, q, a) -> f(a) = b;
 
 def quotient_predicate_prop(
@@ -17,12 +17,12 @@ def quotient_predicate_prop(
   q : SetQuotient(A, relation), a : A
 ) :
   FieldProp(quotient_predicate(A, relation, q, a)) {
-  obtain (prop, reflexive, symmetric, transitive) = laws;
+  obtain (prop, reflexive, symmetric, transitive) := laws;
   have atRepresentative :
     (exists b : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(b, x))
     -> FieldProp(quotient_predicate(A, relation, q, a)) {
     intro witness;
-    obtain (b, same) = witness;
+    obtain (b, same) := witness;
     exact along((fun (P : U0) => FieldProp(P))) by sym(same(a)) from prop(b, a);
   }
   exact field_exists_elim(
@@ -59,7 +59,7 @@ def quotient_induction_prop(
   P(q) {
   have descend : (exists a : A, quotient_class(A, relation, a) = q) -> P(q) {
     intro witness;
-    obtain (a, same) = witness;
+    obtain (a, same) := witness;
     exact along P by same from atClass(a);
   }
   exact field_exists_elim(
@@ -74,12 +74,12 @@ def quotient_value_unique(
   pb : QuotientValue(A, relation, B, f, q, b), pc : QuotientValue(A, relation, B, f, q, c)
 ) :
   b = c {
-  obtain (prop, reflexive, symmetric, transitive) = laws;
+  obtain (prop, reflexive, symmetric, transitive) := laws;
   have atRepresentative :
     (exists a : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(a, x)) -> b = c {
     intro witness;
-    obtain (a, same) = witness;
-    let member = along((fun (P : U0) => P)) by sym(same(a)) from reflexive(a);
+    obtain (a, same) := witness;
+    let member := along((fun (P : U0) => P)) by sym(same(a)) from reflexive(a);
     exact trans(sym(pb(a, member)), pc(a, member));
   }
   exact field_exists_elim(
@@ -94,7 +94,7 @@ def quotient_value_pair_prop(
 ) :
   FieldProp(exists b : B, QuotientValue(A, relation, B, f, q, b)) {
   intro u v;
-  let P = QuotientValue(A, relation, B, f, q);
+  let P := QuotientValue(A, relation, B, f, q);
   exact field_subtype_ext(
     B, P, quotient_value_prop(A, relation, B, setB, f, q), u, v,
     quotient_value_unique(
@@ -114,7 +114,7 @@ def quotient_value(
     (exists a : A, forall x : A, quotient_predicate(A, relation, q, x) = relation(a, x))
     -> (exists b : B, QuotientValue(A, relation, B, f, q, b)) {
     intro witness;
-    obtain (a, same) = witness;
+    obtain (a, same) := witness;
     exact (
       f(a),
       (
@@ -166,7 +166,7 @@ def quotient_rec_beta(
   setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f), a : A
 ) :
   quotient_rec(A, relation, laws, B, setB, f, respects, quotient_class(A, relation, a)) = f(a) {
-  obtain (prop, reflexive, symmetric, transitive) = laws;
+  obtain (prop, reflexive, symmetric, transitive) := laws;
   exact sym(
     quotient_rec_member(
       A, relation, laws, B, setB, f, respects, quotient_class(A, relation, a), a, reflexive(a)

@@ -13,26 +13,26 @@ def dyadic_width_small_from_natural_bound(
   large : lt(mulF(width, reciprocal), field_natural(F, zero, one, addF)(n))
 ) :
   lt(dyadic_width(F, half, n, width), epsilon) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let natural = field_natural(F, zero, one, addF);
-  let factor = natural(succ(n));
-  let divided = mulF(width, reciprocal);
-  let sampledWidth = dyadic_width(F, half, n, width);
-  let nonnegativeOne =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let natural := field_natural(F, zero, one, addF);
+  let factor := natural(succ(n));
+  let divided := mulF(width, reciprocal);
+  let sampledWidth := dyadic_width(F, half, n, width);
+  let nonnegativeOne :=
     ordered_lt_implies_le(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, one, positiveOne
     );
-  let nextNatural =
+  let nextNatural :=
     order_le_add_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, natural(n), one, nonnegativeOne
     );
-  let largeFactor = ltLe(divided, natural(n), factor, large, nextNatural);
-  let positiveFactor =
+  let largeFactor := ltLe(divided, natural(n), factor, large, nextNatural);
+  let positiveFactor :=
     ltLe(
       zero, one, factor, positiveOne,
       field_natural_successor_ge_one(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, n)
     );
-  obtain (multiply, unMultiply) = scale(divided, factor, epsilon, positiveEpsilon);
+  obtain (multiply, unMultiply) := scale(divided, factor, epsilon, positiveEpsilon);
   have restores : mulF(divided, epsilon) = width := trans(
     ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, width, reciprocal, epsilon),
     trans(
@@ -42,24 +42,24 @@ def dyadic_width_small_from_natural_bound(
       ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, width)
     )
   );
-  let aboveWidth =
+  let aboveWidth :=
     along((fun (v : F) => lt(v, mulF(factor, epsilon)))) by restores from multiply(largeFactor);
-  let bounded =
+  let bounded :=
     dyadic_width_growth_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, n, width,
       nonnegativeWidth
     );
-  let productLess =
+  let productLess :=
     leLt(mulF(factor, sampledWidth), width, mulF(factor, epsilon), bounded, aboveWidth);
-  let leftCommutes =
+  let leftCommutes :=
     along((fun (v : F) => lt(v, mulF(factor, epsilon)))) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, factor, sampledWidth
     ) from productLess;
-  let rightCommutes =
+  let rightCommutes :=
     along lt(mulF(sampledWidth, factor)) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, factor, epsilon
     ) from leftCommutes;
-  obtain (preserve, reflect) = scale(sampledWidth, epsilon, factor, positiveFactor);
+  obtain (preserve, reflect) := scale(sampledWidth, epsilon, factor, positiveFactor);
   exact reflect(rightCommutes);
 }
 
@@ -75,15 +75,15 @@ def dyadic_width_arbitrarily_small(
   nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon)
 ) :
   FieldExists(exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon)) {
-  obtain (reciprocal, positiveReciprocal, inverseLaw) = field_positive_reciprocal(
+  obtain (reciprocal, positiveReciprocal, inverseLaw) := field_positive_reciprocal(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, epsilon, positiveEpsilon
   );
-  let divided = mulF(width, reciprocal);
-  let A = (exists n : Nat, lt(divided, field_natural(F, zero, one, addF)(n)));
-  let B = (exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon));
+  let divided := mulF(width, reciprocal);
+  let A := (exists n : Nat, lt(divided, field_natural(F, zero, one, addF)(n)));
+  let B := (exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon));
   have mapping : A -> B {
     intro data;
-    obtain (n, large) = data;
+    obtain (n, large) := data;
     exact (
       n,
       dyadic_width_small_from_natural_bound(

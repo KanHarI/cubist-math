@@ -8,13 +8,13 @@ def field_nonnegative_magnitude(
   aboveZero : FieldLe(F, lt, zero, x)
 ) :
   FieldMagnitudeBound(F, negF, lt, x, x) {
-  let shifted =
+  let shifted :=
     order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, x, negF(x), aboveZero);
-  let removeZero =
+  let removeZero :=
     along((fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x))))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, negF(x)
     ) from shifted;
-  let negBelowZero =
+  let negBelowZero :=
     along FieldLe(F, lt, negF(x)) by ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x) from removeZero;
   exact (
     order_le_refl(F, lt, order, x),
@@ -31,12 +31,12 @@ def field_close_zero_magnitude(
   close : FieldClose(F, addF, lt, x, zero, radius)
 ) :
   FieldMagnitudeBound(F, negF, lt, x, radius) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  obtain (upper, lower) = close;
-  let less = along lt(x) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, radius) from upper;
-  obtain (forward, backward) = translate(zero, addF(x, radius), negF(x));
-  let shifted = forward(lower);
-  let lhs =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (upper, lower) := close;
+  let less := along lt(x) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, radius) from upper;
+  obtain (forward, backward) := translate(zero, addF(x, radius), negF(x));
+  let shifted := forward(lower);
+  let lhs :=
     along((fun (v : F) => lt(v, addF(addF(x, radius), negF(x))))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, negF(x)
     ) from shifted;
@@ -52,7 +52,7 @@ def field_close_zero_magnitude(
       )
     )
   );
-  let negLess = along lt(negF(x)) by cancels from lhs;
+  let negLess := along lt(negF(x)) by cancels from lhs;
   exact (
     ordered_lt_implies_le(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, radius, less
@@ -70,8 +70,8 @@ def field_positive_product(
   positiveY : lt(zero, y)
 ) :
   lt(zero, mulF(x, y)) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  obtain (forward, backward) = scale(zero, x, y, positiveY);
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (forward, backward) := scale(zero, x, y, positiveY);
   exact along((fun (v : F) => lt(v, mulF(x, y)))) by ring_zero_mul(
     F, zero, one, addF, mulF, negF, ring, y
   ) from forward(positiveX);
@@ -84,19 +84,19 @@ def field_positive_reciprocal(
   inverses : FieldInverses(F, zero, one, mulF, lt), x : F, positive : lt(zero, x)
 ) :
   exists reciprocal : F, lt(zero, reciprocal) and (mulF(x, reciprocal) = one) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  obtain (getInverse, getApart) = inverses(x);
-  let apart =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (getInverse, getApart) := inverses(x);
+  let apart :=
     field_exists_intro(
       (lt(x, zero) or lt(zero, x)), typed((lt(x, zero) or lt(zero, x)), right(positive))
     );
   have inverseData : exists reciprocal : F, mulF(x, reciprocal) = one := getInverse(apart);
-  obtain (reciprocal, inverseLaw) = inverseData;
-  obtain (forward, backward) = scale(zero, reciprocal, x, positive);
-  let productOne =
+  obtain (reciprocal, inverseLaw) := inverseData;
+  obtain (forward, backward) := scale(zero, reciprocal, x, positive);
+  let productOne :=
     trans(ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, x), inverseLaw);
-  let positiveProduct = along lt(zero) by sym(productOne) from positiveOne;
-  let zeroProduct =
+  let positiveProduct := along lt(zero) by sym(productOne) from positiveOne;
+  let zeroProduct :=
     along((fun (v : F) => lt(v, mulF(reciprocal, x)))) by sym(
       ring_zero_mul(F, zero, one, addF, mulF, negF, ring, x)
     ) from positiveProduct;
@@ -111,19 +111,19 @@ def field_small_scaled_radius(
   nonnegativeLength : FieldLe(F, lt, zero, length), epsilon : F, positive : lt(zero, epsilon)
 ) :
   exists delta : F, lt(zero, delta) and lt(mulF(delta, length), epsilon) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let denominator = addF(one, length);
-  let positiveDenominator =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let denominator := addF(one, length);
+  let positiveDenominator :=
     ordered_positive_plus_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, one, length, positiveOne,
       nonnegativeLength
     );
-  obtain (reciprocal, positiveReciprocal, inverseLaw) = field_positive_reciprocal(
+  obtain (reciprocal, positiveReciprocal, inverseLaw) := field_positive_reciprocal(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, denominator,
     positiveDenominator
   );
-  let delta = mulF(epsilon, reciprocal);
-  let positiveDelta =
+  let delta := mulF(epsilon, reciprocal);
+  let positiveDelta :=
     field_positive_product(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, epsilon, reciprocal, positive,
       positiveReciprocal
@@ -150,8 +150,8 @@ def field_small_scaled_radius(
       )
     ), product
   );
-  obtain (shiftForward, shiftBackward) = translate(zero, delta, mulF(delta, length));
-  let shifted =
+  obtain (shiftForward, shiftBackward) := translate(zero, delta, mulF(delta, length));
+  let shifted :=
     along((fun (v : F) => lt(v, addF(delta, mulF(delta, length))))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, mulF(delta, length)
     ) from shiftForward(positiveDelta);
@@ -168,23 +168,23 @@ def field_bounded_scale_zero_converges(
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => mulF(xs(n), factor)), zero) {
   intro epsilon positive;
-  let nonnegativeLength =
+  let nonnegativeLength :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, factor, length, boundedFactor
     );
-  obtain (delta, positiveDelta, small) = field_small_scaled_radius(
+  obtain (delta, positiveDelta, small) := field_small_scaled_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
     nonnegativeLength, epsilon, positive
   );
-  obtain (bound, close) = vanishes(delta, positiveDelta);
+  obtain (bound, close) := vanishes(delta, positiveDelta);
   have tail :
     forall n : Nat, IndexLE(bound, n) -> FieldClose(F, addF, lt, mulF(xs(n), factor), zero, epsilon) {
     intro n large;
-    let boundedX =
+    let boundedX :=
       field_close_zero_magnitude(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(n), delta, close(n, large)
       );
-    let productBound =
+    let productBound :=
       field_magnitude_mul(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(n), factor, delta, length,
         boundedX, boundedFactor

@@ -7,9 +7,9 @@ import finite_cardinalities;
 // An extension automorphism is a field embedding of its ambient field.
 def galois_field_embedding(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)) :
   FieldEmbedding(extension_field(K, E), extension_field(K, E)) {
-  let A = extension_carrier(K, E);
-  let f = extension_iso_forward(K, E, E, e);
-  let bijection = structure_iso_bijection(ExtensionData(K), ExtensionPreserved(K), E, E, e);
+  let A := extension_carrier(K, E);
+  let f := extension_iso_forward(K, E, E, e);
+  let bijection := structure_iso_bijection(ExtensionData(K), ExtensionPreserved(K), E, E, e);
   exact (
     f, galois_preserves_field_ops(K, E, e),
     (
@@ -30,10 +30,10 @@ def fixing_automorphism_over_intermediate(
     intermediate_as_field(K, E, M), extension_field(K, E), intermediate_ambient_embedding(K, E, M),
     extension_field(K, E), intermediate_ambient_embedding(K, E, M)
   ) {
-  let F = extension_field(K, E);
-  let S = intermediate_subfield(K, E, M);
-  let R = intermediate_as_field(K, E, M);
-  let h = galois_field_embedding(K, E, e);
+  let F := extension_field(K, E);
+  let S := intermediate_subfield(K, E, M);
+  let R := intermediate_as_field(K, E, M);
+  let h := galois_field_embedding(K, E, e);
   exact (h, (fun (x : af_carrier(R)) => fixes(subfield_value(F, S, x), subfield_evidence(F, S, x))));
 }
 
@@ -66,9 +66,9 @@ def fixing_automorphism_over_intermediate_injective(
   )
 ) :
   e = d {
-  let R = intermediate_as_field(K, E, M);
-  let F = extension_field(K, E);
-  let i = intermediate_ambient_embedding(K, E, M);
+  let R := intermediate_as_field(K, E, M);
+  let F := extension_field(K, E);
+  let i := intermediate_ambient_embedding(K, E, M);
   exact galois_field_embedding_injective(
     K, E, e, d,
     cong((fun (h : EmbeddingsOver(R, F, i, F, i)) => embedding_over(R, F, i, F, i, h)), same)
@@ -85,8 +85,8 @@ def subgroup_member_fixes_intermediate(
     K, E, intermediate_members(K, E, fixed_intermediate_field(K, E, H)),
     subgroup_value(GaloisGroup(K, E), H, h)
   ) {
-  let e = subgroup_value(GaloisGroup(K, E), H, h);
-  let member = subgroup_evidence(GaloisGroup(K, E), H, h);
+  let e := subgroup_value(GaloisGroup(K, E), H, h);
+  let member := subgroup_evidence(GaloisGroup(K, E), H, h);
   exact with unfolding [
     fixed_intermediate_field, galois_fixed_field, intermediate_members, galois_subgroup_members,
     subgroup_members
@@ -104,7 +104,7 @@ def fixed_subgroup_embedding(
     intermediate_ambient_embedding(K, E, fixed_intermediate_field(K, E, H)), extension_field(K, E),
     intermediate_ambient_embedding(K, E, fixed_intermediate_field(K, E, H))
   ) {
-  let e = subgroup_value(GaloisGroup(K, E), H, h);
+  let e := subgroup_value(GaloisGroup(K, E), H, h);
   exact fixing_automorphism_over_intermediate(
     K, E, fixed_intermediate_field(K, E, H), e, subgroup_member_fixes_intermediate(K, E, H, h)
   );
@@ -116,13 +116,13 @@ def fixed_subgroup_embedding_injective(
   same : fixed_subgroup_embedding(K, E, H, h) = fixed_subgroup_embedding(K, E, H, k)
 ) :
   h = k {
-  let G = GaloisGroup(K, E);
-  let e = subgroup_value(G, H, h);
-  let d = subgroup_value(G, H, k);
-  let M = fixed_intermediate_field(K, E, H);
-  let R = intermediate_as_field(K, E, M);
-  let F = extension_field(K, E);
-  let i = intermediate_ambient_embedding(K, E, M);
+  let G := GaloisGroup(K, E);
+  let e := subgroup_value(G, H, h);
+  let d := subgroup_value(G, H, k);
+  let M := fixed_intermediate_field(K, E, H);
+  let R := intermediate_as_field(K, E, M);
+  let F := extension_field(K, E);
+  let i := intermediate_ambient_embedding(K, E, M);
   exact subgroup_value_ext(
     G, H, h, k,
     galois_field_embedding_injective(
@@ -161,7 +161,7 @@ def fixed_subgroup_loop_embedding_action(
       fixed_subgroup_loop_embedding(K, E, H, p, member)
     ), x
   ) = (along extension_carrier(K) by p from x) {
-  let e = extension_path_iso(K, E, E, p);
+  let e := extension_path_iso(K, E, E, p);
   exact trans(
     sym(galois_loop_action(K, E, e, x)),
     cong(
@@ -180,13 +180,13 @@ def fixed_subgroup_loop_embedding_injective(
   )
 ) :
   p = q {
-  let M = fixed_intermediate_field(K, E, H);
-  let R = intermediate_as_field(K, E, M);
-  let F = extension_field(K, E);
-  let i = intermediate_ambient_embedding(K, E, M);
-  let e = extension_path_iso(K, E, E, p);
-  let d = extension_path_iso(K, E, E, q);
-  let eq =
+  let M := fixed_intermediate_field(K, E, H);
+  let R := intermediate_as_field(K, E, M);
+  let F := extension_field(K, E);
+  let i := intermediate_ambient_embedding(K, E, M);
+  let e := extension_path_iso(K, E, E, p);
+  let d := extension_path_iso(K, E, E, q);
+  let eq :=
     galois_field_embedding_injective(
       K, E, e, d,
       cong((fun (v : EmbeddingsOver(R, F, i, F, i)) => embedding_over(R, F, i, F, i, v)), same)
@@ -214,16 +214,16 @@ def fixed_subgroup_distinct_embeddings(
       ), n
     )
   ) {
-  let G = GaloisGroup(K, E);
-  let A = SubgroupCarrier(G, H);
-  let M = fixed_intermediate_field(K, E, H);
-  let R = intermediate_as_field(K, E, M);
-  let F = extension_field(K, E);
-  let i = intermediate_ambient_embedding(K, E, M);
-  let B = EmbeddingsOver(R, F, i, F, i);
+  let G := GaloisGroup(K, E);
+  let A := SubgroupCarrier(G, H);
+  let M := fixed_intermediate_field(K, E, H);
+  let R := intermediate_as_field(K, E, M);
+  let F := extension_field(K, E);
+  let i := intermediate_ambient_embedding(K, E, M);
+  let B := EmbeddingsOver(R, F, i, F, i);
   have make : Bijection(Fin(n), A) -> DistinctFamily(B, n) {
     intro enumeration;
-    let f =
+    let f :=
       fun (index : Fin(n)) => fixed_subgroup_embedding(
         K, E, H, forward(Fin(n), A, enumeration, index)
       );

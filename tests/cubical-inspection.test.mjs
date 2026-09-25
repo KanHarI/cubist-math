@@ -118,7 +118,7 @@ test("path notation and raw syntax display stay bounded on shared terms", () => 
 
 test("axiom labels and derived cubical helpers remain inspectable", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check("def Mere(A : U1) = Truncate(U1, A); def refl_nat(n : Nat) : n = n { exact refl(n); }", "sample");
+  const result = await program.check("def Mere(A : U1) := Truncate(U1, A); def refl_nat(n : Nat) : n = n { exact refl(n); }", "sample");
   assert.equal(result.complete, true);
   const view = program.inspect("sample__Mere");
   const tree = cubicalMathTree(view.folded.expression, view.symbols);
@@ -131,7 +131,7 @@ test("axiom labels and derived cubical helpers remain inspectable", async t => {
 
 test("a let alias preserves the original local's name and does not leak to later declarations", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const source = "def zero = 0; def aliases(n : Nat) : n = n { let m = n; exact refl(n); } def after = zero;";
+  const source = "def zero := 0; def aliases(n : Nat) : n = n { let m := n; exact refl(n); } def after := zero;";
   const result = await program.check(source, "aliases");
   assert.equal(result.complete, true);
   const n = result.links.filter(link => link.name === "n").at(-1);

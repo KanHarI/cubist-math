@@ -19,12 +19,12 @@ def field_embedding_lift_preserves(
     af_carrier(K), SubfieldCarrier(L, S), field_embedding_lift(K, L, e, S, lands), af_operations(K),
     subfield_carrier_ops(L, S)
   ) {
-  let A = af_carrier(K);
-  let B = SubfieldCarrier(L, S);
-  let opsA = af_operations(K);
-  let opsB = subfield_carrier_ops(L, S);
-  let lift = field_embedding_lift(K, L, e, S, lands);
-  obtain (p0, p1, pn, pa, pm) = field_embedding_preserves(K, L, e);
+  let A := af_carrier(K);
+  let B := SubfieldCarrier(L, S);
+  let opsA := af_operations(K);
+  let opsB := subfield_carrier_ops(L, S);
+  let lift := field_embedding_lift(K, L, e, S, lands);
+  obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
     subfield_value_ext(L, S, lift(af_zero(A, opsA)), af_zero(B, opsB), p0),
     subfield_value_ext(L, S, lift(af_one(A, opsA)), af_one(B, opsB), p1),

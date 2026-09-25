@@ -3,12 +3,12 @@ import sample_magnitude;
 
 def parameter_real_increment(
   C F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a b tag : C
-) =
+) :=
   coordinate_difference(F, addF, negF, complex_real(F, curve(a)), complex_real(F, curve(b)));
 
 def parameter_imag_increment(
   C F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a b tag : C
-) =
+) :=
   coordinate_difference(F, addF, negF, complex_imag(F, curve(a)), complex_imag(F, curve(b)));
 
 // Repackage separately proved coordinate bounds for the contour estimate.

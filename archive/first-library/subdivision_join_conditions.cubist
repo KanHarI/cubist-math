@@ -29,23 +29,23 @@ def subdivision_tagged_join_step(
     join_tags(C, succ(n), tags, m, rightTags),
     join_subdivision_families(C, succ(n), vertices, pieces, m, rightVertices, rightPieces, same)
   ) {
-  let a = field_fst(C, SampleVertices(C, n), vertices);
-  let tail = field_snd(C, SampleVertices(C, n), vertices);
-  let b = sample_first(C, n, tail);
-  let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  let joined = join_vertices(C, n, tail, m, rightVertices);
-  let joinedFirst = sample_first(C, n + m, joined);
-  let firstPath = sym(join_vertices_first(C, n, tail, m, rightVertices, same));
-  let tag = field_fst(C, SampleTags(C, n), tags);
-  let tailTags = field_snd(C, SampleTags(C, n), tags);
-  let joinedTags = join_tags(C, n, tailTags, m, rightTags);
-  let joinedPieces =
+  let a := field_fst(C, SampleVertices(C, n), vertices);
+  let tail := field_snd(C, SampleVertices(C, n), vertices);
+  let b := sample_first(C, n, tail);
+  let headPiece := field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let tailPieces := field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let joined := join_vertices(C, n, tail, m, rightVertices);
+  let joinedFirst := sample_first(C, n + m, joined);
+  let firstPath := sym(join_vertices_first(C, n, tail, m, rightVertices, same));
+  let tag := field_fst(C, SampleTags(C, n), tags);
+  let tailTags := field_snd(C, SampleTags(C, n), tags);
+  let joinedTags := join_tags(C, n, tailTags, m, rightTags);
+  let joinedPieces :=
     join_subdivision_families(C, n, tail, tailPieces, m, rightVertices, rightPieces, same);
-  let moved = subdivision_move_end(C, a, b, joinedFirst, firstPath, headPiece);
+  let moved := subdivision_move_end(C, a, b, joinedFirst, firstPath, headPiece);
   have data : condition(a, b, tag, headPiece)
   and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) := valid;
-  obtain (headValid, tailValid) = data;
+  obtain (headValid, tailValid) := data;
   exact typed(
     (
       condition(a, joinedFirst, tag, moved)

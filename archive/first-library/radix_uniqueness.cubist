@@ -10,7 +10,7 @@ def radix_nat_no_smaller_self(n : Nat) : (succ(n) <= n) -> Void {
 }
 
 def radix_nat_small_not_large(r d e : Nat, small : succ(d) <= r, same : d = r + e) : Void {
-  let large =
+  let large :=
     along((fun (v : Nat) => r <= v)) by trans(nat_add_comm(e, r), sym(same)) from nat_le_add(e, r);
   exact radix_nat_no_smaller_self(d, nat_le_trans(succ(d), r, d, small, large));
 }
@@ -92,7 +92,7 @@ def radix_digit_bound(n : Nat) : forall d : RadixDigit(n), succ(radix_digit_valu
 
 // Finite digits are distinguished by their values. Unit branches still use
 // their actual equality proofs, rather than treating all terms as definitionally equal.
-def RadixDigitInjective(n : Nat) =
+def RadixDigitInjective(n : Nat) :=
   forall d : RadixDigit(n), forall e : RadixDigit(n),
   (radix_digit_value(n, d) = radix_digit_value(n, e)) -> (d = e);
 

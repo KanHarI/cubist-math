@@ -20,8 +20,8 @@ def contour_tag_change_close(
     F, addF, lt, contour_sum(F, zero, addF, mulF, negF, f, n, vertices, newTags),
     contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags), epsilon
   ) {
-  let error = contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags);
-  let bound =
+  let error := contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags);
+  let bound :=
     contour_tag_error_length_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, weight, delta, length,
       nonnegativeDelta, n, vertices, oldTags, newTags, errors, increments, variation
@@ -120,7 +120,7 @@ def contour_tag_errors_from_vanishing_values(
       )
     ), zero
   ) {
-  let scaled =
+  let scaled :=
     field_nonnegative_scale_zero_converges(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
       nonnegativeLength, delta, vanishes

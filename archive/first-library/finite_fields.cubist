@@ -3,11 +3,11 @@ import field_extensions;
 // F2 and F4 are constructed by finite tables. F4 represents F2[t]/(t^2+t+1):
 // the four entries are 0, 1, alpha, alpha+1. Every algebraic law below is
 // checked by elimination of the finite carrier and computation in each case.
-def F2Carrier = Fin(2);
+def F2Carrier := Fin(2);
 
-def f2_0 = typed((Unit or Fin(1)), left(tt));
+def f2_0 := typed((Unit or Fin(1)), left(tt));
 
-def f2_1 = typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt))));
+def f2_1 := typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt))));
 
 def f2_induction(C : F2Carrier -> U0, c0 : C(f2_0), c1 : C(f2_1), x : F2Carrier) : C(x) {
   exact match typed(Unit or Fin(1), x) as point0 return C(point0) {
@@ -26,21 +26,21 @@ def f2_induction(C : F2Carrier -> U0, c0 : C(f2_0), c1 : C(f2_1), x : F2Carrier)
   };
 }
 
-def f2_add(x y : F2Carrier) =
+def f2_add(x y : F2Carrier) :=
   f2_induction(
     (fun (x : F2Carrier) => F2Carrier),
     f2_induction((fun (y : F2Carrier) => F2Carrier), f2_0, f2_1, y),
     f2_induction((fun (y : F2Carrier) => F2Carrier), f2_1, f2_0, y), x
   );
 
-def f2_mul(x y : F2Carrier) =
+def f2_mul(x y : F2Carrier) :=
   f2_induction(
     (fun (x : F2Carrier) => F2Carrier),
     f2_induction((fun (y : F2Carrier) => F2Carrier), f2_0, f2_0, y),
     f2_induction((fun (y : F2Carrier) => F2Carrier), f2_0, f2_1, y), x
   );
 
-def f2_ops = field_ops(F2Carrier, f2_0, f2_1, (fun (x : F2Carrier) => x), f2_add, f2_mul);
+def f2_ops := field_ops(F2Carrier, f2_0, f2_1, (fun (x : F2Carrier) => x), f2_add, f2_mul);
 
 def f2_add_assoc(x y z : F2Carrier) : f2_add(f2_add(x, y), z) = f2_add(x, f2_add(y, z)) {
   exact f2_induction(
@@ -187,10 +187,10 @@ def f2_distribute(x y z : F2Carrier) : f2_mul(x, f2_add(y, z)) = f2_add(f2_mul(x
   );
 }
 
-def f2_nontrivial(p : f2_1 = f2_0) =
+def f2_nontrivial(p : f2_1 = f2_0) :=
   sum_disjoint(Fin(1), tt, typed((Unit or Fin(0)), left(tt)), sym(p));
 
-def f2_inverses(x : F2Carrier) =
+def f2_inverses(x : F2Carrier) :=
   f2_induction(
     (
       fun (x : F2Carrier) => FieldNonzero(F2Carrier, f2_ops, x) -> exists y : F2Carrier,
@@ -217,18 +217,18 @@ def f2_laws : AlgebraicFieldLaws(F2Carrier, f2_ops) {
   );
 }
 
-def F2 = algebraic_field(F2Carrier, f2_ops, fin_is_set(2), f2_laws);
+def F2 := algebraic_field(F2Carrier, f2_ops, fin_is_set(2), f2_laws);
 
-def F4Carrier = Fin(4);
+def F4Carrier := Fin(4);
 
-def f4_0 = typed((Unit or Fin(3)), left(tt));
+def f4_0 := typed((Unit or Fin(3)), left(tt));
 
-def f4_1 = typed((Unit or Fin(3)), right(typed((Unit or Fin(2)), left(tt))));
+def f4_1 := typed((Unit or Fin(3)), right(typed((Unit or Fin(2)), left(tt))));
 
-def f4_2 =
+def f4_2 :=
   typed((Unit or Fin(3)), right(typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt))))));
 
-def f4_3 =
+def f4_3 :=
   typed(
     (Unit or Fin(3)),
     right(
@@ -304,7 +304,7 @@ def f4_induction(
   };
 }
 
-def f4_add(x y : F4Carrier) =
+def f4_add(x y : F4Carrier) :=
   f4_induction(
     (fun (x : F4Carrier) => F4Carrier),
     f4_induction((fun (y : F4Carrier) => F4Carrier), f4_0, f4_1, f4_2, f4_3, y),
@@ -313,7 +313,7 @@ def f4_add(x y : F4Carrier) =
     f4_induction((fun (y : F4Carrier) => F4Carrier), f4_3, f4_2, f4_1, f4_0, y), x
   );
 
-def f4_mul(x y : F4Carrier) =
+def f4_mul(x y : F4Carrier) :=
   f4_induction(
     (fun (x : F4Carrier) => F4Carrier),
     f4_induction((fun (y : F4Carrier) => F4Carrier), f4_0, f4_0, f4_0, f4_0, y),
@@ -322,7 +322,7 @@ def f4_mul(x y : F4Carrier) =
     f4_induction((fun (y : F4Carrier) => F4Carrier), f4_0, f4_3, f4_1, f4_2, y), x
   );
 
-def f4_ops = field_ops(F4Carrier, f4_0, f4_1, (fun (x : F4Carrier) => x), f4_add, f4_mul);
+def f4_ops := field_ops(F4Carrier, f4_0, f4_1, (fun (x : F4Carrier) => x), f4_add, f4_mul);
 
 def f4_add_assoc(x y z : F4Carrier) : f4_add(f4_add(x, y), z) = f4_add(x, f4_add(y, z)) {
   exact f4_induction(
@@ -731,10 +731,10 @@ def f4_distribute(x y z : F4Carrier) : f4_mul(x, f4_add(y, z)) = f4_add(f4_mul(x
   );
 }
 
-def f4_nontrivial(p : f4_1 = f4_0) =
+def f4_nontrivial(p : f4_1 = f4_0) :=
   sum_disjoint(Fin(3), tt, typed((Unit or Fin(2)), left(tt)), sym(p));
 
-def f4_inverses(x : F4Carrier) =
+def f4_inverses(x : F4Carrier) :=
   f4_induction(
     (
       fun (x : F4Carrier) => FieldNonzero(F4Carrier, f4_ops, x) -> exists y : F4Carrier,
@@ -771,4 +771,4 @@ def f4_laws : AlgebraicFieldLaws(F4Carrier, f4_ops) {
   );
 }
 
-def F4 = algebraic_field(F4Carrier, f4_ops, fin_is_set(4), f4_laws);
+def F4 := algebraic_field(F4Carrier, f4_ops, fin_is_set(4), f4_laws);

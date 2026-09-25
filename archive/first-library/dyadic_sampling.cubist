@@ -3,12 +3,12 @@ import sample_join_conditions;
 
 // Counts double while widths are repeatedly halved. Iterating on the inside
 // makes the recursive width of a half-interval exactly the next outer width.
-def dyadic_count(n : Nat) = induction n as k return Nat {
+def dyadic_count(n : Nat) := induction n as k return Nat {
     zero => 1;
     succ previous => previous + previous;
   };
 
-def dyadic_width(F : U1, half : F -> F, n : Nat) = induction n as k return (F -> F) {
+def dyadic_width(F : U1, half : F -> F, n : Nat) := induction n as k return (F -> F) {
     zero => fun (width : F) => width;
     succ previous => fun (width : F) => previous(half(width));
   };
@@ -16,7 +16,7 @@ def dyadic_width(F : U1, half : F -> F, n : Nat) = induction n as k return (F ->
 def IntervalTaggedWidth(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F,
   a b tag : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   IntervalTagWithin(F, zero, one, lt, a, b, tag)
   and FieldLe(F, lt, interval_difference(F, zero, one, addF, negF, lt)(a, b), radius);
 
@@ -24,7 +24,7 @@ def DyadicSampleLaws(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, half : F -> F,
   depth : Nat, a b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
-) =
+) :=
   (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
   and SubdivisionTaggedValid(
     FieldUnitInterval(F, zero, one, lt),
@@ -37,7 +37,7 @@ def DyadicSampleLaws(
 def DyadicIntervalSamples(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, half : F -> F,
   depth : Nat, a b : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
   DyadicSampleLaws(F, zero, one, addF, negF, lt, half, depth, a, b, piece);
 
@@ -45,7 +45,7 @@ def dyadic_samples_piece(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, half : F -> F,
   depth : Nat, a b : FieldUnitInterval(F, zero, one, lt),
   data : DyadicIntervalSamples(F, zero, one, addF, negF, lt, half, depth, a, b)
-) =
+) :=
   field_first(
     SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
     DyadicSampleLaws(F, zero, one, addF, negF, lt, half, depth, a, b), data
@@ -55,7 +55,7 @@ def dyadic_samples_laws(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, half : F -> F,
   depth : Nat, a b : FieldUnitInterval(F, zero, one, lt),
   data : DyadicIntervalSamples(F, zero, one, addF, negF, lt, half, depth, a, b)
-) =
+) :=
   field_second(
     SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
     DyadicSampleLaws(F, zero, one, addF, negF, lt, half, depth, a, b), data
@@ -131,8 +131,8 @@ def dyadic_interval_samples_zero(
   )
 ) :
   DyadicIntervalSamples(F, zero, one, addF, negF, lt, half, 0, a, b) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let radius = interval_difference(F, zero, one, addF, negF, lt)(a, b);
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let radius := interval_difference(F, zero, one, addF, negF, lt)(a, b);
   have valid : IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius, a, b, a)
   and Unit := (
     (
@@ -161,17 +161,17 @@ def dyadic_interval_samples_step(
   )
 ) :
   DyadicIntervalSamples(F, zero, one, addF, negF, lt, half, succ(depth), a, b) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let width = interval_difference(F, zero, one, addF, negF, lt);
-  let midpoint =
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let width := interval_difference(F, zero, one, addF, negF, lt);
+  let midpoint :=
     interval_midpoint_point(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
-  let leftOrdered =
+  let leftOrdered :=
     interval_midpoint_left_order(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
-  let rightOrdered =
+  let rightOrdered :=
     interval_midpoint_right_order(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
@@ -187,24 +187,25 @@ def dyadic_interval_samples_step(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     )
   );
-  let leftData = previous(a, midpoint, leftOrdered);
-  let rightData = previous(midpoint, b, rightOrdered);
-  let left = dyadic_samples_piece(F, zero, one, addF, negF, lt, half, depth, a, midpoint, leftData);
-  let right =
+  let leftData := previous(a, midpoint, leftOrdered);
+  let rightData := previous(midpoint, b, rightOrdered);
+  let left :=
+    dyadic_samples_piece(F, zero, one, addF, negF, lt, half, depth, a, midpoint, leftData);
+  let right :=
     dyadic_samples_piece(F, zero, one, addF, negF, lt, half, depth, midpoint, b, rightData);
-  let leftCount =
+  let leftCount :=
     dyadic_samples_count(F, zero, one, addF, negF, lt, half, depth, a, midpoint, leftData);
-  let rightCount =
+  let rightCount :=
     dyadic_samples_count(F, zero, one, addF, negF, lt, half, depth, midpoint, b, rightData);
-  let leftValid =
+  let leftValid :=
     dyadic_samples_valid(F, zero, one, addF, negF, lt, half, depth, a, midpoint, leftData);
-  let rightValid =
+  let rightValid :=
     dyadic_samples_valid(F, zero, one, addF, negF, lt, half, depth, midpoint, b, rightData);
-  let radius = dyadic_width(F, half, succ(depth), width(a, b));
-  let condition = IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
-  let leftRadius = dyadic_width(F, half, depth, width(a, midpoint));
-  let rightRadius = dyadic_width(F, half, depth, width(midpoint, b));
-  let leftBounds =
+  let radius := dyadic_width(F, half, succ(depth), width(a, b));
+  let condition := IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
+  let leftRadius := dyadic_width(F, half, depth, width(a, midpoint));
+  let rightRadius := dyadic_width(F, half, depth, width(midpoint, b));
+  let leftBounds :=
     along(
       (
         fun (r : F) => SubdivisionTaggedValid(
@@ -212,7 +213,7 @@ def dyadic_interval_samples_step(
         )
       )
     ) by cong(dyadic_width(F, half, depth), leftWidth) from leftValid;
-  let rightBounds =
+  let rightBounds :=
     along(
       (
         fun (r : F) => SubdivisionTaggedValid(
@@ -220,11 +221,11 @@ def dyadic_interval_samples_step(
         )
       )
     ) by cong(dyadic_width(F, half, depth), rightWidth) from rightValid;
-  let valid =
+  let valid :=
     subdivision_tagged_valid_join(
       I, condition, a, midpoint, b, left, right, leftBounds, rightBounds
     );
-  let count =
+  let count :=
     trans(
       cong((fun (n : Nat) => n + subdivision_count(I, midpoint, b, right)), leftCount),
       cong((fun (n : Nat) => dyadic_count(depth) + n), rightCount)

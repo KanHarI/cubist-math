@@ -2,7 +2,7 @@ import ordered_squares;
 
 // Positive error radii can be halved constructively. The inverse of 1+1
 // exists from its positive apartness; no sign decision or choice is needed.
-def Halving(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0) =
+def Halving(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0) :=
   exists half : F -> F, (forall epsilon : F, addF(half(epsilon), half(epsilon)) = epsilon)
   and (forall epsilon : F, lt(zero, epsilon) -> lt(zero, half(epsilon)));
 
@@ -40,9 +40,9 @@ def positive_half_from_sum(
   sum : addF(half, half) = epsilon, positive : lt(zero, epsilon)
 ) :
   lt(zero, half) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) = order;
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let alternatives = splitPositive(half, half, along lt(zero) by sym(sum) from positive);
+  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let alternatives := splitPositive(half, half, along lt(zero) by sym(sum) from positive);
   exact field_exists_elim(
     (lt(zero, half) or lt(zero, half)), lt(zero, half), prop(zero, half),
     (fun (side : lt(zero, half) or lt(zero, half)) => match side return lt(zero, half) {
@@ -59,25 +59,26 @@ def ordered_field_halving(
   inverses : FieldInverses(F, zero, one, mulF, lt)
 ) :
   Halving(F, zero, addF, lt) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let two = addF(one, one);
-  let positiveTwo =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let two := addF(one, one);
+  let positiveTwo :=
     ordered_positive_plus_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, one, one, positiveOne,
       ordered_lt_implies_le(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, one, positiveOne
       )
     );
-  obtain (forward, backward) = inverses(two);
+  obtain (forward, backward) := inverses(two);
   have actualInverse : exists reciprocal : F,
   mulF(two, reciprocal) = one := forward(
     field_exists_intro(
       (lt(two, zero) or lt(zero, two)), typed((lt(two, zero) or lt(zero, two)), right(positiveTwo))
     )
   );
-  obtain (reciprocal, inverseTwo) = actualInverse;
-  let half = fun (epsilon : F) => mulF(epsilon, reciprocal);
-  let sum = half_sum_from_inverse_two(F, zero, one, addF, mulF, negF, ring, reciprocal, inverseTwo);
+  obtain (reciprocal, inverseTwo) := actualInverse;
+  let half := fun (epsilon : F) => mulF(epsilon, reciprocal);
+  let sum :=
+    half_sum_from_inverse_two(F, zero, one, addF, mulF, negF, ring, reciprocal, inverseTwo);
   exact (
     half, sum,
     (

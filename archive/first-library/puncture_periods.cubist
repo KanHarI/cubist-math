@@ -9,7 +9,7 @@ import bouquet_invariants;
 def weighted_winding_sum(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, values : Fin(n) -> G,
   p : BouquetLoops(Fin(n))
-) =
+) :=
   finite_sum(
     G, zero, addG, n,
     (
@@ -39,15 +39,15 @@ def weighted_winding_laws(
       weighted_winding_sum(n, G, zero, addG, negG, values, q)
     ) {
     intro p q;
-    let first =
+    let first :=
       fun (i : Fin(n)) => integer_multiple(
         G, zero, addG, negG, values(i), puncture_winding(n, i, p)
       );
-    let second =
+    let second :=
       fun (i : Fin(n)) => integer_multiple(
         G, zero, addG, negG, values(i), puncture_winding(n, i, q)
       );
-    let total =
+    let total :=
       fun (i : Fin(n)) => integer_multiple(
         G, zero, addG, negG, values(i), puncture_winding(n, i, trans(p, q))
       );
@@ -78,7 +78,7 @@ def weighted_winding_generator(
   weighted_winding_sum(n, G, zero, addG, negG, values, puncture_loop(n, selected)) = values(
     selected
   ) {
-  let terms =
+  let terms :=
     fun (i : Fin(n)) => integer_multiple(
       G, zero, addG, negG, values(i), puncture_winding(n, i, puncture_loop(n, selected))
     );
@@ -102,7 +102,7 @@ def additive_right_cancellation(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG)
 ) :
   RightCancellation(G, addG) {
-  obtain (assoc, comm, unit, inverseLaw) = laws;
+  obtain (assoc, comm, unit, inverseLaw) := laws;
   intro x y z same;
   exact field_add_cancel(
     G, zero, addG, negG, laws, z, x, y, trans(comm(z, x), trans(same, comm(y, z)))
@@ -140,8 +140,8 @@ def puncture_period_same_windings(
   same : (forall i : Fin(n), puncture_winding(n, i, p) = puncture_winding(n, i, q))
 ) :
   period(p) = period(q) {
-  let values = fun (i : Fin(n)) => period(puncture_loop(n, i));
-  let local = fun (i : Fin(n)) => refl(values(i));
+  let values := fun (i : Fin(n)) => period(puncture_loop(n, i));
+  let local := fun (i : Fin(n)) => refl(values(i));
   exact trans(
     puncture_period_formula(
       n, G, zero, addG, negG, setG, laws, period, periodLaws, values, local, p
@@ -176,7 +176,7 @@ def puncture_period_zero_windings(
   p : BouquetLoops(Fin(n)), noWinding : (forall i : Fin(n), puncture_winding(n, i, p) = zeroZ)
 ) :
   period(p) = zero {
-  obtain (unitLaw, appendLaw) = periodLaws;
+  obtain (unitLaw, appendLaw) := periodLaws;
   exact trans(
     puncture_period_same_windings(
       n, G, zero, addG, negG, setG, laws, period, periodLaws, p, refl(bouquet_base(Fin(n))),

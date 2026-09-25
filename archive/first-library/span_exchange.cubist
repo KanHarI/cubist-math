@@ -7,7 +7,7 @@ def subspace_neg(
   member : subspace_members(K, V, S, x)
 ) :
   subspace_members(K, V, S, vector_neg(K, V, x)) {
-  let minusOne = af_neg(af_carrier(K), af_operations(K), af_one(af_carrier(K), af_operations(K)));
+  let minusOne := af_neg(af_carrier(K), af_operations(K), af_one(af_carrier(K), af_operations(K)));
   exact along subspace_members(K, V, S) by vector_minus_one_scale(K, V, x) from subspace_scale(
     K, V, S, minusOne, x, member
   );
@@ -23,13 +23,13 @@ def subspace_solve_nonzero(
   vanishes : vector_add(K, V, vector_scale(K, V, a, x), y) = vector_zero(K, V)
 ) :
   subspace_members(K, V, S, x) {
-  obtain (ring, nontrivial, inverses) = af_laws(K);
-  obtain (addLaws, mulLaws) = ring;
-  obtain (assoc, comm, one, distribute) = mulLaws;
-  obtain (b, inverse) = inverses(a, nonzero);
-  let leftInverse = trans(comm(b, a), inverse);
-  let G = vector_group(K, V);
-  let scaled = vector_scale(K, V, a, x);
+  obtain (ring, nontrivial, inverses) := af_laws(K);
+  obtain (addLaws, mulLaws) := ring;
+  obtain (assoc, comm, one, distribute) := mulLaws;
+  obtain (b, inverse) := inverses(a, nonzero);
+  let leftInverse := trans(comm(b, a), inverse);
+  let G := vector_group(K, V);
+  let scaled := vector_scale(K, V, a, x);
   have solve : scaled = vector_neg(K, V, y) := group_inverse_unique(
     vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), group_laws(G), y, scaled,
     vector_neg(K, V, y), vanishes, group_inverse_right(G, y)
@@ -53,8 +53,8 @@ def nonzero_coefficient_in_span(
   vanishes : linear_combination(K, V, n, v, a) = vector_zero(K, V)
 ) :
   Span(K, V, P, v(i)) {
-  let S = SpanSubspace(K, V, P);
-  let rest = linear_remainder(K, V, n, v, a, i);
+  let S := SpanSubspace(K, V, P);
+  let rest := linear_remainder(K, V, n, v, a, i);
   exact subspace_solve_nonzero(
     K, V, S, a(i), nonzero, v(i), rest,
     remainder_in_subspace(

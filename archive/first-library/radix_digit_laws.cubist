@@ -3,13 +3,13 @@ import paths;
 
 // Increment either produces the next digit or certifies that the old digit
 // was the maximum. This is constructive, with no decidability axiom.
-def RadixDigitStepLaw(n : Nat, d : RadixDigit(n), result : RadixDigit(n) or Unit) =
+def RadixDigitStepLaw(n : Nat, d : RadixDigit(n), result : RadixDigit(n) or Unit) :=
   match result return U0 {
     left next => radix_digit_value(n, next) = succ(radix_digit_value(n, d));
     right carry => succ(radix_digit_value(n, d)) = n;
   };
 
-def radix_digit_lift_step(n : Nat, result : RadixDigit(n) or Unit) =
+def radix_digit_lift_step(n : Nat, result : RadixDigit(n) or Unit) :=
   match result return (RadixDigit(succ(n)) or Unit) {
     left next => left(radix_digit_weaken(n, next));
     right carry => left(radix_digit_top(n));

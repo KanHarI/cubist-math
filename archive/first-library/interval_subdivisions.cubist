@@ -7,7 +7,7 @@ def IntervalSubdivisionFine(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
   a b tag : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
-) =
+) :=
   typed(
     U1, IntervalTagWithin(F, zero, one, lt, a, b, tag)
     and lt(interval_difference(F, zero, one, addF, negF, lt, a, b), mesh)
@@ -21,7 +21,7 @@ def IntervalSubdivisionFine(
 def interval_refinement_radius(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, delta length : F,
   a b tag : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   mulF(delta, interval_weight(F, zero, one, addF, mulF, negF, lt, length, a, b, tag));
 
 // The sum of all coarse radii is delta times outer width times length,
@@ -45,9 +45,9 @@ def interval_refinement_radius_sum(
       ), length
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let weight = interval_weight(F, zero, one, addF, mulF, negF, lt, length);
-  let mapping = mulF(delta);
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let weight := interval_weight(F, zero, one, addF, mulF, negF, lt, length);
+  let mapping := mulF(delta);
   exact trans(
     sym(
       sample_sum_map(

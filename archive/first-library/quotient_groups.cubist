@@ -6,7 +6,7 @@ def left_cosets_are_set(G : Group, S : Subgroup(G)) : FieldSet(LeftCosets(G, S))
   exact quotient_is_set(group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S));
 }
 
-def quotient_product_on_representatives(G : Group, S : Subgroup(G), x y : group_carrier(G)) =
+def quotient_product_on_representatives(G : Group, S : Subgroup(G), x y : group_carrier(G)) :=
   left_coset(G, S, group_multiply(G, x, y));
 
 def quotient_product_respects(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
@@ -21,7 +21,7 @@ def quotient_product_respects(G : Group, S : Subgroup(G), normal : IsNormal(G, S
   );
 }
 
-def quotient_multiply(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) =
+def quotient_multiply(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :=
   quotient_binary_rec(
     group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), LeftCosets(G, S),
     left_cosets_are_set(G, S), quotient_product_on_representatives(G, S),
@@ -43,7 +43,7 @@ def quotient_multiply_beta(
   };
 }
 
-def quotient_inverse_on_representatives(G : Group, S : Subgroup(G), x : group_carrier(G)) =
+def quotient_inverse_on_representatives(G : Group, S : Subgroup(G), x : group_carrier(G)) :=
   left_coset(G, S, group_inverse(G, x));
 
 def quotient_inverse_respects(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
@@ -57,7 +57,7 @@ def quotient_inverse_respects(G : Group, S : Subgroup(G), normal : IsNormal(G, S
   );
 }
 
-def quotient_inverse(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) =
+def quotient_inverse(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :=
   quotient_rec(
     group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), LeftCosets(G, S),
     left_cosets_are_set(G, S), quotient_inverse_on_representatives(G, S),
@@ -85,9 +85,9 @@ def quotient_associative_on_classes(
     G, S, normal, left_coset(G, S, x),
     quotient_multiply(G, S, normal, left_coset(G, S, y), left_coset(G, S, z))
   ) {
-  let m = quotient_multiply(G, S, normal);
-  let c = left_coset(G, S);
-  let product = group_multiply(G);
+  let m := quotient_multiply(G, S, normal);
+  let c := left_coset(G, S);
+  let product := group_multiply(G);
   exact with unfolding [left_coset] {
     trans(
       cong((fun (q : LeftCosets(G, S)) => m(q, c(z))), quotient_multiply_beta(G, S, normal, x, y)),
@@ -107,8 +107,8 @@ def quotient_associative_on_classes(
 
 def quotient_associative(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
   GroupAssociativeAt(U1, LeftCosets(G, S), quotient_multiply(G, S, normal)) {
-  let Q = LeftCosets(G, S);
-  let m = quotient_multiply(G, S, normal);
+  let Q := LeftCosets(G, S);
+  let m := quotient_multiply(G, S, normal);
   exact with unfolding [left_coset] {
     quotient_induction_prop3(
       group_carrier(G), SameLeftCoset(G, S), (fun (q r s : Q) => m(m(q, r), s) = m(q, m(r, s))),
@@ -122,10 +122,10 @@ def quotient_unit_left(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
   GroupLeftUnitAt(
     U1, LeftCosets(G, S), left_coset(G, S, group_unit(G)), quotient_multiply(G, S, normal)
   ) {
-  let Q = LeftCosets(G, S);
-  let m = quotient_multiply(G, S, normal);
-  let c = left_coset(G, S);
-  let one = group_unit(G);
+  let Q := LeftCosets(G, S);
+  let m := quotient_multiply(G, S, normal);
+  let c := left_coset(G, S);
+  let one := group_unit(G);
   exact with unfolding [left_coset] {
     quotient_induction_prop(
       group_carrier(G), SameLeftCoset(G, S), (fun (q : Q) => m(c(one), q) = q),
@@ -143,10 +143,10 @@ def quotient_unit_right(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
   GroupRightUnitAt(
     U1, LeftCosets(G, S), left_coset(G, S, group_unit(G)), quotient_multiply(G, S, normal)
   ) {
-  let Q = LeftCosets(G, S);
-  let m = quotient_multiply(G, S, normal);
-  let c = left_coset(G, S);
-  let one = group_unit(G);
+  let Q := LeftCosets(G, S);
+  let m := quotient_multiply(G, S, normal);
+  let c := left_coset(G, S);
+  let one := group_unit(G);
   exact with unfolding [left_coset] {
     quotient_induction_prop(
       group_carrier(G), SameLeftCoset(G, S), (fun (q : Q) => m(q, c(one)) = q),
@@ -164,10 +164,10 @@ def quotient_inverse_left(G : Group, S : Subgroup(G), normal : IsNormal(G, S), q
   quotient_multiply(G, S, normal, quotient_inverse(G, S, normal, q), q) = left_coset(
     G, S, group_unit(G)
   ) {
-  let Q = LeftCosets(G, S);
-  let m = quotient_multiply(G, S, normal);
-  let inv = quotient_inverse(G, S, normal);
-  let c = left_coset(G, S);
+  let Q := LeftCosets(G, S);
+  let m := quotient_multiply(G, S, normal);
+  let inv := quotient_inverse(G, S, normal);
+  let c := left_coset(G, S);
   exact with unfolding [left_coset] {
     quotient_induction_prop(
       group_carrier(G), SameLeftCoset(G, S), (fun (q : Q) => m(inv(q), q) = c(group_unit(G))),
@@ -191,10 +191,10 @@ def quotient_inverse_right(
   quotient_multiply(G, S, normal, q, quotient_inverse(G, S, normal, q)) = left_coset(
     G, S, group_unit(G)
   ) {
-  let Q = LeftCosets(G, S);
-  let m = quotient_multiply(G, S, normal);
-  let inv = quotient_inverse(G, S, normal);
-  let c = left_coset(G, S);
+  let Q := LeftCosets(G, S);
+  let m := quotient_multiply(G, S, normal);
+  let inv := quotient_inverse(G, S, normal);
+  let c := left_coset(G, S);
   exact with unfolding [left_coset] {
     quotient_induction_prop(
       group_carrier(G), SameLeftCoset(G, S), (fun (q : Q) => m(q, inv(q)) = c(group_unit(G))),

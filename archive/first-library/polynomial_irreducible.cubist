@@ -2,7 +2,7 @@ import polynomial_bezout;
 
 // The usual factorization definition, with existence and disjunction truncated.
 // Being nonzero and a nonunit excludes zero and the invertible constants.
-def PolynomialIrreducible(K : AlgebraicField, p : Polynomial(K)) =
+def PolynomialIrreducible(K : AlgebraicField, p : Polynomial(K)) :=
   PolynomialNonzero(K, p) and (PolynomialUnit(K, p) -> Void)
   and (
     forall a : Polynomial(K), forall b : Polynomial(K), p = polynomial_mul(K, a, b)
@@ -13,7 +13,7 @@ def polynomial_irreducible_nonzero(
   K : AlgebraicField, p : Polynomial(K), irreducible : PolynomialIrreducible(K, p)
 ) :
   PolynomialNonzero(K, p) {
-  obtain (nz, nu, factors) = irreducible;
+  obtain (nz, nu, factors) := irreducible;
   exact nz;
 }
 
@@ -21,7 +21,7 @@ def polynomial_irreducible_nonunit(
   K : AlgebraicField, p : Polynomial(K), irreducible : PolynomialIrreducible(K, p)
 ) :
   PolynomialUnit(K, p) -> Void {
-  obtain (nz, nu, factors) = irreducible;
+  obtain (nz, nu, factors) := irreducible;
   exact nu;
 }
 
@@ -30,7 +30,7 @@ def polynomial_irreducible_factors(
 ) :
   forall a : Polynomial(K), forall b : Polynomial(K), p = polynomial_mul(K, a, b)
   -> Mere(PolynomialUnit(K, a) or PolynomialUnit(K, b)) {
-  obtain (nz, nu, factors) = irreducible;
+  obtain (nz, nu, factors) := irreducible;
   exact factors;
 }
 
@@ -49,15 +49,15 @@ def polynomial_divides_trans(
   bc : PolynomialDivides(K, b, c)
 ) :
   PolynomialDivides(K, a, c) {
-  let Result = PolynomialDivides(K, a, c);
+  let Result := PolynomialDivides(K, a, c);
   have first : (exists u : Polynomial(K), b = polynomial_mul(K, a, u)) -> Result {
     intro witness;
-    obtain (u, eu) = witness;
+    obtain (u, eu) := witness;
     have second :
       (exists v : Polynomial(K), c = polynomial_mul(K, b, v))
       -> (exists w : Polynomial(K), c = polynomial_mul(K, a, w)) {
       intro other;
-      obtain (v, ev) = other;
+      obtain (v, ev) := other;
       exact (
         polynomial_mul(K, u, v),
         trans(
@@ -89,7 +89,7 @@ def polynomial_unit_factor_reverse(
     (exists u : Polynomial(K), polynomial_mul(K, b, u) = polynomial_one(K))
     -> (exists u : Polynomial(K), a = polynomial_mul(K, p, u)) {
     intro witness;
-    obtain (u, inverse) = witness;
+    obtain (u, inverse) := witness;
     exact (
       u,
       sym(
@@ -118,7 +118,7 @@ def irreducible_coprime(
   intro g gp gq;
   have useFactor : (exists h : Polynomial(K), p = polynomial_mul(K, g, h)) -> PolynomialUnit(K, g) {
     intro witness;
-    obtain (h, equation) = witness;
+    obtain (h, equation) := witness;
     have alternative : (PolynomialUnit(K, g) or PolynomialUnit(K, h)) -> PolynomialUnit(K, g) {
       intro which;
       exact match which as z return PolynomialUnit(K, g) {

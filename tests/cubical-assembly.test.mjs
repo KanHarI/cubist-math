@@ -7,9 +7,9 @@ import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 const module = await createCubical();
 async function fixture(t) {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check(`def N = Nat; def id(n : Nat) = n;
-    def twice = id(id(0)); def annotated = typed(N, 0);
-    def along(A : U0, x : A, y : A, p : x = y) =
+  const result = await program.check(`def N := Nat; def id(n : Nat) := n;
+    def twice := id(id(0)); def annotated := typed(N, 0);
+    def along(A : U0, x : A, y : A, p : x = y) :=
       path(fun (i : Interval) => A, fun (i : Interval) => at(p, i));`, "assembly");
   assert.equal(result.complete, true);
   return program;
@@ -77,8 +77,8 @@ test("open interval contexts and full 64-bit formula masks survive assembly insp
 
 test("universe axiom specialization records provenance without inventing a kernel application", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check(`def choice0 = Choice(U0); def choice1 = Choice(U1);
-    def truncate1 = Truncate(U1); def identity(n : Nat) = n;`, "specialization");
+  const result = await program.check(`def choice0 := Choice(U0); def choice1 := Choice(U1);
+    def truncate1 := Truncate(U1); def identity(n : Nat) := n;`, "specialization");
   assert.equal(result.complete, true);
   for (const level of [0, 1]) {
     const binding = `__assumption_Choice_U${level}`;

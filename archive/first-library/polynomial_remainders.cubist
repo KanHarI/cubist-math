@@ -1,26 +1,26 @@
 import polynomial_irreducible;
 
 // A nonzero modulus with its degree certified once for all reductions.
-def PolynomialModulus(K : AlgebraicField) =
+def PolynomialModulus(K : AlgebraicField) :=
   exists p : Polynomial(K), exists d : Nat, polynomial_cutoff(K, p) = succ(d);
 
-def modulus_polynomial(K : AlgebraicField, M : PolynomialModulus(K)) =
+def modulus_polynomial(K : AlgebraicField, M : PolynomialModulus(K)) :=
   sigma_first(
     Polynomial(K), (fun (p : Polynomial(K)) => exists d : Nat, polynomial_cutoff(K, p) = succ(d)), M
   );
 
-def modulus_degree_data(K : AlgebraicField, M : PolynomialModulus(K)) =
+def modulus_degree_data(K : AlgebraicField, M : PolynomialModulus(K)) :=
   sigma_second(
     Polynomial(K), (fun (p : Polynomial(K)) => exists d : Nat, polynomial_cutoff(K, p) = succ(d)), M
   );
 
-def modulus_degree(K : AlgebraicField, M : PolynomialModulus(K)) =
+def modulus_degree(K : AlgebraicField, M : PolynomialModulus(K)) :=
   sigma_first(
     Nat, (fun (d : Nat) => polynomial_cutoff(K, modulus_polynomial(K, M)) = succ(d)),
     modulus_degree_data(K, M)
   );
 
-def modulus_degree_equality(K : AlgebraicField, M : PolynomialModulus(K)) =
+def modulus_degree_equality(K : AlgebraicField, M : PolynomialModulus(K)) :=
   sigma_second(
     Nat, (fun (d : Nat) => polynomial_cutoff(K, modulus_polynomial(K, M)) = succ(d)),
     modulus_degree_data(K, M)
@@ -35,13 +35,13 @@ def polynomial_reduction_data(K : AlgebraicField, M : PolynomialModulus(K), p : 
 
 opaque def polynomial_quotient(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
   Polynomial(K) {
-  obtain (q, r, equation, support) = polynomial_reduction_data(K, M, p);
+  obtain (q, r, equation, support) := polynomial_reduction_data(K, M, p);
   exact q;
 }
 
 opaque def polynomial_remainder(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
   Polynomial(K) {
-  obtain (q, r, equation, support) = polynomial_reduction_data(K, M, p);
+  obtain (q, r, equation, support) := polynomial_reduction_data(K, M, p);
   exact r;
 }
 
@@ -50,13 +50,13 @@ def polynomial_remainder_equation(K : AlgebraicField, M : PolynomialModulus(K), 
     K, polynomial_mul(K, polynomial_quotient(K, M, p), modulus_polynomial(K, M)),
     polynomial_remainder(K, M, p)
   ) {
-  obtain (q, r, equation, support) = polynomial_reduction_data(K, M, p);
+  obtain (q, r, equation, support) := polynomial_reduction_data(K, M, p);
   exact equation;
 }
 
 def polynomial_remainder_support(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
   SeriesSupport(K, polynomial_coefficients(K, polynomial_remainder(K, M, p)), modulus_degree(K, M)) {
-  obtain (q, r, equation, support) = polynomial_reduction_data(K, M, p);
+  obtain (q, r, equation, support) := polynomial_reduction_data(K, M, p);
   exact support;
 }
 
@@ -66,7 +66,7 @@ def polynomial_remainder_unique(
   support : SeriesSupport(K, polynomial_coefficients(K, r), modulus_degree(K, M))
 ) :
   polynomial_remainder(K, M, p) = r {
-  obtain (sameQ, sameR) = polynomial_division_unique(
+  obtain (sameQ, sameR) := polynomial_division_unique(
     K, p, modulus_polynomial(K, M), modulus_degree(K, M), modulus_degree_equality(K, M),
     polynomial_quotient(K, M, p), polynomial_remainder(K, M, p),
     polynomial_remainder_equation(K, M, p), polynomial_remainder_support(K, M, p), q, r, equation,
@@ -93,7 +93,7 @@ def polynomial_remainder_small(
   );
 }
 
-def polynomial_remainder_zero(K : AlgebraicField, M : PolynomialModulus(K)) =
+def polynomial_remainder_zero(K : AlgebraicField, M : PolynomialModulus(K)) :=
   polynomial_remainder_small(
     K, M, polynomial_zero(K),
     (fun (n : Nat, above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
@@ -103,11 +103,11 @@ def polynomial_remainder_add(K : AlgebraicField, M : PolynomialModulus(K), p q :
   polynomial_remainder(K, M, polynomial_add(K, p, q)) = polynomial_add(
     K, polynomial_remainder(K, M, p), polynomial_remainder(K, M, q)
   ) {
-  let D = modulus_polynomial(K, M);
-  let qp = polynomial_quotient(K, M, p);
-  let qq = polynomial_quotient(K, M, q);
-  let rp = polynomial_remainder(K, M, p);
-  let rq = polynomial_remainder(K, M, q);
+  let D := modulus_polynomial(K, M);
+  let qp := polynomial_quotient(K, M, p);
+  let qq := polynomial_quotient(K, M, q);
+  let rp := polynomial_remainder(K, M, p);
+  let rq := polynomial_remainder(K, M, q);
   have equation : polynomial_add(K, p, q) = polynomial_add(
     K, polynomial_mul(K, polynomial_add(K, qp, qq), D), polynomial_add(K, rp, rq)
   ) := trans(
@@ -150,12 +150,12 @@ def polynomial_remainder_mul_left(K : AlgebraicField, M : PolynomialModulus(K), 
   polynomial_remainder(K, M, polynomial_mul(K, p, q)) = polynomial_remainder(
     K, M, polynomial_mul(K, polynomial_remainder(K, M, p), q)
   ) {
-  let D = modulus_polynomial(K, M);
-  let qp = polynomial_quotient(K, M, p);
-  let rp = polynomial_remainder(K, M, p);
-  let t = polynomial_mul(K, qp, q);
-  let r = polynomial_mul(K, rp, q);
-  let reduce = polynomial_remainder(K, M);
+  let D := modulus_polynomial(K, M);
+  let qp := polynomial_quotient(K, M, p);
+  let rp := polynomial_remainder(K, M, p);
+  let t := polynomial_mul(K, qp, q);
+  let r := polynomial_mul(K, rp, q);
+  let reduce := polynomial_remainder(K, M);
   have rearrange : polynomial_mul(K, polynomial_mul(K, qp, D), q) = polynomial_mul(K, t, D) := with unfolding [
 
   ] {
@@ -215,8 +215,8 @@ def polynomial_remainder_neg(K : AlgebraicField, M : PolynomialModulus(K), p : P
   polynomial_remainder(K, M, polynomial_neg(K, p)) = polynomial_neg(
     K, polynomial_remainder(K, M, p)
   ) {
-  let r = polynomial_remainder(K, M, p);
-  let rn = polynomial_remainder(K, M, polynomial_neg(K, p));
+  let r := polynomial_remainder(K, M, p);
+  let rn := polynomial_remainder(K, M, polynomial_neg(K, p));
   have inverse : polynomial_add(K, rn, r) = polynomial_zero(K) := with unfolding [] {
     trans(
       sym(polynomial_remainder_add(K, M, polynomial_neg(K, p), p)),
@@ -239,8 +239,8 @@ def polynomial_remainder_zero_divides(
   zero : polynomial_remainder(K, M, p) = polynomial_zero(K)
 ) :
   PolynomialDivides(K, modulus_polynomial(K, M), p) {
-  let q = polynomial_quotient(K, M, p);
-  let D = modulus_polynomial(K, M);
+  let q := polynomial_quotient(K, M, p);
+  let D := modulus_polynomial(K, M);
   exact merely(
     (exists a : Polynomial(K), p = polynomial_mul(K, D, a)),
     typed(
@@ -266,12 +266,12 @@ def polynomial_divides_remainder_zero(
   divides : PolynomialDivides(K, modulus_polynomial(K, M), p)
 ) :
   polynomial_remainder(K, M, p) = polynomial_zero(K) {
-  let D = modulus_polynomial(K, M);
+  let D := modulus_polynomial(K, M);
   have useQuotient :
     (exists q : Polynomial(K), p = polynomial_mul(K, D, q))
     -> polynomial_remainder(K, M, p) = polynomial_zero(K) {
     intro witness;
-    obtain (q, equation) = witness;
+    obtain (q, equation) := witness;
     exact with unfolding [] {
       trans(
         cong(polynomial_remainder(K, M), trans(equation, polynomial_mul_comm(K, D, q))),

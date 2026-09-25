@@ -21,5 +21,5 @@ test("statement fragments retain explicit equality and skip comments without hid
     =[A] x { exact refl(x); }`;
   const statement = sourceStatement(source, parse(source).declarations[0]);
   assert.equal(text(statement.conclusion), "x =[A] x");
-  assert.equal(sourceStatement("def a = 0;", parse("def a = 0;").declarations[0]), null);
+  assert.equal(sourceStatement("def a := 0;", parse("def a := 0;").declarations[0]), null);
 });

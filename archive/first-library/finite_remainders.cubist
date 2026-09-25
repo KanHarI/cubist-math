@@ -3,7 +3,7 @@ import vector_subspaces;
 
 // Sum every term except the selected index. This recursion compares only
 // finite indices; it needs no decidable equality on vectors or scalars.
-def linear_remainder(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def linear_remainder(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
     (Fin(k) -> vector_carrier(K, V)) -> (Fin(k) -> af_carrier(K)) -> Fin(k) -> vector_carrier(K, V)
   ) {
@@ -26,7 +26,7 @@ def linear_remainder(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
   };
 
 // The full combination is the selected summand plus its remainder.
-def linear_combination_split(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def linear_combination_split(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
     forall i : Fin(k),
@@ -82,7 +82,7 @@ def linear_combination_split(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
   };
 
 // If all the other vectors belong to a subspace, their remainder does too.
-def remainder_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) =
+def remainder_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) :=
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
     forall i : Fin(k), (forall j : Fin(k), ((j = i) -> Void) -> subspace_members(K, V, S, v(j)))

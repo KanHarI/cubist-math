@@ -3,7 +3,7 @@ import polynomial_coordinates;
 import linear_bijections;
 import extension_degree;
 
-def residue_coordinates(K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M)) =
+def residue_coordinates(K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M)) :=
   series_coordinates(
     K, modulus_degree(K, M), polynomial_coefficients(K, residue_polynomial(K, M, r))
   );
@@ -12,9 +12,9 @@ def residue_from_coordinates(
   K : AlgebraicField, M : PolynomialModulus(K), a : Fin(modulus_degree(K, M)) -> af_carrier(K)
 ) :
   PolynomialResidue(K, M) {
-  let n = modulus_degree(K, M);
-  let f = series_from_coordinates(K, n, a);
-  let support = series_from_coordinates_support(K, n, a);
+  let n := modulus_degree(K, M);
+  let f := series_from_coordinates(K, n, a);
+  let support := series_from_coordinates_support(K, n, a);
   exact (polynomial_of_support(K, f, n, support), support);
 }
 
@@ -22,7 +22,7 @@ def residue_coordinates_left(
   K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M)
 ) :
   residue_from_coordinates(K, M, residue_coordinates(K, M, r)) = r {
-  let p = residue_polynomial(K, M, r);
+  let p := residue_polynomial(K, M, r);
   exact residue_ext(
     K, M, residue_from_coordinates(K, M, residue_coordinates(K, M, r)), r,
     polynomial_ext(
@@ -71,7 +71,7 @@ def residue_scalar_polynomial(
   residue_polynomial(K, M, residue_mul(K, M, residue_constant(K, M, a), r)) = polynomial_scale(
     K, a, residue_polynomial(K, M, r)
   ) {
-  let p = residue_polynomial(K, M, r);
+  let p := residue_polynomial(K, M, r);
   exact with unfolding [] {
     trans(
       sym(polynomial_remainder_mul_left(K, M, polynomial_constant(K, a), p)),
@@ -103,9 +103,9 @@ def residue_coordinates_scale(
   residue_coordinates(K, M, residue_mul(K, M, residue_constant(K, M, a), r)) = (
     fun (i : Fin(modulus_degree(K, M))) => field_mul(K, a, residue_coordinates(K, M, r, i))
   ) {
-  let p = residue_polynomial(K, M, r);
-  let f = polynomial_coefficients(K, p);
-  let n = modulus_degree(K, M);
+  let p := residue_polynomial(K, M, r);
+  let f := polynomial_coefficients(K, p);
+  let n := modulus_degree(K, M);
   have coefficient : polynomial_coefficients(K, polynomial_scale(K, a, p)) = series_scale(K, a, f) := FunExt(
     U0, Nat, (fun (j : Nat) => af_carrier(K)),
     polynomial_coefficients(K, polynomial_scale(K, a, p)), series_scale(K, a, f),
@@ -124,7 +124,7 @@ def residue_coordinates_scale(
 def ResidueVectorSpace(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M))
-) =
+) :=
   field_vector_space(
     K, PolynomialResidueField(K, M, irreducible), residue_embedding(K, M, irreducible)
   );
@@ -146,8 +146,8 @@ def residue_field_basis(
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M))
 ) :
   FiniteBasis(K, ResidueVectorSpace(K, M, irreducible), modulus_degree(K, M)) {
-  let V = ResidueVectorSpace(K, M, irreducible);
-  let C = CoordinateSpace(K, modulus_degree(K, M));
+  let V := ResidueVectorSpace(K, M, irreducible);
+  let C := CoordinateSpace(K, modulus_degree(K, M));
   exact linear_iso_inverse(
     K, V, C,
     linear_bijective_iso(
@@ -160,7 +160,7 @@ def residue_field_basis(
 def adjoined_extension(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M))
-) =
+) :=
   embedding_as_extension(
     K, PolynomialResidueField(K, M, irreducible), residue_embedding(K, M, irreducible)
   );
