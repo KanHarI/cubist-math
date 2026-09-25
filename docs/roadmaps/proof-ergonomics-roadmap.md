@@ -19,6 +19,9 @@ Each open item below names its new owner. This roadmap keeps:
 - computability as a checked property (milestone 8).
 
 Milestones 5–7 build on the HoTT roadmap's goal layer (A5).
+The [computation notation roadmap](computation-notation-roadmap.md) builds on
+their inference, structures and matching for monadic `do` and arrow blocks;
+it owns that planned extension and requires no new kernel rule.
 This document covers language tooling and does not resume any mathematical
 roadmap. Examples below not yet covered by the checked sample files remain
 proposals.

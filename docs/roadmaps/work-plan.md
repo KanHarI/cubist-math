@@ -5,6 +5,8 @@ Status: plan of 2026-09-25, after merging PRs #2–#4 into
 - the [kernel roadmap](cubical-kernel-roadmap.md): G0, H1–H4;
 - the [proof ergonomics roadmap](proof-ergonomics-roadmap.md): milestones 5–8;
 - the [HoTT automation roadmap](hott-automation-roadmap.md);
+- the [computation notation roadmap](computation-notation-roadmap.md), an
+  additional language track with milestones N0–N5;
 - the [reals roadmap](reals-roadmap.md);
 - the two adopted designs,
   [higher inductive-inductive types](higher-inductive-types-design.md) and
@@ -48,7 +50,7 @@ packages (HoTT A1, A2, A4, A6) continue alongside stage 2.
 | I0.4 | Remove local scratch state (done) | — | — | S |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` (done) | Ergonomics 8 | — | M |
 | D0.1 | Checked-example harness for the reference (done) | Plan | — | S |
-| D0.2 | Reference chapters for the stable language (split done; chapters 1–3 rewritten) | Plan | D0.1 | L |
+| D0.2 | Reference chapters for the stable language (split done; chapters 1–3 and 6–10 rewritten) | Plan | D0.1 | L |
 
 **I0.2 Archive the first library.** Done on 2026-09-25, working off `main`
 (I0.1 is deferred by choice).
@@ -107,24 +109,27 @@ examples run under the harness, with failures fixed or removed.
 **D0.2 Reference chapters.** The reference is one page per chapter under
 `web/reference/`, with `language.html` as the index. Anchors of the former
 single page redirect to their chapters. The split and the rewrite of chapters
-1–3 were done on 2026-09-25. Each chapter gets several checked examples per
-construct, including rejected ones:
+1–3 and 6–10 were done on 2026-09-25 (PRs #8, #9 and #11). Each chapter gets
+several checked examples per construct, including rejected ones:
 1. A first proof and files (rewritten);
 2. Terms, functions and pairs (rewritten);
 3. Proof blocks (rewritten);
 4. Universes;
 5. Natural numbers and inductive types;
-6. Equality and paths;
-7. Equational reasoning and simplification;
-8. Cubical paths, pushouts and suspensions;
-9. Conversion and opacity;
-10. Assumptions and computability;
+6. Equality and paths (rewritten);
+7. Equational reasoning and simplification (rewritten);
+8. Cubical paths, pushouts and suspensions (rewritten);
+9. Conversion and opacity (rewritten);
+10. Assumptions and computability (rewritten);
 11. Checking and inspection;
 12. Common errors.
 
 Chapters 4 and 5 describe today's syntax and are rewritten in stages 1–2.
-Chapters 6–12 carry the former page's text, with the facts found wrong while
-writing chapters 1–3 corrected, until their own rewrite. The quick reference
+Chapters 11 and 12 carry the former page's text, with the facts found wrong
+while writing the other chapters corrected, until their own rewrite. Writing
+the chapters against the checker found documented features that do not
+exist, among them user `axiom` declarations and a univalence axiom:
+function extensionality and univalence are constructions that compute. The quick reference
 in `proof.html` becomes one checked example per construct, each linking to
 its chapter. `tests/reference-structure.test.mjs` checks the navigation,
 every link and anchor, and the redirects.
@@ -307,6 +312,31 @@ modules.
 - HoTT C4 and E1, E3, E4; HoTT F1 and F2 beyond what theories and
   presentations need.
 - The RH roadmap, after stage 5.
+
+## Computation notation track
+
+The [monadic do and arrow roadmap](computation-notation-roadmap.md) adds
+explicitly scoped computation blocks. Its milestones fit alongside the
+existing stages; they add no kernel work or gates to the rebuild:
+
+- **N0, mathematical baselines:** can start with the archive and design
+  examples. Record span closure, free-algebra substitution and a basic-arrow
+  example before changing syntax.
+- **N1, checked interfaces:** after L1.1 (G0) and L2.4 (records/theories).
+  Universe-correct operation and law records are the common foundation.
+- **N2, monadic do, and N4, basic arrows:** after N1, L1.2 (goal layer) and
+  L4.1 (argument inference). The two forms can proceed independently over
+  the shared interfaces; N4 does not wait for all monad instances.
+- **N3, patterns and mathematical instances:** follows N2 and the relevant
+  matching/library work. Native truncation uses B3.1; free-algebra
+  substitution uses L2.6; rebuilt span closure uses B4.1.
+- **N5, choice and dynamic arrow application:** follows N4 with explicit
+  checked capability extensions. Probability instances wait for their
+  finite-distribution and rational arithmetic library; partiality waits
+  for H3. Neither is a prerequisite for the initial notation releases.
+
+Reference examples, rejected programs and a tactical handoff accompany each
+release. Exact syntax remains proposed until its implementation milestone.
 
 ## Documentation track, across stages
 
