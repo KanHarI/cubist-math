@@ -174,6 +174,27 @@ def double(n : Nat) := n + n;
 
 def wrong_argument := double(tt);  // Error: Type mismatch: found Unit, expected Nat.</code></pre>
             <p>The argument <code>tt</code> has type <code>Unit</code>, but <code>double</code> takes a <code>Nat</code>.</p>
+            <h3 id="tour-parameters">Several parameters</h3>
+            <p>A function can take several parameters, separated by commas, and <code>f(a, b)</code> applies it to all of them. Consecutive parameters of the same type can share it: <code>(m n : Nat)</code> means <code>(m : Nat, n : Nat)</code>. The same works in <code>fun</code>:</p>
+            <pre><code data-check="accept">import naturals;
+
+def sum(m : Nat, n : Nat) := m + n;
+
+def sum_again(m n : Nat) := m + n;
+
+def sum_fun := fun (m n : Nat) =&gt; m + n;
+
+evaluate sum(3, 4) expecting 7;
+evaluate sum_again(3, 4) expecting 7;
+evaluate sum_fun(3, 4) expecting 7;</code></pre>
+            <p>A function of two numbers has type <code>Nat -> Nat -> Nat</code>: given <code>m</code>, it returns a function that waits for <code>n</code>. So arguments can be supplied a few at a time, and <code>sum(3)</code> is the function that adds <code>3</code>:</p>
+            <pre><code data-check="accept">import naturals;
+
+def sum(m n : Nat) := m + n;
+
+def add_three := sum(3);
+
+evaluate add_three(4) expecting 7;</code></pre>
           </section>
           <section id="tour-types">
             <h2>Types are values too</h2>
