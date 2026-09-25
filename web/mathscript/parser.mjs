@@ -532,6 +532,19 @@ export function parse(source, typeOnly = false) {
       const directive={kind:"simp_set",name:set,rules,start:t.start,end};
       directives.push(directive);items.push(directive);continue;
     }
+    // `evaluate term expecting value;` is a checked computation test.
+    if (t.text === "evaluate") {
+      const value = expr();
+      take("expecting");
+      const expected = expr();
+      const end = take(";").end;
+      const directive = { kind: "evaluate", value, expected, start: t.start, end };
+      directives.push(directive); items.push(directive); continue;
+    }
+    // `computable def` asserts that the checked result uses no assumption.
+    const computable = t.text === "computable" && ["def", "opaque"].includes(peek());
+    const modifierStart = computable ? t.start : undefined;
+    if (computable) t = take();
     const opaque = t.text === "opaque";
     if (opaque) t = take("def");
     if (!["def", "axiom"].includes(t.text))
@@ -547,6 +560,7 @@ export function parse(source, typeOnly = false) {
       declarations.push({
         kind: t.text,
         opaque,
+        ...(computable ? { computable, modifierStart } : {}),
         name: n,
         value,
         valueStart: value.start,
@@ -591,6 +605,7 @@ export function parse(source, typeOnly = false) {
       declarations.push({
         kind: t.text,
         opaque,
+        ...(computable ? { computable, modifierStart } : {}),
         name: n,
         value,
         valueStart,
@@ -608,6 +623,7 @@ export function parse(source, typeOnly = false) {
     declarations.push({
       kind: t.text,
       opaque,
+      ...(computable ? { computable, modifierStart } : {}),
       name: n,
       params,
       type,

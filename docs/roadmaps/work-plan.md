@@ -46,7 +46,7 @@ packages (HoTT A1, A2, A4, A6) continue alongside stage 2.
 | I0.2 | Archive the first library (done) | Plan | — | M |
 | I0.3 | Start the new library tree | Plan | I0.2 | S |
 | I0.4 | Remove local scratch state (done) | — | — | S |
-| L0.1 | Non-computing dependencies, `computable`, `evaluate` | Ergonomics 8 | — | M |
+| L0.1 | Non-computing dependencies, `computable`, `evaluate` (done) | Ergonomics 8 | — | M |
 | D0.1 | Checked-example harness for the reference (done) | Plan | — | S |
 | D0.2 | Reference chapters for the stable language | Plan | D0.1 | L |
 
@@ -77,15 +77,23 @@ proposed `library/`, served the same way as the archive.
 branch and the scratch directories `.migration/` and `.catalog/`. The
 curated pass's findings are recorded in the ergonomics handoff.
 
-**L0.1 Non-computing dependencies, `computable`, `evaluate`.**
-- Compute each declaration's non-computing dependencies from the checked
-  dependency graph; show them in the inspector and CLI.
-- Add the `computable` modifier and the `evaluate term expecting pattern;`
-  directive.
-- Add a CLI `evaluate` command with witness readout for truncations.
-- Make the migration verifier compare non-computing dependencies.
-- Acceptance: on the archive, the computed dependencies agree with today's
-  assumption lists; negative tests name the dependency chain.
+**L0.1 Non-computing dependencies, `computable`, `evaluate`.** Done on
+2026-09-25. The existing assumption lists already are the non-computing
+dependencies: they are computed from the checked term and every definition it
+mentions. The CLI's `inspect` now prints them.
+- `computable def` and `computable opaque def` reject a declaration that
+  uses an assumption. The error names every assumption and one chain of
+  definitions to the first.
+- `evaluate term expecting value;` checks that a closed term uses no
+  assumption and compares normal forms. The CLI has an `evaluate EXPRESSION`
+  command.
+- The migration verifier already failed a declaration whose assumptions
+  changed.
+- The canonicity fixture marks its results `computable` and has an
+  `evaluate` check. Tests: `tests/computability.test.mjs`,
+  `tests/cli.test.mjs`, and the reference's Computability examples.
+- Deferred to H1: patterns with holes after `expecting`, and witness readout
+  from truncations, which are still assumptions.
 
 **D0.1 Checked-example harness.** Done on 2026-09-25 as
 `tests/reference-examples.test.mjs`. It found that the reference documented
@@ -316,7 +324,7 @@ Stage 0's housekeeping is settled:
 
 Next, in parallel:
 
-1. L0.1, computability tracking.
+1. L0.1, computability tracking (done).
 2. D0.1, the reference harness, then D0.2, the reference chapters.
 3. K1.1, the G0 specification.
 4. L1.2, the goal layer.

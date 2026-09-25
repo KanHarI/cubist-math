@@ -417,6 +417,9 @@ def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
           dependencies. Truncation, function extensionality, univalence, choice,
           and classical principles have explicit library dependencies; see
           <a href="language.html#axioms">their signatures and restrictions</a>.
+          <code>computable def</code> requires a declaration to use no assumption, and
+          <code>evaluate term expecting value;</code> checks what a closed term computes to;
+          see <a href="language.html#computability">computability</a>.
         </p>
       </details>
     </main>

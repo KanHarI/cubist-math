@@ -3,7 +3,7 @@ import { parse, tokenize } from "./parser.mjs";
 // Source coordinates and notation do not belong to the expanded syntax tree.
 export function expandedSyntax(tree) {
   return JSON.stringify(tree, (key, value) => [
-    "start", "end", "operatorStart", "operatorEnd", "definitionStart", "valueStart", "valueEnd",
+    "start", "end", "operatorStart", "operatorEnd", "definitionStart", "modifierStart", "valueStart", "valueEnd",
     "tupleStart", "tupleEnd", "syntheticTuplePair",
   ].includes(key) ? undefined : value);
 }

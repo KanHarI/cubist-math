@@ -531,21 +531,27 @@ mismatches and missing h-level evidence are rejected with precise messages.
 
 ### 8. Computability as a checked property
 
-- [ ] Track each declaration's non-computing dependencies: user axioms,
+Every item but the fourth was done on 2026-09-25 (work plan L0.1). The done
+items are documented in the language reference's Computability section.
+
+- [x] Track each declaration's non-computing dependencies: user axioms,
   excluded middle, choice, resizing and any postulate. Compute them from the
-  checked dependency graph, and show them in the inspector and CLI.
-- [ ] `computable def …`. The checker rejects the declaration unless the set
+  checked dependency graph, and show them in the inspector and CLI. These are
+  the existing assumption lists; the CLI's `inspect` now prints them.
+- [x] `computable def …`. The checker rejects the declaration unless the set
   is empty, and names the dependency chain. A `kernel extension: Hn` marker is
-  shown but is not a non-computing dependency.
-- [ ] `evaluate term expecting pattern;`, a checked normal-form test. It
-  reads witnesses from normalized truncations for the CLI's `evaluate`
-  command.
-- [ ] Guarantee that evaluation always unfolds `opaque` definitions and
+  shown but is not a non-computing dependency. The marker arrives with H1.
+- [x] `evaluate term expecting value;`, a checked normal-form test, and the
+  CLI's `evaluate EXPRESSION` command.
+- [ ] Patterns with holes on the expected side of `evaluate`, and witness
+  readout from normalized truncations in the CLI's `evaluate` command. Both
+  wait for H1, while truncation is still an assumption.
+- [x] Guarantee that evaluation always unfolds `opaque` definitions and
   ignores unfolding hints.
-- [ ] Recheck every `computable` and `evaluate` in CI. The migration
+- [x] Recheck every `computable` and `evaluate` in CI. The migration
   verifier compares non-computing dependencies.
 
-This milestone needs no kernel change and can start now.
+The remaining item needs H1.
 
 ## Integration map
 
