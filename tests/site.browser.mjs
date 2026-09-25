@@ -73,6 +73,9 @@ try {
   const moduleLink = page.locator("#tour-numbers a.example-module").first();
   assert.equal(await moduleLink.textContent(), "naturals");
   assert.match(await moduleLink.getAttribute("href"), /proof\.html\?proof=naturals$/);
+  // 0 is the constructor itself, not notation.
+  assert.deepEqual(await page.locator("#tour-numbers pre code").first().evaluate(code =>
+    [...code.querySelectorAll("*")].filter(node => node.textContent === "0").map(node => node.classList.contains("macro"))), [false]);
   // A numeral's expansion shows at once on hover.
   await page.locator('#tour-numbers [data-tip*="succ("]').first().hover();
   assert.match(await page.locator(".token-tip:not([hidden])").textContent(), /^\d+ expands to succ\(/);
