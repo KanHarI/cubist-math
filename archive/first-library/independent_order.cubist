@@ -7,11 +7,12 @@ def independence_is_prop(
   p q : LinearlyIndependent(K, V, P)
 ) :
   p = q {
-  exact path t => fun (n : Nat) (vectors : Fin(n) -> vector_carrier(K, V)) (
-    distinct : (forall i : Fin(n), forall j : Fin(n), vectors(i) = vectors(j) -> i = j)
-  ) (members : (forall i : Fin(n), P(vectors(i)))) (coefficients : Fin(n) -> af_carrier(K)) (
-    vanishes : linear_combination(K, V, n, vectors, coefficients) = vector_zero(K, V)
-  ) (i : Fin(n)) => af_set(
+  exact path t => fun (
+    n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
+    distinct : (forall i : Fin(n), forall j : Fin(n), vectors(i) = vectors(j) -> i = j),
+    members : (forall i : Fin(n), P(vectors(i))), coefficients : Fin(n) -> af_carrier(K),
+    vanishes : linear_combination(K, V, n, vectors, coefficients) = vector_zero(K, V), i : Fin(n)
+  ) => af_set(
     K, coefficients(i), af_zero(af_carrier(K), af_operations(K)),
     p(n, vectors, distinct, members, coefficients, vanishes, i),
     q(n, vectors, distinct, members, coefficients, vanishes, i)

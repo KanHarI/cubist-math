@@ -38,7 +38,7 @@ def field_embedding_injective(
 def field_embedding_identity(K : AlgebraicField) : FieldEmbedding(K, K) {
   exact (
     (fun (x : af_carrier(K)) => x), field_ops_identity(af_carrier(K), af_operations(K)),
-    (fun (x y : af_carrier(K)) (same : x = y) => same)
+    (fun (x y : af_carrier(K), same : x = y) => same)
   );
 }
 
@@ -74,7 +74,7 @@ def field_embedding_compose(
   exact (
     (fun (x : af_carrier(K)) => g(f(x))), field_embedding_composite_preserves(K, L, M, e, d),
     (
-      fun (x y : af_carrier(K)) (same : g(f(x)) = g(f(y))) => field_embedding_injective(
+      fun (x y : af_carrier(K), same : g(f(x)) = g(f(y))) => field_embedding_injective(
         K, L, e, x, y, field_embedding_injective(L, M, d, f(x), f(y), same)
       )
     )

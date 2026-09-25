@@ -113,7 +113,7 @@ def artin_fixed_field_automorphism_classification(
         R, F, i, n, points, spanning, maps,
         outside_subgroup_extra_embedding_distinct(K, E, H, n, enumeration, g, outside),
         (
-          fun (t : Fin(succ(n))) (a : af_carrier(R)) => extra_embedding_fixes_fixed_base(
+          fun (t : Fin(succ(n)), a : af_carrier(R)) => extra_embedding_fixes_fixed_base(
             K, E, H, n, enumeration, g, fixes, t, a
           )
         )

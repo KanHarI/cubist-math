@@ -70,8 +70,8 @@ def map_sample_sum(
       C, G, zero, addG, (fun (a b tag : C) => edge(f(a), f(b), f(tag))), k, vertices, tags
     )
   ) {
-    zero => fun (vertices : C) (tags : Unit) => refl(zero);
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) => trans(
+    zero => fun (vertices : C, tags : Unit) => refl(zero);
+    succ previous => fun (vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k))) => trans(
       cong(
         (
           fun (v : D) => addG(

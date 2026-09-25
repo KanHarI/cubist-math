@@ -145,9 +145,9 @@ def subdivision_total(C G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C
   induction n as k return (
     forall vertices : SampleVertices(C, k), SampleSubdivisions(C, k, vertices) -> G
   ) {
-    zero => fun (vertices : C) (pieces : Unit) => zero;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (
-      pieces : SampleSubdivisions(C, succ(k), vertices)
+    zero => fun (vertices : C, pieces : Unit) => zero;
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), pieces : SampleSubdivisions(C, succ(k), vertices)
     ) => addG(
       subdivision_sum(
         C, G, zero, addG, edge, field_fst(C, SampleVertices(C, k), vertices),
@@ -219,7 +219,7 @@ def sample_subdivisions_flatten(
     forall vertices : SampleVertices(C, k), forall pieces : SampleSubdivisions(C, k, vertices),
     FlattenedSubdivision(C, G, zero, addG, edge, k, vertices, pieces)
   ) {
-    zero => fun (vertices : C) (pieces : Unit) => typed(
+    zero => fun (vertices : C, pieces : Unit) => typed(
       FlattenedSubdivision(C, G, zero, addG, edge, 0, vertices, pieces),
       (empty_subdivision(C, vertices), refl(zero))
     );

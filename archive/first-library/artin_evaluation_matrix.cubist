@@ -95,15 +95,15 @@ def coordinate_dot_rows_zero(K : AlgebraicField, n m : Nat) =
       K
     )
   ) {
-    zero => fun (a : Fin(n) -> af_carrier(K)) (rows : Fin(0) -> (Fin(n) -> af_carrier(K))) (
-      c : Fin(0) -> af_carrier(K)
-    ) (vanish : forall j : Fin(0), coordinate_dot(K, n, a, rows(j)) = field_zero(K)) => coordinate_dot_right_zero(
-      K, n, a
-    );
-    succ previous => fun (a : Fin(n) -> af_carrier(K)) (
-      rows : Fin(succ(k)) -> (Fin(n) -> af_carrier(K))
-    ) (c : Fin(succ(k)) -> af_carrier(K)) (
-      vanish : forall j : Fin(succ(k)), coordinate_dot(K, n, a, rows(j)) = field_zero(K)
+    zero => fun (
+      a : Fin(n) -> af_carrier(K), rows : Fin(0) -> (Fin(n) -> af_carrier(K)),
+      c : Fin(0) -> af_carrier(K), vanish : forall j : Fin(0),
+      coordinate_dot(K, n, a, rows(j)) = field_zero(K)
+    ) => coordinate_dot_right_zero(K, n, a);
+    succ previous => fun (
+      a : Fin(n) -> af_carrier(K), rows : Fin(succ(k)) -> (Fin(n) -> af_carrier(K)),
+      c : Fin(succ(k)) -> af_carrier(K), vanish : forall j : Fin(succ(k)),
+      coordinate_dot(K, n, a, rows(j)) = field_zero(K)
     ) => trans(
       coordinate_dot_right_add(
         K, n, a,
@@ -164,7 +164,7 @@ def coordinate_rows_linear(
   LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, m)) {
   let C = CoordinateSpace(K, n);
   let D = CoordinateSpace(K, m);
-  let f = fun (a : Fin(n) -> af_carrier(K)) (j : Fin(m)) => coordinate_dot(K, n, a, rows(j));
+  let f = fun (a : Fin(n) -> af_carrier(K), j : Fin(m)) => coordinate_dot(K, n, a, rows(j));
   exact (
     f,
     (
@@ -174,7 +174,7 @@ def coordinate_rows_linear(
       )
     ),
     (
-      fun (c : af_carrier(K)) (a : Fin(n) -> af_carrier(K)) => FunExt(
+      fun (c : af_carrier(K), a : Fin(n) -> af_carrier(K)) => FunExt(
         U0, Fin(m), (fun (j : Fin(m)) => af_carrier(K)), f(vector_scale(K, C, c, a)),
         vector_scale(K, D, c, f(a)), (fun (j : Fin(m)) => coordinate_dot_scale(K, n, c, a, rows(j)))
       )

@@ -19,7 +19,7 @@ def homotopy_naturality(
 ) =
   path_induction(
     A,
-    (fun (a b : A) (r : a = b) => trans(cong(f, r), homotopy(b)) = trans(homotopy(a), cong(g, r))),
+    (fun (a b : A, r : a = b) => trans(cong(f, r), homotopy(b)) = trans(homotopy(a), cong(g, r))),
     (
       fun (a : A) => trans(
         left_unit(B, f(a), g(a), homotopy(a)), sym(right_unit(B, f(a), g(a), homotopy(a)))
@@ -31,11 +31,11 @@ def cancel_right_path(A : U1, y z : A, r : y = z) =
   path_induction(
     A,
     (
-      fun (a b : A) (s : a = b) => forall x : A, forall p : x = a, forall q : x = a,
+      fun (a b : A, s : a = b) => forall x : A, forall p : x = a, forall q : x = a,
       (trans(p, s) = trans(q, s)) -> (p = q)
     ),
     (
-      fun (a x : A) (p q : x = a) (same : trans(p, refl(a)) = trans(q, refl(a))) => trans(
+      fun (a x : A, p q : x = a, same : trans(p, refl(a)) = trans(q, refl(a))) => trans(
         sym(right_unit(A, x, a, p)), trans(same, right_unit(A, x, a, q))
       )
     ), y, z, r

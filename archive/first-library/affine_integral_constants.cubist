@@ -83,7 +83,8 @@ def complex_constant_curve_uniform(
   exact (
     one, positiveOne,
     (
-      fun (s t : FieldUnitInterval(F, zero, one, lt)) (
+      fun (
+        s t : FieldUnitInterval(F, zero, one, lt),
         near : FieldClose(
           F, addF, lt, field_interval_coordinate(F, zero, one, lt)(s),
           field_interval_coordinate(F, zero, one, lt)(t), one
@@ -114,7 +115,7 @@ def complex_constant_sequence_converges(
         )
       )
     );
-  exact (0, (fun (n : Nat) (later : IndexLE(0, n)) => close));
+  exact (0, (fun (n : Nat, later : IndexLE(0, n)) => close));
 }
 
 // Normalization of the constructed integral, not an assumed integral law:

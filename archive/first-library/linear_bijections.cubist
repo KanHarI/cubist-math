@@ -82,7 +82,7 @@ def linear_empty(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, Coordina
       fun (v w : Fin(0) -> af_carrier(K)) => sym(
         group_unit_left(vector_group(K, V), vector_zero(K, V))
       )
-    ), (fun (a : af_carrier(K)) (v : Fin(0) -> af_carrier(K)) => sym(vector_scale_zero(K, V, a)))
+    ), (fun (a : af_carrier(K), v : Fin(0) -> af_carrier(K)) => sym(vector_scale_zero(K, V, a)))
   );
 }
 

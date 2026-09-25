@@ -64,13 +64,13 @@ def quotient_comparison_path(
 def quotient_is_set(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation)) :
   FieldSet(SetQuotient(A, relation)) {
   let choose =
-    fun (q r : SetQuotient(A, relation)) (p : q = r) => quotient_comparison_path(
+    fun (q r : SetQuotient(A, relation), p : q = r) => quotient_comparison_path(
       A, relation, laws, q, r, quotient_path_comparison(A, relation, q, r, p)
     );
   exact constant_paths_are_set(
     SetQuotient(A, relation), choose,
     (
-      fun (q r : SetQuotient(A, relation)) (p s : q = r) => cong(
+      fun (q r : SetQuotient(A, relation), p s : q = r) => cong(
         quotient_comparison_path(A, relation, laws, q, r),
         quotient_comparison_prop(
           A, relation, laws, q, r, quotient_path_comparison(A, relation, q, r, p),
@@ -88,7 +88,7 @@ def dependent_functions_are_set(A : U1, B : A -> U1, setB : (forall a : A, Field
   intro f g p q;
   exact path j => path(
     fun (i : Interval) => forall a : A, B(a),
-    fun (i : Interval) (a : A) => setB(
+    fun (i : Interval, a : A) => setB(
       a, f(a), g(a), cong((fun (h : (forall a : A, B(a))) => h(a)), p),
       cong((fun (h : (forall a : A, B(a))) => h(a)), q)
     ) @ j @ i

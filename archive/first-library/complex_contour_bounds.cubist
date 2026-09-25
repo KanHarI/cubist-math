@@ -82,8 +82,9 @@ def ComplexContourTagBounds(
   induction n as k return (
     SampleVertices(Complex(F), k) -> SampleTags(Complex(F), k) -> SampleTags(Complex(F), k) -> U0
   ) {
-    zero => fun (vertices : Complex(F)) (oldTags newTags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(Complex(F), succ(k))) (
+    zero => fun (vertices : Complex(F), oldTags newTags : Unit) => Unit;
+    succ previous => fun (
+      vertices : SampleVertices(Complex(F), succ(k)),
       oldTags newTags : SampleTags(Complex(F), succ(k))
     ) => ComplexBoxBound(
       F, negF, lt,
@@ -105,9 +106,9 @@ def ComplexContourIncrementBounds(
   realWeight imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, n : Nat
 ) =
   induction n as k return (SampleVertices(Complex(F), k) -> SampleTags(Complex(F), k) -> U0) {
-    zero => fun (vertices : Complex(F)) (oldTags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(Complex(F), succ(k))) (
-      oldTags : SampleTags(Complex(F), succ(k))
+    zero => fun (vertices : Complex(F), oldTags : Unit) => Unit;
+    succ previous => fun (
+      vertices : SampleVertices(Complex(F), succ(k)), oldTags : SampleTags(Complex(F), succ(k))
     ) => ComplexRectangleBound(
       F, negF, lt,
       coordinate_difference(
@@ -174,18 +175,17 @@ def complex_contour_tag_error_variation_bound(
       )
     )
   ) {
-    zero => fun (vertices : Complex(F)) (oldTags newTags errors increments : Unit) => along ComplexBoxBound(
+    zero => fun (vertices : Complex(F), oldTags newTags errors increments : Unit) => along ComplexBoxBound(
       F, negF, lt, complex_zero(F, zero)
     ) by sym(ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta)) from complex_box_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic
     );
-    succ previous => fun (vertices : SampleVertices(Complex(F), succ(k))) (
-      oldTags newTags : SampleTags(Complex(F), succ(k))
-    ) (
+    succ previous => fun (
+      vertices : SampleVertices(Complex(F), succ(k)),
+      oldTags newTags : SampleTags(Complex(F), succ(k)),
       errors : ComplexContourTagBounds(
         F, addF, negF, lt, f, delta, succ(k), vertices, oldTags, newTags
-      )
-    ) (
+      ),
       increments : ComplexContourIncrementBounds(
         F, addF, negF, lt, realWeight, imagWeight, succ(k), vertices, oldTags
       )

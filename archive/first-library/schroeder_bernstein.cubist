@@ -89,7 +89,7 @@ def f_preimage(
     Fiber(A, B, f, y), embedF(y),
     (
       fun (empty : Fiber(A, B, f, y) -> Void) => bad(
-        fun (origin : A) (n : Nat) => induction n as k return (
+        fun (origin : A, n : Nat) => induction n as k return (
           (iterate(A, (fun (a : A) => g(f(a))), origin, k) = g(y)) -> Fiber(B, A, g, origin)
         ) {
           zero => fun (p : origin = g(y)) => typed(Fiber(B, A, g, origin), (y, sym(p)));

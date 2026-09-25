@@ -67,7 +67,7 @@ def residue_reduce(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(
 
 def residue_zero(K : AlgebraicField, M : PolynomialModulus(K)) : PolynomialResidue(K, M) {
   exact (
-    polynomial_zero(K), (fun (n : Nat) (above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
+    polynomial_zero(K), (fun (n : Nat, above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
   );
 }
 

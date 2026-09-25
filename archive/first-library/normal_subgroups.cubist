@@ -85,7 +85,7 @@ def group_kernel_trivial(G H : Group) :
   exact subgroup_inclusion_antisymmetric(
     G, group_kernel(G, H, group_hom_trivial(G, H)), subgroup_top(G),
     subgroup_top_greatest(G, group_kernel(G, H, group_hom_trivial(G, H))),
-    (fun (x : group_carrier(G)) (member : Unit) => group_kernel_trivial_member(G, H, x))
+    (fun (x : group_carrier(G), member : Unit) => group_kernel_trivial_member(G, H, x))
   );
 }
 

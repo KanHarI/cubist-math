@@ -19,7 +19,7 @@ def compositum_transport(F G : AlgebraicField, p : F =[AlgebraicField] G) =
   );
 
 def subfield_transport_member(F G : AlgebraicField, p : F =[AlgebraicField] G) =
-  fun (S : Subfield(F)) (x : af_carrier(F)) (member : subfield_members(F, S, x)) => comp(
+  fun (S : Subfield(F), x : af_carrier(F), member : subfield_members(F, S, x)) => comp(
     fun (i : Interval) => subfield_members(
       p @ i, fill(fun (j : Interval) => Subfield(p @ j), S, i),
       fill(fun (j : Interval) => af_carrier(p @ j), x, i)

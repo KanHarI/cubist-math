@@ -118,7 +118,7 @@ def complex_scalar_uniform_radius(
   exact (
     delta, positiveDelta,
     (
-      fun (x y : Complex(F)) (nearby : ComplexClose(F, addF, lt, x, y, delta)) => complex_scaled_close(
+      fun (x y : Complex(F), nearby : ComplexClose(F, addF, lt, x, y, delta)) => complex_scaled_close(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, coefficient, r, s,
         typed(ComplexRectangleBound(F, negF, lt, coefficient, r, s), (realBound, imagBound)), x, y,
         delta, epsilon, nearby, small
@@ -153,7 +153,8 @@ def complex_uniform_curve_scale(
   exact (
     mesh, positiveMesh,
     (
-      fun (s t : FieldUnitInterval(F, zero, one, lt)) (
+      fun (
+        s t : FieldUnitInterval(F, zero, one, lt),
         nearby : FieldClose(
           F, addF, lt, field_interval_coordinate(F, zero, one, lt)(s),
           field_interval_coordinate(F, zero, one, lt)(t), mesh
@@ -184,6 +185,6 @@ def complex_converges_scale(
   obtain (bound, close) = converges(delta, positiveDelta);
   exact (
     bound,
-    (fun (n : Nat) (later : IndexLE(bound, n)) => scaleClose(sequence(n), value, close(n, later)))
+    (fun (n : Nat, later : IndexLE(bound, n)) => scaleClose(sequence(n), value, close(n, later)))
   );
 }

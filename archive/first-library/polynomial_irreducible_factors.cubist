@@ -55,7 +55,7 @@ def polynomial_factor_nonzero_right(
 
 def natural_sum_le_left_zero(m : Nat) =
   induction m as k return (forall n : Nat, le(add_count(k, n), k) -> n = 0) {
-    zero => fun (n : Nat) (above : le(n, 0)) => dimension_order_antisymmetric(n, 0, above, tt);
+    zero => fun (n : Nat, above : le(n, 0)) => dimension_order_antisymmetric(n, 0, above, tt);
     succ previous => previous;
   };
 

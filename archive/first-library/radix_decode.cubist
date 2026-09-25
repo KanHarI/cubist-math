@@ -8,7 +8,7 @@ opaque def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) =
     extra, Nat,
     (fun (first : RadixDigit(succ(extra))) => succ(radix_digit_value(succ(extra), first))),
     (
-      fun (digit : RadixDigit(succ(succ(extra)))) (child : RadixPositive(extra)) (ih : Nat) => succ(
+      fun (digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra), ih : Nat) => succ(
         succ(extra)
       ) * ih + radix_digit_value(succ(succ(extra)), digit)
     ), p
@@ -161,7 +161,8 @@ def radix_decode_positive_succ(extra : Nat, p : RadixPositive(extra)) :
       )
     ),
     (
-      fun (d : RadixDigit(succ(succ(extra)))) (q : RadixPositive(extra)) (
+      fun (
+        d : RadixDigit(succ(succ(extra))), q : RadixPositive(extra),
         ih : radix_positive_to_nat(extra, radix_positive_succ(extra, q)) = succ(
           radix_positive_to_nat(extra, q)
         )

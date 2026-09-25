@@ -39,7 +39,7 @@ def linear_identity(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, V, V)
   exact (
     (fun (x : vector_carrier(K, V)) => x),
     (fun (x y : vector_carrier(K, V)) => refl(vector_add(K, V, x, y))),
-    (fun (a : af_carrier(K)) (x : vector_carrier(K, V)) => refl(vector_scale(K, V, a, x)))
+    (fun (a : af_carrier(K), x : vector_carrier(K, V)) => refl(vector_scale(K, V, a, x)))
   );
 }
 
@@ -58,7 +58,7 @@ def linear_compose(
       )
     ),
     (
-      fun (a : af_carrier(K)) (x : vector_carrier(K, V)) => trans(
+      fun (a : af_carrier(K), x : vector_carrier(K, V)) => trans(
         cong(g, linear_scale(K, V, W, h, a, x)), linear_scale(K, W, X, k, a, f(x))
       )
     )

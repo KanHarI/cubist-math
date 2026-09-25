@@ -119,7 +119,7 @@ def predicate_eta(A : U0, p : (Unit or A) -> Bool) : predicate_normal(A, p) = p 
 
 def type_path_bijection(A B : U0, path : A = B) =
   path_induction(
-    U0, (fun (X Y : U0) (q : X = Y) => Bijection(X, Y)), (fun (X : U0) => identity_bijection(X)), A,
+    U0, (fun (X Y : U0, q : X = Y) => Bijection(X, Y)), (fun (X : U0) => identity_bijection(X)), A,
     B, path
   );
 

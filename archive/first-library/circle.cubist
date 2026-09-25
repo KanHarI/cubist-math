@@ -213,7 +213,7 @@ def decode(x : S1) =
 def decode_encode(x : S1, p : base = x) : decode(x, encode(x, p)) = p {
   exact based_induction(
     U1, U0, S1, base,
-    (fun (point : S1) (path : base = point) => decode(point, encode(point, path)) = path),
+    (fun (point : S1, path : base = point) => decode(point, encode(point, path)) = path),
     refl(refl(base)), x, p
   );
 }

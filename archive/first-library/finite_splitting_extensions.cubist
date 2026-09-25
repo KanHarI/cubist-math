@@ -100,7 +100,7 @@ def finite_splitting_by_degree(n : Nat) =
     forall K : AlgebraicField, forall p : Polynomial(K), polynomial_cutoff(K, p) = succ(k)
     -> FieldExists(FiniteSplittingExtension(K, p, k))
   ) {
-    zero => fun (K : AlgebraicField) (p : Polynomial(K)) (degree : polynomial_cutoff(K, p) = 1) => field_exists_intro(
+    zero => fun (K : AlgebraicField, p : Polynomial(K), degree : polynomial_cutoff(K, p) = 1) => field_exists_intro(
       FiniteSplittingExtension(K, p, 0), finite_splitting_zero(K, p, degree)
     );
     succ previous => finite_splitting_step(k, previous);

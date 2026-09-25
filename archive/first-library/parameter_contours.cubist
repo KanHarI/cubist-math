@@ -39,9 +39,9 @@ def parameter_contour_tag_error_sum(
   C F : U1, zero : F, addF mulF : F -> F -> F, negF : F -> F, curve values : C -> F, n : Nat
 ) =
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> SampleTags(C, k) -> F) {
-    zero => fun (vertices : C) (oldTags newTags : Unit) => zero;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (
-      oldTags newTags : SampleTags(C, succ(k))
+    zero => fun (vertices : C, oldTags newTags : Unit) => zero;
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), oldTags newTags : SampleTags(C, succ(k))
     ) => addF(
       parameter_contour_tag_error(
         C, F, addF, mulF, negF, curve, values, field_fst(C, SampleVertices(C, k), vertices),
@@ -77,11 +77,11 @@ def parameter_contour_sum_change_tags(
       )
     )
   ) {
-    zero => fun (vertices : C) (oldTags newTags : Unit) => sym(
+    zero => fun (vertices : C, oldTags newTags : Unit) => sym(
       ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero)
     );
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (
-      oldTags newTags : SampleTags(C, succ(k))
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), oldTags newTags : SampleTags(C, succ(k))
     ) => trans(
       cong(
         (

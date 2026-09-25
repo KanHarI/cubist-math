@@ -40,7 +40,7 @@ def group_carrier_at(U : Universe, G : GroupAt(U)) = unpack G as (A, structure) 
 def group_structure_at(U : Universe, G : GroupAt(U)) =
   pair_induction(
     (fun (H : GroupAt(U)) => GroupStructureAt(U, group_carrier_at(U, H))),
-    (fun (A : U) (structure : GroupStructureAt(U, A)) => structure), G
+    (fun (A : U, structure : GroupStructureAt(U, A)) => structure), G
   );
 
 def group_unit_at(U : Universe, G : GroupAt(U)) : group_carrier_at(U, G) {

@@ -143,7 +143,7 @@ def affine_dyadic_cauchy(
   }
   let positiveHalf =
     (
-      fun (epsilon : F) (positive : lt(zero, epsilon)) => positive_half_from_sum(
+      fun (epsilon : F, positive : lt(zero, epsilon)) => positive_half_from_sum(
         F, zero, one, addF, mulF, lt, order, arithmetic, epsilon, half(epsilon), halfSum(epsilon),
         positive
       )

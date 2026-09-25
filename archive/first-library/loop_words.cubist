@@ -61,7 +61,7 @@ def eval_snoc(
       )
     ),
     (
-      fun (n : Nat) (letters : WordOf(A, n)) => refl(
+      fun (n : Nat, letters : WordOf(A, n)) => refl(
         trans(
           eval_word_of(A, X, basepoint, generators, n, letters),
           letter_path(A, X, basepoint, generators, letter)
@@ -224,7 +224,7 @@ def loop_map_word_of(
         )
       ),
       (
-        fun (prefix : WordOf(A, k)) (letter : Signed(A)) => trans(
+        fun (prefix : WordOf(A, k), letter : Signed(A)) => trans(
           multiplyLaw(
             eval_word_of(A, X, point, generators, k, prefix),
             letter_path(A, X, point, generators, letter)

@@ -159,12 +159,12 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
     return null;
   }
   // The body of a one-name lambda. When later binder groups share its fun
-  // token, the body is those groups: fun (x : A) (y : B) => e  gives
+  // token, the body is those groups: fun (x : A, y : B) => e  gives
   // fun (y : B) => e.
   function lambdaBody(lambda) {
     if (!lambda.body.generatedBinder) return render(lambda.body, "delimited");
-    const close = tokens.find(token => token.start >= lambda.domain.end);
-    return `fun ${splice(lambda.body, close.end).trimStart()}`;
+    const separator = tokens.find(token => token.start >= lambda.domain.end);
+    return `fun (${splice(lambda.body, separator.end).trimStart()}`;
   }
   // A parenthesized lambda's span starts at its opening parenthesis.
   function funStart(node) {
@@ -189,7 +189,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
     const merged = mergeGroups(groups.map(group => ({ ...group, text: squash(render(group.domain, "delimited")) })));
     if (!separate && merged.length === groups.length) return null;
     const lead = source.slice(node.start, funStart(node)), trail = source.slice(body.end, node.end);
-    return `${lead}fun ${merged.map(group => `(${group.names.join(" ")} : ${group.text})`).join(" ")} => ${
+    return `${lead}fun (${merged.map(group => `${group.names.join(" ")} : ${group.text}`).join(", ")}) => ${
       render(body, "delimited")}${trail}`;
   }
   // Adjacent binders share a group when their domains are the same text and

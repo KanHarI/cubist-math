@@ -116,7 +116,7 @@ def field_embedding_inverse(
   exact (
     g, field_inverse_preserves(K, L, e, onto),
     (
-      fun (x y : af_carrier(L)) (same : g(x) = g(y)) => trans(
+      fun (x y : af_carrier(L), same : g(x) = g(y)) => trans(
         sym(right(x)), trans(cong(f, same), right(y))
       )
     )

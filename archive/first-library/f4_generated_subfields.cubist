@@ -28,7 +28,7 @@ def f4_alpha_generates_field :
     );
   exact subfield_inclusion_antisymmetric(
     F4, generated_subfield(F4, F4AlphaGenerator), subfield_top(F4),
-    (fun (x : F4Carrier) (member : P(x)) => tt), (fun (x : F4Carrier) (member : Unit) => every(x))
+    (fun (x : F4Carrier, member : P(x)) => tt), (fun (x : F4Carrier, member : Unit) => every(x))
   );
 }
 

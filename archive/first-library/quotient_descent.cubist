@@ -118,7 +118,7 @@ def quotient_value(
     exact (
       f(a),
       (
-        fun (x : A) (member : quotient_predicate(A, relation, q, x)) => sym(
+        fun (x : A, member : quotient_predicate(A, relation, q, x)) => sym(
           respects(a, x, along((fun (P : U0) => P)) by same(x) from member)
         )
       )

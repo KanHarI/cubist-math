@@ -203,12 +203,14 @@ def coordinate_injection_bound(K : AlgebraicField, n : Nat) =
       forall f : LinearMap(K, CoordinateSpace(K, source), CoordinateSpace(K, 0)),
       CoordinateInjection(K, source, 0, f) -> le(source, 0)
     ) {
-      zero => fun (f : LinearMap(K, CoordinateSpace(K, 0), CoordinateSpace(K, 0))) (
+      zero => fun (
+        f : LinearMap(K, CoordinateSpace(K, 0), CoordinateSpace(K, 0)),
         injective : CoordinateInjection(K, 0, 0, f)
       ) => tt;
       succ ignored => fun (
-        f : LinearMap(K, CoordinateSpace(K, succ(source)), CoordinateSpace(K, 0))
-      ) (injective : CoordinateInjection(K, succ(source), 0, f)) => first_image_nonzero(
+        f : LinearMap(K, CoordinateSpace(K, succ(source)), CoordinateSpace(K, 0)),
+        injective : CoordinateInjection(K, succ(source), 0, f)
+      ) => first_image_nonzero(
         K, source, 0, f, injective,
         FunExt(
           U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)),
@@ -233,29 +235,27 @@ def coordinate_injection_bound(K : AlgebraicField, n : Nat) =
       forall f : LinearMap(K, CoordinateSpace(K, source), CoordinateSpace(K, succ(target))),
       CoordinateInjection(K, source, succ(target), f) -> le(source, succ(target))
     ) {
-      zero => fun (f : LinearMap(K, CoordinateSpace(K, 0), CoordinateSpace(K, succ(target)))) (
+      zero => fun (
+        f : LinearMap(K, CoordinateSpace(K, 0), CoordinateSpace(K, succ(target))),
         injective : CoordinateInjection(K, 0, succ(target), f)
       ) => tt;
       succ ignored => fun (
-        f : LinearMap(K, CoordinateSpace(K, succ(source)), CoordinateSpace(K, succ(target)))
-      ) (injective : CoordinateInjection(K, succ(source), succ(target), f)) => coordinate_injection_step(
-        K, source, target, f, injective, previous
-      );
+        f : LinearMap(K, CoordinateSpace(K, succ(source)), CoordinateSpace(K, succ(target))),
+        injective : CoordinateInjection(K, succ(source), succ(target), f)
+      ) => coordinate_injection_step(K, source, target, f, injective, previous);
     };
   };
 
 def dimension_order_antisymmetric(m : Nat) =
   induction m as k return (forall n : Nat, le(k, n) -> le(n, k) -> k = n) {
-    zero => fun (n : Nat) (forward : le(0, n)) (backward : le(n, 0)) => sym(
-      nat_le_zero(n, backward)
-    );
+    zero => fun (n : Nat, forward : le(0, n), backward : le(n, 0)) => sym(nat_le_zero(n, backward));
     succ previous => fun (n : Nat) => induction n as j return (
       le(succ(k), j) -> le(j, succ(k)) -> succ(k) = j
     ) {
-      zero => fun (impossible : le(succ(k), 0)) (other : le(0, succ(k))) => typed(
+      zero => fun (impossible : le(succ(k), 0), other : le(0, succ(k))) => typed(
         (succ(k) = 0), absurd(impossible)
       );
-      succ ignored => fun (forward : le(succ(k), succ(j))) (backward : le(succ(j), succ(k))) => cong(
+      succ ignored => fun (forward : le(succ(k), succ(j)), backward : le(succ(j), succ(k))) => cong(
         (fun (x : Nat) => succ(x)), previous(j, forward, backward)
       );
     };

@@ -30,7 +30,7 @@ def path_correction(
   exact based_induction(
     U1, U0, A, x,
     (
-      fun (point : A) (path : x = point) => trans(
+      fun (point : A, path : x = point) => trans(
         sym(choose_path(A, x, x, decide(x, x), refl(x))),
         choose_path(A, x, point, decide(x, point), path)
       ) = path

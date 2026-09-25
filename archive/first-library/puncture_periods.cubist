@@ -90,7 +90,7 @@ def weighted_winding_generator(
       ), integer_multiple_one(G, zero, addG, negG, laws, values(selected))
     ),
     (
-      fun (i : Fin(n)) (different : (selected = i) -> Void) => cong(
+      fun (i : Fin(n), different : (selected = i) -> Void) => cong(
         integer_multiple(G, zero, addG, negG, values(i)),
         puncture_winding_other(n, i, selected, (fun (same : i = selected) => different(sym(same))))
       )

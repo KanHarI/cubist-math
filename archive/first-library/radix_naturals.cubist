@@ -74,14 +74,15 @@ def radix_positive_rec(
 ) =
   wrec(
     RadixPositive(extra), fun (tree : RadixPositive(extra)) => R,
-    fun (tag : RadixLabel(extra)) (children : RadixArity(extra, tag) -> RadixPositive(extra)) (
+    fun (
+      tag : RadixLabel(extra), children : RadixArity(extra, tag) -> RadixPositive(extra),
       ih : RadixArity(extra, tag) -> R
     ) => (
       match tag as label return (
         (RadixArity(extra, label) -> RadixPositive(extra)) -> (RadixArity(extra, label) -> R) -> R
       ) {
-        left first => fun (f : Void -> RadixPositive(extra)) (h : Void -> R) => leading(first);
-        right next => fun (f : Unit -> RadixPositive(extra)) (h : Unit -> R) => digit(
+        left first => fun (f : Void -> RadixPositive(extra), h : Void -> R) => leading(first);
+        right next => fun (f : Unit -> RadixPositive(extra), h : Unit -> R) => digit(
           next, f(tt), h(tt)
         );
       }
@@ -94,7 +95,7 @@ def radix_positive_cases(
 ) =
   radix_positive_rec(
     extra, R, leading,
-    fun (d : RadixDigit(succ(succ(extra)))) (child : RadixPositive(extra)) (ignored : R) => digit(
+    fun (d : RadixDigit(succ(succ(extra))), child : RadixPositive(extra), ignored : R) => digit(
       d, child
     ), p
   );

@@ -55,12 +55,12 @@ def field_scalar_laws(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
   exact (
     (fun (x : A) => trans(cong((fun (z : A) => mul(z, x)), onePres), one(x))),
     (
-      fun (a b : af_carrier(K)) (x : A) => trans(
+      fun (a b : af_carrier(K), x : A) => trans(
         cong((fun (z : A) => mul(z, x)), mulPres(a, b)), assoc(f(a), f(b), x)
       )
     ), (fun (a : af_carrier(K)) => distribute(f(a))),
     (
-      fun (a b : af_carrier(K)) (x : A) => trans(
+      fun (a b : af_carrier(K), x : A) => trans(
         cong((fun (z : A) => mul(z, x)), addPres(a, b)),
         trans(
           comm(add(f(a), f(b)), x),

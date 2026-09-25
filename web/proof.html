@@ -307,7 +307,7 @@ def pair_first : Nat {
 }</pre>
         <p>
           <code>fun (x : A) => body</code> constructs a function;
-          <code>fun (x y : A) => body</code> and <code>fun (a : A) (b : B) => body</code>
+          <code>fun (x y : A) => body</code> and <code>fun (a : A, b : B) => body</code>
           take several arguments, and <code>fun x => body</code> reads the domain from
           an expected function type. <code>f(a, b)</code> means <code>f(a)(b)</code>.
           <code>(a, b, c, d)</code> expands to <code>(a, (b, (c, d)))</code>;

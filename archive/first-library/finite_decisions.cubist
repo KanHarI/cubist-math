@@ -70,11 +70,11 @@ def finite_forall_decidable(n : Nat) =
     forall P : Fin(k) -> U0, (forall x : Fin(k), Decidable(P(x)))
     -> Decidable(forall x : Fin(k), P(x))
   ) {
-    zero => fun (P : Fin(0) -> U0) (decide : (forall x : Fin(0), Decidable(P(x)))) => typed(
+    zero => fun (P : Fin(0) -> U0, decide : (forall x : Fin(0), Decidable(P(x)))) => typed(
       Decidable(forall x : Fin(0), P(x)), left(fun (x : Fin(0)) => typed(P(x), absurd(x)))
     );
-    succ previous => fun (P : Fin(succ(k)) -> U0) (
-      decide : (forall x : Fin(succ(k)), Decidable(P(x)))
+    succ previous => fun (
+      P : Fin(succ(k)) -> U0, decide : (forall x : Fin(succ(k)), Decidable(P(x)))
     ) => finite_decision_step(
       k, P, decide(typed(Unit or Fin(k), left(tt))),
       previous(

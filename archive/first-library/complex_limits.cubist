@@ -46,7 +46,7 @@ def complex_converges_coordinates(
       exact (
         bound,
         (
-          fun (n : Nat) (large : IndexLE(bound, n)) => field_fst(
+          fun (n : Nat, large : IndexLE(bound, n)) => field_fst(
             FieldClose(F, addF, lt, complex_real(F, sequence(n)), complex_real(F, limit), epsilon),
             FieldClose(F, addF, lt, complex_imag(F, sequence(n)), complex_imag(F, limit), epsilon),
             close(n, large)
@@ -63,7 +63,7 @@ def complex_converges_coordinates(
       exact (
         bound,
         (
-          fun (n : Nat) (large : IndexLE(bound, n)) => field_snd(
+          fun (n : Nat, large : IndexLE(bound, n)) => field_snd(
             FieldClose(F, addF, lt, complex_real(F, sequence(n)), complex_real(F, limit), epsilon),
             FieldClose(F, addF, lt, complex_imag(F, sequence(n)), complex_imag(F, limit), epsilon),
             close(n, large)
@@ -91,7 +91,7 @@ def complex_converges_coordinates(
     exact (
       bound,
       (
-        fun (n : Nat) (large : IndexLE(bound, n)) => typed(
+        fun (n : Nat, large : IndexLE(bound, n)) => typed(
           ComplexClose(F, addF, lt, sequence(n), limit, epsilon),
           (
             realClose(
@@ -137,7 +137,7 @@ def complex_cauchy_coordinates(
       exact (
         bound,
         (
-          fun (m n : Nat) (largeM : IndexLE(bound, m)) (largeN : IndexLE(bound, n)) => field_fst(
+          fun (m n : Nat, largeM : IndexLE(bound, m), largeN : IndexLE(bound, n)) => field_fst(
             FieldClose(
               F, addF, lt, complex_real(F, sequence(m)), complex_real(F, sequence(n)), epsilon
             ),
@@ -154,7 +154,7 @@ def complex_cauchy_coordinates(
       exact (
         bound,
         (
-          fun (m n : Nat) (largeM : IndexLE(bound, m)) (largeN : IndexLE(bound, n)) => field_snd(
+          fun (m n : Nat, largeM : IndexLE(bound, m), largeN : IndexLE(bound, n)) => field_snd(
             FieldClose(
               F, addF, lt, complex_real(F, sequence(m)), complex_real(F, sequence(n)), epsilon
             ),
@@ -181,7 +181,7 @@ def complex_cauchy_coordinates(
     exact (
       bound,
       (
-        fun (m n : Nat) (largeM : IndexLE(bound, m)) (largeN : IndexLE(bound, n)) => typed(
+        fun (m n : Nat, largeM : IndexLE(bound, m), largeN : IndexLE(bound, n)) => typed(
           ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon),
           (
             realClose(
@@ -394,7 +394,7 @@ def complex_converges_pointwise(
   exact (
     bound,
     (
-      fun (n : Nat) (large : IndexLE(bound, n)) => along(
+      fun (n : Nat, large : IndexLE(bound, n)) => along(
         (fun (term : Complex(F)) => ComplexClose(F, addF, lt, term, value, epsilon))
       ) by same(n) from close(n, large)
     )

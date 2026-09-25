@@ -30,7 +30,7 @@ def group_carrier(G : Group) = unpack G as (A, structure) return U0 {
 def group_structure(G : Group) =
   pair_induction(
     (fun (H : Group) => GroupStructure(group_carrier(H))),
-    (fun (A : U0) (structure : GroupStructure(A)) => structure), G
+    (fun (A : U0, structure : GroupStructure(A)) => structure), G
   );
 
 def group_unit(G : Group) =
@@ -151,17 +151,17 @@ def group_induction(
   exact pair_induction(
     P,
     (
-      fun (A : U0) (ops : GroupStructure(A)) => pair_induction(
+      fun (A : U0, ops : GroupStructure(A)) => pair_induction(
         (fun (ops : GroupStructure(A)) => P(typed(Group, (A, ops)))),
         (
-          fun (unit : A) (data : (exists multiply : A -> A -> A, GroupLaws(A, unit, multiply))) => pair_induction(
+          fun (unit : A, data : (exists multiply : A -> A -> A, GroupLaws(A, unit, multiply))) => pair_induction(
             (
               fun (data : (exists multiply : A -> A -> A, GroupLaws(A, unit, multiply))) => P(
                 typed(Group, (A, unit, data))
               )
             ),
             (
-              fun (multiply : A -> A -> A) (laws : GroupLaws(A, unit, multiply)) => step(
+              fun (multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)) => step(
                 A, unit, multiply, laws
               )
             ), data
@@ -182,7 +182,7 @@ def group_object_eta(G : Group) :
       ) = H
     ),
     (
-      fun (A : U0) (unit : A) (multiply : A -> A -> A) (laws : GroupLaws(A, unit, multiply)) => refl(
+      fun (A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)) => refl(
         group_object(A, unit, multiply, laws)
       )
     ), G

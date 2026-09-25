@@ -15,7 +15,7 @@ def distinct_polynomial_splitting_map(
   exact (
     mappedRoots, b, mappedEquation,
     (
-      fun (i j : Fin(n)) (same : mappedRoots(i) = mappedRoots(j)) => distinct(
+      fun (i j : Fin(n), same : mappedRoots(i) = mappedRoots(j)) => distinct(
         i, j, field_embedding_injective(K, L, e, roots(i), roots(j), same)
       )
     )

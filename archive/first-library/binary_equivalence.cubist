@@ -7,8 +7,8 @@ import equivalence_from_inverse;
 // huge unary result without materializing that result during proof transport.
 opaque def binary_positive_to_nat(p : BinaryPositive) =
   binary_positive_rec(
-    Nat, 1, fun (child : BinaryPositive) (ih : Nat) => ih + ih,
-    fun (child : BinaryPositive) (ih : Nat) => succ(ih + ih), p
+    Nat, 1, fun (child : BinaryPositive, ih : Nat) => ih + ih,
+    fun (child : BinaryPositive, ih : Nat) => succ(ih + ih), p
   );
 
 opaque def binary_to_nat(n : BinaryNat) = match n return Nat {
@@ -41,12 +41,14 @@ def binary_decode_positive_succ(p : BinaryPositive) :
       )
     ), refl(2),
     (
-      fun (q : BinaryPositive) (
+      fun (
+        q : BinaryPositive,
         ih : binary_positive_to_nat(binary_positive_succ(q)) = succ(binary_positive_to_nat(q))
       ) => refl(succ(binary_positive_to_nat(q) + binary_positive_to_nat(q)))
     ),
     (
-      fun (q : BinaryPositive) (
+      fun (
+        q : BinaryPositive,
         ih : binary_positive_to_nat(binary_positive_succ(q)) = succ(binary_positive_to_nat(q))
       ) => trans(
         binary_decode_even(binary_positive_succ(q)),
@@ -107,13 +109,13 @@ def binary_positive_roundtrip(p : BinaryPositive) :
     (fun (q : BinaryPositive) => binary_of_nat(binary_positive_to_nat(q)) = binary_positive(q)),
     cong(binary_of_nat, binary_decode_one),
     (
-      fun (q : BinaryPositive) (ih : binary_of_nat(binary_positive_to_nat(q)) = binary_positive(q)) => trans(
+      fun (q : BinaryPositive, ih : binary_of_nat(binary_positive_to_nat(q)) = binary_positive(q)) => trans(
         cong(binary_of_nat, binary_decode_even(q)),
         trans(binary_encode_double(binary_positive_to_nat(q)), cong(binary_double, ih))
       )
     ),
     (
-      fun (q : BinaryPositive) (ih : binary_of_nat(binary_positive_to_nat(q)) = binary_positive(q)) => trans(
+      fun (q : BinaryPositive, ih : binary_of_nat(binary_positive_to_nat(q)) = binary_positive(q)) => trans(
         cong(binary_of_nat, binary_decode_odd(q)),
         cong(
           binary_succ,

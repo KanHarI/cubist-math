@@ -68,10 +68,10 @@ def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
       join_tags(C, k, tags, m, rightTags)
     )
   ) {
-    zero => fun (vertices : C) (tags : Unit) (m : Nat) (rightVertices : SampleVertices(C, m)) (
-      rightTags : SampleTags(C, m)
-    ) (same : vertices = sample_first(C, m, rightVertices)) (valid : Unit) (
-      rightValid : SampleTagged(C, condition, m, rightVertices, rightTags)
+    zero => fun (
+      vertices : C, tags : Unit, m : Nat, rightVertices : SampleVertices(C, m),
+      rightTags : SampleTags(C, m), same : vertices = sample_first(C, m, rightVertices),
+      valid : Unit, rightValid : SampleTagged(C, condition, m, rightVertices, rightTags)
     ) => rightValid;
     succ previous => sample_tagged_join_step(C, condition, k, previous);
   };

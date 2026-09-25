@@ -20,8 +20,8 @@ def bounded_eval_zero_support(
     forall f : FormalSeries(K), SeriesSupport(K, f, 0)
     -> bounded_eval(K, L, e, x, k, f) = field_zero(L)
   ) {
-    zero => fun (f : FormalSeries(K)) (support : SeriesSupport(K, f, 0)) => refl(field_zero(L));
-    succ previous => fun (f : FormalSeries(K)) (support : SeriesSupport(K, f, 0)) => trans(
+    zero => fun (f : FormalSeries(K), support : SeriesSupport(K, f, 0)) => refl(field_zero(L));
+    succ previous => fun (f : FormalSeries(K), support : SeriesSupport(K, f, 0)) => trans(
       cong(
         (
           fun (a : af_carrier(K)) => field_add(
@@ -41,7 +41,7 @@ def bounded_eval_zero_support(
         trans(
           cong(
             (fun (a : af_carrier(L)) => field_add(L, field_zero(L), field_mul(L, x, a))),
-            previous(series_tail(K, f), (fun (i : Nat) (above : le(0, i)) => support(succ(i), tt)))
+            previous(series_tail(K, f), (fun (i : Nat, above : le(0, i)) => support(succ(i), tt)))
           ),
           trans(
             cong(field_add(L, field_zero(L)), scalar_mul_zero(L, x)),
@@ -60,25 +60,25 @@ def bounded_eval_independent(
     forall f : FormalSeries(K), forall n : Nat, SeriesSupport(K, f, k) -> SeriesSupport(K, f, n)
     -> bounded_eval(K, L, e, x, k, f) = bounded_eval(K, L, e, x, n, f)
   ) {
-    zero => fun (f : FormalSeries(K)) (n : Nat) (sf : SeriesSupport(K, f, 0)) (
-      sn : SeriesSupport(K, f, n)
+    zero => fun (
+      f : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, 0), sn : SeriesSupport(K, f, n)
     ) => sym(bounded_eval_zero_support(K, L, e, x, n, f, sf));
-    succ previous => fun (f : FormalSeries(K)) (n : Nat) => induction n as j return (
+    succ previous => fun (f : FormalSeries(K), n : Nat) => induction n as j return (
       SeriesSupport(K, f, succ(k)) -> SeriesSupport(K, f, j)
       -> bounded_eval(K, L, e, x, succ(k), f) = bounded_eval(K, L, e, x, j, f)
     ) {
-      zero => fun (sf : SeriesSupport(K, f, succ(k))) (sn : SeriesSupport(K, f, 0)) => bounded_eval_zero_support(
+      zero => fun (sf : SeriesSupport(K, f, succ(k)), sn : SeriesSupport(K, f, 0)) => bounded_eval_zero_support(
         K, L, e, x, succ(k), f, sn
       );
-      succ ignored => fun (sf : SeriesSupport(K, f, succ(k))) (sn : SeriesSupport(K, f, succ(j))) => cong(
+      succ ignored => fun (sf : SeriesSupport(K, f, succ(k)), sn : SeriesSupport(K, f, succ(j))) => cong(
         (
           fun (a : af_carrier(L)) => field_add(
             L, field_embedding_map(K, L, e, f(0)), field_mul(L, x, a)
           )
         ),
         previous(
-          series_tail(K, f), j, (fun (i : Nat) (above : le(k, i)) => sf(succ(i), above)),
-          (fun (i : Nat) (above : le(j, i)) => sn(succ(i), above))
+          series_tail(K, f), j, (fun (i : Nat, above : le(k, i)) => sf(succ(i), above)),
+          (fun (i : Nat, above : le(j, i)) => sn(succ(i), above))
         )
       );
     };
@@ -103,7 +103,7 @@ def polynomial_eval_bound(
 def polynomial_eval_zero(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
   polynomial_eval(K, L, e, polynomial_zero(K), x) = field_zero(L) {
   exact polynomial_eval_bound(
-    K, L, e, polynomial_zero(K), x, 0, (fun (n : Nat) (above : le(0, n)) => refl(field_zero(K)))
+    K, L, e, polynomial_zero(K), x, 0, (fun (n : Nat, above : le(0, n)) => refl(field_zero(K)))
   );
 }
 
@@ -425,15 +425,17 @@ def polynomial_eval_mul_bound(
       L, polynomial_eval(K, L, e, p, x), polynomial_eval(K, L, e, q, x)
     )
   ) {
-    zero => fun (p : Polynomial(K)) (support : SeriesSupport(K, polynomial_coefficients(K, p), 0)) (
+    zero => fun (
+      p : Polynomial(K), support : SeriesSupport(K, polynomial_coefficients(K, p), 0),
       q : Polynomial(K)
     ) => polynomial_eval_mul_zero(K, L, e, p, q, x, support);
-    succ previous => fun (p : Polynomial(K)) (
-      support : SeriesSupport(K, polynomial_coefficients(K, p), succ(k))
-    ) (q : Polynomial(K)) => polynomial_eval_mul_step(
+    succ previous => fun (
+      p : Polynomial(K), support : SeriesSupport(K, polynomial_coefficients(K, p), succ(k)),
+      q : Polynomial(K)
+    ) => polynomial_eval_mul_step(
       K, L, e, p, q, x,
       previous(
-        polynomial_tail(K, p), (fun (j : Nat) (above : le(k, j)) => support(succ(j), above)), q
+        polynomial_tail(K, p), (fun (j : Nat, above : le(k, j)) => support(succ(j), above)), q
       )
     );
   };

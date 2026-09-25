@@ -17,9 +17,9 @@ def ComplexParameterTagBounds(
   delta : F, n : Nat
 ) =
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> SampleTags(C, k) -> U0) {
-    zero => fun (vertices : C) (oldTags newTags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (
-      oldTags newTags : SampleTags(C, succ(k))
+    zero => fun (vertices : C, oldTags newTags : Unit) => Unit;
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), oldTags newTags : SampleTags(C, succ(k))
     ) => ComplexBoxBound(
       F, negF, lt,
       coordinate_difference(
@@ -39,8 +39,8 @@ def ComplexParameterIncrementBounds(
   realWeight imagWeight : C -> C -> C -> F, n : Nat
 ) =
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
-    zero => fun (vertices : C) (oldTags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (oldTags : SampleTags(C, succ(k))) => ComplexRectangleBound(
+    zero => fun (vertices : C, oldTags : Unit) => Unit;
+    succ previous => fun (vertices : SampleVertices(C, succ(k)), oldTags : SampleTags(C, succ(k))) => ComplexRectangleBound(
       F, negF, lt,
       coordinate_difference(
         Complex(F), complex_add(F, addF), complex_neg(F, negF),
@@ -109,18 +109,16 @@ def complex_parameter_tag_error_variation_bound(
       )
     )
   ) {
-    zero => fun (vertices : C) (oldTags newTags errors increments : Unit) => along ComplexBoxBound(
+    zero => fun (vertices : C, oldTags newTags errors increments : Unit) => along ComplexBoxBound(
       F, negF, lt, complex_zero(F, zero)
     ) by sym(ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta)) from complex_box_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic
     );
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (
-      oldTags newTags : SampleTags(C, succ(k))
-    ) (
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), oldTags newTags : SampleTags(C, succ(k)),
       errors : ComplexParameterTagBounds(
         C, F, addF, negF, lt, values, delta, succ(k), vertices, oldTags, newTags
-      )
-    ) (
+      ),
       increments : ComplexParameterIncrementBounds(
         C, F, addF, negF, lt, curve, realWeight, imagWeight, succ(k), vertices, oldTags
       )

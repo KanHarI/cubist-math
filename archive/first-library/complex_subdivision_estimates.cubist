@@ -115,7 +115,7 @@ def complex_subdivision_total_estimate(
       ), sample_sum(C, F, zero, addF, radius, k, vertices, tags)
     )
   ) {
-    zero => fun (vertices : C) (tags pieces estimates : Unit) => complex_perturbation_zero(
+    zero => fun (vertices : C, tags pieces estimates : Unit) => complex_perturbation_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic
     );
     succ previous => complex_subdivision_total_estimate_step(

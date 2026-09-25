@@ -164,7 +164,7 @@ def field_close_separated(
     field_close_all_le(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, x,
       (
-        fun (epsilon : F) (positive : lt(zero, epsilon)) => field_close_symmetry(
+        fun (epsilon : F, positive : lt(zero, epsilon)) => field_close_symmetry(
           F, addF, lt, x, y, epsilon, close(epsilon, positive)
         )
       )

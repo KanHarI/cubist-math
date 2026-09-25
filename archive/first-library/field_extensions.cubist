@@ -97,7 +97,7 @@ def extension_data_path(K : AlgebraicField, A : U0, setA : IsSet(A), a b : Field
   exact path_induction(
     FieldData(A),
     (
-      fun (a b : FieldData(A)) (p : a = b) => forall e : FieldEmbeddingData(K, A, a),
+      fun (a b : FieldData(A), p : a = b) => forall e : FieldEmbeddingData(K, A, a),
       forall d : FieldEmbeddingData(K, A, b),
       (
         forall k : af_carrier(K),
@@ -105,7 +105,8 @@ def extension_data_path(K : AlgebraicField, A : U0, setA : IsSet(A), a b : Field
       ) -> (typed(ExtensionData(K, A), (a, e)) = typed(ExtensionData(K, A), (b, d)))
     ),
     (
-      fun (a : FieldData(A)) (e d : FieldEmbeddingData(K, A, a)) (
+      fun (
+        a : FieldData(A), e d : FieldEmbeddingData(K, A, a),
         same : (
           forall k : af_carrier(K),
           extension_embedding_function(K, A, a, e, k) = extension_embedding_function(K, A, a, d, k)

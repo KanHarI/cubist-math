@@ -194,7 +194,7 @@ def bouquet_decode_encode(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :
   exact based_induction(
     U1, U0, Bouquet(A), bouquet_base(A),
     (
-      fun (point : Bouquet(A)) (path : bouquet_base(A) = point) => bouquet_decode(
+      fun (point : Bouquet(A), path : bouquet_base(A) = point) => bouquet_decode(
         A, point, bouquet_encode(A, point, path)
       ) = path
     ),

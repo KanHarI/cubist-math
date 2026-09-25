@@ -87,11 +87,11 @@ def coordinate_combination_component(F : AlgebraicField, n : Nat, i : Fin(n), m 
       F, k, (fun (j : Fin(k)) => field_mul(F, coefficients(j), rows(j)(i)))
     )
   ) {
-    zero => fun (rows : Fin(0) -> (Fin(n) -> af_carrier(F))) (
-      coefficients : Fin(0) -> af_carrier(F)
-    ) => refl(field_zero(F));
-    succ previous => fun (rows : Fin(succ(k)) -> (Fin(n) -> af_carrier(F))) (
-      coefficients : Fin(succ(k)) -> af_carrier(F)
+    zero => fun (rows : Fin(0) -> (Fin(n) -> af_carrier(F)), coefficients : Fin(0) -> af_carrier(F)) => refl(
+      field_zero(F)
+    );
+    succ previous => fun (
+      rows : Fin(succ(k)) -> (Fin(n) -> af_carrier(F)), coefficients : Fin(succ(k)) -> af_carrier(F)
     ) => cong(
       field_add(
         F,
@@ -314,7 +314,7 @@ def subgroup_relation_transform(
   let sv = subgroup_value(G, H, s);
   let shifted = subgroup_carrier_multiply(G, H, h, subgroup_carrier_inverse(G, H, s));
   let act =
-    fun (u : SubgroupCarrier(G, H)) (x : extension_carrier(K, E)) => extension_iso_forward(
+    fun (u : SubgroupCarrier(G, H), x : extension_carrier(K, E)) => extension_iso_forward(
       K, E, E, subgroup_value(G, H, u), x
     );
   let e = galois_field_embedding(K, E, sv);
@@ -435,7 +435,7 @@ def subgroup_evaluation_coefficient_member(
     fixed_intermediate_field, galois_fixed_field, intermediate_members, galois_subgroup_members,
     subgroup_members
   ] {
-    fun (e : Galois(K, E)) (member : subgroup_members(G, H, e)) => subgroup_evaluation_coefficient_fixed(
+    fun (e : Galois(K, E), member : subgroup_members(G, H, e)) => subgroup_evaluation_coefficient_fixed(
       K, E, H, n, enumeration, points, basis, y, typed(SubgroupCarrier(G, H), (e, member)), j
     )
   };
@@ -486,11 +486,11 @@ def field_vector_combination_sum(R F : AlgebraicField, i : FieldEmbedding(R, F),
       (fun (j : Fin(k)) => field_mul(F, field_embedding_map(R, F, i, coefficients(j)), points(j)))
     )
   ) {
-    zero => fun (points : Fin(0) -> af_carrier(F)) (coefficients : Fin(0) -> af_carrier(R)) => refl(
+    zero => fun (points : Fin(0) -> af_carrier(F), coefficients : Fin(0) -> af_carrier(R)) => refl(
       field_zero(F)
     );
-    succ previous => fun (points : Fin(succ(k)) -> af_carrier(F)) (
-      coefficients : Fin(succ(k)) -> af_carrier(R)
+    succ previous => fun (
+      points : Fin(succ(k)) -> af_carrier(F), coefficients : Fin(succ(k)) -> af_carrier(R)
     ) => cong(
       field_add(
         F,

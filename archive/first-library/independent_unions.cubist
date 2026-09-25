@@ -76,7 +76,7 @@ def EmptyIndependentSubset(K : AlgebraicField, V : VectorSpace(K)) =
     IndependentSubset(K, V),
     (
       (fun (x : vector_carrier(K, V)) => Void),
-      (fun (x : vector_carrier(K, V)) (p q : Void) => typed((p = q), absurd(p))),
+      (fun (x : vector_carrier(K, V), p q : Void) => typed((p = q), absurd(p))),
       empty_linearly_independent(K, V)
     )
   );

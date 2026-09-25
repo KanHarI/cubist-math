@@ -130,7 +130,7 @@ def embedding_evaluation_combination(
       (fun (t : Fin(j)) => field_embedding_map(R, F, e, coefficients(t)))
     )
   ) {
-    zero => fun (points : Fin(0) -> af_carrier(F)) (coefficients : Fin(0) -> af_carrier(R)) => embedding_evaluation_zero(
+    zero => fun (points : Fin(0) -> af_carrier(F), coefficients : Fin(0) -> af_carrier(R)) => embedding_evaluation_zero(
       F, k, maps
     );
     succ previous => embedding_evaluation_combination_step(R, F, e, k, maps, over, j, previous);

@@ -12,7 +12,8 @@ def radix_decode_positive(extra : Nat, p : RadixPositive(extra)) :
       )
     ),
     (
-      fun (d : RadixDigit(succ(succ(extra)))) (q : RadixPositive(extra)) (
+      fun (
+        d : RadixDigit(succ(succ(extra))), q : RadixPositive(extra),
         ih : 1 <= radix_positive_to_nat(extra, q)
       ) => nat_add_positive(
         succ(succ(extra)) * radix_positive_to_nat(extra, q),
@@ -75,7 +76,8 @@ def radix_leading_injective(extra : Nat, d : RadixDigit(succ(extra)), q : RadixP
       ) -> (radix_leading(extra, d) = r)
     ),
     (
-      fun (e : RadixDigit(succ(extra))) (
+      fun (
+        e : RadixDigit(succ(extra)),
         same : radix_positive_to_nat(extra, radix_leading(extra, d)) = radix_positive_to_nat(
           extra, radix_leading(extra, e)
         )
@@ -90,11 +92,11 @@ def radix_leading_injective(extra : Nat, d : RadixDigit(succ(extra)), q : RadixP
       )
     ),
     (
-      fun (e : RadixDigit(succ(succ(extra)))) (r : RadixPositive(extra)) (
+      fun (
+        e : RadixDigit(succ(succ(extra))), r : RadixPositive(extra),
         ignored : (
           radix_positive_to_nat(extra, radix_leading(extra, d)) = radix_positive_to_nat(extra, r)
-        ) -> (radix_leading(extra, d) = r)
-      ) (
+        ) -> (radix_leading(extra, d) = r),
         same : radix_positive_to_nat(extra, radix_leading(extra, d)) = radix_positive_to_nat(
           extra, radix_append(extra, e, r)
         )
@@ -143,7 +145,8 @@ def radix_append_injective(
       ) -> (radix_append(extra, d, p) = r)
     ),
     (
-      fun (e : RadixDigit(succ(extra))) (
+      fun (
+        e : RadixDigit(succ(extra)),
         same : radix_positive_to_nat(extra, radix_append(extra, d, p)) = radix_positive_to_nat(
           extra, radix_leading(extra, e)
         )
@@ -153,7 +156,8 @@ def radix_append_injective(
       )
     ),
     (
-      fun (e : RadixDigit(succ(succ(extra)))) (r : RadixPositive(extra)) (
+      fun (
+        e : RadixDigit(succ(succ(extra))), r : RadixPositive(extra),
         ignored : (
           radix_positive_to_nat(extra, radix_append(extra, d, p)) = radix_positive_to_nat(extra, r)
         ) -> (radix_append(extra, d, p) = r)

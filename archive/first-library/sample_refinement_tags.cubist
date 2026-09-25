@@ -19,9 +19,9 @@ def sample_adjacent_endpoints(
     forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices)
     -> related(sample_first(C, k, vertices), sample_last(C, k, vertices))
   ) {
-    zero => fun (vertices : C) (ordered : Unit) => reflexivity(vertices);
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (
-      ordered : SampleAdjacent(C, related, succ(k), vertices)
+    zero => fun (vertices : C, ordered : Unit) => reflexivity(vertices);
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), ordered : SampleAdjacent(C, related, succ(k), vertices)
     ) => transitiveRelation(
       field_fst(C, SampleVertices(C, k), vertices),
       sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
@@ -160,9 +160,10 @@ def sample_between_global(
 ) :
   SampleBetweenGlobal(C, related, n) {
   exact induction n as k return SampleBetweenGlobal(C, related, k) {
-    zero => fun (a b vertices : C) (tags : Unit) (lowerFirst : related(a, vertices)) (
-      upperLast : related(vertices, b)
-    ) (valid : Unit) => tt;
+    zero => fun (
+      a b vertices : C, tags : Unit, lowerFirst : related(a, vertices),
+      upperLast : related(vertices, b), valid : Unit
+    ) => tt;
     succ previous => sample_between_global_step(
       C, related, reflexivity, transitiveRelation, k, previous
     );

@@ -48,8 +48,8 @@ def dyadic_width_nonnegative(
     forall width : F, FieldLe(F, lt, zero, width)
     -> FieldLe(F, lt, zero, dyadic_width(F, half, k, width))
   ) {
-    zero => fun (width : F) (nonnegativeWidth : FieldLe(F, lt, zero, width)) => nonnegativeWidth;
-    succ previous => fun (width : F) (nonnegativeWidth : FieldLe(F, lt, zero, width)) => previous(
+    zero => fun (width : F, nonnegativeWidth : FieldLe(F, lt, zero, width)) => nonnegativeWidth;
+    succ previous => fun (width : F, nonnegativeWidth : FieldLe(F, lt, zero, width)) => previous(
       half(width),
       nonnegative_half_from_sum(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, half(width),

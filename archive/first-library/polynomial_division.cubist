@@ -155,7 +155,7 @@ def division_zero(
           polynomial_add_zero(K, polynomial_zero(K))
         )
       )
-    ), (fun (k : Nat) (above : le(d, k)) => refl(field_zero(K)))
+    ), (fun (k : Nat, above : le(d, k)) => refl(field_zero(K)))
   );
 }
 
@@ -171,11 +171,11 @@ def divide_with_bound(
     -> DivisionResult(K, p, divisor, d)
   ) {
     zero => division_zero(K, divisor, d);
-    succ previous => fun (p : Polynomial(K)) (
-      support : SeriesSupport(K, polynomial_coefficients(K, p), succ(k))
+    succ previous => fun (
+      p : Polynomial(K), support : SeriesSupport(K, polynomial_coefficients(K, p), succ(k))
     ) => division_horner_step(
       K, divisor, d, b, inverse, sd, p,
-      previous(polynomial_tail(K, p), (fun (j : Nat) (above : le(k, j)) => support(succ(j), above)))
+      previous(polynomial_tail(K, p), (fun (j : Nat, above : le(k, j)) => support(succ(j), above)))
     );
   };
 

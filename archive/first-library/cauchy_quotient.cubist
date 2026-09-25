@@ -86,7 +86,7 @@ def sequence_same_reflexive(
       (
         exists bound : Nat, forall n : Nat, IndexLE(bound, n)
         -> FieldClose(Q, addQ, ltQ, x(n), x(n), epsilon)
-      ), (0, (fun (n : Nat) (bound : IndexLE(0, n)) => closeSelf(x(n), epsilon, positive)))
+      ), (0, (fun (n : Nat, bound : IndexLE(0, n)) => closeSelf(x(n), epsilon, positive)))
     )
   );
 }
@@ -119,7 +119,7 @@ def sequence_same_symmetric(
         (
           bound,
           (
-            fun (n : Nat) (large : IndexLE(bound, n)) => typed(
+            fun (n : Nat, large : IndexLE(bound, n)) => typed(
               FieldClose(Q, addQ, ltQ, y(n), x(n), epsilon),
               (
                 field_snd(
@@ -173,7 +173,7 @@ def close_tails_compose(
   exact (
     leftBound + rightBound,
     (
-      fun (n : Nat) (large : IndexLE(leftBound + rightBound, n)) => composeClose(
+      fun (n : Nat, large : IndexLE(leftBound + rightBound, n)) => composeClose(
         x(n), y(n), z(n),
         leftClose(n, nat_le_trans(leftBound, leftBound + rightBound, n, boundLeft, large)),
         rightClose(

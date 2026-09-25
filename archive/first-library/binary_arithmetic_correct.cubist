@@ -100,12 +100,12 @@ def binary_decode_add_even(
     BinaryAddCorrect(binary_bit0(p)),
     binary_add_right_one(binary_bit0(p), refl(binary_positive_succ(binary_bit0(p)))),
     (
-      fun (r : BinaryPositive) (ignored : BinaryAddCorrect(binary_bit0(p), r)) => binary_add_even_even(
+      fun (r : BinaryPositive, ignored : BinaryAddCorrect(binary_bit0(p), r)) => binary_add_even_even(
         p, r, ih(r)
       )
     ),
     (
-      fun (r : BinaryPositive) (ignored : BinaryAddCorrect(binary_bit0(p), r)) => binary_add_even_odd(
+      fun (r : BinaryPositive, ignored : BinaryAddCorrect(binary_bit0(p), r)) => binary_add_even_odd(
         p, r, ih(r)
       )
     ), q
@@ -120,12 +120,12 @@ def binary_decode_add_odd(
     BinaryAddCorrect(binary_bit1(p)),
     binary_add_right_one(binary_bit1(p), refl(binary_positive_succ(binary_bit1(p)))),
     (
-      fun (r : BinaryPositive) (ignored : BinaryAddCorrect(binary_bit1(p), r)) => binary_add_odd_even(
+      fun (r : BinaryPositive, ignored : BinaryAddCorrect(binary_bit1(p), r)) => binary_add_odd_even(
         p, r, ih(r)
       )
     ),
     (
-      fun (r : BinaryPositive) (ignored : BinaryAddCorrect(binary_bit1(p), r)) => binary_add_odd_odd(
+      fun (r : BinaryPositive, ignored : BinaryAddCorrect(binary_bit1(p), r)) => binary_add_odd_odd(
         p, r, ih(r)
       )
     ), q
@@ -198,8 +198,8 @@ def binary_decode_positive_mul(p q : BinaryPositive) : BinaryMulCorrect(p, q) {
   exact binary_positive_induction(
     (fun (a : BinaryPositive) => BinaryMulCorrect(a, q)),
     sym(nat_add_zero(binary_positive_to_nat(q))),
-    (fun (a : BinaryPositive) (ih : BinaryMulCorrect(a, q)) => binary_mul_even(a, q, ih)),
-    (fun (a : BinaryPositive) (ih : BinaryMulCorrect(a, q)) => binary_mul_odd(a, q, ih)), p
+    (fun (a : BinaryPositive, ih : BinaryMulCorrect(a, q)) => binary_mul_even(a, q, ih)),
+    (fun (a : BinaryPositive, ih : BinaryMulCorrect(a, q)) => binary_mul_odd(a, q, ih)), p
   );
 }
 

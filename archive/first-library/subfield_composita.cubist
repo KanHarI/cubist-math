@@ -149,7 +149,7 @@ def prime_subfield_least(F : AlgebraicField, S : Subfield(F)) :
   exact generated_subfield_least(
     F, (fun (x : af_carrier(F)) => Void), S,
     (
-      fun (x : af_carrier(F)) (impossible : Void) => typed(
+      fun (x : af_carrier(F), impossible : Void) => typed(
         subfield_members(F, S, x), absurd(impossible)
       )
     )

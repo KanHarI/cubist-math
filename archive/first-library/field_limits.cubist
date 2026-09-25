@@ -17,7 +17,7 @@ def field_converges_constant(
   exact (
     0,
     (
-      fun (n : Nat) (large : IndexLE(0, n)) => field_close_self(
+      fun (n : Nat, large : IndexLE(0, n)) => field_close_self(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, epsilon, positive
       )
     )
@@ -69,7 +69,7 @@ def field_converges_add(
   exact (
     bound,
     (
-      fun (n : Nat) (large : IndexLE(bound, n)) => along(
+      fun (n : Nat, large : IndexLE(bound, n)) => along(
         (fun (radius : F) => FieldClose(F, addF, lt, addF(xs(n), ys(n)), addF(x, y), radius))
       ) by halfSum(epsilon) from field_close_add(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(n), x, ys(n), y,
@@ -99,7 +99,7 @@ def field_converges_is_cauchy(
   exact (
     bound,
     (
-      fun (m n : Nat) (largeM : IndexLE(bound, m)) (largeN : IndexLE(bound, n)) => field_close_halved_triangle(
+      fun (m n : Nat, largeM : IndexLE(bound, m), largeN : IndexLE(bound, n)) => field_close_halved_triangle(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, sequence(m),
         limit, sequence(n), epsilon, close(m, largeM),
         field_close_symmetry(F, addF, lt, sequence(n), limit, half(epsilon), close(n, largeN))
@@ -124,7 +124,7 @@ def field_cauchy_add(
   exact (
     bound,
     (
-      fun (m n : Nat) (largeM : IndexLE(bound, m)) (largeN : IndexLE(bound, n)) => along(
+      fun (m n : Nat, largeM : IndexLE(bound, m), largeN : IndexLE(bound, n)) => along(
         (
           fun (radius : F) => FieldClose(
             F, addF, lt, addF(xs(m), ys(m)), addF(xs(n), ys(n)), radius
@@ -158,7 +158,7 @@ def field_converges_pointwise(
   exact (
     bound,
     (
-      fun (n : Nat) (large : IndexLE(bound, n)) => along(
+      fun (n : Nat, large : IndexLE(bound, n)) => along(
         (fun (value : F) => FieldClose(F, addF, lt, value, limit, epsilon))
       ) by same(n) from close(n, large)
     )

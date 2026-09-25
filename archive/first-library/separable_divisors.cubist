@@ -47,7 +47,7 @@ def unit_distinct_splitting(
   let splitting =
     typed(
       DistinctPolynomialSplitting(K, p, 0),
-      (roots, a, eq, (fun (i j : Fin(0)) (same : roots(i) = roots(j)) => typed((i = j), absurd(i))))
+      (roots, a, eq, (fun (i j : Fin(0), same : roots(i) = roots(j)) => typed((i = j), absurd(i))))
     );
   exact along DistinctPolynomialSplitting(K, p) by sym(cong(natural_predecessor, degree)) from splitting;
 }

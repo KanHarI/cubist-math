@@ -64,12 +64,14 @@ def combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace
     (forall i : Fin(k), subspace_members(K, V, S, v(i)))
     -> subspace_members(K, V, S, linear_combination(K, V, k, v, a))
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, V)) (a : Fin(0) -> af_carrier(K)) (
+    zero => fun (
+      v : Fin(0) -> vector_carrier(K, V), a : Fin(0) -> af_carrier(K),
       members : (forall i : Fin(0), subspace_members(K, V, S, v(i)))
     ) => subspace_zero(K, V, S);
-    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) (
-      a : Fin(succ(k)) -> af_carrier(K)
-    ) (members : (forall i : Fin(succ(k)), subspace_members(K, V, S, v(i)))) => subspace_add(
+    succ previous => fun (
+      v : Fin(succ(k)) -> vector_carrier(K, V), a : Fin(succ(k)) -> af_carrier(K),
+      members : (forall i : Fin(succ(k)), subspace_members(K, V, S, v(i)))
+    ) => subspace_add(
       K, V, S,
       vector_scale(K, V, finite_head(af_carrier(K), k, a), finite_head(vector_carrier(K, V), k, v)),
       linear_combination(

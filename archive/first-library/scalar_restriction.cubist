@@ -18,13 +18,13 @@ def restricted_scalar_laws(K L : AlgebraicField, e : FieldEmbedding(K, L), V : V
       )
     ),
     (
-      fun (a b : af_carrier(K)) (x : X) => trans(
+      fun (a b : af_carrier(K), x : X) => trans(
         cong((fun (c : af_carrier(L)) => vector_scale(L, V, c, x)), mul(a, b)),
         vector_scale_associative(L, V, embed(a), embed(b), x)
       )
     ), (fun (a : af_carrier(K)) => vector_scale_add_vectors(L, V, embed(a))),
     (
-      fun (a b : af_carrier(K)) (x : X) => trans(
+      fun (a b : af_carrier(K), x : X) => trans(
         cong((fun (c : af_carrier(L)) => vector_scale(L, V, c, x)), add(a, b)),
         vector_scale_add_scalars(L, V, embed(a), embed(b), x)
       )
@@ -68,7 +68,7 @@ def restrict_coordinate_iso(K L : AlgebraicField, e : FieldEmbedding(K, L), n : 
   let add =
     fun (x y : X) => refl((fun (i : Fin(n)) => af_add(af_carrier(L), af_operations(L), x(i), y(i))));
   let scale =
-    fun (a : af_carrier(K)) (x : X) => refl(
+    fun (a : af_carrier(K), x : X) => refl(
       (
         fun (i : Fin(n)) => af_mul(
           af_carrier(L), af_operations(L), field_embedding_map(K, L, e, a), x(i)
@@ -89,7 +89,7 @@ def restrict_field_tower_iso(
   let f = fun (x : X) => x;
   let add = fun (x y : X) => refl(af_add(X, af_operations(M), x, y));
   let scale =
-    fun (a : af_carrier(K)) (x : X) => refl(
+    fun (a : af_carrier(K), x : X) => refl(
       af_mul(X, af_operations(M), field_embedding_map(L, M, d, field_embedding_map(K, L, e, a)), x)
     );
   exact ((f, add, scale), (f, add, scale), (fun (x : X) => refl(x)), (fun (x : X) => refl(x)));

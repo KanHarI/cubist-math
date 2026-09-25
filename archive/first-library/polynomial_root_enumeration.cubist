@@ -46,7 +46,8 @@ def linear_factor_product_root_index(K : AlgebraicField, n : Nat) :
     PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, k, roots), x)
     -> Mere(exists i : Fin(k), roots(i) = x)
   ) {
-    zero => fun (roots : Fin(0) -> af_carrier(K)) (x : af_carrier(K)) (
+    zero => fun (
+      roots : Fin(0) -> af_carrier(K), x : af_carrier(K),
       root : PolynomialRoot(K, K, field_embedding_identity(K), polynomial_one(K), x)
     ) => typed(
       Mere(exists i : Fin(0), roots(i) = x),
@@ -104,7 +105,7 @@ def linear_factor_product_listed_root(K : AlgebraicField, n : Nat) =
     forall roots : Fin(k) -> af_carrier(K), forall i : Fin(k),
     PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, k, roots), roots(i))
   ) {
-    zero => fun (roots : Fin(0) -> af_carrier(K)) (i : Fin(0)) => typed(
+    zero => fun (roots : Fin(0) -> af_carrier(K), i : Fin(0)) => typed(
       PolynomialRoot(
         K, K, field_embedding_identity(K), linear_factor_product(K, 0, roots), roots(i)
       ), absurd(i)

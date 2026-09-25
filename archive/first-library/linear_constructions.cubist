@@ -188,7 +188,7 @@ def linear_map_change(
       )
     ),
     (
-      fun (a : af_carrier(K)) (x : X) => trans(
+      fun (a : af_carrier(K), x : X) => trans(
         sym(same(vector_scale(K, V, a, x))),
         trans(linear_scale(K, V, W, h, a, x), cong(vector_scale(K, W, a), same(x)))
       )

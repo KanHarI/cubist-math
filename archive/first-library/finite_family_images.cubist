@@ -53,14 +53,14 @@ def family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
       i
     )
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, V)) (i : Fin(0)) => typed(
+    zero => fun (v : Fin(0) -> vector_carrier(K, V), i : Fin(0)) => typed(
       (
         linear_map(K, CoordinateSpace(K, 0), V, family_linear(K, V, 0, v), coordinate_unit(K, 0, i)) = v(
           i
         )
       ), absurd(i)
     );
-    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) (i : Fin(succ(k))) => match i as j return (
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V), i : Fin(succ(k))) => match i as j return (
       linear_map(
         K, CoordinateSpace(K, succ(k)), V, family_linear(K, V, succ(k), v),
         coordinate_unit(K, succ(k), j)
@@ -153,7 +153,8 @@ def family_combination_in_image(
       )
     )
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, W)) (a : Fin(0) -> af_carrier(K)) (
+    zero => fun (
+      v : Fin(0) -> vector_carrier(K, W), a : Fin(0) -> af_carrier(K),
       members : (
         forall i : Fin(0),
         Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), v(i)))
@@ -165,9 +166,8 @@ def family_combination_in_image(
         (vector_zero(K, V), linear_zero(K, V, W, f))
       )
     );
-    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, W)) (
-      a : Fin(succ(k)) -> af_carrier(K)
-    ) (
+    succ previous => fun (
+      v : Fin(succ(k)) -> vector_carrier(K, W), a : Fin(succ(k)) -> af_carrier(K),
       members : (
         forall i : Fin(succ(k)),
         Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), v(i)))

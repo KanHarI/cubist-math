@@ -71,11 +71,11 @@ def embedding_evaluation_frame_build(fuel : Nat) =
     -> n = add_count(k, m) -> EmbeddingEvaluationFrame(K, L, n, m, maps)
     -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps))
   ) {
-    zero => fun (K L : AlgebraicField) (n m : Nat) (maps : Fin(n) -> FieldEmbedding(K, L)) (
-      distinct : PairwiseDistinctEmbeddings(K, L, n, maps)
-    ) (total : n = add_count(0, m)) (frame : EmbeddingEvaluationFrame(K, L, n, m, maps)) => merely(
-      EmbeddingEvaluationFrame(K, L, n, m, maps), frame
-    );
+    zero => fun (
+      K L : AlgebraicField, n m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+      distinct : PairwiseDistinctEmbeddings(K, L, n, maps), total : n = add_count(0, m),
+      frame : EmbeddingEvaluationFrame(K, L, n, m, maps)
+    ) => merely(EmbeddingEvaluationFrame(K, L, n, m, maps), frame);
     succ previous => embedding_evaluation_frame_build_step(k, previous);
   };
 

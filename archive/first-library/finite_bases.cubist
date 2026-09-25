@@ -83,20 +83,20 @@ def pointwise_scalar_laws(K : AlgebraicField, I : U0, V : VectorSpace(K)) :
       )
     ),
     (
-      fun (a b : af_carrier(K)) (f : I -> A) => FunExt(
+      fun (a b : af_carrier(K), f : I -> A) => FunExt(
         U0, I, (fun (i : I) => A), scale(af_mul(af_carrier(K), af_operations(K), a, b), f),
         scale(a, scale(b, f)), (fun (i : I) => vector_scale_associative(K, V, a, b, f(i)))
       )
     ),
     (
-      fun (a : af_carrier(K)) (f g : I -> A) => FunExt(
+      fun (a : af_carrier(K), f g : I -> A) => FunExt(
         U0, I, (fun (i : I) => A), scale(a, pointwise_add(I, G, f, g)),
         pointwise_add(I, G, scale(a, f), scale(a, g)),
         (fun (i : I) => vector_scale_add_vectors(K, V, a, f(i), g(i)))
       )
     ),
     (
-      fun (a b : af_carrier(K)) (f : I -> A) => FunExt(
+      fun (a b : af_carrier(K), f : I -> A) => FunExt(
         U0, I, (fun (i : I) => A), scale(af_add(af_carrier(K), af_operations(K), a, b), f),
         pointwise_add(I, G, scale(a, f), scale(b, f)),
         (fun (i : I) => vector_scale_add_scalars(K, V, a, b, f(i)))
@@ -189,17 +189,17 @@ def evaluation_linear(K : AlgebraicField, I : U0, V : VectorSpace(K), i : I) :
   exact (
     (fun (f : I -> vector_carrier(K, V)) => f(i)),
     (fun (f g : I -> vector_carrier(K, V)) => refl(vector_add(K, V, f(i), g(i)))),
-    (fun (a : af_carrier(K)) (f : I -> vector_carrier(K, V)) => refl(vector_scale(K, V, a, f(i))))
+    (fun (a : af_carrier(K), f : I -> vector_carrier(K, V)) => refl(vector_scale(K, V, a, f(i))))
   );
 }
 
 def constant_linear(K : AlgebraicField, I : U0, V : VectorSpace(K)) :
   LinearMap(K, V, FunctionSpace(K, I, V)) {
   exact (
-    (fun (x : vector_carrier(K, V)) (i : I) => x),
+    (fun (x : vector_carrier(K, V), i : I) => x),
     (fun (x y : vector_carrier(K, V)) => refl((fun (i : I) => vector_add(K, V, x, y)))),
     (
-      fun (a : af_carrier(K)) (x : vector_carrier(K, V)) => refl(
+      fun (a : af_carrier(K), x : vector_carrier(K, V)) => refl(
         (fun (i : I) => vector_scale(K, V, a, x))
       )
     )
