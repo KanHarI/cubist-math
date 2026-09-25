@@ -246,7 +246,7 @@ A box marked moved names the item's new owner.
   Add expected-type lambda binders only where the expected function type gives
   an unambiguous domain. Consecutive `Universe` parameters in declarations
   also specialize correctly when grouped.
-- [x] Add `have h = term;` when its type can already be inferred, plus
+- [x] Add `have h := term;` when its type can already be inferred, plus
   `have h : T := term;` as shorthand for an existing `have`/`exact` block.
   The distinct assignment token avoids ambiguity with equality inside `T`.
 - [x] Define source spans and formatter behavior for each expansion. The

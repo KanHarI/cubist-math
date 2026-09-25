@@ -35,11 +35,10 @@ export function parse(source, typeOnly = false) {
     return t;
   }
   // A binding gives a name its value with `:=`; `=` is the equality type.
-  const LEGACY_EQUALS = true; // Transitional: accept `=` until sources migrate.
-  const binds = () => peek() === ":=" || (LEGACY_EQUALS && peek() === "=");
+  const binds = () => peek() === ":=";
   function define(form) {
     if (binds()) return take();
-    throw Object.assign(new Error(`Write := to give a value: ${form}.`), { offset: ts[i].start });
+    throw Object.assign(new Error(`Write := to give a value: ${form}`), { offset: ts[i].start });
   }
   function name() {
     const t = take();
@@ -342,6 +341,7 @@ export function parse(source, typeOnly = false) {
         s = { kind: t.text, target, value, start: t.start, end: e.end };
       } else if (t.text === "have") {
         const n = name();
+        if (peek() === "=") define("have name := term;");
         if (binds()) {
           take();
           const value = expr(), end = take(";");
@@ -636,6 +636,7 @@ export function parse(source, typeOnly = false) {
       });items.push(declarations.at(-1));
       continue;
     }
+    if (peek() === "=") define("def name := term;");
     take(":");
     const type = expr();
     // `def name : T := term;` states the type of a term; it is the block
@@ -649,7 +650,7 @@ export function parse(source, typeOnly = false) {
       continue;
     }
     if (peek() === ";" && type.kind === "binary" && type.operator === "=")
-      throw Object.assign(new Error("Write := to give a value: def name : T := term; here `=` reads as an equality type."), { offset: type.operatorStart });
+      throw Object.assign(new Error("Write := to give a value: def name : T := term; here `=` read as an equality type"), { offset: type.operatorStart });
     const body = block();
     declarations.push({
       kind: t.text,

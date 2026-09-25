@@ -276,9 +276,9 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
           const probe = `probe_${symbol.name}_${level}`;
           const beforeModule = `${module}${SHADOW}_probe_original_${symbol.name}_${level}`;
           const afterModule = `${module}${SHADOW}_probe_edited_${symbol.name}_${level}`;
-          await program.check(`import ${module};\ndef ${probe} = ${symbol.name}(${levels});`, beforeModule);
+          await program.check(`import ${module};\ndef ${probe} := ${symbol.name}(${levels});`, beforeModule);
           if (!program.symbols[`${beforeModule}__${probe}`]?.verified) continue;
-          await program.check(`import ${shadow};\ndef ${probe} = ${symbol.name}(${levels});`, afterModule);
+          await program.check(`import ${shadow};\ndef ${probe} := ${symbol.name}(${levels});`, afterModule);
           specialized = true;
           if (!program.symbols[`${afterModule}__${probe}`]?.verified) {
             fail(symbol.name, `Specialization at ${levels} no longer checks.`); break;

@@ -58,14 +58,14 @@
           <section id="values">
             <h2>Every value has a type</h2>
             <p>A Cubist file is a list of declarations. The simplest names a value:</p>
-            <pre><code data-check="accept">def seven = 7;</code></pre>
-            <p><code>def seven = 7;</code> names the value <code>7</code>. The checker works out its type, <code>Nat</code>, the type of natural numbers. Read <code>x : T</code> as “<code>x</code> has type <code>T</code>”: here <code>seven : Nat</code>.</p>
+            <pre><code data-check="accept">def seven := 7;</code></pre>
+            <p><code>def seven := 7;</code> names the value <code>7</code>. The checker works out its type, <code>Nat</code>, the type of natural numbers. Read <code>x : T</code> as “<code>x</code> has type <code>T</code>”: here <code>seven : Nat</code>.</p>
             <h3 id="exact-intro">Stating the type: <code>exact</code></h3>
             <p>A declaration can also state its type, after a colon. The value then goes in a <strong>block</strong> between braces, and the statement <code>exact value;</code> gives it:</p>
             <pre><code data-check="accept">def seven_again : Nat {
   exact 7;
 }</code></pre>
-            <p>The checker accepts the declaration only when the value really has the stated type. <code>exact</code> is the simplest statement a block can hold. The following chapters use blocks to build proofs one step at a time, and the chapter on <a href="proof-blocks.html#goals">proof blocks</a> lists every statement. This chapter introduces the basic types and their values; the next one writes a first proof.</p>
+            <p>A short value can also follow the type directly: <code>def seven_again : Nat := 7;</code> means the same. Throughout Cubist, <code>:=</code> gives a name its value, and <code>=</code> always means equality. The checker accepts the declaration only when the value really has the stated type. <code>exact</code> is the simplest statement a block can hold. The following chapters use blocks to build proofs one step at a time, and the chapter on <a href="proof-blocks.html#goals">proof blocks</a> lists every statement. This chapter introduces the basic types and their values; the next one writes a first proof.</p>
           </section>
           <section id="tour-numbers">
             <h2>Natural numbers</h2>
@@ -74,13 +74,13 @@
             <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import naturals;</code> at its start. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
             <pre><code data-check="accept">import naturals;
 
-def three = succ(succ(succ(0)));
+def three := succ(succ(succ(0)));
 
 evaluate three expecting 3;
 evaluate 2 + 3 expecting 5;
 evaluate 2 * 3 expecting 6;</code></pre>
             <p>Without the import, <code>+</code> has no definition. A wrong expectation is reported with the actual value:</p>
-            <pre><code data-check="reject">def five = 2 + 3;  // Error: Untranslated name: add</code></pre>
+            <pre><code data-check="reject">def five := 2 + 3;  // Error: Untranslated name: add</code></pre>
             <pre><code data-check="reject">import naturals;
 
 evaluate 2 + 2 expecting 5;  // Error: The term evaluates to 4, not 5.</code></pre>
@@ -122,7 +122,7 @@ def triple : Nat and Nat and Nat {
   exact (1, 2, 3);
 }</code></pre>
             <p>A pair needs its type stated: the checker does not guess it.</p>
-            <pre><code data-check="reject">def loose = (3, tt);  // Error: Pair requires an expected type.</code></pre>
+            <pre><code data-check="reject">def loose := (3, tt);  // Error: Pair requires an expected type.</code></pre>
           </section>
           <section id="tour-choices">
             <h2>Choices: <code>or</code></h2>
@@ -134,35 +134,56 @@ def triple : Nat and Nat and Nat {
 def no_number : Nat or Unit {
   exact right(tt);
 }</code></pre>
+            <h3 id="tour-several-choices">More than two choices</h3>
+            <p><code>or</code> groups to the right: <code>Unit or Unit or Nat</code> means <code>Unit or (Unit or Nat)</code>. So <code>left</code> picks the first type, and <code>right</code> steps into the rest, where <code>left</code> and <code>right</code> choose again:</p>
+            <pre><code data-check="accept">def first_of_three : Unit or Unit or Nat {
+  exact left(tt);
+}
+
+def second_of_three : Unit or Unit or Nat {
+  exact right(left(tt));
+}
+
+def third_of_three : Unit or Unit or Nat {
+  exact right(right(5));
+}</code></pre>
+            <p>Parentheses make a different type. In <code>(Unit or Unit) or Nat</code>, <code>left</code> first picks between the two units:</p>
+            <pre><code data-check="accept">def second_unit : (Unit or Unit) or Nat {
+  exact left(right(tt));
+}
+
+def the_number : (Unit or Unit) or Nat {
+  exact right(5);
+}</code></pre>
           </section>
           <section id="tour-functions">
             <h2>Functions: <code>-></code></h2>
             <p><code>A -> B</code> is the type of functions from <code>A</code> to <code>B</code>. <code>fun (n : Nat) => n + n</code> is the function that doubles a number, of type <code>Nat -> Nat</code>. A declaration with parameters defines a function in one step, and <code>f(x)</code> applies it:</p>
             <pre><code data-check="accept">import naturals;
 
-def double(n : Nat) = n + n;
+def double(n : Nat) := n + n;
 
-def double_again = fun (n : Nat) =&gt; n + n;
+def double_again := fun (n : Nat) =&gt; n + n;
 
 evaluate double(4) expecting 8;
 evaluate double_again(4) expecting 8;</code></pre>
             <pre><code data-check="reject">import naturals;
 
-def double(n : Nat) = n + n;
+def double(n : Nat) := n + n;
 
-def wrong_argument = double(tt);  // Error: Type mismatch: found Unit, expected Nat.</code></pre>
+def wrong_argument := double(tt);  // Error: Type mismatch: found Unit, expected Nat.</code></pre>
             <p>The argument <code>tt</code> has type <code>Unit</code>, but <code>double</code> takes a <code>Nat</code>.</p>
           </section>
           <section id="tour-types">
             <h2>Types are values too</h2>
             <p>A type is itself a value, of a type called a <strong>universe</strong>. <code>Nat</code>, <code>Unit</code> and <code>Nat and Unit</code> have type <code>U0</code>, the universe of small types. <code>U0</code> itself has type <code>U1</code>, the next universe. So types can be named, and functions can build them:</p>
-            <pre><code data-check="accept">def Pair = Nat and Unit;
+            <pre><code data-check="accept">def Pair := Nat and Unit;
 
 def p : Pair {
   exact (1, tt);
 }
 
-def Twice(A : U0) = A and A;
+def Twice(A : U0) := A and A;
 
 def q : Twice(Nat) {
   exact (1, 2);
@@ -184,13 +205,13 @@ def duplicate : forall A : U0, A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, a);
 }
 
-def one_one = duplicate(Nat, 1);</code></pre>
+def one_one := duplicate(Nat, 1);</code></pre>
             <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type the argument chose:</p>
             <pre><code data-check="reject">def duplicate : forall A : U0, A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, 0);  // Error: Type mismatch: found Nat, expected A.
 }</code></pre>
             <p>A <code>forall</code> type is itself a value, like every type. Compare a function that builds a type with a single type that quantifies over all types:</p>
-            <pre><code data-check="accept">def Twice(A : U0) = A and A;
+            <pre><code data-check="accept">def Twice(A : U0) := A and A;
 
 def AlsoTwice : U1 {
   exact forall A : U0, A and A;

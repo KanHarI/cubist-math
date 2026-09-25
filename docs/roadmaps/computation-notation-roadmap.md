@@ -172,7 +172,7 @@ use set-valued instances; higher coherence is separate library work.
 ```text
 do using M {
   x <- mx;
-  let z = h(x);
+  let z := h(x);
   y <- f(z);
   pure (x, y);
 }
@@ -187,7 +187,7 @@ Here and below, expansions omit inferable type arguments:
 | Final computation `e;` | `e`, checked against the block's expected type |
 | `x <- e; rest` | `M.bind(e, fun x => rest)` |
 | Nonfinal computation `e; rest` | `M.bind(e, fun _ => rest)` |
-| `let x = e; rest` | An ordinary local definition inside the continuation |
+| `let x := e; rest` | An ordinary local definition inside the continuation |
 
 `pure` introduces the final result; it is not an early return. Nested blocks
 select their own structure explicitly. The elaborator uses fresh binders,

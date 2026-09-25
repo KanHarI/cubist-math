@@ -49,7 +49,7 @@ def rejected_convertible_rule_refl(A : U0, x y : A, p : x = y, omega : p = p) :
 def rejected_independent_fillers(
   A : U0, B : A -> U0, E : (forall a : A, B(a) -> U0), R : U0,
   f : (forall a : A, forall b : B(a), E(a, b) -> R), x y : A, p : x = y, v : B(x), w : E(x, v)
-) =
+) :=
   path(
     fun (i : Interval) => R,
     fun (i : Interval) => f(

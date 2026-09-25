@@ -82,7 +82,7 @@ evaluate one + one expecting two;
   assert.equal("computable" in ast.declarations[2], false, "the flag appears only when written");
   const formatted = formatMathScript(source);
   assert.equal(formatMathScript(formatted), formatted);
-  assert.match(formatted, /\ncomputable def one = 1;\n\ncomputable opaque def two = 2;\n\n/);
+  assert.match(formatted, /\ncomputable def one := 1;\n\ncomputable opaque def two := 2;\n\n/);
   assert.match(formatted, /\n\nevaluate one \+ one expecting two;\n$/);
   assert.match(formatted, /have expecting : Nat := evaluate;/);
 });

@@ -89,7 +89,7 @@ test("constant path reversal avoids exponential native interval expansion",async
   let terms=Array.from({length:16},(_,i)=>`meet(d${2*i},d${2*i+1})`);
   while(terms.length>1)terms=Array.from({length:Math.ceil(terms.length/2)},(_,i)=>
     terms[2*i+1]?`join(${terms[2*i]},${terms[2*i+1]})`:terms[2*i]);
-  const lets=dimensions.map((_,i)=>`let t${i} = ${i?`refl(t${i-1})`:"0"};`).join("\n");
+  const lets=dimensions.map((_,i)=>`let t${i} := ${i?`refl(t${i-1})`:"0"};`).join("\n");
   const source=`def native_interval_budget : 0 = 0 {
     ${lets}
     have h : t31 = t31 {
@@ -130,7 +130,7 @@ test("positive composition faces use only the needed endpoint of a compact inter
   let terms=Array.from({length:16},(_,i)=>`meet(d${2*i},d${2*i+1})`);
   while(terms.length>1)terms=Array.from({length:Math.ceil(terms.length/2)},(_,i)=>
     terms[2*i+1]?`join(${terms[2*i]},${terms[2*i+1]})`:terms[2*i]);
-  const lets=dimensions.map((_,i)=>`let t${i} = ${i?`refl(t${i-1})`:"0"};`).join("\n");
+  const lets=dimensions.map((_,i)=>`let t${i} := ${i?`refl(t${i-1})`:"0"};`).join("\n");
   const source=`def positive_face_budget : 0 = 0 {
     ${lets}
     have h : t31 = t31 {
@@ -153,7 +153,7 @@ test("pushout construction visits shared source types within the proof deadline"
   const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
   const programPath=new URL("../web/cubical-program.mjs",import.meta.url).href;
   let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
-  for(let i=1;i<=26;i++)source+=`let T${i} = F(T${i-1},T${i-1});`;
+  for(let i=1;i<=26;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
   source+=`let P := Pushout(T26, Unit, Unit, fun (x : T26) => tt, fun (x : T26) => tt);
     have h : forall x : P, x = x { intro x; exact path i => x; } rfl; }
     def after : 0 = 0 { rfl; }`;
@@ -240,8 +240,8 @@ test("simp size budget interrupts serialization of a compact shared term",()=>{
   const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
   const script=`import createCubical from ${JSON.stringify(wasm)};
     import {CubicalProgram} from ${JSON.stringify(program)};
-    let source:="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
-    for(let i:=1;i<=24;i++)source+="let t"+i+" = f(t"+(i-1)+", t"+(i-1)+");";
+    let source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+    for(let i=1;i<=24;i++)source+="let t"+i+" := f(t"+(i-1)+", t"+(i-1)+");";
     source+="have h : t24 = t24 { simp only []; } rfl; }";
     const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
       {collectReferences:false});
@@ -263,8 +263,8 @@ test("simp rule selection and exclusion bound compact shared identities",()=>{
   for(const tactic of ["simp only [h]","simp without [h]"]) {
     const script=`import createCubical from ${JSON.stringify(wasm)};
       import {CubicalProgram} from ${JSON.stringify(program)};
-      let source:="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
-      for(let i:=1;i<=24;i++)source+="let t"+i+" = f(t"+(i-1)+", t"+(i-1)+");";
+      let source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+      for(let i=1;i<=24;i++)source+="let t"+i+" := f(t"+(i-1)+", t"+(i-1)+");";
       source+="have h : t24 = t24 { rfl; } ${tactic}; }";
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
         {collectReferences:false});
@@ -287,8 +287,8 @@ test("quantified simp rules scan each shared pattern node once",()=>{
   for(const tactic of ["simp only [h]","simp without [h]"]) {
     const script=`import createCubical from ${JSON.stringify(wasm)};
       import {CubicalProgram} from ${JSON.stringify(program)};
-      let source:="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
-      for(let i:=1;i<=28;i++)source+="let t"+i+" = f(t"+(i-1)+", t"+(i-1)+");";
+      let source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+      for(let i=1;i<=28;i++)source+="let t"+i+" := f(t"+(i-1)+", t"+(i-1)+");";
       source+="have helper : (forall k : Nat, f(t28,k) = k) -> n = n { intro h; ${tactic}; } rfl; }";
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
         {collectReferences:false});
@@ -320,8 +320,8 @@ test("path reconstruction preserves compact shared terms within the proof deadli
   for(const [name,prefix,fn,suffix] of cases) {
     const script=`import createCubical from ${JSON.stringify(wasm)};
       import {CubicalProgram} from ${JSON.stringify(program)};
-      let source:=${JSON.stringify(prefix)};
-      for(let i:=1;i<=24;i++)source+="let t"+i+" = ${fn}(t"+(i-1)+",t"+(i-1)+");";
+      let source=${JSON.stringify(prefix)};
+      for(let i=1;i<=24;i++)source+="let t"+i+" := ${fn}(t"+(i-1)+",t"+(i-1)+");";
       source+=${JSON.stringify(suffix)};
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
         {collectReferences:false});
@@ -347,11 +347,11 @@ test("path abstraction and dependent-path transport keep shared inputs compact",
       let source;
       if(${JSON.stringify(mode)}==="path") {
         source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
-        for(let i:=1;i<=24;i++)source+="let T"+i+" = F(T"+(i-1)+",T"+(i-1)+");";
+        for(let i=1;i<=24;i++)source+="let T"+i+" := F(T"+(i-1)+",T"+(i-1)+");";
         source+="have h : forall x : T24, x = x { intro x; exact path i => x; } rfl; }";
       } else {
         source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
-        for(let i:=1;i<=24;i++)source+="let t"+i+" = f(t"+(i-1)+",t"+(i-1)+");";
+        for(let i=1;i<=24;i++)source+="let t"+i+" := f(t"+(i-1)+",t"+(i-1)+");";
         source+="have h : (along (fun (n : Nat) => Nat) by refl(0) from t24) = t24 -> t24 = t24 { intro q; over (fun (n : Nat) => Nat) along refl(0) by { exact q; } } rfl; }";
       }
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
@@ -378,7 +378,7 @@ test("interval expansion is bounded while later declarations still elaborate",()
     while(formula.length>1)formula=Array.from({length:Math.ceil(formula.length/2)},(_,i)=>
       formula[2*i+1]?`meet(${formula[2*i]},${formula[2*i+1]})`:formula[2*i]);
     let source="def interval_budget : 0 = 0 { let t0 := 0;";
-    for(let i=1;i<dimensions.length;i++)source+=`let t${i} = refl(t${i-1});`;
+    for(let i=1;i<dimensions.length;i++)source+=`let t${i} := refl(t${i-1});`;
     source+=`have h : t${dimensions.length-1} = t${dimensions.length-1} { exact `;
     source+=dimensions.map(d=>`path ${d} => `).join("");
     return source+`refl(0) @ ${formula[0]}; } rfl; } def after : 0 = 0 { rfl; }`;
@@ -413,11 +413,11 @@ test("shared path and transport proofs remain inspectable without expanding raw 
     let source;
     if(mode==="path") {
       source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
-      for(let i=1;i<=28;i++)source+=`let T${i} = F(T${i-1},T${i-1});`;
+      for(let i=1;i<=28;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
       source+="have h : forall x : T28, x = x { intro x; exact path i => x; } rfl; }";
     } else {
       source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
-      for(let i=1;i<=24;i++)source+=`let t${i} = f(t${i-1},t${i-1});`;
+      for(let i=1;i<=24;i++)source+=`let t${i} := f(t${i-1},t${i-1});`;
       source+="have h : (along (fun (n : Nat) => Nat) by refl(0) from t24) = t24 -> t24 = t24 { intro q; over (fun (n : Nat) => Nat) along refl(0) by { exact q; } } rfl; }";
     }
     const script=`import createCubical from ${JSON.stringify(wasm)};
@@ -539,7 +539,7 @@ test("universe templates retain their defining simplification sets during use an
 
 test("imported template failures select the caller and name the definition site",async t=>{
   const library=`// ${".".repeat(200)}\ndef broken__rule(U : Universe, n : Nat) : n = n {\n simp only [0];\n}`;
-  const source="import rules;\ndef use = broken__rule(U0, 0);\ndef good = 0;";
+  const source="import rules;\ndef use := broken__rule(U0, 0);\ndef good := 0;";
   const program=new CubicalProgram(await createCubical(),name=>{
     if(name==="rules")return library;
     throw Error(`Unexpected import ${name}`);
@@ -919,7 +919,7 @@ test("registered default and named sets retain checked proofs and format stably"
   assert.equal(expandedSyntax(parse(formatted)),expandedSyntax(parse(source)));
   // A set assignment is spaced like one; an equality carrier stays attached.
   assert.equal(formatted,source);
-  assert.match(formatted,/simp_set nat_units = \[nat_add_zero\];/);
+  assert.match(formatted,/simp_set nat_units := \[nat_add_zero\];/);
   assert.match(formatMathScript("def t(x : Nat) : x =[Nat] x {\n  rfl;\n}\n"),/x =\[Nat\] x/);
 });
 

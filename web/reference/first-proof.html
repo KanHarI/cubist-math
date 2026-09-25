@@ -70,11 +70,11 @@
             <p>In the proof workspace, click a proof-step line number to see its goal and context.</p>
             <h3 id="blocks-and-terms">The same proof as a term</h3>
             <p>A proof block is a readable way to build a term. The same function can be written directly:</p>
-            <pre><code data-check="accept">def identity(A : U0, value : A) = value;
+            <pre><code data-check="accept">def identity(A : U0, value : A) := value;
 
-def identity_on_numbers = identity(Nat);
+def identity_on_numbers := identity(Nat);
 
-def five = identity(Nat, 5);</code></pre>
+def five := identity(Nat, 5);</code></pre>
             <p>Both forms produce the same kind of kernel term: a function taking a type and an element of it. The second <code>identity</code> is used twice: <code>identity(Nat)</code> is the identity function on <code>Nat</code>, and <code>identity(Nat, 5)</code> is the number <code>5</code>. The chapter on <a href="proof-blocks.html#goals">proof blocks</a> describes every statement a block can contain.</p>
             <p>A wrong proof is rejected with a message, and nothing is added. Here the last step offers the type <code>A</code> where an element of <code>A</code> is needed:</p>
             <pre><code data-check="reject">def not_identity : forall A : U0, A -&gt; A {
@@ -92,7 +92,7 @@ def five = identity(Nat, 5);</code></pre>
   exact Nat;  // Error: Type mismatch: found U0, expected Nat.
 }
 
-def uses_wrong = wrong;  // Error: Untranslated dependency: wrong</code></pre>
+def uses_wrong := wrong;  // Error: Untranslated dependency: wrong</code></pre>
             <p>Here <code>wrong</code> fails because <code>Nat</code> is a type, not a number, and <code>uses_wrong</code> fails because <code>wrong</code> does not exist. The chapter on <a href="checking.html#inspection">checking and inspection</a> shows where to run the checker and how to read its results.</p>
           </section>
           <section id="files">
@@ -102,20 +102,20 @@ def uses_wrong = wrong;  // Error: Untranslated dependency: wrong</code></pre>
 import sets;
 
 // Declarations and directives follow the imports.
-def seven = 7;</code></pre>
+def seven := 7;</code></pre>
             <p>An import names a module without quotes or a file extension. <code>import naturals;</code> loads <code>naturals.cubist</code>. The command-line checker looks first in the directory of the file being checked, then in the library: the rebuilt library under <code>library/</code>, then the archived first library. The imported module is checked too, along with everything it imports.</p>
             <p>An import makes every checked declaration of the module available, and so do the modules it imports in turn. It also brings the <a href="rewriting.html#simp-registration">simplification rules and sets</a> that those modules register. Importing a module does not make a theorem depend on that module’s assumptions. Each theorem’s assumptions are computed from its own checked term.</p>
             <p>Imports must come first. An import after a declaration is a syntax error:</p>
-            <pre><code data-check="reject">def zero_again = 0;
+            <pre><code data-check="reject">def zero_again := 0;
 
 import naturals;  // Error: Imports must come before declarations.</code></pre>
           </section>
           <section id="names">
             <h2>Names and comments</h2>
             <p>A name starts with a letter or an underscore, followed by letters, digits and underscores. Names are case-sensitive: <code>value</code> and <code>Value</code> are different names.</p>
-            <pre><code data-check="accept">def value = 0;
+            <pre><code data-check="accept">def value := 0;
 
-def Value = 1;</code></pre>
+def Value := 1;</code></pre>
             <p>Comments run from <code>//</code> to the end of the line. There are no block comments and no string literals. Source is plain ASCII: write <code>-></code>, <code>forall</code> and <code>exists</code>, not arrows or quantifier symbols. The inspector can display mathematical symbols, but the source cannot contain them:</p>
             <pre><code data-check="reject">def arrow(A : U0) : A → A {  // Error: Unexpected character →
   intro a;
@@ -130,20 +130,21 @@ def Value = 1;</code></pre>
 // The identity on numbers.
 //
 // A second paragraph of the same description.
-def same_number(n : Nat) = n;</code></pre>
+def same_number(n : Nat) := n;</code></pre>
             <p>Here the first comment is a section comment, because a blank line follows it. The next three lines are the description of <code>next</code>.</p>
           </section>
           <section id="declarations">
             <h2>Declarations</h2>
-            <p>A declaration names a checked term. There are two main forms:</p>
+            <p>A declaration names a checked term. Its value follows <code>:=</code>, and <code>=</code> always means equality. There are three main forms:</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
               <tbody>
-                <tr><td><code>def name(params) = term;</code></td><td>The <strong>term form</strong>. The result type is inferred from the term. The parameters are optional.</td></tr>
+                <tr><td><code>def name(params) := term;</code></td><td>The <strong>term form</strong>. The result type is inferred from the term. The parameters are optional.</td></tr>
+                <tr><td><code>def name(params) : T := term;</code></td><td>The <strong>typed term form</strong>. The term is checked against the stated type <code>T</code>.</td></tr>
                 <tr><td><code>def name(params) : T { … }</code></td><td>The <strong>block form</strong>. The block is checked against the stated result type <code>T</code>. Use it for proofs and for constructions whose type should be stated.</td></tr>
               </tbody>
             </table></div>
-            <pre><code data-check="accept">def identity_term(A : U0, x : A) = x;
+            <pre><code data-check="accept">def identity_term(A : U0, x : A) := x;
 
 def same(A : U0, x : A) : A {
   exact x;
@@ -152,15 +153,19 @@ def same(A : U0, x : A) : A {
 def second_of_two(A : U0, x y : A) : A {
   exact y;
 }</code></pre>
-            <p>A term declaration ends with <code>;</code>. A block declaration ends with <code>}</code>. There is no form with both a stated type and a term: in <code>def four : Nat = 4;</code> the checker reads <code>Nat = 4</code> as the type, an equation, and then expects a block:</p>
-            <pre><code data-check="reject">def four : Nat = 4;  // Error: Expected '{', found ';'.</code></pre>
-            <p>To state the type of a short term, use a block with <code>exact</code>. The next chapter adds <a href="terms.html#typed"><code>typed</code></a> for the same purpose inside a term.</p>
-            <pre><code data-check="accept">def four : Nat {
+            <p>A term declaration ends with <code>;</code>. A block declaration ends with <code>}</code>. A short term with a stated type uses the typed term form, which means the same as a block with <code>exact</code>:</p>
+            <pre><code data-check="accept">def four : Nat := 4;
+
+def four_again : Nat {
   exact 4;
 }</code></pre>
+            <p>Writing <code>=</code> for <code>:=</code> is an error. In <code>def four : Nat = 4;</code> the checker reads <code>Nat = 4</code> as the type, an equation, so it says what to write instead:</p>
+            <pre><code data-check="reject">// Error: Write := to give a value: def name : T := term; here `=` read as an equality type
+def four : Nat = 4;</code></pre>
+            <pre><code data-check="reject">def seven = 7;  // Error: Write := to give a value: def name := term;</code></pre>
             <p>A missing semicolon is reported at the next token:</p>
-            <pre><code data-check="reject">def one = 1
-def two = 2;  // Error: Expected ';', found 'def'.</code></pre>
+            <pre><code data-check="reject">def one := 1
+def two := 2;  // Error: Expected ';', found 'def'.</code></pre>
             <h3 id="other-declarations">Other declaration forms</h3>
             <div class="table-scroll"><table>
               <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
@@ -168,13 +173,13 @@ def two = 2;  // Error: Expected ';', found 'def'.</code></pre>
                 <tr><td><code>opaque def name …</code></td><td>Accepted, and currently checked and unfolded like <code>def</code>. See <a href="conversion.html#conversion">conversion and opacity</a>.</td></tr>
                 <tr><td><code>computable def name …</code></td><td>A definition that must use no assumption. See <a href="assumptions.html#computability">computability</a>.</td></tr>
                 <tr><td><code>evaluate term expecting value;</code></td><td>A directive that checks what a closed term computes to. See <a href="assumptions.html#evaluate">evaluate</a>.</td></tr>
-                <tr><td><code>simp_rule name priority N;</code><br /><code>simp_set name = [rule, …];</code></td><td>Directives that register checked equalities for simplification. See <a href="rewriting.html#simp-registration">registering rules</a>.</td></tr>
+                <tr><td><code>simp_rule name priority N;</code><br /><code>simp_set name := [rule, …];</code></td><td>Directives that register checked equalities for simplification. See <a href="rewriting.html#simp-registration">registering rules</a>.</td></tr>
               </tbody>
             </table></div>
             <p>There is no <code>axiom</code> declaration: a source file cannot introduce assumptions of its own. To reason under a hypothesis, take it as a parameter. The result then holds for every value of the hypothesis, and the hypothesis stays visible in its type:</p>
-            <pre><code data-check="accept">def ask(oracle : Nat -&gt; Nat) = oracle(3);
+            <pre><code data-check="accept">def ask(oracle : Nat -&gt; Nat) := oracle(3);
 
-def ask_again(oracle : Nat -&gt; Nat) = oracle(ask(oracle));</code></pre>
+def ask_again(oracle : Nat -&gt; Nat) := oracle(ask(oracle));</code></pre>
             <p>The only assumptions are the library’s fixed schemas, such as truncation and excluded middle, described in <a href="assumptions.html#axioms">assumptions</a>. <code>axiom</code> is an ordinary name, so a declaration cannot start with it:</p>
             <pre><code data-check="reject">// Error: Expected a declaration or directive: def, opaque def, computable def, evaluate, simp_rule or
 //   simp_set.
@@ -188,21 +193,21 @@ axiom Oracle : Nat -&gt; Nat;</code></pre>
   exact f(a, b);
 }
 
-def pick_second(A B : U0, x y : A, b : B) = y;
+def pick_second(A B : U0, x y : A, b : B) := y;
 
-def picked = pick_second(Nat, Nat, 1, 2, 3);</code></pre>
+def picked := pick_second(Nat, Nat, 1, 2, 3);</code></pre>
             <p>A declaration with parameters is a function of them. Every argument is written at each use: there are no implicit arguments, so <code>pick_second</code> takes both types explicitly, here <code>Nat</code> twice. Arguments can also be supplied a few at a time:</p>
-            <pre><code data-check="accept">def first(A B : U0, a : A, b : B) = a;
+            <pre><code data-check="accept">def first(A B : U0, a : A, b : B) := a;
 
-def first_number = first(Nat, Nat, 5);
+def first_number := first(Nat, Nat, 5);
 
-def five = first_number(7);</code></pre>
+def five := first_number(7);</code></pre>
             <p><code>first_number</code> has type <code>Nat -> Nat</code>: it waits for the last argument. Supplying more arguments than a function takes is an error:</p>
-            <pre><code data-check="reject">def pick_first(A B : U0, a : A, b : B) = a;
+            <pre><code data-check="reject">def pick_first(A B : U0, a : A, b : B) := a;
 
-def too_many = pick_first(Nat, Nat, 1, 2, 3);  // Error: Source application is not a function.</code></pre>
+def too_many := pick_first(Nat, Nat, 1, 2, 3);  // Error: Source application is not a function.</code></pre>
             <p>Every parameter needs a type. After <code>x</code>, the parser expects either another name sharing the type or a colon:</p>
-            <pre><code data-check="reject">def untyped_parameter(x) = x;  // Error: Expected a name.</code></pre>
+            <pre><code data-check="reject">def untyped_parameter(x) := x;  // Error: Expected a name.</code></pre>
             <h3 id="statement-placement">Parameters or a quantified type</h3>
             <p>A statement can put its inputs in the parameters or in the result type. These two declarations have the same type, <code>forall A : U0, A -> A</code>:</p>
             <pre><code data-check="accept">def in_parameters(A : U0, a : A) : A {
@@ -218,17 +223,17 @@ def in_type : forall A : U0, A -&gt; A {
           <section id="order">
             <h2>Order, scope and recursion</h2>
             <p>Declarations become available in source order. A declaration can use only the declarations above it and the imported ones. There are no forward declarations:</p>
-            <pre><code data-check="reject">def uses_later = later;  // Error: Untranslated name: later
+            <pre><code data-check="reject">def uses_later := later;  // Error: Untranslated name: later
 
-def later = 0;</code></pre>
+def later := 0;</code></pre>
             <p>A declaration cannot refer to itself, so there is no recursive definition. Recursion and induction use an eliminator instead, such as <a href="induction.html#induction">natural-number induction</a>:</p>
             <pre><code data-check="reject">def loop(n : Nat) : Nat {
   exact loop(n);  // Error: Untranslated name: loop
 }</code></pre>
             <p>Each name can be declared once in a module:</p>
-            <pre><code data-check="reject">def twice_named = 0;
+            <pre><code data-check="reject">def twice_named := 0;
 
-def twice_named = 1;  // Error: Definition symbol is already registered.</code></pre>
+def twice_named := 1;  // Error: Definition symbol is already registered.</code></pre>
             <p>Inside a declaration, parameters and local names shadow outer ones. Choose fresh local names when a clash would be confusing to the reader.</p>
           </section>
 

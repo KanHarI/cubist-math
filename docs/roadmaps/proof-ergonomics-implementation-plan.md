@@ -54,7 +54,7 @@ particularly `finite_uniform_fiber_count`, for its finite-counting baseline.
 
 | PR | Depends on | Concrete change | Acceptance evidence |
 | --- | --- | --- | --- |
-| 1. Baselines and syntax conveniences | — | Preserve selected statements/assumptions; grouped `intro`, grouped typed binders, typed multi-binder lambdas, `have h = e;`, and `have h : T := e;`. Expected-type untyped lambdas only with a known Pi. | Current/future paired examples; AST-equivalent explicit expansions; binder shadowing, comments and inspector spans. A pair without an inferable type still needs an annotation. |
+| 1. Baselines and syntax conveniences | — | Preserve selected statements/assumptions; grouped `intro`, grouped typed binders, typed multi-binder lambdas, `have h := e;`, and `have h : T := e;`. Expected-type untyped lambdas only with a known Pi. | Current/future paired examples; AST-equivalent explicit expansions; binder shadowing, comments and inspector spans. A pair without an inferable type still needs an annotation. |
 | 2. Reconstruction and transactions | 1 | Add single-goal transitions, shared checked path constructors, and reusable declaration transactions. Initially exercise transitions through internal APIs. | A checked proof of the new goal reconstructs a checked proof of the old one; failed declarations discard generated helpers and rules; previously accepted declarations remain usable. |
 | 3. `calc` and `rfl` | 2 | Terminal homogeneous `calc` statement; subsequent `_` means previous right endpoint; step justification is a term or nested proof block. `rfl;` emits a constant path and asks the kernel to check it. | Arithmetic chain fixture checks. Wrong intermediate endpoint/carrier fails at that step; nested `by { ... }` supports the following PR. |
 | 4. Explicit `rw` | 3 | Fully instantiated homogeneous paths; ordered rules, reverse direction, `at lhs`/`at rhs`, one-based `occurrence n`; root and fixed-codomain application contexts. | Forward/reverse/congruence fixtures; occurrence order and dependent-context rejection; complete witness visible from the source selection. |
@@ -226,7 +226,7 @@ unfolding policy and a native arena generation. Clear/remap entries on rollback
 or compaction. A cached rewrite includes its witness.
 
 PR 8 now uses `simp_rule nat_add_zero;` and
-`simp_set nat_units = [nat_add_zero];`. Registration validates checked
+`simp_set nat_units := [nat_add_zero];`. Registration validates checked
 homogeneous equality types, exports qualified rule identities through imports,
 resolves explicit set names lexically, de-duplicates rules and orders defaults
 by priority then identity. Local hypotheses enter only through explicit lists.

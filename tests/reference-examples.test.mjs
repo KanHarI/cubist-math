@@ -132,7 +132,7 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
   await assert.rejects(verify({ ...rejected, text: "def wrong : 0 = 1 { exact refl(0); }  // Error: not this message" }, 4),
     /should fail with/);
   await assert.rejects(verify({ ...rejected, text: "def wrong : 0 = 1 { exact refl(0); }" }, 6), /states its errors/);
-  await assert.rejects(verify({ ...rejected, text: "def wrong : 0 = 1 { exact refl(0); }  // Error: Type mismatch: found (0 =[Nat] 0), expected (0 =[Nat] 1).\ndef later = missing;" }, 7),
+  await assert.rejects(verify({ ...rejected, text: "def wrong : 0 = 1 { exact refl(0); }  // Error: Type mismatch: found (0 =[Nat] 0), expected (0 =[Nat] 1).\ndef later := missing;" }, 7),
     /is not stated in a comment/);
   await assert.rejects(verify({ ...accepted, text: "def one := succ(0);  // Error: Type mismatch: found Nat, expected Unit." }, 8), /states no error/);
   await assert.rejects(verify({ ...rejected, attrs: { ...rejected.attrs, "data-error": "Type mismatch" } }, 9), /not data-error/);

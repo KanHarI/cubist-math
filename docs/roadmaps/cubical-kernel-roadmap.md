@@ -113,7 +113,7 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
     `ℓ ≤ ℓ'`, as in `U0 ≤ U(x) ≤ U(max(x, y)) ≤ UU0`.
   - **Universe binders.** `U < UU0` binds a universe variable that ranges
     over the universes below `UU0`: `U0, U1, …`. Examples are
-    `def identity(U < UU0, A : U, x : A) = x;`, `forall U < UU0, B` and
+    `def identity(U < UU0, A : U, x : A) := x;`, `forall U < UU0, B` and
     `fun (U < UU0) => t`. The bound is binder syntax, never a term, and only
     tier bases (`UU0`, `UUU0`, …) may be bounds. The word `Universe` is
     removed. G0 implements only `< UU0`, so universe variables denote natural

@@ -47,8 +47,8 @@ def second := 1;
 def same : 0 = 0 { exact refl(0); }
 def last := 2;`;
   const formatted = formatMathScript(source);
-  assert.match(formatted, /first = 0; \/\/ trailing\n\n\/\/ Second declaration\.\n\/\/ Its documentation continues\.\ndef second/);
-  assert.match(formatted, /second = 1;\n\ndef same/);
+  assert.match(formatted, /first := 0; \/\/ trailing\n\n\/\/ Second declaration\.\n\/\/ Its documentation continues\.\ndef second/);
+  assert.match(formatted, /second := 1;\n\ndef same/);
   assert.match(formatted, /}\n\ndef last/);
   assert.equal(formatMathScript(formatted), formatted);
 });

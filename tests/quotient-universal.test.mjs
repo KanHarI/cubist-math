@@ -17,7 +17,7 @@ test("homomorphism universe schemas check at U0–U3 and agree with small homomo
   const schemas = ["GroupHomLawsAt", "GroupHomAt", "group_hom_map_at", "group_hom_multiply_at",
     "group_is_set_at", "group_hom_laws_prop_at", "group_hom_ext_at",
     "group_hom_identity_at", "group_hom_compose_at", "group_hom_object_at"];
-  const specializations = [0, 1, 2, 3].flatMap(level => schemas.map(name => `def check_${name}_${level} = ${name}(U${level});`));
+  const specializations = [0, 1, 2, 3].flatMap(level => schemas.map(name => `def check_${name}_${level} := ${name}(U${level});`));
   const result = await program.check(`import group_homomorphisms;
     ${specializations.join("\n")}
     def small_hom_specialization(G : Group, H : Group) : GroupHomAt(U0, G, H) =[U0] GroupHom(G, H) {

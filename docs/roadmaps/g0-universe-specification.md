@@ -149,7 +149,7 @@ This follows the kernel roadmap's G0 item and ergonomics milestone 5.
 - **Universe binders.** `U < UU0` binds a universe variable `U` that ranges
   over `U0, U1, …`. Grouping works as today: `(U V < UU0, A : U, B : V)`.
   Examples:
-  - `def identity(U < UU0, A : U, x : A) = x;`
+  - `def identity(U < UU0, A : U, x : A) := x;`
   - `forall U < UU0, B` is `Π (x < ω). B`;
   - `fun (U < UU0) => t` is `λ (x < ω). t`.
 - **Bounds.** A bound must be a tier base: `UU0`, `UUU0`, … . L1.1 accepts
@@ -532,7 +532,7 @@ Unchanged:
 
 - **Definitions.** A definition `d : A := t` is checked once, in the empty
   context: `· ⊢ A : U(ℓ)` and `· ⊢ t : A`. `A` may be a generic statement,
-  and so may `t`: `def Endo = forall U < UU0, U -> U;` is a definition of
+  and so may `t`: `def Endo := forall U < UU0, U -> U;` is a definition of
   type `UU0` (Q2). Uses are `d` and `d {ℓ}`. δ-unfolding is unchanged.
 - **Assumption telescope.** Entries of the kernel's assumption telescope
   (`cc_assumption`) may be level entries `x < ω` and term entries of any
@@ -1172,7 +1172,7 @@ first.
   `d(E, …)` becomes `d {ℓ_E} …`, and a universe argument that is not finite
   is rejected with a message that names the bound.
 - **Generic statements.** `forall U < UU0, B` may appear wherever a type is
-  expected. `def Endo = forall U < UU0, U -> U;` is accepted with type
+  expected. `def Endo := forall U < UU0, U -> U;` is accepted with type
   `UU0`.
 - **Kept.** The `typed(E, T)` ascription and explicit universe arguments.
 - **Inspector.** It shows level abstractions and instantiations in source
@@ -1327,10 +1327,10 @@ this isolates the codomain `≤`.
 | B8 | `(λ (x < ω). U(x)) {Nat}`; `(λ (x < ω). U(x)) Nat` | Reject both | Instantiation needs a level; term application needs a term Π. |
 | B9 | `x < ω ⊢ U(x) : U(x + 1)` | Accept | Level entry used in a level. |
 | B10 | `(λ (A : U(ω + 1)). A) U(ω)` | Accept | `UU0` is a term. |
-| B11 | source: `def u = Universe;`; `def f(U : Universe, A : U) = A;` | Reject both | `Universe` is removed. |
-| B12 | source: `def f(U < UU1, A : U) = A;`; `(U < U5, …)`; `(U < UUU0, …)` | Reject all | Not tier bases; `UUU0` is not in this version. |
-| B13 | source: `def UU2 = Nat;`; `fun (U1 : U0) => U1`; `U01` | Reject all | Reserved names; malformed constant. |
-| B14 | source: `def g(UU : U1, x : UU) = x;`; `def h = UU;` | Accept; Reject | `UU` is an ordinary name; unbound, and not a constant. |
+| B11 | source: `def u := Universe;`; `def f(U : Universe, A : U) := A;` | Reject both | `Universe` is removed. |
+| B12 | source: `def f(U < UU1, A : U) := A;`; `(U < U5, …)`; `(U < UUU0, …)` | Reject all | Not tier bases; `UUU0` is not in this version. |
+| B13 | source: `def UU2 := Nat;`; `fun (U1 : U0) => U1`; `U01` | Reject all | Reserved names; malformed constant. |
+| B14 | source: `def g(UU : U1, x : UU) := x;`; `def h := UU;` | Accept; Reject | `UU` is an ordinary name; unbound, and not a constant. |
 | B15 | source: `def v : UU1 = UU0;`; `def w : UU0 = U7;` | Accept both | Universes of both tiers are terms; cumulativity crosses tiers. |
 | B16 | source: `next(Nat)`; `identity(Nat, …)` | Reject both | A non-universe where a universe is required. |
 | B17 | source: `forall n < 3, n = n` | Reject | A binder bound must be a tier-base universe. |
@@ -1501,7 +1501,7 @@ would need its own soundness argument; it is plausible because the model of
 a higher inductive type does not depend on the ambient universe.
 
 **Q2. Named generic statements. Resolved: yes.** A definition's value may be
-a generic statement: `def Endo = forall U < UU0, U -> U;` is a definition of
+a generic statement: `def Endo := forall U < UU0, U -> U;` is a definition of
 type `UU0`. No new judgment is needed, because generic statements are
 ordinary types.
 

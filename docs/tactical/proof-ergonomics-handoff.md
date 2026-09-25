@@ -10,7 +10,7 @@ the C/WASM cubical kernel and report no axiom dependencies.
 
 - Grouped `intro x y;`, grouped typed declaration/quantifier/lambda binders,
   including consecutive `Universe` schema parameters,
-  expected-type `fun x => ...`, `have h = e;`, and `have h : T := e;`.
+  expected-type `fun x => ...`, `have h := e;`, and `have h : T := e;`.
   A source `fun` token with several binder groups opens the complete checked
   function in the inspector. Template source links include names introduced by
   `ext` and `simp ... at h as h2`, including their later uses.
@@ -39,7 +39,7 @@ the C/WASM cubical kernel and report no axiom dependencies.
   fixed-codomain application contexts are supported; arbitrary maps between
   propositions are not synthesized.
 - `simp_rule lemma priority 10;` registers an already checked homogeneous
-  equality for deterministic default simplification. `simp_set units = [lemma];`
+  equality for deterministic default simplification. `simp_set units := [lemma];`
   names an explicit collection. Registrations and sets flow through imports;
   duplicate default rules collapse by checked identity, sorted by descending
   priority and then identity. Conflicting imported set names are ambiguous until
@@ -398,7 +398,7 @@ changes the kernel or its equality rules.
   source. A stem ending in a digit now gets a separator, making generated
   names unique, and every binding site asserts that its name is new.
 
-Smaller changes: the formatter prints `simp_set name = [...]` with a space;
+Smaller changes: the formatter prints `simp_set name := [...]` with a space;
 template inspection and specialization skip freeze replays whose result is
 discarded; the elaborator's conversion query avoids live coordinate names; the
 language reference describes the new behaviour. The address-sanitizer stall
