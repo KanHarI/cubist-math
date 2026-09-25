@@ -90,7 +90,7 @@ def path_endpoint(A : U0, x y : A, p : x = y) : p @ 1 = y {
             <pre><code data-check="reject">import primes;
 
 def plus_zero(n : Nat) : n + 0 = n {
-  rfl;  // Error: Type mismatch.
+  rfl;  // Error: Type mismatch: found (add(n, 0) =[Nat] add(n, 0)), expected (add(n, 0) =[Nat] n).
 }</code></pre>
             <p>The checker never uses a theorem automatically. A proved equality such as commutativity is a path, not a reduction rule; <code>rw</code> and <code>simp</code> use it only when it is named in the proof or registered with <a href="rewriting.html#simp-registration"><code>simp_rule</code></a>.</p>
           </section>

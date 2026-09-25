@@ -146,8 +146,24 @@ static void error_kinds(void) {
     assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
     assert(!cc_kernel_check(k, zero, unit, NULL, 0, &result));
     assert(cc_kernel_error_kind(k) == CC_ERROR_MISMATCH);
+    cc_term found = 0, expected = 0;
+    assert(cc_kernel_mismatch(k, &found, &expected));
+    assert(cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0) == 0); /* no construction while an error is set */
     cc_kernel_clear_error(k);
     assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+    assert(!cc_kernel_mismatch(k, &found, &expected));
+    /* The recorded pair is the type of 0 and the type it had to match. */
+    cc_checked_result as_nat, as_unit;
+    assert(cc_kernel_check(k, zero, nat, NULL, 0, &as_nat));
+    assert(cc_kernel_check(k, unit, 0, NULL, 0, &as_unit));
+    assert(!cc_kernel_check(k, zero, unit, NULL, 0, &result));
+    assert(cc_kernel_mismatch(k, &found, &expected));
+    cc_kernel_clear_error(k);
+    cc_checked_result found_view, expected_view;
+    assert(cc_kernel_check(k, found, 0, NULL, 0, &found_view));
+    assert(cc_kernel_check(k, expected, 0, NULL, 0, &expected_view));
+    assert(found_view.expression == as_nat.type);
+    assert(expected_view.expression == unit);
     assert(!cc_kernel_check(k, free_var, nat, NULL, 0, &result));
     assert(cc_kernel_error_kind(k) == CC_ERROR_OTHER);
     assert(cc_kernel_check(k, zero, nat, NULL, 0, &result));

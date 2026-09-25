@@ -80,7 +80,7 @@ def five = identity(Nat, 5);</code></pre>
             <pre><code data-check="reject">def not_identity : forall A : U0, A -&gt; A {
   intro A;
   intro value;
-  exact A;  // Error: Type mismatch.
+  exact A;  // Error: Type mismatch: found Π (A : U0), (A → U0), expected Π (A : U0), (A → A).
 }</code></pre>
           </section>
           <section id="checking">
@@ -89,7 +89,7 @@ def five = identity(Nat, 5);</code></pre>
             <p>A convenience that the kernel cannot check makes the declaration fail. It never turns into an assumption. The only assumptions are the explicit library ones described in <a href="assumptions.html#axioms">assumptions and computability</a>, and each theorem lists the ones it uses.</p>
             <p>Each declaration is checked on its own. A rejected declaration is not added, so a later declaration that uses it fails too, with a message naming the missing dependency:</p>
             <pre><code data-check="reject">def wrong : Nat {
-  exact Nat;  // Error: Type mismatch.
+  exact Nat;  // Error: Type mismatch: found U0, expected Nat.
 }
 
 def uses_wrong = wrong;  // Error: Untranslated dependency: wrong</code></pre>

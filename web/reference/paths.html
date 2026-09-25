@@ -73,7 +73,7 @@ def path_between_paths(A : U0, x : A) : refl(x) = refl(x) {
   exact refl(refl(x));
 }</code></pre>
             <pre><code data-check="reject">def zero_is_one : 0 = 1 {
-  exact refl(0);  // Error: Type mismatch.
+  exact refl(0);  // Error: Type mismatch: found (0 =[Nat] 0), expected (0 =[Nat] 1).
 }</code></pre>
           </section>
           <section id="carriers">
@@ -88,7 +88,7 @@ def reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
 }</code></pre>
             <p>In <code>A =[U1] B</code>, the endpoints are types and the carrier is a universe. Equalities between different types come from univalence; see <a href="assumptions.html#univalence">extensionality and univalence</a>. The carrier must be the type of both endpoints:</p>
             <pre><code data-check="reject">def wrong_carrier(x : Nat) : x =[Unit] x {
-  exact refl(x);  // Error: Type mismatch.
+  exact refl(x);  // Error: Type mismatch: found Nat, expected Unit.
 }</code></pre>
           </section>
           <section id="path-operations">
@@ -130,7 +130,7 @@ def apply_path(A B : U0, f g : A -&gt; B, p : f = g, a : A) : f(a) = g(a) {
 }</code></pre>
             <p><code>cong</code> needs a function with a fixed result type. For a dependent function, <code>f(x)</code> and <code>f(y)</code> have different types, so <code>f(x) = f(y)</code> does not type-check the way <code>cong</code> needs; use <code>apd</code> or <code>apd_path</code>:</p>
             <pre><code data-check="reject">def dependent_cong(A : U0, C : A -&gt; U0, f : forall a : A, C(a), x y : A, p : x = y) : f(x) = f(y) {
-  exact cong(f, p);  // Error: Type mismatch.
+  exact cong(f, p);  // Error: Type mismatch: found C(y), expected C(x).
 }</code></pre>
             <p>Some inferred pair projections do not keep enough equality information for <code>sym</code>, <code>trans</code> or <code>cong</code>. In that case, state the path first with <code>have p : x = y := term;</code>.</p>
           </section>

@@ -493,5 +493,9 @@ static bool cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
 bool ck_expect(cc_kernel *k, cc_term actual, cc_term expected) {
     if (cumulative(k, actual, expected))
         return true;
+    if (!k->error[0]) {
+        k->mismatch_found = actual;
+        k->mismatch_expected = expected;
+    }
     return ck_fail_as(k, CC_ERROR_MISMATCH, "Type mismatch.");
 }

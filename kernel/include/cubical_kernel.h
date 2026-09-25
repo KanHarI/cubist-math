@@ -53,6 +53,10 @@ typedef enum {
     CC_ERROR_NONE, CC_ERROR_MISMATCH, CC_ERROR_BUDGET, CC_ERROR_DEADLINE, CC_ERROR_OTHER
 } cc_error_kind;
 cc_error_kind cc_kernel_error_kind(const cc_kernel *);
+/* For a MISMATCH error, the type that was found and the type it was expected
+ * to match, for diagnostics. Returns false for any other error or none. The
+ * handles are valid until the next rollback, which also clears the error. */
+bool cc_kernel_mismatch(const cc_kernel *, cc_term *found, cc_term *expected);
 /* Clear a rejected request before constructing corrected raw syntax. */
 void cc_kernel_clear_error(cc_kernel *);
 /* Diagnostic transactions. Abort invalidates ALL handles made since begin.

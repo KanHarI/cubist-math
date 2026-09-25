@@ -122,7 +122,7 @@ def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x y : A, P(x, y)) 
 }</code></pre>
             <p>The argument decides the result type, so <code>f(0)</code> does not prove <code>P(1)</code>:</p>
             <pre><code data-check="reject">def wrong_index(P : Nat -&gt; U0, f : forall n : Nat, P(n)) : P(1) {
-  exact f(0);  // Error: Type mismatch.
+  exact f(0);  // Error: Type mismatch: found P(0), expected P(1).
 }</code></pre>
           </section>
           <section id="pairs">
@@ -260,7 +260,7 @@ def plus_zero(n : Nat) : n + 0 = n {
             <pre><code data-check="reject">import primes;
 
 def plus_zero_by_computation(n : Nat) : n + 0 = n {
-  exact refl(n);  // Error: Type mismatch.
+  exact refl(n);  // Error: Type mismatch: found (n =[Nat] n), expected (add(n, 0) =[Nat] n).
 }</code></pre>
             <p>Induction on <code>Nat</code> and binary numerals are described in <a href="induction.html#induction">natural numbers and inductive types</a>.</p>
           </section>
@@ -279,7 +279,7 @@ def plus_zero_by_computation(n : Nat) : n + 0 = n {
 def successor = typed(Nat -&gt; Nat, fun n =&gt; succ(n));
 
 def choice = typed(Nat or Unit, right(tt));</code></pre>
-            <pre><code data-check="reject">def not_a_number = typed(Nat, tt);  // Error: Type mismatch.</code></pre>
+            <pre><code data-check="reject">def not_a_number = typed(Nat, tt);  // Error: Type mismatch: found Unit, expected Nat.</code></pre>
           </section>
           <section id="precedence">
             <h2>Precedence</h2>
@@ -306,7 +306,7 @@ def and_before_or(A B C : U0, x : A and B or C) : (A and B) or C {
             <pre><code data-check="reject">import primes;
 
 def chained : 1 &lt; 2 &lt; 3 {
-  exact tt;  // Error: Type mismatch.
+  exact tt;  // Error: Type mismatch: found U0, expected Nat.
 }</code></pre>
             <p>In the source reader, keywords and built-in forms such as <code>succ</code> are purple, and named functions are green. Numerals, tuples and arithmetic are notation: they are amber with a dotted underline. Hover over one to see its expansion; <code>2</code> shows <code>succ(succ(0))</code> and <code>a + b</code> shows <code>add(a, b)</code>.</p>
           </section>
