@@ -8,7 +8,7 @@ const readSource = async name => {
   if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(name)) throw new Error("Invalid source module name.");
   if (![...sourceModules, ...cubicalSourceModules].includes(name))
     throw new Error(`Native source is not available for ${name}.`);
-  const response = await fetch(new URL(`./proofs/${cubicalSourceFile(name)}`, import.meta.url), { cache: "no-store" });
+  const response = await fetch(new URL(`./archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), { cache: "no-store" });
   if (!response.ok) throw new Error(`Native source is not available for ${name}.`);
   return response.text();
 };

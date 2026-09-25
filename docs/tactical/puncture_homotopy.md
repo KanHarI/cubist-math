@@ -35,7 +35,7 @@ particular, removing points from a set type does not create identity loops.
 
 ## The generation theorem
 
-[bouquet_generation.cubist](../../web/proofs/bouquet_generation.cubist) proves:
+[bouquet_generation.cubist](../../archive/first-library/bouquet_generation.cubist) proves:
 
 ```text
 def every_puncture_loop_generated(
@@ -79,7 +79,7 @@ loop space is a set. Those stronger statements require further proofs.
 
 ## Loop invariants and the eventual residue argument
 
-[bouquet_invariants.cubist](../../web/proofs/bouquet_invariants.cubist) proves
+[bouquet_invariants.cubist](../../archive/first-library/bouquet_invariants.cubist) proves
 `bouquet_maps_determined_by_generators`. Suppose `h` and `k` map loops into a
 set `G`, preserve the constant loop and concatenation, and agree on each
 positive generator. If the target operation has right cancellation, then
@@ -95,7 +95,7 @@ our intended proposition-valued Dedekind reals. The supporting
 `small_mere_eliminate` lemma uses the existing universe-lowering truncation
 signature, as explained in [the real-number foundation notes](../roadmaps/reals-roadmap.md).
 
-[puncture_periods.cubist](../../web/proofs/puncture_periods.cubist) now proves the
+[puncture_periods.cubist](../../archive/first-library/puncture_periods.cubist) now proves the
 explicit formula for every based loop `p`:
 
 ```text
@@ -111,7 +111,7 @@ The winding sum is then proved additive and equal to `values(i)` on generator
 `i`. The existing generation theorem extends that equality to all paths. No
 representative word is selected, and no uniqueness of words is needed.
 
-[complex_periods.cubist](../../web/proofs/complex_periods.cubist) specializes this
+[complex_periods.cubist](../../archive/first-library/complex_periods.cubist) specializes this
 result to complex addition, with local values `normalization * residues(i)`.
 The normalization is a parameter: its eventual value `2*pi*i` has not been
 constructed. This is the homotopy reduction of the residue formula, not yet
@@ -145,14 +145,14 @@ proved for the limit before applying the period formula.
 
 ## Winding and a checked counterexample
 
-[puncture_winding.cubist](../../web/proofs/puncture_winding.cubist) maps the selected
+[puncture_winding.cubist](../../archive/first-library/puncture_winding.cubist) maps the selected
 generator to our existing `S1` loop and the other generators to the constant
 loop. Applying the existing circle winding map gives an integer. The source
 proves that the selected generator has winding +1, its reverse has winding -1,
 and other generators have winding zero. Winding is additive under concatenation.
 It follows that generators are nontrivial and distinct.
 
-[puncture_noncommutative.cubist](../../web/proofs/puncture_noncommutative.cubist)
+[puncture_noncommutative.cubist](../../archive/first-library/puncture_noncommutative.cubist)
 constructs two generators `a`, `b` and their commutator `a b a⁻¹ b⁻¹`. It proves:
 
 - The generators do not commute.
@@ -165,7 +165,7 @@ around the commutator sends state 0 to state 2. The constant loop fixes state 0,
 and the two states are provably distinct. This uses explicit finite permutations,
 not a postulated free-group classification.
 
-[puncture_period_examples.cubist](../../web/proofs/puncture_period_examples.cubist)
+[puncture_period_examples.cubist](../../archive/first-library/puncture_period_examples.cubist)
 now also proves that every additive period vanishes on this noncontractible
 commutator. More generally, equal winding vectors imply equal additive
 periods, and zero winding implies zero period. These statements do not assert

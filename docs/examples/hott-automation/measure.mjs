@@ -33,7 +33,7 @@ const selection = [
   ["quotient_descent", "quotient_rec_beta"],
 ];
 const modules = [...new Set(selection.map(([module]) => module))];
-const readSource = name => readFile(new URL(`web/proofs/${cubicalSourceFile(name)}`, root), "utf8");
+const readSource = name => readFile(new URL(`archive/first-library/${cubicalSourceFile(name)}`, root), "utf8");
 // A universe template has no single checked translation. Measure each selected
 // template through its U0 specialization instead.
 const firstDomain = declaration => declaration.params[0]?.type ?? declaration.value?.domain;
@@ -155,7 +155,7 @@ const selected = await Promise.all(selection.map(async ([module, name]) => {
     fresh: freshObservations.get(`hott_baseline__${name}_${specialization[2]}`),
     reused: observations.get(`hott_baseline_reused__${name}_${specialization[2]}_reused`),
   } : { template: false, fresh: freshRow, reused };
-  return { module, name, sourcePath: `web/proofs/${cubicalSourceFile(module)}`,
+  return { module, name, sourcePath: `archive/first-library/${cubicalSourceFile(module)}`,
     sourceSha256: createHash("sha256").update(source).digest("hex"),
     declarationSha256: createHash("sha256").update(text).digest("hex"),
     sourceTokens: tokenize(text).length - 1, sourceLines: text.split("\n").length,

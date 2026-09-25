@@ -110,7 +110,7 @@ to see the binary-pair expansion or click to inspect the checked tuple.
 `x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
 
 Blocks support `intro`, `let`, `obtain`, `have`, `cases`, and `exact`. See
-[Euclid](../../web/proofs/euclid.cubist) for the complete short argument. Induction
+[Euclid](../../archive/first-library/euclid.cubist) for the complete short argument. Induction
 expressions carry an explicit motive:
 
 ```text
@@ -150,7 +150,7 @@ induction and introduce no axiom. `refl(x)` supplies the reflexive path `x = x`.
 Equality induction is available as
 `path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
 function of two endpoints and their equality proof. The foundational symmetry,
-transitivity, and congruence proofs in [primes.cubist](../../web/proofs/primes.cubist)
+transitivity, and congruence proofs in [primes.cubist](../../archive/first-library/primes.cubist)
 show its use. The lower-level `induct`, `cases`, and `unpack` function forms remain
 available for proof-producing source tools.
 
@@ -289,7 +289,7 @@ are skipped. Run it again and it makes no further changes.
 
 ```sh
 npm run linearize:mathscript -- --check
-npm run linearize:mathscript -- web/proofs/circle_group_identity.cubist
+npm run linearize:mathscript -- archive/first-library/circle_group_identity.cubist
 ```
 
 `--check` reports remaining candidates without writing and exits nonzero if

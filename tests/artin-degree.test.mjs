@@ -5,7 +5,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 
 test("Artin fixed-field degree theorem is checked for a merely finite automorphism subgroup", async t => {
   const p = new CubicalProgram(module, readSource, { collectReferences: false });

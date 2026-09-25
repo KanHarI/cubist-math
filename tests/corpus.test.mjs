@@ -7,7 +7,7 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // A generous regression deadline avoids confusing machine load with failure.
   // Use benchmark.html for the independent <100ms optimization target.
   const report = await benchmark({ limitMs: 10000,
-    readSource: name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8") });
+    readSource: name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8") });
   const failures = report.declarations.filter(d => !["checked", "template"].includes(d.category));
   assert.deepEqual(failures, []);
   assert.ok(report.declarations.length >= 2500, "The corpus must not silently lose modules.");

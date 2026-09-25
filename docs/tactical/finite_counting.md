@@ -39,7 +39,7 @@ produces an empty type.
 
 ## Natural numbers to types
 
-[finite.cubist](../../web/proofs/finite.cubist) defines `Fin(0) = Void` and
+[finite.cubist](../../archive/first-library/finite.cubist) defines `Fin(0) = Void` and
 `Fin(succ(n)) = Unit or Fin(n)` by Nat induction. It constructs explicit
 bijections between literal sums `two`, `three`, `four`, `five` and their `Fin`
 counterparts. `choose_units_five_two` counts `Binomial(five, two)` itself,
@@ -103,7 +103,7 @@ axioms. None of these results requires excluded middle or the axiom of choice.
 **Truncation interface correction:** the original library accidentally required
 `U -> P` instead of `A -> P`, for `A : U`. The Rust construction and the generated
 axiom library now use the corrected `lib_trunc_elim` axiom. All bundled copies
-have been regenerated. In [truncation.cubist](../../web/proofs/truncation.cubist),
+have been regenerated. In [truncation.cubist](../../archive/first-library/truncation.cubist),
 `mere_eliminate` is a checked definition wrapping that library axiom; it is no
 longer a separate axiom. The result dependency list links to `lib_trunc_elim`.
 
@@ -111,19 +111,19 @@ longer a separate axiom. The result dependency list links to `lib_trunc_elim`.
 
 | Source | Contents |
 | --- | --- |
-| [equivalences](../../web/proofs/equivalences.cubist) | Bijections, sums, products, and the full equivalence interface |
-| [finite](../../web/proofs/finite.cubist) | Iterated Unit sums, finite sums, decidable equality and setness |
-| [function_counting](../../web/proofs/function_counting.cubist) | Products and function counts |
-| [finite_cancellation](../../web/proofs/finite_cancellation.cubist) | Swaps, cancellation of one element, uniqueness of cardinality |
-| [bijection_equality](../../web/proofs/bijection_equality.cubist) | Extensional equality and uniqueness of inverse/coherence data |
-| [permutations](../../web/proofs/permutations.cubist) | Permutation decomposition and factorial count |
-| [truncation](../../web/proofs/truncation.cubist) | Explicit propositional truncation interface |
-| [binomial](../../web/proofs/binomial.cubist) | Numeric Pascal recurrence and structural selections |
-| [binomial_types](../../web/proofs/binomial_types.cubist) | Rijke predicate construction and true/false fiber maps |
-| [binomial_pascal](../../web/proofs/binomial_pascal.cubist) | Checked Pascal bijection and its inverse laws |
-| [binomial_counting](../../web/proofs/binomial_counting.cubist) | Base cases, induction, final equivalences and Unit-sum example |
+| [equivalences](../../archive/first-library/equivalences.cubist) | Bijections, sums, products, and the full equivalence interface |
+| [finite](../../archive/first-library/finite.cubist) | Iterated Unit sums, finite sums, decidable equality and setness |
+| [function_counting](../../archive/first-library/function_counting.cubist) | Products and function counts |
+| [finite_cancellation](../../archive/first-library/finite_cancellation.cubist) | Swaps, cancellation of one element, uniqueness of cardinality |
+| [bijection_equality](../../archive/first-library/bijection_equality.cubist) | Extensional equality and uniqueness of inverse/coherence data |
+| [permutations](../../archive/first-library/permutations.cubist) | Permutation decomposition and factorial count |
+| [truncation](../../archive/first-library/truncation.cubist) | Explicit propositional truncation interface |
+| [binomial](../../archive/first-library/binomial.cubist) | Numeric Pascal recurrence and structural selections |
+| [binomial_types](../../archive/first-library/binomial_types.cubist) | Rijke predicate construction and true/false fiber maps |
+| [binomial_pascal](../../archive/first-library/binomial_pascal.cubist) | Checked Pascal bijection and its inverse laws |
+| [binomial_counting](../../archive/first-library/binomial_counting.cubist) | Base cases, induction, final equivalences and Unit-sum example |
 
-In the CLI, run `prove web/proofs/binomial_counting.cubist`, then
+In the CLI, run `prove archive/first-library/binomial_counting.cubist`, then
 `use finite_binomial_equivalence` and `show`. Selection and reduction commands
 remain available for inspecting the compiled proof.
 

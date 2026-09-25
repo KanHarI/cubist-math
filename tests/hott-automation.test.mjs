@@ -8,7 +8,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
 import {parse} from "../web/mathscript/parser.mjs";
 
-const readLibrary = name => readFile(new URL(`../web/proofs/${name}.cubist`,import.meta.url),"utf8");
+const readLibrary = name => readFile(new URL(`../archive/first-library/${name}.cubist`,import.meta.url),"utf8");
 const example = name => readFile(new URL(`../docs/examples/hott-automation/${name}`,import.meta.url),"utf8");
 
 async function checkExample(t,file,module) {

@@ -38,7 +38,7 @@ try {
   for (const link of links) {
     const query = new URL(link).searchParams;
     assert.ok(proofChoices.some(p => p.id === query.get("proof")));
-    const source = await page.request.get(`${base}/proofs/${query.get("proof")}.cubist`);
+    const source = await page.request.get(`${base}/archive/first-library/${query.get("proof")}.cubist`);
     assert.equal(source.status(), 200);
     assert.ok((await source.text()).includes(`def ${query.get("name")}`));
   }

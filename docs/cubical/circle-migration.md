@@ -1,6 +1,6 @@
 # Circle encode–decode in the native cubical checker
 
-`web/proofs/circle.cubist` preserves the original integer cover,
+`archive/first-library/circle.cubist` preserves the original integer cover,
 encode–decode construction, winding number, addition compatibility, loop-group
 laws, and final multiplication-preserving integer isomorphism. Its imports use
 the native cubical source loader. The legacy source remains unchanged.

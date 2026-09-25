@@ -1,7 +1,7 @@
 // Check that edited library modules keep their checked meaning.
 //   node tools/verify-proof-migration.mjs [--base REV] [--level identical|types]
 //     [--json FILE] [--no-dependents] [module ...]
-// Without module names, every web/proofs module modified relative to the base
+// Without module names, every archive/first-library module modified relative to the base
 // revision (default HEAD) is checked. Every module that imports a checked
 // module, directly or not, is compared too, against the edited definitions;
 // --no-dependents skips them. See tools/proof-migration.mjs.
@@ -23,15 +23,15 @@ if (noDependents) args.splice(args.indexOf("--no-dependents"), 1);
 const base = option("--base") ?? "HEAD", level = option("--level") ?? "identical", json = option("--json");
 if (args.some(arg => arg.startsWith("--"))) throw new Error(`Unknown option: ${args.find(arg => arg.startsWith("--"))}`);
 const git = gitArgs => execFileSync("git", gitArgs, { cwd: root, encoding: "utf8", maxBuffer: 1 << 28 });
-const modules = args.length ? args : git(["diff", "--name-only", base, "--", "web/proofs"]).split("\n")
-  .filter(path => path.endsWith(".cubist")).map(path => path.slice("web/proofs/".length, -".cubist".length));
+const modules = args.length ? args : git(["diff", "--name-only", base, "--", "archive/first-library"]).split("\n")
+  .filter(path => path.endsWith(".cubist")).map(path => path.slice("archive/first-library/".length, -".cubist".length));
 if (!modules.length) { console.log("No modified library modules."); process.exit(0); }
 
-const readEdited = name => readFile(`${root}web/proofs/${name}.cubist`, "utf8");
+const readEdited = name => readFile(`${root}archive/first-library/${name}.cubist`, "utf8");
 const changed = new Set(modules);
 if (!noDependents) {
   const importers = new Map();
-  for (const file of (await readdir(`${root}web/proofs`)).filter(name => name.endsWith(".cubist"))) {
+  for (const file of (await readdir(`${root}archive/first-library`)).filter(name => name.endsWith(".cubist"))) {
     const name = file.slice(0, -".cubist".length);
     for (const [, dependency] of (await readEdited(name)).matchAll(/^\s*import\s+([A-Za-z_][A-Za-z_0-9]*)\s*;/gm))
       importers.set(dependency, [...(importers.get(dependency) ?? []), name]);
@@ -41,7 +41,7 @@ if (!noDependents) {
 }
 const originals = new Map();
 const readOriginal = async name => {
-  if (!originals.has(name)) originals.set(name, git(["show", `${base}:web/proofs/${name}.cubist`]));
+  if (!originals.has(name)) originals.set(name, git(["show", `${base}:archive/first-library/${name}.cubist`]));
   return originals.get(name);
 };
 const reports = await verifyMigration({ modules, readOriginal, readEdited, level });

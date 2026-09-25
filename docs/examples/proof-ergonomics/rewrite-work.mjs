@@ -16,7 +16,7 @@ const examples=new Map([
 ]);
 const sources=new Map(await Promise.all([...examples].map(async([module,path])=>
   [module,await readFile(new URL(`docs/examples/proof-ergonomics/${path}`,root),"utf8")])));
-const readSource=name=>sources.get(name)??readFile(new URL(`web/proofs/${name}.cubist`,root),"utf8");
+const readSource=name=>sources.get(name)??readFile(new URL(`archive/first-library/${name}.cubist`,root),"utf8");
 const report=await benchmark({modules:[...examples.keys()],limitMs:1000,readSource});
 if(report.importErrors.length||report.counts.failed||report.counts.blocked||report.counts.optimize)
   throw Error(`Proof-ergonomics workload did not fully check: ${JSON.stringify(report.counts)}`);

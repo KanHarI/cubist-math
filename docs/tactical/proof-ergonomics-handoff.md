@@ -335,10 +335,10 @@ are canonical library proofs, not new demonstration declarations:
 
 | Feature | Existing declarations | Simplification |
 | --- | --- | --- |
-| `simp only` | `ring_distribute_left`, `ring_add_cancel_prefix` in [ring_laws](../../web/proofs/ring_laws.cubist) | Replace explicit congruence/composition chains with selected ring laws. Commutativity is instantiated at the required arguments rather than used as a looping general rule. |
-| `simpa only` | `field_add_cancel`, `field_inverse_unique` in [ordered_fields](../../web/proofs/ordered_fields.cubist) | Normalize the supplied equality after applying the inverse operation; remove the `undoY`/`undoZ` intermediates and explicit chains. |
-| `over` | `field_subtype_ext` in [field_extensionality](../../web/proofs/field_extensionality.cubist), `group_hom_ext_at` in [group_hom_universes](../../web/proofs/group_hom_universes.cubist) | Construct the genuinely dependent second-component path from transported law evidence, then assemble the pair path directly. |
-| `apd_path` | `apd_constant` in [paths](../../web/proofs/paths.cubist), `ap_interchange` in [equivalence_from_inverse](../../web/proofs/equivalence_from_inverse.cubist) | Replace explicit interval families and pointwise function applications in existing homotopy laws. These use the constant-family specialization of dependent path action. |
+| `simp only` | `ring_distribute_left`, `ring_add_cancel_prefix` in [ring_laws](../../archive/first-library/ring_laws.cubist) | Replace explicit congruence/composition chains with selected ring laws. Commutativity is instantiated at the required arguments rather than used as a looping general rule. |
+| `simpa only` | `field_add_cancel`, `field_inverse_unique` in [ordered_fields](../../archive/first-library/ordered_fields.cubist) | Normalize the supplied equality after applying the inverse operation; remove the `undoY`/`undoZ` intermediates and explicit chains. |
+| `over` | `field_subtype_ext` in [field_extensionality](../../archive/first-library/field_extensionality.cubist), `group_hom_ext_at` in [group_hom_universes](../../archive/first-library/group_hom_universes.cubist) | Construct the genuinely dependent second-component path from transported law evidence, then assemble the pair path directly. |
+| `apd_path` | `apd_constant` in [paths](../../archive/first-library/paths.cubist), `ap_interchange` in [equivalence_from_inverse](../../archive/first-library/equivalence_from_inverse.cubist) | Replace explicit interval families and pointwise function applications in existing homotopy laws. These use the constant-family specialization of dependent path action. |
 
 The pair proofs rely on judgmental Sigma eta, making
 `field_dependent_pair_path`, `field_sigma_eta`, and `group_hom_eta_at`
@@ -424,7 +424,7 @@ Library-wide adoption of the new syntax is checked mechanically, not by review
 alone. `node tools/verify-proof-migration.mjs [--base REV] [--level
 identical|types] [--no-dependents] [module ...]` checks each edited module in
 the same native kernel as its version at `REV` (default `HEAD`). With no module
-names it takes every `web/proofs` module that differs from `REV`. It also
+names it takes every `archive/first-library` module that differs from `REV`. It also
 compares every module that imports one of them, directly or not, unless
 `--no-dependents` is given. Each compared module is loaded again under a shadow
 name. Its imports of other compared modules are redirected to their shadows,

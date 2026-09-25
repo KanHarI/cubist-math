@@ -76,13 +76,13 @@ The text below describes the first library at the time it was archived.
 
 ### Shared interface
 
-[ordered_fields.cubist](../../web/proofs/ordered_fields.cubist) defines a commutative
+[ordered_fields.cubist](../../archive/first-library/ordered_fields.cubist) defines a commutative
 ring, a proposition-valued strict order, non-strict order and apartness, lattice
 operations, order-compatible arithmetic, and inversion for elements apart from
 zero. It proves cancellation, uniqueness of inverses, and `zero != one` from
 the stated laws.
 
-[complete_fields.cubist](../../web/proofs/complete_fields.cubist) adds:
+[complete_fields.cubist](../../archive/first-library/complete_fields.cubist) adds:
 
 - `Archimedean`: every element is below some natural-number multiple of one.
 - `FieldCauchy`: a sequence **with a modulus**. Each positive epsilon supplies
@@ -106,11 +106,11 @@ is a complete ordered field.
 
 | Module | Checked development | Additional assumptions |
 | --- | --- | --- |
-| [Constructive Dedekind cuts](../../web/proofs/dedekind_cuts.cubist) | Proposition-valued cuts; principal cuts; preservation and reflection of strict order; injectivity of the principal-cut map; downward/upward closure, separation, irreflexivity and transitivity of cut order | The base order, density, and absence of endpoints are explicit parameters where needed. Truncation; no excluded middle or choice. |
-| [Classical Boolean cuts](../../web/proofs/boolean_cuts.cubist) | Boolean predicates with cut laws; decoding to constructive cuts; conversion back with proofs that both memberships are preserved | Decoding uses no classical principle. Encoding arbitrary proposition-valued cuts uses `LEM`; predicate equality also uses univalence and function extensionality. No choice. |
-| [Ordinary Cauchy quotient](../../web/proofs/cauchy_quotient.cubist) | Sequences with moduli; eventual-closeness relation; equivalence-relation laws under explicit reflexivity and radius-composition hypotheses; quotient carrier; mere existence of representatives | Constructive through the quotient construction. Simultaneous representatives use the explicit `RepresentativeChoice` argument. No global choice axiom is loaded. |
+| [Constructive Dedekind cuts](../../archive/first-library/dedekind_cuts.cubist) | Proposition-valued cuts; principal cuts; preservation and reflection of strict order; injectivity of the principal-cut map; downward/upward closure, separation, irreflexivity and transitivity of cut order | The base order, density, and absence of endpoints are explicit parameters where needed. Truncation; no excluded middle or choice. |
+| [Classical Boolean cuts](../../archive/first-library/boolean_cuts.cubist) | Boolean predicates with cut laws; decoding to constructive cuts; conversion back with proofs that both memberships are preserved | Decoding uses no classical principle. Encoding arbitrary proposition-valued cuts uses `LEM`; predicate equality also uses univalence and function extensionality. No choice. |
+| [Ordinary Cauchy quotient](../../archive/first-library/cauchy_quotient.cubist) | Sequences with moduli; eventual-closeness relation; equivalence-relation laws under explicit reflexivity and radius-composition hypotheses; quotient carrier; mere existence of representatives | Constructive through the quotient construction. Simultaneous representatives use the explicit `RepresentativeChoice` argument. No global choice axiom is loaded. |
 
-[set_quotients.cubist](../../web/proofs/set_quotients.cubist) represents classes by
+[set_quotients.cubist](../../archive/first-library/set_quotients.cubist) represents classes by
 predicates with a **truncated** witness that the predicate describes a class.
 It proves surjectivity of the class map and, for a proposition-valued equivalence
 relation, that two classes are equal exactly when their representatives are
@@ -130,7 +130,7 @@ not been implemented here. The book discusses the role of countable choice in
 the ordinary construction and compares Cauchy and Dedekind reals in the
 [same chapter](https://github.com/HoTT/book/blob/master/reals.tex).
 
-The [ordered Cauchy lemmas](../../web/proofs/cauchy_ordered.cubist) now discharge
+The [ordered Cauchy lemmas](../../archive/first-library/cauchy_ordered.cubist) now discharge
 the self-closeness and radius-composition hypotheses from a supplied ordered
 field. They use constructive halving and the proved triangle inequality.
 [Limit laws](../tactical/analysis_limits.md) also establish uniqueness, addition, and
@@ -143,9 +143,9 @@ rational field or finish the quotient's field and completeness certificates.
 live in `U1`. The shared interface accepts a carrier `F : U1`, so these
 cuts do not have to be replaced with Booleans to fit its universe.
 
-[field_logic.cubist](../../web/proofs/field_logic.cubist) specializes the **existing**
+[field_logic.cubist](../../archive/first-library/field_logic.cubist) specializes the **existing**
 library truncation and function-extensionality axioms at `U1` using the new
-explicit-universe primitives. [field_extensionality.cubist](../../web/proofs/field_extensionality.cubist)
+explicit-universe primitives. [field_extensionality.cubist](../../archive/first-library/field_extensionality.cubist)
 adds small-proposition extensionality via the existing univalence axiom and
 equality lemmas for dependent pairs in `U1`.
 

@@ -276,7 +276,7 @@ try {
         calc { n + 0 = n by nat_add_zero(n); }
       }`;
     const program=new CubicalProgram(await createCubical(),async name=>
-      (await fetch(`/proofs/${name}.cubist`)).text());
+      (await fetch(`/archive/first-library/${name}.cubist`)).text());
     try {
       await program.check(source,"browser_template_calc");
       program.inspect("browser_template_calc__generic",{universes:[0]});

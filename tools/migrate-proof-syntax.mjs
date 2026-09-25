@@ -1,6 +1,6 @@
 // Rewrite library proofs to newer syntax, then format them.
 //   node tools/migrate-proof-syntax.mjs --rewrites a,b [--skip FILE.json] [module ...]
-// Without module names, every web/proofs module is rewritten in place. The
+// Without module names, every archive/first-library module is rewritten in place. The
 // skip file maps module names to declarations that must stay unchanged.
 // Verify the result with tools/verify-proof-migration.mjs.
 import { readFile, readdir, writeFile } from "node:fs/promises";
@@ -21,12 +21,12 @@ const rewrites = (option("--rewrites") ?? identicalRewrites.join(",")).split(","
 for (const name of rewrites) if (!known.includes(name)) throw new Error(`Unknown rewrite ${name}; expected ${known.join(", ")}.`);
 const skipFile = option("--skip");
 const skips = skipFile ? JSON.parse(await readFile(skipFile, "utf8")) : {};
-const modules = args.length ? args : (await readdir(`${root}web/proofs`)).filter(name => name.endsWith(".cubist"))
+const modules = args.length ? args : (await readdir(`${root}archive/first-library`)).filter(name => name.endsWith(".cubist"))
   .map(name => name.slice(0, -".cubist".length)).sort();
 const totals = {};
 let changed = 0;
 for (const module of modules) {
-  const path = `${root}web/proofs/${module}.cubist`, source = await readFile(path, "utf8");
+  const path = `${root}archive/first-library/${module}.cubist`, source = await readFile(path, "utf8");
   const result = rewriteModule(source, { rewrites, skip: new Set(skips[module] ?? []) });
   if (result.source === source) continue;
   let text = result.source;
