@@ -1249,3 +1249,40 @@ test("each calc by keyword links to its checked step in an ordinary declaration"
     assert.equal(program.inspect(step.binding).type.tag,"Path");
   }
 });
+
+test("concrete declarations and templates link tactics from the parser's keyword sites",async t=>{
+  const declarations=parameters=>`
+    def calc_site(${parameters}x y : Nat, p : x = y) : x = y { calc { x = y by p; } }
+    def rw_site(${parameters}x y : Nat, p : x = y) : x = y { rw [p]; }
+    def simp_site(${parameters}f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n { simp [h]; }`;
+  const roles=new Set(["calculation witness","calculation step","rewrite witness","simplification witness"]);
+  // Each tactic link, relative to the keyword the parser recorded.
+  const sites=async(source,module)=>{
+    const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");});
+    t.after(()=>program.dispose());
+    const result=await program.check(source,module);
+    assert.equal(result.gaps.length,0,JSON.stringify(result.gaps));
+    const keywords=parse(source).declarations.map(d=>d.body[0].keyword);
+    return result.links.filter(link=>roles.has(link.role)).sort((a,b)=>a.start-b.start).map(link=>{
+      const keyword=keywords.findLast(keyword=>keyword.start<=link.start);
+      return [link.name,link.role,link.start-keyword.start,link.end-link.start];
+    });
+  };
+  const concrete=await sites(declarations(""),"concrete_sites");
+  assert.deepEqual(concrete.map(site=>site[0]),["calc","calc step 1","rw","simp"]);
+  assert.deepEqual(await sites(declarations("U : Universe, "),"template_sites"),concrete);
+});
+
+test("a parenthesized binder links from its keyword like an unparenthesized one",async t=>{
+  const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");});
+  t.after(()=>program.dispose());
+  const source=`def bare = fun (n : Nat) => n;
+    def parenthesized = (fun (n : Nat) => n);
+    def bare_type = forall n : Nat, n = n;
+    def parenthesized_type = (forall n : Nat, n = n);`;
+  const result=await program.check(source,"binder_sites");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  const keywords=[...source.matchAll(/\b(fun|forall)\b/g)].map(match=>[match[1],match.index,match.index+match[1].length]);
+  const links=result.links.filter(link=>link.role==="language expression"&&["fun","forall"].includes(link.name));
+  assert.deepEqual(links.map(link=>[link.name,link.start,link.end]).sort((a,b)=>a[1]-b[1]),keywords);
+});
