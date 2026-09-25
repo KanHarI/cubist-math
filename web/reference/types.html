@@ -163,12 +163,13 @@ def nat_is_a_type : U0 {
           <section id="tour-dependent">
             <h2>Dependent types: <code>forall</code> and <code>exists</code></h2>
             <p>A function’s result type can depend on its argument. <code>forall x : A, B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not.</p>
-            <pre><code data-check="accept">def duplicate : forall A : U0, A -&gt; A and A {
+            <pre><code data-check="accept">// `and` binds tighter than `-&gt;`, so `A -&gt; A and A` means `A -&gt; (A and A)`.
+def duplicate : forall A : U0, A -&gt; A and A {
   exact fun (A : U0) (a : A) =&gt; (a, a);
 }
 
 def one_one = duplicate(Nat, 1);</code></pre>
-            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The result must fit the type the argument chose:</p>
+            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type the argument chose:</p>
             <pre><code data-check="reject">def duplicate : forall A : U0, A -&gt; A and A {
   exact fun (A : U0) (a : A) =&gt; (a, 0);  // Error: Type mismatch: found Nat, expected A.
 }</code></pre>
