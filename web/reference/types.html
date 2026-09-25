@@ -56,12 +56,14 @@
           <section id="values">
             <h2>Every value has a type</h2>
             <p>A Cubist file is a list of declarations. The simplest names a value:</p>
-            <pre><code data-check="accept">def seven = 7;
-
-def seven_again : Nat {
+            <pre><code data-check="accept">def seven = 7;</code></pre>
+            <p><code>def seven = 7;</code> names the value <code>7</code>. The checker works out its type, <code>Nat</code>, the type of natural numbers. Read <code>x : T</code> as “<code>x</code> has type <code>T</code>”: here <code>seven : Nat</code>.</p>
+            <h3 id="exact-intro">Stating the type: <code>exact</code></h3>
+            <p>A declaration can also state its type, after a colon. The value then goes in a <strong>block</strong> between braces, and the statement <code>exact value;</code> gives it:</p>
+            <pre><code data-check="accept">def seven_again : Nat {
   exact 7;
 }</code></pre>
-            <p><code>def seven = 7;</code> names the value <code>7</code>, and the checker works out its type, <code>Nat</code>. The second form states the type first: <code>def name : T { … }</code> says the value has type <code>T</code>, and <code>exact 7;</code> gives the value. Read <code>x : T</code> as “<code>x</code> has type <code>T</code>”. The checker accepts a declaration only when the value really has the stated type. This chapter introduces the basic types and their values; the next one writes a first proof.</p>
+            <p>The checker accepts the declaration only when the value really has the stated type. <code>exact</code> is the simplest statement a block can hold. The following chapters use blocks to build proofs one step at a time, and the chapter on <a href="proof-blocks.html#goals">proof blocks</a> lists every statement. This chapter introduces the basic types and their values; the next one writes a first proof.</p>
           </section>
           <section id="tour-numbers">
             <h2>Natural numbers</h2>
