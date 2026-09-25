@@ -6,6 +6,7 @@ import { Scope } from "./dist/cubical-runtime/elaboration.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
 import { parse } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
+import { tacticSite, calcStepSite } from "./mathscript/link-sites.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
@@ -196,18 +197,15 @@ export class CubicalProgram {
             const nodes = [], binders = new Set(info.templateParameters);
             const visit = node => {
               if (!node || typeof node !== "object") return;
-              const tactic = {calc:"calculation witness",rw:"rewrite witness",
-                simp:"simplification witness",simpOnly:"simplification witness",
-                simpa:"simplification witness",simpaOnly:"simplification witness"}[node.kind];
+              // The elaborator's tactic sites (link-sites.mjs). Expression
+              // sites are not listed: some operators and binders, such as a
+              // face formula's `and`, are never elaborated as terms.
+              const tactic = tacticSite(node);
               if (tactic) {
-                const keyword = node.kind.replace("Only","");
-                nodes.push({name:keyword,start:node.start,end:node.start+keyword.length,
-                  selectionOffset:node.start,role:tactic});
-                // The same `by` site as the elaborator's step reference.
+                nodes.push(tactic);
                 if (node.kind === "calc") node.steps.forEach((step,index) => {
-                  nodes.push({name:`calc step ${index+1}`,start:step.by.start,end:step.by.end,
-                    selectionOffset:step.by.start,role:"calculation step",
-                    expansion:{role:"calculation step",index:index+1}});
+                  const site = calcStepSite(step,index);
+                  nodes.push({...site,expansion:{role:site.role,index:site.expansionIndex}});
                 });
               }
               if (["let", "obtain"].includes(node.kind)) {
@@ -242,12 +240,11 @@ export class CubicalProgram {
                 !(node.role || schema.env.has(node.name) || binders.has(node.name))) continue;
               seen.add(node.start);
               const reference = `${binding}__reference_${node.start}`;
-              const selectedOffset = node.selectionOffset ?? node.start;
-              this.templateSelections.set(reference, { binding, offset: selectedOffset,
+              this.templateSelections.set(reference, { binding, offset: node.start,
                 expansion:node.expansion });
               this.links.push({ name: node.name, binding: reference, start: node.start, end: node.end,
                 role: node.role ?? "template reference", templateBinding: binding,
-                templateOffset: selectedOffset, ...(node.expansion ? {templateExpansion:node.expansion} : {}),
+                templateOffset: node.start, ...(node.expansion ? {templateExpansion:node.expansion} : {}),
                 templateParameters: info.templateParameters, definitionStart: node.start });
             }
           }

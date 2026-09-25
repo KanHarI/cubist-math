@@ -348,9 +348,15 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
       retries, conversion queries, rewriting, benchmark categories and the
       migration verifier use these kinds; declaration results record
       `failure` and `template` instead of being classified by their reason.
-    - [ ] One computation of source link sites. The parser records keyword spans,
+    - [x] One computation of source link sites. The parser records keyword spans,
       as it now does for each `calc` step's `by`; concrete declarations and
-      unelaborated templates use the same sites.
+      unelaborated templates use the same sites. Delivered in
+      [link-sites.mjs](../../web/mathscript/link-sites.mjs): the parser records
+      each proof statement's keyword and each `fun`, `forall` and `exists`
+      keyword. The elaborator takes tactic, `calc` step, operator and binder
+      sites from there, and template links take the same tactic and `calc` step
+      sites. Templates list no expression sites, because some operators, such
+      as a face formula's `and`, are never elaborated as terms.
     - [x] An explicit elaboration context passed down, instead of Translator
       fields (`source`, `simpRegistry`, `moduleName`, `onReference`,
       `dimensions`, `rewriteWork`) swapped in and out for templates and freeze

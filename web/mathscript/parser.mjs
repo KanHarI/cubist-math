@@ -207,7 +207,7 @@ export function parse(source, typeOnly = false) {
           ...(binder.names.length === 1 ? {name:binder.names[0]} : {names:binder.names}),
           binderKind:"lambda",domain: binder.domain, body:a, start:t.start, end:a.end,
           // Only the outer expression owns the single source `fun` token.
-          ...(index ? {generatedBinder:true} : {}),
+          ...(index ? {generatedBinder:true} : {keyword:{start:t.start,end:t.end}}),
         };
       }
     } else if (t.text === "forall" || t.text === "exists") {
@@ -221,6 +221,7 @@ export function parse(source, typeOnly = false) {
         kind: names.length === 1 ? t.text : "binderGroup",
         ...(names.length === 1 ? {name:names[0]} : {names}),
         binderKind:t.text, domain, body, start:t.start, end:body.end,
+        keyword:{start:t.start,end:t.end},
       };
     } else if (t.text === "(") {
       a = tuple(t, expr(), () => expr());
@@ -481,8 +482,10 @@ export function parse(source, typeOnly = false) {
           ),
           { offset: t.start },
         );
-      if (Array.isArray(s)) statements.push(...s);
-      else statements.push(s);
+      const parsed = [s].flat();
+      // A statement's leading token is its keyword, a source link site.
+      for (const statement of parsed) statement.keyword = { start: t.start, end: t.end };
+      statements.push(...parsed);
     }
     take("}");
     depth--;
