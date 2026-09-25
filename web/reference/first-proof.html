@@ -59,18 +59,22 @@
             <pre><code data-check="accept">import naturals;
 
 // n &lt; m: m is n plus a positive number, succ(k) for some k.
-def lt(n m : Nat) := exists k : Nat, succ(k) + n = m;
+def lt(n m : Nat) : U0 {
+  exact exists k : Nat, succ(k) + n = m;
+}
 
 // 2 &lt; 7: take k = 4, since succ(4) + 2 = 7.
 def two_lt_seven : lt(2, 7) {
   exact (4, refl(7));
 }</code></pre>
-            <p><code>lt</code> is a function that returns a type: <code>lt(n, m)</code> is the statement that <code>n</code> is less than <code>m</code>. A value of it is evidence: a number <code>k</code> together with a proof that <code>succ(k) + n = m</code>.</p>
+            <p><code>lt</code> is a function that returns a type, so its value is a type in <code>U0</code>: <code>lt(n, m)</code> is the statement that <code>n</code> is less than <code>m</code>. A value of it is evidence: a number <code>k</code> together with a proof that <code>succ(k) + n = m</code>.</p>
             <p><code>two_lt_seven</code> proves <code>lt(2, 7)</code>, which unfolds to <code>exists k : Nat, succ(k) + 2 = 7</code>. The pair <code>(4, refl(7))</code> takes <code>k = 4</code>, and <code>refl(7)</code> is accepted as evidence because <code>succ(4) + 2</code> computes to <code>7</code>. Any other <code>k</code> fails, because <code>succ(k) + 2</code> would compute to a different number.</p>
             <p>The same idea works for every <code>n</code>: <code>succ(n)</code> is greater than <code>n</code>, with <code>k = 0</code>. That gives the statement:</p>
             <pre><code data-check="accept">import naturals;
 
-def lt(n m : Nat) := exists k : Nat, succ(k) + n = m;
+def lt(n m : Nat) : U0 {
+  exact exists k : Nat, succ(k) + n = m;
+}
 
 // succ(n) is greater than n: take k = 0.
 def lt_succ(n : Nat) : lt(n, succ(n)) {
