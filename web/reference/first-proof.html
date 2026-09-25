@@ -107,7 +107,7 @@ def four = 2 + 2;</code></pre>
             <p>Imports must come first. An import after a declaration is a syntax error:</p>
             <pre><code data-check="reject">def zero_again = 0;
 
-import primes;  // Error: Expected def or axiom.</code></pre>
+import primes;  // Error: Imports must come before declarations.</code></pre>
           </section>
           <section id="names">
             <h2>Names and comments</h2>
@@ -174,14 +174,18 @@ def two = 2;  // Error: Expected ';', found 'def'.</code></pre>
                 <tr><td><code>computable def name …</code></td><td>A definition that must use no assumption. See <a href="assumptions.html#computability">computability</a>.</td></tr>
                 <tr><td><code>evaluate term expecting value;</code></td><td>A directive that checks what a closed term computes to. See <a href="assumptions.html#evaluate">evaluate</a>.</td></tr>
                 <tr><td><code>simp_rule name priority N;</code><br /><code>simp_set name = [rule, …];</code></td><td>Directives that register checked equalities for simplification. See <a href="rewriting.html#simp-registration">registering rules</a>.</td></tr>
-                <tr><td><code>axiom name(params) : T;</code></td><td>Parsed, but always rejected. See below.</td></tr>
               </tbody>
             </table></div>
-            <p>A source file cannot introduce its own assumptions. <code>axiom</code> declarations are parsed and then rejected, and declarations that use them are blocked. The available assumptions are the library’s fixed schemas, such as truncation and excluded middle, described in <a href="assumptions.html#axioms">assumptions</a>.</p>
-            <pre><code data-check="reject">// Error: Axiom declarations require an explicit assumption policy; not translated.
-axiom Oracle : Nat -&gt; Nat;
+            <p>There is no <code>axiom</code> declaration: a source file cannot introduce assumptions of its own. To reason under a hypothesis, take it as a parameter. The result then holds for every value of the hypothesis, and the hypothesis stays visible in its type:</p>
+            <pre><code data-check="accept">def ask(oracle : Nat -&gt; Nat) = oracle(3);
 
-def ask = Oracle(3);  // Error: Untranslated dependency: Oracle</code></pre>
+def asked_twice(oracle : Nat -&gt; Nat) : ask(oracle) = oracle(3) {
+  rfl;
+}</code></pre>
+            <p>The only assumptions are the library’s fixed schemas, such as truncation and excluded middle, described in <a href="assumptions.html#axioms">assumptions</a>. <code>axiom</code> is an ordinary name, so a declaration cannot start with it:</p>
+            <pre><code data-check="reject">// Error: Expected a declaration or directive: def, opaque def, computable def, evaluate, simp_rule or
+//   simp_set.
+axiom Oracle : Nat -&gt; Nat;</code></pre>
           </section>
           <section id="parameters">
             <h2>Parameters</h2>

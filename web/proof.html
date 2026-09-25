@@ -412,7 +412,7 @@ def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
           The compiler can retain a checked helper for this block so the enclosing
           proof can reuse it without expanding it again.
           It does not assume an equality or normalize the whole proof.
-          A source file cannot add assumptions: <code>axiom</code> declarations are rejected.
+          There is no <code>axiom</code> declaration: a source file cannot add assumptions.
           Truncation, choice and excluded middle are the explicit library assumptions; see
           <a href="reference/assumptions.html#axioms">their signatures and restrictions</a>.
           Function extensionality and univalence compute; see

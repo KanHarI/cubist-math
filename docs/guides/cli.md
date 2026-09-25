@@ -34,7 +34,7 @@ node cli/repl.mjs check example.cubist
 
 A successful check prints the declaration and kernel-step counts and exits with
 status 0. Parse errors, missing imports, or unchecked declarations exit nonzero.
-A source file cannot add assumptions: `axiom` declarations are rejected. Each
+There is no `axiom` declaration: a source file cannot add assumptions. Each
 `evaluate` directive's result is printed after the counts.
 Universe templates are checked through their concrete instantiations.
 
