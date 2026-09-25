@@ -59,7 +59,7 @@
               <li><strong>eta</strong>: a function equals <code>fun x => f(x)</code>, and a pair equals the pair of its components;</li>
               <li><strong>cubical rules</strong>: a path at <code>0</code> or <code>1</code> is its endpoint, and interval formulas are compared in normal form.</li>
             </ul>
-            <pre><code data-check="accept">import primes;
+            <pre><code data-check="accept">import naturals;
 
 def beta : (fun (n : Nat) =&gt; succ(n))(0) = 1 {
   rfl;
@@ -87,7 +87,7 @@ def path_endpoint(A : U0, x y : A, p : x = y) : p @ 1 = y {
   rfl;
 }</code></pre>
             <p>An eliminator applied to a variable does not compute, so an equality that needs a case analysis or induction on the variable is not definitional. It is a theorem, proved with a lemma, <code>rw</code> or <code>simp</code>:</p>
-            <pre><code data-check="reject">import primes;
+            <pre><code data-check="reject">import naturals;
 
 def plus_zero(n : Nat) : n + 0 = n {
   rfl;  // Error: Type mismatch: found (add(n, 0) =[Nat] add(n, 0)), expected (add(n, 0) =[Nat] n).

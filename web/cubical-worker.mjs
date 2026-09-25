@@ -1,14 +1,16 @@
 import { cubicalSourceFile } from "./cubical-sources.mjs";
 import createCubical from "./dist/cubical.mjs";
-import { sourceModules, cubicalSourceModules } from "./mathscript/modules.mjs";
+import { sourceModules, cubicalSourceModules, libraryModules } from "./mathscript/modules.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 const module = await createCubical();
 let program = null;
 const readSource = async name => {
   if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(name)) throw new Error("Invalid source module name.");
-  if (![...sourceModules, ...cubicalSourceModules].includes(name))
+  const library = libraryModules.includes(name);
+  if (!library && ![...sourceModules, ...cubicalSourceModules].includes(name))
     throw new Error(`Native source is not available for ${name}.`);
-  const response = await fetch(new URL(`./archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), { cache: "no-store" });
+  const path = library ? `./library/${name}.cubist` : `./archive/first-library/${cubicalSourceFile(name)}`;
+  const response = await fetch(new URL(path, import.meta.url), { cache: "no-store" });
   if (!response.ok) throw new Error(`Native source is not available for ${name}.`);
   return response.text();
 };

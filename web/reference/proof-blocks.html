@@ -142,7 +142,7 @@ def use_set_assumption : SetAssumption {
           <section id="exact">
             <h2><code>exact</code></h2>
             <p><code>exact term;</code> checks the term against the goal and closes the block. The two types need only be equal by computation, as described in <a href="conversion.html#conversion">conversion</a>:</p>
-            <pre><code data-check="accept">import primes;
+            <pre><code data-check="accept">import naturals;
 
 def by_computation : 2 + 2 = 4 {
   exact refl(4);
@@ -308,7 +308,7 @@ def default(value : Unit or Unit) : Shape(value) {
           <section id="changing-the-goal">
             <h2>Changing the goal</h2>
             <p><code>rw</code>, <code>simp</code> and <code>ext</code> replace the goal with a new one and continue. Some of them finish the block when the new goal holds by computation; the chapters on <a href="rewriting.html#rw">rewriting</a> and <a href="cubical.html#ext">function extensionality</a> say when. Otherwise, a following statement proves the new goal.</p>
-            <pre><code data-check="accept">import primes;
+            <pre><code data-check="accept">import naturals;
 
 def rewrite_then_finish(n : Nat) : (n + 0) + 0 = n {
   rw [nat_add_zero(n)];

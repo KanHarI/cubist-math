@@ -30,7 +30,14 @@ for (const arg of args) {
 }
 const module = await createCubical();
 let program, view, binding, checkedModule, evaluations = 0;
-const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+// The rebuilt library comes first; the archived first library is the fallback.
+const readSource = async name => {
+  for (const root of ["../library/", "../archive/first-library/"]) {
+    try { return await readFile(new URL(`${root}${name}.cubist`, import.meta.url), "utf8"); }
+    catch (error) { if (error.code !== "ENOENT") throw error; }
+  }
+  throw Error(`No module named ${name} in library/ or archive/first-library/.`);
+};
 function show() {
   const shown = view.folded ?? view;
   for (const entry of shown.context) console.log(`${entry.label ?? entry.name} : ${cubicalText(entry.type, view.symbols)}`);

@@ -69,8 +69,8 @@
             <h2>Natural numbers</h2>
             <p><code>Nat</code> is the type of natural numbers <code>0, 1, 2, …</code>. They are built from <code>0</code> and <code>succ</code>, the successor: <code>succ(n)</code> is <code>n + 1</code>.</p>
             <p>By default, a numeral is a <code>Nat</code> in this unary form: <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. It is not a machine integer, so a numeral’s size is the size of its term; numerals go up to 256. Binary literals such as <code>0b110</code> belong to a separate type, <code>BinaryNat</code>, described with the <a href="induction.html#w-types">inductive types</a>.</p>
-            <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import primes;</code> at its start. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
-            <pre><code data-check="accept">import primes;
+            <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import naturals;</code> at its start. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
+            <pre><code data-check="accept">import naturals;
 
 def three = succ(succ(succ(0)));
 
@@ -79,7 +79,7 @@ evaluate 2 + 3 expecting 5;
 evaluate 2 * 3 expecting 6;</code></pre>
             <p>Without the import, <code>+</code> has no definition. A wrong expectation is reported with the actual value:</p>
             <pre><code data-check="reject">def five = 2 + 3;  // Error: Untranslated name: add</code></pre>
-            <pre><code data-check="reject">import primes;
+            <pre><code data-check="reject">import naturals;
 
 evaluate 2 + 2 expecting 5;  // Error: The term evaluates to 4, not 5.</code></pre>
           </section>
@@ -121,7 +121,7 @@ def no_number : Nat or Unit {
           <section id="tour-functions">
             <h2>Functions: <code>-></code></h2>
             <p><code>A -> B</code> is the type of functions from <code>A</code> to <code>B</code>. <code>fun (n : Nat) => n + n</code> is the function that doubles a number, of type <code>Nat -> Nat</code>. A declaration with parameters defines a function in one step, and <code>f(x)</code> applies it:</p>
-            <pre><code data-check="accept">import primes;
+            <pre><code data-check="accept">import naturals;
 
 def double(n : Nat) = n + n;
 
@@ -129,7 +129,7 @@ def double_again = fun (n : Nat) =&gt; n + n;
 
 evaluate double(4) expecting 8;
 evaluate double_again(4) expecting 8;</code></pre>
-            <pre><code data-check="reject">import primes;
+            <pre><code data-check="reject">import naturals;
 
 def double(n : Nat) = n + n;
 

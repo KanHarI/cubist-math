@@ -98,17 +98,17 @@ def uses_wrong = wrong;  // Error: Untranslated dependency: wrong</code></pre>
           <section id="files">
             <h2>Files and imports</h2>
             <p>A source file has the extension <code>.cubist</code>. It starts with imports, followed by declarations and directives in any order:</p>
-            <pre><code data-check="accept">import primes;
+            <pre><code data-check="accept">import naturals;
 import sets;
 
 // Declarations and directives follow the imports.
 def seven = 7;</code></pre>
-            <p>An import names a module without quotes or a file extension. <code>import primes;</code> loads <code>primes.cubist</code>. The command-line checker looks first in the directory of the file being checked, then in the library. The imported module is checked too, along with everything it imports.</p>
+            <p>An import names a module without quotes or a file extension. <code>import naturals;</code> loads <code>naturals.cubist</code>. The command-line checker looks first in the directory of the file being checked, then in the library: the rebuilt library under <code>library/</code>, then the archived first library. The imported module is checked too, along with everything it imports.</p>
             <p>An import makes every checked declaration of the module available, and so do the modules it imports in turn. It also brings the <a href="rewriting.html#simp-registration">simplification rules and sets</a> that those modules register. Importing a module does not make a theorem depend on that module’s assumptions. Each theorem’s assumptions are computed from its own checked term.</p>
             <p>Imports must come first. An import after a declaration is a syntax error:</p>
             <pre><code data-check="reject">def zero_again = 0;
 
-import primes;  // Error: Imports must come before declarations.</code></pre>
+import naturals;  // Error: Imports must come before declarations.</code></pre>
           </section>
           <section id="names">
             <h2>Names and comments</h2>

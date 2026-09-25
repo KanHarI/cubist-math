@@ -74,7 +74,7 @@
           <section id="cli">
             <h2>The command-line checker</h2>
             <p><code>node cli/repl.mjs</code> checks source files with the same C kernel as the workspace. It needs the kernel built once with <code>make wasm</code>. Given a command, it runs that command and exits; with none, it reads one command per line. The examples below use this file, saved as <code>sample.cubist</code>:</p>
-            <pre><code data-check="accept" data-name="sample">import primes;
+            <pre><code data-check="accept" data-name="sample">import naturals;
 import classical;
 
 // Twice a number.
@@ -89,7 +89,7 @@ evaluate double(2) expecting 4;</code></pre>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs check sample.cubist
 Checked 2 declarations · … kernel steps
 evaluate at line 11: 4</code></pre>
-            <p>Imports are looked up first in the directory of the checked file, then in the library, so a local module can shadow a library module of the same name. A bare module name, as in <code>node cli/repl.mjs check euclid</code>, checks that library module.</p>
+            <p>Imports are looked up first in the directory of the checked file, then in the rebuilt library under <code>library/</code>, then in the archived first library. So a local module can shadow a library module of the same name. A bare module name, as in <code>node cli/repl.mjs check euclid</code>, checks that library module.</p>
             <h3 id="cli-commands">Commands</h3>
             <div class="table-scroll"><table>
               <thead><tr><th>Command</th><th>Effect</th></tr></thead>

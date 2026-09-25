@@ -61,7 +61,7 @@ def copy_two : copy(2) = 2 {
 }</code></pre>
             <p>In <code>induction n as k return C(k)</code>, the zero branch must have type <code>C(0)</code>. In the successor branch, <code>k : Nat</code> is the predecessor and <code>previous : C(k)</code> is the induction hypothesis. The branch must produce <code>C(succ(k))</code>. Each branch is an expression, not a proof block; put a longer argument in a separate helper theorem.</p>
             <p>The motive <code>C(k)</code> is what makes this a proof by induction rather than just recursion. For a theorem, it is the statement at <code>k</code>. For example, the library proves <code>n + 0 = n</code> with the motive <code>(k + 0) = k</code>:</p>
-            <pre><code data-check="excerpt" data-module="primes">def nat_add_zero(x : Nat) = induction x as k return ((k + 0) = k) {
+            <pre><code data-check="excerpt" data-module="naturals">def nat_add_zero(x : Nat) = induction x as k return ((k + 0) = k) {
     zero =&gt; refl(0);
     succ h =&gt; cong((fun (n : Nat) =&gt; succ(n)), h);
   };</code></pre>
