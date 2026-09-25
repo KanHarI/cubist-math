@@ -8,22 +8,17 @@ def complex_converges_successor(
   value : Complex(F), converges : ComplexConverges(F, zero, addF, lt, sequence, value)
 ) :
   ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => sequence(succ(n))), value) {
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   obtain (bound, close) = converges(epsilon, positive);
   exact (
     bound,
-    (
-      fun (n : Nat) => fun (later : IndexLE(bound, n)) => close(
-        succ(n), nat_le_step(bound, n, later)
-      )
-    )
+    (fun (n : Nat) (later : IndexLE(bound, n)) => close(succ(n), nat_le_step(bound, n, later)))
   );
 }
 
 // Coordinate balls have the symmetry and triangle laws of their real parts.
 def complex_close_symmetry(
-  F : U1, addF : F -> F -> F, lt : F -> F -> U0, x : Complex(F), y : Complex(F), epsilon : F,
+  F : U1, addF : F -> F -> F, lt : F -> F -> U0, x y : Complex(F), epsilon : F,
   close : ComplexClose(F, addF, lt, x, y, epsilon)
 ) :
   ComplexClose(F, addF, lt, y, x, epsilon) {
@@ -35,10 +30,10 @@ def complex_close_symmetry(
 }
 
 def complex_close_triangle(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : Complex(F), y : Complex(F),
-  z : Complex(F), epsilon : F, delta : F, xy : ComplexClose(F, addF, lt, x, y, epsilon),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y z : Complex(F),
+  epsilon delta : F, xy : ComplexClose(F, addF, lt, x, y, epsilon),
   yz : ComplexClose(F, addF, lt, y, z, delta)
 ) :
   ComplexClose(F, addF, lt, x, z, addF(epsilon, delta)) {
@@ -59,11 +54,10 @@ def complex_close_triangle(
 // A checked error certificate gives a strict ball once its weak radius is
 // strictly below epsilon. No sign decision on either coordinate is used.
 def complex_perturbation_close(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), old : Complex(F),
-  fresh : Complex(F), radius : F, epsilon : F,
-  perturbation : ComplexPerturbation(F, addF, negF, lt, old, fresh, radius),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), old fresh : Complex(F),
+  radius epsilon : F, perturbation : ComplexPerturbation(F, addF, negF, lt, old, fresh, radius),
   small : lt(radius, epsilon)
 ) :
   ComplexClose(F, addF, lt, old, fresh, epsilon) {
@@ -90,8 +84,8 @@ def complex_perturbation_close(
 // Compare arbitrary m and n through their common later level m+n.
 // The sum order on indices is commutative; contour sums need not be.
 def complex_cauchy_from_refinements(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   halving : Halving(F, zero, addF, lt), sequence : Nat -> Complex(F),
   refines : (
@@ -101,31 +95,24 @@ def complex_cauchy_from_refinements(
 ) :
   ComplexCauchy(F, zero, addF, lt, sequence) {
   obtain (half, halfSum, positiveHalf) = halving;
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   obtain (bound, close) = refines(half(epsilon), positiveHalf(epsilon, positive));
   have tail :
     forall m : Nat, forall n : Nat, IndexLE(bound, m) -> IndexLE(bound, n)
     -> ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon) {
-    intro m;
-    intro n;
-    intro largeM;
-    intro largeN;
+    intro m n largeM largeN;
     let first = close(m, n, largeM);
     let second =
-      transport(
-        (fun (k : Nat) => ComplexClose(F, addF, lt, sequence(n), sequence(k), half(epsilon))),
-        n + m, m + n, nat_add_comm(n, m), close(n, m, largeN)
-      );
+      along((fun (k : Nat) => ComplexClose(F, addF, lt, sequence(n), sequence(k), half(epsilon)))) by nat_add_comm(
+        n, m
+      ) from close(n, m, largeN);
     let reversed =
       complex_close_symmetry(F, addF, lt, sequence(n), sequence(m + n), half(epsilon), second);
-    exact transport(
-      (fun (r : F) => ComplexClose(F, addF, lt, sequence(m), sequence(n), r)),
-      addF(half(epsilon), half(epsilon)), epsilon, halfSum(epsilon),
-      complex_close_triangle(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, sequence(m), sequence(m + n),
-        sequence(n), half(epsilon), half(epsilon), first, reversed
-      )
+    exact along((fun (r : F) => ComplexClose(F, addF, lt, sequence(m), sequence(n), r))) by halfSum(
+      epsilon
+    ) from complex_close_triangle(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, sequence(m), sequence(m + n),
+      sequence(n), half(epsilon), half(epsilon), first, reversed
     );
   }
   exact (bound, tail);

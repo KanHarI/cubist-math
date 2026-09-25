@@ -4,15 +4,14 @@ import complex_magnitude;
 // An explicit error and its bound. Existence here is an ordinary dependent
 // pair: finite sums can combine these witnesses without any choice principle.
 def ComplexPerturbation(
-  F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, old : Complex(F),
-  fresh : Complex(F), radius : F
+  F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, old fresh : Complex(F), radius : F
 ) =
   exists error : Complex(F), (fresh = complex_add(F, addF, old, error))
   and ComplexBoxBound(F, negF, lt, error, radius);
 
 def complex_perturbation_zero(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)
 ) :
   ComplexPerturbation(F, addF, negF, lt, complex_zero(F, zero), complex_zero(F, zero), zero) {
@@ -25,10 +24,10 @@ def complex_perturbation_zero(
 }
 
 def complex_perturbation_add(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), oldLeft : Complex(F),
-  freshLeft : Complex(F), oldRight : Complex(F), freshRight : Complex(F), r : F, s : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  oldLeft freshLeft oldRight freshRight : Complex(F), r s : F,
   left : ComplexPerturbation(F, addF, negF, lt, oldLeft, freshLeft, r),
   right : ComplexPerturbation(F, addF, negF, lt, oldRight, freshRight, s)
 ) :

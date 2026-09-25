@@ -33,16 +33,16 @@ def galois_connection(
   GaloisConnection(K, E, H, P) {
   exact (
     (
-      fun (fixes : PredicateIncluded(Galois(K, E), H, GaloisFixing(K, E, P))) => fun (
+      fun (fixes : PredicateIncluded(Galois(K, E), H, GaloisFixing(K, E, P))) (
         x : extension_carrier(K, E)
-      ) => fun (px : P(x)) => fun (e : Galois(K, E)) => fun (he : H(e)) => typed(
-        GaloisFixing(K, E, P, e), fixes(e, he)
-      )(x, px)
+      ) (px : P(x)) (e : Galois(K, E)) (he : H(e)) => typed(GaloisFixing(K, E, P, e), fixes(e, he))(
+        x, px
+      )
     ),
     (
-      fun (fixed : PredicateIncluded(extension_carrier(K, E), P, GaloisFixed(K, E, H))) => fun (
+      fun (fixed : PredicateIncluded(extension_carrier(K, E), P, GaloisFixed(K, E, H))) (
         e : Galois(K, E)
-      ) => fun (he : H(e)) => fun (x : extension_carrier(K, E)) => fun (px : P(x)) => typed(
+      ) (he : H(e)) (x : extension_carrier(K, E)) (px : P(x)) => typed(
         GaloisFixed(K, E, H, x), fixed(x, px)
       )(e, he)
     )
@@ -51,27 +51,27 @@ def galois_connection(
 
 // Enlarging a family of automorphisms can only shrink its fixed elements.
 def galois_fixed_antitone(
-  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, J : Galois(K, E) -> U0,
+  K : AlgebraicField, E : FieldExt(K), H J : Galois(K, E) -> U0,
   included : PredicateIncluded(Galois(K, E), H, J)
 ) :
   PredicateIncluded(extension_carrier(K, E), GaloisFixed(K, E, J), GaloisFixed(K, E, H)) {
   exact (
-    fun (x : extension_carrier(K, E)) => fun (fixed : GaloisFixed(K, E, J, x)) => fun (
-      e : Galois(K, E)
-    ) => fun (member : H(e)) => fixed(e, included(e, member))
+    fun (x : extension_carrier(K, E)) (fixed : GaloisFixed(K, E, J, x)) (e : Galois(K, E)) (
+      member : H(e)
+    ) => fixed(e, included(e, member))
   );
 }
 
 // Enlarging the subset to be fixed can only shrink its fixing automorphisms.
 def galois_fixing_antitone(
-  K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0,
-  Q : extension_carrier(K, E) -> U0, included : PredicateIncluded(extension_carrier(K, E), P, Q)
+  K : AlgebraicField, E : FieldExt(K), P Q : extension_carrier(K, E) -> U0,
+  included : PredicateIncluded(extension_carrier(K, E), P, Q)
 ) :
   PredicateIncluded(Galois(K, E), GaloisFixing(K, E, Q), GaloisFixing(K, E, P)) {
   exact (
-    fun (e : Galois(K, E)) => fun (fixes : GaloisFixing(K, E, Q, e)) => fun (
-      x : extension_carrier(K, E)
-    ) => fun (member : P(x)) => fixes(x, included(x, member))
+    fun (e : Galois(K, E)) (fixes : GaloisFixing(K, E, Q, e)) (x : extension_carrier(K, E)) (
+      member : P(x)
+    ) => fixes(x, included(x, member))
   );
 }
 
@@ -80,7 +80,7 @@ def galois_fixed_fixing_contains(
 ) :
   PredicateIncluded(extension_carrier(K, E), P, GaloisFixed(K, E, GaloisFixing(K, E, P))) {
   exact (
-    fun (x : extension_carrier(K, E)) => fun (member : P(x)) => fun (e : Galois(K, E)) => fun (
+    fun (x : extension_carrier(K, E)) (member : P(x)) (e : Galois(K, E)) (
       fixes : GaloisFixing(K, E, P, e)
     ) => fixes(x, member)
   );
@@ -89,7 +89,7 @@ def galois_fixed_fixing_contains(
 def galois_fixing_fixed_contains(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) :
   PredicateIncluded(Galois(K, E), H, GaloisFixing(K, E, GaloisFixed(K, E, H))) {
   exact (
-    fun (e : Galois(K, E)) => fun (member : H(e)) => fun (x : extension_carrier(K, E)) => fun (
+    fun (e : Galois(K, E)) (member : H(e)) (x : extension_carrier(K, E)) (
       fixed : GaloisFixed(K, E, H, x)
     ) => fixed(e, member)
   );
@@ -124,15 +124,14 @@ def GaloisLoopInvariant(
   K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E)
 ) =
   forall e : Galois(K, E), H(e)
-  -> (transport(extension_carrier(K), E, E, extension_iso_path(K, E, E, e), x) = x);
+  -> ((along extension_carrier(K) by extension_iso_path(K, E, E, e) from x) = x);
 
 def galois_fixed_is_loop_invariant(
   K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E),
   fixed : GaloisFixed(K, E, H, x)
 ) :
   GaloisLoopInvariant(K, E, H, x) {
-  intro e;
-  intro member;
+  intro e member;
   exact trans(galois_loop_action(K, E, e, x), fixed(e, member));
 }
 
@@ -141,7 +140,6 @@ def galois_loop_invariant_is_fixed(
   invariant : GaloisLoopInvariant(K, E, H, x)
 ) :
   GaloisFixed(K, E, H, x) {
-  intro e;
-  intro member;
+  intro e member;
   exact trans(sym(galois_loop_action(K, E, e, x)), invariant(e, member));
 }

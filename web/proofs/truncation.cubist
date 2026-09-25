@@ -11,8 +11,8 @@ def mere_is_prop(A : U0) = TruncateProp(U0, A);
 
 // The library supplies the standard elimination axiom. This checked wrapper
 // rearranges its premises; it introduces no additional axiom.
-def mere_eliminate(A : U0, P : U0, proposition : IsProp(P), f : A -> P) =
+def mere_eliminate(A P : U0, proposition : IsProp(P), f : A -> P) =
   TruncateElim(U0, A, P, proposition, f);
 
-def mere_map(A : U0, B : U0, f : A -> B, h : Mere(A)) =
+def mere_map(A B : U0, f : A -> B, h : Mere(A)) =
   mere_eliminate(A, Mere(B), mere_is_prop(B), (fun (a : A) => merely(B, f(a))), h);

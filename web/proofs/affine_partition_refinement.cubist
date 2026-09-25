@@ -5,10 +5,9 @@ import complex_subdivision_estimates;
 // A piece's contribution uses the same mapped contour sum as the original
 // sampling interface, with its stored count, vertices, and tags.
 def curve_subdivision_samples(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  integrand : Complex(F) -> Complex(F), a : FieldUnitInterval(F, zero, one, lt),
-  b : FieldUnitInterval(F, zero, one, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
+  a b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) =
   curve_contour_samples(
@@ -20,10 +19,9 @@ def curve_subdivision_samples(
 
 // Preserve both the supplied subdivisions' total and the error certificate.
 def CurvePartitionEstimate(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  integrand : Complex(F) -> Complex(F), n : Nat,
-  vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
+  n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices), radius : F
 ) =
@@ -64,11 +62,11 @@ def CurvePartitionEstimate(
 // Checking this generic step once keeps the continuity witness folded.
 // Move a fixed-mesh estimate to the stored endpoints of one piece.
 def affine_partition_piece_estimate(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -160,39 +158,26 @@ def affine_partition_piece_estimate(
   have mapEstimates :
     forall a : I, forall b : I, forall tag : I, forall piece : SampleSubdivision(I, a, b),
     condition(a, b, tag, piece) -> other(a, b, tag, piece) {
-    intro a;
-    intro b;
-    intro tag;
-    intro piece;
-    intro valid;
+    intro a b tag piece valid;
     obtain (within, small, fineValid) = valid;
     let count = subdivision_count(I, a, b, piece);
     let samples = subdivision_vertices(I, a, b, piece);
     let fineTags = subdivision_tags(I, a, b, piece);
     let first = sample_first(I, count, samples);
     let last = sample_last(I, count, samples);
-    have firstPath : first = a {
-      exact field_fst((first = a), (last = b), subdivision_endpoints(I, a, b, piece));
-    }
-    have lastPath : last = b {
-      exact field_snd((first = a), (last = b), subdivision_endpoints(I, a, b, piece));
-    }
+    have firstPath : first = a := field_fst(
+      (first = a), (last = b), subdivision_endpoints(I, a, b, piece)
+    );
+    have lastPath : last = b := field_snd(
+      (first = a), (last = b), subdivision_endpoints(I, a, b, piece)
+    );
     let withinFirst =
-      transport(
-        (fun (v : I) => IntervalTagWithin(F, zero, one, lt, v, b, tag)), a, first, sym(firstPath),
-        within
-      );
+      along((fun (v : I) => IntervalTagWithin(F, zero, one, lt, v, b, tag))) by sym(firstPath) from within;
     let withinSamples =
-      transport(
-        (fun (v : I) => IntervalTagWithin(F, zero, one, lt, first, v, tag)), b, last, sym(lastPath),
-        withinFirst
-      );
+      along((fun (v : I) => IntervalTagWithin(F, zero, one, lt, first, v, tag))) by sym(lastPath) from withinFirst;
     let widthPath =
       trans(cong((fun (v : I) => width(v, last)), firstPath), cong(width(a), lastPath));
-    let smallSamples =
-      transport(
-        (fun (v : F) => lt(v, mesh)), width(a, b), width(first, last), sym(widthPath), small
-      );
+    let smallSamples = along((fun (v : F) => lt(v, mesh))) by sym(widthPath) from small;
     obtain (error, identity, bounded) = localEstimates(
       count, samples, tag, fineTags, fineValid, withinSamples, smallSamples
     );
@@ -209,21 +194,18 @@ def affine_partition_piece_estimate(
     exact (
       error,
       trans(mapped, trans(identity, cong((fun (v : Complex(F)) => addC(v, error)), edgePath))),
-      transport(
-        ComplexBoxBound(F, negF, lt, error), mulF(delta, mulF(width(first, last), length)),
-        radius(a, b, tag), radiusPath, bounded
-      )
+      along ComplexBoxBound(F, negF, lt, error) by radiusPath from bounded
     );
   }
   exact mapEstimates;
 }
 
 def affine_partition_from_local_estimates(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -327,11 +309,7 @@ def affine_partition_from_local_estimates(
         )
       )
     ) {
-    intro n;
-    intro vertices;
-    intro tags;
-    intro pieces;
-    intro valid;
+    intro n vertices tags pieces valid;
     let localBounds =
       subdivision_tagged_map(I, condition, other, mapEstimates, n, vertices, tags, pieces, valid);
     obtain (flat, computes, error, identity, bounded) = complex_subdivision_flat_estimate(
@@ -360,23 +338,18 @@ def affine_partition_from_local_estimates(
       trans(
         sym(mappedFine),
         trans(identity, cong((fun (v : Complex(F)) => addC(v, error)), mappedCoarse))
-      ),
-      transport(
-        ComplexBoxBound(F, negF, lt, error),
-        sample_sum(I, F, zero, addF, radius, n, vertices, tags),
-        mulF(delta, mulF(width(a, b), length)), radiusPath, bounded
-      )
+      ), along ComplexBoxBound(F, negF, lt, error) by radiusPath from bounded
     );
   }
   exact estimates;
 }
 
 def affine_partition_uniform_estimate(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (

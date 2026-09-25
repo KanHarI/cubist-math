@@ -9,17 +9,16 @@ def IndexLE(n : Nat) = induction n as k return (Nat -> U0) {
     };
   };
 
-def field_natural(F : U1, zero : F, one : F, addF : F -> F -> F, n : Nat) =
-  induction n as k return F {
+def field_natural(F : U1, zero one : F, addF : F -> F -> F, n : Nat) = induction n as k return F {
     zero => zero;
     succ previous => addF(previous, one);
   };
 
-def Archimedean(F : U1, zero : F, one : F, addF : F -> F -> F, lt : F -> F -> U0) =
+def Archimedean(F : U1, zero one : F, addF : F -> F -> F, lt : F -> F -> U0) =
   forall x : F, FieldExists(exists n : Nat, lt(x, field_natural(F, zero, one, addF, n)));
 
 // |x-y| < epsilon, expressed without requiring a total absolute-value API.
-def FieldClose(F : U1, addF : F -> F -> F, lt : F -> F -> U0, x : F, y : F, epsilon : F) =
+def FieldClose(F : U1, addF : F -> F -> F, lt : F -> F -> U0, x y epsilon : F) =
   lt(x, addF(y, epsilon)) and lt(y, addF(x, epsilon));
 
 // The bound is an actual natural number. A merely existing modulus is a
@@ -40,15 +39,15 @@ def CauchyComplete(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0) =
   FieldConverges(F, zero, addF, lt, sequence, limit);
 
 def CompleteOrderedField(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  minF : F -> F -> F, maxF : F -> F -> F, lt : F -> F -> U0
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, minF maxF : F -> F -> F,
+  lt : F -> F -> U0
 ) =
   OrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt)
   and Archimedean(F, zero, one, addF, lt) and CauchyComplete(F, zero, addF, lt);
 
 // Stronger order completeness is a separate property, not hidden in Cauchy
 // completeness or replaced by the classical least-upper-bound principle.
-def CutLaws(F : U1, lt : F -> F -> U0, lower : F -> U0, upper : F -> U0) =
+def CutLaws(F : U1, lt : F -> F -> U0, lower upper : F -> U0) =
   (forall x : F, FieldProp(lower(x))) and (forall x : F, FieldProp(upper(x)))
   and FieldExists(exists x : F, lower(x)) and FieldExists(exists x : F, upper(x))
   and (forall x : F, FieldIff(lower(x), FieldExists(exists y : F, lt(x, y) and lower(y))))
@@ -56,7 +55,7 @@ def CutLaws(F : U1, lt : F -> F -> U0, lower : F -> U0, upper : F -> U0) =
   and (forall x : F, lower(x) -> upper(x) -> Void)
   and (forall x : F, forall y : F, lt(x, y) -> FieldOr(lower(x), upper(y)));
 
-def RealizesCut(F : U1, lt : F -> F -> U0, lower : F -> U0, upper : F -> U0, point : F) =
+def RealizesCut(F : U1, lt : F -> F -> U0, lower upper : F -> U0, point : F) =
   (forall x : F, FieldIff(lower(x), lt(x, point)))
   and (forall x : F, FieldIff(upper(x), lt(point, x)));
 
@@ -65,9 +64,8 @@ def DedekindComplete(F : U1, lt : F -> F -> U0) =
   RealizesCut(F, lt, lower, upper, point);
 
 def complete_field_ordered(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, minF : F -> F
-  -> F, maxF : F -> F -> F, lt : F -> F -> U0,
-  complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt)
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, minF maxF : F -> F -> F, lt : F -> F
+  -> U0, complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt)
 ) :
   OrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt) {
   obtain (ordered, archimedean, cauchy) = complete;
@@ -75,10 +73,9 @@ def complete_field_ordered(
 }
 
 def complete_field_limit(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, minF : F -> F
-  -> F, maxF : F -> F -> F, lt : F -> F -> U0,
-  complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt), sequence : Nat
-  -> F, cauchySequence : FieldCauchy(F, zero, addF, lt, sequence)
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, minF maxF : F -> F -> F, lt : F -> F
+  -> U0, complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt),
+  sequence : Nat -> F, cauchySequence : FieldCauchy(F, zero, addF, lt, sequence)
 ) :
   exists limit : F, FieldConverges(F, zero, addF, lt, sequence, limit) {
   obtain (ordered, archimedean, cauchy) = complete;
@@ -91,17 +88,15 @@ def field_constant_converges(
   x : F
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => x), x) {
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   let step =
-    transport(
-      (fun (a : F) => lt(a, addF(x, epsilon))), addF(x, zero), x, unit(x),
-      translate(zero, epsilon, x, positive)
+    along((fun (a : F) => lt(a, addF(x, epsilon)))) by unit(x) from translate(
+      zero, epsilon, x, positive
     );
   exact (
     0,
     (
-      fun (n : Nat) => fun (bound : IndexLE(0, n)) => typed(
+      fun (n : Nat) (bound : IndexLE(0, n)) => typed(
         FieldClose(F, addF, lt, x, x, epsilon), (step, step)
       )
     )

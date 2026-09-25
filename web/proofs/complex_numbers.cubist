@@ -12,19 +12,19 @@ def complex_zero(F : U1, zero : F) : Complex(F) {
   exact (zero, zero);
 }
 
-def complex_one(F : U1, zero : F, one : F) : Complex(F) {
+def complex_one(F : U1, zero one : F) : Complex(F) {
   exact (one, zero);
 }
 
-def complex_i(F : U1, zero : F, one : F) : Complex(F) {
+def complex_i(F : U1, zero one : F) : Complex(F) {
   exact (zero, one);
 }
 
-def complex_embed(F : U1, zero : F, x : F) : Complex(F) {
+def complex_embed(F : U1, zero x : F) : Complex(F) {
   exact (x, zero);
 }
 
-def complex_add(F : U1, addF : F -> F -> F, z : Complex(F), w : Complex(F)) : Complex(F) {
+def complex_add(F : U1, addF : F -> F -> F, z w : Complex(F)) : Complex(F) {
   exact (addF(complex_real(F, z), complex_real(F, w)), addF(complex_imag(F, z), complex_imag(F, w)));
 }
 
@@ -32,10 +32,7 @@ def complex_neg(F : U1, negF : F -> F, z : Complex(F)) : Complex(F) {
   exact (negF(complex_real(F, z)), negF(complex_imag(F, z)));
 }
 
-def complex_mul(
-  F : U1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, z : Complex(F), w : Complex(F)
-) :
-  Complex(F) {
+def complex_mul(F : U1, addF mulF : F -> F -> F, negF : F -> F, z w : Complex(F)) : Complex(F) {
   exact (
     addF(
       mulF(complex_real(F, z), complex_real(F, w)),
@@ -49,5 +46,5 @@ def complex_conjugate(F : U1, negF : F -> F, z : Complex(F)) : Complex(F) {
   exact (complex_real(F, z), negF(complex_imag(F, z)));
 }
 
-def complex_norm_squared(F : U1, addF : F -> F -> F, mulF : F -> F -> F, z : Complex(F)) =
+def complex_norm_squared(F : U1, addF mulF : F -> F -> F, z : Complex(F)) =
   addF(mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)));

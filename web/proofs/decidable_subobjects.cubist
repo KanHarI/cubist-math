@@ -29,7 +29,7 @@ def subgroup_decisions_prop(G : Group, S : Subgroup(G)) : Proposition(SubgroupDe
 }
 
 def decidable_subgroup_ext(
-  G : Group, D : DecidableSubgroup(G), E : DecidableSubgroup(G),
+  G : Group, D E : DecidableSubgroup(G),
   same : decidable_subgroup(G, D) =[Subgroup(G)] decidable_subgroup(G, E)
 ) :
   D = E {
@@ -79,8 +79,7 @@ def intermediate_decisions_prop(K : AlgebraicField, E : FieldExt(K), M : Interme
 }
 
 def decidable_intermediate_ext(
-  K : AlgebraicField, E : FieldExt(K), D : DecidableIntermediateField(K, E),
-  F : DecidableIntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), D F : DecidableIntermediateField(K, E),
   same : decidable_intermediate(K, E, D) =[IntermediateField(K, E)] decidable_intermediate(K, E, F)
 ) :
   D = F {

@@ -4,9 +4,9 @@ import polynomial_root_existence;
 
 // Cancellation of a common linear factor also cancels divisibility evidence.
 def polynomial_factor_divisibility_cancel(
-  K : AlgebraicField, F : Polynomial(K), nonzero : PolynomialNonzero(K, F), p : Polynomial(K),
-  q : Polynomial(K), a : Polynomial(K), b : Polynomial(K), ep : p = polynomial_mul(K, F, a),
-  eq : q = polynomial_mul(K, F, b), divides : PolynomialDivides(K, q, p)
+  K : AlgebraicField, F : Polynomial(K), nonzero : PolynomialNonzero(K, F), p q a b : Polynomial(K),
+  ep : p = polynomial_mul(K, F, a), eq : q = polynomial_mul(K, F, b),
+  divides : PolynomialDivides(K, q, p)
 ) :
   PolynomialDivides(K, b, a) {
   have send :
@@ -47,19 +47,9 @@ def unit_distinct_splitting(
   let splitting =
     typed(
       DistinctPolynomialSplitting(K, p, 0),
-      (
-        roots, a, eq,
-        (
-          fun (i : Fin(0)) => fun (j : Fin(0)) => fun (same : roots(i) = roots(j)) => typed(
-            (i = j), absurd(i)
-          )
-        )
-      )
+      (roots, a, eq, (fun (i j : Fin(0)) (same : roots(i) = roots(j)) => typed((i = j), absurd(i))))
     );
-  exact transport(
-    DistinctPolynomialSplitting(K, p), 0, polynomial_degree(K, p),
-    sym(cong(natural_predecessor, degree)), splitting
-  );
+  exact along DistinctPolynomialSplitting(K, p) by sym(cong(natural_predecessor, degree)) from splitting;
 }
 
 def DistinctSplittingDivisors(K : AlgebraicField, n : Nat) =
@@ -88,9 +78,8 @@ def omitted_divisor_roots_avoid(
     exact distinct_roots_omit_avoid(K, n, roots, distinct, index, j, trans(eq, same));
   }
   exact mere_eliminate(
-    (exists j : Fin(n), rs(j) = x), Void,
-    (fun (u : Void) => fun (v : Void) => typed((u = v), absurd(u))), contradict,
-    splitting_root_index(K, p, n, rs, a, equation, nonzero, x, rp)
+    (exists j : Fin(n), rs(j) = x), Void, (fun (u v : Void) => typed((u = v), absurd(u))),
+    contradict, splitting_root_index(K, p, n, rs, a, equation, nonzero, x, rp)
   );
 }
 
@@ -136,8 +125,7 @@ def distinct_splitting_divisor_at_root(
     intro splitting;
     obtain (rs, b, fact, distinctQ) = splitting;
     have avoids : forall i : Fin(m), (rs(i) = x) -> Void {
-      intro i;
-      intro same;
+      intro i same;
       exact omitted_divisor_roots_avoid(
         K, n, roots, distinct, index, a, tailP, refl(tailP), nzP, tailQ, divided, rs(i),
         splitting_listed_root(K, tailQ, m, rs, b, fact, i), same
@@ -162,9 +150,7 @@ def distinct_splitting_divisor_at_root(
         cong(natural_predecessor, productDegree),
         sym(cong((fun (k : Nat) => succ(natural_predecessor(k))), degree))
       );
-    exact transport(
-      DistinctPolynomialSplitting(K, q), succ(m), polynomial_degree(K, q), sym(size), result
-    );
+    exact along DistinctPolynomialSplitting(K, q) by sym(size) from result;
   }
   exact mere_map(
     DistinctPolynomialSplitting(K, tailQ, m), Goal, extend,
@@ -174,12 +160,7 @@ def distinct_splitting_divisor_at_root(
 
 def distinct_splitting_divisor_zero(K : AlgebraicField, closed : AlgebraicallyClosed(K)) :
   DistinctSplittingDivisors(K, 0) {
-  intro p;
-  intro nonzero;
-  intro splitting;
-  intro q;
-  intro nonzeroQ;
-  intro divides;
+  intro p nonzero splitting q nonzeroQ divides;
   obtain (roots, a, equation, distinct) = splitting;
   let Goal = DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
   have nonunit : (PolynomialUnit(K, q) -> Void) -> Mere(Goal) {
@@ -218,12 +199,7 @@ def distinct_splitting_divisor_step(
   previous : DistinctSplittingDivisors(K, n)
 ) :
   DistinctSplittingDivisors(K, succ(n)) {
-  intro p;
-  intro nonzero;
-  intro splitting;
-  intro q;
-  intro nonzeroQ;
-  intro divides;
+  intro p nonzero splitting q nonzeroQ divides;
   obtain (roots, a, equation, distinct) = splitting;
   let Goal = DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
   have nonunit : (PolynomialUnit(K, q) -> Void) -> Mere(Goal) {
@@ -239,9 +215,7 @@ def distinct_splitting_divisor_step(
         obtain (i, same) = witness;
         exact distinct_splitting_divisor_at_root(
           K, n, previous, p, nonzero, roots, a, equation, distinct, q, nonzeroQ, divides, i,
-          transport(
-            PolynomialRoot(K, K, field_embedding_identity(K), q), x, roots(i), sym(same), root
-          )
+          along PolynomialRoot(K, K, field_embedding_identity(K), q) by sym(same) from root
         );
       }
       exact mere_eliminate(

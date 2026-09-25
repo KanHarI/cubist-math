@@ -35,7 +35,7 @@ def permutation_join(n : Nat, p : Fin(succ(n)) and Permutations(n)) =
   );
 
 def extension_restriction_point(
-  A : U0, B : U0, e : Bijection(Unit or A, Unit or B),
+  A B : U0, e : Bijection(Unit or A, Unit or B),
   fixed : forward(Unit or A, Unit or B, e, head(A)) = head(B), x : Unit or A
 ) =
   match x as z return (
@@ -138,7 +138,7 @@ def permutation_split_join(n : Nat, p : Fin(succ(n)) and Permutations(n)) :
         fun (q : Fin(succ(n)) and Permutations(n)) => permutation_split(n, permutation_join(n, q)) = q
       ),
       (
-        fun (y : Fin(succ(n))) => fun (d : Permutations(n)) => product_path(
+        fun (y : Fin(succ(n))) (d : Permutations(n)) => product_path(
           Fin(succ(n)), Permutations(n), permutation_image(n, permutation_join_at(n, y, d)), y,
           permutation_join_image(n, y, d), permutation_tail(n, permutation_join_at(n, y, d)), d,
           permutation_join_tail(n, y, d)

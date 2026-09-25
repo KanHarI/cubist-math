@@ -4,7 +4,7 @@ import field_arithmetic;
 // Multiplication by a nonzero field element is injective. The inverse is used
 // only after the explicit nonzero hypothesis has been supplied.
 def field_mul_left_cancel_nonzero(
-  L : AlgebraicField, a : af_carrier(L), x : af_carrier(L), y : af_carrier(L),
+  L : AlgebraicField, a x y : af_carrier(L),
   nonzero : FieldNonzero(af_carrier(L), af_operations(L), a),
   same : field_mul(L, a, x) = field_mul(L, a, y)
 ) :
@@ -27,9 +27,8 @@ def field_mul_left_cancel_nonzero(
 // Dedekind independence, in the two-map case. The coefficient relation is
 // pointwise on the source field; no vector-space presentation is assumed.
 def distinct_embeddings_two_independent(
-  K : AlgebraicField, L : AlgebraicField, f : FieldEmbedding(K, L), g : FieldEmbedding(K, L),
-  different : (f = g) -> Void, a : af_carrier(L), b : af_carrier(L),
-  relation : forall x : af_carrier(K),
+  K L : AlgebraicField, f g : FieldEmbedding(K, L), different : (f = g) -> Void,
+  a b : af_carrier(L), relation : forall x : af_carrier(K),
   field_add(
     L, field_mul(L, a, field_embedding_map(K, L, f, x)),
     field_mul(L, b, field_embedding_map(K, L, g, x))
@@ -40,36 +39,34 @@ def distinct_embeddings_two_independent(
   let G = field_embedding_map(K, L, g);
   obtain (f0, f1, fn, fa, fm) = field_embedding_preserves(K, L, f);
   obtain (g0, g1, gn, ga, gm) = field_embedding_preserves(K, L, g);
-  have sumZero : field_add(L, a, b) = field_zero(L) {
-    exact trans(
-      sym(
+  have sumZero : field_add(L, a, b) = field_zero(L) := trans(
+    sym(
+      trans(
+        cong(
+          (
+            fun (v : af_carrier(L)) => field_add(
+              L, field_mul(L, a, v), field_mul(L, b, G(field_one(K)))
+            )
+          ), f1
+        ),
         trans(
           cong(
             (
               fun (v : af_carrier(L)) => field_add(
-                L, field_mul(L, a, v), field_mul(L, b, G(field_one(K)))
+                L, field_mul(L, a, field_one(L)), field_mul(L, b, v)
               )
-            ), f1
+            ), g1
           ),
           trans(
             cong(
-              (
-                fun (v : af_carrier(L)) => field_add(
-                  L, field_mul(L, a, field_one(L)), field_mul(L, b, v)
-                )
-              ), g1
-            ),
-            trans(
-              cong(
-                (fun (v : af_carrier(L)) => field_add(L, v, field_mul(L, b, field_one(L)))),
-                scalar_mul_one_right(L, a)
-              ), cong(field_add(L, a), scalar_mul_one_right(L, b))
-            )
+              (fun (v : af_carrier(L)) => field_add(L, v, field_mul(L, b, field_one(L)))),
+              scalar_mul_one_right(L, a)
+            ), cong(field_add(L, a), scalar_mul_one_right(L, b))
           )
         )
-      ), relation(field_one(K))
-    );
-  }
+      )
+    ), relation(field_one(K))
+  );
   have equalIfNonzero : FieldNonzero(af_carrier(L), af_operations(L), a) -> f = g {
     intro nonzero;
     have equalPointwise : forall x : af_carrier(K), F(x) = G(x) {
@@ -77,14 +74,12 @@ def distinct_embeddings_two_independent(
       let fx = F(x);
       let gx = G(x);
       let c = field_mul(L, b, gx);
-      have alternate : field_add(L, field_mul(L, a, gx), c) = field_zero(L) {
-        exact trans(
-          sym(scalar_distribute_left(L, a, b, gx)),
-          trans(
-            cong((fun (z : af_carrier(L)) => field_mul(L, z, gx)), sumZero), scalar_zero_mul(L, gx)
-          )
-        );
-      }
+      have alternate : field_add(L, field_mul(L, a, gx), c) = field_zero(L) := trans(
+        sym(scalar_distribute_left(L, a, b, gx)),
+        trans(
+          cong((fun (z : af_carrier(L)) => field_mul(L, z, gx)), sumZero), scalar_zero_mul(L, gx)
+        )
+      );
       let equalProducts =
         group_cancel_right(
           FieldAdditiveGroup(L), field_mul(L, a, fx), field_mul(L, a, gx), c,
@@ -94,21 +89,17 @@ def distinct_embeddings_two_independent(
     }
     exact field_embedding_ext(K, L, f, g, equalPointwise);
   }
-  have aZero : a = field_zero(L) {
-    exact double_negation(
-      a = field_zero(L), af_set(L, a, field_zero(L)),
-      (
-        fun (nonzero : FieldNonzero(af_carrier(L), af_operations(L), a)) => different(
-          equalIfNonzero(nonzero)
-        )
+  have aZero : a = field_zero(L) := double_negation(
+    a = field_zero(L), af_set(L, a, field_zero(L)),
+    (
+      fun (nonzero : FieldNonzero(af_carrier(L), af_operations(L), a)) => different(
+        equalIfNonzero(nonzero)
       )
-    );
-  }
-  have bZero : b = field_zero(L) {
-    exact trans(
-      sym(scalar_add_zero(L, b)),
-      trans(cong((fun (z : af_carrier(L)) => field_add(L, z, b)), sym(aZero)), sumZero)
-    );
-  }
+    )
+  );
+  have bZero : b = field_zero(L) := trans(
+    sym(scalar_add_zero(L, b)),
+    trans(cong((fun (z : af_carrier(L)) => field_add(L, z, b)), sym(aZero)), sumZero)
+  );
   exact (aZero, bZero);
 }

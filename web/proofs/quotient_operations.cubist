@@ -12,24 +12,21 @@ def quotient_binary_right(
   unpack laws as (prop, rest) return (SetQuotient(A, relation) -> B) {
     unpack rest as (reflexive, rest2) return (SetQuotient(A, relation) -> B) {
       quotient_rec(
-        A, relation, laws, B, setB, f(a),
-        (fun (y : A) => fun (y2 : A) => respects(a, a, y, y2, reflexive(a)))
+        A, relation, laws, B, setB, f(a), (fun (y y2 : A) => respects(a, a, y, y2, reflexive(a)))
       );
     };
   };
 
 def quotient_binary_right_beta(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
-  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a : A,
-  b : A
+  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a b : A
 ) :
   quotient_binary_right(A, relation, laws, B, setB, f, respects, a, quotient_class(A, relation, b)) = f(
     a, b
   ) {
   obtain (prop, reflexive, symmetric, transitive) = laws;
   exact quotient_rec_beta(
-    A, relation, laws, B, setB, f(a),
-    (fun (y : A) => fun (y2 : A) => respects(a, a, y, y2, reflexive(a))), b
+    A, relation, laws, B, setB, f(a), (fun (y y2 : A) => respects(a, a, y, y2, reflexive(a))), b
   );
 }
 
@@ -41,9 +38,7 @@ def quotient_binary_left_respects(
     A, relation, (SetQuotient(A, relation) -> B),
     quotient_binary_right(A, relation, laws, B, setB, f, respects)
   ) {
-  intro a;
-  intro a2;
-  intro same;
+  intro a a2 same;
   obtain (prop, reflexive, symmetric, transitive) = laws;
   exact quotient_maps_ext(
     A, relation, B, setB, quotient_binary_right(A, relation, laws, B, setB, f, respects, a),
@@ -76,8 +71,7 @@ def quotient_binary_rec(
 
 def quotient_binary_rec_beta(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
-  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a : A,
-  b : A
+  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a b : A
 ) :
   quotient_binary_rec(
     A, relation, laws, B, setB, f, respects, quotient_class(A, relation, a),
@@ -107,7 +101,7 @@ def quotient_induction_prop2(
   ),
   atClass : (
     forall a : A, forall b : A, P(quotient_class(A, relation, a), quotient_class(A, relation, b))
-  ), q : SetQuotient(A, relation), r : SetQuotient(A, relation)
+  ), q r : SetQuotient(A, relation)
 ) :
   P(q, r) {
   exact quotient_induction_prop(
@@ -139,7 +133,7 @@ def quotient_induction_prop3(
     P(
       quotient_class(A, relation, a), quotient_class(A, relation, b), quotient_class(A, relation, c)
     )
-  ), q : SetQuotient(A, relation), r : SetQuotient(A, relation), s : SetQuotient(A, relation)
+  ), q r s : SetQuotient(A, relation)
 ) :
   P(q, r, s) {
   exact quotient_induction_prop(

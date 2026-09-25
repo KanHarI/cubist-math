@@ -4,8 +4,8 @@ import dyadic_decay;
 // Ordinary data for one sufficiently fine dyadic subdivision. The existence
 // theorem below deliberately keeps the Archimedean witness truncated.
 def FineIntervalSamples(
-  F : U1, zero : F, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
-  a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
+  a b : FieldUnitInterval(F, zero, one, lt)
 ) =
   exists depth : Nat, exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
   (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
@@ -24,12 +24,11 @@ def FineIntervalSamples(
 // samples. Midpoints, tags, counts and widths are all supplied by checked
 // constructions. Neither a partition oracle nor choice/LEM is assumed.
 def archimedean_interval_fine_samples(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt),
-  archimedean : Archimedean(F, zero, one, addF, lt), a : FieldUnitInterval(F, zero, one, lt),
-  b : FieldUnitInterval(F, zero, one, lt),
+  archimedean : Archimedean(F, zero, one, addF, lt), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)

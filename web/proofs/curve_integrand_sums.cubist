@@ -3,7 +3,7 @@ import contour_sums;
 
 // Right scalar multiplication, using commutativity of the coefficient ring.
 def contour_sum_scale(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, coefficient : F, n : Nat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n)
 ) :
@@ -13,11 +13,9 @@ def contour_sum_scale(
   let original = contour_edge(F, addF, mulF, negF, f);
   let scaled = contour_edge(F, addF, mulF, negF, (fun (x : F) => mulF(f(x), coefficient)));
   let mapping = mulF(coefficient);
-  let mapped = (fun (a : F) => fun (b : F) => fun (tag : F) => mapping(original(a, b, tag)));
+  let mapped = (fun (a b tag : F) => mapping(original(a, b, tag)));
   have edgePath : forall a : F, forall b : F, forall tag : F, scaled(a, b, tag) = mapped(a, b, tag) {
-    intro a;
-    intro b;
-    intro tag;
+    intro a b tag;
     let difference = coordinate_difference(F, addF, negF, a, b);
     exact trans(
       cong(
@@ -46,11 +44,10 @@ def contour_sum_scale(
 }
 
 def curve_subdivision_samples_add(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f : Complex(F) -> Complex(F),
-  g : Complex(F) -> Complex(F), a : FieldUnitInterval(F, zero, one, lt),
-  b : FieldUnitInterval(F, zero, one, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f g : Complex(F) -> Complex(F),
+  a b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :
   curve_subdivision_samples(
@@ -72,11 +69,10 @@ def curve_subdivision_samples_add(
 }
 
 def curve_subdivision_samples_scale(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f : Complex(F) -> Complex(F),
-  coefficient : Complex(F), a : FieldUnitInterval(F, zero, one, lt),
-  b : FieldUnitInterval(F, zero, one, lt),
+  coefficient : Complex(F), a b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :
   curve_subdivision_samples(
@@ -101,11 +97,10 @@ def curve_subdivision_samples_scale(
 // Only values on the curve matter; no equality of the whole functions is
 // required, and no function-extensionality axiom is used.
 def curve_subdivision_samples_cong(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f : Complex(F) -> Complex(F),
-  g : Complex(F) -> Complex(F),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f g : Complex(F) -> Complex(F),
   same : (forall t : FieldUnitInterval(F, zero, one, lt), f(curve(t)) = g(curve(t))),
-  a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  a b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :
   curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece) = curve_subdivision_samples(
@@ -121,9 +116,7 @@ def curve_subdivision_samples_cong(
   let edgeG =
     parameter_contour_edge(I, Complex(F), addC, mulC, negC, curve, (fun (t : I) => g(curve(t))));
   have edges : forall x : I, forall y : I, forall tag : I, edgeF(x, y, tag) = edgeG(x, y, tag) {
-    intro x;
-    intro y;
-    intro tag;
+    intro x y tag;
     exact cong(
       (
         fun (v : Complex(F)) => mulC(

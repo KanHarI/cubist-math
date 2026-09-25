@@ -2,8 +2,8 @@ import field_magnitude_close;
 
 // Constructive moduli for multiplication by a fixed bounded scalar.
 def field_nonnegative_magnitude(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F,
   aboveZero : FieldLe(F, lt, zero, x)
 ) :
@@ -11,15 +11,11 @@ def field_nonnegative_magnitude(
   let shifted =
     order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, x, negF(x), aboveZero);
   let removeZero =
-    transport(
-      (fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x)))), addF(zero, negF(x)), negF(x),
-      ring_add_zero(F, zero, one, addF, mulF, negF, ring, negF(x)), shifted
-    );
+    along((fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x))))) by ring_add_zero(
+      F, zero, one, addF, mulF, negF, ring, negF(x)
+    ) from shifted;
   let negBelowZero =
-    transport(
-      FieldLe(F, lt, negF(x)), addF(x, negF(x)), zero,
-      ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x), removeZero
-    );
+    along FieldLe(F, lt, negF(x)) by ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x) from removeZero;
   exact (
     order_le_refl(F, lt, order, x),
     order_le_trans(
@@ -29,41 +25,34 @@ def field_nonnegative_magnitude(
 }
 
 def field_close_zero_magnitude(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, radius : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x radius : F,
   close : FieldClose(F, addF, lt, x, zero, radius)
 ) :
   FieldMagnitudeBound(F, negF, lt, x, radius) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   obtain (upper, lower) = close;
-  let less =
-    transport(
-      lt(x), addF(zero, radius), radius,
-      ring_add_zero(F, zero, one, addF, mulF, negF, ring, radius), upper
-    );
+  let less = along lt(x) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, radius) from upper;
   obtain (forward, backward) = translate(zero, addF(x, radius), negF(x));
   let shifted = forward(lower);
   let lhs =
-    transport(
-      (fun (v : F) => lt(v, addF(addF(x, radius), negF(x)))), addF(zero, negF(x)), negF(x),
-      ring_add_zero(F, zero, one, addF, mulF, negF, ring, negF(x)), shifted
-    );
-  have cancels : addF(addF(x, radius), negF(x)) = radius {
-    exact trans(
-      ring_add_comm(F, zero, one, addF, mulF, negF, ring, addF(x, radius), negF(x)),
+    along((fun (v : F) => lt(v, addF(addF(x, radius), negF(x))))) by ring_add_zero(
+      F, zero, one, addF, mulF, negF, ring, negF(x)
+    ) from shifted;
+  have cancels : addF(addF(x, radius), negF(x)) = radius := trans(
+    ring_add_comm(F, zero, one, addF, mulF, negF, ring, addF(x, radius), negF(x)),
+    trans(
+      sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, negF(x), x, radius)),
       trans(
-        sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, negF(x), x, radius)),
-        trans(
-          cong(
-            (fun (v : F) => addF(v, radius)),
-            ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x)
-          ), ring_add_zero(F, zero, one, addF, mulF, negF, ring, radius)
-        )
+        cong(
+          (fun (v : F) => addF(v, radius)),
+          ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x)
+        ), ring_add_zero(F, zero, one, addF, mulF, negF, ring, radius)
       )
-    );
-  }
-  let negLess = transport(lt(negF(x)), addF(addF(x, radius), negF(x)), radius, cancels, lhs);
+    )
+  );
+  let negLess = along lt(negF(x)) by cancels from lhs;
   exact (
     ordered_lt_implies_le(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, radius, less
@@ -75,23 +64,22 @@ def field_close_zero_magnitude(
 }
 
 def field_positive_product(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,
-  positiveX : lt(zero, x), positiveY : lt(zero, y)
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F, positiveX : lt(zero, x),
+  positiveY : lt(zero, y)
 ) :
   lt(zero, mulF(x, y)) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
   obtain (forward, backward) = scale(zero, x, y, positiveY);
-  exact transport(
-    (fun (v : F) => lt(v, mulF(x, y))), mulF(zero, y), zero,
-    ring_zero_mul(F, zero, one, addF, mulF, negF, ring, y), forward(positiveX)
-  );
+  exact along((fun (v : F) => lt(v, mulF(x, y)))) by ring_zero_mul(
+    F, zero, one, addF, mulF, negF, ring, y
+  ) from forward(positiveX);
 }
 
 def field_positive_reciprocal(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), x : F, positive : lt(zero, x)
 ) :
@@ -102,25 +90,22 @@ def field_positive_reciprocal(
     field_exists_intro(
       (lt(x, zero) or lt(zero, x)), typed((lt(x, zero) or lt(zero, x)), right(positive))
     );
-  have inverseData : exists reciprocal : F, mulF(x, reciprocal) = one {
-    exact getInverse(apart);
-  }
+  have inverseData : exists reciprocal : F, mulF(x, reciprocal) = one := getInverse(apart);
   obtain (reciprocal, inverseLaw) = inverseData;
   obtain (forward, backward) = scale(zero, reciprocal, x, positive);
   let productOne =
     trans(ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, x), inverseLaw);
-  let positiveProduct = transport(lt(zero), one, mulF(reciprocal, x), sym(productOne), positiveOne);
+  let positiveProduct = along lt(zero) by sym(productOne) from positiveOne;
   let zeroProduct =
-    transport(
-      (fun (v : F) => lt(v, mulF(reciprocal, x))), zero, mulF(zero, x),
-      sym(ring_zero_mul(F, zero, one, addF, mulF, negF, ring, x)), positiveProduct
-    );
+    along((fun (v : F) => lt(v, mulF(reciprocal, x)))) by sym(
+      ring_zero_mul(F, zero, one, addF, mulF, negF, ring, x)
+    ) from positiveProduct;
   exact (reciprocal, backward(zeroProduct), inverseLaw);
 }
 
 def field_small_scaled_radius(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length), epsilon : F, positive : lt(zero, epsilon)
@@ -143,56 +128,46 @@ def field_small_scaled_radius(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, epsilon, reciprocal, positive,
       positiveReciprocal
     );
-  have product : mulF(delta, denominator) = epsilon {
-    exact trans(
-      ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, epsilon, reciprocal, denominator),
-      trans(
-        cong(
-          mulF(epsilon),
-          trans(
-            ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, denominator), inverseLaw
-          )
-        ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, epsilon)
-      )
-    );
-  }
-  have gap : addF(delta, mulF(delta, length)) = epsilon {
-    exact trans(
-      sym(
+  have product : mulF(delta, denominator) = epsilon := trans(
+    ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, epsilon, reciprocal, denominator),
+    trans(
+      cong(
+        mulF(epsilon),
         trans(
-          ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, one, length),
-          cong(
-            (fun (v : F) => addF(v, mulF(delta, length))),
-            ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, delta)
-          )
+          ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, denominator), inverseLaw
         )
-      ), product
-    );
-  }
+      ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, epsilon)
+    )
+  );
+  have gap : addF(delta, mulF(delta, length)) = epsilon := trans(
+    sym(
+      trans(
+        ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, one, length),
+        cong(
+          (fun (v : F) => addF(v, mulF(delta, length))),
+          ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, delta)
+        )
+      )
+    ), product
+  );
   obtain (shiftForward, shiftBackward) = translate(zero, delta, mulF(delta, length));
   let shifted =
-    transport(
-      (fun (v : F) => lt(v, addF(delta, mulF(delta, length)))), addF(zero, mulF(delta, length)),
-      mulF(delta, length), ring_add_zero(F, zero, one, addF, mulF, negF, ring, mulF(delta, length)),
-      shiftForward(positiveDelta)
-    );
-  exact (
-    delta, positiveDelta,
-    transport(lt(mulF(delta, length)), addF(delta, mulF(delta, length)), epsilon, gap, shifted)
-  );
+    along((fun (v : F) => lt(v, addF(delta, mulF(delta, length))))) by ring_add_zero(
+      F, zero, one, addF, mulF, negF, ring, mulF(delta, length)
+    ) from shiftForward(positiveDelta);
+  exact (delta, positiveDelta, along lt(mulF(delta, length)) by gap from shifted);
 }
 
 def field_bounded_scale_zero_converges(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), factor : F, length : F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), factor length : F,
   boundedFactor : FieldMagnitudeBound(F, negF, lt, factor, length), xs : Nat -> F,
   vanishes : FieldConverges(F, zero, addF, lt, xs, zero)
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => mulF(xs(n), factor)), zero) {
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   let nonnegativeLength =
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, factor, length, boundedFactor
@@ -204,8 +179,7 @@ def field_bounded_scale_zero_converges(
   obtain (bound, close) = vanishes(delta, positiveDelta);
   have tail :
     forall n : Nat, IndexLE(bound, n) -> FieldClose(F, addF, lt, mulF(xs(n), factor), zero, epsilon) {
-    intro n;
-    intro large;
+    intro n large;
     let boundedX =
       field_close_zero_magnitude(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(n), delta, close(n, large)
@@ -224,8 +198,8 @@ def field_bounded_scale_zero_converges(
 }
 
 def field_nonnegative_scale_zero_converges(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length), xs : Nat -> F,

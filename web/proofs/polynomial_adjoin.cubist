@@ -20,9 +20,7 @@ def residue_constant_neg(K : AlgebraicField, M : PolynomialModulus(K), a : af_ca
   );
 }
 
-def residue_constant_add(
-  K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K), b : af_carrier(K)
-) :
+def residue_constant_add(K : AlgebraicField, M : PolynomialModulus(K), a b : af_carrier(K)) :
   residue_constant(K, M, field_add(K, a, b)) = residue_add(
     K, M, residue_constant(K, M, a), residue_constant(K, M, b)
   ) {
@@ -32,9 +30,7 @@ def residue_constant_add(
   );
 }
 
-def residue_constant_mul(
-  K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K), b : af_carrier(K)
-) :
+def residue_constant_mul(K : AlgebraicField, M : PolynomialModulus(K), a b : af_carrier(K)) :
   residue_constant(K, M, field_mul(K, a, b)) = residue_mul(
     K, M, residue_constant(K, M, a), residue_constant(K, M, b)
   ) {
@@ -75,15 +71,14 @@ def residue_reduce_horner(K : AlgebraicField, M : PolynomialModulus(K), p : Poly
   let tail = polynomial_tail(K, p);
   let constant = polynomial_constant(K, polynomial_coefficients(K, p, 0));
   let reduce = residue_reduce(K, M);
-  have product :
-    reduce(polynomial_shift(K, tail)) = residue_mul(K, M, adjoined_root(K, M), reduce(tail)) {
-    exact with unfolding [] {
-      trans(
-        cong(reduce, sym(polynomial_variable_mul(K, tail))),
-        residue_reduce_mul(K, M, polynomial_variable(K), tail)
-      )
-    };
-  }
+  have product : reduce(polynomial_shift(K, tail)) = residue_mul(
+    K, M, adjoined_root(K, M), reduce(tail)
+  ) := with unfolding [] {
+    trans(
+      cong(reduce, sym(polynomial_variable_mul(K, tail))),
+      residue_reduce_mul(K, M, polynomial_variable(K), tail)
+    )
+  };
   exact with unfolding [] {
     trans(
       cong(reduce, polynomial_decompose(K, p)),

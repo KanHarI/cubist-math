@@ -46,9 +46,8 @@ def polynomial_cutoff_zero(
   p = polynomial_zero(K) {
   exact support_zero_polynomial(
     K, p,
-    transport(
-      SeriesSupport(K, polynomial_coefficients(K, p)), polynomial_cutoff(K, p), 0, zero,
-      polynomial_cutoff_support(K, p)
+    along SeriesSupport(K, polynomial_coefficients(K, p)) by zero from polynomial_cutoff_support(
+      K, p
     )
   );
 }
@@ -57,7 +56,7 @@ def polynomial_zero_cutoff(K : AlgebraicField) : polynomial_cutoff(K, polynomial
   exact nat_le_zero(
     polynomial_cutoff(K, polynomial_zero(K)),
     polynomial_cutoff_least(
-      K, polynomial_zero(K), 0, (fun (k : Nat) => fun (above : le(0, k)) => refl(field_zero(K)))
+      K, polynomial_zero(K), 0, (fun (k : Nat) (above : le(0, k)) => refl(field_zero(K)))
     )
   );
 }
@@ -67,8 +66,7 @@ def support_predecessor(
   last : f(n) = field_zero(K)
 ) :
   SeriesSupport(K, f, n) {
-  intro k;
-  intro above;
+  intro k above;
   exact match nat_le_total(succ(n), k) return f(k) = field_zero(K) {
     left beyond => support(k, beyond);
     right below => trans(cong(f, sym(dimension_order_antisymmetric(n, k, above, below))), last);
@@ -81,17 +79,12 @@ def polynomial_leading_nonzero(
   FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, p, n)) {
   intro zero;
   let support =
-    transport(
-      SeriesSupport(K, polynomial_coefficients(K, p)), polynomial_cutoff(K, p), succ(n), degree,
-      polynomial_cutoff_support(K, p)
+    along SeriesSupport(K, polynomial_coefficients(K, p)) by degree from polynomial_cutoff_support(
+      K, p
     );
   let lowered = support_predecessor(K, polynomial_coefficients(K, p), n, support, zero);
   exact successor_not_le_self(
-    n,
-    transport(
-      (fun (k : Nat) => le(k, n)), polynomial_cutoff(K, p), succ(n), degree,
-      polynomial_cutoff_least(K, p, n, lowered)
-    )
+    n, along((fun (k : Nat) => le(k, n))) by degree from polynomial_cutoff_least(K, p, n, lowered)
   );
 }
 
@@ -103,12 +96,10 @@ def polynomial_cutoff_exact(
 ) :
   polynomial_cutoff(K, p) = succ(n) {
   let c = polynomial_cutoff(K, p);
-  have lower : le(succ(n), c) {
-    exact match nat_le_total(succ(n), c) return le(succ(n), c) {
-      left yes => yes;
-      right below => absurd(nonzero(polynomial_cutoff_support(K, p, n, below)));
-    };
-  }
+  have lower : le(succ(n), c) := match nat_le_total(succ(n), c) return le(succ(n), c) {
+    left yes => yes;
+    right below => absurd(nonzero(polynomial_cutoff_support(K, p, n, below)));
+  };
   exact dimension_order_antisymmetric(
     c, succ(n), polynomial_cutoff_least(K, p, succ(n), support), lower
   );

@@ -76,7 +76,7 @@ def add_negative(n : Nat, z : Z) = induction n as k return Z {
     succ previous => predecessorZ(previous);
   };
 
-def addZ(x : Z, y : Z) = match y return Z {
+def addZ(x y : Z) = match y return Z {
     left n => add_nonnegative(n, x);
     right n => add_negative(n, x);
   };
@@ -92,7 +92,7 @@ def zero_fiber(n : Nat) = induction n as k return U0 {
     succ previous => Void;
   };
 
-def zero_not_successor(n : Nat, p : 0 = succ(n)) = transport(zero_fiber, 0, succ(n), p, tt);
+def zero_not_successor(n : Nat, p : 0 = succ(n)) = along zero_fiber by p from tt;
 
 def nat_equal_decidable(n : Nat) = induction n as k return (forall m : Nat, Decidable(k = m)) {
     zero => fun (m : Nat) => induction m as j return Decidable(0 = j) {
@@ -125,8 +125,7 @@ def sign_fiber(z : Z) = match z return U0 {
     right n => Void;
   };
 
-def signs_differ(n : Nat, m : Nat, p : nonnegative(n) = negative(m)) =
-  transport(sign_fiber, nonnegative(n), negative(m), p, tt);
+def signs_differ(n m : Nat, p : nonnegative(n) = negative(m)) = along sign_fiber by p from tt;
 
 def integer_equal_decidable(x : Z) = match x as a return (forall y : Z, Decidable(a = y)) {
     left n => fun (y : Z) => match y as b return Decidable(nonnegative(n) = b) {

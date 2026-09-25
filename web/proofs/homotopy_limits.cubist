@@ -6,8 +6,8 @@ import descent_loop_laws;
 // different approximations at every finite stage.
 
 def homotopy_limit_descent(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
   C : U1, X : U0, point : X, present : C -> (point = point),
@@ -29,9 +29,7 @@ def homotopy_limit_descent(
   let value =
     fun (c : C) => field_sequence_limit(F, zero, addF, lt, complete, approximations(c), cauchy(c));
   have consistent : forall c : C, forall d : C, (present(c) = present(d)) -> value(c) = value(d) {
-    intro c;
-    intro d;
-    intro same;
+    intro c d same;
     exact field_asymptotic_limits_equal(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, approximations(c),
       approximations(d), homotopyError(c, d, same), value(c), value(d),
@@ -46,8 +44,8 @@ def homotopy_limit_descent(
 }
 
 def homotopy_limit_period(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
   C : U1, X : U0, point : X, present : C -> (point = point),
@@ -89,18 +87,15 @@ def homotopy_limit_period(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, complete, C, X, point,
     present, covered, approximations, cauchy, homotopyError
   );
-  have constantValue : value(constant) = zero {
-    exact field_asymptotic_limits_equal(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving,
-      approximations(constant), (fun (n : Nat) => zero), constantError, value(constant), zero,
-      field_sequence_limit_converges(
-        F, zero, addF, lt, complete, approximations(constant), cauchy(constant)
-      ), field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
-    );
-  }
+  have constantValue : value(constant) = zero := field_asymptotic_limits_equal(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, approximations(constant),
+    (fun (n : Nat) => zero), constantError, value(constant), zero,
+    field_sequence_limit_converges(
+      F, zero, addF, lt, complete, approximations(constant), cauchy(constant)
+    ), field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
+  );
   have joinValue : forall c : C, forall d : C, value(join(c, d)) = addF(value(c), value(d)) {
-    intro c;
-    intro d;
+    intro c d;
     exact field_asymptotic_limits_equal(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving,
       approximations(join(c, d)),

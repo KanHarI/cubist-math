@@ -8,8 +8,8 @@ def order_le_refl(F : U1, lt : F -> F -> U0, order : StrictOrder(F, lt), x : F) 
 }
 
 def order_le_trans(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, z : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, lt : F -> F -> U0,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y z : F,
   xy : FieldLe(F, lt, x, y), yz : FieldLe(F, lt, y, z)
 ) :
   FieldLe(F, lt, x, z) {
@@ -19,9 +19,8 @@ def order_le_trans(
 }
 
 def order_le_translate(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, lt : F -> F -> U0,
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, z : F,
-  xy : FieldLe(F, lt, x, y)
+  F : U1, zero one : F, addF mulF : F -> F -> F, lt : F -> F -> U0,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y z : F, xy : FieldLe(F, lt, x, y)
 ) :
   FieldLe(F, lt, addF(x, z), addF(y, z)) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
@@ -31,59 +30,50 @@ def order_le_translate(
 }
 
 def order_le_add(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F, u : F, v : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y u v : F,
   xy : FieldLe(F, lt, x, y), uv : FieldLe(F, lt, u, v)
 ) :
   FieldLe(F, lt, addF(x, u), addF(y, v)) {
   let first = order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, x, y, u, xy);
   let shifted = order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, u, v, y, uv);
   let second =
-    transport(
-      (fun (a : F) => FieldLe(F, lt, a, addF(v, y))), addF(u, y), addF(y, u),
-      ring_add_comm(F, zero, one, addF, mulF, negF, ring, u, y), shifted
-    );
+    along((fun (a : F) => FieldLe(F, lt, a, addF(v, y)))) by ring_add_comm(
+      F, zero, one, addF, mulF, negF, ring, u, y
+    ) from shifted;
   let third =
-    transport(
-      FieldLe(F, lt, addF(y, u)), addF(v, y), addF(y, v),
-      ring_add_comm(F, zero, one, addF, mulF, negF, ring, v, y), second
-    );
+    along FieldLe(F, lt, addF(y, u)) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, v, y) from second;
   exact order_le_trans(
     F, zero, one, addF, mulF, lt, arithmetic, addF(x, u), addF(y, u), addF(y, v), first, third
   );
 }
 
 def order_le_add_nonnegative(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F,
   aboveZeroWeak : FieldLe(F, lt, zero, y)
 ) :
   FieldLe(F, lt, x, addF(x, y)) {
   let shifted =
     order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, y, x, aboveZeroWeak);
   let first =
-    transport(
-      (fun (a : F) => FieldLe(F, lt, a, addF(y, x))), addF(zero, x), x,
-      ring_add_zero(F, zero, one, addF, mulF, negF, ring, x), shifted
-    );
-  exact transport(
-    FieldLe(F, lt, x), addF(y, x), addF(x, y),
-    ring_add_comm(F, zero, one, addF, mulF, negF, ring, y, x), first
-  );
+    along((fun (a : F) => FieldLe(F, lt, a, addF(y, x)))) by ring_add_zero(
+      F, zero, one, addF, mulF, negF, ring, x
+    ) from shifted;
+  exact along FieldLe(F, lt, x) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, y, x) from first;
 }
 
 def order_mul_nonnegative(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, y : F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F,
   nx : FieldLe(F, lt, zero, x), ny : FieldLe(F, lt, zero, y)
 ) :
   FieldLe(F, lt, zero, mulF(x, y)) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  exact transport(
-    (fun (a : F) => FieldLe(F, lt, a, mulF(x, y))), mulF(zero, y), zero,
-    ring_zero_mul(F, zero, one, addF, mulF, negF, ring, y), weakScale(zero, x, y, nx, ny)
-  );
+  exact along((fun (a : F) => FieldLe(F, lt, a, mulF(x, y)))) by ring_zero_mul(
+    F, zero, one, addF, mulF, negF, ring, y
+  ) from weakScale(zero, x, y, nx, ny);
 }

@@ -11,7 +11,7 @@ def linear_factor_product_omit(K : AlgebraicField, n : Nat) =
       linear_factor_product(K, k, (fun (j : Fin(k)) => roots(fin_omit(k, i, j))))
     )
   ) {
-    zero => fun (roots : Fin(1) -> af_carrier(K)) => fun (i : Fin(1)) => match i as index return (
+    zero => fun (roots : Fin(1) -> af_carrier(K)) (i : Fin(1)) => match i as index return (
       linear_factor_product(K, 1, roots) = polynomial_mul(
         K, polynomial_linear_factor(K, roots(index)), polynomial_one(K)
       )
@@ -25,9 +25,7 @@ def linear_factor_product_omit(K : AlgebraicField, n : Nat) =
       );
       right impossible => absurd(impossible);
     };
-    succ previous => fun (roots : Fin(succ(succ(k))) -> af_carrier(K)) => fun (
-      i : Fin(succ(succ(k)))
-    ) => match i as index return (
+    succ previous => fun (roots : Fin(succ(succ(k))) -> af_carrier(K)) (i : Fin(succ(succ(k)))) => match i as index return (
       linear_factor_product(K, succ(succ(k)), roots) = polynomial_mul(
         K, polynomial_linear_factor(K, roots(index)),
         linear_factor_product(
@@ -65,9 +63,7 @@ def distinct_roots_omit(
   distinct : Injective(Fin(succ(n)), af_carrier(K), roots), i : Fin(succ(n))
 ) :
   Injective(Fin(n), af_carrier(K), (fun (j : Fin(n)) => roots(fin_omit(n, i, j)))) {
-  intro j;
-  intro k;
-  intro same;
+  intro j k same;
   exact fin_omit_injective(n, i, j, k, distinct(fin_omit(n, i, j), fin_omit(n, i, k), same));
 }
 
@@ -86,9 +82,7 @@ def distinct_roots_prepend(
   avoids : (forall i : Fin(n), (roots(i) = x) -> Void)
 ) :
   Injective(Fin(succ(n)), af_carrier(K), coordinate_cons(K, n, x, roots)) {
-  intro i;
-  intro j;
-  intro same;
+  intro i j same;
   exact match i as a return (
     coordinate_cons(K, n, x, roots, a) = coordinate_cons(K, n, x, roots, j) -> a = j
   ) {

@@ -3,11 +3,11 @@ import complex_uniform_operations;
 // Right multiplication is convenient for the product-box estimate. Complex
 // multiplication is commutative, so this is also scalar multiplication.
 def complex_scaled_close(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), coefficient : Complex(F), r : F,
-  s : F, bounded : ComplexRectangleBound(F, negF, lt, coefficient, r, s), x : Complex(F),
-  y : Complex(F), delta : F, epsilon : F, close : ComplexClose(F, addF, lt, x, y, delta),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), coefficient : Complex(F), r s : F,
+  bounded : ComplexRectangleBound(F, negF, lt, coefficient, r, s), x y : Complex(F),
+  delta epsilon : F, close : ComplexClose(F, addF, lt, x, y, delta),
   small : lt(mulF(delta, addF(r, s)), epsilon)
 ) :
   ComplexClose(
@@ -40,25 +40,21 @@ def complex_scaled_close(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, difference, coefficient, delta, r,
     s, differenceBound, bounded
   );
-  have recover : addC(y, difference) = x {
-    exact trans(
-      sym(ring_add_assoc(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, negC(y), x)),
-      trans(
-        cong(
-          (fun (v : Complex(F)) => addC(v, x)),
-          ring_add_inverse_right(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y)
-        ), ring_add_zero(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, x)
-      )
-    );
-  }
-  have computes : mulC(x, coefficient) = addC(mulC(y, coefficient), mulC(difference, coefficient)) {
-    exact trans(
-      cong((fun (v : Complex(F)) => mulC(v, coefficient)), sym(recover)),
-      ring_distribute_left(
-        Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, difference, coefficient
-      )
-    );
-  }
+  have recover : addC(y, difference) = x := trans(
+    sym(ring_add_assoc(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, negC(y), x)),
+    trans(
+      cong(
+        (fun (v : Complex(F)) => addC(v, x)),
+        ring_add_inverse_right(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y)
+      ), ring_add_zero(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, x)
+    )
+  );
+  have computes : mulC(x, coefficient) = addC(mulC(y, coefficient), mulC(difference, coefficient)) := trans(
+    cong((fun (v : Complex(F)) => mulC(v, coefficient)), sym(recover)),
+    ring_distribute_left(
+      Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, difference, coefficient
+    )
+  );
   let radius = mulF(delta, addF(r, s));
   exact (
     field_magnitude_perturbation_close(
@@ -78,10 +74,10 @@ def complex_scaled_close(
 
 // One radius works on the whole complex plane, including a zero coefficient.
 def complex_scalar_uniform_radius(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF : F -> F -> F, maxF : F -> F -> F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F), epsilon : F,
   positive : lt(zero, epsilon)
 ) :
@@ -109,13 +105,11 @@ def complex_scalar_uniform_radius(
     );
   let length = addF(r, s);
   let nonnegativeLength =
-    transport(
-      (fun (v : F) => FieldLe(F, lt, v, length)), addF(zero, zero), zero,
-      ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero),
-      order_le_add(
-        F, zero, one, addF, mulF, negF, lt, ring, arithmetic, zero, r, zero, s, nonnegativeR,
-        nonnegativeS
-      )
+    along((fun (v : F) => FieldLe(F, lt, v, length))) by ring_add_zero(
+      F, zero, one, addF, mulF, negF, ring, zero
+    ) from order_le_add(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, zero, r, zero, s, nonnegativeR,
+      nonnegativeS
     );
   obtain (delta, positiveDelta, small) = field_small_scaled_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
@@ -124,9 +118,7 @@ def complex_scalar_uniform_radius(
   exact (
     delta, positiveDelta,
     (
-      fun (x : Complex(F)) => fun (y : Complex(F)) => fun (
-        nearby : ComplexClose(F, addF, lt, x, y, delta)
-      ) => complex_scaled_close(
+      fun (x y : Complex(F)) (nearby : ComplexClose(F, addF, lt, x, y, delta)) => complex_scaled_close(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, coefficient, r, s,
         typed(ComplexRectangleBound(F, negF, lt, coefficient, r, s), (realBound, imagBound)), x, y,
         delta, epsilon, nearby, small
@@ -136,10 +128,10 @@ def complex_scalar_uniform_radius(
 }
 
 def complex_uniform_curve_scale(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF : F -> F -> F, maxF : F -> F -> F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F),
   f : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, f)
@@ -152,8 +144,7 @@ def complex_uniform_curve_scale(
       )
     )
   ) {
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   obtain (delta, positiveDelta, scaleClose) = complex_scalar_uniform_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
     coefficient, epsilon, positive
@@ -162,7 +153,7 @@ def complex_uniform_curve_scale(
   exact (
     mesh, positiveMesh,
     (
-      fun (s : FieldUnitInterval(F, zero, one, lt)) => fun (t : FieldUnitInterval(F, zero, one, lt)) => fun (
+      fun (s t : FieldUnitInterval(F, zero, one, lt)) (
         nearby : FieldClose(
           F, addF, lt, field_interval_coordinate(F, zero, one, lt)(s),
           field_interval_coordinate(F, zero, one, lt)(t), mesh
@@ -173,10 +164,10 @@ def complex_uniform_curve_scale(
 }
 
 def complex_converges_scale(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF : F -> F -> F, maxF : F -> F -> F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F), sequence : Nat -> Complex(F),
   value : Complex(F), converges : ComplexConverges(F, zero, addF, lt, sequence, value)
 ) :
@@ -185,8 +176,7 @@ def complex_converges_scale(
     (fun (n : Nat) => complex_mul(F, addF, mulF, negF, sequence(n), coefficient)),
     complex_mul(F, addF, mulF, negF, value, coefficient)
   ) {
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   obtain (delta, positiveDelta, scaleClose) = complex_scalar_uniform_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
     coefficient, epsilon, positive
@@ -194,10 +184,6 @@ def complex_converges_scale(
   obtain (bound, close) = converges(delta, positiveDelta);
   exact (
     bound,
-    (
-      fun (n : Nat) => fun (later : IndexLE(bound, n)) => scaleClose(
-        sequence(n), value, close(n, later)
-      )
-    )
+    (fun (n : Nat) (later : IndexLE(bound, n)) => scaleClose(sequence(n), value, close(n, later)))
   );
 }

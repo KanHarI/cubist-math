@@ -3,7 +3,7 @@ import sample_tagged;
 
 // Lift a bound for two admissible tags in one small edge to all sampled edges.
 def parameter_tag_bounds_from_samples(
-  C : U1, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, values : C -> Complex(F),
+  C F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, values : C -> Complex(F),
   delta : F, mesh : C -> C -> U0, valid : C -> C -> C -> U0,
   localBound : (
     forall a : C, forall b : C, forall x : C, forall y : C, mesh(a, b) -> valid(a, b, x)
@@ -26,16 +26,12 @@ def parameter_tag_bounds_from_samples(
     -> SampleTagged(C, valid, k, vertices, oldTags) -> SampleTagged(C, valid, k, vertices, newTags)
     -> ComplexParameterTagBounds(C, F, addF, negF, lt, values, delta, k, vertices, oldTags, newTags)
   ) {
-    zero => fun (vertices : C) => fun (oldTags : Unit) => fun (newTags : Unit) => fun (small : Unit) => fun (
-      oldValid : Unit
-    ) => fun (newValid : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
-      oldTags : SampleTags(C, succ(k))
-    ) => fun (newTags : SampleTags(C, succ(k))) => fun (
-      small : SampleAdjacent(C, mesh, succ(k), vertices)
-    ) => fun (oldValid : SampleTagged(C, valid, succ(k), vertices, oldTags)) => fun (
-      newValid : SampleTagged(C, valid, succ(k), vertices, newTags)
-    ) => typed(
+    zero => fun (vertices : C) (oldTags newTags small oldValid newValid : Unit) => tt;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (
+      oldTags newTags : SampleTags(C, succ(k))
+    ) (small : SampleAdjacent(C, mesh, succ(k), vertices)) (
+      oldValid : SampleTagged(C, valid, succ(k), vertices, oldTags)
+    ) (newValid : SampleTagged(C, valid, succ(k), vertices, newTags)) => typed(
       (
         ComplexBoxBound(
           F, negF, lt,

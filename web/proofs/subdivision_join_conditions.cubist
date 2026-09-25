@@ -43,11 +43,8 @@ def subdivision_tagged_join_step(
   let joinedPieces =
     join_subdivision_families(C, n, tail, tailPieces, m, rightVertices, rightPieces, same);
   let moved = subdivision_move_end(C, a, b, joinedFirst, firstPath, headPiece);
-  have data :
-    condition(a, b, tag, headPiece)
-    and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) {
-    exact valid;
-  }
+  have data : condition(a, b, tag, headPiece)
+  and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) := valid;
   obtain (headValid, tailValid) = data;
   exact typed(
     (
@@ -95,11 +92,11 @@ def subdivision_tagged_join(
       join_subdivision_families(C, k, vertices, pieces, m, rightVertices, rightPieces, same)
     )
   ) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (pieces : Unit) => fun (m : Nat) => fun (
-      rightVertices : SampleVertices(C, m)
-    ) => fun (rightTags : SampleTags(C, m)) => fun (
-      rightPieces : SampleSubdivisions(C, m, rightVertices)
-    ) => fun (same : vertices = sample_first(C, m, rightVertices)) => fun (valid : Unit) => fun (
+    zero => fun (vertices : C) (tags pieces : Unit) (m : Nat) (rightVertices : SampleVertices(C, m)) (
+      rightTags : SampleTags(C, m)
+    ) (rightPieces : SampleSubdivisions(C, m, rightVertices)) (
+      same : vertices = sample_first(C, m, rightVertices)
+    ) (valid : Unit) (
       rightValid : SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces)
     ) => rightValid;
     succ previous => subdivision_tagged_join_step(C, condition, k, previous);

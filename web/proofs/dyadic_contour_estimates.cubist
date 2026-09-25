@@ -4,11 +4,11 @@ import dyadic_refinement_mesh;
 // Uniform continuity supplies one mesh controlling every later dyadic level.
 // The bound depends on the outer width, not the number of samples.
 def affine_dyadic_refinement_estimate(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -108,12 +108,7 @@ def affine_dyadic_refinement_estimate(
         )
       )
     ) {
-    intro depth;
-    intro extra;
-    intro a;
-    intro b;
-    intro ordered;
-    intro small;
+    intro depth extra a b ordered small;
     let refinement =
       dyadic_samples_refine_below_mesh(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, Complex(F),

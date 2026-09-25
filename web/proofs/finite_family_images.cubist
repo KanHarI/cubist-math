@@ -53,14 +53,14 @@ def family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
       i
     )
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, V)) => fun (i : Fin(0)) => typed(
+    zero => fun (v : Fin(0) -> vector_carrier(K, V)) (i : Fin(0)) => typed(
       (
         linear_map(K, CoordinateSpace(K, 0), V, family_linear(K, V, 0, v), coordinate_unit(K, 0, i)) = v(
           i
         )
       ), absurd(i)
     );
-    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) => fun (i : Fin(succ(k))) => match i as j return (
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) (i : Fin(succ(k))) => match i as j return (
       linear_map(
         K, CoordinateSpace(K, succ(k)), V, family_linear(K, V, succ(k), v),
         coordinate_unit(K, succ(k), j)
@@ -82,8 +82,8 @@ def family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
   };
 
 def linear_image_combine(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
-  a : af_carrier(K), x : vector_carrier(K, W), y : vector_carrier(K, W),
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W), a : af_carrier(K),
+  x y : vector_carrier(K, W),
   px : Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), x),
   py : Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y)
 ) :
@@ -114,8 +114,8 @@ def linear_image_combine(
 }
 
 def linear_image_combine_mere(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W),
-  a : af_carrier(K), x : vector_carrier(K, W), y : vector_carrier(K, W),
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W), a : af_carrier(K),
+  x y : vector_carrier(K, W),
   px : Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), x)),
   py : Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y))
 ) :
@@ -138,7 +138,7 @@ def linear_image_combine_mere(
 }
 
 def family_combination_in_image(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat
 ) =
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, W), forall a : Fin(k) -> af_carrier(K),
@@ -153,7 +153,7 @@ def family_combination_in_image(
       )
     )
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, W)) => fun (a : Fin(0) -> af_carrier(K)) => fun (
+    zero => fun (v : Fin(0) -> vector_carrier(K, W)) (a : Fin(0) -> af_carrier(K)) (
       members : (
         forall i : Fin(0),
         Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), v(i)))
@@ -165,9 +165,9 @@ def family_combination_in_image(
         (vector_zero(K, V), linear_zero(K, V, W, f))
       )
     );
-    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, W)) => fun (
+    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, W)) (
       a : Fin(succ(k)) -> af_carrier(K)
-    ) => fun (
+    ) (
       members : (
         forall i : Fin(succ(k)),
         Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), v(i)))
@@ -185,8 +185,8 @@ def family_combination_in_image(
   };
 
 def spanning_family_in_image(
-  K : AlgebraicField, V : VectorSpace(K), W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat,
-  v : Fin(n) -> vector_carrier(K, W), spanning : FiniteSpanningFamily(K, W, n, v),
+  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat, v : Fin(n)
+  -> vector_carrier(K, W), spanning : FiniteSpanningFamily(K, W, n, v),
   members : (
     forall i : Fin(n),
     Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), v(i)))
@@ -199,9 +199,8 @@ def spanning_family_in_image(
   have descend : (exists a : C, linear_combination(K, W, n, v, a) = x) -> Mere(FiberF(x)) {
     intro witness;
     obtain (a, same) = witness;
-    exact transport(
-      (fun (z : vector_carrier(K, W)) => Mere(FiberF(z))), linear_combination(K, W, n, v, a), x,
-      same, family_combination_in_image(K, V, W, f, n, v, a, members)
+    exact along((fun (z : vector_carrier(K, W)) => Mere(FiberF(z)))) by same from family_combination_in_image(
+      K, V, W, f, n, v, a, members
     );
   }
   exact mere_eliminate(

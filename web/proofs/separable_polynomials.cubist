@@ -8,7 +8,7 @@ def DistinctPolynomialSplitting(K : AlgebraicField, p : Polynomial(K), n : Nat) 
   (p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots)))
   and Injective(Fin(n), af_carrier(K), roots);
 
-def SeparableIn(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) =
+def SeparableIn(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) =
   Mere(DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), polynomial_degree(K, p)));
 
 def SeparablePolynomial(K : AlgebraicField, p : Polynomial(K)) =
@@ -17,17 +17,15 @@ def SeparablePolynomial(K : AlgebraicField, p : Polynomial(K)) =
     exists L : AlgebraicField, exists e : FieldEmbedding(K, L), SeparableIn(K, L, e, p)
   );
 
-def SeparableElement(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)
-) =
+def SeparableElement(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) =
   exists algebraic : AlgebraicElement(K, L, e, x),
   SeparablePolynomial(K, minimal_polynomial(K, L, e, x, algebraic));
 
-def SeparableExtension(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
+def SeparableExtension(K L : AlgebraicField, e : FieldEmbedding(K, L)) =
   forall x : af_carrier(L), SeparableElement(K, L, e, x);
 
 def mapped_root_to_original(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   r : PolynomialRoots(L, L, field_embedding_identity(L), polynomial_map(K, L, e, p))
 ) :
   PolynomialRoots(K, L, e, p) {
@@ -36,17 +34,14 @@ def mapped_root_to_original(
 }
 
 def original_root_to_mapped(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  r : PolynomialRoots(K, L, e, p)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), r : PolynomialRoots(K, L, e, p)
 ) :
   PolynomialRoots(L, L, field_embedding_identity(L), polynomial_map(K, L, e, p)) {
   obtain (x, root) = r;
   exact (x, trans(polynomial_eval_mapped(K, L, e, p, x), root));
 }
 
-def mapped_roots_bijection(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)
-) :
+def mapped_roots_bijection(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) :
   Bijection(
     PolynomialRoots(L, L, field_embedding_identity(L), polynomial_map(K, L, e, p)),
     PolynomialRoots(K, L, e, p)
@@ -76,7 +71,7 @@ def mapped_roots_bijection(
 }
 
 def distinct_splitting_root_count(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat,
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat,
   nonzero : PolynomialNonzero(K, p),
   splitting : DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n)
 ) :
@@ -93,7 +88,7 @@ def distinct_splitting_root_count(
 }
 
 def separable_root_count(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), separable : SeparableIn(K, L, e, p)
 ) :
   HasCardinality(PolynomialRoots(K, L, e, p), polynomial_degree(K, p)) {
@@ -121,14 +116,11 @@ def separable_adjoined_embedding_count(
     separable_root_count(K, L, e, p, polynomial_irreducible_nonzero(K, p, irreducible), separable);
   let transported =
     cardinality_path(R, H, sym(adjoined_embeddings_are_roots(K, M, irreducible, L, e)), n, count);
-  exact transport(
-    HasCardinality(H), n, modulus_degree(K, M),
-    cong(natural_predecessor, modulus_degree_equality(K, M)), transported
-  );
+  exact along HasCardinality(H) by cong(natural_predecessor, modulus_degree_equality(K, M)) from transported;
 }
 
 def polynomial_root_family_upper_bound(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p),
   family : DistinctFamily(PolynomialRoots(K, L, e, p), succ(polynomial_degree(K, p)))
 ) :
@@ -138,9 +130,7 @@ def polynomial_root_family_upper_bound(
   obtain (f, distinct) = family;
   let roots = fun (i : Fin(n)) => sigma_first(af_carrier(L), P, f(i));
   have injective : Injective(Fin(n), af_carrier(L), roots) {
-    intro i;
-    intro j;
-    intro same;
+    intro i j same;
     exact distinct(
       i, j, subtype_ext(af_carrier(L), P, polynomial_root_prop(K, L, e, p), f(i), f(j), same)
     );
@@ -166,13 +156,12 @@ def adjoined_embeddings_upper_bound(
   let H = AdjoinedEmbeddings(K, M, irreducible, L, e);
   let R = PolynomialRoots(K, L, e, p);
   let roots =
-    transport(
-      (fun (A : U0) => DistinctFamily(A, n)), H, R,
-      adjoined_embeddings_are_roots(K, M, irreducible, L, e), family
-    );
+    along((fun (A : U0) => DistinctFamily(A, n))) by adjoined_embeddings_are_roots(
+      K, M, irreducible, L, e
+    ) from family;
   let degree = cong((fun (d : Nat) => succ(natural_predecessor(d))), modulus_degree_equality(K, M));
   exact polynomial_root_family_upper_bound(
     K, L, e, p, polynomial_irreducible_nonzero(K, p, irreducible),
-    transport(DistinctFamily(R), n, succ(polynomial_degree(K, p)), sym(degree), roots)
+    along DistinctFamily(R) by sym(degree) from roots
   );
 }

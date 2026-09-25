@@ -3,19 +3,16 @@ import polynomial_roots;
 // Change coefficients through a specified field embedding. Formal support,
 // coefficient equality and degree are preserved, even over finite fields.
 def mapped_series_support(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), f : FormalSeries(K), n : Nat,
+  K L : AlgebraicField, e : FieldEmbedding(K, L), f : FormalSeries(K), n : Nat,
   support : SeriesSupport(K, f, n)
 ) :
   SeriesSupport(L, (fun (j : Nat) => field_embedding_map(K, L, e, f(j))), n) {
   obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
-  intro j;
-  intro above;
+  intro j above;
   exact trans(cong(field_embedding_map(K, L, e), support(j, above)), zero);
 }
 
-def polynomial_map(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)
-) =
+def polynomial_map(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) =
   polynomial_of_support(
     L, (fun (j : Nat) => field_embedding_map(K, L, e, polynomial_coefficients(K, p, j))),
     polynomial_cutoff(K, p),
@@ -26,8 +23,8 @@ def polynomial_map(
   );
 
 def polynomial_map_injective(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  q : Polynomial(K), same : polynomial_map(K, L, e, p) = polynomial_map(K, L, e, q)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p q : Polynomial(K),
+  same : polynomial_map(K, L, e, p) = polynomial_map(K, L, e, q)
 ) :
   p = q {
   exact polynomial_coefficient_ext(
@@ -41,17 +38,14 @@ def polynomial_map_injective(
   );
 }
 
-def polynomial_map_cutoff(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)
-) :
+def polynomial_map_cutoff(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) :
   polynomial_cutoff(L, polynomial_map(K, L, e, p)) = polynomial_cutoff(K, p) {
   let q = polynomial_map(K, L, e, p);
   let n = polynomial_cutoff(K, p);
   let m = polynomial_cutoff(L, q);
   obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
   have reflected : SeriesSupport(K, polynomial_coefficients(K, p), m) {
-    intro j;
-    intro above;
+    intro j above;
     exact field_embedding_injective(
       K, L, e, polynomial_coefficients(K, p, j), field_zero(K),
       trans(polynomial_cutoff_support(L, q, j, above), sym(zero))
@@ -68,7 +62,7 @@ def polynomial_map_cutoff(
   );
 }
 
-def polynomial_map_zero(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def polynomial_map_zero(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
   polynomial_map(K, L, e, polynomial_zero(K)) = polynomial_zero(L) {
   obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
   exact polynomial_coefficient_ext(
@@ -76,9 +70,7 @@ def polynomial_map_zero(K : AlgebraicField, L : AlgebraicField, e : FieldEmbeddi
   );
 }
 
-def polynomial_map_constant(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K)
-) :
+def polynomial_map_constant(K L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K)) :
   polynomial_map(K, L, e, polynomial_constant(K, a)) = polynomial_constant(
     L, field_embedding_map(K, L, e, a)
   ) {
@@ -96,10 +88,7 @@ def polynomial_map_constant(
   );
 }
 
-def polynomial_map_add(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  q : Polynomial(K)
-) :
+def polynomial_map_add(K L : AlgebraicField, e : FieldEmbedding(K, L), p q : Polynomial(K)) :
   polynomial_map(K, L, e, polynomial_add(K, p, q)) = polynomial_add(
     L, polynomial_map(K, L, e, p), polynomial_map(K, L, e, q)
   ) {
@@ -111,9 +100,7 @@ def polynomial_map_add(
   );
 }
 
-def polynomial_map_neg(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)
-) :
+def polynomial_map_neg(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) :
   polynomial_map(K, L, e, polynomial_neg(K, p)) = polynomial_neg(L, polynomial_map(K, L, e, p)) {
   obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
   exact polynomial_coefficient_ext(
@@ -122,7 +109,7 @@ def polynomial_map_neg(
   );
 }
 
-def convolution_embedding(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat) :
+def convolution_embedding(K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat) :
   forall a : FormalSeries(K), forall b : FormalSeries(K),
   field_embedding_map(K, L, e, convolution(K, n, a, b)) = convolution(
     L, n, (fun (j : Nat) => field_embedding_map(K, L, e, a(j))),
@@ -136,8 +123,8 @@ def convolution_embedding(K : AlgebraicField, L : AlgebraicField, e : FieldEmbed
       L, k, (fun (j : Nat) => f(a(j))), (fun (j : Nat) => f(b(j)))
     )
   ) {
-    zero => fun (a : FormalSeries(K)) => fun (b : FormalSeries(K)) => mul(a(0), b(0));
-    succ previous => fun (a : FormalSeries(K)) => fun (b : FormalSeries(K)) => trans(
+    zero => fun (a b : FormalSeries(K)) => mul(a(0), b(0));
+    succ previous => fun (a b : FormalSeries(K)) => trans(
       add(field_mul(K, a(0), b(succ(k))), convolution(K, k, series_tail(K, a), b)),
       trans(
         cong(
@@ -149,10 +136,7 @@ def convolution_embedding(K : AlgebraicField, L : AlgebraicField, e : FieldEmbed
   };
 }
 
-def polynomial_map_mul(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  q : Polynomial(K)
-) :
+def polynomial_map_mul(K L : AlgebraicField, e : FieldEmbedding(K, L), p q : Polynomial(K)) :
   polynomial_map(K, L, e, polynomial_mul(K, p, q)) = polynomial_mul(
     L, polynomial_map(K, L, e, p), polynomial_map(K, L, e, q)
   ) {
@@ -167,9 +151,7 @@ def polynomial_map_mul(
   );
 }
 
-def polynomial_map_shift(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)
-) :
+def polynomial_map_shift(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K)) :
   polynomial_map(K, L, e, polynomial_shift(K, p)) = polynomial_shift(L, polynomial_map(K, L, e, p)) {
   obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
   let f = field_embedding_map(K, L, e);
@@ -199,8 +181,7 @@ def polynomial_map_identity(K : AlgebraicField, p : Polynomial(K)) :
 }
 
 def polynomial_map_composition(
-  K : AlgebraicField, L : AlgebraicField, T : AlgebraicField, e : FieldEmbedding(K, L),
-  h : FieldEmbedding(L, T), p : Polynomial(K)
+  K L T : AlgebraicField, e : FieldEmbedding(K, L), h : FieldEmbedding(L, T), p : Polynomial(K)
 ) :
   polynomial_map(L, T, h, polynomial_map(K, L, e, p)) = polynomial_map(
     K, T, field_embedding_compose(K, L, T, e, h), p

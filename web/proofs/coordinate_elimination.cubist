@@ -5,7 +5,7 @@ import maps;
 // Gaussian elimination removes one source and one target coordinate.
 // The pivot inverse is supplied explicitly; the algebra itself is constructive.
 def pivot_coefficient(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
 ) =
   linear_compose(
@@ -20,7 +20,7 @@ def pivot_coefficient(
   );
 
 def pivot_corrected(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
 ) =
   linear_subtract(
@@ -42,7 +42,7 @@ def pivot_corrected(
   );
 
 def pivot_reduced(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K)
 ) =
   linear_compose(
@@ -51,7 +51,7 @@ def pivot_reduced(
   );
 
 def scalar_pivot_cancel(
-  K : AlgebraicField, a : af_carrier(K), b : af_carrier(K),
+  K : AlgebraicField, a b : af_carrier(K),
   inv : af_mul(af_carrier(K), af_operations(K), a, b) = af_one(af_carrier(K), af_operations(K)),
   x : af_carrier(K)
 ) :
@@ -67,7 +67,7 @@ def scalar_pivot_cancel(
 }
 
 def pivot_corrected_head(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))), b : af_carrier(K),
   inv : af_mul(
     af_carrier(K), af_operations(K),
@@ -98,7 +98,7 @@ def pivot_corrected_head(
 }
 
 def pivot_reduced_kernel(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
   injective : Injective(
     vector_carrier(K, CoordinateSpace(K, succ(m))), vector_carrier(K, CoordinateSpace(K, succ(n))),
@@ -126,24 +126,18 @@ def pivot_reduced_kernel(
   let u = F(coordinate_first(K, m));
   let h = F(coordinate_insert(K, m, v));
   let cu = vector_scale(K, T, c, u);
-  have corrected_zero : vector_add(K, T, h, vector_neg(K, T, cu)) = vector_zero(K, T) {
-    exact finite_function_ext(
-      A, n, vector_add(K, T, h, vector_neg(K, T, cu)), vector_zero(K, T),
-      pivot_corrected_head(K, m, n, f, b, inv, v), vanishes
-    );
-  }
-  have image_equal : h = cu {
-    exact group_cancel_right(
-      vector_group(K, T), h, cu, vector_neg(K, T, cu),
-      trans(corrected_zero, sym(group_inverse_right(vector_group(K, T), cu)))
-    );
-  }
-  have source_equal : coordinate_insert(K, m, v) = vector_scale(K, S, c, coordinate_first(K, m)) {
-    exact injective(
-      coordinate_insert(K, m, v), vector_scale(K, S, c, coordinate_first(K, m)),
-      trans(image_equal, sym(linear_scale(K, S, T, f, c, coordinate_first(K, m))))
-    );
-  }
+  have corrected_zero : vector_add(K, T, h, vector_neg(K, T, cu)) = vector_zero(K, T) := finite_function_ext(
+    A, n, vector_add(K, T, h, vector_neg(K, T, cu)), vector_zero(K, T),
+    pivot_corrected_head(K, m, n, f, b, inv, v), vanishes
+  );
+  have image_equal : h = cu := group_cancel_right(
+    vector_group(K, T), h, cu, vector_neg(K, T, cu),
+    trans(corrected_zero, sym(group_inverse_right(vector_group(K, T), cu)))
+  );
+  have source_equal : coordinate_insert(K, m, v) = vector_scale(K, S, c, coordinate_first(K, m)) := injective(
+    coordinate_insert(K, m, v), vector_scale(K, S, c, coordinate_first(K, m)),
+    trans(image_equal, sym(linear_scale(K, S, T, f, c, coordinate_first(K, m))))
+  );
   // Every tail coordinate of a multiple of the first coordinate vector is zero.
   exact trans(
     cong(finite_tail(A, m), source_equal),
@@ -157,7 +151,7 @@ def pivot_reduced_kernel(
 }
 
 def pivot_reduced_injective(
-  K : AlgebraicField, m : Nat, n : Nat,
+  K : AlgebraicField, m n : Nat,
   f : LinearMap(K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n))),
   injective : Injective(
     vector_carrier(K, CoordinateSpace(K, succ(m))), vector_carrier(K, CoordinateSpace(K, succ(n))),

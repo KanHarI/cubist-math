@@ -43,10 +43,10 @@ def polynomial_ideal_mul(K : AlgebraicField, I : PolynomialIdeal(K)) :
 
 def PolynomialNonzero(K : AlgebraicField, p : Polynomial(K)) = (p = polynomial_zero(K)) -> Void;
 
-def PolynomialDivides(K : AlgebraicField, divisor : Polynomial(K), p : Polynomial(K)) =
+def PolynomialDivides(K : AlgebraicField, divisor p : Polynomial(K)) =
   Mere(exists q : Polynomial(K), p = polynomial_mul(K, divisor, q));
 
-def polynomial_divides_prop(K : AlgebraicField, divisor : Polynomial(K), p : Polynomial(K)) =
+def polynomial_divides_prop(K : AlgebraicField, divisor p : Polynomial(K)) =
   mere_is_prop(exists q : Polynomial(K), p = polynomial_mul(K, divisor, q));
 
 def polynomial_ideal_neg(
@@ -55,39 +55,30 @@ def polynomial_ideal_neg(
 ) :
   polynomial_ideal_members(K, I, polynomial_neg(K, p)) {
   let minusOne = polynomial_neg(K, polynomial_one(K));
-  exact transport(
-    polynomial_ideal_members(K, I), polynomial_mul(K, minusOne, p), polynomial_neg(K, p),
-    trans(
-      polynomial_neg_mul(K, polynomial_one(K), p), cong(polynomial_neg(K), polynomial_mul_one(K, p))
-    ), polynomial_ideal_mul(K, I, minusOne, p, member)
-  );
+  exact along polynomial_ideal_members(K, I) by trans(
+    polynomial_neg_mul(K, polynomial_one(K), p), cong(polynomial_neg(K), polynomial_mul_one(K, p))
+  ) from polynomial_ideal_mul(K, I, minusOne, p, member);
 }
 
 def polynomial_ideal_remainder(
-  K : AlgebraicField, I : PolynomialIdeal(K), p : Polynomial(K), divisor : Polynomial(K),
-  q : Polynomial(K), r : Polynomial(K),
+  K : AlgebraicField, I : PolynomialIdeal(K), p divisor q r : Polynomial(K),
   equation : p = polynomial_add(K, polynomial_mul(K, q, divisor), r),
   memberP : polynomial_ideal_members(K, I, p), memberD : polynomial_ideal_members(K, I, divisor)
 ) :
   polynomial_ideal_members(K, I, r) {
   let product = polynomial_mul(K, q, divisor);
   let difference = polynomial_subtract(K, p, product);
-  have recombine : polynomial_add(K, product, difference) = p {
-    exact trans(
-      cong(polynomial_add(K, product), polynomial_add_comm(K, p, polynomial_neg(K, product))),
-      polynomial_add_cancel_prefix(K, product, p)
-    );
-  }
+  have recombine : polynomial_add(K, product, difference) = p := trans(
+    cong(polynomial_add(K, product), polynomial_add_comm(K, p, polynomial_neg(K, product))),
+    polynomial_add_cancel_prefix(K, product, p)
+  );
   let same =
     group_cancel_left(
       PolynomialAdditiveGroup(K), product, difference, r, trans(recombine, equation)
     );
-  exact transport(
-    polynomial_ideal_members(K, I), difference, r, same,
-    polynomial_ideal_add(
-      K, I, p, polynomial_neg(K, product), memberP,
-      polynomial_ideal_neg(K, I, product, polynomial_ideal_mul(K, I, q, divisor, memberD))
-    )
+  exact along polynomial_ideal_members(K, I) by same from polynomial_ideal_add(
+    K, I, p, polynomial_neg(K, product), memberP,
+    polynomial_ideal_neg(K, I, product, polynomial_ideal_mul(K, I, q, divisor, memberD))
   );
 }
 
@@ -111,9 +102,7 @@ def ideal_minimal_divides(
           polynomial_cutoff(K, g), polynomial_cutoff(K, r), d, minimal(r, memberR, nr),
           polynomial_cutoff_least(K, r, d, support)
         );
-      exact successor_not_le_self(
-        d, transport((fun (n : Nat) => le(n, d)), polynomial_cutoff(K, g), succ(d), degree, below)
-      );
+      exact successor_not_le_self(d, along((fun (n : Nat) => le(n, d))) by degree from below);
     }
     exact double_negation(
       r = polynomial_zero(K), polynomial_set(K, r, polynomial_zero(K)), impossible
@@ -188,17 +177,13 @@ def polynomial_ideal_principal(
     have minimal :
       forall r : Polynomial(K), polynomial_ideal_members(K, I, r) -> PolynomialNonzero(K, r)
       -> le(polynomial_cutoff(K, g), polynomial_cutoff(K, r)) {
-      intro r;
-      intro mr;
-      intro nr;
+      intro r mr nr;
       let cr = polynomial_cutoff(K, r);
       let candidateR =
         merely(
           IdealCutoffWitness(K, I, cr), typed(IdealCutoffWitness(K, I, cr), (r, mr, nr, refl(cr)))
         );
-      exact transport(
-        (fun (k : Nat) => le(k, cr)), n, polynomial_cutoff(K, g), sym(same), least(cr, candidateR)
-      );
+      exact along((fun (k : Nat) => le(k, cr))) by sym(same) from least(cr, candidateR);
     }
     exact (g, member, nonzero, ideal_minimal_divides(K, I, g, member, nonzero, minimal));
   }

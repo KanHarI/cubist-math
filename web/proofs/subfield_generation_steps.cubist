@@ -46,8 +46,7 @@ def field_closure_step_neg(
 }
 
 def field_closure_step_add(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F), px : P(x),
-  py : P(y)
+  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), px : P(x), py : P(y)
 ) :
   FieldClosureStep(F, P, af_add(af_carrier(F), af_operations(F), x, y)) {
   exact right(
@@ -56,8 +55,7 @@ def field_closure_step_add(
 }
 
 def field_closure_step_mul(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F), px : P(x),
-  py : P(y)
+  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), px : P(x), py : P(y)
 ) :
   FieldClosureStep(F, P, af_mul(af_carrier(F), af_operations(F), x, y)) {
   exact right(
@@ -68,7 +66,7 @@ def field_closure_step_mul(
 }
 
 def field_closure_step_inverse(
-  F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F), y : af_carrier(F), px : P(x),
+  F : AlgebraicField, P : af_carrier(F) -> U0, x y : af_carrier(F), px : P(x),
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
   )
@@ -79,7 +77,7 @@ def field_closure_step_inverse(
 
 // A subfield containing P contains the result of every single closure step.
 def field_closure_step_into_subfield(
-  F : AlgebraicField, P : af_carrier(F) -> U0, Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
+  F : AlgebraicField, P Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
   included : PredicateIncluded(af_carrier(F), P, Q), x : af_carrier(F),
   step : FieldClosureStep(F, P, x)
 ) :
@@ -91,43 +89,33 @@ def field_closure_step_into_subfield(
     right alternatives => {
       cases alternatives {
         left zeroPath => {
-          exact transport(
-            Q, af_zero(af_carrier(F), af_operations(F)), x, sym(zeroPath), subfield_zero(F, Q, laws)
-          );
+          exact along Q by sym(zeroPath) from subfield_zero(F, Q, laws);
         }
         right nonzeroAlternatives => {
           cases nonzeroAlternatives {
             left onePath => {
-              exact transport(
-                Q, af_one(af_carrier(F), af_operations(F)), x, sym(onePath),
-                subfield_one(F, Q, laws)
-              );
+              exact along Q by sym(onePath) from subfield_one(F, Q, laws);
             }
             right operation => {
               cases operation {
                 left negated => {
                   obtain (y, py, same) = negated;
-                  exact transport(
-                    Q, af_neg(af_carrier(F), af_operations(F), y), x, same,
-                    subfield_neg(F, Q, laws, y, included(y, py))
-                  );
+                  exact along Q by same from subfield_neg(F, Q, laws, y, included(y, py));
                 }
                 right binaryOrInverse => {
                   cases binaryOrInverse {
                     left added => {
                       obtain (y, z, py, pz, same) = added;
-                      exact transport(
-                        Q, af_add(af_carrier(F), af_operations(F), y, z), x, same,
-                        subfield_add(F, Q, laws, y, z, included(y, py), included(z, pz))
+                      exact along Q by same from subfield_add(
+                        F, Q, laws, y, z, included(y, py), included(z, pz)
                       );
                     }
                     right productOrInverse => {
                       cases productOrInverse {
                         left multiplied => {
                           obtain (y, z, py, pz, same) = multiplied;
-                          exact transport(
-                            Q, af_mul(af_carrier(F), af_operations(F), y, z), x, same,
-                            subfield_mul(F, Q, laws, y, z, included(y, py), included(z, pz))
+                          exact along Q by same from subfield_mul(
+                            F, Q, laws, y, z, included(y, py), included(z, pz)
                           );
                         }
                         right inverted => {
@@ -160,30 +148,27 @@ def field_closure_pad(F : AlgebraicField, P : af_carrier(F) -> U0, m : Nat) =
     forall n : Nat, forall x : af_carrier(F), FieldClosureStage(F, P, n, x)
     -> FieldClosureStage(F, P, k + n, x)
   ) {
-    zero => (
-      fun (n : Nat) => fun (x : af_carrier(F)) => fun (member : FieldClosureStage(F, P, n, x)) => member
-    );
+    zero => (fun (n : Nat) (x : af_carrier(F)) (member : FieldClosureStage(F, P, n, x)) => member);
     succ previous => (
-      fun (n : Nat) => fun (x : af_carrier(F)) => fun (member : FieldClosureStage(F, P, n, x)) => field_closure_step_keep(
+      fun (n : Nat) (x : af_carrier(F)) (member : FieldClosureStage(F, P, n, x)) => field_closure_step_keep(
         F, FieldClosureStage(F, P, k + n), x, previous(n, x, member)
       )
     );
   };
 
 def field_closure_pad_right(
-  F : AlgebraicField, P : af_carrier(F) -> U0, n : Nat, m : Nat, x : af_carrier(F),
+  F : AlgebraicField, P : af_carrier(F) -> U0, n m : Nat, x : af_carrier(F),
   member : FieldClosureStage(F, P, n, x)
 ) :
   FieldClosureStage(F, P, n + m, x) {
-  exact transport(
-    (fun (rank : Nat) => FieldClosureStage(F, P, rank, x)), m + n, n + m, nat_add_comm(m, n),
-    field_closure_pad(F, P, m, n, x, member)
+  exact along((fun (rank : Nat) => FieldClosureStage(F, P, rank, x))) by nat_add_comm(m, n) from field_closure_pad(
+    F, P, m, n, x, member
   );
 }
 
 // Every finite derivation lies in any subfield containing the generators.
 def field_closure_stage_least(
-  F : AlgebraicField, P : af_carrier(F) -> U0, Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
+  F : AlgebraicField, P Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
   included : PredicateIncluded(af_carrier(F), P, Q), n : Nat
 ) =
   induction n as k return (forall x : af_carrier(F), FieldClosureStage(F, P, k, x) -> Q(x)) {

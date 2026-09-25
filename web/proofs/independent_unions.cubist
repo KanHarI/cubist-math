@@ -9,13 +9,7 @@ def directed_union_independent(
   independent : (forall j : I, LinearlyIndependent(K, V, P(j)))
 ) :
   LinearlyIndependent(K, V, PredicateUnion(I, vector_carrier(K, V), P)) {
-  intro n;
-  intro vectors;
-  intro distinct;
-  intro members;
-  intro coefficients;
-  intro vanishes;
-  intro i;
+  intro n vectors distinct members coefficients vanishes i;
   let A = vector_carrier(K, V);
   let zero = af_zero(af_carrier(K), af_operations(K));
   let Goal = coefficients(i) = zero;
@@ -82,11 +76,8 @@ def EmptyIndependentSubset(K : AlgebraicField, V : VectorSpace(K)) =
     IndependentSubset(K, V),
     (
       (fun (x : vector_carrier(K, V)) => Void),
-      (
-        fun (x : vector_carrier(K, V)) => fun (p : Void) => fun (q : Void) => typed(
-          (p = q), absurd(p)
-        )
-      ), empty_linearly_independent(K, V)
+      (fun (x : vector_carrier(K, V)) (p q : Void) => typed((p = q), absurd(p))),
+      empty_linearly_independent(K, V)
     )
   );
 

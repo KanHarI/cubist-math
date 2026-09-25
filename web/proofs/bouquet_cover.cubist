@@ -17,14 +17,13 @@ def bouquet_code(A : U0) =
   suspension_rec(Unit or A, U0, BouquetLoops(A), BouquetLoops(A), bouquet_code_edges(A));
 
 def bouquet_univalent_action(A : U0, a : A, p : BouquetLoops(A)) :
-  transport(
-    (fun (T : U0) => T), BouquetLoops(A), BouquetLoops(A),
-    ua(
+  (
+    along((fun (T : U0) => T)) by ua(
       U0, BouquetLoops(A), BouquetLoops(A),
       append_path_equivalence(
         Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a)
       )
-    ), p
+    ) from p
   ) = append_path(
     Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), p, bouquet_generator(A, a)
   ) {
@@ -37,18 +36,14 @@ def bouquet_univalent_action(A : U0, a : A, p : BouquetLoops(A)) :
 }
 
 def bouquet_spoke_action(A : U0, p : BouquetLoops(A)) :
-  transport(bouquet_code(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A), p) = p {
+  (along bouquet_code(A) by bouquet_spoke(A) from p) = p {
   exact trans(
     trans(
       transport_ap(
         Bouquet(A), bouquet_code(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A), p
       ),
       cong(
-        (
-          fun (q : BouquetLoops(A) = BouquetLoops(A)) => transport(
-            (fun (T : U0) => T), BouquetLoops(A), BouquetLoops(A), q, p
-          )
-        ),
+        (fun (q : BouquetLoops(A) = BouquetLoops(A)) => along((fun (T : U0) => T)) by q from p),
         suspension_rec_beta(
           Unit or A, U0, BouquetLoops(A), BouquetLoops(A), bouquet_code_edges(A),
           typed(Unit or A, left(tt))
@@ -62,7 +57,7 @@ def bouquet_spoke_action(A : U0, p : BouquetLoops(A)) :
 }
 
 def bouquet_edge_action(A : U0, a : A, p : BouquetLoops(A)) :
-  transport(bouquet_code(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a), p) = append_path(
+  (along bouquet_code(A) by bouquet_edge(A, a) from p) = append_path(
     Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), p, bouquet_generator(A, a)
   ) {
   exact trans(
@@ -71,11 +66,7 @@ def bouquet_edge_action(A : U0, a : A, p : BouquetLoops(A)) :
     ),
     trans(
       cong(
-        (
-          fun (q : BouquetLoops(A) = BouquetLoops(A)) => transport(
-            (fun (T : U0) => T), BouquetLoops(A), BouquetLoops(A), q, p
-          )
-        ),
+        (fun (q : BouquetLoops(A) = BouquetLoops(A)) => along((fun (T : U0) => T)) by q from p),
         suspension_rec_beta(
           Unit or A, U0, BouquetLoops(A), BouquetLoops(A), bouquet_code_edges(A),
           typed(Unit or A, right(a))
@@ -86,15 +77,15 @@ def bouquet_edge_action(A : U0, a : A, p : BouquetLoops(A)) :
 }
 
 def bouquet_spoke_backward(A : U0, p : BouquetLoops(A)) :
-  transport(
-    bouquet_code(A), bouquet_tip(A), bouquet_base(A),
-    inverse(U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)), p
+  (
+    along bouquet_code(A) by inverse(
+      U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)
+    ) from p
   ) = p {
   let before =
-    transport(
-      bouquet_code(A), bouquet_tip(A), bouquet_base(A),
-      inverse(U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)), p
-    );
+    along bouquet_code(A) by inverse(
+      U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A)
+    ) from p;
   exact trans(
     sym(bouquet_spoke_action(A, before)),
     transport_after_inverse(
@@ -104,18 +95,18 @@ def bouquet_spoke_backward(A : U0, p : BouquetLoops(A)) :
 }
 
 def bouquet_edge_backward(A : U0, a : A, p : BouquetLoops(A)) :
-  transport(
-    bouquet_code(A), bouquet_tip(A), bouquet_base(A),
-    inverse(U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a)), p
+  (
+    along bouquet_code(A) by inverse(
+      U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a)
+    ) from p
   ) = append_path(
     Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), p,
     inverse(U1, Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a))
   ) {
   let before =
-    transport(
-      bouquet_code(A), bouquet_tip(A), bouquet_base(A),
-      inverse(U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a)), p
-    );
+    along bouquet_code(A) by inverse(
+      U1, Bouquet(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a)
+    ) from p;
   let undo =
     fun (q : BouquetLoops(A)) => append_path(
       Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), q,
@@ -179,16 +170,13 @@ def bouquet_decoder_edge(A : U0, a : A, p : BouquetLoops(A)) :
 def bouquet_decoder_family(A : U0, x : Bouquet(A)) = bouquet_code(A, x) -> (bouquet_base(A) = x);
 
 def bouquet_decoder_spoke(A : U0) :
-  transport(
-    bouquet_decoder_family(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A),
-    (fun (p : BouquetLoops(A)) => p)
-  ) = bouquet_south_decoder(A) {
+  (along bouquet_decoder_family(A) by bouquet_spoke(A) from(fun (p : BouquetLoops(A)) => p)) = bouquet_south_decoder(
+    A
+  ) {
   exact FunExt(
     U0, BouquetLoops(A), (fun (p : BouquetLoops(A)) => bouquet_base(A) = bouquet_tip(A)),
-    transport(
-      bouquet_decoder_family(A), bouquet_base(A), bouquet_tip(A), bouquet_spoke(A),
-      (fun (p : BouquetLoops(A)) => p)
-    ), bouquet_south_decoder(A),
+    along bouquet_decoder_family(A) by bouquet_spoke(A) from(fun (p : BouquetLoops(A)) => p),
+    bouquet_south_decoder(A),
     (
       fun (p : BouquetLoops(A)) => trans(
         transport_decoder(
@@ -204,16 +192,13 @@ def bouquet_decoder_spoke(A : U0) :
 }
 
 def bouquet_decoder_meridian(A : U0, a : A) :
-  transport(
-    bouquet_decoder_family(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a),
-    (fun (p : BouquetLoops(A)) => p)
-  ) = bouquet_south_decoder(A) {
+  (along bouquet_decoder_family(A) by bouquet_edge(A, a) from(fun (p : BouquetLoops(A)) => p)) = bouquet_south_decoder(
+    A
+  ) {
   exact FunExt(
     U0, BouquetLoops(A), (fun (p : BouquetLoops(A)) => bouquet_base(A) = bouquet_tip(A)),
-    transport(
-      bouquet_decoder_family(A), bouquet_base(A), bouquet_tip(A), bouquet_edge(A, a),
-      (fun (p : BouquetLoops(A)) => p)
-    ), bouquet_south_decoder(A),
+    along bouquet_decoder_family(A) by bouquet_edge(A, a) from(fun (p : BouquetLoops(A)) => p),
+    bouquet_south_decoder(A),
     (
       fun (p : BouquetLoops(A)) => trans(
         transport_decoder(
@@ -237,16 +222,16 @@ def bouquet_decoder_meridian(A : U0, a : A) :
 
 def bouquet_decoder_edges(A : U0, label : Unit or A) =
   match label as e return (
-    transport(
-      bouquet_decoder_family(A), bouquet_base(A), bouquet_tip(A), meridian(Unit or A, e),
-      (fun (p : BouquetLoops(A)) => p)
-    ) = bouquet_south_decoder(A)
+    (along bouquet_decoder_family(A) by meridian(Unit or A, e) from(fun (p : BouquetLoops(A)) => p)) = bouquet_south_decoder(
+      A
+    )
   ) {
     left u => unit_induction(
       (
-        fun (v : Unit) => transport(
-          bouquet_decoder_family(A), bouquet_base(A), bouquet_tip(A),
-          meridian(Unit or A, typed(Unit or A, left(v))), (fun (p : BouquetLoops(A)) => p)
+        fun (v : Unit) => (
+          along bouquet_decoder_family(A) by meridian(Unit or A, typed(Unit or A, left(v))) from(
+            fun (p : BouquetLoops(A)) => p
+          )
         ) = bouquet_south_decoder(A)
       ), bouquet_decoder_spoke(A), u
     );
@@ -260,14 +245,14 @@ def bouquet_decode(A : U0, x : Bouquet(A)) =
   );
 
 def bouquet_encode(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) =
-  transport(bouquet_code(A), bouquet_base(A), x, p, refl(bouquet_base(A)));
+  along bouquet_code(A) by p from refl(bouquet_base(A));
 
 def bouquet_decode_encode(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :
   bouquet_decode(A, x, bouquet_encode(A, x, p)) = p {
   exact based_induction(
     U1, U0, Bouquet(A), bouquet_base(A),
     (
-      fun (point : Bouquet(A)) => fun (path : bouquet_base(A) = point) => bouquet_decode(
+      fun (point : Bouquet(A)) (path : bouquet_base(A) = point) => bouquet_decode(
         A, point, bouquet_encode(A, point, path)
       ) = path
     ),

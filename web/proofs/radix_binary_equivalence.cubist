@@ -13,9 +13,7 @@ opaque def radix_positive_to_binary(extra : Nat, p : RadixPositive(extra)) =
       )
     ),
     (
-      fun (digit : RadixDigit(succ(succ(extra)))) => fun (child : RadixPositive(extra)) => fun (
-        ih : BinaryNat
-      ) => binary_add(
+      fun (digit : RadixDigit(succ(succ(extra)))) (child : RadixPositive(extra)) (ih : BinaryNat) => binary_add(
         binary_mul(binary_of_nat(succ(succ(extra))), ih),
         binary_of_nat(radix_digit_value(succ(succ(extra)), digit))
       )
@@ -89,9 +87,9 @@ def radix_binary_correct(extra : Nat, n : RadixNat(extra)) :
 opaque def binary_positive_to_radix(extra : Nat, p : BinaryPositive) =
   binary_positive_rec(
     RadixNat(extra), radix_positive(extra, radix_one(extra)),
-    (fun (child : BinaryPositive) => fun (ih : RadixNat(extra)) => radix_add(extra, ih, ih)),
+    (fun (child : BinaryPositive) (ih : RadixNat(extra)) => radix_add(extra, ih, ih)),
     (
-      fun (child : BinaryPositive) => fun (ih : RadixNat(extra)) => radix_succ(
+      fun (child : BinaryPositive) (ih : RadixNat(extra)) => radix_succ(
         extra, radix_add(extra, ih, ih)
       )
     ), p
@@ -157,8 +155,7 @@ def binary_radix_correct(extra : Nat, n : BinaryNat) :
   };
 }
 
-def binary_injective(a : BinaryNat, b : BinaryNat, same : binary_to_nat(a) = binary_to_nat(b)) :
-  a = b {
+def binary_injective(a b : BinaryNat, same : binary_to_nat(a) = binary_to_nat(b)) : a = b {
   exact trans(sym(binary_roundtrip(a)), trans(cong(binary_of_nat, same), binary_roundtrip(b)));
 }
 

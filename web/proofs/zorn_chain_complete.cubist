@@ -34,8 +34,7 @@ def no_maximal_strict_successor(
   have contradiction : (FieldExists(StrictlyAbove(A, le, x)) -> Void) -> Void {
     intro noSuccessor;
     have maximal : OrderMaximal(A, le, x) {
-      intro y;
-      intro xy;
+      intro y xy;
       exact double_negation(
         le(y, x), order_prop(A, le, laws, y, x),
         (
@@ -66,7 +65,7 @@ def no_strict_successor_function(
   }
   obtain (x, fixed) = bourbaki_witt(A, le, laws, complete, f, progressive);
   obtain (above, strict) = strict_above_laws(A, le, x, choose(x));
-  exact strict(transport(le(f(x)), f(x), x, fixed, order_refl(A, le, laws, f(x))));
+  exact strict(along le(f(x)) by fixed from order_refl(A, le, laws, f(x)));
 }
 
 // The chain-complete form of Zorn, derived from Choice(U1) and LEM.
@@ -86,7 +85,7 @@ def zorn_chain_complete(
       );
     exact field_exists_elim(
       (forall x : A, StrictlyAbove(A, le, x)), Void,
-      (fun (p : Void) => fun (q : Void) => typed((p = q), absurd(p))),
+      (fun (p q : Void) => typed((p = q), absurd(p))),
       no_strict_successor_function(A, le, laws, complete), successors
     );
   }

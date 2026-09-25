@@ -48,16 +48,14 @@ def galois_fixed_prop(
 
 def galois_fixed_zero(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) :
   GaloisFixed(K, E, H, af_zero(extension_carrier(K, E), af_operations(extension_field(K, E)))) {
-  intro e;
-  intro member;
+  intro e member;
   obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
   exact p0;
 }
 
 def galois_fixed_one(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) :
   GaloisFixed(K, E, H, af_one(extension_carrier(K, E), af_operations(extension_field(K, E)))) {
-  intro e;
-  intro member;
+  intro e member;
   obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
   exact p1;
 }
@@ -67,8 +65,7 @@ def galois_fixed_neg(
   fixed : GaloisFixed(K, E, H, x)
 ) :
   GaloisFixed(K, E, H, af_neg(extension_carrier(K, E), af_operations(extension_field(K, E)), x)) {
-  intro e;
-  intro member;
+  intro e member;
   obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
   exact trans(
     pn(x),
@@ -77,12 +74,11 @@ def galois_fixed_neg(
 }
 
 def galois_fixed_add(
-  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E),
-  y : extension_carrier(K, E), fixedX : GaloisFixed(K, E, H, x), fixedY : GaloisFixed(K, E, H, y)
+  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x y : extension_carrier(K, E),
+  fixedX : GaloisFixed(K, E, H, x), fixedY : GaloisFixed(K, E, H, y)
 ) :
   GaloisFixed(K, E, H, af_add(extension_carrier(K, E), af_operations(extension_field(K, E)), x, y)) {
-  intro e;
-  intro member;
+  intro e member;
   obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
   exact trans(
     pa(x, y),
@@ -103,12 +99,11 @@ def galois_fixed_add(
 }
 
 def galois_fixed_mul(
-  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E),
-  y : extension_carrier(K, E), fixedX : GaloisFixed(K, E, H, x), fixedY : GaloisFixed(K, E, H, y)
+  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x y : extension_carrier(K, E),
+  fixedX : GaloisFixed(K, E, H, x), fixedY : GaloisFixed(K, E, H, y)
 ) :
   GaloisFixed(K, E, H, af_mul(extension_carrier(K, E), af_operations(extension_field(K, E)), x, y)) {
-  intro e;
-  intro member;
+  intro e member;
   obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
   exact trans(
     pm(x, y),
@@ -131,26 +126,23 @@ def galois_fixed_mul(
 // If x is fixed and x*y=1, the image of y is another inverse of x. Uniqueness
 // of inverses forces that image to be y. There is no choice of an inverse here.
 def galois_fixed_inverse(
-  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E),
-  y : extension_carrier(K, E), fixed : GaloisFixed(K, E, H, x),
+  K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x y : extension_carrier(K, E),
+  fixed : GaloisFixed(K, E, H, x),
   inverseLaw : af_mul(extension_carrier(K, E), af_operations(extension_field(K, E)), x, y) = af_one(
     extension_carrier(K, E), af_operations(extension_field(K, E))
   )
 ) :
   GaloisFixed(K, E, H, y) {
-  intro e;
-  intro member;
+  intro e member;
   let F = extension_field(K, E);
   let A = extension_carrier(K, E);
   let ops = af_operations(F);
   let f = extension_iso_forward(K, E, E, e);
   obtain (p0, p1, pn, pa, pm) = galois_preserves_field_ops(K, E, e);
-  have imageInverse : af_mul(A, ops, x, f(y)) = af_one(A, ops) {
-    exact trans(
-      cong((fun (a : A) => af_mul(A, ops, a, f(y))), sym(fixed(e, member))),
-      trans(sym(pm(x, y)), trans(cong(f, inverseLaw), p1))
-    );
-  }
+  have imageInverse : af_mul(A, ops, x, f(y)) = af_one(A, ops) := trans(
+    cong((fun (a : A) => af_mul(A, ops, a, f(y))), sym(fixed(e, member))),
+    trans(sym(pm(x, y)), trans(cong(f, inverseLaw), p1))
+  );
   exact algebraic_inverse_unique(
     A, ops, af_set(F), field_ring_data(A, ops, af_laws(F)), x, f(y), y, imageInverse, inverseLaw
   );
@@ -171,8 +163,7 @@ def galois_fixed_contains_base(
   K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, k : af_carrier(K)
 ) :
   GaloisFixed(K, E, H, extension_inclusion(K, E, k)) {
-  intro e;
-  intro member;
+  intro e member;
   exact galois_fixes_base(K, E, e, k);
 }
 

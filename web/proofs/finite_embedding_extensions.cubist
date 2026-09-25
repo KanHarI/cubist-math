@@ -10,15 +10,7 @@ def FiniteEmbeddingExtension(n : Nat) =
   -> forall j : FieldEmbedding(K, T), Mere(EmbeddingsOver(K, L, e, T, j));
 
 def finite_embedding_extension_zero : FiniteEmbeddingExtension(0) {
-  intro K;
-  intro L;
-  intro e;
-  intro generators;
-  intro algebraic;
-  intro generates;
-  intro T;
-  intro closed;
-  intro j;
+  intro K L e generators algebraic generates T closed j;
   let onto = field_generated_empty_surjective(K, L, e, generators, generates);
   let extension =
     embedding_over_surjective_source(
@@ -34,15 +26,7 @@ def finite_embedding_extension_zero : FiniteEmbeddingExtension(0) {
 
 def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension(n)) :
   FiniteEmbeddingExtension(succ(n)) {
-  intro K;
-  intro L;
-  intro e;
-  intro generators;
-  intro algebraic;
-  intro generates;
-  intro T;
-  intro closed;
-  intro j;
+  intro K L e generators algebraic generates T closed j;
   let x = finite_head(af_carrier(L), n, generators);
   let alg = algebraic(typed(Fin(succ(n)), left(tt)));
   let p = minimal_polynomial(K, L, e, x, alg);
@@ -53,11 +37,9 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
   let i = residue_embedding(K, M, irr);
   let h = adjoin_root_embedding(K, M, irr, L, e, x, root);
   let triangle = residue_evaluate_constant(K, M, L, e, x, root);
-  have tower : FieldTower(K, R, L, i, h, e) {
-    exact with unfolding [FieldTower] {
-      field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle)
-    };
-  }
+  have tower : FieldTower(K, R, L, i, h, e) := with unfolding [FieldTower] {
+    field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle)
+  };
   let algebraicR =
     (
       fun (index : Fin(n)) => algebraic_element_enlarge_base(
@@ -101,7 +83,7 @@ def finitely_generated_embedding_extension(n : Nat) =
 // No generators are requested from the caller: a finite vector basis supplies
 // them internally. The existence statement preserves its propositional truncation.
 def finite_extension_embedding_exists(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
+  K L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e)), T : AlgebraicField,
   closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
 ) :

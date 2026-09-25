@@ -4,16 +4,15 @@ import complex_numbers;
 // Pair two scalar limiting periods. The estimates are stated coordinatewise;
 // complex_limits proves equivalence with common-bound complex Cauchy data.
 def paired_complex_period(
-  F : U1, X : U0, point : X, realPeriod : (point = point) -> F, imagPeriod : (point = point) -> F,
-  p : point = point
+  F : U1, X : U0, point : X, realPeriod imagPeriod : (point = point) -> F, p : point = point
 ) :
   Complex(F) {
   exact (realPeriod(p), imagPeriod(p));
 }
 
 def paired_complex_period_laws(
-  F : U1, zero : F, addF : F -> F -> F, X : U0, point : X, realPeriod : (point = point) -> F,
-  imagPeriod : (point = point) -> F, realLaws : LoopMapLaws(X, point, F, zero, addF, realPeriod),
+  F : U1, zero : F, addF : F -> F -> F, X : U0, point : X, realPeriod imagPeriod : (point = point)
+  -> F, realLaws : LoopMapLaws(X, point, F, zero, addF, realPeriod),
   imagLaws : LoopMapLaws(X, point, F, zero, addF, imagPeriod)
 ) :
   LoopMapLaws(
@@ -26,7 +25,7 @@ def paired_complex_period_laws(
   exact (
     field_pair_path(F, F, period(refl(point)), complex_zero(F, zero), realZero, imagZero),
     (
-      fun (p : point = point) => fun (q : point = point) => field_pair_path(
+      fun (p q : point = point) => field_pair_path(
         F, F, period(append_path(X, point, point, point, p, q)),
         complex_add(F, addF, period(p), period(q)), realAppend(p, q), imagAppend(p, q)
       )
@@ -49,12 +48,11 @@ def PeriodApproximationLaws(
   );
 
 def complex_cauchy_approximation_period_laws(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
-  X : U0, point : X, realApproximations : (point = point) -> Nat -> F,
-  imagApproximations : (point = point) -> Nat -> F,
+  X : U0, point : X, realApproximations imagApproximations : (point = point) -> Nat -> F,
   realCauchy : (forall p : point = point, FieldCauchy(F, zero, addF, lt, realApproximations(p))),
   imagCauchy : (forall p : point = point, FieldCauchy(F, zero, addF, lt, imagApproximations(p))),
   realEstimates : PeriodApproximationLaws(F, zero, addF, lt, X, point, realApproximations),

@@ -88,9 +88,9 @@ def positive_circle_power_not_null_homotopic(
   Void {
   let zeroDegree =
     null_homotopic_circle_map_degree_zero(circle_power_map(succ(n)), refl(base), point, homotopy);
-  have impossible : nonnegative(succ(n)) = zeroZ {
-    exact trans(sym(circle_power_degree(succ(n))), zeroDegree);
-  }
+  have impossible : nonnegative(succ(n)) = zeroZ := trans(
+    sym(circle_power_degree(succ(n))), zeroDegree
+  );
   exact zero_not_successor(n, sym(cong(magnitude, impossible)));
 }
 
@@ -125,9 +125,7 @@ def positive_winding_loop_not_null(
   n : Nat, p : base = base, degree : winding(p) = nonnegative(succ(n)), null : p = refl(base)
 ) :
   Void {
-  have impossible : nonnegative(succ(n)) = zeroZ {
-    exact trans(sym(degree), cong(winding, null));
-  }
+  have impossible : nonnegative(succ(n)) = zeroZ := trans(sym(degree), cong(winding, null));
   exact zero_not_successor(n, sym(cong(magnitude, impossible)));
 }
 

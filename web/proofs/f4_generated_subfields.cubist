@@ -28,20 +28,17 @@ def f4_alpha_generates_field :
     );
   exact subfield_inclusion_antisymmetric(
     F4, generated_subfield(F4, F4AlphaGenerator), subfield_top(F4),
-    (fun (x : F4Carrier) => fun (member : P(x)) => tt),
-    (fun (x : F4Carrier) => fun (member : Unit) => every(x))
+    (fun (x : F4Carrier) (member : P(x)) => tt), (fun (x : F4Carrier) (member : Unit) => every(x))
   );
 }
 
 def f4_base_subfield = intermediate_subfield(F2, F4OverF2, f4_base_intermediate);
 
 def f4_base_in_prime : SubfieldIncluded(F4, f4_base_subfield, prime_subfield(F4)) {
-  intro x;
-  intro member;
+  intro x member;
   obtain (k, same) = typed(F2Image(x), member);
-  exact transport(
-    GeneratedField(F4, (fun (x : F4Carrier) => Void)), f2_into_f4(k), x, same,
-    f4_generated_contains_base((fun (x : F4Carrier) => Void), k)
+  exact along GeneratedField(F4, (fun (x : F4Carrier) => Void)) by same from f4_generated_contains_base(
+    (fun (x : F4Carrier) => Void), k
   );
 }
 
@@ -56,9 +53,7 @@ def f4_prime_subfield_is_base : prime_subfield(F4) =[Subfield(F4)] f4_base_subfi
 
 // The generated prime subfield does not accidentally contain alpha.
 def f4_alpha_not_in_prime(member : subfield_members(F4, prime_subfield(F4), f4_2)) : Void {
-  have inBase : F2Image(f4_2) {
-    exact prime_subfield_least(F4, f4_base_subfield, f4_2, member);
-  }
+  have inBase : F2Image(f4_2) := prime_subfield_least(F4, f4_base_subfield, f4_2, member);
   exact f4_3_not_2(f4_base_is_fixed(f4_2, inBase, f4_frobenius_automorphism, tt));
 }
 

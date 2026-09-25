@@ -6,7 +6,7 @@ import extension_degree;
 // The n+1 powers of any element of an n-dimensional extension are dependent.
 // The resulting nonzero coefficient array is a formal annihilating polynomial.
 def finite_basis_element_algebraic(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
+  K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
   basis : FiniteBasis(K, field_vector_space(K, L, e), n), x : af_carrier(L)
 ) :
   AlgebraicElement(K, L, e, x) {
@@ -18,8 +18,7 @@ def finite_basis_element_algebraic(
     have kernel :
       forall a : Fin(succ(n)) -> af_carrier(K), linear_map(K, C, V, evaluation, a) = field_zero(L)
       -> a = (fun (i : Fin(succ(n))) => field_zero(K)) {
-      intro a;
-      intro root;
+      intro a root;
       let p = polynomial_from_coordinates(K, succ(n), a);
       have zero : p = polynomial_zero(K) {
         have contradiction : PolynomialNonzero(K, p) -> Void {
@@ -57,11 +56,11 @@ def finite_basis_element_algebraic(
   );
 }
 
-def AlgebraicExtension(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
+def AlgebraicExtension(K L : AlgebraicField, e : FieldEmbedding(K, L)) =
   forall x : af_carrier(L), AlgebraicElement(K, L, e, x);
 
 def finite_extension_algebraic(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
+  K L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e))
 ) :
   AlgebraicExtension(K, L, e) {

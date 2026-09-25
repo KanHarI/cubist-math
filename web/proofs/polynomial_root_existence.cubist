@@ -4,9 +4,8 @@ import polynomial_residue_basis;
 
 // A root of a divisor is a root of the original polynomial, in any extension.
 def polynomial_divisor_root(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  g : Polynomial(K), divides : PolynomialDivides(K, g, p), x : af_carrier(L),
-  root : PolynomialRoot(K, L, e, g, x)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), p g : Polynomial(K),
+  divides : PolynomialDivides(K, g, p), x : af_carrier(L), root : PolynomialRoot(K, L, e, g, x)
 ) :
   PolynomialRoot(K, L, e, p, x) {
   let E = fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);

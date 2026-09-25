@@ -2,15 +2,12 @@ import quotient_groups;
 import kernel_quotient_image;
 
 // The normal-kernel quotient carries its descended operations in U1.
-def KernelQuotientGroup(G : Group, H : Group, h : GroupHom(G, H)) =
+def KernelQuotientGroup(G H : Group, h : GroupHom(G, H)) =
   QuotientGroup(G, group_kernel(G, H, h), group_kernel_normal(G, H, h));
 
-def ImageGroup(G : Group, H : Group, h : GroupHom(G, H)) =
-  subgroup_as_group(H, group_image(G, H, h));
+def ImageGroup(G H : Group, h : GroupHom(G, H)) = subgroup_as_group(H, group_image(G, H, h));
 
-def kernel_image_multiply_on_classes(
-  G : Group, H : Group, h : GroupHom(G, H), x : group_carrier(G), y : group_carrier(G)
-) :
+def kernel_image_multiply_on_classes(G H : Group, h : GroupHom(G, H), x y : group_carrier(G)) :
   kernel_quotient_to_image(
     G, H, h,
     quotient_multiply(
@@ -50,9 +47,7 @@ def kernel_image_multiply_on_classes(
 }
 
 // Multiplicativity is proved for arbitrary cosets by propositional induction.
-def kernel_quotient_image_multiply(
-  G : Group, H : Group, h : GroupHom(G, H), q : KernelQuotient(G, H, h), r : KernelQuotient(G, H, h)
-) :
+def kernel_quotient_image_multiply(G H : Group, h : GroupHom(G, H), q r : KernelQuotient(G, H, h)) :
   kernel_quotient_to_image(
     G, H, h, quotient_multiply(G, group_kernel(G, H, h), group_kernel_normal(G, H, h), q, r)
   ) = group_multiply(
@@ -65,19 +60,16 @@ def kernel_quotient_image_multiply(
   exact with unfolding [left_coset] {
     quotient_induction_prop2(
       group_carrier(G), SameLeftCoset(G, group_kernel(G, H, h)),
-      (fun (q : Q) => fun (r : Q) => out(m(q, r)) = product(out(q), out(r))),
-      (
-        fun (q : Q) => fun (r : Q) => group_is_set(
-          ImageGroup(G, H, h), out(m(q, r)), product(out(q), out(r))
-        )
-      ), kernel_image_multiply_on_classes(G, H, h), q, r
+      (fun (q r : Q) => out(m(q, r)) = product(out(q), out(r))),
+      (fun (q r : Q) => group_is_set(ImageGroup(G, H, h), out(m(q, r)), product(out(q), out(r)))),
+      kernel_image_multiply_on_classes(G, H, h), q, r
     )
   };
 }
 
 // First group isomorphism theorem: G / ker(h) is isomorphic to im(h).
 // The image is repackaged in U1, without resizing the quotient or choosing representatives.
-def group_first_isomorphism(G : Group, H : Group, h : GroupHom(G, H)) :
+def group_first_isomorphism(G H : Group, h : GroupHom(G, H)) :
   GroupIsoAt(U1, KernelQuotientGroup(G, H, h), group_lift(ImageGroup(G, H, h))) {
   exact with unfolding [KernelQuotientGroup, QuotientGroup, group_lift] {
     group_iso_object_at(

@@ -5,9 +5,7 @@ def RootFamily(K : AlgebraicField, p : Polynomial(K), n : Nat) =
   exists roots : Fin(n) -> af_carrier(K), Injective(Fin(n), af_carrier(K), roots)
   and (forall i : Fin(n), PolynomialRoot(K, K, field_embedding_identity(K), p, roots(i)));
 
-def linear_factor_eval_nonzero(
-  K : AlgebraicField, r : af_carrier(K), x : af_carrier(K), different : (x = r) -> Void
-) :
+def linear_factor_eval_nonzero(K : AlgebraicField, r x : af_carrier(K), different : (x = r) -> Void) :
   FieldNonzero(
     af_carrier(K), af_operations(K),
     polynomial_eval(K, K, field_embedding_identity(K), polynomial_linear_factor(K, r), x)
@@ -30,14 +28,12 @@ def root_descends_to_factor_quotient(
   let e = field_embedding_identity(K);
   let E = fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, x);
   let a = E(polynomial_linear_factor(K, r));
-  have productZero : field_mul(K, a, E(q)) = field_zero(K) {
-    exact with unfolding [] {
-      trans(
-        sym(polynomial_eval_mul(K, K, e, polynomial_linear_factor(K, r), q, x)),
-        trans(sym(cong(E, factor)), root)
-      )
-    };
-  }
+  have productZero : field_mul(K, a, E(q)) = field_zero(K) := with unfolding [] {
+    trans(
+      sym(polynomial_eval_mul(K, K, e, polynomial_linear_factor(K, r), q, x)),
+      trans(sym(cong(E, factor)), root)
+    )
+  };
   exact vector_scale_injective(
     K, ScalarSpace(K), a, linear_factor_eval_nonzero(K, r, x, different), E(q), field_zero(K),
     trans(productZero, sym(scalar_mul_zero(K, a)))
@@ -45,9 +41,8 @@ def root_descends_to_factor_quotient(
 }
 
 def factor_quotient_nonzero(
-  K : AlgebraicField, p : Polynomial(K), f : Polynomial(K), q : Polynomial(K),
-  factor : p = polynomial_mul(K, f, q), nonzero : (p = polynomial_zero(K)) -> Void,
-  zero : q = polynomial_zero(K)
+  K : AlgebraicField, p f q : Polynomial(K), factor : p = polynomial_mul(K, f, q),
+  nonzero : (p = polynomial_zero(K)) -> Void, zero : q = polynomial_zero(K)
 ) :
   Void {
   exact nonzero(trans(factor, trans(cong(polynomial_mul(K, f), zero), polynomial_mul_zero(K, f))));
@@ -82,9 +77,8 @@ def polynomial_constant_no_root_family(
   obtain (roots, distinct, allRoots) = family;
   let r = roots(typed(Fin(1), left(tt)));
   let support =
-    transport(
-      SeriesSupport(K, polynomial_coefficients(K, p)), polynomial_cutoff(K, p), 1, degree,
-      polynomial_cutoff_support(K, p)
+    along SeriesSupport(K, polynomial_coefficients(K, p)) by degree from polynomial_cutoff_support(
+      K, p
     );
   exact polynomial_leading_nonzero(
     K, p, 0, degree,
@@ -118,9 +112,7 @@ def polynomial_root_bound_step(
     );
   let rest = finite_tail(af_carrier(K), succ(m), roots);
   have restDistinct : Injective(Fin(succ(m)), af_carrier(K), rest) {
-    intro i;
-    intro j;
-    intro same;
+    intro i j same;
     exact tail_injective(
       Fin(succ(m)), i, j,
       distinct(typed(Fin(succ(succ(m))), right(i)), typed(Fin(succ(succ(m))), right(j)), same)
@@ -158,8 +150,5 @@ def polynomial_root_bound(
   obtain (d, degree) = polynomial_nonzero_degree(K, p, nonzero);
   let number = cong((fun (n : Nat) => succ(natural_predecessor(n))), degree);
   intro family;
-  exact polynomial_root_bound_degree(
-    K, d, p, degree,
-    transport(RootFamily(K, p), succ(polynomial_degree(K, p)), succ(d), number, family)
-  );
+  exact polynomial_root_bound_degree(K, d, p, degree, along RootFamily(K, p) by number from family);
 }

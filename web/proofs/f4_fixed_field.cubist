@@ -30,9 +30,7 @@ def f4_fixed_in_base(x : F4Carrier, fixed : F4Fixed(x)) : F2Image(x) {
 
 def f4_base_is_fixed(x : F4Carrier, member : F2Image(x)) : F4Fixed(x) {
   obtain (k, same) = member;
-  exact transport(
-    F4Fixed, f2_into_f4(k), x, same, galois_fixed_contains_base(F2, F4OverF2, F4AllAutomorphisms, k)
-  );
+  exact along F4Fixed by same from galois_fixed_contains_base(F2, F4OverF2, F4AllAutomorphisms, k);
 }
 
 // The fixed elements of Gal(F4/F2) are exactly the embedded base field.
@@ -44,16 +42,12 @@ def f4_fixed_field_is_base(x : F4Carrier) :
 
 // The embedding is injective, so its actual fibers are propositions. No
 // truncation is required when expressing membership in this base-field image.
-def f2_image_prop(x : F4Carrier, p : F2Image(x), q : F2Image(x)) : p = q {
+def f2_image_prop(x : F4Carrier, p q : F2Image(x)) : p = q {
   let fiber = (fun (k : F2Carrier) => f2_into_f4(k) = x);
   let k = sigma_first(F2Carrier, fiber, p);
   let l = sigma_first(F2Carrier, fiber, q);
-  have pk : f2_into_f4(k) = x {
-    exact sigma_second(F2Carrier, fiber, p);
-  }
-  have ql : f2_into_f4(l) = x {
-    exact sigma_second(F2Carrier, fiber, q);
-  }
+  have pk : f2_into_f4(k) = x := sigma_second(F2Carrier, fiber, p);
+  have ql : f2_into_f4(l) = x := sigma_second(F2Carrier, fiber, q);
   exact subtype_ext(
     F2Carrier, fiber, (fun (a : F2Carrier) => fin_is_set(4, f2_into_f4(a), x)), p, q,
     f2_inclusion_injective(k, l, trans(pk, sym(ql)))
@@ -73,10 +67,7 @@ def f4_base_intermediate : IntermediateField(F2, F4OverF2) {
     intermediate_laws(F2, F4OverF2, galois_fixed_field(F2, F4OverF2, F4AllAutomorphisms));
   exact (
     F2Image,
-    transport(
-      (fun (P : F4Carrier -> U0) => IntermediateFieldLaws(F2, F4OverF2, P)), F4Fixed, F2Image,
-      f4_fixed_predicate_is_base, fixedLaws
-    )
+    along((fun (P : F4Carrier -> U0) => IntermediateFieldLaws(F2, F4OverF2, P))) by f4_fixed_predicate_is_base from fixedLaws
   );
 }
 

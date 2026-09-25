@@ -7,7 +7,7 @@ import contour_sums;
 // These are finite sums; existence of a contour integral is not asserted.
 
 def complex_constant_contour_closed(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : Complex(F), n : Nat,
   vertices : SampleVertices(Complex(F), n), tags : SampleTags(Complex(F), n),
   closed : sample_last(Complex(F), n, vertices) = sample_first(Complex(F), n, vertices)
@@ -24,7 +24,7 @@ def complex_constant_contour_closed(
 }
 
 def complex_contour_composes(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : Complex(F) -> Complex(F), n : Nat,
   vertices : SampleVertices(Complex(F), n), tags : SampleTags(Complex(F), n), m : Nat,
   rightVertices : SampleVertices(Complex(F), m), rightTags : SampleTags(Complex(F), m),
@@ -46,7 +46,7 @@ def complex_contour_composes(
 }
 
 def complex_identity_backtrack_sum(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :
   complex_contour_sum(
@@ -62,7 +62,7 @@ def complex_identity_backtrack_sum(
 }
 
 def complex_identity_backtrack_nonzero(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), nontrivial : (zero = one) -> Void
 ) :
   (

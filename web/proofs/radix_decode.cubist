@@ -8,9 +8,9 @@ opaque def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) =
     extra, Nat,
     (fun (first : RadixDigit(succ(extra))) => succ(radix_digit_value(succ(extra), first))),
     (
-      fun (digit : RadixDigit(succ(succ(extra)))) => fun (child : RadixPositive(extra)) => fun (
-        ih : Nat
-      ) => succ(succ(extra)) * ih + radix_digit_value(succ(succ(extra)), digit)
+      fun (digit : RadixDigit(succ(succ(extra)))) (child : RadixPositive(extra)) (ih : Nat) => succ(
+        succ(extra)
+      ) * ih + radix_digit_value(succ(succ(extra)), digit)
     ), p
   );
 
@@ -163,7 +163,7 @@ def radix_decode_positive_succ(extra : Nat, p : RadixPositive(extra)) :
       )
     ),
     (
-      fun (d : RadixDigit(succ(succ(extra)))) => fun (q : RadixPositive(extra)) => fun (
+      fun (d : RadixDigit(succ(succ(extra)))) (q : RadixPositive(extra)) (
         ih : radix_positive_to_nat(extra, radix_positive_succ(extra, q)) = succ(
           radix_positive_to_nat(extra, q)
         )
@@ -185,7 +185,7 @@ def radix_decode_succ(extra : Nat, n : RadixNat(extra)) :
   };
 }
 
-def radix_nat_roundtrip(extra : Nat, n : Nat) : radix_to_nat(extra, radix_of_nat(extra, n)) = n {
+def radix_nat_roundtrip(extra n : Nat) : radix_to_nat(extra, radix_of_nat(extra, n)) = n {
   exact induction n as k return (radix_to_nat(extra, radix_of_nat(extra, k)) = k) {
     zero => refl(0);
     succ previous => trans(radix_decode_succ(extra, radix_of_nat(extra, k)), cong(succ, previous));

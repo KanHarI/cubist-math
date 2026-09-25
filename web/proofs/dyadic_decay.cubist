@@ -4,8 +4,8 @@ import field_scale_limits;
 // An actual natural bound yields an actual depth with small dyadic width.
 // The subsequent Archimedean theorem keeps the truncation of its input bound.
 def dyadic_width_small_from_natural_bound(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
   halfSum : (forall x : F, addF(half(x), half(x)) = x), width : F,
   nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon),
@@ -33,24 +33,17 @@ def dyadic_width_small_from_natural_bound(
       field_natural_successor_ge_one(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, n)
     );
   obtain (multiply, unMultiply) = scale(divided, factor, epsilon, positiveEpsilon);
-  have restores : mulF(divided, epsilon) = width {
-    exact trans(
-      ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, width, reciprocal, epsilon),
-      trans(
-        cong(
-          mulF(width),
-          trans(
-            ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, epsilon), inverseLaw
-          )
-        ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, width)
-      )
-    );
-  }
+  have restores : mulF(divided, epsilon) = width := trans(
+    ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, width, reciprocal, epsilon),
+    trans(
+      cong(
+        mulF(width),
+        trans(ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, epsilon), inverseLaw)
+      ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, width)
+    )
+  );
   let aboveWidth =
-    transport(
-      (fun (v : F) => lt(v, mulF(factor, epsilon))), mulF(divided, epsilon), width, restores,
-      multiply(largeFactor)
-    );
+    along((fun (v : F) => lt(v, mulF(factor, epsilon)))) by restores from multiply(largeFactor);
   let bounded =
     dyadic_width_growth_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, n, width,
@@ -59,16 +52,13 @@ def dyadic_width_small_from_natural_bound(
   let productLess =
     leLt(mulF(factor, sampledWidth), width, mulF(factor, epsilon), bounded, aboveWidth);
   let leftCommutes =
-    transport(
-      (fun (v : F) => lt(v, mulF(factor, epsilon))), mulF(factor, sampledWidth),
-      mulF(sampledWidth, factor),
-      ring_mul_comm(F, zero, one, addF, mulF, negF, ring, factor, sampledWidth), productLess
-    );
+    along((fun (v : F) => lt(v, mulF(factor, epsilon)))) by ring_mul_comm(
+      F, zero, one, addF, mulF, negF, ring, factor, sampledWidth
+    ) from productLess;
   let rightCommutes =
-    transport(
-      lt(mulF(sampledWidth, factor)), mulF(factor, epsilon), mulF(epsilon, factor),
-      ring_mul_comm(F, zero, one, addF, mulF, negF, ring, factor, epsilon), leftCommutes
-    );
+    along lt(mulF(sampledWidth, factor)) by ring_mul_comm(
+      F, zero, one, addF, mulF, negF, ring, factor, epsilon
+    ) from leftCommutes;
   obtain (preserve, reflect) = scale(sampledWidth, epsilon, factor, positiveFactor);
   exact reflect(rightCommutes);
 }
@@ -76,8 +66,8 @@ def dyadic_width_small_from_natural_bound(
 // Constructive Archimedeanness gives mere existence of a sufficiently small
 // width. No natural-number modulus is selected out of that truncation.
 def dyadic_width_arbitrarily_small(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
   halfSum : (forall x : F, addF(half(x), half(x)) = x),
   inverses : FieldInverses(F, zero, one, mulF, lt),

@@ -4,8 +4,8 @@ import ring_laws;
 
 // A checked segment of the ring expansion.
 def parallelogram_expansion_1(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
 ) =
   trans(
     cong(
@@ -78,8 +78,8 @@ def parallelogram_expansion_1(
 
 // A checked segment of the ring expansion.
 def parallelogram_expansion_2(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
 ) =
   trans(
     cong(
@@ -194,8 +194,8 @@ def parallelogram_expansion_2(
 
 // A checked segment of the ring expansion.
 def parallelogram_expansion_3(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
 ) =
   trans(
     cong(
@@ -293,8 +293,8 @@ def parallelogram_expansion_3(
 
 // A checked segment of the ring expansion.
 def parallelogram_expansion_4(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
 ) =
   trans(
     cong(
@@ -344,8 +344,8 @@ def parallelogram_expansion_4(
 
 // A checked segment of the ring expansion.
 def parallelogram_right_expansion(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
 ) =
   trans(
     ring_add_assoc(
@@ -358,8 +358,8 @@ def parallelogram_right_expansion(
   );
 
 def complex_coordinate_parallelogram(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a : F, b : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
 ) :
   addF(mulF(addF(a, b), addF(a, b)), mulF(addF(a, negF(b)), addF(a, negF(b)))) = addF(
     addF(mulF(a, a), mulF(b, b)), addF(mulF(a, a), mulF(b, b))

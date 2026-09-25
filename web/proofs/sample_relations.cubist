@@ -11,8 +11,8 @@ def SampleAdjacent(C : U1, related : C -> C -> U0, n : Nat) =
   };
 
 def sample_adjacent_magnitude(
-  C : U1, F : U1, negF : F -> F, lt : F -> F -> U0, related : C -> C -> U0, edge : C -> C -> C -> F,
-  radius : C -> C -> C -> F,
+  C F : U1, negF : F -> F, lt : F -> F -> U0, related : C -> C -> U0, edge radius : C -> C -> C
+  -> F,
   bounded : (
     forall a : C, forall b : C, forall tag : C, related(a, b)
     -> FieldMagnitudeBound(F, negF, lt, edge(a, b, tag), radius(a, b, tag))
@@ -26,10 +26,10 @@ def sample_adjacent_magnitude(
     SampleAdjacent(C, related, k, vertices)
     -> SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, vertices, tags)
   ) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (adjacent : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
-      tags : SampleTags(C, succ(k))
-    ) => fun (adjacent : SampleAdjacent(C, related, succ(k), vertices)) => typed(
+    zero => fun (vertices : C) (tags adjacent : Unit) => tt;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
+      adjacent : SampleAdjacent(C, related, succ(k), vertices)
+    ) => typed(
       (
         FieldMagnitudeBound(
           F, negF, lt,

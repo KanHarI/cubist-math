@@ -4,13 +4,13 @@ import affine_dyadic_limits;
 // Actual Archimedean bounds and the field's completeness operation remain
 // explicit inputs; no convergence of these contour sums is assumed.
 def affine_dyadic_integral_exists(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -18,7 +18,7 @@ def affine_dyadic_integral_exists(
         complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
       )
     )
-  ), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  ), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -46,13 +46,12 @@ def affine_dyadic_integral_exists(
 }
 
 def affine_dyadic_integral(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  lt : F -> F -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  order : StrictOrder(F, lt), arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  minF : F -> F -> F, maxF : F -> F -> F, lattice : FieldLattice(F, lt, minF, maxF),
-  inverses : FieldInverses(F, zero, one, mulF, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F),
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F),
   integrand : Complex(F) -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
@@ -61,7 +60,7 @@ def affine_dyadic_integral(
         complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
       )
     )
-  ), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  ), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -83,13 +82,13 @@ def affine_dyadic_integral(
   );
 
 def affine_dyadic_integral_converges(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -97,7 +96,7 @@ def affine_dyadic_integral_converges(
         complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
       )
     )
-  ), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  ), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -132,13 +131,13 @@ def affine_dyadic_integral_converges(
 
 // Any other limit of these actual sums is the constructed integral.
 def affine_dyadic_integral_unique(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -146,7 +145,7 @@ def affine_dyadic_integral_unique(
         complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
       )
     )
-  ), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  ), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -185,13 +184,13 @@ def affine_dyadic_integral_unique(
 // Changing the witnesses used to obtain a modulus or a limit cannot change
 // the value: the sampled sequence does not contain these witnesses.
 def affine_dyadic_integral_independent_data(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -199,7 +198,7 @@ def affine_dyadic_integral_independent_data(
         complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
       )
     )
-  ), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  ), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)

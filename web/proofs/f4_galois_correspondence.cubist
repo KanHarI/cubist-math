@@ -13,10 +13,9 @@ def f4_fixed_from_representatives(
 ) :
   GaloisFixed(F2, F4OverF2, H, x) {
   intro e;
-  exact transport(
-    (fun (d : F4Automorphism) => H(d) -> (f4_auto_apply(d, x) = x)),
-    f4_symmetry(f4_symmetry_bit(e)), e, f4_symmetry_classify(e), tested(f4_symmetry_bit(e))
-  );
+  exact along((fun (d : F4Automorphism) => H(d) -> (f4_auto_apply(d, x) = x))) by f4_symmetry_classify(
+    e
+  ) from tested(f4_symmetry_bit(e));
 }
 
 def f4_fixed_decision(
@@ -36,8 +35,7 @@ def f4_fixed_decision(
   exact decision_transfer(
     F4FixedOnRepresentatives(H, x), GaloisFixed(F2, F4OverF2, H, x),
     f4_fixed_from_representatives(H, x),
-    (fun (fixed : GaloisFixed(F2, F4OverF2, H, x)) => fun (b : F2Carrier) => fixed(f4_symmetry(b))),
-    tested
+    (fun (fixed : GaloisFixed(F2, F4OverF2, H, x)) (b : F2Carrier) => fixed(f4_symmetry(b))), tested
   );
 }
 
@@ -110,16 +108,12 @@ def f4_galois_correspondence :
   );
 }
 
-def F4DecidableSubgroupIncluded(
-  D : DecidableSubgroup(F4GaloisGroup), E : DecidableSubgroup(F4GaloisGroup)
-) =
+def F4DecidableSubgroupIncluded(D E : DecidableSubgroup(F4GaloisGroup)) =
   SubgroupIncluded(
     F4GaloisGroup, decidable_subgroup(F4GaloisGroup, D), decidable_subgroup(F4GaloisGroup, E)
   );
 
-def F4DecidableIntermediateIncluded(
-  D : DecidableIntermediateField(F2, F4OverF2), E : DecidableIntermediateField(F2, F4OverF2)
-) =
+def F4DecidableIntermediateIncluded(D E : DecidableIntermediateField(F2, F4OverF2)) =
   IntermediateIncluded(
     F2, F4OverF2, decidable_intermediate(F2, F4OverF2, D), decidable_intermediate(F2, F4OverF2, E)
   );
@@ -129,9 +123,7 @@ def f4_decidable_fixed_antitone :
     DecidableSubgroup(F4GaloisGroup), DecidableIntermediateField(F2, F4OverF2),
     F4DecidableSubgroupIncluded, F4DecidableIntermediateIncluded, f4_decidable_fixed
   ) {
-  intro D;
-  intro E;
-  intro included;
+  intro D E included;
   exact fixed_field_reverses_inclusion(
     F2, F4OverF2, decidable_subgroup(F4GaloisGroup, D), decidable_subgroup(F4GaloisGroup, E),
     included
@@ -143,9 +135,7 @@ def f4_decidable_fixing_antitone :
     DecidableIntermediateField(F2, F4OverF2), DecidableSubgroup(F4GaloisGroup),
     F4DecidableIntermediateIncluded, F4DecidableSubgroupIncluded, f4_decidable_fixing
   ) {
-  intro D;
-  intro E;
-  intro included;
+  intro D E included;
   exact fixing_group_reverses_inclusion(
     F2, F4OverF2, decidable_intermediate(F2, F4OverF2, D), decidable_intermediate(F2, F4OverF2, E),
     included

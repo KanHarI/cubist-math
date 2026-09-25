@@ -2,23 +2,22 @@ import field_closeness;
 import primes;
 
 // Actual natural moduli are combined explicitly. No countable choice is used.
-def index_sum_left(n : Nat, m : Nat) =
-  transport((fun (k : Nat) => IndexLE(n, k)), m + n, n + m, nat_add_comm(m, n), nat_le_add(m, n));
+def index_sum_left(n m : Nat) =
+  along((fun (k : Nat) => IndexLE(n, k))) by nat_add_comm(m, n) from nat_le_add(m, n);
 
-def index_sum_right(n : Nat, m : Nat) = typed(IndexLE(m, n + m), nat_le_add(n, m));
+def index_sum_right(n m : Nat) = typed(IndexLE(m, n + m), nat_le_add(n, m));
 
 def field_converges_constant(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => x), x) {
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   exact (
     0,
     (
-      fun (n : Nat) => fun (large : IndexLE(0, n)) => field_close_self(
+      fun (n : Nat) (large : IndexLE(0, n)) => field_close_self(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, epsilon, positive
       )
     )
@@ -26,18 +25,17 @@ def field_converges_constant(
 }
 
 def field_limit_unique(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  halving : Halving(F, zero, addF, lt), sequence : Nat -> F, x : F, y : F,
+  halving : Halving(F, zero, addF, lt), sequence : Nat -> F, x y : F,
   toX : FieldConverges(F, zero, addF, lt, sequence, x),
   toY : FieldConverges(F, zero, addF, lt, sequence, y)
 ) :
   x = y {
   obtain (half, halfSum, halfPositive) = halving;
   have close : forall epsilon : F, lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon) {
-    intro epsilon;
-    intro positive;
+    intro epsilon positive;
     obtain (leftBound, leftClose) = toX(half(epsilon), halfPositive(epsilon, positive));
     obtain (rightBound, rightClose) = toY(half(epsilon), halfPositive(epsilon, positive));
     let bound = leftBound + rightBound;
@@ -56,34 +54,31 @@ def field_limit_unique(
 }
 
 def field_converges_add(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  halving : Halving(F, zero, addF, lt), xs : Nat -> F, ys : Nat -> F, x : F, y : F,
+  halving : Halving(F, zero, addF, lt), xs ys : Nat -> F, x y : F,
   toX : FieldConverges(F, zero, addF, lt, xs, x), toY : FieldConverges(F, zero, addF, lt, ys, y)
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => addF(xs(n), ys(n))), addF(x, y)) {
   obtain (half, halfSum, halfPositive) = halving;
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   obtain (leftBound, leftClose) = toX(half(epsilon), halfPositive(epsilon, positive));
   obtain (rightBound, rightClose) = toY(half(epsilon), halfPositive(epsilon, positive));
   let bound = leftBound + rightBound;
   exact (
     bound,
     (
-      fun (n : Nat) => fun (large : IndexLE(bound, n)) => transport(
-        (fun (radius : F) => FieldClose(F, addF, lt, addF(xs(n), ys(n)), addF(x, y), radius)),
-        addF(half(epsilon), half(epsilon)), epsilon, halfSum(epsilon),
-        field_close_add(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(n), x, ys(n), y,
-          half(epsilon), half(epsilon),
-          leftClose(
-            n, nat_le_trans(leftBound, bound, n, index_sum_left(leftBound, rightBound), large)
-          ),
-          rightClose(
-            n, nat_le_trans(rightBound, bound, n, index_sum_right(leftBound, rightBound), large)
-          )
+      fun (n : Nat) (large : IndexLE(bound, n)) => along(
+        (fun (radius : F) => FieldClose(F, addF, lt, addF(xs(n), ys(n)), addF(x, y), radius))
+      ) by halfSum(epsilon) from field_close_add(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(n), x, ys(n), y,
+        half(epsilon), half(epsilon),
+        leftClose(
+          n, nat_le_trans(leftBound, bound, n, index_sum_left(leftBound, rightBound), large)
+        ),
+        rightClose(
+          n, nat_le_trans(rightBound, bound, n, index_sum_right(leftBound, rightBound), large)
         )
       )
     )
@@ -91,23 +86,20 @@ def field_converges_add(
 }
 
 def field_converges_is_cauchy(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   halving : Halving(F, zero, addF, lt), sequence : Nat -> F, limit : F,
   converges : FieldConverges(F, zero, addF, lt, sequence, limit)
 ) :
   FieldCauchy(F, zero, addF, lt, sequence) {
   obtain (half, halfSum, halfPositive) = halving;
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   obtain (bound, close) = converges(half(epsilon), halfPositive(epsilon, positive));
   exact (
     bound,
     (
-      fun (m : Nat) => fun (n : Nat) => fun (largeM : IndexLE(bound, m)) => fun (
-        largeN : IndexLE(bound, n)
-      ) => field_close_halved_triangle(
+      fun (m n : Nat) (largeM : IndexLE(bound, m)) (largeN : IndexLE(bound, n)) => field_close_halved_triangle(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, sequence(m),
         limit, sequence(n), epsilon, close(m, largeM),
         field_close_symmetry(F, addF, lt, sequence(n), limit, half(epsilon), close(n, largeN))
@@ -117,42 +109,37 @@ def field_converges_is_cauchy(
 }
 
 def field_cauchy_add(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  halving : Halving(F, zero, addF, lt), xs : Nat -> F, ys : Nat -> F,
+  halving : Halving(F, zero, addF, lt), xs ys : Nat -> F,
   cauchyX : FieldCauchy(F, zero, addF, lt, xs), cauchyY : FieldCauchy(F, zero, addF, lt, ys)
 ) :
   FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => addF(xs(n), ys(n)))) {
   obtain (half, halfSum, halfPositive) = halving;
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   obtain (leftBound, leftClose) = cauchyX(half(epsilon), halfPositive(epsilon, positive));
   obtain (rightBound, rightClose) = cauchyY(half(epsilon), halfPositive(epsilon, positive));
   let bound = leftBound + rightBound;
   exact (
     bound,
     (
-      fun (m : Nat) => fun (n : Nat) => fun (largeM : IndexLE(bound, m)) => fun (
-        largeN : IndexLE(bound, n)
-      ) => transport(
+      fun (m n : Nat) (largeM : IndexLE(bound, m)) (largeN : IndexLE(bound, n)) => along(
         (
           fun (radius : F) => FieldClose(
             F, addF, lt, addF(xs(m), ys(m)), addF(xs(n), ys(n)), radius
           )
-        ), addF(half(epsilon), half(epsilon)), epsilon, halfSum(epsilon),
-        field_close_add(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(m), xs(n), ys(m), ys(n),
-          half(epsilon), half(epsilon),
-          leftClose(
-            m, n, nat_le_trans(leftBound, bound, m, index_sum_left(leftBound, rightBound), largeM),
-            nat_le_trans(leftBound, bound, n, index_sum_left(leftBound, rightBound), largeN)
-          ),
-          rightClose(
-            m, n,
-            nat_le_trans(rightBound, bound, m, index_sum_right(leftBound, rightBound), largeM),
-            nat_le_trans(rightBound, bound, n, index_sum_right(leftBound, rightBound), largeN)
-          )
+        )
+      ) by halfSum(epsilon) from field_close_add(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(m), xs(n), ys(m), ys(n),
+        half(epsilon), half(epsilon),
+        leftClose(
+          m, n, nat_le_trans(leftBound, bound, m, index_sum_left(leftBound, rightBound), largeM),
+          nat_le_trans(leftBound, bound, n, index_sum_left(leftBound, rightBound), largeN)
+        ),
+        rightClose(
+          m, n, nat_le_trans(rightBound, bound, m, index_sum_right(leftBound, rightBound), largeM),
+          nat_le_trans(rightBound, bound, n, index_sum_right(leftBound, rightBound), largeN)
         )
       )
     )
@@ -161,30 +148,28 @@ def field_cauchy_add(
 
 // A pointwise equality of sequences preserves its convergence certificate.
 def field_converges_pointwise(
-  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs : Nat -> F, ys : Nat -> F,
+  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs ys : Nat -> F,
   same : (forall n : Nat, xs(n) = ys(n)), limit : F,
   converges : FieldConverges(F, zero, addF, lt, xs, limit)
 ) :
   FieldConverges(F, zero, addF, lt, ys, limit) {
-  intro epsilon;
-  intro positive;
+  intro epsilon positive;
   obtain (bound, close) = converges(epsilon, positive);
   exact (
     bound,
     (
-      fun (n : Nat) => fun (large : IndexLE(bound, n)) => transport(
-        (fun (value : F) => FieldClose(F, addF, lt, value, limit, epsilon)), xs(n), ys(n), same(n),
-        close(n, large)
-      )
+      fun (n : Nat) (large : IndexLE(bound, n)) => along(
+        (fun (value : F) => FieldClose(F, addF, lt, value, limit, epsilon))
+      ) by same(n) from close(n, large)
     )
   );
 }
 
 def ordered_field_limit_unique(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), sequence : Nat -> F, x : F, y : F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), sequence : Nat -> F, x y : F,
   toX : FieldConverges(F, zero, addF, lt, sequence, x),
   toY : FieldConverges(F, zero, addF, lt, sequence, y)
 ) :

@@ -10,8 +10,7 @@ def KillsSubgroupAt(
   forall n : group_carrier(G), subgroup_members(G, S, n)
   -> group_hom_map_at(U1, group_lift(G), H, h, n) = group_unit_at(U1, H);
 
-def group_hom_lift(G : Group, H : Group, h : GroupHom(G, H)) :
-  GroupHomAt(U1, group_lift(G), group_lift(H)) {
+def group_hom_lift(G H : Group, h : GroupHom(G, H)) : GroupHomAt(U1, group_lift(G), group_lift(H)) {
   exact with unfolding [group_lift] {
     group_hom_object_at(
       U1, group_carrier(G), group_unit(G), group_multiply(G), group_laws(G), group_carrier(H),
@@ -31,21 +30,17 @@ def killing_subgroup_respects_cosets_at(
     group_carrier(G), SameLeftCoset(G, S), group_carrier_at(U1, H),
     group_hom_map_at(U1, group_lift(G), H, h)
   ) {
-  intro x;
-  intro y;
-  intro same;
+  intro x y same;
   let f = group_hom_map_at(U1, group_lift(G), H, h);
   let d = group_multiply(G, group_inverse(G, x), y);
   let m = group_multiply_at(U1, H);
-  have cancel : group_multiply(G, x, d) = y {
-    exact trans(
-      sym(group_associative(G, x, group_inverse(G, x), y)),
-      trans(
-        cong((fun (z : group_carrier(G)) => group_multiply(G, z, y)), group_inverse_right(G, x)),
-        group_unit_left(G, y)
-      )
-    );
-  }
+  have cancel : group_multiply(G, x, d) = y := trans(
+    sym(group_associative(G, x, group_inverse(G, x), y)),
+    trans(
+      cong((fun (z : group_carrier(G)) => group_multiply(G, z, y)), group_inverse_right(G, x)),
+      group_unit_left(G, y)
+    )
+  );
   exact trans(
     sym(group_unit_right_at(U1, H, f(x))),
     trans(
@@ -83,8 +78,7 @@ def quotient_descend_beta(
 
 def quotient_descend_multiply_classes(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
-  normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S), x : group_carrier(G),
-  y : group_carrier(G)
+  normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S), x y : group_carrier(G)
 ) :
   quotient_descend_map(
     G, H, h, S, kills, quotient_multiply(G, S, normal, left_coset(G, S, x), left_coset(G, S, y))
@@ -114,8 +108,7 @@ def quotient_descend_multiply_classes(
 
 def quotient_descend_multiply(
   G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
-  normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S), q : LeftCosets(G, S),
-  r : LeftCosets(G, S)
+  normal : IsNormal(G, S), kills : KillsSubgroupAt(G, H, h, S), q r : LeftCosets(G, S)
 ) :
   quotient_descend_map(G, H, h, S, kills, quotient_multiply(G, S, normal, q, r)) = group_multiply_at(
     U1, H, quotient_descend_map(G, H, h, S, kills, q), quotient_descend_map(G, H, h, S, kills, r)
@@ -127,8 +120,8 @@ def quotient_descend_multiply(
   exact with unfolding [left_coset] {
     quotient_induction_prop2(
       group_carrier(G), SameLeftCoset(G, S),
-      (fun (q : Q) => fun (r : Q) => out(m(q, r)) = product(out(q), out(r))),
-      (fun (q : Q) => fun (r : Q) => group_is_set_at(U1, H, out(m(q, r)), product(out(q), out(r)))),
+      (fun (q r : Q) => out(m(q, r)) = product(out(q), out(r))),
+      (fun (q r : Q) => group_is_set_at(U1, H, out(m(q, r)), product(out(q), out(r)))),
       quotient_descend_multiply_classes(G, H, h, S, normal, kills), q, r
     )
   };
@@ -142,11 +135,7 @@ def quotient_projection(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
       U1, group_carrier(G), group_unit(G), group_multiply(G), group_laws(G), LeftCosets(G, S),
       left_coset(G, S, group_unit(G)), quotient_multiply(G, S, normal),
       quotient_group_laws(G, S, normal), left_coset(G, S),
-      (
-        fun (x : group_carrier(G)) => fun (y : group_carrier(G)) => sym(
-          quotient_multiply_beta(G, S, normal, x, y)
-        )
-      )
+      (fun (x y : group_carrier(G)) => sym(quotient_multiply_beta(G, S, normal, x, y)))
     )
   };
 }
@@ -239,7 +228,7 @@ def quotient_group_universal(
 
 // On small targets this recovers the earlier unique map of sets.
 def quotient_descend_agrees_with_map(
-  G : Group, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
+  G H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
 ) :
   quotient_descend_map(G, group_lift(H), group_hom_lift(G, H, h), S, kills) = group_quotient_map(
     G, H, h, S, kills
@@ -253,8 +242,7 @@ def quotient_descend_agrees_with_map(
 // Every subgroup element becomes the identity under the quotient projection.
 def quotient_projection_kills(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
   KillsSubgroupAt(G, QuotientGroup(G, S, normal), quotient_projection(G, S, normal), S) {
-  intro n;
-  intro member;
+  intro n member;
   exact sym(
     same_coset_path(
       G, S, group_unit(G), n,
@@ -267,8 +255,7 @@ def quotient_projection_kills(G : Group, S : Subgroup(G), normal : IsNormal(G, S
 // equality of maps out of the quotient, including their law fields.
 def quotient_projection_epimorphism(
   G : Group, H : GroupAt(U1), S : Subgroup(G), normal : IsNormal(G, S),
-  f : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
-  g : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
+  f g : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
   same : group_hom_compose_at(
     U1, group_lift(G), QuotientGroup(G, S, normal), H, quotient_projection(G, S, normal), f
   ) = group_hom_compose_at(

@@ -45,8 +45,8 @@ def polynomial_divides_refl(K : AlgebraicField, p : Polynomial(K)) : PolynomialD
 }
 
 def polynomial_divides_trans(
-  K : AlgebraicField, a : Polynomial(K), b : Polynomial(K), c : Polynomial(K),
-  ab : PolynomialDivides(K, a, b), bc : PolynomialDivides(K, b, c)
+  K : AlgebraicField, a b c : Polynomial(K), ab : PolynomialDivides(K, a, b),
+  bc : PolynomialDivides(K, b, c)
 ) :
   PolynomialDivides(K, a, c) {
   let Result = PolynomialDivides(K, a, c);
@@ -81,8 +81,8 @@ def polynomial_divides_trans(
 }
 
 def polynomial_unit_factor_reverse(
-  K : AlgebraicField, p : Polynomial(K), a : Polynomial(K), b : Polynomial(K),
-  equation : p = polynomial_mul(K, a, b), unit : PolynomialUnit(K, b)
+  K : AlgebraicField, p a b : Polynomial(K), equation : p = polynomial_mul(K, a, b),
+  unit : PolynomialUnit(K, b)
 ) :
   PolynomialDivides(K, p, a) {
   have useInverse :
@@ -115,9 +115,7 @@ def irreducible_coprime(
   q : Polynomial(K), notDivides : PolynomialDivides(K, p, q) -> Void
 ) :
   PolynomialCoprime(K, p, q) {
-  intro g;
-  intro gp;
-  intro gq;
+  intro g gp gq;
   have useFactor : (exists h : Polynomial(K), p = polynomial_mul(K, g, h)) -> PolynomialUnit(K, g) {
     intro witness;
     obtain (h, equation) = witness;

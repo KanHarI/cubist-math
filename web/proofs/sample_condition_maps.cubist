@@ -2,7 +2,7 @@ import sample_tagged;
 
 // Map the evidence at each edge without changing vertices or tags.
 def sample_tagged_map_step(
-  C : U1, condition : C -> C -> C -> U0, other : C -> C -> C -> U0,
+  C : U1, condition other : C -> C -> C -> U0,
   mapping : (forall a : C, forall b : C, forall tag : C, condition(a, b, tag) -> other(a, b, tag)),
   n : Nat,
   previous : (
@@ -17,9 +17,7 @@ def sample_tagged_map_step(
   let b = sample_first(C, n, tail);
   let tag = field_fst(C, SampleTags(C, n), tags);
   let tailTags = field_snd(C, SampleTags(C, n), tags);
-  have data : condition(a, b, tag) and SampleTagged(C, condition, n, tail, tailTags) {
-    exact valid;
-  }
+  have data : condition(a, b, tag) and SampleTagged(C, condition, n, tail, tailTags) := valid;
   obtain (headValid, tailValid) = data;
   exact typed(
     (other(a, b, tag) and SampleTagged(C, other, n, tail, tailTags)),
@@ -28,7 +26,7 @@ def sample_tagged_map_step(
 }
 
 def sample_tagged_map(
-  C : U1, condition : C -> C -> C -> U0, other : C -> C -> C -> U0,
+  C : U1, condition other : C -> C -> C -> U0,
   mapping : (forall a : C, forall b : C, forall tag : C, condition(a, b, tag) -> other(a, b, tag)),
   n : Nat
 ) :
@@ -38,7 +36,7 @@ def sample_tagged_map(
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     SampleTagged(C, condition, k, vertices, tags) -> SampleTagged(C, other, k, vertices, tags)
   ) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (valid : Unit) => tt;
+    zero => fun (vertices : C) (tags valid : Unit) => tt;
     succ previous => sample_tagged_map_step(C, condition, other, mapping, k, previous);
   };
 }

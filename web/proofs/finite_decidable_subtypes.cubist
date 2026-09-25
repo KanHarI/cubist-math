@@ -6,8 +6,7 @@ import classical;
 def HasFiniteCardinality(A : U0) = exists n : Nat, HasCardinality(A, n);
 
 def finite_cardinality_prop(A : U0) : Proposition(HasFiniteCardinality(A)) {
-  intro first;
-  intro second;
+  intro first second;
   obtain (n, countN) = first;
   obtain (m, countM) = second;
   exact subtype_ext(
@@ -16,9 +15,7 @@ def finite_cardinality_prop(A : U0) : Proposition(HasFiniteCardinality(A)) {
   );
 }
 
-def finite_cardinality_bijection(
-  A : U0, B : U0, e : Bijection(A, B), finite : HasFiniteCardinality(A)
-) :
+def finite_cardinality_bijection(A B : U0, e : Bijection(A, B), finite : HasFiniteCardinality(A)) :
   HasFiniteCardinality(B) {
   obtain (n, count) = finite;
   exact (
@@ -81,18 +78,18 @@ def finite_selected_bool_step(
     match p(head(A)) as first return HasFiniteCardinality(
       Selected(Fin(succ(k)), predicate_join(A, first, q))
     ) {
-      left u => transport(
-        (fun (b : Bool) => HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, b, q)))),
-        yes, typed(Bool, left(u)), cong((fun (v : Unit) => typed(Bool, left(v))), unit_equal(u)),
-        typed(
+      left u => (
+        along(
+          (fun (b : Bool) => HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, b, q))))
+        ) by cong((fun (v : Unit) => typed(Bool, left(v))), unit_equal(u)) from typed(
           HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, yes, q))),
           (succ(m), finite_selected_true(k, q, m, count))
         )
       );
-      right u => transport(
-        (fun (b : Bool) => HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, b, q)))),
-        no, typed(Bool, right(u)), cong((fun (v : Unit) => typed(Bool, right(v))), unit_equal(u)),
-        typed(
+      right u => (
+        along(
+          (fun (b : Bool) => HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, b, q))))
+        ) by cong((fun (v : Unit) => typed(Bool, right(v))), unit_equal(u)) from typed(
           HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, no, q))),
           (m, finite_selected_false(k, q, m, count))
         )
@@ -152,7 +149,7 @@ def classical_predicate_truth(A : U0, P : A -> U0, prop : forall a : A, Proposit
 }
 
 def subtype_reindex_bijection(
-  A : U0, B : U0, P : B -> U0, prop : forall b : B, Proposition(P(b)), e : Bijection(A, B)
+  A B : U0, P : B -> U0, prop : forall b : B, Proposition(P(b)), e : Bijection(A, B)
 ) :
   Bijection((exists a : A, P(forward(A, B, e, a))), (exists b : B, P(b))) {
   let Q = fun (a : A) => P(forward(A, B, e, a));
@@ -164,10 +161,7 @@ def subtype_reindex_bijection(
       X,
       (
         backward(A, B, e, sigma_first(B, P, y)),
-        transport(
-          P, sigma_first(B, P, y), forward(A, B, e, backward(A, B, e, sigma_first(B, P, y))),
-          sym(right_inverse(A, B, e, sigma_first(B, P, y))), sigma_second(B, P, y)
-        )
+        along P by sym(right_inverse(A, B, e, sigma_first(B, P, y))) from sigma_second(B, P, y)
       )
     );
   exact (

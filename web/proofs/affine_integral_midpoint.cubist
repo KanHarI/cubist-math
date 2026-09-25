@@ -4,12 +4,11 @@ import curve_sample_sums;
 // This is the recursion equation for the actual contour sums, using the
 // same midpoint and the same endpoint-order proofs as the sampler.
 def affine_dyadic_sum_successor(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F), a : FieldUnitInterval(F, zero, one, lt),
-  b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -83,13 +82,13 @@ def affine_dyadic_sum_successor(
 // Completeness and uniqueness carry the exact finite-sum equation to limits.
 // All three integrals use the same affine curve and its restricted endpoints.
 def affine_dyadic_integral_midpoint(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF : F -> F -> F, maxF : F -> F
-  -> F, lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z : Complex(F), slope : Complex(F),
-  integrand : Complex(F) -> Complex(F),
+  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope : Complex(F), integrand : Complex(F)
+  -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -97,7 +96,7 @@ def affine_dyadic_integral_midpoint(
         complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope)(t)
       )
     )
-  ), a : FieldUnitInterval(F, zero, one, lt), b : FieldUnitInterval(F, zero, one, lt),
+  ), a b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)

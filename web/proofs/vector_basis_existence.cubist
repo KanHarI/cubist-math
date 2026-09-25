@@ -30,8 +30,7 @@ def independent_indexed_chain(
       )
     )
   ) {
-  intro i;
-  intro j;
+  intro i j;
   exact chain(
     independent_chain_member(K, V, C, i), independent_chain_member(K, V, C, j),
     independent_chain_evidence(K, V, C, i), independent_chain_evidence(K, V, C, j)
@@ -40,23 +39,20 @@ def independent_indexed_chain(
 
 def independent_chain_complete(K : AlgebraicField, V : VectorSpace(K)) :
   ChainComplete(IndependentSubset(K, V), IndependentIncluded(K, V)) {
-  intro C;
-  intro chain;
+  intro C chain;
   let A = IndependentSubset(K, V);
   let I = IndependentChainIndex(K, V, C);
   let family = independent_chain_member(K, V, C);
   let indexed = independent_indexed_chain(K, V, C, chain);
   let union = IndependentUnion(K, V, I, family, indexed);
   have upper : forall S : A, C(S) -> IndependentIncluded(K, V, S, union) {
-    intro S;
-    intro cs;
+    intro S cs;
     exact independent_union_upper(K, V, I, family, indexed, typed(I, (S, cs)));
   }
   have least :
     forall T : A, (forall S : A, C(S) -> IndependentIncluded(K, V, S, T))
     -> IndependentIncluded(K, V, union, T) {
-    intro T;
-    intro bound;
+    intro T bound;
     exact independent_union_least(
       K, V, I, family, indexed, T,
       (fun (i : I) => bound(family(i), independent_chain_evidence(K, V, C, i)))

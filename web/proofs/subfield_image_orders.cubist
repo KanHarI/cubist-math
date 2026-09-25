@@ -3,36 +3,31 @@ import order_maps;
 
 // Image is left adjoint to inverse image on subfield inclusion orders.
 def subfield_image_inclusion_to_preimage(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
-  T : Subfield(L), included : SubfieldIncluded(L, subfield_image(K, L, e, S), T)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), T : Subfield(L),
+  included : SubfieldIncluded(L, subfield_image(K, L, e, S), T)
 ) :
   SubfieldIncluded(K, S, subfield_preimage(K, L, e, T)) {
-  intro x;
-  intro member;
+  intro x member;
   let f = field_embedding_map(K, L, e);
   exact included(f(x), typed(SubfieldImage(K, L, e, S, f(x)), (x, member, refl(f(x)))));
 }
 
 def subfield_image_inclusion_from_preimage(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
-  T : Subfield(L), included : SubfieldIncluded(K, S, subfield_preimage(K, L, e, T))
+  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), T : Subfield(L),
+  included : SubfieldIncluded(K, S, subfield_preimage(K, L, e, T))
 ) :
   SubfieldIncluded(L, subfield_image(K, L, e, S), T) {
-  intro y;
-  intro member;
+  intro y member;
   obtain (x, px, same) = typed(SubfieldImage(K, L, e, S, y), member);
-  exact transport(subfield_members(L, T), field_embedding_map(K, L, e, x), y, same, included(x, px));
+  exact along subfield_members(L, T) by same from included(x, px);
 }
 
-def subfield_image_preimage_adjunction(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)
-) :
+def subfield_image_preimage_adjunction(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
   OrderAdjunction(
     Subfield(K), Subfield(L), SubfieldIncluded(K), SubfieldIncluded(L), subfield_image(K, L, e),
     subfield_preimage(K, L, e)
   ) {
-  intro S;
-  intro T;
+  intro S T;
   exact (
     subfield_image_inclusion_to_preimage(K, L, e, S, T),
     subfield_image_inclusion_from_preimage(K, L, e, S, T)
@@ -42,38 +37,33 @@ def subfield_image_preimage_adjunction(
 // In these two results the embedding is fixed: both operations preserve
 // inclusion. Contravariance of inverse image concerns composition of embeddings.
 def subfield_image_monotone(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K),
-  T : Subfield(K), included : SubfieldIncluded(K, S, T)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), S T : Subfield(K),
+  included : SubfieldIncluded(K, S, T)
 ) :
   SubfieldIncluded(L, subfield_image(K, L, e, S), subfield_image(K, L, e, T)) {
-  intro y;
-  intro member;
+  intro y member;
   obtain (x, px, same) = typed(SubfieldImage(K, L, e, S, y), member);
   exact typed(SubfieldImage(K, L, e, T, y), (x, included(x, px), same));
 }
 
 def subfield_preimage_monotone(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L),
-  T : Subfield(L), included : SubfieldIncluded(L, S, T)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), S T : Subfield(L),
+  included : SubfieldIncluded(L, S, T)
 ) :
   SubfieldIncluded(K, subfield_preimage(K, L, e, S), subfield_preimage(K, L, e, T)) {
-  intro x;
-  intro member;
+  intro x member;
   exact included(field_embedding_map(K, L, e, x), member);
 }
 
 // Injectivity also recovers a subfield after taking its image then preimage.
-def subfield_preimage_image(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)
-) :
+def subfield_preimage_image(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) :
   subfield_preimage(K, L, e, subfield_image(K, L, e, S)) =[Subfield(K)] S {
   let P = subfield_members(K, S);
   let f = field_embedding_map(K, L, e);
   have back : SubfieldIncluded(K, subfield_preimage(K, L, e, subfield_image(K, L, e, S)), S) {
-    intro x;
-    intro member;
+    intro x member;
     obtain (y, py, same) = typed(SubfieldImage(K, L, e, S, f(x)), member);
-    exact transport(P, y, x, field_embedding_injective(K, L, e, y, x, same), py);
+    exact along P by field_embedding_injective(K, L, e, y, x, same) from py;
   }
   exact subfield_inclusion_antisymmetric(
     K, subfield_preimage(K, L, e, subfield_image(K, L, e, S)), S, back,

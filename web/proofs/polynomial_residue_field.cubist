@@ -54,27 +54,25 @@ def residue_bezout_inverse(
   let D = modulus_polynomial(K, M);
   let p = residue_polynomial(K, M, x);
   let reduce = polynomial_remainder(K, M);
-  have inverse : reduce(polynomial_mul(K, p, b)) = reduce(polynomial_one(K)) {
-    exact with unfolding [] {
-      trans(
-        cong(reduce, polynomial_mul_comm(K, p, b)),
-        sym(
+  have inverse : reduce(polynomial_mul(K, p, b)) = reduce(polynomial_one(K)) := with unfolding [] {
+    trans(
+      cong(reduce, polynomial_mul_comm(K, p, b)),
+      sym(
+        trans(
+          cong(reduce, equation),
           trans(
-            cong(reduce, equation),
+            polynomial_remainder_add(K, M, polynomial_mul(K, a, D), polynomial_mul(K, b, p)),
             trans(
-              polynomial_remainder_add(K, M, polynomial_mul(K, a, D), polynomial_mul(K, b, p)),
-              trans(
-                cong(
-                  (fun (s : Polynomial(K)) => polynomial_add(K, s, reduce(polynomial_mul(K, b, p)))),
-                  polynomial_remainder_multiple(K, M, a)
-                ), polynomial_add_zero(K, reduce(polynomial_mul(K, b, p)))
-              )
+              cong(
+                (fun (s : Polynomial(K)) => polynomial_add(K, s, reduce(polynomial_mul(K, b, p)))),
+                polynomial_remainder_multiple(K, M, a)
+              ), polynomial_add_zero(K, reduce(polynomial_mul(K, b, p)))
             )
           )
         )
       )
-    };
-  }
+    )
+  };
   let y = residue_reduce(K, M, b);
   exact with unfolding [] {
     (

@@ -5,8 +5,7 @@ import sample_tagged;
 // Both families have the same vertices and tags, so their heads correspond.
 def subdivision_tagged_zip_step(
   C : U1, coarse : C -> C -> C -> U0,
-  fine : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
-  other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
+  fine other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   combine : (
     forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b),
     coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)
@@ -29,13 +28,9 @@ def subdivision_tagged_zip_step(
   let tailTags = field_snd(C, SampleTags(C, n), tags);
   let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
   let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  have coarseData : coarse(a, b, tag) and SampleTagged(C, coarse, n, tail, tailTags) {
-    exact coarseValid;
-  }
-  have fineData :
-    fine(a, b, tag, headPiece) and SubdivisionTagged(C, fine, n, tail, tailTags, tailPieces) {
-    exact fineValid;
-  }
+  have coarseData : coarse(a, b, tag) and SampleTagged(C, coarse, n, tail, tailTags) := coarseValid;
+  have fineData : fine(a, b, tag, headPiece)
+  and SubdivisionTagged(C, fine, n, tail, tailTags, tailPieces) := fineValid;
   obtain (headCoarse, tailCoarse) = coarseData;
   obtain (headFine, tailFine) = fineData;
   exact typed(
@@ -49,8 +44,7 @@ def subdivision_tagged_zip_step(
 
 def subdivision_tagged_zip(
   C : U1, coarse : C -> C -> C -> U0,
-  fine : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
-  other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
+  fine other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   combine : (
     forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b),
     coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)
@@ -66,9 +60,7 @@ def subdivision_tagged_zip(
     -> SubdivisionTagged(C, fine, k, vertices, tags, pieces)
     -> SubdivisionTagged(C, other, k, vertices, tags, pieces)
   ) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (pieces : Unit) => fun (
-      coarseValid : Unit
-    ) => fun (fineValid : Unit) => tt;
+    zero => fun (vertices : C) (tags pieces coarseValid fineValid : Unit) => tt;
     succ previous => subdivision_tagged_zip_step(C, coarse, fine, other, combine, k, previous);
   };
 }

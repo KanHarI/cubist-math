@@ -1,14 +1,12 @@
 import function_linear_isos;
 
 def restricted_action(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L),
-  a : af_carrier(K), x : vector_carrier(L, V)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), a : af_carrier(K),
+  x : vector_carrier(L, V)
 ) =
   vector_scale(L, V, field_embedding_map(K, L, e, a), x);
 
-def restricted_scalar_laws(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L)
-) :
+def restricted_scalar_laws(K L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L)) :
   ScalarLaws(K, vector_group(L, V), restricted_action(K, L, e, V)) {
   let embed = field_embedding_map(K, L, e);
   let X = vector_carrier(L, V);
@@ -20,13 +18,13 @@ def restricted_scalar_laws(
       )
     ),
     (
-      fun (a : af_carrier(K)) => fun (b : af_carrier(K)) => fun (x : X) => trans(
+      fun (a b : af_carrier(K)) (x : X) => trans(
         cong((fun (c : af_carrier(L)) => vector_scale(L, V, c, x)), mul(a, b)),
         vector_scale_associative(L, V, embed(a), embed(b), x)
       )
     ), (fun (a : af_carrier(K)) => vector_scale_add_vectors(L, V, embed(a))),
     (
-      fun (a : af_carrier(K)) => fun (b : af_carrier(K)) => fun (x : X) => trans(
+      fun (a b : af_carrier(K)) (x : X) => trans(
         cong((fun (c : af_carrier(L)) => vector_scale(L, V, c, x)), add(a, b)),
         vector_scale_add_scalars(L, V, embed(a), embed(b), x)
       )
@@ -34,17 +32,14 @@ def restricted_scalar_laws(
   );
 }
 
-def RestrictScalars(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L)
-) =
+def RestrictScalars(K L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L)) =
   vector_space(
     K, vector_group(L, V), restricted_action(K, L, e, V), vector_abelian(L, V),
     restricted_scalar_laws(K, L, e, V)
   );
 
 def restrict_linear_map(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L),
-  W : VectorSpace(L), f : LinearMap(L, V, W)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), V W : VectorSpace(L), f : LinearMap(L, V, W)
 ) :
   LinearMap(K, RestrictScalars(K, L, e, V), RestrictScalars(K, L, e, W)) {
   exact (
@@ -54,8 +49,7 @@ def restrict_linear_map(
 }
 
 def restrict_linear_iso(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L),
-  W : VectorSpace(L), iso : LinearIso(L, V, W)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), V W : VectorSpace(L), iso : LinearIso(L, V, W)
 ) :
   LinearIso(K, RestrictScalars(K, L, e, V), RestrictScalars(K, L, e, W)) {
   obtain (f, g, left, right) = iso;
@@ -64,9 +58,7 @@ def restrict_linear_iso(
 
 // These identity isomorphisms compare operations, not the chosen proofs
 // of their laws. They avoid silently identifying different structure records.
-def restrict_coordinate_iso(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat
-) :
+def restrict_coordinate_iso(K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat) :
   LinearIso(
     K, FunctionSpace(K, Fin(n), field_vector_space(K, L, e)),
     RestrictScalars(K, L, e, CoordinateSpace(L, n))
@@ -74,11 +66,9 @@ def restrict_coordinate_iso(
   let X = Fin(n) -> af_carrier(L);
   let f = fun (x : X) => x;
   let add =
-    fun (x : X) => fun (y : X) => refl(
-      (fun (i : Fin(n)) => af_add(af_carrier(L), af_operations(L), x(i), y(i)))
-    );
+    fun (x y : X) => refl((fun (i : Fin(n)) => af_add(af_carrier(L), af_operations(L), x(i), y(i))));
   let scale =
-    fun (a : af_carrier(K)) => fun (x : X) => refl(
+    fun (a : af_carrier(K)) (x : X) => refl(
       (
         fun (i : Fin(n)) => af_mul(
           af_carrier(L), af_operations(L), field_embedding_map(K, L, e, a), x(i)
@@ -89,8 +79,7 @@ def restrict_coordinate_iso(
 }
 
 def restrict_field_tower_iso(
-  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
-  d : FieldEmbedding(L, M)
+  K L M : AlgebraicField, e : FieldEmbedding(K, L), d : FieldEmbedding(L, M)
 ) :
   LinearIso(
     K, RestrictScalars(K, L, e, field_vector_space(L, M, d)),
@@ -98,9 +87,9 @@ def restrict_field_tower_iso(
   ) {
   let X = af_carrier(M);
   let f = fun (x : X) => x;
-  let add = fun (x : X) => fun (y : X) => refl(af_add(X, af_operations(M), x, y));
+  let add = fun (x y : X) => refl(af_add(X, af_operations(M), x, y));
   let scale =
-    fun (a : af_carrier(K)) => fun (x : X) => refl(
+    fun (a : af_carrier(K)) (x : X) => refl(
       af_mul(X, af_operations(M), field_embedding_map(L, M, d, field_embedding_map(K, L, e, a)), x)
     );
   exact ((f, add, scale), (f, add, scale), (fun (x : X) => refl(x)), (fun (x : X) => refl(x)));
@@ -109,8 +98,7 @@ def restrict_field_tower_iso(
 // A product of coordinate systems gives a basis over the bottom field.
 // The index order is outer L-coordinates, then inner K-coordinates.
 def field_tower_basis(
-  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
-  d : FieldEmbedding(L, M), m : Nat, n : Nat,
+  K L M : AlgebraicField, e : FieldEmbedding(K, L), d : FieldEmbedding(L, M), m n : Nat,
   lower : FiniteBasis(K, field_vector_space(K, L, e), m),
   upper : FiniteBasis(L, field_vector_space(L, M, d), n)
 ) :

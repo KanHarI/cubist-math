@@ -19,26 +19,20 @@ def normal_embedding_intermediate_base_change(
   let i = intermediate_ambient_embedding(K, E, M);
   let e = extension_inclusion_embedding(K, E);
   let tower = intermediate_tower(K, E, M);
-  intro T;
-  intro j;
-  intro h;
-  intro same;
-  intro y;
-  have overK : field_embedding_compose(K, F, T, e, h) = field_embedding_compose(K, F, T, e, j) {
-    exact trans(
-      cong((fun (f : FieldEmbedding(K, F)) => field_embedding_compose(K, F, T, f, h)), sym(tower)),
+  intro T j h same y;
+  have overK : field_embedding_compose(K, F, T, e, h) = field_embedding_compose(K, F, T, e, j) := trans(
+    cong((fun (f : FieldEmbedding(K, F)) => field_embedding_compose(K, F, T, f, h)), sym(tower)),
+    trans(
+      field_embedding_associative(K, R, F, T, b, i, h),
       trans(
-        field_embedding_associative(K, R, F, T, b, i, h),
+        cong(field_embedding_compose(K, R, T, b), same),
         trans(
-          cong(field_embedding_compose(K, R, T, b), same),
-          trans(
-            sym(field_embedding_associative(K, R, F, T, b, i, j)),
-            cong((fun (f : FieldEmbedding(K, F)) => field_embedding_compose(K, F, T, f, j)), tower)
-          )
+          sym(field_embedding_associative(K, R, F, T, b, i, j)),
+          cong((fun (f : FieldEmbedding(K, F)) => field_embedding_compose(K, F, T, f, j)), tower)
         )
       )
-    );
-  }
+    )
+  );
   exact normal(T, j, h, overK, y);
 }
 
@@ -71,21 +65,20 @@ def finite_normal_intermediate_base_change(
 // With normality, every self-embedding over the base is onto. This converts
 // embedding counts into counts of automorphism loops in the next layer.
 def normal_self_embedding_surjective(
-  K : AlgebraicField, F : AlgebraicField, e : FieldEmbedding(K, F),
-  normal : NormalEmbeddingLaw(K, F, e), h : FieldEmbedding(F, F), over : forall a : af_carrier(K),
+  K F : AlgebraicField, e : FieldEmbedding(K, F), normal : NormalEmbeddingLaw(K, F, e),
+  h : FieldEmbedding(F, F), over : forall a : af_carrier(K),
   field_embedding_map(F, F, h, field_embedding_map(K, F, e, a)) = field_embedding_map(K, F, e, a)
 ) :
   Surjective(af_carrier(F), af_carrier(F), field_embedding_map(F, F, h)) {
   let identity = field_embedding_identity(F);
-  have triangle :
-    field_embedding_compose(K, F, F, e, identity) = field_embedding_compose(K, F, F, e, h) {
-    exact trans(
-      field_embedding_right_identity(K, F, e),
-      field_embedding_ext(
-        K, F, e, field_embedding_compose(K, F, F, e, h), (fun (a : af_carrier(K)) => sym(over(a)))
-      )
-    );
-  }
+  have triangle : field_embedding_compose(K, F, F, e, identity) = field_embedding_compose(
+    K, F, F, e, h
+  ) := trans(
+    field_embedding_right_identity(K, F, e),
+    field_embedding_ext(
+      K, F, e, field_embedding_compose(K, F, F, e, h), (fun (a : af_carrier(K)) => sym(over(a)))
+    )
+  );
   intro y;
   exact merely(
     Fiber(af_carrier(F), af_carrier(F), field_embedding_map(F, F, h), y),
@@ -135,8 +128,7 @@ def normal_embedding_over_intermediate_automorphism(
   }
   let g = normal_self_embedding_automorphism(K, E, normal, h, overK);
   have fixes : GaloisFixing(K, E, intermediate_members(K, E, M), g) {
-    intro x;
-    intro member;
+    intro x member;
     exact over(typed(af_carrier(R), (x, member)));
   }
   exact (g, fixes);

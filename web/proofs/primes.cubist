@@ -3,14 +3,14 @@
 
 // Addition.
 // 0 + b = b; succ(a) + b = succ(a + b).
-def add(x : Nat, y : Nat) = induction x as k return Nat {
+def add(x y : Nat) = induction x as k return Nat {
     zero => y;
     succ h => succ(h);
   };
 
 // Multiplication.
 // 0 * b = 0; succ(a) * b = b + a * b.
-def mul(x : Nat, y : Nat) = induction x as k return Nat {
+def mul(x y : Nat) = induction x as k return Nat {
     zero => 0;
     succ h => (y + h);
   };
@@ -44,7 +44,7 @@ def nat_zero_ne_succ(n : Nat, p : (0 = succ(n))) =
             })(x)) => t)), 0, succ(n), p
   )(tt);
 
-def nat_succ_injective(x : Nat, y : Nat, p : (succ(x) = succ(y))) =
+def nat_succ_injective(x y : Nat, p : (succ(x) = succ(y))) =
   cong((fun (n : Nat) => induction n as k return Nat {
         zero => 0;
         succ ignored => k;
@@ -208,7 +208,7 @@ def nat_mul_zero(a : Nat) = induction a as a2 return ((a2 * 0) = 0) {
     succ h => h;
   };
 
-def nat_add_shuffle(a : Nat, c : Nat, d : Nat) : (a + (c + d)) = (c + (a + d)) {
+def nat_add_shuffle(a c d : Nat) : (a + (c + d)) = (c + (a + d)) {
   calc {
     a + (c + d) = (a + c) + d by sym(nat_add_assoc(a, c, d));
     _ = (c + a) + d by cong((fun (x : Nat) => x + d), nat_add_comm(a, c));
@@ -260,7 +260,7 @@ def nat_mul_assoc(a : Nat) =
     );
   };
 
-def nat_quotient_bound(d : Nat, q : Nat) = induction q as q2 return (q2 <= (q2 * succ(succ(d)))) {
+def nat_quotient_bound(d q : Nat) = induction q as q2 return (q2 <= (q2 * succ(succ(d)))) {
     zero => tt;
     succ h => nat_le_trans(
       q2, (q2 * succ(succ(d))), succ((d + (q2 * succ(succ(d))))), h,
@@ -504,9 +504,9 @@ def least_bounded_witness(
 
 // Divisibility.
 // Divides(d, n) means exists k : Nat, k * d = n.
-def Divides(d : Nat, n : Nat) = (exists q : Nat, ((q * d) = n));
+def Divides(d n : Nat) = (exists q : Nat, ((q * d) = n));
 
-def nontrivial_divisibility_decidable(d : Nat, n : Nat) =
+def nontrivial_divisibility_decidable(d n : Nat) =
   match bounded_least_search(
     (fun (q : Nat) => ((q * succ(succ(d))) = n)),
     (fun (q : Nat) => nat_eq_decidable((q * succ(succ(d))), n)), n
@@ -545,7 +545,7 @@ def nontrivial_divisibility_decidable(d : Nat, n : Nat) =
     );
   };
 
-def divides_transitive(d : Nat, m : Nat, n : Nat, dm : Divides(d, m), mn : Divides(m, n)) =
+def divides_transitive(d m n : Nat, dm : Divides(d, m), mn : Divides(m, n)) =
   unpack dm as (k, pk) return Divides(d, n) {
     unpack mn as (l, pl) return Divides(d, n) {
       typed(
@@ -555,7 +555,7 @@ def divides_transitive(d : Nat, m : Nat, n : Nat, dm : Divides(d, m), mn : Divid
     };
   };
 
-def multiples_not_adjacent(d : Nat, k : Nat) =
+def multiples_not_adjacent(d k : Nat) =
   induction k as k2 return (
     forall l : Nat, (((l * succ(succ(d))) = succ((k2 * succ(succ(d))))) -> Void)
   ) {
@@ -593,7 +593,7 @@ def multiples_not_adjacent(d : Nat, k : Nat) =
 // No consecutive multiples.
 // A number at least two cannot divide both n and n+1.
 def nontrivial_divisor_not_consecutive(
-  d : Nat, n : Nat, dn : Divides(succ(succ(d)), n), dsn : Divides(succ(succ(d)), succ(n))
+  d n : Nat, dn : Divides(succ(succ(d)), n), dsn : Divides(succ(succ(d)), succ(n))
 ) =
   unpack dn as (k, pk) return Void {
     unpack dsn as (l, pl) return Void {
@@ -625,7 +625,7 @@ def factorial_positive(n : Nat) = induction n as n2 return (1 <= factorial(n2)) 
 
 // Divisor of a factorial.
 // Every number from 2 through n divides factorial(n).
-def bounded_divisor_of_factorial(d : Nat, n : Nat) =
+def bounded_divisor_of_factorial(d n : Nat) =
   induction n as n2 return ((succ(succ(d)) <= n2) -> Divides(succ(succ(d)), factorial(n2))) {
     zero => (fun (v : Void) => typed(Divides(succ(succ(d)), 1), absurd(v)));
     succ ih => (
@@ -747,4 +747,4 @@ def prime_divisor_exists(n : Nat) =
     };
   };
 
-def isLt(n : Nat, p : Nat) = le(succ(n), p);
+def isLt(n p : Nat) = le(succ(n), p);

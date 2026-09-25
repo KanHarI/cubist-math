@@ -1,19 +1,15 @@
 import contour_samples;
 
 // Exact error terms from tag changes and splitting an oriented edge.
-def contour_tag_error(
-  F : U1, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, f : F -> F, a : F, b : F,
-  oldTag : F, newTag : F
-) =
+def contour_tag_error(F : U1, addF mulF : F -> F -> F, negF f : F -> F, a b oldTag newTag : F) =
   mulF(
     coordinate_difference(F, addF, negF, f(oldTag), f(newTag)),
     coordinate_difference(F, addF, negF, a, b)
   );
 
 def contour_edge_change_tag(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, y : F, oldTag : F,
-  newTag : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x y oldTag newTag : F
 ) :
   contour_edge(F, addF, mulF, negF, f, x, y, newTag) = addF(
     contour_edge(F, addF, mulF, negF, f, x, y, oldTag),
@@ -37,9 +33,8 @@ def contour_edge_change_tag(
 }
 
 def contour_edge_subdivide(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, middle : F, y : F,
-  tag : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x middle y tag : F
 ) :
   addF(
     contour_edge(F, addF, mulF, negF, f, x, middle, tag),
@@ -57,9 +52,9 @@ def contour_edge_subdivide(
 }
 
 def contour_edge_refinement(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x : F, middle : F, y : F,
-  coarseTag : F, leftTag : F, rightTag : F
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F,
+  x middle y coarseTag leftTag rightTag : F
 ) :
   addF(
     contour_edge(F, addF, mulF, negF, f, x, middle, leftTag),
@@ -115,14 +110,12 @@ def contour_edge_refinement(
   );
 }
 
-def contour_tag_error_sum(
-  F : U1, zero : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, f : F -> F, n : Nat
-) =
+def contour_tag_error_sum(F : U1, zero : F, addF mulF : F -> F -> F, negF f : F -> F, n : Nat) =
   induction n as k return (SampleVertices(F, k) -> SampleTags(F, k) -> SampleTags(F, k) -> F) {
-    zero => fun (vertices : F) => fun (oldTags : Unit) => fun (newTags : Unit) => zero;
-    succ previous => fun (vertices : SampleVertices(F, succ(k))) => fun (
-      oldTags : SampleTags(F, succ(k))
-    ) => fun (newTags : SampleTags(F, succ(k))) => addF(
+    zero => fun (vertices : F) (oldTags newTags : Unit) => zero;
+    succ previous => fun (vertices : SampleVertices(F, succ(k))) (
+      oldTags newTags : SampleTags(F, succ(k))
+    ) => addF(
       contour_tag_error(
         F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices),
         sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)),
@@ -136,7 +129,7 @@ def contour_tag_error_sum(
   };
 
 def contour_sum_change_tags(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, n : Nat
 ) :
   forall vertices : SampleVertices(F, n), forall oldTags : SampleTags(F, n),
@@ -153,12 +146,12 @@ def contour_sum_change_tags(
       contour_tag_error_sum(F, zero, addF, mulF, negF, f, k, vertices, oldTags, newTags)
     )
   ) {
-    zero => fun (vertices : F) => fun (oldTags : Unit) => fun (newTags : Unit) => sym(
+    zero => fun (vertices : F) (oldTags newTags : Unit) => sym(
       ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero)
     );
-    succ previous => fun (vertices : SampleVertices(F, succ(k))) => fun (
-      oldTags : SampleTags(F, succ(k))
-    ) => fun (newTags : SampleTags(F, succ(k))) => trans(
+    succ previous => fun (vertices : SampleVertices(F, succ(k))) (
+      oldTags newTags : SampleTags(F, succ(k))
+    ) => trans(
       cong(
         (
           fun (value : F) => addF(

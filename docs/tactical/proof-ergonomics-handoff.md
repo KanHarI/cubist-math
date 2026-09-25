@@ -451,3 +451,16 @@ interval lambdas to `path i =>` (`path-lambda`), and `exact FunExt(...)` to
 unchanged. [proof-migration.test.mjs](../../tests/proof-migration.test.mjs)
 covers the hasher, both levels, a changed statement, and every rewrite. The
 formatter now separates adjacent lambda binder groups with a space.
+
+### Tier 1: syntax with identical checked terms
+
+The six identical rewrites were applied to the whole corpus. They changed 354
+of 367 modules: 1,757 merged parameter lists, 654 merged lambda binder chains,
+264 grouped introductions, 209 value-style `have` statements, 424 `along`
+transports, and 336 `@` applications. Source size fell from 679,184 to
+650,845 tokens (-4.2%) and from 66,404 to 63,262 lines (-4.7%).
+`node tools/verify-proof-migration.mjs --base migration-tools` reports all 354
+modules identical, with no failures; an independent structural comparison of
+12 randomly chosen declarations agreed. The full JS suite passed 363 tests,
+including the canonical corpus with 3,761 checked declarations, 43 templates,
+and no failed or blocked declarations. Every source is formatter-stable.

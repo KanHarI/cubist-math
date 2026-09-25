@@ -38,12 +38,11 @@ def field_additive_abelian(F : AlgebraicField) : IsAbelian(FieldAdditiveGroup(F)
 // Scalars act through the specified embedding K -> L. This is the action
 // used for L as a vector space over K in extension-degree calculations.
 def field_scalar_action(
-  K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K),
-  x : af_carrier(L)
+  K L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K), x : af_carrier(L)
 ) =
   af_mul(af_carrier(L), af_operations(L), field_embedding_map(K, L, e, a), x);
 
-def field_scalar_laws(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def field_scalar_laws(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
   ScalarLaws(K, FieldAdditiveGroup(L), field_scalar_action(K, L, e)) {
   let A = af_carrier(L);
   let ops = af_operations(L);
@@ -78,7 +77,7 @@ def field_scalar_laws(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding
   );
 }
 
-def field_vector_space(K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L)) =
+def field_vector_space(K L : AlgebraicField, e : FieldEmbedding(K, L)) =
   vector_space(
     K, FieldAdditiveGroup(L), field_scalar_action(K, L, e), field_additive_abelian(L),
     field_scalar_laws(K, L, e)

@@ -5,7 +5,7 @@ def scalar_evaluation_hom(K : AlgebraicField, V : VectorSpace(K), x : vector_car
   GroupHom(FieldAdditiveGroup(K), vector_group(K, V)) {
   exact (
     (fun (a : af_carrier(K)) => vector_scale(K, V, a, x)),
-    (fun (a : af_carrier(K)) => fun (b : af_carrier(K)) => vector_scale_add_scalars(K, V, a, b, x))
+    (fun (a b : af_carrier(K)) => vector_scale_add_scalars(K, V, a, b, x))
   );
 }
 
@@ -39,7 +39,7 @@ def vector_minus_one_scale(K : AlgebraicField, V : VectorSpace(K), x : vector_ca
 
 // The field laws supply such an inverse for a nonzero scalar, without choice.
 def vector_scale_undo(
-  K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), b : af_carrier(K),
+  K : AlgebraicField, V : VectorSpace(K), a b : af_carrier(K),
   inverse : af_mul(af_carrier(K), af_operations(K), b, a) = af_one(af_carrier(K), af_operations(K)),
   x : vector_carrier(K, V)
 ) :
@@ -55,8 +55,8 @@ def vector_scale_undo(
 
 def vector_scale_injective(
   K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K),
-  nonzero : FieldNonzero(af_carrier(K), af_operations(K), a), x : vector_carrier(K, V),
-  y : vector_carrier(K, V), same : vector_scale(K, V, a, x) = vector_scale(K, V, a, y)
+  nonzero : FieldNonzero(af_carrier(K), af_operations(K), a), x y : vector_carrier(K, V),
+  same : vector_scale(K, V, a, x) = vector_scale(K, V, a, y)
 ) :
   x = y {
   obtain (ring, nontrivial, inverses) = af_laws(K);
@@ -73,10 +73,7 @@ def vector_scale_injective(
 // Move a term past its neighbour in an additive sum. This is the only
 
 // reordering needed to isolate any chosen term of a finite combination.
-def vector_add_swap(
-  K : AlgebraicField, V : VectorSpace(K), x : vector_carrier(K, V), y : vector_carrier(K, V),
-  z : vector_carrier(K, V)
-) :
+def vector_add_swap(K : AlgebraicField, V : VectorSpace(K), x y z : vector_carrier(K, V)) :
   vector_add(K, V, x, vector_add(K, V, y, z)) = vector_add(K, V, y, vector_add(K, V, x, z)) {
   exact trans(
     sym(group_associative(vector_group(K, V), x, y, z)),

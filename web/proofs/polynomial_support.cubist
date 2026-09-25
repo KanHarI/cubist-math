@@ -32,7 +32,7 @@ def series_support_prop(K : AlgebraicField, f : FormalSeries(K), n : Nat) =
   );
 
 def polynomial_ext(
-  K : AlgebraicField, p : Polynomial(K), q : Polynomial(K),
+  K : AlgebraicField, p q : Polynomial(K),
   same : polynomial_coefficients(K, p) = polynomial_coefficients(K, q)
 ) :
   p = q {
@@ -59,12 +59,11 @@ def polynomial_of_support(
 }
 
 def support_weaken(
-  K : AlgebraicField, f : FormalSeries(K), n : Nat, m : Nat, bound : le(n, m),
+  K : AlgebraicField, f : FormalSeries(K), n m : Nat, bound : le(n, m),
   support : SeriesSupport(K, f, n)
 ) :
   SeriesSupport(K, f, m) {
-  intro k;
-  intro above;
+  intro k above;
   exact support(k, nat_le_trans(n, m, k, bound, above));
 }
 
@@ -90,20 +89,16 @@ def support_shift(
   };
 }
 
-def natural_le_add_left(m : Nat, n : Nat) : le(m, add_count(m, n)) {
-  exact transport(
-    (fun (k : Nat) => le(m, k)), add_count(n, m), add_count(m, n), nat_add_comm(n, m),
-    nat_le_add(n, m)
-  );
+def natural_le_add_left(m n : Nat) : le(m, add_count(m, n)) {
+  exact along((fun (k : Nat) => le(m, k))) by nat_add_comm(n, m) from nat_le_add(n, m);
 }
 
 def support_add(
-  K : AlgebraicField, f : FormalSeries(K), g : FormalSeries(K), m : Nat, n : Nat,
-  sf : SeriesSupport(K, f, m), sg : SeriesSupport(K, g, n)
+  K : AlgebraicField, f g : FormalSeries(K), m n : Nat, sf : SeriesSupport(K, f, m),
+  sg : SeriesSupport(K, g, n)
 ) :
   SeriesSupport(K, series_add(K, f, g), add_count(m, n)) {
-  intro k;
-  intro above;
+  intro k above;
   exact trans(
     cong(
       (fun (a : af_carrier(K)) => field_add(K, a, g(k))),
@@ -119,11 +114,10 @@ def support_add(
 }
 
 def support_mul_zero(
-  K : AlgebraicField, f : FormalSeries(K), g : FormalSeries(K), sf : SeriesSupport(K, f, 0), n : Nat
+  K : AlgebraicField, f g : FormalSeries(K), sf : SeriesSupport(K, f, 0), n : Nat
 ) :
   SeriesSupport(K, series_mul(K, f, g), n) {
-  intro k;
-  intro above;
+  intro k above;
   exact trans(
     cong(
       (fun (s : FormalSeries(K)) => convolution(K, k, s, g)),
@@ -139,8 +133,7 @@ def support_mul_step(
   previous : (
     forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat, SeriesSupport(K, f, m)
     -> SeriesSupport(K, g, n) -> SeriesSupport(K, series_mul(K, f, g), add_count(m, n))
-  ), f : FormalSeries(K), g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, succ(m)),
-  sg : SeriesSupport(K, g, n)
+  ), f g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, succ(m)), sg : SeriesSupport(K, g, n)
 ) :
   SeriesSupport(K, series_mul(K, f, g), add_count(succ(m), n)) {
   intro k;
@@ -168,8 +161,8 @@ def support_mul_step(
           cong(
             field_add(K, field_zero(K)),
             previous(
-              series_tail(K, f), g, n,
-              (fun (i : Nat) => fun (bound : le(m, i)) => sf(succ(i), bound)), sg, j, above
+              series_tail(K, f), g, n, (fun (i : Nat) (bound : le(m, i)) => sf(succ(i), bound)), sg,
+              j, above
             )
           ), scalar_add_zero(K, field_zero(K))
         )
@@ -183,15 +176,15 @@ def support_mul(K : AlgebraicField, m : Nat) =
     forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat, SeriesSupport(K, f, k)
     -> SeriesSupport(K, g, n) -> SeriesSupport(K, series_mul(K, f, g), add_count(k, n))
   ) {
-    zero => fun (f : FormalSeries(K)) => fun (g : FormalSeries(K)) => fun (n : Nat) => fun (
-      sf : SeriesSupport(K, f, 0)
-    ) => fun (sg : SeriesSupport(K, g, n)) => support_mul_zero(K, f, g, sf, n);
+    zero => fun (f g : FormalSeries(K)) (n : Nat) (sf : SeriesSupport(K, f, 0)) (
+      sg : SeriesSupport(K, g, n)
+    ) => support_mul_zero(K, f, g, sf, n);
     succ previous => support_mul_step(K, k, previous);
   };
 
 def polynomial_zero(K : AlgebraicField) =
   polynomial_of_support(
-    K, series_zero(K), 0, (fun (k : Nat) => fun (above : le(0, k)) => refl(field_zero(K)))
+    K, series_zero(K), 0, (fun (k : Nat) (above : le(0, k)) => refl(field_zero(K)))
   );
 
 def polynomial_constant(K : AlgebraicField, a : af_carrier(K)) =
@@ -206,7 +199,7 @@ def finite_support_binary(
   closure : (
     forall m : Nat, forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat,
     SeriesSupport(K, f, m) -> SeriesSupport(K, g, n) -> SeriesSupport(K, op(f, g), add_count(m, n))
-  ), p : Polynomial(K), q : Polynomial(K)
+  ), p q : Polynomial(K)
 ) :
   Polynomial(K) {
   let f = polynomial_coefficients(K, p);
@@ -236,11 +229,7 @@ def finite_support_binary(
 def polynomial_add(K : AlgebraicField) =
   finite_support_binary(
     K, series_add(K),
-    (
-      fun (m : Nat) => fun (f : FormalSeries(K)) => fun (g : FormalSeries(K)) => fun (n : Nat) => support_add(
-        K, f, g, m, n
-      )
-    )
+    (fun (m : Nat) (f g : FormalSeries(K)) (n : Nat) => support_add(K, f, g, m, n))
   );
 
 def polynomial_mul(K : AlgebraicField) = finite_support_binary(K, series_mul(K), support_mul(K));
@@ -270,7 +259,7 @@ def polynomial_neg(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
     exact (
       n,
       (
-        fun (k : Nat) => fun (above : le(n, k)) => trans(
+        fun (k : Nat) (above : le(n, k)) => trans(
           cong(field_neg(K), support(k, above)), scalar_neg_zero(K)
         )
       )

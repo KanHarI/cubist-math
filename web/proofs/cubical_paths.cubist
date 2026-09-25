@@ -2,34 +2,33 @@ import suspension_types;
 
 // Cubical paths expose their interval coordinate; Interval is binder syntax,
 // not an additional type in the universe hierarchy.
-def reverse_path(A : U0, x : A, y : A, p : x = y) =
-  path(fun (i : Interval) => A, fun (i : Interval) => at(p, flip(i)));
+def reverse_path(A : U0, x y : A, p : x = y) =
+  path(fun (i : Interval) => A, fun (i : Interval) => p @ flip(i));
 
 // Reversing twice computes to the original path, even in an arbitrary type.
-def reverse_twice(A : U0, x : A, y : A, p : x = y) :
-  reverse_path(A, y, x, reverse_path(A, x, y, p)) = p {
+def reverse_twice(A : U0, x y : A, p : x = y) : reverse_path(A, y, x, reverse_path(A, x, y, p)) = p {
   rfl;
 }
 
 // Function action is pointwise application along a path.
-def map_path(A : U0, B : U0, f : A -> B, x : A, y : A, p : x = y) =
-  path(fun (i : Interval) => B, fun (i : Interval) => f(at(p, i)));
+def map_path(A B : U0, f : A -> B, x y : A, p : x = y) =
+  path(fun (i : Interval) => B, fun (i : Interval) => f(p @ i));
 
 // Paths in a varying family can be stated without encoding them as transport.
-def dependent_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x : Nat, y : Nat) =
-  PathP(fun (i : Interval) => at(P, i), x, y);
+def dependent_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x y : Nat) =
+  PathP(fun (i : Interval) => P @ i, x, y);
 
 // An empty tube gives transport through a family of types.
 def transport_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x : Nat) =
-  comp(fun (i : Interval) => at(P, i), x);
+  comp(fun (i : Interval) => P @ i, x);
 
 // Composition fills a square with fixed left edge and right edge q.
-def join_paths(A : U0, x : A, y : A, z : A, p : x = y, q : y = z) =
+def join_paths(A : U0, x y z : A, p : x = y, q : y = z) =
   path(
     fun (i : Interval) => A,
     fun (i : Interval) => comp(
-      fun (j : Interval) => A, at(p, i), face(i, 0, fun (j : Interval) => x),
-      face(i, 1, fun (j : Interval) => at(q, j))
+      fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
+      face(i, 1, fun (j : Interval) => q @ j)
     )
   );
 
@@ -54,8 +53,7 @@ def unit_family(p : Suspension(Unit)) = Unit;
 
 def unit_unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
 
-def transported_meridian(a : Unit) =
-  unit_unique(transport(unit_family, north(Unit), south(Unit), meridian(Unit, a), tt));
+def transported_meridian(a : Unit) = unit_unique(along unit_family by meridian(Unit, a) from tt);
 
 def collapse_with_transport(p : Suspension(Unit)) =
   suspension_induction(Unit, unit_family, tt, tt, transported_meridian, p);

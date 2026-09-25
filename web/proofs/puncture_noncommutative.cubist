@@ -42,7 +42,7 @@ def first_puncture_loop = puncture_loop(2, first_puncture);
 
 def second_puncture_loop = puncture_loop(2, second_puncture);
 
-def two_loop_product(p : BouquetLoops(Fin(2)), q : BouquetLoops(Fin(2))) =
+def two_loop_product(p q : BouquetLoops(Fin(2))) =
   append_path(
     PunctureGraph(2), bouquet_base(Fin(2)), bouquet_base(Fin(2)), bouquet_base(Fin(2)), p, q
   );
@@ -135,27 +135,26 @@ def puncture_generators_do_not_commute :
     )
   ) -> Void {
   intro commuted;
-  have reverseAction :
-    three_state_action(two_loop_product(second_puncture_loop, first_puncture_loop), state_zero) = state_two {
-    exact trans(
-      loop_action_append(
-        Fin(2), Fin(3), puncture_permutations, second_puncture_loop, first_puncture_loop, state_zero
+  have reverseAction : three_state_action(
+    two_loop_product(second_puncture_loop, first_puncture_loop), state_zero
+  ) = state_two := trans(
+    loop_action_append(
+      Fin(2), Fin(3), puncture_permutations, second_puncture_loop, first_puncture_loop, state_zero
+    ),
+    trans(
+      cong(
+        (fun (v : Fin(3)) => three_state_action(first_puncture_loop, v)),
+        loop_action_generator(Fin(2), Fin(3), puncture_permutations, second_puncture, state_zero)
       ),
       trans(
-        cong(
-          (fun (v : Fin(3)) => three_state_action(first_puncture_loop, v)),
-          loop_action_generator(Fin(2), Fin(3), puncture_permutations, second_puncture, state_zero)
-        ),
-        trans(
-          loop_action_generator(Fin(2), Fin(3), puncture_permutations, first_puncture, state_two),
-          swap_tail_different(
-            Fin(2), first_puncture, second_puncture,
-            fin_decidable(2, first_puncture, second_puncture), first_second_different
-          )
+        loop_action_generator(Fin(2), Fin(3), puncture_permutations, first_puncture, state_two),
+        swap_tail_different(
+          Fin(2), first_puncture, second_puncture,
+          fin_decidable(2, first_puncture, second_puncture), first_second_different
         )
       )
-    );
-  }
+    )
+  );
   let impossible =
     trans(
       sym(puncture_ab_action),

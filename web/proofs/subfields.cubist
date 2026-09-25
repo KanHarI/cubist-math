@@ -68,8 +68,8 @@ def subfield_neg(
 }
 
 def subfield_add(
-  F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F),
-  y : af_carrier(F), px : P(x), py : P(y)
+  F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x y : af_carrier(F),
+  px : P(x), py : P(y)
 ) :
   P(af_add(af_carrier(F), af_operations(F), x, y)) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
@@ -77,8 +77,8 @@ def subfield_add(
 }
 
 def subfield_mul(
-  F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F),
-  y : af_carrier(F), px : P(x), py : P(y)
+  F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x y : af_carrier(F),
+  px : P(x), py : P(y)
 ) :
   P(af_mul(af_carrier(F), af_operations(F), x, y)) {
   obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) = laws;
@@ -86,8 +86,8 @@ def subfield_mul(
 }
 
 def subfield_inverse(
-  F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F),
-  y : af_carrier(F), px : P(x),
+  F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x y : af_carrier(F),
+  px : P(x),
   inverseLaw : af_mul(af_carrier(F), af_operations(F), x, y) = af_one(
     af_carrier(F), af_operations(F)
   )
@@ -98,9 +98,7 @@ def subfield_inverse(
 }
 
 // Closure laws and membership proposition evidence are properties, not extra data.
-def subfield_laws_prop(
-  F : AlgebraicField, P : af_carrier(F) -> U0, p : SubfieldLaws(F, P), q : SubfieldLaws(F, P)
-) :
+def subfield_laws_prop(F : AlgebraicField, P : af_carrier(F) -> U0, p q : SubfieldLaws(F, P)) :
   p = q {
   let A = af_carrier(F);
   let ops = af_operations(F);
@@ -238,7 +236,7 @@ def subfield_laws_prop(
 
 // Univalence identifies subfields with the same elements, including their laws.
 def subfield_ext(
-  F : AlgebraicField, S : Subfield(F), T : Subfield(F),
+  F : AlgebraicField, S T : Subfield(F),
   same : (
     forall x : af_carrier(F), (subfield_members(F, S, x) -> subfield_members(F, T, x))
     and (subfield_members(F, T, x) -> subfield_members(F, S, x))
@@ -247,12 +245,10 @@ def subfield_ext(
   S =[Subfield(F)] T {
   let P = subfield_members(F, S);
   let Q = subfield_members(F, T);
-  have membership : P = Q {
-    exact field_predicate_ext(
-      af_carrier(F), P, Q, subfield_prop(F, P, subfield_laws(F, S)),
-      subfield_prop(F, Q, subfield_laws(F, T)), same
-    );
-  }
+  have membership : P = Q := field_predicate_ext(
+    af_carrier(F), P, Q, subfield_prop(F, P, subfield_laws(F, S)),
+    subfield_prop(F, Q, subfield_laws(F, T)), same
+  );
   exact field_subtype_ext(
     (af_carrier(F) -> U0), (fun (P : af_carrier(F) -> U0) => typed(U1, SubfieldLaws(F, P))),
     subfield_laws_prop(F), S, T, membership
@@ -266,15 +262,10 @@ def subfield_top_laws(F : AlgebraicField) : SubfieldLaws(F, SubfieldTop(F)) {
   let A = af_carrier(F);
   let ops = af_operations(F);
   exact (
-    (fun (x : A) => fun (p : Unit) => fun (q : Unit) => trans(sym(unit_equal(p)), unit_equal(q))),
-    tt, tt, (fun (x : A) => fun (px : Unit) => tt),
-    (fun (x : A) => fun (y : A) => fun (px : Unit) => fun (py : Unit) => tt),
-    (fun (x : A) => fun (y : A) => fun (px : Unit) => fun (py : Unit) => tt),
-    (
-      fun (x : A) => fun (y : A) => fun (px : Unit) => fun (
-        inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops)
-      ) => tt
-    )
+    (fun (x : A) (p q : Unit) => trans(sym(unit_equal(p)), unit_equal(q))), tt, tt,
+    (fun (x : A) (px : Unit) => tt), (fun (x y : A) (px py : Unit) => tt),
+    (fun (x y : A) (px py : Unit) => tt),
+    (fun (x y : A) (px : Unit) (inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops)) => tt)
   );
 }
 
@@ -282,12 +273,12 @@ def subfield_top(F : AlgebraicField) : Subfield(F) {
   exact (SubfieldTop(F), subfield_top_laws(F));
 }
 
-def SubfieldIncluded(F : AlgebraicField, S : Subfield(F), T : Subfield(F)) =
+def SubfieldIncluded(F : AlgebraicField, S T : Subfield(F)) =
   forall x : af_carrier(F), subfield_members(F, S, x) -> subfield_members(F, T, x);
 
 // Antisymmetry is equality of bundled subfields, using their univalent predicates.
 def subfield_inclusion_antisymmetric(
-  F : AlgebraicField, S : Subfield(F), T : Subfield(F), includedST : SubfieldIncluded(F, S, T),
+  F : AlgebraicField, S T : Subfield(F), includedST : SubfieldIncluded(F, S, T),
   includedTS : SubfieldIncluded(F, T, S)
 ) :
   S =[Subfield(F)] T {
@@ -305,17 +296,15 @@ def subfield_inclusion_antisymmetric(
 }
 
 def subfield_inclusion_refl(F : AlgebraicField, S : Subfield(F)) : SubfieldIncluded(F, S, S) {
-  intro x;
-  intro member;
+  intro x member;
   exact member;
 }
 
 def subfield_inclusion_trans(
-  F : AlgebraicField, S : Subfield(F), T : Subfield(F), V : Subfield(F),
-  st : SubfieldIncluded(F, S, T), tv : SubfieldIncluded(F, T, V)
+  F : AlgebraicField, S T V : Subfield(F), st : SubfieldIncluded(F, S, T),
+  tv : SubfieldIncluded(F, T, V)
 ) :
   SubfieldIncluded(F, S, V) {
-  intro x;
-  intro member;
+  intro x member;
   exact tv(x, st(x, member));
 }

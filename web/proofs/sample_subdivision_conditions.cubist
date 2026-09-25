@@ -10,10 +10,10 @@ def SubdivisionTagged(
     forall vertices : SampleVertices(C, k), SampleTags(C, k) -> SampleSubdivisions(C, k, vertices)
     -> U1
   ) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (pieces : Unit) => typed(U1, Unit);
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
-      tags : SampleTags(C, succ(k))
-    ) => fun (pieces : SampleSubdivisions(C, succ(k), vertices)) => condition(
+    zero => fun (vertices : C) (tags pieces : Unit) => typed(U1, Unit);
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
+      pieces : SampleSubdivisions(C, succ(k), vertices)
+    ) => condition(
       field_fst(C, SampleVertices(C, k), vertices),
       sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
       field_fst(C, SampleTags(C, k), tags),
@@ -36,8 +36,7 @@ def SubdivisionTagged(
   };
 
 def subdivision_tagged_map_step(
-  C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
-  other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
+  C : U1, condition other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   mapping : (
     forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b),
     condition(a, b, tag, piece) -> other(a, b, tag, piece)
@@ -59,11 +58,8 @@ def subdivision_tagged_map_step(
   let tailTags = field_snd(C, SampleTags(C, n), tags);
   let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
   let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  have data :
-    condition(a, b, tag, headPiece)
-    and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) {
-    exact valid;
-  }
+  have data : condition(a, b, tag, headPiece)
+  and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) := valid;
   obtain (headValid, tailValid) = data;
   exact typed(
     (other(a, b, tag, headPiece) and SubdivisionTagged(C, other, n, tail, tailTags, tailPieces)),
@@ -72,8 +68,7 @@ def subdivision_tagged_map_step(
 }
 
 def subdivision_tagged_map(
-  C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
-  other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
+  C : U1, condition other : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
   mapping : (
     forall a : C, forall b : C, forall tag : C, forall piece : SampleSubdivision(C, a, b),
     condition(a, b, tag, piece) -> other(a, b, tag, piece)
@@ -89,7 +84,7 @@ def subdivision_tagged_map(
     SubdivisionTagged(C, condition, k, vertices, tags, pieces)
     -> SubdivisionTagged(C, other, k, vertices, tags, pieces)
   ) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (pieces : Unit) => fun (valid : Unit) => tt;
+    zero => fun (vertices : C) (tags pieces valid : Unit) => tt;
     succ previous => subdivision_tagged_map_step(C, condition, other, mapping, k, previous);
   };
 }

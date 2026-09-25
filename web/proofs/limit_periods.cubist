@@ -14,8 +14,8 @@ def limit_period(
   field_sequence_limit(F, zero, addF, lt, complete, approximations(p), cauchy(p));
 
 def cauchy_approximation_period_laws(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
   X : U0, point : X, approximations : (point = point) -> Nat -> F,
@@ -42,19 +42,16 @@ def cauchy_approximation_period_laws(
     fun (p : point = point) => field_sequence_limit_converges(
       F, zero, addF, lt, complete, approximations(p), cauchy(p)
     );
-  have constantLaw : period(refl(point)) = zero {
-    exact field_asymptotic_limits_equal(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving,
-      approximations(refl(point)), (fun (n : Nat) => zero), constantApproximation,
-      period(refl(point)), zero, convergence(refl(point)),
-      field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
-    );
-  }
+  have constantLaw : period(refl(point)) = zero := field_asymptotic_limits_equal(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving,
+    approximations(refl(point)), (fun (n : Nat) => zero), constantApproximation,
+    period(refl(point)), zero, convergence(refl(point)),
+    field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
+  );
   have appendLaw :
     forall p : point = point, forall q : point = point,
     period(append_path(X, point, point, point, p, q)) = addF(period(p), period(q)) {
-    intro p;
-    intro q;
+    intro p q;
     let joined = append_path(X, point, point, point, p, q);
     exact field_asymptotic_limits_equal(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, approximations(joined),
@@ -71,11 +68,11 @@ def cauchy_approximation_period_laws(
 
 // Changing the approximating scheme by a vanishing error preserves its period.
 def limit_period_independent_of_approximation(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
-  X : U0, point : X, first : (point = point) -> Nat -> F, second : (point = point) -> Nat -> F,
+  X : U0, point : X, first second : (point = point) -> Nat -> F,
   cauchyFirst : (forall p : point = point, FieldCauchy(F, zero, addF, lt, first(p))),
   cauchySecond : (forall p : point = point, FieldCauchy(F, zero, addF, lt, second(p))),
   same : (forall p : point = point, FieldAsymptotic(F, zero, addF, lt, first(p), second(p))),

@@ -4,9 +4,9 @@ import sample_refinement_tags;
 // Freezing the value at the coarse tag makes any finite subdivision telescope.
 // No continuity, ordering, or admissibility is needed for this exact identity.
 def parameter_constant_tag_sum(
-  C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve : C -> F, values : C -> F, tag : C,
-  n : Nat, vertices : SampleVertices(C, n)
+  C F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve values : C -> F, tag : C, n : Nat,
+  vertices : SampleVertices(C, n)
 ) :
   parameter_contour_sum(
     C, F, zero, addF, mulF, negF, curve, values, n, vertices, sample_repeat_tags(C, n, tag)
@@ -26,9 +26,7 @@ def parameter_constant_tag_sum(
   have composeEdges :
     forall a : C, forall b : C, forall c : C,
     addF(edge(a, b, tag), edge(b, c, tag)) = edge(a, c, tag) {
-    intro a;
-    intro b;
-    intro c;
+    intro a b c;
     exact contour_edge_subdivide(
       F, zero, one, addF, mulF, negF, ring, (fun (v : F) => v), curve(a), curve(b), curve(c),
       values(tag)
@@ -42,9 +40,9 @@ def parameter_constant_tag_sum(
 // The old side is one edge; the new side may have any finite number of edges.
 // Refinement error is precisely the accumulated change from its repeated tag.
 def parameter_refinement_identity(
-  C : U1, F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve : C -> F, values : C -> F,
-  coarseTag : C, n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)
+  C F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve values : C -> F, coarseTag : C,
+  n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)
 ) :
   parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, tags) = addF(
     parameter_contour_edge(

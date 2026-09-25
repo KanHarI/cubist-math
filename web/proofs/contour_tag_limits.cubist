@@ -4,16 +4,15 @@ import field_scale_limits;
 
 // The tag-error estimate controls the difference of the actual finite sums.
 def contour_tag_change_close(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : F -> F, weight : F -> F -> F
-  -> F, delta : F, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,
-  vertices : SampleVertices(F, n), oldTags : SampleTags(F, n), newTags : SampleTags(F, n),
+  -> F, delta length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,
+  vertices : SampleVertices(F, n), oldTags newTags : SampleTags(F, n),
   errors : ContourTagBounds(F, addF, negF, lt, f, delta, n, vertices, oldTags, newTags),
   increments : SampleMagnitudeBounds(
-    F, F, negF, lt,
-    (fun (a : F) => fun (b : F) => fun (t : F) => coordinate_difference(F, addF, negF, a, b)),
-    weight, n, vertices, oldTags
+    F, F, negF, lt, (fun (a b t : F) => coordinate_difference(F, addF, negF, a, b)), weight, n,
+    vertices, oldTags
   ), variation : FieldLe(F, lt, sample_sum(F, F, zero, addF, weight, n, vertices, oldTags), length),
   epsilon : F, small : lt(mulF(delta, length), epsilon)
 ) :
@@ -40,12 +39,11 @@ def contour_tag_change_close(
 // The sampling scheme and its analytic estimates are explicit inputs.
 // This does not postulate that arbitrary refinements have small errors.
 def contour_tag_errors_converge(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : F -> F, weight : F -> F -> F
   -> F, count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(F, count(n))),
-  oldTags : (forall n : Nat, SampleTags(F, count(n))),
-  newTags : (forall n : Nat, SampleTags(F, count(n))), delta : Nat -> F, length : F,
+  oldTags newTags : (forall n : Nat, SampleTags(F, count(n))), delta : Nat -> F, length : F,
   nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
   errors : (
     forall n : Nat,
@@ -54,9 +52,8 @@ def contour_tag_errors_converge(
   increments : (
     forall n : Nat,
     SampleMagnitudeBounds(
-      F, F, negF, lt,
-      (fun (a : F) => fun (b : F) => fun (t : F) => coordinate_difference(F, addF, negF, a, b)),
-      weight, count(n), vertices(n), oldTags(n)
+      F, F, negF, lt, (fun (a b t : F) => coordinate_difference(F, addF, negF, a, b)), weight,
+      count(n), vertices(n), oldTags(n)
     )
   ),
   variation : (
@@ -91,13 +88,12 @@ def contour_tag_errors_converge(
 
 // Over ordered fields, convergence of delta itself suffices.
 def contour_tag_errors_from_vanishing_values(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), f : F -> F, weight : F -> F -> F -> F,
   count : Nat -> Nat, vertices : (forall n : Nat, SampleVertices(F, count(n))),
-  oldTags : (forall n : Nat, SampleTags(F, count(n))),
-  newTags : (forall n : Nat, SampleTags(F, count(n))), delta : Nat -> F, length : F,
+  oldTags newTags : (forall n : Nat, SampleTags(F, count(n))), delta : Nat -> F, length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length),
   nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
   errors : (
@@ -107,9 +103,8 @@ def contour_tag_errors_from_vanishing_values(
   increments : (
     forall n : Nat,
     SampleMagnitudeBounds(
-      F, F, negF, lt,
-      (fun (a : F) => fun (b : F) => fun (t : F) => coordinate_difference(F, addF, negF, a, b)),
-      weight, count(n), vertices(n), oldTags(n)
+      F, F, negF, lt, (fun (a b t : F) => coordinate_difference(F, addF, negF, a, b)), weight,
+      count(n), vertices(n), oldTags(n)
     )
   ),
   variation : (

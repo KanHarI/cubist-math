@@ -3,10 +3,10 @@ import parameter_tag_sampling;
 import complex_curves;
 
 def complex_close_difference_bound(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z : Complex(F), w : Complex(F),
-  radius : F, close : ComplexClose(F, addF, lt, w, z, radius)
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), z w : Complex(F), radius : F,
+  close : ComplexClose(F, addF, lt, w, z, radius)
 ) :
   ComplexBoxBound(
     F, negF, lt,
@@ -18,19 +18,15 @@ def complex_close_difference_bound(
   let wr = complex_real(F, w);
   let wi = complex_imag(F, w);
   exact (
-    transport(
-      (fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius)), addF(negF(zr), wr),
-      addF(wr, negF(zr)), ring_add_comm(F, zero, one, addF, mulF, negF, ring, negF(zr), wr),
-      field_close_difference_bound(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, wr, zr, radius, realClose
-      )
+    along((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius))) by ring_add_comm(
+      F, zero, one, addF, mulF, negF, ring, negF(zr), wr
+    ) from field_close_difference_bound(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, wr, zr, radius, realClose
     ),
-    transport(
-      (fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius)), addF(negF(zi), wi),
-      addF(wi, negF(zi)), ring_add_comm(F, zero, one, addF, mulF, negF, ring, negF(zi), wi),
-      field_close_difference_bound(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, wi, zi, radius, imagClose
-      )
+    along((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius))) by ring_add_comm(
+      F, zero, one, addF, mulF, negF, ring, negF(zi), wi
+    ) from field_close_difference_bound(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, wi, zi, radius, imagClose
     )
   );
 }
@@ -38,8 +34,8 @@ def complex_close_difference_bound(
 // Uniform continuity produces a positive mesh threshold. Tag errors are
 // then proved from admissibility, rather than supplied as an extra premise.
 def uniform_curve_tag_bounds(
-  F : U1, zero : F, one : F, addF : F -> F -> F, mulF : F -> F -> F, negF : F -> F, lt : F -> F
-  -> U0, ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   values : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, values), epsilon : F,
@@ -61,11 +57,7 @@ def uniform_curve_tag_bounds(
   let I = FieldUnitInterval(F, zero, one, lt);
   obtain (mesh, positiveMesh, closeValues) = uniform(epsilon, positive);
   let smallEdge =
-    (
-      fun (a : I) => fun (b : I) => lt(
-        interval_difference(F, zero, one, addF, negF, lt, a, b), mesh
-      )
-    );
+    (fun (a b : I) => lt(interval_difference(F, zero, one, addF, negF, lt, a, b), mesh));
   have localBound :
     forall a : I, forall b : I, forall x : I, forall y : I, smallEdge(a, b)
     -> IntervalTagWithin(F, zero, one, lt, a, b, x) -> IntervalTagWithin(F, zero, one, lt, a, b, y)
@@ -75,13 +67,7 @@ def uniform_curve_tag_bounds(
         Complex(F), complex_add(F, addF), complex_neg(F, negF), values(x), values(y)
       ), epsilon
     ) {
-    intro a;
-    intro b;
-    intro x;
-    intro y;
-    intro small;
-    intro withinX;
-    intro withinY;
+    intro a b x y small withinX withinY;
     let closeParameters =
       interval_tags_close(
         F, zero, one, addF, mulF, negF, lt, ring, arithmetic, a, b, y, x, withinY, withinX, mesh,

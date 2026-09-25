@@ -2,10 +2,8 @@ import sample_relations;
 
 def SampleTagged(C : U1, condition : C -> C -> C -> U0, n : Nat) =
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
-    zero => fun (vertices : C) => fun (tags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
-      tags : SampleTags(C, succ(k))
-    ) => condition(
+    zero => fun (vertices : C) (tags : Unit) => Unit;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) => condition(
       field_fst(C, SampleVertices(C, k), vertices),
       sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
       field_fst(C, SampleTags(C, k), tags)
@@ -24,10 +22,10 @@ def sample_tagged_adjacent(
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     SampleTagged(C, condition, k, vertices, tags) -> SampleAdjacent(C, related, k, vertices)
   ) {
-    zero => fun (vertices : C) => fun (tags : Unit) => fun (valid : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
-      tags : SampleTags(C, succ(k))
-    ) => fun (valid : SampleTagged(C, condition, succ(k), vertices, tags)) => typed(
+    zero => fun (vertices : C) (tags valid : Unit) => tt;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
+      valid : SampleTagged(C, condition, succ(k), vertices, tags)
+    ) => typed(
       (
         related(
           field_fst(C, SampleVertices(C, k), vertices),
@@ -92,8 +90,8 @@ def sample_left_tags_valid(
     forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices)
     -> SampleTagged(C, condition, k, vertices, sample_left_tags(C, k, vertices))
   ) {
-    zero => fun (vertices : C) => fun (ordered : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+    zero => fun (vertices : C) (ordered : Unit) => tt;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (
       ordered : SampleAdjacent(C, related, succ(k), vertices)
     ) => typed(
       (
@@ -154,8 +152,8 @@ def sample_right_tags_valid(
     forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices)
     -> SampleTagged(C, condition, k, vertices, sample_right_tags(C, k, vertices))
   ) {
-    zero => fun (vertices : C) => fun (ordered : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) => fun (
+    zero => fun (vertices : C) (ordered : Unit) => tt;
+    succ previous => fun (vertices : SampleVertices(C, succ(k))) (
       ordered : SampleAdjacent(C, related, succ(k), vertices)
     ) => typed(
       (

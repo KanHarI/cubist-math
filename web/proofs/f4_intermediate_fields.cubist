@@ -45,7 +45,7 @@ def f4_intermediate_contains_image(
   P(x) {
   obtain (closure, base) = laws;
   obtain (k, same) = member;
-  exact transport(P, f2_into_f4(k), x, same, base(k));
+  exact along P by same from base(k);
 }
 
 // Exactly the decision used by this classification is an explicit parameter.
@@ -65,33 +65,29 @@ def f4_intermediate_classification(
   cases decideAlpha {
     left alpha => {
       let every = f4_intermediate_with_alpha(P, laws, alpha);
-      have same : P = SubfieldTop(F4) {
-        exact field_predicate_ext(
-          F4Carrier, P, SubfieldTop(F4), subfield_prop(F4, P, closure),
-          subfield_prop(F4, SubfieldTop(F4), subfield_top_laws(F4)),
-          (
-            fun (x : F4Carrier) => typed(
-              ((P(x) -> Unit) and (Unit -> P(x))),
-              ((fun (member : P(x)) => tt), (fun (u : Unit) => every(x)))
-            )
+      have same : P = SubfieldTop(F4) := field_predicate_ext(
+        F4Carrier, P, SubfieldTop(F4), subfield_prop(F4, P, closure),
+        subfield_prop(F4, SubfieldTop(F4), subfield_top_laws(F4)),
+        (
+          fun (x : F4Carrier) => typed(
+            ((P(x) -> Unit) and (Unit -> P(x))),
+            ((fun (member : P(x)) => tt), (fun (u : Unit) => every(x)))
           )
-        );
-      }
+        )
+      );
       exact right(intermediate_ext(F2, F4OverF2, M, intermediate_top(F2, F4OverF2), same));
     }
     right noAlpha => {
       let intoBase = f4_intermediate_without_alpha(P, laws, noAlpha);
-      have same : P = F2Image {
-        exact field_predicate_ext(
-          F4Carrier, P, F2Image, subfield_prop(F4, P, closure), f2_image_prop,
-          (
-            fun (x : F4Carrier) => typed(
-              ((P(x) -> F2Image(x)) and (F2Image(x) -> P(x))),
-              (intoBase(x), f4_intermediate_contains_image(P, laws, x))
-            )
+      have same : P = F2Image := field_predicate_ext(
+        F4Carrier, P, F2Image, subfield_prop(F4, P, closure), f2_image_prop,
+        (
+          fun (x : F4Carrier) => typed(
+            ((P(x) -> F2Image(x)) and (F2Image(x) -> P(x))),
+            (intoBase(x), f4_intermediate_contains_image(P, laws, x))
           )
-        );
-      }
+        )
+      );
       exact left(intermediate_ext(F2, F4OverF2, M, f4_base_intermediate, same));
     }
   }
