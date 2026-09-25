@@ -150,7 +150,7 @@ try {
   await inspected("Truncate(U1)");
 
   await openProof("cubical_paths", "reverse_twice");
-  await page.locator('.source-line').filter({ hasText: "fun (i : Interval) => at(p," }).locator('[data-name="p"]').click();
+  await page.locator('.source-line').filter({ hasText: "fun (i : Interval) => p @ flip(i)" }).locator('[data-name="p"]').click();
   await inspected("p");
   assert.match(await page.locator("#kernel-context-list").textContent(), /Interval coordinates/);
   await page.setViewportSize({ width: 600, height: 900 });
