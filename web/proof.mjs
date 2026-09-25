@@ -10,6 +10,7 @@ import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proo
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
 import { keywords, builtinForms } from "./source-tokens.mjs";
+import { enableTokenTips } from "./token-tips.mjs";
 
 const query = new URLSearchParams(location.search);
 const backend = "cubical";
@@ -494,8 +495,10 @@ function renderSource() {
           const button = document.createElement("button");
           button.className = `reference${style ? " " + style : ""}`;
           button.textContent = text;
-          button.title = expansion ? `${text} expands to ${expansion}` : `Inspect ${text}`;
-          if (expansion) button.setAttribute("aria-label", button.title);
+          if (expansion && expansion !== text) {
+            button.dataset.tip = `${text} expands to ${expansion}`;
+            button.setAttribute("aria-label", button.dataset.tip);
+          } else button.title = `Inspect ${text}`;
           button.dataset.name = text;
           button.onclick = () =>
             inspect({ ...decorate(info), line: index + 1 });
@@ -504,7 +507,7 @@ function renderSource() {
           const span = document.createElement("span");
           span.className = style;
           span.textContent = text;
-          if (expansion) span.title = `${text} expands to ${expansion}`;
+          if (expansion && expansion !== text) span.dataset.tip = `${text} expands to ${expansion}`;
           code.append(span);
         } else code.append(document.createTextNode(text));
       }
@@ -973,4 +976,5 @@ addEventListener("focus", () => {
 addEventListener("pageshow", (event) => {
   if (event.persisted) refreshCompiler().catch(diagnostic);
 });
+enableTokenTips();
 await startWorker();

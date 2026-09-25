@@ -648,3 +648,21 @@ body.embedded .workspace { grid-template-columns: minmax(0, 1fr); }
 #kernel-terms[hidden] { display: none; }
 /* Embedded, the inspector comes before the source it inspects. */
 body.embedded .workspace > .inspector { order: -1; }
+
+/* A macro's expansion, shown at once on hover or focus (token-tips.mjs). */
+.token-tip {
+  position: fixed;
+  z-index: 60;
+  max-width: min(36rem, calc(100vw - 16px));
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: #23342d;
+  color: #f6f7f3;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+}
+.token-tip[hidden] {
+  display: none;
+}
