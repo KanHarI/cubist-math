@@ -417,3 +417,37 @@ still match by conversion while quantified rules match syntactically.
 The [HoTT roadmap](../roadmaps/hott-automation-roadmap.md) now owns this work:
 deterministic fuel is A4, the goal layer and elaborator infrastructure A5,
 and residual-goal diagnostics A6.
+
+## Library migration tooling (2026-09-25)
+
+Library-wide adoption of the new syntax is checked mechanically, not by review
+alone. `node tools/verify-proof-migration.mjs [--base REV] [--level
+identical|types] [module ...]` checks each edited module in the same native
+kernel as its version at `REV` (default `HEAD`). With no module names it takes
+every `web/proofs` module that differs from `REV`. The edited source is loaded
+under a shadow module name, so both versions and their shared imports are
+checked in one kernel session.
+
+- `identical` requires every declaration's checked term and type to hash
+  equally up to bound-variable and dimension names (de Bruijn indices) and the
+  session serials of generated unfolding helpers, which are compared by their
+  checked bodies.
+- `types` requires kernel-convertible public types and the same assumption
+  labels; proof terms may change.
+- Both levels require the same declaration list and order. A template is
+  compared through its specialization at the least universe levels (up to
+  `U2`) at which the original checks.
+
+`node tools/migrate-proof-syntax.mjs --rewrites a,b [--skip FILE.json]
+[module ...]` applies source rewrites from
+[proof-rewrites.mjs](../../tools/proof-rewrites.mjs) and formats the result.
+The rewrites splice the recognized spans only, keep all other text, and skip
+any span whose rewrite would drop a comment. Six rewrites elaborate to the
+same checked terms (`params`, `fun`, `intro`, `have`, `along`, `path-apply`).
+Four keep public types but change proof terms: library path wrappers to
+builtins (`wrappers`), `exact refl(x)` to `rfl` (`rfl`), `path` with two
+interval lambdas to `path i =>` (`path-lambda`), and `exact FunExt(...)` to
+`ext` (`ext`). The skip file maps module names to declarations that must stay
+unchanged. [proof-migration.test.mjs](../../tests/proof-migration.test.mjs)
+covers the hasher, both levels, a changed statement, and every rewrite. The
+formatter now separates adjacent lambda binder groups with a space.

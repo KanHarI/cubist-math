@@ -94,3 +94,8 @@ test("the formatter automatically linearizes tuples while preserving their expan
   assert.equal(formatMathScript(formatted), formatted);
   assert.match(formatMathScript(source, { linearizeTuples: false }), /exact \(0, \(1, 2\)\);/);
 });
+
+test("lambda binder groups are separated by spaces, applications are not", () => {
+  const formatted = formatMathScript("def f(F : Nat -> Nat -> U0) = fun (a : Nat)(b : F(0)(1)) => a;\n");
+  assert.match(formatted, /fun \(a : Nat\) \(b : F\(0\)\(1\)\) => a;/);
+});
