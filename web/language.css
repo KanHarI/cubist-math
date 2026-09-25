@@ -71,6 +71,8 @@ pre code .comment { color: #7c8d80; }
   cursor: pointer; color: #216142; text-decoration: underline; text-decoration-color: #abc3a7; text-underline-offset: 3px; }
 .example-token.keyword { text-decoration-color: #b7a7c4; }
 .example-token:hover, .example-token:focus-visible { background: #dcedd4; outline: none; }
+.example-module { color: inherit; text-decoration-color: #9fb89b; text-underline-offset: 3px; }
+.example-module:hover, .example-module:focus-visible { background: #dcedd4; outline: none; }
 .example-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; margin: -10px 0 18px;
   font-size: 12px; color: #627468; }
 .example-bar a { color: #346447; }
