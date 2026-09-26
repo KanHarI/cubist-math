@@ -125,7 +125,7 @@ bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
         if (!success)
             break;
         uint32_t level;
-        cc_term type;
+        cc_term type = 0;
         success = ck_type(k, assumptions[i].type, ctx, dimensions, &type, &level);
         if (!success)
             break;

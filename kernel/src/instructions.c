@@ -67,9 +67,12 @@ static uint32_t derivation_hash(const cc_derivation *d, const uint8_t *position)
 }
 
 static bool same_derivation(const cc_kernel *k, const cc_derivation *a, const uint8_t *position, const cc_derivation *b) {
-    return a->rule == b->rule && !memcmp(a->premise, b->premise, sizeof a->premise) && a->entry == b->entry &&
-           !memcmp(a->operand, b->operand, sizeof a->operand) && a->depth == b->depth &&
-           (!a->depth || !memcmp(position, k->positions + b->position, a->depth));
+    if (a->rule != b->rule || memcmp(a->premise, b->premise, sizeof a->premise) || a->entry != b->entry ||
+        memcmp(a->operand, b->operand, sizeof a->operand) || a->depth != b->depth)
+        return false;
+    for (uint32_t i = 0; i < a->depth; ++i)
+        if (position[i] != k->positions[b->position + i]) return false;
+    return true;
 }
 
 /* Index the facts by derivation. Truncated ids act as tombstones, and a
@@ -309,7 +312,7 @@ static bool bind(cc_kernel *k, uint32_t body, cc_entry_id e, uint32_t *out) {
 /* A term entry is named by its symbol: extending with the same type
  * judgement and symbol again returns the same entry. */
 cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol) {
-    cc_fact t;
+    cc_fact t = {0};
     uint32_t level = 0;
     if (!ready(k) || !premise(k, type, CC_FACT_TYPING, &t) || !universe(k, t.type, &level))
         return 0;
@@ -370,7 +373,7 @@ cc_judgement_id cc_instr_variable(cc_kernel *k, cc_entry_id id) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_VARIABLE, .entry = id}, NULL, 0, &found))
         return found;
-    cc_entry e;
+    cc_entry e = {0};
     if (!entry(k, id, false, &e))
         return 0;
     return typing(k, ck_var(k, e.symbol), e.type, e.scope);
@@ -404,7 +407,7 @@ cc_judgement_id cc_instr_succ(cc_kernel *k, cc_judgement_id value) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_SUCC, .premise = {value}}, NULL, 0, &found))
         return found;
-    cc_fact n;
+    cc_fact n = {0};
     if (!premise(k, value, CC_FACT_TYPING, &n) ||
         !same(k, n.type, make(k, CC_NAT, 0, 0, 0, 0, 0), "succ needs a natural number."))
         return 0;
@@ -424,7 +427,7 @@ cc_judgement_id cc_instr_nat_elim(cc_kernel *k, cc_judgement_id motive_id, cc_ju
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_NAT_ELIM, .premise = {motive_id, zero_id, step_id, value_id}}, NULL, 0, &found))
         return found;
-    cc_fact p, z, s, n;
+    cc_fact p = {0}, z = {0}, s = {0}, n = {0};
     if (!premise(k, motive_id, CC_FACT_TYPING, &p) || !premise(k, zero_id, CC_FACT_TYPING, &z) ||
         !premise(k, step_id, CC_FACT_TYPING, &s) || !premise(k, value_id, CC_FACT_TYPING, &n))
         return 0;
@@ -447,7 +450,7 @@ cc_judgement_id cc_instr_unit_elim(cc_kernel *k, cc_judgement_id motive_id, cc_j
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_UNIT_ELIM, .premise = {motive_id, point_id, value_id}}, NULL, 0, &found))
         return found;
-    cc_fact p, b, u;
+    cc_fact p = {0}, b = {0}, u = {0};
     uint32_t context = 0;
     if (!premise(k, motive_id, CC_FACT_TYPING, &p) || !premise(k, point_id, CC_FACT_TYPING, &b) ||
         !premise(k, value_id, CC_FACT_TYPING, &u))
@@ -464,7 +467,7 @@ cc_judgement_id cc_instr_abort(cc_kernel *k, cc_judgement_id type_id, cc_judgeme
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_ABORT, .premise = {type_id, impossible_id}}, NULL, 0, &found))
         return found;
-    cc_fact t, e;
+    cc_fact t = {0}, e = {0};
     uint32_t level = 0, context = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, impossible_id, CC_FACT_TYPING, &e) ||
         !universe(k, t.type, &level) ||
@@ -478,7 +481,7 @@ cc_judgement_id cc_instr_sum(cc_kernel *k, cc_judgement_id left_id, cc_judgement
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_SUM, .premise = {left_id, right_id}}, NULL, 0, &found))
         return found;
-    cc_fact a, b;
+    cc_fact a = {0}, b = {0};
     uint32_t left = 0, right = 0, context = 0;
     if (!premise(k, left_id, CC_FACT_TYPING, &a) || !premise(k, right_id, CC_FACT_TYPING, &b) ||
         !universe(k, a.type, &left) || !universe(k, b.type, &right) || !merge(k, a.context, b.context, &context))
@@ -490,7 +493,7 @@ cc_judgement_id cc_instr_inject(cc_kernel *k, cc_judgement_id type_id, cc_judgem
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_INJECT, .premise = {type_id, value_id}, .operand = {right}}, NULL, 0, &found))
         return found;
-    cc_fact t, v;
+    cc_fact t = {0}, v = {0};
     uint32_t level = 0, context = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, value_id, CC_FACT_TYPING, &v) ||
         !universe(k, t.type, &level))
@@ -509,7 +512,7 @@ cc_judgement_id cc_instr_sum_elim(cc_kernel *k, cc_judgement_id motive_id, cc_ju
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_SUM_ELIM, .premise = {motive_id, left_id, right_id, value_id}}, NULL, 0, &found))
         return found;
-    cc_fact p, cases[2], v;
+    cc_fact p = {0}, cases[2] = {0}, v = {0};
     uint32_t context = 0;
     if (!premise(k, motive_id, CC_FACT_TYPING, &p) || !premise(k, left_id, CC_FACT_TYPING, &cases[0]) ||
         !premise(k, right_id, CC_FACT_TYPING, &cases[1]) || !premise(k, value_id, CC_FACT_TYPING, &v))
@@ -537,8 +540,8 @@ static cc_judgement_id former(cc_kernel *k, cc_term_kind kind, cc_entry_id id, c
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = kind == CC_PI ? CC_INSTR_PI : CC_INSTR_SIGMA, .premise = {family}, .entry = id}, NULL, 0, &found))
         return found;
-    cc_entry e;
-    cc_fact b;
+    cc_entry e = {0};
+    cc_fact b = {0};
     uint32_t level = 0, context = 0;
     if (!entry(k, id, false, &e) || !premise(k, family, CC_FACT_TYPING, &b) ||
         !universe(k, b.type, &level) || !bind(k, b.context, id, &context))
@@ -559,8 +562,8 @@ cc_judgement_id cc_instr_lambda(cc_kernel *k, cc_entry_id id, cc_judgement_id bo
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_LAMBDA, .premise = {body_id}, .entry = id}, NULL, 0, &found))
         return found;
-    cc_entry e;
-    cc_fact b;
+    cc_entry e = {0};
+    cc_fact b = {0};
     uint32_t context = 0;
     if (!entry(k, id, false, &e) || !premise(k, body_id, CC_FACT_TYPING, &b) ||
         !bind(k, b.context, id, &context))
@@ -572,7 +575,7 @@ cc_judgement_id cc_instr_apply(cc_kernel *k, cc_judgement_id function, cc_judgem
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_APPLY, .premise = {function, argument}}, NULL, 0, &found))
         return found;
-    cc_fact f, a;
+    cc_fact f = {0}, a = {0};
     uint32_t context = 0;
     if (!premise(k, function, CC_FACT_TYPING, &f) || !premise(k, argument, CC_FACT_TYPING, &a))
         return 0;
@@ -588,7 +591,7 @@ cc_judgement_id cc_instr_pair(cc_kernel *k, cc_judgement_id type_id, cc_judgemen
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_PAIR, .premise = {type_id, first_id, second_id}}, NULL, 0, &found))
         return found;
-    cc_fact t, a, b;
+    cc_fact t = {0}, a = {0}, b = {0};
     uint32_t level = 0, context = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, first_id, CC_FACT_TYPING, &a) ||
         !premise(k, second_id, CC_FACT_TYPING, &b) || !universe(k, t.type, &level))
@@ -607,7 +610,7 @@ static cc_judgement_id projection(cc_kernel *k, cc_judgement_id pair, bool secon
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = second ? CC_INSTR_SECOND : CC_INSTR_FIRST, .premise = {pair}}, NULL, 0, &found))
         return found;
-    cc_fact p;
+    cc_fact p = {0};
     if (!premise(k, pair, CC_FACT_TYPING, &p))
         return 0;
     cc_node sigma = k->nodes[p.type];
@@ -628,7 +631,7 @@ cc_judgement_id cc_instr_domain(cc_kernel *k, cc_judgement_id type_id) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_DOMAIN, .premise = {type_id}}, NULL, 0, &found))
         return found;
-    cc_fact t;
+    cc_fact t = {0};
     uint32_t level = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !universe(k, t.type, &level))
         return 0;
@@ -642,7 +645,7 @@ cc_judgement_id cc_instr_family(cc_kernel *k, cc_judgement_id type_id, cc_judgem
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_FAMILY, .premise = {type_id, argument}}, NULL, 0, &found))
         return found;
-    cc_fact t, a;
+    cc_fact t = {0}, a = {0};
     uint32_t level = 0, context = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, argument, CC_FACT_TYPING, &a) ||
         !universe(k, t.type, &level))
@@ -662,8 +665,8 @@ cc_judgement_id cc_instr_path(cc_kernel *k, cc_entry_id dimension, cc_judgement_
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_PATH, .premise = {family_id, left_id, right_id}, .entry = dimension}, NULL, 0, &found))
         return found;
-    cc_entry i;
-    cc_fact a, l, r;
+    cc_entry i = {0};
+    cc_fact a = {0}, l = {0}, r = {0};
     uint32_t level = 0, context = 0;
     if (!entry(k, dimension, true, &i) || !premise(k, family_id, CC_FACT_TYPING, &a) ||
         !premise(k, left_id, CC_FACT_TYPING, &l) || !premise(k, right_id, CC_FACT_TYPING, &r) ||
@@ -679,8 +682,8 @@ cc_judgement_id cc_instr_path_lambda(cc_kernel *k, cc_entry_id dimension, cc_jud
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_PATH_LAMBDA, .premise = {body_id}, .entry = dimension}, NULL, 0, &found))
         return found;
-    cc_entry i;
-    cc_fact b;
+    cc_entry i = {0};
+    cc_fact b = {0};
     uint32_t context = 0;
     if (!entry(k, dimension, true, &i) || !premise(k, body_id, CC_FACT_TYPING, &b) ||
         !bind(k, b.context, dimension, &context))
@@ -694,7 +697,7 @@ cc_judgement_id cc_instr_path_apply(cc_kernel *k, cc_judgement_id path_id, cc_en
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_PATH_APPLY, .premise = {path_id}, .entry = dimension, .operand = {endpoint}}, NULL, 0, &found))
         return found;
-    cc_fact p;
+    cc_fact p = {0};
     cc_entry i = {0};
     uint32_t context = 0;
     if (!premise(k, path_id, CC_FACT_TYPING, &p) || (dimension && !entry(k, dimension, true, &i)))
@@ -722,8 +725,8 @@ cc_judgement_id cc_instr_endpoint(cc_kernel *k, cc_judgement_id id, cc_entry_id 
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_ENDPOINT, .premise = {id}, .entry = dimension, .operand = {endpoint}},
                NULL, 0, &found))
         return found;
-    cc_fact t;
-    cc_entry i;
+    cc_fact t = {0};
+    cc_entry i = {0};
     uint32_t context = 0;
     if (!premise(k, id, CC_FACT_TYPING, &t) || !entry(k, dimension, true, &i))
         return 0;
@@ -740,7 +743,7 @@ cc_judgement_id cc_instr_define(cc_kernel *k, uint32_t symbol, cc_judgement_id c
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_DEFINE, .premise = {closed}, .operand = {symbol}}, NULL, 0, &found))
         return found;
-    cc_fact d;
+    cc_fact d = {0};
     if (!premise(k, closed, CC_FACT_TYPING, &d))
         return 0;
     if (d.context)
@@ -777,7 +780,7 @@ cc_judgement_id cc_instr_refl(cc_kernel *k, cc_judgement_id typing_id) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_REFL, .premise = {typing_id}}, NULL, 0, &found))
         return found;
-    cc_fact t;
+    cc_fact t = {0};
     if (!premise(k, typing_id, CC_FACT_TYPING, &t))
         return 0;
     return publish(k, CC_FACT_EQUALITY, t.term, t.term, t.type, t.context);
@@ -788,7 +791,7 @@ cc_judgement_id cc_instr_side(cc_kernel *k, cc_judgement_id equality, unsigned s
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_SIDE, .premise = {equality}, .operand = {side}}, NULL, 0, &found))
         return found;
-    cc_fact e;
+    cc_fact e = {0};
     if (!premise(k, equality, CC_FACT_EQUALITY, &e))
         return 0;
     if (side > 1)
@@ -800,7 +803,7 @@ cc_judgement_id cc_instr_symmetry(cc_kernel *k, cc_judgement_id equality) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_SYMMETRY, .premise = {equality}}, NULL, 0, &found))
         return found;
-    cc_fact e;
+    cc_fact e = {0};
     if (!premise(k, equality, CC_FACT_EQUALITY, &e))
         return 0;
     return publish(k, CC_FACT_EQUALITY, e.other, e.term, e.type, e.context);
@@ -810,7 +813,7 @@ cc_judgement_id cc_instr_transitivity(cc_kernel *k, cc_judgement_id first, cc_ju
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_TRANSITIVITY, .premise = {first, second}}, NULL, 0, &found))
         return found;
-    cc_fact a, b;
+    cc_fact a = {0}, b = {0};
     uint32_t context = 0;
     if (!premise(k, first, CC_FACT_EQUALITY, &a) || !premise(k, second, CC_FACT_EQUALITY, &b) ||
         !same(k, b.term, a.other, "The equalities do not meet.") ||
@@ -824,7 +827,7 @@ cc_judgement_id cc_instr_convert(cc_kernel *k, cc_judgement_id typing_id, cc_jud
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_CONVERT, .premise = {typing_id, equality}}, NULL, 0, &found))
         return found;
-    cc_fact t, e;
+    cc_fact t = {0}, e = {0};
     uint32_t level = 0, context = 0;
     if (!premise(k, typing_id, CC_FACT_TYPING, &t) || !premise(k, equality, CC_FACT_EQUALITY, &e) ||
         !universe(k, e.type, &level) || !same(k, t.type, e.term, "The equality does not start at the judgement's type.") ||
@@ -837,7 +840,7 @@ cc_judgement_id cc_instr_lift(cc_kernel *k, cc_judgement_id typing_id, cc_judgem
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_LIFT, .premise = {typing_id, type_id}}, NULL, 0, &found))
         return found;
-    cc_fact t, b;
+    cc_fact t = {0}, b = {0};
     uint32_t level = 0, context = 0;
     if (!premise(k, typing_id, CC_FACT_TYPING, &t) || !premise(k, type_id, CC_FACT_TYPING, &b) ||
         !universe(k, b.type, &level))
@@ -858,7 +861,7 @@ cc_judgement_id cc_instr_eta(cc_kernel *k, cc_judgement_id typing_id) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_ETA, .premise = {typing_id}}, NULL, 0, &found))
         return found;
-    cc_fact t;
+    cc_fact t = {0};
     if (!premise(k, typing_id, CC_FACT_TYPING, &t))
         return 0;
     cc_node type = k->nodes[t.type];
@@ -1034,7 +1037,7 @@ cc_judgement_id cc_instr_step(cc_kernel *k, cc_judgement_id id, unsigned side,
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_STEP, .premise = {id}, .operand = {side, rule}}, position, depth, &found))
         return found;
-    cc_fact e;
+    cc_fact e = {0};
     cc_term root = 0;
     if (!judgement(k, id, side, &e, &root))
         return 0;
@@ -1089,7 +1092,7 @@ cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id id, unsigned side
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_REPLACE, .premise = {id, by}, .operand = {side}}, position, depth, &found))
         return found;
-    cc_fact e, inner;
+    cc_fact e = {0}, inner = {0};
     cc_term root = 0;
     if (!judgement(k, id, side, &e, &root) || !premise(k, by, CC_FACT_EQUALITY, &inner))
         return 0;
