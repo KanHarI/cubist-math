@@ -32,6 +32,9 @@ static cc_term other_of(cc_judgement_id j) { return info(j).other; }
 static cc_term type_of(cc_judgement_id j) { return info(j).type; }
 static size_t context_size(cc_judgement_id j) { size_t n = 0; while (cc_kernel_judgement_context(k, j, n)) ++n; return n; }
 static cc_term_kind kind(cc_term t) { cc_term_kind result; assert(cc_kernel_node(k, t, &result, NULL, NULL)); return result; }
+static cc_term child(cc_term t, unsigned i) { cc_term children[4]; assert(cc_kernel_node(k, t, NULL, NULL, children)); return children[i]; }
+/* The level constant ω·tier + n, as raw syntax. */
+static cc_term level(unsigned tier, unsigned n) { return cc_kernel_term(k, CC_LCONST, tier << 16 | n, 0, 0, 0, 0); }
 
 /* Contract one redex of side 1 of an equality, at a position. */
 #define AT(...) (const uint8_t[]){__VA_ARGS__}, sizeof((uint8_t[]){__VA_ARGS__})
@@ -368,9 +371,35 @@ int main(void) {
     assert(successors(other_of(STEP(OK(cc_instr_refl(k, four)), CC_STEP_NORMALIZE, ROOT))) == 4);
     assert(kind(other_of(OK(cc_instr_eta(k, add)))) == CC_LAM);
     assert(kind(other_of(OK(cc_instr_eta(k, loop)))) == CC_PLAM);
-    cc_judgement_id lifted = OK(cc_instr_lift(k, nat, OK(cc_instr_universe(k, 1))));
+    cc_judgement_id lifted = OK(cc_instr_lift(k, nat, OK(cc_instr_universe(k, level(0, 1)))));
     assert(kind(type_of(lifted)) == CC_U);
-    rejects(cc_instr_lift(k, zero, OK(cc_instr_universe(k, 0))), "not included");
+    rejects(cc_instr_lift(k, zero, OK(cc_instr_universe(k, level(0, 0)))), "not included");
+
+    /* Universes at levels (G0 §2.5, and acceptance cases L16-L19, L26, L27).
+     * A universe's level is its child, in normal form, so universes at equal
+     * levels are one term; cumulativity crosses tiers. */
+    cc_term one = level(0, 1), omega = level(1, 0);
+    cc_term max_one = cc_kernel_term(k, CC_LMAX, 0, one, level(0, 0), 0, 0);
+    cc_judgement_id u1 = OK(cc_instr_universe(k, one));
+    assert(term_of(OK(cc_instr_universe(k, max_one))) == term_of(u1));
+    assert(child(type_of(u1), 0) == level(0, 2));
+    cc_judgement_id uu0 = OK(cc_instr_universe(k, omega));
+    assert(child(type_of(uu0), 0) == level(1, 1));
+    assert(kind(type_of(OK(cc_instr_lift(k, u1, OK(cc_instr_universe(k, level(1, 3))))))) == CC_U);
+    OK(cc_instr_lift(k, nat, uu0));
+    rejects(cc_instr_lift(k, uu0, OK(cc_instr_universe(k, level(0, 5)))), "not included");
+    OK(cc_instr_universe(k, level(0, CC_LEVEL_MAX - 1)));
+    rejects(cc_instr_universe(k, level(0, CC_LEVEL_MAX)), "bound");
+    OK(cc_instr_universe(k, level(1, CC_LEVEL_MAX - 1)));
+    rejects(cc_instr_universe(k, level(1, CC_LEVEL_MAX)), "bound");
+    OK(cc_instr_universe(k, level(CC_TIER_MAX, 0)));
+    rejects(cc_instr_universe(k, level(CC_TIER_MAX + 1, 0)), "bound");
+    rejects(cc_instr_universe(k, cc_kernel_term(k, CC_VAR, 999, 0, 0, 0, 0)), "Unbound level variable");
+    rejects(cc_instr_universe(k, cc_kernel_term(k, CC_VAR, A, 0, 0, 0, 0)), "A term variable is not a level");
+    rejects(cc_instr_universe(k, term_of(nat)), "Expected a level");
+    rejects(cc_instr_universe(k, cc_kernel_term(k, CC_LBOUND, 1, 0, 0, 0, 0)), "A bound is not a level");
+    assert(!cc_kernel_term(k, CC_U, 3, 0, 0, 0, 0));
+    rejects(0, "payload must be zero");
 
     /* The kernel's weak head normal form as a step, and the aids an untrusted
      * search may steer by: conversion as a query, and renaming. */

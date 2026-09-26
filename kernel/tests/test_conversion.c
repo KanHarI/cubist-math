@@ -60,8 +60,8 @@ static void conversion_cache(void) {
     assert(k->reduction_steps - before < 2000);
 
     // Equality reuse never bypasses the typing gate or downward cumulativity.
-    cc_term u0 = ck_make(k, CC_U, 0, 0, 0, 0, 0);
-    cc_term u1 = ck_make(k, CC_U, 1, 0, 0, 0, 0);
+    cc_term u0 = ck_universe_at(k, 0);
+    cc_term u1 = ck_universe_at(k, 1);
     assert(ck_expect(k, u0, u1));
     assert(!ck_convertible(k, u0, u1));
     assert(!ck_expect(k, u1, u0));

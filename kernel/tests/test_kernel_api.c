@@ -109,7 +109,7 @@ static void open_cube(void) {
     assert(k);
     cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
     cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term universe = cc_kernel_term(k, CC_U, 0, 0, 0, 0, 0);
+    cc_term universe = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
     cc_term family_type = cc_kernel_term(k, CC_PATH, 1, universe, nat, unit, 0);
     cc_term family = cc_kernel_term(k, CC_VAR, 100, 0, 0, 0, 0);
     cc_formula i;
@@ -238,23 +238,23 @@ static void exact_sharing(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
     enum { MANY = 100000 };
-    cc_term first = cc_kernel_term(k, CC_U, 0, 0, 0, 0, 0);
+    cc_term first = cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0);
     for (uint32_t level = 1; level < MANY; ++level)
-        assert(cc_kernel_term(k, CC_U, level, 0, 0, 0, 0) == first + level);
+        assert(cc_kernel_term(k, CC_LCONST, level, 0, 0, 0, 0) == first + level);
     for (uint32_t level = 0; level < MANY; level += 997)
-        assert(cc_kernel_term(k, CC_U, level, 0, 0, 0, 0) == first + level);
+        assert(cc_kernel_term(k, CC_LCONST, level, 0, 0, 0, 0) == first + level);
 
     cc_kernel_checkpoint(k);
-    cc_term discarded = cc_kernel_term(k, CC_U, MANY, 0, 0, 0, 0);
+    cc_term discarded = cc_kernel_term(k, CC_LCONST, MANY, 0, 0, 0, 0);
     cc_kernel_rollback(k);
     cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
     assert(nat == discarded);
-    cc_term again = cc_kernel_term(k, CC_U, MANY, 0, 0, 0, 0);
-    assert(again != nat && cc_kernel_term(k, CC_U, MANY, 0, 0, 0, 0) == again);
-    assert(cc_kernel_term(k, CC_U, 7, 0, 0, 0, 0) == first + 7);
+    cc_term again = cc_kernel_term(k, CC_LCONST, MANY, 0, 0, 0, 0);
+    assert(again != nat && cc_kernel_term(k, CC_LCONST, MANY, 0, 0, 0, 0) == again);
+    assert(cc_kernel_term(k, CC_LCONST, 7, 0, 0, 0, 0) == first + 7);
 
     cc_kernel_checkpoint(k);
-    assert(cc_kernel_term(k, CC_U, MANY + 1, 0, 0, 0, 0));
+    assert(cc_kernel_term(k, CC_LCONST, MANY + 1, 0, 0, 0, 0));
     cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
     cc_term one = cc_kernel_term(k, CC_SUCC, 0, zero, 0, 0, 0);
     cc_term reference = cc_kernel_define(k, 500, one, nat);

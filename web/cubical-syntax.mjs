@@ -82,7 +82,7 @@ export class CubicalSyntax {
         result = k.definitions.get(term.name);
         if (!result) throw new Error(`Unknown checked cubical definition: ${term.name}`);
         break;
-      case "U": result = node(term.level); break;
+      case "U": result = node(0, this.encodeLevel(term.level)); break;
       case "Var": result = node(k.symbol(term.name)); break;
       case "Nat": case "Zero": case "Unit": case "Point": case "Void": result = node(); break;
       case "Pi": case "Lam": case "Sigma": case "W":
@@ -144,6 +144,35 @@ export class CubicalSyntax {
     Object.freeze(term);
     return result;
   }
+  // A universe's level (web/cubical-levels.mjs): a number is a tier-0
+  // constant. The kernel takes it to normal form; this only encodes it.
+  encodeLevel(level) {
+    const k = this.kernel;
+    if (typeof level === "number") {
+      if (!Number.isInteger(level) || level < 0 || level > 0xffff) throw new Error(`Invalid universe level: ${level}`);
+      return k.term("LConst", level);
+    }
+    switch (level?.tag) {
+      case "LConst":
+        if (![level.tier, level.value].every(n => Number.isInteger(n) && n >= 0 && n <= 0xffff))
+          throw new Error("Invalid universe level constant.");
+        return k.term("LConst", level.tier * 0x10000 + level.value);
+      case "LSucc": return k.term("LSucc", level.count, this.encodeLevel(level.level));
+      case "LMax": return k.term("LMax", 0, this.encodeLevel(level.left), this.encodeLevel(level.right));
+      case "Var": return k.term("Var", k.symbol(level.name));
+      default: throw new Error("Expected a universe level.");
+    }
+  }
+  decodeLevel(id) {
+    const { kind, payload, children } = this.kernel.node(id);
+    switch (kind) {
+      case "LConst": return payload <= 0xffff ? payload : { tag: "LConst", tier: payload >>> 16, value: payload & 0xffff };
+      case "LSucc": return { tag: "LSucc", count: payload, level: this.decodeLevel(children[0]) };
+      case "LMax": return { tag: "LMax", left: this.decodeLevel(children[0]), right: this.decodeLevel(children[1]) };
+      case "Var": return { tag: "Var", name: this.kernel.symbolName(payload) };
+      default: throw new Error(`Expected a universe level, not ${kind}.`);
+    }
+  }
   decodeFormula(id, dimensions = new Map()) {
     const names = new Map([...dimensions].map(([name, index]) => [index, name]));
     return this.kernel.inspectFormula(id).clauses.map(([positive, negative]) => {
@@ -174,7 +203,7 @@ export class CubicalSyntax {
     let result = { tag };
     switch (tag) {
       case "DefRef": result.name = this.kernel.definition(id).name; break;
-      case "U": result.level = payload; break;
+      case "U": result.level = this.decodeLevel(c[0]); break;
       case "Var": result.name = this.kernel.symbolName(payload); break;
       case "Nat": case "Zero": case "Unit": case "Point": case "Void": break;
       case "Pi": case "Lam": case "Sigma": case "W":

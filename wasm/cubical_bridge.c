@@ -29,6 +29,12 @@ static browser_session *lookup(uint32_t token) {
     return NULL;
 }
 
+/* The syntax encoding this module was built with; the JavaScript loader
+ * refuses a module whose version it was not written for. */
+uint32_t cb_abi_version(void) {
+    return cc_kernel_abi_version();
+}
+
 uint32_t cb_new(void) {
     if (!next_token) return 0;
     for (unsigned i = 0; i < 8; ++i) {

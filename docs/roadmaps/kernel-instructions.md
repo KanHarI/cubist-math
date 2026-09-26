@@ -125,7 +125,8 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   one entry, and extending it again at an alpha-equal type returns that
   entry, whatever judgement shows the type is a type), `Dimension` (the entry
   of an interval index), `Variable`.
-- **Formation, introduction and elimination:** universes, `Π` (`Pi`,
+- **Formation, introduction and elimination:** universes (`Universe`, at a
+  level expression taken to normal form: G0), `Π` (`Pi`,
   `Lambda`, `Apply`), `Σ` (`Sigma`, `Pair`, `First`, `Second`), `Nat` (`Zero`,
   `Succ`, `NatElim`), `Unit` (`Point`, `UnitElim`), `Void` (`Abort`), sums
   (`Sum`, `Inject`, `SumElim`), paths (`Path`, `PathLambda`, `PathApply` at a

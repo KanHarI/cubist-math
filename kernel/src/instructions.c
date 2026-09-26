@@ -188,10 +188,11 @@ static bool same(cc_kernel *k, cc_term found, cc_term expected, const char *mess
     return ck_fail_as(k, CC_ERROR_MISMATCH, message);
 }
 
-static bool universe(cc_kernel *k, cc_term type, uint32_t *level) {
+/* A type's universe, and its level: the universe's level child. */
+static bool universe(cc_kernel *k, cc_term type, cc_term *level) {
     if (!type || k->nodes[type].kind != CC_U)
         return ck_fail(k, "Expected a type: a term of a universe.");
-    *level = k->nodes[type].payload;
+    *level = k->nodes[type].child[0];
     return true;
 }
 
@@ -356,7 +357,7 @@ static void index_entry(cc_kernel *k, cc_entry_id id) {
  * judgement and symbol again returns the same entry. */
 cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol) {
     cc_fact t = {0};
-    uint32_t level = 0;
+    cc_term level = 0;
     if (!ready(k) || !premise(k, type, CC_FACT_TYPING, &t) || !universe(k, t.type, &level))
         return 0;
     if (!symbol)
@@ -437,20 +438,40 @@ cc_judgement_id cc_instr_variable(cc_kernel *k, cc_entry_id id) {
 
 /* ---- Universes and inductive types -------------------------------------- */
 
-cc_judgement_id cc_instr_universe(cc_kernel *k, uint32_t level) {
+/* U-Form (G0 §2.5): a well-formed level whose successor is within the bound.
+ * The level is taken in normal form, so universes at equal levels are one
+ * term. No instruction binds a level variable yet, so a variable in the level
+ * is unbound, or names a term. */
+cc_judgement_id cc_instr_universe(cc_kernel *k, cc_term level) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_UNIVERSE, .operand = {level}}, NULL, 0, &found))
         return found;
-    if (level == UINT32_MAX)
-        return ck_fail(k, "Universe successor overflow."), 0;
-    return typing(k, make(k, CC_U, level, 0, 0, 0, 0), make(k, CC_U, level + 1, 0, 0, 0, 0), 0);
+    cc_level_nf nf;
+    if (!ck_level_normal(k, level, &nf))
+        return 0;
+    cc_term canonical = 0, next = 0;
+    if (nf.count)
+        ck_fail(k, find_entry(k, (uint32_t)nf.terms[0].key) ? "A term variable is not a level."
+                                                            : "Unbound level variable.");
+    else if (nf.constant >= CC_LEVEL_MAX)
+        ck_fail(k, "A universe level exceeds the kernel's bound.");
+    else {
+        canonical = ck_level_build(k, &nf);
+        ++nf.constant;
+        next = ck_level_build(k, &nf);
+    }
+    ck_level_nf_free(&nf);
+    if (!canonical || !next)
+        return 0;
+    return typing(k, ck_universe(k, canonical), ck_universe(k, next), 0);
 }
 
 static cc_judgement_id constant(cc_kernel *k, cc_instruction rule, cc_term_kind kind, cc_term_kind type) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = rule}, NULL, 0, &found))
         return found;
-    return typing(k, make(k, kind, 0, 0, 0, 0, 0), make(k, type, 0, 0, 0, 0, 0), 0);
+    cc_term sort = type == CC_U ? ck_universe_at(k, 0) : make(k, type, 0, 0, 0, 0, 0);
+    return typing(k, make(k, kind, 0, 0, 0, 0, 0), sort, 0);
 }
 
 cc_judgement_id cc_instr_nat(cc_kernel *k) { return constant(k, CC_INSTR_NAT, CC_NAT, CC_U); }
@@ -524,7 +545,8 @@ cc_judgement_id cc_instr_abort(cc_kernel *k, cc_judgement_id type_id, cc_judgeme
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_ABORT, .premise = {type_id, impossible_id}}, NULL, 0, &found))
         return found;
     cc_fact t = {0}, e = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, impossible_id, CC_FACT_TYPING, &e) ||
         !universe(k, t.type, &level) ||
         !same(k, e.type, make(k, CC_VOID, 0, 0, 0, 0, 0), "abort needs an element of the empty type.") ||
@@ -538,11 +560,12 @@ cc_judgement_id cc_instr_sum(cc_kernel *k, cc_judgement_id left_id, cc_judgement
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_SUM, .premise = {left_id, right_id}}, NULL, 0, &found))
         return found;
     cc_fact a = {0}, b = {0};
-    uint32_t left = 0, right = 0, context = 0;
+    cc_term left = 0, right = 0;
+    uint32_t context = 0;
     if (!premise(k, left_id, CC_FACT_TYPING, &a) || !premise(k, right_id, CC_FACT_TYPING, &b) ||
         !universe(k, a.type, &left) || !universe(k, b.type, &right) || !merge(k, a.context, b.context, &context))
         return 0;
-    return typing(k, make(k, CC_SUM, 0, a.term, b.term, 0, 0), make(k, CC_U, left > right ? left : right, 0, 0, 0, 0), context);
+    return typing(k, make(k, CC_SUM, 0, a.term, b.term, 0, 0), ck_universe(k, ck_level_max(k, left, right)), context);
 }
 
 cc_judgement_id cc_instr_inject(cc_kernel *k, cc_judgement_id type_id, cc_judgement_id value_id, bool right) {
@@ -550,7 +573,8 @@ cc_judgement_id cc_instr_inject(cc_kernel *k, cc_judgement_id type_id, cc_judgem
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_INJECT, .premise = {type_id, value_id}, .operand = {right}}, NULL, 0, &found))
         return found;
     cc_fact t = {0}, v = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, value_id, CC_FACT_TYPING, &v) ||
         !universe(k, t.type, &level))
         return 0;
@@ -599,12 +623,13 @@ static cc_judgement_id former(cc_kernel *k, cc_term_kind kind, cc_entry_id id, c
         return found;
     cc_entry e = {0};
     cc_fact b = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!entry(k, id, false, &e) || !premise(k, family, CC_FACT_TYPING, &b) ||
         !universe(k, b.type, &level) || !bind(k, b.context, id, &context))
         return 0;
     return typing(k, make(k, kind, e.symbol, e.type, b.term, 0, 0),
-                  make(k, CC_U, e.level > level ? e.level : level, 0, 0, 0, 0), context);
+                  ck_universe(k, ck_level_max(k, e.level, level)), context);
 }
 
 cc_judgement_id cc_instr_pi(cc_kernel *k, cc_entry_id id, cc_judgement_id codomain) {
@@ -649,7 +674,8 @@ cc_judgement_id cc_instr_pair(cc_kernel *k, cc_judgement_id type_id, cc_judgemen
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_PAIR, .premise = {type_id, first_id, second_id}}, NULL, 0, &found))
         return found;
     cc_fact t = {0}, a = {0}, b = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, first_id, CC_FACT_TYPING, &a) ||
         !premise(k, second_id, CC_FACT_TYPING, &b) || !universe(k, t.type, &level))
         return 0;
@@ -690,7 +716,7 @@ cc_judgement_id cc_instr_domain(cc_kernel *k, cc_judgement_id type_id) {
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_DOMAIN, .premise = {type_id}}, NULL, 0, &found))
         return found;
     cc_fact t = {0};
-    uint32_t level = 0;
+    cc_term level = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !universe(k, t.type, &level))
         return 0;
     cc_node former = k->nodes[t.term];
@@ -704,7 +730,8 @@ cc_judgement_id cc_instr_family(cc_kernel *k, cc_judgement_id type_id, cc_judgem
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_FAMILY, .premise = {type_id, argument}}, NULL, 0, &found))
         return found;
     cc_fact t = {0}, a = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, argument, CC_FACT_TYPING, &a) ||
         !universe(k, t.type, &level))
         return 0;
@@ -725,7 +752,8 @@ cc_judgement_id cc_instr_path(cc_kernel *k, cc_entry_id dimension, cc_judgement_
         return found;
     cc_entry i = {0};
     cc_fact a = {0}, l = {0}, r = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!entry(k, dimension, true, &i) || !premise(k, family_id, CC_FACT_TYPING, &a) ||
         !premise(k, left_id, CC_FACT_TYPING, &l) || !premise(k, right_id, CC_FACT_TYPING, &r) ||
         !universe(k, a.type, &level) ||
@@ -834,7 +862,8 @@ cc_judgement_id cc_instr_system(cc_kernel *k, cc_entry_id dimension, cc_judgemen
         return found;
     cc_entry i = {0};
     cc_fact a = {0}, b = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!entry(k, dimension, true, &i) || !premise(k, family_id, CC_FACT_TYPING, &a) ||
         !premise(k, base_id, CC_FACT_TYPING, &b) || !universe(k, a.type, &level) ||
         !same(k, b.type, ck_endpoint_term(k, a.term, i.symbol, 0), "The base is not in the family at 0.") ||
@@ -1013,7 +1042,8 @@ cc_judgement_id cc_instr_sup(cc_kernel *k, cc_judgement_id type_id, cc_judgement
         return found;
     cc_fact t = {0}, l = {0}, c = {0};
     cc_node w = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, label_id, CC_FACT_TYPING, &l) ||
         !premise(k, children_id, CC_FACT_TYPING, &c) || !universe(k, t.type, &level) || !w_type(k, t.term, &w))
         return 0;
@@ -1062,7 +1092,8 @@ cc_judgement_id cc_instr_pushout(cc_kernel *k, cc_judgement_id source_id, cc_jud
                NULL, 0, &found))
         return found;
     cc_fact c = {0}, a = {0}, b = {0}, m = {0};
-    uint32_t lc = 0, la = 0, lb = 0, context = 0;
+    cc_term lc = 0, la = 0, lb = 0;
+    uint32_t context = 0;
     if (!premise(k, source_id, CC_FACT_TYPING, &c) || !premise(k, left_id, CC_FACT_TYPING, &a) ||
         !premise(k, right_id, CC_FACT_TYPING, &b) || !premise(k, maps_id, CC_FACT_TYPING, &m) ||
         !universe(k, c.type, &lc) || !universe(k, a.type, &la) || !universe(k, b.type, &lb))
@@ -1072,15 +1103,13 @@ cc_judgement_id cc_instr_pushout(cc_kernel *k, cc_judgement_id source_id, cc_jud
     if (!same(k, m.type, span, "The maps of a pushout are a pair C → A, C → B.") ||
         !merge(k, c.context, a.context, &context) || !merge3(k, context, b.context, m.context, &context))
         return 0;
-    uint32_t level = lc > la ? lc : la;
-    if (lb > level)
-        level = lb;
-    return typing(k, make(k, CC_PUSHOUT, 0, c.term, a.term, b.term, m.term), make(k, CC_U, level, 0, 0, 0, 0), context);
+    return typing(k, make(k, CC_PUSHOUT, 0, c.term, a.term, b.term, m.term),
+                  ck_universe(k, ck_level_max(k, ck_level_max(k, lc, la), lb)), context);
 }
 
 /* A pushout type as written, and the context of its typing judgement. */
 static bool pushout_type(cc_kernel *k, cc_judgement_id type_id, cc_fact *t, cc_node *span) {
-    uint32_t level = 0;
+    cc_term level = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, t) || !universe(k, t->type, &level))
         return false;
     *span = k->nodes[t->term];
@@ -1230,7 +1259,7 @@ cc_judgement_id cc_instr_glue_base(cc_kernel *k, cc_judgement_id base_id) {
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_GLUE_BASE, .premise = {base_id}}, NULL, 0, &found))
         return found;
     cc_fact a = {0};
-    uint32_t level = 0;
+    cc_term level = 0;
     if (!premise(k, base_id, CC_FACT_TYPING, &a) || !universe(k, a.type, &level))
         return 0;
     cc_term glue = make(k, CC_GLUE, 0, a.term, 0, 0, 0);
@@ -1281,7 +1310,8 @@ cc_judgement_id cc_instr_glue_piece(cc_kernel *k, cc_judgement_id system_id, cc_
                                   .operand = {face}}, NULL, 0, &found))
         return found;
     cc_fact s = {0}, t = {0}, e = {0};
-    uint32_t level = 0, own = 0, dims = 0, context = 0;
+    cc_term level = 0, own = 0;
+    uint32_t dims = 0, context = 0;
     if (!open_system(k, system_id, CC_GLUE, &s) || !premise(k, type_id, CC_FACT_TYPING, &t) ||
         !premise(k, equivalence_id, CC_FACT_TYPING, &e) || !universe(k, s.type, &level) || !universe(k, t.type, &own))
         return 0;
@@ -1306,7 +1336,7 @@ cc_judgement_id cc_instr_glue_piece(cc_kernel *k, cc_judgement_id system_id, cc_
         return 0;
     cc_term pieces = append_piece(k, glue.child[1], face, t.term, e.term);
     cc_term extended = pieces ? make(k, CC_GLUE, 0, glue.child[0], pieces, 0, 0) : 0;
-    cc_term sort = make(k, CC_U, own > level ? own : level, 0, 0, 0, 0);
+    cc_term sort = ck_universe(k, ck_level_max(k, own, level));
     return extended && sort ? system_fact(k, extended, sort, context, pending) : 0;
 }
 
@@ -1370,7 +1400,8 @@ cc_judgement_id cc_instr_glue_term_base(cc_kernel *k, cc_judgement_id type_id, c
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_GLUE_TERM_BASE, .premise = {type_id, base_id}}, NULL, 0, &found))
         return found;
     cc_fact g = {0}, a = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!premise(k, type_id, CC_FACT_TYPING, &g) || !premise(k, base_id, CC_FACT_TYPING, &a) ||
         !universe(k, g.type, &level))
         return 0;
@@ -1551,7 +1582,8 @@ cc_judgement_id cc_instr_convert(cc_kernel *k, cc_judgement_id typing_id, cc_jud
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_CONVERT, .premise = {typing_id, equality}}, NULL, 0, &found))
         return found;
     cc_fact t = {0}, e = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!premise(k, typing_id, CC_FACT_TYPING, &t) || !premise(k, equality, CC_FACT_EQUALITY, &e) ||
         !universe(k, e.type, &level) || !same(k, t.type, e.term, "The equality does not start at the judgement's type.") ||
         !merge(k, t.context, e.context, &context))
@@ -1564,7 +1596,8 @@ cc_judgement_id cc_instr_lift(cc_kernel *k, cc_judgement_id typing_id, cc_judgem
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_LIFT, .premise = {typing_id, type_id}}, NULL, 0, &found))
         return found;
     cc_fact t = {0}, b = {0};
-    uint32_t level = 0, context = 0;
+    cc_term level = 0;
+    uint32_t context = 0;
     if (!premise(k, typing_id, CC_FACT_TYPING, &t) || !premise(k, type_id, CC_FACT_TYPING, &b) ||
         !universe(k, b.type, &level))
         return 0;
