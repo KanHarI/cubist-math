@@ -11,6 +11,12 @@ const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "W"]);
 // names back their source stems (`A3` → `A`, `native10` → `x`) where no two
 // names would clash. The result is never checked or stored.
 export function displayTerm(term, budget = 256) {
+  const shown = betaReduce(term, budget);
+  return scopedNames(shown) ?? globalNames(shown);
+}
+
+// Beta-reduce within a budget of substitutions, keeping every name.
+export function betaReduce(term, budget = 256) {
   const reduced = new WeakMap();
   const beta = t => {
     if (!t || typeof t !== "object") return t;
@@ -21,8 +27,7 @@ export function displayTerm(term, budget = 256) {
     reduced.set(t, result);
     return result;
   };
-  const shown = beta(term);
-  return scopedNames(shown) ?? globalNames(shown);
+  return beta(term);
 }
 
 const stem = name => name.startsWith("__") ? name : /^native\d+$/.test(name) ? "x" : name.replace(/\d+$/, "") || name;
@@ -183,12 +188,15 @@ export class NativeCubicalElaborator {
   }
   // A goal, and the term a statement built for it, shown with one renaming,
   // so the context's names, the target and the term agree.
-  displayGoal(context, target, built = null, width = 400) {
+  // `print` is sourceText by default; cubicalText gives mathematical notation.
+  // A derivation shows its terms as they are: `reduce` false keeps redexes.
+  displayGoal(context, target, built = null, width = 400, print = null, reduce = true) {
     // Goals can share large terms; the printer stops after `width` nodes too.
-    const show = term => { const text = sourceText(term, this.displayNames, width); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
+    const printed = term => print ? print(term, this.displayNames) : sourceText(term, this.displayNames, width);
+    const show = term => { const text = printed(term); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
     let chained = { tag: "Pair", first: target, second: built ?? { tag: "Point" } };
     for (const [name, type] of [...context].reverse()) chained = T.pi(name, type, chained);
-    let shown = displayTerm(chained);
+    let shown = displayTerm(chained, reduce ? 256 : 0);
     const locals = [];
     while (locals.length < context.size && shown.tag === "Pi") {
       locals.push({ name: shown.name, type: show(shown.domain) });

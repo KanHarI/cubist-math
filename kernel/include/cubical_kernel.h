@@ -57,6 +57,27 @@ cc_error_kind cc_kernel_error_kind(const cc_kernel *);
  * to match, for diagnostics. Returns false for any other error or none. The
  * handles are valid until the next rollback, which also clears the error. */
 bool cc_kernel_mismatch(const cc_kernel *, cc_term *found, cc_term *expected);
+/* An optional trace of the checker's actions, for inspection only. It
+ * records events as the rules run and never changes a judgement. Starting a
+ * trace discards the previous one; events beyond its capacity are counted but
+ * not kept. Handles in events are valid until the next rollback.
+ *   INFER      a: raw term; the events that check it follow, one level deeper.
+ *   INFERRED   a: raw term, b: checked term, c: its type; b = c = 0 on failure.
+ *   REUSED     a: raw term, b: checked term, c: its type, from the check cache.
+ *   EXTEND     a: bound symbol, b: its type: the context gains an assumption.
+ *   CONVERT    a: type found, b: type expected, c: 1 when they agree.
+ *   REDUCE     a: term, b: its weak head normal form, when they differ.
+ * Reductions inside a conversion are not recorded. */
+typedef enum {
+    CC_TRACE_INFER = 1, CC_TRACE_INFERRED, CC_TRACE_REUSED, CC_TRACE_EXTEND, CC_TRACE_CONVERT, CC_TRACE_REDUCE
+} cc_trace_kind;
+typedef struct {
+    uint32_t kind, depth, a, b, c;
+} cc_trace_event;
+bool cc_kernel_trace_start(cc_kernel *, size_t capacity);
+void cc_kernel_trace_stop(cc_kernel *);
+size_t cc_kernel_trace_count(const cc_kernel *);
+bool cc_kernel_trace_event(const cc_kernel *, size_t index, cc_trace_event *);
 /* Clear a rejected request before constructing corrected raw syntax. */
 void cc_kernel_clear_error(cc_kernel *);
 /* Diagnostic transactions. Abort invalidates ALL handles made since begin.

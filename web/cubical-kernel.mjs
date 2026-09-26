@@ -1,5 +1,6 @@
 // Integer-handle interface to the independent C checker, usable in a browser
 // worker or Node. Building syntax never certifies it; check() does that in C.
+const traceKinds = ["", "infer", "inferred", "reused", "extend", "convert", "reduce"];
 export const cubicalKinds = [
   "", "U", "Var", "Pi", "Lam", "App", "Sigma", "Pair", "Fst", "Snd",
   "Nat", "Zero", "Succ", "NatRec", "Unit", "Point", "Path", "PLam", "PApp",
@@ -49,6 +50,21 @@ export class CubicalKernel {
     this.assertOpen();
     this.deadline = milliseconds > 0 ? performance.now() + milliseconds : 0;
     this.module._cb_deadline_ms(this.handle, milliseconds);
+  }
+  // Run an operation with the checker's trace on, and return the rules it
+  // applied, as events (kernel/include/cubical_kernel.h). The trace changes
+  // no result; events past the capacity are counted as dropped.
+  traced(operation, capacity = 4000) {
+    this.assertOpen();
+    if (!this.module._cb_trace(this.handle, capacity)) throw new Error("Could not start a kernel trace.");
+    try {
+      const value = operation();
+      const count = this.module._cb_trace_count(this.handle) >>> 0, kept = Math.min(count, capacity);
+      const field = (index, which) => this.module._cb_trace_event(this.handle, index, which) >>> 0;
+      const events = Array.from({ length: kept }, (_, index) => ({ kind: traceKinds[field(index, 0)],
+        depth: field(index, 1), a: field(index, 2), b: field(index, 3), c: field(index, 4) }));
+      return { value, events, dropped: count - kept };
+    } finally { this.module._cb_trace(this.handle, 0); }
   }
   checkDeadline() {
     if (this.deadline && performance.now() >= this.deadline)

@@ -65,6 +65,38 @@ cc_kernel *cc_kernel_new(void) {
     return k;
 }
 
+void ck_trace(cc_kernel *k, cc_trace_kind kind, uint32_t a, uint32_t b, uint32_t c) {
+    if (!k->trace || k->trace_mute) return;
+    if (k->trace_count < k->trace_capacity)
+        k->trace[k->trace_count] = (cc_trace_event){ kind, k->trace_depth, a, b, c };
+    if (k->trace_count < SIZE_MAX) ++k->trace_count;
+}
+
+bool cc_kernel_trace_start(cc_kernel *k, size_t capacity) {
+    if (!k || !capacity) return false;
+    cc_kernel_trace_stop(k);
+    k->trace = calloc(capacity, sizeof *k->trace);
+    if (!k->trace) return false;
+    k->trace_capacity = capacity;
+    return true;
+}
+
+void cc_kernel_trace_stop(cc_kernel *k) {
+    if (!k) return;
+    free(k->trace);
+    k->trace = NULL;
+    k->trace_count = k->trace_capacity = 0;
+    k->trace_depth = k->trace_mute = 0;
+}
+
+size_t cc_kernel_trace_count(const cc_kernel *k) { return k ? k->trace_count : 0; }
+
+bool cc_kernel_trace_event(const cc_kernel *k, size_t index, cc_trace_event *event) {
+    if (!k || !k->trace || !event || index >= k->trace_count || index >= k->trace_capacity) return false;
+    *event = k->trace[index];
+    return true;
+}
+
 void cc_kernel_set_optimizations(cc_kernel *k, unsigned flags) {
     if (!k) return;
     k->optimizations = flags & (CC_SHARE_SYNTAX | CC_REUSE_CHECKS);
@@ -79,6 +111,7 @@ void cc_kernel_set_step_budget(cc_kernel *k, uint64_t steps) {
 void cc_kernel_free(cc_kernel *k) {
     if (!k)
         return;
+    free(k->trace);
     for (size_t i = 1; i < k->formula_count; ++i)
         cc_clear(&k->formulas[i]);
     free(k->relocation);

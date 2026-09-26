@@ -98,7 +98,13 @@ struct cc_kernel {
     char error[192];
     cc_error_kind error_kind; /* meaningful only while error is set */
     cc_term mismatch_found, mismatch_expected; /* meaningful for a MISMATCH error */
+    /* An optional record of checking events. It observes the rules and never
+     * influences them. trace_mute silences events nested in a conversion. */
+    cc_trace_event *trace;
+    size_t trace_count, trace_capacity;
+    unsigned trace_depth, trace_mute;
 };
+void ck_trace(cc_kernel *, cc_trace_kind, uint32_t a, uint32_t b, uint32_t c);
 
 cc_context ck_extend(cc_kernel *, uint32_t, cc_term, const cc_context *);
 void ck_clear_check_cache(cc_kernel *);

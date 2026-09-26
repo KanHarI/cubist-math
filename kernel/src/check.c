@@ -82,7 +82,16 @@ bool ck_infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dims,
         --k->recursion;
         return ck_fail(k, "Native reference recursion depth exceeded.");
     }
-    bool success = ck_inference_get(k, raw, ctx, dims, result) || infer(k, raw, ctx, dims, result);
+    bool success = ck_inference_get(k, raw, ctx, dims, result);
+    if (success) ck_trace(k, CC_TRACE_REUSED, raw, result->expression, result->type);
+    else {
+        ck_trace(k, CC_TRACE_INFER, raw, 0, 0);
+        ++k->trace_depth;
+        success = infer(k, raw, ctx, dims, result);
+        --k->trace_depth;
+        bool checked = success && !k->error[0];
+        ck_trace(k, CC_TRACE_INFERRED, raw, checked ? result->expression : 0, checked ? result->type : 0);
+    }
     if (success && !k->error[0]) {
         ck_inference_put(k, raw, ctx, dims, *result);
         ck_inference_put(k, result->expression, ctx, dims, *result);
