@@ -68,6 +68,36 @@ def copy_two : copy(2) = 2 {
     succ h =&gt; cong((fun (n : Nat) =&gt; succ(n)), h);
   };</code></pre>
             <p>The zero branch needs <code>0 + 0 = 0</code>, which holds by computation. The successor branch has <code>h : k + 0 = k</code> and needs <code>succ(k) + 0 = succ(k)</code>. That computes to <code>succ(k + 0) = succ(k)</code>, which is <code>cong</code> of <code>succ</code> applied to <code>h</code>. When a statement quantifies over further variables, put them inside the motive, as in <code>return (forall y : Nat, …)</code>, so the induction hypothesis is general enough.</p>
+            <h3 id="order-by-induction">The order on natural numbers</h3>
+            <p>The arithmetic library defines <code>&lt;=</code> by induction on its first argument, with the motive <code>Nat -> U0</code>. For each <code>x</code>, the induction builds a function that takes <code>y</code> and returns the type <code>x &lt;= y</code>: <code>Unit</code> when it holds and <code>Void</code> when it does not. <code>&lt;</code> is defined from it.</p>
+            <pre><code data-check="excerpt" data-module="naturals">// Order, computed: 0 &lt;= b is Unit; succ(a) &lt;= 0 is Void;
+// succ(a) &lt;= succ(b) is a &lt;= b.
+def le(x : Nat) := induction x as k return (Nat -&gt; U0) {
+    zero =&gt; (fun (x2 : Nat) =&gt; Unit);
+    succ h =&gt; (fun (y : Nat) =&gt; induction y as j return U0 {
+        zero =&gt; Void;
+        succ ignored =&gt; h(j);
+      });
+  };
+
+// Strict order: n &lt; p is succ(n) &lt;= p.
+def isLt(n, p : Nat) := le(succ(n), p);</code></pre>
+            <p><code>0 &lt;= y</code> is <code>Unit</code> for every <code>y</code>. For <code>succ(k) &lt;= y</code>, a second induction looks at <code>y</code>. <code>succ(k) &lt;= 0</code> is <code>Void</code>, and <code>succ(k) &lt;= succ(j)</code> is <code>h(j)</code>, where <code>h</code> is the function built for the predecessor <code>k</code>, so it is <code>k &lt;= j</code>. A comparison of numerals therefore computes all the way to <code>Unit</code> or <code>Void</code>, and <code>tt</code> proves a true one.</p>
+            <p>With a variable, the computation stops at the variable, and a proof goes by induction:</p>
+            <pre><code data-check="accept">import naturals;
+
+// 0 &lt;= n computes to Unit.
+def zero_le(n : Nat) : 0 &lt;= n {
+  exact tt;
+}
+
+// n &lt;= succ(n), by induction on n.
+def le_succ(n : Nat) := induction n as k return (k &lt;= succ(k)) {
+  zero =&gt; tt;
+  succ h =&gt; h;
+};</code></pre>
+            <p>In <code>le_succ</code>, the zero branch needs <code>0 &lt;= 1</code>, which is <code>Unit</code>. The successor branch has <code>h : k &lt;= succ(k)</code> and needs <code>succ(k) &lt;= succ(succ(k))</code>, which computes to <code>k &lt;= succ(k)</code>: exactly <code>h</code>. The library proves <code>n &lt;= n</code> the same way, as <code>nat_le_refl</code>, and so <code>n &lt; succ(n)</code>, which computes to <code>n &lt;= n</code>.</p>
+
           </section>
           <section id="w-types">
             <h2>W types and binary numbers</h2>

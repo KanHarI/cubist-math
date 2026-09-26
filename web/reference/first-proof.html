@@ -165,6 +165,7 @@ def seven_lt_two : 7 &lt; 2 {
   exact tt;  // Error: Type mismatch: found Unit, expected 7 &lt; 2.
 }</code></pre>
             <p>With a variable, the computation stops at the variable, so proofs about <code>&lt;</code> use lemmas. <code>nat_le_refl(n) : n &lt;= n</code> proves <code>n &lt; succ(n)</code>, because <code>succ(n) &lt;= succ(n)</code> computes to <code>n &lt;= n</code>. Both definitions describe the same order. The library’s gives short proofs by computation; the one in this section says what a proof contains.</p>
+            <p>The library’s <code>&lt;</code> is defined by induction on natural numbers, which this chapter has not introduced yet. The chapter on natural numbers and inductive types returns to it: <a href="induction.html#order-by-induction">the order on natural numbers</a> shows its definition and proofs about it by induction.</p>
             </aside>
           </section>
           <section id="checking">
