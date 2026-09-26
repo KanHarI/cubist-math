@@ -5,6 +5,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { instructions } from "../web/cubical-instructions.mjs";
+import { judgementGraph } from "../web/cubical-graph-view.mjs";
 
 const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
 const source = `import naturals;
@@ -83,4 +84,29 @@ test("the judgement graph records each derivation: rule, premises, highlighted s
   assert.equal(graph.judgement(entry.source).rule, "nat");
   // Repeating an instruction returns the same judgement.
   assert.equal(driver.check(value, type), root.id);
+});
+
+test("the workbench's kernel graph lists lt_succ's derivation in THTH style", async t => {
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check(source, "first");
+  const view = program.inspect("first__lt_succ");
+  const checked = program.checker.syntax.check(view.expression, view.type, [], new Map());
+  const listing = judgementGraph(program, view, checked);
+  const root = listing.rows.at(-1);
+  assert.equal(root.number, listing.root);
+  assert.equal(root.label, "PiIntro");
+  assert.match(root.statement, /^\{\} ⊢ λ \(n : Nat\)\. .* : Π \(n : Nat\), lt\(n, succ\(n\)\)$/);
+  // Numbered in derivation order, premises first, each used where it is cited.
+  for (const row of listing.rows) for (const premise of row.premises) {
+    assert.ok(premise < row.number);
+    assert.ok(listing.rows[premise - 1].usedBy.includes(row.number));
+  }
+  // The goal lt(n, succ(n)) is unfolded at its highlighted head, then computed.
+  const unfold = listing.rows.find(row => row.highlight?.rule === "delta" && row.highlight.text === "lt");
+  assert.deepEqual(unfold.highlight.position, [0, 0]);
+  assert.match(unfold.statement, /^\{n : Nat\} ⊢ lt\(n, succ\(n\)\) ≡ /);
+  assert.ok(listing.rows.some(row => row.highlight?.rule === "iota"));
+  assert.ok(listing.rows.some(row => row.label === "SigmaIntro" && /^\{n : Nat\} ⊢ \(0 , refl\(succ\(n\)\)\) : Σ/.test(row.statement)));
+  assert.deepEqual(listing.entries.map(entry => entry.shown), ["n", "ascription", "d0"]);
 });

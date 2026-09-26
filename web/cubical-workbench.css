@@ -20,3 +20,17 @@
 .assembly-table tr.selected { background: #fff0b8; outline: 2px solid #a66a0a; outline-offset: -2px; }
 .assembly-definition-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin: .4rem 0; }
 .assembly-definition-actions button { font-size: .75rem; }
+
+.graph-listing { list-style: none; padding: 0; margin: 0; max-height: 65vh; overflow: auto; border: 1px solid #dce2dc; border-radius: 6px; }
+.graph-row { padding: .55rem .7rem; border-bottom: 1px solid #dce2dc; }
+.graph-row.selected { background: #fff0b8; outline: 2px solid #a66a0a; outline-offset: -2px; }
+.graph-row.graph-root { border-left: 4px solid #3f7f4a; }
+.graph-head, .graph-foot { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem .8rem; font-size: .8rem; }
+.graph-number { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #5b665b; min-width: 2.5rem; }
+.graph-rule { font-weight: 600; }
+.graph-statement { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem; margin: .25rem 0; overflow-wrap: anywhere; }
+.graph-highlight { font-size: .8rem; color: #7a4a00; overflow-wrap: anywhere; }
+.graph-link, .graph-node { border: 0; padding: 0 .15rem; background: transparent; font: inherit; text-decoration: underline; cursor: pointer; }
+.graph-node { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.graph-entries h3 { font-size: 1rem; margin: 1rem 0 .4rem; }
+.graph-entry-list { font-size: .85rem; }

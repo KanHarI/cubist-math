@@ -130,7 +130,7 @@ export class InstructionGraph {
     const field = index => this.module._cb_entry(this.kernel.handle, id, index) >>> 0;
     const dimension = !!field(2), symbol = field(0);
     if (!dimension && !symbol) throw new Error(`Unknown context entry ${id}.`);
-    return { id, dimension, symbol, name: dimension ? `i${symbol}` : this.kernel.symbolName(symbol),
+    return { id, dimension, symbol, name: dimension ? `d${symbol}` : this.kernel.symbolName(symbol),
       type: field(1), source: field(3) };
   }
 }

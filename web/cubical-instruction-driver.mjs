@@ -17,9 +17,13 @@ export class InstructionDriver {
     this.nodes = new Map();
   }
 
-  // The judgement `expression : type` for a closed checked term and its type.
-  check(expression, type) {
-    return this.convertTo(this.derive(expression, new Map()), this.asType(this.derive(type, new Map())));
+  // The judgement `expression : type` for a checked term and its type, in a
+  // context of [symbol, type] assumptions, each over the ones before it.
+  check(expression, type, context = []) {
+    const scope = new Map();
+    for (const [symbol, assumption] of context)
+      scope.set(symbol, this.bind(symbol, this.asType(this.derive(assumption, scope))));
+    return this.convertTo(this.derive(expression, scope), this.asType(this.derive(type, scope)));
   }
 
   node(handle) {
@@ -90,9 +94,9 @@ export class InstructionDriver {
       return g.apply(fn, this.convertTo(derive(b), this.evidence(this.focus(fn, "type", [0]))));
     }
     case "Pair": {
-      const type = this.shape(this.focus(this.asType(derive(a)), "term"), "Sigma");
+      const [type, back] = this.former(this.asType(derive(a)), "Sigma");
       const first = this.convertTo(derive(b), g.domain(type));
-      return g.pair(type, first, this.convertTo(derive(c), g.family(type, first)));
+      return this.restore(g.pair(type, first, this.convertTo(derive(c), g.family(type, first))), back);
     }
     case "Fst": case "Snd": {
       const pair = this.shape(this.focus(derive(a), "type"), "Sigma");
@@ -101,9 +105,9 @@ export class InstructionDriver {
     case "Abort": return g.abort(this.asType(derive(a)), this.convertTo(derive(b), g.void()));
     case "Sum": return g.sum(this.asType(derive(a)), this.asType(derive(b)));
     case "Inl": case "Inr": {
-      const type = this.shape(this.focus(this.asType(derive(a)), "term"), "Sum");
+      const [type, back] = this.former(this.asType(derive(a)), "Sum");
       const summand = this.evidence(this.focus(type, "term", [n.kind === "Inl" ? 0 : 1]));
-      return g.inject(type, this.convertTo(derive(b), summand), n.kind === "Inr");
+      return this.restore(g.inject(type, this.convertTo(derive(b), summand), n.kind === "Inr"), back);
     }
     case "NatRec": {
       const value = this.convertTo(derive(d), g.nat());
@@ -144,6 +148,17 @@ export class InstructionDriver {
     default: throw unsupported(n.kind);
     }
   }
+
+  // A constructor's annotation as a type former of the given kind: the
+  // annotation itself, or its reduct with the equality back to it, so the
+  // constructed term can be given the annotation as its type again.
+  former(annotation, kind) {
+    if (this.node(this.statement(annotation).term).kind === kind) return [annotation, null];
+    const reduct = this.focus(this.graph.refl(annotation), "other");
+    this.shape(reduct, kind);
+    return [this.graph.side(reduct.ref.id, "other"), this.graph.symmetry(reduct.ref.id)];
+  }
+  restore(judgement, back) { return back ? this.graph.convert(judgement, back) : judgement; }
 
   // A motive over `domain`: a family P : Π(x : A). U(l) with A matching the
   // domain's type judgement.

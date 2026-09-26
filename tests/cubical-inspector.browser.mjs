@@ -115,6 +115,16 @@ try {
   const operand = assemblyBench.locator(".assembly-table .assembly-reference").first();
   const handle = await operand.getAttribute("data-handle"); await operand.click();
   assert.equal(await assemblyBench.locator(".assembly-table tr.selected").getAttribute("id"), `assembly-node-${handle}`);
+  // The kernel graph derives the view again in instruction mode, and its
+  // node links lead back into the assembly's syntax graph.
+  await assemblyBench.locator("#workbench-view").selectOption("graph");
+  assert.match(await assemblyBench.locator("#graph-status").textContent(), /^\d+ judgements, \d+ of them highlighted steps; the last, #\d+, is the conclusion\.$/);
+  // hd is a local definition over n : Nat, derived with its context entry.
+  assert.match(await assemblyBench.locator(".graph-row.graph-root .graph-statement").textContent(),
+    /^\{n : Nat\} ⊢ snd\(snd\(prime_divisor_exists\(.*\)\)\) : Divides\(/);
+  await assemblyBench.locator(".graph-row.graph-root .graph-node").first().click();
+  assert.equal(await assemblyBench.locator("#workbench-view").inputValue(), "assembly");
+  assert.equal(await assemblyBench.locator(".assembly-table tr.selected").count(), 1);
   const downloaded = assemblyBench.waitForEvent("download");
   await assemblyBench.locator("#assembly-download").click();
   assert.match((await downloaded).suggestedFilename(), /\.assembly\.txt$/);

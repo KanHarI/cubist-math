@@ -18,7 +18,7 @@
         <button id="back" disabled>← Back</button>
         <button id="unhighlight">Un-highlight</button>
         <label for="workbench-view">View</label>
-        <select id="workbench-view"><option value="math">Mathematical</option><option value="assembly">Kernel assembly</option></select>
+        <select id="workbench-view"><option value="math">Mathematical</option><option value="assembly">Kernel assembly</option><option value="graph">Kernel graph</option></select>
         <button id="check" data-math-option disabled>Check edited expression</button>
         <label data-math-option><input id="fold-names" type="checkbox" checked /> Fold source names</label>
         <label data-math-option><input id="truncation-sugar" type="checkbox" checked /> Truncation ‖A‖</label>
@@ -67,6 +67,11 @@
             <button id="assembly-more" hidden>Show more nodes</button>
             <button id="assembly-download" disabled>Download shown assembly</button>
           </div>
+        </section>
+        <section id="graph-view" hidden aria-label="Kernel judgement graph">
+          <p class="hint">The inspected term derived again by the instruction kernel, one THTH-style rule per judgement. Each judgement lists the judgements it was derived from and those that use it; a step names the subterm it contracts. The graph shares repeated derivations, and <em>term</em> and <em>type</em> open a node of the syntax graph in the kernel assembly.</p>
+          <p id="graph-status" role="status"></p>
+          <div id="graph-listing"></div>
         </section>
       </section>
     </main>

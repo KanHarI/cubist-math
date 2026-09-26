@@ -1,8 +1,16 @@
 # Kernel instructions: a THTH-style forward kernel
 
-Status: Stage 1 is implemented on the `kernel-instructions` branch
-(`kernel/src/instructions.c`, `kernel/tests/test_instructions.c`), beside the
-current term checker, which it does not change.
+Status: on the `kernel-instructions` branch, beside the current term checker,
+which it does not change:
+
+- Stage 1 is implemented: `kernel/src/instructions.c`, tested by
+  `kernel/tests/test_instructions.c`.
+- Most of Stage 2 is implemented: the WASM bridge, `web/cubical-instructions.mjs`,
+  the driver `web/cubical-instruction-driver.mjs`, and the workbench's
+  **Kernel graph** view (`web/cubical-graph-view.mjs`).
+- In instruction mode, the first proof checks, and so does every
+  `library/naturals` declaration except `nat_add_comm`, whose `trans` needs
+  compound interval formulas.
 
 ## Goal
 
@@ -114,6 +122,11 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
     `Symmetry`, `Transitivity`.
 - **Conversion:** `Convert(t : A, A ≡ B)` gives `t : B`; `Lift` raises
   `t : A` to a cumulative `B` (universes by level, `Π`/`Σ` by codomain).
+  `Step` and `Replace` also rewrite the term or the type of a typing judgement
+  in place, as THTH's `HighType` with a pointed reduction did: a reduct of a
+  type is a type, so no typing judgement for the type is needed.
+- **Endpoints:** `Endpoint` substitutes 0 or 1 for a dimension in a typing
+  judgement, for the endpoint types of a dependent path family.
 
 Highlighting stays in the kernel on purpose: a short targeted reduction or
 rewrite can replace normalizing a whole type.
@@ -160,10 +173,25 @@ equality, the interval and face algebra, deterministic normalization, the two
 hash graphs, budgets and deadlines. It loses the conversion strategy, the
 hints and every implicit reduction.
 
+## The driver
+
+`InstructionDriver` replays a checked term as instructions, one per node. Where
+a rule needs two types to agree, it makes them agree without trust:
+
+- by weak-head steps, taken in the order the term checker's reduction takes them;
+- by congruence on common heads;
+- by `Normalize` when that runs long;
+- by `Lift` for cumulativity.
+
+A rule's expected type comes either from a premise the driver can rewrite in
+place, or from a typing judgement it derives for that type. It reduces a
+constructor's annotation once, as an equality, and converts the result back
+along it.
+
 ## Inspection: the graphs in the workbench
 
 The instructions the elaborator sends are the derivation. The kernel
-workbench gains a graph explorer:
+workbench's **Kernel graph** view (`?view=graph`) explores it:
 
 - **Judgements:** each with its rule, operands and highlighted position,
   rendered as `Γ ⊢ t : T` or `Γ ⊢ a ≡ b : T` in mathematical notation; its
@@ -174,8 +202,8 @@ workbench gains a graph explorer:
 - **Syntax:** a node's kind, payload and children, with sharing visible:
   every judgement and definition that uses the node.
 
-The Elaboration panels then show the instructions directly, instead of
-reconstructing a derivation from a trace (#36).
+Still to do: the Elaboration panels should show the instructions directly,
+instead of reconstructing a derivation from a trace (#36).
 
 ## Costs and risks
 
@@ -198,11 +226,13 @@ reconstructing a derivation from a trace (#36).
    and syntax hash graphs, contexts, universes, `Π`, `Σ`, `Nat`, `Unit`,
    `Void`, sums, paths without composition, definitions, equality judgements
    with highlighted steps, replacement, eta, conversion and lift.
-2. **Untrusted driver and search** in JavaScript: the WASM bridge and a kernel
-   wrapper; turn a checked term into instructions and conversion steps. The
-   first proof and `library/naturals` check in instruction mode, with the same
-   judgements as the term checker; the workbench explores the graphs, and the
-   Elaboration panel shows the instructions.
+2. **Untrusted driver and search** in JavaScript, mostly done:
+   - done: the WASM bridge and a kernel wrapper;
+   - done: turning a checked term into instructions and conversion steps;
+   - done: the first proof and `library/naturals` (except `nat_add_comm`)
+     check in instruction mode, at the term checker's types;
+   - done: the workbench explores the graphs;
+   - remaining: the Elaboration panel shows the instructions.
 3. **W types and the cubical rules:** composition, transport, `Glue`,
    pushouts. The archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the
