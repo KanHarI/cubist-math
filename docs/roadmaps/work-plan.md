@@ -69,17 +69,15 @@ path builders. This changes what a kernel package is and how it is accepted.
   driver, which then searches on its own, as it already does where the
   oracle runs out of budget. The reference checker keeps its tests for the
   CCHM fragment. Their retirement is a separate decision, taken when the
-  driver no longer benefits from the oracle:
-  `node tools/instruction-coverage.mjs --no-oracle` measures that, and
-  phase 4 of the [learned search](learned-search.md) design aims at it.
-  Measured on 2026-09-26, the driver still needs it: without the oracle
-  the archive checks in 62 s against 33 s, three declarations run out of
-  kernel budget (`finite_subgroup_fixed_degree_upper_bound`,
-  `f4_base_field_is_f2` and `f2_embedded_compositum_is_f2`, with five
-  dependents), and deriving every definition again takes 34 s against
-  10 s. After L1.1 most generic terms carry level syntax the oracle cannot
-  read, so K1.4 below, the driver deriving the archive unaided, precedes
-  L1.1. At the retirement the
+  driver no longer benefits from the oracle. On 2026-09-26 it still did:
+  without the oracle the archive checked in 62 s against 33 s, and three
+  declarations ran out of kernel budget. After L1.1 most generic terms
+  carry level syntax the oracle cannot read, so K1.4 below, the driver
+  deriving the archive unaided, preceded L1.1. K1.4 is done: the driver's
+  own guide compares weak head normal forms, the archive checks in 37 s
+  against 34.9 s with the oracle, and the guide is the default
+  (`node tools/instruction-coverage.mjs --oracle` compares). The
+  retirement can now be taken as its own change. At the retirement the
   three trusted functions still in those files, alpha equality and
   syntactic cumulativity in `term_conversion.c` and the pushout bridge type
   in `check_pushout.c`, move to their own file, and the rest of
@@ -204,7 +202,7 @@ navigation, every link and anchor, the redirects and the error catalogue.
 | K1.1 | G0 rule specification and consistency note (done) | Kernel G0 | — | M |
 | K1.2 | G0 in the instruction kernel: level nodes and arithmetic, level entries, `LevelPi`, `LevelLambda`, `LevelApply`, symbolic `Lift`, level-Π composition, ABI, sanitizers (done) | Kernel G0 | K1.1 | L |
 | K1.3 | G0 in the driver and bridges: deriving level binders and instantiations, agreement of universes by level normal form, decoding, serialization (done; its source cases move with L1.1) | Kernel G0 | K1.2 | M |
-| K1.4 | The driver derives the archive unaided: its congruence and unfolding choices without the conversion oracle, with no declaration over the limit and at most half again the guided time | Kernel instructions | — | M |
+| K1.4 | The driver derives the archive unaided: its congruence and unfolding choices without the conversion oracle, with no declaration over the limit and at most half again the guided time (done: the driver's own guide, 37 s against 34.9 s, every definition derived again) | Kernel instructions | — | M |
 | L1.1 | Universe binders, level expressions, removal of templates | Kernel G0 (language part) | K1.3, K1.4 | L |
 | L1.2 | Goal and proof-construction layer (core done) | HoTT A5 | — | L |
 | L1.3 | Deterministic fuel; residual goals in diagnostics | HoTT A4, A6 | L1.2 for A6 | M |
@@ -453,13 +451,15 @@ Next, as of 2026-09-26:
 
 1. **G0**, the main track. It gates H1, theories, inductive declarations
    and `match`, `Id`, computation notation and the rebuild. K1.2 and K1.3,
-   the kernel's and the driver's halves, are done. L1.1, the language, is
-   next once K1.4 holds, so K1.4 is now on the critical path.
-2. Alongside it, **K1.4**, the driver deriving the archive without the
-   conversion oracle, which L1.1 waits for (the measurement above). Phases
-   1 and 2 of the [learned search](learned-search.md) design, the driver's
-   explicit options and the kernel cost of each instruction, are its
-   tooling; phases 3 to 5 wait for their numbers.
+   the kernel's and the driver's halves, are done, and so is K1.4: the
+   driver steers by its own guide, which reads level syntax, instead of the
+   term checker's conversion. L1.1, the language, is next.
+2. Optional, standing alone: phases 1 and 2 of the
+   [learned search](learned-search.md) design, the driver's explicit
+   options and the kernel cost of each instruction; phases 3 to 5 wait for
+   their numbers. The retirement of the term checker and the reference
+   checker, now that nothing in the driver asks them, is a separate
+   decision.
 3. Also alongside, small self-contained language packages that need only
    the goal layer: L1.5 (Σ projections, `induction p;`, `show` and
    `suffices`) and L1.3 (deterministic fuel, residual goals in

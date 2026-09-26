@@ -78,6 +78,26 @@ export class InstructionGraph {
   // A universe variable x < ω (G0): a level entry, used only inside levels.
   level(name) { return this.levelEntry(this.kernel.symbol(name)); }
   levelEntry(symbol) { return this.issue(LEVEL, symbol); }
+  // The kernel's weak head normal form of a term, within `steps` of its
+  // budget, or 0 when they run out: trusted reduction used as a query by the
+  // search, never evidence. Running out of time is passed on.
+  head(term, steps) {
+    const k = this.kernel, m = this.module;
+    k.checkDeadline();
+    m._cb_step_budget(k.handle, steps, 0);
+    try {
+      const id = m._cb_head(k.handle, term) >>> 0, kind = k.errorKind();
+      // A reduction may answer while a nested computation ran out, with the
+      // error still recorded: that is no answer, and the error must not stay
+      // behind to fail the next instruction.
+      if (id && kind === "none") return id;
+      m._cb_clear_error(k.handle);
+      if (kind === "deadline") throw new KernelError("Declaration time limit exceeded.", "deadline");
+      return 0;
+    } finally {
+      m._cb_step_budget(k.handle, Number(k.stepBudget & 0xffffffffn), Number(k.stepBudget >> 32n));
+    }
+  }
   levelPi(entry, body) { return this.issue("levelPi", entry, body); }
   levelLambda(entry, body) { return this.issue("levelLambda", entry, body); }
   levelApply(fn, level) { return this.issue("levelApply", fn, level); }

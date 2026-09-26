@@ -3,9 +3,9 @@
 // once, every check derived by the instruction kernel; then every definition's
 // value is derived again by a fresh instruction driver at its type, with a
 // time limit per definition. Writes build/instruction-coverage.json and prints a summary.
-//   node tools/instruction-coverage.mjs [--limit-ms=5000] [--no-oracle]
-// With --no-oracle the driver searches without the term checker's conversion,
-// which measures how much the search depends on it.
+//   node tools/instruction-coverage.mjs [--limit-ms=5000] [--oracle]
+// The driver steers by its own guide; with --oracle, by the term checker's
+// conversion instead, for comparison.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
@@ -15,7 +15,7 @@ import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 
 const limitArg = process.argv.find(arg => arg.startsWith("--limit-ms="));
 const limitMs = limitArg ? Number(limitArg.slice("--limit-ms=".length)) : 5000;
-const oracle = !process.argv.includes("--no-oracle");
+const oracle = process.argv.includes("--oracle");
 const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
 const program = new CubicalProgram(await createCubical(), readSource);
 program.kernel.conversionOracle = oracle;
@@ -46,7 +46,7 @@ const report = { definitions: kernel.definitions.size, derived: times.length, li
   failures: Object.fromEntries(Object.entries(failures).sort((a, b) => b[1].length - a[1].length)) };
 await mkdir(new URL("../build/", import.meta.url), { recursive: true });
 await writeFile(new URL("../build/instruction-coverage.json", import.meta.url), JSON.stringify(report, null, 2) + "\n");
-console.log(`Archive checked ${oracle ? "with" : "without"} the conversion oracle in ${checkSeconds} s`
+console.log(`Archive checked ${oracle ? "with the conversion oracle" : "with the driver's guide"} in ${checkSeconds} s`
   + `${checked.complete ? "" : `, with ${report.checked.gaps.length} gaps`}.`);
 for (const gap of report.checked.gaps) console.log(`  gap  ${gap.module}.${gap.name ?? "?"}: ${gap.reason}`);
 console.log(`${report.derived} of ${report.definitions} definitions derive in instruction mode `

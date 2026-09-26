@@ -430,3 +430,27 @@ test("G0: the driver's level normal forms agree with the kernel's on random leve
   }
   assert.ok(equal > 0);
 });
+
+test("the driver's guide compares weak heads: equal, different, or unknown", async t => {
+  const kernel = new CubicalKernel(await createCubical());
+  t.after(() => kernel.dispose());
+  const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel), e = term => syntax.encode(term);
+  const guide = (x, y) => driver.guide(x, y, null, null, { left: 400 });
+  const zero = { tag: "Zero" }, one = { tag: "Succ", value: zero }, two = { tag: "Succ", value: one }, nat = { tag: "Nat" };
+  const successor = { tag: "Lam", name: "n", domain: nat, body: { tag: "Succ", value: { tag: "Var", name: "n" } } };
+  // Equal after computing heads; different constructors or neutral terms.
+  assert.equal(guide(e({ tag: "App", fn: successor, arg: one }), e(two)), true);
+  assert.equal(guide(e(one), e(two)), false);
+  assert.equal(guide(e(nat), e({ tag: "U", level: 0 })), false);
+  assert.equal(guide(e({ tag: "Var", name: "x" }), e({ tag: "Var", name: "y" })), false);
+  assert.equal(guide(e({ tag: "Var", name: "x" }), e(zero)), false);
+  // A lambda against a neutral function may be equal by eta: unknown.
+  assert.equal(guide(e({ tag: "Lam", name: "m", domain: nat, body: { tag: "Var", name: "m" } }), e({ tag: "Var", name: "f" })), null);
+  // A path at an endpoint of its annotated type is that endpoint: nothing is
+  // computed, and the path may be a variable.
+  const annotation = e({ tag: "Path", dim: "i", family: nat, left: zero, right: one });
+  const at = end => kernel.term("PApp", syntax.formula(end ? [[]] : [], "interval"), e({ tag: "Var", name: "p" }), annotation);
+  assert.equal(guide(at(0), e(zero)), true);
+  assert.equal(guide(at(1), e(one)), true);
+  assert.equal(guide(at(0), e(one)), false);
+});
