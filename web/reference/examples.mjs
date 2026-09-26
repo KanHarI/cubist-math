@@ -3,6 +3,7 @@
 // checker links becomes clickable and opens the workspace's kernel inspector
 // in a side panel, checked and inspected in the same way as in a proof.
 import { tokenPattern, tokenStyle, numeralExpansion } from "../source-tokens.mjs";
+import { enableTokenTips } from "../token-tips.mjs";
 
 const workerURL = new URL("../cubical-worker.mjs", import.meta.url);
 const workspaceURL = new URL("../proof.html?example=1", import.meta.url);
@@ -64,14 +65,15 @@ function render(code, source, links = []) {
       button.type = "button";
       button.className = `example-token${style ? ` ${style}` : ""}`;
       button.textContent = text;
-      button.title = expansion ? `${text} expands to ${expansion}` : `Inspect ${text} as a checked kernel term`;
+      if (expansion && expansion !== text) button.dataset.tip = `${text} expands to ${expansion}`;
+      else button.title = `Inspect ${text} as a checked kernel term`;
       button.onclick = () => openInspector(source, start);
       parts.push(button);
     } else if (style) {
       const span = document.createElement("span");
       span.className = style;
       span.textContent = text;
-      if (expansion) span.title = `${text} expands to ${expansion}`;
+      if (expansion && expansion !== text) span.dataset.tip = `${text} expands to ${expansion}`;
       parts.push(span);
     } else parts.push(document.createTextNode(text));
   }
@@ -133,6 +135,7 @@ function enhance(pre, code) {
 }
 
 // Every Cubist example is highlighted at once; checked ones gain links later.
+enableTokenTips();
 for (const code of document.querySelectorAll('pre > code[data-check]:not([data-check="cli"])'))
   render(code, code.textContent);
 const examples = [...document.querySelectorAll('pre > code[data-check="accept"], pre > code[data-check="reject"]')];

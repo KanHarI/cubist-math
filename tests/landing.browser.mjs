@@ -85,9 +85,13 @@ try {
       for (const name of ["GroupIso", "CircleLoopGroup", "IntegerGroup"])
         assert.equal(await page.locator(`#kernel-type [data-name="${name}"]`).count(), 1);
       assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
-      const tuple = page.locator('#read-source .reference.macro[data-name="("][title*="winding, (integer_loop"]').first();
+      const tuple = page.locator('#read-source .reference.macro[data-name="("][data-tip*="winding, (integer_loop"]').first();
       assert.equal(await tuple.count(), 1);
-      assert.match(await tuple.getAttribute("title"), /winding, \(integer_loop, \(integer_loop_winding/);
+      // The expansion shows at once on hover, without the browser's title delay.
+      await tuple.hover();
+      const tip = page.locator(".token-tip");
+      assert.equal(await tip.isVisible(), true);
+      assert.match(await tip.textContent(), /winding, \(integer_loop, \(integer_loop_winding/);
       await tuple.click();
       assert.equal(await page.locator("#inspect-kind").textContent(), "tuple macro");
       assert.match(await page.locator("#inspect-description").textContent(), /Expands to \(winding, \(integer_loop/);

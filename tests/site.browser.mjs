@@ -69,8 +69,11 @@ try {
   await page.locator("#tour-numbers").scrollIntoViewIfNeeded();
   await page.waitForSelector("#tour-numbers .example-token");
   assert.match(await page.locator("#tour-numbers .example-bar span").first().textContent(), /evaluate at line 7: 6/);
+  // A numeral's expansion shows at once on hover.
+  await page.locator('#tour-numbers [data-tip*="succ("]').first().hover();
+  assert.match(await page.locator(".token-tip:not([hidden])").textContent(), /^\d+ expands to succ\(/);
   assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?example=1#source=/);
-  console.log("PASS reference examples: in-browser checking, linked names, embedded kernel inspector, evaluate results");
+  console.log("PASS reference examples: in-browser checking, linked names, embedded kernel inspector, evaluate results, instant macro tips");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status").textContent.includes("checked"));
   assert.equal(await page.locator("#diagnostic").isVisible(), false);
