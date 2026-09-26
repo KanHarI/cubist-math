@@ -21,9 +21,11 @@ const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "Sigma", "Pair", "Nat", "Zero", 
   "Sum", "Inl", "Inr", "Path", "PLam", "W", "Sup", "Pushout", "PushLeft", "PushRight"]);
 // The type former a constructor's eta expansion needs.
 const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma" };
+// Steps after which a comparison the oracle finds true computes normal forms.
+const LONG_COMPUTATION = 64;
 
 export class InstructionDriver {
-  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = 20000, guideSteps = 200000 } = {}) {
+  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = 20000, guideSteps = 20000 } = {}) {
     this.kernel = kernel;
     this.graph = graph;
     this.fuel = fuel;
@@ -579,10 +581,18 @@ export class InstructionDriver {
     // an eta expansion that a step contracts again, so without this the same
     // attempt would repeat until the budget ran out.
     const failed = new Set();
-    for (;;) {
+    for (let taken = 0; ; taken++) {
       if (--budget.left < 0) return false;
       const x = this.subterm(a), y = this.subterm(b);
       if (this.alpha(x, y, terms, dims)) return true;
+      // A long closed computation, such as a numeral's arithmetic: once the
+      // term checker's conversion finds the two equal, compute both normal
+      // forms, one instruction each, rather than step by step. Each step
+      // rebuilds the judgement's term; a normal form is computed once, in C.
+      // Open terms keep to lazy steps: their normal forms can be enormous.
+      if (taken === LONG_COMPUTATION && this.closed(a) && this.closed(b) && this.equal(x, y, terms, dims) === true &&
+          this.normalizeBoth(a, b, terms, dims))
+        return true;
       const nx = this.node(x), ny = this.node(y);
       if (nx.kind === ny.kind && !failed.has(`${x},${y}`) && this.sameHead(nx, ny, terms, dims) &&
           this.partsEqual(nx, ny, terms, dims)) {
@@ -609,6 +619,23 @@ export class InstructionDriver {
       return false;
     }
   }
+  // Whether the focused subterm has no free term variable: its judgement has
+  // none in context, and the position is under no term binder.
+  closed(focus) {
+    if (this.statement(focus.ref.id).context.some(entry => !this.graph.entry(entry).dimension)) return false;
+    let term = this.sideOf(focus.ref.id, focus.side);
+    for (const child of focus.path) {
+      const n = this.node(term);
+      if (TERM_BINDERS.has(n.kind) && child === 1) return false;
+      term = n.children[child];
+    }
+    return true;
+  }
+  normalizeBoth(a, b, terms, dims) {
+    try { for (const focus of [a, b]) this.reduce(focus, { path: [], rule: "normalize" }); }
+    catch { return false; }
+    return this.alpha(this.subterm(a), this.subterm(b), terms, dims);
+  }
   // The registry index of the definition a delta step unfolds.
   definitionAt(term, step) {
     for (const child of step.path) term = this.node(term).children[child];
@@ -626,11 +653,19 @@ export class InstructionDriver {
   // Whether congruence can work: no pair of parts is known to differ. Only
   // asked when a head could be reduced instead; parts under a binder are left
   // to the comparison itself.
+  //
+  // A computation step (beta, iota, path, face) is cheap and never a wrong
+  // turn: it is taken rather than comparing parts it may discard, unless they
+  // are known equal. Unfolding a definition is not cheap: there, parts not
+  // known to differ are compared first.
   partsEqual(x, y, terms, dims) {
-    if (!this.headStep(this.nodeHandle(x)) && !this.headStep(this.nodeHandle(y))) return true;
+    const left = this.headStep(this.nodeHandle(x)), right = this.headStep(this.nodeHandle(y));
+    if (!left && !right) return true;
+    const computes = (left && left.rule !== "delta") || (right && right.rule !== "delta");
     for (let i = 0; i < this.parts(x); i++) {
       if (!x.children[i] || !y.children[i] || (TERM_BINDERS.has(x.kind) && i === 1) || dimensionBound(x.kind, i)) continue;
-      if (this.equal(x.children[i], y.children[i], terms, dims) === false) return false;
+      const answer = this.equal(x.children[i], y.children[i], terms, dims);
+      if (answer === false || (computes && answer !== true)) return false;
     }
     return true;
   }

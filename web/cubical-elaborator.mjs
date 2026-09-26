@@ -3,6 +3,7 @@ import { T, substituteTerm } from "./dist/cubical-runtime/core.mjs";
 import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
 import { NameSupply } from "./dist/cubical-runtime/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
+import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 
 const speculativeFailures = new Set(["mismatch", "budget", "deadline"]);
 const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "W"]);
@@ -267,13 +268,32 @@ export class NativeCubicalElaborator {
       body = { tag: "Lam", name: parameter, domain, body };
       signature = { tag: "Pi", name: parameter, domain, body: signature };
     }
-    let reference;
-    try { reference = this.kernel.define(name, this.syntax.encode(body), this.syntax.encode(signature)); }
+    let reference, admission;
+    try { ({ reference, admission } = this.admit(name, this.syntax.encode(body), this.syntax.encode(signature))); }
     catch (error) { throw this.describeMismatch(error, new Map()); }
-    this.definitionViews.set(name, { term, type, assumptions, unfoldingHints: [...this.kernel.unfoldingHints] });
+    this.definitionViews.set(name, { term, type, assumptions, unfoldingHints: [...this.kernel.unfoldingHints], admission });
     let result = this.syntax.decode(reference);
     for (const parameter of assumptions.keys()) result = { tag: "App", fn: result, arg: { tag: "Var", name: parameter } };
     return result;
+  }
+  // The instruction kernel admits every definition. The term checker, which
+  // is untrusted, elaborates the body: it reconstructs annotations and splits
+  // faces into clauses. The instruction driver then derives the checked body
+  // at its type, one kernel instruction per rule, and Define registers the
+  // closed judgement. Nothing the term checker says is taken as evidence; a
+  // body the instruction kernel cannot derive is not a definition.
+  admit(name, body, signature) {
+    const checked = this.kernel.check(body, signature), started = performance.now();
+    const driver = new InstructionDriver(this.kernel), graph = driver.graph, before = graph.count;
+    let reference;
+    try {
+      const judgement = driver.check(checked.expression, checked.type);
+      reference = graph.judgement(graph.define(name, judgement)).term;
+    } catch (error) {
+      throw Object.assign(new Error(`Instruction kernel: ${error.message}`), { kind: error.kind ?? "other" });
+    }
+    this.kernel.definitions.set(name, reference);
+    return { reference, admission: { ms: +(performance.now() - started).toFixed(3), judgements: graph.count - before } };
   }
   specializeSchema(name, levels, elaborate) {
     const key = `${name}__${levels.map(level => `U${level}`).join("_")}`;

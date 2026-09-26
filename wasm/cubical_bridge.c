@@ -424,6 +424,12 @@ unsigned cb_convertible(uint32_t token, uint32_t a, uint32_t b, uint32_t steps) 
     return equal ? 1 : 0;
 }
 
+/* A symbol id shared by no name the kernel or the page has given out. */
+uint32_t cb_fresh_symbol(uint32_t token) {
+    browser_session *s = lookup(token);
+    return s ? cc_kernel_fresh_symbol(s->kernel) : 0;
+}
+
 uint32_t cb_rename(uint32_t token, uint32_t term, unsigned dimension, uint32_t from, uint32_t to) {
     browser_session *s = lookup(token);
     if (!s) return 0;

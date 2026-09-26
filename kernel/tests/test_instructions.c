@@ -137,10 +137,20 @@ int main(void) {
     assert(cc_kernel_node(k, other_of(opened), NULL, NULL, children) && kind(children[1]) == CC_SIGMA);
     rejects(cc_instr_replace(k, OK(cc_instr_refl(k, statement)), 1, AT(0), unfolded), "not the equality's left side");
 
-    /* A bound name must correspond to an entry of the binder's type. */
+    /* The term checker's definitions are not admitted: Lookup refuses them. */
     cc_term raw_nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
-    cc_term identity = cc_kernel_define(k, 103, cc_kernel_term(k, CC_LAM, W, raw_nat, cc_kernel_term(k, CC_VAR, W, 0, 0, 0, 0), 0, 0), 0);
-    assert(identity);
+    cc_term unadmitted = cc_kernel_define(k, 103, cc_kernel_term(k, CC_LAM, W, raw_nat, cc_kernel_term(k, CC_VAR, W, 0, 0, 0, 0), 0, 0), 0);
+    assert(unadmitted);
+    rejects(cc_instr_lookup(k, unadmitted), "admitted by Define");
+    /* A bound name must correspond to an entry of the binder's type. The
+     * identity λ(W : Nat). W is admitted inside a checkpoint whose entries
+     * the commit drops, so W can then name an entry of another type. */
+    cc_kernel_checkpoint(k);
+    cc_entry_id bound = OK(cc_instr_extend(k, nat, W));
+    cc_judgement_id identity_admitted = OK(cc_instr_define(k, 105, OK(cc_instr_lambda(k, bound, OK(cc_instr_variable(k, bound))))));
+    cc_term identity = term_of(identity_admitted);
+    assert(cc_kernel_commit_checkpoint(k));
+    identity = cc_kernel_relocated(k, identity);
     cc_judgement_id identity_value = STEP(OK(cc_instr_refl(k, OK(cc_instr_lookup(k, identity)))), CC_STEP_DELTA, ROOT);
     cc_entry_id w = OK(cc_instr_extend(k, OK(cc_instr_unit(k)), W));
     rejects(cc_instr_replace(k, identity_value, 1, AT(1), OK(cc_instr_refl(k, OK(cc_instr_variable(k, w))))), "different types");

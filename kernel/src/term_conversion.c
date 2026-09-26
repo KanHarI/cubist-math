@@ -82,25 +82,25 @@ static bool clause_included(cc_clause a, cc_clause b, const alpha_binding *dims)
     return true;
 }
 
+static unsigned literals(cc_clause clause) {
+    return (unsigned)__builtin_popcountll(clause.positive) + (unsigned)__builtin_popcountll(clause.negative);
+}
+
 static bool formula_equal(cc_kernel *k, uint32_t a, uint32_t b, const alpha_binding *dims) {
+    /* The same formula, with no dimension binder renamed on the way. */
+    if (a == b && !dims)
+        return cc_kernel_get_formula(k, a) != NULL;
     const cc_formula *left = cc_kernel_get_formula(k, a);
     const cc_formula *right = cc_kernel_get_formula(k, b);
     if (!left || !right || left->sort != right->sort || left->length != right->length)
         return false;
     for (size_t i = 0; i < left->length; ++i) {
         bool found = false;
+        unsigned l = literals(left->clauses[i]);
         /* A binder renaming is bijective. Forward inclusion plus equal
          * literal counts therefore establishes equality of the clauses. */
         for (size_t j = 0; j < right->length; ++j) {
-            unsigned l = 0, r = 0;
-            for (unsigned d = 0; d < CC_DIMENSIONS; ++d) {
-                uint64_t bit = UINT64_C(1) << d;
-                l += (left->clauses[i].positive & bit) != 0;
-                l += (left->clauses[i].negative & bit) != 0;
-                r += (right->clauses[j].positive & bit) != 0;
-                r += (right->clauses[j].negative & bit) != 0;
-            }
-            if (l == r && clause_included(left->clauses[i], right->clauses[j], dims)) {
+            if (l == literals(right->clauses[j]) && clause_included(left->clauses[i], right->clauses[j], dims)) {
                 found = true;
                 break;
             }

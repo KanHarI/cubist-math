@@ -126,7 +126,11 @@ export class CubicalKernel {
     this.assertOpen();
     if (typeof name !== "string" || !name) throw new TypeError("A symbol needs a nonempty name.");
     if (!this.names.has(name)) {
-      const id = uint32(this.nextSymbol++, "Symbol");
+      // The kernel allocates the id: its own fresh names come from the same
+      // counter, so a page name and a kernel name never share one.
+      const id = uint32(this.module._cb_fresh_symbol(this.handle) >>> 0, "Symbol");
+      if (!id) throw this.failure("Could not allocate a symbol.");
+      this.nextSymbol = Math.max(this.nextSymbol, id + 1);
       this.names.set(name, id);
       this.symbolNames.set(id, name);
     }

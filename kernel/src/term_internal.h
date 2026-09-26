@@ -27,6 +27,10 @@ typedef struct {
 typedef struct {
     uint32_t symbol;
     cc_term value, type;
+    /* Registered by an instruction Define, from a derived closed judgement,
+     * and so available to instruction Lookup. The term checker's own
+     * definitions (cc_kernel_define) are not. */
+    bool admitted;
 } cc_definition;
 
 /* The judgement graph (instructions.c). A fact is a typing judgement

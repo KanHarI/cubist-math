@@ -3,9 +3,17 @@
 
 #include "cubical.h"
 
-/* Raw syntax constructors are deliberately NOT proof certificates. Only
- * cc_kernel_check publishes a checked result. Names are numeric symbols whose
- * readable spelling is maintained by the caller; bound names are renamed when necessary to avoid shadowing.
+/* The trusted kernel is the instruction kernel (cc_instr_*, below): a
+ * definition is admitted only by Define, from a closed judgement derived one
+ * rule at a time, and only admitted definitions can be looked up. The term
+ * checker (cc_kernel_check, cc_kernel_define), its conversion strategy and
+ * the unfolding hints that steer it are untrusted elaboration services: they
+ * propose checked terms, and decide nothing an instruction relies on.
+ *
+ * Raw syntax constructors are deliberately NOT proof certificates. Names are
+ * numeric symbols whose readable spelling is maintained by the caller;
+ * cc_kernel_fresh_symbol allocates them. Bound names are renamed when
+ * necessary to avoid shadowing.
  * A dimension name is separate from a term name and is currently 0..63. */
 typedef uint32_t cc_term;
 typedef uint32_t cc_formula_id;
@@ -255,7 +263,8 @@ cc_judgement_id cc_instr_w_elim(cc_kernel *, cc_judgement_id motive, cc_judgemen
 /* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
  * substitution preserves typing. No other entry may depend on i. */
 cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);
-/* A closed typing judgement becomes a definition; the result is its lookup. */
+/* A closed typing judgement becomes a definition, admitted; the result is its
+ * lookup. Lookup recalls an admitted definition, and no other. */
 cc_judgement_id cc_instr_define(cc_kernel *, uint32_t symbol, cc_judgement_id closed);
 cc_judgement_id cc_instr_lookup(cc_kernel *, cc_term reference);         /* ⊢ d : T */
 /* Equalities, and rewriting. A judgement's sides are 0, its term; 1, the
@@ -290,6 +299,10 @@ bool cc_kernel_convertible(cc_kernel *, cc_term, cc_term, uint64_t steps);
 /* Syntax only, for the same search: a term with a free name, or dimension,
  * renamed, avoiding capture. */
 cc_term cc_kernel_rename(cc_kernel *, cc_term, bool dimension, uint32_t from, uint32_t to);
+/* A symbol no term of this kernel has used or will be given by the kernel's
+ * own fresh names: clients naming new binders or entries allocate here, so
+ * their names and the kernel's never share an id. */
+uint32_t cc_kernel_fresh_symbol(cc_kernel *);
 
 /* Reading the graph. Judgement ids run from 1 to count - 1, premises first.
  * Kind 1 is typing, 2 equality and 3 a composition system; other is 0 but
@@ -358,7 +371,13 @@ cc_term cc_kernel_term(cc_kernel *, cc_term_kind, uint32_t payload,
                        cc_term a, cc_term b, cc_term c, cc_term d);
 cc_formula_id cc_kernel_formula(cc_kernel *, const cc_formula *);
 
-/* Ordered assumptions are themselves checked as a telescope. An expected type
+/* ---- Untrusted elaboration services -------------------------------------
+ * The term checker below elaborates raw syntax, reconstructing annotations and
+ * splitting faces, and answers the elaborator's queries. Nothing it accepts
+ * is a definition the instruction kernel will use: instruction Lookup refuses
+ * its definitions, and the instructions never consult it.
+ *
+ * Ordered assumptions are themselves checked as a telescope. An expected type
  * of zero requests inference only. On failure, result is cleared. No old
  * production-kernel handle or axiom fallback can be supplied through this API. */
 bool cc_kernel_check(cc_kernel *, cc_term, cc_term expected,
@@ -372,14 +391,17 @@ bool cc_kernel_check_in_cube(cc_kernel *, cc_term, cc_term expected,
                              const cc_assumption *, size_t count,
                              uint64_t dimensions, cc_checked_result *);
 
-/* Optional conversion strategy, never a typing certificate. References must
- * belong to this kernel's checked definition registry. Listed definitions
+/* Optional conversion strategy for the term checker, never a typing
+ * certificate, and outside the trusted kernel: no instruction reads it.
+ * References must belong to this kernel's checked definition registry. Listed definitions
  * unfold in a preliminary comparison; count zero clears the strategy. The list
  * applies to check/define operations until replaced. Invalid input preserves
  * the prior list. Clear after a scoped hint even when a check is rejected. */
 bool cc_kernel_set_unfolding_hints(cc_kernel *, const cc_term *references, size_t count);
 
-/* Register a closed definition, checked using only earlier checked references.
+/* The term checker's own definition, checked using only earlier checked
+ * references, for its checks alone: it is not admitted, and instruction
+ * Lookup refuses it. Admit a definition by instruction Define instead.
  * A symbol may be registered once. On failure no definition is published.
  * The returned expression is a folded DefRef, never an assumed axiom. */
 cc_term cc_kernel_define(cc_kernel *, uint32_t symbol, cc_term value, cc_term expected_type);

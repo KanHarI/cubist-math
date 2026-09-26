@@ -1471,7 +1471,7 @@ cc_judgement_id cc_instr_define(cc_kernel *k, uint32_t symbol, cc_judgement_id c
     cc_term reference = make(k, CC_DEFREF, index, 0, 0, 0, 0);
     if (!reference)
         return 0;
-    k->definitions[index] = (cc_definition){symbol, d.term, d.type};
+    k->definitions[index] = (cc_definition){symbol, d.term, d.type, true};
     ++k->definition_count;
     return typing(k, reference, d.type, 0);
 }
@@ -1483,6 +1483,9 @@ cc_judgement_id cc_instr_lookup(cc_kernel *k, cc_term reference) {
     if (!reference || reference >= k->count || k->nodes[reference].kind != CC_DEFREF ||
         !k->nodes[reference].payload || k->nodes[reference].payload >= k->definition_count)
         return ck_fail(k, "Unknown checked definition reference."), 0;
+    /* Only what the instructions admitted: the term checker is not trusted. */
+    if (!k->definitions[k->nodes[reference].payload].admitted)
+        return ck_fail(k, "Only a definition admitted by Define can be looked up."), 0;
     return typing(k, reference, k->definitions[k->nodes[reference].payload].type, 0);
 }
 

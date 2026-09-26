@@ -114,13 +114,13 @@ test("benchmark checks local simp witnesses without collecting inspector referen
   assert.ok(work.candidateVisits>0&&work.premiseAttempts>=2&&work.premiseProofs>=2);
 });
 
-test("the benchmark derives each checked declaration again by the instruction kernel", async () => {
+test("the instruction kernel admits each declaration the benchmark counts", async () => {
   const readSource = async () => "def good := 0; def uses := good;";
   const report = await benchmark({ modules: ["sample"], readSource });
   for (const row of report.declarations) {
     assert.equal(row.category, "checked");
-    assert.ok(row.instructionJudgements > 0 && row.instructionMs >= 0 && row.checkMs >= 0, row.binding);
-    assert.ok(row.elapsedMs >= row.checkMs);
+    assert.ok(row.instructionJudgements > 0 && row.instructionMs >= 0, row.binding);
+    assert.ok(row.elapsedMs >= row.instructionMs);
   }
   // What the instruction kernel cannot derive fails, and blocks what uses it.
   const check = InstructionDriver.prototype.check;
