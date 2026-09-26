@@ -112,6 +112,10 @@ void cc_kernel_free(cc_kernel *k) {
     if (!k)
         return;
     free(k->trace);
+    free(k->facts);
+    free(k->entries);
+    free(k->context_sets);
+    free(k->context_items);
     for (size_t i = 1; i < k->formula_count; ++i)
         cc_clear(&k->formulas[i]);
     free(k->relocation);

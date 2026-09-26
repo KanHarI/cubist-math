@@ -29,6 +29,30 @@ typedef struct {
     cc_term value, type;
 } cc_definition;
 
+/* The instruction store (instructions.c). A fact is a typing judgement
+ * Γ ⊢ term : type, or an equality judgement Γ ⊢ term ≡ other : type. Its
+ * context is a set of entries, sorted by creation; an entry records the
+ * context its own type needs, so every set is closed under dependencies.
+ * Context set zero is the empty context; fact and entry zero are invalid. */
+enum { CC_FACT_TYPING = 1, CC_FACT_EQUALITY = 2 };
+typedef struct {
+    uint32_t kind;
+    cc_term term, other, type;
+    uint32_t context;
+} cc_fact;
+typedef struct {
+    uint32_t symbol;  /* a term symbol, or a dimension index */
+    cc_term type;     /* zero for a dimension */
+    uint32_t level;   /* the universe of the type */
+    uint32_t context; /* the context the type needs */
+    uint32_t scope;   /* that context and the entry itself */
+    bool dimension;
+} cc_entry;
+typedef struct {
+    size_t offset;
+    uint32_t count;
+} cc_context_set;
+
 /* Exact-key memo entries affect time only. A collision discards the older
  * entry; it can never establish equality or approve an unchecked term. */
 typedef struct {
@@ -103,7 +127,18 @@ struct cc_kernel {
     cc_trace_event *trace;
     size_t trace_count, trace_capacity;
     unsigned trace_depth, trace_mute;
+    cc_fact *facts;
+    size_t fact_count, fact_capacity;
+    cc_entry *entries;
+    size_t entry_count, entry_capacity;
+    cc_context_set *context_sets;
+    size_t context_set_count, context_set_capacity;
+    uint32_t *context_items;
+    size_t context_item_count, context_item_capacity;
+    size_t checkpoint_store[4]; /* facts, entries, context sets, items */
 };
+bool ck_alpha_equal(cc_kernel *, cc_term, cc_term);
+bool ck_syntactic_cumulative(cc_kernel *, cc_term actual, cc_term expected);
 void ck_trace(cc_kernel *, cc_trace_kind, uint32_t a, uint32_t b, uint32_t c);
 
 cc_context ck_extend(cc_kernel *, uint32_t, cc_term, const cc_context *);

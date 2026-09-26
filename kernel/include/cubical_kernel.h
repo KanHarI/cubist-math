@@ -78,6 +78,100 @@ bool cc_kernel_trace_start(cc_kernel *, size_t capacity);
 void cc_kernel_trace_stop(cc_kernel *);
 size_t cc_kernel_trace_count(const cc_kernel *);
 bool cc_kernel_trace_event(const cc_kernel *, size_t index, cc_trace_event *);
+/* Instructions (instructions.c): THTH-style forward rules on a store of
+ * judgements, beside cc_kernel_check. An instruction takes earlier judgements
+ * and context entries, checks its side conditions syntactically — types must
+ * be identical up to bound names — and returns a new judgement, or 0 with an
+ * error. Nothing is reduced or unfolded except by an equality instruction
+ * that names the position and the rule. A judgement keeps only the context
+ * entries it depends on, and the contexts of premises merge.
+ *
+ * Judgements are typing judgements Γ ⊢ t : T, or equality judgements
+ * Γ ⊢ a ≡ b : T. Equalities are built from reflexivity by targeted steps: a
+ * step contracts one redex at a position (a path of child indices, the
+ * highlighted subterm), and a replacement rewrites a highlighted occurrence
+ * of a by b, given a ≡ b. Conversion moves t : A to t : B along A ≡ B.
+ *
+ * The store is truncated by rollback and by commit_checkpoint to its size at
+ * the checkpoint; judgements from before it stay valid after a rollback. */
+typedef uint32_t cc_judgement_id;
+typedef uint32_t cc_entry_id;
+typedef enum {
+    CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
+    CC_STEP_DELTA,     /* a definition to its checked value */
+    CC_STEP_IOTA,      /* an eliminator or projection on a constructor */
+    CC_STEP_PATH,      /* a path lambda applied at an interval point, or a
+                        * path applied at an endpoint of its annotated type */
+    CC_STEP_NORMALIZE  /* the normal form, by the kernel's fixed strategy */
+} cc_step_rule;
+
+cc_judgement_id cc_instr_universe(cc_kernel *, uint32_t level);           /* ⊢ U(l) : U(l+1) */
+cc_judgement_id cc_instr_nat(cc_kernel *);                                /* ⊢ Nat : U0 */
+cc_judgement_id cc_instr_zero(cc_kernel *);                               /* ⊢ 0 : Nat */
+cc_judgement_id cc_instr_succ(cc_kernel *, cc_judgement_id);              /* n : Nat ⊢ succ(n) : Nat */
+cc_judgement_id cc_instr_nat_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id zero,
+                                  cc_judgement_id step, cc_judgement_id value);
+cc_judgement_id cc_instr_unit(cc_kernel *);
+cc_judgement_id cc_instr_point(cc_kernel *);
+cc_judgement_id cc_instr_unit_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id point,
+                                   cc_judgement_id value);
+cc_judgement_id cc_instr_void(cc_kernel *);
+cc_judgement_id cc_instr_abort(cc_kernel *, cc_judgement_id type, cc_judgement_id impossible);
+/* A term entry x : A, from Γ ⊢ A : U(i); the symbol must be new. */
+cc_entry_id cc_instr_extend(cc_kernel *, cc_judgement_id type, uint32_t symbol);
+/* A dimension entry, with its interval index. */
+cc_entry_id cc_instr_dimension(cc_kernel *, unsigned index);
+cc_judgement_id cc_instr_variable(cc_kernel *, cc_entry_id);              /* Γ, x : A ⊢ x : A */
+/* Binders discharge an entry that no other entry of the premise depends on. */
+cc_judgement_id cc_instr_pi(cc_kernel *, cc_entry_id, cc_judgement_id codomain);
+cc_judgement_id cc_instr_lambda(cc_kernel *, cc_entry_id, cc_judgement_id body);
+cc_judgement_id cc_instr_apply(cc_kernel *, cc_judgement_id function, cc_judgement_id argument);
+cc_judgement_id cc_instr_sigma(cc_kernel *, cc_entry_id, cc_judgement_id family);
+cc_judgement_id cc_instr_pair(cc_kernel *, cc_judgement_id type, cc_judgement_id first, cc_judgement_id second);
+/* Γ ⊢ Π(x : A). B : U(l) or Σ(…) gives Γ ⊢ A : U(l), and B[a/x] : U(l). */
+cc_judgement_id cc_instr_domain(cc_kernel *, cc_judgement_id type);
+cc_judgement_id cc_instr_family(cc_kernel *, cc_judgement_id type, cc_judgement_id argument);
+cc_judgement_id cc_instr_first(cc_kernel *, cc_judgement_id pair);
+cc_judgement_id cc_instr_second(cc_kernel *, cc_judgement_id pair);
+cc_judgement_id cc_instr_sum(cc_kernel *, cc_judgement_id left, cc_judgement_id right);
+cc_judgement_id cc_instr_inject(cc_kernel *, cc_judgement_id type, cc_judgement_id value, bool right);
+cc_judgement_id cc_instr_sum_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id left,
+                                  cc_judgement_id right, cc_judgement_id value);
+cc_judgement_id cc_instr_path(cc_kernel *, cc_entry_id dimension, cc_judgement_id family,
+                              cc_judgement_id left, cc_judgement_id right);
+cc_judgement_id cc_instr_path_lambda(cc_kernel *, cc_entry_id dimension, cc_judgement_id body);
+/* At a dimension entry, or at endpoint 0 or 1 when the entry is 0. */
+cc_judgement_id cc_instr_path_apply(cc_kernel *, cc_judgement_id path, cc_entry_id dimension, unsigned endpoint);
+/* A closed typing judgement becomes a definition; the result is its lookup. */
+cc_judgement_id cc_instr_define(cc_kernel *, uint32_t symbol, cc_judgement_id closed);
+cc_judgement_id cc_instr_lookup(cc_kernel *, cc_term reference);         /* ⊢ d : T */
+/* Equalities. Side 0 is the left term, side 1 the right. A position is the
+ * path of child indices from that side's root to the highlighted subterm.
+ * A step contracts the highlighted redex by the named rule. A replacement
+ * swaps a highlighted occurrence of a for b, given a ≡ b; when a or b uses
+ * a name bound on the way down, the given equality must have that name as a
+ * context entry of the binder's type, and the entry is discharged. */
+cc_judgement_id cc_instr_refl(cc_kernel *, cc_judgement_id typing);      /* t ≡ t : T */
+cc_judgement_id cc_instr_step(cc_kernel *, cc_judgement_id equality, unsigned side,
+                              const uint8_t *position, size_t depth, cc_step_rule);
+cc_judgement_id cc_instr_replace(cc_kernel *, cc_judgement_id equality, unsigned side,
+                                 const uint8_t *position, size_t depth, cc_judgement_id by);
+/* t : T for a Π, Σ or path type T gives t ≡ its eta expansion : T. */
+cc_judgement_id cc_instr_eta(cc_kernel *, cc_judgement_id typing);
+cc_judgement_id cc_instr_side(cc_kernel *, cc_judgement_id equality, unsigned side); /* a : T */
+cc_judgement_id cc_instr_symmetry(cc_kernel *, cc_judgement_id equality);
+cc_judgement_id cc_instr_transitivity(cc_kernel *, cc_judgement_id first, cc_judgement_id second);
+/* t : A and A ≡ B : U(i) give t : B. Lift raises t : A to a cumulative B. */
+cc_judgement_id cc_instr_convert(cc_kernel *, cc_judgement_id typing, cc_judgement_id equality);
+cc_judgement_id cc_instr_lift(cc_kernel *, cc_judgement_id typing, cc_judgement_id type);
+
+/* Reading the store. Kind 1 is typing and 2 equality; for typing, other is 0. */
+bool cc_kernel_fact(const cc_kernel *, cc_judgement_id, uint32_t *kind, cc_term *term,
+                    cc_term *other, cc_term *type);
+/* The index-th entry of a judgement's context, in creation order, or 0. */
+cc_entry_id cc_kernel_fact_context(const cc_kernel *, cc_judgement_id, size_t index);
+bool cc_kernel_entry(const cc_kernel *, cc_entry_id, uint32_t *symbol, cc_term *type, bool *dimension);
+
 /* Clear a rejected request before constructing corrected raw syntax. */
 void cc_kernel_clear_error(cc_kernel *);
 /* Diagnostic transactions. Abort invalidates ALL handles made since begin.

@@ -443,6 +443,31 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
     return !k->error[0] && equal;
 }
 
+/* Syntactic equality up to bound names and interval algebra: nothing is
+ * reduced or unfolded. The instruction kernel uses only this. */
+bool ck_alpha_equal(cc_kernel *k, cc_term a, cc_term b) {
+    return alpha(k, a, b, NULL, NULL, FOLDED);
+}
+
+/* Cumulativity without conversion: universes by level, and Π or Σ with
+ * identical domains and cumulative codomains. */
+bool ck_syntactic_cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
+    if (ck_alpha_equal(k, actual, expected))
+        return true;
+    if (k->error[0] || !actual || !expected)
+        return false;
+    cc_node left = k->nodes[actual], right = k->nodes[expected];
+    if (left.kind == CC_U && right.kind == CC_U)
+        return left.payload <= right.payload;
+    if ((left.kind == CC_PI || left.kind == CC_SIGMA) && left.kind == right.kind &&
+        ck_alpha_equal(k, left.child[0], right.child[0])) {
+        cc_term variable = ck_var(k, ck_fresh_symbol(k));
+        return ck_syntactic_cumulative(k, ck_substitute(k, left.child[1], left.payload, variable),
+                                       ck_substitute(k, right.child[1], right.payload, variable));
+    }
+    return false;
+}
+
 bool ck_convertible(cc_kernel *k, cc_term a, cc_term b) {
     /* Prefer the folded checked structure. Equal closed references never
      * need their bodies evaluated, even inside larger matching types. */
