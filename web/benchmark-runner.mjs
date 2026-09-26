@@ -1,15 +1,39 @@
 // Shared by the Node benchmark and browser worker; source checks are identical.
+// Each declaration is elaborated and checked by the term checker, then derived
+// again by the instruction kernel (cc_instr_*), through the untrusted driver
+// that replays the checked term one rule at a time. It counts as checked only
+// when both succeed within the declaration's deadline.
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
+import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { sourceModules, cubicalSourceModules } from "./mathscript/modules.mjs";
 import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 
-export function category(result, elapsedMs, limitMs) {
+export function category(result, elapsedMs, limitMs, instructions = null) {
   if (result.template) return "template";
   if (result.blockedBy) return "blocked";
-  if (result.failure === "deadline" || elapsedMs > limitMs) return "optimize";
+  if (result.failure === "deadline" || instructions?.deadline || elapsedMs > limitMs) return "optimize";
+  if (instructions && !instructions.derived) return "failed";
   return result.status === "checked-native-cubical" ? "checked" : "failed";
+}
+
+// The checked definition, derived again by instructions within what is left
+// of the deadline: the time, the judgements the derivation added to the
+// kernel's graph, or why it failed.
+export function deriveByInstructions(kernel, binding, remainingMs) {
+  const reference = kernel.definitions.get(binding);
+  if (!reference) return null;
+  const { value, type } = kernel.definition(reference), started = performance.now();
+  kernel.setDeadline(Math.max(remainingMs, 1));
+  const driver = new InstructionDriver(kernel), before = driver.graph.count;
+  try {
+    driver.check(value, type);
+    return { derived: true, ms: +(performance.now() - started).toFixed(3), judgements: driver.graph.count - before };
+  } catch (error) {
+    return { derived: false, ms: +(performance.now() - started).toFixed(3), reason: error.message,
+      deadline: error.kind === "deadline" || /time limit exceeded/i.test(error.message) };
+  } finally { kernel.setDeadline(); }
 }
 
 export async function benchmark({ modules = [...sourceModules, ...cubicalSourceModules], limitMs = 100, optimizations = {},
@@ -31,19 +55,28 @@ export async function benchmark({ modules = [...sourceModules, ...cubicalSourceM
       program.kernel.setDeadline(limitMs);
     },
     onDeclaration(module, syntax, result, checker) {
-      const elapsedMs = performance.now() - declarationStart;
+      const checkMs = performance.now() - declarationStart;
       program.kernel.setDeadline();
-      const row = { binding: `${module}__${result.name}`, module, name: result.name,
-        category: category(result, elapsedMs, limitMs), elapsedMs: +elapsedMs.toFixed(3),
+      const binding = `${module}__${result.name}`;
+      const instructions = result.status === "checked-native-cubical" && !result.template && checkMs <= limitMs
+        ? deriveByInstructions(program.kernel, binding, limitMs - checkMs) : null;
+      const elapsedMs = performance.now() - declarationStart;
+      const row = { binding, module, name: result.name,
+        category: category(result, elapsedMs, limitMs, instructions), elapsedMs: +elapsedMs.toFixed(3),
+        checkMs: +checkMs.toFixed(3), instructionMs: instructions?.ms ?? null,
+        instructionJudgements: instructions?.judgements ?? null,
         nativeCheckingSteps: checker.steps-declarationStartSteps,
         rewriteWork: result.rewriteWork,
         finalCheckArenaNodes: result.native?.arenaNodes ?? null,
         finalCheckArenaBytes: result.native?.arenaBytes ?? null,
-        reason: result.reason, blockedBy: result.blockedBy,
+        reason: instructions && !instructions.derived ? `Instruction kernel: ${instructions.reason}` : result.reason,
+        blockedBy: result.blockedBy,
         line: program.sources[module].slice(0, syntax.start).split("\n").length };
-      if (row.category === "optimize") {
+      // Rolled back below, so the program must not count it as checked: its
+      // dependents are then blocked on it.
+      if (row.category === "optimize" || (instructions && !instructions.derived)) {
         result.status = "not-translated";
-        result.reason = "Declaration time limit exceeded.";
+        result.reason = row.category === "optimize" ? "Declaration time limit exceeded." : row.reason;
       }
       transaction.finish(row.category === "checked");
       transaction = null;

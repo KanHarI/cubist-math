@@ -81,6 +81,10 @@ try {
   const workbench = await popup;
   workbench.on("pageerror", error => errors.push(error.message));
   await workbench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  // It opens on the kernel graph, the instruction kernel's derivation.
+  assert.equal(await workbench.locator("#workbench-view").inputValue(), "graph");
+  await workbench.locator("#graph-listing .graph-row").first().waitFor();
+  await workbench.locator("#workbench-view").selectOption("math");
   assert.equal(await workbench.locator("#expression").textContent(), "Divides(succ(succ(i)),m)");
   assert.match(await workbench.locator("#context").textContent(), /n :Nat/);
   await workbench.locator("#fold-names").uncheck();
@@ -187,6 +191,7 @@ try {
   const reductionBench = await reductionPopup;
   reductionBench.on("pageerror", error => errors.push(error.message));
   await reductionBench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  await reductionBench.locator("#workbench-view").selectOption("math");
   const chooseReduction = async (side, kind, path = []) => {
     const before = await reductionBench.locator("#syntax").inputValue();
     await reductionBench.locator(`#${kind}-${side}`).click();

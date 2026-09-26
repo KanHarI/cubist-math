@@ -19,12 +19,17 @@ function renderRows() {
   const bindings = new Map(report.declarations.map(row => [row.binding, row]));
   for (const row of rows) {
     const tr = document.createElement("tr"); tr.dataset.category = row.category;
-    const cells = Array.from({ length: 4 }, () => document.createElement("td"));
+    const cells = Array.from({ length: 5 }, () => document.createElement("td"));
+    const ms = value => `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })} ms`;
     cells[0].append(link(row)); cells[1].textContent = labels[row.category];
-    cells[2].textContent = `${row.elapsedMs.toLocaleString(undefined, { maximumFractionDigits: 1 })} ms`;
-    cells[3].textContent = row.reason ?? "Native kernel check passed.";
+    cells[2].textContent = ms(row.elapsedMs);
+    // The instruction kernel's derivation, in reports that record it.
+    cells[3].textContent = row.instructionMs == null ? "—"
+      : `${ms(row.instructionMs)}${row.instructionJudgements != null ? ` · ${row.instructionJudgements.toLocaleString()} judgements` : ""}`;
+    cells[4].textContent = row.reason ?? (row.instructionJudgements != null
+      ? "Checked, and derived by the instruction kernel." : "Native kernel check passed.");
     const root = bindings.get(row.rootBlocker);
-    if (root) { const small = document.createElement("small"); small.append("Root blocker: ", link(root)); cells[3].append(small); }
+    if (root) { const small = document.createElement("small"); small.append("Root blocker: ", link(root)); cells[4].append(small); }
     tr.append(...cells); fragment.append(tr);
   }
   $("entries").replaceChildren(fragment);

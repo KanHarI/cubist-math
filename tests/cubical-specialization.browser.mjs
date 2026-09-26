@@ -86,6 +86,7 @@ try {
   const specialized = await transferred;
   specialized.on("pageerror", error => errors.push(error.stack ?? error.message));
   await specialized.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  await specialized.locator("#workbench-view").selectOption("math");
   assert.equal(await specialized.locator("#name").textContent(), "GroupAssociativeAt_U3");
   assert.doesNotMatch(await specialized.locator("#expression").textContent(), /A[0-9]|multiply[0-9]|[xyz][0-9]/);
   assert.match(await specialized.locator("#expression").textContent(), /multiply/);
