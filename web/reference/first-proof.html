@@ -179,7 +179,8 @@ def seven_lt_two : 7 &lt; 2 {
               <li><strong>Proof statements build the term.</strong> Each statement faces a goal and builds part of the term. <code>intro n;</code> builds <code>fun (n : Nat) => ?</code>, and <code>exact</code> fills the hole <code>?</code> with its value.</li>
               <li><strong>The kernel receives a graph of native nodes.</strong> Each node has an opcode, such as <code>CC_LAM</code> for a function or <code>CC_PI</code> for a function type. Two nodes come from the elaborator rather than the source: <code>exact</code> checks its value at the goal <code>T</code> by applying <code>fun (ascription : T) => ascription</code> to it, and <code>refl(x)</code> is the path that stays at <code>x</code>, <code>CC_PLAM</code>.</li>
             </ul>
-            <p>Open <em>Elaboration</em> below the first proof to see each of its declarations elaborated step by step. For more info on the kernel and its opcodes, see the <a href="../kernel.html">kernel reference</a>, still to be written.</p>
+            <p>The kernel then checks the term one node at a time, applying one typing rule to each. Entering a binder checks that its domain is a type and extends the context with the bound name. An application checks its argument against the domain of the function’s type. Wherever a type must match another, the kernel compares the two by conversion, unfolding definitions such as <code>lt</code> as needed.</p>
+            <p>Open <em>Elaboration</em> below the first proof to see each of its declarations elaborated step by step. Inside it, <em>Kernel check, step by step</em> lists every rule the kernel applied, as the kernel recorded it. For more info on the kernel and its opcodes, see the <a href="../kernel.html">kernel reference</a>, still to be written.</p>
             <pre><code data-check="accept" data-elaborate="yes">import naturals;
 
 def lt(n, m : Nat) : U0 {

@@ -156,6 +156,31 @@ function opcodeLines(lines) {
   }
   return pre;
 }
+// The kernel's check as a nested list: each rule it applied, with the type it
+// found, and the context extensions, conversions and reductions inside.
+function derivationList({ lines, rulesApplied, truncated }) {
+  const panel = element("details", "kernel-derivation");
+  panel.append(element("summary", null, `Kernel check, step by step · ${rulesApplied} rules applied`));
+  const list = element("div", "derivation");
+  const labels = { extend: "context gains", convert: "compare", reduce: "reduce" };
+  for (const line of lines) {
+    const row = element("div", `derivation-line derivation-${line.kind}`);
+    row.style.paddingLeft = `${line.depth * 1.25}em`;
+    if (line.kind === "rule") {
+      const node = element("code", "derivation-node");
+      for (const part of line.text.split(/(CC_[A-Z_]+)/)) if (part)
+        node.append(part.startsWith("CC_") ? element("span", "opcode", part) : document.createTextNode(part));
+      row.append(node);
+    } else row.append(element("span", "derivation-label", `${labels[line.kind]} `), sourceCode(line.text));
+    if (line.result) row.append(element("span", "derivation-arrow", line.kind === "convert" ? ": " : " ⇒ "),
+      line.kind === "convert" ? element("span", `derivation-${line.result}`, line.result) : sourceCode(line.result));
+    if (line.note) row.append(element("span", "derivation-note", ` ${line.note}`));
+    list.append(row);
+  }
+  if (truncated) list.append(element("div", "derivation-note", "… the rest of the check is not shown."));
+  panel.append(list);
+  return panel;
+}
 function renderElaboration(panel, declarations) {
   const body = element("div", "elaboration-body");
   body.append(element("p", "elaboration-legend",
@@ -201,7 +226,7 @@ function renderElaboration(panel, declarations) {
     const link = element("a", null, "For more info");
     link.href = kernelPage;
     note.append("✓ The C kernel checked this term at this type. ", link, " on the native opcodes, see the kernel reference.");
-    row("Kernel", trees, note);
+    row("Kernel", trees, note, derivationList(declaration.derivation));
     section.append(rows);
     body.append(section);
   }

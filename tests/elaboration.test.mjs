@@ -53,3 +53,21 @@ test("the elaboration view shows each declaration's term and type as native opco
   assert.ok(tree(view[0].kernelTerm).some(line => /CC_LAM ascription : CC_U 0/.test(line)));
   assert.ok(tree(view[2].kernelTerm).some(line => /second: CC_APP \(CC_DEFREF lt_succ\) \(CC_VAR n\)/.test(line)));
 });
+
+test("the kernel's check is shown rule by rule, from the kernel's own trace", async t => {
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check(source, "first");
+  const [lt, ltSucc] = elaboration(program, "first");
+  const lines = derivation => derivation.lines.map(line => `${"  ".repeat(line.depth)}${line.kind} ${line.text}${line.result ? ` ⇒ ${line.result}` : ""}`);
+  const shown = lines(lt.derivation);
+  // Entering a binder: the domain is checked, then the context gains n : Nat.
+  assert.deepEqual(shown.slice(0, 3), ["rule CC_LAM n : CC_NAT ⇒ Nat -> Nat -> U0", "  rule CC_NAT ⇒ U0", "  extend n : Nat"]);
+  // The inferred type is compared with the declared one.
+  assert.equal(shown.at(-1), "convert Nat -> Nat -> U0 ≡ Nat -> Nat -> U0 ⇒ equal");
+  // lt unfolds when its value is checked as a pair.
+  assert.ok(lines(ltSucc.derivation).some(line => /reduce lt\(n, succ\(n\)\) ⟶ exists k : Nat\. succ\(k\) \+ n = succ\(n\)/.test(line)));
+  assert.ok(lt.derivation.rulesApplied > 20 && !lt.derivation.truncated);
+  // Tracing turns check reuse off only while it runs.
+  assert.equal(program.kernel.optimizations?.reuseChecks ?? true, true);
+});

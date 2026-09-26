@@ -141,6 +141,11 @@ try {
   assert.match(await elaboration.textContent(), /intro n;\s*⊢ forall n : Nat\. exists m : Nat\. lt\(n, m\)\s*builds fun \(n : Nat\) => \?/);
   assert.match(await elaboration.locator(".opcode-tree").first().textContent(), /^CC_LAM n : CC_NAT/);
   assert.match(await elaboration.getByRole("link", { name: "For more info" }).first().getAttribute("href"), /kernel\.html$/);
+  // The kernel's check, rule by rule, from its own trace.
+  const derivation = elaboration.locator("details.kernel-derivation").first();
+  await derivation.locator("summary").click();
+  assert.match(await derivation.textContent(), /context gains n : Nat/);
+  assert.match(await derivation.textContent(), /compare Nat -> Nat -> U0 ≡ Nat -> Nat -> U0: equal/);
   await page.goto(new URL("kernel.html", base).href);
   assert.equal(await page.locator("#opcodes tbody tr").count(), 42);
   console.log("PASS elaboration panel and the kernel reference outline");

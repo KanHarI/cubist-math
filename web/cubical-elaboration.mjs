@@ -57,6 +57,65 @@ export function opcodeTree(kernel, handle, { names = {}, limit = 300 } = {}) {
   return lines;
 }
 
+// What each rule checks, for the step-by-step kernel view.
+const rules = {
+  Lam: "function: check the domain is a type, extend the context, infer the body",
+  Pi: "function type: the domain and the body are types",
+  Sigma: "pair type: both components are types",
+  App: "application: the function's type is a Π; check the argument against its domain",
+  Pair: "pair: check each component against the pair type",
+  Var: "variable: its type is in the context",
+  DefRef: "definition: its type was checked when it was defined",
+  U: "universe: U(n) has type U(n+1)",
+  Nat: "natural numbers", Zero: "zero", Succ: "successor of a natural number",
+  Path: "path type: both endpoints have the family's type",
+  PLam: "path: check the body at every point of the interval",
+  NatRec: "recursion on a natural number", SumRec: "case analysis on a sum",
+};
+
+// The kernel's check of a declaration, step by step: each rule it applied to
+// a node, with the type it found, and the context extensions, conversions and
+// reductions inside. Check reuse is off, so every node is checked.
+export function kernelDerivation(program, view, { limit = 400 } = {}) {
+  const kernel = program.kernel, checker = program.checker, dimensions = new Map(view.dimensions ?? []);
+  const context = view.context.map(entry => [entry.name, entry.type]);
+  const saved = kernel.optimizations ?? { shareSyntax: true, reuseChecks: true, compactPaths: true };
+  kernel.setOptimizations({ ...saved, reuseChecks: false });
+  let traced;
+  try { traced = kernel.traced(() => checker.syntax.check(view.expression, view.type, context, dimensions)); }
+  finally { kernel.setOptimizations(saved); }
+  const shown = handle => { try { return checker.displayText(checker.syntax.decode(handle, dimensions), 160); } catch { return `%${handle}`; } };
+  const lines = [], open = [];
+  let rulesApplied = 0;
+  for (const event of traced.events) {
+    if (lines.length >= limit) break;
+    if (event.kind === "infer") {
+      rulesApplied++;
+      const kind = kernel.node(event.a).kind;
+      const line = { depth: event.depth, kind: "rule", text: nodeSummary(kernel, event.a, view.symbols), note: rules[kind] ?? "" };
+      lines.push(line);
+      open.push(line);
+    } else if (event.kind === "inferred") {
+      const line = open.pop();
+      if (line) line.result = event.c ? shown(event.c) : "rejected";
+    } else if (event.kind === "reused")
+      lines.push({ depth: event.depth, kind: "rule", text: nodeSummary(kernel, event.a, view.symbols), result: shown(event.c), note: "already checked" });
+    else if (event.kind === "extend")
+      lines.push({ depth: event.depth, kind: "extend", text: `${stem(kernel.symbolName(event.a))} : ${shown(event.b)}` });
+    else if (event.kind === "convert")
+      lines.push({ depth: event.depth, kind: "convert", text: `${shown(event.a)} ≡ ${shown(event.b)}`, result: event.c ? "equal" : "different" });
+    else if (event.kind === "reduce")
+      lines.push({ depth: event.depth, kind: "reduce", text: `${shown(event.a)} ⟶ ${shown(event.b)}` });
+  }
+  return { lines, rulesApplied, truncated: lines.length >= limit || traced.dropped > 0 };
+}
+
+// One node: its opcode and name, or the whole node when it is short.
+function nodeSummary(kernel, handle, names = {}) {
+  const [line] = opcodeTree(kernel, handle, { names, limit: 1 });
+  return line.text;
+}
+
 // Every declaration of `module`, in source order.
 export function elaboration(program, module) {
   const source = program.sources[module] ?? "";
@@ -75,7 +134,7 @@ export function elaboration(program, module) {
         type: checker.displayText(view.type, 600), term: checker.displayText(view.expression, 600),
         kernelTerm: opcodeTree(program.kernel, checked.expression, { names }),
         kernelType: opcodeTree(program.kernel, checker.syntax.encode(view.type, dimensions), { names }),
-        checkingSteps: checked.checkingSteps };
+        checkingSteps: checked.checkingSteps, derivation: kernelDerivation(program, view) };
     } catch (error) {
       return { ...result, steps, reason: error.message };
     }

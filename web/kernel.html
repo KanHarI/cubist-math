@@ -88,7 +88,8 @@
         </section>
         <section id="checking">
           <h2>Checking</h2>
-          <p class="tbd">To be written: bidirectional checking of each opcode, the typing rules, and the steps the kernel counts.</p>
+          <p>The kernel checks a term one node at a time, applying one typing rule to each: it infers the node’s type from its operands, extends the context under a binder, and compares types by conversion where they must agree. The <a href="reference/first-proof.html#elaboration">Elaboration panels</a> of the language reference show every rule it applied to a declaration, from the kernel’s own trace (<code>cc_kernel_trace_start</code>).</p>
+          <p class="tbd">To be written: the typing rule of each opcode, and the steps the kernel counts.</p>
         </section>
         <section id="conversion">
           <h2>Conversion</h2>

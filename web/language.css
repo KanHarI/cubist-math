@@ -131,3 +131,14 @@ details.elaboration[open] > summary { border-bottom: 1px solid #e3e8e1; }
 .elaboration-error { color: #a3322b; }
 @media (max-width: 640px) { .elaboration-stages { grid-template-columns: minmax(0, 1fr); } }
 .tbd { color: #7c8d80; font-style: italic; }
+details.kernel-derivation { margin-top: 10px; border: 1px solid #e3e8e1; border-radius: 6px; background: white; }
+details.kernel-derivation > summary { padding: 8px 12px; cursor: pointer; font-weight: 600; color: #346447; }
+.derivation { padding: 6px 12px 10px; font-size: .86em; line-height: 1.6; overflow-x: auto; }
+.derivation-line { white-space: nowrap; }
+.derivation-line code { font-size: 1em; }
+.derivation-label, .derivation-arrow { color: #5f7066; }
+.derivation-extend .derivation-label { color: #346447; font-weight: 600; }
+.derivation-reduce .derivation-label { color: #98531c; font-weight: 600; }
+.derivation-note { color: #8a978f; font-size: .92em; }
+.derivation-equal { color: #346447; font-weight: 600; }
+.derivation-different { color: #a3322b; font-weight: 600; }
