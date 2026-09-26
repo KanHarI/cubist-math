@@ -157,6 +157,21 @@ int main(void) {
     cc_judgement_id start = STEP(OK(cc_instr_refl(k, OK(cc_instr_path_apply(k, OK(cc_instr_variable(k, q)), 0, 0)))), CC_STEP_PATH, ROOT);
     assert(other_of(start) == term_of(nv));
 
+    cc_judgement_id numeral = OK(cc_instr_succ(k, OK(cc_instr_succ(k, zero))));
+    cc_judgement_id four = OK(cc_instr_apply(k, OK(cc_instr_apply(k, add, numeral)), numeral));
+
+    /* Rewriting a typing judgement in place: its type by a step, as THTH's
+     * HighType with a pointed reduction, and its term by a replacement. */
+    cc_judgement_id retyped = OK(cc_instr_step(k, proof, 2, AT(0, 0), CC_STEP_DELTA));
+    retyped = OK(cc_instr_step(k, retyped, 2, AT(0), CC_STEP_BETA));
+    retyped = OK(cc_instr_step(k, retyped, 2, ROOT, CC_STEP_BETA));
+    assert(term_of(retyped) == term_of(proof) && type_of(retyped) == other_of(unfolded));
+    cc_judgement_id reduced = OK(cc_instr_step(k, OK(cc_instr_refl(k, four)), 0, ROOT, CC_STEP_NORMALIZE));
+    assert(successors(term_of(reduced)) == 4 && successors(term_of(OK(cc_instr_step(k, four, 0, ROOT, CC_STEP_NORMALIZE)))) == 4);
+    rejects(cc_instr_step(k, four, 1, ROOT, CC_STEP_NORMALIZE), "sides");
+    cc_judgement_id swapped = OK(cc_instr_replace(k, goal, 0, ROOT, unfolded));
+    assert(term_of(swapped) == other_of(unfolded) && type_of(swapped) == type_of(goal));
+
     /* The graph records each derivation once: its rule, premises, entry,
      * operands and highlighted position. Dimension entries are their index. */
     assert(OK(cc_instr_dimension(k, 0)) == i && OK(cc_instr_extend(k, nat, N)) == n);
@@ -186,8 +201,6 @@ int main(void) {
     rejects(cc_instr_define(k, 104, nv), "closed");
 
     /* Normalization, eta and cumulativity. */
-    cc_judgement_id numeral = OK(cc_instr_succ(k, OK(cc_instr_succ(k, zero))));
-    cc_judgement_id four = OK(cc_instr_apply(k, OK(cc_instr_apply(k, add, numeral)), numeral));
     assert(successors(other_of(STEP(OK(cc_instr_refl(k, four)), CC_STEP_NORMALIZE, ROOT))) == 4);
     assert(kind(other_of(OK(cc_instr_eta(k, add)))) == CC_LAM);
     assert(kind(other_of(OK(cc_instr_eta(k, loop)))) == CC_PLAM);

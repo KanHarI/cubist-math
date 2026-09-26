@@ -162,16 +162,19 @@ cc_judgement_id cc_instr_path_apply(cc_kernel *, cc_judgement_id path, cc_entry_
 /* A closed typing judgement becomes a definition; the result is its lookup. */
 cc_judgement_id cc_instr_define(cc_kernel *, uint32_t symbol, cc_judgement_id closed);
 cc_judgement_id cc_instr_lookup(cc_kernel *, cc_term reference);         /* ⊢ d : T */
-/* Equalities. Side 0 is the left term, side 1 the right. A position is the
- * path of child indices from that side's root to the highlighted subterm.
- * A step contracts the highlighted redex by the named rule. A replacement
- * swaps a highlighted occurrence of a for b, given a ≡ b; when a or b uses
- * a name bound on the way down, the given equality must have that name as a
+/* Equalities, and rewriting. A judgement's sides are 0, its term; 1, the
+ * other term of an equality; and 2, its type (THTH highlighted either the
+ * expression or the type). A position is the path of child indices from a
+ * side's root to the highlighted subterm. A step contracts the highlighted
+ * redex by the named rule; on a typing judgement's term this is subject
+ * reduction, and on a type it keeps a type. A replacement swaps a
+ * highlighted occurrence of a for b, given a ≡ b; when a or b uses a name
+ * bound on the way down, the given equality must have that name as a
  * context entry of the binder's type, and the entry is discharged. */
 cc_judgement_id cc_instr_refl(cc_kernel *, cc_judgement_id typing);      /* t ≡ t : T */
-cc_judgement_id cc_instr_step(cc_kernel *, cc_judgement_id equality, unsigned side,
+cc_judgement_id cc_instr_step(cc_kernel *, cc_judgement_id, unsigned side,
                               const uint8_t *position, size_t depth, cc_step_rule);
-cc_judgement_id cc_instr_replace(cc_kernel *, cc_judgement_id equality, unsigned side,
+cc_judgement_id cc_instr_replace(cc_kernel *, cc_judgement_id, unsigned side,
                                  const uint8_t *position, size_t depth, cc_judgement_id by);
 /* t : T for a Π, Σ or path type T gives t ≡ its eta expansion : T. */
 cc_judgement_id cc_instr_eta(cc_kernel *, cc_judgement_id typing);

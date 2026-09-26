@@ -991,22 +991,41 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
     return ck_fail(k, "Unknown step rule."), 0;
 }
 
-cc_judgement_id cc_instr_step(cc_kernel *k, cc_judgement_id equality, unsigned side,
+/* The sides of a judgement: 0 its term, 1 the other side of an equality,
+ * 2 its type. Rewriting any side by a definitional equality keeps the
+ * judgement valid: a term by subject reduction, a type because a reduct
+ * (or a convertible, well-typed replacement) of a type is a type. */
+static bool judgement(cc_kernel *k, cc_judgement_id id, unsigned side, cc_fact *out, cc_term *root) {
+    if (!id || id >= k->fact_count)
+        return ck_fail(k, "Unknown judgement.");
+    *out = k->facts[id];
+    if (side > 2 || (side == 1 && out->kind != CC_FACT_EQUALITY))
+        return ck_fail(k, "A judgement has sides 0 (term), 2 (type), and 1 for an equality's other term.");
+    *root = side == 0 ? out->term : side == 1 ? out->other : out->type;
+    return true;
+}
+
+static cc_judgement_id republish(cc_kernel *k, cc_fact f, unsigned side, cc_term changed, uint32_t context) {
+    if (side == 0) f.term = changed;
+    else if (side == 1) f.other = changed;
+    else f.type = changed;
+    return publish(k, f.kind, f.term, f.other, f.type, context);
+}
+
+cc_judgement_id cc_instr_step(cc_kernel *k, cc_judgement_id id, unsigned side,
                               const uint8_t *position, size_t depth, cc_step_rule rule) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_STEP, .premise = {equality}, .operand = {side, rule}}, position, depth, &found))
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_STEP, .premise = {id}, .operand = {side, rule}}, position, depth, &found))
         return found;
     cc_fact e;
-    if (!premise(k, equality, CC_FACT_EQUALITY, &e))
+    cc_term root;
+    if (!judgement(k, id, side, &e, &root))
         return 0;
-    if (side > 1)
-        return ck_fail(k, "An equality has sides 0 and 1."), 0;
-    cc_term root = side ? e.other : e.term;
     cc_term target = locate(k, root, position, depth, NULL);
     cc_term changed = target ? rebuild(k, root, position, depth, contract(k, target, rule)) : 0;
     if (!changed)
         return 0;
-    return publish(k, CC_FACT_EQUALITY, side ? e.term : changed, side ? changed : e.other, e.type, e.context);
+    return republish(k, e, side, changed, e.context);
 }
 
 /* A term whose free names matter at a depth of the path: the two sides of
@@ -1048,18 +1067,15 @@ static cc_entry_id context_entry(const cc_kernel *k, uint32_t set, uint32_t symb
     return 0;
 }
 
-cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id equality, unsigned side,
+cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id id, unsigned side,
                                  const uint8_t *position, size_t depth, cc_judgement_id by) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_REPLACE, .premise = {equality, by}, .operand = {side}}, position, depth, &found))
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_REPLACE, .premise = {id, by}, .operand = {side}}, position, depth, &found))
         return found;
     cc_fact e, inner;
-    if (!premise(k, equality, CC_FACT_EQUALITY, &e) || !premise(k, by, CC_FACT_EQUALITY, &inner))
+    cc_term root;
+    if (!judgement(k, id, side, &e, &root) || !premise(k, by, CC_FACT_EQUALITY, &inner))
         return 0;
-    if (side > 1)
-        return ck_fail(k, "An equality has sides 0 and 1."), 0;
-    if (depth > 1024)
-        return ck_fail(k, "Position depth exceeded."), 0;
     crossing *crossed = depth ? malloc(depth * sizeof *crossed) : NULL;
     scoped_term *terms = malloc((depth + 2) * sizeof *terms);
     cc_entry_id *removed = depth ? malloc(depth * sizeof *removed) : NULL;
@@ -1068,7 +1084,6 @@ cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id equality, unsigne
         ck_fail(k, "Replacement allocation failed.");
         goto done;
     }
-    cc_term root = side ? e.other : e.term;
     cc_term target = locate(k, root, position, depth, crossed);
     if (!target || !same(k, target, inner.term, "The highlighted subterm is not the equality's left side."))
         goto done;
@@ -1108,7 +1123,7 @@ cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id equality, unsigne
     cc_term changed = rebuild(k, root, position, depth, inner.other);
     if (!changed || !discharge(k, inner.context, removed, discharged, &context) || !merge(k, e.context, context, &context))
         goto done;
-    result = publish(k, CC_FACT_EQUALITY, side ? e.term : changed, side ? changed : e.other, e.type, context);
+    result = republish(k, e, side, changed, context);
 done:
     free(crossed);
     free(terms);
