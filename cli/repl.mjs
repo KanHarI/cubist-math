@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Source is elaborated by JavaScript; all accepted judgements come from C/WASM.
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import { basename, resolve, dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import createCubical from "../web/dist/cubical.mjs";
@@ -14,6 +14,9 @@ const help = `Cubist Math — cubical C kernel
   typeof TERM;             Show the type of a term
   evaluate TERM;           Show the value of a closed term that uses no assumption
   import MODULE;           Load a module into the session
+  /modules [TEXT]          List the modules import can load, or those whose names contain TEXT
+  /clear                   Clear the terminal
+  /restart                 Start a new session: forget every name defined here
   check MODULE|FILE.cubist  Check source and imports; later entries see its names
   inspect NAME             Show a checked expression, context, type and assumptions
   assembly NAME            Show the native kernel opcode graph
@@ -46,6 +49,12 @@ const readSource = async name => {
   }
   throw Error(`No module named ${name} in library/ or archive/first-library/.`);
 };
+// What import can load, for the REPL's /modules.
+const importable = async () => {
+  const names = async root => (await readdir(new URL(root, import.meta.url)).catch(() => []))
+    .filter(file => file.endsWith(".cubist")).map(file => file.slice(0, -".cubist".length));
+  return { library: await names("../library/"), archive: await names("../archive/first-library/") };
+};
 function show() {
   const shown = view.folded ?? view;
   for (const entry of shown.context) console.log(`${entry.label ?? entry.name} : ${cubicalText(entry.type, view.symbols)}`);
@@ -55,10 +64,10 @@ function show() {
 // before any check. A new check keeps the session: its entries are replayed.
 async function replSession() {
   if (program && session?.program !== program)
-    session = session ? await session.rebase(program, checkedModule) : new ReplSession(program, { base: checkedModule });
+    session = session ? await session.rebase(program, checkedModule) : new ReplSession(program, { base: checkedModule, modules: importable });
   else if (!session) {
     sessionProgram = new CubicalProgram(module, readSource, { optimizations });
-    session = new ReplSession(sessionProgram);
+    session = new ReplSession(sessionProgram, { modules: importable });
   }
   return session;
 }
@@ -66,6 +75,15 @@ const commands = new Set(["help", "--help", "-h", "quit", "exit", "check", "insp
 async function execute(line) {
   const [operation, ...parts] = line.trim().split(/\s+/), value = parts.join(" ");
   if (!operation) return;
+  if (line.trim().replace(/;$/, "") === "/help") { console.log(help); return; }
+  if (line.trim().replace(/;$/, "") === "/clear") { console.clear(); return; }
+  if (line.trim().replace(/;$/, "") === "/restart") {
+    sessionProgram?.dispose();
+    sessionProgram = null;
+    session = null;
+    console.log("Started a new session.");
+    return;
+  }
   if (!commands.has(operation)) {
     for (const { kind, text } of await (await replSession()).run(line))
       (kind === "error" ? console.error : console.log)(text);

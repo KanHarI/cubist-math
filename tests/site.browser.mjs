@@ -131,6 +131,17 @@ try {
   for (const text of ["let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
   assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "Type mismatch: found 7 = 7, expected x = 8."]);
   console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
+  // Slash commands: /modules lists what import can load; /clear and /restart
+  // act on the console.
+  await enter("/modules natural");
+  assert.match((await lastResults(1))[0], /^Library \(1\): naturals\nArchive, the first library \(\d+\): .*binary_naturals/);
+  await enter("/clear");
+  assert.equal(await page.locator(".repl-log").last().locator(".repl-result, .repl-entry").count(), 0);
+  await enter("/restart");
+  await page.waitForFunction(() => document.querySelector(".repl-log")?.textContent.includes("Started a new session."));
+  await enter("typeof x;");
+  assert.deepEqual(await lastResults(1), ["Untranslated name: x"]);
+  console.log("PASS REPL page: /modules, /clear and /restart");
   // The first proof's Elaboration panel opens on demand and shows every
   // declaration, down to the kernel's opcodes, with a link for more info.
   await page.goto(new URL("reference/first-proof.html#elaboration", base).href);
