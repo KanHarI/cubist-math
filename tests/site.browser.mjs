@@ -69,11 +69,20 @@ try {
   await page.locator("#tour-numbers").scrollIntoViewIfNeeded();
   await page.waitForSelector("#tour-numbers .example-token");
   assert.match(await page.locator("#tour-numbers .example-bar span").first().textContent(), /evaluate at line 7: 6/);
+  // An imported module's name opens the module in the workspace.
+  const moduleLink = page.locator("#tour-numbers a.example-module").first();
+  assert.equal(await moduleLink.textContent(), "naturals");
+  assert.match(await moduleLink.getAttribute("href"), /proof\.html\?proof=naturals$/);
   // A numeral's expansion shows at once on hover.
   await page.locator('#tour-numbers [data-tip*="succ("]').first().hover();
   assert.match(await page.locator(".token-tip:not([hidden])").textContent(), /^\d+ expands to succ\(/);
   assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?example=1#source=/);
   console.log("PASS reference examples: in-browser checking, linked names, embedded kernel inspector, evaluate results, instant macro tips");
+  await page.goto(new URL("proof.html?proof=naturals", base).href);
+  await page.locator("#read-source .reference").first().waitFor();
+  assert.equal(await page.locator("#proof-title").textContent(), "Library: naturals");
+  assert.equal(await page.locator("#archive-note").isHidden(), true);
+  console.log("PASS library module in the workspace");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status").textContent.includes("checked"));
   assert.equal(await page.locator("#diagnostic").isVisible(), false);

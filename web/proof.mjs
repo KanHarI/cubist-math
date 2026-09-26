@@ -10,6 +10,7 @@ import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proo
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
 import { keywords, builtinForms } from "./source-tokens.mjs";
+import { libraryModules } from "./mathscript/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 
 const query = new URLSearchParams(location.search);
@@ -17,11 +18,14 @@ const backend = "cubical";
 // A reference example is not a library proof: its source comes from the URL
 // fragment (#source=…), or, when embedded in a reference page, by message.
 const exampleMode = query.has("example"), embedded = exampleMode && query.has("embed");
-const proofId = exampleMode ? "reference_example" : choices.some((p) => p.id === query.get("proof"))
-  ? query.get("proof")
+// A module of the rebuilt library opens like a proof, from library/.
+const libraryModule = !exampleMode && libraryModules.includes(query.get("proof"));
+const proofId = exampleMode ? "reference_example"
+  : libraryModule || choices.some((p) => p.id === query.get("proof")) ? query.get("proof")
   : "euclid";
 const choice = choices.find((p) => p.id === proofId);
 const sourceURL = exampleMode ? null
+  : libraryModule ? `library/${proofId}.cubist`
   : `archive/first-library/${choice.file ?? cubicalSourceFile(proofId)}`;
 const snapshot = readProofNavigation(query.get("restore"));
 let restoring = snapshot?.proof === proofId ? snapshot : null;
@@ -94,11 +98,11 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
-$("proof-title").textContent = choice?.title ?? "Reference example";
+$("proof-title").textContent = choice?.title ?? (libraryModule ? `Library: ${proofId}` : "Reference example");
 $("development-note").hidden = !choice?.realDevelopment;
 $("puncture-note").hidden = !choice?.punctureDevelopment;
 $("complex-note").hidden = !choice?.complexDevelopment;
-$("archive-note").hidden = exampleMode;
+$("archive-note").hidden = exampleMode || libraryModule;
 $("source-file").hidden = exampleMode;
 $("repository-source").hidden = exampleMode;
 if (sourceURL) {

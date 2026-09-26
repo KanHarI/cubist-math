@@ -4,6 +4,7 @@
 // in a side panel, checked and inspected in the same way as in a proof.
 import { tokenPattern, tokenStyle, numeralExpansion } from "../source-tokens.mjs";
 import { enableTokenTips } from "../token-tips.mjs";
+import { sourceModules, cubicalSourceModules, libraryModules } from "../mathscript/modules.mjs";
 
 const workerURL = new URL("../cubical-worker.mjs", import.meta.url);
 const workspaceURL = new URL("../proof.html?example=1", import.meta.url);
@@ -41,8 +42,13 @@ const encode = source => btoa(String.fromCharCode(...new TextEncoder().encode(so
 const workspaceLink = source => `${workspaceURL.href}#source=${encode(source)}`;
 
 // Highlight source as the workspace's Read view does. Names the checker linked
-// become buttons that open the kernel inspector.
+// become buttons that open the kernel inspector, and an imported module's
+// name links to its source in the workspace.
+const modules = new Set([...sourceModules, ...cubicalSourceModules, ...libraryModules]);
 function render(code, source, links = []) {
+  const imports = new Map([...source.matchAll(/^\s*import\s+([A-Za-z_][A-Za-z_0-9]*)\s*;/gm)]
+    .filter(match => modules.has(match[1]))
+    .map(match => [match.index + match[0].lastIndexOf(match[1]), match[1]]));
   const linkAt = new Map();
   for (const link of links) {
     const old = linkAt.get(link.start);
@@ -56,6 +62,15 @@ function render(code, source, links = []) {
       span.className = "comment";
       span.textContent = text;
       parts.push(span);
+      continue;
+    }
+    if (imports.has(start)) {
+      const link = document.createElement("a");
+      link.className = "example-module";
+      link.textContent = text;
+      link.href = new URL(`../proof.html?proof=${encodeURIComponent(text)}`, import.meta.url).href;
+      link.title = `Open the ${text} module`;
+      parts.push(link);
       continue;
     }
     const expansion = numeralExpansion(text) ?? linkAt.get(start)?.expansion;
