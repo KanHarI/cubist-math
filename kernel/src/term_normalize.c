@@ -248,16 +248,21 @@ static cc_term weak(cc_kernel *k, cc_term term) {
 cc_term ck_whnf(cc_kernel *k, cc_term term) {
     if (!term || term >= k->count || !ck_tick(k, false))
         return 0;
-    if (k->weak_cache[term])
+    if (k->weak_cache[term]) {
+        if (k->weak_cache[term] != term) ck_trace(k, CC_TRACE_REDUCE, term, k->weak_cache[term], 0);
         return k->weak_cache[term];
+    }
     if (++k->recursion > 1024) {
         --k->recursion;
         return ck_fail(k, "Native reduction recursion depth exceeded."), 0;
     }
+    ++k->trace_mute;
     cc_term result = weak(k, term);
+    --k->trace_mute;
     --k->recursion;
     if (result && !k->error[0])
         k->weak_cache[term] = result;
+    if (result && result != term) ck_trace(k, CC_TRACE_REDUCE, term, result, 0);
     return result;
 }
 

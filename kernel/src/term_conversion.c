@@ -491,7 +491,11 @@ static bool cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
 }
 
 bool ck_expect(cc_kernel *k, cc_term actual, cc_term expected) {
-    if (cumulative(k, actual, expected))
+    ++k->trace_mute;
+    bool agree = cumulative(k, actual, expected);
+    --k->trace_mute;
+    ck_trace(k, CC_TRACE_CONVERT, actual, expected, agree);
+    if (agree)
         return true;
     if (!k->error[0]) {
         k->mismatch_found = actual;

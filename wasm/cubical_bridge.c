@@ -72,6 +72,29 @@ uint32_t cb_mismatch(uint32_t token, unsigned side) {
     return side ? expected : found;
 }
 
+/* The checker's trace (cubical_kernel.h), for inspection: a capacity starts
+ * it and zero stops it. An event's fields are 0 kind, 1 depth, 2 a, 3 b, 4 c. */
+bool cb_trace(uint32_t token, uint32_t capacity) {
+    browser_session *s = lookup(token);
+    if (!s) return false;
+    if (!capacity) { cc_kernel_trace_stop(s->kernel); return true; }
+    return cc_kernel_trace_start(s->kernel, capacity);
+}
+
+uint32_t cb_trace_count(uint32_t token) {
+    browser_session *s = lookup(token);
+    size_t count = s ? cc_kernel_trace_count(s->kernel) : 0;
+    return count > UINT32_MAX ? UINT32_MAX : (uint32_t)count;
+}
+
+uint32_t cb_trace_event(uint32_t token, uint32_t index, unsigned field) {
+    browser_session *s = lookup(token);
+    cc_trace_event event;
+    if (!s || field > 4 || !cc_kernel_trace_event(s->kernel, index, &event)) return 0;
+    const uint32_t fields[] = { event.kind, event.depth, event.a, event.b, event.c };
+    return fields[field];
+}
+
 void cb_optimizations(uint32_t token, unsigned flags) {
     browser_session *s = lookup(token);
     if (s) cc_kernel_set_optimizations(s->kernel, flags);

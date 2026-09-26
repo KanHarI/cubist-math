@@ -182,7 +182,58 @@ static void error_kinds(void) {
     cc_kernel_free(k);
 }
 
+/* A trace records the rules as they run, and never changes a judgement. */
+static bool traced(const cc_kernel *k, cc_trace_kind kind, uint32_t a, cc_trace_event *found) {
+    cc_trace_event event;
+    for (size_t i = 0; cc_kernel_trace_event(k, i, &event); ++i)
+        if (event.kind == kind && (!a || event.a == a)) { if (found) *found = event; return true; }
+    return false;
+}
+
+static void trace_events(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
+    cc_term var = cc_kernel_term(k, CC_VAR, 5, 0, 0, 0, 0);
+    cc_term identity = cc_kernel_term(k, CC_LAM, 5, nat, var, 0, 0);
+    cc_term arrow = cc_kernel_term(k, CC_PI, 5, nat, nat, 0, 0);
+    cc_checked_result result;
+    assert(cc_kernel_trace_start(k, 256));
+    assert(cc_kernel_check(k, identity, arrow, NULL, 0, &result));
+    cc_trace_event event;
+    /* Entering the binder: the domain is inferred, the context gains 5 : Nat,
+     * and the body is inferred one level deeper. */
+    assert(traced(k, CC_TRACE_INFER, identity, &event) && event.depth == 0);
+    assert(traced(k, CC_TRACE_EXTEND, 5, &event) && event.b);
+    assert(traced(k, CC_TRACE_INFER, var, &event) && event.depth == 1);
+    assert(traced(k, CC_TRACE_INFERRED, identity, &event) && event.b && event.c);
+    assert(traced(k, CC_TRACE_CONVERT, 0, &event) && event.c == 1);
+    /* Checking again reuses the cached judgement. */
+    assert(cc_kernel_trace_start(k, 256));
+    assert(cc_kernel_check(k, identity, arrow, NULL, 0, &result));
+    assert(traced(k, CC_TRACE_REUSED, identity, NULL));
+    /* A rejection is still a rejection, with the failed conversion recorded. */
+    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
+    assert(cc_kernel_trace_start(k, 256));
+    assert(!cc_kernel_check(k, zero, unit, NULL, 0, &result));
+    assert(traced(k, CC_TRACE_CONVERT, 0, &event) && event.c == 0);
+    cc_kernel_clear_error(k);
+    /* Events beyond the capacity are counted, not kept. */
+    assert(cc_kernel_trace_start(k, 1));
+    assert(cc_kernel_check(k, zero, nat, NULL, 0, &result));
+    assert(cc_kernel_trace_count(k) > 1);
+    assert(cc_kernel_trace_event(k, 0, &event) && !cc_kernel_trace_event(k, 1, &event));
+    /* Stopped, nothing is recorded. */
+    cc_kernel_trace_stop(k);
+    assert(cc_kernel_check(k, identity, arrow, NULL, 0, &result));
+    assert(cc_kernel_trace_count(k) == 0 && !cc_kernel_trace_event(k, 0, &event));
+    assert(!cc_kernel_trace_start(k, 0));
+    cc_kernel_free(k);
+}
+
 int main(void) {
+    trace_events();
     checked_definitions();
     open_cube();
     error_kinds();
