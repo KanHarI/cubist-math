@@ -37,11 +37,15 @@ const joinScopes = (...scopes) => new Map([...scopes.flatMap(scope => [...scope]
 const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: [0] };
 
 export class InstructionDriver {
-  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = 20000, guideSteps = 20000 } = {}) {
+  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = 20000, guideSteps = 20000,
+                        oracle = kernel.conversionOracle ?? true } = {}) {
     this.kernel = kernel;
     this.graph = graph;
     this.fuel = fuel;
     this.guideSteps = guideSteps;
+    // Whether the term checker's conversion guides the search. Without it,
+    // every comparison it would have answered is "cannot tell".
+    this.oracle = oracle;
     this.nodes = new Map();
     // Judgements never change, so reads are cached; so are the scopes of
     // contexts, derivations by term and scope, and terms known to be in weak
@@ -676,6 +680,7 @@ export class InstructionDriver {
   // false, or null when it cannot tell. Bound names that differ are renamed
   // on the right first, innermost binder first. A guide for the search only.
   equal(x, y, terms, dims) {
+    if (!this.oracle) return null;
     try {
       for (const [bindings, dimension] of [[terms, false], [dims, true]]) {
         const renamed = new Set();

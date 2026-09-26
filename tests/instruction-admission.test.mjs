@@ -66,3 +66,20 @@ test("a tactic's check is derived as it runs, and fails at the tactic", async t 
   // Reported at have, line 8, not at the declaration.
   assert.match(failed.reason, /^Instruction kernel: No rule for this yet\. at 8:3$/);
 });
+
+test("the driver derives without the term checker's conversion as a search aid", async t => {
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  program.kernel.conversionOracle = false;
+  const result = await program.check(source, "unaided");
+  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  assert.equal(new InstructionDriver(program.kernel).oracle, false);
+  const graph = new InstructionDriver(program.kernel).graph;
+  for (const [name, reference] of program.kernel.definitions) {
+    const { value, type } = program.kernel.definition(reference);
+    const driver = new InstructionDriver(program.kernel);
+    driver.check(value, type);
+    assert.equal(driver.equalities.size, 0, name);
+    assert.equal(graph.judgement(graph.lookup(reference)).term, reference, name);
+  }
+});
