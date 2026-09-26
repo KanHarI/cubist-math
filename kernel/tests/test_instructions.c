@@ -191,6 +191,11 @@ int main(void) {
         for (unsigned slot = 0; slot < 4; ++slot)
             assert(info(id).premise[slot] < id);
 
+    /* An endpoint substitutes into a judgement and discharges the dimension. */
+    cc_judgement_id at_one = OK(cc_instr_endpoint(k, OK(cc_instr_path_apply(k, loop, i, 0)), i, 1));
+    assert(context_size(at_one) == 1 && kind(term_of(at_one)) == CC_PAPP);
+    assert(other_of(STEP(OK(cc_instr_refl(k, at_one)), CC_STEP_PATH, ROOT)) == term_of(sn));
+
     /* Mismatches are reported with both types. */
     cc_term found, wanted;
     assert(!cc_instr_apply(k, add, OK(cc_instr_variable(k, w))));

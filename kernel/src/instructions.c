@@ -717,6 +717,23 @@ cc_judgement_id cc_instr_path_apply(cc_kernel *k, cc_judgement_id path_id, cc_en
     return typing(k, make(k, CC_PAPP, argument, p.term, p.type, 0, 0), result, context);
 }
 
+cc_judgement_id cc_instr_endpoint(cc_kernel *k, cc_judgement_id id, cc_entry_id dimension, unsigned endpoint) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_ENDPOINT, .premise = {id}, .entry = dimension, .operand = {endpoint}},
+               NULL, 0, &found))
+        return found;
+    cc_fact t;
+    cc_entry i;
+    uint32_t context;
+    if (!premise(k, id, CC_FACT_TYPING, &t) || !entry(k, dimension, true, &i))
+        return 0;
+    if (endpoint > 1)
+        return ck_fail(k, "An endpoint is 0 or 1."), 0;
+    if (!discharge(k, t.context, &dimension, 1, &context))
+        return 0;
+    return typing(k, ck_endpoint_term(k, t.term, i.symbol, endpoint), ck_endpoint_term(k, t.type, i.symbol, endpoint), context);
+}
+
 /* ---- Definitions -------------------------------------------------------- */
 
 cc_judgement_id cc_instr_define(cc_kernel *k, uint32_t symbol, cc_judgement_id closed) {

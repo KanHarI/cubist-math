@@ -111,7 +111,7 @@ typedef enum {
     CC_INSTR_SIGMA, CC_INSTR_PAIR, CC_INSTR_FIRST, CC_INSTR_SECOND, CC_INSTR_DOMAIN, CC_INSTR_FAMILY,
     CC_INSTR_PATH, CC_INSTR_PATH_LAMBDA, CC_INSTR_PATH_APPLY, CC_INSTR_DEFINE, CC_INSTR_LOOKUP,
     CC_INSTR_REFL, CC_INSTR_STEP, CC_INSTR_REPLACE, CC_INSTR_ETA, CC_INSTR_SIDE,
-    CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT
+    CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
@@ -159,6 +159,9 @@ cc_judgement_id cc_instr_path(cc_kernel *, cc_entry_id dimension, cc_judgement_i
 cc_judgement_id cc_instr_path_lambda(cc_kernel *, cc_entry_id dimension, cc_judgement_id body);
 /* At a dimension entry, or at endpoint 0 or 1 when the entry is 0. */
 cc_judgement_id cc_instr_path_apply(cc_kernel *, cc_judgement_id path, cc_entry_id dimension, unsigned endpoint);
+/* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
+ * substitution preserves typing. No other entry may depend on i. */
+cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);
 /* A closed typing judgement becomes a definition; the result is its lookup. */
 cc_judgement_id cc_instr_define(cc_kernel *, uint32_t symbol, cc_judgement_id closed);
 cc_judgement_id cc_instr_lookup(cc_kernel *, cc_term reference);         /* ⊢ d : T */
