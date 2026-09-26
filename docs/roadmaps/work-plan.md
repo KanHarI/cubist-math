@@ -203,7 +203,7 @@ navigation, every link and anchor, the redirects and the error catalogue.
 | --- | --- | --- | --- | --- |
 | K1.1 | G0 rule specification and consistency note (done) | Kernel G0 | — | M |
 | K1.2 | G0 in the instruction kernel: level nodes and arithmetic, level entries, `LevelPi`, `LevelLambda`, `LevelApply`, symbolic `Lift`, level-Π composition, ABI, sanitizers (done) | Kernel G0 | K1.1 | L |
-| K1.3 | G0 in the driver and bridges: deriving level binders and instantiations, agreement of universes by level normal form, decoding, serialization | Kernel G0 | K1.2 | M |
+| K1.3 | G0 in the driver and bridges: deriving level binders and instantiations, agreement of universes by level normal form, decoding, serialization (done; its source cases move with L1.1) | Kernel G0 | K1.2 | M |
 | K1.4 | The driver derives the archive unaided: its congruence and unfolding choices without the conversion oracle, with no declaration over the limit and at most half again the guided time | Kernel instructions | — | M |
 | L1.1 | Universe binders, level expressions, removal of templates | Kernel G0 (language part) | K1.3, K1.4 | L |
 | L1.2 | Goal and proof-construction layer (core done) | HoTT A5 | — | L |
@@ -452,9 +452,9 @@ is merged.
 Next, as of 2026-09-26:
 
 1. **G0**, the main track. It gates H1, theories, inductive declarations
-   and `match`, `Id`, computation notation and the rebuild. K1.2, the
-   kernel's half, is done; K1.3, the driver's half, is next, and L1.1 once
-   K1.4 holds.
+   and `match`, `Id`, computation notation and the rebuild. K1.2 and K1.3,
+   the kernel's and the driver's halves, are done. L1.1, the language, is
+   next once K1.4 holds, so K1.4 is now on the critical path.
 2. Alongside it, **K1.4**, the driver deriving the archive without the
    conversion oracle, which L1.1 waits for (the measurement above). Phases
    1 and 2 of the [learned search](learned-search.md) design, the driver's

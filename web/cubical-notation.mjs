@@ -10,7 +10,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (!cache) { cache = new Map(); freeCache.set(term, cache); }
     if (cache.has(variable)) return cache.get(variable);
     const found = term.tag === "Var" ? term.name === variable
-      : ["Pi", "Sigma", "Lam", "W"].includes(term.tag)
+      : ["Pi", "Sigma", "Lam", "W", "LPi", "LLam"].includes(term.tag)
         ? free(term.domain, variable) || (term.name !== variable && free(term.body, variable))
         : Object.values(term).some(child => free(child, variable));
     cache.set(variable, found); return found;
@@ -97,10 +97,17 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
       return { kind: t.tag, ...binder, domain, domainDependencies: null, domainKey: null };
     }
     if (t.tag === "Lam") { const domain = child(t.domain, "domain"); return { kind: "Lambda", domain, ...underBinder(t.name, t.body, () => child(t.body, "body")) }; }
-    if (t.tag === "App") {
-      if (paths) return { kind: "Call", fn: child(t.fn, "fn"), args: [child(t.arg, "arg")] };
+    // Level quantification (G0): Π (x < ω). B, λ (x < ω). t, and an
+    // instantiation as a call with a universe argument, as the source writes it.
+    if (t.tag === "LPi" || t.tag === "LLam")
+      return { kind: t.tag === "LPi" ? "LevelPi" : "LevelLambda", ...underBinder(t.name, t.body, () => child(t.body, "body")) };
+    if (t.tag === "App" || t.tag === "LApp") {
+      if (paths && t.tag === "App") return { kind: "Call", fn: child(t.fn, "fn"), args: [child(t.arg, "arg")] };
       const args = []; let fn = t;
-      while (fn.tag === "App" && remaining-- > 0) { args.unshift(visit(fn.arg)); fn = fn.fn; }
+      while ((fn.tag === "App" || fn.tag === "LApp") && remaining-- > 0) {
+        args.unshift(fn.tag === "App" ? visit(fn.arg) : { kind: "Universe", level: fn.level });
+        fn = fn.fn;
+      }
       const head = visit(fn);
       if (head.axiomNotation === "truncation") head.truncationArgument = 0;
       return { kind: "Call", fn: head, args };
@@ -148,13 +155,15 @@ export function cubicalTextParts(tree) {
     if (t.kind === "Name") return [{ text: t.name, binding: t.contextBinding ?? t.binding }];
     if (t.kind === "Number") return literal(String(t.value));
     if (t.kind === "Universe") return literal(universeText(t.level));
-    if (t.kind === "Call") return [...(t.fn.kind === "Lambda" ? [...literal("("), ...show(t.fn), ...literal(")")] : show(t.fn)),
+    if (t.kind === "Call") return [...(["Lambda", "LevelLambda"].includes(t.fn.kind) ? [...literal("("), ...show(t.fn), ...literal(")")] : show(t.fn)),
       ...literal("("), ...join(t.args.map(show), ", "), ...literal(")")];
     if (t.kind === "Lambda") return [...literal(`λ ${t.domain ? "(" : ""}${t.name}`),
       ...(t.domain ? [...literal(" : "), ...show(t.domain), ...literal(")")] : []), ...literal(". "), ...show(t.body)];
     if (["Pi", "Sigma"].includes(t.kind)) return [...literal(`${t.kind === "Pi" ? "Π" : "Σ"} (${t.name} : `), ...show(t.domain), ...literal("), "), ...show(t.body)];
     if (t.kind === "Identity") return [...literal("("), ...show(t.left), ...literal(" =["), ...show(t.carrier), ...literal("] "), ...show(t.right), ...literal(")")];
     if (t.kind === "Scope") return [...literal(`[${t.names.join(", ")}]. `), ...show(t.body)];
+    if (t.kind === "LevelPi") return [...literal(`Π (${t.name} < ω), `), ...show(t.body)];
+    if (t.kind === "LevelLambda") return [...literal(`λ (${t.name} < ω). `), ...show(t.body)];
     const operator = { Arrow: "→", Product: "×", Sum: "+", Pair: "," }[t.kind];
     return [...literal("("), ...show(t.left), ...literal(` ${operator} `), ...show(t.right), ...literal(")")];
   };

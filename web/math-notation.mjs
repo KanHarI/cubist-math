@@ -103,6 +103,9 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
     }
     if (node.kind === "Scope") return row(operator("["), element("mtext", node.names.join(", ")), operator("]"), operator("."), visit(node.body));
     if (node.kind === "Number") return element("mn", String(node.value));
+    if (node.kind === "LevelPi" || node.kind === "LevelLambda")
+      return row(operator(node.kind === "LevelPi" ? "Π" : "λ"), fenced(row(element("mi", node.name), operator("<"), element("mi", "ω"))),
+        operator(node.kind === "LevelPi" ? "," : "."), visit(node.body));
     if (["Pi", "Sigma", "Lambda"].includes(node.kind)) {
       if (node.kind === "Lambda") return row(operator("λ"), node.domain
         ? fenced(row(element("mi", node.name), operator(":"), visit(node.domain))) : element("mi", node.name), operator("."), visit(node.body));
