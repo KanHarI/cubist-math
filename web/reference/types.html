@@ -174,12 +174,12 @@ def the_number : (Unit or Unit) or Nat {
           </section>
           <section id="tour-functions">
             <h2>Functions: <code>-></code></h2>
-            <p><code>A -> B</code> is the type of functions from <code>A</code> to <code>B</code>. <code>fun (n : Nat) => n + n</code> is the function that doubles a number, of type <code>Nat -> Nat</code>. A declaration with parameters defines a function in one step, and <code>f(x)</code> applies it:</p>
+            <p><code>A -> B</code> is the type of functions from <code>A</code> to <code>B</code>. <code>fun (n : Nat) => n + n</code> is the function that doubles a number, of type <code>Nat -> Nat</code>. A declaration can state its type before <code>:=</code>, as <code>double_again</code> does. A declaration with parameters defines a function in one step, and <code>f(x)</code> applies it:</p>
             <pre><code data-check="accept">import naturals;
 
 def double(n : Nat) := n + n;
 
-def double_again := fun (n : Nat) =&gt; n + n;
+def double_again : Nat -&gt; Nat := fun (n : Nat) =&gt; n + n;
 
 evaluate double(4) expecting 8;
 evaluate double_again(4) expecting 8;</code></pre>
