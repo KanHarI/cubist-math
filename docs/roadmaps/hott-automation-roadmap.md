@@ -1045,8 +1045,9 @@ The matcher, resource limits and witness reconstruction must support it first.
 
 A–F require no new C kernel rule. The face-restricted query exposes a judgement
 the kernel already makes internally when checking composition overlaps; it
-needs review as an interface change. G has its own rule specification, native
-and reference implementations, universe audit and migration gates.
+needs review as an interface change. G has its own rule specification, its
+instructions and the driver's search for them, universe audit and migration
+gates.
 
 ## Validation
 

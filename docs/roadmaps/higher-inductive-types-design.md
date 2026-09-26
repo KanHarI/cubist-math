@@ -288,13 +288,21 @@ partiality monad, surreal numbers and the syntax of type theory.
 
 ### Trust controls
 
-- **Reference checker first.** Every stage lands in the JavaScript reference
-  checker before the C kernel. Both must agree on the canonicity fixture and on
-  every generated-rule test.
+- **Instructions first.** Since 2026-09-26 the trusted kernel is the
+  [instruction kernel](kernel-instructions.md). Every stage lands as its
+  instructions: one admits a signature in normal form, and each generated
+  rule (formation, constructor, formal composition, eliminator, and their
+  `Iota`, `Face` and `Whnf` steps) is an instruction the untrusted driver
+  issues. Neither the term checker nor the JavaScript reference checker is
+  extended (see the
+  [work plan](work-plan.md#the-instruction-kernel-and-this-plan)). Each
+  stage passes the canonicity fixture and a rejection test per generated
+  rule.
 - **Differential oracles.** The hand-coded natural-number, sum, W and pushout
-  rules are the oracle for stage H1. Declare the same types generically and
-  compare typing, reduction and composition results on the kernel tests and
-  the archived library. Retire the hand-coded rules only after they agree.
+  instructions are the oracle for stage H1. Declare the same types
+  generically and compare typing, reduction and composition results on the
+  kernel tests and, through the driver, on the archived library. Retire the
+  hand-coded instructions only after they agree.
 - **Negative tests:**
   - positivity violations, such as a sort in an arity or in data;
   - boundaries that disagree on overlapping faces;

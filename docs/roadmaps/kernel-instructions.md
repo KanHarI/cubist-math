@@ -1,8 +1,12 @@
 # Kernel instructions: a THTH-style forward kernel
 
-Status: on the `kernel-instructions` branch. The instruction kernel is the
-trusted kernel, and elaboration checks every term through it. The term
-checker remains only as an untrusted guide for the search, its conversion.
+Status: merged into `proof-ergonomics-roadmap` on 2026-09-26 (PR #38). The
+instruction kernel is the trusted kernel, and elaboration checks every term
+through it. The term checker remains only as an untrusted guide for the
+search, its conversion; see [what remains of it](#what-remains-of-the-term-checker).
+Every later kernel item (G0, H) is a set of instructions; the
+[work plan](work-plan.md#the-instruction-kernel-and-this-plan) records how
+that changes the plan.
 
 - Stage 1 is implemented: `kernel/src/instructions.c`, tested by
   `kernel/tests/test_instructions.c`.
@@ -40,11 +44,12 @@ and it decides nothing on its own: no conversion strategy, no implicit
 reduction, no unfolding hints. `with unfolding` and any future notion of
 opacity become elaborator features only.
 
-## Where the kernel searches today
+## Where the term checker searched
 
-The kernel takes a finished term and checks it top-down (`kernel/src/check*.c`).
-Choosing each rule is not search: every node kind has one rule. The search is
-in how it decides that two types are equal, and where it reduces:
+The term checker, the trusted kernel before this work, takes a finished term
+and checks it top-down (`kernel/src/check*.c`). Choosing each rule is not
+search: every node kind has one rule. The search is in how it decides that
+two types are equal, and where it reduces:
 
 | Where | What it decides | Files |
 | --- | --- | --- |
@@ -472,6 +477,39 @@ by the dimensions the terms mention, and the tower checks in 50 ms. With a
 5 s limit per declaration, the archive's 3761 declarations check in 25 s,
 against 20 s in Stage 4. The JS test suite takes 76 s, up from 61 s.
 
+## What remains of the term checker
+
+The instruction kernel calls three functions of the old checker's files, and
+only those are trusted: alpha equality (`ck_alpha_equal`) and syntactic
+cumulativity (`ck_syntactic_cumulative`) in `term_conversion.c`, and the
+builder of a pushout's bridge type (`ck_pushout_bridge_type`) in
+`check_pushout.c`. The rest is untrusted:
+
+- the typing rules (`ck_check`, `ck_infer` in `check_*.c`), reachable through
+  `cc_kernel_check` for `CubicalSyntax.check`, which only tests use;
+- the conversion strategy (`ck_convertible` in `term_conversion.c`) and the
+  unfolding hints, reachable through `cc_kernel_convertible`, the driver's
+  search aid;
+- `cc_kernel_define`, whose definitions `Lookup` refuses.
+
+The JavaScript reference checker (`lib/cubical/core.mjs`) is in the same
+position: its `Checker` serves the tests of the CCHM fragment and the
+JavaScript-only elaboration tests, and the path builders use its syntax
+constructors and substitution.
+
+**Decision (2026-09-26).** Neither is extended. G0 and H are implemented as
+instructions and as the driver's search, once; the term checker's rules and
+the reference checker stay at today's fragment. An error or an exhausted
+budget from the conversion oracle is "not known" to the driver, which then
+searches on its own. The oracle retires when the driver no longer benefits
+from it: `node tools/instruction-coverage.mjs` measures the archive with the
+oracle switched off, and phase 4 of the
+[learned search](learned-search.md) design aims at that independence. At
+that point the three trusted functions move to their own file, and
+`check_*.c`, the rest of `term_conversion.c` and `unfolding_hints.c` are
+deleted, together with `cc_kernel_check`, `cc_kernel_convertible` and
+`cc_kernel_define`. Stage 6 stays conditional on JavaScript being too slow.
+
 ## Decisions
 
 1. `Normalize` is allowed: it involves no choice, so it is computation, not
@@ -487,3 +525,6 @@ against 20 s in Stage 4. The JS test suite takes 76 s, up from 61 s.
    checker and the unfolding hints are untrusted elaboration aids.
 7. Elaboration checks nothing with the term checker. Its conversion is a
    search aid only; `CubicalSyntax.check` keeps it reachable for tests.
+8. Every later kernel feature is instructions only. The term checker's rules
+   and the JavaScript reference checker are not extended, and they retire
+   when the driver no longer benefits from the conversion oracle.

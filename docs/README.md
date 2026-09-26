@@ -18,9 +18,13 @@ Moving these documents does not change their recorded status or resume paused wo
     (kernel);
   - [theories and inductive declarations](roadmaps/inductive-language-features.md)
     (language).
+- The trusted kernel:
+  [kernel instructions](roadmaps/kernel-instructions.md), the THTH-style
+  forward kernel with every search decision in an untrusted driver, merged
+  on 2026-09-26. Every later kernel item is a set of instructions; the
+  [work plan](roadmaps/work-plan.md#the-instruction-kernel-and-this-plan)
+  records what that changes.
 - Experimental designs:
-  - [kernel instructions](roadmaps/kernel-instructions.md): the THTH-style
-    forward kernel, with every search decision in an untrusted driver;
   - [learned search](roadmaps/learned-search.md): a small policy and value
     network, trained against that kernel, for cheaper derivations.
 
