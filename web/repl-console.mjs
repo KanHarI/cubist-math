@@ -3,7 +3,7 @@
 // line; ↑ and ↓ recall earlier entries. `run(text)` returns the results of
 // a ReplSession (see repl-session.mjs).
 import { tokenPattern, tokenStyle, numeralExpansion } from "./source-tokens.mjs";
-import { replStatements } from "./repl-session.mjs";
+import { replStatements, consoleCommands } from "./repl-session.mjs";
 
 const element = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -32,7 +32,7 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
   prompt.setAttribute("aria-hidden", "true");
   const input = element("textarea", "repl-text");
   Object.assign(input, { rows: 1, spellcheck: false, autocapitalize: "off", autocomplete: "off",
-    placeholder: "let x := 7;   typeof x;   evaluate x;   help" });
+    placeholder: "let x := 7;   typeof x;   evaluate x;   /help" });
   input.setAttribute("aria-label", label);
   const runButton = element("button", "repl-run", "Run"), clearButton = element("button", "repl-clear", "Clear");
   runButton.type = "submit";
@@ -92,6 +92,15 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
     if (!text || busy) return;
     input.value = "";
     grow();
+    // /clear and /restart act on the console itself.
+    if (consoleCommands.has(text.replace(/;$/, ""))) {
+      history.push(text);
+      recalled = history.length;
+      if (text.startsWith("/clear")) log.replaceChildren();
+      else if (reset) await restart();
+      else show({ kind: "error", text: "This console cannot restart." });
+      return;
+    }
     await execute(text);
   }
   async function restart() {

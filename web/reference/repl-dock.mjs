@@ -34,7 +34,7 @@ function setOpen(open) {
   // The console is mounted inside, so its display never overrides hidden.
   if (open && !repl) repl = createReplConsole(body.appendChild(document.createElement("div")), {
     ...standaloneRepl(),
-    greeting: ["Each entry is checked by the kernel, as in a file. import naturals; enables + and *. help lists every command."],
+    greeting: ["Each entry is checked by the kernel, as in a file. import naturals; enables + and *. /help lists every command."],
   });
 }
 toggle.onclick = () => {
