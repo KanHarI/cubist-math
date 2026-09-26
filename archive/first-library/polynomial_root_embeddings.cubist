@@ -58,7 +58,7 @@ def residue_evaluate_mul(
   };
 }
 
-opaque def residue_evaluate_preserves(
+def residue_evaluate_preserves(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x)
 ) :=

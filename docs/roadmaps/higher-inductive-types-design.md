@@ -238,8 +238,8 @@ silently lose it.
   Automatic clauses use proved h-level evidence, never assumed evidence. A
   view built with a non-computing assumption carries that dependency into
   every use, and `computable` definitions then reject it.
-- **Opacity.** `opaque` and unfolding hints change conversion strategy only.
-  Evaluation always unfolds, so they never hide computational content.
+- **Unfolding hints** change conversion strategy only. Evaluation always
+  unfolds, so they never hide computational content.
 - **Tools.** The migration verifier compares non-computing dependencies as
   well as types. A declaration that computed before a refactoring must still
   compute after it.

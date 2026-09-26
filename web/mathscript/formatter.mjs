@@ -150,10 +150,9 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         if (!close && trailing && preceding && declarationEnds.has(preceding.end)) docs.push(hard);
         previous = null; continue;
       }
-      const itemStart = ["def", "opaque", "construction", "simp_rule", "simp_set"].includes(text)
+      const itemStart = ["def", "construction", "simp_rule", "simp_set"].includes(text)
         || itemStarts.has(token.start);
-      if (!close && itemStart && previous && !(["opaque", "computable"].includes(previous.text) && text === "def")
-        && !(previous.text === "computable" && text === "opaque")) {
+      if (!close && itemStart && previous && !(previous.text === "computable" && text === "def")) {
         flush(); docs.push(hard, hard); previous = null;
       }
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)

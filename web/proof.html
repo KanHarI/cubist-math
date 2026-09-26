@@ -421,7 +421,6 @@ def rewrite_then_finish(n, m : Nat, h : n = m) : n + 0 = m {
         </p>
         <p>
           Named definitions have checked bodies that the checker can unfold.
-          <code>opaque def</code> currently behaves like <code>def</code>.
           Conversion unfolds them as it needs them. In the native cubical backend,
           <code>with unfolding [alias, another_alias] { expression }</code> suggests which
           checked definitions to unfold while elaborating the enclosed expression.

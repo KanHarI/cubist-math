@@ -129,8 +129,7 @@ checking. Computability is expressible and preserved (milestone 8):
 
 - no convenience adds a non-computing dependency;
 - automatic clauses use proved h-level evidence;
-- `opaque` and unfolding hints never hide computational content from
-  evaluation.
+- unfolding hints never hide computational content from evaluation.
 
 Keep automatic computation demand-driven. Preserve named references and shared
 subterms; do not fully unfold the library to discover matches. Specify which
@@ -554,8 +553,8 @@ items are documented in the language reference's Computability section.
 - [ ] Patterns with holes on the expected side of `evaluate`, and witness
   readout from normalized truncations in the CLI's `evaluate` command. Both
   wait for H1, while truncation is still an assumption.
-- [x] Guarantee that evaluation always unfolds `opaque` definitions and
-  ignores unfolding hints.
+- [x] Guarantee that evaluation always unfolds definitions and ignores
+  unfolding hints. (`opaque def`, which changed nothing, has been removed.)
 - [x] Recheck every `computable` and `evaluate` in CI. The migration
   verifier compares non-computing dependencies.
 

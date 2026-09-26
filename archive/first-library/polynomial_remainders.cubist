@@ -33,13 +33,13 @@ def polynomial_reduction_data(K : AlgebraicField, M : PolynomialModulus(K), p : 
   );
 }
 
-opaque def polynomial_quotient(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
+def polynomial_quotient(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
   Polynomial(K) {
   obtain (q, r, equation, support) := polynomial_reduction_data(K, M, p);
   exact q;
 }
 
-opaque def polynomial_remainder(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
+def polynomial_remainder(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
   Polynomial(K) {
   obtain (q, r, equation, support) := polynomial_reduction_data(K, M, p);
   exact r;

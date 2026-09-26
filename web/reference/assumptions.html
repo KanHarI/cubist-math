@@ -38,7 +38,7 @@
             <li><a href="paths.html">Equality and paths</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
             <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li><a href="conversion.html">Conversion and unfolding</a></li>
             <li class="current"><a href="assumptions.html" aria-current="page">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
@@ -144,7 +144,7 @@ evaluate along (fun (T : U0) =&gt; T) by swapped from typed(Unit and Nat, (tt, 3
             <h2>Computability</h2>
             <p>A term that uses an assumption can stop computing. <code>LEM(U0, A, doubleNegation)</code> has type <code>Truncate(U0, A)</code>, but it is not built from any element of <code>A</code>, so nothing can be computed from it. A term that uses no assumption is built from the kernel’s own rules only. The kernel is designed so that such a closed term reduces to a canonical value: a closed <code>Nat</code> reduces to a numeral. The test suite checks this on closed examples. The language lets a declaration require it, and lets a file test what a term computes to.</p>
             <h3 id="computable"><code>computable def</code></h3>
-            <p>Writing <code>computable</code> before <code>def</code> or <code>opaque def</code> requires the declaration to use no assumption. The checker collects the assumptions of the checked term, of its type and of every definition they mention; this is the same list that the inspector shows. If the list is not empty, the declaration is rejected. The error names every assumption, and one chain of definitions through which the first one enters. A rejected declaration is not added, so the declarations that use it are blocked too.</p>
+            <p>Writing <code>computable</code> before <code>def</code> requires the declaration to use no assumption. The checker collects the assumptions of the checked term, of its type and of every definition they mention; this is the same list that the inspector shows. If the list is not empty, the declaration is rejected. The error names every assumption, and one chain of definitions through which the first one enters. A rejected declaration is not added, so the declarations that use it are blocked too.</p>
             <pre><code data-check="accept">import naturals;
 
 computable def double(n : Nat) := n + n;
@@ -184,13 +184,13 @@ evaluate double(3) expecting 7;  // Error: The term evaluates to 6, not 7.</code
             <pre><code data-check="reject">// Error: The evaluated term depends on non-computing assumptions: Truncate(U0), TruncateIntro(U0).
 //   Path to Truncate(U0): Truncate(U0).
 evaluate TruncateIntro(U0, Nat, 3) expecting TruncateIntro(U0, Nat, 3);</code></pre>
-            <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to. Evaluation computes full normal forms: it unfolds <code>opaque</code> definitions and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are keywords only in these positions. Elsewhere they are ordinary names.</p>
+            <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to. Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are keywords only in these positions. Elsewhere they are ordinary names.</p>
             <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
             <p class="note">Truncation is itself an assumption in the current kernel, so a term of type <code>Truncate(U0, A)</code> never evaluates. The kernel roadmap makes truncation an inductive type with a computation rule. After that, a closed truncated term that uses no other assumption will compute, and <code>evaluate</code> is planned to read the witness inside it.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="conversion.html">← 10. Conversion and opacity</a>
+            <a class="previous" href="conversion.html">← 10. Conversion and unfolding</a>
             <a class="next" href="checking.html">12. Checking and inspection →</a>
           </nav>
         </article>

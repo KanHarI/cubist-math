@@ -5,13 +5,13 @@ import equivalence_from_inverse;
 
 // Keep evaluation into unary Nat folded. A compact binary input can denote a
 // huge unary result without materializing that result during proof transport.
-opaque def binary_positive_to_nat(p : BinaryPositive) :=
+def binary_positive_to_nat(p : BinaryPositive) :=
   binary_positive_rec(
     Nat, 1, fun (child : BinaryPositive, ih : Nat) => ih + ih,
     fun (child : BinaryPositive, ih : Nat) => succ(ih + ih), p
   );
 
-opaque def binary_to_nat(n : BinaryNat) := match n return Nat {
+def binary_to_nat(n : BinaryNat) := match n return Nat {
     left zero => 0;
     right p => binary_positive_to_nat(p);
   };

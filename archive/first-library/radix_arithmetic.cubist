@@ -97,7 +97,7 @@ def radix_of_nat(extra, n : Nat) := induction n as k return RadixNat(extra) {
     succ previous => radix_succ(extra, previous);
   };
 
-opaque def radix_factorial(extra, n : Nat) := induction n as k return RadixNat(extra) {
+def radix_factorial(extra, n : Nat) := induction n as k return RadixNat(extra) {
     zero => radix_positive(extra, radix_one(extra));
     succ previous => radix_mul(extra, radix_of_nat(extra, succ(k)), previous);
   };

@@ -64,7 +64,7 @@ def binary_of_nat(n : Nat) := induction n as k return BinaryNat {
   };
 
 // The recursion index is small; all intermediate products are binary W trees.
-opaque def binary_factorial(n : Nat) := induction n as k return BinaryNat {
+def binary_factorial(n : Nat) := induction n as k return BinaryNat {
     zero => 0b1;
     succ previous => binary_mul(binary_of_nat(succ(k)), previous);
   };

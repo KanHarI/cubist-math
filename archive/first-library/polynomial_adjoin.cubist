@@ -40,7 +40,7 @@ def residue_constant_mul(K : AlgebraicField, M : PolynomialModulus(K), a, b : af
   );
 }
 
-opaque def residue_constant_preserves(K : AlgebraicField, M : PolynomialModulus(K)) :=
+def residue_constant_preserves(K : AlgebraicField, M : PolynomialModulus(K)) :=
   with unfolding [] {
     field_ops_preserved_from_laws(
       af_carrier(K), PolynomialResidue(K, M), af_operations(K), residue_zero(K, M),

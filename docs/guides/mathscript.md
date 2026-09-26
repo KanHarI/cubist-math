@@ -68,19 +68,11 @@ def identity(A : U0, x : A) = x;
 Consecutive comment lines form a paragraph; an empty `//` line starts another
 paragraph. A physical blank line separates a file or section comment from a
 declaration. Trailing comments are not used as documentation for the next
-declaration. This also works for proof blocks, axioms, opaque definitions and
-construction declarations. Documentation is displayed as plain text and does
-not change the checked proof.
+declaration. This also works for proof blocks and construction declarations.
+Documentation is displayed as plain text and does not change the checked proof.
 
-The parser also accepts `opaque def`; the current cubical backend checks and
-unfolds it exactly like `def`:
-
-```text
-opaque def Permutations(n : Nat) = Bijection(Fin(n), Fin(n));
-opaque def successor(n : Nat) = succ(n);
-def folded = successor(1);
-def opened = unfold(folded); // 2
-```
+Every definition unfolds wherever conversion needs its value; there is no way
+to keep one folded.
 
 Named definitions retain their checked bodies, which conversion can unfold
 when necessary to compare types. Function application still computes by beta

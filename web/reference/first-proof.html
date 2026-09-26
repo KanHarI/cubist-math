@@ -38,7 +38,7 @@
             <li><a href="paths.html">Equality and paths</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
             <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and opacity</a></li>
+            <li><a href="conversion.html">Conversion and unfolding</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
@@ -282,7 +282,6 @@ def two := 2;  // Error: Expected ';', found 'def'.</code></pre>
             <div class="table-scroll"><table>
               <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
               <tbody>
-                <tr><td><code>opaque def name …</code></td><td>Accepted, and currently checked and unfolded like <code>def</code>. See <a href="conversion.html#conversion">conversion and opacity</a>.</td></tr>
                 <tr><td><code>computable def name …</code></td><td>A definition that must use no assumption. See <a href="assumptions.html#computability">computability</a>.</td></tr>
                 <tr><td><code>evaluate term expecting value;</code></td><td>A directive that checks what a closed term computes to. See <a href="assumptions.html#evaluate">evaluate</a>.</td></tr>
                 <tr><td><code>simp_rule name priority N;</code><br /><code>simp_set name := [rule, …];</code></td><td>Directives that register checked equalities for simplification. See <a href="rewriting.html#simp-registration">registering rules</a>.</td></tr>
