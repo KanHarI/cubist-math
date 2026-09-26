@@ -10,7 +10,8 @@ export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "
   "second", "domain", "family", "path", "pathLambda", "pathApply", "define", "lookup", "refl", "step", "replace",
   "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp", "systemOverlap",
   "pushout", "pushPoint", "pushPath", "pushElim", "w", "sup", "wElim", "hcomp", "trans",
-  "glueBase", "gluePiece", "glueOverlap", "glue", "glueTermBase", "glueTermPiece", "glueTerm", "unglue"];
+  "glueBase", "gluePiece", "glueOverlap", "glue", "glueTermBase", "glueTermPiece", "glueTerm", "unglue",
+  "levelPi", "levelLambda", "levelApply"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
   natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
@@ -24,11 +25,11 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   pushPath: "PushoutPath", pushElim: "PushoutElim", w: "WForm", sup: "WIntro", wElim: "WElim",
   hcomp: "HComp", trans: "Transp", glueBase: "GlueBase", gluePiece: "GluePiece", glueOverlap: "GlueOverlap",
   glue: "GlueForm", glueTermBase: "GlueIntroBase", glueTermPiece: "GlueIntroPiece", glueTerm: "GlueIntro",
-  unglue: "GlueElim" };
+  unglue: "GlueElim", levelPi: "LevelForm", levelLambda: "LevelIntro", levelApply: "LevelElim" };
 export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
-const EXTEND = 100, DIMENSION = 101;
+const EXTEND = 100, DIMENSION = 101, LEVEL = 102;
 
 const side = value => {
   const index = typeof value === "number" ? value : sides.indexOf(value);
@@ -74,6 +75,11 @@ export class InstructionGraph {
   sumElim(motive, left, right, value) { return this.issue("sumElim", motive, left, right, value); }
   extend(type, name) { return this.issue(EXTEND, type, this.kernel.symbol(name)); }
   dimension(index) { return this.issue(DIMENSION, index); }
+  // A universe variable x < ω (G0): a level entry, used only inside levels.
+  level(name) { return this.issue(LEVEL, this.kernel.symbol(name)); }
+  levelPi(entry, body) { return this.issue("levelPi", entry, body); }
+  levelLambda(entry, body) { return this.issue("levelLambda", entry, body); }
+  levelApply(fn, level) { return this.issue("levelApply", fn, level); }
   variable(entry) { return this.issue("variable", entry); }
   pi(entry, codomain) { return this.issue("pi", entry, codomain); }
   lambda(entry, body) { return this.issue("lambda", entry, body); }

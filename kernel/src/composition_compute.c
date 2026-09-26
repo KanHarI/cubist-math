@@ -40,6 +40,8 @@ static cc_term map_tubes(cc_kernel *k, cc_term system, cc_term_kind operation,
     cc_term value;
     if (operation == CC_APP)
         value = app(k, tube.child[0], argument);
+    else if (operation == CC_LAPP)
+        value = ck_make(k, CC_LAPP, 0, tube.child[0], argument, 0, 0);
     else if (operation == CC_PAPP)
         value = ck_make(k, CC_PAPP, argument, tube.child[0], annotation, 0, 0);
     else if (operation == CC_SUCC) {
@@ -168,6 +170,18 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
         cc_term second = ck_make(k, CC_COMP, dim, second_family, second_system, second_base, 0);
         cc_term target = ck_endpoint_term(k, family, dim, 1);
         return ck_make(k, CC_PAIR, 0, target, first, second, 0);
+    }
+    /* Composition at a level Π (G0 §2.11) is pointwise: levels never vary
+     * along the interval, so no filling is needed.
+     *   comp^i (Π (x < ω). B) [φ ↦ u] u0 ⟶ λ (y < ω). comp^i B[x := y] [φ ↦ u {y}] (u0 {y}) */
+    if (type.kind == CC_LPI) {
+        uint32_t name = ck_fresh_symbol(k);
+        cc_term level = ck_var(k, name);
+        cc_term body_family = ck_substitute(k, type.child[1], type.payload, level);
+        cc_term body_system = map_tubes(k, system, CC_LAPP, level, 0);
+        cc_term body_base = ck_make(k, CC_LAPP, 0, base, level, 0, 0);
+        cc_term body = ck_make(k, CC_COMP, dim, body_family, body_system, body_base, 0);
+        return ck_make(k, CC_LLAM, name, type.child[0], body, 0, 0);
     }
     if (type.kind == CC_PI) {
         uint32_t name = ck_fresh_symbol(k);

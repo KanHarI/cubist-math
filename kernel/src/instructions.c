@@ -146,6 +146,8 @@ static bool entry(cc_kernel *k, cc_entry_id id, bool dimension, cc_entry *out) {
         return ck_fail(k, "Unknown context entry.");
     if (k->entries[id].dimension != dimension)
         return ck_fail(k, dimension ? "Expected a dimension entry." : "Expected a term entry.");
+    if (k->entries[id].level_variable)
+        return ck_fail(k, "A universe variable is not a term: use it in a level, as U(x).");
     *out = k->entries[id];
     return true;
 }
@@ -385,13 +387,58 @@ cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol)
     if (!self)
         return 0;
     *self = id;
-    k->entries[id] = (cc_entry){symbol, t.term, level, t.context, 0, type, false};
+    k->entries[id] = (cc_entry){symbol, t.term, level, t.context, 0, type, false, false};
     if (!publish_set(k, 1, &scope) || !merge(k, t.context, scope, &scope))
         return 0;
     k->entries[id].scope = scope;
     ++k->entry_count;
     index_entry(k, id);
     return id;
+}
+
+/* A level entry x < ω (G0 §2.2). Its type is the bound, LBound(1): binder
+ * syntax, never a term, so the entry needs no judgement. Level and term
+ * entries share the symbols: the same symbol again gives the same level
+ * entry, and a term entry's symbol is refused. */
+cc_entry_id cc_instr_level(cc_kernel *k, uint32_t symbol) {
+    if (!ready(k))
+        return 0;
+    if (!symbol)
+        return ck_fail(k, "A context entry needs a symbol."), 0;
+    cc_entry_id named = find_entry(k, symbol);
+    if (named) {
+        if (k->entries[named].level_variable)
+            return named;
+        return ck_fail(k, "The symbol already names a context entry."), 0;
+    }
+    cc_term bound = make(k, CC_LBOUND, 1, 0, 0, 0, 0);
+    if (!bound || !ck_var(k, symbol))
+        return 0;
+    cc_entry *entries = reserve(k, k->entries, &k->entry_capacity, k->entry_count + 1, sizeof *entries);
+    if (!entries)
+        return 0;
+    k->entries = entries;
+    cc_entry_id id = (cc_entry_id)k->entry_count;
+    uint32_t *self = scratch(k, 1), scope = 0;
+    if (!self)
+        return 0;
+    *self = id;
+    k->entries[id] = (cc_entry){symbol, bound, 0, 0, 0, 0, false, true};
+    if (!publish_set(k, 1, &scope))
+        return 0;
+    k->entries[id].scope = scope;
+    ++k->entry_count;
+    index_entry(k, id);
+    return id;
+}
+
+static bool level_entry(cc_kernel *k, cc_entry_id id, cc_entry *out) {
+    if (!id || id >= k->entry_count)
+        return ck_fail(k, "Unknown context entry.");
+    if (!k->entries[id].level_variable)
+        return ck_fail(k, "Expected a level entry.");
+    *out = k->entries[id];
+    return true;
 }
 
 static cc_entry_id dimension_entry(cc_kernel *k, unsigned index);
@@ -417,7 +464,7 @@ static cc_entry_id dimension_entry(cc_kernel *k, unsigned index) {
     if (!self)
         return 0;
     *self = id;
-    k->entries[id] = (cc_entry){index, 0, 0, 0, 0, 0, true};
+    k->entries[id] = (cc_entry){index, 0, 0, 0, 0, 0, true, false};
     if (!publish_set(k, 1, &scope))
         return 0;
     k->entries[id].scope = scope;
@@ -438,10 +485,24 @@ cc_judgement_id cc_instr_variable(cc_kernel *k, cc_entry_id id) {
 
 /* ---- Universes and inductive types -------------------------------------- */
 
+/* The context of a level (G0 §2.3): the level entries of its variables. */
+static bool level_context(cc_kernel *k, const cc_level_nf *nf, uint32_t *context) {
+    *context = 0;
+    for (uint32_t i = 0; i < nf->count; ++i) {
+        cc_entry_id id = nf->terms[i].key <= UINT32_MAX ? find_entry(k, (uint32_t)nf->terms[i].key) : 0;
+        if (!id)
+            return ck_fail(k, "Unbound level variable.");
+        if (!k->entries[id].level_variable)
+            return ck_fail(k, "A term variable is not a level.");
+        if (!merge(k, *context, k->entries[id].scope, context))
+            return false;
+    }
+    return true;
+}
+
 /* U-Form (G0 §2.5): a well-formed level whose successor is within the bound.
  * The level is taken in normal form, so universes at equal levels are one
- * term. No instruction binds a level variable yet, so a variable in the level
- * is unbound, or names a term. */
+ * term; its variables' entries are the context. */
 cc_judgement_id cc_instr_universe(cc_kernel *k, cc_term level) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_UNIVERSE, .operand = {level}}, NULL, 0, &found))
@@ -450,20 +511,20 @@ cc_judgement_id cc_instr_universe(cc_kernel *k, cc_term level) {
     if (!ck_level_normal(k, level, &nf))
         return 0;
     cc_term canonical = 0, next = 0;
-    if (nf.count)
-        ck_fail(k, find_entry(k, (uint32_t)nf.terms[0].key) ? "A term variable is not a level."
-                                                            : "Unbound level variable.");
-    else if (nf.constant >= CC_LEVEL_MAX)
+    uint32_t context = 0;
+    bool bound = level_context(k, &nf, &context);
+    if (bound && nf.constant >= CC_LEVEL_MAX)
         ck_fail(k, "A universe level exceeds the kernel's bound.");
-    else {
+    else if (bound) {
         canonical = ck_level_build(k, &nf);
-        ++nf.constant;
-        next = ck_level_build(k, &nf);
+        if (!ck_level_nf_succ(k, &nf))
+            canonical = 0;
+        next = canonical ? ck_level_build(k, &nf) : 0;
     }
     ck_level_nf_free(&nf);
     if (!canonical || !next)
         return 0;
-    return typing(k, ck_universe(k, canonical), ck_universe(k, next), 0);
+    return typing(k, ck_universe(k, canonical), ck_universe(k, next), context);
 }
 
 static cc_judgement_id constant(cc_kernel *k, cc_instruction rule, cc_term_kind kind, cc_term_kind type) {
@@ -667,6 +728,68 @@ cc_judgement_id cc_instr_apply(cc_kernel *k, cc_judgement_id function, cc_judgem
     if (!same(k, a.type, pi.child[0], "The argument has the wrong type.") || !merge(k, f.context, a.context, &context))
         return 0;
     return typing(k, app(k, f.term, a.term), ck_substitute(k, pi.child[1], pi.payload, a.term), context);
+}
+
+/* ---- Level quantification (G0 §2.7) ------------------------------------ */
+
+/* ∀-Form: the statement lives at lim_x of its body's level, ω when x occurs
+ * in the body's level and that level otherwise. */
+cc_judgement_id cc_instr_level_pi(cc_kernel *k, cc_entry_id id, cc_judgement_id body_id) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_LEVEL_PI, .premise = {body_id}, .entry = id}, NULL, 0, &found))
+        return found;
+    cc_entry e = {0};
+    cc_fact b = {0};
+    cc_term level = 0;
+    uint32_t context = 0;
+    if (!level_entry(k, id, &e) || !premise(k, body_id, CC_FACT_TYPING, &b) || !universe(k, b.type, &level) ||
+        !bind(k, b.context, id, &context))
+        return 0;
+    return typing(k, make(k, CC_LPI, e.symbol, e.type, b.term, 0, 0),
+                  ck_universe(k, ck_level_limit(k, e.symbol, level)), context);
+}
+
+/* ∀-Intro. */
+cc_judgement_id cc_instr_level_lambda(cc_kernel *k, cc_entry_id id, cc_judgement_id body_id) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_LEVEL_LAMBDA, .premise = {body_id}, .entry = id}, NULL, 0, &found))
+        return found;
+    cc_entry e = {0};
+    cc_fact b = {0};
+    uint32_t context = 0;
+    if (!level_entry(k, id, &e) || !premise(k, body_id, CC_FACT_TYPING, &b) || !bind(k, b.context, id, &context))
+        return 0;
+    return typing(k, make(k, CC_LLAM, e.symbol, e.type, b.term, 0, 0),
+                  make(k, CC_LPI, e.symbol, e.type, b.type, 0, 0), context);
+}
+
+/* ∀-Elim: only at a finite level, since the variable ranges over the levels
+ * below ω (§3.3 shows why ω itself would be unsound). The instance's levels
+ * are taken to normal form, and must stay within the bounds. */
+cc_judgement_id cc_instr_level_apply(cc_kernel *k, cc_judgement_id function, cc_term level) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_LEVEL_APPLY, .premise = {function}, .operand = {level}}, NULL, 0, &found))
+        return found;
+    cc_fact f = {0};
+    if (!premise(k, function, CC_FACT_TYPING, &f))
+        return 0;
+    cc_node pi = k->nodes[f.type];
+    if (pi.kind != CC_LPI)
+        return ck_fail(k, "Only a term of a level Π can be instantiated at a level."), 0;
+    cc_level_nf nf;
+    if (!ck_level_normal(k, level, &nf))
+        return 0;
+    cc_term canonical = 0;
+    uint32_t levels = 0, context = 0;
+    if (nf.tier)
+        ck_fail(k, "Instantiation needs a finite level, below ω.");
+    else if (level_context(k, &nf, &levels))
+        canonical = ck_level_build(k, &nf);
+    ck_level_nf_free(&nf);
+    if (!canonical || !merge(k, f.context, levels, &context))
+        return 0;
+    cc_term type = ck_level_instantiate(k, pi.child[1], pi.payload, canonical);
+    return type ? typing(k, make(k, CC_LAPP, 0, f.term, canonical, 0, 0), type, context) : 0;
 }
 
 cc_judgement_id cc_instr_pair(cc_kernel *k, cc_judgement_id type_id, cc_judgement_id first_id, cc_judgement_id second_id) {
@@ -1625,6 +1748,9 @@ cc_judgement_id cc_instr_eta(cc_kernel *k, cc_judgement_id typing_id) {
     if (type.kind == CC_PI) {
         uint32_t name = ck_fresh_symbol(k);
         expanded = make(k, CC_LAM, name, type.child[0], app(k, t.term, ck_var(k, name)), 0, 0);
+    } else if (type.kind == CC_LPI) {
+        uint32_t name = ck_fresh_symbol(k);
+        expanded = make(k, CC_LLAM, name, type.child[0], make(k, CC_LAPP, 0, t.term, ck_var(k, name), 0, 0), 0, 0);
     } else if (type.kind == CC_SIGMA) {
         expanded = make(k, CC_PAIR, 0, t.type, make(k, CC_FST, 0, t.term, 0, 0, 0), make(k, CC_SND, 0, t.term, 0, 0, 0), 0);
     } else if (type.kind == CC_PATH) {
@@ -1640,7 +1766,7 @@ cc_judgement_id cc_instr_eta(cc_kernel *k, cc_judgement_id typing_id) {
             return ck_fail(k, "Interval allocation failed."), 0;
         expanded = make(k, CC_PLAM, fresh, family, make(k, CC_PAPP, argument, t.term, t.type, 0, 0), 0, 0);
     } else {
-        return ck_fail(k, "Eta needs a term of a Π, Σ or path type."), 0;
+        return ck_fail(k, "Eta needs a term of a Π, level Π, Σ or path type."), 0;
     }
     return publish(k, CC_FACT_EQUALITY, t.term, expanded, t.type, t.context);
 }
@@ -1707,7 +1833,11 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
             cc_node lambda = k->nodes[n.child[0]];
             return ck_substitute(k, lambda.child[1], lambda.payload, n.child[1]);
         }
-        return ck_fail(k, "Beta needs a lambda applied to an argument."), 0;
+        if (n.kind == CC_LAPP && k->nodes[n.child[0]].kind == CC_LLAM) {
+            cc_node lambda = k->nodes[n.child[0]];
+            return ck_level_instantiate(k, lambda.child[1], lambda.payload, n.child[1]);
+        }
+        return ck_fail(k, "Beta needs a lambda applied to an argument, or a level lambda to a level."), 0;
     case CC_STEP_DELTA:
         if (n.kind == CC_DEFREF && n.payload && n.payload < k->definition_count)
             return k->definitions[n.payload].value;

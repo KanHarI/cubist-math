@@ -4,11 +4,14 @@ Status: specification for review. Written on 2026-09-25 as work-plan item
 K1.1, and revised the same day with the user's decisions on tiered
 universes. It specifies [kernel roadmap](cubical-kernel-roadmap.md) item G0.
 K1.2 (the instruction kernel), K1.3 (the driver and bridges) and L1.1
-(language) implement it, and section 5 is their acceptance list. The first
-half of K1.2 is implemented: the level node kinds, the arithmetic of 2.4 in
-`kernel/src/levels.c`, universes that carry their level as a child, the
-`Universe(level)` instruction, symbolic cumulativity in `Lift`, and ABI
-version 2 (section 4.1). The level instructions are next.
+(language) implement it, and section 5 is their acceptance list. K1.2 is
+implemented (section 4.1): the level node kinds and the arithmetic of 2.4 in
+`kernel/src/levels.c`; universes that carry their level as a child; ABI
+version 2; level entries; `Universe`, `LevelPi`, `LevelLambda` and
+`LevelApply`; level `Beta` and `Eta`; `Lift` with `≤-∀`; alpha equality of
+levels under binders; and composition at a level Π. `test_instructions.c`
+checks the kernel-level acceptance cases by their IDs. K1.3, the driver's
+half, is next.
 
 ## Revision
 
@@ -999,7 +1002,8 @@ arithmetic (`ck_level_*`, below), never by search.
   (`∀-Intro`). `LevelApply(f, ℓ)` derives `f {ℓ} : B[x := ℓ]` for
   `f : Π (x < ω). B` as written, with `ℓ` finite (`∀-Elim`); the type is
   substituted by the kernel's capture-avoiding level substitution (2.8).
-  `Domain` does not apply to a level Π; `Family` gives `B` under the entry.
+  `Domain` and `Family` do not apply to a level Π: its instances come from
+  `LevelApply`, and nothing yet needs its body as a type on its own.
 - `Step(eq, side, position, Beta)` contracts a level redex
   `(λ (x < ω). t) {ℓ}` as it contracts a term redex (`∀-β`), and `Eta`
   expands a term of a level Π to `λ (x < ω). f {x}` (`∀-η`). `Whnf` and
