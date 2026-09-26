@@ -15,7 +15,8 @@ which it does not change:
 - In instruction mode, the first proof checks, and so does all of
   `library/naturals`. So does every one of the 41 definitions behind the
   archive's Euclid theorem, and 3800 of the archive's 3938 definitions
-  (96.5%), in 14 s for the whole archive. The rest need:
+  (96.5%), in 14 s for the whole archive; `node tools/instruction-coverage.mjs`
+  measures it again. The rest need:
 
   | Need | Definitions |
   | --- | --- |
