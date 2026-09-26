@@ -45,8 +45,8 @@ evaluate binary_mul(0b1101, 0b1011) expecting 0b10001111;
 evaluate double_negation expecting double_negation;
 evaluate 2 + 2 expecting tt;
 `, t);
-  assert.deepEqual(result.evaluations.map(evaluation => [evaluation.name, evaluation.value.slice(0, 1)]),
-    [["at line 4", "4"], ["at line 6", "I"]]);
+  assert.deepEqual(result.evaluations.map(evaluation => [evaluation.name, evaluation.value]),
+    [["at line 4", "4"], ["at line 6", "0b10001111"]]);
   assert.equal(gaps.length, 3);
   assert.match(gaps[0], /^evaluate at line 5: The term evaluates to 4, not 5\.$/);
   assert.match(gaps[1], /^evaluate at line 7: The evaluated term depends on non-computing assumptions: .*LEM\(U0\)/);

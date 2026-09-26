@@ -2,7 +2,7 @@ import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T, substituteTerm } from "./dist/cubical-runtime/core.mjs";
 import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
 import { NameSupply } from "./dist/cubical-runtime/names.mjs";
-import { cubicalText } from "./cubical-notation.mjs";
+import { sourceText } from "./cubical-source-text.mjs";
 
 const speculativeFailures = new Set(["mismatch", "budget", "deadline"]);
 const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "W"]);
@@ -99,7 +99,7 @@ export class NativeCubicalElaborator {
     for (const [name, type] of [...this.assumptions].reverse()) if (names.has(name)) visit(type);
     return new Map([...this.assumptions].filter(([name]) => names.has(name)));
   }
-  // A type mismatch names both types in Cubist notation. The kernel's handles
+  // A type mismatch names both types in Cubist source syntax. The kernel's handles
   // are read at once, before any rollback can invalidate them.
   describeMismatch(error, dimensions) {
     if (error?.kind !== "mismatch" || !error.mismatch?.found || error.described) return error;
@@ -117,7 +117,7 @@ export class NativeCubicalElaborator {
     this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : name.includes("__") && !name.startsWith("__") ? { name: name.slice(name.indexOf("__") + 2) } : undefined });
-    const text = cubicalText(displayTerm(term), this.displaySymbols);
+    const text = sourceText(displayTerm(term), this.displaySymbols);
     return text.length > 160 ? `${text.slice(0, 159)}…` : text;
   }
   checkSyntax(term, expected, context, dimensions, describe = true) {

@@ -263,7 +263,7 @@ def plus_zero(n : Nat) : n + 0 = n {
             <pre><code data-check="reject">import naturals;
 
 def plus_zero_by_computation(n : Nat) : n + 0 = n {
-  exact refl(n);  // Error: Type mismatch: found (n =[Nat] n), expected (add(n, 0) =[Nat] n).
+  exact refl(n);  // Error: Type mismatch: found n = n, expected n + 0 = n.
 }</code></pre>
             <p>Induction on <code>Nat</code> and binary numerals are described in <a href="induction.html#induction">natural numbers and inductive types</a>.</p>
           </section>

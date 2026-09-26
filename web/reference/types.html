@@ -156,6 +156,11 @@ def second_of_three : Unit or Unit or Nat {
 def third_of_three : Unit or Unit or Nat {
   exact right(right(5));
 }</code></pre>
+            <p>Each <code>right</code> steps in once, so a value deeper in the list needs every step on the way:</p>
+            <pre><code data-check="reject">def skipped_step : Unit or Unit or Nat {
+  exact right(5);  // Error: Type mismatch: found Nat, expected Unit or Nat.
+}</code></pre>
+            <p><code>right(5)</code> offers <code>5</code> as a value of the rest, <code>Unit or Nat</code>, which is itself a choice. <code>right(right(5))</code> is the value meant.</p>
             <p>Parentheses make a different type. In <code>(Unit or Unit) or Nat</code>, <code>left</code> first picks between the two units:</p>
             <pre><code data-check="accept">def second_unit : (Unit or Unit) or Nat {
   exact left(right(tt));
@@ -265,9 +270,9 @@ def seven_is_seven : 7 = 7 {
             <pre><code data-check="reject">import naturals;
 
 def wrong_sum : 2 + 2 = 5 {
-  exact refl(4);  // Error: Type mismatch: found (4 =[Nat] 4), expected (add(2, 2) =[Nat] 5).
+  exact refl(4);  // Error: Type mismatch: found 4 = 4, expected 2 + 2 = 5.
 }</code></pre>
-            <p>The message writes each equality with its type: <code>x =[T] y</code> is <code>x = y</code> with both sides of type <code>T</code>, and <code>add(2, 2)</code> is <code>2 + 2</code>. An equality is a type like any other, so it can be a parameter, an assumption to reason from, or part of a larger type. Equalities that do not hold by computation, such as <code>n + 0 = n</code> for a variable <code>n</code>, need a proof; the chapter on <a href="paths.html#paths">equality and paths</a> describes the tools.</p>
+            <p>The message shows both types as they would be written in a file. An equality is a type like any other, so it can be a parameter, an assumption to reason from, or part of a larger type. Equalities that do not hold by computation, such as <code>n + 0 = n</code> for a variable <code>n</code>, need a proof; the chapter on <a href="paths.html#paths">equality and paths</a> describes the tools.</p>
           </section>
           <section id="tour-dependent">
             <h2>Dependent types: <code>forall</code> and <code>exists</code></h2>

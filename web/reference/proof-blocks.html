@@ -287,7 +287,7 @@ def reassociate(A B C : U0, value : A or (B or C)) : (A or B) or C {
 
 def default(value : Unit or Unit) : Shape(value) {
   cases value {
-    // Error: Type mismatch: found (Unit → Nat), expected (Unit → Shape(value)).
+    // Error: Type mismatch: found Unit -&gt; Nat, expected Unit -&gt; Shape(value).
     left a =&gt; { exact 0; }
     right b =&gt; { exact tt; }
   }

@@ -34,6 +34,7 @@ export class CubicalProgram {
     this.templates = new Map();
     this.templateSelections = new Map();
     this.gaps = []; this.evaluations = []; this.links = []; this.sources = {}; this.completed = 0;
+    this.failedImports = new Map();
   }
   dispose() { this.kernel.dispose(); }
   assumptionSymbols() {
@@ -77,6 +78,7 @@ export class CubicalProgram {
       catch (error) {
         if (name === main) throw error;
         this.gaps.push({ module: name, reason: error.message });
+        this.failedImports.set(name, error.message);
         visiting.delete(name); return new Map();
       }
       this.sources[name] = text;
@@ -86,6 +88,12 @@ export class CubicalProgram {
         env = new Map([...env, ...await load(dependency)]);
         simpRegistry=mergeSimpRegistries(simpRegistry,this.simpRegistries.get(dependency));
       }
+      // A declaration that fails after an import failed names that import:
+      // its missing names are usually the import's.
+      const failedImport = ast.imports.find(dependency => this.failedImports.has(dependency));
+      // The note goes before a trailing source position, which stays last.
+      const failure = reason => failedImport && reason ? reason.replace(/(?: at \d+:\d+)?$/,
+        position => ` (import ${failedImport} failed: ${this.failedImports.get(failedImport)})${position}`) : reason;
       const define = this.checker.define.bind(this.checker);
       const checker = Object.create(this.checker);
       checker.bindingName = local => `${name}__${local}`;
@@ -171,16 +179,16 @@ export class CubicalProgram {
       for (const d of result.declarations) {
         const syntax = byName.get(d.name), binding = `${name}__${d.name}`;
         const verified = d.status === "checked-native-cubical";
-        const template = !!d.template;
+        const template = !!d.template, reason = verified ? d.reason : failure(d.reason);
         const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified, template,
-          status: d.status, reason: d.reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
+          status: d.status, reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
           rewriteWork: d.rewriteWork,
           unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [], start: syntax.start, end: syntax.end,
           definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
           ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),
           type: verified ? cubicalText(d.type, { ...this.symbols, ...Object.fromEntries(
             (this.declarationBindings.get(binding) ?? []).filter(item => item.term.tag === "Var")
-              .map(item => [item.term.name, { name: item.node.name }])) }) : d.reason };
+              .map(item => [item.term.name, { name: item.node.name }])) }) : reason };
         this.symbols[binding] = info;
         if (template) {
           const schema = result.env.get(d.name);
@@ -250,7 +258,7 @@ export class CubicalProgram {
           }
         }
         if (!verified && !template) this.gaps.push({ module: name, name: d.name,
-          reason: d.reason, start: d.errorStart, end: d.errorEnd });
+          reason, start: d.errorStart, end: d.errorEnd });
         if (name === main) this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
       }
       this.modules.set(name, result.env); visiting.delete(name);
