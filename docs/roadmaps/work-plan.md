@@ -1,8 +1,13 @@
 # Work plan: kernel, language, library rebuild and reference
 
 Status: plan of 2026-09-25, after merging PRs #2–#4 into
-`proof-ergonomics-roadmap`. It sequences these documents:
-- the [kernel roadmap](cubical-kernel-roadmap.md): G0, H1–H4;
+`proof-ergonomics-roadmap`; revised on 2026-09-26, when the instruction
+kernel became the trusted kernel (PR #38). It sequences these documents:
+- the [kernel roadmap](cubical-kernel-roadmap.md): G0, H1–H4, each now a
+  set of instructions (see
+  [the instruction kernel and this plan](#the-instruction-kernel-and-this-plan));
+- the [instruction kernel](kernel-instructions.md), delivered, and the
+  [learned search](learned-search.md) design that builds on it;
 - the [proof ergonomics roadmap](proof-ergonomics-roadmap.md): milestones 5–8;
 - the [HoTT automation roadmap](hott-automation-roadmap.md);
 - the [computation notation roadmap](computation-notation-roadmap.md), an
@@ -22,16 +27,16 @@ can compute is marked `computable`, and its computations are tested with
 **Sizes** are relative (S < M < L < XL): dependency-sized work packages, not
 time estimates. **IDs:** K = kernel, L = language and elaborator, B = library
 rebuild, D = reference and documentation, I = infrastructure. Every package
-lands with its tests, and kernel packages land in the reference checker
-before the C kernel.
+lands with its tests. A kernel package is a set of instructions in
+`kernel/src/instructions.c`, together with the driver's search for them.
 
 ## Overview
 
 | Stage | Theme | Gate to leave the stage |
 | --- | --- | --- |
 | 0 | Consolidate: merge, archive, computability tracking, reference harness | Archive checked in CI; `computable` and `evaluate` available; reference examples checked |
-| 1 | Universes (G0) and the goal layer | G0 reviewed, and both checkers agree; archive templates rechecked generically |
-| 2 | One-sort inductive signatures (H1) and the first language release | H1 soundness note reviewed; hand-coded rules agree with H1; `inductive`/`match`/theories released |
+| 1 | Universes (G0) and the goal layer | G0 reviewed; every acceptance case passes through the instruction kernel; archive templates rechecked generically |
+| 2 | One-sort inductive signatures (H1) and the first language release | H1 soundness note reviewed; the hand-coded instructions agree with H1's generated ones; `inductive`/`match`/theories released |
 | 3 | Rebuild wave 1: foundations, numbers, counting, order, homotopy types, groups | Hull and iconic results of those areas re-proved |
 | 4 | Indexed families (H2), inference, rebuild wave 2: algebra, fields, Galois | `Id` with J on `refl`; implicit arguments; wave 2 results re-proved |
 | 5 | Inductive-inductive types (H3), reals and analysis | H3 soundness note reviewed, or the fallback taken; Cauchy reals instance; analysis rebuilt |
@@ -40,13 +45,59 @@ before the C kernel.
 Stages overlap wherever dependencies allow. For example, stage 1's tooling
 packages (HoTT A1, A2, A4, A6) continue alongside stage 2.
 
+## The instruction kernel and this plan
+
+Since 2026-09-26 the trusted kernel is the
+[instruction kernel](kernel-instructions.md): a THTH-style forward kernel
+whose typing rules are instructions, issued one at a time by an untrusted
+driver (`web/cubical-instruction-driver.mjs`). The term checker that was
+the trusted kernel when this plan was written is now the driver's untrusted
+conversion oracle, and the JavaScript reference checker
+(`lib/cubical/core.mjs`) serves only tests and, as a syntax library, the
+path builders. This changes what a kernel package is and how it is accepted.
+
+- **A kernel package is instructions.** G0 and each stage of H add
+  instructions to `kernel/src/instructions.c` and teach the driver to issue
+  them: the formation, introduction and elimination rules, and the `Step`
+  rules (`Beta`, `Iota`, `Face`, `Whnf`, `Normalize`) that give them
+  computation. Nothing lands in the reference checker or in the term
+  checker's rules first. Each kernel package is one implementation,
+  reviewed once.
+- **The term checker and the reference checker stay at today's fragment.**
+  Neither is extended to levels or to declared inductive types. An error or
+  an exhausted budget from the conversion oracle is "not known" to the
+  driver, which then searches on its own, as it already does where the
+  oracle runs out of budget. The reference checker keeps its tests for the
+  CCHM fragment. Their retirement is a separate decision, taken when the
+  driver no longer benefits from the oracle: the coverage tool measures
+  that with the oracle switched off, and phase 4 of the
+  [learned search](learned-search.md) design aims at it. At that point the
+  three trusted functions still in those files, alpha equality and
+  syntactic cumulativity in `term_conversion.c` and the pushout bridge type
+  in `check_pushout.c`, move to their own file, and the rest of
+  `check_*.c`, `term_conversion.c` and `unfolding_hints.c` is deleted.
+- **"Both checkers agree" becomes four checks.** The specification's
+  acceptance cases run through the instruction kernel: kernel-level cases
+  are issued directly in `kernel/tests/test_instructions.c`, and source
+  cases go through the driver in the JavaScript tests. The archive derives
+  again under `node tools/instruction-coverage.mjs`, and the migration
+  verifier compares its judgements. The canonicity fixture computes the
+  stage's showcase. Each generated rule has a rejection test.
+- **H1's differential oracle is the hand-coded instructions.** `Nat`, sums,
+  W types and pushouts keep their instructions until the generic signature
+  mechanism agrees with them on the kernel tests and on the archive. Then
+  they retire, as the design intended for the term checker's rules.
+- **The driver is part of every language package.** Where a plan below says
+  the elaborator checks a term, the driver derives it. A feature the driver
+  cannot derive is not a feature.
+
 ## Stage 0: consolidate
 
 | ID | Package | Owner | Depends on | Size |
 | --- | --- | --- | --- | --- |
 | I0.1 | Merge `proof-ergonomics-roadmap` into `main` (deferred: work continues off `main`) | — | Maintainer decision | S |
 | I0.2 | Archive the first library (done) | Plan | — | M |
-| I0.3 | Start the new library tree | Plan | I0.2 | S |
+| I0.3 | Start the new library tree (done: `library/naturals`) | Plan | I0.2 | S |
 | I0.4 | Remove local scratch state (done) | — | — | S |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` (done) | Ergonomics 8 | — | M |
 | D0.1 | Checked-example harness for the reference (done) | Plan | — | S |
@@ -143,12 +194,13 @@ navigation, every link and anchor, the redirects and the error catalogue.
 | ID | Package | Owner | Depends on | Size |
 | --- | --- | --- | --- | --- |
 | K1.1 | G0 rule specification and consistency note (done) | Kernel G0 | — | M |
-| K1.2 | G0 in the reference checker | Kernel G0 | K1.1 | L |
-| K1.3 | G0 in the C kernel, ABI, serialization, sanitizers | Kernel G0 | K1.2 | L |
+| K1.2 | G0 in the instruction kernel: level nodes and arithmetic, level entries, `LevelPi`, `LevelLambda`, `LevelApply`, symbolic `Lift`, level-Π composition, ABI, sanitizers | Kernel G0 | K1.1 | L |
+| K1.3 | G0 in the driver and bridges: deriving level binders and instantiations, agreement of universes by level normal form, decoding, serialization | Kernel G0 | K1.2 | M |
 | L1.1 | Universe binders, level expressions, removal of templates | Kernel G0 (language part) | K1.3 | L |
 | L1.2 | Goal and proof-construction layer (core done) | HoTT A5 | — | L |
 | L1.3 | Deterministic fuel; residual goals in diagnostics | HoTT A4, A6 | L1.2 for A6 | M |
 | L1.4 | Folded path vocabulary; congruence through constructors | HoTT A1, A2 | L1.2 | L |
+| L1.5 | Σ projections `p.1`/`p.2`; `induction p;` from the goal; `show` and `suffices` | HoTT A8, B1, B4 | L1.2 | M |
 
 **K1.1–K1.3.** K1.1 was done on 2026-09-25: the
 [G0 specification](g0-universe-specification.md) (PRs #10 and #16), with
@@ -157,13 +209,15 @@ every open question answered or deferred to the
 - Implement tiered universe constants below ω² (`U0…`, `UU0…`, `UUU0…`),
   level binders `U < UU0`, level quantification as a type with its pointwise
   composition rule, capture-avoiding level substitution, and symbolic
-  cumulativity across tiers.
-- Acceptance is G0's list in the kernel roadmap: the native and reference
-  checkers agree, and the canonicity fixture computes instantiated closed
-  results.
+  cumulativity across tiers, as the instructions of section 4.1 of the
+  specification.
+- Acceptance is G0's list in the kernel roadmap: every case of the
+  specification's section 5 passes through the instruction kernel, directly
+  or through the driver, and the canonicity fixture computes instantiated
+  closed results.
 
 **L1.1 Universe binders and levels.** It depends on K1.3, because the
-elaborator checks only through the native kernel.
+elaborator checks only through the instruction kernel's driver.
 - `U < UU0` elaborates to a kernel level binder, and `Universe` leaves the
   language. Universe constants of every tier carry an index.
 - Source gains `next(U)` and `max(U, V)`.
@@ -196,10 +250,10 @@ curated pass's findings:
 | ID | Package | Owner | Depends on | Size |
 | --- | --- | --- | --- | --- |
 | K2.1 | H specification and H1 soundness note | Kernel H1 | K1.1 | L |
-| K2.2 | H1 in the reference checker | Kernel H1 | K1.2, K2.1 | XL |
-| K2.3 | Differential oracle against the hand-coded rules | Kernel H1 | K2.2 | M |
-| K2.4 | H1 in the C kernel; retire hand-coded rules after K2.3 | Kernel H1 | K1.3, K2.3 | XL |
-| L2.1 | `inductive` declarations for one sort | Ergonomics 7 | K2.2 | L |
+| K2.2 | H1 as instructions: the signature normal form admitted, and the generated formation, constructor, formal-composition and eliminator rules with their steps | Kernel H1 | K1.2, K2.1 | XL |
+| K2.3 | H1 in the driver: declared signatures, search over the generated rules, clause splitting | Kernel H1 | K1.3, K2.2 | L |
+| K2.4 | Differential oracle against the hand-coded `Nat`, sum, W and pushout instructions; retire them when they agree | Kernel H1 | K2.3 | M |
+| L2.1 | `inductive` declarations for one sort | Ergonomics 7 | K2.3 | L |
 | L2.2 | `match`, recursion, path clauses, automatic clauses, obligations | Ergonomics 7 | L1.2, L2.1, L2.5 | XL |
 | L2.3 | Derived declarations: `paths`, `decidable_equality`, `universal`, `ind_prop`, `rec` | Ergonomics 7 | L2.2 | L |
 | L2.4 | Theories: models, homomorphisms, notation, sections, `extends` | Ergonomics 6 | L1.1 | L |
@@ -209,22 +263,28 @@ curated pass's findings:
 | L2.8 | Squares and `cell` syntax | HoTT E2 | L2.1 | M |
 | D2.1 | Reference chapters for the new language | Plan | L2.1–L2.7 | L |
 
-**K2.2 H1 in the reference checker.**
-- The signature normal-form checker: data, positions as cubes, dimensions,
-  boundaries and positivity.
-- Generated formation rules, constructors and boundary reductions.
-- One formal composition per sort, with pushing through constructors.
+**K2.2 H1 as instructions.**
+- A `Signature` instruction that admits the normal form: data, positions as
+  cubes, dimensions, boundaries and positivity. It is checked once, and the
+  driver elaborates readable declarations into it (L2.1).
+- Instructions for the generated formation rules and constructors, and
+  `Iota` steps for boundary reductions.
+- One formal composition per sort, as an instruction; `Whnf` pushes it
+  through constructors.
 - Transport along parameters with boundary correction.
 - The eliminator, with clause typing through the partial eliminator, and its
-  computation rules.
+  computation as `Iota` steps.
 - The provisional `kernel extension: H1` marker.
 
-**K2.3 Differential oracle.**
+**K2.4 Differential oracle.**
 - Declare natural numbers, sums, W types and pushouts generically.
-- Compare typing, reduction and composition with the hand-coded rules on
-  the kernel tests and on the archive.
+- Compare typing, reduction and composition with the hand-coded
+  instructions on the kernel tests and, through the driver, on the archive:
+  the same definitions derive, with the same judgements up to the names of
+  the rules.
 - Measure checking time.
-- Acceptance: they agree, and any performance gap is recorded.
+- Acceptance: they agree, and any performance gap is recorded. Then the
+  hand-coded instructions retire.
 
 **Showcase acceptance for the stage:**
 - a declared circle whose loop has winding number 1 by computation;
@@ -277,7 +337,7 @@ Acceptance:
 | ID | Package | Owner | Depends on | Size |
 | --- | --- | --- | --- | --- |
 | K4.1 | H2 soundness note: index-line matching and its stability, formal composition along indices | Kernel H2 | K2.1 | L |
-| K4.2 | H2 in both checkers; `Id` with J on `refl` and its comparison with `Path` | Kernel H2, G3 | K2.4, K4.1 | L |
+| K4.2 | H2 as instructions and in the driver; `Id` with J on `refl` and its comparison with `Path` | Kernel H2, G3 | K2.3, K4.1 | L |
 | L4.1 | Implicit binders, `_` holes, level inference | Ergonomics 5 | L1.2 | L |
 | L4.2 | Dependent matching without K; coverage; impossible branches | Ergonomics 7 | K4.2, L2.3, L4.1 | L |
 | L4.3 | Nested declarations | Ergonomics 7 | L2.1 | M |
@@ -303,7 +363,7 @@ Showcase acceptance: `Vec` and a typed-syntax evaluator are declared, and
 | ID | Package | Owner | Depends on | Size |
 | --- | --- | --- | --- | --- |
 | K5.1 | H3 soundness note | Kernel H3 | K4.1 | XL (new work) |
-| K5.2 | H3 in both checkers | Kernel H3 | K4.2, K5.1 | XL |
+| K5.2 | H3 as instructions and in the driver | Kernel H3 | K4.2, K5.1 | XL |
 | L5.1 | Companion sorts and functions; relations; bundles; theories with inductive-inductive initial models | Ergonomics 6–7 | K5.2, L2.6 | L |
 | B5.1 | Cauchy reals: `initial CauchyStructure`, operations by fold, `CompleteOrderedField` model | Reals R2–R3 | L5.1, B4.3 | XL |
 | B5.2 | Analysis: limits, complex numbers, integration along segments, periods | Reals R2; complex-analysis roadmap | B5.1 | XL |
@@ -374,15 +434,25 @@ release. Exact syntax remains proposed until its implementation milestone.
 
 ## First actions
 
-Stage 0's housekeeping is settled:
-- I0.1 is deferred, because work continues off `main` on
-  `proof-ergonomics-roadmap`;
-- I0.2 and I0.4 are done.
+Stage 0 is settled: I0.1 is deferred, because work continues off `main` on
+`proof-ergonomics-roadmap`; I0.2, I0.3, I0.4, L0.1 and D0.1 are done; and
+D0.2's chapters 5 and 6 and the quick reference wait for L1.1 and stage 2.
+Of stage 1, K1.1 and the core of L1.2 are done, and the instruction kernel
+is merged.
 
-Next, in parallel:
+Next, as of 2026-09-26:
 
-1. L0.1, computability tracking (done).
-2. D0.1, the reference harness, then D0.2, the reference chapters.
-3. K1.1, the G0 specification (done).
-4. L1.2, the goal layer (core done).
-5. I0.3, the new library tree, which is needed only when stage 3 starts.
+1. **K1.2, G0 as instructions**, the main track. It gates H1, theories,
+   inductive declarations and `match`, `Id`, computation notation and the
+   rebuild. Then K1.3 and L1.1.
+2. Alongside it, small self-contained language packages that need only the
+   goal layer: L1.5 (Σ projections, `induction p;`, `show` and `suffices`)
+   and L1.3 (deterministic fuel, residual goals in diagnostics). Search
+   limits are still elapsed time, so a result can differ by machine.
+3. Then L4.1, argument inference, which theories, matching on indexed
+   families and do-notation all need and which waits for G0 only for level
+   inference; and L2.5, the h-level definitions and the first `hlevel`
+   slice, which milestone 7's automatic clauses need.
+4. Optional, standing alone: phases 1 and 2 of the
+   [learned search](learned-search.md) design, the driver's explicit
+   options and the kernel cost of each instruction.

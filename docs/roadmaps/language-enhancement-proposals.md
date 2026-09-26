@@ -21,8 +21,9 @@ would have to satisfy them.
 express every signature we know of: `Group(U) : next(U)`, quotients at
 `max(U, V)`, and the H design's examples. A universe binder's bound, as in
 `U < UU0`, is not a constraint between variables. Constraints would bring
-in a constraint problem with loop checking (Bezem–Coquand) in both checkers,
-and level comparison would become relative to a constraint set.
+in a constraint problem with loop checking (Bezem–Coquand) in the kernel's
+level arithmetic, and level comparison would become relative to a
+constraint set.
 
 **What would justify it.** A signature or theorem whose universe levels
 cannot be written with `max` and `next` alone, without an unwanted increase

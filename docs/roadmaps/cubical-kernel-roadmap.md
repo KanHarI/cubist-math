@@ -13,10 +13,14 @@ that references remain valid, although G1–G3 are now superseded.
 - **G5** comes from the
   [proof ergonomics roadmap](proof-ergonomics-roadmap.md#architecture-and-invariants).
 
-Every item changes the trusted C kernel or its query interface. So each needs
-its own rule specification, native and reference implementations, and
-review. The [work plan](work-plan.md) sequences these items with the language
-and library work.
+Every item changes the trusted C kernel, which since 2026-09-26 is the
+[instruction kernel](kernel-instructions.md): each typing rule is an
+instruction that the untrusted driver issues. So each item needs its own
+rule specification, its instructions, the driver's search for them, and
+review. The term checker and the JavaScript reference checker are not
+extended; the
+[work plan](work-plan.md#the-instruction-kernel-and-this-plan) records that
+decision and sequences these items with the language and library work.
 
 ## Governing requirement: computability is expressible and preserved
 
@@ -50,7 +54,7 @@ Consequences for every item below:
 - **Computation ships with every type former.** A new type former, or a
   generated rule of H, ships with composition, transport and constructor
   computation, including computation of its eliminator on formal
-  compositions, in both the native and reference checkers.
+  compositions, as `Step` rules the driver can issue.
 - **No regularity for `Path`.** Nothing adds strict J computation or general
   regularity to `Path`. General regularity is not known to be compatible with
   Glue, which univalence uses (HoTT invariant 3). An identity type with strict
@@ -147,8 +151,8 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   - **Kernel scope.** Every typing rule that computes a level (Π, Σ, W, sums,
     `Path`, Glue, pushouts, `U`) computes a level expression, and level
     quantification uses the rule above. Conversion compares universes by
-    level normal form. Serialization, the ABI and the reference checker gain
-    level expressions, bounds and level binders.
+    level normal form. Serialization, the ABI and the driver gain level
+    expressions, bounds and level binders.
   - **Language.** `U < UU0` elaborates to a kernel level binder. Source gains
     `next(E)` and `max(E, F)`, so that `Group(U)` can live in `next(U)`.
     Universe arguments stay explicit at first. Inferring them from level
@@ -183,7 +187,8 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
       - Glue and composition at a variable level and at `UU0`;
       - computation of instantiated closed results, and of a transport along
         a line of generic statements, in the canonicity fixture.
-    - The native and reference checkers must agree on all of these.
+    - Every case runs through the instruction kernel: kernel-level cases
+      directly in `test_instructions.c`, source cases through the driver.
     - Recheck the archived library's templates generically. Record each one
       that only checked at particular levels, rather than weakening the rules
       to accept it.
@@ -202,9 +207,10 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   - **H1. One sort, no indices.** Data and higher inductive types: natural
     numbers, sums, W types, pushouts, suspensions, spheres, truncation
     `Trunc`, set quotients `Quotient`.
-    - Reference checker first.
-    - The hand-coded natural-number, sum, W and pushout rules are
-      differential oracles. They retire only after typing, reduction and
+    - Instructions first: the signature checker and every generated rule
+      are instructions, and the driver learns to issue them.
+    - The hand-coded natural-number, sum, W and pushout instructions are
+      the differential oracle. They retire only after typing, reduction and
       composition agree on the kernel tests and on the archived library.
     - Main obligation: transport along parameter lines with boundary
       correction.
@@ -230,7 +236,8 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
       boundary clauses, h-level misuse, index levels, forward references.
     - A canonicity statement, with fixture additions.
   - **Acceptance, per stage.**
-    - The native and reference checkers agree on every generated rule.
+    - Every generated rule is an instruction with a rejection test, and for
+      H1 the hand-coded instructions agree with the generated ones.
     - Closed data results normalize, including through formal compositions.
     - The canonicity fixture computes the stage's showcase:
       - H1: the winding number of a loop in a declared circle;
@@ -274,8 +281,8 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
     archive has 23 such calls, for example `code_lower`'s at `Z`.
   - It is not strict J for `Path`, and it adds nothing for higher inductive
     types or neutral types.
-  - It needs a soundness argument and implementations in both checkers, with
-    interaction tests for Glue and formal composition. Rank it below H1–H3.
+  - It needs a soundness argument, a `Step` rule for it, and interaction
+    tests for Glue and formal composition. Rank it below H1–H3.
 - [ ] **G5. Certified interval normalization.** The current native clause and
   work limits make exponential distribution fail promptly, and the elaborator
   simplifies constant-path reversal before checking. To accept general compact
@@ -298,15 +305,15 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
 
 | Item | Must be rejected or preserved |
 | --- | --- |
-| G0 | Bounds only in universe binders, never terms; generic statements live in `UU0` or at their body's level; instantiation only below `UU0`; level equality by normal form across tiers; symbolic cumulativity across tiers; capture-avoiding level substitution; composition at a level quantification is pointwise; instantiated closed results compute; both checkers agree |
-| H1–H4 | Each stage's gate opens only with its soundness note; generated rules agree between checkers; hand-coded rules agree with H1 before retirement; positivity, boundary, h-level and index-level errors rejected; closed data results normalize through formal compositions; the stage showcase computes |
+| G0 | Bounds only in universe binders, never terms; generic statements live in `UU0` or at their body's level; instantiation only below `UU0`; level equality by normal form across tiers; symbolic cumulativity across tiers; capture-avoiding level substitution; composition at a level quantification is pointwise; instantiated closed results compute; every acceptance case passes through the instruction kernel |
+| H1–H4 | Each stage's gate opens only with its soundness note; generated rules are instructions with rejection tests; the hand-coded instructions agree with H1 before retirement; positivity, boundary, h-level and index-level errors rejected; closed data results normalize through formal compositions; the stage showcase computes |
 | G2 | Universe preservation distinguished from resizing; implicit downward resizing rejected; retained resizing named and reported |
 | G3 (as H2's `Id`) | J computes on `refl`; checked connection to `Path`; no UIP or collapse of nontrivial loops |
-| G4 if pursued | Neutral values of declared data types transport along constant families by conversion; neutral types and other type formers do not; both checkers agree |
+| G4 if pursued | Neutral values of declared data types transport along constant families by conversion; neutral types and other type formers do not; the archive's judgements change only where the rule applies |
 | G5 if pursued | Missing, oversized or incorrect certificates rejected; interval equality distinguished from face entailment; dimension scope and binder renaming preserved; checking time and proof size compared with the guarded implementation |
 | Every item | Closed assumption-free results normalize to canonical values; removed, retained and new assumptions recorded as non-computing dependencies |
 
-Each item also needs `make test`, `make CC=clang sanitize`, independent
-reference-checker tests, ABI/serialization checks and closed computation
-examples for its kernel implementation. A documentation update alone does not
+Each item also needs `make test`, `make CC=clang sanitize`,
+`node tools/instruction-coverage.mjs` over the archive, ABI/serialization
+checks and closed computation examples for its kernel implementation. A documentation update alone does not
 run these future implementation gates.

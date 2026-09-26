@@ -3,8 +3,9 @@
 Status: specification for review. Written on 2026-09-25 as work-plan item
 K1.1, and revised the same day with the user's decisions on tiered
 universes. It specifies [kernel roadmap](cubical-kernel-roadmap.md) item G0.
-Nothing here is implemented. K1.2 (reference checker), K1.3 (C kernel) and
-L1.1 (language) implement it, and section 5 is their acceptance list.
+Nothing here is implemented. K1.2 (the instruction kernel), K1.3 (the driver
+and bridges) and L1.1 (language) implement it, and section 5 is their
+acceptance list.
 
 ## Revision
 
@@ -25,6 +26,12 @@ Q2 and Q3 are resolved by these decisions. The remaining questions were
 answered on 2026-09-25: Q1, Q4, Q5, Q6, Q8 and Q9 as recommended. Q7 and Q10
 are deferred as [language enhancement proposals](language-enhancement-proposals.md)
 E1 and E2 (section 6).
+
+Revised again on 2026-09-26: the instruction kernel is the trusted kernel
+(PR #38), so section 4 now targets it. G0 is implemented once, as
+instructions and as the driver's search for them; the term checker and the
+JavaScript reference checker are not extended. The rules of sections 1–3
+are unchanged.
 
 ## Decisions in brief
 
@@ -76,9 +83,11 @@ E1 and E2 (section 6).
 
 `ω` is kernel notation. The source writes `UU0`.
 
-"The kernel" means both checkers: the reference checker in
-`lib/cubical/core.mjs` and the C kernel in `kernel/src`. They implement the
-same rules independently.
+"The kernel" means the instruction kernel, `kernel/src/instructions.c`, with
+the level arithmetic, substitution and normalization it calls. The untrusted
+driver, `web/cubical-instruction-driver.mjs`, issues its instructions. The
+term checker (`check_*.c`, `term_conversion.c`) and the JavaScript reference
+checker (`lib/cubical/core.mjs`) are not extended to levels (section 4).
 
 ## 1. Syntax
 
@@ -135,7 +144,7 @@ They share a symbol because `x < ω` means what the order judgment `ℓ < ω` of
 | every other former | Unchanged. Its type arguments may live at any level. |
 
 The C kernel represents level binders by their own node kinds rather than by
-Π and λ with a special domain (section 4.2). Code that handles Π therefore
+Π and λ with a special domain (section 4.1). Code that handles Π therefore
 cannot meet a level binder by accident.
 
 ### 1.4 Source surface
@@ -585,8 +594,8 @@ Unchanged:
     every point of the line. The family is a product of lines of types
     indexed by a discrete set, and composition in such a product is computed
     factor by factor (3.2).
-  - Transport and filling are derived from composition in both checkers, so
-    they inherit the rule. `hcomp` and the C kernel's `CC_TRANS` apply only
+  - Transport and filling are derived from composition, so they inherit
+    the rule. `hcomp` and the C kernel's `CC_TRANS` apply only
     to pushouts and are unaffected.
   - Unlike composition at a term Π, the rule needs no backward filling,
     because the domain is not a type and has no line.
@@ -602,9 +611,8 @@ Unchanged:
 
   The rule never reads `ℓ`, so composition in `U(ω)` or `U(ω·2 + 3)` is the
   same Glue construction. `UU0` is a fibrant universe like any other. In the
-  C kernel, `composition_compute.c` sends a `CC_U` family to
-  `ck_universe_composition` in `glue_compute.c`. In the reference checker,
-  `normal` sends a `U` family to `universeComposition`. Neither reads the
+  kernel, `composition_compute.c` sends a `CC_U` family to
+  `ck_universe_composition` in `glue_compute.c`, which never reads the
   level. The reduct's inferred level is `max(ℓ_A, ℓ_{E(1)}) ≤ ℓ`, so it
   checks at `U(ℓ)` by `U-Cum`, a symbolic check.
 - **Glue.** The base and the partial types may be at any levels. The Glue
@@ -959,73 +967,61 @@ So G0 has canonicity whenever CCHM_{ω²} has it, and in the same sense.
 
 ## 4. Implementation consequences
 
-Both checkers implement section 2 independently. The reference checker lands
-first.
+The instruction kernel implements section 2 once: each rule is an
+instruction, and the driver's search issues them (K1.3). The term checker's
+rules and the JavaScript reference checker are not extended, as the
+[work plan](work-plan.md#the-instruction-kernel-and-this-plan) records.
+The conversion oracle behind `cc_kernel_convertible` therefore answers level
+syntax with an error, which the driver treats as "not known" and searches
+on its own.
 
-### 4.1 K1.2: reference checker (`lib/cubical/core.mjs`)
+### 4.1 K1.2: the instruction kernel (`kernel/src/instructions.c`)
 
-**Data.**
+Each instruction checks its side conditions syntactically and answers with
+a judgement, as the existing ones do. Levels are decided by trusted
+arithmetic (`ck_level_*`, below), never by search.
 
-- **Level nodes.** `{tag:"LConst", tier, value}` for `ω·tier + value`,
-  `{tag:"LSucc", level}` and `{tag:"LMax", left, right}`. Level variables are
-  ordinary `{tag:"Var", name}` nodes in level position. This mirrors the C
-  kernel, and substitution and free-variable code then covers levels.
-- **Universes.** `{tag:"U", level}` takes a level node. For the many existing
-  callers, `T.universe(n)` with a number builds a tier-0 `LConst`.
-- **Level binders.** `{tag:"LPi", name, bound, body}`,
-  `{tag:"LLam", name, bound, body}` and `{tag:"LApp", fn, level}`. `bound`
-  is `{tag:"LBound", tier}`, and this version requires `tier` to be 1.
-- **Level entries.** `{tag:"LBound", tier:1}` appears as the type of a level
-  entry in `verify`'s assumptions and in the checker's context map. It
-  appears nowhere else.
-- **Definitions.** A definition registry: `define(name, value, type)` checks
-  once, and `DefRef` infers the stored type and unfolds in `normal`. The
-  reference checker has no inference rule for `DefRef` today. Without one it
-  cannot test "checked once, instantiated at two levels" as the C kernel
-  will.
-- **Level module.** A new `lib/cubical/levels.mjs` provides
-  `normalizeLevel`, `levelLeq`, `levelEqual`, `levelFinite`, `levelLimit`
-  (the `lim` of 2.7), `printLevel`, `LEVEL_MAX` and `TIER_MAX`. The
-  elaborator may use it for display. The C kernel does not share it.
+**Instructions.**
 
-**Checks.**
+- `Level(symbol)`: the context entry `x < ω` of a level variable, as
+  `Dimension` is the entry of an interval index. It has no type judgement;
+  its bound is fixed by the instruction. `Variable` refuses it ("a universe
+  variable is not a term").
+- `Universe(level)` replaces the numeral form: `Γ ⊢ U(ℓ) : U(ℓ + 1)`. The
+  raw level node is checked well formed (2.3) against the level entries it
+  mentions and returned canonical.
+- `LevelPi(entry, B : U(ℓ))` derives `Π (x < ω). B : U(lim_x(ℓ))` and
+  discharges the entry (`∀-Form`, the limit of 2.7 by `ck_level_limit`).
+  `LevelLambda(entry, t : B)` derives `λ (x < ω). t : Π (x < ω). B`
+  (`∀-Intro`). `LevelApply(f, ℓ)` derives `f {ℓ} : B[x := ℓ]` for
+  `f : Π (x < ω). B` as written, with `ℓ` finite (`∀-Elim`); the type is
+  substituted by the kernel's capture-avoiding level substitution (2.8).
+  `Domain` does not apply to a level Π; `Family` gives `B` under the entry.
+- `Step(eq, side, position, Beta)` contracts a level redex
+  `(λ (x < ω). t) {ℓ}` as it contracts a term redex (`∀-β`), and `Eta`
+  expands a term of a level Π to `λ (x < ω). f {x}` (`∀-η`). `Whnf` and
+  `Normalize` include `∀-β`, and under them composition at a level Π (2.11)
+  reduces to the level abstraction of the composition at the body.
+- `Lift(t : A, B)` compares universes by `ck_level_leq` on normal forms and
+  gains the `≤-∀` case for level-Π codomains (2.9). `Convert` is unchanged:
+  alpha equality (`ck_alpha_equal`) compares `U` and `LApp` levels by normal
+  form.
+- Every existing formation instruction (`Pi`, `Sigma`, `W`, `Sum`, `Path`,
+  `Glue`, `Pushout`) computes its level as a level expression with
+  `ck_level_max` and `ck_level_succ`, so its arguments may live at any level
+  or tier (2.6).
+- `Define` admits a judgement of any type, including a level Π: a generic
+  definition is checked once, and each use is `Lookup` followed by
+  `LevelApply` (2.10). An assumption generic over `U < UU0` is an entry of
+  level-Π type.
 
-- **`type()`** returns `{term, level}` for every type, including a level Π.
-  The first version's split into small and large sorts is gone.
-- **`infer`.**
-  - `U` checks its level and both bounds.
-  - `Var` rejects a level entry ("a universe variable is not a term").
-  - `LBound` is rejected everywhere except as a binder's bound or an entry's
-    type.
-  - `LPi` infers its body's level under the level entry and returns
-    `U(levelLimit(x, level))`.
-  - `LLam` follows `∀-Intro`. `LApp` requires a finite level.
-  - `App` rejects a level Π, and `LApp` rejects a term Π.
-- **`cumulative`.** `U` uses `levelLeq`. Add the `≤-∀` case.
-- **`free`, `substitute`, `alpha`, `normal`.** These become level-aware.
-  - `alpha` renders `U` and `LApp` levels as normal forms, with bound
-    variables replaced by binder indices.
-  - `normal` adds `∀-β`, and η-contraction of `λ (x < ω). f {x}`, as it
-    already contracts term η.
-  - `normal` adds composition at `LPi` next to the `Pi` case (2.11).
-- **Type formers.** Every former accepts types of any level; only the level
-  arithmetic changes.
+Rejections, each a test: a bound as a term or with a type; a level that is
+not finite in `LevelApply`; a level entry used by `Variable`; a term
+application of a level Π and a level application of a term Π; a level above
+`LEVEL_MAX` or a tier above `TIER_MAX` wherever a level is normalized; and
+discharging a level entry that another entry's type mentions.
 
-**Tests** (`lib/cubical/tests/levels.test.mjs` and
-`lib/cubical/tests/g0.test.mjs`):
-
-- every case of section 5, by its ID;
-- a property test comparing `levelLeq` and `levelEqual` with brute-force
-  evaluation over assignments up to `2·top + 2`, with constants of tiers 0
-  to 2;
-- a property test that `levelLimit` is monotone and stable (2.7);
-- a property test for Lemma 5: for random well-typed generic terms `t` and
-  numerals `n`, `nf(t[x := n])` equals `nf(nf(t)[x := n])`, and equals
-  `nf(t)[x := n]` when the result is canonical data;
-- a property test for the level-Π composition rule: instantiating its reduct
-  at `n` gives the composition at `B[x := n]` after one `∀-β`.
-
-### 4.2 K1.3: C kernel, ABI, serialization, sanitizers
+The data and arithmetic behind the instructions:
 
 **Node kinds.** Tags 1–42 keep their numbers. The new kinds are appended:
 
@@ -1063,37 +1059,39 @@ first.
   assumption types, definition types and expected types use it as today.
   There is no separate check for large types.
 - Every site that builds `CC_U` from a computed level builds a canonical
-  level node. Every `>` comparison of levels becomes `ck_level_leq`. The
-  sites are:
-  - `check.c` (U);
-  - `check_functions.c` (Π, Σ, and the level Π with `ck_level_limit`);
-  - `check_inductives.c` (`Nat`, `Unit`, `Void`, W, sums);
-  - `check_paths.c`;
-  - `check_glue.c`;
-  - `check_pushout.c`.
+  level node, and every `>` comparison of levels becomes `ck_level_leq`.
+  The sites are the formation instructions and `Lift` in `instructions.c`.
+  The term checker's sites (`check.c`, `check_functions.c`,
+  `check_inductives.c`, `check_paths.c`, `check_glue.c`, `check_pushout.c`)
+  are not updated: the oracle is not extended, and reports level syntax it
+  does not know as an error.
 - `term_conversion.c`:
-  - `alpha_inner` compares `CC_U` and `CC_LAPP` levels by normal form under
-    the current `alpha_binding` environment. It no longer compares payloads.
-  - η for `CC_LLAM` builds `CC_LAPP`.
-  - `cumulative` uses `ck_level_leq` and gains the `CC_LPI` case.
+  - `alpha_inner`, behind the trusted `ck_alpha_equal`, compares `CC_U` and
+    `CC_LAPP` levels by normal form under the current `alpha_binding`
+    environment. It no longer compares payloads.
+  - `ck_syntactic_cumulative`, behind `Lift`, uses `ck_level_leq` and gains
+    the `CC_LPI` case.
+  - the untrusted `ck_convertible` is not extended.
+- `Eta` in `instructions.c` builds `CC_LAPP` for a `CC_LLAM`.
 - `term_normalize.c` and weak-head reduction add `∀-β`. A `CC_LAPP` of a
   non-λ is neutral.
 - `composition_compute.c`: `ck_reduce_composition` gains a `CC_LPI` case
   beside `CC_PI`. It takes a fresh symbol, renames the family's binder to
   it, maps the tubes through `CC_LAPP` (a new operation of `map_tubes`),
   applies the base, and returns a `CC_LLAM`. It needs no call to `ck_fill`.
-- `cc_context` entries whose type is `CC_LBOUND` are level entries. `CC_VAR`
-  inference rejects them, and `ck_level` accepts them.
+- `cc_context` entries whose type is `CC_LBOUND` are level entries, made by
+  the `Level` instruction. `Variable` rejects them, and `ck_level` accepts
+  them.
 - Glue, universe and pushout computation need no rule change. An audit test
   checks that no code outside the level functions reads a `CC_U` child or a
   `CC_LCONST` payload.
 
 **Public API.**
 
-- `cc_kernel_check` and `cc_kernel_check_in_cube` accept level entries,
-  whose `cc_assumption.type` is a `CC_LBOUND` handle.
-- `cc_kernel_define` is unchanged apart from levels: any checked type may be
-  a definition's type.
+- `cc_instr` gains the instructions above. A level entry, made by `Level`,
+  is accepted wherever a dimension entry is, and `cc_kernel_entry` reports
+  its bound.
+- `cc_kernel_check` and `cc_kernel_define` are not extended.
 - `cc_kernel_node` exposes level nodes. Inspection functions treat malformed
   level nodes as inert syntax.
 
@@ -1120,34 +1118,76 @@ first.
 - Canonical level nodes may be interned. That is an optimization and never a
   typing certificate.
 
-**Serialization and bridges.**
-
-- `lib/cubical/native.mjs` gains the new kinds. `N` lines keep their format.
-  An `A` line may name a `CC_LBOUND` handle as a type.
-- `web/cubical-syntax.mjs` and `web/cubical-kernel.mjs` encode and decode
-  level nodes, and decode `CC_U` from its child.
-- `cb_context_add` in `wasm/cubical_bridge.c` accepts `CC_LBOUND`.
-- Every consumer of a numeric universe level moves to level expressions:
-  - the renderers `web/cubical-notation.mjs` and `web/math-notation.mjs`,
-    which print tiers (`UU3`, `𝒰_{ω+3}`);
-  - the bridges `web/cubical-syntax.mjs` and `lib/cubical/native.mjs`;
-  - `core.mjs` and `translate.mjs`.
-
-  The template inspection in `web/cubical-program.mjs` is removed (4.3).
-
 **Tests.**
 
 - `kernel/tests/test_levels.c`: normal forms across tiers, order, the
   bounds, and malformed nodes.
-- `test_conversion.c`: α-renamed levels and level η.
-- A composition test for the `CC_LPI` case, including its boundary on a
-  face.
-- `test_kernel_api.c`: level entries, generic statements as definitions'
-  types and values, and the ABI version.
-- `tests/cubical-wasm.test.mjs` runs every case of section 5 through both
-  checkers and compares verdicts and normal forms.
+- `test_conversion.c`: α-renamed levels in `ck_alpha_equal`.
+- `test_instructions.c`: every kernel-level case of section 5 by its ID;
+  level entries; `Eta` at a level Π; generic statements as definitions'
+  types and values, checked once and instantiated at two levels; the
+  composition at a level Π, including its boundary on a face; and the
+  rejections above.
+- `test_kernel_api.c`: the ABI version.
 - `make test` and `make CC=clang sanitize`, including a fuzz of random level
   nodes.
+
+### 4.2 K1.3: the driver, bridges and serialization
+
+The driver (`web/cubical-instruction-driver.mjs`) derives the language's
+level forms and makes universes agree. Nothing it does is trusted.
+
+**Deriving.**
+
+- A parameter `U < UU0`, `forall U < UU0. B` and `fun (U < UU0) => t`
+  derive through `Level`, `LevelPi` and `LevelLambda`; a use `d(E, …)`
+  through `Lookup` and `LevelApply` at the level of `E`. The scope tracks
+  live level entries as it tracks dimensions, and a level binder is renamed
+  apart only when a live entry of the same name exists.
+- A universe expression in argument position is translated to a raw level
+  node; `next(E)` and `max(E, F)` are `CC_LSUCC` and `CC_LMAX`.
+
+**Agreement.** Where two types must agree and both are universes or level
+applications, the driver compares their levels by normal form itself, with
+a JavaScript copy of the arithmetic (`lib/cubical/levels.mjs`:
+`normalizeLevel`, `levelLeq`, `levelEqual`, `levelFinite`, `levelLimit`,
+`printLevel`, `LEVEL_MAX`, `TIER_MAX`). It then issues `Lift` when the
+levels differ and `Convert` by alpha equality when they are equal; the
+kernel decides, and the copy only steers. `Step … Beta` on a level redex and
+`Eta` at a level Π join the weak-head steps. A generic definition's use is a
+`Lookup` and a `LevelApply`, never a specialization. The conversion oracle
+answers level syntax with an error, which the driver treats as not known.
+
+**Bridges and serialization.**
+
+- `lib/cubical/native.mjs` gains the new kinds. `N` lines keep their format.
+  An `A` line may name a `CC_LBOUND` handle as a type.
+- `web/cubical-syntax.mjs` and `web/cubical-kernel.mjs` encode and decode
+  level nodes, and decode `CC_U` from its child. The bridge passes a level
+  entry to `cb_instr` as it passes a dimension entry.
+- Every consumer of a numeric universe level moves to level expressions:
+  - the renderers `web/cubical-notation.mjs` and `web/math-notation.mjs`,
+    which print tiers (`UU3`, `𝒰_{ω+3}`);
+  - the bridges `web/cubical-syntax.mjs` and `lib/cubical/native.mjs`;
+  - `translate.mjs`. The reference checker `core.mjs` is not extended, and
+    its `T.universe(n)` keeps building a tier-0 constant.
+
+  The template inspection in `web/cubical-program.mjs` is removed (4.3).
+
+**Tests** (`lib/cubical/tests/levels.test.mjs` and
+`tests/cubical-wasm.test.mjs`):
+
+- every source case of section 5, by its ID, through the driver, comparing
+  verdicts and normal forms with the stated ones;
+- a property test comparing `levelLeq` and `levelEqual` with brute-force
+  evaluation over assignments up to `2·top + 2`, with constants of tiers 0
+  to 2, and with the kernel's answers through `Lift`;
+- a property test that `levelLimit` is monotone and stable (2.7);
+- a property test for Lemma 5: for random well-typed generic terms `t` and
+  numerals `n`, `nf(t[x := n])` equals `nf(nf(t)[x := n])`, and equals
+  `nf(t)[x := n]` when the result is canonical data;
+- a property test for the level-Π composition rule: instantiating its reduct
+  at `n` gives the composition at `B[x := n]` after one `∀-β`.
 
 ### 4.3 L1.1: language and removal of templates
 
@@ -1241,10 +1281,10 @@ the elaborator could build the same closed body at a UU-tier constant.
 - **Reference.** Rewrite `web/reference/universes.html`, and the universe
   paragraphs of `web/reference/assumptions.html`.
 
-**Sequencing.** The elaborator checks through the native kernel
-(`NativeCubicalElaborator`). The reference checker is used only in tests.
-So L1.1 can be developed against K1.2 in tests, but the template removal and
-the archive recheck land only after K1.3.
+**Sequencing.** The elaborator checks through the driver
+(`NativeCubicalElaborator` issues instructions). So L1.1's syntax and
+translation can be developed against K1.2's instructions in tests, but the
+template removal and the archive recheck land only after K1.3.
 
 ### 4.4 Documents and examples to update when L1.1 lands
 
@@ -1276,7 +1316,9 @@ roadmap.
 ## 5. Acceptance cases
 
 Each case has an ID for K1.2's and K1.3's tests. "Accept" and "Reject" are
-the verdicts of both checkers. `Γ` is empty unless stated. `x, y, z < ω` are
+the instruction kernel's verdicts: kernel-level cases are issued directly
+in `test_instructions.c`, and source cases go through the driver. `Γ` is
+empty unless stated. `x, y, z < ω` are
 level entries where they occur. Cases marked "source" belong to L1.1.
 
 ### 5.1 Level normal forms and order
@@ -1470,7 +1512,7 @@ K8, K1.2's test also checks `nf(d {n} …) = nf(body)[x := n] …` directly.
 | R2 | `CC_LMAX` with a term child; `CC_U` with no level; `CC_LPI` whose child 0 is not `CC_LBOUND`; `CC_LBOUND` as a term or with payload 0; `CC_LCONST` with a finite part above `LEVEL_MAX` | Reject; inspection stays inert | Malformed raw syntax. |
 | R3 | 1,000 nested level binders, with a level mentioning all of them | Accept within budget | Heap-allocated normal forms. |
 | R4 | a WASM or CLI build with a mismatched ABI version | Refused | The encoding of `CC_U` changed. |
-| R5 | a deep chain of definitions whose instantiations push an intermediate level past `LEVEL_MAX` during conversion | Reject, no overflow | Checked arithmetic. The rejection point may differ between checkers, as for step budgets. |
+| R5 | a deep chain of definitions whose instantiations push an intermediate level past `LEVEL_MAX` during conversion | Reject, no overflow | Checked arithmetic. The rejection point may differ between a direct instruction and the driver's search, as for step budgets. |
 
 ## 6. Open questions
 

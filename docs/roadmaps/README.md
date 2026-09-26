@@ -17,9 +17,11 @@ target statement or a supplied theorem parameter as an already proved result.
   canonical quotients, presentations and derived declarations.
 - [Results of the first library](../library-results.md): what the archived
   library established, in mathematical English.
-- [Kernel instructions](kernel-instructions.md): the experimental THTH-style
-  forward kernel. Every search decision moves to an untrusted driver, and the
-  kernel's state is two hash graphs, explorable in the workbench.
+- [Kernel instructions](kernel-instructions.md): the trusted kernel since
+  2026-09-26, a THTH-style forward kernel whose rules are instructions.
+  Every search decision is in an untrusted driver, and the kernel's state is
+  two hash graphs, explorable in the workbench. Every later kernel item is a
+  set of instructions.
 - [Learned search](learned-search.md): a design for a small policy and value
   network over the kernel's graphs, trained against the instruction kernel,
   that steers the driver's conversion search toward cheaper derivations.
@@ -51,8 +53,8 @@ target statement or a supplied theorem parameter as an already proved result.
   - B0, B2, B5, F3 and A9 are superseded by the kernel's item H and
     ergonomics milestone 7.
 - [Kernel extensions for computation](cubical-kernel-roadmap.md): planning
-  only. Changes to the trusted kernel, governed by the requirement that
-  computability is expressible and preserved:
+  only. Changes to the trusted kernel, each a set of instructions, governed
+  by the requirement that computability is expressible and preserved:
   - G0, universe-generic checking with `Uω` only as a type;
   - H1–H4, one signature mechanism for inductive, indexed, higher and
     inductive-inductive types;
