@@ -64,6 +64,13 @@ A small transformer over the kernel's own graph, in THTH's topological form:
 plain multi-head attention where each head has its own boolean mask, built
 from a structural relation between tokens.
 
+This is the starting hypothesis, not a settled choice. THTH's pieces were
+designed for a much larger model on random-walk data, and none has been
+tested on this task at this scale. Each one is listed under
+[Ablations](#ablations) with the experiment that keeps or removes it, and
+the first draft of this design, a message-passing network, stays as the
+control.
+
 ### Tokens
 
 - **Syntax nodes** of both sides, one token per interned node and side. A
@@ -152,6 +159,20 @@ also an offline mode: search once for a cheap derivation of each definition
 and keep the instruction list as a certificate, so checking never pays for
 the network.
 
+### The first draft, kept as the control
+
+The design before reviewing THTH was a message-passing network over the same
+relations: a bottom-up gated encoder memoized per interned node (a node's
+vector from its features and its slot-projected children), two weight-shared
+goal iterations passing messages down the tree, along binder edges and from
+a pooled goal vector, and one cross-attention layer between the sides, at
+about 85k parameters. Masked attention replaced it because the ancestor and
+descendant heads reach a whole spine in one layer, where message passing
+needs a layer per hop, and because the cross-side comparison becomes one
+more mask instead of a separate layer. That reasoning is plausible, not
+measured, so the draft is the first ablation arm: the same features, the
+same edges, and the same heads, with message passing in place of attention.
+
 ## Training
 
 - **Data.**
@@ -189,8 +210,10 @@ the network.
 2. **Logging and cost.** The bridge exposes the kernel cost of each
    instruction; the coverage tool logs trajectories and reports total cost
    per definition. This is the baseline.
-3. **Imitation.** Train the network on the logs; measure agreement with the
-   heuristic on the held-out modules.
+3. **Imitation and ablations.** Train the network on the logs; measure
+   agreement with the heuristic on the held-out modules. Run the ablation
+   table below at this phase, where a run is minutes, and fix the
+   architecture before expert iteration.
 4. **Expert iteration** on derivation cost, measured on the held-out modules
    against the heuristic, with the oracle switched off.
 5. **Deployment.** The chooser in the driver, the options in the workbench,
@@ -207,7 +230,9 @@ when hand heuristics stop scaling; the experiment pays off most after stage
 
 The original THTH trained an AST transformer on an H100 (six layers, width
 1024, sixteen heads, a 2048-dimensional latent, 100 million random-walk
-steps). Its pieces, and whether they carry over:
+steps). Its pieces, and whether they carry over. "Adopted" means adopted
+into the starting hypothesis; many of these may be ablated away, and the
+[Ablations](#ablations) section says how each is tested.
 
 **Adopted.**
 
@@ -272,3 +297,45 @@ THTH never reached a policy: its last experiments trained the VAE with the
 judgement-recognition loss as the foundation for an agent. The instruction
 kernel supplies what that agent lacked, a cheap exact referee with a real
 corpus, so the policy can start small.
+
+## Ablations
+
+The rule: start from the smallest network that works, add one piece at a
+time, and keep a piece only when it improves the held-out numbers by more
+than the run-to-run noise (three seeds each). THTH's pieces earned nothing
+yet on this task; a design inherited whole would carry every one of its
+accidents. Results go into the table as they arrive.
+
+**Baselines**, without which no ablation means anything:
+
+- the heuristic driver as it stands, with and without the oracle;
+- a uniform random policy under the same search, to measure how much the
+  search alone does;
+- a linear policy over the syntactic features with no attention, the
+  cheapest learned baseline.
+
+**Metrics**, on the held-out modules: derivation cost against the heuristic,
+coverage (must not drop), agreement with the expert at branch points, and
+time per branch point.
+
+| Piece | Ablation | Should matter for | Result |
+| --- | --- | --- | --- |
+| Masked attention | message passing over the same edges (the first draft) | deep spines; otherwise the draft is cheaper | |
+| One head per relation | one head with the union mask and a relation-type bias | cost per layer | |
+| Ancestor and descendant heads | parent and child heads only | deep terms | |
+| Binder tokens | drop them; keep the binder-distance feature | eta and replacement under binders | |
+| Cross-side head | drop it; the goal token carries the other side | congruence choices | |
+| Goal and register tokens | mean pooling instead of the goal token; no registers | the value head | |
+| `ghostmax` | plain softmax | heads with empty masks, such as the root's ancestors | |
+| Relative-depth bias | absolute depth only, as THTH | telling children from great-grandchildren | |
+| Two stages with memoization | four goal-stage layers | speed only; must cost no accuracy | |
+| Numeral collapse | a capped chain of `Succ` nodes | arithmetic modules | |
+| Definition features | drop later-than, recursion and head features | lazy delta choices | |
+| Pair features `(a, b, a − b)` | the goal token alone | value accuracy | |
+| Auxiliary losses | drop each of convertibility, `whnf` head, witness | sample efficiency, held-out generalization | |
+| Random-walk data | the corpus alone | pretraining the subtree stage | |
+| Width and depth | 32 against 64; two layers against four | everything, at cost | |
+
+The oracle switch is the main experiment rather than an ablation: the value
+head replaces `cc_kernel_convertible` only if held-out cost and coverage
+hold with it off.
