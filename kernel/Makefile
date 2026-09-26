@@ -5,7 +5,7 @@ BUILD ?= build
 SRC = $(wildcard src/*.c)
 HEADERS = $(wildcard include/*.h src/*.h)
 .PHONY: all test sanitize
-all: $(BUILD)/lattice-cli $(BUILD)/test-lattice $(BUILD)/bench-lattice $(BUILD)/kernel-cli $(BUILD)/test-kernel-api $(BUILD)/test-conversion $(BUILD)/test-dimension-scope $(BUILD)/test-path-head $(BUILD)/test-unfolding-hints $(BUILD)/test-checkpoint $(BUILD)/test-check-cache $(BUILD)/test-instructions
+all: $(BUILD)/lattice-cli $(BUILD)/test-lattice $(BUILD)/bench-lattice $(BUILD)/kernel-cli $(BUILD)/test-kernel-api $(BUILD)/test-conversion $(BUILD)/test-dimension-scope $(BUILD)/test-path-head $(BUILD)/test-unfolding-hints $(BUILD)/test-checkpoint $(BUILD)/test-check-cache $(BUILD)/test-instructions $(BUILD)/test-levels
 $(BUILD):
 	mkdir -p $@
 $(BUILD)/lattice-cli: tests/lattice_cli.c $(SRC) $(HEADERS) | $(BUILD)
@@ -24,6 +24,7 @@ test: all
 	$(BUILD)/test-checkpoint
 	$(BUILD)/test-check-cache
 	$(BUILD)/test-instructions
+	$(BUILD)/test-levels
 sanitize:
 	$(MAKE) BUILD=build-sanitize CFLAGS='-O1 -g -std=c11 -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer' test
 
@@ -52,6 +53,9 @@ $(BUILD)/test-check-cache: tests/test_check_cache.c $(SRC) $(HEADERS) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $< -o $@
 
 $(BUILD)/test-instructions: tests/test_instructions.c $(SRC) $(HEADERS) | $(BUILD)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $< -o $@
+
+$(BUILD)/test-levels: tests/test_levels.c $(SRC) $(HEADERS) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $< -o $@
 
 .PHONY: clean

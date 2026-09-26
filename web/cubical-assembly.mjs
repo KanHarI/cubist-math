@@ -1,3 +1,4 @@
+import { levelText } from "./cubical-levels.mjs";
 // Read the native arena directly. Source names are labels only; they never
 // replace handles, payloads, or constructor operands in this listing.
 import { cubicalKinds } from "./cubical-kernel.mjs";
@@ -14,6 +15,8 @@ export const operandNames = {
   GlueTerm: ["Glue type", "base", "tubes"], Unglue: ["Glue type", "value"],
   Pushout: ["center", "left", "right", "maps"], PushLeft: ["pushout", "value"], PushRight: ["pushout", "value"],
   PushPath: ["pushout", "value"], PushElim: ["motive", "left", "right", "bridge"],
+  U: ["level"], LSucc: ["level"], LMax: ["left", "right"], LApp: ["function", "level"],
+  LPi: ["bound", "body"], LLam: ["bound", "body"],
   HComp: ["type", "tubes", "base"], Trans: ["family", "face tube", "base"],
 };
 export const opcodeName = kind => "CC_" + ({ GlueSystem: "GLUE_SYSTEM", GlueTerm: "GLUE_TERM",
@@ -41,7 +44,9 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
       const name = kernel.symbolName(native.payload), label = view.symbols[name]?.name;
       node.annotation = `symbol #${native.payload}: ${label && label !== name ? `${label} (${name})` : name}`;
     } else if (["Path", "PLam", "Comp", "HComp", "Trans"].includes(native.kind)) node.annotation = `dimension #${native.payload}`;
-    else if (native.kind === "U") node.annotation = `universe level ${native.payload}`;
+    else if (native.kind === "U") node.annotation = "universe; its level is operand a";
+    else if (native.kind === "LConst") node.annotation = `level ${levelText({ tag: "LConst", tier: native.payload >>> 16, value: native.payload & 0xffff })}`;
+    else if (native.kind === "LSucc") node.annotation = `level successor: + ${native.payload}`;
     else if (["PApp", "PushPath", "Tube", "GlueSystem"].includes(native.kind)) {
       node.formula = native.payload;
       if (!formulas.has(native.payload)) {

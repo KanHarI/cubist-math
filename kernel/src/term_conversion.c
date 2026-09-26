@@ -375,8 +375,13 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
         }
         return false;
     }
-    if (left.kind == CC_U || left.kind == CC_DEFREF)
+    if (left.kind == CC_DEFREF)
         return left.payload == right.payload;
+    /* Universes are equal when their levels are (G0 §2.5, U-Eq): identical
+     * normal forms. A level variable is compared by its symbol; no rule binds
+     * one yet, so a bound level variable is never met here. */
+    if (left.kind == CC_U)
+        return left.child[0] == right.child[0] || ck_level_equal(k, left.child[0], right.child[0]);
     if (left.kind == CC_VAR)
         return same_name(left.payload, right.payload, terms);
     if (ck_term_binder(left.kind)) {
@@ -492,7 +497,7 @@ bool ck_syntactic_cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
         return false;
     cc_node left = k->nodes[actual], right = k->nodes[expected];
     if (left.kind == CC_U && right.kind == CC_U)
-        return left.payload <= right.payload;
+        return ck_level_leq(k, left.child[0], right.child[0]);
     if ((left.kind == CC_PI || left.kind == CC_SIGMA) && left.kind == right.kind &&
         ck_alpha_equal(k, left.child[0], right.child[0])) {
         cc_term variable = ck_var(k, ck_fresh_symbol(k));
@@ -531,7 +536,7 @@ static bool cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
             cc_node left = k->nodes[actual];
             cc_node right = k->nodes[expected];
             if (left.kind == CC_U && right.kind == CC_U) {
-                accepted = left.payload <= right.payload;
+                accepted = ck_level_leq(k, left.child[0], right.child[0]);
             } else if ((left.kind == CC_PI || left.kind == CC_SIGMA) &&
                        left.kind == right.kind &&
                        ck_convertible(k, left.child[0], right.child[0])) {

@@ -44,7 +44,7 @@ bool ck_pushout(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims,
         if (lb > level)
             level = lb;
         out->expression = ck_make(k, CC_PUSHOUT, 0, C, A, B, maps);
-        out->type = ck_make(k, CC_U, level, 0, 0, 0, 0);
+        out->type = ck_universe_at(k, level);
         return !k->error[0];
     }
     if (n.kind == CC_PUSH_ELIM) {

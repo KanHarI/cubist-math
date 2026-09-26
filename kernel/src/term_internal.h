@@ -59,7 +59,7 @@ typedef struct {
 typedef struct {
     uint32_t symbol;  /* a term symbol, or a dimension index */
     cc_term type;     /* zero for a dimension */
-    uint32_t level;   /* the universe of the type */
+    cc_term level;    /* the level of the type's universe, canonical */
     uint32_t context; /* the context the type needs */
     uint32_t scope;   /* that context and the entry itself */
     uint32_t source;  /* the judgement that the type is a type */
@@ -171,6 +171,33 @@ struct cc_kernel {
     size_t checkpoint_store[5]; /* facts, entries, context sets, items, positions */
 };
 bool ck_alpha_equal(cc_kernel *, cc_term, cc_term);
+
+/* Universe levels (levels.c, G0 §2.4). A normal form is finite, a tier-0
+ * constant with an offset for each variable it mentions, sorted by key; or a
+ * constant of tier 1 or above, with no variables. Keys are symbols. */
+typedef struct {
+    uint64_t key;
+    uint32_t offset;
+} cc_level_term;
+typedef struct {
+    uint32_t tier, constant, count, capacity;
+    cc_level_term *terms;
+} cc_level_nf;
+bool ck_level_normal(cc_kernel *, cc_term level, cc_level_nf *);
+void ck_level_nf_free(cc_level_nf *);
+cc_term ck_level_build(cc_kernel *, const cc_level_nf *);
+cc_term ck_level_constant(cc_kernel *, uint32_t tier, uint32_t value);
+bool ck_level_equal(cc_kernel *, cc_term, cc_term);
+bool ck_level_leq(cc_kernel *, cc_term, cc_term);
+bool ck_level_finite(cc_kernel *, cc_term);
+cc_term ck_level_canonical(cc_kernel *, cc_term);
+cc_term ck_level_max(cc_kernel *, cc_term, cc_term);
+cc_term ck_level_succ(cc_kernel *, cc_term);
+cc_term ck_level_limit(cc_kernel *, uint32_t symbol, cc_term);
+cc_term ck_universe(cc_kernel *, cc_term level);
+/* The term checker's universes: closed finite levels only. */
+bool ck_universe_number(cc_kernel *, cc_term universe, uint32_t *level);
+cc_term ck_universe_at(cc_kernel *, uint32_t level);
 bool ck_syntactic_cumulative(cc_kernel *, cc_term actual, cc_term expected);
 void ck_trace(cc_kernel *, cc_trace_kind, uint32_t a, uint32_t b, uint32_t c);
 void ck_intern(cc_kernel *, cc_term);

@@ -86,7 +86,7 @@ static bool formation(cc_kernel *k, cc_node n, const cc_context *ctx,
         cc_clear(&face);
     }
     out->expression = ck_make(k, CC_GLUE, 0, base, reverse_system(k, reversed, true), 0, 0);
-    out->type = ck_make(k, CC_U, level, 0, 0, 0, 0);
+    out->type = ck_universe_at(k, level);
     return !k->error[0];
 }
 

@@ -12,8 +12,7 @@ bool ck_type(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dims,
     if (!sort || k->nodes[sort].kind != CC_U)
         return ck_fail(k, "Expected a universe-valued type.");
     *type = checked.expression;
-    *level = k->nodes[sort].payload;
-    return true;
+    return ck_universe_number(k, sort, level);
 }
 
 bool ck_check(cc_kernel *k, cc_term raw, cc_term expected, const cc_context *ctx,
@@ -31,12 +30,16 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
         return ck_fail(k, "Invalid term handle.");
     cc_node n = k->nodes[raw];
     switch (n.kind) {
-    case CC_U:
-        if (n.payload == UINT32_MAX)
-            return ck_fail(k, "Universe successor overflow.");
+    case CC_U: {
+        uint32_t level;
+        if (!ck_universe_number(k, raw, &level))
+            return false;
+        if (level >= CC_LEVEL_MAX)
+            return ck_fail(k, "A universe level exceeds the kernel's bound.");
         result->expression = raw;
-        result->type = ck_make(k, CC_U, n.payload + 1, 0, 0, 0, 0);
+        result->type = ck_universe_at(k, level + 1);
         return result->type != 0;
+    }
     case CC_DEFREF:
         if (!n.payload || n.payload >= k->definition_count)
             return ck_fail(k, "Unknown checked definition reference.");
@@ -70,6 +73,12 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
     case CC_GLUE_SYSTEM:
     case CC_TUBE:
         return ck_fail(k, "A partial tube is not a standalone term.");
+    case CC_LBOUND:
+        return ck_fail(k, "A bound is not a term.");
+    case CC_LCONST: case CC_LSUCC: case CC_LMAX:
+        return ck_fail(k, "A level is not a term.");
+    case CC_LPI: case CC_LLAM: case CC_LAPP:
+        return ck_fail(k, "The term checker has no rules for level quantification.");
     }
     return ck_fail(k, "Unsupported term constructor.");
 }

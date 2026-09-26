@@ -27,7 +27,7 @@ bool ck_functions(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims,
             if (!ck_type(k, raw_body, &extended, dims, &body, &body_level))
                 return false;
             out->expression = ck_make(k, n.kind, name, domain, body, 0, 0);
-            out->type = ck_make(k, CC_U, domain_level > body_level ? domain_level : body_level, 0, 0, 0, 0);
+            out->type = ck_universe_at(k, domain_level > body_level ? domain_level : body_level);
         }
         return !k->error[0];
     }

@@ -26,8 +26,21 @@ typedef enum {
     CC_VOID, CC_ABORT, CC_W, CC_SUP, CC_WREC,
     CC_SUM, CC_INL, CC_INR, CC_SUMREC, CC_UNITREC,
     CC_GLUE, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_UNGLUE, CC_DEFREF,
-    CC_PUSHOUT, CC_PUSH_LEFT, CC_PUSH_RIGHT, CC_PUSH_PATH, CC_PUSH_ELIM, CC_HCOMP, CC_TRANS
+    CC_PUSHOUT, CC_PUSH_LEFT, CC_PUSH_RIGHT, CC_PUSH_PATH, CC_PUSH_ELIM, CC_HCOMP, CC_TRANS,
+    /* Universe levels (G0). Levels are not terms; see the child order below. */
+    CC_LBOUND, CC_LCONST, CC_LSUCC, CC_LMAX, CC_LPI, CC_LLAM, CC_LAPP
 } cc_term_kind;
+
+/* The encoding of syntax this header describes. A client built for another
+ * version must not exchange handles with this kernel: version 2 moved a
+ * universe's level from its payload to a level child. */
+#define CC_KERNEL_ABI_VERSION 2u
+uint32_t cc_kernel_abi_version(void);
+
+/* Resource bounds on universe levels (G0 §2.3): the finite part within a tier,
+ * and the tier. They can only cause rejection. */
+#define CC_LEVEL_MAX 65535u
+#define CC_TIER_MAX 255u
 
 typedef struct {
     uint32_t symbol;
@@ -143,7 +156,10 @@ typedef enum {
                         * a transport on a face that holds, to its base */
 } cc_step_rule;
 
-cc_judgement_id cc_instr_universe(cc_kernel *, uint32_t level);           /* ⊢ U(l) : U(l+1) */
+/* ⊢ U(l) : U(l+1), for a level l: well formed, and with a successor within
+ * CC_LEVEL_MAX. The judgement's universes carry l's normal form. No
+ * instruction binds a level variable yet, so l has none. */
+cc_judgement_id cc_instr_universe(cc_kernel *, cc_term level);
 cc_judgement_id cc_instr_nat(cc_kernel *);                                /* ⊢ Nat : U0 */
 cc_judgement_id cc_instr_zero(cc_kernel *);                               /* ⊢ 0 : Nat */
 cc_judgement_id cc_instr_succ(cc_kernel *, cc_judgement_id);              /* n : Nat ⊢ succ(n) : Nat */
@@ -352,7 +368,12 @@ bool cc_kernel_commit_checkpoint(cc_kernel *);
 cc_term cc_kernel_relocated(const cc_kernel *, cc_term);
 
 /* Child order:
- * U(level), Var(symbol); Pi/Lam/Sigma/W(symbol; domain, body).
+ * U(level) with payload zero; Var(symbol); Pi/Lam/Sigma/W(symbol; domain, body).
+ * Levels: LConst(tier * 65536 + n) is the constant ω·tier + n; LSucc(n; level)
+ * is level + n, for n ≥ 1; LMax(level, level); a level variable is a Var.
+ * LBound(tier) is a level binder's bound ω·tier; LPi/LLam(symbol; bound, body)
+ * and LApp(function, level) are level quantification, which no rule accepts
+ * yet.
  * App(fn,arg); Pair(type,first,second); Fst/Snd(pair); Succ(value).
  * NatRec(motive,zero,step,value).
  * Path(dimension; family,left,right); PLam(dimension; family,body).

@@ -1,4 +1,5 @@
 import { cubicalText } from "./cubical-notation.mjs";
+import { universeText } from "./cubical-levels.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
@@ -88,7 +89,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
   function print(t) {
     if (--budget < 0) return atom("…");
     switch (t?.tag) {
-      case "U": return atom(`U${t.level}`);
+      case "U": return atom(universeText(t.level));
       case "Nat": case "Unit": case "Void": return atom(t.tag);
       case "Point": return atom("tt");
       case "Zero": case "Succ": {

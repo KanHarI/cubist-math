@@ -35,13 +35,15 @@ bool ck_tick(cc_kernel *k, bool checking) {
 
 unsigned ck_arity(cc_term_kind kind) {
     switch (kind) {
-    case CC_DEFREF: case CC_U: case CC_VAR: case CC_NAT: case CC_ZERO: case CC_UNIT: case CC_POINT: case CC_VOID:
+    case CC_DEFREF: case CC_VAR: case CC_NAT: case CC_ZERO: case CC_UNIT: case CC_POINT: case CC_VOID:
+    case CC_LBOUND: case CC_LCONST:
         return 0;
-    case CC_SUCC: case CC_FST: case CC_SND:
+    case CC_U: case CC_SUCC: case CC_FST: case CC_SND: case CC_LSUCC:
         return 1;
     case CC_PI: case CC_LAM: case CC_APP: case CC_SIGMA: case CC_PLAM: case CC_PAPP:
     case CC_TUBE: case CC_ABORT: case CC_W: case CC_SUM: case CC_INL: case CC_INR:
     case CC_GLUE: case CC_UNGLUE: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH:
+    case CC_LMAX: case CC_LPI: case CC_LLAM: case CC_LAPP:
         return 2;
     case CC_PAIR: case CC_PATH: case CC_COMP: case CC_SUP: case CC_WREC: case CC_UNITREC:
     case CC_GLUE_SYSTEM: case CC_GLUE_TERM: case CC_HCOMP: case CC_TRANS:
@@ -193,6 +195,10 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     cc_term children[] = {a, b, c, d};
     if (arity > 4)
         return ck_fail(k, "Unknown term constructor."), 0;
+    /* ABI 1 kept a universe's level in its payload; ABI 2 keeps it in a child.
+     * A payload here is a client built for the old encoding. */
+    if (kind == CC_U && payload)
+        return ck_fail(k, "A universe's level is its child; its payload must be zero."), 0;
     for (unsigned i = 0; i < 4; ++i) {
         bool optional = (kind == CC_PAPP && i == 1) ||
                         (kind == CC_TUBE && i == 1) ||

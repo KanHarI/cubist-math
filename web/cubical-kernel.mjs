@@ -8,7 +8,12 @@ export const cubicalKinds = [
   "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "DefRef",
   "Pushout", "PushLeft", "PushRight", "PushPath", "PushElim",
   "HComp", "Trans",
+  "LBound", "LConst", "LSucc", "LMax", "LPi", "LLam", "LApp",
 ];
+// The syntax encoding this code is written for (CC_KERNEL_ABI_VERSION in
+// kernel/include/cubical_kernel.h). Version 2 keeps a universe's level in a
+// level child rather than its payload.
+export const CUBICAL_ABI_VERSION = 2;
 
 // A rejected kernel request. `kind` classifies it, from cc_error_kind, so no
 // caller needs to read the message: "mismatch" (a type is not convertible to
@@ -28,6 +33,10 @@ function uint32(value, label) {
 
 export class CubicalKernel {
   constructor(module) {
+    const version = module._cb_abi_version?.();
+    if (version !== CUBICAL_ABI_VERSION)
+      throw new Error(`The cubical kernel module encodes syntax as ABI version ${version ?? 1}, `
+        + `but this code expects version ${CUBICAL_ABI_VERSION}. Rebuild it with \`make wasm\`.`);
     this.module = module;
     this.handle = module._cb_new();
     if (!this.handle) throw new Error("Could not allocate cubical kernel session.");

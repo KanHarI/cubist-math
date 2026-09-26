@@ -202,7 +202,7 @@ navigation, every link and anchor, the redirects and the error catalogue.
 | ID | Package | Owner | Depends on | Size |
 | --- | --- | --- | --- | --- |
 | K1.1 | G0 rule specification and consistency note (done) | Kernel G0 | — | M |
-| K1.2 | G0 in the instruction kernel: level nodes and arithmetic, level entries, `LevelPi`, `LevelLambda`, `LevelApply`, symbolic `Lift`, level-Π composition, ABI, sanitizers | Kernel G0 | K1.1 | L |
+| K1.2 | G0 in the instruction kernel: level nodes and arithmetic, level entries, `LevelPi`, `LevelLambda`, `LevelApply`, symbolic `Lift`, level-Π composition, ABI, sanitizers (first half done: levels, `Universe(level)`, symbolic `Lift`, ABI 2) | Kernel G0 | K1.1 | L |
 | K1.3 | G0 in the driver and bridges: deriving level binders and instantiations, agreement of universes by level normal form, decoding, serialization | Kernel G0 | K1.2 | M |
 | K1.4 | The driver derives the archive unaided: its congruence and unfolding choices without the conversion oracle, with no declaration over the limit and at most half again the guided time | Kernel instructions | — | M |
 | L1.1 | Universe binders, level expressions, removal of templates | Kernel G0 (language part) | K1.3, K1.4 | L |

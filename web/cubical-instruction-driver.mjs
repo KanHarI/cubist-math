@@ -221,7 +221,7 @@ export class InstructionDriver {
     const derive = (child, inner = scope) => this.derive(child, inner);
     const within = child => this.derive(child, bound);
     switch (n.kind) {
-    case "U": return g.universe(n.payload);
+    case "U": return g.universe(n.children[0]);
     case "Nat": return g.nat();
     case "Zero": return g.zero();
     case "Unit": return g.unit();

@@ -1,3 +1,4 @@
+import { levelText } from "./cubical-levels.mjs";
 const mathNamespace = "http://www.w3.org/1998/Math/MathML";
 
 // This is shorthand for an unchanged ordered sequence of Pi/Sigma binders,
@@ -93,7 +94,8 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
       return node.axiomParameter === undefined ? symbol
         : element("msub", symbol, element("mtext", `Axiom ${node.axiomParameter}`));
     }
-    if (node.kind === "Universe") return element("msub", element("mi", "𝒰"), element("mn", String(node.level)));
+    if (node.kind === "Universe")
+      return element("msub", element("mi", "𝒰"), element(typeof node.level === "number" ? "mn" : "mi", levelText(node.level)));
     if (node.kind === "NatElim") {
       const scope = row(operator("["), element("mi", node.names[0]), operator(","), element("mi", node.names[1]), operator("]"));
       return row(element("msub", element("mi", "nat.elim"), scope),

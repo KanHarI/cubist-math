@@ -27,7 +27,7 @@ bool ck_inductives(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims
                     cc_judgement *out) {
     if (n.kind == CC_NAT || n.kind == CC_UNIT || n.kind == CC_VOID) {
         out->expression = ck_make(k, n.kind, 0, 0, 0, 0, 0);
-        out->type = ck_make(k, CC_U, 0, 0, 0, 0, 0);
+        out->type = ck_universe_at(k, 0);
         return !k->error[0];
     }
     if (n.kind == CC_ZERO || n.kind == CC_POINT) {
@@ -62,7 +62,7 @@ bool ck_inductives(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims
             return false;
         out->expression = ck_make(k, CC_SUM, 0, left, right, 0, 0);
         uint32_t level = left_level > right_level ? left_level : right_level;
-        out->type = ck_make(k, CC_U, level, 0, 0, 0, 0);
+        out->type = ck_universe_at(k, level);
         return !k->error[0];
     }
     if (n.kind == CC_INL || n.kind == CC_INR) {
@@ -149,7 +149,7 @@ bool ck_inductives(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims
         if (!ck_type(k, body, &extended, dims, &arities, &arity_level))
             return false;
         out->expression = ck_make(k, CC_W, name, labels, arities, 0, 0);
-        out->type = ck_make(k, CC_U, label_level > arity_level ? label_level : arity_level, 0, 0, 0, 0);
+        out->type = ck_universe_at(k, label_level > arity_level ? label_level : arity_level);
         return !k->error[0];
     }
     if (n.kind == CC_SUP) {

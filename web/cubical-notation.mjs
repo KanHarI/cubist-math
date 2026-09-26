@@ -1,3 +1,4 @@
+import { universeText } from "./cubical-levels.mjs";
 // Display the native checked syntax itself. Definition references stay named;
 // this does not reconstruct an unchecked expression from Cubist source.
 export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false } = {}) {
@@ -146,7 +147,7 @@ export function cubicalTextParts(tree) {
   const show = t => {
     if (t.kind === "Name") return [{ text: t.name, binding: t.contextBinding ?? t.binding }];
     if (t.kind === "Number") return literal(String(t.value));
-    if (t.kind === "Universe") return literal(`U${t.level}`);
+    if (t.kind === "Universe") return literal(universeText(t.level));
     if (t.kind === "Call") return [...(t.fn.kind === "Lambda" ? [...literal("("), ...show(t.fn), ...literal(")")] : show(t.fn)),
       ...literal("("), ...join(t.args.map(show), ", "), ...literal(")")];
     if (t.kind === "Lambda") return [...literal(`λ ${t.domain ? "(" : ""}${t.name}`),

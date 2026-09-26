@@ -3,9 +3,12 @@
 Status: specification for review. Written on 2026-09-25 as work-plan item
 K1.1, and revised the same day with the user's decisions on tiered
 universes. It specifies [kernel roadmap](cubical-kernel-roadmap.md) item G0.
-Nothing here is implemented. K1.2 (the instruction kernel), K1.3 (the driver
-and bridges) and L1.1 (language) implement it, and section 5 is their
-acceptance list.
+K1.2 (the instruction kernel), K1.3 (the driver and bridges) and L1.1
+(language) implement it, and section 5 is their acceptance list. The first
+half of K1.2 is implemented: the level node kinds, the arithmetic of 2.4 in
+`kernel/src/levels.c`, universes that carry their level as a child, the
+`Universe(level)` instruction, symbolic cumulativity in `Lift`, and ABI
+version 2 (section 4.1). The level instructions are next.
 
 ## Revision
 
@@ -1029,7 +1032,7 @@ The data and arithmetic behind the instructions:
 | --- | --- | --- |
 | 43 | `CC_LBOUND` | payload `k ≥ 1`, the bound `ω·k`; `k = 1` in this version. Valid only as a level binder's child 0 or a level entry's type. |
 | 44 | `CC_LCONST` | payload `k·2¹⁶ + n` for `ω·k + n`, with `n ≤ LEVEL_MAX` and `k ≤ TIER_MAX` |
-| 45 | `CC_LSUCC` | child 0: level |
+| 45 | `CC_LSUCC` | payload `n ≥ 1`; child 0: level. It is `ℓ + n`, so `x + n` is one node: syntax depth is bounded by 512, while `n` may reach `LEVEL_MAX`. |
 | 46 | `CC_LMAX` | children 0 and 1: levels |
 | 47 | `CC_LPI` | payload: binder symbol; child 0: `CC_LBOUND`; child 1: body |
 | 48 | `CC_LLAM` | payload: binder symbol; child 0: `CC_LBOUND`; child 1: body |
@@ -1113,8 +1116,9 @@ The data and arithmetic behind the instructions:
   `U-Form`, for instantiation results and whenever a level is normalized,
   including during conversion.
 - Normal forms are heap-allocated with checked sizes.
-- Deep `CC_LSUCC` chains are handled iteratively or under the recursion
-  counter.
+- Deep `CC_LSUCC` chains are walked iteratively. A level shared as a DAG but
+  exponential as a tree costs one budget step per node visited, so it is
+  rejected rather than expanded.
 - Canonical level nodes may be interned. That is an optimization and never a
   typing certificate.
 

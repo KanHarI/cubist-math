@@ -63,7 +63,7 @@ bool ck_paths(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims,
             !ck_check(k, n.child[2], right_type, ctx, dims, &right))
             return false;
         out->expression = ck_make(k, CC_PATH, dim, family, left, right, 0);
-        out->type = ck_make(k, CC_U, level, 0, 0, 0, 0);
+        out->type = ck_universe_at(k, level);
     } else if (n.kind == CC_PLAM) {
         cc_term body;
         if (!ck_check(k, n.child[1], family, ctx, inner, &body))
