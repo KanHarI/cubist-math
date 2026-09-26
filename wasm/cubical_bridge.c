@@ -333,10 +333,10 @@ uint32_t cb_formula_view(uint32_t token, uint32_t id, unsigned clause, unsigned 
 
 /* Instructions (kernel/include/cubical_kernel.h). cb_instr applies one by
  * its cc_instruction code, or extends the context (CB_EXTEND: a = type
- * judgement, b = symbol; CB_DIMENSION: a = index). A step or replacement
+ * judgement, b = symbol; CB_DIMENSION: a = index; CB_LEVEL: a = symbol). A step or replacement
  * reads the position pushed since the last cb_position_clear. An
  * instruction's error stays recorded until cb_clear_error. */
-enum { CB_EXTEND = 100, CB_DIMENSION = 101 };
+enum { CB_EXTEND = 100, CB_DIMENSION = 101, CB_LEVEL = 102 };
 
 void cb_position_clear(uint32_t token) {
     browser_session *s = lookup(token);
@@ -424,6 +424,10 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_UNGLUE: return cc_instr_unglue(k, a);
     case CB_EXTEND: return cc_instr_extend(k, a, b);
     case CB_DIMENSION: return cc_instr_dimension(k, a);
+    case CB_LEVEL: return cc_instr_level(k, a);
+    case CC_INSTR_LEVEL_PI: return cc_instr_level_pi(k, a, b);
+    case CC_INSTR_LEVEL_LAMBDA: return cc_instr_level_lambda(k, a, b);
+    case CC_INSTR_LEVEL_APPLY: return cc_instr_level_apply(k, a, b);
     }
     s->error = "Unknown instruction.";
     return 0;

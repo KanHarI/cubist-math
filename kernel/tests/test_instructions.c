@@ -41,6 +41,11 @@ static cc_term level(unsigned tier, unsigned n) { return cc_kernel_term(k, CC_LC
 #define STEP(eq, rule, ...) OK(cc_instr_step(k, (eq), 1, __VA_ARGS__, (rule)))
 #define ROOT NULL, 0
 
+static cc_term lvar(uint32_t symbol) { return cc_kernel_term(k, CC_VAR, symbol, 0, 0, 0, 0); }
+static cc_term lsucc(cc_term level, uint32_t n) { return cc_kernel_term(k, CC_LSUCC, n, level, 0, 0, 0); }
+static cc_term lmax(cc_term a, cc_term b) { return cc_kernel_term(k, CC_LMAX, 0, a, b, 0, 0); }
+static void level_quantification(void);
+
 static unsigned successors(cc_term t) {
     unsigned count = 0;
     cc_term children[4];
@@ -432,6 +437,138 @@ int main(void) {
     assert(OK(cc_instr_lookup(k, term_of(lt_succ))));
 
     cc_kernel_free(k);
+    k = cc_kernel_new();
+    assert(k);
+    level_quantification();
+    cc_kernel_free(k);
     puts("instruction tests passed");
     return 0;
+}
+
+/* Universe-generic definitions: level entries and level quantification
+ * (G0 §2.7), with the acceptance cases of §5.2-5.6 named by their IDs. */
+static void level_quantification(void) {
+    enum { X = 1, Y, Z, A, B, C, T, N, F, G, H, ID = 50, ENDO };
+    cc_judgement_id nat = OK(cc_instr_nat(k));
+    cc_entry_id x = OK(cc_instr_level(k, X)), y = OK(cc_instr_level(k, Y)), z = OK(cc_instr_level(k, Z));
+    assert(OK(cc_instr_level(k, X)) == x);
+    uint32_t symbol;
+    cc_term bound;
+    bool dimension;
+    cc_judgement_id source;
+    assert(cc_kernel_entry(k, x, &symbol, &bound, &dimension, &source) && symbol == X && !dimension && !source);
+    assert(kind(bound) == CC_LBOUND);
+    rejects(cc_instr_variable(k, x), "not a term");                                       /* B7 */
+    rejects(cc_instr_extend(k, nat, X), "already names");                                 /* D3 */
+    OK(cc_instr_extend(k, nat, N));
+    rejects(cc_instr_level(k, N), "already names");
+    rejects(cc_instr_universe(k, lvar(99)), "Unbound level variable");                   /* L18 */
+    rejects(cc_instr_universe(k, lvar(N)), "A term variable is not a level");            /* L19 */
+    cc_judgement_id ux = OK(cc_instr_universe(k, lvar(X)));                               /* B9 */
+    assert(child(type_of(ux), 0) == lsucc(lvar(X), 1) && context_size(ux) == 1);
+    cc_judgement_id uy = OK(cc_instr_universe(k, lvar(Y)));
+    cc_judgement_id uomega = OK(cc_instr_universe(k, level(1, 0)));
+
+    /* Generic statements are types (§5.3). */
+    cc_entry_id a = OK(cc_instr_extend(k, ux, A));
+    cc_judgement_id endo_x = OK(cc_instr_pi(k, a, ux));
+    cc_judgement_id endo = OK(cc_instr_level_pi(k, x, endo_x));                           /* G1 */
+    assert(kind(term_of(endo)) == CC_LPI && child(type_of(endo), 0) == level(1, 0) && context_size(endo) == 0);
+    OK(cc_instr_lift(k, endo, OK(cc_instr_universe(k, level(1, 1)))));
+    rejects(cc_instr_lift(k, endo, OK(cc_instr_universe(k, lsucc(lvar(Y), 5)))), "not included"); /* G2 */
+    assert(child(type_of(OK(cc_instr_level_pi(k, x, nat))), 0) == level(0, 0));          /* G3 */
+    cc_judgement_id g4 = OK(cc_instr_level_pi(k, x, uy));                                 /* G4 */
+    assert(child(type_of(g4), 0) == lsucc(lvar(Y), 1) && context_size(g4) == 1);
+    cc_judgement_id g5 = OK(cc_instr_level_pi(k, x, OK(cc_instr_pi(k, a, uomega))));      /* G5 */
+    assert(child(type_of(g5), 0) == level(1, 1));
+    rejects(cc_instr_lift(k, g5, uomega), "not included");
+    cc_judgement_id inner = OK(cc_instr_level_pi(k, z, OK(cc_instr_universe(k, lmax(lvar(X), lvar(Z))))));
+    assert(child(type_of(OK(cc_instr_level_pi(k, x, inner))), 0) == level(1, 0));       /* G6 */
+    cc_judgement_id endo_def = OK(cc_instr_define(k, ENDO, endo));                        /* G10 */
+    assert(child(type_of(endo_def), 0) == level(1, 0));
+    rejects(cc_instr_level_pi(k, a, ux), "Expected a level entry");
+    rejects(cc_instr_pi(k, x, ux), "not a term");
+    rejects(cc_instr_level_lambda(k, x, OK(cc_instr_variable(k, a))), "still depends");
+
+    /* Cumulativity (§5.4). */
+    OK(cc_instr_lift(k, nat, ux));                                                        /* C1 */
+    OK(cc_instr_lift(k, ux, OK(cc_instr_universe(k, lmax(lsucc(lvar(X), 1), lvar(Y))))));  /* C2 */
+    rejects(cc_instr_lift(k, ux, ux), "not included");                                    /* C3 */
+    rejects(cc_instr_lift(k, ux, OK(cc_instr_universe(k, level(0, 1)))), "not included"); /* C4 */
+    cc_judgement_id av = OK(cc_instr_variable(k, a));
+    rejects(cc_instr_lift(k, av, OK(cc_instr_universe(k, level(0, 0)))), "not included"); /* C5 */
+    cc_entry_id b = OK(cc_instr_extend(k, OK(cc_instr_universe(k, lmax(level(0, 1), lvar(X)))), B));
+    cc_entry_id c = OK(cc_instr_extend(k, OK(cc_instr_universe(k, lsucc(lvar(X), 1))), C));
+    OK(cc_instr_lift(k, OK(cc_instr_variable(k, b)), OK(cc_instr_universe(k, lsucc(lvar(X), 1)))));    /* C9 */
+    rejects(cc_instr_lift(k, OK(cc_instr_variable(k, c)), OK(cc_instr_universe(k, lmax(level(0, 1), lvar(X))))), "not included");
+    cc_judgement_id constant_nat = OK(cc_instr_level_lambda(k, x, nat));                  /* C11 */
+    OK(cc_instr_lift(k, constant_nat, OK(cc_instr_level_pi(k, x, OK(cc_instr_universe(k, level(0, 1)))))));
+    cc_entry_id f = OK(cc_instr_extend(k, OK(cc_instr_level_pi(k, x, ux)), F));           /* C13 */
+    OK(cc_instr_lift(k, OK(cc_instr_variable(k, f)), OK(cc_instr_level_pi(k, y, OK(cc_instr_universe(k, lsucc(lvar(Y), 1)))))));
+    cc_judgement_id raised = OK(cc_instr_level_pi(k, x, OK(cc_instr_universe(k, lsucc(lvar(X), 1)))));
+    cc_entry_id g = OK(cc_instr_extend(k, raised, G));                                    /* C14 */
+    rejects(cc_instr_lift(k, OK(cc_instr_variable(k, g)), OK(cc_instr_level_pi(k, y, uy))), "not included");
+    OK(cc_instr_lift(k, ux, uomega));                                                     /* C15 */
+    OK(cc_instr_lift(k, OK(cc_instr_universe(k, level(0, 5))), uomega));                  /* C16 */
+    rejects(cc_instr_lift(k, uomega, OK(cc_instr_universe(k, level(0, 5)))), "not included");
+    /* Bound names do not matter: λ (x < ω). U(x) converts along an equality
+     * that starts at Π (y < ω). U(y + 1). */
+    cc_judgement_id family = OK(cc_instr_level_lambda(k, x, ux));
+    OK(cc_instr_convert(k, family, OK(cc_instr_refl(k, OK(cc_instr_level_pi(k, y, OK(cc_instr_universe(k, lsucc(lvar(Y), 1)))))))));
+
+    /* Instantiation and substitution (§5.5), with id := λ (x < ω). λ (A : U(x)). λ (t : A). t. */
+    cc_entry_id t = OK(cc_instr_extend(k, av, T));
+    cc_judgement_id poly = OK(cc_instr_level_lambda(k, x, OK(cc_instr_lambda(k, a, OK(cc_instr_lambda(k, t, OK(cc_instr_variable(k, t))))))));
+    cc_judgement_id id = OK(cc_instr_define(k, ID, poly));                                /* S1 */
+    assert(kind(type_of(id)) == CC_LPI);
+    cc_judgement_id zero = OK(cc_instr_zero(k));
+    cc_judgement_id three = OK(cc_instr_succ(k, OK(cc_instr_succ(k, OK(cc_instr_succ(k, zero))))));
+    cc_judgement_id id0 = OK(cc_instr_level_apply(k, id, level(0, 0)));                   /* S2 */
+    cc_judgement_id applied = OK(cc_instr_apply(k, OK(cc_instr_apply(k, id0, nat)), three));
+    assert(kind(type_of(applied)) == CC_NAT);
+    assert(successors(other_of(STEP(OK(cc_instr_refl(k, applied)), CC_STEP_NORMALIZE, ROOT))) == 3);
+    cc_judgement_id u0 = OK(cc_instr_universe(k, level(0, 0)));
+    cc_judgement_id at_one = OK(cc_instr_apply(k, OK(cc_instr_apply(k, OK(cc_instr_level_apply(k, id, level(0, 1))), u0)), nat));
+    assert(type_of(at_one) == term_of(u0));
+    assert(kind(other_of(STEP(OK(cc_instr_refl(k, at_one)), CC_STEP_NORMALIZE, ROOT))) == CC_NAT);
+    rejects(cc_instr_apply(k, id0, u0), "wrong type");                                    /* S3 */
+    cc_judgement_id at_ux = OK(cc_instr_apply(k, OK(cc_instr_level_apply(k, id, lsucc(lvar(X), 1))), ux)); /* S4 */
+    assert(kind(type_of(at_ux)) == CC_PI && context_size(at_ux) == 1);
+    cc_judgement_id outer = OK(cc_instr_level_lambda(k, x, OK(cc_instr_level_lambda(k, y,
+        OK(cc_instr_universe(k, lmax(lvar(X), lvar(Y))))))));                            /* S5 */
+    cc_judgement_id at_y0 = OK(cc_instr_level_apply(k, OK(cc_instr_level_apply(k, outer, lvar(Y))), level(0, 0)));
+    assert(context_size(at_y0) == 1 && child(type_of(at_y0), 0) == lsucc(lvar(Y), 1));
+    cc_judgement_id reduced = STEP(STEP(OK(cc_instr_refl(k, at_y0)), CC_STEP_BETA, AT(0)), CC_STEP_BETA, ROOT);
+    assert(other_of(reduced) == term_of(uy) && other_of(reduced) != term_of(u0));
+    cc_judgement_id fv = OK(cc_instr_variable(k, f));                                     /* S7 */
+    cc_judgement_id expanded = OK(cc_instr_eta(k, fv));
+    assert(kind(other_of(expanded)) == CC_LLAM);
+    assert(other_of(STEP(expanded, CC_STEP_WHNF, ROOT)) == term_of(fv));
+    cc_judgement_id at_two = OK(cc_instr_level_apply(k, family, level(0, 2)));             /* S8 */
+    assert(other_of(STEP(OK(cc_instr_refl(k, at_two)), CC_STEP_BETA, ROOT)) == term_of(OK(cc_instr_universe(k, level(0, 2)))));
+    cc_judgement_id far = OK(cc_instr_level_lambda(k, x, OK(cc_instr_universe(k, lsucc(lvar(X), 65000)))));
+    rejects(cc_instr_level_apply(k, far, level(0, 1000)), "bound");                       /* S9 */
+    assert(term_of(OK(cc_instr_level_apply(k, id, lmax(level(0, 0), level(0, 0))))) == term_of(id0)); /* S11 */
+    rejects(cc_instr_level_apply(k, id, level(1, 0)), "finite");                          /* S12 */
+    rejects(cc_instr_level_apply(k, id, lmax(lvar(X), level(1, 0))), "finite");           /* S13 */
+    rejects(cc_instr_level_apply(k, id, term_of(nat)), "Expected a level");               /* B8 */
+    rejects(cc_instr_apply(k, id, nat), "Only a term of a Π type");
+    rejects(cc_instr_level_apply(k, id0, level(0, 0)), "Only a term of a level Π");
+
+    /* Composition at a level Π is pointwise (§2.11, K7):
+     * h : Π (x < ω). Nat → Nat ⊢ comp^j (Π (x < ω). Nat → Nat) [i = 0 ↦ h] h. */
+    cc_entry_id n = OK(cc_instr_extend(k, nat, N));
+    cc_judgement_id generic = OK(cc_instr_level_pi(k, x, OK(cc_instr_pi(k, n, nat))));
+    assert(child(type_of(generic), 0) == level(0, 0));
+    cc_judgement_id hv = OK(cc_instr_variable(k, OK(cc_instr_extend(k, generic, H))));
+    cc_formula face;
+    cc_init(&face, CC_FACE);
+    assert(cc_generator(&face, 0, false) == CC_OK);
+    cc_formula_id i0 = cc_kernel_formula(k, &face);
+    cc_clear(&face);
+    cc_judgement_id box = OK(cc_instr_system(k, OK(cc_instr_dimension(k, 1)), generic, hv));
+    cc_judgement_id composed = OK(cc_instr_comp(k, OK(cc_instr_system_tube(k, box, i0, hv, OK(cc_instr_refl(k, hv))))));
+    cc_term pointwise = other_of(STEP(OK(cc_instr_refl(k, composed)), CC_STEP_WHNF, ROOT));
+    assert(kind(pointwise) == CC_LLAM && kind(child(pointwise, 1)) == CC_COMP);
+    assert(kind(child(child(pointwise, 1), 2)) == CC_LAPP);
 }

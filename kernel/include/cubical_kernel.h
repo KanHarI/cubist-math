@@ -137,7 +137,8 @@ typedef enum {
     CC_INSTR_PUSHOUT, CC_INSTR_PUSH_POINT, CC_INSTR_PUSH_PATH, CC_INSTR_PUSH_ELIM,
     CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM, CC_INSTR_HCOMP, CC_INSTR_TRANS,
     CC_INSTR_GLUE_BASE, CC_INSTR_GLUE_PIECE, CC_INSTR_GLUE_OVERLAP, CC_INSTR_GLUE,
-    CC_INSTR_GLUE_TERM_BASE, CC_INSTR_GLUE_TERM_PIECE, CC_INSTR_GLUE_TERM, CC_INSTR_UNGLUE
+    CC_INSTR_GLUE_TERM_BASE, CC_INSTR_GLUE_TERM_PIECE, CC_INSTR_GLUE_TERM, CC_INSTR_UNGLUE,
+    CC_INSTR_LEVEL_PI, CC_INSTR_LEVEL_LAMBDA, CC_INSTR_LEVEL_APPLY
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
@@ -156,9 +157,9 @@ typedef enum {
                         * a transport on a face that holds, to its base */
 } cc_step_rule;
 
-/* ⊢ U(l) : U(l+1), for a level l: well formed, and with a successor within
- * CC_LEVEL_MAX. The judgement's universes carry l's normal form. No
- * instruction binds a level variable yet, so l has none. */
+/* Γ ⊢ U(l) : U(l+1), for a level l whose successor is within CC_LEVEL_MAX.
+ * Its variables must be level entries, which form Γ. The judgement's
+ * universes carry l's normal form. */
 cc_judgement_id cc_instr_universe(cc_kernel *, cc_term level);
 cc_judgement_id cc_instr_nat(cc_kernel *);                                /* ⊢ Nat : U0 */
 cc_judgement_id cc_instr_zero(cc_kernel *);                               /* ⊢ 0 : Nat */
@@ -175,6 +176,21 @@ cc_judgement_id cc_instr_abort(cc_kernel *, cc_judgement_id type, cc_judgement_i
 cc_entry_id cc_instr_extend(cc_kernel *, cc_judgement_id type, uint32_t symbol);
 /* The dimension entry of an interval index. */
 cc_entry_id cc_instr_dimension(cc_kernel *, unsigned index);
+/* Universe-generic definitions (G0 §2.7). Level names a level entry x < ω:
+ * a universe variable, ranging over the natural numbers; its type, as
+ * cc_kernel_entry reports it, is the bound LBound(1). It is no term:
+ * Variable refuses it, and only levels may mention it.
+ * LevelPi gives Γ ⊢ Π (x < ω). B : U(lim_x(l)) from Γ, x < ω ⊢ B : U(l), where
+ * lim_x(l) is ω when x occurs in l's normal form and l otherwise. LevelLambda
+ * gives λ (x < ω). t : Π (x < ω). B from Γ, x < ω ⊢ t : B. Both discharge x.
+ * LevelApply gives f {l} : B[x := l] from f : Π (x < ω). B as written and a
+ * finite level l (below ω) whose variables are level entries; the result's
+ * levels are in normal form. Beta contracts (λ (x < ω). t) {l} to t[x := l],
+ * and Eta expands a term of a level Π to λ (y < ω). t {y}. */
+cc_entry_id cc_instr_level(cc_kernel *, uint32_t symbol);
+cc_judgement_id cc_instr_level_pi(cc_kernel *, cc_entry_id, cc_judgement_id body);
+cc_judgement_id cc_instr_level_lambda(cc_kernel *, cc_entry_id, cc_judgement_id body);
+cc_judgement_id cc_instr_level_apply(cc_kernel *, cc_judgement_id function, cc_term level);
 cc_judgement_id cc_instr_variable(cc_kernel *, cc_entry_id);              /* Γ, x : A ⊢ x : A */
 /* Binders discharge an entry that no other entry of the premise depends on. */
 cc_judgement_id cc_instr_pi(cc_kernel *, cc_entry_id, cc_judgement_id codomain);
@@ -371,9 +387,10 @@ cc_term cc_kernel_relocated(const cc_kernel *, cc_term);
  * U(level) with payload zero; Var(symbol); Pi/Lam/Sigma/W(symbol; domain, body).
  * Levels: LConst(tier * 65536 + n) is the constant ω·tier + n; LSucc(n; level)
  * is level + n, for n ≥ 1; LMax(level, level); a level variable is a Var.
- * LBound(tier) is a level binder's bound ω·tier; LPi/LLam(symbol; bound, body)
- * and LApp(function, level) are level quantification, which no rule accepts
- * yet.
+ * LBound(tier) is a level binder's bound ω·tier, and the type of a level
+ * entry; LPi/LLam(symbol; bound, body) and LApp(function, level) are level
+ * quantification, Π (x < ω). B, λ (x < ω). t and f {l}. Only the bound ω,
+ * LBound(1), is admitted.
  * App(fn,arg); Pair(type,first,second); Fst/Snd(pair); Succ(value).
  * NatRec(motive,zero,step,value).
  * Path(dimension; family,left,right); PLam(dimension; family,body).

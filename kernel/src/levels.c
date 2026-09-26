@@ -313,6 +313,66 @@ cc_term ck_level_limit(cc_kernel *k, uint32_t symbol, cc_term level) {
     return result;
 }
 
+/* nf(ℓ + 1), in place. */
+bool ck_level_nf_succ(cc_kernel *k, cc_level_nf *nf) {
+    return add(k, nf, 1);
+}
+
+void ck_level_nf_sort(cc_level_nf *nf) {
+    for (uint32_t i = 1; i < nf->count; ++i)
+        for (uint32_t j = i; j && nf->terms[j - 1].key > nf->terms[j].key; --j) {
+            cc_level_term swap = nf->terms[j];
+            nf->terms[j] = nf->terms[j - 1];
+            nf->terms[j - 1] = swap;
+        }
+}
+
+bool ck_level_nf_equal(const cc_level_nf *a, const cc_level_nf *b) {
+    return nf_equal(a, b);
+}
+
+/* Every level of a term in normal form: each universe's level and each
+ * instantiation's. Shared subterms are visited once. */
+cc_term ck_canonical_levels(cc_kernel *k, cc_term term) {
+    if (!term || k->error[0])
+        return 0;
+    uint64_t cached;
+    if (ck_memo_get(k, 4, term, 0, 0, &cached))
+        return (cc_term)cached;
+    if (!ck_tick(k, false))
+        return 0;
+    cc_node n = k->nodes[term];
+    cc_term result = term;
+    if (n.kind == CC_U) {
+        result = ck_universe(k, ck_level_canonical(k, n.child[0]));
+    } else if (n.kind != CC_LCONST && n.kind != CC_LSUCC && n.kind != CC_LMAX && n.kind != CC_LBOUND) {
+        if (++k->recursion > 1024) {
+            --k->recursion;
+            return ck_fail(k, "Level normalization depth exceeded."), 0;
+        }
+        cc_term child[4] = {n.child[0], n.child[1], n.child[2], n.child[3]};
+        for (unsigned i = 0; i < ck_arity(n.kind) && result; ++i)
+            if (child[i])
+                result = child[i] = n.kind == CC_LAPP && i == 1 ? ck_level_canonical(k, child[i])
+                                                                : ck_canonical_levels(k, child[i]);
+        --k->recursion;
+        if (result && memcmp(child, n.child, sizeof child))
+            result = ck_make(k, n.kind, n.payload, child[0], child[1], child[2], child[3]);
+        else if (result)
+            result = term;
+    }
+    if (result)
+        ck_memo_put(k, 4, term, 0, 0, result);
+    return result;
+}
+
+/* Level substitution (§2.8): capture-avoiding, since level and term
+ * variables share one name supply, then every level taken to normal form, so
+ * that an instance is the term a direct derivation would give. */
+cc_term ck_level_instantiate(cc_kernel *k, cc_term body, uint32_t symbol, cc_term level) {
+    return ck_canonical_levels(k, ck_substitute(k, body, symbol, level));
+}
+
 cc_term ck_universe(cc_kernel *k, cc_term level) {
     return level ? ck_make(k, CC_U, 0, level, 0, 0, 0) : 0;
 }

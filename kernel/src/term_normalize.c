@@ -109,6 +109,16 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return ck_whnf(k, ck_substitute(k, head.child[1], head.payload, n.child[1]));
         return fn == n.child[0] ? term : app(k, fn, n.child[1]);
     }
+    /* ∀-β (G0 §2.7): instantiation of a level lambda substitutes the level. */
+    if (n.kind == CC_LAPP) {
+        cc_term fn = ck_whnf(k, n.child[0]);
+        if (!fn)
+            return 0;
+        cc_node head = k->nodes[fn];
+        if (head.kind == CC_LLAM)
+            return ck_whnf(k, ck_level_instantiate(k, head.child[1], head.payload, n.child[1]));
+        return fn == n.child[0] ? term : ck_make(k, CC_LAPP, 0, fn, n.child[1], 0, 0);
+    }
     if (n.kind == CC_PAIR) {
         /* Surjective pairing. Inspect only projection syntax here: forcing
          * arbitrary components would destroy the demand-driven strategy. */
@@ -220,6 +230,14 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         }
         cc_clear(&argument);
         return result;
+    }
+    /* ∀-η: λ (x < ω). f {x} is f when x is not free in f. */
+    if (n.kind == CC_LLAM) {
+        cc_node head = k->nodes[n.child[1]];
+        if (head.kind == CC_LAPP && k->nodes[head.child[1]].kind == CC_VAR &&
+            k->nodes[head.child[1]].payload == n.payload && !ck_term_free(k, head.child[0], n.payload))
+            return ck_whnf(k, head.child[0]);
+        return term;
     }
     if (n.kind == CC_LAM || n.kind == CC_PLAM) {
         /* A lambda is already a weak head. Eta may inspect its syntax, but

@@ -64,6 +64,7 @@ typedef struct {
     uint32_t scope;   /* that context and the entry itself */
     uint32_t source;  /* the judgement that the type is a type */
     bool dimension;
+    bool level_variable; /* a level entry x < ω: its type is LBound(1) */
 } cc_entry;
 typedef struct {
     size_t offset;
@@ -195,6 +196,13 @@ cc_term ck_level_max(cc_kernel *, cc_term, cc_term);
 cc_term ck_level_succ(cc_kernel *, cc_term);
 cc_term ck_level_limit(cc_kernel *, uint32_t symbol, cc_term);
 cc_term ck_universe(cc_kernel *, cc_term level);
+void ck_level_nf_sort(cc_level_nf *);
+bool ck_level_nf_succ(cc_kernel *, cc_level_nf *);
+bool ck_level_nf_equal(const cc_level_nf *, const cc_level_nf *);
+/* t[x := l] for a level variable x, capture-avoiding, with every level of
+ * the result in normal form (G0 §2.8). */
+cc_term ck_level_instantiate(cc_kernel *, cc_term body, uint32_t symbol, cc_term level);
+cc_term ck_canonical_levels(cc_kernel *, cc_term);
 /* The term checker's universes: closed finite levels only. */
 bool ck_universe_number(cc_kernel *, cc_term universe, uint32_t *level);
 cc_term ck_universe_at(cc_kernel *, uint32_t level);

@@ -412,3 +412,22 @@ test("G0: the module's ABI version is checked, and a universe carries its level 
   assert.deepEqual([universeText(3), universeText({ tag: "LConst", tier: 1, value: 3 }), universeText({ tag: "LConst", tier: 2, value: 0 })],
     ["U3", "UU3", "UUU0"]);
 });
+
+test("G0: level entries and level quantification through the instruction wrapper and the codec", t => {
+  const k = session(t), syntax = new CubicalSyntax(k), g = new InstructionGraph(k);
+  const x = g.level("x"), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }));
+  assert.throws(() => g.variable(x), /not a term/);
+  // λ (x < ω). U(x) : Π (x < ω). U(x + 1), and its instance at 2 is U(2) : U(3).
+  const family = g.levelLambda(x, ux);
+  assert.deepEqual(syntax.decode(g.judgement(family).term),
+    { tag: "LLam", name: "x", body: { tag: "U", level: { tag: "Var", name: "x" } } });
+  const atTwo = g.judgement(g.levelApply(family, syntax.encodeLevel(2)));
+  assert.deepEqual(syntax.decode(atTwo.type), { tag: "U", level: 3 });
+  assert.throws(() => g.levelApply(family, syntax.encodeLevel({ tag: "LConst", tier: 1, value: 0 })), /finite/);
+  // Π (x < ω). U(x) lives in UU0.
+  const statement = g.judgement(g.levelPi(x, ux));
+  assert.equal(statement.context.length, 0);
+  assert.deepEqual(syntax.decode(statement.type), { tag: "U", level: { tag: "LConst", tier: 1, value: 0 } });
+  const generic = { tag: "LPi", name: "y", body: { tag: "U", level: { tag: "LSucc", count: 1, level: { tag: "Var", name: "y" } } } };
+  assert.deepEqual(syntax.decode(syntax.encode(generic)), generic);
+});

@@ -63,6 +63,38 @@ static bool same_name(uint32_t a, uint32_t b, const alpha_binding *env) {
     return left || right ? left && left == right : a == b;
 }
 
+/* Levels are equal when their normal forms are (G0 §2.9), with each
+ * variable bound on the way down named by the binding it resolves to, so
+ * that λ (x < ω). U(x) and λ (y < ω). U(y) agree. Free variables keep their
+ * symbols; bound ones take keys above every symbol. */
+static void bound_keys(cc_level_nf *nf, const alpha_binding *terms, bool right) {
+    for (uint32_t i = 0; i < nf->count; ++i) {
+        const alpha_binding *binding = bound(terms, (uint32_t)nf->terms[i].key, right);
+        if (binding)
+            nf->terms[i].key = UINT64_C(1) << 63 | binding->scope;
+    }
+    ck_level_nf_sort(nf);
+}
+
+static bool level_alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms) {
+    if (a == b && a < k->count && k->nodes[a].kind == CC_LCONST)
+        return true;
+    if (!terms)
+        return ck_level_equal(k, a, b);
+    cc_level_nf left, right;
+    if (!ck_level_normal(k, a, &left))
+        return false;
+    bool equal = false;
+    if (ck_level_normal(k, b, &right)) {
+        bound_keys(&left, terms, false);
+        bound_keys(&right, terms, true);
+        equal = ck_level_nf_equal(&left, &right);
+        ck_level_nf_free(&right);
+    }
+    ck_level_nf_free(&left);
+    return equal && !k->error[0];
+}
+
 static bool clause_included(cc_clause a, cc_clause b, const alpha_binding *dims) {
     for (unsigned i = 0; i < CC_DIMENSIONS; ++i) {
         uint64_t bit = UINT64_C(1) << i;
@@ -377,11 +409,19 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
     }
     if (left.kind == CC_DEFREF)
         return left.payload == right.payload;
-    /* Universes are equal when their levels are (G0 §2.5, U-Eq): identical
-     * normal forms. A level variable is compared by its symbol; no rule binds
-     * one yet, so a bound level variable is never met here. */
+    /* Universes are equal when their levels are (G0 §2.5, U-Eq), and
+     * instantiations when their functions and levels are (Inst). */
     if (left.kind == CC_U)
-        return left.child[0] == right.child[0] || ck_level_equal(k, left.child[0], right.child[0]);
+        return level_alpha(k, left.child[0], right.child[0], terms);
+    if (left.kind == CC_LAPP)
+        return alpha(k, left.child[0], right.child[0], terms, dims, children_mode) &&
+               level_alpha(k, left.child[1], right.child[1], terms);
+    /* A binder's bound by its tier, and a level met on its own by its normal
+     * form; the generic comparison below would ignore their payloads. */
+    if (left.kind == CC_LBOUND)
+        return left.payload == right.payload;
+    if (left.kind == CC_LCONST || left.kind == CC_LSUCC || left.kind == CC_LMAX)
+        return level_alpha(k, a, b, terms);
     if (left.kind == CC_VAR)
         return same_name(left.payload, right.payload, terms);
     if (ck_term_binder(left.kind)) {
@@ -498,7 +538,9 @@ bool ck_syntactic_cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
     cc_node left = k->nodes[actual], right = k->nodes[expected];
     if (left.kind == CC_U && right.kind == CC_U)
         return ck_level_leq(k, left.child[0], right.child[0]);
-    if ((left.kind == CC_PI || left.kind == CC_SIGMA) && left.kind == right.kind &&
+    /* ≤-∀ (G0 §2.9) as ≤-Π: the bounds are the same, and the bodies are
+     * compared under one fresh level variable. */
+    if ((left.kind == CC_PI || left.kind == CC_SIGMA || left.kind == CC_LPI) && left.kind == right.kind &&
         ck_alpha_equal(k, left.child[0], right.child[0])) {
         cc_term variable = ck_var(k, ck_fresh_symbol(k));
         return ck_syntactic_cumulative(k, ck_substitute(k, left.child[1], left.payload, variable),

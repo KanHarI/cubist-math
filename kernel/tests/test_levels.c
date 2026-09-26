@@ -84,6 +84,31 @@ static void canonical_forms(void) {
     assert(!ck_alpha_equal(k, ck_universe_at(k, 1), ck_universe_at(k, 2)));
     assert(ck_syntactic_cumulative(k, ck_universe_at(k, 7), ck_universe(k, lconst(1, 0))));
     assert(!ck_syntactic_cumulative(k, ck_universe(k, lconst(1, 0)), ck_universe_at(k, 7)));
+    /* Under level binders, levels compare through the renaming (G0 §2.9). */
+    cc_term bound = ck_make(k, CC_LBOUND, 1, 0, 0, 0, 0);
+    cc_term by_x = ck_make(k, CC_LLAM, X, bound, ck_universe(k, succ(x, 1)), 0, 0);
+    cc_term by_y = ck_make(k, CC_LLAM, Y, bound, ck_universe(k, succ(y, 1)), 0, 0);
+    cc_term free_x = ck_make(k, CC_LLAM, Y, bound, ck_universe(k, succ(x, 1)), 0, 0);
+    assert(ck_alpha_equal(k, by_x, by_y) && !ck_alpha_equal(k, by_x, free_x));
+    cc_term wide_bound = ck_make(k, CC_LLAM, X, ck_make(k, CC_LBOUND, 2, 0, 0, 0, 0), ck_universe(k, succ(x, 1)), 0, 0);
+    assert(!ck_alpha_equal(k, by_x, wide_bound));
+    assert(!ck_alpha_equal(k, lconst(0, 1), lconst(0, 2)) && ck_alpha_equal(k, lmax(x, y), lmax(y, x)));
+    cc_term pair_xy = ck_make(k, CC_LLAM, X, bound, ck_make(k, CC_LLAM, Y, bound, ck_universe(k, lmax(x, y)), 0, 0), 0, 0);
+    cc_term pair_yx = ck_make(k, CC_LLAM, Y, bound, ck_make(k, CC_LLAM, X, bound, ck_universe(k, lmax(y, x)), 0, 0), 0, 0);
+    cc_term swapped = ck_make(k, CC_LLAM, Y, bound, ck_make(k, CC_LLAM, X, bound, ck_universe(k, lmax(x, succ(y, 1))), 0, 0), 0, 0);
+    assert(ck_alpha_equal(k, pair_xy, pair_yx) && !ck_alpha_equal(k, pair_xy, swapped));
+    cc_term f = var(20);
+    assert(ck_alpha_equal(k, ck_make(k, CC_LAPP, 0, f, lmax(lconst(0, 0), lconst(0, 0)), 0, 0),
+                          ck_make(k, CC_LAPP, 0, f, lconst(0, 0), 0, 0)));                 /* Inst, S11 */
+    /* ∀-β substitutes, avoiding capture, and leaves levels in normal form;
+     * ∀-η contracts. */
+    cc_term instance = ck_whnf(k, ck_make(k, CC_LAPP, 0, pair_xy, y, 0, 0));
+    assert(k->nodes[instance].kind == CC_LLAM && k->nodes[instance].payload != Y);
+    cc_term at_zero = ck_whnf(k, ck_make(k, CC_LAPP, 0, instance, lconst(0, 0), 0, 0));
+    assert(at_zero == ck_universe(k, y));                                                  /* S5 */
+    assert(ck_canonical_levels(k, ck_universe(k, lmax(lconst(0, 1), lconst(0, 0)))) == ck_universe_at(k, 1));
+    cc_term eta = ck_make(k, CC_LLAM, 21, bound, ck_make(k, CC_LAPP, 0, f, var(21), 0, 0), 0, 0);
+    assert(ck_whnf(k, eta) == f);
     assert(!k->error[0]);
 }
 
