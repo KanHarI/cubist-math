@@ -154,6 +154,11 @@ struct cc_kernel {
     /* Facts by derivation. Truncated ids are tombstones until a rebuild. */
     uint32_t *derivations;
     size_t derivation_capacity, derivation_used;
+    /* Term entries by symbol, and the dimension entry of each index. Truncated
+     * ids are ignored, as in the derivation index. */
+    uint32_t *entry_index;
+    size_t entry_index_capacity, entry_index_used;
+    uint32_t dimension_entries[CC_DIMENSIONS];
     cc_derivation pending; /* the instruction being checked */
     const uint8_t *pending_position;
     size_t checkpoint_store[5]; /* facts, entries, context sets, items, positions */

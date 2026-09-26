@@ -14,18 +14,17 @@ which it does not change:
   composition with tubes on disjoint faces (`System`, `SystemTube`, `Comp`).
 - In instruction mode, the first proof checks, and so does all of
   `library/naturals`. So does every one of the 41 definitions behind the
-  archive's Euclid theorem, and 3616 of the archive's 3938 definitions (92%).
-  The rest need:
+  archive's Euclid theorem, and 3800 of the archive's 3938 definitions
+  (96.5%), in 14 s for the whole archive. The rest need:
 
   | Need | Definitions |
   | --- | --- |
-  | Faster search (budget or time limit) | 144 |
-  | Pushouts | 66 |
-  | Composition search for the path library | 54 |
+  | Pushouts | 67 |
+  | Overlapping or multi-clause faces | 40 |
   | W types | 18 |
-  | Overlapping faces | 16 |
   | Glue | 8 |
-  | Driver bugs | ~15 |
+  | `HComp` | 1 |
+  | A better search | 4 |
 
 ## Goal
 
@@ -201,10 +200,34 @@ hints and every implicit reduction.
 `InstructionDriver` replays a checked term as instructions, one per node. Where
 a rule needs two types to agree, it makes them agree without trust:
 
-- by weak-head steps, taken in the order the term checker's reduction takes them;
-- by congruence on common heads;
+- by congruence on common heads, when their parts are equal;
+- by weak-head steps: beta, iota and path steps first, then unfolding
+  definitions lazily. The one defined later is unfolded first, and both when
+  they are the same (lazy delta reduction, as in Lean);
+- by `Whnf`, the kernel's own weak head normal form, for heads the steps do
+  not take: composition, transport, Glue, pushouts;
+- by eta, expanding a neutral term against a lambda, path lambda or pair:
+  - the neutral term is derived again at its position, and `Replace` puts its
+    `Eta` expansion there;
+  - below binders, the derivation uses entries named as the binders;
 - by `Normalize` when that runs long;
 - by `Lift` for cumulativity.
+
+Where a function's domain and its argument's type must agree, both are
+rewritten in place, toward a common form.
+
+**Search aids.** The kernel offers two queries that decide nothing:
+`cc_kernel_convertible` answers whether the term checker's conversion finds
+two terms equal, within a small step budget, and `cc_kernel_rename` renames a
+free name.
+
+The driver asks the first query only where the answer changes its choice: on a
+common head that could also be reduced. Before comparing parts under binders,
+it renames the right side's bound names to match the left's. Every step it
+then takes is still an instruction the kernel checks.
+
+The driver caches judgement reads, scopes and derivations; the kernel indexes
+entries by symbol. Together, these took the archive from 457 s to 14 s.
 
 A rule's expected type comes either from a premise the driver can rewrite in
 place, or from a typing judgement it derives for that type. It reduces a

@@ -120,7 +120,10 @@ typedef enum {
     CC_STEP_IOTA,      /* an eliminator or projection on a constructor */
     CC_STEP_PATH,      /* a path lambda applied at an interval point, or a
                         * path applied at an endpoint of its annotated type */
-    CC_STEP_NORMALIZE  /* the normal form, by the kernel's fixed strategy */
+    CC_STEP_NORMALIZE, /* the normal form, by the kernel's fixed strategy */
+    CC_STEP_WHNF       /* the weak head normal form, by the same strategy:
+                        * composition, transport, Glue and pushouts compute,
+                        * and lambdas contract by eta */
 } cc_step_rule;
 
 cc_judgement_id cc_instr_universe(cc_kernel *, uint32_t level);           /* ⊢ U(l) : U(l+1) */
@@ -203,6 +206,16 @@ cc_judgement_id cc_instr_transitivity(cc_kernel *, cc_judgement_id first, cc_jud
 /* t : A and A ≡ B : U(i) give t : B. Lift raises t : A to a cumulative B. */
 cc_judgement_id cc_instr_convert(cc_kernel *, cc_judgement_id typing, cc_judgement_id equality);
 cc_judgement_id cc_instr_lift(cc_kernel *, cc_judgement_id typing, cc_judgement_id type);
+
+/* A search aid, never evidence: whether the term checker's conversion finds
+ * two terms equal, within a step budget (zero for the usual one). An
+ * untrusted driver may steer its search by it; the instructions it then
+ * issues are checked as any others. False on an error, which stays recorded:
+ * an exhausted budget means the answer is unknown. */
+bool cc_kernel_convertible(cc_kernel *, cc_term, cc_term, uint64_t steps);
+/* Syntax only, for the same search: a term with a free name, or dimension,
+ * renamed, avoiding capture. */
+cc_term cc_kernel_rename(cc_kernel *, cc_term, bool dimension, uint32_t from, uint32_t to);
 
 /* Reading the graph. Judgement ids run from 1 to count - 1, premises first.
  * Kind 1 is typing, 2 equality and 3 a composition system; other is 0 but

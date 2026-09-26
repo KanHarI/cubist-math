@@ -118,6 +118,7 @@ void cc_kernel_free(cc_kernel *k) {
     free(k->context_items);
     free(k->positions);
     free(k->derivations);
+    free(k->entry_index);
     for (size_t i = 1; i < k->formula_count; ++i)
         cc_clear(&k->formulas[i]);
     free(k->relocation);

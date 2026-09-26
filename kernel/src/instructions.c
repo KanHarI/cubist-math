@@ -309,6 +309,46 @@ static bool bind(cc_kernel *k, uint32_t body, cc_entry_id e, uint32_t *out) {
     return discharge(k, body, &e, 1, &rest) && merge(k, rest, k->entries[e].context, out);
 }
 
+/* Term entries by symbol. A slot holding a truncated id is free again, and
+ * lookups compare the entry, so a stale slot only costs time. */
+static size_t symbol_slot(uint32_t symbol, size_t capacity) {
+    return (size_t)(symbol * UINT32_C(2654435761)) & (capacity - 1);
+}
+
+static cc_entry_id find_entry(const cc_kernel *k, uint32_t symbol) {
+    if (!k->entry_index_capacity)
+        return 0;
+    size_t mask = k->entry_index_capacity - 1;
+    for (size_t slot = symbol_slot(symbol, k->entry_index_capacity); k->entry_index[slot]; slot = (slot + 1) & mask) {
+        cc_entry_id id = k->entry_index[slot];
+        if (id < k->entry_count && !k->entries[id].dimension && k->entries[id].symbol == symbol)
+            return id;
+    }
+    return 0;
+}
+
+/* A failed allocation only forgoes the index: find_entry then misses, and
+ * extend's uniqueness check would too, so it fails the instruction. */
+static void index_entry(cc_kernel *k, cc_entry_id id) {
+    if ((k->entry_index_used + 1) * 2 > k->entry_index_capacity) {
+        size_t capacity = 256;
+        while (capacity < 4 * k->entry_count && capacity < SIZE_MAX / 8) capacity *= 2;
+        uint32_t *table = calloc(capacity, sizeof *table);
+        if (!table) { ck_fail(k, "Entry index allocation failed."); return; }
+        free(k->entry_index);
+        k->entry_index = table;
+        k->entry_index_capacity = capacity;
+        k->entry_index_used = 0;
+        for (cc_entry_id old = 1; old < id; ++old)
+            if (!k->entries[old].dimension) index_entry(k, old);
+    }
+    size_t mask = k->entry_index_capacity - 1, slot = symbol_slot(k->entries[id].symbol, k->entry_index_capacity);
+    while (k->entry_index[slot] && k->entry_index[slot] < k->entry_count && k->entry_index[slot] != id)
+        slot = (slot + 1) & mask;
+    if (!k->entry_index[slot]) ++k->entry_index_used;
+    k->entry_index[slot] = id;
+}
+
 /* A term entry is named by its symbol: extending with the same type
  * judgement and symbol again returns the same entry. */
 cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol) {
@@ -318,12 +358,12 @@ cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol)
         return 0;
     if (!symbol)
         return ck_fail(k, "A context entry needs a symbol."), 0;
-    for (size_t i = 1; i < k->entry_count; ++i)
-        if (!k->entries[i].dimension && k->entries[i].symbol == symbol) {
-            if (k->entries[i].source == type)
-                return (cc_entry_id)i;
-            return ck_fail(k, "The symbol already names a context entry."), 0;
-        }
+    cc_entry_id named = find_entry(k, symbol);
+    if (named) {
+        if (k->entries[named].source == type)
+            return named;
+        return ck_fail(k, "The symbol already names a context entry."), 0;
+    }
     if (!ck_var(k, symbol))
         return 0;
     cc_entry *entries = reserve(k, k->entries, &k->entry_capacity, k->entry_count + 1, sizeof *entries);
@@ -341,6 +381,7 @@ cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol)
         return 0;
     k->entries[id].scope = scope;
     ++k->entry_count;
+    index_entry(k, id);
     return id;
 }
 
@@ -355,9 +396,9 @@ cc_entry_id cc_instr_dimension(cc_kernel *k, unsigned index) {
 static cc_entry_id dimension_entry(cc_kernel *k, unsigned index) {
     if (index >= CC_DIMENSIONS)
         return ck_fail(k, "Dimension outside the native range."), 0;
-    for (size_t i = 1; i < k->entry_count; ++i)
-        if (k->entries[i].dimension && k->entries[i].symbol == index)
-            return (cc_entry_id)i;
+    cc_entry_id cached = k->dimension_entries[index];
+    if (cached && cached < k->entry_count && k->entries[cached].dimension && k->entries[cached].symbol == index)
+        return cached;
     cc_entry *entries = reserve(k, k->entries, &k->entry_capacity, k->entry_count + 1, sizeof *entries);
     if (!entries)
         return 0;
@@ -372,6 +413,7 @@ static cc_entry_id dimension_entry(cc_kernel *k, unsigned index) {
         return 0;
     k->entries[id].scope = scope;
     ++k->entry_count;
+    k->dimension_entries[index] = id;
     return id;
 }
 
@@ -1126,6 +1168,8 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
     }
     case CC_STEP_NORMALIZE:
         return ck_normal(k, term);
+    case CC_STEP_WHNF:
+        return ck_whnf(k, term);
     }
     return ck_fail(k, "Unknown step rule."), 0;
 }

@@ -19,7 +19,7 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   replace: "HighSubs", eta: "Eta", side: "DefEqExt", symmetry: "DefEqSwp", transitivity: "DefEqTrans",
   convert: "Conv", lift: "Lift", endpoint: "Endpoint", pathAt: "PathElim", system: "CompBase", systemTube: "CompTube",
   comp: "Comp" };
-export const stepRules = ["", "beta", "delta", "iota", "path", "normalize"];
+export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
 const EXTEND = 100, DIMENSION = 101;
@@ -108,6 +108,14 @@ export class InstructionGraph {
   convert(typing, equality) { return this.issue("convert", typing, equality); }
   lift(typing, type) { return this.issue("lift", typing, type); }
 
+  // A search aid, never evidence: whether the term checker's conversion finds
+  // two terms equal within `steps`; null when it could not tell.
+  convertible(a, b, steps = 0) {
+    const answer = this.module._cb_convertible(this.kernel.handle, a, b, steps);
+    return answer === 2 ? null : answer === 1;
+  }
+  // Syntax only, for the same search: a free name or dimension renamed.
+  rename(term, dimension, from, to) { return this.module._cb_rename(this.kernel.handle, term, dimension ? 1 : 0, from, to) >>> 0; }
   get count() { return this.module._cb_judgement_count(this.kernel.handle) >>> 0; }
   get entryCount() { return this.module._cb_entry_count(this.kernel.handle) >>> 0; }
   // A judgement: its statement, the instruction that derived it, and its

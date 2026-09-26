@@ -443,6 +443,30 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
     return !k->error[0] && equal;
 }
 
+cc_term cc_kernel_rename(cc_kernel *k, cc_term term, bool dimension, uint32_t from, uint32_t to) {
+    if (!k || k->error[0] || !term || term >= k->count)
+        return 0;
+    k->budget = k->operation_budget;
+    k->recursion = 0;
+    if (!dimension)
+        return ck_substitute(k, term, from, ck_var(k, to));
+    if (from >= CC_DIMENSIONS || to >= CC_DIMENSIONS)
+        return ck_fail(k, "Dimension outside the native range."), 0;
+    cc_formula point;
+    cc_init(&point, CC_INTERVAL);
+    cc_term renamed = cc_generator(&point, to, true) == CC_OK ? ck_dimension_substitute(k, term, from, &point) : 0;
+    cc_clear(&point);
+    return renamed;
+}
+
+bool cc_kernel_convertible(cc_kernel *k, cc_term a, cc_term b, uint64_t steps) {
+    if (!k || k->error[0] || !a || !b || a >= k->count || b >= k->count)
+        return false;
+    k->budget = steps && steps < k->operation_budget ? steps : k->operation_budget;
+    k->recursion = 0;
+    return ck_convertible(k, a, b);
+}
+
 /* Syntactic equality up to bound names and interval algebra: nothing is
  * reduced or unfolded. The instruction kernel uses only this. */
 bool ck_alpha_equal(cc_kernel *k, cc_term a, cc_term b) {

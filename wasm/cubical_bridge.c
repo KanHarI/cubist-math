@@ -396,6 +396,24 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     return 0;
 }
 
+/* 1 when the term checker's conversion finds the terms equal, 0 when not,
+ * 2 when it could not tell (its error is cleared): a search aid only. */
+unsigned cb_convertible(uint32_t token, uint32_t a, uint32_t b, uint32_t steps) {
+    browser_session *s = lookup(token);
+    if (!s) return 2;
+    bool equal = cc_kernel_convertible(s->kernel, a, b, steps);
+    if (cc_kernel_error_kind(s->kernel) != CC_ERROR_NONE) { cc_kernel_clear_error(s->kernel); return 2; }
+    return equal ? 1 : 0;
+}
+
+uint32_t cb_rename(uint32_t token, uint32_t term, unsigned dimension, uint32_t from, uint32_t to) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    cc_term renamed = cc_kernel_rename(s->kernel, term, dimension != 0, from, to);
+    if (!renamed) cc_kernel_clear_error(s->kernel);
+    return renamed;
+}
+
 uint32_t cb_judgement_count(uint32_t token) {
     browser_session *s = lookup(token);
     size_t count = s ? cc_kernel_judgement_count(s->kernel) : 0;

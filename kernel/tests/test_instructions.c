@@ -244,6 +244,20 @@ int main(void) {
     assert(kind(type_of(lifted)) == CC_U);
     rejects(cc_instr_lift(k, zero, OK(cc_instr_universe(k, 0))), "not included");
 
+    /* The kernel's weak head normal form as a step, and the aids an untrusted
+     * search may steer by: conversion as a query, and renaming. */
+    cc_judgement_id head = STEP(OK(cc_instr_refl(k, four)), CC_STEP_WHNF, ROOT);
+    assert(kind(other_of(head)) == CC_SUCC);
+    assert(cc_kernel_convertible(k, term_of(four), other_of(head), 0));
+    assert(!cc_kernel_convertible(k, term_of(four), term_of(zero), 0) && !cc_kernel_error(k)[0]);
+    assert(cc_kernel_rename(k, term_of(nv), false, N, M) == term_of(OK(cc_instr_variable(k, m))));
+    /* Entries are found by symbol among many, and dimensions by index. */
+    cc_entry_id many[400];
+    for (uint32_t s = 0; s < 400; ++s) many[s] = OK(cc_instr_extend(k, nat, 1000 + s));
+    for (uint32_t s = 0; s < 400; s += 37) assert(OK(cc_instr_extend(k, nat, 1000 + s)) == many[s]);
+    rejects(cc_instr_extend(k, OK(cc_instr_unit(k)), 1234), "already names");
+    assert(OK(cc_instr_dimension(k, 1)) == j2);
+
     /* A rollback drops the judgements made since the checkpoint. */
     cc_kernel_checkpoint(k);
     cc_judgement_id scratch = OK(cc_instr_succ(k, numeral));
