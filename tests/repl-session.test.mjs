@@ -61,3 +61,23 @@ test("a session over a proof sees its names, and rebases onto a rechecked proof"
   const rebased = await repl.rebase(program);
   assert.deepEqual(texts(await rebased.run("evaluate y")), ["value: 6"]);
 });
+
+test("slash commands: /modules lists what import can load, /help the commands", async t => {
+  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  t.after(() => program.dispose());
+  const modules = async () => ({ library: ["naturals"], archive: ["naturals", "primes", "euclid", "cubical_paths"] });
+  const repl = new ReplSession(program, { modules });
+  // The library shadows the archive's module of the same name.
+  assert.deepEqual(texts(await repl.run("/modules")),
+    ["info: Library (1): naturals\nArchive, the first library (3): cubical_paths, euclid, primes\nLoad one with import NAME;"]);
+  assert.deepEqual(texts(await repl.run("/modules prime")), ["info: Archive, the first library (1): primes\nLoad one with import NAME;"]);
+  assert.deepEqual(texts(await repl.run("/modules zeta")), ["info: No importable module's name contains zeta."]);
+  assert.deepEqual(await repl.run("/help"), await repl.run("help"));
+  assert.match(texts(await repl.run("/help"))[0], /\/modules \[TEXT\][\s\S]*\/clear[\s\S]*\/restart/);
+  // The console clears and restarts itself; a session only says so.
+  assert.deepEqual(texts(await repl.run("/clear")), ["error: /clear is a command of the console, not of an entry."]);
+  assert.deepEqual(texts(await repl.run("/frobnicate")), ["error: Unknown command /frobnicate. /help lists the commands."]);
+  // A rebased session keeps its module list.
+  assert.equal((await repl.rebase(program)).modules, modules);
+  assert.deepEqual(texts(await new ReplSession(program).run("/modules")), ["error: This session cannot list its modules."]);
+});
