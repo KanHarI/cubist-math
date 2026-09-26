@@ -116,7 +116,7 @@ export function kernelDerivation(program, view, { limit = 400 } = {}) {
 // in the panel's form: each step one rule on earlier steps, under a comment
 // with the judgement it derives. Context entries are CtxExt steps, placed just
 // before their first use; a highlighted step names its rule and position.
-const stepNames = { beta: "Beta", delta: "Delta", iota: "Iota", path: "PathBeta", normalize: "Normalize", whnf: "Whnf" };
+const stepNames = { beta: "Beta", delta: "Delta", iota: "Iota", path: "PathBeta", normalize: "Normalize", whnf: "Whnf", face: "Face" };
 export function instructionDerivation(program, view, { limit = 400 } = {}) {
   const context = view.context.map(entry => [entry.name, entry.type]);
   const checked = program.checker.syntax.check(view.expression, view.type, context, new Map(view.dimensions ?? []));

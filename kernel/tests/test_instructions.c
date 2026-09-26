@@ -226,6 +226,10 @@ int main(void) {
     cc_assumption assumptions[] = {{N, type_of(nv)}};
     assert(cc_kernel_check_in_cube(k, term_of(composed), type_of(composed), assumptions, 1, 1, &checked));
     rejects(cc_instr_system(k, i, nat, OK(cc_instr_path_apply(k, loop, i, 0))), "may not use its dimension");
+    /* At i = 1 the face i = 1 holds: a face step gives that tube at the end. */
+    rejects(cc_instr_step(k, OK(cc_instr_refl(k, composed)), 1, ROOT, CC_STEP_FACE), "face that holds");
+    cc_judgement_id at_face = OK(cc_instr_endpoint(k, composed, i, 1));
+    assert(other_of(STEP(OK(cc_instr_refl(k, at_face)), CC_STEP_FACE, ROOT)) == term_of(nv));
 
     /* Mismatches are reported with both types. */
     cc_term found, wanted;

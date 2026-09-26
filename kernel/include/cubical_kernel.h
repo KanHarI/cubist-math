@@ -121,9 +121,11 @@ typedef enum {
     CC_STEP_PATH,      /* a path lambda applied at an interval point, or a
                         * path applied at an endpoint of its annotated type */
     CC_STEP_NORMALIZE, /* the normal form, by the kernel's fixed strategy */
-    CC_STEP_WHNF       /* the weak head normal form, by the same strategy:
+    CC_STEP_WHNF,      /* the weak head normal form, by the same strategy:
                         * composition, transport, Glue and pushouts compute,
                         * and lambdas contract by eta */
+    CC_STEP_FACE       /* a composition with a tube on a face that holds, to
+                        * that tube at the end of the composition's dimension */
 } cc_step_rule;
 
 cc_judgement_id cc_instr_universe(cc_kernel *, uint32_t level);           /* ⊢ U(l) : U(l+1) */

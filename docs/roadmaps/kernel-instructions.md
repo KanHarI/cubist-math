@@ -14,18 +14,18 @@ which it does not change:
   composition with tubes on disjoint faces (`System`, `SystemTube`, `Comp`).
 - In instruction mode, the first proof checks, and so does all of
   `library/naturals`. So does every one of the 41 definitions behind the
-  archive's Euclid theorem, and 3800 of the archive's 3938 definitions
-  (96.5%), in 14 s for the whole archive; `node tools/instruction-coverage.mjs`
-  measures it again. The rest need:
+  archive's Euclid theorem, and 3803 of the archive's 3938 definitions
+  (96.6%), in 13 s for the whole archive; `node tools/instruction-coverage.mjs`
+  measures it again. Every derived term is its source syntax, annotations
+  included. The rest need kernel rules, not search:
 
   | Need | Definitions |
   | --- | --- |
-  | Pushouts | 67 |
+  | Pushouts | 68 |
   | Overlapping or multi-clause faces | 40 |
   | W types | 18 |
   | Glue | 8 |
   | `HComp` | 1 |
-  | A better search | 4 |
 
 ## Goal
 
@@ -124,9 +124,11 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   - `Step(eq, side, position, rule)` contracts the highlighted redex, and only
     it: `Beta`, `Delta` (unfold the highlighted definition), `Iota` (an
     eliminator or projection on a constructor), `Path` (a path lambda at a
-    point, or a path at an endpoint of its annotated type), or `Normalize`
-    (the normal form of the highlighted subterm, by the kernel's fixed
-    strategy; THTH's `BetaReduceGrossKnuth`).
+    point, or a path at an endpoint of its annotated type), `Face` (a
+    composition with a tube on a face that holds, to that tube at the end of
+    its dimension), `Whnf` (the kernel's weak head normal form), or
+    `Normalize` (the normal form of the highlighted subterm, by the kernel's
+    fixed strategy; THTH's `BetaReduceGrossKnuth`).
   - `Replace(eq, side, position, a ≡ b)` swaps a highlighted occurrence of `a`
     for `b`: a targeted definitional-equality rewrite. When `a` or `b` uses a
     name bound on the way down, the given equality must have that name as a
@@ -186,8 +188,9 @@ decides equality of De Morgan formulas, with no strategy to choose.
 - **Conversion search.** Where a rule needs two types to agree, or a type in a
   particular shape, the driver searches for the steps — the strategy
   `term_conversion.c` uses today — and emits them as equality instructions.
-- **Unfolding hints** order that search. A notion of opacity, if it returns,
-  would be the search never emitting `Delta` for a definition.
+- **Unfolding hints** do not move with it: the search finds its own order,
+  so that proofs need no hints. A notion of opacity, if it returns, would be
+  the search never emitting `Delta` for a definition.
 
 ### What the kernel keeps
 
@@ -201,10 +204,14 @@ hints and every implicit reduction.
 `InstructionDriver` replays a checked term as instructions, one per node. Where
 a rule needs two types to agree, it makes them agree without trust:
 
-- by congruence on common heads, when their parts are equal;
-- by weak-head steps: beta, iota and path steps first, then unfolding
+- by congruence on common heads, when their parts are equal, and never twice
+  on the same two terms: a failed attempt can leave an eta expansion that a
+  step contracts again;
+- by weak-head steps: beta, iota, path and face steps first, then unfolding
   definitions lazily. The one defined later is unfolded first, and both when
-  they are the same (lazy delta reduction, as in Lean);
+  they are the same (lazy delta reduction, as in Lean). A face step takes a
+  composition whose face holds to its tube, where `Whnf` would go on to
+  compute the tube's head, perhaps a large number in unary;
 - by `Whnf`, the kernel's own weak head normal form, for heads the steps do
   not take: composition, transport, Glue, pushouts;
 - by eta, expanding a neutral term against a lambda, path lambda or pair:
@@ -232,8 +239,14 @@ entries by symbol. Together, these took the archive from 457 s to 14 s.
 
 A rule's expected type comes either from a premise the driver can rewrite in
 place, or from a typing judgement it derives for that type. It reduces a
-constructor's annotation once, as an equality, and converts the result back
-along it.
+constructor's annotation once, as an equality, and rewrites the result's
+annotation and type back along it; a path lambda is derived at its own
+family. So a derived term is always its source syntax, and a type derived as
+evidence is the type it stands for.
+
+The driver does not use `with unfolding` hints: the search must not need
+them. Letting hinted definitions unfold first changed about 1% of the
+judgements of the 54 hinted archive definitions, and fixed nothing.
 
 ## Inspection: the graphs in the workbench
 

@@ -40,8 +40,8 @@ test("the first proof and the naturals library, trans included, derive in instru
     const judgement = driver.graph.judgement(driver.check(value, type));
     assert.equal(judgement.kind, "typing", name);
     assert.deepEqual(judgement.context, [], name);
-    // The type is the checked one. The term may differ in an annotation the
-    // driver reduced, such as a pair's type, so it is equal by computation.
+    // The term is the checked one, and so is its type.
+    assert.ok(driver.alpha(judgement.term, value), name);
     assert.ok(driver.alpha(judgement.type, type), name);
     derived.push(name);
   }
@@ -144,6 +144,7 @@ test("every definition behind Euclid's theorem derives in instruction mode", asy
     try {
       const judgement = driver.graph.judgement(driver.check(value, type));
       assert.deepEqual(judgement.context, [], name);
+      assert.ok(driver.alpha(judgement.term, value), name);
       assert.ok(driver.alpha(judgement.type, type), name);
     } catch (error) { failures.push(`${name}: ${error.message}`); }
   }
@@ -161,4 +162,62 @@ test("every definition behind Euclid's theorem derives in instruction mode", asy
     stack.push(...judgement.premises);
   }
   for (const rule of ["pathAt", "system", "systemTube", "comp"]) assert.ok(rules.has(rule), rule);
+});
+
+test("a derived term is its source: a constructor at a type that reduces keeps that type", async t => {
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check(`import naturals;
+
+def NatSum : U0 {
+  exact Nat or Nat;
+}
+
+def left_zero : NatSum {
+  exact typed(NatSum, left(0));
+}
+
+def tag(c : NatSum) : Nat {
+  exact 1;
+}
+
+def tag_left_zero : tag(typed(NatSum, left(0))) = 1 {
+  exact refl(1);
+}
+`, "sums");
+  const kernel = program.kernel;
+  for (const name of ["sums__left_zero", "sums__tag_left_zero"]) {
+    const { value, type } = kernel.definition(kernel.definitions.get(name));
+    const driver = new InstructionDriver(kernel);
+    const judgement = driver.graph.judgement(driver.check(value, type));
+    // The injection is built at Nat + Nat, and both its annotation and its
+    // type are rewritten back to NatSum.
+    assert.ok(driver.alpha(judgement.term, value), name);
+    assert.ok(driver.alpha(judgement.type, type), name);
+  }
+});
+
+test("search: a composition whose face holds contracts by one step, and a failed congruence is not retried", async t => {
+  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  for (const [module, name, rule] of [
+    // Unfolding the other side here would compute 10! in unary.
+    ["binary_univalence_transfer", "binary_univalence_transfer__binary_factorial_ten_via_nat", "face"],
+    // A group and its lift to U1 agree by projections, not by their pairs'
+    // annotations; congruence on the pairs fails, and must not repeat.
+    ["quotient_group_universal", "quotient_group_universal__killing_subgroup_respects_cosets_at", null]]) {
+    const program = new CubicalProgram(await createCubical(), readArchive);
+    t.after(() => program.dispose());
+    await program.check(await readArchive(module), module);
+    const kernel = program.kernel, { value, type } = kernel.definition(kernel.definitions.get(name));
+    const driver = new InstructionDriver(kernel), rules = new Set();
+    for (const stack = [driver.check(value, type)], seen = new Set(); stack.length;) {
+      const id = stack.pop();
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const judgement = driver.graph.judgement(id);
+      if (judgement.stepRule) rules.add(judgement.stepRule);
+      stack.push(...judgement.premises);
+    }
+    if (rule) assert.ok(rules.has(rule), `${name} uses a ${rule} step`);
+  }
 });

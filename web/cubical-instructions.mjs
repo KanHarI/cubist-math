@@ -19,7 +19,7 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   replace: "HighSubs", eta: "Eta", side: "DefEqExt", symmetry: "DefEqSwp", transitivity: "DefEqTrans",
   convert: "Conv", lift: "Lift", endpoint: "Endpoint", pathAt: "PathElim", system: "CompBase", systemTube: "CompTube",
   comp: "Comp" };
-export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf"];
+export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
 const EXTEND = 100, DIMENSION = 101;

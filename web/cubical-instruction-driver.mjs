@@ -194,7 +194,12 @@ export class InstructionDriver {
       return g.path(dimension, family, this.convertTo(derive(b), g.endpoint(family, dimension, 0)),
         this.convertTo(derive(c), g.endpoint(family, dimension, 1)));
     }
-    case "PLam": return g.pathLambda(g.dimension(n.payload), derive(b));
+    case "PLam": {
+      // At its own family, so that the derived term is the source's: the
+      // kernel annotates a path lambda with its body's type.
+      const dimension = g.dimension(n.payload), body = derive(b);
+      return g.pathLambda(dimension, a ? this.convertTo(body, this.asType(derive(a))) : body);
+    }
     case "PApp": {
       const path = this.shape(this.focus(derive(a), "type"), "Path");
       const point = this.point(n.payload);
@@ -229,14 +234,20 @@ export class InstructionDriver {
 
   // A constructor's annotation as a type former of the given kind: the
   // annotation itself, or its reduct with the equality back to it, so the
-  // constructed term can be given the annotation as its type again.
+  // constructed term can be given the annotation again, in its term (the
+  // annotation is its first operand) and as its type. A derived term must be
+  // the syntax it was derived from, or a type derived as evidence would not
+  // be the type it stands for.
   former(annotation, kind) {
     if (this.node(this.statement(annotation).term).kind === kind) return [annotation, null];
     const reduct = this.focus(this.graph.refl(annotation), "other");
     this.shape(reduct, kind);
     return [this.graph.side(reduct.ref.id, "other"), this.graph.symmetry(reduct.ref.id)];
   }
-  restore(judgement, back) { return back ? this.graph.convert(judgement, back) : judgement; }
+  restore(judgement, back) {
+    if (!back) return judgement;
+    return this.graph.convert(this.graph.replace(judgement, "term", [0], back), back);
+  }
 
   // A motive over `domain`: a family P : Π(x : A). U(l) with A matching the
   // domain's type judgement.
@@ -376,16 +387,22 @@ export class InstructionDriver {
   // heads part by part when their parts are equal, and otherwise take
   // weak-head steps on either side.
   agree(a, b, terms = null, dims = null, budget = { left: this.fuel }) {
+    // Pairs of terms congruence already failed on. A failed attempt can leave
+    // an eta expansion that a step contracts again, so without this the same
+    // attempt would repeat until the budget ran out.
+    const failed = new Set();
     for (;;) {
       if (--budget.left < 0) return false;
       const x = this.subterm(a), y = this.subterm(b);
       if (this.alpha(x, y, terms, dims)) return true;
       const nx = this.node(x), ny = this.node(y);
-      if (nx.kind === ny.kind && this.sameHead(nx, ny, terms, dims) && this.partsEqual(nx, ny, terms, dims) &&
-          this.agreeParts(a, b, nx, terms, dims, budget))
-        return true;
-      // Computation before unfolding: beta, iota and path steps first. Then
-      // unfold the later definition, as it is likely defined through the
+      if (nx.kind === ny.kind && !failed.has(`${x},${y}`) && this.sameHead(nx, ny, terms, dims) &&
+          this.partsEqual(nx, ny, terms, dims)) {
+        if (this.agreeParts(a, b, nx, terms, dims, budget)) return true;
+        failed.add(`${x},${y}`);
+      }
+      // Computation before unfolding: beta, iota, path and face steps first.
+      // Then unfold the later definition, as it is likely defined through the
       // other, and both when they are the same (lazy delta reduction).
       // A congruence attempt that failed may have rewritten parts: read again.
       const x2 = this.subterm(a), y2 = this.subterm(b);
@@ -473,6 +490,14 @@ export class InstructionDriver {
         return { path: [], rule: "path" };
       return under(0, this.headStep(n.children[0]));
     }
+    // A composition with a tube on a face that holds is that tube at 1. Any
+    // other composition computes by its type, which only Whnf takes.
+    case "Comp": case "HComp":
+      for (let tube = n.children[1]; tube; tube = this.node(tube).children[1]) {
+        const { clauses } = this.kernel.inspectFormula(this.node(tube).payload);
+        if (clauses.length === 1 && !clauses[0][0] && !clauses[0][1]) return { path: [], rule: "face" };
+      }
+      return null;
     default: return null;
     }
   }

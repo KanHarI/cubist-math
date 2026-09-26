@@ -1170,6 +1170,19 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
         return ck_normal(k, term);
     case CC_STEP_WHNF:
         return ck_whnf(k, term);
+    case CC_STEP_FACE:
+        /* comp^i A [1 ↦ u, …] a0 is u(1), and so is hcomp: the first rule of
+         * the term checker's composition reduction, alone. */
+        if (n.kind == CC_COMP || n.kind == CC_HCOMP) {
+            for (cc_term cursor = n.child[1]; cursor; cursor = k->nodes[cursor].child[1]) {
+                cc_node tube = k->nodes[cursor];
+                const cc_formula *face = cc_kernel_get_formula(k, tube.payload);
+                if (face && face->sort == CC_FACE && face->length == 1 && !face->clauses[0].positive &&
+                    !face->clauses[0].negative)
+                    return ck_endpoint_term(k, tube.child[0], n.payload, 1);
+            }
+        }
+        return ck_fail(k, "A face step needs a composition with a tube on a face that holds."), 0;
     }
     return ck_fail(k, "Unknown step rule."), 0;
 }
