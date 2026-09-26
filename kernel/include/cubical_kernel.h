@@ -112,12 +112,14 @@ typedef enum {
     CC_INSTR_PATH, CC_INSTR_PATH_LAMBDA, CC_INSTR_PATH_APPLY, CC_INSTR_DEFINE, CC_INSTR_LOOKUP,
     CC_INSTR_REFL, CC_INSTR_STEP, CC_INSTR_REPLACE, CC_INSTR_ETA, CC_INSTR_SIDE,
     CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT,
-    CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP, CC_INSTR_SYSTEM_OVERLAP
+    CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP, CC_INSTR_SYSTEM_OVERLAP,
+    CC_INSTR_PUSHOUT, CC_INSTR_PUSH_POINT, CC_INSTR_PUSH_PATH, CC_INSTR_PUSH_ELIM
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
     CC_STEP_DELTA,     /* a definition to its checked value */
-    CC_STEP_IOTA,      /* an eliminator or projection on a constructor */
+    CC_STEP_IOTA,      /* an eliminator or projection on a constructor, and a
+                        * pushout path at an endpoint */
     CC_STEP_PATH,      /* a path lambda applied at an interval point, or a
                         * path applied at an endpoint of its annotated type */
     CC_STEP_NORMALIZE, /* the normal form, by the kernel's fixed strategy */
@@ -187,6 +189,20 @@ cc_judgement_id cc_instr_system_tube(cc_kernel *, cc_judgement_id system, cc_for
 cc_judgement_id cc_instr_system_overlap(cc_kernel *, cc_judgement_id system, uint32_t position,
                                         cc_judgement_id agreement);
 cc_judgement_id cc_instr_comp(cc_kernel *, cc_judgement_id system);
+/* Pushouts (CHM §3.3.5). Pushout gives Pushout(C, A, B, maps) : U from
+ * C, A, B : U and maps : Σ(f : C → A). C → B. PushPoint gives inl(a) or inr(b)
+ * of a pushout type P (right selects inr); PushPath gives push^r(c) : P for
+ * c : C at an interval formula r. PushElim, from a motive M : Π(z : P). U(l)
+ * and its left, right and bridge cases, gives the eliminator :
+ * Π(z : P). M(z); the bridge is a dependent path over push(c) from the left
+ * case at f(c) to the right case at g(c). Types are compared syntactically;
+ * P must be a pushout type as written. */
+cc_judgement_id cc_instr_pushout(cc_kernel *, cc_judgement_id source, cc_judgement_id left,
+                                 cc_judgement_id right, cc_judgement_id maps);
+cc_judgement_id cc_instr_push_point(cc_kernel *, cc_judgement_id type, cc_judgement_id value, bool right);
+cc_judgement_id cc_instr_push_path(cc_kernel *, cc_judgement_id type, cc_judgement_id value, cc_formula_id interval);
+cc_judgement_id cc_instr_push_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id left,
+                                   cc_judgement_id right, cc_judgement_id bridge);
 /* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
  * substitution preserves typing. No other entry may depend on i. */
 cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);

@@ -256,6 +256,31 @@ int main(void) {
     cc_judgement_id at_face = OK(cc_instr_endpoint(k, composed, i, 1));
     assert(other_of(STEP(OK(cc_instr_refl(k, at_face)), CC_STEP_FACE, ROOT)) == term_of(nv));
 
+    /* The pushout of Nat ← Unit → Nat along 0 and 0: points, a path between
+     * them, and the path at an endpoint computing to a point. */
+    cc_judgement_id unit_type = OK(cc_instr_unit(k));
+    cc_entry_id u0 = OK(cc_instr_extend(k, unit_type, 30));
+    cc_judgement_id constant = OK(cc_instr_lambda(k, u0, zero));
+    cc_entry_id f0 = OK(cc_instr_extend(k, OK(cc_instr_pi(k, u0, nat)), 31));
+    cc_judgement_id span_type = OK(cc_instr_sigma(k, f0, OK(cc_instr_pi(k, u0, nat))));
+    cc_judgement_id maps = OK(cc_instr_pair(k, span_type, constant, constant));
+    rejects(cc_instr_pushout(k, unit_type, nat, nat, zero), "maps of a pushout");
+    cc_judgement_id pushout = OK(cc_instr_pushout(k, unit_type, nat, nat, maps));
+    assert(kind(term_of(pushout)) == CC_PUSHOUT && kind(type_of(pushout)) == CC_U);
+    cc_judgement_id inl = OK(cc_instr_push_point(k, pushout, zero, false));
+    assert(kind(term_of(inl)) == CC_PUSH_LEFT && type_of(inl) == term_of(pushout));
+    rejects(cc_instr_push_point(k, pushout, OK(cc_instr_point(k)), true), "wrong type");
+    rejects(cc_instr_push_point(k, nat, zero, false), "pushout type");
+    cc_init(&formula, CC_INTERVAL);
+    assert(cc_generator(&formula, 0, true) == CC_OK);
+    cc_formula_id along = cc_kernel_formula(k, &formula);
+    cc_clear(&formula);
+    cc_judgement_id push = OK(cc_instr_push_path(k, pushout, OK(cc_instr_point(k)), along));
+    assert(context_size(push) == 1 && kind(term_of(push)) == CC_PUSH_PATH);
+    cc_judgement_id at_start = OK(cc_instr_endpoint(k, push, i, 0));
+    assert(kind(other_of(STEP(OK(cc_instr_refl(k, at_start)), CC_STEP_IOTA, ROOT))) == CC_PUSH_LEFT);
+    rejects(cc_instr_step(k, OK(cc_instr_refl(k, push)), 1, ROOT, CC_STEP_IOTA), "Iota needs");
+
     /* Mismatches are reported with both types. */
     cc_term found, wanted;
     assert(!cc_instr_apply(k, add, OK(cc_instr_variable(k, w))));

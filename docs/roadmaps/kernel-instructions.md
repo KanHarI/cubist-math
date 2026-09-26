@@ -10,19 +10,19 @@ which it does not change:
   - the driver `web/cubical-instruction-driver.mjs`;
   - the workbench's **Kernel graph** view (`web/cubical-graph-view.mjs`);
   - the Elaboration panels, which now show the instruction derivation.
-- Stage 3 is under way: paths at any interval formula (`PathAt`), and
+- Stage 3 is under way: paths at any interval formula (`PathAt`),
   composition, with an equality on each overlap of two tubes' faces
-  (`System`, `SystemTube`, `SystemOverlap`, `Comp`).
+  (`System`, `SystemTube`, `SystemOverlap`, `Comp`), and pushouts
+  (`Pushout`, `PushPoint`, `PushPath`, `PushElim`).
 - In instruction mode, the first proof checks, and so does all of
   `library/naturals`. So does every one of the 41 definitions behind the
-  archive's Euclid theorem, and 3843 of the archive's 3938 definitions
-  (97.6%), in 13 s for the whole archive; `node tools/instruction-coverage.mjs`
+  archive's Euclid theorem, and 3911 of the archive's 3938 definitions
+  (99.3%), in 14 s for the whole archive; `node tools/instruction-coverage.mjs`
   measures it again. Every derived term is its source syntax, annotations
   included. The rest need kernel rules, not search:
 
   | Need | Definitions |
   | --- | --- |
-  | Pushouts | 68 |
   | W types | 18 |
   | Glue | 8 |
   | `HComp` | 1 |
@@ -158,6 +158,16 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
     closes the system. The term checker asks the same, of its conversion.
   - `Comp` closes the system into `comp … : A(1)` and discharges `i`.
   - `PathAt` applies a path at any interval formula, such as `1 - i`.
+- **Pushouts** (CHM §3.3.5): `Pushout` forms `Pushout(C, A, B, (f, g))`
+  from `C, A, B : U` and the maps, a pair `C → A`, `C → B`. `PushPoint` gives
+  `inl(a)` or `inr(b)`, `PushPath` gives `push^r(c)` at an interval formula
+  `r`, and `PushElim` gives the dependent eliminator from a motive and its
+  left, right and bridge cases, the bridge a dependent path over `push(c)`
+  from the left case at `f(c)` to the right case at `g(c)`. The pushout type
+  must be one as written, so the driver reduces an annotation such as
+  `Susp(A)` first, as it does for a pair's. `Iota` computes the eliminator
+  on a point or a path, and a path at an endpoint to a point; that step
+  reads the maps off the pushout type's weak head, which involves no choice.
 
 Highlighting stays in the kernel on purpose: a short targeted reduction or
 rewrite can replace normalizing a whole type.
@@ -308,7 +318,8 @@ reconstructed from the term checker's trace (#36).
 3. **W types and the cubical rules**, under way:
    - done: paths at any interval formula;
    - done: composition, with an equality on each overlap of two faces;
-   - remaining: `HComp`, `Trans`, `Glue`, pushouts and W types;
+   - done: pushouts;
+   - remaining: `HComp`, `Trans`, `Glue` and W types;
    - remaining: the archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the
    trusted kernel. Unfolding hints leave the kernel.

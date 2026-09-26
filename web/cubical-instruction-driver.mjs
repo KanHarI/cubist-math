@@ -89,6 +89,25 @@ export class InstructionDriver {
     if (!this.scopeKeys.has(scope)) this.scopeKeys.set(scope, [...scope].map(([symbol, entry]) => `${symbol}:${entry}`).sort().join(","));
     return this.scopeKeys.get(scope);
   }
+  // A binder name no term uses: numbered per kernel, as fresh entries are.
+  freshSymbol(stem) {
+    const counters = this.kernel.freshNames ??= new Map(), suffix = (counters.get(stem) ?? 0) + 1;
+    counters.set(stem, suffix);
+    return this.kernel.symbol(`${stem}'${suffix}`);
+  }
+  // An interval index no judgement among `ids` has in its context, so none of
+  // their terms uses it.
+  freeDimension(ids) {
+    const used = new Set();
+    for (const id of ids)
+      for (const entry of this.statement(id).context) {
+        const info = this.graph.entry(entry);
+        if (info.dimension) used.add(info.symbol);
+      }
+    let dimension = 0;
+    while (used.has(dimension)) dimension++;
+    return dimension;
+  }
   // A context entry for a binder: its own name unless another entry of a
   // different type has it, then a fresh variant. Fresh names are numbered
   // per kernel, so finding one never searches.
@@ -244,6 +263,46 @@ export class InstructionDriver {
         tubes.push({ clause, value });
       }
       return g.comp(system);
+    }
+    case "Pushout": {
+      // The maps are a pair C → A, C → B, derived as that type's syntax.
+      const [source, left, right] = [a, b, c].map(child => this.asType(derive(child)));
+      const x = this.freshSymbol("x"), f = this.freshSymbol("f"), k = this.kernel;
+      const span = k.term("Sigma", f, k.term("Pi", x, a, b), k.term("Pi", x, a, c));
+      return g.pushout(source, left, right, this.convertTo(derive(d), this.asType(derive(span))));
+    }
+    case "PushLeft": case "PushRight": case "PushPath": {
+      const [type, back] = this.former(this.asType(derive(a)), "Pushout");
+      const slot = { PushPath: 0, PushLeft: 1, PushRight: 2 }[n.kind];
+      const value = this.convertTo(derive(b), this.evidence(this.focus(type, "term", [slot])));
+      return this.restore(n.kind === "PushPath" ? g.pushPath(type, value, n.payload)
+        : g.pushPoint(type, value, n.kind === "PushRight"), back);
+    }
+    case "PushElim": {
+      // A motive over a pushout type P = Pushout(C, A, B, (f, g)), and each
+      // case at the type the kernel asks for, derived from its syntax.
+      const motive = this.focus(this.shape(this.focus(derive(a), "type"), "Pi"), "type");
+      this.shape(this.child(motive, 0), "Pushout");
+      this.shape(this.child(motive, 1), "U");
+      const k = this.kernel, M = this.statement(motive.ref.id).term, P = this.subterm(this.child(motive, 0));
+      const [C, A, B, maps] = this.node(P).children;
+      const point = (kind, domain, stem) => {
+        const x = this.freshSymbol(stem);
+        return k.term("Pi", x, domain, k.term("App", 0, M, k.term(kind, 0, P, k.term("Var", x))));
+      };
+      // Built from judgements, the syntax names their entries: derive it in
+      // their scope, not the source's.
+      const own = this.scope(motive.ref.id);
+      const left = this.convertTo(derive(b), this.asType(derive(point("PushLeft", A, "a"), own)));
+      const right = this.convertTo(derive(c), this.asType(derive(point("PushRight", B, "b"), own)));
+      const [l, r] = [left, right].map(id => this.statement(id).term);
+      const joint = new Map([...own, ...this.scope(left), ...this.scope(right)]);
+      const dimension = this.freeDimension([motive.ref.id, left, right]), x = this.freshSymbol("c");
+      const at = k.formula("interval", [[1n << BigInt(dimension), 0n]]), cv = k.term("Var", x);
+      const bridge = k.term("Pi", x, C, k.term("Path", dimension, k.term("App", 0, M, k.term("PushPath", at, P, cv)),
+        k.term("App", 0, l, k.term("App", 0, k.term("Fst", 0, maps), cv)),
+        k.term("App", 0, r, k.term("App", 0, k.term("Snd", 0, maps), cv))));
+      return g.pushElim(motive.ref.id, left, right, this.convertTo(derive(d), this.asType(derive(bridge, joint))));
     }
     default: throw unsupported(n.kind);
     }
@@ -486,8 +545,18 @@ export class InstructionDriver {
     const iota = { path: [], rule: "iota" };
     switch (n.kind) {
     case "DefRef": return { path: [], rule: "delta" };
-    case "App":
-      return this.node(n.children[0]).kind === "Lam" ? { path: [], rule: "beta" } : under(0, this.headStep(n.children[0]));
+    case "App": {
+      const fn = this.node(n.children[0]).kind;
+      if (fn === "Lam") return { path: [], rule: "beta" };
+      // The pushout eliminator computes on a point or a path.
+      if (fn === "PushElim") {
+        const kind = this.node(n.children[1]).kind;
+        return ["PushLeft", "PushRight", "PushPath"].includes(kind) ? iota : under(1, this.headStep(n.children[1]));
+      }
+      return under(0, this.headStep(n.children[0]));
+    }
+    // A pushout path at an endpoint is a point.
+    case "PushPath": return this.point(n.payload).endpoint !== undefined ? iota : null;
     case "Fst": case "Snd":
       return this.node(n.children[0]).kind === "Pair" ? iota : under(0, this.headStep(n.children[0]));
     case "NatRec": {

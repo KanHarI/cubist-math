@@ -258,3 +258,30 @@ test("composition with overlapping faces: each overlap has its equality, and a t
   }
   assert.deepEqual(overlaps.sort(), [0, 1]);
 });
+
+test("pushouts: the suspension, its points and meridian, and its induction principle derive", async t => {
+  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const program = new CubicalProgram(await createCubical(), readArchive);
+  t.after(() => program.dispose());
+  await program.check(await readArchive("suspension_types"), "suspension_types");
+  const kernel = program.kernel, rules = new Set(), failures = [];
+  for (const [name, reference] of kernel.definitions) {
+    if (!name.startsWith("suspension_types__")) continue;
+    const { value, type } = kernel.definition(reference);
+    const driver = new InstructionDriver(kernel);
+    try {
+      const root = driver.graph.judgement(driver.check(value, type));
+      assert.ok(driver.alpha(root.term, value) && driver.alpha(root.type, type), name);
+      for (const stack = [root.id], seen = new Set(); stack.length;) {
+        const id = stack.pop();
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const judgement = driver.graph.judgement(id);
+        rules.add(judgement.rule);
+        stack.push(...judgement.premises);
+      }
+    } catch (error) { failures.push(`${name}: ${error.message}`); }
+  }
+  assert.deepEqual(failures, []);
+  for (const rule of ["pushout", "pushPoint", "pushPath", "pushElim"]) assert.ok(rules.has(rule), rule);
+});

@@ -8,7 +8,8 @@ import { KernelError } from "./cubical-kernel.mjs";
 export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "unit", "point", "unitElim",
   "void", "abort", "sum", "inject", "sumElim", "variable", "pi", "lambda", "apply", "sigma", "pair", "first",
   "second", "domain", "family", "path", "pathLambda", "pathApply", "define", "lookup", "refl", "step", "replace",
-  "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp", "systemOverlap"];
+  "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp", "systemOverlap",
+  "pushout", "pushPoint", "pushPath", "pushElim"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
   natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
@@ -18,7 +19,8 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   pathApply: "PathElim", define: "Def", lookup: "DefLookup", refl: "DefEqRefl", step: "Step",
   replace: "HighSubs", eta: "Eta", side: "DefEqExt", symmetry: "DefEqSwp", transitivity: "DefEqTrans",
   convert: "Conv", lift: "Lift", endpoint: "Endpoint", pathAt: "PathElim", system: "CompBase", systemTube: "CompTube",
-  comp: "Comp", systemOverlap: "CompOverlap" };
+  comp: "Comp", systemOverlap: "CompOverlap", pushout: "PushoutForm", pushPoint: "PushoutIntro",
+  pushPath: "PushoutPath", pushElim: "PushoutElim" };
 export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
@@ -87,6 +89,10 @@ export class InstructionGraph {
   // The last tube agrees with the tube at `position` where their faces meet.
   systemOverlap(system, position, agreement) { return this.issue("systemOverlap", system, position, agreement); }
   comp(system) { return this.issue("comp", system); }
+  pushout(source, left, right, maps) { return this.issue("pushout", source, left, right, maps); }
+  pushPoint(type, value, right) { return this.issue("pushPoint", type, value, right ? 1 : 0); }
+  pushPath(type, value, interval) { return this.issue("pushPath", type, value, interval); }
+  pushElim(motive, left, right, bridge) { return this.issue("pushElim", motive, left, right, bridge); }
   define(name, closed) { return this.issue("define", this.kernel.symbol(name), closed); }
   lookup(reference) { return this.issue("lookup", reference); }
   refl(typing) { return this.issue("refl", typing); }

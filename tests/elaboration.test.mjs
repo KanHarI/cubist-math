@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { elaboration } from "../web/cubical-elaboration.mjs";
+import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 
 const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
 const source = `import naturals;
@@ -82,10 +83,17 @@ test("the elaboration view shows each declaration's type, term and the kernel's 
 test("a declaration outside instruction mode shows the kernel's traced check instead", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  // Pushouts are not in instruction mode yet.
   await program.check("def Suspension(A : U0) := Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);\n", "suspension");
-  const [suspension] = elaboration(program, "suspension");
+  // Whatever the driver cannot derive yet; here, it is made to fail.
+  const check = InstructionDriver.prototype.check;
+  InstructionDriver.prototype.check = () => { throw new Error("Pushout is not in instruction mode yet."); };
+  let suspension;
+  try { [suspension] = elaboration(program, "suspension"); }
+  finally { InstructionDriver.prototype.check = check; }
   assert.equal(suspension.derivation.source, "trace");
   assert.match(suspension.derivation.reason, /Pushout is not in instruction mode yet/);
   assert.ok(suspension.derivation.steps.length > 0);
+  // In instruction mode, the same declaration's derivation is the driver's.
+  const [derived] = elaboration(program, "suspension");
+  assert.notEqual(derived.derivation.source, "trace");
 });
