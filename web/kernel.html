@@ -37,52 +37,52 @@
         </section>
         <section id="opcodes">
           <h2>Opcodes</h2>
-          <p>Every native node has one of these opcodes. The operands are the node's children, in slot order; the payload is the value stored in the node itself.</p>
+          <p>Every native node has one of these opcodes. The operands are the node’s children, in slot order; the payload is the value stored in the node itself. Checking a node applies one typing rule, named here as in THTH, the forward proof engine this kernel descends from. The remaining rules are still to be written.</p>
           <div class="table-scroll"><table>
-            <thead><tr><th>Opcode</th><th>Number</th><th>Operands</th><th>Payload</th><th>Meaning</th></tr></thead>
+            <thead><tr><th>Opcode</th><th>Number</th><th>Operands</th><th>Payload</th><th>THTH rule</th></tr></thead>
             <tbody>
-          <tr><td><code>CC_U</code></td><td>1</td><td>—</td><td>universe level</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_VAR</code></td><td>2</td><td>—</td><td>symbol</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_PI</code></td><td>3</td><td>domain, body</td><td>bound symbol</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_LAM</code></td><td>4</td><td>domain, body</td><td>bound symbol</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_APP</code></td><td>5</td><td>function, argument</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_SIGMA</code></td><td>6</td><td>domain, body</td><td>bound symbol</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_PAIR</code></td><td>7</td><td>type, first, second</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_FST</code></td><td>8</td><td>pair</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_SND</code></td><td>9</td><td>pair</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_NAT</code></td><td>10</td><td>—</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_ZERO</code></td><td>11</td><td>—</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_SUCC</code></td><td>12</td><td>value</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_NATREC</code></td><td>13</td><td>motive, zero, step, value</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_UNIT</code></td><td>14</td><td>—</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_POINT</code></td><td>15</td><td>—</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_PATH</code></td><td>16</td><td>family, left, right</td><td>dimension</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_PLAM</code></td><td>17</td><td>family, body</td><td>dimension</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_PAPP</code></td><td>18</td><td>path, checked annotation</td><td>formula</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_COMP</code></td><td>19</td><td>family, tubes, base</td><td>dimension</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_U</code></td><td>1</td><td>—</td><td>universe level</td><td><code>UIntro</code></td></tr>
+          <tr><td><code>CC_VAR</code></td><td>2</td><td>—</td><td>symbol</td><td><code>Vble</code></td></tr>
+          <tr><td><code>CC_PI</code></td><td>3</td><td>domain, body</td><td>bound symbol</td><td><code>PiForm</code></td></tr>
+          <tr><td><code>CC_LAM</code></td><td>4</td><td>domain, body</td><td>bound symbol</td><td><code>PiIntro</code></td></tr>
+          <tr><td><code>CC_APP</code></td><td>5</td><td>function, argument</td><td>—</td><td><code>PiElim</code></td></tr>
+          <tr><td><code>CC_SIGMA</code></td><td>6</td><td>domain, body</td><td>bound symbol</td><td><code>SigmaForm</code></td></tr>
+          <tr><td><code>CC_PAIR</code></td><td>7</td><td>type, first, second</td><td>—</td><td><code>SigmaIntro</code></td></tr>
+          <tr><td><code>CC_FST</code></td><td>8</td><td>pair</td><td>—</td><td><code>SigmaElim</code></td></tr>
+          <tr><td><code>CC_SND</code></td><td>9</td><td>pair</td><td>—</td><td><code>SigmaElim</code></td></tr>
+          <tr><td><code>CC_NAT</code></td><td>10</td><td>—</td><td>—</td><td><code>NatForm</code></td></tr>
+          <tr><td><code>CC_ZERO</code></td><td>11</td><td>—</td><td>—</td><td><code>NatIntroZ</code></td></tr>
+          <tr><td><code>CC_SUCC</code></td><td>12</td><td>value</td><td>—</td><td><code>NatIntroS</code></td></tr>
+          <tr><td><code>CC_NATREC</code></td><td>13</td><td>motive, zero, step, value</td><td>—</td><td><code>NatElim</code></td></tr>
+          <tr><td><code>CC_UNIT</code></td><td>14</td><td>—</td><td>—</td><td><code>UnitForm</code></td></tr>
+          <tr><td><code>CC_POINT</code></td><td>15</td><td>—</td><td>—</td><td><code>UnitIntro</code></td></tr>
+          <tr><td><code>CC_PATH</code></td><td>16</td><td>family, left, right</td><td>dimension</td><td><code>PathForm</code></td></tr>
+          <tr><td><code>CC_PLAM</code></td><td>17</td><td>family, body</td><td>dimension</td><td><code>PathIntro</code></td></tr>
+          <tr><td><code>CC_PAPP</code></td><td>18</td><td>path, checked annotation</td><td>formula</td><td><code>PathElim</code></td></tr>
+          <tr><td><code>CC_COMP</code></td><td>19</td><td>family, tubes, base</td><td>dimension</td><td><code>Comp</code></td></tr>
           <tr><td><code>CC_TUBE</code></td><td>20</td><td>partial term, next tube</td><td>formula</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_VOID</code></td><td>21</td><td>—</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_ABORT</code></td><td>22</td><td>type, impossible</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_W</code></td><td>23</td><td>domain, body</td><td>bound symbol</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_SUP</code></td><td>24</td><td>W type, label, children</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_WREC</code></td><td>25</td><td>motive, step, value</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_SUM</code></td><td>26</td><td>left, right</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_INL</code></td><td>27</td><td>sum type, value</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_INR</code></td><td>28</td><td>sum type, value</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_SUMREC</code></td><td>29</td><td>motive, left, right, value</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_UNITREC</code></td><td>30</td><td>motive, point, value</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_GLUE</code></td><td>31</td><td>base, system</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_VOID</code></td><td>21</td><td>—</td><td>—</td><td><code>VoidForm</code></td></tr>
+          <tr><td><code>CC_ABORT</code></td><td>22</td><td>type, impossible</td><td>—</td><td><code>VoidElim</code></td></tr>
+          <tr><td><code>CC_W</code></td><td>23</td><td>domain, body</td><td>bound symbol</td><td><code>WForm</code></td></tr>
+          <tr><td><code>CC_SUP</code></td><td>24</td><td>W type, label, children</td><td>—</td><td><code>WIntro</code></td></tr>
+          <tr><td><code>CC_WREC</code></td><td>25</td><td>motive, step, value</td><td>—</td><td><code>WElim</code></td></tr>
+          <tr><td><code>CC_SUM</code></td><td>26</td><td>left, right</td><td>—</td><td><code>SumForm</code></td></tr>
+          <tr><td><code>CC_INL</code></td><td>27</td><td>sum type, value</td><td>—</td><td><code>SumIntroL</code></td></tr>
+          <tr><td><code>CC_INR</code></td><td>28</td><td>sum type, value</td><td>—</td><td><code>SumIntroR</code></td></tr>
+          <tr><td><code>CC_SUMREC</code></td><td>29</td><td>motive, left, right, value</td><td>—</td><td><code>SumElim</code></td></tr>
+          <tr><td><code>CC_UNITREC</code></td><td>30</td><td>motive, point, value</td><td>—</td><td><code>UnitElim</code></td></tr>
+          <tr><td><code>CC_GLUE</code></td><td>31</td><td>base, system</td><td>—</td><td><code>GlueForm</code></td></tr>
           <tr><td><code>CC_GLUE_SYSTEM</code></td><td>32</td><td>partial type, equivalence, next</td><td>formula</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_GLUE_TERM</code></td><td>33</td><td>Glue type, base, tubes</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_UNGLUE</code></td><td>34</td><td>Glue type, value</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_DEFREF</code></td><td>35</td><td>—</td><td>registry entry</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_GLUE_TERM</code></td><td>33</td><td>Glue type, base, tubes</td><td>—</td><td><code>GlueIntro</code></td></tr>
+          <tr><td><code>CC_UNGLUE</code></td><td>34</td><td>Glue type, value</td><td>—</td><td><code>GlueElim</code></td></tr>
+          <tr><td><code>CC_DEFREF</code></td><td>35</td><td>—</td><td>registry entry</td><td><code>DefLookup</code></td></tr>
           <tr><td><code>CC_PUSHOUT</code></td><td>36</td><td>center, left, right, maps</td><td>—</td><td class="tbd">To be written.</td></tr>
           <tr><td><code>CC_PUSH_LEFT</code></td><td>37</td><td>pushout, value</td><td>—</td><td class="tbd">To be written.</td></tr>
           <tr><td><code>CC_PUSH_RIGHT</code></td><td>38</td><td>pushout, value</td><td>—</td><td class="tbd">To be written.</td></tr>
           <tr><td><code>CC_PUSH_PATH</code></td><td>39</td><td>pushout, value</td><td>formula</td><td class="tbd">To be written.</td></tr>
           <tr><td><code>CC_PUSH_ELIM</code></td><td>40</td><td>motive, left, right, bridge</td><td>—</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_HCOMP</code></td><td>41</td><td>type, tubes, base</td><td>dimension</td><td class="tbd">To be written.</td></tr>
-          <tr><td><code>CC_TRANS</code></td><td>42</td><td>family, face tube, base</td><td>dimension</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_HCOMP</code></td><td>41</td><td>type, tubes, base</td><td>dimension</td><td><code>HComp</code></td></tr>
+          <tr><td><code>CC_TRANS</code></td><td>42</td><td>family, face tube, base</td><td>dimension</td><td><code>Transp</code></td></tr>
             </tbody>
           </table></div>
         </section>
@@ -93,7 +93,7 @@
         </section>
         <section id="trace">
           <h2>The trace</h2>
-          <p>A caller can ask the kernel to record its actions while it checks a term (<code>cc_kernel_trace_start</code> in <code>kernel/include/cubical_kernel.h</code>). The trace observes the rules and never changes a judgement. The <em>Kernel check, step by step</em> view of the language reference’s Elaboration panels shows one line per event, named by its kind:</p>
+          <p>A caller can ask the kernel to record its actions while it checks a term (<code>cc_kernel_trace_start</code> in <code>kernel/include/cubical_kernel.h</code>). The trace observes the rules and never changes a judgement. The events are:</p>
           <div class="table-scroll"><table>
             <thead><tr><th>Line</th><th>Event</th><th>Recorded when</th><th>Operands</th></tr></thead>
             <tbody>
@@ -104,6 +104,7 @@
               <tr><td><code>REDUCE</code></td><td><code>CC_TRACE_REDUCE</code></td><td>A term is reduced to weak head normal form, unfolding definitions, and changes (<code>ck_whnf</code>). Reductions inside a conversion are not recorded.</td><td>the term and its weak head normal form</td></tr>
             </tbody>
           </table></div>
+          <p>The language reference’s Elaboration panels turn the trace into a forward derivation, in the style of THTH’s proofs. Each <code>INFER</code> event is one application of its node’s rule, completed after the rules for its operands, so the derivation lists judgements in the order they are derived. Each step names its rule and the earlier steps it uses. A comment above the step gives the judgement or context it derives, <code>{n : Nat} ⊢ succ(n) : Nat</code>, over only the part of the context it depends on. An <code>EXTEND</code> event is a <code>CtxExt</code> step, a <code>CONVERT</code> event between types that read differently is a <code>Conv</code> step, and a judgement derived twice is numbered once.</p>
         </section>
         <section id="conversion">
           <h2>Conversion</h2>

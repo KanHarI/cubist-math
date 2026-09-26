@@ -36,7 +36,7 @@ test("each proof statement reports its goal, the names in scope and the term it 
   ]);
 });
 
-test("the elaboration view shows each declaration's term and type as native opcode trees", async t => {
+test("the elaboration view shows each declaration's type, term and the kernel's derivation", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check(source, "first");
@@ -46,28 +46,26 @@ test("the elaboration view shows each declaration's term and type as native opco
     ["lt_succ", "forall n : Nat. lt(n, succ(n))", "fun (n : Nat) => (0, refl(succ(n)))"],
     ["exists_greater_number", "forall n : Nat. exists m : Nat. lt(n, m)", "fun (n : Nat) => (succ(n), lt_succ(n))"],
   ]);
-  const tree = lines => lines.map(line => `${"  ".repeat(line.depth)}${line.text}`);
-  assert.deepEqual(tree(view[0].kernelType), ["CC_PI n : CC_NAT", "  CC_PI m : CC_NAT", "    CC_U 0"]);
-  assert.deepEqual(tree(view[0].kernelTerm).slice(0, 2), ["CC_LAM n : CC_NAT", "  CC_LAM m : CC_NAT"]);
-  // exact checks its value at the goal through an ascription.
-  assert.ok(tree(view[0].kernelTerm).some(line => /CC_LAM ascription : CC_U 0/.test(line)));
-  assert.ok(tree(view[2].kernelTerm).some(line => /second: CC_APP \(CC_DEFREF lt_succ\) \(CC_VAR n\)/.test(line)));
-});
-
-test("the kernel's check is shown rule by rule, from the kernel's own trace", async t => {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
-  t.after(() => program.dispose());
-  await program.check(source, "first");
-  const [lt, ltSucc] = elaboration(program, "first");
-  const lines = derivation => derivation.lines.map(line => `${"  ".repeat(line.depth)}${line.kind} ${line.text}${line.result ? ` ⇒ ${line.result}` : ""}`);
-  const shown = lines(lt.derivation);
-  // Entering a binder: the domain is checked, then the context gains n : Nat.
-  assert.deepEqual(shown.slice(0, 3), ["infer CC_LAM n : CC_NAT ⇒ Nat -> Nat -> U0", "  infer CC_NAT ⇒ U0", "  extend n : Nat"]);
-  // The inferred type is compared with the declared one.
-  assert.equal(shown.at(-1), "convert Nat -> Nat -> U0 ≡ Nat -> Nat -> U0 ⇒ equal");
-  // lt unfolds when its value is checked as a pair.
-  assert.ok(lines(ltSucc.derivation).some(line => /reduce lt\(n, succ\(n\)\) ⟶ exists k : Nat\. succ\(k\) \+ n = succ\(n\)/.test(line)));
-  assert.ok(lt.derivation.rulesApplied > 20 && !lt.derivation.truncated);
+  const derivation = declaration => declaration.derivation.steps.map(step =>
+    `${step.number} ${step.rule}(${step.premises.join(", ")}) // ${step.comment}${step.scaffold ? " [elaborator]" : ""}`);
+  const ltSucc = derivation(view[1]);
+  // A forward derivation in the style of THTH: rules on earlier steps.
+  assert.deepEqual(ltSucc.slice(0, 7), [
+    "1 NatForm() // {} ⊢ Nat : U0",
+    "2 CtxExt(1) // {n : Nat}",
+    "3 DefLookup() // {} ⊢ lt : (Nat → (Nat → U0))",
+    "4 Vble(2) // {n : Nat} ⊢ n : Nat",
+    "5 PiElim(3, 4) // {n : Nat} ⊢ lt(n) : (Nat → U0)",
+    "6 NatIntroS(4) // {n : Nat} ⊢ succ(n) : Nat",
+    "7 PiElim(5, 6) // {n : Nat} ⊢ lt(n, succ(n)) : U0",
+  ]);
+  // refl(succ(n)) proves succ(0) + n = succ(n) by conversion.
+  assert.ok(ltSucc.includes("13 Conv(12) // {n : Nat} ⊢ (succ(n) =[Nat] succ(n)) ≡ (add(1, n) =[Nat] succ(n))"));
+  assert.ok(ltSucc.some(step => /^\d+ SigmaIntro\(7, 11, 12, 13\) \/\/ \{n : Nat\} ⊢ \(0 , refl\(succ\(n\)\)\) : lt\(n, succ\(n\)\)$/.test(step)));
+  // exact's ascription is the elaborator's, and marked; the proof is not.
+  assert.ok(ltSucc.some(step => /PiIntro.*λ \(ascription : lt\(n, succ\(n\)\)\)\. ascription.*\[elaborator\]$/.test(step)));
+  assert.ok(!ltSucc.some(step => /SigmaIntro.*\[elaborator\]/.test(step)));
+  assert.ok(view.every(declaration => !declaration.derivation.truncated));
   // Tracing turns check reuse off only while it runs.
   assert.equal(program.kernel.optimizations?.reuseChecks ?? true, true);
 });

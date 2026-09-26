@@ -145,57 +145,30 @@ function sourceCode(text) {
   render(code, text);
   return code;
 }
-function opcodeLines(lines) {
-  const pre = element("pre", "opcode-tree");
-  for (const { depth, text } of lines) {
-    const line = element("span", "opcode-line");
-    line.style.paddingLeft = `${depth * 1.5}em`;
-    for (const part of text.split(/(CC_[A-Z_]+)/)) if (part)
-      line.append(part.startsWith("CC_") ? element("span", "opcode", part) : document.createTextNode(part));
-    pre.append(line);
-  }
-  return pre;
-}
-// The kernel's check as a nested list, one action per line, named as the
-// kernel's trace names it (kernel.html#trace): INFER a node, EXTEND the
-// context, CONVERT a type to another, REDUCE a term, REUSED a checked node.
-const actions = {
-  infer: ["INFER", "CC_TRACE_INFER: apply the typing rule of this node"],
-  reused: ["REUSED", "CC_TRACE_REUSED: a node already checked in this context"],
-  extend: ["EXTEND", "CC_TRACE_EXTEND: the context gains an assumption"],
-  convert: ["CONVERT", "CC_TRACE_CONVERT: the type found must be convertible to the type expected"],
-  reduce: ["REDUCE", "CC_TRACE_REDUCE: reduction to weak head normal form, unfolding definitions"],
-};
-function derivationList({ lines, rulesApplied, truncated }) {
-  const panel = element("details", "kernel-derivation");
-  panel.append(element("summary", null, `Kernel check, step by step · ${rulesApplied} rules applied`));
+// The kernel's check as a forward derivation, in the style of THTH's proofs:
+// each step applies one rule (opcode) to earlier steps, under a comment with
+// the judgement or context it derives. Steps the elaborator added are marked.
+function derivationList({ steps, truncated }) {
+  const section = element("div", "kernel-derivation");
   const legend = element("p", "derivation-note");
-  const names = element("a", null, "kernel reference");
-  names.href = new URL("../kernel.html#trace", import.meta.url).href;
-  legend.append("Each line is one action of the kernel, named as its trace names it; the ", names, " lists them.");
-  const list = element("div", "derivation");
-  list.append(legend);
-  for (const line of lines) {
-    const row = element("div", `derivation-line derivation-${line.kind}`);
-    row.style.paddingLeft = `${line.depth * 1.25}em`;
-    const [mnemonic, meaning] = actions[line.kind];
-    const action = element("span", "derivation-action", mnemonic);
-    action.title = meaning;
-    row.append(action, " ");
-    if (line.kind === "infer" || line.kind === "reused") {
-      const node = element("code", "derivation-node");
-      for (const part of line.text.split(/(CC_[A-Z_]+)/)) if (part)
-        node.append(part.startsWith("CC_") ? element("span", "opcode", part) : document.createTextNode(part));
-      row.append(node);
-    } else row.append(sourceCode(line.text));
-    if (line.result) row.append(element("span", "derivation-arrow", line.kind === "convert" ? ": " : " ⇒ "),
-      line.kind === "convert" ? element("span", `derivation-${line.result}`, line.result) : sourceCode(line.result));
-    if (line.note) row.append(element("span", "derivation-note", ` ${line.note}`));
-    list.append(row);
+  const reference = element("a", null, "kernel reference");
+  reference.href = new URL("../kernel.html#trace", import.meta.url).href;
+  legend.append(`The kernel’s check as a forward derivation: each of the ${steps.length} steps applies one rule to earlier steps, `
+    + "and the comment above it is the judgement or context it derives. The ", reference, " explains the rules.");
+  const list = element("ol", "derivation");
+  for (const step of steps) {
+    const item = element("li", `derivation-step${step.scaffold ? " derivation-scaffold" : ""}`);
+    item.append(element("div", "derivation-comment", `// ${step.comment}`));
+    const line = element("div", "derivation-rule");
+    line.append(element("span", "derivation-number", String(step.number)), " ", element("span", "opcode", step.rule),
+      `(${step.premises.join(", ")})`);
+    if (step.scaffold) line.append(element("span", "derivation-added", step.scaffold));
+    item.append(line);
+    list.append(item);
   }
-  if (truncated) list.append(element("div", "derivation-note", "… the rest of the check is not shown."));
-  panel.append(list);
-  return panel;
+  section.append(legend, list);
+  if (truncated) section.append(element("p", "derivation-note", "… the rest of the derivation is not shown."));
+  return section;
 }
 function renderElaboration(panel, declarations) {
   const body = element("div", "elaboration-body");
@@ -232,17 +205,11 @@ function renderElaboration(panel, declarations) {
       row("Statements", list);
     } else row("Statements", element("span", null, "None: the value is given directly after :=."));
     row("Term", sourceCode(declaration.term));
-    const trees = element("div", "opcode-trees");
-    for (const [label, lines] of [["Kernel term", declaration.kernelTerm], ["Kernel type", declaration.kernelType]]) {
-      const column = element("div");
-      column.append(element("h5", null, label), opcodeLines(lines));
-      trees.append(column);
-    }
     const note = element("p", "elaboration-checked");
     const link = element("a", null, "For more info");
     link.href = kernelPage;
-    note.append("✓ The C kernel checked this term at this type. ", link, " on the native opcodes, see the kernel reference.");
-    row("Kernel", trees, note, derivationList(declaration.derivation));
+    note.append("✓ The C kernel checked this term at this type. ", link, " on the kernel and its rules, see the kernel reference.");
+    row("Kernel", derivationList(declaration.derivation), note);
     section.append(rows);
     body.append(section);
   }
