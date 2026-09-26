@@ -113,13 +113,15 @@ typedef enum {
     CC_INSTR_REFL, CC_INSTR_STEP, CC_INSTR_REPLACE, CC_INSTR_ETA, CC_INSTR_SIDE,
     CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT,
     CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP, CC_INSTR_SYSTEM_OVERLAP,
-    CC_INSTR_PUSHOUT, CC_INSTR_PUSH_POINT, CC_INSTR_PUSH_PATH, CC_INSTR_PUSH_ELIM
+    CC_INSTR_PUSHOUT, CC_INSTR_PUSH_POINT, CC_INSTR_PUSH_PATH, CC_INSTR_PUSH_ELIM,
+    CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
     CC_STEP_DELTA,     /* a definition to its checked value */
-    CC_STEP_IOTA,      /* an eliminator or projection on a constructor, and a
-                        * pushout path at an endpoint */
+    CC_STEP_IOTA,      /* an eliminator or projection on a constructor (W
+                        * recursion on sup included), and a pushout path
+                        * at an endpoint */
     CC_STEP_PATH,      /* a path lambda applied at an interval point, or a
                         * path applied at an endpoint of its annotated type */
     CC_STEP_NORMALIZE, /* the normal form, by the kernel's fixed strategy */
@@ -203,6 +205,15 @@ cc_judgement_id cc_instr_push_point(cc_kernel *, cc_judgement_id type, cc_judgem
 cc_judgement_id cc_instr_push_path(cc_kernel *, cc_judgement_id type, cc_judgement_id value, cc_formula_id interval);
 cc_judgement_id cc_instr_push_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id left,
                                    cc_judgement_id right, cc_judgement_id bridge);
+/* W types. W(x : L). B, from an entry x : L and B : U over it, like Π and Σ;
+ * Domain and Family give L and B[l/x]. Sup gives sup(l, c) : T for T a W type
+ * as written, l : L and c : Π(i : B[l/x]). T. WElim, from a motive
+ * M : Π(z : T). U(l), a step Π(l : L). Π(c : Π(i : B[l/x]). T).
+ * Π(h : Π(i : B[l/x]). M(c(i))). M(sup(l, c)), and a value v : T, gives
+ * WRec(M, step, v) : M(v). */
+cc_judgement_id cc_instr_w(cc_kernel *, cc_entry_id id, cc_judgement_id arities);
+cc_judgement_id cc_instr_sup(cc_kernel *, cc_judgement_id type, cc_judgement_id label, cc_judgement_id children);
+cc_judgement_id cc_instr_w_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id step, cc_judgement_id value);
 /* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
  * substitution preserves typing. No other entry may depend on i. */
 cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);

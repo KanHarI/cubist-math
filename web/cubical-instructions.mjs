@@ -9,7 +9,7 @@ export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "
   "void", "abort", "sum", "inject", "sumElim", "variable", "pi", "lambda", "apply", "sigma", "pair", "first",
   "second", "domain", "family", "path", "pathLambda", "pathApply", "define", "lookup", "refl", "step", "replace",
   "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp", "systemOverlap",
-  "pushout", "pushPoint", "pushPath", "pushElim"];
+  "pushout", "pushPoint", "pushPath", "pushElim", "w", "sup", "wElim"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
   natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
@@ -20,7 +20,7 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   replace: "HighSubs", eta: "Eta", side: "DefEqExt", symmetry: "DefEqSwp", transitivity: "DefEqTrans",
   convert: "Conv", lift: "Lift", endpoint: "Endpoint", pathAt: "PathElim", system: "CompBase", systemTube: "CompTube",
   comp: "Comp", systemOverlap: "CompOverlap", pushout: "PushoutForm", pushPoint: "PushoutIntro",
-  pushPath: "PushoutPath", pushElim: "PushoutElim" };
+  pushPath: "PushoutPath", pushElim: "PushoutElim", w: "WForm", sup: "WIntro", wElim: "WElim" };
 export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
@@ -93,6 +93,9 @@ export class InstructionGraph {
   pushPoint(type, value, right) { return this.issue("pushPoint", type, value, right ? 1 : 0); }
   pushPath(type, value, interval) { return this.issue("pushPath", type, value, interval); }
   pushElim(motive, left, right, bridge) { return this.issue("pushElim", motive, left, right, bridge); }
+  w(entry, arities) { return this.issue("w", entry, arities); }
+  sup(type, label, children) { return this.issue("sup", type, label, children); }
+  wElim(motive, step, value) { return this.issue("wElim", motive, step, value); }
   define(name, closed) { return this.issue("define", this.kernel.symbol(name), closed); }
   lookup(reference) { return this.issue("lookup", reference); }
   refl(typing) { return this.issue("refl", typing); }

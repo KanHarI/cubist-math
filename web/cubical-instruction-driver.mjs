@@ -152,12 +152,32 @@ export class InstructionDriver {
       return g.variable(scope.get(n.payload));
     }
     case "Succ": return g.succ(this.convertTo(derive(a), g.nat()));
-    case "Pi": case "Sigma": case "Lam": {
+    case "Pi": case "Sigma": case "W": case "Lam": {
       const entry = this.bind(n.payload, this.asType(derive(a)));
       const inner = new Map(scope).set(n.payload, entry);
       if (n.kind === "Lam") return g.lambda(entry, derive(b, inner));
       const body = this.asType(derive(b, inner));
-      return n.kind === "Pi" ? g.pi(entry, body) : g.sigma(entry, body);
+      return n.kind === "Pi" ? g.pi(entry, body) : n.kind === "Sigma" ? g.sigma(entry, body) : g.w(entry, body);
+    }
+    case "Sup": {
+      // sup(l, c) : T, with c : Π(i : B[l/x]). T.
+      const [type, back] = this.former(this.asType(derive(a)), "W");
+      const label = this.convertTo(derive(b), g.domain(type));
+      const index = this.freshEntry(g.family(type, label), "i");
+      return this.restore(g.sup(type, label, this.convertTo(derive(c), g.pi(index, type))), back);
+    }
+    case "WRec": {
+      // The step at Π(l : L). Π(c : Π(i : B[l]). W). Π(h : Π(i : B[l]).
+      // M(c(i))). M(sup(l, c)), built by instructions.
+      const value = this.shape(this.focus(derive(c), "type"), "W");
+      const type = this.evidence(this.focus(value, "type"));
+      const motive = this.motive(derive(a), type);
+      const label = this.freshEntry(g.domain(type), "l"), lv = g.variable(label);
+      const arity = g.family(type, lv), index = this.freshEntry(arity, "i");
+      const children = this.freshEntry(g.pi(index, type), "c"), cv = g.variable(children);
+      const hypothesis = this.freshEntry(g.pi(index, g.apply(motive, g.apply(cv, g.variable(index)))), "h");
+      const step = g.pi(label, g.pi(children, g.pi(hypothesis, g.apply(motive, g.sup(type, lv, cv)))));
+      return g.wElim(motive, this.convertTo(derive(b), step), value);
     }
     case "App": {
       // The argument's type and the function's domain agree in place, both
@@ -569,6 +589,8 @@ export class InstructionDriver {
     }
     case "UnitRec":
       return this.node(n.children[2]).kind === "Point" ? iota : under(2, this.headStep(n.children[2]));
+    case "WRec":
+      return this.node(n.children[2]).kind === "Sup" ? iota : under(2, this.headStep(n.children[2]));
     case "PApp": {
       if (this.node(n.children[0]).kind === "PLam") return { path: [], rule: "path" };
       const point = this.point(n.payload);

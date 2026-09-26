@@ -12,18 +12,18 @@ which it does not change:
   - the Elaboration panels, which now show the instruction derivation.
 - Stage 3 is under way: paths at any interval formula (`PathAt`),
   composition, with an equality on each overlap of two tubes' faces
-  (`System`, `SystemTube`, `SystemOverlap`, `Comp`), and pushouts
-  (`Pushout`, `PushPoint`, `PushPath`, `PushElim`).
+  (`System`, `SystemTube`, `SystemOverlap`, `Comp`), pushouts
+  (`Pushout`, `PushPoint`, `PushPath`, `PushElim`), and W types (`W`, `Sup`,
+  `WElim`).
 - In instruction mode, the first proof checks, and so does all of
   `library/naturals`. So does every one of the 41 definitions behind the
-  archive's Euclid theorem, and 3911 of the archive's 3938 definitions
-  (99.3%), in 14 s for the whole archive; `node tools/instruction-coverage.mjs`
+  archive's Euclid theorem, and 3929 of the archive's 3938 definitions
+  (99.8%), in 18 s for the whole archive; `node tools/instruction-coverage.mjs`
   measures it again. Every derived term is its source syntax, annotations
   included. The rest need kernel rules, not search:
 
   | Need | Definitions |
   | --- | --- |
-  | W types | 18 |
   | Glue | 8 |
   | `HComp` | 1 |
 
@@ -168,6 +168,11 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   `Susp(A)` first, as it does for a pair's. `Iota` computes the eliminator
   on a point or a path, and a path at an endpoint to a point; that step
   reads the maps off the pushout type's weak head, which involves no choice.
+- **W types:** `W` forms `W(x : L). B` from an entry and a family, as `Π` and
+  `Σ` do, and `Domain` and `Family` give `L` and `B[l/x]`. `Sup` gives
+  `sup(l, c)` of a W type as written, and `WElim` gives W recursion from a
+  motive, a step and a value, at the types the term checker states. `Iota`
+  computes recursion on `sup`.
 
 Highlighting stays in the kernel on purpose: a short targeted reduction or
 rewrite can replace normalizing a whole type.
@@ -318,8 +323,8 @@ reconstructed from the term checker's trace (#36).
 3. **W types and the cubical rules**, under way:
    - done: paths at any interval formula;
    - done: composition, with an equality on each overlap of two faces;
-   - done: pushouts;
-   - remaining: `HComp`, `Trans`, `Glue` and W types;
+   - done: pushouts and W types;
+   - remaining: `HComp`, `Trans` and `Glue`;
    - remaining: the archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the
    trusted kernel. Unfolding hints leave the kernel.

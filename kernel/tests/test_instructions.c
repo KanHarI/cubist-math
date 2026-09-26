@@ -281,6 +281,37 @@ int main(void) {
     assert(kind(other_of(STEP(OK(cc_instr_refl(k, at_start)), CC_STEP_IOTA, ROOT))) == CC_PUSH_LEFT);
     rejects(cc_instr_step(k, OK(cc_instr_refl(k, push)), 1, ROOT, CC_STEP_IOTA), "Iota needs");
 
+    /* The W type of trees with Unit many children at each label: W(x : Unit). Unit.
+     * A tree whose children are one tree, and W recursion computing on sup. */
+    cc_judgement_id trees = OK(cc_instr_w(k, u0, unit_type));
+    assert(kind(term_of(trees)) == CC_W && kind(type_of(trees)) == CC_U);
+    cc_judgement_id tt = OK(cc_instr_point(k));
+    assert(kind(term_of(OK(cc_instr_family(k, trees, tt)))) == CC_UNIT);
+    cc_entry_id sub = OK(cc_instr_extend(k, trees, 32));
+    cc_entry_id slot = OK(cc_instr_extend(k, unit_type, 33));
+    cc_judgement_id only = OK(cc_instr_lambda(k, slot, OK(cc_instr_variable(k, sub))));
+    rejects(cc_instr_sup(k, trees, zero, only), "label has the wrong type");
+    rejects(cc_instr_sup(k, nat, tt, only), "W type");
+    cc_judgement_id node = OK(cc_instr_sup(k, trees, tt, only));
+    assert(kind(term_of(node)) == CC_SUP && type_of(node) == term_of(trees));
+    /* WRec(λz. Nat, λl. λc. λh. 0, node) : (λz. Nat)(node), and it computes. */
+    cc_entry_id z0 = OK(cc_instr_extend(k, trees, 34));
+    cc_judgement_id count = OK(cc_instr_lambda(k, z0, nat));
+    cc_entry_id l0 = OK(cc_instr_extend(k, unit_type, 35));
+    cc_entry_id c0 = OK(cc_instr_extend(k, OK(cc_instr_pi(k, slot, trees)), 36));
+    cc_judgement_id child_count = OK(cc_instr_apply(k, count, OK(cc_instr_apply(k, OK(cc_instr_variable(k, c0)),
+                                                                                OK(cc_instr_variable(k, slot))))));
+    cc_entry_id h0 = OK(cc_instr_extend(k, OK(cc_instr_pi(k, slot, child_count)), 37));
+    cc_judgement_id tree_count = OK(cc_instr_apply(k, count, OK(cc_instr_sup(k, trees, OK(cc_instr_variable(k, l0)),
+                                                                                 OK(cc_instr_variable(k, c0))))));
+    cc_judgement_id counted = OK(cc_instr_convert(k, zero, OK(cc_instr_symmetry(k, STEP(OK(cc_instr_refl(k, tree_count)),
+                                                                                       CC_STEP_BETA, ROOT)))));
+    cc_judgement_id step_case = OK(cc_instr_lambda(k, l0, OK(cc_instr_lambda(k, c0, OK(cc_instr_lambda(k, h0, counted))))));
+    rejects(cc_instr_w_elim(k, count, zero, node), "step has the wrong type");
+    cc_judgement_id recursion_w = OK(cc_instr_w_elim(k, count, step_case, node));
+    assert(kind(term_of(recursion_w)) == CC_WREC);
+    assert(kind(other_of(STEP(OK(cc_instr_refl(k, recursion_w)), CC_STEP_IOTA, ROOT))) == CC_APP);
+
     /* Mismatches are reported with both types. */
     cc_term found, wanted;
     assert(!cc_instr_apply(k, add, OK(cc_instr_variable(k, w))));
