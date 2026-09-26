@@ -116,8 +116,8 @@ changed witnesses, and G's kernel extensions as described here. In addition:
    same variable. The h-level solver proves `IsContr`, `IsProp` and `IsSet`
    statements only from registered checked lemmas and local evidence.
 6. **Matching transparency is explicit.** The rule matcher unfolds only
-   definitions registered as matching aliases, and never unfolds `opaque def`.
-   Kernel conversion is unaffected.
+   definitions registered as matching aliases. Kernel conversion is
+   unaffected.
 7. **Each tactic documents the path it builds.** The inspector distinguishes
    conversion, a supplied equality witness, congruence, composition and
    transport. Freeze/replay must produce a convertible proof under the same
@@ -215,10 +215,8 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     definitions (`specializeSchema`), including its transaction behavior.
   - A1c: register the library wrappers `inverse`, `concatenate` and `ap` as
     matching aliases, so that a rule stated with either spelling matches. The
-    syntax is to be settled, for example `simp_alias concatenate;`. An
-    `opaque def` cannot be an alias. `opaque def` currently behaves exactly as
-    `def` ([language reference](../../web/language.html)); invariant 6 gives it
-    a matcher-only meaning, which the reference must then document.
+    syntax is to be settled, for example `simp_alias concatenate;`.
+    (`opaque def`, which behaved exactly as `def`, has been removed.)
     The library side is done: the tier 2 migration (2026-09-25,
     [handoff](../tactical/proof-ergonomics-handoff.md)) replaced all 205 full
     applications of `concatenate`, `append_path`, `inverse` and `ap` with
@@ -1058,7 +1056,7 @@ Mandatory cases:
 
 | Feature | Must be rejected or preserved |
 | --- | --- |
-| A1 folded heads | Public types equal by conversion and identical assumptions for this refactor; `sym(sym(p))` still converts to `p`; no match through `opaque def`; U1 rules match U0 carriers; raw inferred lemma signatures migrated; failed-first-use rollback recovers; carrier/endpoint arguments of folded heads are never rewritten; one `based_induction` identity remains |
+| A1 folded heads | Public types equal by conversion and identical assumptions for this refactor; `sym(sym(p))` still converts to `p`; U1 rules match U0 carriers; raw inferred lemma signatures migrated; failed-first-use rollback recovers; carrier/endpoint arguments of folded heads are never rewritten; one `based_induction` identity remains |
 | A2, A3 | `succ(n + 0) = succ(n)` accepted; dependent positions identified; newly introduced redexes resimplified; A3 path changes recorded and consumers rechecked; same-strategy freeze/replay yields convertible proofs |
 | A4 fuel | CLI/browser and fresh/reused sessions agree on logical fuel outcome; hard native exhaustion is tested independently of frontend exhaustion and wall-clock timeout |
 | A5 plans | Context, face and universe data preserved; occurrence selection survives DAG sharing; generated witnesses checked independently |
@@ -1381,8 +1379,6 @@ the same way. There, the ergonomic forms of its arithmetic examples use 1.7 to
   `paths` is imported, and the bodies differ: the library applies
   `path_induction` to a Π-motive, while the builtin is a direct connection
   `comp`.
-- `opaque def` is accepted syntax with the same checking and unfolding as
-  `def` ([language reference](../../web/language.html)).
 - The public `Fiber` in [maps](../../archive/first-library/maps.cubist) is
   `exists x : A. f(x) = y`; the native fiber is `y = f(x)`.
 - `fundamental_group_laws` in [fundamental_groups](../../archive/first-library/fundamental_groups.cubist)

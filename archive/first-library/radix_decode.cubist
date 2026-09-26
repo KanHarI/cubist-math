@@ -3,7 +3,7 @@ import radix_induction;
 import radix_digit_laws;
 import primes;
 
-opaque def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) :=
+def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) :=
   radix_positive_rec(
     extra, Nat,
     (fun (first : RadixDigit(succ(extra))) => succ(radix_digit_value(succ(extra), first))),
@@ -14,7 +14,7 @@ opaque def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) :=
     ), p
   );
 
-opaque def radix_to_nat(extra : Nat, n : RadixNat(extra)) := match n return Nat {
+def radix_to_nat(extra : Nat, n : RadixNat(extra)) := match n return Nat {
     left zero => 0;
     right p => radix_positive_to_nat(extra, p);
   };

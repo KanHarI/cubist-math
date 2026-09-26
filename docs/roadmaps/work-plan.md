@@ -83,7 +83,7 @@ curated pass's findings are recorded in the ergonomics handoff.
 2026-09-25. The existing assumption lists already are the non-computing
 dependencies: they are computed from the checked term and every definition it
 mentions. The CLI's `inspect` now prints them.
-- `computable def` and `computable opaque def` reject a declaration that
+- `computable def` rejects a declaration that
   uses an assumption. The error names every assumption and one chain of
   definitions to the first.
 - `evaluate term expecting value;` checks that a closed term uses no

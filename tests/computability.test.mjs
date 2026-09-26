@@ -54,8 +54,8 @@ evaluate 2 + 2 expecting tt;
   assert.equal(result.complete, false, "a failed evaluation makes the module incomplete");
 });
 
-test("evaluation unfolds opaque definitions and ignores unfolding hints", async t => {
-  const { result, gaps } = await check(`opaque def boxed(n : Nat) := succ(n);
+test("evaluation unfolds every definition and ignores unfolding hints", async t => {
+  const { result, gaps } = await check(`def boxed(n : Nat) := succ(n);
 def identity(n : Nat) := n;
 evaluate boxed(1) expecting 2;
 evaluate with unfolding [identity] { identity(boxed(2)) } expecting 3;
@@ -68,7 +68,7 @@ evaluate with unfolding [] { boxed(boxed(0)) } expecting boxed(1);
 test("computable and evaluate parse, format stably and stay ordinary names elsewhere", () => {
   const source = `import primes;
 computable def one := 1;
-computable opaque def two := 2;
+computable def two := 2;
 def uses_names(evaluate, computable : Nat) : Nat {
   have expecting : Nat := evaluate;
   exact expecting;
@@ -76,13 +76,13 @@ def uses_names(evaluate, computable : Nat) : Nat {
 evaluate one + one expecting two;
 `;
   const ast = parse(source);
-  assert.deepEqual(ast.declarations.map(d => [d.name.text, !!d.computable, !!d.opaque]),
-    [["one", true, false], ["two", true, true], ["uses_names", false, false]]);
+  assert.deepEqual(ast.declarations.map(d => [d.name.text, !!d.computable]),
+    [["one", true], ["two", true], ["uses_names", false]]);
   assert.equal(ast.directives.filter(d => d.kind === "evaluate").length, 1);
   assert.equal("computable" in ast.declarations[2], false, "the flag appears only when written");
   const formatted = formatMathScript(source);
   assert.equal(formatMathScript(formatted), formatted);
-  assert.match(formatted, /\ncomputable def one := 1;\n\ncomputable opaque def two := 2;\n\n/);
+  assert.match(formatted, /\ncomputable def one := 1;\n\ncomputable def two := 2;\n\n/);
   assert.match(formatted, /\n\nevaluate one \+ one expecting two;\n$/);
   assert.match(formatted, /have expecting : Nat := evaluate;/);
 });

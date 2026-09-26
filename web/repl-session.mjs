@@ -94,7 +94,7 @@ export class ReplSession {
     if ((match = /^import\s+([A-Za-z_][A-Za-z_0-9]*)$/.exec(source))) return this.import(match[1], text);
     if (/^evaluate\s/.test(source) && !/\bexpecting\b/.test(source)) return this.evaluate(source.replace(/^evaluate\s+/, ""));
     if (/^let\s/.test(source)) return this.declare(`def${source.slice(3)};`, text);
-    if (/^(def|opaque|computable|simp_rule|simp_set|evaluate)\s/.test(source))
+    if (/^(def|computable|simp_rule|simp_set|evaluate)\s/.test(source))
       return this.declare(/[;}]$/.test(text.trim()) ? text.trim() : `${source};`, text);
     return this.evaluate(source);
   }

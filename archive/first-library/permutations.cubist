@@ -4,7 +4,7 @@ import function_counting;
 
 // Bijection records on sets have unique inverse data, so this counts
 // permutations themselves, without extra multiplicity from proof witnesses.
-opaque def Permutations(n : Nat) := Bijection(Fin(n), Fin(n));
+def Permutations(n : Nat) := Bijection(Fin(n), Fin(n));
 
 def permutation_image(n : Nat, e : Permutations(succ(n))) :=
   forward(Fin(succ(n)), Fin(succ(n)), e, head(Fin(n)));

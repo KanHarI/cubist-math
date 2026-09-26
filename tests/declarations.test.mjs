@@ -15,11 +15,13 @@ test("removed theorem declarations are rejected in both source forms", () => {
   }
 });
 
-test("axiom is not a declaration, and imports come first", () => {
-  assert.throws(() => parse("axiom assumed : Nat;"), /Expected a declaration or directive: def, opaque def/);
+test("axiom and opaque are not declarations, and imports come first", () => {
+  assert.throws(() => parse("axiom assumed : Nat;"), /Expected a declaration or directive: def, computable def/);
+  assert.throws(() => parse("opaque def boxed := 0;"), /Expected a declaration or directive: def, computable def/);
   assert.throws(() => parse("def zero_again := 0;\nimport primes;"), /^Error: Imports must come before declarations\.$/);
-  // `axiom` is an ordinary name elsewhere.
+  // `axiom` and `opaque` are ordinary names elsewhere.
   assert.equal(parse("def axiom(n : Nat) := n;").declarations[0].name.text, "axiom");
+  assert.equal(parse("def opaque(n : Nat) := n;").declarations[0].name.text, "opaque");
 });
 
 test("definitions check constructions and proofs and expose their checked bodies", async t => {

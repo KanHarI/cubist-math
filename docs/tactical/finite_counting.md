@@ -135,6 +135,6 @@ grows by doubling as allocation permits, without fixed count caps. The heap
 starts at 16 MiB and can grow up to 4 GiB in wasm32. Depth and browser
 request-time limits still apply.
 These bounds do not remove the need to control expansion: theorem bodies are
-boxed, and `opaque def Permutations` keeps the concept named during ordinary
+boxed, and the named definition `Permutations` keeps the concept named during ordinary
 normalization. Checked type conversion can open its body when needed. Explicit
 `unfold` is available for inspection and computation.

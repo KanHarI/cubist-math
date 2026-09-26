@@ -11,7 +11,7 @@ test("declaration comments distinguish adjacent prose, paragraphs, headers and t
 // across two lines.
 //
 // Second paragraph: <b>plain text</b>.
-opaque def documented := 0;
+def documented := 0;
 // Detached comment.
 
 def detached := 0; // Trailing comment belongs to this line.

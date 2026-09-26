@@ -90,14 +90,14 @@ used to check a proof.
 
 The focused regression suite also replays small baseline and optimized
 programs into the same kernel and verifies each proof against both versions
-of its statement. It covers dependent types, opaque conversion, recursive
+of its statement. It covers dependent types, conversion through definitions, recursive
 functions, axiom dependencies, and rejection of invalid proofs.
 
 ## Boxing and future experiments
 
 Theorems already use boxed kernel definitions. Ordinary `def` declarations
-are transparent; `opaque def` keeps a named definition folded and supports
-checked unfolding when conversion needs it. These optimizations do
+stay folded as named definitions and are unfolded, checked, when conversion
+needs them. These optimizations do
 not change these language semantics.
 
 Automatically boxing ordinary definitions requires a separate experiment:
@@ -115,7 +115,7 @@ needs application and conversion to coordinate selective unfolding, such as
 reducing only enough to expose a function's outer type constructor.
 
 Boxing individual concepts already works where existing conversion supports
-them: changing only `InfinitelyManyPrimes` to `opaque def` still verified
+them: boxing only `InfinitelyManyPrimes` (with `opaque def`, since removed) still verified
 Euclid's theorem. Its expression became a `DRef` instead of an expanded `Pi`,
 but the trace grew from 22,589 to 22,614 instructions for the required
 conversions. This experiment was not applied to the source library. A smaller

@@ -24,7 +24,6 @@ export const keywords = new Set([
   "computable",
   "evaluate",
   "expecting",
-  "opaque",
   "axioms",
   "allow",
   "none",

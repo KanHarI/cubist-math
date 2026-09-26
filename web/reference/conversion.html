@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="When two terms are equal by computation, and how definitions unfold." />
-    <title>Cubist · 10. Conversion and opacity</title>
+    <title>Cubist · 10. Conversion and unfolding</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
   </head>
@@ -22,7 +22,7 @@
     <main>
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 10</p>
-        <h1>Conversion and opacity</h1>
+        <h1>Conversion and unfolding</h1>
         <p class="lead">When two terms are equal by computation, and how definitions unfold.</p>
       </div>
       <div class="reference-layout">
@@ -38,7 +38,7 @@
             <li><a href="paths.html">Equality and paths</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
             <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li class="current"><a href="conversion.html" aria-current="page">Conversion and opacity</a></li>
+            <li class="current"><a href="conversion.html" aria-current="page">Conversion and unfolding</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
@@ -46,7 +46,7 @@
           <h2>In this chapter</h2>
           <ul class="sections">
             <li><a href="#conversion">Equality by computation</a></li>
-            <li><a href="#opacity">Opaque definitions</a></li>
+            <li><a href="#unfolding-definitions">Definitions unfold</a></li>
             <li><a href="#unfolding-hints">Unfolding hints</a></li>
           </ul>
         </aside>
@@ -96,10 +96,10 @@ def plus_zero(n : Nat) : n + 0 = n {
 }</code></pre>
             <p>The checker never uses a theorem automatically. A proved equality such as commutativity is a path, not a reduction rule; <code>rw</code> and <code>simp</code> use it only when it is named in the proof or registered with <a href="rewriting.html#simp-registration"><code>simp_rule</code></a>.</p>
           </section>
-          <section id="opacity">
-            <h2>Opaque definitions</h2>
-            <p><code>opaque def</code> is accepted syntax. It is currently checked and unfolded exactly like <code>def</code>: conversion opens <code>boxed_successor(1)</code> to <code>succ(1)</code>, which is the numeral <code>2</code>. There is no separate operation that unfolds a term on request; conversion unfolds definitions as it needs them.</p>
-            <pre><code data-check="accept">opaque def boxed_successor(n : Nat) := succ(n);
+          <section id="unfolding-definitions">
+            <h2>Definitions unfold</h2>
+            <p>A definition unfolds wherever conversion needs its value: conversion opens <code>boxed_successor(1)</code> to <code>succ(1)</code>, which is the numeral <code>2</code>. There is no separate operation that unfolds a term on request, and no way to keep a definition folded; conversion unfolds definitions as it needs them.</p>
+            <pre><code data-check="accept">def boxed_successor(n : Nat) := succ(n);
 
 def opened_is_two : boxed_successor(1) = 2 {
   exact refl(2);

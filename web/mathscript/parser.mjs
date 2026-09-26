@@ -575,14 +575,12 @@ export function parse(source, typeOnly = false) {
       directives.push(directive); items.push(directive); continue;
     }
     // `computable def` asserts that the checked result uses no assumption.
-    const computable = t.text === "computable" && ["def", "opaque"].includes(peek());
+    const computable = t.text === "computable" && peek() === "def";
     const modifierStart = computable ? t.start : undefined;
     if (computable) t = take();
-    const opaque = t.text === "opaque";
-    if (opaque) t = take("def");
     if (t.text !== "def")
       throw Object.assign(new Error(t.text === "import" ? "Imports must come before declarations."
-        : "Expected a declaration or directive: def, opaque def, computable def, evaluate, simp_rule or simp_set."), {
+        : "Expected a declaration or directive: def, computable def, evaluate, simp_rule or simp_set."), {
         offset: t.start,
       });
     const n = name(),
@@ -593,7 +591,6 @@ export function parse(source, typeOnly = false) {
       const end = take(";").end;
       declarations.push({
         kind: t.text,
-        opaque,
         ...(computable ? { computable, modifierStart } : {}),
         name: n,
         value,
@@ -637,7 +634,6 @@ export function parse(source, typeOnly = false) {
       }
       declarations.push({
         kind: t.text,
-        opaque,
         ...(computable ? { computable, modifierStart } : {}),
         name: n,
         value,
@@ -658,7 +654,7 @@ export function parse(source, typeOnly = false) {
     if (peek() === ":=") {
       const assign = take(":="), value = expr(), end = take(";").end;
       declarations.push({
-        kind: t.text, opaque, ...(computable ? { computable, modifierStart } : {}), name: n, params, type,
+        kind: t.text, ...(computable ? { computable, modifierStart } : {}), name: n, params, type,
         body: [{ kind: "exact", value, start: assign.start, end }], typedValue: true, start: t.start, end,
       });items.push(declarations.at(-1));
       continue;
@@ -668,7 +664,6 @@ export function parse(source, typeOnly = false) {
     const body = block();
     declarations.push({
       kind: t.text,
-      opaque,
       ...(computable ? { computable, modifierStart } : {}),
       name: n,
       params,

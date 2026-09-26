@@ -4,7 +4,7 @@ import binary_arithmetic_correct;
 
 // Direct digit conversion computes in binary. It does not first construct a
 // unary natural number; unary evaluation is used only in the correctness proof.
-opaque def radix_positive_to_binary(extra : Nat, p : RadixPositive(extra)) :=
+def radix_positive_to_binary(extra : Nat, p : RadixPositive(extra)) :=
   radix_positive_rec(
     extra, BinaryNat,
     (
@@ -20,7 +20,7 @@ opaque def radix_positive_to_binary(extra : Nat, p : RadixPositive(extra)) :=
     ), p
   );
 
-opaque def radix_to_binary(extra : Nat, n : RadixNat(extra)) := match n return BinaryNat {
+def radix_to_binary(extra : Nat, n : RadixNat(extra)) := match n return BinaryNat {
     left zero => binary_zero;
     right p => radix_positive_to_binary(extra, p);
   };
@@ -84,7 +84,7 @@ def radix_binary_correct(extra : Nat, n : RadixNat(extra)) :
 }
 
 // Conversion in the other direction doubles/adds digits in the target radix.
-opaque def binary_positive_to_radix(extra : Nat, p : BinaryPositive) :=
+def binary_positive_to_radix(extra : Nat, p : BinaryPositive) :=
   binary_positive_rec(
     RadixNat(extra), radix_positive(extra, radix_one(extra)),
     (fun (child : BinaryPositive, ih : RadixNat(extra)) => radix_add(extra, ih, ih)),
@@ -95,7 +95,7 @@ opaque def binary_positive_to_radix(extra : Nat, p : BinaryPositive) :=
     ), p
   );
 
-opaque def binary_to_radix(extra : Nat, n : BinaryNat) := match n return RadixNat(extra) {
+def binary_to_radix(extra : Nat, n : BinaryNat) := match n return RadixNat(extra) {
     left zero => radix_zero(extra);
     right p => binary_positive_to_radix(extra, p);
   };
