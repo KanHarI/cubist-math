@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { elaboration } from "../web/cubical-elaboration.mjs";
+import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 
 const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
 const source = `import naturals;
@@ -79,13 +80,21 @@ test("the elaboration view shows each declaration's type, term and the kernel's 
   assert.equal(program.kernel.optimizations?.reuseChecks ?? true, true);
 });
 
-test("a declaration outside instruction mode shows the kernel's traced check instead", async t => {
+test("a declaration the instruction kernel cannot derive shows why, not a derivation", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  // Pushouts are not in instruction mode yet.
   await program.check("def Suspension(A : U0) := Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);\n", "suspension");
-  const [suspension] = elaboration(program, "suspension");
-  assert.equal(suspension.derivation.source, "trace");
-  assert.match(suspension.derivation.reason, /Pushout is not in instruction mode yet/);
-  assert.ok(suspension.derivation.steps.length > 0);
+  // Whatever the driver cannot derive; here, it is made to fail.
+  const check = InstructionDriver.prototype.check;
+  InstructionDriver.prototype.check = () => { throw new Error("The search could not derive this."); };
+  let suspension;
+  try { [suspension] = elaboration(program, "suspension"); }
+  finally { InstructionDriver.prototype.check = check; }
+  // There is no other derivation to show: the term checker no longer checks,
+  // and the declaration's view is itself derived.
+  assert.equal(suspension.derivation, undefined);
+  assert.match(suspension.reason, /^Instruction kernel: The search could not derive this/);
+  const [derived] = elaboration(program, "suspension");
+  assert.ok(derived.derivation.steps.length > 0);
+  assert.equal(derived.derivation.reason, undefined);
 });

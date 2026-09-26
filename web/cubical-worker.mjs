@@ -5,6 +5,8 @@ import { CubicalProgram } from "./cubical-program.mjs";
 import { ReplSession } from "./repl-session.mjs";
 import { elaboration } from "./cubical-elaboration.mjs";
 const module = await createCubical();
+// What import can load, for the REPL's /modules.
+const importable = async () => ({ library: libraryModules, archive: [...sourceModules, ...cubicalSourceModules] });
 let program = null;
 const readSource = async name => {
   if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(name)) throw new Error("Invalid source module name.");
@@ -24,10 +26,10 @@ async function repl({ input, fresh }) {
   if (fresh) {
     if (!sessionProgram) {
       sessionProgram = new CubicalProgram(module, readSource, { collectReferences: false });
-      session = new ReplSession(sessionProgram);
+      session = new ReplSession(sessionProgram, { modules: importable });
     }
   } else if (!program) throw new Error("Check a proof first.");
-  else if (!session) session = new ReplSession(program, { base: programMain });
+  else if (!session) session = new ReplSession(program, { base: programMain, modules: importable });
   // A rechecked proof keeps the session: what extended it is replayed.
   else if (session.program !== program) session = await session.rebase(program, programMain);
   return session.run(input);

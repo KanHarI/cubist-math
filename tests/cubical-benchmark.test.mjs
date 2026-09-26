@@ -4,6 +4,7 @@ import {readFile} from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { benchmark, category } from "../web/benchmark-runner.mjs";
+import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { budget } from "./timing.mjs";
 
 test("benchmark distinguishes invalid proofs, blocked uses, and independent checked declarations", async () => {
@@ -111,4 +112,26 @@ test("benchmark checks local simp witnesses without collecting inspector referen
     assert.equal(report.declarations.find(d=>d.name===name)?.category,"checked",name);
   const work=report.declarations.find(d=>d.name==="nested").rewriteWork;
   assert.ok(work.candidateVisits>0&&work.premiseAttempts>=2&&work.premiseProofs>=2);
+});
+
+test("the instruction kernel admits each declaration the benchmark counts", async () => {
+  const readSource = async () => "def good := 0; def uses := good;";
+  const report = await benchmark({ modules: ["sample"], readSource });
+  for (const row of report.declarations) {
+    assert.equal(row.category, "checked");
+    assert.ok(row.instructionJudgements > 0 && row.instructionMs >= 0, row.binding);
+    assert.ok(row.elapsedMs >= row.instructionMs);
+  }
+  // What the instruction kernel cannot derive fails, and blocks what uses it.
+  const check = InstructionDriver.prototype.check;
+  InstructionDriver.prototype.check = function (value, type, context) {
+    if (this.kernel.node(value).kind === "Zero") throw new Error("No rule for this yet.");
+    return check.call(this, value, type, context);
+  };
+  try {
+    const failing = await benchmark({ modules: ["sample"], readSource });
+    assert.deepEqual(failing.declarations.map(d => d.category), ["failed", "blocked"]);
+    assert.match(failing.declarations[0].reason, /^Instruction kernel: No rule for this yet/);
+    assert.equal(failing.declarations[1].rootBlocker, "sample__good");
+  } finally { InstructionDriver.prototype.check = check; }
 });

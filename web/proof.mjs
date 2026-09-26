@@ -809,7 +809,9 @@ $("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedK
 $("kernel-truncation-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-group-binders").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-identity-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
-async function openKernelWorkbench(side, representation = "math") {
+// The workbench opens on the kernel graph: the judgements the instruction
+// kernel derives for the term.
+async function openKernelWorkbench(side, representation = "graph") {
   if (!checkedKernelView) return;
   const binding = checkedKernelView.name;
   const folded = $("kernel-view").value === "notation" && !!checkedKernelView.folded?.verified?.[side];

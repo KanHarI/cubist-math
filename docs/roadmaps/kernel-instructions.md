@@ -1,7 +1,8 @@
 # Kernel instructions: a THTH-style forward kernel
 
-Status: on the `kernel-instructions` branch, beside the current term checker,
-which it does not change:
+Status: on the `kernel-instructions` branch. The instruction kernel is the
+trusted kernel, and elaboration checks every term through it. The term
+checker remains only as an untrusted guide for the search, its conversion.
 
 - Stage 1 is implemented: `kernel/src/instructions.c`, tested by
   `kernel/tests/test_instructions.c`.
@@ -10,22 +11,25 @@ which it does not change:
   - the driver `web/cubical-instruction-driver.mjs`;
   - the workbench's **Kernel graph** view (`web/cubical-graph-view.mjs`);
   - the Elaboration panels, which now show the instruction derivation.
-- Stage 3 is under way: paths at any interval formula (`PathAt`), and
-  composition with tubes on disjoint faces (`System`, `SystemTube`, `Comp`).
-- In instruction mode, the first proof checks, and so does all of
-  `library/naturals`. So does every one of the 41 definitions behind the
-  archive's Euclid theorem, and 3800 of the archive's 3938 definitions
-  (96.5%), in 14 s for the whole archive; `node tools/instruction-coverage.mjs`
-  measures it again. The rest need:
-
-  | Need | Definitions |
-  | --- | --- |
-  | Pushouts | 67 |
-  | Overlapping or multi-clause faces | 40 |
-  | W types | 18 |
-  | Glue | 8 |
-  | `HComp` | 1 |
-  | A better search | 4 |
+- Stage 3 is implemented: paths at any interval formula (`PathAt`),
+  composition, with an equality on each overlap of two tubes' faces
+  (`System`, `SystemTube`, `SystemOverlap`, `Comp`), pushouts
+  (`Pushout`, `PushPoint`, `PushPath`, `PushElim`), W types (`W`, `Sup`,
+  `WElim`), homogeneous composition and transport (`HComp`, `Trans`), and
+  Glue (`GlueBase`, `GluePiece`, `GlueOverlap`, `Glue`, the Glue term's
+  three, and `Unglue`).
+- Stage 4 is implemented: the instruction kernel admits every definition,
+  in the proof pages, the REPL, the CLI, the benchmark and the tests, and each
+  tactic's check is derived as the tactic runs. See
+  [Stage 4](#stage-4-the-trusted-kernel) below.
+- Stage 5 is implemented: the term checker leaves elaboration. The driver
+  derives source syntax itself, and every check and query the elaborator
+  makes is derived by the instruction kernel. See
+  [Stage 5](#stage-5-the-term-checker-leaves-elaboration) below.
+- Every one of the archive's 3938 definitions is admitted this way, and so
+  are the first proof and `library/naturals`. Every derived term is its
+  source syntax, annotations included. The benchmark page measures it, and
+  `node tools/instruction-coverage.mjs` derives every stored definition again.
 
 ## Goal
 
@@ -109,24 +113,28 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
 
 ### Instructions
 
-- **Contexts:** `Extend` (an entry `x : A` from `Γ ⊢ A : U_i`; the symbol must
-  be new), `Dimension` (the entry of an interval index), `Variable`.
+- **Contexts:** `Extend` (an entry `x : A` from `Γ ⊢ A : U_i`; a symbol names
+  one entry, and extending it again at an alpha-equal type returns that
+  entry, whatever judgement shows the type is a type), `Dimension` (the entry
+  of an interval index), `Variable`.
 - **Formation, introduction and elimination:** universes, `Π` (`Pi`,
   `Lambda`, `Apply`), `Σ` (`Sigma`, `Pair`, `First`, `Second`), `Nat` (`Zero`,
   `Succ`, `NatElim`), `Unit` (`Point`, `UnitElim`), `Void` (`Abort`), sums
   (`Sum`, `Inject`, `SumElim`), paths (`Path`, `PathLambda`, `PathApply` at a
   dimension or an endpoint). `Domain` and `Family` give the parts of a `Π` or
   `Σ` type as types in its universe.
-- **Definitions:** `Define` registers a closed judgement under a symbol and
-  returns its lookup; `Lookup` recalls any checked definition, including
-  those of the term checker.
+- **Definitions:** `Define` admits a closed judgement under a symbol and
+  returns its lookup; `Lookup` recalls an admitted definition, and refuses the
+  term checker's own (`cc_kernel_define`).
 - **Equality judgements** `Γ ⊢ a ≡ b : T`, from `Refl`:
   - `Step(eq, side, position, rule)` contracts the highlighted redex, and only
     it: `Beta`, `Delta` (unfold the highlighted definition), `Iota` (an
     eliminator or projection on a constructor), `Path` (a path lambda at a
-    point, or a path at an endpoint of its annotated type), or `Normalize`
-    (the normal form of the highlighted subterm, by the kernel's fixed
-    strategy; THTH's `BetaReduceGrossKnuth`).
+    point, or a path at an endpoint of its annotated type), `Face` (a
+    composition with a tube on a face that holds, to that tube at the end of
+    its dimension), `Whnf` (the kernel's weak head normal form), or
+    `Normalize` (the normal form of the highlighted subterm, by the kernel's
+    fixed strategy; THTH's `BetaReduceGrossKnuth`).
   - `Replace(eq, side, position, a ≡ b)` swaps a highlighted occurrence of `a`
     for `b`: a targeted definitional-equality rewrite. When `a` or `b` uses a
     name bound on the way down, the given equality must have that name as a
@@ -146,10 +154,46 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   - `System` starts from the family `A : U` over `i` and the base `a0 : A(0)`.
   - `SystemTube` adds a tube on a face of one clause. The tube is typed at `A`
     restricted to the face, and an equality shows it starts at the base
-    there: `u(0) ≡ a0` on the face.
+    there: `u(0) ≡ a0` on the face. The face may be `1`, the clause with no
+    equations. A tube on the face `0`, as a substitution into a type can
+    leave it, is never used and needs only a typing judgement.
+  - `SystemOverlap` shows that the newest tube agrees with an earlier one
+    where their faces meet: an equality between the two, restricted to the
+    overlap. `SystemTube` records which earlier tubes the new face meets,
+    and until each has its equality, the kernel neither adds a tube nor
+    closes the system. The term checker asks the same, of its conversion.
   - `Comp` closes the system into `comp … : A(1)` and discharges `i`.
-  - Faces may not overlap yet; an overlap would need its own equality.
+  - `HComp` closes it into `hcomp^i A [φ ↦ u] a0 : A` when the family does
+    not vary along `i`, and `Trans` into `transp^i A φ a0 : A(1)` when its
+    tubes are the base on each clause of `φ`, at the family there, which is
+    constant on `φ`. As in the term checker, both are for pushout types,
+    which each reads off the family's weak head. `Face` takes a transport
+    whose face holds to its base.
   - `PathAt` applies a path at any interval formula, such as `1 - i`.
+- **Pushouts** (CHM §3.3.5): `Pushout` forms `Pushout(C, A, B, (f, g))`
+  from `C, A, B : U` and the maps, a pair `C → A`, `C → B`. `PushPoint` gives
+  `inl(a)` or `inr(b)`, `PushPath` gives `push^r(c)` at an interval formula
+  `r`, and `PushElim` gives the dependent eliminator from a motive and its
+  left, right and bridge cases, the bridge a dependent path over `push(c)`
+  from the left case at `f(c)` to the right case at `g(c)`. The pushout type
+  must be one as written, so the driver reduces an annotation such as
+  `Susp(A)` first, as it does for a pair's. `Iota` computes the eliminator
+  on a point or a path, and a path at an endpoint to a point; that step
+  reads the maps off the pushout type's weak head, which involves no choice.
+- **Glue:** `Glue [φ ↦ (T, e)] A` is built piece by piece, as a composition's
+  system is: `GlueBase` from `A : U`; `GluePiece` adds a type `T` on a face and
+  an equivalence `e` at `Equiv(T, A)` there, the type the term checker
+  states; where two pieces' faces meet, `GlueOverlap` takes equalities of
+  their types and of their equivalences; `Glue` closes it. A Glue term is
+  built the same way, a value `t : T` for each piece in order with an
+  equality `fst(e)(t) ≡ a` on its face, and `SystemOverlap` where faces meet;
+  `Unglue` gives the base. A search aid, `cc_kernel_equiv_type`, builds
+  `Equiv(T, A)` as syntax for the driver. Glue computes by `Whnf`.
+- **W types:** `W` forms `W(x : L). B` from an entry and a family, as `Π` and
+  `Σ` do, and `Domain` and `Family` give `L` and `B[l/x]`. `Sup` gives
+  `sup(l, c)` of a W type as written, and `WElim` gives W recursion from a
+  motive, a step and a value, at the types the term checker states. `Iota`
+  computes recursion on `sup`.
 
 Highlighting stays in the kernel on purpose: a short targeted reduction or
 rewrite can replace normalizing a whole type.
@@ -165,46 +209,57 @@ capture-free.
 
 ### Soundness
 
-The instructions reuse the kernel's single-step contractions, substitution,
-alpha equality and normalizer, which the term checker already trusts, and
-the metatheory the term checker relies on (subject reduction, uniqueness of
-types up to conversion and cumulativity). The judgement graph is truncated
-with the syntax arena on rollback and commit. `test_instructions.c` derives
-`add`, `lt` and `lt_succ` forward and has the term checker accept the
-definitions, and checks the rejections: capture, dependency, mismatched binder
-types, open definitions, and misplaced steps.
+The trusted base is the instructions and what they call: the single-step
+contractions, substitution, alpha equality, the normalizer and weak head
+normal form (for `Normalize` and `Whnf`), the interval and face algebra, and
+the metatheory the typing rules rely on (subject reduction, uniqueness of
+types up to conversion, cumulativity). The kernel's weak head normal form of
+a Glue element consults conversion for Glue's eta rule; that is a reduction
+rule's side condition, and any answer yields a convertible term. The term
+checker's typing rules and its conversion strategy are not in it, nor are the
+unfolding hints. The judgement graph is truncated with the syntax arena on
+rollback and commit. `test_instructions.c` derives `add`, `lt` and `lt_succ`
+forward and has the term checker accept the definitions, and checks the
+rejections: capture, dependency, mismatched binder types, open definitions,
+misplaced steps, and lookups of definitions `Define` did not admit.
 
 The interval and face algebra keeps its decision procedure in the kernel: it
 decides equality of De Morgan formulas, with no strategy to choose.
 
 ### What moves to the elaborator
 
-- **Driving the rules.** Today's top-down checker becomes an untrusted driver:
-  it walks the term the elaborator built and issues the instruction for each
-  node. Later, tactics issue instructions directly (`intro` is `Extend` then
-  `Lambda`, `exact` a `Convert`).
+- **Driving the rules.** The top-down checker becomes an untrusted driver: it
+  walks the term the elaborator built and issues the instruction for each
+  node, as each tactic's check runs and again when the declaration is
+  defined.
 - **Conversion search.** Where a rule needs two types to agree, or a type in a
   particular shape, the driver searches for the steps — the strategy
   `term_conversion.c` uses today — and emits them as equality instructions.
-- **Unfolding hints** order that search. A notion of opacity, if it returns,
-  would be the search never emitting `Delta` for a definition.
+- **Unfolding hints** do not move with it: the search finds its own order,
+  so that proofs need no hints. A notion of opacity, if it returns, would be
+  the search never emitting `Delta` for a definition.
 
 ### What the kernel keeps
 
 The typing rules as instructions, the single-step contractions, alpha
 equality, the interval and face algebra, deterministic normalization, the two
-hash graphs, budgets and deadlines. It loses the conversion strategy, the
-hints and every implicit reduction.
+hash graphs, budgets and deadlines. The conversion strategy, the hints and
+every implicit reduction are now the untrusted term checker's alone.
 
 ## The driver
 
-`InstructionDriver` replays a checked term as instructions, one per node. Where
-a rule needs two types to agree, it makes them agree without trust:
+`InstructionDriver` derives a term's source syntax as instructions, one per
+node. Where a rule needs two types to agree, it makes them agree without
+trust:
 
-- by congruence on common heads, when their parts are equal;
-- by weak-head steps: beta, iota and path steps first, then unfolding
+- by congruence on common heads, when their parts are equal, and never twice
+  on the same two terms: a failed attempt can leave an eta expansion that a
+  step contracts again;
+- by weak-head steps: beta, iota, path and face steps first, then unfolding
   definitions lazily. The one defined later is unfolded first, and both when
-  they are the same (lazy delta reduction, as in Lean);
+  they are the same (lazy delta reduction, as in Lean). A face step takes a
+  composition whose face holds to its tube, where `Whnf` would go on to
+  compute the tube's head, perhaps a large number in unary;
 - by `Whnf`, the kernel's own weak head normal form, for heads the steps do
   not take: composition, transport, Glue, pushouts;
 - by eta, expanding a neutral term against a lambda, path lambda or pair:
@@ -217,15 +272,42 @@ a rule needs two types to agree, it makes them agree without trust:
 Where a function's domain and its argument's type must agree, both are
 rewritten in place, toward a common form.
 
-**Search aids.** The kernel offers two queries that decide nothing:
+**Search aids.** The kernel offers queries that decide nothing:
 `cc_kernel_convertible` answers whether the term checker's conversion finds
-two terms equal, within a small step budget, and `cc_kernel_rename` renames a
-free name.
+two terms equal, within a budget of 20,000 steps; `cc_kernel_rename` renames a
+free name; `cc_kernel_equiv_type` builds `Equiv(A, B)` as syntax; and
+`cc_kernel_fresh_symbol` allocates symbols, so the driver's names and the
+kernel's never share an id.
 
 The driver asks the first query only where the answer changes its choice: on a
-common head that could also be reduced. Before comparing parts under binders,
-it renames the right side's bound names to match the left's. Every step it
-then takes is still an instruction the kernel checks.
+common head that could also be reduced. Where the head reduces by computation
+(beta, iota, path or face), it reduces unless the parts are known equal;
+where only unfolding a definition would, it compares parts not known to
+differ. Nearly all of the query's cost was in answers that ran out of budget,
+so 20,000 steps rather than 200,000 halved the admission time of the
+algebraic modules. Before comparing parts under binders, it renames the right
+side's bound names to match the left's. Every step it then takes is still an
+instruction the kernel checks.
+
+After 64 steps in one comparison, two closed subterms the query does not
+find different, such as a numeral's arithmetic, are normalized, one
+instruction each: single steps each rebuild the judgement's term, and a
+factorial's took 1.1M arena nodes where 58k now do. Steps are counted over the
+whole comparison, since congruence splits a computation into many short
+ones, often under a binder. Past the limit, a comparison of open subterms
+inside a closed one gives up, and the closed one tries normal forms, once;
+if that fails, the steps go on. Open terms keep to lazy steps, since their
+normal forms can be enormous. A path lambda applied at a compound interval
+formula contracts its body's computing head first, before the formula is
+substituted; the driver's alpha comparison is memoized over the shared term
+graph, since walking it as a tree is exponential in its depth. Its renaming
+of dimensions is first cut to the dimensions the two terms mention, so a
+subterm met under many different binders is still compared once.
+
+A binder's variant name, when its own is taken at another type, is
+remembered by name and type and used again, and the kernel reuses an entry at
+an alpha-equal type: two entries for one variable would make terms that
+mention it differ for ever.
 
 The driver caches judgement reads, scopes and derivations; the kernel indexes
 entries by symbol. Together, these took the archive from 457 s to 14 s.
@@ -236,8 +318,14 @@ in [learned-search.md](learned-search.md).
 
 A rule's expected type comes either from a premise the driver can rewrite in
 place, or from a typing judgement it derives for that type. It reduces a
-constructor's annotation once, as an equality, and converts the result back
-along it.
+constructor's annotation once, as an equality, and rewrites the result's
+annotation and type back along it; a path lambda is derived at its own
+family. So a derived term is always its source syntax, and a type derived as
+evidence is the type it stands for.
+
+The driver does not use `with unfolding` hints: the search must not need
+them. Letting hinted definitions unfold first changed about 1% of the
+judgements of the 54 hinted archive definitions, and fixed nothing.
 
 ## Inspection: the graphs in the workbench
 
@@ -259,8 +347,8 @@ The Elaboration panels show the same derivation in THTH's form:
 - each reduction step names its rule, position and subterm;
 - exact's ascription is marked as the elaborator's.
 
-For a term the driver cannot derive yet, a panel falls back to the derivation
-reconstructed from the term checker's trace (#36).
+If a derivation cannot be shown, a panel shows the reason; since Stage 5
+there is no term checker's trace to fall back to.
 
 ## Costs and risks
 
@@ -290,18 +378,99 @@ reconstructed from the term checker's trace (#36).
      instruction mode, at the term checker's types;
    - the workbench explores the graphs;
    - the Elaboration panels show the instructions.
-3. **W types and the cubical rules**, under way:
-   - done: paths at any interval formula;
-   - done: composition with tubes on disjoint faces;
-   - remaining: overlapping faces (an equality on each overlap), `HComp`,
-     `Trans`, `Glue`, pushouts and W types;
-   - remaining: the archive checks in instruction mode.
+3. **W types and the cubical rules**, done:
+   - paths at any interval formula;
+   - composition, with an equality on each overlap of two faces;
+   - pushouts, W types, `HComp`, `Trans` and `Glue`;
+   - the whole archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the
-   trusted kernel. Unfolding hints leave the kernel.
-5. **Performance:** an untrusted native search module if JavaScript is too
+   trusted kernel. Unfolding hints leave the kernel. Done; see below.
+5. **The term checker leaves elaboration:** the driver derives source syntax
+   itself. Done; see below.
+6. **Performance:** an untrusted native search module if JavaScript is too
    slow; certificate compaction; content hashes for exported certificates;
    a learned search policy for cheaper derivations
    ([learned-search.md](learned-search.md)).
+
+## Stage 4: the trusted kernel
+
+**Admission.** Every definition, whatever its source (a declaration, a
+universe specialization, a `with unfolding` helper, a builtin such as `ua`),
+goes through `NativeCubicalElaborator.admit`: the term checker elaborates the
+body, reconstructing annotations and splitting faces; the driver derives the
+checked body at its type; and `Define` registers the closed judgement. A body
+the instruction kernel cannot derive is not a definition: the declaration
+fails with an error beginning "Instruction kernel:". The kernel enforces the
+boundary itself: each definition records whether `Define` admitted it, and
+`Lookup` refuses any other, so a definition the term checker registered can
+never enter a derivation.
+
+**Tactics.** Each committed check a tactic makes, the checks it builds its
+proof from, is derived at once, through one driver shared by the declaration,
+and the declaration's admission reuses those derivations. A term the kernel
+cannot derive fails at the tactic that checked it, with its source position.
+The elaborator's queries (`infer`, `nf`, `equal`, `expect`, speculative checks)
+steer elaboration: about 180,000 `infer` and 170,000 `nf` calls on the archive
+against 7,300 committed checks. In Stage 4 they were answered by the term checker
+alone and were not evidence; Stage 5 derives them too. The driver
+lives on the kernel and is dropped after each admission, at the end of each
+declaration's transaction and at each inspection, so no search depends on
+another declaration's.
+
+**Hints.** `with unfolding` hints steer only the term checker: withholding
+them from it leaves every archive definition admissible except five F4
+proofs that then elaborate too slowly for a 5 s limit. Nothing the
+instruction kernel accepts depends on them.
+
+**Cost.** With a 5 s limit per declaration, the archive's 3761 declarations
+take 20 s, against about 10 s for the term checker alone; the admissions themselves
+take 2.3 s, because the tactics' derivations are reused. The JS test suite
+takes 61 s, up from 34 s.
+
+**Not done** in Stage 4: the term checker still elaborated, and the driver
+derived its output. Stage 5 removes it.
+
+## Stage 5: the term checker leaves elaboration
+
+**Raw syntax.** The elaborator hands the driver the source syntax, not the
+term checker's output, and the driver does what the term checker did before
+it:
+
+- it restores a constructor's annotation after reducing it, and derives a
+  path lambda at its own family, so that the derived term is the source's;
+- it splits a composition's faces into clauses and restricts each tube to
+  its clause, with an equality on each overlap;
+- it tracks the live interval dimensions in each scope, and moves a
+  dimension binder to a free index when its parts could not tell it from a
+  live one: a composition's faces lie outside its binder, and a variable's
+  type may mention the outer dimension. Otherwise a binder keeps its index,
+  so derived types stay the source's, and sharing survives;
+- it names apart a binder whose name another entry has at another type.
+  Displays show the source's name again wherever nothing in the body can
+  tell the two apart.
+
+**Everything is derived.** `check`, `infer`, `equal`, `expect` and speculative
+checks all go through the driver, and the term checker's check count during
+elaboration is zero. What remains of it is its conversion, the search's
+guide, and the kernel's own reduction (`Whnf`, `Normalize`), which is trusted
+computation. A mismatch is reported as the term checker reported it, "Type
+mismatch", with the two types; running out of time or budget is passed on as
+such; any other refusal begins "Instruction kernel:". The Elaboration panels
+have no other derivation to fall back to: a declaration whose view cannot be
+derived shows the reason.
+
+**Deadlines.** Each instruction polls the declaration's deadline, and a
+derivation polls it before reusing an earlier judgement. The syntax services
+(`rename`, `endpointTerm`, `equivType`) now report the kernel's error rather
+than a zero handle.
+
+**Costs.** Deriving raw syntax exposed two caches keyed by more than they
+depend on. Decoding a result was cached per whole dimension context, and the
+driver's alpha comparison per whole renaming. A tower of 32 nested path
+lambdas then took exponential time and ran out of memory. Both are now keyed
+by the dimensions the terms mention, and the tower checks in 50 ms. With a
+5 s limit per declaration, the archive's 3761 declarations check in 25 s,
+against 20 s in Stage 4. The JS test suite takes 76 s, up from 61 s.
 
 ## Decisions
 
@@ -313,3 +482,8 @@ reconstructed from the term checker's trace (#36).
    derivations instead of normalizing whole types.
 5. The kernel's state is the syntax and judgement hash graphs, explorable in
    the workbench; binders stay named, and ids stay dense, for now.
+6. The instruction kernel is the trusted kernel: only `Define` admits a
+   definition, and only admitted definitions can be looked up. The term
+   checker and the unfolding hints are untrusted elaboration aids.
+7. Elaboration checks nothing with the term checker. Its conversion is a
+   search aid only; `CubicalSyntax.check` keeps it reachable for tests.

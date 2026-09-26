@@ -103,11 +103,13 @@ evaluate at line 11: 4</code></pre>
                 <tr><td><code>typeof TERM;</code></td><td>Print the type of a term</td></tr>
                 <tr><td><code>evaluate TERM;</code></td><td>Print the normal form of a closed term that uses no assumption, in the scope of the checked module</td></tr>
                 <tr><td><code>import MODULE;</code></td><td>Load a module for later entries</td></tr>
+                <tr><td><code>/modules [TEXT]</code></td><td>List the modules <code>import</code> can load: the rebuilt library, then the archive of the first library; with <code>TEXT</code>, only those whose names contain it</td></tr>
+                <tr><td><code>/clear</code>, <code>/restart</code></td><td>Clear the terminal, or start a new session that forgets every name defined in it</td></tr>
                 <tr><td><code>assembly NAME</code></td><td>Show the native kernel opcode graph of a declaration</td></tr>
                 <tr><td><code>beta [expression|type]</code></td><td>Perform one beta reduction in the inspected declaration, checked by the kernel</td></tr>
                 <tr><td><code>delta [expression|type]</code></td><td>Unfold one named definition in the inspected declaration, checked by the kernel</td></tr>
                 <tr><td><code>export FILE.json</code></td><td>Save the inspected declaration’s source and inspection data</td></tr>
-                <tr><td><code>help</code>, <code>quit</code></td><td>Show the command list, or exit</td></tr>
+                <tr><td><code>help</code>, <code>/help</code>, <code>quit</code></td><td>Show the command list, or exit</td></tr>
               </tbody>
             </table></div>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs
@@ -168,7 +170,7 @@ x_is_seven : x = 7
 Type mismatch: found 7 = 7, expected x = 8.
 &gt; x + 1
 8</code></pre>
-            <p><code>let x := 7;</code> defines <code>x</code> and prints its type; <code>def</code> works the same way. An entry continues on the next line while a bracket is open, so a proof block is one entry. A term alone is evaluated, and the final <code>;</code> of an entry can be left out. <code>x_is_eight</code> is rejected, so it does not exist for later entries. <code>help</code> lists the entries.</p>
+            <p><code>let x := 7;</code> defines <code>x</code> and prints its type; <code>def</code> works the same way. An entry continues on the next line while a bracket is open, so a proof block is one entry. A term alone is evaluated, and the final <code>;</code> of an entry can be left out. <code>x_is_eight</code> is rejected, so it does not exist for later entries. <code>/help</code> lists the entries and the commands, which start with <code>/</code>: <code>/modules</code> lists the modules <code>import</code> can load, <code>/clear</code> clears the log and <code>/restart</code> starts a new session. The consoles on the website take the same commands.</p>
           </section>
           <section id="tools">
             <h2>Formatting and tests</h2>

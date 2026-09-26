@@ -295,6 +295,15 @@ uint32_t cb_normalize(uint32_t token, uint32_t term) {
     return cc_kernel_normalize(s->kernel, term);
 }
 
+/* A term the page derived by instructions, and so knows to be well typed:
+ * the page keeps that list; the kernel only computes. */
+uint32_t cb_normalize_derived(uint32_t token, uint32_t term) {
+    browser_session *s = lookup(token);
+    if (!s || !term) return 0;
+    cc_kernel_clear_error(s->kernel);
+    return cc_kernel_normalize(s->kernel, term);
+}
+
 uint32_t cb_node(uint32_t token, uint32_t term, unsigned field) {
     browser_session *s = lookup(token);
     cc_term_kind kind;
@@ -389,6 +398,24 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_SYSTEM: return cc_instr_system(k, a, b, c);
     case CC_INSTR_SYSTEM_TUBE: return cc_instr_system_tube(k, a, b, c, d);
     case CC_INSTR_COMP: return cc_instr_comp(k, a);
+    case CC_INSTR_SYSTEM_OVERLAP: return cc_instr_system_overlap(k, a, b, c);
+    case CC_INSTR_PUSHOUT: return cc_instr_pushout(k, a, b, c, d);
+    case CC_INSTR_PUSH_POINT: return cc_instr_push_point(k, a, b, c != 0);
+    case CC_INSTR_PUSH_PATH: return cc_instr_push_path(k, a, b, c);
+    case CC_INSTR_PUSH_ELIM: return cc_instr_push_elim(k, a, b, c, d);
+    case CC_INSTR_W: return cc_instr_w(k, a, b);
+    case CC_INSTR_SUP: return cc_instr_sup(k, a, b, c);
+    case CC_INSTR_W_ELIM: return cc_instr_w_elim(k, a, b, c);
+    case CC_INSTR_HCOMP: return cc_instr_hcomp(k, a);
+    case CC_INSTR_TRANS: return cc_instr_trans(k, a, b);
+    case CC_INSTR_GLUE_BASE: return cc_instr_glue_base(k, a);
+    case CC_INSTR_GLUE_PIECE: return cc_instr_glue_piece(k, a, b, c, d);
+    case CC_INSTR_GLUE_OVERLAP: return cc_instr_glue_overlap(k, a, b, c, d);
+    case CC_INSTR_GLUE: return cc_instr_glue(k, a);
+    case CC_INSTR_GLUE_TERM_BASE: return cc_instr_glue_term_base(k, a, b);
+    case CC_INSTR_GLUE_TERM_PIECE: return cc_instr_glue_term_piece(k, a, b, c);
+    case CC_INSTR_GLUE_TERM: return cc_instr_glue_term(k, a);
+    case CC_INSTR_UNGLUE: return cc_instr_unglue(k, a);
     case CB_EXTEND: return cc_instr_extend(k, a, b);
     case CB_DIMENSION: return cc_instr_dimension(k, a);
     }
@@ -406,12 +433,41 @@ unsigned cb_convertible(uint32_t token, uint32_t a, uint32_t b, uint32_t steps) 
     return equal ? 1 : 0;
 }
 
+/* The syntax services below return 0 on failure and leave the kernel's
+ * error, such as an expired deadline, for the caller to read and clear. */
+/* Syntax only: a term with an endpoint substituted for a dimension. */
+uint32_t cb_endpoint_term(uint32_t token, uint32_t term, uint32_t dimension, unsigned endpoint) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    return cc_kernel_endpoint_term(s->kernel, term, dimension, endpoint);
+}
+
+/* The arena's size: field 0 its nodes, field 1 its bytes. */
+uint32_t cb_arena(uint32_t token, unsigned field) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    size_t nodes = 0, bytes = 0;
+    cc_kernel_arena(s->kernel, &nodes, &bytes);
+    return (uint32_t)(field ? bytes : nodes);
+}
+
+/* A symbol id shared by no name the kernel or the page has given out. */
+uint32_t cb_fresh_symbol(uint32_t token) {
+    browser_session *s = lookup(token);
+    return s ? cc_kernel_fresh_symbol(s->kernel) : 0;
+}
+
 uint32_t cb_rename(uint32_t token, uint32_t term, unsigned dimension, uint32_t from, uint32_t to) {
     browser_session *s = lookup(token);
     if (!s) return 0;
-    cc_term renamed = cc_kernel_rename(s->kernel, term, dimension != 0, from, to);
-    if (!renamed) cc_kernel_clear_error(s->kernel);
-    return renamed;
+    return cc_kernel_rename(s->kernel, term, dimension != 0, from, to);
+}
+
+/* Syntax only: Equiv(a, b) as the Glue rules state it. */
+uint32_t cb_equiv_type(uint32_t token, uint32_t a, uint32_t b) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    return cc_kernel_equiv_type(s->kernel, a, b);
 }
 
 uint32_t cb_judgement_count(uint32_t token) {

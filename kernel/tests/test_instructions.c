@@ -137,10 +137,20 @@ int main(void) {
     assert(cc_kernel_node(k, other_of(opened), NULL, NULL, children) && kind(children[1]) == CC_SIGMA);
     rejects(cc_instr_replace(k, OK(cc_instr_refl(k, statement)), 1, AT(0), unfolded), "not the equality's left side");
 
-    /* A bound name must correspond to an entry of the binder's type. */
+    /* The term checker's definitions are not admitted: Lookup refuses them. */
     cc_term raw_nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
-    cc_term identity = cc_kernel_define(k, 103, cc_kernel_term(k, CC_LAM, W, raw_nat, cc_kernel_term(k, CC_VAR, W, 0, 0, 0, 0), 0, 0), 0);
-    assert(identity);
+    cc_term unadmitted = cc_kernel_define(k, 103, cc_kernel_term(k, CC_LAM, W, raw_nat, cc_kernel_term(k, CC_VAR, W, 0, 0, 0, 0), 0, 0), 0);
+    assert(unadmitted);
+    rejects(cc_instr_lookup(k, unadmitted), "admitted by Define");
+    /* A bound name must correspond to an entry of the binder's type. The
+     * identity λ(W : Nat). W is admitted inside a checkpoint whose entries
+     * the commit drops, so W can then name an entry of another type. */
+    cc_kernel_checkpoint(k);
+    cc_entry_id bound = OK(cc_instr_extend(k, nat, W));
+    cc_judgement_id identity_admitted = OK(cc_instr_define(k, 105, OK(cc_instr_lambda(k, bound, OK(cc_instr_variable(k, bound))))));
+    cc_term identity = term_of(identity_admitted);
+    assert(cc_kernel_commit_checkpoint(k));
+    identity = cc_kernel_relocated(k, identity);
     cc_judgement_id identity_value = STEP(OK(cc_instr_refl(k, OK(cc_instr_lookup(k, identity)))), CC_STEP_DELTA, ROOT);
     cc_entry_id w = OK(cc_instr_extend(k, OK(cc_instr_unit(k)), W));
     rejects(cc_instr_replace(k, identity_value, 1, AT(1), OK(cc_instr_refl(k, OK(cc_instr_variable(k, w))))), "different types");
@@ -217,7 +227,32 @@ int main(void) {
     cc_judgement_id stay = OK(cc_instr_refl(k, nv));
     for (unsigned side = 0; side < 2; ++side)
         system = OK(cc_instr_system_tube(k, system, faces[side], nv, stay));
-    rejects(cc_instr_system_tube(k, system, faces[0], nv, stay), "Overlapping");
+    /* A third tube, on the face 1, overlaps both: until an equality shows it
+     * agrees with each on the overlap, the system neither grows nor closes. */
+    cc_formula_id always, never;
+    cc_init(&formula, CC_FACE);
+    assert(cc_one(&formula) == CC_OK);
+    always = cc_kernel_formula(k, &formula);
+    cc_clear(&formula);
+    cc_init(&formula, CC_FACE);
+    assert(cc_zero(&formula) == CC_OK);
+    never = cc_kernel_formula(k, &formula);
+    cc_clear(&formula);
+    cc_judgement_id overlapping = OK(cc_instr_system_tube(k, system, always, nv, stay));
+    rejects(cc_instr_comp(k, overlapping), "agree with the tubes it overlaps");
+    rejects(cc_instr_system_tube(k, overlapping, never, OK(cc_instr_unit(k)), 0), "agree with the tubes it overlaps");
+    rejects(cc_instr_system_overlap(k, overlapping, 2, stay), "does not overlap");
+    rejects(cc_instr_system_overlap(k, overlapping, 0, OK(cc_instr_refl(k, OK(cc_instr_variable(k, m))))),
+            "does not start at the last tube");
+    cc_judgement_id agreed = OK(cc_instr_system_overlap(k, overlapping, 0, stay));
+    rejects(cc_instr_system_overlap(k, agreed, 0, stay), "already agrees");
+    agreed = OK(cc_instr_system_overlap(k, agreed, 1, stay));
+    /* A tube on the face 0 is never used: any typing judgement will do. */
+    rejects(cc_instr_system_tube(k, agreed, never, OK(cc_instr_unit(k)), stay), "takes no equality");
+    agreed = OK(cc_instr_system_tube(k, agreed, never, OK(cc_instr_unit(k)), 0));
+    cc_judgement_id full = OK(cc_instr_comp(k, agreed));
+    assert(cc_kernel_check_in_cube(k, term_of(full), type_of(full), (cc_assumption[]){{N, type_of(nv)}}, 1, 1, &checked));
+    assert(other_of(STEP(OK(cc_instr_refl(k, full)), CC_STEP_FACE, ROOT)) == term_of(nv));
     rejects(cc_instr_step(k, system, 0, ROOT, CC_STEP_NORMALIZE), "closed by Comp");
     cc_judgement_id composed = OK(cc_instr_comp(k, system));
     assert(kind(term_of(composed)) == CC_COMP && kind(type_of(composed)) == CC_NAT);
@@ -226,6 +261,99 @@ int main(void) {
     cc_assumption assumptions[] = {{N, type_of(nv)}};
     assert(cc_kernel_check_in_cube(k, term_of(composed), type_of(composed), assumptions, 1, 1, &checked));
     rejects(cc_instr_system(k, i, nat, OK(cc_instr_path_apply(k, loop, i, 0))), "may not use its dimension");
+    /* At i = 1 the face i = 1 holds: a face step gives that tube at the end. */
+    rejects(cc_instr_step(k, OK(cc_instr_refl(k, composed)), 1, ROOT, CC_STEP_FACE), "face that holds");
+    cc_judgement_id at_face = OK(cc_instr_endpoint(k, composed, i, 1));
+    assert(other_of(STEP(OK(cc_instr_refl(k, at_face)), CC_STEP_FACE, ROOT)) == term_of(nv));
+
+    /* The pushout of Nat ← Unit → Nat along 0 and 0: points, a path between
+     * them, and the path at an endpoint computing to a point. */
+    cc_judgement_id unit_type = OK(cc_instr_unit(k));
+    cc_entry_id u0 = OK(cc_instr_extend(k, unit_type, 30));
+    cc_judgement_id constant = OK(cc_instr_lambda(k, u0, zero));
+    cc_entry_id f0 = OK(cc_instr_extend(k, OK(cc_instr_pi(k, u0, nat)), 31));
+    cc_judgement_id span_type = OK(cc_instr_sigma(k, f0, OK(cc_instr_pi(k, u0, nat))));
+    cc_judgement_id maps = OK(cc_instr_pair(k, span_type, constant, constant));
+    rejects(cc_instr_pushout(k, unit_type, nat, nat, zero), "maps of a pushout");
+    cc_judgement_id pushout = OK(cc_instr_pushout(k, unit_type, nat, nat, maps));
+    assert(kind(term_of(pushout)) == CC_PUSHOUT && kind(type_of(pushout)) == CC_U);
+    cc_judgement_id inl = OK(cc_instr_push_point(k, pushout, zero, false));
+    assert(kind(term_of(inl)) == CC_PUSH_LEFT && type_of(inl) == term_of(pushout));
+    rejects(cc_instr_push_point(k, pushout, OK(cc_instr_point(k)), true), "wrong type");
+    rejects(cc_instr_push_point(k, nat, zero, false), "pushout type");
+    cc_init(&formula, CC_INTERVAL);
+    assert(cc_generator(&formula, 0, true) == CC_OK);
+    cc_formula_id along = cc_kernel_formula(k, &formula);
+    cc_clear(&formula);
+    cc_judgement_id push = OK(cc_instr_push_path(k, pushout, OK(cc_instr_point(k)), along));
+    assert(context_size(push) == 1 && kind(term_of(push)) == CC_PUSH_PATH);
+    cc_judgement_id at_start = OK(cc_instr_endpoint(k, push, i, 0));
+    assert(kind(other_of(STEP(OK(cc_instr_refl(k, at_start)), CC_STEP_IOTA, ROOT))) == CC_PUSH_LEFT);
+    rejects(cc_instr_step(k, OK(cc_instr_refl(k, push)), 1, ROOT, CC_STEP_IOTA), "Iota needs");
+    /* Homogeneous composition, over the pushout; not over Nat. */
+    cc_judgement_id box = OK(cc_instr_system(k, j2, pushout, inl));
+    box = OK(cc_instr_system_tube(k, box, faces[0], inl, OK(cc_instr_refl(k, inl))));
+    cc_judgement_id hcomp = OK(cc_instr_hcomp(k, box));
+    assert(kind(term_of(hcomp)) == CC_HCOMP && type_of(hcomp) == term_of(pushout));
+    rejects(cc_instr_hcomp(k, system), "pushout types");
+    /* Transport along a constant family: its tubes are the base on each clause. */
+    cc_judgement_id moved = OK(cc_instr_trans(k, box, faces[0]));
+    assert(kind(term_of(moved)) == CC_TRANS && type_of(moved) == term_of(pushout));
+    rejects(cc_instr_trans(k, box, faces[1]), "clauses, in order");
+    cc_judgement_id still = OK(cc_instr_system_tube(k, OK(cc_instr_system(k, j2, pushout, inl)), always, inl,
+                                                     OK(cc_instr_refl(k, inl))));
+    cc_judgement_id unmoved = OK(cc_instr_trans(k, still, always));
+    assert(other_of(STEP(OK(cc_instr_refl(k, unmoved)), CC_STEP_FACE, ROOT)) == term_of(inl));
+
+    /* Glue over Nat with a piece on the face 0, which is never used: a Glue
+     * term of it, and unglue. An equivalence must be one, of the stated type. */
+    cc_judgement_id glue_system = OK(cc_instr_glue_base(k, nat));
+    rejects(cc_instr_glue_base(k, zero), "Expected a type");
+    rejects(cc_instr_glue_piece(k, glue_system, faces[0], unit_type, zero), "equivalence is not");
+    rejects(cc_instr_glue(k, OK(cc_instr_system(k, j2, nat, zero))), "Not a Glue type");
+    glue_system = OK(cc_instr_glue_piece(k, glue_system, never, unit_type, zero));
+    cc_judgement_id glued = OK(cc_instr_glue(k, glue_system));
+    assert(kind(term_of(glued)) == CC_GLUE && kind(type_of(glued)) == CC_U);
+    rejects(cc_instr_glue_term_base(k, nat, zero), "needs a Glue type");
+    cc_judgement_id glue_value = OK(cc_instr_glue_term_base(k, glued, zero));
+    rejects(cc_instr_glue_term(k, glue_value), "value for every piece");
+    glue_value = OK(cc_instr_glue_term_piece(k, glue_value, OK(cc_instr_point(k)), 0));
+    cc_judgement_id element = OK(cc_instr_glue_term(k, glue_value));
+    assert(kind(term_of(element)) == CC_GLUE_TERM && type_of(element) == term_of(glued));
+    assert(cc_kernel_check(k, term_of(element), type_of(element), NULL, 0, &checked));
+    assert(type_of(OK(cc_instr_unglue(k, element))) == term_of(nat));
+    rejects(cc_instr_unglue(k, zero), "Glue type");
+
+    /* The W type of trees with Unit many children at each label: W(x : Unit). Unit.
+     * A tree whose children are one tree, and W recursion computing on sup. */
+    cc_judgement_id trees = OK(cc_instr_w(k, u0, unit_type));
+    assert(kind(term_of(trees)) == CC_W && kind(type_of(trees)) == CC_U);
+    cc_judgement_id tt = OK(cc_instr_point(k));
+    assert(kind(term_of(OK(cc_instr_family(k, trees, tt)))) == CC_UNIT);
+    cc_entry_id sub = OK(cc_instr_extend(k, trees, 32));
+    cc_entry_id slot = OK(cc_instr_extend(k, unit_type, 33));
+    cc_judgement_id only = OK(cc_instr_lambda(k, slot, OK(cc_instr_variable(k, sub))));
+    rejects(cc_instr_sup(k, trees, zero, only), "label has the wrong type");
+    rejects(cc_instr_sup(k, nat, tt, only), "W type");
+    cc_judgement_id node = OK(cc_instr_sup(k, trees, tt, only));
+    assert(kind(term_of(node)) == CC_SUP && type_of(node) == term_of(trees));
+    /* WRec(λz. Nat, λl. λc. λh. 0, node) : (λz. Nat)(node), and it computes. */
+    cc_entry_id z0 = OK(cc_instr_extend(k, trees, 34));
+    cc_judgement_id count = OK(cc_instr_lambda(k, z0, nat));
+    cc_entry_id l0 = OK(cc_instr_extend(k, unit_type, 35));
+    cc_entry_id c0 = OK(cc_instr_extend(k, OK(cc_instr_pi(k, slot, trees)), 36));
+    cc_judgement_id child_count = OK(cc_instr_apply(k, count, OK(cc_instr_apply(k, OK(cc_instr_variable(k, c0)),
+                                                                                OK(cc_instr_variable(k, slot))))));
+    cc_entry_id h0 = OK(cc_instr_extend(k, OK(cc_instr_pi(k, slot, child_count)), 37));
+    cc_judgement_id tree_count = OK(cc_instr_apply(k, count, OK(cc_instr_sup(k, trees, OK(cc_instr_variable(k, l0)),
+                                                                                 OK(cc_instr_variable(k, c0))))));
+    cc_judgement_id counted = OK(cc_instr_convert(k, zero, OK(cc_instr_symmetry(k, STEP(OK(cc_instr_refl(k, tree_count)),
+                                                                                       CC_STEP_BETA, ROOT)))));
+    cc_judgement_id step_case = OK(cc_instr_lambda(k, l0, OK(cc_instr_lambda(k, c0, OK(cc_instr_lambda(k, h0, counted))))));
+    rejects(cc_instr_w_elim(k, count, zero, node), "step has the wrong type");
+    cc_judgement_id recursion_w = OK(cc_instr_w_elim(k, count, step_case, node));
+    assert(kind(term_of(recursion_w)) == CC_WREC);
+    assert(kind(other_of(STEP(OK(cc_instr_refl(k, recursion_w)), CC_STEP_IOTA, ROOT))) == CC_APP);
 
     /* Mismatches are reported with both types. */
     cc_term found, wanted;
@@ -255,6 +383,9 @@ int main(void) {
     cc_entry_id many[400];
     for (uint32_t s = 0; s < 400; ++s) many[s] = OK(cc_instr_extend(k, nat, 1000 + s));
     for (uint32_t s = 0; s < 400; s += 37) assert(OK(cc_instr_extend(k, nat, 1000 + s)) == many[s]);
+    /* The same name at the same type is the same entry, whatever derived the type. */
+    cc_judgement_id nat_again = OK(cc_instr_side(k, OK(cc_instr_refl(k, nat)), 1));
+    assert(nat_again != nat && OK(cc_instr_extend(k, nat_again, 1000)) == many[0]);
     rejects(cc_instr_extend(k, OK(cc_instr_unit(k)), 1234), "already names");
     assert(OK(cc_instr_dimension(k, 1)) == j2);
 

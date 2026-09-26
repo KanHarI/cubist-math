@@ -8,7 +8,9 @@ import { KernelError } from "./cubical-kernel.mjs";
 export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "unit", "point", "unitElim",
   "void", "abort", "sum", "inject", "sumElim", "variable", "pi", "lambda", "apply", "sigma", "pair", "first",
   "second", "domain", "family", "path", "pathLambda", "pathApply", "define", "lookup", "refl", "step", "replace",
-  "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp"];
+  "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp", "systemOverlap",
+  "pushout", "pushPoint", "pushPath", "pushElim", "w", "sup", "wElim", "hcomp", "trans",
+  "glueBase", "gluePiece", "glueOverlap", "glue", "glueTermBase", "glueTermPiece", "glueTerm", "unglue"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
   natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
@@ -18,8 +20,12 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   pathApply: "PathElim", define: "Def", lookup: "DefLookup", refl: "DefEqRefl", step: "Step",
   replace: "HighSubs", eta: "Eta", side: "DefEqExt", symmetry: "DefEqSwp", transitivity: "DefEqTrans",
   convert: "Conv", lift: "Lift", endpoint: "Endpoint", pathAt: "PathElim", system: "CompBase", systemTube: "CompTube",
-  comp: "Comp" };
-export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf"];
+  comp: "Comp", systemOverlap: "CompOverlap", pushout: "PushoutForm", pushPoint: "PushoutIntro",
+  pushPath: "PushoutPath", pushElim: "PushoutElim", w: "WForm", sup: "WIntro", wElim: "WElim",
+  hcomp: "HComp", trans: "Transp", glueBase: "GlueBase", gluePiece: "GluePiece", glueOverlap: "GlueOverlap",
+  glue: "GlueForm", glueTermBase: "GlueIntroBase", glueTermPiece: "GlueIntroPiece", glueTerm: "GlueIntro",
+  unglue: "GlueElim" };
+export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
 const EXTEND = 100, DIMENSION = 101;
@@ -39,13 +45,14 @@ export class InstructionGraph {
     this.kernel.assertOpen();
     const code = typeof name === "number" ? name : instructions.indexOf(name);
     while (operands.length < 4) operands.push(0);
-    const id = this.module._cb_instr(this.kernel.handle, code, ...operands.map(operand => operand >>> 0)) >>> 0;
-    if (!id) {
-      const error = this.kernel.failure(`${name} failed.`);
-      this.module._cb_clear_error(this.kernel.handle);
-      throw error;
-    }
-    return id;
+    return this.answer(this.module._cb_instr(this.kernel.handle, code, ...operands.map(operand => operand >>> 0)), `${name} failed.`);
+  }
+  // A handle, or the kernel's error thrown and cleared: 0 is never a result.
+  answer(handle, fallback) {
+    if (handle >>> 0) return handle >>> 0;
+    const error = this.kernel.failure(fallback);
+    this.module._cb_clear_error(this.kernel.handle);
+    throw error;
   }
   position(path) {
     this.module._cb_position_clear(this.kernel.handle);
@@ -84,7 +91,26 @@ export class InstructionGraph {
   pathAt(path, formula) { return this.issue("pathAt", path, formula); }
   system(dimension, family, base) { return this.issue("system", dimension, family, base); }
   systemTube(system, face, tube, adjacency) { return this.issue("systemTube", system, face, tube, adjacency); }
+  // The last tube agrees with the tube at `position` where their faces meet.
+  systemOverlap(system, position, agreement) { return this.issue("systemOverlap", system, position, agreement); }
   comp(system) { return this.issue("comp", system); }
+  hcomp(system) { return this.issue("hcomp", system); }
+  trans(system, face) { return this.issue("trans", system, face); }
+  glueBase(base) { return this.issue("glueBase", base); }
+  gluePiece(system, face, type, equivalence) { return this.issue("gluePiece", system, face, type, equivalence); }
+  glueOverlap(system, position, types, equivalences) { return this.issue("glueOverlap", system, position, types, equivalences); }
+  glue(system) { return this.issue("glue", system); }
+  glueTermBase(type, base) { return this.issue("glueTermBase", type, base); }
+  glueTermPiece(system, value, image) { return this.issue("glueTermPiece", system, value, image); }
+  glueTerm(system) { return this.issue("glueTerm", system); }
+  unglue(value) { return this.issue("unglue", value); }
+  pushout(source, left, right, maps) { return this.issue("pushout", source, left, right, maps); }
+  pushPoint(type, value, right) { return this.issue("pushPoint", type, value, right ? 1 : 0); }
+  pushPath(type, value, interval) { return this.issue("pushPath", type, value, interval); }
+  pushElim(motive, left, right, bridge) { return this.issue("pushElim", motive, left, right, bridge); }
+  w(entry, arities) { return this.issue("w", entry, arities); }
+  sup(type, label, children) { return this.issue("sup", type, label, children); }
+  wElim(motive, step, value) { return this.issue("wElim", motive, step, value); }
   define(name, closed) { return this.issue("define", this.kernel.symbol(name), closed); }
   lookup(reference) { return this.issue("lookup", reference); }
   refl(typing) { return this.issue("refl", typing); }
@@ -114,8 +140,18 @@ export class InstructionGraph {
     const answer = this.module._cb_convertible(this.kernel.handle, a, b, steps);
     return answer === 2 ? null : answer === 1;
   }
+  // Syntax only: Equiv(a, b) as the Glue rules state it.
+  equivType(a, b) {
+    return this.answer(this.module._cb_equiv_type(this.kernel.handle, a, b), "Could not build an equivalence type.");
+  }
+  // Syntax only: a term with 0 or 1 substituted for a free dimension.
+  endpointTerm(term, dimension, endpoint) {
+    return this.answer(this.module._cb_endpoint_term(this.kernel.handle, term, dimension, endpoint), "Could not substitute an endpoint.");
+  }
   // Syntax only, for the same search: a free name or dimension renamed.
-  rename(term, dimension, from, to) { return this.module._cb_rename(this.kernel.handle, term, dimension ? 1 : 0, from, to) >>> 0; }
+  rename(term, dimension, from, to) {
+    return this.answer(this.module._cb_rename(this.kernel.handle, term, dimension ? 1 : 0, from, to), "Could not rename.");
+  }
   get count() { return this.module._cb_judgement_count(this.kernel.handle) >>> 0; }
   get entryCount() { return this.module._cb_entry_count(this.kernel.handle) >>> 0; }
   // A judgement: its statement, the instruction that derived it, and its

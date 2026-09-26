@@ -308,6 +308,10 @@ uint32_t ck_fresh_symbol(cc_kernel *k) {
     return k->next_symbol++;
 }
 
+uint32_t cc_kernel_fresh_symbol(cc_kernel *k) {
+    return k ? ck_fresh_symbol(k) : 0;
+}
+
 void cc_kernel_clear_error(cc_kernel *k) {
     if (k)
         k->error[0] = '\0';

@@ -9,13 +9,14 @@ import { ththNames } from "./cubical-instructions.mjs";
 // `expanded` holds definition references whose bodies are derived too: THTH
 // derived a DefLookup from the Def judgement that registered the definition,
 // and here the body's derivation becomes the lookup's premise, "defined by".
-export function judgementGraph(program, view, checked, { limit = 1500, expanded = new Set() } = {}) {
+export function judgementGraph(program, view, checked = null, { limit = 1500, expanded = new Set() } = {}) {
   const kernel = program.kernel, checker = program.checker, dimensions = new Map(view.dimensions ?? []);
   const driver = new InstructionDriver(kernel), graph = driver.graph;
   const encode = term => checker.syntax.encode(term, dimensions);
   const decode = handle => checker.syntax.decode(handle, dimensions);
   const context = view.context.map(entry => [kernel.symbol(entry.name), encode(entry.type)]);
-  const root = driver.check(checked.expression, encode(view.type), context);
+  const live = [...dimensions.values()].reduce((mask, index) => mask | 1n << BigInt(index), 0n);
+  const root = driver.check(checked?.expression ?? encode(view.expression), encode(view.type), context, live);
 
   // Every judgement the conclusion rests on: through premises, the judgements
   // that justify its context entries, and the bodies of expanded definitions.

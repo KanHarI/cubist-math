@@ -54,6 +54,8 @@ try {
   const workbench = await opened;
   await workbench.waitForURL(/workbench\.html/);
   await workbench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+  assert.equal(await workbench.locator("#workbench-view").inputValue(), "graph");
+  await workbench.locator("#workbench-view").selectOption("math");
   assert.ok(await workbench.locator("#context .context-entry").count());
   assert.match(await workbench.locator("#source-back").getAttribute("href"), /proof\.html/);
   await workbench.locator("details summary").click();
@@ -80,6 +82,7 @@ try {
   await page.locator("#open-kernel-expression").click();
   const intervalWorkbench = await intervalOpened;
   await intervalWorkbench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+  await intervalWorkbench.locator("#workbench-view").selectOption("math");
   assert.match(await intervalWorkbench.locator("#context").textContent(), /Interval coordinates/);
   await intervalWorkbench.close();
   await page.goto(`http://127.0.0.1:${port}/benchmark.html`);

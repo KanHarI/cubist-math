@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // How much of the archive derives in instruction mode. The archive is checked
-// once by the term checker; then every checked definition's value is derived
-// again by the instruction driver at its checked type, with a time limit per
-// definition. Writes build/instruction-coverage.json and prints a summary.
+// once, every check derived by the instruction kernel; then every definition's
+// value is derived again by a fresh instruction driver at its type, with a
+// time limit per definition. Writes build/instruction-coverage.json and prints a summary.
 //   node tools/instruction-coverage.mjs [--limit-ms=5000]
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
