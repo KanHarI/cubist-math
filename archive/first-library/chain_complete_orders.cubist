@@ -112,7 +112,7 @@ def collapse_path_recovers(
 ) :
   collapse_path(A, h, x, y, p) = p {
   exact based_induction(
-    U1, U1, A, x, (fun (z : A) (q : x = z) => collapse_path(A, h, x, z, q) = q),
+    U1, U1, A, x, (fun (z : A, q : x = z) => collapse_path(A, h, x, z, q) = q),
     inverse_left(A, x, x, h(x, x, refl(x))), y, p
   );
 }
@@ -171,11 +171,11 @@ def field_subtype_is_set(
   FieldSet(exists x : A, P(x)) {
   let S = exists x : A, P(x);
   let first = field_first(A, P);
-  let h = fun (x y : S) (p : x = y) => field_subtype_ext(A, P, prop, x, y, cong(first, p));
+  let h = fun (x y : S, p : x = y) => field_subtype_ext(A, P, prop, x, y, cong(first, p));
   exact weak_path_collapser_set(
     S, h,
     (
-      fun (x y : S) (p q : x = y) => cong(
+      fun (x y : S, p q : x = y) => cong(
         field_subtype_ext(A, P, prop, x, y),
         setA(first(x), first(y), cong(first, p), cong(first, q))
       )

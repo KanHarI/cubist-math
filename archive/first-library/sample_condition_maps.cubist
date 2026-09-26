@@ -36,7 +36,7 @@ def sample_tagged_map(
     forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
     SampleTagged(C, condition, k, vertices, tags) -> SampleTagged(C, other, k, vertices, tags)
   ) {
-    zero => fun (vertices : C) (tags valid : Unit) => tt;
+    zero => fun (vertices : C, tags valid : Unit) => tt;
     succ previous => sample_tagged_map_step(C, condition, other, mapping, k, previous);
   };
 }

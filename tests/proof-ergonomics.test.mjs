@@ -717,8 +717,8 @@ test("a grouped binder checks its shared domain before a binder shadows that nam
 });
 
 test("a multi-binder fun source link inspects the complete closed function",async t=>{
-  for(const expression of ["fun (x : Nat) (y : Nat) => x",
-    "fun (x y : Nat) => x", "fun (x : Nat) (fun : Nat) => x"]) {
+  for(const expression of ["fun (x : Nat, y : Nat) => x",
+    "fun (x y : Nat) => x", "fun (x : Nat, fun : Nat) => x"]) {
     const program=new CubicalProgram(await createCubical(),readLibrary);
     t.after(()=>program.dispose());
     const source=`def f = ${expression};`;

@@ -92,7 +92,7 @@ def subfield_base_subspace(
   exact (
     P, subfield_prop(L, P, laws), subfield_zero(L, P, laws), subfield_add(L, P, laws),
     (
-      fun (a : af_carrier(K)) (x : af_carrier(L)) (px : P(x)) => subfield_mul(
+      fun (a : af_carrier(K), x : af_carrier(L), px : P(x)) => subfield_mul(
         L, P, laws, field_embedding_map(K, L, e, a), x, contains(a), px
       )
     )

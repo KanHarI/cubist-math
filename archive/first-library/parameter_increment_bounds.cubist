@@ -40,13 +40,13 @@ def parameter_coordinate_increment_bounds(
       C, F, addF, negF, lt, curve, realWeight, imagWeight, k, vertices, tags
     )
   ) {
-    zero => fun (vertices : C) (tags realBounds imagBounds : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
+    zero => fun (vertices : C, tags realBounds imagBounds : Unit) => tt;
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)),
       realBounds : SampleMagnitudeBounds(
         C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, succ(k),
         vertices, tags
-      )
-    ) (
+      ),
       imagBounds : SampleMagnitudeBounds(
         C, F, negF, lt, parameter_imag_increment(C, F, addF, negF, curve), imagWeight, succ(k),
         vertices, tags

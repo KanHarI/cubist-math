@@ -21,10 +21,11 @@ def sample_sum_magnitude_bound(
       sample_sum(C, F, zero, addF, radius, k, vertices, tags)
     )
   ) {
-    zero => fun (vertices : C) (tags bounds : Unit) => field_magnitude_zero(
+    zero => fun (vertices : C, tags bounds : Unit) => field_magnitude_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic
     );
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)),
       bounds : SampleMagnitudeBounds(C, F, negF, lt, edge, radius, succ(k), vertices, tags)
     ) => field_magnitude_add(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
@@ -113,10 +114,10 @@ def sample_magnitude_product(
       (fun (a b t : C) => mulF(radius(a, b, t), otherRadius(a, b, t))), k, vertices, tags
     )
   ) {
-    zero => fun (vertices : C) (tags leftBounds rightBounds : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
-      leftBounds : SampleMagnitudeBounds(C, F, negF, lt, edge, radius, succ(k), vertices, tags)
-    ) (
+    zero => fun (vertices : C, tags leftBounds rightBounds : Unit) => tt;
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)),
+      leftBounds : SampleMagnitudeBounds(C, F, negF, lt, edge, radius, succ(k), vertices, tags),
       rightBounds : SampleMagnitudeBounds(
         C, F, negF, lt, other, otherRadius, succ(k), vertices, tags
       )

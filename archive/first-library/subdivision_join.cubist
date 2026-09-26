@@ -41,9 +41,11 @@ def join_subdivision_families(C : U1, n : Nat) =
     (sample_last(C, k, vertices) = sample_first(C, m, rightVertices))
     -> SampleSubdivisions(C, k + m, join_vertices(C, k, vertices, m, rightVertices))
   ) {
-    zero => fun (vertices : C) (pieces : Unit) (m : Nat) (rightVertices : SampleVertices(C, m)) (
-      rightPieces : SampleSubdivisions(C, m, rightVertices)
-    ) (same : vertices = sample_first(C, m, rightVertices)) => rightPieces;
+    zero => fun (
+      vertices : C, pieces : Unit, m : Nat, rightVertices : SampleVertices(C, m),
+      rightPieces : SampleSubdivisions(C, m, rightVertices),
+      same : vertices = sample_first(C, m, rightVertices)
+    ) => rightPieces;
     succ previous => join_subdivision_families_step(C, k, previous);
   };
 
@@ -133,11 +135,11 @@ def subdivision_total_join(
       subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)
     )
   ) {
-    zero => fun (vertices : C) (pieces : Unit) (m : Nat) (rightVertices : SampleVertices(C, m)) (
-      rightPieces : SampleSubdivisions(C, m, rightVertices)
-    ) (same : vertices = sample_first(C, m, rightVertices)) => sym(
-      unitLaw(subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces))
-    );
+    zero => fun (
+      vertices : C, pieces : Unit, m : Nat, rightVertices : SampleVertices(C, m),
+      rightPieces : SampleSubdivisions(C, m, rightVertices),
+      same : vertices = sample_first(C, m, rightVertices)
+    ) => sym(unitLaw(subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)));
     succ previous => subdivision_total_join_step(
       C, G, zero, addG, unitLaw, assoc, edge, k, previous
     );

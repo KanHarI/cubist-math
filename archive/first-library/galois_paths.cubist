@@ -67,13 +67,13 @@ def extension_transport_forward(K : AlgebraicField, E F : FieldExt(K), p : E = F
   exact path_induction(
     FieldExt(K),
     (
-      fun (E F : FieldExt(K)) (p : E = F) => forall x : extension_carrier(K, E),
+      fun (E F : FieldExt(K), p : E = F) => forall x : extension_carrier(K, E),
       (along extension_carrier(K) by p from x) = extension_iso_forward(
         K, E, F, extension_path_iso(K, E, F, p), x
       )
     ),
     (
-      fun (E : FieldExt(K)) (x : extension_carrier(K, E)) => trans(
+      fun (E : FieldExt(K), x : extension_carrier(K, E)) => trans(
         transport_constant(FieldExt(K), extension_carrier(K, E), E, E, refl(E), x),
         sym(
           cong(

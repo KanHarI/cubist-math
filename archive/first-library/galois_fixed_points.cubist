@@ -33,18 +33,16 @@ def galois_connection(
   GaloisConnection(K, E, H, P) {
   exact (
     (
-      fun (fixes : PredicateIncluded(Galois(K, E), H, GaloisFixing(K, E, P))) (
-        x : extension_carrier(K, E)
-      ) (px : P(x)) (e : Galois(K, E)) (he : H(e)) => typed(GaloisFixing(K, E, P, e), fixes(e, he))(
-        x, px
-      )
+      fun (
+        fixes : PredicateIncluded(Galois(K, E), H, GaloisFixing(K, E, P)),
+        x : extension_carrier(K, E), px : P(x), e : Galois(K, E), he : H(e)
+      ) => typed(GaloisFixing(K, E, P, e), fixes(e, he))(x, px)
     ),
     (
-      fun (fixed : PredicateIncluded(extension_carrier(K, E), P, GaloisFixed(K, E, H))) (
-        e : Galois(K, E)
-      ) (he : H(e)) (x : extension_carrier(K, E)) (px : P(x)) => typed(
-        GaloisFixed(K, E, H, x), fixed(x, px)
-      )(e, he)
+      fun (
+        fixed : PredicateIncluded(extension_carrier(K, E), P, GaloisFixed(K, E, H)),
+        e : Galois(K, E), he : H(e), x : extension_carrier(K, E), px : P(x)
+      ) => typed(GaloisFixed(K, E, H, x), fixed(x, px))(e, he)
     )
   );
 }
@@ -56,8 +54,8 @@ def galois_fixed_antitone(
 ) :
   PredicateIncluded(extension_carrier(K, E), GaloisFixed(K, E, J), GaloisFixed(K, E, H)) {
   exact (
-    fun (x : extension_carrier(K, E)) (fixed : GaloisFixed(K, E, J, x)) (e : Galois(K, E)) (
-      member : H(e)
+    fun (
+      x : extension_carrier(K, E), fixed : GaloisFixed(K, E, J, x), e : Galois(K, E), member : H(e)
     ) => fixed(e, included(e, member))
   );
 }
@@ -69,8 +67,8 @@ def galois_fixing_antitone(
 ) :
   PredicateIncluded(Galois(K, E), GaloisFixing(K, E, Q), GaloisFixing(K, E, P)) {
   exact (
-    fun (e : Galois(K, E)) (fixes : GaloisFixing(K, E, Q, e)) (x : extension_carrier(K, E)) (
-      member : P(x)
+    fun (
+      e : Galois(K, E), fixes : GaloisFixing(K, E, Q, e), x : extension_carrier(K, E), member : P(x)
     ) => fixes(x, included(x, member))
   );
 }
@@ -80,8 +78,8 @@ def galois_fixed_fixing_contains(
 ) :
   PredicateIncluded(extension_carrier(K, E), P, GaloisFixed(K, E, GaloisFixing(K, E, P))) {
   exact (
-    fun (x : extension_carrier(K, E)) (member : P(x)) (e : Galois(K, E)) (
-      fixes : GaloisFixing(K, E, P, e)
+    fun (
+      x : extension_carrier(K, E), member : P(x), e : Galois(K, E), fixes : GaloisFixing(K, E, P, e)
     ) => fixes(x, member)
   );
 }
@@ -89,8 +87,8 @@ def galois_fixed_fixing_contains(
 def galois_fixing_fixed_contains(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) :
   PredicateIncluded(Galois(K, E), H, GaloisFixing(K, E, GaloisFixed(K, E, H))) {
   exact (
-    fun (e : Galois(K, E)) (member : H(e)) (x : extension_carrier(K, E)) (
-      fixed : GaloisFixed(K, E, H, x)
+    fun (
+      e : Galois(K, E), member : H(e), x : extension_carrier(K, E), fixed : GaloisFixed(K, E, H, x)
     ) => fixed(e, member)
   );
 }

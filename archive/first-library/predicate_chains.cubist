@@ -46,10 +46,10 @@ def predicate_chain_directed(I : U1, A : U0, P : I -> A -> U0, chain : Predicate
     intro comparison;
     cases comparison {
       left ij => {
-        exact field_exists_intro(Upper, typed(Upper, (j, ij, (fun (x : A) (hx : P(j, x)) => hx))));
+        exact field_exists_intro(Upper, typed(Upper, (j, ij, (fun (x : A, hx : P(j, x)) => hx))));
       }
       right ji => {
-        exact field_exists_intro(Upper, typed(Upper, (i, (fun (x : A) (hx : P(i, x)) => hx), ji)));
+        exact field_exists_intro(Upper, typed(Upper, (i, (fun (x : A, hx : P(i, x)) => hx), ji)));
       }
     }
   }
@@ -116,15 +116,15 @@ def finite_directed_union_cover(
     forall v : Fin(k) -> A, (forall i : Fin(k), PredicateUnion(I, A, P, v(i)))
     -> FieldExists(FiniteFamilyCover(I, A, P, k, v))
   ) {
-    zero => fun (v : Fin(0) -> A) (members : (forall i : Fin(0), PredicateUnion(I, A, P, v(i)))) => field_exists_intro(
+    zero => fun (v : Fin(0) -> A, members : (forall i : Fin(0), PredicateUnion(I, A, P, v(i)))) => field_exists_intro(
       FiniteFamilyCover(I, A, P, 0, v),
       typed(
         FiniteFamilyCover(I, A, P, 0, v),
         (seed, (fun (i : Fin(0)) => typed(P(seed, v(i)), absurd(i))))
       )
     );
-    succ previous => fun (v : Fin(succ(k)) -> A) (
-      members : (forall i : Fin(succ(k)), PredicateUnion(I, A, P, v(i)))
+    succ previous => fun (
+      v : Fin(succ(k)) -> A, members : (forall i : Fin(succ(k)), PredicateUnion(I, A, P, v(i)))
     ) => finite_cover_step(
       I, A, P, directed, k, v, members(typed(Fin(succ(k)), left(tt))),
       previous(finite_tail(A, k, v), (fun (i : Fin(k)) => members(typed(Fin(succ(k)), right(i)))))

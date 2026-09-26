@@ -142,7 +142,7 @@ def left_unit(A : U1, x y : A, p : x = y) =
   );
 
 def cancel_left(A : U1, x y : A, p : x = y) =
-  fun (z : A) (q r : y = z) (same : trans(p, q) = trans(p, r)) => trans(
+  fun (z : A, q r : y = z, same : trans(p, q) = trans(p, r)) => trans(
     sym(
       trans(
         sym(path_associative(A, y, x, y, z, sym(p), p, q)),
@@ -361,7 +361,7 @@ def based_induction(
   c : C(origin, refl(origin)), x : A, p : origin = x
 ) =
   path_induction(
-    A, fun (a b : A) (q : a = b) => forall D : (forall point : A, (a = point) -> V), D(a, refl(a))
-    -> D(b, q), fun (a : A) (D : (forall point : A, (a = point) -> V)) (d : D(a, refl(a))) => d,
+    A, fun (a b : A, q : a = b) => forall D : (forall point : A, (a = point) -> V), D(a, refl(a))
+    -> D(b, q), fun (a : A, D : (forall point : A, (a = point) -> V), d : D(a, refl(a))) => d,
     origin, x, p
   )(C, c);

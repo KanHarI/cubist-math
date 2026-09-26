@@ -182,7 +182,7 @@ def structure_total_set_path(
   exact path_induction(
     IsSet(A),
     (
-      fun (setA setB : IsSet(A)) (p : setA = setB) => forall e : StructureIso(
+      fun (setA setB : IsSet(A), p : setA = setB) => forall e : StructureIso(
         S, R, structure_object(S, A, a, setA), structure_object(S, A, a, setB)
       ),
       (
@@ -198,9 +198,9 @@ def structure_total_set_path(
       )
     ),
     (
-      fun (setA : IsSet(A)) (
-        e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, A, a, setA))
-      ) (
+      fun (
+        setA : IsSet(A),
+        e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, A, a, setA)),
         same : (
           forall x : A,
           x = structure_iso_forward(
@@ -238,7 +238,7 @@ def structure_total_data_path(
   exact path_induction(
     S(A),
     (
-      fun (a b : S(A)) (p : a = b) => forall setA : IsSet(A), forall setB : IsSet(A),
+      fun (a b : S(A), p : a = b) => forall setA : IsSet(A), forall setB : IsSet(A),
       forall e : StructureIso(
         S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB)
       ),
@@ -291,9 +291,9 @@ def structure_total_constant_transport(
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R)
 ) =
   (
-    fun (A : U0) (a b : S(A)) (setA setB : IsSet(A)) (
-      e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB))
-    ) (
+    fun (
+      A : U0, a b : S(A), setA setB : IsSet(A),
+      e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB)),
       same : (
         forall x : A,
         group_carrier_transport(A, A, refl(A), x) = structure_iso_forward(
@@ -327,7 +327,7 @@ def structure_total_transport(
   exact path_induction(
     U0,
     (
-      fun (A B : U0) (p : A = B) => forall a : S(A), forall b : S(B), forall setA : IsSet(A),
+      fun (A B : U0, p : A = B) => forall a : S(A), forall b : S(B), forall setA : IsSet(A),
       forall setB : IsSet(B),
       forall e : StructureIso(
         S, R, structure_object(S, A, a, setA), structure_object(S, B, b, setB)
@@ -380,7 +380,7 @@ def structure_induction(
   exact pair_induction(
     P,
     (
-      fun (A : U0) (data : S(A) and IsSet(A)) => pair_induction(
+      fun (A : U0, data : S(A) and IsSet(A)) => pair_induction(
         (fun (data : S(A) and IsSet(A)) => P(typed(Structure(S), (A, data)))), step(A), data
       )
     ), X
@@ -400,7 +400,7 @@ def structure_total_contractible(
       structure_iso_center(S, R, identity, X) = structure_iso_point(S, R, X, Y, e)
     ),
     (
-      fun (A : U0) (a : S(A)) (setA : IsSet(A)) => structure_induction(
+      fun (A : U0, a : S(A), setA : IsSet(A)) => structure_induction(
         S,
         (
           fun (Y : Structure(S)) => forall e : StructureIso(
@@ -411,7 +411,7 @@ def structure_total_contractible(
           )
         ),
         (
-          fun (B : U0) (b : S(B)) (setB : IsSet(B)) => structure_objects_total(
+          fun (B : U0, b : S(B), setB : IsSet(B)) => structure_objects_total(
             S, R, prop, identity, reflects, A, B, a, b, setA, setB
           )
         )

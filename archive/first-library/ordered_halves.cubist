@@ -81,7 +81,7 @@ def ordered_field_halving(
   exact (
     half, sum,
     (
-      fun (epsilon : F) (positive : lt(zero, epsilon)) => positive_half_from_sum(
+      fun (epsilon : F, positive : lt(zero, epsilon)) => positive_half_from_sum(
         F, zero, one, addF, mulF, lt, order, arithmetic, epsilon, half(epsilon), sum(epsilon),
         positive
       )

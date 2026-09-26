@@ -99,7 +99,7 @@ def span_idempotent(
     (
       fun (member : Span(K, V, Span(K, V, P), x)) => span_least(
         K, V, Span(K, V, P), SpanSubspace(K, V, P),
-        (fun (y : vector_carrier(K, V)) (hy : Span(K, V, P, y)) => hy), x, member
+        (fun (y : vector_carrier(K, V), hy : Span(K, V, P, y)) => hy), x, member
       )
     ), span_generator(K, V, Span(K, V, P), x)
   );

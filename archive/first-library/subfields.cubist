@@ -262,10 +262,10 @@ def subfield_top_laws(F : AlgebraicField) : SubfieldLaws(F, SubfieldTop(F)) {
   let A = af_carrier(F);
   let ops = af_operations(F);
   exact (
-    (fun (x : A) (p q : Unit) => trans(sym(unit_equal(p)), unit_equal(q))), tt, tt,
-    (fun (x : A) (px : Unit) => tt), (fun (x y : A) (px py : Unit) => tt),
-    (fun (x y : A) (px py : Unit) => tt),
-    (fun (x y : A) (px : Unit) (inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops)) => tt)
+    (fun (x : A, p q : Unit) => trans(sym(unit_equal(p)), unit_equal(q))), tt, tt,
+    (fun (x : A, px : Unit) => tt), (fun (x y : A, px py : Unit) => tt),
+    (fun (x y : A, px py : Unit) => tt),
+    (fun (x y : A, px : Unit, inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops)) => tt)
   );
 }
 

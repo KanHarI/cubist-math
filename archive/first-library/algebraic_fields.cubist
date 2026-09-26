@@ -373,7 +373,7 @@ def algebraic_field_laws_prop(
   let nontrivialProp =
     forall_prop(
       (af_one(A, ops) = af_zero(A, ops)), (fun (e : af_one(A, ops) = af_zero(A, ops)) => Void),
-      (fun (e : af_one(A, ops) = af_zero(A, ops)) (v w : Void) => typed((v = w), absurd(v)))
+      (fun (e : af_one(A, ops) = af_zero(A, ops), v w : Void) => typed((v = w), absurd(v)))
     );
   let inverseProp =
     forall_prop(

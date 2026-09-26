@@ -3,7 +3,7 @@ import finite_basis_search;
 // A least natural satisfying a proposition is unique, so it can be recovered
 // from mere existence without a choice function.
 def natural_order_prop(n : Nat) = induction n as k return (forall m : Nat, Proposition(le(k, m))) {
-    zero => fun (m : Nat) (a b : Unit) => trans(sym(unit_equal(a)), unit_equal(b));
+    zero => fun (m : Nat, a b : Unit) => trans(sym(unit_equal(a)), unit_equal(b));
     succ previous => fun (m : Nat) => induction m as j return Proposition(le(succ(k), j)) {
       zero => fun (a b : Void) => typed((a = b), absurd(a));
       succ ignored => previous(j);

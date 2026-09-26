@@ -95,7 +95,8 @@ def tower_separation(
     (fun (y : A) => field_exists_prop(le(y, a) or le(f(a), y))),
     tower_separation_step(A, le, laws, complete, f, progressive, a, stable),
     (
-      fun (C : A -> U0) (chain : OrderChain(A, le, C)) (
+      fun (
+        C : A -> U0, chain : OrderChain(A, le, C),
         members : (forall y : A, C(y) -> TowerMember(A, le, complete, f, y))
       ) => tower_separation_sup(A, le, laws, complete, f, a, C, chain)
     ), b, tb
@@ -178,12 +179,13 @@ def tower_is_stable(
     A, le, complete, f, TowerStable(A, le, complete, f),
     tower_stable_prop(A, le, laws, complete, f),
     (
-      fun (x : A) (tx : TowerMember(A, le, complete, f, x)) => tower_stable_step(
+      fun (x : A, tx : TowerMember(A, le, complete, f, x)) => tower_stable_step(
         A, le, laws, complete, f, progressive, x
       )
     ),
     (
-      fun (C : A -> U0) (chain : OrderChain(A, le, C)) (
+      fun (
+        C : A -> U0, chain : OrderChain(A, le, C),
         members : (forall x : A, C(x) -> TowerMember(A, le, complete, f, x))
       ) => tower_stable_sup(A, le, laws, complete, f, progressive, C, chain)
     ), a, ta
@@ -221,7 +223,7 @@ def bourbaki_witt(
   let T = TowerMember(A, le, complete, f);
   let chain = tower_is_chain(A, le, laws, complete, f, progressive);
   let s = chain_sup(A, le, complete, T, chain);
-  let member = tower_sup(A, le, complete, f, T, chain, (fun (x : A) (tx : T(x)) => tx));
+  let member = tower_sup(A, le, complete, f, T, chain, (fun (x : A, tx : T(x)) => tx));
   let next = tower_step(A, le, complete, f, s, member);
   exact (
     s,

@@ -21,7 +21,7 @@ def group_hom_multiply_at(U : Universe, G H : GroupAt(U), h : GroupHomAt(U, G, H
   exact pair_induction(
     (fun (k : GroupHomAt(U, G, H)) => GroupHomLawsAt(U, G, H, group_hom_map_at(U, G, H, k))),
     (
-      fun (f : group_carrier_at(U, G) -> group_carrier_at(U, H)) (law : GroupHomLawsAt(U, G, H, f)) => law
+      fun (f : group_carrier_at(U, G) -> group_carrier_at(U, H), law : GroupHomLawsAt(U, G, H, f)) => law
     ), h
   );
 }

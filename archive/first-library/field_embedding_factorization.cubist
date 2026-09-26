@@ -54,7 +54,8 @@ def field_embedding_factor(
   exact (
     field_embedding_lift(K, L, e, S, lands), field_embedding_lift_preserves(K, L, e, S, lands),
     (
-      fun (x y : af_carrier(K)) (
+      fun (
+        x y : af_carrier(K),
         same : field_embedding_lift(K, L, e, S, lands, x) = field_embedding_lift(
           K, L, e, S, lands, y
         )

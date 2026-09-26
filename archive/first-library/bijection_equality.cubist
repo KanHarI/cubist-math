@@ -19,7 +19,7 @@ def sigma_eta(A : U0, P : A -> U0, u : (exists x : A, P(x))) =
       fun (v : (exists x : A, P(x))) => typed(
         (exists x : A, P(x)), (sigma_first(A, P, v), sigma_second(A, P, v))
       ) = v
-    ), (fun (x : A) (h : P(x)) => refl(typed((exists z : A, P(z)), (x, h)))), u
+    ), (fun (x : A, h : P(x)) => refl(typed((exists z : A, P(z)), (x, h)))), u
   );
 
 def subtype_pair_path(
@@ -247,7 +247,7 @@ def subtype_path_correction(
   exact based_induction(
     U1, U0, (exists x : A, P(x)), u,
     (
-      fun (v : (exists x : A, P(x))) (p : u = v) => trans(
+      fun (v : (exists x : A, P(x)), p : u = v) => trans(
         sym(subtype_path(A, P, prop, u, u, refl(u))), subtype_path(A, P, prop, u, v, p)
       ) = p
     ), inverse_left((exists x : A, P(x)), u, u, subtype_path(A, P, prop, u, u, refl(u))), v, p

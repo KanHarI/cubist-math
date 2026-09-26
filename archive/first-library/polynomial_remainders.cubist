@@ -96,7 +96,7 @@ def polynomial_remainder_small(
 def polynomial_remainder_zero(K : AlgebraicField, M : PolynomialModulus(K)) =
   polynomial_remainder_small(
     K, M, polynomial_zero(K),
-    (fun (n : Nat) (above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
+    (fun (n : Nat, above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
   );
 
 def polynomial_remainder_add(K : AlgebraicField, M : PolynomialModulus(K), p q : Polynomial(K)) :
@@ -142,7 +142,7 @@ def polynomial_remainder_multiple(K : AlgebraicField, M : PolynomialModulus(K), 
   exact polynomial_remainder_unique(
     K, M, polynomial_mul(K, p, modulus_polynomial(K, M)), p, polynomial_zero(K),
     sym(polynomial_add_zero_right(K, polynomial_mul(K, p, modulus_polynomial(K, M)))),
-    (fun (n : Nat) (above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
+    (fun (n : Nat, above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
   );
 }
 

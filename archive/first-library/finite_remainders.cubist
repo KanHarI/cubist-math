@@ -7,12 +7,12 @@ def linear_remainder(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
   induction n as k return (
     (Fin(k) -> vector_carrier(K, V)) -> (Fin(k) -> af_carrier(K)) -> Fin(k) -> vector_carrier(K, V)
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, V)) (a : Fin(0) -> af_carrier(K)) (i : Fin(0)) => typed(
+    zero => fun (v : Fin(0) -> vector_carrier(K, V), a : Fin(0) -> af_carrier(K), i : Fin(0)) => typed(
       vector_carrier(K, V), absurd(i)
     );
-    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) (
-      a : Fin(succ(k)) -> af_carrier(K)
-    ) (i : Fin(succ(k))) => match i return vector_carrier(K, V) {
+    succ previous => fun (
+      v : Fin(succ(k)) -> vector_carrier(K, V), a : Fin(succ(k)) -> af_carrier(K), i : Fin(succ(k))
+    ) => match i return vector_carrier(K, V) {
       left u => linear_combination(
         K, V, k, finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a)
       );
@@ -34,16 +34,16 @@ def linear_combination_split(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
       K, V, vector_scale(K, V, a(i), v(i)), linear_remainder(K, V, k, v, a, i)
     )
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, V)) (a : Fin(0) -> af_carrier(K)) (i : Fin(0)) => typed(
+    zero => fun (v : Fin(0) -> vector_carrier(K, V), a : Fin(0) -> af_carrier(K), i : Fin(0)) => typed(
       (
         linear_combination(K, V, 0, v, a) = vector_add(
           K, V, vector_scale(K, V, a(i), v(i)), linear_remainder(K, V, 0, v, a, i)
         )
       ), absurd(i)
     );
-    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) (
-      a : Fin(succ(k)) -> af_carrier(K)
-    ) (i : Fin(succ(k))) => match i as index return (
+    succ previous => fun (
+      v : Fin(succ(k)) -> vector_carrier(K, V), a : Fin(succ(k)) -> af_carrier(K), i : Fin(succ(k))
+    ) => match i as index return (
       linear_combination(K, V, succ(k), v, a) = vector_add(
         K, V, vector_scale(K, V, a(index), v(index)), linear_remainder(K, V, succ(k), v, a, index)
       )
@@ -88,12 +88,13 @@ def remainder_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K
     forall i : Fin(k), (forall j : Fin(k), ((j = i) -> Void) -> subspace_members(K, V, S, v(j)))
     -> subspace_members(K, V, S, linear_remainder(K, V, k, v, a, i))
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, V)) (a : Fin(0) -> af_carrier(K)) (i : Fin(0)) (
+    zero => fun (
+      v : Fin(0) -> vector_carrier(K, V), a : Fin(0) -> af_carrier(K), i : Fin(0),
       members : (forall j : Fin(0), ((j = i) -> Void) -> subspace_members(K, V, S, v(j)))
     ) => typed(subspace_members(K, V, S, linear_remainder(K, V, 0, v, a, i)), absurd(i));
-    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) (
-      a : Fin(succ(k)) -> af_carrier(K)
-    ) (i : Fin(succ(k))) => match i as index return (
+    succ previous => fun (
+      v : Fin(succ(k)) -> vector_carrier(K, V), a : Fin(succ(k)) -> af_carrier(K), i : Fin(succ(k))
+    ) => match i as index return (
       (forall j : Fin(succ(k)), ((j = index) -> Void) -> subspace_members(K, V, S, v(j)))
       -> subspace_members(K, V, S, linear_remainder(K, V, succ(k), v, a, index))
     ) {
@@ -135,7 +136,7 @@ def remainder_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K
         previous(
           finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, a), iTail,
           (
-            fun (j : Fin(k)) (different : (j = iTail) -> Void) => members(
+            fun (j : Fin(k), different : (j = iTail) -> Void) => members(
               typed(Fin(succ(k)), right(j)),
               (
                 fun (same : typed(Fin(succ(k)), right(j)) = typed(Fin(succ(k)), right(iTail))) => different(

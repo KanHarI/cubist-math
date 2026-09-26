@@ -90,9 +90,8 @@ def principal_cut_laws(
         FieldIff(ltQ(q, y), FieldExists(exists x : Q, ltQ(q, x) and ltQ(x, y))),
         (dense(q, y), upperBack(y))
       )
-    ),
-    (fun (x : Q) (xq : ltQ(x, q)) (qx : ltQ(q, x)) => irreflexive(x, transitive(x, q, x, xq, qx))),
-    (fun (x y : Q) (xy : ltQ(x, y)) => cotransitive(x, y, q, xy))
+    ), (fun (x : Q, xq : ltQ(x, q), qx : ltQ(q, x)) => irreflexive(x, transitive(x, q, x, xq, qx))),
+    (fun (x y : Q, xy : ltQ(x, y)) => cotransitive(x, y, q, xy))
   );
 }
 

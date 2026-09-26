@@ -102,7 +102,8 @@ def radix_add_append_correct(
     extra, RadixAddCorrect(extra, radix_append(extra, d, p)),
     radix_add_append_leading_correct(extra, d, p),
     (
-      fun (e : RadixDigit(succ(succ(extra)))) (r : RadixPositive(extra)) (
+      fun (
+        e : RadixDigit(succ(succ(extra))), r : RadixPositive(extra),
         ignored : RadixAddCorrect(extra, radix_append(extra, d, p), r)
       ) => radix_add_append_append_correct(extra, d, p, e, r, ih(r))
     ), q
@@ -203,7 +204,8 @@ def radix_decode_positive_mul(extra : Nat, p q : RadixPositive(extra)) :
     extra, (fun (a : RadixPositive(extra)) => RadixMulCorrect(extra, a, q)),
     (fun (d : RadixDigit(succ(extra))) => radix_mul_leading_correct(extra, d, q)),
     (
-      fun (d : RadixDigit(succ(succ(extra)))) (a : RadixPositive(extra)) (
+      fun (
+        d : RadixDigit(succ(succ(extra))), a : RadixPositive(extra),
         ih : RadixMulCorrect(extra, a, q)
       ) => radix_mul_append_correct(extra, d, a, q, ih)
     ), p

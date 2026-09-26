@@ -13,7 +13,7 @@ def galois_field_embedding(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)
   exact (
     f, galois_preserves_field_ops(K, E, e),
     (
-      fun (x y : A) (same : f(x) = f(y)) => trans(
+      fun (x y : A, same : f(x) = f(y)) => trans(
         sym(left_inverse(A, A, bijection, x)),
         trans(cong(backward(A, A, bijection), same), left_inverse(A, A, bijection, y))
       )

@@ -148,9 +148,9 @@ def field_closure_pad(F : AlgebraicField, P : af_carrier(F) -> U0, m : Nat) =
     forall n : Nat, forall x : af_carrier(F), FieldClosureStage(F, P, n, x)
     -> FieldClosureStage(F, P, k + n, x)
   ) {
-    zero => (fun (n : Nat) (x : af_carrier(F)) (member : FieldClosureStage(F, P, n, x)) => member);
+    zero => (fun (n : Nat, x : af_carrier(F), member : FieldClosureStage(F, P, n, x)) => member);
     succ previous => (
-      fun (n : Nat) (x : af_carrier(F)) (member : FieldClosureStage(F, P, n, x)) => field_closure_step_keep(
+      fun (n : Nat, x : af_carrier(F), member : FieldClosureStage(F, P, n, x)) => field_closure_step_keep(
         F, FieldClosureStage(F, P, k + n), x, previous(n, x, member)
       )
     );

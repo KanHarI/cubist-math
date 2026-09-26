@@ -67,8 +67,9 @@ def extend_coordinate_square(
   ) {
     zero => extend_coordinate_zero(K, L, e, V);
     succ previous => fun (
-      h : LinearMap(K, CoordinateSpace(K, succ(k)), RestrictScalars(K, L, e, V))
-    ) (a : Fin(succ(k)) -> af_carrier(K)) => trans(
+      h : LinearMap(K, CoordinateSpace(K, succ(k)), RestrictScalars(K, L, e, V)),
+      a : Fin(succ(k)) -> af_carrier(K)
+    ) => trans(
       cong(
         vector_add(
           L, V,

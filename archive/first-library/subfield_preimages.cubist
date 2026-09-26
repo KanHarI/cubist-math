@@ -22,19 +22,19 @@ def subfield_preimage_laws(K L : AlgebraicField, e : FieldEmbedding(K, L), S : S
     (fun (x : A) => subfield_prop(L, Q, laws, f(x))),
     along Q by sym(p0) from subfield_zero(L, Q, laws),
     along Q by sym(p1) from subfield_one(L, Q, laws),
-    (fun (x : A) (px : Q(f(x))) => along Q by sym(pn(x)) from subfield_neg(L, Q, laws, f(x), px)),
+    (fun (x : A, px : Q(f(x))) => along Q by sym(pn(x)) from subfield_neg(L, Q, laws, f(x), px)),
     (
-      fun (x y : A) (px : Q(f(x))) (py : Q(f(y))) => along Q by sym(pa(x, y)) from subfield_add(
+      fun (x y : A, px : Q(f(x)), py : Q(f(y))) => along Q by sym(pa(x, y)) from subfield_add(
         L, Q, laws, f(x), f(y), px, py
       )
     ),
     (
-      fun (x y : A) (px : Q(f(x))) (py : Q(f(y))) => along Q by sym(pm(x, y)) from subfield_mul(
+      fun (x y : A, px : Q(f(x)), py : Q(f(y))) => along Q by sym(pm(x, y)) from subfield_mul(
         L, Q, laws, f(x), f(y), px, py
       )
     ),
     (
-      fun (x y : A) (px : Q(f(x))) (inverseLaw : af_mul(A, opsA, x, y) = af_one(A, opsA)) => subfield_inverse(
+      fun (x y : A, px : Q(f(x)), inverseLaw : af_mul(A, opsA, x, y) = af_one(A, opsA)) => subfield_inverse(
         L, Q, laws, f(x), f(y), px, trans(sym(pm(x, y)), trans(cong(f, inverseLaw), p1))
       )
     )

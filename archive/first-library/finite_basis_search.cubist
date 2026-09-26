@@ -90,16 +90,16 @@ def finite_basis_search(K : AlgebraicField, V : VectorSpace(K), fuel : Nat) =
     LinearInjective(K, CoordinateSpace(K, m), V, f) -> NoIndependent(K, V, add_count(k, m))
     -> FiniteDimensional(K, V)
   ) {
-    zero => fun (m : Nat) (f : LinearMap(K, CoordinateSpace(K, m), V)) (
-      injective : LinearInjective(K, CoordinateSpace(K, m), V, f)
-    ) (bound : NoIndependent(K, V, add_count(0, m))) => typed(
-      FiniteDimensional(K, V), absurd(bound(f, injective))
-    );
-    succ previous => fun (m : Nat) (f : LinearMap(K, CoordinateSpace(K, m), V)) (
-      injective : LinearInjective(K, CoordinateSpace(K, m), V, f)
-    ) (bound : NoIndependent(K, V, add_count(succ(k), m))) => finite_basis_search_step(
-      K, V, k, m, previous, f, injective, bound
-    );
+    zero => fun (
+      m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
+      injective : LinearInjective(K, CoordinateSpace(K, m), V, f),
+      bound : NoIndependent(K, V, add_count(0, m))
+    ) => typed(FiniteDimensional(K, V), absurd(bound(f, injective)));
+    succ previous => fun (
+      m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
+      injective : LinearInjective(K, CoordinateSpace(K, m), V, f),
+      bound : NoIndependent(K, V, add_count(succ(k), m))
+    ) => finite_basis_search_step(K, V, k, m, previous, f, injective, bound);
   };
 
 def finite_dimensional_from_bound(

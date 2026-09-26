@@ -95,7 +95,8 @@ test("the formatter automatically linearizes tuples while preserving their expan
   assert.match(formatMathScript(source, { linearizeTuples: false }), /exact \(0, \(1, 2\)\);/);
 });
 
-test("lambda binder groups are separated by spaces, applications are not", () => {
-  const formatted = formatMathScript("def f(F : Nat -> Nat -> U0) = fun (a : Nat)(b : F(0)(1)) => a;\n");
-  assert.match(formatted, /fun \(a : Nat\) \(b : F\(0\)\(1\)\) => a;/);
+test("lambda binder groups are one comma-separated list; separate groups are rejected", () => {
+  const formatted = formatMathScript("def f(F : Nat -> Nat -> U0) = fun (a : Nat,b : F(0)(1)) => a;\n");
+  assert.match(formatted, /fun \(a : Nat, b : F\(0\)\(1\)\) => a;/);
+  assert.throws(() => parse("def f = fun (a : Nat) (b : Nat) => a;"), /Separate binder groups with commas/);
 });

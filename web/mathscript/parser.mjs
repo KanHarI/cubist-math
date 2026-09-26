@@ -188,14 +188,22 @@ export function parse(source, typeOnly = false) {
       a = { kind:"along", family, path, value, start:t.start, end:value.end };
     } else if (t.text === "fun") {
       const binders = [];
-      while (peek() === "(") {
+      // Binder groups are one comma-separated list, like parameters:
+      // fun (x y : A, b : B) => body.
+      if (peek() === "(") {
         take("(");
-        const names = [name()];
-        while (peek() !== ":") names.push(name());
-        take(":");
-        const domain = expr();
+        while (true) {
+          const names = [name()];
+          while (peek() !== ":") names.push(name());
+          take(":");
+          const domain = expr();
+          binders.push({ names, domain });
+          if (peek() !== ",") break;
+          take(",");
+        }
         take(")");
-        binders.push({ names, domain });
+        if (peek() === "(")
+          throw Object.assign(new Error("Separate binder groups with commas: fun (a : A, b : B) => …"), { offset: ts[i].start });
       }
       if (!binders.length) binders.push({ names: [name()], domain: null });
       take("=>");

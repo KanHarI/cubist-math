@@ -76,7 +76,7 @@ def independent_zero_omission(
   omittedA(t) = af_zero(af_carrier(K), af_operations(K)) := independent(
     n, omittedV,
     (
-      fun (s t : Fin(n)) (same : omittedV(s) = omittedV(t)) => fin_omit_injective(
+      fun (s t : Fin(n), same : omittedV(s) = omittedV(t)) => fin_omit_injective(
         n, i, s, t, distinct(omit(s), omit(t), same)
       )
     ), (fun (t : Fin(n)) => others(omit(t), fin_omit_avoids(n, i, t))), omittedA,
@@ -192,11 +192,12 @@ def adjoin_independent_finite(
     linear_combination(K, V, k, v, a) = vector_zero(K, V) -> forall i : Fin(k),
     a(i) = af_zero(af_carrier(K), af_operations(K))
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, V)) (
-      distinct : (forall i : Fin(0), forall j : Fin(0), v(i) = v(j) -> i = j)
-    ) (members : (forall i : Fin(0), AdjoinVector(K, V, P, x, v(i)))) (a : Fin(0) -> af_carrier(K)) (
-      vanishes : linear_combination(K, V, 0, v, a) = vector_zero(K, V)
-    ) (i : Fin(0)) => typed((a(i) = af_zero(af_carrier(K), af_operations(K))), absurd(i));
+    zero => fun (
+      v : Fin(0) -> vector_carrier(K, V),
+      distinct : (forall i : Fin(0), forall j : Fin(0), v(i) = v(j) -> i = j),
+      members : (forall i : Fin(0), AdjoinVector(K, V, P, x, v(i))), a : Fin(0) -> af_carrier(K),
+      vanishes : linear_combination(K, V, 0, v, a) = vector_zero(K, V), i : Fin(0)
+    ) => typed((a(i) = af_zero(af_carrier(K), af_operations(K))), absurd(i));
     succ previous => adjoin_independent_step(K, V, P, prop, independent, x, outside, k);
   };
 

@@ -22,11 +22,11 @@ def finite_sum_zero(
     forall values : Fin(k) -> G, (forall i : Fin(k), values(i) = zero)
     -> finite_sum(G, zero, addG, k, values) = zero
   ) {
-    zero => fun (values : Fin(0) -> G) (allZero : (forall i : Fin(0), values(i) = zero)) => refl(
+    zero => fun (values : Fin(0) -> G, allZero : (forall i : Fin(0), values(i) = zero)) => refl(
       zero
     );
-    succ previous => fun (values : Fin(succ(k)) -> G) (
-      allZero : (forall i : Fin(succ(k)), values(i) = zero)
+    succ previous => fun (
+      values : Fin(succ(k)) -> G, allZero : (forall i : Fin(succ(k)), values(i) = zero)
     ) => trans(
       cong(
         (
@@ -94,11 +94,11 @@ def finite_sum_cong(
     (forall i : Fin(k), values(i) = other(i))
     -> finite_sum(G, zero, addG, k, values) = finite_sum(G, zero, addG, k, other)
   ) {
-    zero => fun (values other : Fin(0) -> G) (same : (forall i : Fin(0), values(i) = other(i))) => refl(
+    zero => fun (values other : Fin(0) -> G, same : (forall i : Fin(0), values(i) = other(i))) => refl(
       zero
     );
-    succ previous => fun (values other : Fin(succ(k)) -> G) (
-      same : (forall i : Fin(succ(k)), values(i) = other(i))
+    succ previous => fun (
+      values other : Fin(succ(k)) -> G, same : (forall i : Fin(succ(k)), values(i) = other(i))
     ) => trans(
       cong(
         (
@@ -134,17 +134,19 @@ def finite_sum_single(
     -> (forall i : Fin(k), ((selected = i) -> Void) -> values(i) = zero)
     -> finite_sum(G, zero, addG, k, values) = v
   ) {
-    zero => fun (values : Fin(0) -> G) (selected : Fin(0)) (v : G) (same : values(selected) = v) (
+    zero => fun (
+      values : Fin(0) -> G, selected : Fin(0), v : G, same : values(selected) = v,
       other : (forall i : Fin(0), ((selected = i) -> Void) -> values(i) = zero)
     ) => typed((zero = v), absurd(selected));
-    succ previous => fun (values : Fin(succ(k)) -> G) (selected : Fin(succ(k))) => match typed(
+    succ previous => fun (values : Fin(succ(k)) -> G, selected : Fin(succ(k))) => match typed(
       Unit or Fin(k), selected
     ) as label return (
       forall v : G, (values(label) = v)
       -> (forall i : Fin(succ(k)), ((label = i) -> Void) -> values(i) = zero)
       -> finite_sum(G, zero, addG, succ(k), values) = v
     ) {
-      left u => fun (v : G) (same : values(typed(Unit or Fin(k), left(u))) = v) (
+      left u => fun (
+        v : G, same : values(typed(Unit or Fin(k), left(u))) = v,
         other : (
           forall i : Fin(succ(k)), ((typed(Unit or Fin(k), left(u)) = i) -> Void)
           -> values(i) = zero
@@ -183,9 +185,8 @@ def finite_sum_single(
           ), additive_right_zero(G, zero, addG, negG, laws, v)
         )
       );
-      right selectedTail => fun (v : G) (
-        same : values(typed(Unit or Fin(k), right(selectedTail))) = v
-      ) (
+      right selectedTail => fun (
+        v : G, same : values(typed(Unit or Fin(k), right(selectedTail))) = v,
         other : (
           forall i : Fin(succ(k)), ((typed(Unit or Fin(k), right(selectedTail)) = i) -> Void)
           -> values(i) = zero
@@ -215,7 +216,7 @@ def finite_sum_single(
             previous(
               (fun (i : Fin(k)) => values(typed(Unit or Fin(k), right(i)))), selectedTail, v, same,
               (
-                fun (i : Fin(k)) (different : (selectedTail = i) -> Void) => other(
+                fun (i : Fin(k), different : (selectedTail = i) -> Void) => other(
                   typed(Unit or Fin(k), right(i)),
                   (
                     fun (

@@ -6,9 +6,9 @@ def fin_append(A : U0, n : Nat) =
   induction n as k return (
     forall m : Nat, (Fin(k) -> A) -> (Fin(m) -> A) -> Fin(add_count(k, m)) -> A
   ) {
-    zero => fun (m : Nat) (f : Fin(0) -> A) (g : Fin(m) -> A) => g;
-    succ previous => fun (m : Nat) (f : Fin(succ(k)) -> A) (g : Fin(m) -> A) (
-      i : Fin(add_count(succ(k), m))
+    zero => fun (m : Nat, f : Fin(0) -> A, g : Fin(m) -> A) => g;
+    succ previous => fun (
+      m : Nat, f : Fin(succ(k)) -> A, g : Fin(m) -> A, i : Fin(add_count(succ(k), m))
     ) => match i return A {
       left u => f(typed(Fin(succ(k)), left(u)));
       right j => previous(m, (fun (l : Fin(k)) => f(typed(Fin(succ(k)), right(l)))), g, j);
@@ -21,14 +21,14 @@ def fin_append_members(A : U0, P : A -> U0, n : Nat) =
     -> (forall j : Fin(m), P(g(j))) -> forall i : Fin(add_count(k, m)),
     P(fin_append(A, k, m, f, g, i))
   ) {
-    zero => fun (m : Nat) (f : Fin(0) -> A) (g : Fin(m) -> A) (hf : (forall i : Fin(0), P(f(i)))) (
+    zero => fun (
+      m : Nat, f : Fin(0) -> A, g : Fin(m) -> A, hf : (forall i : Fin(0), P(f(i))),
       hg : (forall j : Fin(m), P(g(j)))
     ) => hg;
-    succ previous => fun (m : Nat) (f : Fin(succ(k)) -> A) (g : Fin(m) -> A) (
-      hf : (forall i : Fin(succ(k)), P(f(i)))
-    ) (hg : (forall j : Fin(m), P(g(j)))) (i : Fin(add_count(succ(k), m))) => match i as index return P(
-      fin_append(A, succ(k), m, f, g, index)
-    ) {
+    succ previous => fun (
+      m : Nat, f : Fin(succ(k)) -> A, g : Fin(m) -> A, hf : (forall i : Fin(succ(k)), P(f(i))),
+      hg : (forall j : Fin(m), P(g(j))), i : Fin(add_count(succ(k), m))
+    ) => match i as index return P(fin_append(A, succ(k), m, f, g, index)) {
       left u => hf(typed(Fin(succ(k)), left(u)));
       right j => previous(
         m, (fun (l : Fin(k)) => f(typed(Fin(succ(k)), right(l)))), g,
@@ -48,14 +48,14 @@ def linear_combination_append(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
       fin_append(af_carrier(K), k, m, a, b)
     ) = vector_add(K, V, linear_combination(K, V, k, v, a), linear_combination(K, V, m, w, b))
   ) {
-    zero => fun (m : Nat) (v : Fin(0) -> vector_carrier(K, V)) (w : Fin(m) -> vector_carrier(K, V)) (
-      a : Fin(0) -> af_carrier(K)
-    ) (b : Fin(m) -> af_carrier(K)) => sym(
-      group_unit_left(vector_group(K, V), linear_combination(K, V, m, w, b))
-    );
-    succ previous => fun (m : Nat) (v : Fin(succ(k)) -> vector_carrier(K, V)) (
-      w : Fin(m) -> vector_carrier(K, V)
-    ) (a : Fin(succ(k)) -> af_carrier(K)) (b : Fin(m) -> af_carrier(K)) => trans(
+    zero => fun (
+      m : Nat, v : Fin(0) -> vector_carrier(K, V), w : Fin(m) -> vector_carrier(K, V),
+      a : Fin(0) -> af_carrier(K), b : Fin(m) -> af_carrier(K)
+    ) => sym(group_unit_left(vector_group(K, V), linear_combination(K, V, m, w, b)));
+    succ previous => fun (
+      m : Nat, v : Fin(succ(k)) -> vector_carrier(K, V), w : Fin(m) -> vector_carrier(K, V),
+      a : Fin(succ(k)) -> af_carrier(K), b : Fin(m) -> af_carrier(K)
+    ) => trans(
       cong(
         vector_add(
           K, V,
@@ -145,11 +145,11 @@ def linear_combination_scale(K : AlgebraicField, V : VectorSpace(K), a : af_carr
       K, V, k, v, (fun (i : Fin(k)) => af_mul(af_carrier(K), af_operations(K), a, b(i)))
     ) = vector_scale(K, V, a, linear_combination(K, V, k, v, b))
   ) {
-    zero => fun (v : Fin(0) -> vector_carrier(K, V)) (b : Fin(0) -> af_carrier(K)) => sym(
+    zero => fun (v : Fin(0) -> vector_carrier(K, V), b : Fin(0) -> af_carrier(K)) => sym(
       vector_scale_zero(K, V, a)
     );
-    succ previous => fun (v : Fin(succ(k)) -> vector_carrier(K, V)) (
-      b : Fin(succ(k)) -> af_carrier(K)
+    succ previous => fun (
+      v : Fin(succ(k)) -> vector_carrier(K, V), b : Fin(succ(k)) -> af_carrier(K)
     ) => combination_scale_step(
       K, V, a, k, v, b,
       previous(finite_tail(vector_carrier(K, V), k, v), finite_tail(af_carrier(K), k, b))

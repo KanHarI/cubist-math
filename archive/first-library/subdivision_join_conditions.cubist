@@ -92,11 +92,10 @@ def subdivision_tagged_join(
       join_subdivision_families(C, k, vertices, pieces, m, rightVertices, rightPieces, same)
     )
   ) {
-    zero => fun (vertices : C) (tags pieces : Unit) (m : Nat) (rightVertices : SampleVertices(C, m)) (
-      rightTags : SampleTags(C, m)
-    ) (rightPieces : SampleSubdivisions(C, m, rightVertices)) (
-      same : vertices = sample_first(C, m, rightVertices)
-    ) (valid : Unit) (
+    zero => fun (
+      vertices : C, tags pieces : Unit, m : Nat, rightVertices : SampleVertices(C, m),
+      rightTags : SampleTags(C, m), rightPieces : SampleSubdivisions(C, m, rightVertices),
+      same : vertices = sample_first(C, m, rightVertices), valid : Unit,
       rightValid : SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces)
     ) => rightValid;
     succ previous => subdivision_tagged_join_step(C, condition, k, previous);

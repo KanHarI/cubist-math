@@ -11,7 +11,7 @@ def radix_positive_succ(extra : Nat, p : RadixPositive(extra)) =
       left next => radix_leading(extra, next);
       right carry => radix_append(extra, radix_digit_zero(succ(extra)), radix_one(extra));
     },
-    fun (digit : RadixDigit(succ(succ(extra)))) (child ih : RadixPositive(extra)) => match radix_digit_succ(
+    fun (digit : RadixDigit(succ(succ(extra))), child ih : RadixPositive(extra)) => match radix_digit_succ(
       succ(succ(extra)), digit
     ) return RadixPositive(extra) {
       left next => radix_append(extra, next, child);
@@ -35,17 +35,18 @@ def radix_positive_add(extra : Nat, a : RadixPositive(extra)) :
   RadixPositive(extra) -> RadixPositive(extra) {
   exact radix_positive_rec(
     extra, (RadixPositive(extra) -> RadixPositive(extra)),
-    fun (first : RadixDigit(succ(extra))) (other : RadixPositive(extra)) => radix_add_small(
+    fun (first : RadixDigit(succ(extra)), other : RadixPositive(extra)) => radix_add_small(
       extra, succ(radix_digit_value(succ(extra), first)), other
     ),
-    fun (digit : RadixDigit(succ(succ(extra)))) (child : RadixPositive(extra)) (
-      ih : RadixPositive(extra) -> RadixPositive(extra)
-    ) (other : RadixPositive(extra)) => radix_positive_cases(
+    fun (
+      digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra),
+      ih : RadixPositive(extra) -> RadixPositive(extra), other : RadixPositive(extra)
+    ) => radix_positive_cases(
       extra, RadixPositive(extra),
       fun (first : RadixDigit(succ(extra))) => radix_add_small(
         extra, succ(radix_digit_value(succ(extra), first)), radix_append(extra, digit, child)
       ),
-      fun (next : RadixDigit(succ(succ(extra)))) (tail : RadixPositive(extra)) => radix_add_small(
+      fun (next : RadixDigit(succ(succ(extra))), tail : RadixPositive(extra)) => radix_add_small(
         extra, radix_digit_value(succ(succ(extra)), next), radix_append(extra, digit, ih(tail))
       ), other
     ), a
@@ -70,12 +71,13 @@ def radix_positive_mul(extra : Nat, a : RadixPositive(extra)) :
   RadixPositive(extra) -> RadixPositive(extra) {
   exact radix_positive_rec(
     extra, (RadixPositive(extra) -> RadixPositive(extra)),
-    fun (first : RadixDigit(succ(extra))) (other : RadixPositive(extra)) => radix_add_copies(
+    fun (first : RadixDigit(succ(extra)), other : RadixPositive(extra)) => radix_add_copies(
       extra, radix_digit_value(succ(extra), first), other, other
     ),
-    fun (digit : RadixDigit(succ(succ(extra)))) (child : RadixPositive(extra)) (
-      ih : RadixPositive(extra) -> RadixPositive(extra)
-    ) (other : RadixPositive(extra)) => radix_add_copies(
+    fun (
+      digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra),
+      ih : RadixPositive(extra) -> RadixPositive(extra), other : RadixPositive(extra)
+    ) => radix_add_copies(
       extra, radix_digit_value(succ(succ(extra)), digit),
       radix_append(extra, radix_digit_zero(succ(extra)), ih(other)), other
     ), a

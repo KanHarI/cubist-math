@@ -60,7 +60,7 @@ def subdivision_tagged_zip(
     -> SubdivisionTagged(C, fine, k, vertices, tags, pieces)
     -> SubdivisionTagged(C, other, k, vertices, tags, pieces)
   ) {
-    zero => fun (vertices : C) (tags pieces coarseValid fineValid : Unit) => tt;
+    zero => fun (vertices : C, tags pieces coarseValid fineValid : Unit) => tt;
     succ previous => subdivision_tagged_zip_step(C, coarse, fine, other, combine, k, previous);
   };
 }

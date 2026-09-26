@@ -56,7 +56,7 @@ def polynomial_zero_cutoff(K : AlgebraicField) : polynomial_cutoff(K, polynomial
   exact nat_le_zero(
     polynomial_cutoff(K, polynomial_zero(K)),
     polynomial_cutoff_least(
-      K, polynomial_zero(K), 0, (fun (k : Nat) (above : le(0, k)) => refl(field_zero(K)))
+      K, polynomial_zero(K), 0, (fun (k : Nat, above : le(0, k)) => refl(field_zero(K)))
     )
   );
 }

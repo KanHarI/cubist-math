@@ -138,7 +138,7 @@ def permutation_split_join(n : Nat, p : Fin(succ(n)) and Permutations(n)) :
         fun (q : Fin(succ(n)) and Permutations(n)) => permutation_split(n, permutation_join(n, q)) = q
       ),
       (
-        fun (y : Fin(succ(n))) (d : Permutations(n)) => product_path(
+        fun (y : Fin(succ(n)), d : Permutations(n)) => product_path(
           Fin(succ(n)), Permutations(n), permutation_image(n, permutation_join_at(n, y, d)), y,
           permutation_join_image(n, y, d), permutation_tail(n, permutation_join_at(n, y, d)), d,
           permutation_join_tail(n, y, d)

@@ -30,14 +30,14 @@ def sample_sum_join(
       sample_sum(C, G, zero, addG, edge, m, rightVertices, rightTags)
     )
   ) {
-    zero => fun (vertices : SampleVertices(C, 0)) (tags : SampleTags(C, 0)) (m : Nat) (
-      rightVertices : SampleVertices(C, m)
-    ) (rightTags : SampleTags(C, m)) (same : vertices = sample_first(C, m, rightVertices)) => sym(
-      unitLaw(sample_sum(C, G, zero, addG, edge, m, rightVertices, rightTags))
-    );
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
-      m : Nat
-    ) (rightVertices : SampleVertices(C, m)) (rightTags : SampleTags(C, m)) (
+    zero => fun (
+      vertices : SampleVertices(C, 0), tags : SampleTags(C, 0), m : Nat,
+      rightVertices : SampleVertices(C, m), rightTags : SampleTags(C, m),
+      same : vertices = sample_first(C, m, rightVertices)
+    ) => sym(unitLaw(sample_sum(C, G, zero, addG, edge, m, rightVertices, rightTags)));
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)), m : Nat,
+      rightVertices : SampleVertices(C, m), rightTags : SampleTags(C, m),
       same : sample_last(C, succ(k), vertices) = sample_first(C, m, rightVertices)
     ) => trans(
       cong(
@@ -103,8 +103,8 @@ def sample_sum_cong(
       C, G, zero, addG, other, k, vertices, tags
     )
   ) {
-    zero => fun (vertices : SampleVertices(C, 0)) (tags : SampleTags(C, 0)) => refl(zero);
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) => trans(
+    zero => fun (vertices : SampleVertices(C, 0), tags : SampleTags(C, 0)) => refl(zero);
+    succ previous => fun (vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k))) => trans(
       cong(
         (
           fun (x : G) => addG(
@@ -158,8 +158,8 @@ def sample_sum_add(
       sample_sum(C, G, zero, addG, other, k, vertices, tags)
     )
   ) {
-    zero => fun (vertices : SampleVertices(C, 0)) (tags : SampleTags(C, 0)) => sym(unitLaw(zero));
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) => trans(
+    zero => fun (vertices : SampleVertices(C, 0), tags : SampleTags(C, 0)) => sym(unitLaw(zero));
+    succ previous => fun (vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k))) => trans(
       cong(
         addG(
           addG(
@@ -218,8 +218,8 @@ def sample_sum_map(
       C, H, zeroH, addH, (fun (a b tag : C) => mapping(edge(a, b, tag))), k, vertices, tags
     )
   ) {
-    zero => fun (vertices : SampleVertices(C, 0)) (tags : SampleTags(C, 0)) => mapsZero;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) => trans(
+    zero => fun (vertices : SampleVertices(C, 0), tags : SampleTags(C, 0)) => mapsZero;
+    succ previous => fun (vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k))) => trans(
       mapsAdd(
         edge(
           field_fst(C, SampleVertices(C, k), vertices),
@@ -264,10 +264,10 @@ def sample_sum_telescopes(
       sample_first(C, k, vertices), sample_last(C, k, vertices)
     )
   ) {
-    zero => fun (vertices : SampleVertices(C, 0)) (tags : SampleTags(C, 0)) => sym(
+    zero => fun (vertices : SampleVertices(C, 0), tags : SampleTags(C, 0)) => sym(
       diagonal(vertices)
     );
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) => trans(
+    succ previous => fun (vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k))) => trans(
       cong(
         addG(
           delta(

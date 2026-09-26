@@ -21,7 +21,7 @@ def polynomial_eval_characterization_step(
   polynomial_eval(K, L, e, p, x) = F(p) {
   let tail = polynomial_tail(K, p);
   let f = polynomial_coefficients(K, p);
-  let tailSupport = fun (j : Nat) (above : le(n, j)) => support(succ(j), above);
+  let tailSupport = fun (j : Nat, above : le(n, j)) => support(succ(j), above);
   let mappedTail = trans(sym(polynomial_eval_bound(K, L, e, tail, x, n, tailSupport)), previous);
   exact with unfolding [] {
     trans(
@@ -48,15 +48,15 @@ def polynomial_eval_characterization_bounded(
     forall p : Polynomial(K), SeriesSupport(K, polynomial_coefficients(K, p), k)
     -> polynomial_eval(K, L, e, p, x) = F(p)
   ) {
-    zero => fun (p : Polynomial(K)) (support : SeriesSupport(K, polynomial_coefficients(K, p), 0)) => trans(
+    zero => fun (p : Polynomial(K), support : SeriesSupport(K, polynomial_coefficients(K, p), 0)) => trans(
       polynomial_eval_bound(K, L, e, p, x, 0, support),
       sym(trans(cong(F, support_zero_polynomial(K, p, support)), zero))
     );
-    succ previous => fun (p : Polynomial(K)) (
-      support : SeriesSupport(K, polynomial_coefficients(K, p), succ(k))
+    succ previous => fun (
+      p : Polynomial(K), support : SeriesSupport(K, polynomial_coefficients(K, p), succ(k))
     ) => polynomial_eval_characterization_step(
       K, L, e, x, F, step, k, p, support,
-      previous(polynomial_tail(K, p), (fun (j : Nat) (above : le(k, j)) => support(succ(j), above)))
+      previous(polynomial_tail(K, p), (fun (j : Nat, above : le(k, j)) => support(succ(j), above)))
     );
   };
 

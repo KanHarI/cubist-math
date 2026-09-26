@@ -112,9 +112,9 @@ def contour_edge_refinement(
 
 def contour_tag_error_sum(F : U1, zero : F, addF mulF : F -> F -> F, negF f : F -> F, n : Nat) =
   induction n as k return (SampleVertices(F, k) -> SampleTags(F, k) -> SampleTags(F, k) -> F) {
-    zero => fun (vertices : F) (oldTags newTags : Unit) => zero;
-    succ previous => fun (vertices : SampleVertices(F, succ(k))) (
-      oldTags newTags : SampleTags(F, succ(k))
+    zero => fun (vertices : F, oldTags newTags : Unit) => zero;
+    succ previous => fun (
+      vertices : SampleVertices(F, succ(k)), oldTags newTags : SampleTags(F, succ(k))
     ) => addF(
       contour_tag_error(
         F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices),
@@ -146,11 +146,11 @@ def contour_sum_change_tags(
       contour_tag_error_sum(F, zero, addF, mulF, negF, f, k, vertices, oldTags, newTags)
     )
   ) {
-    zero => fun (vertices : F) (oldTags newTags : Unit) => sym(
+    zero => fun (vertices : F, oldTags newTags : Unit) => sym(
       ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero)
     );
-    succ previous => fun (vertices : SampleVertices(F, succ(k))) (
-      oldTags newTags : SampleTags(F, succ(k))
+    succ previous => fun (
+      vertices : SampleVertices(F, succ(k)), oldTags newTags : SampleTags(F, succ(k))
     ) => trans(
       cong(
         (

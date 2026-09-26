@@ -11,7 +11,7 @@ def linear_factor_product_omit(K : AlgebraicField, n : Nat) =
       linear_factor_product(K, k, (fun (j : Fin(k)) => roots(fin_omit(k, i, j))))
     )
   ) {
-    zero => fun (roots : Fin(1) -> af_carrier(K)) (i : Fin(1)) => match i as index return (
+    zero => fun (roots : Fin(1) -> af_carrier(K), i : Fin(1)) => match i as index return (
       linear_factor_product(K, 1, roots) = polynomial_mul(
         K, polynomial_linear_factor(K, roots(index)), polynomial_one(K)
       )
@@ -25,7 +25,7 @@ def linear_factor_product_omit(K : AlgebraicField, n : Nat) =
       );
       right impossible => absurd(impossible);
     };
-    succ previous => fun (roots : Fin(succ(succ(k))) -> af_carrier(K)) (i : Fin(succ(succ(k)))) => match i as index return (
+    succ previous => fun (roots : Fin(succ(succ(k))) -> af_carrier(K), i : Fin(succ(succ(k)))) => match i as index return (
       linear_factor_product(K, succ(succ(k)), roots) = polynomial_mul(
         K, polynomial_linear_factor(K, roots(index)),
         linear_factor_product(

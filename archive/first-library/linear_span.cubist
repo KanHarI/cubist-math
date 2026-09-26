@@ -6,11 +6,11 @@ def linear_combination(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
   induction n as k return (
     (Fin(k) -> vector_carrier(K, V)) -> (Fin(k) -> af_carrier(K)) -> vector_carrier(K, V)
   ) {
-    zero => fun (vectors : Fin(0) -> vector_carrier(K, V)) (coefficients : Fin(0) -> af_carrier(K)) => vector_zero(
+    zero => fun (vectors : Fin(0) -> vector_carrier(K, V), coefficients : Fin(0) -> af_carrier(K)) => vector_zero(
       K, V
     );
-    succ previous => fun (vectors : Fin(succ(k)) -> vector_carrier(K, V)) (
-      coefficients : Fin(succ(k)) -> af_carrier(K)
+    succ previous => fun (
+      vectors : Fin(succ(k)) -> vector_carrier(K, V), coefficients : Fin(succ(k)) -> af_carrier(K)
     ) => vector_add(
       K, V,
       vector_scale(
@@ -148,7 +148,7 @@ def independent_excludes_zero(
   exact nontrivial(
     independent(
       1, (fun (i : Fin(1)) => zero),
-      (fun (i j : Fin(1)) (same : zero = zero) => trans(sym(fin_one_unique(i)), fin_one_unique(j))),
+      (fun (i j : Fin(1), same : zero = zero) => trans(sym(fin_one_unique(i)), fin_one_unique(j))),
       (fun (i : Fin(1)) => member), (fun (i : Fin(1)) => af_one(A, ops)), vanishes, fin_one_center
     )
   );

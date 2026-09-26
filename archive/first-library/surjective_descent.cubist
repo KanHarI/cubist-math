@@ -67,7 +67,7 @@ def surjective_descent_data(
       ) {
         (
           value(a),
-          (fun (a2 : A) (same : present(a2) = b) => consistent(a2, a, trans(same, sym(represents))))
+          (fun (a2 : A, same : present(a2) = b) => consistent(a2, a, trans(same, sym(represents))))
         );
       }
     ), covered(b)

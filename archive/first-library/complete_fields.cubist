@@ -96,7 +96,7 @@ def field_constant_converges(
   exact (
     0,
     (
-      fun (n : Nat) (bound : IndexLE(0, n)) => typed(
+      fun (n : Nat, bound : IndexLE(0, n)) => typed(
         FieldClose(F, addF, lt, x, x, epsilon), (step, step)
       )
     )

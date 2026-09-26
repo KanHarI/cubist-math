@@ -71,7 +71,7 @@ def radix_division_successor(
 def radix_division_unique(r d e : Nat, smallD : succ(d) <= r, smallE : succ(e) <= r, a : Nat) :
   forall b : Nat, (r * a + d = r * b + e) -> ((a = b) and (d = e)) {
   exact induction a as k return (forall b : Nat, (r * k + d = r * b + e) -> ((k = b) and (d = e))) {
-    zero => fun (b : Nat) (same : r * 0 + d = r * b + e) => radix_division_zero(
+    zero => fun (b : Nat, same : r * 0 + d = r * b + e) => radix_division_zero(
       r, d, e, smallD, b, trans(sym(cong((fun (v : Nat) => v + d), nat_mul_zero(r))), same)
     );
     succ previous => radix_division_successor(r, d, e, smallE, k, previous);

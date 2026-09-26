@@ -7,7 +7,7 @@ def function_linear_map(K : AlgebraicField, I : U0, V W : VectorSpace(K), h : Li
   let X = vector_carrier(K, V);
   let Y = vector_carrier(K, W);
   exact (
-    (fun (v : I -> X) (i : I) => f(v(i))),
+    (fun (v : I -> X, i : I) => f(v(i))),
     (
       fun (v w : I -> X) => FunExt(
         U0, I, (fun (i : I) => Y), (fun (i : I) => f(vector_add(K, V, v(i), w(i)))),
@@ -16,7 +16,7 @@ def function_linear_map(K : AlgebraicField, I : U0, V W : VectorSpace(K), h : Li
       )
     ),
     (
-      fun (a : af_carrier(K)) (v : I -> X) => FunExt(
+      fun (a : af_carrier(K), v : I -> X) => FunExt(
         U0, I, (fun (i : I) => Y), (fun (i : I) => f(vector_scale(K, V, a, v(i)))),
         (fun (i : I) => vector_scale(K, W, a, f(v(i)))),
         (fun (i : I) => linear_scale(K, V, W, h, a, v(i)))
@@ -53,9 +53,9 @@ def reindex_linear(K : AlgebraicField, I J : U0, V : VectorSpace(K), f : J -> I)
   LinearMap(K, FunctionSpace(K, I, V), FunctionSpace(K, J, V)) {
   let X = vector_carrier(K, V);
   exact (
-    (fun (v : I -> X) (j : J) => v(f(j))),
+    (fun (v : I -> X, j : J) => v(f(j))),
     (fun (v w : I -> X) => refl((fun (j : J) => vector_add(K, V, v(f(j)), w(f(j)))))),
-    (fun (a : af_carrier(K)) (v : I -> X) => refl((fun (j : J) => vector_scale(K, V, a, v(f(j))))))
+    (fun (a : af_carrier(K), v : I -> X) => refl((fun (j : J) => vector_scale(K, V, a, v(f(j))))))
   );
 }
 
@@ -85,19 +85,19 @@ def curry_linear(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
   LinearMap(K, FunctionSpace(K, I and J, V), FunctionSpace(K, I, FunctionSpace(K, J, V))) {
   let X = vector_carrier(K, V);
   exact (
-    (fun (v : (I and J) -> X) (i : I) (j : J) => v(typed(I and J, (i, j)))),
+    (fun (v : (I and J) -> X, i : I, j : J) => v(typed(I and J, (i, j)))),
     (
       fun (v w : (I and J) -> X) => refl(
         (
-          fun (i : I) (j : J) => vector_add(
+          fun (i : I, j : J) => vector_add(
             K, V, v(typed(I and J, (i, j))), w(typed(I and J, (i, j)))
           )
         )
       )
     ),
     (
-      fun (a : af_carrier(K)) (v : (I and J) -> X) => refl(
-        (fun (i : I) (j : J) => vector_scale(K, V, a, v(typed(I and J, (i, j)))))
+      fun (a : af_carrier(K), v : (I and J) -> X) => refl(
+        (fun (i : I, j : J) => vector_scale(K, V, a, v(typed(I and J, (i, j)))))
       )
     )
   );
@@ -107,7 +107,7 @@ def uncurry_linear(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
   LinearMap(K, FunctionSpace(K, I, FunctionSpace(K, J, V)), FunctionSpace(K, I and J, V)) {
   let X = vector_carrier(K, V);
   exact (
-    (fun (v : I -> J -> X) (p : I and J) => v(fst(I, J, p), snd(I, J, p))),
+    (fun (v : I -> J -> X, p : I and J) => v(fst(I, J, p), snd(I, J, p))),
     (
       fun (v w : I -> J -> X) => refl(
         (
@@ -118,7 +118,7 @@ def uncurry_linear(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
       )
     ),
     (
-      fun (a : af_carrier(K)) (v : I -> J -> X) => refl(
+      fun (a : af_carrier(K), v : I -> J -> X) => refl(
         (fun (p : I and J) => vector_scale(K, V, a, v(fst(I, J, p), snd(I, J, p))))
       )
     )
@@ -135,7 +135,7 @@ def curry_linear_iso(K : AlgebraicField, I J : U0, V : VectorSpace(K)) :
     ext p;
     exact pair_induction(
       (fun (q : I and J) => v(typed(I and J, (fst(I, J, q), snd(I, J, q)))) = v(q)),
-      (fun (i : I) (j : J) => refl(v(typed(I and J, (i, j))))), p
+      (fun (i : I, j : J) => refl(v(typed(I and J, (i, j))))), p
     );
   }
   exact (

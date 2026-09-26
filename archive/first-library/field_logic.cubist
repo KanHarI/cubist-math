@@ -29,7 +29,7 @@ def field_first(A : U1, P : A -> U1, pair : (exists a : A, P(a))) = unpack pair 
 
 def field_second(A : U1, P : A -> U1, pair : (exists a : A, P(a))) =
   pair_induction(
-    (fun (v : (exists a : A, P(a))) => P(field_first(A, P, v))), (fun (a : A) (p : P(a)) => p), pair
+    (fun (v : (exists a : A, P(a))) => P(field_first(A, P, v))), (fun (a : A, p : P(a)) => p), pair
   );
 
 def field_fst(A B : U1, pair : A and B) = field_first(A, (fun (a : A) => B), pair);

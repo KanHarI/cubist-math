@@ -99,7 +99,7 @@ def monic_difference_identity(
         )
       ),
       (
-        fun (constant : F) (tail : MonicCoefficients(F, k)) => trans(
+        fun (constant : F, tail : MonicCoefficients(F, k)) => trans(
           cong((fun (v : F) => addF(constant, mulF(x, v))), previous(tail)),
           polynomial_difference_step(
             F, zero, one, addF, mulF, negF, ring, constant, x, r,

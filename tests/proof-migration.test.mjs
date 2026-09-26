@@ -85,7 +85,7 @@ def still(A : U0, x : A) : x = x {
   exact path(fun (i : Interval) => A, fun (i : Interval) => x);
 }
 def pointed(A : U0, f : A -> A) : f = f {
-  exact path(fun (t : Interval) => A -> A, fun (t : Interval) (x : A) => f(x));
+  exact path(fun (t : Interval) => A -> A, fun (t : Interval, x : A) => f(x));
 }
 def pointwise(A : U0, f : A -> A) : f = f {
   exact FunExt(U0, A, (fun (a : A) => A), f, f, fun (a : A) => refl(f(a)));

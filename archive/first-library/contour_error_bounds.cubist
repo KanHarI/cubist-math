@@ -6,9 +6,9 @@ def ContourTagBounds(
   F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, f : F -> F, delta : F, n : Nat
 ) =
   induction n as k return (SampleVertices(F, k) -> SampleTags(F, k) -> SampleTags(F, k) -> U0) {
-    zero => fun (vertices : F) (oldTags newTags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(F, succ(k))) (
-      oldTags newTags : SampleTags(F, succ(k))
+    zero => fun (vertices : F, oldTags newTags : Unit) => Unit;
+    succ previous => fun (
+      vertices : SampleVertices(F, succ(k)), oldTags newTags : SampleTags(F, succ(k))
     ) => FieldMagnitudeBound(
       F, negF, lt,
       coordinate_difference(
@@ -53,14 +53,14 @@ def contour_tag_error_variation_bound(
       mulF(delta, sample_sum(F, F, zero, addF, weight, k, vertices, oldTags))
     )
   ) {
-    zero => fun (vertices : F) (oldTags newTags errors increments : Unit) => along FieldMagnitudeBound(
+    zero => fun (vertices : F, oldTags newTags errors increments : Unit) => along FieldMagnitudeBound(
       F, negF, lt, zero
     ) by sym(ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta)) from field_magnitude_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic
     );
-    succ previous => fun (vertices : SampleVertices(F, succ(k))) (
-      oldTags newTags : SampleTags(F, succ(k))
-    ) (errors : ContourTagBounds(F, addF, negF, lt, f, delta, succ(k), vertices, oldTags, newTags)) (
+    succ previous => fun (
+      vertices : SampleVertices(F, succ(k)), oldTags newTags : SampleTags(F, succ(k)),
+      errors : ContourTagBounds(F, addF, negF, lt, f, delta, succ(k), vertices, oldTags, newTags),
       increments : SampleMagnitudeBounds(
         F, F, negF, lt, (fun (a b t : F) => coordinate_difference(F, addF, negF, a, b)), weight,
         succ(k), vertices, oldTags

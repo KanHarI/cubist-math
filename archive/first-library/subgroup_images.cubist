@@ -159,7 +159,8 @@ def subgroup_image_preimage_adjunction(
   ) {
   exact (
     (
-      fun (included : SubgroupIncluded(H, subgroup_image(G, H, h, S), T)) (x : group_carrier(G)) (
+      fun (
+        included : SubgroupIncluded(H, subgroup_image(G, H, h, S), T), x : group_carrier(G),
         member : subgroup_members(G, S, x)
       ) => included(group_hom_map(G, H, h, x), subgroup_image_intro(G, H, h, S, x, member))
     ), subgroup_image_least(G, H, h, S, T)
@@ -173,7 +174,7 @@ def subgroup_image_monotone(
   exact subgroup_image_least(
     G, H, h, S, subgroup_image(G, H, h, T),
     (
-      fun (x : group_carrier(G)) (member : subgroup_members(G, S, x)) => subgroup_image_intro(
+      fun (x : group_carrier(G), member : subgroup_members(G, S, x)) => subgroup_image_intro(
         G, H, h, T, x, included(x, member)
       )
     )
@@ -204,7 +205,7 @@ def group_image_trivial(G H : Group) :
     H, group_image(G, H, group_hom_trivial(G, H)), subgroup_bottom(H),
     subgroup_image_least(
       G, H, group_hom_trivial(G, H), subgroup_top(G), subgroup_bottom(H),
-      (fun (x : group_carrier(G)) (member : Unit) => refl(group_unit(H)))
+      (fun (x : group_carrier(G), member : Unit) => refl(group_unit(H)))
     ), subgroup_bottom_least(H, group_image(G, H, group_hom_trivial(G, H)))
   );
 }

@@ -60,7 +60,7 @@ def nonzero_coefficient_in_span(
     remainder_in_subspace(
       K, V, S, n, v, a, i,
       (
-        fun (j : Fin(n)) (different : (j = i) -> Void) => span_generator(
+        fun (j : Fin(n), different : (j = i) -> Void) => span_generator(
           K, V, P, v(j), others(j, different)
         )
       )

@@ -161,7 +161,7 @@ def support_mul_step(
           cong(
             field_add(K, field_zero(K)),
             previous(
-              series_tail(K, f), g, n, (fun (i : Nat) (bound : le(m, i)) => sf(succ(i), bound)), sg,
+              series_tail(K, f), g, n, (fun (i : Nat, bound : le(m, i)) => sf(succ(i), bound)), sg,
               j, above
             )
           ), scalar_add_zero(K, field_zero(K))
@@ -176,15 +176,15 @@ def support_mul(K : AlgebraicField, m : Nat) =
     forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat, SeriesSupport(K, f, k)
     -> SeriesSupport(K, g, n) -> SeriesSupport(K, series_mul(K, f, g), add_count(k, n))
   ) {
-    zero => fun (f g : FormalSeries(K)) (n : Nat) (sf : SeriesSupport(K, f, 0)) (
-      sg : SeriesSupport(K, g, n)
+    zero => fun (
+      f g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, 0), sg : SeriesSupport(K, g, n)
     ) => support_mul_zero(K, f, g, sf, n);
     succ previous => support_mul_step(K, k, previous);
   };
 
 def polynomial_zero(K : AlgebraicField) =
   polynomial_of_support(
-    K, series_zero(K), 0, (fun (k : Nat) (above : le(0, k)) => refl(field_zero(K)))
+    K, series_zero(K), 0, (fun (k : Nat, above : le(0, k)) => refl(field_zero(K)))
   );
 
 def polynomial_constant(K : AlgebraicField, a : af_carrier(K)) =
@@ -228,8 +228,7 @@ def finite_support_binary(
 
 def polynomial_add(K : AlgebraicField) =
   finite_support_binary(
-    K, series_add(K),
-    (fun (m : Nat) (f g : FormalSeries(K)) (n : Nat) => support_add(K, f, g, m, n))
+    K, series_add(K), (fun (m : Nat, f g : FormalSeries(K), n : Nat) => support_add(K, f, g, m, n))
   );
 
 def polynomial_mul(K : AlgebraicField) = finite_support_binary(K, series_mul(K), support_mul(K));
@@ -259,7 +258,7 @@ def polynomial_neg(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
     exact (
       n,
       (
-        fun (k : Nat) (above : le(n, k)) => trans(
+        fun (k : Nat, above : le(n, k)) => trans(
           cong(field_neg(K), support(k, above)), scalar_neg_zero(K)
         )
       )

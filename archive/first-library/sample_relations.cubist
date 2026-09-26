@@ -26,8 +26,9 @@ def sample_adjacent_magnitude(
     SampleAdjacent(C, related, k, vertices)
     -> SampleMagnitudeBounds(C, F, negF, lt, edge, radius, k, vertices, tags)
   ) {
-    zero => fun (vertices : C) (tags adjacent : Unit) => tt;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
+    zero => fun (vertices : C, tags adjacent : Unit) => tt;
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)),
       adjacent : SampleAdjacent(C, related, succ(k), vertices)
     ) => typed(
       (

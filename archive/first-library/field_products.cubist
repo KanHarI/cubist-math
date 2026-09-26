@@ -4,7 +4,7 @@ import field_logic;
 def field_pair_eta(A B : U1, u : A and B) =
   pair_induction(
     (fun (v : A and B) => typed(A and B, (field_fst(A, B, v), field_snd(A, B, v))) = v),
-    (fun (a : A) (b : B) => refl(typed(A and B, (a, b)))), u
+    (fun (a : A, b : B) => refl(typed(A and B, (a, b)))), u
   );
 
 def field_pair_path(
@@ -19,7 +19,7 @@ def field_pair_path_refl(A B : U1, u : A and B) =
       fun (v : A and B) => field_pair_path(
         A, B, v, v, refl(field_fst(A, B, v)), refl(field_snd(A, B, v))
       ) = refl(v)
-    ), (fun (a : A) (b : B) => refl(refl(typed(A and B, (a, b))))), u
+    ), (fun (a : A, b : B) => refl(refl(typed(A and B, (a, b))))), u
   );
 
 // Holds by conversion: pairing a path's projections gives back the path.

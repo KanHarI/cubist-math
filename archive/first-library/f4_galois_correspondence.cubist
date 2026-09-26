@@ -35,7 +35,7 @@ def f4_fixed_decision(
   exact decision_transfer(
     F4FixedOnRepresentatives(H, x), GaloisFixed(F2, F4OverF2, H, x),
     f4_fixed_from_representatives(H, x),
-    (fun (fixed : GaloisFixed(F2, F4OverF2, H, x)) (b : F2Carrier) => fixed(f4_symmetry(b))), tested
+    (fun (fixed : GaloisFixed(F2, F4OverF2, H, x), b : F2Carrier) => fixed(f4_symmetry(b))), tested
   );
 }
 

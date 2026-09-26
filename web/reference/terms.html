@@ -81,11 +81,11 @@
               <thead><tr><th>Source</th><th>Means</th></tr></thead>
               <tbody>
                 <tr><td><code>fun (x y : A) => body</code></td><td><code>fun (x : A) => fun (y : A) => body</code></td></tr>
-                <tr><td><code>fun (a : A) (b : B) => body</code></td><td>Two binder groups with different types. Use separate parentheses, not commas.</td></tr>
+                <tr><td><code>fun (a : A, b : B) => body</code></td><td>Binders with different types, separated by commas, exactly as in a parameter list</td></tr>
                 <tr><td><code>fun x => body</code></td><td>One binder whose type is taken from the expected function type</td></tr>
               </tbody>
             </table></div>
-            <pre><code data-check="accept">def constant(A B : U0) = fun (a : A) (b : B) =&gt; a;
+            <pre><code data-check="accept">def constant(A B : U0) = fun (a : A, b : B) =&gt; a;
 
 def second(A : U0) = fun (x y : A) =&gt; y;
 
@@ -97,6 +97,9 @@ def twice(A : U0, f : A -&gt; A) = fun (x : A) =&gt; f(f(x));</code></pre>
 
 def successor_function = typed(Nat -&gt; Nat, fun n =&gt; succ(n));</code></pre>
             <pre><code data-check="reject">def no_expected_type = fun x =&gt; x;  // Error: Untyped lambda requires an expected function type.</code></pre>
+            <p>All typed binders go in one parenthesized list, separated by commas, as in parameters. Separate parenthesized groups are not a form:</p>
+            <pre><code data-check="reject">// Error: Separate binder groups with commas: fun (a : A, b : B) =&gt; …
+def two_groups(A B : U0) = fun (a : A) (b : B) =&gt; a;</code></pre>
             <p>An untyped binder stands alone. Write <code>fun x => fun y => …</code>, not <code>fun x y => …</code>; only typed binders can share a group:</p>
             <pre><code data-check="reject">def pair_of_binders(A : U0) : A -&gt; A -&gt; A {
   exact fun x y =&gt; x;  // Error: Expected '=&gt;', found 'y'.
@@ -168,7 +171,7 @@ def not_a_pair(n : Nat) = unpack n as (a, b) return Nat { a; };</code></pre>
             <p>When the result type depends on the pair itself, use <code>pair_induction(motive, branch, pair)</code>. For <code>pair : exists x : A, B(x)</code>, the branch takes <code>x : A</code> and <code>y : B(x)</code> and proves <code>motive((x, y))</code>. The result proves <code>motive(pair)</code>.</p>
             <pre><code data-check="accept">def pair_is_itself(A : U0, B : A -&gt; U0, p : exists x : A, B(x)) : p = p {
   exact pair_induction(fun (q : exists x : A, B(x)) =&gt; q = q,
-    fun (x : A) (y : B(x)) =&gt; refl(typed(exists x : A, B(x), (x, y))), p);
+    fun (x : A, y : B(x)) =&gt; refl(typed(exists x : A, B(x), (x, y))), p);
 }</code></pre>
           </section>
           <section id="sums">

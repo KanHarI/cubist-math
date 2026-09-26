@@ -61,19 +61,19 @@ def subspace_carrier_scalar_laws(K : AlgebraicField, V : VectorSpace(K), S : Sub
       )
     ),
     (
-      fun (a b : af_carrier(K)) (x : X) => subspace_value_ext(
+      fun (a b : af_carrier(K), x : X) => subspace_value_ext(
         K, V, S, scale(af_mul(af_carrier(K), af_operations(K), a, b), x), scale(a, scale(b, x)),
         vector_scale_associative(K, V, a, b, val(x))
       )
     ),
     (
-      fun (a : af_carrier(K)) (x y : X) => subspace_value_ext(
+      fun (a : af_carrier(K), x y : X) => subspace_value_ext(
         K, V, S, scale(a, group_multiply(G, x, y)), group_multiply(G, scale(a, x), scale(a, y)),
         vector_scale_add_vectors(K, V, a, val(x), val(y))
       )
     ),
     (
-      fun (a b : af_carrier(K)) (x : X) => subspace_value_ext(
+      fun (a b : af_carrier(K), x : X) => subspace_value_ext(
         K, V, S, scale(af_add(af_carrier(K), af_operations(K), a, b), x),
         group_multiply(G, scale(a, x), scale(b, x)), vector_scale_add_scalars(K, V, a, b, val(x))
       )
@@ -102,7 +102,7 @@ def subspace_inclusion_linear(K : AlgebraicField, V : VectorSpace(K), S : Subspa
   let val = subspace_value(K, V, S);
   exact (
     val, (fun (x y : X) => refl(vector_add(K, V, val(x), val(y)))),
-    (fun (a : af_carrier(K)) (x : X) => refl(vector_scale(K, V, a, val(x))))
+    (fun (a : af_carrier(K), x : X) => refl(vector_scale(K, V, a, val(x))))
   );
 }
 

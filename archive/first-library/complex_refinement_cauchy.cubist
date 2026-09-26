@@ -12,7 +12,7 @@ def complex_converges_successor(
   obtain (bound, close) = converges(epsilon, positive);
   exact (
     bound,
-    (fun (n : Nat) (later : IndexLE(bound, n)) => close(succ(n), nat_le_step(bound, n, later)))
+    (fun (n : Nat, later : IndexLE(bound, n)) => close(succ(n), nat_le_step(bound, n, later)))
   );
 }
 

@@ -8,8 +8,8 @@ def SampleCloseBounds(
   C F : U1, addF : F -> F -> F, lt : F -> F -> U0, edge other radius : C -> C -> C -> F, n : Nat
 ) =
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
-    zero => fun (vertices : C) (tags : Unit) => Unit;
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) => FieldClose(
+    zero => fun (vertices : C, tags : Unit) => Unit;
+    succ previous => fun (vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k))) => FieldClose(
       F, addF, lt,
       edge(
         field_fst(C, SampleVertices(C, k), vertices),
@@ -54,14 +54,16 @@ def sample_sum_error_bound(
       addF(sample_sum(C, F, zero, addF, radius, k, vertices, tags), epsilon)
     )
   ) {
-    zero => fun (vertices : C) (tags bounds : Unit) (epsilon : F) (positive : lt(zero, epsilon)) => along(
+    zero => fun (vertices : C, tags bounds : Unit, epsilon : F, positive : lt(zero, epsilon)) => along(
       (fun (r : F) => FieldClose(F, addF, lt, zero, zero, r))
     ) by sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)) from field_close_self(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, positive
     );
-    succ previous => fun (vertices : SampleVertices(C, succ(k))) (tags : SampleTags(C, succ(k))) (
-      bounds : SampleCloseBounds(C, F, addF, lt, edge, other, radius, succ(k), vertices, tags)
-    ) (epsilon : F) (positive : lt(zero, epsilon)) => along(
+    succ previous => fun (
+      vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)),
+      bounds : SampleCloseBounds(C, F, addF, lt, edge, other, radius, succ(k), vertices, tags),
+      epsilon : F, positive : lt(zero, epsilon)
+    ) => along(
       (
         fun (r : F) => FieldClose(
           F, addF, lt, sample_sum(C, F, zero, addF, edge, succ(k), vertices, tags),

@@ -58,13 +58,13 @@ def polynomial_from_coordinates_add(K : AlgebraicField, n : Nat, a b : Fin(n) ->
       trans(
         cong(
           (
-            fun (u : Fin(n) -> af_carrier(K)) (i : Fin(n)) => field_add(
+            fun (u : Fin(n) -> af_carrier(K), i : Fin(n)) => field_add(
               K, u(i), series_coordinates(K, n, g, i)
             )
           ), series_coordinates_roundtrip(K, n, a)
         ),
         cong(
-          (fun (v : Fin(n) -> af_carrier(K)) (i : Fin(n)) => field_add(K, a(i), v(i))),
+          (fun (v : Fin(n) -> af_carrier(K), i : Fin(n)) => field_add(K, a(i), v(i))),
           series_coordinates_roundtrip(K, n, b)
         )
       )
@@ -103,7 +103,7 @@ def polynomial_from_coordinates_scale(
     trans(
       series_coordinates_scale(K, a, n, f),
       cong(
-        (fun (v : Fin(n) -> af_carrier(K)) (i : Fin(n)) => field_mul(K, a, v(i))),
+        (fun (v : Fin(n) -> af_carrier(K), i : Fin(n)) => field_mul(K, a, v(i))),
         series_coordinates_roundtrip(K, n, b)
       )
     )

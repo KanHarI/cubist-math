@@ -1,7 +1,7 @@
 import finite_remainders;
 
 def fin_omit(n : Nat) = induction n as k return (Fin(succ(k)) -> Fin(k) -> Fin(succ(k))) {
-    zero => fun (i : Fin(1)) (j : Fin(0)) => typed(Fin(1), absurd(j));
+    zero => fun (i : Fin(1), j : Fin(0)) => typed(Fin(1), absurd(j));
     succ previous => fun (i : Fin(succ(succ(k)))) => match i return (
       Fin(succ(k)) -> Fin(succ(succ(k)))
     ) {
@@ -18,11 +18,12 @@ def fin_omit_avoids(n : Nat) =
   induction n as k return (
     forall i : Fin(succ(k)), forall j : Fin(k), (fin_omit(k, i, j) = i) -> Void
   ) {
-    zero => fun (i : Fin(1)) (j : Fin(0)) (same : fin_omit(0, i, j) = i) => typed(Void, absurd(j));
+    zero => fun (i : Fin(1), j : Fin(0), same : fin_omit(0, i, j) = i) => typed(Void, absurd(j));
     succ previous => fun (i : Fin(succ(succ(k)))) => match i as index return (
       forall j : Fin(succ(k)), (fin_omit(succ(k), index, j) = index) -> Void
     ) {
-      left u => fun (j : Fin(succ(k))) (
+      left u => fun (
+        j : Fin(succ(k)),
         same : fin_omit(succ(k), typed(Fin(succ(succ(k))), left(u)), j) = typed(
           Fin(succ(succ(k))), left(u)
         )
@@ -49,7 +50,7 @@ def fin_omit_injective(n : Nat) =
     forall i : Fin(succ(k)), forall x : Fin(k), forall y : Fin(k),
     fin_omit(k, i, x) = fin_omit(k, i, y) -> x = y
   ) {
-    zero => fun (i : Fin(1)) (x y : Fin(0)) (same : fin_omit(0, i, x) = fin_omit(0, i, y)) => typed(
+    zero => fun (i : Fin(1), x y : Fin(0), same : fin_omit(0, i, x) = fin_omit(0, i, y)) => typed(
       (x = y), absurd(x)
     );
     succ previous => fun (i : Fin(succ(succ(k)))) => match i as index return (
@@ -160,7 +161,7 @@ def linear_combination_omit(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
       (fun (j : Fin(k)) => a(fin_omit(k, i, j)))
     ) = linear_remainder(K, V, succ(k), v, a, i)
   ) {
-    zero => fun (v : Fin(1) -> vector_carrier(K, V)) (a : Fin(1) -> af_carrier(K)) (i : Fin(1)) => match i as index return (
+    zero => fun (v : Fin(1) -> vector_carrier(K, V), a : Fin(1) -> af_carrier(K), i : Fin(1)) => match i as index return (
       linear_combination(
         K, V, 0, (fun (j : Fin(0)) => v(fin_omit(0, index, j))),
         (fun (j : Fin(0)) => a(fin_omit(0, index, j)))
@@ -169,9 +170,10 @@ def linear_combination_omit(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
       left u => refl(vector_zero(K, V));
       right t => absurd(t);
     };
-    succ previous => fun (v : Fin(succ(succ(k))) -> vector_carrier(K, V)) (
-      a : Fin(succ(succ(k))) -> af_carrier(K)
-    ) (i : Fin(succ(succ(k)))) => match i as index return (
+    succ previous => fun (
+      v : Fin(succ(succ(k))) -> vector_carrier(K, V), a : Fin(succ(succ(k))) -> af_carrier(K),
+      i : Fin(succ(succ(k)))
+    ) => match i as index return (
       linear_combination(
         K, V, succ(k), (fun (j : Fin(succ(k))) => v(fin_omit(succ(k), index, j))),
         (fun (j : Fin(succ(k))) => a(fin_omit(succ(k), index, j)))

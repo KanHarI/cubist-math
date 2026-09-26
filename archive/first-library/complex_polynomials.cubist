@@ -9,8 +9,8 @@ def MonicCoefficients(F : U1, n : Nat) = induction n as k return U1 {
 
 def monic_eval(F : U1, one : F, addF mulF : F -> F -> F, n : Nat) =
   induction n as k return (MonicCoefficients(F, k) -> F -> F) {
-    zero => fun (u : Unit) (z : F) => one;
-    succ previous => fun (coefficients : MonicCoefficients(F, succ(k))) (z : F) => unpack typed(
+    zero => fun (u : Unit, z : F) => one;
+    succ previous => fun (coefficients : MonicCoefficients(F, succ(k)), z : F) => unpack typed(
       F and MonicCoefficients(F, k), coefficients
     ) as (constant, tail) return F {
       addF(constant, mulF(z, previous(tail, z)));
