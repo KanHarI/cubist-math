@@ -158,7 +158,7 @@ bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
                               (k->syntax_memo ? CC_SYNTAX_MEMO_SIZE * sizeof(cc_syntax_memo) : 0) +
                               (k->alpha_memo ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_memo) : 0) +
                               (k->alpha_scopes ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_scope) : 0) +
-                              (k->interned ? CC_INTERN_SIZE * sizeof(cc_term) : 0) +
+                              (k->interned ? k->intern_capacity * sizeof(cc_term) : 0) +
                               (k->contexts ? CC_CHECK_MEMO_SIZE * sizeof(cc_context_memo) : 0) +
                               (k->inferred ? CC_CHECK_MEMO_SIZE * sizeof(cc_infer_memo) : 0);
         result->checking_steps = k->checking_steps;

@@ -29,16 +29,25 @@ typedef struct {
     cc_term value, type;
 } cc_definition;
 
-/* The instruction store (instructions.c). A fact is a typing judgement
- * Γ ⊢ term : type, or an equality judgement Γ ⊢ term ≡ other : type. Its
- * context is a set of entries, sorted by creation; an entry records the
- * context its own type needs, so every set is closed under dependencies.
- * Context set zero is the empty context; fact and entry zero are invalid. */
+/* The judgement graph (instructions.c). A fact is a typing judgement
+ * Γ ⊢ term : type, or an equality judgement Γ ⊢ term ≡ other : type, with
+ * the instruction and operands that derived it. Its context is a set of
+ * entries, sorted by creation; an entry records the context its own type
+ * needs, so every set is closed under dependencies. Context set zero is the
+ * empty context; fact and entry zero are invalid. */
 enum { CC_FACT_TYPING = 1, CC_FACT_EQUALITY = 2 };
+typedef struct {
+    uint32_t rule;
+    uint32_t premise[4];
+    uint32_t entry;
+    uint32_t operand[2];
+    uint32_t position, depth; /* into the kernel's positions */
+} cc_derivation;
 typedef struct {
     uint32_t kind;
     cc_term term, other, type;
     uint32_t context;
+    cc_derivation how;
 } cc_fact;
 typedef struct {
     uint32_t symbol;  /* a term symbol, or a dimension index */
@@ -46,6 +55,7 @@ typedef struct {
     uint32_t level;   /* the universe of the type */
     uint32_t context; /* the context the type needs */
     uint32_t scope;   /* that context and the entry itself */
+    uint32_t source;  /* the judgement that the type is a type */
     bool dimension;
 } cc_entry;
 typedef struct {
@@ -60,7 +70,7 @@ typedef struct {
     uint64_t result;
 } cc_syntax_memo;
 #define CC_SYNTAX_MEMO_SIZE 8192
-#define CC_INTERN_SIZE 65536
+#define CC_INTERN_MINIMUM 65536
 
 /* Conversion keys include exact, never-reused binder-renaming scopes. An
  * identity renaming is equivalent to the empty renaming and uses scope zero.
@@ -99,7 +109,11 @@ struct cc_kernel {
     cc_context_memo *contexts;
     cc_infer_memo *inferred;
     uint64_t next_context;
-    cc_term *interned; /* Exact syntax sharing; never a typing certificate. */
+    /* The syntax hash graph: with CC_SHARE_SYNTAX, identical syntax has one
+     * handle. An index of live nodes, never a typing certificate. Discarded
+     * handles act as tombstones until the table is rebuilt. */
+    cc_term *interned;
+    size_t intern_capacity, intern_used;
     cc_syntax_memo *syntax_memo;
     cc_alpha_memo *alpha_memo;
     cc_alpha_scope *alpha_scopes;
@@ -135,11 +149,19 @@ struct cc_kernel {
     size_t context_set_count, context_set_capacity;
     uint32_t *context_items;
     size_t context_item_count, context_item_capacity;
-    size_t checkpoint_store[4]; /* facts, entries, context sets, items */
+    uint8_t *positions;
+    size_t position_count, position_capacity;
+    /* Facts by derivation. Truncated ids are tombstones until a rebuild. */
+    uint32_t *derivations;
+    size_t derivation_capacity, derivation_used;
+    cc_derivation pending; /* the instruction being checked */
+    const uint8_t *pending_position;
+    size_t checkpoint_store[5]; /* facts, entries, context sets, items, positions */
 };
 bool ck_alpha_equal(cc_kernel *, cc_term, cc_term);
 bool ck_syntactic_cumulative(cc_kernel *, cc_term actual, cc_term expected);
 void ck_trace(cc_kernel *, cc_trace_kind, uint32_t a, uint32_t b, uint32_t c);
+void ck_intern(cc_kernel *, cc_term);
 
 cc_context ck_extend(cc_kernel *, uint32_t, cc_term, const cc_context *);
 void ck_clear_check_cache(cc_kernel *);

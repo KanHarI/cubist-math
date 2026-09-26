@@ -78,7 +78,7 @@ bool cc_kernel_trace_start(cc_kernel *, size_t capacity);
 void cc_kernel_trace_stop(cc_kernel *);
 size_t cc_kernel_trace_count(const cc_kernel *);
 bool cc_kernel_trace_event(const cc_kernel *, size_t index, cc_trace_event *);
-/* Instructions (instructions.c): THTH-style forward rules on a store of
+/* Instructions (instructions.c): THTH-style forward rules on a graph of
  * judgements, beside cc_kernel_check. An instruction takes earlier judgements
  * and context entries, checks its side conditions syntactically — types must
  * be identical up to bound names — and returns a new judgement, or 0 with an
@@ -92,10 +92,27 @@ bool cc_kernel_trace_event(const cc_kernel *, size_t index, cc_trace_event *);
  * highlighted subterm), and a replacement rewrites a highlighted occurrence
  * of a by b, given a ≡ b. Conversion moves t : A to t : B along A ≡ B.
  *
- * The store is truncated by rollback and by commit_checkpoint to its size at
- * the checkpoint; judgements from before it stay valid after a rollback. */
+ * The judgements form a derivation graph, as THTH's graph store did: each
+ * records the instruction, premises and operands that derived it, and the
+ * same instruction on the same operands returns the same judgement. Context
+ * entries play THTH's context fragments: each records the judgement that its
+ * type is a type. There is one dimension entry per interval index.
+ *
+ * The graph is truncated by rollback and by commit_checkpoint to its size at
+ * the checkpoint; judgements from before it stay valid. An instruction does
+ * nothing while an error is recorded. */
 typedef uint32_t cc_judgement_id;
 typedef uint32_t cc_entry_id;
+typedef enum {
+    CC_INSTR_UNIVERSE = 1, CC_INSTR_NAT, CC_INSTR_ZERO, CC_INSTR_SUCC, CC_INSTR_NAT_ELIM,
+    CC_INSTR_UNIT, CC_INSTR_POINT, CC_INSTR_UNIT_ELIM, CC_INSTR_VOID, CC_INSTR_ABORT,
+    CC_INSTR_SUM, CC_INSTR_INJECT, CC_INSTR_SUM_ELIM,
+    CC_INSTR_VARIABLE, CC_INSTR_PI, CC_INSTR_LAMBDA, CC_INSTR_APPLY,
+    CC_INSTR_SIGMA, CC_INSTR_PAIR, CC_INSTR_FIRST, CC_INSTR_SECOND, CC_INSTR_DOMAIN, CC_INSTR_FAMILY,
+    CC_INSTR_PATH, CC_INSTR_PATH_LAMBDA, CC_INSTR_PATH_APPLY, CC_INSTR_DEFINE, CC_INSTR_LOOKUP,
+    CC_INSTR_REFL, CC_INSTR_STEP, CC_INSTR_REPLACE, CC_INSTR_ETA, CC_INSTR_SIDE,
+    CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT
+} cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
     CC_STEP_DELTA,     /* a definition to its checked value */
@@ -119,7 +136,7 @@ cc_judgement_id cc_instr_void(cc_kernel *);
 cc_judgement_id cc_instr_abort(cc_kernel *, cc_judgement_id type, cc_judgement_id impossible);
 /* A term entry x : A, from Γ ⊢ A : U(i); the symbol must be new. */
 cc_entry_id cc_instr_extend(cc_kernel *, cc_judgement_id type, uint32_t symbol);
-/* A dimension entry, with its interval index. */
+/* The dimension entry of an interval index. */
 cc_entry_id cc_instr_dimension(cc_kernel *, unsigned index);
 cc_judgement_id cc_instr_variable(cc_kernel *, cc_entry_id);              /* Γ, x : A ⊢ x : A */
 /* Binders discharge an entry that no other entry of the premise depends on. */
@@ -165,12 +182,32 @@ cc_judgement_id cc_instr_transitivity(cc_kernel *, cc_judgement_id first, cc_jud
 cc_judgement_id cc_instr_convert(cc_kernel *, cc_judgement_id typing, cc_judgement_id equality);
 cc_judgement_id cc_instr_lift(cc_kernel *, cc_judgement_id typing, cc_judgement_id type);
 
-/* Reading the store. Kind 1 is typing and 2 equality; for typing, other is 0. */
-bool cc_kernel_fact(const cc_kernel *, cc_judgement_id, uint32_t *kind, cc_term *term,
-                    cc_term *other, cc_term *type);
+/* Reading the graph. Judgement ids run from 1 to count - 1, premises first.
+ * Kind 1 is typing and 2 equality; for typing, other is 0. Premises are
+ * judgements, in the instruction's argument order, and entry the context
+ * entry the instruction bound or used. Operands: a universe level, a
+ * definition symbol or reference, a path endpoint, a side and a step rule,
+ * or an injection's side. The position is the highlighted one, for a step or
+ * a replacement; it is valid until the next instruction. */
+typedef struct {
+    uint32_t kind;
+    cc_term term, other, type;
+    cc_instruction rule;
+    cc_judgement_id premise[4];
+    cc_entry_id entry;
+    uint32_t operand[2];
+    const uint8_t *position;
+    size_t depth;
+} cc_judgement_info;
+size_t cc_kernel_judgement_count(const cc_kernel *);
+bool cc_kernel_judgement(const cc_kernel *, cc_judgement_id, cc_judgement_info *);
 /* The index-th entry of a judgement's context, in creation order, or 0. */
-cc_entry_id cc_kernel_fact_context(const cc_kernel *, cc_judgement_id, size_t index);
-bool cc_kernel_entry(const cc_kernel *, cc_entry_id, uint32_t *symbol, cc_term *type, bool *dimension);
+cc_entry_id cc_kernel_judgement_context(const cc_kernel *, cc_judgement_id, size_t index);
+/* Entries run from 1 to count - 1. A term entry records the judgement that
+ * its type is a type; a dimension entry has symbol = index and no type. */
+size_t cc_kernel_entry_count(const cc_kernel *);
+bool cc_kernel_entry(const cc_kernel *, cc_entry_id, uint32_t *symbol, cc_term *type, bool *dimension,
+                     cc_judgement_id *source);
 
 /* Clear a rejected request before constructing corrected raw syntax. */
 void cc_kernel_clear_error(cc_kernel *);

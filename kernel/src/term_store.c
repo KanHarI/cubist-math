@@ -100,7 +100,7 @@ bool cc_kernel_trace_event(const cc_kernel *k, size_t index, cc_trace_event *eve
 void cc_kernel_set_optimizations(cc_kernel *k, unsigned flags) {
     if (!k) return;
     k->optimizations = flags & (CC_SHARE_SYNTAX | CC_REUSE_CHECKS);
-    if (!(flags & CC_SHARE_SYNTAX)) { free(k->interned); k->interned = NULL; }
+    if (!(flags & CC_SHARE_SYNTAX)) { free(k->interned); k->interned = NULL; k->intern_capacity = k->intern_used = 0; }
     if (!(flags & CC_REUSE_CHECKS)) ck_clear_check_cache(k);
 }
 
@@ -116,6 +116,8 @@ void cc_kernel_free(cc_kernel *k) {
     free(k->entries);
     free(k->context_sets);
     free(k->context_items);
+    free(k->positions);
+    free(k->derivations);
     for (size_t i = 1; i < k->formula_count; ++i)
         cc_clear(&k->formulas[i]);
     free(k->relocation);
@@ -150,6 +152,38 @@ bool cc_kernel_mismatch(const cc_kernel *k, cc_term *found, cc_term *expected) {
     return true;
 }
 
+static uint32_t node_hash(cc_term_kind kind, uint32_t payload, const cc_term children[4]) {
+    uint32_t hash = (uint32_t)kind;
+    hash = (hash ^ payload) * UINT32_C(16777619);
+    for (unsigned i = 0; i < 4; ++i) hash = (hash ^ children[i]) * UINT32_C(16777619);
+    return hash;
+}
+
+/* Index a live node. A slot holding a discarded handle is free again. */
+void ck_intern(cc_kernel *k, cc_term term) {
+    if (!k->interned) return;
+    size_t mask = k->intern_capacity - 1;
+    cc_node n = k->nodes[term];
+    size_t slot = node_hash(n.kind, n.payload, n.child) & mask;
+    while (k->interned[slot] && k->interned[slot] < k->count && k->interned[slot] != term)
+        slot = (slot + 1) & mask;
+    if (!k->interned[slot]) ++k->intern_used;
+    k->interned[slot] = term;
+}
+
+/* Keep the table at most half full, counting tombstones. A failed
+ * allocation drops the index: sharing affects space, never judgements. */
+static void intern_reserve(cc_kernel *k) {
+    if (k->interned && (k->intern_used + 1) * 2 <= k->intern_capacity) return;
+    size_t capacity = CC_INTERN_MINIMUM;
+    while (capacity < 4 * k->count && capacity < SIZE_MAX / 8) capacity *= 2;
+    free(k->interned);
+    k->interned = calloc(capacity, sizeof *k->interned);
+    k->intern_capacity = k->interned ? capacity : 0;
+    k->intern_used = 0;
+    for (size_t i = 1; i < k->count; ++i) ck_intern(k, (cc_term)i);
+}
+
 cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
                 cc_term a, cc_term b, cc_term c, cc_term d) {
     if (!k || k->error[0])
@@ -168,18 +202,19 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         if (children[i] >= k->count || (i >= arity && children[i]))
             return ck_fail(k, "Invalid syntax child handle."), 0;
     }
-    /* Intern only identical syntax. Every child and payload is compared after
+    /* Identical syntax is one node. Every child and payload is compared after
      * hashing, so collisions affect performance, never term identity. */
-    if ((k->optimizations & CC_SHARE_SYNTAX) && !k->interned) k->interned = calloc(CC_INTERN_SIZE, sizeof *k->interned);
-    uint32_t hash = (uint32_t)kind;
-    hash = (hash ^ payload) * UINT32_C(16777619);
-    for (unsigned i = 0; i < 4; ++i) hash = (hash ^ children[i]) * UINT32_C(16777619);
-    size_t slot = hash % CC_INTERN_SIZE;
-    if (k->interned && k->interned[slot]) {
-        cc_term existing = k->interned[slot];
-        cc_node node = k->nodes[existing];
-        if (node.kind == kind && node.payload == payload &&
-            !memcmp(node.child, children, sizeof children)) return existing;
+    if (k->optimizations & CC_SHARE_SYNTAX) {
+        intern_reserve(k);
+        size_t mask = k->intern_capacity - 1;
+        for (size_t slot = k->interned ? node_hash(kind, payload, children) & mask : 0;
+             k->interned && k->interned[slot]; slot = (slot + 1) & mask) {
+            cc_term existing = k->interned[slot];
+            if (existing >= k->count) continue;
+            cc_node node = k->nodes[existing];
+            if (node.kind == kind && node.payload == payload && !memcmp(node.child, children, sizeof children))
+                return existing;
+        }
     }
     unsigned depth = 1;
     for (unsigned i = 0; i < arity; ++i)
@@ -211,7 +246,7 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
             return ck_fail(k, "Term symbol space exhausted."), 0;
         k->next_symbol = payload + 1;
     }
-    if (k->interned) k->interned[slot] = result;
+    ck_intern(k, result);
     return result;
 }
 

@@ -26,10 +26,11 @@ static void rejects(uint32_t id, const char *fragment) {
     cc_kernel_clear_error(k);
 }
 
-static cc_term term_of(cc_judgement_id j) { cc_term t; assert(cc_kernel_fact(k, j, NULL, &t, NULL, NULL)); return t; }
-static cc_term other_of(cc_judgement_id j) { cc_term t; assert(cc_kernel_fact(k, j, NULL, NULL, &t, NULL)); return t; }
-static cc_term type_of(cc_judgement_id j) { cc_term t; assert(cc_kernel_fact(k, j, NULL, NULL, NULL, &t)); return t; }
-static size_t context_size(cc_judgement_id j) { size_t n = 0; while (cc_kernel_fact_context(k, j, n)) ++n; return n; }
+static cc_judgement_info info(cc_judgement_id j) { cc_judgement_info result; assert(cc_kernel_judgement(k, j, &result)); return result; }
+static cc_term term_of(cc_judgement_id j) { return info(j).term; }
+static cc_term other_of(cc_judgement_id j) { return info(j).other; }
+static cc_term type_of(cc_judgement_id j) { return info(j).type; }
+static size_t context_size(cc_judgement_id j) { size_t n = 0; while (cc_kernel_judgement_context(k, j, n)) ++n; return n; }
 static cc_term_kind kind(cc_term t) { cc_term_kind result; assert(cc_kernel_node(k, t, &result, NULL, NULL)); return result; }
 
 /* Contract one redex of side 1 of an equality, at a position. */
@@ -148,7 +149,7 @@ int main(void) {
     cc_judgement_id loop_type = OK(cc_instr_path(k, i, nat, nv, nv));
     cc_entry_id q = OK(cc_instr_extend(k, loop_type, Q));
     rejects(cc_instr_lambda(k, n, OK(cc_instr_variable(k, q))), "still depends");
-    rejects(cc_instr_extend(k, nat, N), "already names");
+    rejects(cc_instr_extend(k, OK(cc_instr_unit(k)), N), "already names");
 
     /* Paths compute at a path lambda, and at an endpoint of the annotation. */
     cc_judgement_id end = STEP(OK(cc_instr_refl(k, OK(cc_instr_path_apply(k, loop, 0, 1)))), CC_STEP_PATH, ROOT);
@@ -156,10 +157,24 @@ int main(void) {
     cc_judgement_id start = STEP(OK(cc_instr_refl(k, OK(cc_instr_path_apply(k, OK(cc_instr_variable(k, q)), 0, 0)))), CC_STEP_PATH, ROOT);
     assert(other_of(start) == term_of(nv));
 
-    /* Two dimension entries with one index never meet. */
-    cc_entry_id j = OK(cc_instr_dimension(k, 0));
-    cc_judgement_id at_i = OK(cc_instr_path_apply(k, loop, i, 0)), at_j = OK(cc_instr_path_apply(k, loop, j, 0));
-    rejects(cc_instr_apply(k, OK(cc_instr_apply(k, add, at_i)), at_j), "one index");
+    /* The graph records each derivation once: its rule, premises, entry,
+     * operands and highlighted position. Dimension entries are their index. */
+    assert(OK(cc_instr_dimension(k, 0)) == i && OK(cc_instr_extend(k, nat, N)) == n);
+    assert(OK(cc_instr_apply(k, OK(cc_instr_apply(k, lt, nv)), sn)) == goal && OK(cc_instr_nat(k)) == nat);
+    cc_judgement_info derived = info(goal);
+    assert(derived.rule == CC_INSTR_APPLY && info(derived.premise[0]).rule == CC_INSTR_APPLY && derived.premise[1] == sn);
+    derived = info(computed);
+    assert(derived.rule == CC_INSTR_STEP && derived.operand[0] == 1 && derived.operand[1] == CC_STEP_IOTA);
+    assert(derived.depth == 2 && derived.position[0] == 1 && derived.position[1] == 0);
+    assert(OK(cc_instr_step(k, derived.premise[0], 1, AT(1, 0), CC_STEP_IOTA)) == computed);
+    assert(info(opened).rule == CC_INSTR_REPLACE && info(opened).premise[1] == unfolded);
+    cc_judgement_id source;
+    bool dimension;
+    assert(cc_kernel_entry(k, h, NULL, NULL, &dimension, &source) && !dimension && source == at_p);
+    assert(cc_kernel_entry(k, i, NULL, NULL, &dimension, &source) && dimension && !source);
+    for (cc_judgement_id id = 1; id < cc_kernel_judgement_count(k); ++id)
+        for (unsigned slot = 0; slot < 4; ++slot)
+            assert(info(id).premise[slot] < id);
 
     /* Mismatches are reported with both types. */
     cc_term found, wanted;
@@ -184,8 +199,13 @@ int main(void) {
     cc_kernel_checkpoint(k);
     cc_judgement_id scratch = OK(cc_instr_succ(k, numeral));
     cc_kernel_rollback(k);
-    assert(!cc_kernel_fact(k, scratch, NULL, NULL, NULL, NULL));
-    assert(cc_kernel_fact(k, numeral, NULL, NULL, NULL, NULL));
+    cc_judgement_info unused;
+    assert(!cc_kernel_judgement(k, scratch, &unused) && cc_kernel_judgement(k, numeral, &unused));
+    /* A truncated judgement's id is issued again, and never confused. */
+    cc_judgement_id other = OK(cc_instr_succ(k, four));
+    assert(other == scratch && info(other).premise[0] == four);
+    cc_judgement_id repeated = OK(cc_instr_succ(k, numeral));
+    assert(repeated != other && info(repeated).premise[0] == numeral);
     assert(OK(cc_instr_lookup(k, term_of(lt_succ))));
 
     cc_kernel_free(k);

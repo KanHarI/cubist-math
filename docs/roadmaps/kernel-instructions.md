@@ -1,7 +1,8 @@
 # Kernel instructions: a THTH-style forward kernel
 
-Status: design, on the `kernel-instructions` branch. Nothing here changes the
-current kernel yet.
+Status: Stage 1 is implemented on the `kernel-instructions` branch
+(`kernel/src/instructions.c`, `kernel/tests/test_instructions.c`), beside the
+current term checker, which it does not change.
 
 ## Goal
 
@@ -27,54 +28,115 @@ in how it decides that two types are equal, and where it reduces:
 
 `opaque def` never reached the kernel, and has been removed (#37).
 
+## Two hash graphs
+
+As in THTH's graph store, the kernel's state is two graphs.
+
+**The syntax graph.** Terms are hash-consed: identical syntax is one node,
+children point to earlier nodes, and a handle is the node's identity. Sharing
+used to be a lossy cache of 65,536 slots that could evict; it is now an exact
+open-addressing table that grows with the arena. Handles discarded by a
+rollback act as tombstones, and the survivors of a checkpoint's compaction are
+indexed again. On the benchmark corpus this alone cut final-check arena nodes
+by 26% (636M to 473M) and the run from 12.1 s to 11.3 s, and let three Artin
+declarations that hit the time limit check, unblocking five more.
+
+**The judgement graph.** Each judgement records the instruction that derived
+it: its rule, its premises (earlier judgements), the context entry it bound or
+used, its immediate operands, and, for a step or a replacement, the
+highlighted position. The same instruction on the same operands returns the
+same judgement, so the graph is a derivation DAG, as THTH's Merkle graph of
+judgements was. Premises always have smaller ids.
+
+**Context entries** play THTH's context fragments: a term entry is a symbol, a
+type, the judgement that the type is a type, and the entries that type needs.
+There is one dimension entry per interval index.
+
+Differences from THTH, for now:
+
+- **Named binders, not de Bruijn indices.** Every reduction in the C kernel
+  works on named terms, so alpha-equivalent terms can be different nodes. The
+  rules compare with alpha equality, so this costs sharing, not soundness.
+- **Dense integer ids, not content hashes.** Ids are valid within a session.
+  Stable content hashes (THTH used blake3) would matter for exporting and
+  caching certificates, and can be added then.
+
 ## The instruction kernel
 
-The kernel keeps a store of checked judgements `Γ ⊢ t : T` and contexts, as
-THTH's graph store did, and offers one instruction per typing rule. An
-instruction takes handles of earlier judgements and contexts, plus small
-immediate data (a bound name, a definition, a position), checks its side
-conditions **syntactically** — types must be identical up to bound names — and
-returns the handle of a new judgement. Nothing is reduced or unfolded unless an
-instruction says so.
+An instruction takes handles of earlier judgements and entries, plus small
+immediate data (a symbol, a level, a position), checks its side conditions
+**syntactically** — types must be identical up to bound names — and returns
+the handle of a new judgement, or 0 with an error. Nothing is reduced or
+unfolded unless an instruction says so. The first proof, forward:
 
 ```
-nat  = NatForm()                      // {} ⊢ Nat : U0
-ctx  = CtxExt(nat)                    // {n : Nat}
-n    = Vble(ctx)                      // {n : Nat} ⊢ n : Nat
-sn   = NatIntroS(n)                   // {n : Nat} ⊢ succ(n) : Nat
-lt   = DefLookup(first__lt)           // {} ⊢ lt : Nat → Nat → U0
-ltn  = PiElim(lt, n)                  // {n : Nat} ⊢ lt(n) : Nat → U0
-goal = PiElim(ltn, sn)                // {n : Nat} ⊢ lt(n, succ(n)) : U0
+nat  = NatForm()                       // {} ⊢ Nat : U0
+n    = CtxExt(nat, n)                  // {n : Nat}
+nv   = Vble(n)                         // {n : Nat} ⊢ n : Nat
+sn   = NatIntroS(nv)                   // {n : Nat} ⊢ succ(n) : Nat
+lt   = DefLookup(lt)                   // {} ⊢ lt : Nat → Nat → U0
+goal = PiElim(PiElim(lt, nv), sn)      // {n : Nat} ⊢ lt(n, succ(n)) : U0
+u    = Refl(goal)                      // lt(n, succ(n)) ≡ lt(n, succ(n))
+u    = Step(u, right, [0, 0], Delta)   //   unfold the highlighted lt
+u    = Step(u, right, [0], Beta)       //   ≡ (λm. Σ(k : Nat). …)(succ(n))
+u    = Step(u, right, [], Beta)        //   ≡ Σ(k : Nat). succ(n + k) = succ(n)
 …
-p    = Conv(pair, goal,               // {n : Nat} ⊢ (0, refl(succ(n))) : lt(n, succ(n))
-          [expected, [], Delta(lt)],  //   unfold lt at the head of the expected type
-          [expected, [], Beta], …)
+p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n, succ(n))
 ```
 
-### Instruction families
+### Instructions
 
-Following THTH's 67 opcodes, adapted to the cubical theory:
+- **Contexts:** `Extend` (an entry `x : A` from `Γ ⊢ A : U_i`; the symbol must
+  be new), `Dimension` (the entry of an interval index), `Variable`.
+- **Formation, introduction and elimination:** universes, `Π` (`Pi`,
+  `Lambda`, `Apply`), `Σ` (`Sigma`, `Pair`, `First`, `Second`), `Nat` (`Zero`,
+  `Succ`, `NatElim`), `Unit` (`Point`, `UnitElim`), `Void` (`Abort`), sums
+  (`Sum`, `Inject`, `SumElim`), paths (`Path`, `PathLambda`, `PathApply` at a
+  dimension or an endpoint). `Domain` and `Family` give the parts of a `Π` or
+  `Σ` type as types in its universe.
+- **Definitions:** `Define` registers a closed judgement under a symbol and
+  returns its lookup; `Lookup` recalls any checked definition, including
+  those of the term checker.
+- **Equality judgements** `Γ ⊢ a ≡ b : T`, from `Refl`:
+  - `Step(eq, side, position, rule)` contracts the highlighted redex, and only
+    it: `Beta`, `Delta` (unfold the highlighted definition), `Iota` (an
+    eliminator or projection on a constructor), `Path` (a path lambda at a
+    point, or a path at an endpoint of its annotated type), or `Normalize`
+    (the normal form of the highlighted subterm, by the kernel's fixed
+    strategy; THTH's `BetaReduceGrossKnuth`).
+  - `Replace(eq, side, position, a ≡ b)` swaps a highlighted occurrence of `a`
+    for `b`: a targeted definitional-equality rewrite. When `a` or `b` uses a
+    name bound on the way down, the given equality must have that name as a
+    context entry of the binder's type — THTH's view of a bound variable as a
+    context fragment — and the entry is discharged. Entry types are followed
+    outwards, so a dependent binder's domain must agree too.
+  - `Eta` (a term of a `Π`, `Σ` or path type equals its expansion), `Side`,
+    `Symmetry`, `Transitivity`.
+- **Conversion:** `Convert(t : A, A ≡ B)` gives `t : B`; `Lift` raises
+  `t : A` to a cumulative `B` (universes by level, `Π`/`Σ` by codomain).
 
-- **Contexts:** `CtxExt` (a context gains `x : A` from `Γ ⊢ A : U_i`), `Vble`,
-  and, for cubical terms, dimension and face extension.
-- **Formation, introduction and elimination** for each type former:
-  universes, `Π`, `Σ`, `Nat`, `Unit`, `Void`, sums, `W`, paths, composition and
-  transport, `Glue`, pushouts.
-- **Definitions:** `Define` registers a closed judgement under a name;
-  `DefLookup` recalls it.
-- **Conversion:** `Conv(j, B, steps)` turns `Γ ⊢ t : A` into `Γ ⊢ t : B`.
-  Each step names a side (the type found or the type expected), a position (a
-  path of child indices), and one rule: `Beta`, `Delta(d)` (unfold definition
-  `d`), `Iota` (an eliminator or projection on a constructor), `Eta`, or one of
-  the cubical computation rules. The kernel checks that the named node is a
-  redex of that rule and contracts it there, using the single-step reductions
-  it already has. After the steps, the two types must be identical up to bound
-  names; universe cumulativity remains a rule.
-- **Normalization (proposed):** `Normalize(side, position)` replaces a subterm
-  by its normal form, with the kernel's fixed, complete strategy. THTH had this
-  too (`BetaReduceGrossKnuth`). It involves no choice, so it is computation,
-  not search, and it keeps large computations — a factorial, a binary numeral
-  — in C instead of in million-step certificates.
+Highlighting stays in the kernel on purpose: a short targeted reduction or
+rewrite can replace normalizing a whole type.
+
+### Contexts
+
+A judgement keeps only the entries it depends on, and the contexts of premises
+merge. Each context is closed under the entries' own dependencies. A binder
+discharges one entry, only when no other entry of the context depends on it.
+The free names and dimensions of a judgement's terms are always entries of its
+context; this is what makes discharging, and replacement under binders,
+capture-free.
+
+### Soundness
+
+The instructions reuse the kernel's single-step contractions, substitution,
+alpha equality and normalizer, which the term checker already trusts, and
+the metatheory the term checker relies on (subject reduction, uniqueness of
+types up to conversion and cumulativity). The judgement graph is truncated
+with the syntax arena on rollback and commit. `test_instructions.c` derives
+`add`, `lt` and `lt_succ` forward and has the term checker accept the
+definitions, and checks the rejections: capture, dependency, mismatched binder
+types, open definitions, and misplaced steps.
 
 The interval and face algebra keeps its decision procedure in the kernel: it
 decides equality of De Morgan formulas, with no strategy to choose.
@@ -83,33 +145,45 @@ decides equality of De Morgan formulas, with no strategy to choose.
 
 - **Driving the rules.** Today's top-down checker becomes an untrusted driver:
   it walks the term the elaborator built and issues the instruction for each
-  node, as the kernel does now. Later, tactics can issue instructions directly
-  (`intro` is `CtxExt` then `PiIntro`, `exact` a `Conv`).
+  node. Later, tactics issue instructions directly (`intro` is `Extend` then
+  `Lambda`, `exact` a `Convert`).
 - **Conversion search.** Where a rule needs two types to agree, or a type in a
   particular shape, the driver searches for the steps — the strategy
-  `term_conversion.c` uses today — and emits them in a `Conv`.
+  `term_conversion.c` uses today — and emits them as equality instructions.
 - **Unfolding hints** order that search. A notion of opacity, if it returns,
   would be the search never emitting `Delta` for a definition.
 
 ### What the kernel keeps
 
 The typing rules as instructions, the single-step contractions, alpha
-equality, the interval and face algebra, deterministic normalization,
-hash-consing of syntax, budgets and deadlines. It loses the conversion
-strategy, the hints and every implicit reduction.
+equality, the interval and face algebra, deterministic normalization, the two
+hash graphs, budgets and deadlines. It loses the conversion strategy, the
+hints and every implicit reduction.
 
-### Inspection
+## Inspection: the graphs in the workbench
 
-The instructions the elaborator sends are the derivation: the Elaboration
-panel shows them directly, instead of reconstructing a derivation from a trace
-(#36). Each `Conv` shows exactly which positions were reduced.
+The instructions the elaborator sends are the derivation. The kernel
+workbench gains a graph explorer:
+
+- **Judgements:** each with its rule, operands and highlighted position,
+  rendered as `Γ ⊢ t : T` or `Γ ⊢ a ≡ b : T` in mathematical notation; its
+  premises and its consumers are links, so a derivation can be walked in
+  either direction. A `Step` shows its highlighted subterm on the side it
+  changed.
+- **Context entries:** the fragment, its type's judgement, what depends on it.
+- **Syntax:** a node's kind, payload and children, with sharing visible:
+  every judgement and definition that uses the node.
+
+The Elaboration panels then show the instructions directly, instead of
+reconstructing a derivation from a trace (#36).
 
 ## Costs and risks
 
 - **Proof size and speed.** Every node becomes an instruction, and every
   conversion carries its steps. The search moves out of C; running it in
   JavaScript is slower, so it may live in an untrusted C/WASM module beside the
-  kernel instead.
+  kernel instead. `Normalize`, and the sharing of repeated instructions, bound
+  the cost.
 - **The cubical rules.** Composition for each type former, `Glue` and pushouts
   make up most of the kernel's rules and computation; each needs an
   instruction and positioned contraction steps.
@@ -120,25 +194,29 @@ panel shows them directly, instead of reconstructing a derivation from a trace
 
 ## Stages
 
-1. **Core instructions** in C, beside today's checker: the judgement store,
-   `CtxExt`, `Vble`, `UIntro`, `Π`, `Σ`, `Nat`, `Unit`, `Void`, sums, paths
-   without composition, `Define`/`DefLookup`, `Conv` with `Beta`, `Delta`,
-   `Iota`, `Eta` and `Normalize`. Kernel tests for each.
-2. **Untrusted driver and search** in JavaScript: turn a checked term into
-   instructions and conversion steps. The first proof and `library/naturals`
-   check in instruction mode, with the same judgements as the term checker;
-   the Elaboration panel shows the instructions.
+1. **Core instructions** in C, beside today's checker — done: the judgement
+   and syntax hash graphs, contexts, universes, `Π`, `Σ`, `Nat`, `Unit`,
+   `Void`, sums, paths without composition, definitions, equality judgements
+   with highlighted steps, replacement, eta, conversion and lift.
+2. **Untrusted driver and search** in JavaScript: the WASM bridge and a kernel
+   wrapper; turn a checked term into instructions and conversion steps. The
+   first proof and `library/naturals` check in instruction mode, with the same
+   judgements as the term checker; the workbench explores the graphs, and the
+   Elaboration panel shows the instructions.
 3. **W types and the cubical rules:** composition, transport, `Glue`,
    pushouts. The archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the
    trusted kernel. Unfolding hints leave the kernel.
 5. **Performance:** an untrusted native search module if JavaScript is too
-   slow; certificate compaction.
+   slow; certificate compaction; content hashes for exported certificates.
 
-## Decisions to make
+## Decisions
 
-1. Whether `Normalize` is allowed, or every conversion is single steps.
-2. Where the conversion search lives: JavaScript, or an untrusted native
-   module.
-3. How contexts combine: THTH's context fragments with explicit dependencies,
-   or ordered contexts with explicit weakening.
+1. `Normalize` is allowed: it involves no choice, so it is computation, not
+   search, and it keeps large computations in C.
+2. The conversion search starts in JavaScript.
+3. Contexts are minimal and merge, as THTH's context fragments did.
+4. Highlighted steps and targeted replacement stay in the kernel, for short
+   derivations instead of normalizing whole types.
+5. The kernel's state is the syntax and judgement hash graphs, explorable in
+   the workbench; binders stay named, and ids stay dense, for now.

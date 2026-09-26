@@ -12,6 +12,7 @@ void cc_kernel_checkpoint(cc_kernel *k) {
     k->checkpoint_store[1] = k->entry_count;
     k->checkpoint_store[2] = k->context_set_count;
     k->checkpoint_store[3] = k->context_item_count;
+    k->checkpoint_store[4] = k->position_count;
 }
 
 /* Instruction judgements made since the checkpoint refer to syntax that a
@@ -22,11 +23,11 @@ static void truncate_store(cc_kernel *k) {
     k->entry_count = k->checkpoint_store[1];
     k->context_set_count = k->checkpoint_store[2];
     k->context_item_count = k->checkpoint_store[3];
+    k->position_count = k->checkpoint_store[4];
 }
 void cc_kernel_rollback(cc_kernel *k) {
     if (!k || !k->checkpoint_count) return;
     ck_clear_check_cache(k);
-    if (k->interned) memset(k->interned, 0, CC_INTERN_SIZE * sizeof *k->interned);
     if (k->weak_cache) memset(k->weak_cache, 0, k->count * sizeof *k->weak_cache);
     if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
     if (k->alpha_memo) memset(k->alpha_memo, 0, CC_ALPHA_MEMO_SIZE * sizeof *k->alpha_memo);
@@ -69,7 +70,6 @@ bool cc_kernel_commit_checkpoint(cc_kernel *k) {
                 if (child >= base) map[child - base] = 1;
             }
     ck_clear_check_cache(k);
-    if (k->interned) memset(k->interned, 0, CC_INTERN_SIZE * sizeof *k->interned);
     if (k->weak_cache) memset(k->weak_cache, 0, k->count * sizeof *k->weak_cache);
     if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
     if (k->alpha_memo) memset(k->alpha_memo, 0, CC_ALPHA_MEMO_SIZE * sizeof *k->alpha_memo);
@@ -87,6 +87,8 @@ bool cc_kernel_commit_checkpoint(cc_kernel *k) {
         if (d->type >= base) d->type = map[d->type - base];
     }
     k->count = next; k->checkpoint_count = 0;
+    /* The survivors have new handles: index them again. */
+    for (size_t i = base; i < next; ++i) ck_intern(k, (cc_term)i);
     truncate_store(k);
     k->relocation = map; k->relocation_base = base; k->relocation_count = count;
     return true;
