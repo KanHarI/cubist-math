@@ -52,14 +52,15 @@ export function judgementGraph(program, view, checked, { limit = 1500 } = {}) {
       const info = entries.get(entry), index = terms.indexOf(entry);
       return info.dimension ? `${info.name} : 𝕀` : `${shown.locals[index]?.name ?? info.name} : ${shown.locals[index]?.type ?? "…"}`;
     });
-    return { scope: `{${names.join(", ")}}`, first: shown.goal, second: shown.built };
+    return { scope: `{${names.join(", ")}}`, entries: judgement.context.map((entry, index) => ({ entry, text: names[index] })),
+      first: shown.goal, second: shown.built };
   };
   const rows = ids.map(id => {
     const j = judgements.get(id);
     const typing = text(j, j.type, j.term);
     const statement = j.kind === "typing" ? `${typing.scope} ⊢ ${typing.second} : ${typing.first}`
       : `${typing.scope} ⊢ ${typing.second} ≡ ${text(j, j.type, j.other).second} : ${typing.first}`;
-    const row = { id, number: number.get(id), rule: j.rule, label: ththNames[j.rule] ?? j.rule, statement,
+    const row = { id, number: number.get(id), rule: j.rule, label: ththNames[j.rule] ?? j.rule, statement, scope: typing.entries,
       premises: j.premises.map(premise => number.get(premise)), usedBy: usedBy.get(id),
       entry: j.entry ? entries.get(j.entry) : null, context: j.context.map(entry => entries.get(entry)),
       term: j.term, type: j.type, other: j.other ?? null };
@@ -72,6 +73,19 @@ export function judgementGraph(program, view, checked, { limit = 1500 } = {}) {
     }
     return row;
   });
+  // Each entry's fragment, as THTH wrote it: the context its type needs, and
+  // the entry itself, in one renaming.
+  for (const info of entries.values()) {
+    if (info.dimension) { info.fragment = [`${info.name} : 𝕀`]; continue; }
+    const source = judgements.get(info.source);
+    const needed = (source?.context ?? []).map(entry => entries.get(entry) ?? graph.entry(entry));
+    const scope = new Map([...needed.filter(item => !item.dimension), info].map(item => [item.name, decode(item.type)]));
+    const shown = checker.displayGoal(scope, { tag: "Unit" }, null, 240, cubicalText, false);
+    const locals = [...shown.locals];
+    info.fragment = [...needed.map(item => item.dimension ? `${item.name} : 𝕀` : locals.shift()).map(local =>
+      typeof local === "string" ? local : `${local.name} : ${local.type}`), `${locals.at(-1)?.name ?? info.name} : ${locals.at(-1)?.type ?? "…"}`];
+    if (!shownNames.has(info.id)) shownNames.set(info.id, locals.at(-1)?.name);
+  }
   for (const info of entries.values()) info.shown = info.dimension ? info.name : shownNames.get(info.id) ?? info.name;
   for (const row of rows) if (row.entry) row.entry = entries.get(row.entry.id);
   return { root: number.get(root), rows, truncated: stack.length > 0,

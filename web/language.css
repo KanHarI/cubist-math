@@ -137,5 +137,6 @@ details.elaboration[open] > summary { border-bottom: 1px solid #e3e8e1; }
 .derivation-added { margin-left: 1em; padding: 0 6px; border-radius: 4px; background: #f3ece2; color: #98531c; font: .92em ui-sans-serif, system-ui, sans-serif; }
 .derivation-scaffold .derivation-comment, .derivation-scaffold .opcode { opacity: .75; }
 .derivation-note { color: #8a978f; font-size: .92em; }
+.derivation-at { color: #7a4a00; white-space: normal; overflow-wrap: anywhere; }
 .derivation-equal { color: #346447; font-weight: 600; }
 .derivation-different { color: #a3322b; font-weight: 600; }

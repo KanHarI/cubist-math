@@ -5,9 +5,11 @@ which it does not change:
 
 - Stage 1 is implemented: `kernel/src/instructions.c`, tested by
   `kernel/tests/test_instructions.c`.
-- Most of Stage 2 is implemented: the WASM bridge, `web/cubical-instructions.mjs`,
-  the driver `web/cubical-instruction-driver.mjs`, and the workbench's
-  **Kernel graph** view (`web/cubical-graph-view.mjs`).
+- Stage 2 is implemented:
+  - the WASM bridge and `web/cubical-instructions.mjs`;
+  - the driver `web/cubical-instruction-driver.mjs`;
+  - the workbench's **Kernel graph** view (`web/cubical-graph-view.mjs`);
+  - the Elaboration panels, which now show the instruction derivation.
 - In instruction mode, the first proof checks, and so does every
   `library/naturals` declaration except `nat_add_comm`, whose `trans` needs
   compound interval formulas.
@@ -202,8 +204,14 @@ workbench's **Kernel graph** view (`?view=graph`) explores it:
 - **Syntax:** a node's kind, payload and children, with sharing visible:
   every judgement and definition that uses the node.
 
-Still to do: the Elaboration panels should show the instructions directly,
-instead of reconstructing a derivation from a trace (#36).
+The Elaboration panels show the same derivation in THTH's form:
+
+- each context entry is a `CtxExt` step, with its fragment as the comment;
+- each reduction step names its rule, position and subterm;
+- exact's ascription is marked as the elaborator's.
+
+For a term the driver cannot derive yet, a panel falls back to the derivation
+reconstructed from the term checker's trace (#36).
 
 ## Costs and risks
 
@@ -226,13 +234,13 @@ instead of reconstructing a derivation from a trace (#36).
    and syntax hash graphs, contexts, universes, `Π`, `Σ`, `Nat`, `Unit`,
    `Void`, sums, paths without composition, definitions, equality judgements
    with highlighted steps, replacement, eta, conversion and lift.
-2. **Untrusted driver and search** in JavaScript, mostly done:
-   - done: the WASM bridge and a kernel wrapper;
-   - done: turning a checked term into instructions and conversion steps;
-   - done: the first proof and `library/naturals` (except `nat_add_comm`)
-     check in instruction mode, at the term checker's types;
-   - done: the workbench explores the graphs;
-   - remaining: the Elaboration panel shows the instructions.
+2. **Untrusted driver and search** in JavaScript, done:
+   - the WASM bridge and a kernel wrapper;
+   - turning a checked term into instructions and conversion steps;
+   - the first proof and `library/naturals` (except `nat_add_comm`) check in
+     instruction mode, at the term checker's types;
+   - the workbench explores the graphs;
+   - the Elaboration panels show the instructions.
 3. **W types and the cubical rules:** composition, transport, `Glue`,
    pushouts. The archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the

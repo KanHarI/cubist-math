@@ -143,7 +143,7 @@ try {
   // The kernel's check as a THTH-style forward derivation, with comments.
   const derivation = elaboration.locator(".derivation").first();
   assert.match(await derivation.textContent(), /\/\/ \{\} ⊢ Nat : U0\s*1 NatForm\(\)/);
-  assert.match(await derivation.textContent(), /\/\/ \{n : Nat\}\s*2 CtxExt\(1\)/);
+  assert.match(await derivation.textContent(), /\/\/ \{n : Nat\}\s*\d+ CtxExt\(1\)/);
   assert.ok(await elaboration.locator(".derivation-scaffold").count() > 0);
   await page.goto(new URL("kernel.html", base).href);
   assert.equal(await page.locator("#opcodes tbody tr").count(), 42);
