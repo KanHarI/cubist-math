@@ -312,3 +312,47 @@ test("W types: binary positive numbers, their constructors and their recursion d
   assert.deepEqual(failures, []);
   for (const rule of ["w", "sup", "wElim"]) assert.ok(rules.has(rule), rule);
 });
+
+test("Glue: univalence derives, and so does a Glue term over its Glue type", async t => {
+  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const program = new CubicalProgram(await createCubical(), readArchive);
+  t.after(() => program.dispose());
+  await program.check(await readArchive("binary_univalence_transfer"), "binary_univalence_transfer");
+  const kernel = program.kernel, rules = new Set();
+  const derive = (value, type) => {
+    const driver = new InstructionDriver(kernel);
+    const root = driver.graph.judgement(driver.check(value, type));
+    assert.ok(driver.alpha(root.term, value) && driver.alpha(root.type, type));
+    for (const stack = [root.id], seen = new Set(); stack.length;) {
+      const id = stack.pop();
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const judgement = driver.graph.judgement(id);
+      rules.add(judgement.rule);
+      stack.push(...judgement.premises);
+    }
+  };
+  for (const name of ["builtin__ua__U0", "builtin__UnivalenceBeta__U0"]) {
+    const { value, type } = kernel.definition(kernel.definitions.get(name));
+    derive(value, type);
+  }
+  for (const rule of ["glueBase", "gluePiece", "glueOverlap", "glue", "unglue"]) assert.ok(rules.has(rule), rule);
+  // λA B e (a : A). <i> glue(e(a), [i = 0 ↦ a, i = 1 ↦ e(a)]) : ua's line,
+  // built on the Glue type in ua's body; the term checker accepts it first.
+  let body = kernel.definition(kernel.definitions.get("builtin__ua__U0")).value;
+  const binders = [];
+  while (kernel.node(body).kind === "Lam") { binders.push(kernel.node(body)); body = kernel.node(body).children[1]; }
+  const line = kernel.node(body), glue = line.children[1];
+  const [, first] = kernel.node(glue).children, second = kernel.node(first).children[2];
+  const [source, equivalence] = kernel.node(first).children, a = kernel.symbol("glued'a");
+  const image = kernel.term("App", 0, kernel.term("Fst", 0, equivalence), kernel.term("Var", a));
+  const values = kernel.term("Tube", kernel.node(first).payload, kernel.term("Var", a),
+    kernel.term("Tube", kernel.node(second).payload, image));
+  const path = kernel.term("PLam", line.payload, glue, kernel.term("GlueTerm", 0, glue, image, values));
+  const value = binders.reduceRight((inner, binder) => kernel.term("Lam", binder.payload, binder.children[0], inner),
+    kernel.term("Lam", a, source, path));
+  const checked = kernel.check(value);
+  rules.clear();
+  derive(checked.expression, checked.type);
+  for (const rule of ["glueTermBase", "glueTermPiece", "glueTerm"]) assert.ok(rules.has(rule), rule);
+});

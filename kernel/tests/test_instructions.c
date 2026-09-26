@@ -295,6 +295,25 @@ int main(void) {
     cc_judgement_id unmoved = OK(cc_instr_trans(k, still, always));
     assert(other_of(STEP(OK(cc_instr_refl(k, unmoved)), CC_STEP_FACE, ROOT)) == term_of(inl));
 
+    /* Glue over Nat with a piece on the face 0, which is never used: a Glue
+     * term of it, and unglue. An equivalence must be one, of the stated type. */
+    cc_judgement_id glue_system = OK(cc_instr_glue_base(k, nat));
+    rejects(cc_instr_glue_base(k, zero), "Expected a type");
+    rejects(cc_instr_glue_piece(k, glue_system, faces[0], unit_type, zero), "equivalence is not");
+    rejects(cc_instr_glue(k, OK(cc_instr_system(k, j2, nat, zero))), "Not a Glue type");
+    glue_system = OK(cc_instr_glue_piece(k, glue_system, never, unit_type, zero));
+    cc_judgement_id glued = OK(cc_instr_glue(k, glue_system));
+    assert(kind(term_of(glued)) == CC_GLUE && kind(type_of(glued)) == CC_U);
+    rejects(cc_instr_glue_term_base(k, nat, zero), "needs a Glue type");
+    cc_judgement_id glue_value = OK(cc_instr_glue_term_base(k, glued, zero));
+    rejects(cc_instr_glue_term(k, glue_value), "value for every piece");
+    glue_value = OK(cc_instr_glue_term_piece(k, glue_value, OK(cc_instr_point(k)), 0));
+    cc_judgement_id element = OK(cc_instr_glue_term(k, glue_value));
+    assert(kind(term_of(element)) == CC_GLUE_TERM && type_of(element) == term_of(glued));
+    assert(cc_kernel_check(k, term_of(element), type_of(element), NULL, 0, &checked));
+    assert(type_of(OK(cc_instr_unglue(k, element))) == term_of(nat));
+    rejects(cc_instr_unglue(k, zero), "Glue type");
+
     /* The W type of trees with Unit many children at each label: W(x : Unit). Unit.
      * A tree whose children are one tree, and W recursion computing on sup. */
     cc_judgement_id trees = OK(cc_instr_w(k, u0, unit_type));

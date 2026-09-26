@@ -276,10 +276,7 @@ export class InstructionDriver {
         tubes.forEach((earlier, position) => {
           const overlap = earlier && [clause[0] | earlier.clause[0], clause[1] | earlier.clause[1]];
           if (!overlap || overlap[0] & overlap[1]) return;
-          const mine = this.focus(g.refl(this.restrict(value, overlap)), "other");
-          const theirs = this.focus(g.refl(this.restrict(earlier.value, overlap)), "other");
-          if (!this.agree(mine, theirs)) throw new Error("Composition tubes disagree on an overlap.");
-          system = g.systemOverlap(system, position, g.transitivity(mine.ref.id, g.symmetry(theirs.ref.id)));
+          system = g.systemOverlap(system, position, this.overlapAgreement(value, earlier.value, overlap));
         });
         tubes.push({ clause, value });
       }
@@ -303,6 +300,72 @@ export class InstructionDriver {
       });
       return g.trans(system, face);
     }
+    case "Glue": {
+      // Glue [φ ↦ (T, e)] A: each piece's equivalence at the type the kernel
+      // states, Equiv(T, A on the face), and where two faces meet, the types
+      // and the equivalences agree.
+      const base = this.asType(derive(a));
+      let system = g.glueBase(base);
+      const pieces = [];
+      for (let piece = b; piece; piece = this.node(piece).children[2]) {
+        const { payload: face, children: [T, e] } = this.node(piece);
+        const { clauses } = this.kernel.inspectFormula(face);
+        if (!clauses.length) {
+          system = g.gluePiece(system, face, this.asType(derive(T)), derive(e));
+          pieces.push(null);
+          continue;
+        }
+        if (clauses.length > 1) throw unsupported("A Glue piece on a face of several clauses");
+        const [clause] = clauses;
+        const type = this.asType(derive(T)), target = this.restrict(base, clause);
+        const equivalenceType = this.graph.equivType(this.statement(type).term, this.statement(target).term);
+        const equivalence = this.convertTo(derive(e),
+          this.asType(this.derive(equivalenceType, new Map([...this.scope(type), ...this.scope(target)]))));
+        system = g.gluePiece(system, face, type, equivalence);
+        pieces.forEach((earlier, position) => {
+          const overlap = earlier && [clause[0] | earlier.clause[0], clause[1] | earlier.clause[1]];
+          if (!overlap || overlap[0] & overlap[1]) return;
+          system = g.glueOverlap(system, position, this.overlapAgreement(type, earlier.type, overlap),
+            this.overlapAgreement(equivalence, earlier.equivalence, overlap));
+        });
+        pieces.push({ clause, type, equivalence });
+      }
+      return g.glue(system);
+    }
+    case "GlueTerm": {
+      // glue(a, [φ ↦ t]) : G: a value for each piece of G, in order, whose
+      // image under the piece's equivalence is the base on its face.
+      const annotation = this.asType(derive(a)), k = this.kernel;
+      const base = this.convertTo(derive(b), this.evidence(this.focus(annotation, "term", [0])));
+      let system = g.glueTermBase(annotation, base);
+      const values = [];
+      for (let tube = c, path = [1]; tube; tube = this.node(tube).children[1], path = [...path, 2]) {
+        const { payload: face, children: [t] } = this.node(tube);
+        const { clauses } = k.inspectFormula(face);
+        if (!clauses.length) {
+          system = g.glueTermPiece(system, derive(t), 0);
+          values.push(null);
+          continue;
+        }
+        if (clauses.length > 1) throw unsupported("A Glue value on a face of several clauses");
+        const [clause] = clauses;
+        const value = this.convertTo(derive(t), this.evidence(this.focus(annotation, "term", [...path, 0])));
+        const equivalence = this.subterm(this.focus(annotation, "term", [...path, 1]));
+        const image = this.derive(k.term("App", 0, k.term("Fst", 0, equivalence), this.statement(value).term),
+          new Map([...this.scope(annotation), ...this.scope(value)]));
+        const start = this.focus(g.refl(image), "other"), end = this.focus(g.refl(this.restrict(base, clause)), "other");
+        if (!this.agree(start, end)) throw new Error("A Glue value's image disagrees with the base.");
+        system = g.glueTermPiece(system, value, g.transitivity(start.ref.id, g.symmetry(end.ref.id)));
+        values.forEach((earlier, position) => {
+          const overlap = earlier && [clause[0] | earlier.clause[0], clause[1] | earlier.clause[1]];
+          if (!overlap || overlap[0] & overlap[1]) return;
+          system = g.systemOverlap(system, position, this.overlapAgreement(value, earlier.value, overlap));
+        });
+        values.push({ clause, value });
+      }
+      return g.glueTerm(system);
+    }
+    case "Unglue": return g.unglue(this.convertTo(derive(b), this.asType(derive(a))));
     case "Pushout": {
       // The maps are a pair C → A, C → B, derived as that type's syntax.
       const [source, left, right] = [a, b, c].map(child => this.asType(derive(child)));
@@ -345,6 +408,16 @@ export class InstructionDriver {
     }
     default: throw unsupported(n.kind);
     }
+  }
+
+  // Two typing judgements agree where two faces meet: an equality between
+  // their terms, both restricted to the overlap.
+  overlapAgreement(mine, theirs, overlap) {
+    const g = this.graph;
+    const x = this.focus(g.refl(this.restrict(mine, overlap)), "other");
+    const y = this.focus(g.refl(this.restrict(theirs, overlap)), "other");
+    if (!this.agree(x, y)) throw new Error("Two pieces disagree where their faces meet.");
+    return g.transitivity(x.ref.id, g.symmetry(y.ref.id));
   }
 
   // A constructor's annotation as a type former of the given kind: the

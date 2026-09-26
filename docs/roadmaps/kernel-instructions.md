@@ -10,17 +10,17 @@ which it does not change:
   - the driver `web/cubical-instruction-driver.mjs`;
   - the workbench's **Kernel graph** view (`web/cubical-graph-view.mjs`);
   - the Elaboration panels, which now show the instruction derivation.
-- Stage 3 is under way: paths at any interval formula (`PathAt`),
+- Stage 3 is implemented: paths at any interval formula (`PathAt`),
   composition, with an equality on each overlap of two tubes' faces
   (`System`, `SystemTube`, `SystemOverlap`, `Comp`), pushouts
   (`Pushout`, `PushPoint`, `PushPath`, `PushElim`), W types (`W`, `Sup`,
-  `WElim`), and homogeneous composition and transport (`HComp`, `Trans`).
-- In instruction mode, the first proof checks, and so does all of
-  `library/naturals`. So does every one of the 41 definitions behind the
-  archive's Euclid theorem, and 3930 of the archive's 3938 definitions
-  (99.8%), in 18 s for the whole archive; `node tools/instruction-coverage.mjs`
-  measures it again. Every derived term is its source syntax, annotations
-  included. The other 8 need Glue: univalence and what is proved with it.
+  `WElim`), homogeneous composition and transport (`HComp`, `Trans`), and
+  Glue (`GlueBase`, `GluePiece`, `GlueOverlap`, `Glue`, the Glue term's
+  three, and `Unglue`).
+- Every one of the archive's 3938 definitions derives in instruction mode,
+  in 19 s for the whole archive, and so do the first proof and
+  `library/naturals`; `node tools/instruction-coverage.mjs` measures it again.
+  Every derived term is its source syntax, annotations included.
 
 ## Goal
 
@@ -169,6 +169,15 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   `Susp(A)` first, as it does for a pair's. `Iota` computes the eliminator
   on a point or a path, and a path at an endpoint to a point; that step
   reads the maps off the pushout type's weak head, which involves no choice.
+- **Glue:** `Glue [φ ↦ (T, e)] A` is built piece by piece, as a composition's
+  system is: `GlueBase` from `A : U`; `GluePiece` adds a type `T` on a face and
+  an equivalence `e` at `Equiv(T, A)` there, the type the term checker
+  states; where two pieces' faces meet, `GlueOverlap` takes equalities of
+  their types and of their equivalences; `Glue` closes it. A Glue term is
+  built the same way, a value `t : T` for each piece in order with an
+  equality `fst(e)(t) ≡ a` on its face, and `SystemOverlap` where faces meet;
+  `Unglue` gives the base. A search aid, `cc_kernel_equiv_type`, builds
+  `Equiv(T, A)` as syntax for the driver. Glue computes by `Whnf`.
 - **W types:** `W` forms `W(x : L). B` from an entry and a family, as `Π` and
   `Σ` do, and `Domain` and `Family` give `L` and `B[l/x]`. `Sup` gives
   `sup(l, c)` of a W type as written, and `WElim` gives W recursion from a
@@ -321,12 +330,11 @@ reconstructed from the term checker's trace (#36).
      instruction mode, at the term checker's types;
    - the workbench explores the graphs;
    - the Elaboration panels show the instructions.
-3. **W types and the cubical rules**, under way:
-   - done: paths at any interval formula;
-   - done: composition, with an equality on each overlap of two faces;
-   - done: pushouts, W types, `HComp` and `Trans`;
-   - remaining: `Glue`;
-   - remaining: the archive checks in instruction mode.
+3. **W types and the cubical rules**, done:
+   - paths at any interval formula;
+   - composition, with an equality on each overlap of two faces;
+   - pushouts, W types, `HComp`, `Trans` and `Glue`;
+   - the whole archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the
    trusted kernel. Unfolding hints leave the kernel.
 5. **Performance:** an untrusted native search module if JavaScript is too

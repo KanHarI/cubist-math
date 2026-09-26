@@ -9,7 +9,8 @@ export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "
   "void", "abort", "sum", "inject", "sumElim", "variable", "pi", "lambda", "apply", "sigma", "pair", "first",
   "second", "domain", "family", "path", "pathLambda", "pathApply", "define", "lookup", "refl", "step", "replace",
   "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp", "systemOverlap",
-  "pushout", "pushPoint", "pushPath", "pushElim", "w", "sup", "wElim", "hcomp", "trans"];
+  "pushout", "pushPoint", "pushPath", "pushElim", "w", "sup", "wElim", "hcomp", "trans",
+  "glueBase", "gluePiece", "glueOverlap", "glue", "glueTermBase", "glueTermPiece", "glueTerm", "unglue"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
   natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
@@ -21,7 +22,9 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   convert: "Conv", lift: "Lift", endpoint: "Endpoint", pathAt: "PathElim", system: "CompBase", systemTube: "CompTube",
   comp: "Comp", systemOverlap: "CompOverlap", pushout: "PushoutForm", pushPoint: "PushoutIntro",
   pushPath: "PushoutPath", pushElim: "PushoutElim", w: "WForm", sup: "WIntro", wElim: "WElim",
-  hcomp: "HComp", trans: "Transp" };
+  hcomp: "HComp", trans: "Transp", glueBase: "GlueBase", gluePiece: "GluePiece", glueOverlap: "GlueOverlap",
+  glue: "GlueForm", glueTermBase: "GlueIntroBase", glueTermPiece: "GlueIntroPiece", glueTerm: "GlueIntro",
+  unglue: "GlueElim" };
 export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
@@ -92,6 +95,14 @@ export class InstructionGraph {
   comp(system) { return this.issue("comp", system); }
   hcomp(system) { return this.issue("hcomp", system); }
   trans(system, face) { return this.issue("trans", system, face); }
+  glueBase(base) { return this.issue("glueBase", base); }
+  gluePiece(system, face, type, equivalence) { return this.issue("gluePiece", system, face, type, equivalence); }
+  glueOverlap(system, position, types, equivalences) { return this.issue("glueOverlap", system, position, types, equivalences); }
+  glue(system) { return this.issue("glue", system); }
+  glueTermBase(type, base) { return this.issue("glueTermBase", type, base); }
+  glueTermPiece(system, value, image) { return this.issue("glueTermPiece", system, value, image); }
+  glueTerm(system) { return this.issue("glueTerm", system); }
+  unglue(value) { return this.issue("unglue", value); }
   pushout(source, left, right, maps) { return this.issue("pushout", source, left, right, maps); }
   pushPoint(type, value, right) { return this.issue("pushPoint", type, value, right ? 1 : 0); }
   pushPath(type, value, interval) { return this.issue("pushPath", type, value, interval); }
@@ -127,6 +138,12 @@ export class InstructionGraph {
   convertible(a, b, steps = 0) {
     const answer = this.module._cb_convertible(this.kernel.handle, a, b, steps);
     return answer === 2 ? null : answer === 1;
+  }
+  // Syntax only: Equiv(a, b) as the Glue rules state it.
+  equivType(a, b) {
+    const type = this.module._cb_equiv_type(this.kernel.handle, a, b) >>> 0;
+    if (!type) throw new Error("Could not build an equivalence type.");
+    return type;
   }
   // Syntax only, for the same search: a free name or dimension renamed.
   rename(term, dimension, from, to) { return this.module._cb_rename(this.kernel.handle, term, dimension ? 1 : 0, from, to) >>> 0; }

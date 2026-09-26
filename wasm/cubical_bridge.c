@@ -399,6 +399,14 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_W_ELIM: return cc_instr_w_elim(k, a, b, c);
     case CC_INSTR_HCOMP: return cc_instr_hcomp(k, a);
     case CC_INSTR_TRANS: return cc_instr_trans(k, a, b);
+    case CC_INSTR_GLUE_BASE: return cc_instr_glue_base(k, a);
+    case CC_INSTR_GLUE_PIECE: return cc_instr_glue_piece(k, a, b, c, d);
+    case CC_INSTR_GLUE_OVERLAP: return cc_instr_glue_overlap(k, a, b, c, d);
+    case CC_INSTR_GLUE: return cc_instr_glue(k, a);
+    case CC_INSTR_GLUE_TERM_BASE: return cc_instr_glue_term_base(k, a, b);
+    case CC_INSTR_GLUE_TERM_PIECE: return cc_instr_glue_term_piece(k, a, b, c);
+    case CC_INSTR_GLUE_TERM: return cc_instr_glue_term(k, a);
+    case CC_INSTR_UNGLUE: return cc_instr_unglue(k, a);
     case CB_EXTEND: return cc_instr_extend(k, a, b);
     case CB_DIMENSION: return cc_instr_dimension(k, a);
     }
@@ -422,6 +430,15 @@ uint32_t cb_rename(uint32_t token, uint32_t term, unsigned dimension, uint32_t f
     cc_term renamed = cc_kernel_rename(s->kernel, term, dimension != 0, from, to);
     if (!renamed) cc_kernel_clear_error(s->kernel);
     return renamed;
+}
+
+/* Syntax only: Equiv(a, b) as the Glue rules state it. */
+uint32_t cb_equiv_type(uint32_t token, uint32_t a, uint32_t b) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    cc_term type = cc_kernel_equiv_type(s->kernel, a, b);
+    if (!type) cc_kernel_clear_error(s->kernel);
+    return type;
 }
 
 uint32_t cb_judgement_count(uint32_t token) {

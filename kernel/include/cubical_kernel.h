@@ -114,7 +114,9 @@ typedef enum {
     CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT,
     CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP, CC_INSTR_SYSTEM_OVERLAP,
     CC_INSTR_PUSHOUT, CC_INSTR_PUSH_POINT, CC_INSTR_PUSH_PATH, CC_INSTR_PUSH_ELIM,
-    CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM, CC_INSTR_HCOMP, CC_INSTR_TRANS
+    CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM, CC_INSTR_HCOMP, CC_INSTR_TRANS,
+    CC_INSTR_GLUE_BASE, CC_INSTR_GLUE_PIECE, CC_INSTR_GLUE_OVERLAP, CC_INSTR_GLUE,
+    CC_INSTR_GLUE_TERM_BASE, CC_INSTR_GLUE_TERM_PIECE, CC_INSTR_GLUE_TERM, CC_INSTR_UNGLUE
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
@@ -201,6 +203,32 @@ cc_judgement_id cc_instr_hcomp(cc_kernel *, cc_judgement_id system);
  * constant, which each tube's typing shows. The family must be a pushout
  * type, as in the term checker. */
 cc_judgement_id cc_instr_trans(cc_kernel *, cc_judgement_id system, cc_formula_id face);
+/* Glue [φ ↦ (T, e)] A, built one piece at a time as a system judgement.
+ * GlueBase starts from A : U. GluePiece adds, on a face of one clause, a type
+ * T : U and e : Equiv(T, A restricted to the face), both already restricted;
+ * a piece on the face 0 is never used and needs only typing judgements.
+ * GlueOverlap gives, for an earlier piece whose face meets the new one's,
+ * equalities of the two types and of the two equivalences on the overlap.
+ * Glue closes the system into Glue(A, pieces) : U.
+ * A Glue term glue(a, [φ ↦ t]) of a Glue type G = Glue(A, pieces) is built the
+ * same way: GlueTermBase from G and a : A, then GlueTermPiece for each piece
+ * of G in order, from t : T and an equality fst(e)(t) ≡ a on the face, with
+ * SystemOverlap where two faces meet; GlueTerm closes it : G.
+ * Unglue gives unglue(g) : A from g : G. */
+cc_judgement_id cc_instr_glue_base(cc_kernel *, cc_judgement_id base);
+cc_judgement_id cc_instr_glue_piece(cc_kernel *, cc_judgement_id system, cc_formula_id face,
+                                    cc_judgement_id type, cc_judgement_id equivalence);
+cc_judgement_id cc_instr_glue_overlap(cc_kernel *, cc_judgement_id system, uint32_t position,
+                                      cc_judgement_id types, cc_judgement_id equivalences);
+cc_judgement_id cc_instr_glue(cc_kernel *, cc_judgement_id system);
+cc_judgement_id cc_instr_glue_term_base(cc_kernel *, cc_judgement_id type, cc_judgement_id base);
+cc_judgement_id cc_instr_glue_term_piece(cc_kernel *, cc_judgement_id system, cc_judgement_id value,
+                                         cc_judgement_id image);
+cc_judgement_id cc_instr_glue_term(cc_kernel *, cc_judgement_id system);
+cc_judgement_id cc_instr_unglue(cc_kernel *, cc_judgement_id value);
+/* Syntax only, for an untrusted search: the type Equiv(A, B) as the Glue
+ * rules state it. */
+cc_term cc_kernel_equiv_type(cc_kernel *, cc_term a, cc_term b);
 /* Pushouts (CHM §3.3.5). Pushout gives Pushout(C, A, B, maps) : U from
  * C, A, B : U and maps : Σ(f : C → A). C → B. PushPoint gives inl(a) or inr(b)
  * of a pushout type P (right selects inr); PushPath gives push^r(c) : P for
