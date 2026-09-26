@@ -73,9 +73,10 @@ const rules = {
   NatRec: "recursion on a natural number", SumRec: "case analysis on a sum",
 };
 
-// The kernel's check of a declaration, step by step: each rule it applied to
-// a node, with the type it found, and the context extensions, conversions and
-// reductions inside. Check reuse is off, so every node is checked.
+// The kernel's check of a declaration, step by step, as its trace records it
+// (cc_trace_kind): INFER a node, with the type found; EXTEND the context;
+// CONVERT one type to another; REDUCE a term; REUSED a checked node. Check
+// reuse is off, so every node is checked.
 export function kernelDerivation(program, view, { limit = 400 } = {}) {
   const kernel = program.kernel, checker = program.checker, dimensions = new Map(view.dimensions ?? []);
   const context = view.context.map(entry => [entry.name, entry.type]);
@@ -92,14 +93,14 @@ export function kernelDerivation(program, view, { limit = 400 } = {}) {
     if (event.kind === "infer") {
       rulesApplied++;
       const kind = kernel.node(event.a).kind;
-      const line = { depth: event.depth, kind: "rule", text: nodeSummary(kernel, event.a, view.symbols), note: rules[kind] ?? "" };
+      const line = { depth: event.depth, kind: "infer", text: nodeSummary(kernel, event.a, view.symbols), note: rules[kind] ?? "" };
       lines.push(line);
       open.push(line);
     } else if (event.kind === "inferred") {
       const line = open.pop();
       if (line) line.result = event.c ? shown(event.c) : "rejected";
     } else if (event.kind === "reused")
-      lines.push({ depth: event.depth, kind: "rule", text: nodeSummary(kernel, event.a, view.symbols), result: shown(event.c), note: "already checked" });
+      lines.push({ depth: event.depth, kind: "reused", text: nodeSummary(kernel, event.a, view.symbols), result: shown(event.c), note: "already checked" });
     else if (event.kind === "extend")
       lines.push({ depth: event.depth, kind: "extend", text: `${stem(kernel.symbolName(event.a))} : ${shown(event.b)}` });
     else if (event.kind === "convert")

@@ -156,22 +156,38 @@ function opcodeLines(lines) {
   }
   return pre;
 }
-// The kernel's check as a nested list: each rule it applied, with the type it
-// found, and the context extensions, conversions and reductions inside.
+// The kernel's check as a nested list, one action per line, named as the
+// kernel's trace names it (kernel.html#trace): INFER a node, EXTEND the
+// context, CONVERT a type to another, REDUCE a term, REUSED a checked node.
+const actions = {
+  infer: ["INFER", "CC_TRACE_INFER: apply the typing rule of this node"],
+  reused: ["REUSED", "CC_TRACE_REUSED: a node already checked in this context"],
+  extend: ["EXTEND", "CC_TRACE_EXTEND: the context gains an assumption"],
+  convert: ["CONVERT", "CC_TRACE_CONVERT: the type found must be convertible to the type expected"],
+  reduce: ["REDUCE", "CC_TRACE_REDUCE: reduction to weak head normal form, unfolding definitions"],
+};
 function derivationList({ lines, rulesApplied, truncated }) {
   const panel = element("details", "kernel-derivation");
   panel.append(element("summary", null, `Kernel check, step by step · ${rulesApplied} rules applied`));
+  const legend = element("p", "derivation-note");
+  const names = element("a", null, "kernel reference");
+  names.href = new URL("../kernel.html#trace", import.meta.url).href;
+  legend.append("Each line is one action of the kernel, named as its trace names it; the ", names, " lists them.");
   const list = element("div", "derivation");
-  const labels = { extend: "context gains", convert: "compare", reduce: "reduce" };
+  list.append(legend);
   for (const line of lines) {
     const row = element("div", `derivation-line derivation-${line.kind}`);
     row.style.paddingLeft = `${line.depth * 1.25}em`;
-    if (line.kind === "rule") {
+    const [mnemonic, meaning] = actions[line.kind];
+    const action = element("span", "derivation-action", mnemonic);
+    action.title = meaning;
+    row.append(action, " ");
+    if (line.kind === "infer" || line.kind === "reused") {
       const node = element("code", "derivation-node");
       for (const part of line.text.split(/(CC_[A-Z_]+)/)) if (part)
         node.append(part.startsWith("CC_") ? element("span", "opcode", part) : document.createTextNode(part));
       row.append(node);
-    } else row.append(element("span", "derivation-label", `${labels[line.kind]} `), sourceCode(line.text));
+    } else row.append(sourceCode(line.text));
     if (line.result) row.append(element("span", "derivation-arrow", line.kind === "convert" ? ": " : " ⇒ "),
       line.kind === "convert" ? element("span", `derivation-${line.result}`, line.result) : sourceCode(line.result));
     if (line.note) row.append(element("span", "derivation-note", ` ${line.note}`));

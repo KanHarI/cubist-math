@@ -91,6 +91,20 @@
           <p>The kernel checks a term one node at a time, applying one typing rule to each: it infers the node’s type from its operands, extends the context under a binder, and compares types by conversion where they must agree. The <a href="reference/first-proof.html#elaboration">Elaboration panels</a> of the language reference show every rule it applied to a declaration, from the kernel’s own trace (<code>cc_kernel_trace_start</code>).</p>
           <p class="tbd">To be written: the typing rule of each opcode, and the steps the kernel counts.</p>
         </section>
+        <section id="trace">
+          <h2>The trace</h2>
+          <p>A caller can ask the kernel to record its actions while it checks a term (<code>cc_kernel_trace_start</code> in <code>kernel/include/cubical_kernel.h</code>). The trace observes the rules and never changes a judgement. The <em>Kernel check, step by step</em> view of the language reference’s Elaboration panels shows one line per event, named by its kind:</p>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Line</th><th>Event</th><th>Recorded when</th><th>Operands</th></tr></thead>
+            <tbody>
+              <tr><td><code>INFER</code></td><td><code>CC_TRACE_INFER</code>, <code>CC_TRACE_INFERRED</code></td><td>The checker applies the typing rule of a node (<code>ck_infer</code>). The events for its operands follow, one level deeper, and the line ends with the type found.</td><td>the node; the checked node and its type</td></tr>
+              <tr><td><code>REUSED</code></td><td><code>CC_TRACE_REUSED</code></td><td>A node was already checked in the same context, and its judgement is reused.</td><td>the node, the checked node and its type</td></tr>
+              <tr><td><code>EXTEND</code></td><td><code>CC_TRACE_EXTEND</code></td><td>The context gains an assumption, on entering a binder (<code>ck_extend</code>).</td><td>the bound symbol and its type</td></tr>
+              <tr><td><code>CONVERT</code></td><td><code>CC_TRACE_CONVERT</code></td><td>A type found must be convertible to, or cumulative with, the type expected (<code>ck_expect</code>).</td><td>both types, and whether they agree</td></tr>
+              <tr><td><code>REDUCE</code></td><td><code>CC_TRACE_REDUCE</code></td><td>A term is reduced to weak head normal form, unfolding definitions, and changes (<code>ck_whnf</code>). Reductions inside a conversion are not recorded.</td><td>the term and its weak head normal form</td></tr>
+            </tbody>
+          </table></div>
+        </section>
         <section id="conversion">
           <h2>Conversion</h2>
           <p class="tbd">To be written: when two terms are equal by computation, unfolding of definitions and opacity, and cubical computation rules.</p>

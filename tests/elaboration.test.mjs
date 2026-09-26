@@ -62,7 +62,7 @@ test("the kernel's check is shown rule by rule, from the kernel's own trace", as
   const lines = derivation => derivation.lines.map(line => `${"  ".repeat(line.depth)}${line.kind} ${line.text}${line.result ? ` ⇒ ${line.result}` : ""}`);
   const shown = lines(lt.derivation);
   // Entering a binder: the domain is checked, then the context gains n : Nat.
-  assert.deepEqual(shown.slice(0, 3), ["rule CC_LAM n : CC_NAT ⇒ Nat -> Nat -> U0", "  rule CC_NAT ⇒ U0", "  extend n : Nat"]);
+  assert.deepEqual(shown.slice(0, 3), ["infer CC_LAM n : CC_NAT ⇒ Nat -> Nat -> U0", "  infer CC_NAT ⇒ U0", "  extend n : Nat"]);
   // The inferred type is compared with the declared one.
   assert.equal(shown.at(-1), "convert Nat -> Nat -> U0 ≡ Nat -> Nat -> U0 ⇒ equal");
   // lt unfolds when its value is checked as a pair.

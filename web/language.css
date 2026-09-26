@@ -136,9 +136,12 @@ details.kernel-derivation > summary { padding: 8px 12px; cursor: pointer; font-w
 .derivation { padding: 6px 12px 10px; font-size: .86em; line-height: 1.6; overflow-x: auto; }
 .derivation-line { white-space: nowrap; }
 .derivation-line code { font-size: 1em; }
-.derivation-label, .derivation-arrow { color: #5f7066; }
-.derivation-extend .derivation-label { color: #346447; font-weight: 600; }
-.derivation-reduce .derivation-label { color: #98531c; font-weight: 600; }
+.derivation-arrow { color: #5f7066; }
+.derivation-action { display: inline-block; min-width: 5.2em; font: 600 .92em ui-monospace, SFMono-Regular, Menlo, monospace; color: #346447; }
+.derivation-extend .derivation-action { color: #1f6f8b; }
+.derivation-convert .derivation-action { color: #5f7066; }
+.derivation-reduce .derivation-action { color: #98531c; }
+.derivation-reused .derivation-action { color: #8a978f; }
 .derivation-note { color: #8a978f; font-size: .92em; }
 .derivation-equal { color: #346447; font-weight: 600; }
 .derivation-different { color: #a3322b; font-weight: 600; }
