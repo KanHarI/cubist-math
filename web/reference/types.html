@@ -307,7 +307,7 @@ def AlsoTwice : U1 {
   exact forall A : U0. A and A;
 }</code></pre>
             <p><code>Twice</code> is a function from types to types: <code>Twice(Nat)</code> is <code>Nat and Nat</code>. <code>AlsoTwice</code> is one type: the type of functions that give a pair of values in every type. It quantifies over all of <code>U0</code>, so it lives in the next universe, <code>U1</code>. It has no values, because <code>Void</code> has no pair of values.</p>
-            <p><code>exists x : A. B</code> is the type of pairs whose second component’s type depends on the first: a value <code>x : A</code>, together with a value of <code>B</code> for that <code>x</code>.</p>
+            <p><code>exists x : A. B</code> is the type of pairs whose second component’s type depends on the first: a value <code>x : A</code>, together with a value of <code>B</code> for that <code>x</code>. When <code>B</code> does not mention <code>x</code>, nothing depends on the first component, and <code>exists x : A. B</code> is the same type as <code>A and B</code>, just as <code>A -> B</code> is <code>forall x : A. B</code> without the dependency. The chapter on equality proves it: <a href="paths.html#exists-and"><code>(exists a : A. B) =[U0] (A and B)</code></a>.</p>
             <pre><code data-check="accept">def pointed : exists A : U0. A {
   exact (Nat, 3);
 }

@@ -92,6 +92,10 @@ def reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
             <pre><code data-check="reject">def wrong_carrier(x : Nat) : x =[Unit] x {
   exact refl(x);  // Error: Type mismatch: found Nat, expected Unit.
 }</code></pre>
+            <p id="exists-and">Types that are definitionally equal need no univalence: <code>refl</code> proves them equal. When <code>B</code> does not mention <code>a</code>, <code>exists a : A. B</code> is a pair of an <code>a : A</code> and a value of <code>B</code>, whatever <code>a</code> is. That is the same type as <code>A and B</code>:</p>
+            <pre><code data-check="accept">def exists_is_and(A : U0, B : U0) : (exists a : A. B) =[U0] (A and B) {
+  exact refl(A and B);
+}</code></pre>
           </section>
           <section id="path-operations">
             <h2>Operations on paths</h2>
