@@ -18,6 +18,11 @@ Moving these documents does not change their recorded status or resume paused wo
     (kernel);
   - [theories and inductive declarations](roadmaps/inductive-language-features.md)
     (language).
+- Experimental designs:
+  - [kernel instructions](roadmaps/kernel-instructions.md): the THTH-style
+    forward kernel, with every search decision in an untrusted driver;
+  - [learned search](roadmaps/learned-search.md): a small policy and value
+    network, trained against that kernel, for cheaper derivations.
 
 ## Mathematical roadmaps
 

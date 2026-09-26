@@ -17,6 +17,12 @@ target statement or a supplied theorem parameter as an already proved result.
   canonical quotients, presentations and derived declarations.
 - [Results of the first library](../library-results.md): what the archived
   library established, in mathematical English.
+- [Kernel instructions](kernel-instructions.md): the experimental THTH-style
+  forward kernel. Every search decision moves to an untrusted driver, and the
+  kernel's state is two hash graphs, explorable in the workbench.
+- [Learned search](learned-search.md): a design for a small policy and value
+  network over the kernel's graphs, trained against the instruction kernel,
+  that steers the driver's conversion search toward cheaper derivations.
 
 ## Language tooling
 

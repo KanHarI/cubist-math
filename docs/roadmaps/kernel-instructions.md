@@ -230,6 +230,10 @@ then takes is still an instruction the kernel checks.
 The driver caches judgement reads, scopes and derivations; the kernel indexes
 entries by symbol. Together, these took the archive from 457 s to 14 s.
 
+A learned policy for this search, trained against the kernel with the
+heuristic as its teacher and derivation cost as its objective, is designed
+in [learned-search.md](learned-search.md).
+
 A rule's expected type comes either from a premise the driver can rewrite in
 place, or from a typing judgement it derives for that type. It reduces a
 constructor's annotation once, as an equality, and converts the result back
@@ -295,7 +299,9 @@ reconstructed from the term checker's trace (#36).
 4. **Tactics issue instructions directly**, and the term checker leaves the
    trusted kernel. Unfolding hints leave the kernel.
 5. **Performance:** an untrusted native search module if JavaScript is too
-   slow; certificate compaction; content hashes for exported certificates.
+   slow; certificate compaction; content hashes for exported certificates;
+   a learned search policy for cheaper derivations
+   ([learned-search.md](learned-search.md)).
 
 ## Decisions
 
