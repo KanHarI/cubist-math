@@ -28,8 +28,8 @@
         <p class="note status">This page is an outline, to be written. Until then, the <a href="language.html">language reference</a> explains how source becomes kernel terms, and the <a href="workbench.html">kernel workbench</a> shows the native term of any checked declaration.</p>
         <section id="role">
           <h2>What the kernel does</h2>
-          <p>The kernel is written in C and compiled to WebAssembly for the browser. It stores terms in an arena of native nodes, each an opcode with a payload and up to four operand handles. It accepts a declaration only when its term has its stated type, and it is the only part of Cubist that is trusted.</p>
-          <p class="tbd">To be written: the trusted base, what the kernel checks and what it assumes, and how a declaration enters its registry.</p>
+          <p>The kernel is written in C and compiled to WebAssembly for the browser. It stores terms in an arena of native nodes, each an opcode with a payload and up to four operand handles. It has two halves. The trusted half is the <a href="#instructions">instruction kernel</a>: a declaration enters the registry only by its <code>Define</code> instruction, from a closed judgement derived one typing rule at a time, and only such a definition can be used in another derivation. The other half, the term checker, elaborates: it reconstructs annotations and answers the elaborator’s questions, and nothing it accepts is trusted.</p>
+          <p class="tbd">To be written: what the instruction kernel checks and what it assumes.</p>
         </section>
         <section id="arena">
           <h2>The term arena</h2>
@@ -88,7 +88,7 @@
         </section>
         <section id="checking">
           <h2>Checking</h2>
-          <p>The kernel checks a term one node at a time, applying one typing rule to each: it infers the node’s type from its operands, extends the context under a binder, and compares types by conversion where they must agree. The <a href="reference/first-proof.html#elaboration">Elaboration panels</a> of the language reference show a declaration’s derivation, one rule per step: as the <a href="#instructions">instruction kernel</a> derives it, or, for a term that uses rules not yet in instruction mode, from the kernel’s own trace (<code>cc_kernel_trace_start</code>).</p>
+          <p>The term checker checks a term one node at a time, applying one typing rule to each: it infers the node’s type from its operands, extends the context under a binder, and compares types by conversion where they must agree. It elaborates the term the instruction kernel then derives. The <a href="reference/first-proof.html#elaboration">Elaboration panels</a> of the language reference show a declaration’s derivation, one rule per step, as the <a href="#instructions">instruction kernel</a> derives it; the term checker’s own trace (<code>cc_kernel_trace_start</code>) stands in if a derivation cannot be shown.</p>
           <p class="tbd">To be written: the typing rule of each opcode, and the steps the kernel counts.</p>
         </section>
         <section id="trace">
@@ -108,7 +108,7 @@
         </section>
         <section id="instructions">
           <h2>Instructions</h2>
-          <p>An experimental second kernel interface works as THTH did: the caller issues one instruction per typing rule (<code>cc_instr_*</code> in <code>kernel/include/cubical_kernel.h</code>), and the kernel checks it and answers with a judgement. It checks side conditions only by comparing terms up to bound names, and reduces nothing unless an instruction says so, so every search decision, such as how to show two types equal, is made outside the trusted kernel. The Elaboration panels and the workbench’s <a href="workbench.html?view=graph">Kernel graph</a> view show these derivations. They are produced by an untrusted driver (<code>web/cubical-instruction-driver.mjs</code>) that replays each checked term as instructions.</p>
+          <p>The trusted kernel works as THTH did: the caller issues one instruction per typing rule (<code>cc_instr_*</code> in <code>kernel/include/cubical_kernel.h</code>), and the kernel checks it and answers with a judgement. It checks side conditions only by comparing terms up to bound names, and reduces nothing unless an instruction says so, so every search decision, such as how to show two types equal, is made outside the trusted kernel. Every definition is admitted this way: each tactic’s check is derived as the tactic runs, and the declaration’s body when it is defined. An untrusted driver (<code>web/cubical-instruction-driver.mjs</code>) issues the instructions and finds the equality steps; the term checker’s conversion guides its search, within a small budget, but never stands as evidence, and neither do the <code>with unfolding</code> hints, which only steer the term checker. The Elaboration panels and the workbench’s <a href="workbench.html?view=graph">Kernel graph</a> view show these derivations.</p>
           <p>A judgement is <code>{Γ} ⊢ t : T</code>, or <code>{Γ} ⊢ a ≡ b : T</code>, over only the context it depends on. Each records the instruction and premises that derived it, and the same instruction on the same premises gives the same judgement, so the judgements form a derivation graph. Identical syntax is likewise one node of the term arena. The steps of a derivation are:</p>
           <div class="table-scroll"><table>
             <thead><tr><th>Step</th><th>Derives</th></tr></thead>
@@ -116,7 +116,7 @@
               <tr><td><code>CtxExt</code>, <code>DimExt</code></td><td>A context entry: <code>x : A</code> from <code>A : U</code>, or an interval dimension. Its comment is the fragment: the context its type needs, and the entry.</td></tr>
               <tr><td><code>Vble</code></td><td><code>x : A</code> from the entry <code>x</code>.</td></tr>
               <tr><td><code>UIntro</code>, <code>NatForm</code>, <code>NatIntroZ</code>, <code>NatIntroS</code>, <code>NatElim</code>, …</td><td>The formation, introduction and elimination rules of each type former, as in THTH: <code>PiForm</code>, <code>PiIntro</code> and <code>PiElim</code> for functions, <code>SigmaForm</code> and <code>SigmaIntro</code> for pairs, <code>PathForm</code>, <code>PathIntro</code> and <code>PathElim</code> for paths. A binder discharges its entry.</td></tr>
-              <tr><td><code>DefLookup</code></td><td>A checked definition at its type.</td></tr>
+              <tr><td><code>Def</code>, <code>DefLookup</code></td><td>A closed judgement admitted as a definition; an admitted definition at its type. The term checker’s own definitions cannot be looked up.</td></tr>
               <tr><td><code>DefEqRefl</code>, <code>DefEqSwp</code>, <code>DefEqExt</code></td><td><code>t ≡ t</code>; an equality reversed; one side of an equality as a typing.</td></tr>
               <tr><td><code>Beta</code>, <code>Delta</code>, <code>Iota</code>, <code>PathBeta</code>, <code>Face</code>, <code>Whnf</code>, <code>Normalize</code></td><td>One contraction at a highlighted position of a judgement’s term, other side, or type: a function applied to its argument, a definition unfolded, an eliminator on a constructor, a path at a point, a composition with a tube on a face that holds (to that tube at the end), a weak head normal form (where composition, transport and Glue compute), or a normal form. The position and the subterm follow the step.</td></tr>
               <tr><td><code>HighSubs</code></td><td>A highlighted subterm replaced, given an equality for it.</td></tr>
@@ -128,7 +128,7 @@
               <tr><td><code>PushoutForm</code>, <code>PushoutIntro</code>, <code>PushoutPath</code>, <code>PushoutElim</code></td><td>A pushout of <code>A ← C → B</code>, its points <code>inl(a)</code> and <code>inr(b)</code>, the path <code>push(c)</code> between <code>inl(f(c))</code> and <code>inr(g(c))</code>, and its dependent eliminator; <code>Iota</code> computes the eliminator on a point or a path.</td></tr>
             </tbody>
           </table></div>
-          <p class="tbd">In instruction mode: universes, functions, pairs, natural numbers, the unit and empty types, sums, paths at any interval formula, composition, transport, pushouts, W types and Glue: every definition in the archive, univalence included.</p>
+          <p class="tbd">The instructions cover universes, functions, pairs, natural numbers, the unit and empty types, sums, paths at any interval formula, composition, transport, pushouts, W types and Glue, and so every definition in the library and the archive, univalence included.</p>
         </section>
         <section id="conversion">
           <h2>Conversion</h2>
