@@ -10,8 +10,11 @@ implemented (section 4.1): the level node kinds and the arithmetic of 2.4 in
 version 2; level entries; `Universe`, `LevelPi`, `LevelLambda` and
 `LevelApply`; level `Beta` and `Eta`; `Lift` with `≤-∀`; alpha equality of
 levels under binders; and composition at a level Π. `test_instructions.c`
-checks the kernel-level acceptance cases by their IDs. K1.3, the driver's
-half, is next.
+checks the kernel-level acceptance cases by their IDs. K1.3's driver half is
+implemented too (section 4.2): the driver derives level binders and
+instantiations, compares levels by normal form under renaming, takes level
+`Beta` and `Eta` steps, and the renderers print level quantification. The
+source cases of section 5 need L1.1's syntax, and move with it.
 
 ## Revision
 
@@ -1157,11 +1160,11 @@ level forms and makes universes agree. Nothing it does is trusted.
 
 **Agreement.** Where two types must agree and both are universes or level
 applications, the driver compares their levels by normal form itself, with
-a JavaScript copy of the arithmetic (`lib/cubical/levels.mjs`:
-`normalizeLevel`, `levelLeq`, `levelEqual`, `levelFinite`, `levelLimit`,
-`printLevel`, `LEVEL_MAX`, `TIER_MAX`). It then issues `Lift` when the
-levels differ and `Convert` by alpha equality when they are equal; the
-kernel decides, and the copy only steers. `Step … Beta` on a level redex and
+a JavaScript copy of the normal form (`levelNormal` in
+`web/cubical-levels.mjs`), each variable bound on the way down named by its
+binder. It never descends into a level. It then issues `Convert` by alpha
+equality when they are equal and `Lift` when they differ, so the order of
+levels is decided only by the kernel, and the copy only steers. `Step … Beta` on a level redex and
 `Eta` at a level Π join the weak-head steps. A generic definition's use is a
 `Lookup` and a `LevelApply`, never a specialization. The conversion oracle
 answers level syntax with an error, which the driver treats as not known.
@@ -1182,15 +1185,20 @@ answers level syntax with an error, which the driver treats as not known.
 
   The template inspection in `web/cubical-program.mjs` is removed (4.3).
 
-**Tests** (`lib/cubical/tests/levels.test.mjs` and
-`tests/cubical-wasm.test.mjs`):
+**Tests.** Implemented in `tests/instruction-driver.test.mjs`:
 
-- every source case of section 5, by its ID, through the driver, comparing
-  verdicts and normal forms with the stated ones;
-- a property test comparing `levelLeq` and `levelEqual` with brute-force
-  evaluation over assignments up to `2·top + 2`, with constants of tiers 0
-  to 2, and with the kernel's answers through `Lift`;
-- a property test that `levelLimit` is monotone and stable (2.7);
+- the driver derives `id`, checked once at a statement with other bound
+  names, at level 1, against an expected type that needs a level `Beta`
+  step, and under two level binders whose canonical levels order their
+  variables differently; `≤-∀` passes and C3 is refused;
+- a property test: on 400 random levels, the driver's normal forms are
+  equal exactly when the kernel's canonical universes are one term.
+
+The arithmetic's brute-force test, including order and `levelLimit`, is the
+C kernel's `test_levels.c`. With L1.1:
+
+- every source case of section 5, by its ID, through the elaborator and
+  the driver, comparing verdicts and normal forms with the stated ones;
 - a property test for Lemma 5: for random well-typed generic terms `t` and
   numerals `n`, `nf(t[x := n])` equals `nf(nf(t)[x := n])`, and equals
   `nf(t)[x := n]` when the result is canonical data;

@@ -24,7 +24,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
     if (!t || typeof t !== "object" || seen.has(t)) return false;
     seen.add(t);
     if (t.tag === "Var") return t.name === variable;
-    if (["Pi", "Lam", "Sigma", "W"].includes(t.tag) && t.name === variable) return mentions(t.domain, variable, seen);
+    if (["Pi", "Lam", "Sigma", "W", "LPi", "LLam"].includes(t.tag) && t.name === variable) return mentions(t.domain, variable, seen);
     return Object.values(t).some(child => mentions(child, variable, seen));
   };
   const numeral = t => {
@@ -106,6 +106,9 @@ export function sourceText(term, symbols = {}, limit = 4000) {
         return [`${sub(t.domain, level + 1)} ${pi ? "->" : "and"} ${under(t.name, () => sub(t.body, level))}`, level];
       }
       case "Sum": return [`${sub(t.left, LEVEL.or + 1)} or ${sub(t.right, LEVEL.or)}`, LEVEL.or];
+      // Level quantification (G0) in its source syntax: the bound is UU0.
+      case "LPi": return [`forall ${t.name} < UU0. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
+      case "LLam": return [`fun (${t.name} < UU0) => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
       case "Lam": {
         // fun (x, y : A, z : B) => body
         const groups = [];
@@ -139,10 +142,11 @@ export function sourceText(term, symbols = {}, limit = 4000) {
           + `left ${left.name} => ${under(left.name, () => show(left.body))}; `
           + `right ${right.name} => ${under(right.name, () => show(right.body))}; }`, LEVEL.binder];
       }
-      case "App": {
+      case "App": case "LApp": {
+        // An instantiation is an application to a universe.
         const args = [];
         let head = t;
-        while (head.tag === "App") { args.unshift(head.arg); head = head.fn; }
+        while (head.tag === "App" || head.tag === "LApp") { args.unshift(head.tag === "App" ? head.arg : { tag: "U", level: head.level }); head = head.fn; }
         const operator = head.tag === "DefRef" && args.length === 2 && arithmetic.exec(head.name)?.[1];
         if (operator) {
           const [symbol, level] = infix[operator], left = level === LEVEL.compare ? level + 1 : level;

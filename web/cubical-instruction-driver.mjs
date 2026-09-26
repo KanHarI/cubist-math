@@ -10,8 +10,12 @@
 import { InstructionGraph } from "./cubical-instructions.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
 import { freeDimensionMask } from "./cubical-syntax.mjs";
+import { levelNormal } from "./cubical-levels.mjs";
 
-const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "W"]);
+const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
+// Binders of a universe variable x < ω (G0): the level entry is found by its
+// symbol, which levels below name.
+const LEVEL_BINDERS = new Set(["LPi", "LLam"]);
 // Nodes whose payload is an interval or face formula.
 const FORMULA_PAYLOADS = new Set(["PApp", "Tube", "GlueSystem", "PushPath"]);
 const unsupported = kind => new Error(`${kind} is not in instruction mode yet.`);
@@ -19,10 +23,10 @@ const unsupported = kind => new Error(`${kind} is not in instruction mode yet.`)
 const dimensionBound = (kind, i) => kind === "PLam" || ((kind === "Path" || kind === "Trans") && i === 0) ||
   (kind === "Comp" && i < 2) || (kind === "HComp" && i === 1);
 // Weak heads that only compute by eta, or not at all.
-const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "Sigma", "Pair", "Nat", "Zero", "Succ", "Unit", "Point", "Void",
+const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", "Nat", "Zero", "Succ", "Unit", "Point", "Void",
   "Sum", "Inl", "Inr", "Path", "PLam", "W", "Sup", "Pushout", "PushLeft", "PushRight"]);
 // The type former a constructor's eta expansion needs.
-const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma" };
+const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi" };
 // Steps after which a comparison the oracle finds true computes normal forms.
 const LONG_COMPUTATION = 64;
 // A scope maps term symbols to entries; under this key, the mask of the
@@ -131,7 +135,7 @@ export class InstructionDriver {
   typesMention(scope, dimension) {
     const key = `${this.scopeKey(scope)}|${dimension}`;
     if (!this.mentions.has(key))
-      this.mentions.set(key, [...scope].some(([symbol, entry]) => symbol !== LIVE &&
+      this.mentions.set(key, [...scope].some(([symbol, entry]) => symbol !== LIVE && this.graph.entry(entry).source &&
         this.statement(this.graph.entry(entry).source).context.some(other => {
           const info = this.graph.entry(other);
           return info.dimension && info.symbol === dimension;
@@ -233,6 +237,12 @@ export class InstructionDriver {
       return g.variable(scope.get(n.payload));
     }
     case "Succ": return g.succ(this.convertTo(derive(a), g.nat()));
+    case "LPi": case "LLam": {
+      const entry = g.levelEntry(n.payload), inner = new Map(scope).set(n.payload, entry);
+      const body = derive(b, inner);
+      return n.kind === "LPi" ? g.levelPi(entry, this.asType(body)) : g.levelLambda(entry, body);
+    }
+    case "LApp": return g.levelApply(this.shape(this.focus(derive(a), "type"), "LPi"), b);
     case "Pi": case "Sigma": case "W": case "Lam": {
       const entry = this.bind(n.payload, this.asType(derive(a)));
       const inner = new Map(scope).set(n.payload, entry);
@@ -624,7 +634,8 @@ export class InstructionDriver {
       const n = this.node(term);
       if ((n.kind === "Comp" && child === 1) || (n.kind === "HComp" && child === 1)) return null;
       if (TERM_BINDERS.has(n.kind) && child === 1) {
-        const entry = this.bind(n.payload, this.asType(this.derive(n.children[0], scope)));
+        const entry = LEVEL_BINDERS.has(n.kind) ? this.graph.levelEntry(n.payload)
+          : this.bind(n.payload, this.asType(this.derive(n.children[0], scope)));
         if (this.graph.entry(entry).symbol !== n.payload) return null;
         scope = new Map(scope).set(n.payload, entry);
       }
@@ -786,13 +797,33 @@ export class InstructionDriver {
   }
   sameHead(x, y, terms, dims) {
     if (x.kind === "Var") return this.sameName(x.payload, y.payload, terms);
+    if (x.kind === "U") return this.levelsEqual(x.children[0], y.children[0], terms);
+    if (x.kind === "LApp") return this.levelsEqual(x.children[1], y.children[1], terms);
     if (FORMULA_PAYLOADS.has(x.kind)) return this.sameFormula(x.payload, y.payload, dims);
     if (TERM_BINDERS.has(x.kind) || ["PLam", "Path", "Comp", "HComp", "Trans"].includes(x.kind)) return true;
     return x.payload === y.payload;
   }
   nodeHandle(node) { return node.id; }
-  // The operand slots compared: all but a path application's annotation.
-  parts(n) { return n.kind === "PApp" ? 1 : 4; }
+  // The operand slots compared: all but a path application's annotation, a
+  // universe's level and an instantiation's level, which sameHead compares.
+  parts(n) { return n.kind === "U" ? 0 : n.kind === "PApp" || n.kind === "LApp" ? 1 : 4; }
+  // Two levels are equal when their normal forms are (G0 §2.4), each variable
+  // bound on the way down named by its binder, so that the levels of
+  // λ (x < ω). U(max(x, z)) and λ (y < ω). U(max(z, y)) agree though their
+  // canonical nodes order the variables differently.
+  levelsEqual(x, y, terms) {
+    if (x === y && this.unrenamed(terms)) return true;
+    const read = id => this.node(id), a = levelNormal(read, x), b = levelNormal(read, y);
+    if (a.tier !== b.tier || a.constant !== b.constant || a.offsets.size !== b.offsets.size) return false;
+    const key = (symbol, right) => {
+      let depth = 0;
+      for (let binding = terms; binding; binding = binding.next, depth++)
+        if ((right ? binding.right : binding.left) === symbol) return `bound ${depth}`;
+      return `free ${symbol}`;
+    };
+    const renamed = new Map([...b.offsets].map(([symbol, offset]) => [key(symbol, true), offset]));
+    return [...a.offsets].every(([symbol, offset]) => renamed.get(key(symbol, false)) === offset);
+  }
   // Whether congruence can work: no pair of parts is known to differ. Only
   // asked when a head could be reduced instead; parts under a binder are left
   // to the comparison itself.
@@ -835,6 +866,8 @@ export class InstructionDriver {
     const iota = { path: [], rule: "iota" };
     switch (n.kind) {
     case "DefRef": return { path: [], rule: "delta" };
+    case "LApp":
+      return this.node(n.children[0]).kind === "LLam" ? { path: [], rule: "beta" } : under(0, this.headStep(n.children[0]));
     case "App": {
       const fn = this.node(n.children[0]).kind;
       if (fn === "Lam") return { path: [], rule: "beta" };

@@ -76,7 +76,8 @@ export class InstructionGraph {
   extend(type, name) { return this.issue(EXTEND, type, this.kernel.symbol(name)); }
   dimension(index) { return this.issue(DIMENSION, index); }
   // A universe variable x < ω (G0): a level entry, used only inside levels.
-  level(name) { return this.issue(LEVEL, this.kernel.symbol(name)); }
+  level(name) { return this.levelEntry(this.kernel.symbol(name)); }
+  levelEntry(symbol) { return this.issue(LEVEL, symbol); }
   levelPi(entry, body) { return this.issue("levelPi", entry, body); }
   levelLambda(entry, body) { return this.issue("levelLambda", entry, body); }
   levelApply(fn, level) { return this.issue("levelApply", fn, level); }

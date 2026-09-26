@@ -318,6 +318,13 @@ graph, since walking it as a tree is exponential in its depth. Its renaming
 of dimensions is first cut to the dimensions the two terms mention, so a
 subterm met under many different binders is still compared once.
 
+Levels (G0) are compared by normal form, never part by part: the driver
+reads a universe's or an instantiation's level as a normal form, names each
+variable bound on the way down by its binder, and issues `Convert` when two
+levels are equal and `Lift` when they differ, so only the kernel decides
+their order. A level lambda instantiated at a level contracts by `Beta`, as
+a lambda applied does.
+
 A binder's variant name, when its own is taken at another type, is
 remembered by name and type and used again, and the kernel reuses an entry at
 an alpha-equal type: two entries for one variable would make terms that
