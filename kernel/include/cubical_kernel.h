@@ -112,7 +112,7 @@ typedef enum {
     CC_INSTR_PATH, CC_INSTR_PATH_LAMBDA, CC_INSTR_PATH_APPLY, CC_INSTR_DEFINE, CC_INSTR_LOOKUP,
     CC_INSTR_REFL, CC_INSTR_STEP, CC_INSTR_REPLACE, CC_INSTR_ETA, CC_INSTR_SIDE,
     CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT,
-    CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP
+    CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP, CC_INSTR_SYSTEM_OVERLAP
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
@@ -173,12 +173,19 @@ cc_judgement_id cc_instr_path_at(cc_kernel *, cc_judgement_id path, cc_formula_i
  * type. System starts from A : U over the dimension entry i and a0 : A(0).
  * SystemTube adds a tube on a face of one clause, not mentioning i: the tube
  * u : A restricted to the face, not mentioning the face's dimensions, and an
- * equality u(0) ≡ a0 restricted to the face. Faces must not overlap yet.
+ * equality u(0) ≡ a0 restricted to the face. The face 1 is the clause with no
+ * equations. A tube on the face 0 is vacuous: it needs only a typing
+ * judgement, at any type, and no equality (adjacency 0).
+ * Where the new tube's face overlaps an earlier tube's, SystemOverlap gives,
+ * for that tube's position, an equality between the two tubes restricted to
+ * the overlap; until every overlap has one, no tube is added and Comp refuses.
  * Comp closes a system into a typing judgement and discharges i; the base
  * must not use i. */
 cc_judgement_id cc_instr_system(cc_kernel *, cc_entry_id dimension, cc_judgement_id family, cc_judgement_id base);
 cc_judgement_id cc_instr_system_tube(cc_kernel *, cc_judgement_id system, cc_formula_id face,
                                      cc_judgement_id tube, cc_judgement_id adjacency);
+cc_judgement_id cc_instr_system_overlap(cc_kernel *, cc_judgement_id system, uint32_t position,
+                                        cc_judgement_id agreement);
 cc_judgement_id cc_instr_comp(cc_kernel *, cc_judgement_id system);
 /* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
  * substitution preserves typing. No other entry may depend on i. */

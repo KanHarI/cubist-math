@@ -11,18 +11,18 @@ which it does not change:
   - the workbench's **Kernel graph** view (`web/cubical-graph-view.mjs`);
   - the Elaboration panels, which now show the instruction derivation.
 - Stage 3 is under way: paths at any interval formula (`PathAt`), and
-  composition with tubes on disjoint faces (`System`, `SystemTube`, `Comp`).
+  composition, with an equality on each overlap of two tubes' faces
+  (`System`, `SystemTube`, `SystemOverlap`, `Comp`).
 - In instruction mode, the first proof checks, and so does all of
   `library/naturals`. So does every one of the 41 definitions behind the
-  archive's Euclid theorem, and 3803 of the archive's 3938 definitions
-  (96.6%), in 13 s for the whole archive; `node tools/instruction-coverage.mjs`
+  archive's Euclid theorem, and 3843 of the archive's 3938 definitions
+  (97.6%), in 13 s for the whole archive; `node tools/instruction-coverage.mjs`
   measures it again. Every derived term is its source syntax, annotations
   included. The rest need kernel rules, not search:
 
   | Need | Definitions |
   | --- | --- |
   | Pushouts | 68 |
-  | Overlapping or multi-clause faces | 40 |
   | W types | 18 |
   | Glue | 8 |
   | `HComp` | 1 |
@@ -148,9 +148,15 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   - `System` starts from the family `A : U` over `i` and the base `a0 : A(0)`.
   - `SystemTube` adds a tube on a face of one clause. The tube is typed at `A`
     restricted to the face, and an equality shows it starts at the base
-    there: `u(0) ≡ a0` on the face.
+    there: `u(0) ≡ a0` on the face. The face may be `1`, the clause with no
+    equations. A tube on the face `0`, as a substitution into a type can
+    leave it, is never used and needs only a typing judgement.
+  - `SystemOverlap` shows that the newest tube agrees with an earlier one
+    where their faces meet: an equality between the two, restricted to the
+    overlap. `SystemTube` records which earlier tubes the new face meets,
+    and until each has its equality, the kernel neither adds a tube nor
+    closes the system. The term checker asks the same, of its conversion.
   - `Comp` closes the system into `comp … : A(1)` and discharges `i`.
-  - Faces may not overlap yet; an overlap would need its own equality.
   - `PathAt` applies a path at any interval formula, such as `1 - i`.
 
 Highlighting stays in the kernel on purpose: a short targeted reduction or
@@ -301,9 +307,8 @@ reconstructed from the term checker's trace (#36).
    - the Elaboration panels show the instructions.
 3. **W types and the cubical rules**, under way:
    - done: paths at any interval formula;
-   - done: composition with tubes on disjoint faces;
-   - remaining: overlapping faces (an equality on each overlap), `HComp`,
-     `Trans`, `Glue`, pushouts and W types;
+   - done: composition, with an equality on each overlap of two faces;
+   - remaining: `HComp`, `Trans`, `Glue`, pushouts and W types;
    - remaining: the archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the
    trusted kernel. Unfolding hints leave the kernel.

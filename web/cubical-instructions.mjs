@@ -8,7 +8,7 @@ import { KernelError } from "./cubical-kernel.mjs";
 export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "unit", "point", "unitElim",
   "void", "abort", "sum", "inject", "sumElim", "variable", "pi", "lambda", "apply", "sigma", "pair", "first",
   "second", "domain", "family", "path", "pathLambda", "pathApply", "define", "lookup", "refl", "step", "replace",
-  "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp"];
+  "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp", "systemOverlap"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
   natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
@@ -18,7 +18,7 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   pathApply: "PathElim", define: "Def", lookup: "DefLookup", refl: "DefEqRefl", step: "Step",
   replace: "HighSubs", eta: "Eta", side: "DefEqExt", symmetry: "DefEqSwp", transitivity: "DefEqTrans",
   convert: "Conv", lift: "Lift", endpoint: "Endpoint", pathAt: "PathElim", system: "CompBase", systemTube: "CompTube",
-  comp: "Comp" };
+  comp: "Comp", systemOverlap: "CompOverlap" };
 export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
@@ -84,6 +84,8 @@ export class InstructionGraph {
   pathAt(path, formula) { return this.issue("pathAt", path, formula); }
   system(dimension, family, base) { return this.issue("system", dimension, family, base); }
   systemTube(system, face, tube, adjacency) { return this.issue("systemTube", system, face, tube, adjacency); }
+  // The last tube agrees with the tube at `position` where their faces meet.
+  systemOverlap(system, position, agreement) { return this.issue("systemOverlap", system, position, agreement); }
   comp(system) { return this.issue("comp", system); }
   define(name, closed) { return this.issue("define", this.kernel.symbol(name), closed); }
   lookup(reference) { return this.issue("lookup", reference); }

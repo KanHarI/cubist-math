@@ -48,6 +48,9 @@ typedef struct {
     cc_term term, other, type;
     uint32_t context;
     cc_derivation how;
+    /* A composition system: the positions of the tubes its last tube
+     * overlaps and has not yet been shown to agree with. */
+    uint64_t pending;
 } cc_fact;
 typedef struct {
     uint32_t symbol;  /* a term symbol, or a dimension index */

@@ -217,7 +217,32 @@ int main(void) {
     cc_judgement_id stay = OK(cc_instr_refl(k, nv));
     for (unsigned side = 0; side < 2; ++side)
         system = OK(cc_instr_system_tube(k, system, faces[side], nv, stay));
-    rejects(cc_instr_system_tube(k, system, faces[0], nv, stay), "Overlapping");
+    /* A third tube, on the face 1, overlaps both: until an equality shows it
+     * agrees with each on the overlap, the system neither grows nor closes. */
+    cc_formula_id always, never;
+    cc_init(&formula, CC_FACE);
+    assert(cc_one(&formula) == CC_OK);
+    always = cc_kernel_formula(k, &formula);
+    cc_clear(&formula);
+    cc_init(&formula, CC_FACE);
+    assert(cc_zero(&formula) == CC_OK);
+    never = cc_kernel_formula(k, &formula);
+    cc_clear(&formula);
+    cc_judgement_id overlapping = OK(cc_instr_system_tube(k, system, always, nv, stay));
+    rejects(cc_instr_comp(k, overlapping), "agree with the tubes it overlaps");
+    rejects(cc_instr_system_tube(k, overlapping, never, OK(cc_instr_unit(k)), 0), "agree with the tubes it overlaps");
+    rejects(cc_instr_system_overlap(k, overlapping, 2, stay), "does not overlap");
+    rejects(cc_instr_system_overlap(k, overlapping, 0, OK(cc_instr_refl(k, OK(cc_instr_variable(k, m))))),
+            "does not start at the last tube");
+    cc_judgement_id agreed = OK(cc_instr_system_overlap(k, overlapping, 0, stay));
+    rejects(cc_instr_system_overlap(k, agreed, 0, stay), "already agrees");
+    agreed = OK(cc_instr_system_overlap(k, agreed, 1, stay));
+    /* A tube on the face 0 is never used: any typing judgement will do. */
+    rejects(cc_instr_system_tube(k, agreed, never, OK(cc_instr_unit(k)), stay), "takes no equality");
+    agreed = OK(cc_instr_system_tube(k, agreed, never, OK(cc_instr_unit(k)), 0));
+    cc_judgement_id full = OK(cc_instr_comp(k, agreed));
+    assert(cc_kernel_check_in_cube(k, term_of(full), type_of(full), (cc_assumption[]){{N, type_of(nv)}}, 1, 1, &checked));
+    assert(other_of(STEP(OK(cc_instr_refl(k, full)), CC_STEP_FACE, ROOT)) == term_of(nv));
     rejects(cc_instr_step(k, system, 0, ROOT, CC_STEP_NORMALIZE), "closed by Comp");
     cc_judgement_id composed = OK(cc_instr_comp(k, system));
     assert(kind(term_of(composed)) == CC_COMP && kind(type_of(composed)) == CC_NAT);

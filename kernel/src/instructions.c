@@ -165,7 +165,7 @@ static cc_judgement_id publish(cc_kernel *k, uint32_t kind, cc_term term, cc_ter
         k->position_count += how.depth;
     }
     cc_judgement_id id = (cc_judgement_id)k->fact_count++;
-    k->facts[id] = (cc_fact){kind, term, other, type, context, how};
+    k->facts[id] = (cc_fact){kind, term, other, type, context, how, 0};
     remember(k, id);
     return id;
 }
@@ -844,6 +844,29 @@ static cc_term append_tube(cc_kernel *k, cc_term tubes, cc_formula_id face, cc_t
     return rest ? make(k, CC_TUBE, n.payload, n.child[0], rest, 0, 0) : 0;
 }
 
+/* The last tube of a system, its clause, and the tube at a position. */
+static bool tube_at(cc_kernel *k, cc_term comp, uint32_t position, cc_term *term, cc_clause *clause, bool last) {
+    uint32_t index = 0;
+    for (cc_term cursor = k->nodes[comp].child[1]; cursor; cursor = k->nodes[cursor].child[1], ++index) {
+        if (last ? k->nodes[cursor].child[1] != 0 : index != position)
+            continue;
+        const cc_formula *face = cc_kernel_get_formula(k, k->nodes[cursor].payload);
+        if (!face || face->length != 1)
+            return ck_fail(k, "That tube's face is not one clause.");
+        *term = k->nodes[cursor].child[0];
+        *clause = face->clauses[0];
+        return true;
+    }
+    return ck_fail(k, "The system has no tube at that position.");
+}
+
+static cc_judgement_id system_fact(cc_kernel *k, cc_term comp, cc_term type, uint32_t context, uint64_t pending) {
+    cc_judgement_id id = publish(k, CC_FACT_SYSTEM, comp, 0, type, context);
+    if (id)
+        k->facts[id].pending = pending;
+    return id;
+}
+
 cc_judgement_id cc_instr_system_tube(cc_kernel *k, cc_judgement_id system_id, cc_formula_id face,
                                      cc_judgement_id tube_id, cc_judgement_id adjacency_id) {
     cc_judgement_id found;
@@ -852,14 +875,25 @@ cc_judgement_id cc_instr_system_tube(cc_kernel *k, cc_judgement_id system_id, cc
         return found;
     cc_fact s = {0}, u = {0}, e = {0};
     uint32_t dims = 0, context = 0;
-    if (!premise(k, system_id, CC_FACT_SYSTEM, &s) || !premise(k, tube_id, CC_FACT_TYPING, &u) ||
-        !premise(k, adjacency_id, CC_FACT_EQUALITY, &e))
+    if (!premise(k, system_id, CC_FACT_SYSTEM, &s) || !premise(k, tube_id, CC_FACT_TYPING, &u))
         return 0;
+    if (s.pending)
+        return ck_fail(k, "The last tube must first be shown to agree with the tubes it overlaps."), 0;
     cc_node comp = k->nodes[s.term];
     unsigned dim = comp.payload;
     const cc_formula *phi = cc_kernel_get_formula(k, face);
-    if (!phi || phi->sort != CC_FACE || phi->length != 1)
-        return ck_fail(k, "A tube's face is one conjunction of endpoint equations."), 0;
+    if (!phi || phi->sort != CC_FACE || phi->length > 1)
+        return ck_fail(k, "A tube's face is one conjunction of endpoint equations, or 0."), 0;
+    if (!phi->length) {
+        /* On the face 0 nothing is required of the tube: it is never used. */
+        if (adjacency_id)
+            return ck_fail(k, "A tube on the face 0 takes no equality."), 0;
+        cc_term tubes = merge(k, s.context, u.context, &context) ? append_tube(k, comp.child[1], face, u.term) : 0;
+        cc_term extended = tubes ? make(k, CC_COMP, dim, comp.child[0], tubes, comp.child[2], 0) : 0;
+        return extended ? system_fact(k, extended, s.type, context, 0) : 0;
+    }
+    if (!premise(k, adjacency_id, CC_FACT_EQUALITY, &e))
+        return 0;
     cc_clause clause = phi->clauses[0];
     uint64_t names = clause.positive | clause.negative;
     if (clause.positive & clause.negative)
@@ -868,10 +902,20 @@ cc_judgement_id cc_instr_system_tube(cc_kernel *k, cc_judgement_id system_id, cc
         return ck_fail(k, "A tube's face may not use the composition's dimension."), 0;
     if (ck_free_dims(k, u.term) & names)
         return ck_fail(k, "A tube must already be restricted to its face."), 0;
-    for (cc_term cursor = comp.child[1]; cursor; cursor = k->nodes[cursor].child[1]) {
-        cc_clause other = cc_kernel_get_formula(k, k->nodes[cursor].payload)->clauses[0];
-        if (!((clause.positive | other.positive) & (clause.negative | other.negative)))
-            return ck_fail(k, "Overlapping tube faces are not in instruction mode yet."), 0;
+    /* Every earlier tube whose face meets this one's must agree with it on
+     * the overlap: SystemOverlap, once for each. */
+    uint64_t pending = 0;
+    uint32_t index = 0;
+    for (cc_term cursor = comp.child[1]; cursor; cursor = k->nodes[cursor].child[1], ++index) {
+        const cc_formula *other_face = cc_kernel_get_formula(k, k->nodes[cursor].payload);
+        if (!other_face->length)
+            continue;
+        cc_clause other = other_face->clauses[0];
+        if ((clause.positive | other.positive) & (clause.negative | other.negative))
+            continue;
+        if (index >= 64)
+            return ck_fail(k, "A tube may overlap only the first 64 tubes of a system."), 0;
+        pending |= UINT64_C(1) << index;
     }
     if (!same(k, u.type, ck_restrict(k, comp.child[0], clause), "The tube is not in the family on its face.") ||
         !same(k, e.term, ck_endpoint_term(k, u.term, dim, 0), "The equality does not start at the tube at 0.") ||
@@ -881,7 +925,33 @@ cc_judgement_id cc_instr_system_tube(cc_kernel *k, cc_judgement_id system_id, cc
         return 0;
     cc_term tubes = append_tube(k, comp.child[1], face, u.term);
     cc_term extended = tubes ? make(k, CC_COMP, dim, comp.child[0], tubes, comp.child[2], 0) : 0;
-    return extended ? publish(k, CC_FACT_SYSTEM, extended, 0, s.type, context) : 0;
+    return extended ? system_fact(k, extended, s.type, context, pending) : 0;
+}
+
+/* The last tube u and the tube v at a position agree where their faces meet:
+ * an equality u ≡ v, both restricted to the overlap. */
+cc_judgement_id cc_instr_system_overlap(cc_kernel *k, cc_judgement_id system_id, uint32_t position,
+                                        cc_judgement_id agreement_id) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SYSTEM_OVERLAP, .premise = {system_id, agreement_id},
+                                  .operand = {position}}, NULL, 0, &found))
+        return found;
+    cc_fact s = {0}, e = {0};
+    uint32_t context = 0;
+    if (!premise(k, system_id, CC_FACT_SYSTEM, &s) || !premise(k, agreement_id, CC_FACT_EQUALITY, &e))
+        return 0;
+    if (position >= 64 || !(s.pending & (UINT64_C(1) << position)))
+        return ck_fail(k, "The last tube does not overlap that tube, or already agrees with it."), 0;
+    cc_term last = 0, other = 0;
+    cc_clause mine = {0}, theirs = {0};
+    if (!tube_at(k, s.term, 0, &last, &mine, true) || !tube_at(k, s.term, position, &other, &theirs, false))
+        return 0;
+    cc_clause overlap = {mine.positive | theirs.positive, mine.negative | theirs.negative};
+    if (!same(k, e.term, ck_restrict(k, last, overlap), "The equality does not start at the last tube on the overlap.") ||
+        !same(k, e.other, ck_restrict(k, other, overlap), "The equality does not end at the other tube on the overlap.") ||
+        !merge(k, s.context, e.context, &context))
+        return 0;
+    return system_fact(k, s.term, s.type, context, s.pending & ~(UINT64_C(1) << position));
 }
 
 cc_judgement_id cc_instr_comp(cc_kernel *k, cc_judgement_id system_id) {
@@ -892,6 +962,8 @@ cc_judgement_id cc_instr_comp(cc_kernel *k, cc_judgement_id system_id) {
     uint32_t context = 0;
     if (!premise(k, system_id, CC_FACT_SYSTEM, &s))
         return 0;
+    if (s.pending)
+        return ck_fail(k, "The last tube must first be shown to agree with the tubes it overlaps."), 0;
     cc_entry_id dimension = dimension_entry(k, k->nodes[s.term].payload);
     if (!dimension || !discharge(k, s.context, &dimension, 1, &context))
         return 0;

@@ -212,11 +212,19 @@ export class InstructionDriver {
       // checked against the family there, and shown equal to the base at 0.
       const dimension = g.dimension(n.payload), family = this.asType(derive(a));
       const base = this.convertTo(derive(c), g.endpoint(family, dimension, 0));
+      // Where a tube's face meets an earlier tube's, the two agree there.
       let system = g.system(dimension, family, base);
+      const tubes = [];
       for (let tube = b; tube; tube = this.node(tube).children[1]) {
         const { payload: face, children: [term] } = this.node(tube);
         const { clauses } = this.kernel.inspectFormula(face);
-        if (clauses.length !== 1) throw unsupported("A tube on a face of several clauses");
+        if (!clauses.length) {
+          // The face 0, as a substitution can leave it: the tube is never used.
+          system = g.systemTube(system, face, derive(term), 0);
+          tubes.push(null);
+          continue;
+        }
+        if (clauses.length > 1) throw unsupported("A tube on a face of several clauses");
         const [clause] = clauses;
         const restricted = this.restrict(family, clause);
         const value = this.convertTo(derive(term), restricted);
@@ -225,6 +233,15 @@ export class InstructionDriver {
         if (!this.agree(start, end)) throw new Error("A composition tube disagrees with its base.");
         const adjacency = g.transitivity(start.ref.id, g.symmetry(end.ref.id));
         system = g.systemTube(system, face, value, adjacency);
+        tubes.forEach((earlier, position) => {
+          const overlap = earlier && [clause[0] | earlier.clause[0], clause[1] | earlier.clause[1]];
+          if (!overlap || overlap[0] & overlap[1]) return;
+          const mine = this.focus(g.refl(this.restrict(value, overlap)), "other");
+          const theirs = this.focus(g.refl(this.restrict(earlier.value, overlap)), "other");
+          if (!this.agree(mine, theirs)) throw new Error("Composition tubes disagree on an overlap.");
+          system = g.systemOverlap(system, position, g.transitivity(mine.ref.id, g.symmetry(theirs.ref.id)));
+        });
+        tubes.push({ clause, value });
       }
       return g.comp(system);
     }

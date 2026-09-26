@@ -389,6 +389,7 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_SYSTEM: return cc_instr_system(k, a, b, c);
     case CC_INSTR_SYSTEM_TUBE: return cc_instr_system_tube(k, a, b, c, d);
     case CC_INSTR_COMP: return cc_instr_comp(k, a);
+    case CC_INSTR_SYSTEM_OVERLAP: return cc_instr_system_overlap(k, a, b, c);
     case CB_EXTEND: return cc_instr_extend(k, a, b);
     case CB_DIMENSION: return cc_instr_dimension(k, a);
     }

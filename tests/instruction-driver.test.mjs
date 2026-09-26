@@ -221,3 +221,40 @@ test("search: a composition whose face holds contracts by one step, and a failed
     if (rule) assert.ok(rules.has(rule), `${name} uses a ${rule} step`);
   }
 });
+
+test("composition with overlapping faces: each overlap has its equality, and a tube on the face 0 is vacuous", async t => {
+  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const program = new CubicalProgram(await createCubical(), readArchive);
+  t.after(() => program.dispose());
+  await program.check(await readArchive("paths"), "paths");
+  const kernel = program.kernel;
+  // right_unit composes over [j = 0, j = 1, i = 1]: the last face meets both
+  // others. transport_constant's type has a composition on the face 0.
+  for (const [name, rule] of [["paths__right_unit", "systemOverlap"], ["paths__transport_constant", "systemTube"]]) {
+    const { value, type } = kernel.definition(kernel.definitions.get(name));
+    const driver = new InstructionDriver(kernel), counts = new Map();
+    const root = driver.graph.judgement(driver.check(value, type));
+    assert.ok(driver.alpha(root.term, value) && driver.alpha(root.type, type), name);
+    for (const stack = [root.id], seen = new Set(); stack.length;) {
+      const id = stack.pop();
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const judgement = driver.graph.judgement(id);
+      counts.set(judgement.rule, (counts.get(judgement.rule) ?? 0) + 1);
+      stack.push(...judgement.premises);
+    }
+    assert.ok(counts.get(rule) > 0, `${name} uses ${rule}`);
+  }
+  const { value } = kernel.definition(kernel.definitions.get("paths__right_unit"));
+  const driver = new InstructionDriver(kernel), graph = driver.graph;
+  const overlaps = [];
+  for (const stack = [driver.check(value, kernel.definition(kernel.definitions.get("paths__right_unit")).type)], seen = new Set(); stack.length;) {
+    const id = stack.pop();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const judgement = graph.judgement(id);
+    if (judgement.rule === "systemOverlap") overlaps.push(judgement.operands[0]);
+    stack.push(...judgement.premises);
+  }
+  assert.deepEqual(overlaps.sort(), [0, 1]);
+});
