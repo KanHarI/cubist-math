@@ -34,6 +34,8 @@ export class CubicalProgram {
     this.templates = new Map();
     this.templateSelections = new Map();
     this.gaps = []; this.evaluations = []; this.links = []; this.sources = {}; this.completed = 0;
+    // Proof statements of each checked module, with their goals (see steps()).
+    this.moduleSteps = new Map();
     this.failedImports = new Map();
   }
   dispose() { this.kernel.dispose(); }
@@ -100,8 +102,12 @@ export class CubicalProgram {
       checker.define = (local, term, type) => define(`${name}__${local}`, term, type);
       let pending = [];
       let transaction = null;
+      const statements = [];
+      let current = null;
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
+        onStep: step => statements.push({ ...step, declaration: current }),
         onDeclarationStart: declaration => {
+          current = declaration.name.text;
           if (this.manageTransactions) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
           try {
             this.onDeclarationStart?.(name, declaration, checker);
@@ -261,6 +267,7 @@ export class CubicalProgram {
           reason, start: d.errorStart, end: d.errorEnd });
         if (name === main) this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
       }
+      this.moduleSteps.set(name, statements);
       this.modules.set(name, result.env); visiting.delete(name);
       return result.env;
     };
@@ -282,12 +289,41 @@ export class CubicalProgram {
     }
     const all = Object.values(this.symbols), outputs = all.filter(d => !d.sourceModule);
     this.main = main;
-    return this.metadata = { backend: "cubical", mode: "mathematical", source, outputs,
+    // Goals are shown on demand; posting the result to the page reads them.
+    let steps = null;
+    const program = this;
+    return this.metadata = {
+      get steps() { return steps ??= program.steps(main); }, backend: "cubical", mode: "mathematical", source, outputs,
       imports: all.filter(d => d.sourceModule), symbols: [...all, ...Object.values(this.assumptionSymbols())], assumptionLabels: Object.fromEntries(this.checker.assumptionLabels), declarations: outputs, links: this.links,
-      steps: [], declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
+      declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
       evaluations: this.evaluations,
       complete: outputs.length > 0 && outputs.every(d => d.verified || d.template)
         && !this.gaps.some(gap=>gap.directive), sources: this.sources };
+  }
+  // Each proof statement of a module: where it is, the goal it faced, with the
+  // names in scope, and the term it built. The rest of the block's proof
+  // shows as a hole ?, so each statement shows only its own part.
+  steps(module, declaration = null) {
+    const records = (this.moduleSteps.get(module) ?? [])
+      .filter(record => Number.isInteger(record.statement?.start) && (!declaration || record.declaration === declaration));
+    const proofOf = new Map(records.map(record => [record.statement, record.proof]));
+    const hole = { tag: "Var", name: "?" };
+    const without = (term, part, seen = new WeakMap()) => {
+      if (term === part) return hole;
+      if (!term || typeof term !== "object") return term;
+      if (seen.has(term)) return seen.get(term);
+      const copy = Array.isArray(term) ? [] : {};
+      seen.set(term, copy);
+      for (const [key, value] of Object.entries(term)) copy[key] = without(value, part, seen);
+      return copy;
+    };
+    return records.map(record => {
+      const rest = record.next && proofOf.get(record.next);
+      const built = rest ? without(record.proof, rest) : record.proof;
+      return { start: record.statement.start, end: record.statement.end, kind: record.statement.kind,
+        declaration: record.declaration, closes: !record.next,
+        ...this.checker.displayGoal(record.goal.scope.context, record.goal.target, built) };
+    }).sort((a, b) => a.start - b.start);
   }
   // Check one more module on top of the loaded ones, as a REPL entry does,
   // and report only what it added. The program keeps presenting its main

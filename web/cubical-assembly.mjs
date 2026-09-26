@@ -2,7 +2,7 @@
 // replace handles, payloads, or constructor operands in this listing.
 import { cubicalKinds } from "./cubical-kernel.mjs";
 
-const operandNames = {
+export const operandNames = {
   Pi: ["domain", "body"], Lam: ["domain", "body"], Sigma: ["domain", "body"], W: ["domain", "body"],
   App: ["function", "argument"], Pair: ["type", "first", "second"], Fst: ["pair"], Snd: ["pair"], Succ: ["value"],
   NatRec: ["motive", "zero", "step", "value"], Path: ["family", "left", "right"], PLam: ["family", "body"],
@@ -16,7 +16,7 @@ const operandNames = {
   PushPath: ["pushout", "value"], PushElim: ["motive", "left", "right", "bridge"],
   HComp: ["type", "tubes", "base"], Trans: ["family", "face tube", "base"],
 };
-const opcodeName = kind => "CC_" + ({ GlueSystem: "GLUE_SYSTEM", GlueTerm: "GLUE_TERM",
+export const opcodeName = kind => "CC_" + ({ GlueSystem: "GLUE_SYSTEM", GlueTerm: "GLUE_TERM",
   PushLeft: "PUSH_LEFT", PushRight: "PUSH_RIGHT", PushPath: "PUSH_PATH", PushElim: "PUSH_ELIM" }[kind] ?? kind.toUpperCase());
 
 export function kernelAssembly(program, view, checked, { limit = 400, expanded = [], focus = [] } = {}) {
