@@ -110,3 +110,28 @@ test("the workbench's kernel graph lists lt_succ's derivation in THTH style", as
   assert.ok(listing.rows.some(row => row.label === "SigmaIntro" && /^\{n : Nat\} ⊢ \(0 , refl\(succ\(n\)\)\) : Σ/.test(row.statement)));
   assert.deepEqual(listing.entries.map(entry => entry.shown), ["n", "ascription", "d0"]);
 });
+
+test("a definition's body is derived on request, as its lookup's premise", async t => {
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check(source, "first");
+  const view = program.inspect("first__lt_succ");
+  const checked = program.checker.syntax.check(view.expression, view.type, [], new Map());
+  const folded = judgementGraph(program, view, checked);
+  const lookup = folded.rows.find(row => row.definition?.name === "lt");
+  assert.equal(lookup.definition.expanded, false);
+  assert.equal(lookup.definition.root, null);
+  // lt's body uses add; both are derived and spliced in, each before its lookup.
+  const add = program.kernel.definitions.get("naturals__add");
+  const listing = judgementGraph(program, view, checked, { expanded: new Set([lookup.definition.reference, add]) });
+  for (const name of ["lt", "add"]) {
+    const row = listing.rows.find(item => item.definition?.name === name);
+    const body = listing.rows[row.definition.root - 1];
+    assert.ok(body.number < row.number, name);
+    assert.ok(body.usedBy.includes(row.number), name);
+    assert.match(body.statement, /^\{\} ⊢ λ /, name);
+  }
+  for (const row of listing.rows) for (const premise of row.premises) assert.ok(premise < row.number);
+  assert.equal(listing.rows.at(-1).number, listing.root);
+  assert.ok(listing.rows.length > folded.rows.length);
+});

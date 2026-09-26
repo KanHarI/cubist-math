@@ -6,7 +6,10 @@ import { cubicalText } from "./cubical-notation.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { ththNames } from "./cubical-instructions.mjs";
 
-export function judgementGraph(program, view, checked, { limit = 1500 } = {}) {
+// `expanded` holds definition references whose bodies are derived too: THTH
+// derived a DefLookup from the Def judgement that registered the definition,
+// and here the body's derivation becomes the lookup's premise, "defined by".
+export function judgementGraph(program, view, checked, { limit = 1500, expanded = new Set() } = {}) {
   const kernel = program.kernel, checker = program.checker, dimensions = new Map(view.dimensions ?? []);
   const driver = new InstructionDriver(kernel), graph = driver.graph;
   const encode = term => checker.syntax.encode(term, dimensions);
@@ -14,9 +17,19 @@ export function judgementGraph(program, view, checked, { limit = 1500 } = {}) {
   const context = view.context.map(entry => [kernel.symbol(entry.name), encode(entry.type)]);
   const root = driver.check(checked.expression, encode(view.type), context);
 
-  // Every judgement the conclusion rests on, through premises and the
-  // judgements that justify its context entries, in the order derived.
-  const judgements = new Map(), entries = new Map(), stack = [root];
+  // Every judgement the conclusion rests on: through premises, the judgements
+  // that justify its context entries, and the bodies of expanded definitions.
+  const judgements = new Map(), entries = new Map(), definitions = new Map(), stack = [root];
+  const edges = id => {
+    const judgement = judgements.get(id), before = [...judgement.premises];
+    for (const entry of [...judgement.context, judgement.entry].filter(Boolean)) {
+      const source = entries.get(entry)?.source;
+      if (source) before.push(source);
+    }
+    const definition = definitions.get(id);
+    if (definition?.root) before.push(definition.root);
+    return before.filter(premise => judgements.has(premise));
+  };
   while (stack.length && judgements.size < limit) {
     const id = stack.pop();
     if (judgements.has(id)) continue;
@@ -29,11 +42,39 @@ export function judgementGraph(program, view, checked, { limit = 1500 } = {}) {
       entries.set(entry, info);
       if (info.source) stack.push(info.source);
     }
+    if (judgement.rule === "lookup") {
+      const reference = judgement.term, { name, value, type } = kernel.definition(reference);
+      const definition = { reference, name, expanded: expanded.has(reference) };
+      if (definition.expanded) {
+        try { definition.root = driver.check(value, type); stack.push(definition.root); }
+        catch (error) { definition.error = error.message; }
+      }
+      definitions.set(id, definition);
+    }
   }
-  const ids = [...judgements.keys()].sort((a, b) => a - b);
+  // Numbered in derivation order, every premise first: the order the
+  // judgements were derived in, except that a definition's body comes before
+  // its lookups.
+  const ids = [], waiting = new Map(), users = new Map(), ready = [];
+  for (const id of judgements.keys()) {
+    const before = [...new Set(edges(id))];
+    waiting.set(id, before.length);
+    for (const premise of before) users.set(premise, [...users.get(premise) ?? [], id]);
+    if (!before.length) ready.push(id);
+  }
+  while (ready.length) {
+    ready.sort((a, b) => b - a);
+    const id = ready.pop();
+    ids.push(id);
+    for (const user of users.get(id) ?? []) if (waiting.set(user, waiting.get(user) - 1).get(user) === 0) ready.push(user);
+  }
   const number = new Map(ids.map((id, index) => [id, index + 1]));
   const usedBy = new Map(ids.map(id => [id, []]));
-  for (const id of ids) for (const premise of judgements.get(id).premises) usedBy.get(premise)?.push(number.get(id));
+  for (const id of ids) {
+    for (const premise of judgements.get(id).premises) usedBy.get(premise)?.push(number.get(id));
+    const definition = definitions.get(id);
+    if (definition?.root) usedBy.get(definition.root)?.push(number.get(id));
+  }
   for (const info of entries.values()) info.sourceNumber = number.get(info.source);
 
   // Terms in mathematical notation over the judgement's context, written
@@ -64,6 +105,9 @@ export function judgementGraph(program, view, checked, { limit = 1500 } = {}) {
       premises: j.premises.map(premise => number.get(premise)), usedBy: usedBy.get(id),
       entry: j.entry ? entries.get(j.entry) : null, context: j.context.map(entry => entries.get(entry)),
       term: j.term, type: j.type, other: j.other ?? null };
+    const definition = definitions.get(id);
+    if (definition) row.definition = { reference: definition.reference, name: program.symbols?.[definition.name]?.name ?? definition.name,
+      expanded: definition.expanded, root: definition.root ? number.get(definition.root) : null, error: definition.error ?? null };
     if (j.rule === "step" || j.rule === "replace") {
       // The highlighted subterm, on the side of the premise it rewrote.
       const premise = judgements.get(j.premises[0]);
@@ -88,11 +132,16 @@ export function judgementGraph(program, view, checked, { limit = 1500 } = {}) {
   }
   for (const info of entries.values()) info.shown = info.dimension ? info.name : shownNames.get(info.id) ?? info.name;
   for (const row of rows) if (row.entry) row.entry = entries.get(row.entry.id);
+  // A judgement that A is a type justifies the entries x : A made from it.
+  for (const info of entries.values()) if (info.sourceNumber) {
+    const row = rows[info.sourceNumber - 1];
+    (row.justifies ??= []).push(info.shown);
+  }
   return { root: number.get(root), rows, truncated: stack.length > 0,
     entries: [...entries.values()].sort((a, b) => a.id - b.id) };
 }
 
-export function renderJudgementGraph(container, listing, { jumpNode } = {}) {
+export function renderJudgementGraph(container, listing, { jumpNode, expand } = {}) {
   const make = (tag, className, text) => {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -128,12 +177,26 @@ export function renderJudgementGraph(container, listing, { jumpNode } = {}) {
     head.append(links("from", row.premises));
     if (row.entry) head.append(make("span", "graph-entry", `${row.rule === "variable" ? "uses" : "binds"} ${row.entry.shown}`));
     item.append(head, make("div", "graph-statement", row.statement));
+    if (row.definition) {
+      const definition = make("div", "graph-definition");
+      if (row.definition.root) definition.append(links(`${row.definition.name} is defined by`, [row.definition.root]));
+      else if (row.definition.error)
+        definition.append(`The body of ${row.definition.name} is not in instruction mode yet: ${row.definition.error}`);
+      else if (expand) {
+        const button = make("button", "graph-expand", `Derive the body of ${row.definition.name}`);
+        button.type = "button";
+        button.onclick = () => expand(row.definition.reference);
+        definition.append(button);
+      }
+      if (definition.childNodes.length) item.append(definition);
+    }
     if (row.highlight) {
       const where = row.highlight.position.length ? `[${row.highlight.position.join(", ")}]` : "the root";
       item.append(make("div", "graph-highlight", `${row.highlight.rule} on the ${row.highlight.side} at ${where}: ${row.highlight.text}`));
     }
     const foot = make("div", "graph-foot");
     foot.append(links("used by", row.usedBy));
+    if (row.justifies) foot.append(make("span", "graph-links", `justifies the entr${row.justifies.length === 1 ? "y" : "ies"} ${row.justifies.join(", ")}`));
     if (jumpNode) {
       for (const [label, handle] of [["term", row.term], ["other", row.other], ["type", row.type]]) {
         if (!handle) continue;

@@ -30,6 +30,8 @@
 .graph-rule { font-weight: 600; }
 .graph-statement { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem; margin: .25rem 0; overflow-wrap: anywhere; }
 .graph-highlight { font-size: .8rem; color: #7a4a00; overflow-wrap: anywhere; }
+.graph-definition { font-size: .8rem; margin: .15rem 0; }
+.graph-expand { font-size: .75rem; }
 .graph-link, .graph-node { border: 0; padding: 0 .15rem; background: transparent; font: inherit; text-decoration: underline; cursor: pointer; }
 .graph-node { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .graph-entries h3 { font-size: 1rem; margin: 1rem 0 .4rem; }

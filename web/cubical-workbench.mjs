@@ -105,21 +105,28 @@ function displayAssembly() {
   $("assembly-more").hidden = !listing.pending;
   $("assembly-download").disabled = false;
 }
-// The judgement graph of the checked view, derived in instruction mode.
-function displayGraph() {
+// The judgement graph of the checked view, derived in instruction mode. A
+// definition's body is derived on request, as its lookup's premise.
+let graphView = null, graphExpanded = new Set();
+function displayGraph(focus = null) {
   $("graph-listing").replaceChildren();
   if (!checked) {
     $("graph-status").textContent = "Return to Mathematical view and check the edited expression before deriving its judgement graph.";
     return;
   }
+  if (graphView !== view) { graphView = view; graphExpanded = new Set(); }
   try {
-    const graph = judgementGraph(program, view, checked);
-    renderJudgementGraph($("graph-listing"), graph, { jumpNode: handle => {
-      $("workbench-view").value = "assembly"; display(false); jumpAssembly(handle);
-    } });
+    const graph = judgementGraph(program, view, checked, { expanded: graphExpanded });
+    const rendered = renderJudgementGraph($("graph-listing"), graph, {
+      jumpNode: handle => { $("workbench-view").value = "assembly"; display(false); jumpAssembly(handle); },
+      expand: reference => { graphExpanded.add(reference); displayGraph(reference); },
+    });
+    const defined = focus && graph.rows.find(row => row.definition?.reference === focus)?.definition.root;
+    if (defined) rendered.jump(defined);
     const steps = graph.rows.filter(row => row.rule === "step").length;
-    $("graph-status").textContent = `${graph.rows.length.toLocaleString()} judgements, ${steps.toLocaleString()} of them highlighted steps; `
-      + `the last, #${graph.root}, is the conclusion.` + (graph.truncated ? " Only part of the graph is shown." : "");
+    const plural = (count, word) => `${count.toLocaleString()} ${word}${count === 1 ? "" : "s"}`;
+    $("graph-status").textContent = `${plural(graph.rows.length, "judgement")}, ${plural(steps, "highlighted step")}; `
+      + `#${graph.root} is the conclusion.` + (graph.truncated ? " Only part of the graph is shown." : "");
   } catch (error) {
     $("graph-status").textContent = `The instruction kernel could not derive this view: ${error.message}`;
   }

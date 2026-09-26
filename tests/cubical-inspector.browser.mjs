@@ -118,10 +118,19 @@ try {
   // The kernel graph derives the view again in instruction mode, and its
   // node links lead back into the assembly's syntax graph.
   await assemblyBench.locator("#workbench-view").selectOption("graph");
-  assert.match(await assemblyBench.locator("#graph-status").textContent(), /^\d+ judgements, \d+ of them highlighted steps; the last, #\d+, is the conclusion\.$/);
+  assert.match(await assemblyBench.locator("#graph-status").textContent(), /^\d+ judgements?, \d+ highlighted steps?; #\d+ is the conclusion\.$/);
   // hd is a local definition over n : Nat, derived with its context entry.
   assert.match(await assemblyBench.locator(".graph-row.graph-root .graph-statement").textContent(),
     /^\{n : Nat\} ⊢ snd\(snd\(prime_divisor_exists\(.*\)\)\) : Divides\(/);
+  // A lookup's definition is derived on request, as the lookup's premise, or
+  // says which rule it still needs.
+  const rows = await assemblyBench.locator(".graph-row").count();
+  const expand = assemblyBench.locator(".graph-expand").first();
+  const name = (await expand.textContent()).replace("Derive the body of ", "");
+  await expand.click();
+  const outcome = assemblyBench.locator(".graph-definition", { hasText: new RegExp(`^(${name} is defined by #\\d+|The body of ${name} is not in instruction mode yet)`) });
+  assert.equal(await outcome.count(), 1);
+  assert.ok(await assemblyBench.locator(".graph-row").count() >= rows);
   await assemblyBench.locator(".graph-row.graph-root .graph-node").first().click();
   assert.equal(await assemblyBench.locator("#workbench-view").inputValue(), "assembly");
   assert.equal(await assemblyBench.locator(".assembly-table tr.selected").count(), 1);
