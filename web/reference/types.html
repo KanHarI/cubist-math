@@ -174,12 +174,12 @@ def the_number : (Unit or Unit) or Nat {
           </section>
           <section id="tour-functions">
             <h2>Functions: <code>-></code></h2>
-            <p><code>A -> B</code> is the type of functions from <code>A</code> to <code>B</code>. <code>fun (n : Nat) => n + n</code> is the function that doubles a number, of type <code>Nat -> Nat</code>. A declaration with parameters defines a function in one step, and <code>f(x)</code> applies it:</p>
+            <p><code>A -> B</code> is the type of functions from <code>A</code> to <code>B</code>. <code>fun (n : Nat) => n + n</code> is the function that doubles a number, of type <code>Nat -> Nat</code>. A declaration can state its type before <code>:=</code>, as <code>double_again</code> does. A declaration with parameters defines a function in one step, and <code>f(x)</code> applies it:</p>
             <pre><code data-check="accept">import naturals;
 
 def double(n : Nat) := n + n;
 
-def double_again := fun (n : Nat) =&gt; n + n;
+def double_again : Nat -&gt; Nat := fun (n : Nat) =&gt; n + n;
 
 evaluate double(4) expecting 8;
 evaluate double_again(4) expecting 8;</code></pre>
@@ -280,7 +280,7 @@ def wrong_sum : 2 + 2 = 5 {
           </section>
           <section id="tour-dependent">
             <h2>Dependent types: <code>forall</code> and <code>exists</code></h2>
-            <p>A function’s result type can depend on its argument. <code>forall x : A. B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not. The dot ends the type of <code>x</code>, and the body follows it. Several names can share the type, as parameters do: <code>forall x, y : A. B</code>.</p>
+            <p>A function’s result type can depend on its argument. <code>forall x : A. B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not; the chapter on equality proves <a href="paths.html#exists-and"><code>(forall x : A. B) =[U0] (A -> B)</code></a>. The dot ends the type of <code>x</code>, and the body follows it. Several names can share the type, as parameters do: <code>forall x, y : A. B</code>.</p>
             <pre><code data-check="accept">// `and` binds tighter than `-&gt;`, so `A -&gt; A and A` means `A -&gt; (A and A)`.
 def duplicate : forall A : U0. A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, a);
@@ -307,7 +307,7 @@ def AlsoTwice : U1 {
   exact forall A : U0. A and A;
 }</code></pre>
             <p><code>Twice</code> is a function from types to types: <code>Twice(Nat)</code> is <code>Nat and Nat</code>. <code>AlsoTwice</code> is one type: the type of functions that give a pair of values in every type. It quantifies over all of <code>U0</code>, so it lives in the next universe, <code>U1</code>. It has no values, because <code>Void</code> has no pair of values.</p>
-            <p><code>exists x : A. B</code> is the type of pairs whose second component’s type depends on the first: a value <code>x : A</code>, together with a value of <code>B</code> for that <code>x</code>.</p>
+            <p><code>exists x : A. B</code> is the type of pairs whose second component’s type depends on the first: a value <code>x : A</code>, together with a value of <code>B</code> for that <code>x</code>. When <code>B</code> does not mention <code>x</code>, nothing depends on the first component, and <code>exists x : A. B</code> is the same type as <code>A and B</code>, just as <code>A -> B</code> is <code>forall x : A. B</code> without the dependency. The chapter on equality proves it: <a href="paths.html#exists-and"><code>(exists a : A. B) =[U0] (A and B)</code></a>.</p>
             <pre><code data-check="accept">def pointed : exists A : U0. A {
   exact (Nat, 3);
 }

@@ -360,6 +360,9 @@ export class CubicalProgram {
     }]));
   }
   inspect(binding, { normalize = false, universes, offset, expansion } = {}) {
+    // An inspection elaborates outside any declaration's transaction: its
+    // instructions start from a driver of their own.
+    this.kernel.instructionDriver = null;
     if (this.templateSelections.has(binding)) {
       const selection = this.templateSelections.get(binding);
       return this.inspect(selection.binding, { normalize, universes, offset: selection.offset,
@@ -458,7 +461,7 @@ export class CubicalProgram {
     }
     const assumptions = this.checker.requiredAssumptions(term, expected, context.map(([, type]) => type));
     context = [...assumptions, ...context];
-    const checked = this.kernel.withUnfoldingHints(unfoldingHints, () => this.checker.syntax.check(term, expected, context, dimensions));
+    const checked = this.checker.checkView(term, expected, context, dimensions);
     if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalize(checked.expression), dimensions);
     const bindings = this.declarationBindings.get(binding) ?? [];
     const aliases = (local?.aliases ?? []).map(alias => ({ ...alias, binding: `${local.referencePrefix ?? local.module}__local_${alias.start}` }));

@@ -100,7 +100,10 @@ test("constant path reversal avoids exponential native interval expansion",async
   const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");},
     {collectReferences:false});
   t.after(()=>program.dispose());
-  program.kernel.setDeadline(budget(500));
+  // The deadline covers the have's instruction derivation too: 32 nested
+  // path lambdas, each compared with its annotation. An exponential
+  // expansion would exceed any budget.
+  program.kernel.setDeadline(budget(1000));
   const result=await program.check(source,"constant_path_reverse");
   assert.equal(result.outputs[0].verified,true,result.outputs[0].reason);
   const neutral=source.replace("def native_interval_budget :",

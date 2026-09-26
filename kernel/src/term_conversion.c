@@ -82,25 +82,25 @@ static bool clause_included(cc_clause a, cc_clause b, const alpha_binding *dims)
     return true;
 }
 
+static unsigned literals(cc_clause clause) {
+    return (unsigned)__builtin_popcountll(clause.positive) + (unsigned)__builtin_popcountll(clause.negative);
+}
+
 static bool formula_equal(cc_kernel *k, uint32_t a, uint32_t b, const alpha_binding *dims) {
+    /* The same formula, with no dimension binder renamed on the way. */
+    if (a == b && !dims)
+        return cc_kernel_get_formula(k, a) != NULL;
     const cc_formula *left = cc_kernel_get_formula(k, a);
     const cc_formula *right = cc_kernel_get_formula(k, b);
     if (!left || !right || left->sort != right->sort || left->length != right->length)
         return false;
     for (size_t i = 0; i < left->length; ++i) {
         bool found = false;
+        unsigned l = literals(left->clauses[i]);
         /* A binder renaming is bijective. Forward inclusion plus equal
          * literal counts therefore establishes equality of the clauses. */
         for (size_t j = 0; j < right->length; ++j) {
-            unsigned l = 0, r = 0;
-            for (unsigned d = 0; d < CC_DIMENSIONS; ++d) {
-                uint64_t bit = UINT64_C(1) << d;
-                l += (left->clauses[i].positive & bit) != 0;
-                l += (left->clauses[i].negative & bit) != 0;
-                r += (right->clauses[j].positive & bit) != 0;
-                r += (right->clauses[j].negative & bit) != 0;
-            }
-            if (l == r && clause_included(left->clauses[i], right->clauses[j], dims)) {
+            if (l == literals(right->clauses[j]) && clause_included(left->clauses[i], right->clauses[j], dims)) {
                 found = true;
                 break;
             }
@@ -441,6 +441,65 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
     }
     --k->recursion;
     return !k->error[0] && equal;
+}
+
+cc_term cc_kernel_endpoint_term(cc_kernel *k, cc_term term, uint32_t dimension, unsigned endpoint) {
+    if (!k || k->error[0] || !term || term >= k->count)
+        return 0;
+    if (dimension >= CC_DIMENSIONS || endpoint > 1)
+        return ck_fail(k, "An endpoint substitution needs a dimension and 0 or 1."), 0;
+    k->budget = k->operation_budget;
+    k->recursion = 0;
+    return ck_endpoint_term(k, term, dimension, endpoint);
+}
+
+cc_term cc_kernel_rename(cc_kernel *k, cc_term term, bool dimension, uint32_t from, uint32_t to) {
+    if (!k || k->error[0] || !term || term >= k->count)
+        return 0;
+    k->budget = k->operation_budget;
+    k->recursion = 0;
+    if (!dimension)
+        return ck_substitute(k, term, from, ck_var(k, to));
+    if (from >= CC_DIMENSIONS || to >= CC_DIMENSIONS)
+        return ck_fail(k, "Dimension outside the native range."), 0;
+    cc_formula point;
+    cc_init(&point, CC_INTERVAL);
+    cc_term renamed = cc_generator(&point, to, true) == CC_OK ? ck_dimension_substitute(k, term, from, &point) : 0;
+    cc_clear(&point);
+    return renamed;
+}
+
+bool cc_kernel_convertible(cc_kernel *k, cc_term a, cc_term b, uint64_t steps) {
+    if (!k || k->error[0] || !a || !b || a >= k->count || b >= k->count)
+        return false;
+    k->budget = steps && steps < k->operation_budget ? steps : k->operation_budget;
+    k->recursion = 0;
+    return ck_convertible(k, a, b);
+}
+
+/* Syntactic equality up to bound names and interval algebra: nothing is
+ * reduced or unfolded. The instruction kernel uses only this. */
+bool ck_alpha_equal(cc_kernel *k, cc_term a, cc_term b) {
+    return alpha(k, a, b, NULL, NULL, FOLDED);
+}
+
+/* Cumulativity without conversion: universes by level, and Π or Σ with
+ * identical domains and cumulative codomains. */
+bool ck_syntactic_cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
+    if (ck_alpha_equal(k, actual, expected))
+        return true;
+    if (k->error[0] || !actual || !expected)
+        return false;
+    cc_node left = k->nodes[actual], right = k->nodes[expected];
+    if (left.kind == CC_U && right.kind == CC_U)
+        return left.payload <= right.payload;
+    if ((left.kind == CC_PI || left.kind == CC_SIGMA) && left.kind == right.kind &&
+        ck_alpha_equal(k, left.child[0], right.child[0])) {
+        cc_term variable = ck_var(k, ck_fresh_symbol(k));
+        return ck_syntactic_cumulative(k, ck_substitute(k, left.child[1], left.payload, variable),
+                                       ck_substitute(k, right.child[1], right.payload, variable));
+    }
+    return false;
 }
 
 bool ck_convertible(cc_kernel *k, cc_term a, cc_term b) {

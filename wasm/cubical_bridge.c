@@ -16,6 +16,8 @@ typedef struct {
     bool formula_open;
     const char *error;
     cc_checked_result checked;
+    uint8_t position[1024]; /* the highlighted position of the next step or replacement */
+    size_t depth;
 } browser_session;
 
 static browser_session sessions[8];
@@ -293,6 +295,15 @@ uint32_t cb_normalize(uint32_t token, uint32_t term) {
     return cc_kernel_normalize(s->kernel, term);
 }
 
+/* A term the page derived by instructions, and so knows to be well typed:
+ * the page keeps that list; the kernel only computes. */
+uint32_t cb_normalize_derived(uint32_t token, uint32_t term) {
+    browser_session *s = lookup(token);
+    if (!s || !term) return 0;
+    cc_kernel_clear_error(s->kernel);
+    return cc_kernel_normalize(s->kernel, term);
+}
+
 uint32_t cb_node(uint32_t token, uint32_t term, unsigned field) {
     browser_session *s = lookup(token);
     cc_term_kind kind;
@@ -312,4 +323,190 @@ uint32_t cb_formula_view(uint32_t token, uint32_t id, unsigned clause, unsigned 
     if (clause >= f->length) return 0;
     uint64_t bits = field < 4 ? f->clauses[clause].positive : f->clauses[clause].negative;
     return (field == 3 || field == 5) ? (uint32_t)(bits >> 32) : (uint32_t)bits;
+}
+
+/* Instructions (kernel/include/cubical_kernel.h). cb_instr applies one by
+ * its cc_instruction code, or extends the context (CB_EXTEND: a = type
+ * judgement, b = symbol; CB_DIMENSION: a = index). A step or replacement
+ * reads the position pushed since the last cb_position_clear. An
+ * instruction's error stays recorded until cb_clear_error. */
+enum { CB_EXTEND = 100, CB_DIMENSION = 101 };
+
+void cb_position_clear(uint32_t token) {
+    browser_session *s = lookup(token);
+    if (s) s->depth = 0;
+}
+
+int cb_position_push(uint32_t token, uint32_t child) {
+    browser_session *s = lookup(token);
+    if (!s || child > 3 || s->depth >= sizeof s->position) return 0;
+    s->position[s->depth++] = (uint8_t)child;
+    return 1;
+}
+
+void cb_clear_error(uint32_t token) {
+    browser_session *s = lookup(token);
+    if (!s) return;
+    s->error = NULL;
+    cc_kernel_clear_error(s->kernel);
+}
+
+uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    cc_kernel *k = s->kernel;
+    switch (op) {
+    case CC_INSTR_UNIVERSE: return cc_instr_universe(k, a);
+    case CC_INSTR_NAT: return cc_instr_nat(k);
+    case CC_INSTR_ZERO: return cc_instr_zero(k);
+    case CC_INSTR_SUCC: return cc_instr_succ(k, a);
+    case CC_INSTR_NAT_ELIM: return cc_instr_nat_elim(k, a, b, c, d);
+    case CC_INSTR_UNIT: return cc_instr_unit(k);
+    case CC_INSTR_POINT: return cc_instr_point(k);
+    case CC_INSTR_UNIT_ELIM: return cc_instr_unit_elim(k, a, b, c);
+    case CC_INSTR_VOID: return cc_instr_void(k);
+    case CC_INSTR_ABORT: return cc_instr_abort(k, a, b);
+    case CC_INSTR_SUM: return cc_instr_sum(k, a, b);
+    case CC_INSTR_INJECT: return cc_instr_inject(k, a, b, c != 0);
+    case CC_INSTR_SUM_ELIM: return cc_instr_sum_elim(k, a, b, c, d);
+    case CC_INSTR_VARIABLE: return cc_instr_variable(k, a);
+    case CC_INSTR_PI: return cc_instr_pi(k, a, b);
+    case CC_INSTR_LAMBDA: return cc_instr_lambda(k, a, b);
+    case CC_INSTR_APPLY: return cc_instr_apply(k, a, b);
+    case CC_INSTR_SIGMA: return cc_instr_sigma(k, a, b);
+    case CC_INSTR_PAIR: return cc_instr_pair(k, a, b, c);
+    case CC_INSTR_FIRST: return cc_instr_first(k, a);
+    case CC_INSTR_SECOND: return cc_instr_second(k, a);
+    case CC_INSTR_DOMAIN: return cc_instr_domain(k, a);
+    case CC_INSTR_FAMILY: return cc_instr_family(k, a, b);
+    case CC_INSTR_PATH: return cc_instr_path(k, a, b, c, d);
+    case CC_INSTR_PATH_LAMBDA: return cc_instr_path_lambda(k, a, b);
+    case CC_INSTR_PATH_APPLY: return cc_instr_path_apply(k, a, b, c);
+    case CC_INSTR_DEFINE: return cc_instr_define(k, a, b);
+    case CC_INSTR_LOOKUP: return cc_instr_lookup(k, a);
+    case CC_INSTR_REFL: return cc_instr_refl(k, a);
+    case CC_INSTR_STEP: return cc_instr_step(k, a, b, s->position, s->depth, (cc_step_rule)c);
+    case CC_INSTR_REPLACE: return cc_instr_replace(k, a, b, s->position, s->depth, c);
+    case CC_INSTR_ETA: return cc_instr_eta(k, a);
+    case CC_INSTR_SIDE: return cc_instr_side(k, a, b);
+    case CC_INSTR_SYMMETRY: return cc_instr_symmetry(k, a);
+    case CC_INSTR_TRANSITIVITY: return cc_instr_transitivity(k, a, b);
+    case CC_INSTR_CONVERT: return cc_instr_convert(k, a, b);
+    case CC_INSTR_LIFT: return cc_instr_lift(k, a, b);
+    case CC_INSTR_ENDPOINT: return cc_instr_endpoint(k, a, b, c);
+    case CC_INSTR_PATH_AT: return cc_instr_path_at(k, a, b);
+    case CC_INSTR_SYSTEM: return cc_instr_system(k, a, b, c);
+    case CC_INSTR_SYSTEM_TUBE: return cc_instr_system_tube(k, a, b, c, d);
+    case CC_INSTR_COMP: return cc_instr_comp(k, a);
+    case CC_INSTR_SYSTEM_OVERLAP: return cc_instr_system_overlap(k, a, b, c);
+    case CC_INSTR_PUSHOUT: return cc_instr_pushout(k, a, b, c, d);
+    case CC_INSTR_PUSH_POINT: return cc_instr_push_point(k, a, b, c != 0);
+    case CC_INSTR_PUSH_PATH: return cc_instr_push_path(k, a, b, c);
+    case CC_INSTR_PUSH_ELIM: return cc_instr_push_elim(k, a, b, c, d);
+    case CC_INSTR_W: return cc_instr_w(k, a, b);
+    case CC_INSTR_SUP: return cc_instr_sup(k, a, b, c);
+    case CC_INSTR_W_ELIM: return cc_instr_w_elim(k, a, b, c);
+    case CC_INSTR_HCOMP: return cc_instr_hcomp(k, a);
+    case CC_INSTR_TRANS: return cc_instr_trans(k, a, b);
+    case CC_INSTR_GLUE_BASE: return cc_instr_glue_base(k, a);
+    case CC_INSTR_GLUE_PIECE: return cc_instr_glue_piece(k, a, b, c, d);
+    case CC_INSTR_GLUE_OVERLAP: return cc_instr_glue_overlap(k, a, b, c, d);
+    case CC_INSTR_GLUE: return cc_instr_glue(k, a);
+    case CC_INSTR_GLUE_TERM_BASE: return cc_instr_glue_term_base(k, a, b);
+    case CC_INSTR_GLUE_TERM_PIECE: return cc_instr_glue_term_piece(k, a, b, c);
+    case CC_INSTR_GLUE_TERM: return cc_instr_glue_term(k, a);
+    case CC_INSTR_UNGLUE: return cc_instr_unglue(k, a);
+    case CB_EXTEND: return cc_instr_extend(k, a, b);
+    case CB_DIMENSION: return cc_instr_dimension(k, a);
+    }
+    s->error = "Unknown instruction.";
+    return 0;
+}
+
+/* 1 when the term checker's conversion finds the terms equal, 0 when not,
+ * 2 when it could not tell (its error is cleared): a search aid only. */
+unsigned cb_convertible(uint32_t token, uint32_t a, uint32_t b, uint32_t steps) {
+    browser_session *s = lookup(token);
+    if (!s) return 2;
+    bool equal = cc_kernel_convertible(s->kernel, a, b, steps);
+    if (cc_kernel_error_kind(s->kernel) != CC_ERROR_NONE) { cc_kernel_clear_error(s->kernel); return 2; }
+    return equal ? 1 : 0;
+}
+
+/* The syntax services below return 0 on failure and leave the kernel's
+ * error, such as an expired deadline, for the caller to read and clear. */
+/* Syntax only: a term with an endpoint substituted for a dimension. */
+uint32_t cb_endpoint_term(uint32_t token, uint32_t term, uint32_t dimension, unsigned endpoint) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    return cc_kernel_endpoint_term(s->kernel, term, dimension, endpoint);
+}
+
+/* The arena's size: field 0 its nodes, field 1 its bytes. */
+uint32_t cb_arena(uint32_t token, unsigned field) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    size_t nodes = 0, bytes = 0;
+    cc_kernel_arena(s->kernel, &nodes, &bytes);
+    return (uint32_t)(field ? bytes : nodes);
+}
+
+/* A symbol id shared by no name the kernel or the page has given out. */
+uint32_t cb_fresh_symbol(uint32_t token) {
+    browser_session *s = lookup(token);
+    return s ? cc_kernel_fresh_symbol(s->kernel) : 0;
+}
+
+uint32_t cb_rename(uint32_t token, uint32_t term, unsigned dimension, uint32_t from, uint32_t to) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    return cc_kernel_rename(s->kernel, term, dimension != 0, from, to);
+}
+
+/* Syntax only: Equiv(a, b) as the Glue rules state it. */
+uint32_t cb_equiv_type(uint32_t token, uint32_t a, uint32_t b) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    return cc_kernel_equiv_type(s->kernel, a, b);
+}
+
+uint32_t cb_judgement_count(uint32_t token) {
+    browser_session *s = lookup(token);
+    size_t count = s ? cc_kernel_judgement_count(s->kernel) : 0;
+    return count > UINT32_MAX ? UINT32_MAX : (uint32_t)count;
+}
+
+/* Fields: 0 kind, 1 term, 2 other, 3 type, 4 rule, 5-8 premises, 9 entry,
+ * 10-11 operands, 12 depth, and 13 + i the position's i-th child index. */
+uint32_t cb_judgement(uint32_t token, uint32_t id, uint32_t field) {
+    browser_session *s = lookup(token);
+    cc_judgement_info j;
+    if (!s || !cc_kernel_judgement(s->kernel, id, &j)) return 0;
+    if (field >= 13) return field - 13 < j.depth ? j.position[field - 13] : 0;
+    const uint32_t fields[] = {j.kind, j.term, j.other, j.type, (uint32_t)j.rule, j.premise[0], j.premise[1],
+                               j.premise[2], j.premise[3], j.entry, j.operand[0], j.operand[1], (uint32_t)j.depth};
+    return fields[field];
+}
+
+uint32_t cb_judgement_context(uint32_t token, uint32_t id, uint32_t index) {
+    browser_session *s = lookup(token);
+    return s ? cc_kernel_judgement_context(s->kernel, id, index) : 0;
+}
+
+uint32_t cb_entry_count(uint32_t token) {
+    browser_session *s = lookup(token);
+    size_t count = s ? cc_kernel_entry_count(s->kernel) : 0;
+    return count > UINT32_MAX ? UINT32_MAX : (uint32_t)count;
+}
+
+/* Fields: 0 symbol (a dimension's index), 1 type, 2 dimension, 3 source. */
+uint32_t cb_entry(uint32_t token, uint32_t id, unsigned field) {
+    browser_session *s = lookup(token);
+    uint32_t symbol;
+    cc_term type;
+    bool dimension;
+    cc_judgement_id source;
+    if (!s || field > 3 || !cc_kernel_entry(s->kernel, id, &symbol, &type, &dimension, &source)) return 0;
+    const uint32_t fields[] = {symbol, type, dimension, source};
+    return fields[field];
 }

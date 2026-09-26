@@ -100,6 +100,18 @@ bool ck_infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dims,
     return success && !k->error[0];
 }
 
+void cc_kernel_arena(const cc_kernel *k, size_t *nodes, size_t *bytes) {
+    *nodes = k ? k->count - 1 : 0;
+    *bytes = !k ? 0 : k->capacity * (sizeof(cc_node) + sizeof(cc_term)) +
+                      k->definition_capacity * sizeof(cc_definition) +
+                      (k->syntax_memo ? CC_SYNTAX_MEMO_SIZE * sizeof(cc_syntax_memo) : 0) +
+                      (k->alpha_memo ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_memo) : 0) +
+                      (k->alpha_scopes ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_scope) : 0) +
+                      (k->interned ? k->intern_capacity * sizeof(cc_term) : 0) +
+                      (k->contexts ? CC_CHECK_MEMO_SIZE * sizeof(cc_context_memo) : 0) +
+                      (k->inferred ? CC_CHECK_MEMO_SIZE * sizeof(cc_infer_memo) : 0);
+}
+
 bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
                               const cc_assumption *assumptions, size_t count,
                               uint64_t dimensions, cc_checked_result *result) {
@@ -125,7 +137,7 @@ bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
         if (!success)
             break;
         uint32_t level;
-        cc_term type;
+        cc_term type = 0;
         success = ck_type(k, assumptions[i].type, ctx, dimensions, &type, &level);
         if (!success)
             break;
@@ -152,15 +164,7 @@ bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
         result->expression = checked.expression;
         result->type = checked.type;
         result->normal = 0; /* Normalization is an explicit inspector operation. */
-        result->arena_nodes = k->count - 1;
-        result->arena_bytes = k->capacity * (sizeof(cc_node) + sizeof(cc_term)) +
-                              k->definition_capacity * sizeof(cc_definition) +
-                              (k->syntax_memo ? CC_SYNTAX_MEMO_SIZE * sizeof(cc_syntax_memo) : 0) +
-                              (k->alpha_memo ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_memo) : 0) +
-                              (k->alpha_scopes ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_scope) : 0) +
-                              (k->interned ? CC_INTERN_SIZE * sizeof(cc_term) : 0) +
-                              (k->contexts ? CC_CHECK_MEMO_SIZE * sizeof(cc_context_memo) : 0) +
-                              (k->inferred ? CC_CHECK_MEMO_SIZE * sizeof(cc_infer_memo) : 0);
+        cc_kernel_arena(k, &result->arena_nodes, &result->arena_bytes);
         result->checking_steps = k->checking_steps;
         result->reduction_steps = k->reduction_steps;
         success = !k->error[0];

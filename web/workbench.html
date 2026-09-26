@@ -18,7 +18,7 @@
         <button id="back" disabled>← Back</button>
         <button id="unhighlight">Un-highlight</button>
         <label for="workbench-view">View</label>
-        <select id="workbench-view"><option value="math">Mathematical</option><option value="assembly">Kernel assembly</option></select>
+        <select id="workbench-view"><option value="math">Mathematical</option><option value="assembly">Kernel AST</option><option value="graph">Kernel graph</option></select>
         <button id="check" data-math-option disabled>Check edited expression</button>
         <label data-math-option><input id="fold-names" type="checkbox" checked /> Fold source names</label>
         <label data-math-option><input id="truncation-sugar" type="checkbox" checked /> Truncation ‖A‖</label>
@@ -59,14 +59,20 @@
           <textarea id="syntax" spellcheck="false" aria-label="Native cubical expression"></textarea>
         </details>
         </div>
-        <section id="assembly-view" hidden aria-label="Native kernel assembly">
-          <p class="hint">Native C constructor opcodes, payloads, and operands. %n are term handles local to this replay session; each shared node is listed once. Zero marks an unused operand or the end of a list.</p>
+        <section id="assembly-view" hidden aria-label="Kernel abstract syntax tree">
+          <p class="hint">The checked term as the kernel stores it: an abstract syntax tree of native nodes, typeset above. Each row is one node: its C constructor opcode, payload, and operands. %n are term handles local to this replay session; identical syntax is one node, listed once, so the tree is shared as a graph. Zero marks an unused operand or the end of a list.</p>
+          <div id="assembly-math" class="assembly-math"></div>
           <p id="assembly-status" role="status"></p>
           <div id="assembly-listing"></div>
           <div class="toolbar">
             <button id="assembly-more" hidden>Show more nodes</button>
-            <button id="assembly-download" disabled>Download shown assembly</button>
+            <button id="assembly-download" disabled>Download shown AST</button>
           </div>
+        </section>
+        <section id="graph-view" hidden aria-label="Kernel judgement graph">
+          <p class="hint">The inspected term derived again by the instruction kernel, one THTH-style rule per judgement. Each judgement lists the judgements it was derived from and those that use it; a step names the subterm it contracts. The graph shares repeated derivations, and <em>term</em> and <em>type</em> open a node of the syntax graph in the Kernel AST.</p>
+          <p id="graph-status" role="status"></p>
+          <div id="graph-listing"></div>
         </section>
       </section>
     </main>

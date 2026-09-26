@@ -81,6 +81,10 @@ try {
   const workbench = await popup;
   workbench.on("pageerror", error => errors.push(error.message));
   await workbench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  // It opens on the kernel graph, the instruction kernel's derivation.
+  assert.equal(await workbench.locator("#workbench-view").inputValue(), "graph");
+  await workbench.locator("#graph-listing .graph-row").first().waitFor();
+  await workbench.locator("#workbench-view").selectOption("math");
   assert.equal(await workbench.locator("#expression").textContent(), "Divides(succ(succ(i)),m)");
   assert.match(await workbench.locator("#context").textContent(), /n :Nat/);
   await workbench.locator("#fold-names").uncheck();
@@ -115,9 +119,28 @@ try {
   const operand = assemblyBench.locator(".assembly-table .assembly-reference").first();
   const handle = await operand.getAttribute("data-handle"); await operand.click();
   assert.equal(await assemblyBench.locator(".assembly-table tr.selected").getAttribute("id"), `assembly-node-${handle}`);
+  // The kernel graph derives the view again in instruction mode, and its
+  // node links lead back into the assembly's syntax graph.
+  await assemblyBench.locator("#workbench-view").selectOption("graph");
+  assert.match(await assemblyBench.locator("#graph-status").textContent(), /^\d+ judgements?, \d+ highlighted steps?; #\d+ is the conclusion\.$/);
+  // hd is a local definition over n : Nat, derived with its context entry.
+  assert.match(await assemblyBench.locator(".graph-row.graph-root .graph-statement").textContent(),
+    /^\{n : Nat\} ⊢ snd\(snd\(prime_divisor_exists\(.*\)\)\) : Divides\(/);
+  // A lookup's definition is derived on request, as the lookup's premise, or
+  // says which rule it still needs.
+  const rows = await assemblyBench.locator(".graph-row").count();
+  const expand = assemblyBench.locator(".graph-expand").first();
+  const name = (await expand.textContent()).replace("Derive the body of ", "");
+  await expand.click();
+  const outcome = assemblyBench.locator(".graph-definition", { hasText: new RegExp(`^(${name} is defined by #\\d+|The body of ${name} is not in instruction mode yet)`) });
+  assert.equal(await outcome.count(), 1);
+  assert.ok(await assemblyBench.locator(".graph-row").count() >= rows);
+  await assemblyBench.locator(".graph-row.graph-root .graph-node").first().click();
+  assert.equal(await assemblyBench.locator("#workbench-view").inputValue(), "assembly");
+  assert.equal(await assemblyBench.locator(".assembly-table tr.selected").count(), 1);
   const downloaded = assemblyBench.waitForEvent("download");
   await assemblyBench.locator("#assembly-download").click();
-  assert.match((await downloaded).suggestedFilename(), /\.assembly\.txt$/);
+  assert.match((await downloaded).suggestedFilename(), /\.ast\.txt$/);
   await assemblyBench.locator("#workbench-view").selectOption("math");
   assert.equal(await assemblyBench.locator("#mathematical-view").isVisible(), true);
   assert.equal(await assemblyBench.locator("#type").textContent(), "Divides(succ(succ(i)),m)");
@@ -168,6 +191,7 @@ try {
   const reductionBench = await reductionPopup;
   reductionBench.on("pageerror", error => errors.push(error.message));
   await reductionBench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  await reductionBench.locator("#workbench-view").selectOption("math");
   const chooseReduction = async (side, kind, path = []) => {
     const before = await reductionBench.locator("#syntax").inputValue();
     await reductionBench.locator(`#${kind}-${side}`).click();

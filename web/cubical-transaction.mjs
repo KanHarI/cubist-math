@@ -40,7 +40,9 @@ export class CubicalDeclarationTransaction {
       kernel.unfoldingHints = [];
       if (this.hints.length) kernel.setUnfoldingHints(this.hints);
     }
-    checker.syntax.encoded = new WeakMap();
-    checker.syntax.decoded.clear();
+    checker.syntax.reset();
+    // Its judgements were truncated with the checkpoint, and handles moved.
+    kernel.instructionDriver = null;
+    kernel.derivedHandles = null;
   }
 }

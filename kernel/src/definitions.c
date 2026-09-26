@@ -30,7 +30,7 @@ cc_term cc_kernel_define(cc_kernel *k, uint32_t symbol, cc_term value, cc_term e
     if (!reference)
         return 0;
     /* Publish only after checking and all allocations have succeeded. */
-    k->definitions[index] = (cc_definition){symbol, checked.expression, checked.type};
+    k->definitions[index] = (cc_definition){symbol, checked.expression, checked.type, false};
     ++k->definition_count;
     return reference;
 }

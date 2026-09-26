@@ -1,4 +1,8 @@
 // Shared by the Node benchmark and browser worker; source checks are identical.
+// Each declaration is elaborated, and the instruction kernel admits it: the
+// untrusted driver derives its checked body one kernel instruction (cc_instr_*)
+// per rule, and Define registers the closed judgement. The row records the
+// time and judgements of that derivation.
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { sourceModules, cubicalSourceModules } from "./mathscript/modules.mjs";
@@ -33,8 +37,11 @@ export async function benchmark({ modules = [...sourceModules, ...cubicalSourceM
     onDeclaration(module, syntax, result, checker) {
       const elapsedMs = performance.now() - declarationStart;
       program.kernel.setDeadline();
-      const row = { binding: `${module}__${result.name}`, module, name: result.name,
+      const binding = `${module}__${result.name}`;
+      const admission = result.status === "checked-native-cubical" ? program.checker.definitionViews.get(binding)?.admission : null;
+      const row = { binding, module, name: result.name,
         category: category(result, elapsedMs, limitMs), elapsedMs: +elapsedMs.toFixed(3),
+        instructionMs: admission?.ms ?? null, instructionJudgements: admission?.judgements ?? null,
         nativeCheckingSteps: checker.steps-declarationStartSteps,
         rewriteWork: result.rewriteWork,
         finalCheckArenaNodes: result.native?.arenaNodes ?? null,

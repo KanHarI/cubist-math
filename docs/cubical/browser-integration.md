@@ -64,14 +64,14 @@ node tests/cubical-inspector.browser.mjs
 
 ## Native interface
 
-### Kernel assembly view
+### Kernel AST view
 
-From a checked proof's inspector, **Open assembly view** opens the cubical
+From a checked proof's inspector, **Open kernel AST** opens the cubical
 workbench in its second view. The workbench's **View** selector switches between
-mathematical notation and **Kernel assembly**; **Back to Cubist** restores
-the source inspection.
+mathematical notation, the **Kernel AST** and the **Kernel graph** of judgements;
+**Back to Cubist** restores the source inspection.
 
-The assembly listing reads `cc_kernel_node` through the WASM bridge. It exposes
+The AST listing, below the term and type typeset, reads `cc_kernel_node` through the WASM bridge. It exposes
 the actual `cc_term_kind` opcode number and C enum name, the unsigned payload,
 and all four operand slots (`a` through `d`). `%n` identifies an arena term;
 `@n` identifies an interval/face formula. Zero is an unused operand or list

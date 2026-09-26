@@ -145,16 +145,17 @@ function sourceCode(text) {
   render(code, text);
   return code;
 }
-// The kernel's check as a forward derivation, in the style of THTH's proofs:
-// each step applies one rule (opcode) to earlier steps, under a comment with
-// the judgement or context it derives. Steps the elaborator added are marked.
+// The instruction kernel's derivation, in the style of THTH's proofs: each
+// step applies one rule to earlier steps, under a comment with the judgement
+// or context it derives. Steps the elaborator added are marked.
 function derivationList({ steps, truncated }) {
   const section = element("div", "kernel-derivation");
   const legend = element("p", "derivation-note");
   const reference = element("a", null, "kernel reference");
-  reference.href = new URL("../kernel.html#trace", import.meta.url).href;
-  legend.append(`The kernel’s check as a forward derivation: each of the ${steps.length} steps applies one rule to earlier steps, `
-    + "and the comment above it is the judgement or context it derives. The ", reference, " explains the rules.");
+  reference.href = new URL("../kernel.html#instructions", import.meta.url).href;
+  legend.append(`The instruction kernel’s derivation: each of the ${steps.length} steps is one rule applied to earlier steps, `
+    + "and the comment above it is the judgement or context it derives. A reduction step names the position it contracts. The ",
+    reference, " explains the rules.");
   const list = element("ol", "derivation");
   for (const step of steps) {
     const item = element("li", `derivation-step${step.scaffold ? " derivation-scaffold" : ""}`);
@@ -162,6 +163,7 @@ function derivationList({ steps, truncated }) {
     const line = element("div", "derivation-rule");
     line.append(element("span", "derivation-number", String(step.number)), " ", element("span", "opcode", step.rule),
       `(${step.premises.join(", ")})`);
+    if (step.note) line.append(" ", element("span", "derivation-at", step.note));
     if (step.scaffold) line.append(element("span", "derivation-added", step.scaffold));
     item.append(line);
     list.append(item);
@@ -209,7 +211,10 @@ function renderElaboration(panel, declarations) {
     const link = element("a", null, "For more info");
     link.href = kernelPage;
     note.append("✓ The C kernel checked this term at this type. ", link, " on the kernel and its rules, see the kernel reference.");
-    row("Kernel", derivationList(declaration.derivation), note);
+    // A derivation that cannot be shown gives its reason; there is no other.
+    const { derivation } = declaration;
+    row("Kernel", derivation.steps.length || !derivation.reason ? derivationList(derivation)
+      : element("span", "elaboration-error", `The derivation cannot be shown: ${derivation.reason}`), note);
     section.append(rows);
     body.append(section);
   }
