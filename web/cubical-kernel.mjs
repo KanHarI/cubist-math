@@ -37,6 +37,9 @@ export class CubicalKernel {
     this.stepBudget = 10000000n;
     this.unfoldingHints = [];
     this.definitions = new Map();
+    // Whether instruction drivers on this session consult the term checker's
+    // conversion as a search aid (web/cubical-instruction-driver.mjs).
+    this.conversionOracle = true;
   }
   assertOpen() {
     if (!this.handle) throw new Error("Cubical kernel session is disposed.");

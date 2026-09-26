@@ -33,7 +33,10 @@ that changes the plan.
 - Every one of the archive's 3938 definitions is admitted this way, and so
   are the first proof and `library/naturals`. Every derived term is its
   source syntax, annotations included. The benchmark page measures it, and
-  `node tools/instruction-coverage.mjs` derives every stored definition again.
+  `node tools/instruction-coverage.mjs` derives every stored definition
+  again: as of 2026-09-26 all but one, `group_homomorphisms.group_hom_laws_prop`,
+  whose second derivation by a fresh driver fails with "The argument has
+  the wrong type" although its admission succeeded. That is open.
 
 ## Goal
 
@@ -502,10 +505,16 @@ instructions and as the driver's search, once; the term checker's rules and
 the reference checker stay at today's fragment. An error or an exhausted
 budget from the conversion oracle is "not known" to the driver, which then
 searches on its own. The oracle retires when the driver no longer benefits
-from it: `node tools/instruction-coverage.mjs` measures the archive with the
-oracle switched off, and phase 4 of the
-[learned search](learned-search.md) design aims at that independence. At
-that point the three trusted functions move to their own file, and
+from it: `node tools/instruction-coverage.mjs --no-oracle` measures the
+archive with the oracle switched off, and phase 4 of the
+[learned search](learned-search.md) design aims at that independence. On
+2026-09-26 the driver still needed it: without the oracle the archive
+checked in 62 s against 33 s, three declarations ran out of kernel budget
+(`finite_subgroup_fixed_degree_upper_bound`, `f4_base_field_is_f2` and
+`f2_embedded_compositum_is_f2`) and five dependents went untranslated, and
+deriving every definition again took 34 s against 10 s. The work plan's
+K1.4 closes that gap before the language side of G0 lands. At the
+retirement the three trusted functions move to their own file, and
 `check_*.c`, the rest of `term_conversion.c` and `unfolding_hints.c` are
 deleted, together with `cc_kernel_check`, `cc_kernel_convertible` and
 `cc_kernel_define`. Stage 6 stays conditional on JavaScript being too slow.
