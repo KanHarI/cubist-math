@@ -4,8 +4,8 @@ import ring_laws;
 // Every normalization step below is an application of a proved ring law.
 
 def complex_coordinate_assoc_real(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d e f : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d, e, f : F
 ) :
   addF(mulF(addF(mulF(a, c), negF(mulF(b, d))), e), negF(mulF(addF(mulF(a, d), mulF(b, c)), f))) = addF(
     mulF(a, addF(mulF(c, e), negF(mulF(d, f)))), negF(mulF(b, addF(mulF(c, f), mulF(d, e))))
@@ -155,8 +155,8 @@ def complex_coordinate_assoc_real(
 }
 
 def complex_coordinate_assoc_imag(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d e f : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d, e, f : F
 ) :
   addF(mulF(addF(mulF(a, c), negF(mulF(b, d))), f), mulF(addF(mulF(a, d), mulF(b, c)), e)) = addF(
     mulF(a, addF(mulF(c, f), mulF(d, e))), mulF(b, addF(mulF(c, e), negF(mulF(d, f))))
@@ -281,8 +281,8 @@ def complex_coordinate_assoc_imag(
 }
 
 def complex_coordinate_distribute_real(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d e f : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d, e, f : F
 ) :
   addF(mulF(a, addF(c, e)), negF(mulF(b, addF(d, f)))) = addF(
     addF(mulF(a, c), negF(mulF(b, d))), addF(mulF(a, e), negF(mulF(b, f)))
@@ -329,8 +329,8 @@ def complex_coordinate_distribute_real(
 }
 
 def complex_coordinate_distribute_imag(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d e f : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d, e, f : F
 ) :
   addF(mulF(a, addF(d, f)), mulF(b, addF(c, e))) = addF(
     addF(mulF(a, d), mulF(b, c)), addF(mulF(a, f), mulF(b, e))
@@ -362,8 +362,8 @@ def complex_coordinate_distribute_imag(
 }
 
 def complex_coordinate_comm_real(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d : F
 ) :
   addF(mulF(a, c), negF(mulF(b, d))) = addF(mulF(c, a), negF(mulF(d, b))) {
   let rightStep1 :=
@@ -382,8 +382,8 @@ def complex_coordinate_comm_real(
 }
 
 def complex_coordinate_comm_imag(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, c, d : F
 ) :
   addF(mulF(a, d), mulF(b, c)) = addF(mulF(c, b), mulF(d, a)) {
   let rightStep1 :=
@@ -403,8 +403,8 @@ def complex_coordinate_comm_imag(
 }
 
 def complex_coordinate_one_real(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b : F
 ) :
   addF(mulF(one, a), negF(mulF(zero, b))) = a {
   let leftStep1 :=
@@ -424,8 +424,8 @@ def complex_coordinate_one_real(
 }
 
 def complex_coordinate_one_imag(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b : F
 ) :
   addF(mulF(one, b), mulF(zero, a)) = b {
   let leftStep1 :=
@@ -442,7 +442,7 @@ def complex_coordinate_one_imag(
 }
 
 def complex_coordinate_i_square_real(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :
   addF(mulF(zero, zero), negF(mulF(one, one))) = negF(one) {
@@ -463,7 +463,7 @@ def complex_coordinate_i_square_real(
 }
 
 def complex_coordinate_i_square_imag(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :
   addF(mulF(zero, one), mulF(one, zero)) = zero {
@@ -482,8 +482,8 @@ def complex_coordinate_i_square_imag(
 }
 
 def complex_coordinate_norm_real(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b : F
 ) :
   addF(mulF(a, a), negF(mulF(b, negF(b)))) = addF(mulF(a, a), mulF(b, b)) {
   let leftStep1 :=
@@ -502,8 +502,8 @@ def complex_coordinate_norm_real(
 }
 
 def complex_coordinate_norm_imag(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b : F
 ) :
   addF(mulF(a, negF(b)), mulF(b, a)) = zero {
   let leftStep1 :=
@@ -521,8 +521,8 @@ def complex_coordinate_norm_imag(
 }
 
 def complex_coordinate_inverse_real(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, d : F
 ) :
   addF(mulF(a, mulF(a, d)), negF(mulF(b, negF(mulF(b, d))))) = mulF(addF(mulF(a, a), mulF(b, b)), d) {
   let leftStep1 :=
@@ -554,8 +554,8 @@ def complex_coordinate_inverse_real(
 }
 
 def complex_coordinate_inverse_imag(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, b, d : F
 ) :
   addF(mulF(a, negF(mulF(b, d))), mulF(b, mulF(a, d))) = zero {
   let leftStep1 :=

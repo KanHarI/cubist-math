@@ -2,7 +2,7 @@ import polynomial_arithmetic;
 
 // Evaluate through a specified field embedding, so the same definition works
 // for roots in an extension and for evaluation in the coefficient field.
-def bounded_eval(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat) :=
+def bounded_eval(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat) :=
   induction n as k return (FormalSeries(K) -> af_carrier(L)) {
     zero => fun (f : FormalSeries(K)) => field_zero(L);
     succ previous => fun (f : FormalSeries(K)) => field_add(
@@ -11,13 +11,13 @@ def bounded_eval(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(
   };
 
 def bounded_eval_zero_support(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat
 ) :
-  forall f : FormalSeries(K), SeriesSupport(K, f, 0)
+  forall f : FormalSeries(K). SeriesSupport(K, f, 0)
   -> bounded_eval(K, L, e, x, n, f) = field_zero(L) {
   obtain (zero, one, neg, add, mul) := field_embedding_preserves(K, L, e);
   exact induction n as k return (
-    forall f : FormalSeries(K), SeriesSupport(K, f, 0)
+    forall f : FormalSeries(K). SeriesSupport(K, f, 0)
     -> bounded_eval(K, L, e, x, k, f) = field_zero(L)
   ) {
     zero => fun (f : FormalSeries(K), support : SeriesSupport(K, f, 0)) => refl(field_zero(L));
@@ -54,10 +54,10 @@ def bounded_eval_zero_support(
 }
 
 def bounded_eval_independent(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), m : Nat
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), m : Nat
 ) :=
   induction m as k return (
-    forall f : FormalSeries(K), forall n : Nat, SeriesSupport(K, f, k) -> SeriesSupport(K, f, n)
+    forall f : FormalSeries(K). forall n : Nat. SeriesSupport(K, f, k) -> SeriesSupport(K, f, n)
     -> bounded_eval(K, L, e, x, k, f) = bounded_eval(K, L, e, x, n, f)
   ) {
     zero => fun (
@@ -85,12 +85,12 @@ def bounded_eval_independent(
   };
 
 def polynomial_eval(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
 ) :=
   bounded_eval(K, L, e, x, polynomial_cutoff(K, p), polynomial_coefficients(K, p));
 
 def polynomial_eval_bound(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L), n : Nat,
   support : SeriesSupport(K, polynomial_coefficients(K, p), n)
 ) :
   polynomial_eval(K, L, e, p, x) = bounded_eval(K, L, e, x, n, polynomial_coefficients(K, p)) {
@@ -100,7 +100,7 @@ def polynomial_eval_bound(
   );
 }
 
-def polynomial_eval_zero(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
+def polynomial_eval_zero(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
   polynomial_eval(K, L, e, polynomial_zero(K), x) = field_zero(L) {
   exact polynomial_eval_bound(
     K, L, e, polynomial_zero(K), x, 0, (fun (n : Nat, above : le(0, n)) => refl(field_zero(K)))
@@ -108,7 +108,7 @@ def polynomial_eval_zero(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_
 }
 
 def polynomial_eval_constant(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K), x : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K), x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_constant(K, a), x) = field_embedding_map(K, L, e, a) {
   exact trans(
@@ -120,20 +120,20 @@ def polynomial_eval_constant(
   );
 }
 
-def bounded_eval_add(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat) :
-  forall f : FormalSeries(K), forall g : FormalSeries(K),
+def bounded_eval_add(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat) :
+  forall f : FormalSeries(K). forall g : FormalSeries(K).
   bounded_eval(K, L, e, x, n, series_add(K, f, g)) = field_add(
     L, bounded_eval(K, L, e, x, n, f), bounded_eval(K, L, e, x, n, g)
   ) {
   obtain (zero, one, neg, add, mul) := field_embedding_preserves(K, L, e);
   exact induction n as k return (
-    forall f : FormalSeries(K), forall g : FormalSeries(K),
+    forall f : FormalSeries(K). forall g : FormalSeries(K).
     bounded_eval(K, L, e, x, k, series_add(K, f, g)) = field_add(
       L, bounded_eval(K, L, e, x, k, f), bounded_eval(K, L, e, x, k, g)
     )
   ) {
-    zero => fun (f g : FormalSeries(K)) => sym(scalar_add_zero(L, field_zero(L)));
-    succ previous => fun (f g : FormalSeries(K)) => trans(
+    zero => fun (f, g : FormalSeries(K)) => sym(scalar_add_zero(L, field_zero(L)));
+    succ previous => fun (f, g : FormalSeries(K)) => trans(
       cong(
         (
           fun (a : af_carrier(L)) => field_add(
@@ -174,7 +174,7 @@ def bounded_eval_add(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carr
 }
 
 def polynomial_eval_add(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p q : Polynomial(K), x : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p, q : Polynomial(K), x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_add(K, p, q), x) = field_add(
     L, polynomial_eval(K, L, e, p, x), polynomial_eval(K, L, e, q, x)
@@ -208,7 +208,7 @@ def polynomial_eval_add(
 }
 
 def polynomial_eval_shift(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_shift(K, p), x) = field_mul(
     L, x, polynomial_eval(K, L, e, p, x)
@@ -234,16 +234,16 @@ def polynomial_eval_shift(
 }
 
 def bounded_eval_scale(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), a : af_carrier(K), n : Nat
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), a : af_carrier(K), n : Nat
 ) :
-  forall f : FormalSeries(K),
+  forall f : FormalSeries(K).
   bounded_eval(K, L, e, x, n, series_scale(K, a, f)) = field_mul(
     L, field_embedding_map(K, L, e, a), bounded_eval(K, L, e, x, n, f)
   ) {
   obtain (zero, one, neg, add, mul) := field_embedding_preserves(K, L, e);
   let ea := field_embedding_map(K, L, e, a);
   exact induction n as k return (
-    forall f : FormalSeries(K),
+    forall f : FormalSeries(K).
     bounded_eval(K, L, e, x, k, series_scale(K, a, f)) = field_mul(
       L, ea, bounded_eval(K, L, e, x, k, f)
     )
@@ -284,7 +284,7 @@ def bounded_eval_scale(
 }
 
 def polynomial_eval_scale(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K), p : Polynomial(K),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K), p : Polynomial(K),
   x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_scale(K, a, p), x) = field_mul(
@@ -310,7 +310,7 @@ def polynomial_eval_scale(
 }
 
 def polynomial_eval_mul_step(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p q : Polynomial(K), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p, q : Polynomial(K), x : af_carrier(L),
   previous : polynomial_eval(K, L, e, polynomial_mul(K, polynomial_tail(K, p), q), x) = field_mul(
     L, polynomial_eval(K, L, e, polynomial_tail(K, p), x), polynomial_eval(K, L, e, q, x)
   )
@@ -391,7 +391,7 @@ def polynomial_eval_mul_step(
 }
 
 def polynomial_eval_mul_zero(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p q : Polynomial(K), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p, q : Polynomial(K), x : af_carrier(L),
   support : SeriesSupport(K, polynomial_coefficients(K, p), 0)
 ) :
   polynomial_eval(K, L, e, polynomial_mul(K, p, q), x) = field_mul(
@@ -416,11 +416,11 @@ def polynomial_eval_mul_zero(
 }
 
 def polynomial_eval_mul_bound(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat
 ) :=
   induction n as k return (
-    forall p : Polynomial(K), SeriesSupport(K, polynomial_coefficients(K, p), k)
-    -> forall q : Polynomial(K),
+    forall p : Polynomial(K). SeriesSupport(K, polynomial_coefficients(K, p), k)
+    -> forall q : Polynomial(K).
     polynomial_eval(K, L, e, polynomial_mul(K, p, q), x) = field_mul(
       L, polynomial_eval(K, L, e, p, x), polynomial_eval(K, L, e, q, x)
     )
@@ -441,7 +441,7 @@ def polynomial_eval_mul_bound(
   };
 
 def polynomial_eval_mul(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p q : Polynomial(K), x : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p, q : Polynomial(K), x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_mul(K, p, q), x) = field_mul(
     L, polynomial_eval(K, L, e, p, x), polynomial_eval(K, L, e, q, x)

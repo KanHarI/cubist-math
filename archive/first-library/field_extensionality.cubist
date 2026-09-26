@@ -3,7 +3,7 @@ import bijection_equality;
 
 // The predicate values are small, although the space of predicates is U1.
 // Univalence and function extensionality are constructive assumptions here.
-def field_prop_ext(P Q : U0, propP : FieldProp(P), propQ : FieldProp(Q), f : P -> Q, g : Q -> P) :
+def field_prop_ext(P, Q : U0, propP : FieldProp(P), propQ : FieldProp(Q), f : P -> Q, g : Q -> P) :
   P = Q {
   exact ua(
     U0, P, Q,
@@ -18,8 +18,8 @@ def field_prop_ext(P Q : U0, propP : FieldProp(P), propQ : FieldProp(Q), f : P -
 }
 
 def field_predicate_ext(
-  A : U1, P Q : A -> U0, propP : (forall a : A, FieldProp(P(a))),
-  propQ : (forall a : A, FieldProp(Q(a))), same : (forall a : A, FieldIff(P(a), Q(a)))
+  A : U1, P, Q : A -> U0, propP : (forall a : A. FieldProp(P(a))),
+  propQ : (forall a : A. FieldProp(Q(a))), same : (forall a : A. FieldIff(P(a), Q(a)))
 ) :
   P = Q {
   ext a;
@@ -30,7 +30,7 @@ def field_predicate_ext(
 }
 
 def field_subtype_ext(
-  A : U1, P : A -> U1, prop : (forall a : A, FieldProp(P(a))), u v : (exists x : A, P(x)),
+  A : U1, P : A -> U1, prop : (forall a : A. FieldProp(P(a))), u, v : (exists x : A. P(x)),
   p : field_first(A, P, u) = field_first(A, P, v)
 ) :
   u = v {
@@ -45,8 +45,8 @@ def field_subtype_ext(
 }
 
 def field_sigma_prop(
-  A : U1, P : A -> U1, propA : FieldProp(A), propP : (forall a : A, FieldProp(P(a))),
-  u v : (exists a : A, P(a))
+  A : U1, P : A -> U1, propA : FieldProp(A), propP : (forall a : A. FieldProp(P(a))),
+  u, v : (exists a : A. P(a))
 ) :
   u = v {
   exact field_subtype_ext(A, P, propP, u, v, propA(field_first(A, P, u), field_first(A, P, v)));

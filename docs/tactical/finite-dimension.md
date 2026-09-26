@@ -46,7 +46,7 @@ coordinates, and both inverse laws. Different bases remain different data.
 `FiniteDimensional(K,V)` is the dependent pair
 
 ```cubist
-exists n : Nat, HasDimension(K, V, n)
+exists n : Nat. HasDimension(K, V, n)
 ```
 
 This pair is proved a proposition: dimension invariance identifies its

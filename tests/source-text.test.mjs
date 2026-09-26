@@ -23,10 +23,10 @@ test("types print as they are written, with only the parentheses the parser need
   assert.equal(sourceText(pi("_", sigma("_", nat, unit), sum(unit, v))), "Nat and Unit -> Unit or Void");
   assert.equal(sourceText(sigma("_", sum(nat, unit), unit)), "(Nat or Unit) and Unit");
   assert.equal(sourceText(pi("A", U0, pi("_", variable("A"), sigma("_", variable("A"), variable("A"))))),
-    "forall A : U0, A -> A and A");
+    "forall A : U0. A -> A and A");
   assert.equal(sourceText(sigma("m", nat, app({ tag: "DefRef", name: "reference_example__lt" }, variable("n"), variable("m")))),
-    "exists m : Nat, lt(n, m)");
-  assert.equal(sourceText(pi("_", pi("n", nat, equal(variable("n"), variable("n"))), unit)), "(forall n : Nat, n = n) -> Unit");
+    "exists m : Nat. lt(n, m)");
+  assert.equal(sourceText(pi("_", pi("n", nat, equal(variable("n"), variable("n"))), unit)), "(forall n : Nat. n = n) -> Unit");
 });
 
 test("values and arithmetic print in source syntax", () => {
@@ -38,7 +38,7 @@ test("values and arithmetic print in source syntax", () => {
   assert.equal(sourceText({ tag: "Pair", first: number(3), second: { tag: "Pair", first: { tag: "Point" }, second: number(1) } }), "(3, tt, 1)");
   assert.equal(sourceText({ tag: "Inl", as: sum(unit, nat), value: { tag: "Point" } }), "left(tt)");
   assert.equal(sourceText({ tag: "Lam", name: "m", domain: nat, body: { tag: "Lam", name: "n", domain: nat,
-    body: { tag: "Lam", name: "p", domain: unit, body: add(variable("m"), variable("n")) } } }), "fun (m n : Nat, p : Unit) => m + n");
+    body: { tag: "Lam", name: "p", domain: unit, body: add(variable("m"), variable("n")) } } }), "fun (m, n : Nat, p : Unit) => m + n");
   assert.equal(sourceText(app({ tag: "Lam", name: "x", domain: nat, body: variable("x") }, number(1))), "(fun (x : Nat) => x)(1)");
 });
 
@@ -51,7 +51,7 @@ test("messages and evaluate results use source syntax", async t => {
 def wrong_sum : 2 + 2 = 5 {
   exact refl(4);
 }
-def choice : Unit or Unit or Nat {
+def three_ways : Unit or Unit or Nat {
   exact 3;
 }
 def sum_and_point : Nat and Unit := (1 + 2, tt);
@@ -61,7 +61,7 @@ evaluate 2 + 2 expecting 5;
 `, "source_messages");
   const reason = name => result.outputs.find(output => output.name === name).reason;
   assert.equal(reason("wrong_sum"), "Type mismatch: found 4 = 4, expected 2 + 2 = 5.");
-  assert.equal(reason("choice"), "Type mismatch: found Nat, expected Unit or Unit or Nat.");
+  assert.equal(reason("three_ways"), "Type mismatch: found Nat, expected Unit or Unit or Nat.");
   assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["(3, tt)"]);
   assert.deepEqual(result.gaps.filter(gap => gap.directive).map(gap => gap.reason), ["The term evaluates to 4, not 5."]);
 });

@@ -13,8 +13,8 @@ export function cubicalSource(term) {
       case 'U':return `U${t.level}`;
       case 'Nat':case 'Unit':case 'Void':return t.tag;
       case 'Point':return 'tt';case 'Zero':return '0';case 'Succ':return `succ(${s(t.value)})`;
-      case 'Pi':return `(forall ${t.name} : ${s(t.domain)}, ${s(t.body)})`;
-      case 'Sigma':return `(exists ${t.name} : ${s(t.domain)}, ${s(t.body)})`;
+      case 'Pi':return `(forall ${t.name} : ${s(t.domain)}. ${s(t.body)})`;
+      case 'Sigma':return `(exists ${t.name} : ${s(t.domain)}. ${s(t.body)})`;
       case 'Lam':return `(fun (${t.name} : ${s(t.domain)}) => ${s(t.body)})`;
       case 'App':{const args=[];let fn=t;while(fn.tag==='App'){args.unshift(s(fn.arg));fn=fn.fn;}return `${s(fn)}(${args.join(', ')})`;}
       case 'Path':return `PathP(fun (${dim(t.dim)} : Interval) => ${s(t.family)}, ${s(t.left)}, ${s(t.right)})`;

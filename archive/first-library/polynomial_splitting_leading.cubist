@@ -13,7 +13,7 @@ def MonicLinearProduct(K : AlgebraicField, n : Nat, roots : Fin(n) -> af_carrier
 
 def monic_linear_product_step(
   K : AlgebraicField, n : Nat,
-  previous : (forall roots : Fin(n) -> af_carrier(K), MonicLinearProduct(K, n, roots)),
+  previous : (forall roots : Fin(n) -> af_carrier(K). MonicLinearProduct(K, n, roots)),
   roots : Fin(succ(n)) -> af_carrier(K)
 ) :
   MonicLinearProduct(K, succ(n), roots) {
@@ -38,7 +38,7 @@ def monic_linear_product_step(
 }
 
 def monic_linear_product(K : AlgebraicField, n : Nat) :=
-  induction n as k return (forall roots : Fin(k) -> af_carrier(K), MonicLinearProduct(K, k, roots)) {
+  induction n as k return (forall roots : Fin(k) -> af_carrier(K). MonicLinearProduct(K, k, roots)) {
     zero => fun (roots : Fin(0) -> af_carrier(K)) => typed(
       MonicLinearProduct(K, 0, roots), (polynomial_one_cutoff(K), refl(field_one(K)))
     );

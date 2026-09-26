@@ -15,7 +15,7 @@ universe. This revision applies four decisions:
   `UU0, UU1, …`, then `UUU0, …`. Every universe is a term.
 - The universe binder is `U < UU0`. It replaces `U : Universe` and the
   kernel's `Uω` marker. The word `Universe` leaves the language.
-- Generic statements are ordinary types. `forall U < UU0, B` lives in `UU0`
+- Generic statements are ordinary types. `forall U < UU0. B` lives in `UU0`
   when `U` occurs in the level of `B`, and at the level of `B` otherwise. The
   judgment for large types is gone, and composition gains one pointwise rule
   for level quantification.
@@ -68,7 +68,7 @@ E1 and E2 (section 6).
 | `n`, `c` | natural numbers |
 | `κ` | a level constant `ω·k + n` below ω², of tier `k` |
 | `ω` | the constant `ω·1 + 0`, the level of `UU0`; also the bound of a binder over tier 0 |
-| `Π (x < ω). B` | level quantification (source: `forall U < UU0, B`) |
+| `Π (x < ω). B` | level quantification (source: `forall U < UU0. B`) |
 | `λ (x < ω). t` | level abstraction (source: `fun (U < UU0) => t`) |
 | `t {ℓ}` | instantiation of `t` at level `ℓ` (source: `t(E)`) |
 | `U(ℓ)` | the universe at level `ℓ`; `U0` is `U(0)`, `UU0` is `U(ω)`, `UU3` is `U(ω + 3)`, `UUU0` is `U(ω·2)` |
@@ -150,10 +150,10 @@ This follows the kernel roadmap's G0 item and ergonomics milestone 5.
   carries its index. `U`, `UU` and `UUU` are not constants and remain free
   for user variables.
 - **Universe binders.** `U < UU0` binds a universe variable `U` that ranges
-  over `U0, U1, …`. Grouping works as today: `(U V < UU0, A : U, B : V)`.
+  over `U0, U1, …`. Grouping works as today: `(U, V < UU0, A : U, B : V)`.
   Examples:
   - `def identity(U < UU0, A : U, x : A) := x;`
-  - `forall U < UU0, B` is `Π (x < ω). B`;
+  - `forall U < UU0. B` is `Π (x < ω). B`;
   - `fun (U < UU0) => t` is `λ (x < ω). t`.
 - **Bounds.** A bound must be a tier base: `UU0`, `UUU0`, … . L1.1 accepts
   only `UU0`. `U < U5` and `U < UU1` are rejected because they are not tier
@@ -535,7 +535,7 @@ Unchanged:
 
 - **Definitions.** A definition `d : A := t` is checked once, in the empty
   context: `· ⊢ A : U(ℓ)` and `· ⊢ t : A`. `A` may be a generic statement,
-  and so may `t`: `def Endo := forall U < UU0, U -> U;` is a definition of
+  and so may `t`: `def Endo := forall U < UU0. U -> U;` is a definition of
   type `UU0` (Q2). Uses are `d` and `d {ℓ}`. δ-unfolding is unchanged.
 - **Assumption telescope.** Entries of the kernel's assumption telescope
   (`cc_assumption`) may be level entries `x < ω` and term entries of any
@@ -564,7 +564,7 @@ Unchanged:
   equality of generic functions, by a definition that computes:
 
   ```text
-  levelExt : Π (f g : Π (x < ω). B). (Π (x < ω). Path(B, f {x}, g {x})) → Path(Π (x < ω). B, f, g)
+  levelExt : Π (f, g : Π (x < ω). B). (Π (x < ω). Path(B, f {x}, g {x})) → Path(Π (x < ω). B, f, g)
   levelExt := λ f g p. ⟨i⟩ λ (x < ω). p {x} @ i
   ```
 
@@ -617,8 +617,8 @@ Unchanged:
   per-universe builtins `builtin__ua__U<n>`:
 
   ```text
-  ua : Π (x < ω). Π (A B : U(x)). Equiv(A, B) → Path(U(x), A, B)
-  ua := λ (x < ω). λ (A B : U(x)). λ (e : Equiv(A, B)).
+  ua : Π (x < ω). Π (A, B : U(x)). Equiv(A, B) → Path(U(x), A, B)
+  ua := λ (x < ω). λ (A, B : U(x)). λ (e : Equiv(A, B)).
           ⟨i⟩ Glue [i = 0 ↦ (A, e), i = 1 ↦ (B, idEquiv(B))] B
   ```
 
@@ -1175,8 +1175,8 @@ first.
   with value `λ (x < ω). …` and type `Π (x < ω). …`, checked once. A use
   `d(E, …)` becomes `d {ℓ_E} …`, and a universe argument that is not finite
   is rejected with a message that names the bound.
-- **Generic statements.** `forall U < UU0, B` may appear wherever a type is
-  expected. `def Endo := forall U < UU0, U -> U;` is accepted with type
+- **Generic statements.** `forall U < UU0. B` may appear wherever a type is
+  expected. `def Endo := forall U < UU0. U -> U;` is accepted with type
   `UU0`.
 - **Kept.** The `typed(E, T)` ascription and explicit universe arguments.
 - **Inspector.** It shows level abstractions and instantiations in source
@@ -1403,7 +1403,7 @@ Let `id := λ (x < ω). λ (A : U(x)). λ (a : A). a`.
 
 | ID | Judgment | Verdict | Reason |
 | --- | --- | --- | --- |
-| K1 | `ua` of 2.11 at type `Π (x < ω). Π (A B : U(x)). Equiv(A, B) → Path(U(x), A, B)` | Accept | Glue at `max(x, x) = x`, checked once. |
+| K1 | `ua` of 2.11 at type `Π (x < ω). Π (A, B : U(x)). Equiv(A, B) → Path(U(x), A, B)` | Accept | Glue at `max(x, x) = x`, checked once. |
 | K2 | `x, y < ω, A : U(x), T : U(y), e : Equiv(T, A) ⊢ Glue [φ ↦ (T, e)] A : U(max(x, y))`; the same at `U(x)` | Accept; Reject | Glue lives at the `max`. |
 | K3 | `x < ω, A : U(x)`, `E` a line in `U(x)` with `E(0) ≡ A` on `φ` `⊢ comp^i U(x) [φ ↦ E(i)] A : U(x)` | Accept | Universe composition at a variable level. The Glue reduct also checks at `U(x)`. |
 | K4 | transport of `inl(tt)` along `ua {0} Two Two swap` and along `ua {1} Two Two swap`, with `Two := Unit + Unit` | Accept; both reduce to `inr(tt)` | One definition, two levels, same value (Lemma 5). |
@@ -1412,7 +1412,7 @@ Let `id := λ (x < ω). λ (A : U(x)). λ (a : A). a`.
 | K7 | `f : Π (x < ω). Nat → Nat, i : I ⊢ comp^j (Π (x < ω). Nat → Nat) [i = 0 ↦ f] f` | Accept; reduces to `λ (x < ω). comp^j (Nat → Nat) [i = 0 ↦ f {x}] (f {x})` | The level-Π composition rule. |
 | K8 | `(transport^i (Π (x < ω). (ua {0} Two Two swap) @ i) (λ (x < ω). inl(tt))) {0}`, and the same at `{7}` | Accept; both reduce to `inr(tt)` | A closed transport along a line of generic statements computes pointwise. The family lives in `U(0)`. |
 | K9 | `A : U(ω)`, `E` a line in `U(ω)` with `E(0) ≡ A` on `φ` `⊢ comp^i U(ω) [φ ↦ E(i)] A : U(ω)` | Accept | Universe composition at tier 1; the Glue reduct checks at `U(ω)`. |
-| K10 | kernel only (the source builtin rejects `UU0`, Q10): the body of `ua` written with `U(ω)` in place of `U(x)`, checked as a closed term of type `Π (A B : U(ω)). Equiv(A, B) → Path(U(ω), A, B)`; transport of `inl(tt)` along it at `Two Two swap` | Accept; reduces to `inr(tt)` | Univalence for `UU0` by the same Glue rule. |
+| K10 | kernel only (the source builtin rejects `UU0`, Q10): the body of `ua` written with `U(ω)` in place of `U(x)`, checked as a closed term of type `Π (A, B : U(ω)). Equiv(A, B) → Path(U(ω), A, B)`; transport of `inl(tt)` along it at `Two Two swap` | Accept; reduces to `inr(tt)` | Univalence for `UU0` by the same Glue rule. |
 | K11 | `levelExt` of 2.11 for `B := Nat → Nat`; `(levelExt f f (λ (x < ω). refl(f {x}))) @ 0 ≡ f` | Accept; Accept | Pointwise paths give a path of generic functions, by `∀-η`. |
 
 ### 5.7 Definitions, assumptions and dependencies
@@ -1446,9 +1446,9 @@ declaration. After L1.1:
   - transport of `left(tt)` along `ua(U0, Two, Two, swap)` and along
     `ua(U1, Two, Two, swap)`, each equal to `right(tt)` (K4).
   - `apply_at_nat(generic_identity) = 5`, where
-    `apply_at_nat(f : forall U < UU0, forall A : U, A -> A) = f(U0, Nat, 5)`.
+    `apply_at_nat(f : forall U < UU0. forall A : U. A -> A) = f(U0, Nat, 5)`.
     This passes a generic definition as an argument (higher rank).
-  - `transport(fun (X : U0) => (forall U < UU0, X), Two, Two, ua(U0, Two, Two, swap), fun (U < UU0) => left(tt))(U3) = right(tt)`.
+  - `transport(fun (X : U0) => (forall U < UU0. X), Two, Two, ua(U0, Two, Two, swap), fun (U < UU0) => left(tt))(U3) = right(tt)`.
     This transports along a line of generic statements and instantiates the
     result (K8).
 - The helpers `generic_identity`, `apply_at_nat`, `Two` and `swap` live in an
@@ -1501,7 +1501,7 @@ would need its own soundness argument; it is plausible because the model of
 a higher inductive type does not depend on the ambient universe.
 
 **Q2. Named generic statements. Resolved: yes.** A definition's value may be
-a generic statement: `def Endo := forall U < UU0, U -> U;` is a definition of
+a generic statement: `def Endo := forall U < UU0. U -> U;` is a definition of
 type `UU0`. No new judgment is needed, because generic statements are
 ordinary types.
 

@@ -11,16 +11,16 @@ def residue_one_not_zero(
   let divides :=
     polynomial_remainder_zero_divides(K, M, polynomial_one(K), cong(residue_polynomial(K, M), same));
   have invert :
-    (exists q : Polynomial(K), polynomial_one(K) = polynomial_mul(K, D, q))
-    -> (exists q : Polynomial(K), polynomial_mul(K, D, q) = polynomial_one(K)) {
+    (exists q : Polynomial(K). polynomial_one(K) = polynomial_mul(K, D, q))
+    -> (exists q : Polynomial(K). polynomial_mul(K, D, q) = polynomial_one(K)) {
     intro witness;
     obtain (q, equation) := witness;
     exact (q, sym(equation));
   }
   exact nonunit(
     mere_map(
-      (exists q : Polynomial(K), polynomial_one(K) = polynomial_mul(K, D, q)),
-      (exists q : Polynomial(K), polynomial_mul(K, D, q) = polynomial_one(K)), invert, divides
+      (exists q : Polynomial(K). polynomial_one(K) = polynomial_mul(K, D, q)),
+      (exists q : Polynomial(K). polynomial_mul(K, D, q) = polynomial_one(K)), invert, divides
     )
   );
 }
@@ -49,7 +49,7 @@ def residue_bezout_inverse(
     K, modulus_polynomial(K, M), residue_polynomial(K, M, x), polynomial_one(K)
   )
 ) :
-  exists y : PolynomialResidue(K, M), residue_mul(K, M, x, y) = residue_one(K, M) {
+  exists y : PolynomialResidue(K, M). residue_mul(K, M, x, y) = residue_one(K, M) {
   obtain (a, b, equation) := combination;
   let D := modulus_polynomial(K, M);
   let p := residue_polynomial(K, M, x);
@@ -92,10 +92,10 @@ def residue_field_inverse(
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), x : PolynomialResidue(K, M),
   nonzero : (x = residue_zero(K, M)) -> Void
 ) :
-  exists y : PolynomialResidue(K, M), residue_mul(K, M, x, y) = residue_one(K, M) {
+  exists y : PolynomialResidue(K, M). residue_mul(K, M, x, y) = residue_one(K, M) {
   let D := modulus_polynomial(K, M);
   let p := residue_polynomial(K, M, x);
-  let Result := exists y : PolynomialResidue(K, M), residue_mul(K, M, x, y) = residue_one(K, M);
+  let Result := exists y : PolynomialResidue(K, M). residue_mul(K, M, x, y) = residue_one(K, M);
   exact mere_eliminate(
     BezoutCombination(K, D, p, polynomial_one(K)), Result,
     commutative_ring_inverse_prop(

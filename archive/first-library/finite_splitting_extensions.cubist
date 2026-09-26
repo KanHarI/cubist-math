@@ -4,7 +4,7 @@ import polynomial_root_existence;
 // This first construction gives a finite extension where the polynomial
 // splits. The splitting-field construction then restricts to the roots' field.
 def FiniteSplittingExtension(K : AlgebraicField, p : Polynomial(K), n : Nat) :=
-  exists L : AlgebraicField, exists e : FieldEmbedding(K, L),
+  exists L : AlgebraicField. exists e : FieldEmbedding(K, L).
   FiniteExtension(K, embedding_as_extension(K, L, e))
   and PolynomialSplitting(L, polynomial_map(K, L, e, p), n);
 
@@ -56,7 +56,7 @@ def splitting_extension_compose(
 def finite_splitting_step(
   n : Nat,
   previous : (
-    forall L : AlgebraicField, forall q : Polynomial(L), polynomial_cutoff(L, q) = succ(n)
+    forall L : AlgebraicField. forall q : Polynomial(L). polynomial_cutoff(L, q) = succ(n)
     -> FieldExists(FiniteSplittingExtension(L, q, n))
   ), K : AlgebraicField, p : Polynomial(K), degree : polynomial_cutoff(K, p) = succ(succ(n))
 ) :
@@ -98,7 +98,7 @@ def finite_splitting_step(
 // Finiteness is composed using the proved tower theorem.
 def finite_splitting_by_degree(n : Nat) :=
   induction n as k return (
-    forall K : AlgebraicField, forall p : Polynomial(K), polynomial_cutoff(K, p) = succ(k)
+    forall K : AlgebraicField. forall p : Polynomial(K). polynomial_cutoff(K, p) = succ(k)
     -> FieldExists(FiniteSplittingExtension(K, p, k))
   ) {
     zero => fun (K : AlgebraicField, p : Polynomial(K), degree : polynomial_cutoff(K, p) = 1) => field_exists_intro(

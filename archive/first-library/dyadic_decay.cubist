@@ -4,10 +4,10 @@ import field_scale_limits;
 // An actual natural bound yields an actual depth with small dyadic width.
 // The subsequent Archimedean theorem keeps the truncation of its input bound.
 def dyadic_width_small_from_natural_bound(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), width : F,
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), width : F,
   nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon),
   reciprocal : F, inverseLaw : mulF(epsilon, reciprocal) = one, n : Nat,
   large : lt(mulF(width, reciprocal), field_natural(F, zero, one, addF)(n))
@@ -66,21 +66,21 @@ def dyadic_width_small_from_natural_bound(
 // Constructive Archimedeanness gives mere existence of a sufficiently small
 // width. No natural-number modulus is selected out of that truncation.
 def dyadic_width_arbitrarily_small(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x),
   inverses : FieldInverses(F, zero, one, mulF, lt),
   archimedean : Archimedean(F, zero, one, addF, lt), width : F,
   nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon)
 ) :
-  FieldExists(exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon)) {
+  FieldExists(exists depth : Nat. lt(dyadic_width(F, half, depth, width), epsilon)) {
   obtain (reciprocal, positiveReciprocal, inverseLaw) := field_positive_reciprocal(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, epsilon, positiveEpsilon
   );
   let divided := mulF(width, reciprocal);
-  let A := (exists n : Nat, lt(divided, field_natural(F, zero, one, addF)(n)));
-  let B := (exists depth : Nat, lt(dyadic_width(F, half, depth, width), epsilon));
+  let A := (exists n : Nat. lt(divided, field_natural(F, zero, one, addF)(n)));
+  let B := (exists depth : Nat. lt(dyadic_width(F, half, depth, width), epsilon));
   have mapping : A -> B {
     intro data;
     obtain (n, large) := data;

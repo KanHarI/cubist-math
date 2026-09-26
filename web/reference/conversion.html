@@ -76,7 +76,7 @@ def delta : double(1) = 3 {
 def eliminators : match typed(Unit or Nat, right(4)) return Nat { left u =&gt; 0; right n =&gt; n; } = 2 + 2 {
   rfl;
 }</code></pre>
-            <pre><code data-check="accept">def function_eta(A B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
+            <pre><code data-check="accept">def function_eta(A, B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
   rfl;
 }
 
@@ -85,7 +85,7 @@ def pair_eta(p : Nat and Nat) :
   rfl;
 }
 
-def path_endpoint(A : U0, x y : A, p : x = y) : p @ 1 = y {
+def path_endpoint(A : U0, x, y : A, p : x = y) : p @ 1 = y {
   rfl;
 }</code></pre>
             <p>An eliminator applied to a variable does not compute, so an equality that needs a case analysis or induction on the variable is not definitional. It is a theorem, proved with a lemma, <code>rw</code> or <code>simp</code>:</p>

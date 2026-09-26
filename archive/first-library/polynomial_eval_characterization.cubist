@@ -3,17 +3,17 @@ import polynomial_evaluation;
 // The Horner equations characterize evaluation. This abstract lemma is also
 // useful when comparing maps into two different representations of a field.
 def PolynomialHornerLaw(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   F : Polynomial(K) -> af_carrier(L)
 ) :=
-  forall p : Polynomial(K),
+  forall p : Polynomial(K).
   F(p) = field_add(
     L, field_embedding_map(K, L, e, polynomial_coefficients(K, p, 0)),
     field_mul(L, x, F(polynomial_tail(K, p)))
   );
 
 def polynomial_eval_characterization_step(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), F : Polynomial(K)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), F : Polynomial(K)
   -> af_carrier(L), step : PolynomialHornerLaw(K, L, e, x, F), n : Nat, p : Polynomial(K),
   support : SeriesSupport(K, polynomial_coefficients(K, p), succ(n)),
   previous : polynomial_eval(K, L, e, polynomial_tail(K, p), x) = F(polynomial_tail(K, p))
@@ -40,12 +40,12 @@ def polynomial_eval_characterization_step(
 }
 
 def polynomial_eval_characterization_bounded(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   F : Polynomial(K) -> af_carrier(L), zero : F(polynomial_zero(K)) = field_zero(L),
   step : PolynomialHornerLaw(K, L, e, x, F), n : Nat
 ) :=
   induction n as k return (
-    forall p : Polynomial(K), SeriesSupport(K, polynomial_coefficients(K, p), k)
+    forall p : Polynomial(K). SeriesSupport(K, polynomial_coefficients(K, p), k)
     -> polynomial_eval(K, L, e, p, x) = F(p)
   ) {
     zero => fun (p : Polynomial(K), support : SeriesSupport(K, polynomial_coefficients(K, p), 0)) => trans(
@@ -61,7 +61,7 @@ def polynomial_eval_characterization_bounded(
   };
 
 def polynomial_eval_characterization(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), F : Polynomial(K)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), F : Polynomial(K)
   -> af_carrier(L), zero : F(polynomial_zero(K)) = field_zero(L),
   step : PolynomialHornerLaw(K, L, e, x, F), p : Polynomial(K)
 ) :

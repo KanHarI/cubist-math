@@ -14,14 +14,14 @@ def radix_unit_children(extra : Nat, f : Unit -> RadixPositive(extra)) :
 }
 
 def RadixBranch(extra : Nat, P : RadixPositive(extra) -> U0, label : RadixLabel(extra)) :=
-  forall children : RadixArity(extra, label) -> RadixPositive(extra),
-  (forall branch : RadixArity(extra, label), P(children(branch)))
+  forall children : RadixArity(extra, label) -> RadixPositive(extra).
+  (forall branch : RadixArity(extra, label). P(children(branch)))
   -> P(sup(RadixPositive(extra), label, children));
 
 def radix_leading_branch(
   extra : Nat, P : RadixPositive(extra) -> U0,
-  leading : (forall d : RadixDigit(succ(extra)), P(radix_leading(extra, d))),
-  d : RadixDigit(succ(extra)), children : Void -> RadixPositive(extra), ih : forall v : Void,
+  leading : (forall d : RadixDigit(succ(extra)). P(radix_leading(extra, d))),
+  d : RadixDigit(succ(extra)), children : Void -> RadixPositive(extra), ih : forall v : Void.
   P(children(v))
 ) :=
   along P by cong(
@@ -35,10 +35,10 @@ def radix_leading_branch(
 def radix_append_branch(
   extra : Nat, P : RadixPositive(extra) -> U0,
   append : (
-    forall d : RadixDigit(succ(succ(extra))), forall p : RadixPositive(extra), P(p)
+    forall d : RadixDigit(succ(succ(extra))). forall p : RadixPositive(extra). P(p)
     -> P(radix_append(extra, d, p))
   ), d : RadixDigit(succ(succ(extra))), children : Unit -> RadixPositive(extra),
-  ih : forall u : Unit, P(children(u))
+  ih : forall u : Unit. P(children(u))
 ) :=
   along P by cong(
     (
@@ -50,9 +50,9 @@ def radix_append_branch(
 
 def radix_positive_induction(
   extra : Nat, P : RadixPositive(extra) -> U0,
-  leading : (forall d : RadixDigit(succ(extra)), P(radix_leading(extra, d))),
+  leading : (forall d : RadixDigit(succ(extra)). P(radix_leading(extra, d))),
   append : (
-    forall d : RadixDigit(succ(succ(extra))), forall p : RadixPositive(extra), P(p)
+    forall d : RadixDigit(succ(succ(extra))). forall p : RadixPositive(extra). P(p)
     -> P(radix_append(extra, d, p))
   ), p : RadixPositive(extra)
 ) :=

@@ -2,13 +2,13 @@
 // Current checked counterparts: ../current/pointwise.cubist.
 
 // ext reads the dependent function carrier from the expected equality.
-def pointwise_path(A B : U0, f g : A -> B, h : (forall x : A, f(x) = g(x))) : f = g {
+def pointwise_path(A, B : U0, f, g : A -> B, h : (forall x : A. f(x) = g(x))) : f = g {
   ext x;
   exact h(x);
 }
 
 def pointwise_section_path(
-  A : U0, C : A -> U0, f g : (forall x : A, C(x)), h : (forall x : A, f(x) = g(x))
+  A : U0, C : A -> U0, f, g : (forall x : A. C(x)), h : (forall x : A. f(x) = g(x))
 ) :
   f = g {
   ext x;
@@ -16,14 +16,14 @@ def pointwise_section_path(
 }
 
 // This same witness-evaluation statement checks in the current expansion.
-def pointwise_evaluation(A B : U0, f g : A -> B, h : (forall x : A, f(x) = g(x)), x : A) :
+def pointwise_evaluation(A, B : U0, f, g : A -> B, h : (forall x : A. f(x) = g(x)), x : A) :
   cong(fun (k : A -> B) => k(x), pointwise_path(A, B, f, g, h)) = h(x) {
   exact refl(h(x));
 }
 
 // The expected PathP supplies the outer family; the inner expected equality
 // supplies B. All four edges must still check in the native kernel.
-def naturality_square(A B : U0, f g : A -> B, H : (forall a : A, f(a) = g(a)), x y : A, p : x = y) :
+def naturality_square(A, B : U0, f, g : A -> B, H : (forall a : A. f(a) = g(a)), x, y : A, p : x = y) :
   PathP(fun (j : Interval) => H(x) @ j = H(y) @ j, cong(f, p), cong(g, p)) {
   exact path j => path i => H(p @ i) @ j;
 }

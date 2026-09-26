@@ -122,8 +122,8 @@ test("dependent pair induction checks its motive and both branch arguments nativ
   const k = session(t), checker = new NativeCubicalElaborator(k);
   const translator = new Translator({ normalize: false, checker });
   const result = translator.translate(`
-    def second(A : U0, B : A -> U0, p : (exists x : A, B(x))) :=
-      pair_induction((fun (q : (exists x : A, B(x))) => B(unpack q as (a, b) return A { a; })),
+    def second(A : U0, B : A -> U0, p : (exists x : A. B(x))) :=
+      pair_induction((fun (q : (exists x : A. B(x))) => B(unpack q as (a, b) return A { a; })),
         (fun (a : A) => fun (b : B(a)) => b), p);
     def wrong(p : Nat and Nat) := pair_induction(
       (fun (q : Nat and Nat) => Nat), (fun (a : Nat) => fun (b : Unit) => a), p);

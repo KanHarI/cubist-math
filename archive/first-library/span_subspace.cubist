@@ -3,7 +3,7 @@ import vector_subspaces;
 // Add the two finite witnesses before eliminating their truncations.
 def span_add_witnesses(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
-  x y : vector_carrier(K, V), hx : SpanWitness(K, V, P, x), hy : SpanWitness(K, V, P, y)
+  x, y : vector_carrier(K, V), hx : SpanWitness(K, V, P, x), hy : SpanWitness(K, V, P, y)
 ) :
   Span(K, V, P, vector_add(K, V, x, y)) {
   obtain (n, v, a, membersV, sumX) := hx;
@@ -35,7 +35,7 @@ def span_add_witnesses(
 
 def span_add(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
-  x y : vector_carrier(K, V), hx : Span(K, V, P, x), hy : Span(K, V, P, y)
+  x, y : vector_carrier(K, V), hx : Span(K, V, P, x), hy : Span(K, V, P, y)
 ) :
   Span(K, V, P, vector_add(K, V, x, y)) {
   exact TruncateElim(

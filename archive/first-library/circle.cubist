@@ -242,13 +242,13 @@ def action_negative(n : Nat, z : Z) :=
     );
   };
 
-def action_integer(x y : Z) :=
+def action_integer(x, y : Z) :=
   match y as w return ((along code by integer_loop(w) from x) = addZ(x, w)) {
     left n => action_positive(n, x);
     right n => action_negative(n, x);
   };
 
-def winding_concatenate(p q : base = base) : winding(trans(p, q)) = addZ(winding(p), winding(q)) {
+def winding_concatenate(p, q : base = base) : winding(trans(p, q)) = addZ(winding(p), winding(q)) {
   let act := fun (r : base = base) => along code by r from winding(p);
   exact trans(
     transport_concat(S1, code, base, base, base, p, q, zeroZ),
@@ -260,9 +260,9 @@ def winding_concatenate(p q : base = base) : winding(trans(p, q)) = addZ(winding
 // its set-truncation is equivalent to it. No higher paths are silently erased.
 def LoopsS1 := base = base;
 
-def loop_multiply(p q : LoopsS1) := trans(p, q);
+def loop_multiply(p, q : LoopsS1) := trans(p, q);
 
-def loop_equal_decidable(p q : LoopsS1) :=
+def loop_equal_decidable(p, q : LoopsS1) :=
   match integer_equal_decidable(winding(p), winding(q)) return Decidable(p = q) {
     left h => typed(
       Decidable(p = q),
@@ -283,13 +283,13 @@ def loops_are_a_set : IsSet(LoopsS1) {
 def loop_group : GroupLaws(LoopsS1, refl(base), loop_multiply) {
   exact (
     loops_are_a_set,
-    (fun (p q r : LoopsS1) => path_associative(S1, base, base, base, base, p, q, r)),
+    (fun (p, q, r : LoopsS1) => path_associative(S1, base, base, base, base, p, q, r)),
     (fun (p : LoopsS1) => left_unit(S1, base, base, p)),
     (fun (p : LoopsS1) => right_unit(S1, base, base, p)),
     (
       fun (p : LoopsS1) => typed(
         (
-          exists q : LoopsS1, (loop_multiply(q, p) = refl(base))
+          exists q : LoopsS1. (loop_multiply(q, p) = refl(base))
           and (loop_multiply(p, q) = refl(base))
         ), (sym(p), inverse_left(S1, base, base, p), inverse_right(S1, base, base, p))
       )
@@ -297,7 +297,7 @@ def loop_group : GroupLaws(LoopsS1, refl(base), loop_multiply) {
   );
 }
 
-def integer_loop_add(x y : Z) :
+def integer_loop_add(x, y : Z) :
   integer_loop(addZ(x, y)) = loop_multiply(integer_loop(x), integer_loop(y)) {
   let p := integer_loop(x);
   let q := integer_loop(y);
@@ -312,11 +312,11 @@ def integer_loop_add(x y : Z) :
   exact trans(cong(integer_loop, sym(h)), integer_loop_winding(loop_multiply(p, q)));
 }
 
-def reflect_integer_path(x y : Z, h : integer_loop(x) = integer_loop(y)) : x = y {
+def reflect_integer_path(x, y : Z, h : integer_loop(x) = integer_loop(y)) : x = y {
   exact trans(sym(winding_integer_loop(x)), trans(cong(winding, h), winding_integer_loop(y)));
 }
 
-def addition_associative(x y z : Z) : addZ(addZ(x, y), z) = addZ(x, addZ(y, z)) {
+def addition_associative(x, y, z : Z) : addZ(addZ(x, y), z) = addZ(x, addZ(y, z)) {
   let p := integer_loop(x);
   let q := integer_loop(y);
   let r := integer_loop(z);
@@ -366,7 +366,7 @@ def integer_group : GroupLaws(Z, zeroZ, addZ) {
     integers_are_a_set, addition_associative, addition_left_zero, (fun (x : Z) => refl(x)),
     (
       fun (x : Z) => typed(
-        (exists y : Z, (addZ(y, x) = zeroZ) and (addZ(x, y) = zeroZ)),
+        (exists y : Z. (addZ(y, x) = zeroZ) and (addZ(x, y) = zeroZ)),
         (inverse_integer(x), addition_inverse_left(x), addition_inverse_right(x))
       )
     )

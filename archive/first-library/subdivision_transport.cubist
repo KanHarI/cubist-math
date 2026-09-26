@@ -2,11 +2,11 @@ import sample_subdivision_conditions;
 
 // Endpoint paths transport the dependent subdivision data. These are
 // identities of endpoints, not geometric contour paths or homotopies.
-def subdivision_move_end(C : U1, a b c : C, p : b = c, piece : SampleSubdivision(C, a, b)) :=
+def subdivision_move_end(C : U1, a, b, c : C, p : b = c, piece : SampleSubdivision(C, a, b)) :=
   along((fun (endpoint : C) => SampleSubdivision(C, a, endpoint))) by p from piece;
 
 def subdivision_sum_move_end(
-  C G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, a b c : C, p : b = c,
+  C, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, a, b, c : C, p : b = c,
   piece : SampleSubdivision(C, a, b)
 ) :
   subdivision_sum(C, G, zero, addG, edge, a, c, subdivision_move_end(C, a, b, c, p, piece)) = subdivision_sum(
@@ -24,8 +24,8 @@ def subdivision_sum_move_end(
 }
 
 def subdivision_condition_move_end(
-  C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1),
-  a b c tag : C, p : b = c, piece : SampleSubdivision(C, a, b), valid : condition(a, b, tag, piece)
+  C : U1, condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1),
+  a, b, c, tag : C, p : b = c, piece : SampleSubdivision(C, a, b), valid : condition(a, b, tag, piece)
 ) :
   condition(a, c, tag, subdivision_move_end(C, a, b, c, p, piece)) {
   exact comp(

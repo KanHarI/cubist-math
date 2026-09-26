@@ -9,27 +9,27 @@ def action_backward(F : U0, e : Equiv(U0, F, F)) : F -> F {
 }
 
 def action_left_law(F : U0, e : Equiv(U0, F, F)) :
-  forall v : F, action_backward(F, e, action_forward(F, e, v)) = v {
+  forall v : F. action_backward(F, e, action_forward(F, e, v)) = v {
   exact equivalence_left(F, F, e);
 }
 
 // A family of equivalences gives a local system on the bouquet. Transport
 // around a generator performs its specified action on the fiber.
-def action_edges(A F : U0, actions : A -> Equiv(U0, F, F), label : Unit or A) :=
+def action_edges(A, F : U0, actions : A -> Equiv(U0, F, F), label : Unit or A) :=
   match label return (F = F) {
     left u => refl(F);
     right a => ua(U0, F, F, actions(a));
   };
 
-def action_family(A F : U0, actions : A -> Equiv(U0, F, F)) :=
+def action_family(A, F : U0, actions : A -> Equiv(U0, F, F)) :=
   suspension_rec(Unit or A, U0, F, F, action_edges(A, F, actions));
 
-def action_univalence(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
+def action_univalence(A, F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
   (along((fun (T : U0) => T)) by ua(U0, F, F, actions(a)) from v) = action_forward(F, actions(a), v) {
   exact UnivalenceBeta(U0, F, F, actions(a), v);
 }
 
-def action_spoke(A F : U0, actions : A -> Equiv(U0, F, F), v : F) :
+def action_spoke(A, F : U0, actions : A -> Equiv(U0, F, F), v : F) :
   (along action_family(A, F, actions) by bouquet_spoke(A) from v) = v {
   exact trans(
     trans(
@@ -47,7 +47,7 @@ def action_spoke(A F : U0, actions : A -> Equiv(U0, F, F), v : F) :
   );
 }
 
-def action_spoke_inverse(A F : U0, actions : A -> Equiv(U0, F, F), v : F) :
+def action_spoke_inverse(A, F : U0, actions : A -> Equiv(U0, F, F), v : F) :
   (along action_family(A, F, actions) by sym(bouquet_spoke(A)) from v) = v {
   let before := along action_family(A, F, actions) by sym(bouquet_spoke(A)) from v;
   exact trans(
@@ -58,7 +58,7 @@ def action_spoke_inverse(A F : U0, actions : A -> Equiv(U0, F, F), v : F) :
   );
 }
 
-def action_edge(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
+def action_edge(A, F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
   (along action_family(A, F, actions) by bouquet_edge(A, a) from v) = action_forward(
     F, actions(a), v
   ) {
@@ -78,10 +78,10 @@ def action_edge(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
   );
 }
 
-def loop_action(A F : U0, actions : A -> Equiv(U0, F, F), p : BouquetLoops(A), v : F) :=
+def loop_action(A, F : U0, actions : A -> Equiv(U0, F, F), p : BouquetLoops(A), v : F) :=
   along action_family(A, F, actions) by p from v;
 
-def loop_action_generator(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
+def loop_action_generator(A, F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
   loop_action(A, F, actions, bouquet_generator(A, a), v) = action_forward(F, actions(a), v) {
   exact trans(
     transport_concat(
@@ -96,7 +96,7 @@ def loop_action_generator(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F
   );
 }
 
-def loop_action_inverse(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
+def loop_action_inverse(A, F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
   loop_action(A, F, actions, sym(bouquet_generator(A, a)), v) = action_backward(F, actions(a), v) {
   let before := loop_action(A, F, actions, sym(bouquet_generator(A, a)), v);
   let same :=
@@ -112,7 +112,7 @@ def loop_action_inverse(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) 
   );
 }
 
-def loop_action_append(A F : U0, actions : A -> Equiv(U0, F, F), p q : BouquetLoops(A), v : F) :
+def loop_action_append(A, F : U0, actions : A -> Equiv(U0, F, F), p, q : BouquetLoops(A), v : F) :
   loop_action(A, F, actions, trans(p, q), v) = loop_action(
     A, F, actions, q, loop_action(A, F, actions, p, v)
   ) {

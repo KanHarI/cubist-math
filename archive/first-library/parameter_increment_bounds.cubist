@@ -2,21 +2,21 @@ import parameter_contour_bounds;
 import sample_magnitude;
 
 def parameter_real_increment(
-  C F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a b tag : C
+  C, F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a, b, tag : C
 ) :=
   coordinate_difference(F, addF, negF, complex_real(F, curve(a)), complex_real(F, curve(b)));
 
 def parameter_imag_increment(
-  C F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a b tag : C
+  C, F : U1, addF : F -> F -> F, negF : F -> F, curve : C -> Complex(F), a, b, tag : C
 ) :=
   coordinate_difference(F, addF, negF, complex_imag(F, curve(a)), complex_imag(F, curve(b)));
 
 // Repackage separately proved coordinate bounds for the contour estimate.
 def parameter_coordinate_increment_bounds(
-  C F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
-  realWeight imagWeight : C -> C -> C -> F, n : Nat
+  C, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
+  realWeight, imagWeight : C -> C -> C -> F, n : Nat
 ) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   SampleMagnitudeBounds(
     C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, n, vertices, tags
   )
@@ -27,7 +27,7 @@ def parameter_coordinate_increment_bounds(
     C, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, tags
   ) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
+    forall vertices : SampleVertices(C, k). forall tags : SampleTags(C, k).
     SampleMagnitudeBounds(
       C, F, negF, lt, parameter_real_increment(C, F, addF, negF, curve), realWeight, k, vertices,
       tags
@@ -40,7 +40,7 @@ def parameter_coordinate_increment_bounds(
       C, F, addF, negF, lt, curve, realWeight, imagWeight, k, vertices, tags
     )
   ) {
-    zero => fun (vertices : C, tags realBounds imagBounds : Unit) => tt;
+    zero => fun (vertices : C, tags, realBounds, imagBounds : Unit) => tt;
     succ previous => fun (
       vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)),
       realBounds : SampleMagnitudeBounds(

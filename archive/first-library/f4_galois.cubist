@@ -13,13 +13,13 @@ def f2_inclusion_retraction(x : F2Carrier) : f4_retract_f2(f2_into_f4(x)) = x {
   );
 }
 
-def f2_inclusion_injective(x y : F2Carrier, p : f2_into_f4(x) = f2_into_f4(y)) : x = y {
+def f2_inclusion_injective(x, y : F2Carrier, p : f2_into_f4(x) = f2_into_f4(y)) : x = y {
   exact trans(
     sym(f2_inclusion_retraction(x)), trans(cong(f4_retract_f2, p), f2_inclusion_retraction(y))
   );
 }
 
-def f2_inclusion_add(x y : F2Carrier) :
+def f2_inclusion_add(x, y : F2Carrier) :
   f2_into_f4(f2_add(x, y)) = f4_add(f2_into_f4(x), f2_into_f4(y)) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_into_f4(f2_add(x, y)) = f4_add(f2_into_f4(x), f2_into_f4(y))),
@@ -34,7 +34,7 @@ def f2_inclusion_add(x y : F2Carrier) :
   );
 }
 
-def f2_inclusion_mul(x y : F2Carrier) :
+def f2_inclusion_mul(x, y : F2Carrier) :
   f2_into_f4(f2_mul(x, y)) = f4_mul(f2_into_f4(x), f2_into_f4(y)) {
   exact f2_induction(
     (fun (x : F2Carrier) => f2_into_f4(f2_mul(x, y)) = f4_mul(f2_into_f4(x), f2_into_f4(y))),
@@ -68,7 +68,7 @@ def F4OverF2 := structure_object(ExtensionData(F2), F4Carrier, f4_extension_data
 // Frobenius x |-> x^2 fixes 0 and 1 and exchanges alpha with alpha+1.
 def f4_frobenius(x : F4Carrier) := f4_mul(x, x);
 
-def f4_frobenius_add(x y : F4Carrier) :
+def f4_frobenius_add(x, y : F4Carrier) :
   f4_frobenius(f4_add(x, y)) = f4_add(f4_frobenius(x), f4_frobenius(y)) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_frobenius(f4_add(x, y)) = f4_add(f4_frobenius(x), f4_frobenius(y))),
@@ -107,7 +107,7 @@ def f4_frobenius_add(x y : F4Carrier) :
   );
 }
 
-def f4_frobenius_mul(x y : F4Carrier) :
+def f4_frobenius_mul(x, y : F4Carrier) :
   f4_frobenius(f4_mul(x, y)) = f4_mul(f4_frobenius(x), f4_frobenius(y)) {
   exact f4_induction(
     (fun (x : F4Carrier) => f4_frobenius(f4_mul(x, y)) = f4_mul(f4_frobenius(x), f4_frobenius(y))),

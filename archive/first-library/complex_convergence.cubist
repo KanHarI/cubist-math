@@ -4,7 +4,7 @@ import complete_fields;
 // Coordinate balls give the product uniformity, with a shared actual bound
 // for both coordinates. The laws and completeness proofs are in complex_limits;
 // these definitions do not assert a concrete real-field model.
-def ComplexClose(F : U1, addF : F -> F -> F, lt : F -> F -> U0, z w : Complex(F), epsilon : F) :=
+def ComplexClose(F : U1, addF : F -> F -> F, lt : F -> F -> U0, z, w : Complex(F), epsilon : F) :=
   FieldClose(F, addF, lt, complex_real(F, z), complex_real(F, w), epsilon)
   and FieldClose(F, addF, lt, complex_imag(F, z), complex_imag(F, w), epsilon);
 
@@ -12,12 +12,12 @@ def ComplexConverges(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F),
   limit : Complex(F)
 ) :=
-  forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat, forall n : Nat, IndexLE(bound, n)
+  forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall n : Nat. IndexLE(bound, n)
   -> ComplexClose(F, addF, lt, sequence(n), limit, epsilon);
 
 def ComplexCauchy(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F)
 ) :=
-  forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat, forall m : Nat, forall n : Nat,
+  forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall m : Nat. forall n : Nat.
   IndexLE(bound, m) -> IndexLE(bound, n)
   -> ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon);

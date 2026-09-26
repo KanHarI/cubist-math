@@ -240,9 +240,9 @@ A box marked moved names the item's new owner.
   rewrite candidate work and final-check arena snapshots; parameter repetition,
   per-declaration arena deltas and signature/assumption inventories remain.
   The HoTT roadmap's baseline (A7) extends this measurement.
-- [x] Add grouped introductions, such as `intro A x h;`, by expansion to
+- [x] Add grouped introductions, such as `intro A, x, h;`, by expansion to
   existing introductions, preserving an inspectable context at each binder.
-- [x] Add grouped typed binders, such as `(x y : A)`, and multi-binder lambdas.
+- [x] Add grouped typed binders, such as `(x, y : A)`, and multi-binder lambdas.
   Add expected-type lambda binders only where the expected function type gives
   an unambiguous domain. Consecutive `Universe` parameters in declarations
   also specialize correctly when grouped.

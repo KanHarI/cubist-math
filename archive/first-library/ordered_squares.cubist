@@ -3,9 +3,9 @@ import ring_laws;
 // Square and norm estimates proved constructively, without sign decisions.
 
 def ordered_lt_implies_le(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F, less : lt(x, y)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y : F, less : lt(x, y)
 ) :
   FieldLe(F, lt, x, y) {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
@@ -14,7 +14,7 @@ def ordered_lt_implies_le(
 }
 
 def ordered_neg_positive(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, belowZero : lt(x, zero)
 ) :
@@ -30,7 +30,7 @@ def ordered_neg_positive(
 }
 
 def ordered_negative_square(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F
 ) :
@@ -45,7 +45,7 @@ def ordered_negative_square(
 }
 
 def ordered_square_of_nonnegative(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F,
   aboveZeroWeak : FieldLe(F, lt, zero, x)
@@ -59,7 +59,7 @@ def ordered_square_of_nonnegative(
 }
 
 def ordered_square_of_positive(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F, positive : lt(zero, x)
 ) :
@@ -72,7 +72,7 @@ def ordered_square_of_positive(
 }
 
 def ordered_square_nonnegative(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F
 ) :
@@ -104,7 +104,7 @@ def ordered_square_nonnegative(
 }
 
 def ordered_square_of_apart(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x : F,
   apart : FieldApart(F, lt, x, zero)
@@ -132,9 +132,9 @@ def ordered_square_of_apart(
 }
 
 def ordered_positive_plus_nonnegative(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F, positive : lt(zero, x),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y : F, positive : lt(zero, x),
   aboveZeroWeak : FieldLe(F, lt, zero, y)
 ) :
   lt(zero, addF(x, y)) {
@@ -148,9 +148,9 @@ def ordered_positive_plus_nonnegative(
 }
 
 def ordered_sum_nonnegative(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y : F,
   nonnegativeX : FieldLe(F, lt, zero, x), nonnegativeY : FieldLe(F, lt, zero, y)
 ) :
   FieldLe(F, lt, zero, addF(x, y)) {

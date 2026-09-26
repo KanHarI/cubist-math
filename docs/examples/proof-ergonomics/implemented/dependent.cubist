@@ -4,17 +4,17 @@
 import paths;
 
 // Only the endpoints are inferred. The family and path are selected explicitly.
-def move_in_fiber(A : U0, C : A -> U0, x y : A, p : x = y, v : C(x)) : C(y) {
+def move_in_fiber(A : U0, C : A -> U0, x, y : A, p : x = y, v : C(x)) : C(y) {
   exact along C by p from v;
 }
 
-def section_path(A : U0, C : A -> U0, f : (forall a : A, C(a)), x y : A, p : x = y) :
+def section_path(A : U0, C : A -> U0, f : (forall a : A. C(a)), x, y : A, p : x = y) :
   PathP(fun (i : Interval) => C(p @ i), f(x), f(y)) {
   exact path i => f(p @ i);
 }
 
 // Alternate frontend API for the same direct dependent path.
-def section_path_action(A : U0, C : A -> U0, f : (forall a : A, C(a)), x y : A, p : x = y) :
+def section_path_action(A : U0, C : A -> U0, f : (forall a : A. C(a)), x, y : A, p : x = y) :
   PathP(fun (i : Interval) => C(p @ i), f(x), f(y)) {
   exact apd_path(f, p);
 }
@@ -22,7 +22,7 @@ def section_path_action(A : U0, C : A -> U0, f : (forall a : A, C(a)), x y : A, 
 // Deliberately show the bridge: its subgoal is the existing apd result type,
 // transport(C,x,y,p,f(x)) = f(y), and its output is a dependent path.
 // The round trip need not be judgmentally equal to section_path.
-def section_via_transport(A : U0, C : A -> U0, f : (forall a : A, C(a)), x y : A, p : x = y) :
+def section_via_transport(A : U0, C : A -> U0, f : (forall a : A. C(a)), x, y : A, p : x = y) :
   PathP(fun (i : Interval) => C(p @ i), f(x), f(y)) {
   over C along p by {
     exact apd(f, x, y, p);

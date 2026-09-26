@@ -1,19 +1,19 @@
 import binomial_types;
 
-def BinCard(n k : Nat, p : Fin(n) -> Bool) := Mere(Bijection(Fin(k), Selected(Fin(n), p)));
+def BinCard(n, k : Nat, p : Fin(n) -> Bool) := Mere(Bijection(Fin(k), Selected(Fin(n), p)));
 
-def bin_predicate(n k : Nat, s : FiniteBinomial(n, k)) : Fin(n) -> Bool {
+def bin_predicate(n, k : Nat, s : FiniteBinomial(n, k)) : Fin(n) -> Bool {
   exact sigma_first(Fin(n) -> Bool, BinCard(n, k), s);
 }
 
-def bin_cardinality(n k : Nat, s : FiniteBinomial(n, k)) :=
+def bin_cardinality(n, k : Nat, s : FiniteBinomial(n, k)) :=
   sigma_second(Fin(n) -> Bool, BinCard(n, k), s);
 
-def bin_pair(n k : Nat, p : Fin(n) -> Bool, h : BinCard(n, k, p)) :=
+def bin_pair(n, k : Nat, p : Fin(n) -> Bool, h : BinCard(n, k, p)) :=
   typed(FiniteBinomial(n, k), (p, h));
 
 def bin_ext(
-  n k : Nat, u v : FiniteBinomial(n, k), p : bin_predicate(n, k, u) = bin_predicate(n, k, v)
+  n, k : Nat, u, v : FiniteBinomial(n, k), p : bin_predicate(n, k, u) = bin_predicate(n, k, v)
 ) :
   u = v {
   exact subtype_ext(
@@ -22,14 +22,14 @@ def bin_ext(
   );
 }
 
-def normalize_card(n k : Nat, p : Fin(succ(n)) -> Bool, h : BinCard(succ(n), k, p)) :=
+def normalize_card(n, k : Nat, p : Fin(succ(n)) -> Bool, h : BinCard(succ(n), k, p)) :=
   cardinal_compose(
     Fin(k), Selected(Fin(succ(n)), p), Selected(Fin(succ(n)), predicate_normal(Fin(n), p)), h,
     selected_normalize(Fin(n), p)
   );
 
 def bin_drop(
-  n k : Nat, p : Fin(n) -> Bool, h : BinCard(succ(n), succ(k), predicate_join(Fin(n), yes, p))
+  n, k : Nat, p : Fin(n) -> Bool, h : BinCard(succ(n), succ(k), predicate_join(Fin(n), yes, p))
 ) :=
   bin_pair(
     n, k, p,
@@ -45,7 +45,7 @@ def bin_drop(
     )
   );
 
-def bin_omit(n k : Nat, p : Fin(n) -> Bool, h : BinCard(succ(n), k, predicate_join(Fin(n), no, p))) :=
+def bin_omit(n, k : Nat, p : Fin(n) -> Bool, h : BinCard(succ(n), k, predicate_join(Fin(n), no, p))) :=
   bin_pair(
     n, k, p,
     cardinal_compose(
@@ -54,7 +54,7 @@ def bin_omit(n k : Nat, p : Fin(n) -> Bool, h : BinCard(succ(n), k, predicate_jo
     )
   );
 
-def bin_include(n k : Nat, p : Fin(n) -> Bool, h : BinCard(n, k, p)) :=
+def bin_include(n, k : Nat, p : Fin(n) -> Bool, h : BinCard(n, k, p)) :=
   bin_pair(
     succ(n), succ(k), predicate_join(Fin(n), yes, p),
     cardinal_compose(
@@ -76,7 +76,7 @@ def bin_include(n k : Nat, p : Fin(n) -> Bool, h : BinCard(n, k, p)) :=
     )
   );
 
-def bin_exclude(n k : Nat, p : Fin(n) -> Bool, h : BinCard(n, k, p)) :=
+def bin_exclude(n, k : Nat, p : Fin(n) -> Bool, h : BinCard(n, k, p)) :=
   bin_pair(
     succ(n), k, predicate_join(Fin(n), no, p),
     cardinal_compose(
@@ -89,12 +89,12 @@ def bin_exclude(n k : Nat, p : Fin(n) -> Bool, h : BinCard(n, k, p)) :=
   );
 
 def change_head_card(
-  n k : Nat, p : Fin(n) -> Bool, b c : Bool, q : b = c,
+  n, k : Nat, p : Fin(n) -> Bool, b, c : Bool, q : b = c,
   h : BinCard(succ(n), k, predicate_join(Fin(n), b, p))
 ) :=
   along((fun (v : Bool) => BinCard(succ(n), k, predicate_join(Fin(n), v, p)))) by q from h;
 
-def pascal_on_head(n k : Nat, p : Fin(n) -> Bool, b : Bool) :=
+def pascal_on_head(n, k : Nat, p : Fin(n) -> Bool, b : Bool) :=
   match b as c return (
     BinCard(succ(n), succ(k), predicate_join(Fin(n), c, p))
     -> (FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)))
@@ -125,7 +125,7 @@ def pascal_on_head(n k : Nat, p : Fin(n) -> Bool, b : Bool) :=
     );
   };
 
-def pascal_forward(n k : Nat, s : FiniteBinomial(succ(n), succ(k))) :=
+def pascal_forward(n, k : Nat, s : FiniteBinomial(succ(n), succ(k))) :=
   pascal_on_head(
     n, k, predicate_tail(Fin(n), bin_predicate(succ(n), succ(k), s)),
     bin_predicate(succ(n), succ(k), s, head(Fin(n))),
@@ -134,15 +134,15 @@ def pascal_forward(n k : Nat, s : FiniteBinomial(succ(n), succ(k))) :=
     )
   );
 
-def pascal_backward(n k : Nat, s : FiniteBinomial(n, k) or FiniteBinomial(n, succ(k))) :=
+def pascal_backward(n, k : Nat, s : FiniteBinomial(n, k) or FiniteBinomial(n, succ(k))) :=
   match s return FiniteBinomial(succ(n), succ(k)) {
     left u => bin_include(n, k, bin_predicate(n, k, u), bin_cardinality(n, k, u));
     right v => bin_exclude(n, succ(k), bin_predicate(n, succ(k), v), bin_cardinality(n, succ(k), v));
   };
 
-def pascal_predicate_roundtrip(n k : Nat, p : Fin(n) -> Bool, b : Bool) :=
+def pascal_predicate_roundtrip(n, k : Nat, p : Fin(n) -> Bool, b : Bool) :=
   match b as c return (
-    forall h : BinCard(succ(n), succ(k), predicate_join(Fin(n), c, p)),
+    forall h : BinCard(succ(n), succ(k), predicate_join(Fin(n), c, p)).
     bin_predicate(succ(n), succ(k), pascal_backward(n, k, pascal_on_head(n, k, p, c, h))) = predicate_join(
       Fin(n), c, p
     )
@@ -157,7 +157,7 @@ def pascal_predicate_roundtrip(n k : Nat, p : Fin(n) -> Bool, b : Bool) :=
     );
   };
 
-def pascal_left(n k : Nat, s : FiniteBinomial(succ(n), succ(k))) :
+def pascal_left(n, k : Nat, s : FiniteBinomial(succ(n), succ(k))) :
   pascal_backward(n, k, pascal_forward(n, k, s)) = s {
   let p := bin_predicate(succ(n), succ(k), s);
   let h := bin_cardinality(succ(n), succ(k), s);
@@ -171,17 +171,17 @@ def pascal_left(n k : Nat, s : FiniteBinomial(succ(n), succ(k))) :
   );
 }
 
-def sum_left_or(A B : U0, fallback : A, x : A or B) := match x return A {
+def sum_left_or(A, B : U0, fallback : A, x : A or B) := match x return A {
     left a => a;
     right b => fallback;
   };
 
-def sum_right_or(A B : U0, fallback : B, x : A or B) := match x return B {
+def sum_right_or(A, B : U0, fallback : B, x : A or B) := match x return B {
     left a => fallback;
     right b => b;
   };
 
-def pascal_right_selected(n k : Nat, s : FiniteBinomial(n, k)) :
+def pascal_right_selected(n, k : Nat, s : FiniteBinomial(n, k)) :
   pascal_forward(
     n, k, pascal_backward(n, k, typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), left(s)))
   ) = typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), left(s)) {
@@ -207,7 +207,7 @@ def pascal_right_selected(n k : Nat, s : FiniteBinomial(n, k)) :
   );
 }
 
-def pascal_right_omitted(n k : Nat, s : FiniteBinomial(n, succ(k))) :
+def pascal_right_omitted(n, k : Nat, s : FiniteBinomial(n, succ(k))) :
   pascal_forward(
     n, k, pascal_backward(n, k, typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), right(s)))
   ) = typed(FiniteBinomial(n, k) or FiniteBinomial(n, succ(k)), right(s)) {
@@ -233,7 +233,7 @@ def pascal_right_omitted(n k : Nat, s : FiniteBinomial(n, succ(k))) :
   );
 }
 
-def pascal_right(n k : Nat, s : FiniteBinomial(n, k) or FiniteBinomial(n, succ(k))) :=
+def pascal_right(n, k : Nat, s : FiniteBinomial(n, k) or FiniteBinomial(n, succ(k))) :=
   with unfolding [pascal_right_omitted] {
     match s as z return (pascal_forward(n, k, pascal_backward(n, k, z)) = z) {
       left u => pascal_right_selected(n, k, u);
@@ -241,7 +241,7 @@ def pascal_right(n k : Nat, s : FiniteBinomial(n, k) or FiniteBinomial(n, succ(k
     }
   };
 
-def binomial_pascal(n k : Nat) :
+def binomial_pascal(n, k : Nat) :
   Bijection(FiniteBinomial(succ(n), succ(k)), FiniteBinomial(n, k) or FiniteBinomial(n, succ(k))) {
   exact (pascal_forward(n, k), pascal_backward(n, k), pascal_left(n, k), pascal_right(n, k));
 }

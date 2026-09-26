@@ -16,7 +16,7 @@ def field_additive_laws(F : AlgebraicField) :
     af_set(F), assoc, unit, (fun (x : A) => trans(comm(x, zero), unit(x))),
     (
       fun (x : A) => typed(
-        (exists y : A, GroupInverseLaws(A, zero, add, x, y)),
+        (exists y : A. GroupInverseLaws(A, zero, add, x, y)),
         (af_neg(A, ops, x), inverseLaw(x), trans(comm(x, af_neg(A, ops, x)), inverseLaw(x)))
       )
     )
@@ -38,11 +38,11 @@ def field_additive_abelian(F : AlgebraicField) : IsAbelian(FieldAdditiveGroup(F)
 // Scalars act through the specified embedding K -> L. This is the action
 // used for L as a vector space over K in extension-degree calculations.
 def field_scalar_action(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K), x : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), a : af_carrier(K), x : af_carrier(L)
 ) :=
   af_mul(af_carrier(L), af_operations(L), field_embedding_map(K, L, e, a), x);
 
-def field_scalar_laws(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
+def field_scalar_laws(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   ScalarLaws(K, FieldAdditiveGroup(L), field_scalar_action(K, L, e)) {
   let A := af_carrier(L);
   let ops := af_operations(L);
@@ -55,12 +55,12 @@ def field_scalar_laws(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
   exact (
     (fun (x : A) => trans(cong((fun (z : A) => mul(z, x)), onePres), one(x))),
     (
-      fun (a b : af_carrier(K), x : A) => trans(
+      fun (a, b : af_carrier(K), x : A) => trans(
         cong((fun (z : A) => mul(z, x)), mulPres(a, b)), assoc(f(a), f(b), x)
       )
     ), (fun (a : af_carrier(K)) => distribute(f(a))),
     (
-      fun (a b : af_carrier(K), x : A) => trans(
+      fun (a, b : af_carrier(K), x : A) => trans(
         cong((fun (z : A) => mul(z, x)), addPres(a, b)),
         trans(
           comm(add(f(a), f(b)), x),
@@ -77,7 +77,7 @@ def field_scalar_laws(K L : AlgebraicField, e : FieldEmbedding(K, L)) :
   );
 }
 
-def field_vector_space(K L : AlgebraicField, e : FieldEmbedding(K, L)) :=
+def field_vector_space(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :=
   vector_space(
     K, FieldAdditiveGroup(L), field_scalar_action(K, L, e), field_additive_abelian(L),
     field_scalar_laws(K, L, e)

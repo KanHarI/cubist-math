@@ -140,6 +140,17 @@ function enhance(pre, code) {
   open.target = "_blank";
   open.rel = "noopener";
   bar.append(status, open);
+  // Pages with a REPL bar load its script.
+  if (document.querySelector('script[src*="repl-dock"]')) {
+    const repl = document.createElement("button");
+    repl.type = "button";
+    repl.className = "repl-fork";
+    repl.textContent = "Open in REPL ↓";
+    repl.title = "Load this example into the REPL bar and continue there";
+    repl.onclick = () => document.dispatchEvent(new CustomEvent("cubist-repl-fork",
+      { detail: { base: source, inputs: [], label: "Loaded the example:" } }));
+    open.before(repl);
+  }
   pre.after(bar);
   checkInTurn(source).then(result => {
     const links = result?.links ?? [];
@@ -184,7 +195,8 @@ function renderTranscript(code) {
     fork.textContent = "Fork into REPL ↓";
     fork.title = "Run this session in the REPL bar, where you can continue it";
     fork.onclick = () => document.dispatchEvent(new CustomEvent("cubist-repl-fork",
-      { detail: { base: base?.textContent ?? null, inputs: entries.map(entry => entry.input) } }));
+      { detail: { base: base?.textContent ?? null, inputs: entries.map(entry => entry.input),
+        label: "Loaded the example above the transcript:" } }));
     bar.append(fork);
   }
   pre.after(bar);

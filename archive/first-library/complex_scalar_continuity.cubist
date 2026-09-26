@@ -3,11 +3,11 @@ import complex_uniform_operations;
 // Right multiplication is convenient for the product-box estimate. Complex
 // multiplication is commutative, so this is also scalar multiplication.
 def complex_scaled_close(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), coefficient : Complex(F), r s : F,
-  bounded : ComplexRectangleBound(F, negF, lt, coefficient, r, s), x y : Complex(F),
-  delta epsilon : F, close : ComplexClose(F, addF, lt, x, y, delta),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), coefficient : Complex(F), r, s : F,
+  bounded : ComplexRectangleBound(F, negF, lt, coefficient, r, s), x, y : Complex(F),
+  delta, epsilon : F, close : ComplexClose(F, addF, lt, x, y, delta),
   small : lt(mulF(delta, addF(r, s)), epsilon)
 ) :
   ComplexClose(
@@ -74,16 +74,16 @@ def complex_scaled_close(
 
 // One radius works on the whole complex plane, including a zero coefficient.
 def complex_scalar_uniform_radius(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F), epsilon : F,
   positive : lt(zero, epsilon)
 ) :
-  exists delta : F, lt(zero, delta)
+  exists delta : F. lt(zero, delta)
   and (
-    forall x : Complex(F), forall y : Complex(F), ComplexClose(F, addF, lt, x, y, delta)
+    forall x : Complex(F). forall y : Complex(F). ComplexClose(F, addF, lt, x, y, delta)
     -> ComplexClose(
       F, addF, lt, complex_mul(F, addF, mulF, negF, x, coefficient),
       complex_mul(F, addF, mulF, negF, y, coefficient), epsilon
@@ -118,7 +118,7 @@ def complex_scalar_uniform_radius(
   exact (
     delta, positiveDelta,
     (
-      fun (x y : Complex(F), nearby : ComplexClose(F, addF, lt, x, y, delta)) => complex_scaled_close(
+      fun (x, y : Complex(F), nearby : ComplexClose(F, addF, lt, x, y, delta)) => complex_scaled_close(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, coefficient, r, s,
         typed(ComplexRectangleBound(F, negF, lt, coefficient, r, s), (realBound, imagBound)), x, y,
         delta, epsilon, nearby, small
@@ -128,10 +128,10 @@ def complex_scalar_uniform_radius(
 }
 
 def complex_uniform_curve_scale(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F),
   f : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, f)
@@ -144,7 +144,7 @@ def complex_uniform_curve_scale(
       )
     )
   ) {
-  intro epsilon positive;
+  intro epsilon, positive;
   obtain (delta, positiveDelta, scaleClose) := complex_scalar_uniform_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
     coefficient, epsilon, positive
@@ -154,7 +154,7 @@ def complex_uniform_curve_scale(
     mesh, positiveMesh,
     (
       fun (
-        s t : FieldUnitInterval(F, zero, one, lt),
+        s, t : FieldUnitInterval(F, zero, one, lt),
         nearby : FieldClose(
           F, addF, lt, field_interval_coordinate(F, zero, one, lt)(s),
           field_interval_coordinate(F, zero, one, lt)(t), mesh
@@ -165,10 +165,10 @@ def complex_uniform_curve_scale(
 }
 
 def complex_converges_scale(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F), sequence : Nat -> Complex(F),
   value : Complex(F), converges : ComplexConverges(F, zero, addF, lt, sequence, value)
 ) :
@@ -177,7 +177,7 @@ def complex_converges_scale(
     (fun (n : Nat) => complex_mul(F, addF, mulF, negF, sequence(n), coefficient)),
     complex_mul(F, addF, mulF, negF, value, coefficient)
   ) {
-  intro epsilon positive;
+  intro epsilon, positive;
   obtain (delta, positiveDelta, scaleClose) := complex_scalar_uniform_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
     coefficient, epsilon, positive

@@ -73,6 +73,9 @@ try {
   const moduleLink = page.locator("#tour-numbers a.example-module").first();
   assert.equal(await moduleLink.textContent(), "naturals");
   assert.match(await moduleLink.getAttribute("href"), /proof\.html\?proof=naturals$/);
+  // 0 is the constructor itself, not notation.
+  assert.deepEqual(await page.locator("#tour-numbers pre code").first().evaluate(code =>
+    [...code.querySelectorAll("*")].filter(node => node.textContent === "0").map(node => node.classList.contains("macro"))), [false]);
   // A numeral's expansion shows at once on hover.
   await page.locator('#tour-numbers [data-tip*="succ("]').first().hover();
   assert.match(await page.locator(".token-tip:not([hidden])").textContent(), /^\d+ expands to succ\(/);
@@ -92,10 +95,17 @@ try {
     await page.waitForFunction(() => !document.querySelector(".repl-form.busy"));
   };
   const lastResults = async count => (await page.locator(".repl-log").last().locator(".repl-result").allTextContents()).slice(-count);
+  // Any checked example opens in the REPL bar, which shows what it defines.
+  await page.goto(new URL("reference/types.html", base).href);
+  await page.locator("#values .example-bar .repl-fork").first().click();
+  await page.waitForFunction(() => [...document.querySelectorAll(".repl-dock .repl-result")].some(line => line.textContent === "seven : Nat"));
+  await enter("evaluate seven");
+  assert.deepEqual(await lastResults(1), ["7"]);
+  console.log("PASS examples open in the REPL bar with their definitions");
   // A read-only REPL transcript forks into the REPL bar, with the example
   // before it loaded, and can be continued there.
   await page.goto(new URL("reference/first-proof.html", base).href);
-  await page.locator(".repl-fork").nth(1).click();
+  await page.locator(".repl-fork", { hasText: "Fork into REPL" }).nth(1).click();
   await page.waitForFunction(() => document.querySelectorAll(".repl-dock .repl-result").length >= 4 && !document.querySelector(".repl-form.busy"));
   await enter("evaluate exists_greater_number(10)");
   assert.deepEqual(await lastResults(2), ["(6, 0, refl(6))", "(11, 0, refl(11))"]);
@@ -108,7 +118,7 @@ try {
   await enter("typeof nat_add_comm;");
   await enter("let y := add(2, 3);");
   await enter("y");
-  assert.deepEqual(await lastResults(3), ["forall x : Nat, forall y : Nat, x + y = y + x", "y : Nat", "5"]);
+  assert.deepEqual(await lastResults(3), ["forall x : Nat. forall y : Nat. x + y = y + x", "y : Nat", "5"]);
   console.log("PASS library module in the workspace, with its console");
   await page.goto(new URL("repl.html", base).href);
   for (const text of ["let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);

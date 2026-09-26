@@ -7,7 +7,7 @@ def PolynomialMonic(K : AlgebraicField, p : Polynomial(K)) :=
   polynomial_coefficients(K, p, polynomial_degree(K, p)) = field_one(K);
 
 def polynomial_scalar_inverse(
-  K : AlgebraicField, a b : af_carrier(K), inverse : field_mul(K, b, a) = field_one(K),
+  K : AlgebraicField, a, b : af_carrier(K), inverse : field_mul(K, b, a) = field_one(K),
   p : Polynomial(K)
 ) :
   polynomial_scale(K, b, polynomial_scale(K, a, p)) = p {
@@ -23,15 +23,15 @@ def polynomial_scalar_inverse(
 }
 
 def polynomial_scale_divides(
-  K : AlgebraicField, a b : af_carrier(K), inverse : field_mul(K, b, a) = field_one(K),
+  K : AlgebraicField, a, b : af_carrier(K), inverse : field_mul(K, b, a) = field_one(K),
   p : Polynomial(K)
 ) :
   PolynomialDivides(K, polynomial_scale(K, a, p), p) {
   let q := polynomial_scale(K, a, p);
   exact merely(
-    (exists u : Polynomial(K), p = polynomial_mul(K, q, u)),
+    (exists u : Polynomial(K). p = polynomial_mul(K, q, u)),
     typed(
-      (exists u : Polynomial(K), p = polynomial_mul(K, q, u)),
+      (exists u : Polynomial(K). p = polynomial_mul(K, q, u)),
       (
         polynomial_constant(K, b),
         trans(
@@ -93,13 +93,13 @@ def polynomial_normalize_nonzero(
 }
 
 def polynomial_divides_cutoff_le(
-  K : AlgebraicField, p q : Polynomial(K), nonzeroP : PolynomialNonzero(K, p),
+  K : AlgebraicField, p, q : Polynomial(K), nonzeroP : PolynomialNonzero(K, p),
   nonzeroQ : PolynomialNonzero(K, q), divides : PolynomialDivides(K, p, q)
 ) :
   le(polynomial_cutoff(K, p), polynomial_cutoff(K, q)) {
   obtain (m, dp) := polynomial_nonzero_degree(K, p, nonzeroP);
   have useQuotient :
-    (exists r : Polynomial(K), q = polynomial_mul(K, p, r))
+    (exists r : Polynomial(K). q = polynomial_mul(K, p, r))
     -> le(polynomial_cutoff(K, p), polynomial_cutoff(K, q)) {
     intro witness;
     obtain (r, equation) := witness;
@@ -117,14 +117,14 @@ def polynomial_divides_cutoff_le(
     ) by sym(dq) from natural_le_add_left(m, n);
   }
   exact mere_eliminate(
-    (exists r : Polynomial(K), q = polynomial_mul(K, p, r)),
+    (exists r : Polynomial(K). q = polynomial_mul(K, p, r)),
     le(polynomial_cutoff(K, p), polynomial_cutoff(K, q)),
     natural_order_prop(polynomial_cutoff(K, p), polynomial_cutoff(K, q)), useQuotient, divides
   );
 }
 
 def monic_difference_support(
-  K : AlgebraicField, p q : Polynomial(K), d : Nat, dp : polynomial_cutoff(K, p) = succ(d),
+  K : AlgebraicField, p, q : Polynomial(K), d : Nat, dp : polynomial_cutoff(K, p) = succ(d),
   dq : polynomial_cutoff(K, q) = succ(d), monicP : PolynomialMonic(K, p),
   monicQ : PolynomialMonic(K, q)
 ) :

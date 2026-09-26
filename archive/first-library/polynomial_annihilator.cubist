@@ -2,16 +2,16 @@ import polynomial_cancellation;
 import polynomial_roots;
 
 // Algebraicity means a nonzero formal polynomial vanishes at the element.
-def AlgebraicElement(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :=
-  Mere(exists p : Polynomial(K), PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
+def AlgebraicElement(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :=
+  Mere(exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
 
-def PolynomialAnnihilator(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
+def PolynomialAnnihilator(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
   PolynomialIdeal(K) {
   let E := fun (p : Polynomial(K)) => polynomial_eval(K, L, e, p, x);
   have add :
-    forall p : Polynomial(K), forall q : Polynomial(K), (E(p) = field_zero(L))
+    forall p : Polynomial(K). forall q : Polynomial(K). (E(p) = field_zero(L))
     -> (E(q) = field_zero(L)) -> E(polynomial_add(K, p, q)) = field_zero(L) {
-    intro p q hp hq;
+    intro p, q, hp, hq;
     exact with unfolding [] {
       trans(
         polynomial_eval_add(K, L, e, p, q, x),
@@ -23,9 +23,9 @@ def PolynomialAnnihilator(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af
     };
   }
   have mul :
-    forall a : Polynomial(K), forall p : Polynomial(K), (E(p) = field_zero(L))
+    forall a : Polynomial(K). forall p : Polynomial(K). (E(p) = field_zero(L))
     -> E(polynomial_mul(K, a, p)) = field_zero(L) {
-    intro a p hp;
+    intro a, p, hp;
     exact with unfolding [] {
       trans(
         polynomial_eval_mul(K, L, e, a, p, x),
@@ -41,12 +41,12 @@ def PolynomialAnnihilator(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af
 }
 
 def root_not_unit(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L),
   root : PolynomialRoot(K, L, e, p, x), unit : PolynomialUnit(K, p)
 ) :
   Void {
   let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
-  have impossible : (exists q : Polynomial(K), polynomial_mul(K, p, q) = polynomial_one(K)) -> Void {
+  have impossible : (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K)) -> Void {
     intro witness;
     obtain (q, inverse) := witness;
     obtain (ring, nontrivial, inverses) := af_laws(L);
@@ -69,24 +69,24 @@ def root_not_unit(
     };
   }
   exact mere_eliminate(
-    (exists q : Polynomial(K), polynomial_mul(K, p, q) = polynomial_one(K)), Void,
-    (fun (v w : Void) => typed((v = w), absurd(v))), impossible, unit
+    (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K)), Void,
+    (fun (v, w : Void) => typed((v = w), absurd(v))), impossible, unit
   );
 }
 
 def annihilator_generator_irreducible(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p : Polynomial(K),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p : Polynomial(K),
   root : PolynomialRoot(K, L, e, p, x), nonzero : PolynomialNonzero(K, p),
   generates : (
-    forall q : Polynomial(K), PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q)
+    forall q : Polynomial(K). PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q)
   )
 ) :
   PolynomialIrreducible(K, p) {
   let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
   have factors :
-    forall a : Polynomial(K), forall b : Polynomial(K), p = polynomial_mul(K, a, b)
+    forall a : Polynomial(K). forall b : Polynomial(K). p = polynomial_mul(K, a, b)
     -> Mere(PolynomialUnit(K, a) or PolynomialUnit(K, b)) {
-    intro a b equation;
+    intro a, b, equation;
     let Result := PolynomialUnit(K, a) or PolynomialUnit(K, b);
     have leftRoot : PolynomialRoot(K, L, e, a, x) -> Mere(Result) {
       intro ra;
@@ -126,14 +126,14 @@ def annihilator_generator_irreducible(
 }
 
 def algebraic_annihilator_generator(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x)
 ) :
   Mere(IdealPrincipalGenerator(K, PolynomialAnnihilator(K, L, e, x))) {
   let I := PolynomialAnnihilator(K, L, e, x);
   have rearrange :
-    (exists p : Polynomial(K), PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x))
-    -> (exists p : Polynomial(K), polynomial_ideal_members(K, I, p) and PolynomialNonzero(K, p)) {
+    (exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x))
+    -> (exists p : Polynomial(K). polynomial_ideal_members(K, I, p) and PolynomialNonzero(K, p)) {
     intro witness;
     obtain (p, nonzero, root) := witness;
     exact (p, root, nonzero);
@@ -141,8 +141,8 @@ def algebraic_annihilator_generator(
   exact polynomial_ideal_principal(
     K, I,
     mere_map(
-      (exists p : Polynomial(K), PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x)),
-      (exists p : Polynomial(K), polynomial_ideal_members(K, I, p) and PolynomialNonzero(K, p)),
+      (exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x)),
+      (exists p : Polynomial(K). polynomial_ideal_members(K, I, p) and PolynomialNonzero(K, p)),
       rearrange, algebraic
     )
   );

@@ -3,7 +3,7 @@ import sample_refinement_tags;
 
 // Tags admissible for a refinement all lie within its outer endpoints.
 def interval_refinement_tags_global(
-  F : U1, zero one : F, addF mulF : F -> F -> F, lt : F -> F -> U0, order : StrictOrder(F, lt),
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, lt : F -> F -> U0, order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
@@ -12,7 +12,7 @@ def interval_refinement_tags_global(
   SampleTagged(
     FieldUnitInterval(F, zero, one, lt),
     (
-      fun (x y : FieldUnitInterval(F, zero, one, lt)) => IntervalTagWithin(
+      fun (x, y : FieldUnitInterval(F, zero, one, lt)) => IntervalTagWithin(
         F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
         sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
       )
@@ -20,11 +20,11 @@ def interval_refinement_tags_global(
   ) {
   let I := FieldUnitInterval(F, zero, one, lt);
   let coordinate := field_interval_coordinate(F, zero, one, lt);
-  let related := (fun (a b : I) => FieldLe(F, lt, coordinate(a), coordinate(b)));
+  let related := (fun (a, b : I) => FieldLe(F, lt, coordinate(a), coordinate(b)));
   exact sample_between_global(
     I, related, (fun (x : I) => order_le_refl(F, lt, order, coordinate(x))),
     (
-      fun (x y z : I) => order_le_trans(
+      fun (x, y, z : I) => order_le_trans(
         F, zero, one, addF, mulF, lt, arithmetic, coordinate(x), coordinate(y), coordinate(z)
       )
     ), n, sample_first(I, n, vertices), sample_last(I, n, vertices), vertices, tags,
@@ -36,18 +36,18 @@ def interval_refinement_tags_global(
 // A coarse tag need not be admissible for each refined edge. The common
 // containing interval, rather than the refined edge, controls its distance.
 def uniform_refinement_tag_bounds(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   values : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
   uniform : ComplexUniformCurve(F, zero, one, addF, lt, values), epsilon : F,
   positive : lt(zero, epsilon)
 ) :
-  exists mesh : F, lt(zero, mesh)
+  exists mesh : F. lt(zero, mesh)
   and (
-    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-    forall coarseTag : FieldUnitInterval(F, zero, one, lt),
-    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall coarseTag : FieldUnitInterval(F, zero, one, lt).
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
     -> IntervalTagWithin(
       F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
@@ -68,9 +68,9 @@ def uniform_refinement_tag_bounds(
   let I := FieldUnitInterval(F, zero, one, lt);
   obtain (mesh, positiveMesh, closeValues) := uniform(epsilon, positive);
   have estimates :
-    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-    forall coarseTag : FieldUnitInterval(F, zero, one, lt),
-    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall coarseTag : FieldUnitInterval(F, zero, one, lt).
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
     -> IntervalTagWithin(
       F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
@@ -87,13 +87,13 @@ def uniform_refinement_tag_bounds(
       FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt, values, epsilon, n, vertices,
       sample_repeat_tags(FieldUnitInterval(F, zero, one, lt), n, coarseTag), tags
     ) {
-    intro n vertices coarseTag tags valid coarseWithin small;
+    intro n, vertices, coarseTag, tags, valid, coarseWithin, small;
     let a := sample_first(I, n, vertices);
     let b := sample_last(I, n, vertices);
     let within := IntervalTagWithin(F, zero, one, lt, a, b);
-    let constantCondition := (fun (x y : I) => within);
+    let constantCondition := (fun (x, y : I) => within);
     have localBound :
-      forall x : I, forall y : I, forall oldTag : I, forall newTag : I, Unit -> within(oldTag)
+      forall x : I. forall y : I. forall oldTag : I. forall newTag : I. Unit -> within(oldTag)
       -> within(newTag)
       -> ComplexBoxBound(
         F, negF, lt,
@@ -101,7 +101,7 @@ def uniform_refinement_tag_bounds(
           Complex(F), complex_add(F, addF), complex_neg(F, negF), values(oldTag), values(newTag)
         ), epsilon
       ) {
-      intro x y oldTag newTag unitWitness oldWithin newWithin;
+      intro x, y, oldTag, newTag, unitWitness, oldWithin, newWithin;
       let closeParameters :=
         interval_tags_close(
           F, zero, one, addF, mulF, negF, lt, ring, arithmetic, a, b, newTag, oldTag, newWithin,
@@ -118,7 +118,7 @@ def uniform_refinement_tag_bounds(
         F, zero, one, addF, mulF, lt, order, arithmetic, n, vertices, tags, valid
       );
     exact parameter_tag_bounds_from_samples(
-      I, F, addF, negF, lt, values, epsilon, (fun (x y : I) => Unit), constantCondition, localBound,
+      I, F, addF, negF, lt, values, epsilon, (fun (x, y : I) => Unit), constantCondition, localBound,
       n, vertices, sample_repeat_tags(I, n, coarseTag), tags,
       sample_adjacent_constant(I, Unit, tt, n, vertices), oldValid, newValid
     );

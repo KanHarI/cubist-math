@@ -35,7 +35,7 @@ test("short arithmetic, cubical and dependent examples elaborate to native axiom
 
 test("generic proof tactics link their checked specialization witnesses from source",async t=>{
   const source=`def generic_calc(U : Universe, x : Nat) : x = x { calc { x = x by refl(x); } }
-    def generic_rw(U : Universe, x y : Nat, p : x = y) : x = y { rw [p]; }
+    def generic_rw(U : Universe, x, y : Nat, p : x = y) : x = y { rw [p]; }
     def generic_simp(U : Universe, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n { simp [h]; }`;
   const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");});
   t.after(()=>program.dispose());
@@ -155,7 +155,7 @@ test("pushout construction visits shared source types within the proof deadline"
   let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
   for(let i=1;i<=26;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
   source+=`let P := Pushout(T26, Unit, Unit, fun (x : T26) => tt, fun (x : T26) => tt);
-    have h : forall x : P, x = x { intro x; exact path i => x; } rfl; }
+    have h : forall x : P. x = x { intro x; exact path i => x; } rfl; }
     def after : 0 = 0 { rfl; }`;
   const script=`import createCubical from ${JSON.stringify(wasm)};
     import {CubicalProgram} from ${JSON.stringify(programPath)};
@@ -189,7 +189,7 @@ test("incomplete grouped binders and introductions fail without hanging the pars
       {encoding:"utf8",timeout:budget(1000)});
     assert.equal(child.error,undefined,source);
     assert.notEqual(child.status,0,source);
-    assert.match(child.stderr,/Expected a name\./,source);
+    assert.match(child.stderr,/Expected (a name\.|[':;]+, found 'EOF'\.)/,source);
   }
 });
 
@@ -210,7 +210,7 @@ test("rewrites retain occurrence, carrier and dependent-position obligations",as
     }
     def missing(n : Nat) : n + 0 = n { rw [nat_add_zero(n)] at lhs occurrence 2; }
     def missing_default(n : Nat) : n + 0 = n { rw [nat_add_zero(n)] occurrence 2; }
-    def dependent(A : U0, C : A -> U0, f : forall a : A, C(a), x : A, y : A, p : x = y) :
+    def dependent(A : U0, C : A -> U0, f : forall a : A. C(a), x : A, y : A, p : x = y) :
       f(x) = f(x) { rw [p] at lhs; }
     def after : 0 = 0 { rfl; }
   `,"rewrite_rejections");
@@ -289,7 +289,7 @@ test("quantified simp rules scan each shared pattern node once",()=>{
       import {CubicalProgram} from ${JSON.stringify(program)};
       let source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
       for(let i=1;i<=28;i++)source+="let t"+i+" := f(t"+(i-1)+", t"+(i-1)+");";
-      source+="have helper : (forall k : Nat, f(t28,k) = k) -> n = n { intro h; ${tactic}; } rfl; }";
+      source+="have helper : (forall k : Nat. f(t28,k) = k) -> n = n { intro h; ${tactic}; } rfl; }";
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
         {collectReferences:false});
       try {
@@ -312,9 +312,9 @@ test("path reconstruction preserves compact shared terms within the proof deadli
       "f", "have proof : t24 = t24 { rw [refl(t24)] at lhs; } rfl; }"],
     ["calc","def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;",
       "f", "have proof : t24 = t24 { calc { t24 = t24 by refl(t24); _ = t24 by refl(t24); } } rfl; }"],
-    ["simp","def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat, n = n -> f(k) = k) : f(n) = n { let t0 := n;",
+    ["simp","def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat. n = n -> f(k) = k) : f(n) = n { let t0 := n;",
       "g", "have h : n = n := (fun (unused : Nat) => refl(n))(t24); simp only [c] with [h]; }"],
-    ["simpa","def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat, n = n -> f(k) = k) : f(n) = n { let t0 := n;",
+    ["simpa","def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat. n = n -> f(k) = k) : f(n) = n { let t0 := n;",
       "g", "have h : n = n := (fun (unused : Nat) => refl(n))(t24); simpa only [c] with [h] using refl(n); }"],
   ];
   for(const [name,prefix,fn,suffix] of cases) {
@@ -348,7 +348,7 @@ test("path abstraction and dependent-path transport keep shared inputs compact",
       if(${JSON.stringify(mode)}==="path") {
         source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
         for(let i=1;i<=24;i++)source+="let T"+i+" := F(T"+(i-1)+",T"+(i-1)+");";
-        source+="have h : forall x : T24, x = x { intro x; exact path i => x; } rfl; }";
+        source+="have h : forall x : T24. x = x { intro x; exact path i => x; } rfl; }";
       } else {
         source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
         for(let i=1;i<=24;i++)source+="let t"+i+" := f(t"+(i-1)+",t"+(i-1)+");";
@@ -414,7 +414,7 @@ test("shared path and transport proofs remain inspectable without expanding raw 
     if(mode==="path") {
       source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
       for(let i=1;i<=28;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
-      source+="have h : forall x : T28, x = x { intro x; exact path i => x; } rfl; }";
+      source+="have h : forall x : T28. x = x { intro x; exact path i => x; } rfl; }";
     } else {
       source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
       for(let i=1;i<=24;i++)source+=`let t${i} := f(t${i-1},t${i-1});`;
@@ -474,8 +474,8 @@ test("simpa transports through checked paths of types without inventing equivale
   const rejected=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>rejected.dispose());
   const bad=await rejected.check(`
-    def no_path(A B : U0, a : A) : B { simpa only [] using a; }
-    def maps_are_not_type_paths(A B : U0, f : A -> B, g : B -> A, a : A) : B {
+    def no_path(A, B : U0, a : A) : B { simpa only [] using a; }
+    def maps_are_not_type_paths(A, B : U0, f : A -> B, g : B -> A, a : A) : B {
       simpa only [f, g] using a;
     }
     def nontrivial_loop(A : U0, p : A = A, a : A) : A {
@@ -492,11 +492,11 @@ test("simp tries rules at each child before rewriting its parent",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
   const result=await program.check(`
-    def equality(f : Nat -> Nat, a b c d : Nat,
+    def equality(f : Nat -> Nat, a, b, c, d : Nat,
       p : f(a) = c, q : a = b, r : f(b) = d) : f(a) = d {
       simp only [p, q, r];
     }
-    def type_goal(P : Nat -> U0, f : Nat -> Nat, a b c d : Nat,
+    def type_goal(P : Nat -> U0, f : Nat -> Nat, a, b, c, d : Nat,
       p : f(a) = c, q : a = b, r : f(b) = d, h : P(d)) : P(f(a)) {
       simpa only [p, q, r] using h;
     }
@@ -559,9 +559,9 @@ test("freeze is withheld when removing a rule changes conditional premise search
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
   const result=await program.check(`import primes;
-    def freeze_case(f g k : Nat -> Nat, a b t : Nat,
-      c : forall n : Nat, g(n) = n -> f(n) = k(n),
-      divert : g(a) = b, unit : forall n : Nat, g(n) = n,
+    def freeze_case(f, g, k : Nat -> Nat, a, b, t : Nat,
+      c : forall n : Nat. g(n) = n -> f(n) = k(n),
+      divert : g(a) = b, unit : forall n : Nat. g(n) = n,
       fallback : f(a) = t) : f(a) + f(b) = t + k(b) {
       simp [c, divert, unit, fallback];
     }
@@ -595,9 +595,9 @@ test("freezing a simplified hypothesis preserves its witness for dependent proof
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
   const source=`import primes;
-    def dependent(f g k : Nat -> Nat, a b : Nat,
-      c : forall n : Nat, g(n) = n -> f(n) = k(n),
-      divert : g(a) = b, unit : forall n : Nat, g(n) = n,
+    def dependent(f, g, k : Nat -> Nat, a, b : Nat,
+      c : forall n : Nat. g(n) = n -> f(n) = k(n),
+      divert : g(a) = b, unit : forall n : Nat. g(n) = n,
       fallback : f(a) = k(a), h : f(a) + f(b) = k(a) + k(b)) : 0 = 0 {
       simp only [c, divert, unit, fallback] at h as h1;
       simp [c, divert, unit, fallback] at h as h2;
@@ -628,9 +628,9 @@ for(const tactic of ["simp","simpa"]) {
     t.after(()=>program.dispose());
     const using=tactic==="simpa"?" using refl(k(a) + k(b))":"";
     const source=`import primes;
-      def dependent(f g k : Nat -> Nat, a b : Nat,
-        c : forall n : Nat, g(n) = n -> f(n) = k(n),
-        divert : g(a) = b, unit : forall n : Nat, g(n) = n,
+      def dependent(f, g, k : Nat -> Nat, a, b : Nat,
+        c : forall n : Nat. g(n) = n -> f(n) = k(n),
+        divert : g(a) = b, unit : forall n : Nat. g(n) = n,
         fallback : f(a) = k(a)) : 0 = 0 {
         have h1 : f(a) + f(b) = k(a) + k(b) {
           ${tactic} only [c, divert, unit, fallback]${using};
@@ -658,9 +658,9 @@ for(const tactic of ["simp","simpa"]) {
     const using=tactic==="simpa"?" using h":"";
     const finish=tactic==="simp"?"exact h;":"";
     const source=`import primes;
-      def dependent(P : Nat -> U0, f g k : Nat -> Nat, a b : Nat,
-        c : forall n : Nat, g(n) = n -> f(n) = k(n),
-        divert : g(a) = b, unit : forall n : Nat, g(n) = n,
+      def dependent(P : Nat -> U0, f, g, k : Nat -> Nat, a, b : Nat,
+        c : forall n : Nat. g(n) = n -> f(n) = k(n),
+        divert : g(a) = b, unit : forall n : Nat. g(n) = n,
         fallback : f(a) = k(a), h : P(k(a) + k(b))) : 0 = 0 {
         have h1 : P(f(a) + f(b)) {
           ${tactic} only [c, divert, unit, fallback]${using};
@@ -708,17 +708,17 @@ test("a grouped binder checks its shared domain before a binder shadows that nam
   t.after(()=>program.dispose());
   const result=await program.check(`
     def Carrier := Nat;
-    def grouped(Carrier item : Carrier) : item = item { rfl; }
+    def grouped(Carrier, item : Carrier) : item = item { rfl; }
     def applied : grouped(0, 1) = grouped(0, 1) { rfl; }
     def inferred_lambda(A : U0) : A -> A { exact fun x => x; }
-    def quantified : forall A B : U0, A -> B -> A { intro A B x y; exact x; }
+    def quantified : forall A, B : U0. A -> B -> A { intro A, B, x, y; exact x; }
   `,"group_shadowing");
   assert.deepEqual(result.outputs.map(d=>d.verified),[true,true,true,true,true]);
 });
 
 test("a multi-binder fun source link inspects the complete closed function",async t=>{
   for(const expression of ["fun (x : Nat, y : Nat) => x",
-    "fun (x y : Nat) => x", "fun (x : Nat, fun : Nat) => x"]) {
+    "fun (x, y : Nat) => x", "fun (x : Nat, fun : Nat) => x"]) {
     const program=new CubicalProgram(await createCubical(),readLibrary);
     t.after(()=>program.dispose());
     const source=`def f := ${expression};`;
@@ -740,7 +740,7 @@ test("grouped universe parameters specialize like separate universe binders",asy
   t.after(()=>program.dispose());
   const result=await program.check(`
     def separate(U : Universe, V : Universe, A : U, B : V, x : A, y : B) := x;
-    def grouped(U V : Universe, A : U, B : V, x : A, y : B) := x;
+    def grouped(U, V : Universe, A : U, B : V, x : A, y : B) := x;
     def use_separate := separate(U0, U1, Nat, U0, 0, Nat);
     def use_grouped := grouped(U0, U1, Nat, U0, 0, Nat);
   `,"grouped_universes");
@@ -754,8 +754,8 @@ test("consecutive mixed universe groups specialize and inspect every parameter",
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
   const source=`
-    def mixed(U : Universe, V W : Universe, A : U, B : V, x : A, y : B) := x;
-    def multiple(U V : Universe, W X : Universe, A : U, B : W, x : A, y : B) := x;
+    def mixed(U : Universe, V, W : Universe, A : U, B : V, x : A, y : B) := x;
+    def multiple(U, V : Universe, W, X : Universe, A : U, B : W, x : A, y : B) := x;
     def use_mixed := mixed(U0, U0, U0, Nat, Nat, 0, 0);
     def use_multiple := multiple(U0, U0, U0, U0, Nat, Nat, 0, 0);
   `;
@@ -767,7 +767,7 @@ test("consecutive mixed universe groups specialize and inspect every parameter",
   assert.equal(program.inspect("mixed_universes__mixed",{universes:[0,1,2]}).type.tag,"Pi");
   assert.equal(program.inspect("mixed_universes__multiple",{universes:[0,1,2,3]}).type.tag,"Pi");
   const binder=result.links.find(item=>item.role==="template reference"
-    &&item.start===source.indexOf("V W : Universe"));
+    &&item.start===source.indexOf("V, W : Universe"));
   assert.ok(binder);
   assert.equal(program.inspect(binder.binding,{universes:[0,1,2]}).expression.level,1);
 });
@@ -775,7 +775,7 @@ test("consecutive mixed universe groups specialize and inspect every parameter",
 test("rw skips an unsupported left occurrence to reach an eligible right one",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
-  const params=`A : U0, C : A -> U0, f : forall a : A, C(a), x y : A,
+  const params=`A : U0, C : A -> U0, f : forall a : A. C(a), x, y : A,
     k : A -> C(x), p : x = y, h : f(x) = k(y)`;
   const result=await program.check(`
     def default_target(${params}) : f(x) = k(x) { rw [p]; exact h; }
@@ -1130,8 +1130,8 @@ test("generated names stay distinct when a source name ends in a digit",async t=
   // forall a, a = a.
   const arrows=Array(9).fill("Nat").join(" -> ");
   const result=await program.check(`
-    def aliased(a1 : Nat, q : ${arrows}) : forall a : Nat, a = a1 { intro a; exact refl(a); }
-    def distinct(a1 : Nat, q : ${arrows}) : forall a : Nat, a1 = a1 { intro a; exact refl(a1); }
+    def aliased(a1 : Nat, q : ${arrows}) : forall a : Nat. a = a1 { intro a; exact refl(a); }
+    def distinct(a1 : Nat, q : ${arrows}) : forall a : Nat. a1 = a1 { intro a; exact refl(a1); }
   `,"generated_names");
   assert.deepEqual(result.outputs.map(d=>d.verified),[false,true]);
   assert.match(result.outputs[0].reason,/Type mismatch/);
@@ -1180,7 +1180,7 @@ test("tactic search time limits exclude later statements and calc steps",async t
 test("simp skips matches in dependent positions instead of failing",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
-  const params="P : Nat -> U0, f : (forall m : Nat, P(m) -> Nat), n : Nat, v : P(n + 0)";
+  const params="P : Nat -> U0, f : (forall m : Nat. P(m) -> Nat), n : Nat, v : P(n + 0)";
   const result=await program.check(`import primes;
     def reflexive(${params}) : f(n + 0, v) = f(n + 0, v) { simp only [nat_add_zero]; }
     def after_rewrite(${params}) : add(f(n + 0, v), n + 0) = add(f(n + 0, v), n) {
@@ -1193,7 +1193,7 @@ test("simp skips matches in dependent positions instead of failing",async t=>{
       simp only [nat_add_zero] at h as h2;
       exact h2;
     }
-    def type_goal(${params}, Q : (forall m : Nat, P(m) -> U0), w : Q(n + 0, v)) : Q(n + 0, v) {
+    def type_goal(${params}, Q : (forall m : Nat. P(m) -> U0), w : Q(n + 0, v)) : Q(n + 0, v) {
       simp only [nat_add_zero];
       exact w;
     }
@@ -1209,7 +1209,7 @@ test("a conditional rule with unprovable premises does not stop simplification",
   const goal=count=>{
     const names=Array.from({length:count},(_,index)=>`b${index}`);
     const args=names.map(name=>`c(${name})`).join(", ");
-    return {params:`a : Nat, g : ${Array(count+2).fill("Nat").join(" -> ")}, ${names.join(" ")} : Nat`,
+    return {params:`a : Nat, g : ${Array(count+2).fill("Nat").join(" -> ")}, ${names.join(", ")} : Nat`,
       type:`g(${args}, (a + 0) + 0) = g(${args}, a)`};
   };
   const few=goal(20),many=goal(70);
@@ -1252,8 +1252,8 @@ test("each calc by keyword links to its checked step in an ordinary declaration"
 
 test("concrete declarations and templates link tactics from the parser's keyword sites",async t=>{
   const declarations=parameters=>`
-    def calc_site(${parameters}x y : Nat, p : x = y) : x = y { calc { x = y by p; } }
-    def rw_site(${parameters}x y : Nat, p : x = y) : x = y { rw [p]; }
+    def calc_site(${parameters}x, y : Nat, p : x = y) : x = y { calc { x = y by p; } }
+    def rw_site(${parameters}x, y : Nat, p : x = y) : x = y { rw [p]; }
     def simp_site(${parameters}f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n { simp [h]; }`;
   const roles=new Set(["calculation witness","calculation step","rewrite witness","simplification witness"]);
   // Each tactic link, relative to the keyword the parser recorded.
@@ -1278,8 +1278,8 @@ test("a parenthesized binder links from its keyword like an unparenthesized one"
   t.after(()=>program.dispose());
   const source=`def bare := fun (n : Nat) => n;
     def parenthesized := (fun (n : Nat) => n);
-    def bare_type := forall n : Nat, n = n;
-    def parenthesized_type := (forall n : Nat, n = n);`;
+    def bare_type := forall n : Nat. n = n;
+    def parenthesized_type := (forall n : Nat. n = n);`;
   const result=await program.check(source,"binder_sites");
   assert.equal(result.complete,true,JSON.stringify(result.gaps));
   const keywords=[...source.matchAll(/\b(fun|forall)\b/g)].map(match=>[match[1],match.index,match.index+match[1].length]);

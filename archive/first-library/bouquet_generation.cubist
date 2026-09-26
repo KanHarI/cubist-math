@@ -111,7 +111,7 @@ def bouquet_encoded_generated(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :
 // comparison with the complement of points in the complex plane.
 def every_bouquet_loop_generated(A : U0, p : BouquetLoops(A)) :
   Mere(
-    exists word : Word(A), eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word) = p
+    exists word : Word(A). eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word) = p
   ) {
   exact along BouquetGenerated(A) by bouquet_decode_encode(A, bouquet_base(A), p) from bouquet_encoded_generated(
     A, bouquet_base(A), p
@@ -120,7 +120,7 @@ def every_bouquet_loop_generated(A : U0, p : BouquetLoops(A)) :
 
 def every_puncture_loop_generated(n : Nat, p : bouquet_base(Fin(n)) = bouquet_base(Fin(n))) :
   Mere(
-    exists word : Word(Fin(n)),
+    exists word : Word(Fin(n)).
     eval_word(Fin(n), PunctureGraph(n), bouquet_base(Fin(n)), puncture_loop(n), word) = p
   ) {
   exact every_bouquet_loop_generated(Fin(n), p);
@@ -147,11 +147,11 @@ def bouquet_connected(A : U0, x : Bouquet(A)) : Mere(bouquet_base(A) = x) {
 }
 
 def bouquet_path_generated(
-  A : U0, x y : Bouquet(A), leftConnector : bouquet_base(A) = x,
+  A : U0, x, y : Bouquet(A), leftConnector : bouquet_base(A) = x,
   rightConnector : bouquet_base(A) = y, p : x = y
 ) :
   Mere(
-    exists word : Word(A),
+    exists word : Word(A).
     reopen_path(
       Bouquet(A), bouquet_base(A), x, y, leftConnector, rightConnector,
       eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word)
@@ -160,11 +160,11 @@ def bouquet_path_generated(
   let closed := close_path(Bouquet(A), bouquet_base(A), x, y, leftConnector, rightConnector, p);
   exact mere_map(
     (
-      exists word : Word(A),
+      exists word : Word(A).
       eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word) = closed
     ),
     (
-      exists word : Word(A),
+      exists word : Word(A).
       reopen_path(
         Bouquet(A), bouquet_base(A), x, y, leftConnector, rightConnector,
         eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word)
@@ -173,11 +173,11 @@ def bouquet_path_generated(
     (
       fun (
         represented : (
-          exists word : Word(A),
+          exists word : Word(A).
           eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word) = closed
         )
       ) => unpack represented as (word, same) return (
-        exists word : Word(A),
+        exists word : Word(A).
         reopen_path(
           Bouquet(A), bouquet_base(A), x, y, leftConnector, rightConnector,
           eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word)

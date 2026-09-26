@@ -3,7 +3,7 @@ import polynomial_remainders;
 // Canonical representatives, rather than a larger universe of equivalence
 // classes. The support proof is irrelevant to equality of representatives.
 def PolynomialResidue(K : AlgebraicField, M : PolynomialModulus(K)) :=
-  exists r : Polynomial(K), SeriesSupport(K, polynomial_coefficients(K, r), modulus_degree(K, M));
+  exists r : Polynomial(K). SeriesSupport(K, polynomial_coefficients(K, r), modulus_degree(K, M));
 
 def residue_polynomial(K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M)) :=
   sigma_first(
@@ -41,7 +41,7 @@ def residue_set(K : AlgebraicField, M : PolynomialModulus(K)) :=
   );
 
 def residue_ext(
-  K : AlgebraicField, M : PolynomialModulus(K), x y : PolynomialResidue(K, M),
+  K : AlgebraicField, M : PolynomialModulus(K), x, y : PolynomialResidue(K, M),
   same : residue_polynomial(K, M, x) = residue_polynomial(K, M, y)
 ) :
   x = y {
@@ -74,7 +74,7 @@ def residue_zero(K : AlgebraicField, M : PolynomialModulus(K)) : PolynomialResid
 def residue_one(K : AlgebraicField, M : PolynomialModulus(K)) :=
   residue_reduce(K, M, polynomial_one(K));
 
-def residue_add(K : AlgebraicField, M : PolynomialModulus(K), x y : PolynomialResidue(K, M)) :
+def residue_add(K : AlgebraicField, M : PolynomialModulus(K), x, y : PolynomialResidue(K, M)) :
   PolynomialResidue(K, M) {
   let p := residue_polynomial(K, M, x);
   let q := residue_polynomial(K, M, y);
@@ -96,7 +96,7 @@ def residue_neg(K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResi
   );
 }
 
-def residue_mul(K : AlgebraicField, M : PolynomialModulus(K), x y : PolynomialResidue(K, M)) :=
+def residue_mul(K : AlgebraicField, M : PolynomialModulus(K), x, y : PolynomialResidue(K, M)) :=
   residue_reduce(K, M, polynomial_mul(K, residue_polynomial(K, M, x), residue_polynomial(K, M, y)));
 
 def residue_reduce_value(K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M)) :
@@ -107,7 +107,7 @@ def residue_reduce_value(K : AlgebraicField, M : PolynomialModulus(K), x : Polyn
   );
 }
 
-def residue_add_assoc(K : AlgebraicField, M : PolynomialModulus(K), x y z : PolynomialResidue(K, M)) :
+def residue_add_assoc(K : AlgebraicField, M : PolynomialModulus(K), x, y, z : PolynomialResidue(K, M)) :
   residue_add(K, M, residue_add(K, M, x, y), z) = residue_add(K, M, x, residue_add(K, M, y, z)) {
   exact residue_ext(
     K, M, residue_add(K, M, residue_add(K, M, x, y), z),
@@ -118,7 +118,7 @@ def residue_add_assoc(K : AlgebraicField, M : PolynomialModulus(K), x y z : Poly
   );
 }
 
-def residue_add_comm(K : AlgebraicField, M : PolynomialModulus(K), x y : PolynomialResidue(K, M)) :
+def residue_add_comm(K : AlgebraicField, M : PolynomialModulus(K), x, y : PolynomialResidue(K, M)) :
   residue_add(K, M, x, y) = residue_add(K, M, y, x) {
   exact residue_ext(
     K, M, residue_add(K, M, x, y), residue_add(K, M, y, x),
@@ -142,7 +142,7 @@ def residue_add_inverse(K : AlgebraicField, M : PolynomialModulus(K), x : Polyno
   );
 }
 
-def residue_mul_assoc(K : AlgebraicField, M : PolynomialModulus(K), x y z : PolynomialResidue(K, M)) :
+def residue_mul_assoc(K : AlgebraicField, M : PolynomialModulus(K), x, y, z : PolynomialResidue(K, M)) :
   residue_mul(K, M, residue_mul(K, M, x, y), z) = residue_mul(K, M, x, residue_mul(K, M, y, z)) {
   let p := residue_polynomial(K, M, x);
   let q := residue_polynomial(K, M, y);
@@ -162,7 +162,7 @@ def residue_mul_assoc(K : AlgebraicField, M : PolynomialModulus(K), x y z : Poly
   };
 }
 
-def residue_mul_comm(K : AlgebraicField, M : PolynomialModulus(K), x y : PolynomialResidue(K, M)) :
+def residue_mul_comm(K : AlgebraicField, M : PolynomialModulus(K), x, y : PolynomialResidue(K, M)) :
   residue_mul(K, M, x, y) = residue_mul(K, M, y, x) {
   exact with unfolding [] {
     residue_ext(
@@ -193,7 +193,7 @@ def residue_mul_one(K : AlgebraicField, M : PolynomialModulus(K), x : Polynomial
 }
 
 def residue_distribute(
-  K : AlgebraicField, M : PolynomialModulus(K), x y z : PolynomialResidue(K, M)
+  K : AlgebraicField, M : PolynomialModulus(K), x, y, z : PolynomialResidue(K, M)
 ) :
   residue_mul(K, M, x, residue_add(K, M, y, z)) = residue_add(
     K, M, residue_mul(K, M, x, y), residue_mul(K, M, x, z)
@@ -221,7 +221,7 @@ def residue_ops(K : AlgebraicField, M : PolynomialModulus(K)) :=
 
 // Package ring laws before specializing the field-operation projections.
 def field_ring_from_commutative_ring(
-  A : U0, zero one : A, neg : A -> A, add mul : A -> A -> A,
+  A : U0, zero, one : A, neg : A -> A, add, mul : A -> A -> A,
   ring : CommutativeRing(A, zero, one, add, mul, neg)
 ) :
   FieldRingLaws(A, field_ops(A, zero, one, neg, add, mul)) {
@@ -258,7 +258,7 @@ def residue_reduce_zero(K : AlgebraicField, M : PolynomialModulus(K)) :
   );
 }
 
-def residue_reduce_add(K : AlgebraicField, M : PolynomialModulus(K), p q : Polynomial(K)) :
+def residue_reduce_add(K : AlgebraicField, M : PolynomialModulus(K), p, q : Polynomial(K)) :
   residue_reduce(K, M, polynomial_add(K, p, q)) = residue_add(
     K, M, residue_reduce(K, M, p), residue_reduce(K, M, q)
   ) {
@@ -277,7 +277,7 @@ def residue_reduce_neg(K : AlgebraicField, M : PolynomialModulus(K), p : Polynom
   );
 }
 
-def residue_reduce_mul(K : AlgebraicField, M : PolynomialModulus(K), p q : Polynomial(K)) :
+def residue_reduce_mul(K : AlgebraicField, M : PolynomialModulus(K), p, q : Polynomial(K)) :
   residue_reduce(K, M, polynomial_mul(K, p, q)) = residue_mul(
     K, M, residue_reduce(K, M, p), residue_reduce(K, M, q)
   ) {
@@ -295,10 +295,10 @@ def residue_reduce_mul(K : AlgebraicField, M : PolynomialModulus(K), p q : Polyn
 
 // Keep the generic field-operation projections out of specialized conversions.
 def commutative_ring_inverse_prop(
-  A : U0, zero one : A, neg : A -> A, add mul : A -> A -> A,
+  A : U0, zero, one : A, neg : A -> A, add, mul : A -> A -> A,
   ring : CommutativeRing(A, zero, one, add, mul, neg), x : A
 ) :
-  Proposition(exists y : A, mul(x, y) = one) {
+  Proposition(exists y : A. mul(x, y) = one) {
   obtain (setA, addLaws, mulLaws) := ring;
   exact algebraic_inverse_evidence_prop(
     A, field_ops(A, zero, one, neg, add, mul), setA,
@@ -307,9 +307,9 @@ def commutative_ring_inverse_prop(
 }
 
 def field_from_commutative_ring(
-  A : U0, zero one : A, neg : A -> A, add mul : A -> A -> A,
+  A : U0, zero, one : A, neg : A -> A, add, mul : A -> A -> A,
   ring : CommutativeRing(A, zero, one, add, mul, neg), nontrivial : (one = zero) -> Void,
-  inverses : (forall x : A, ((x = zero) -> Void) -> exists y : A, mul(x, y) = one)
+  inverses : (forall x : A. ((x = zero) -> Void) -> exists y : A. mul(x, y) = one)
 ) :
   AlgebraicField {
   obtain (setA, addLaws, mulLaws) := ring;

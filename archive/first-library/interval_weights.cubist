@@ -3,8 +3,8 @@ import contour_samples;
 import sample_sum_laws;
 
 def interval_difference(
-  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  s t : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  s, t : FieldUnitInterval(F, zero, one, lt)
 ) :=
   coordinate_difference(
     F, addF, negF, field_interval_coordinate(F, zero, one, lt, s),
@@ -12,15 +12,15 @@ def interval_difference(
   );
 
 def interval_weight(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, length : F,
-  s t tag : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, length : F,
+  s, t, tag : FieldUnitInterval(F, zero, one, lt)
 ) :=
   mulF(interval_difference(F, zero, one, addF, negF, lt, s, t), length);
 
 def field_difference_nonnegative(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s t : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), s, t : F,
   ordered : FieldLe(F, lt, s, t)
 ) :
   FieldLe(F, lt, zero, coordinate_difference(F, addF, negF, s, t)) {
@@ -30,10 +30,10 @@ def field_difference_nonnegative(
 }
 
 def interval_difference_le_one(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  s t : FieldUnitInterval(F, zero, one, lt)
+  s, t : FieldUnitInterval(F, zero, one, lt)
 ) :
   FieldLe(F, lt, interval_difference(F, zero, one, addF, negF, lt, s, t), one) {
   let x := field_interval_coordinate(F, zero, one, lt, s);
@@ -59,7 +59,7 @@ def interval_difference_le_one(
 // Telescoping is valid even without ordered samples. Nonnegative weights
 // and their use as magnitude bounds require ordered adjacent parameters.
 def interval_weight_sum(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), length : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
@@ -76,13 +76,13 @@ def interval_weight_sum(
   let I := FieldUnitInterval(F, zero, one, lt);
   let coordinate := field_interval_coordinate(F, zero, one, lt);
   let delta := interval_difference(F, zero, one, addF, negF, lt);
-  let edge := (fun (s t tag : I) => delta(s, t));
+  let edge := (fun (s, t, tag : I) => delta(s, t));
   let telescope :=
     sample_sum_telescopes(
       I, F, zero, addF, delta,
       (fun (s : I) => ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, coordinate(s))),
       (
-        fun (s t u : I) => difference_compose(
+        fun (s, t, u : I) => difference_compose(
           F, zero, one, addF, mulF, negF, ring, coordinate(s), coordinate(t), coordinate(u)
         )
       ), n, vertices, tags
@@ -93,7 +93,7 @@ def interval_weight_sum(
       sample_sum_map(
         I, F, zero, addF, F, zero, addF, mapping,
         ring_zero_mul(F, zero, one, addF, mulF, negF, ring, length),
-        (fun (x y : F) => ring_distribute_left(F, zero, one, addF, mulF, negF, ring, x, y, length)),
+        (fun (x, y : F) => ring_distribute_left(F, zero, one, addF, mulF, negF, ring, x, y, length)),
         edge, n, vertices, tags
       )
     ), cong(mapping, telescope)
@@ -101,7 +101,7 @@ def interval_weight_sum(
 }
 
 def interval_weight_sum_bound(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length), n : Nat,

@@ -4,7 +4,7 @@ import f4_fixed_field;
 def f4_intermediate_with_alpha(
   P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P), alpha : P(f4_2)
 ) :
-  forall x : F4Carrier, P(x) {
+  forall x : F4Carrier. P(x) {
   obtain (closure, base) := laws;
   exact (
     fun (x : F4Carrier) => f4_induction(
@@ -18,7 +18,7 @@ def f4_intermediate_with_alpha(
 def f4_intermediate_without_alpha(
   P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P), noAlpha : P(f4_2) -> Void
 ) :
-  forall x : F4Carrier, P(x) -> F2Image(x) {
+  forall x : F4Carrier. P(x) -> F2Image(x) {
   obtain (closure, base) := laws;
   exact (
     fun (x : F4Carrier) => f4_induction(

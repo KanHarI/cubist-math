@@ -42,7 +42,7 @@ def residue_coordinates_right(
 }
 
 def residue_coordinates_injective(
-  K : AlgebraicField, M : PolynomialModulus(K), r s : PolynomialResidue(K, M),
+  K : AlgebraicField, M : PolynomialModulus(K), r, s : PolynomialResidue(K, M),
   same : residue_coordinates(K, M, r) = residue_coordinates(K, M, s)
 ) :
   r = s {
@@ -55,11 +55,11 @@ def residue_coordinates_injective(
 def residue_coordinates_surjective(
   K : AlgebraicField, M : PolynomialModulus(K), a : Fin(modulus_degree(K, M)) -> af_carrier(K)
 ) :
-  Mere(exists r : PolynomialResidue(K, M), residue_coordinates(K, M, r) = a) {
+  Mere(exists r : PolynomialResidue(K, M). residue_coordinates(K, M, r) = a) {
   exact merely(
-    (exists r : PolynomialResidue(K, M), residue_coordinates(K, M, r) = a),
+    (exists r : PolynomialResidue(K, M). residue_coordinates(K, M, r) = a),
     typed(
-      (exists r : PolynomialResidue(K, M), residue_coordinates(K, M, r) = a),
+      (exists r : PolynomialResidue(K, M). residue_coordinates(K, M, r) = a),
       (residue_from_coordinates(K, M, a), residue_coordinates_right(K, M, a))
     )
   );
@@ -84,7 +84,7 @@ def residue_scalar_polynomial(
 }
 
 def residue_coordinates_add(
-  K : AlgebraicField, M : PolynomialModulus(K), r s : PolynomialResidue(K, M)
+  K : AlgebraicField, M : PolynomialModulus(K), r, s : PolynomialResidue(K, M)
 ) :
   residue_coordinates(K, M, residue_add(K, M, r, s)) = (
     fun (i : Fin(modulus_degree(K, M))) => field_add(

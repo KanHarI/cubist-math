@@ -4,7 +4,7 @@ import linear_span;
 // values, and no decision procedure for the carrier, is needed.
 def fin_append(A : U0, n : Nat) :=
   induction n as k return (
-    forall m : Nat, (Fin(k) -> A) -> (Fin(m) -> A) -> Fin(add_count(k, m)) -> A
+    forall m : Nat. (Fin(k) -> A) -> (Fin(m) -> A) -> Fin(add_count(k, m)) -> A
   ) {
     zero => fun (m : Nat, f : Fin(0) -> A, g : Fin(m) -> A) => g;
     succ previous => fun (
@@ -17,17 +17,17 @@ def fin_append(A : U0, n : Nat) :=
 
 def fin_append_members(A : U0, P : A -> U0, n : Nat) :=
   induction n as k return (
-    forall m : Nat, forall f : Fin(k) -> A, forall g : Fin(m) -> A, (forall i : Fin(k), P(f(i)))
-    -> (forall j : Fin(m), P(g(j))) -> forall i : Fin(add_count(k, m)),
+    forall m : Nat. forall f : Fin(k) -> A. forall g : Fin(m) -> A. (forall i : Fin(k). P(f(i)))
+    -> (forall j : Fin(m). P(g(j))) -> forall i : Fin(add_count(k, m)).
     P(fin_append(A, k, m, f, g, i))
   ) {
     zero => fun (
-      m : Nat, f : Fin(0) -> A, g : Fin(m) -> A, hf : (forall i : Fin(0), P(f(i))),
-      hg : (forall j : Fin(m), P(g(j)))
+      m : Nat, f : Fin(0) -> A, g : Fin(m) -> A, hf : (forall i : Fin(0). P(f(i))),
+      hg : (forall j : Fin(m). P(g(j)))
     ) => hg;
     succ previous => fun (
-      m : Nat, f : Fin(succ(k)) -> A, g : Fin(m) -> A, hf : (forall i : Fin(succ(k)), P(f(i))),
-      hg : (forall j : Fin(m), P(g(j))), i : Fin(add_count(succ(k), m))
+      m : Nat, f : Fin(succ(k)) -> A, g : Fin(m) -> A, hf : (forall i : Fin(succ(k)). P(f(i))),
+      hg : (forall j : Fin(m). P(g(j))), i : Fin(add_count(succ(k), m))
     ) => match i as index return P(fin_append(A, succ(k), m, f, g, index)) {
       left u => hf(typed(Fin(succ(k)), left(u)));
       right j => previous(
@@ -40,9 +40,9 @@ def fin_append_members(A : U0, P : A -> U0, n : Nat) :=
 // Concatenating witnesses computes the sum of their linear combinations.
 def linear_combination_append(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
-    forall m : Nat, forall v : Fin(k) -> vector_carrier(K, V),
-    forall w : Fin(m) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
-    forall b : Fin(m) -> af_carrier(K),
+    forall m : Nat. forall v : Fin(k) -> vector_carrier(K, V).
+    forall w : Fin(m) -> vector_carrier(K, V). forall a : Fin(k) -> af_carrier(K).
+    forall b : Fin(m) -> af_carrier(K).
     linear_combination(
       K, V, add_count(k, m), fin_append(vector_carrier(K, V), k, m, v, w),
       fin_append(af_carrier(K), k, m, a, b)
@@ -140,7 +140,7 @@ def combination_scale_step(
 
 def linear_combination_scale(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), n : Nat) :=
   induction n as k return (
-    forall v : Fin(k) -> vector_carrier(K, V), forall b : Fin(k) -> af_carrier(K),
+    forall v : Fin(k) -> vector_carrier(K, V). forall b : Fin(k) -> af_carrier(K).
     linear_combination(
       K, V, k, v, (fun (i : Fin(k)) => af_mul(af_carrier(K), af_operations(K), a, b(i)))
     ) = vector_scale(K, V, a, linear_combination(K, V, k, v, b))

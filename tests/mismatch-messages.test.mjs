@@ -11,7 +11,7 @@ test("a type mismatch names the type found and the type expected, in source synt
   left a => Nat;
   right b => Unit;
 };
-def wrong_index(P : Nat -> U0, f : forall n : Nat, P(n)) : P(1) {
+def wrong_index(P : Nat -> U0, f : forall n : Nat. P(n)) : P(1) {
   exact f(0);
 }
 def not_unit : Unit {

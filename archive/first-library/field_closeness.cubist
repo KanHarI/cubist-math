@@ -4,9 +4,9 @@ import ordered_halves;
 // Two-sided order balls: triangle, addition, and separation laws.
 
 def order_lt_add_left(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y z : F, less : lt(x, y)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, z : F, less : lt(x, y)
 ) :
   lt(addF(z, x), addF(z, y)) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
@@ -19,9 +19,9 @@ def order_lt_add_left(
 }
 
 def order_lt_add_pair(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y u v : F, xy : lt(x, y),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, u, v : F, xy : lt(x, y),
   uv : lt(u, v)
 ) :
   lt(addF(x, u), addF(y, v)) {
@@ -35,9 +35,9 @@ def order_lt_add_pair(
 }
 
 def order_difference_positive(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F, less : lt(x, y)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y : F, less : lt(x, y)
 ) :
   lt(zero, addF(y, negF(x))) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
@@ -48,9 +48,9 @@ def order_difference_positive(
 }
 
 def field_close_self(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x epsilon : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, epsilon : F,
   positive : lt(zero, epsilon)
 ) :
   FieldClose(F, addF, lt, x, x, epsilon) {
@@ -66,7 +66,7 @@ def field_close_self(
 }
 
 def field_close_symmetry(
-  F : U1, addF : F -> F -> F, lt : F -> F -> U0, x y epsilon : F,
+  F : U1, addF : F -> F -> F, lt : F -> F -> U0, x, y, epsilon : F,
   close : FieldClose(F, addF, lt, x, y, epsilon)
 ) :
   FieldClose(F, addF, lt, y, x, epsilon) {
@@ -75,9 +75,9 @@ def field_close_symmetry(
 }
 
 def field_close_triangle(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y z epsilon delta : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, z, epsilon, delta : F,
   xy : FieldClose(F, addF, lt, x, y, epsilon), yz : FieldClose(F, addF, lt, y, z, delta)
 ) :
   FieldClose(F, addF, lt, x, z, addF(epsilon, delta)) {
@@ -101,9 +101,9 @@ def field_close_triangle(
 }
 
 def field_close_add(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y u v epsilon delta : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, u, v, epsilon, delta : F,
   xy : FieldClose(F, addF, lt, x, y, epsilon), uv : FieldClose(F, addF, lt, u, v, delta)
 ) :
   FieldClose(F, addF, lt, addF(x, u), addF(y, v), addF(epsilon, delta)) {
@@ -126,10 +126,10 @@ def field_close_add(
 }
 
 def field_close_all_le(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F,
-  close : (forall epsilon : F, lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon))
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y : F,
+  close : (forall epsilon : F. lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon))
 ) :
   FieldLe(F, lt, x, y) {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
@@ -151,10 +151,10 @@ def field_close_all_le(
 }
 
 def field_close_separated(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x y : F,
-  close : (forall epsilon : F, lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon))
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y : F,
+  close : (forall epsilon : F. lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon))
 ) :
   x = y {
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
@@ -173,10 +173,10 @@ def field_close_separated(
 }
 
 def field_close_halved_triangle(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall epsilon : F, addF(half(epsilon), half(epsilon)) = epsilon), x y z epsilon : F,
+  halfSum : (forall epsilon : F. addF(half(epsilon), half(epsilon)) = epsilon), x, y, z, epsilon : F,
   xy : FieldClose(F, addF, lt, x, y, half(epsilon)),
   yz : FieldClose(F, addF, lt, y, z, half(epsilon))
 ) :

@@ -2,9 +2,9 @@ import affine_partition_refinement;
 
 // The parameter sum and the sum on the image curve are the same checked value.
 def curve_subdivision_sum_is_mapped(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
-  a b : FieldUnitInterval(F, zero, one, lt),
+  a, b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :
   subdivision_sum(
@@ -25,10 +25,10 @@ def curve_subdivision_sum_is_mapped(
 }
 
 def curve_subdivision_samples_join(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
-  a b c : FieldUnitInterval(F, zero, one, lt),
+  a, b, c : FieldUnitInterval(F, zero, one, lt),
   left : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
   right : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), b, c)
 ) :

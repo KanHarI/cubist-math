@@ -3,14 +3,14 @@ import surjections;
 
 // Injectivity and surjectivity refer to the underlying map of a checked
 // linear map. Surjectivity promises only truncated preimages.
-def LinearInjective(K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W)) :=
+def LinearInjective(K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W)) :=
   Injective(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
 
-def LinearSurjective(K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W)) :=
+def LinearSurjective(K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W)) :=
   Surjective(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
 
 def linear_unique_preimage(
-  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W),
   injective : LinearInjective(K, V, W, f), onto : LinearSurjective(K, V, W, f),
   y : vector_carrier(K, W)
 ) :
@@ -26,7 +26,7 @@ def linear_unique_preimage(
 }
 
 def linear_bijective_iso(
-  K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W),
   injective : LinearInjective(K, V, W, f), onto : LinearSurjective(K, V, W, f)
 ) :
   LinearIso(K, V, W) {
@@ -42,8 +42,8 @@ def linear_bijective_iso(
       X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
     );
   have additive :
-    forall y : Y, forall z : Y, g(vector_add(K, W, y, z)) = vector_add(K, V, g(y), g(z)) {
-    intro y z;
+    forall y : Y. forall z : Y. g(vector_add(K, W, y, z)) = vector_add(K, V, g(y), g(z)) {
+    intro y, z;
     exact injective(
       g(vector_add(K, W, y, z)), vector_add(K, V, g(y), g(z)),
       trans(
@@ -61,9 +61,9 @@ def linear_bijective_iso(
     );
   }
   have scalar :
-    forall a : af_carrier(K), forall y : Y,
+    forall a : af_carrier(K). forall y : Y.
     g(vector_scale(K, W, a, y)) = vector_scale(K, V, a, g(y)) {
-    intro a y;
+    intro a, y;
     exact injective(
       g(vector_scale(K, W, a, y)), vector_scale(K, V, a, g(y)),
       trans(
@@ -79,7 +79,7 @@ def linear_empty(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, Coordina
   exact (
     (fun (v : Fin(0) -> af_carrier(K)) => vector_zero(K, V)),
     (
-      fun (v w : Fin(0) -> af_carrier(K)) => sym(
+      fun (v, w : Fin(0) -> af_carrier(K)) => sym(
         group_unit_left(vector_group(K, V), vector_zero(K, V))
       )
     ), (fun (a : af_carrier(K), v : Fin(0) -> af_carrier(K)) => sym(vector_scale_zero(K, V, a)))
@@ -88,7 +88,7 @@ def linear_empty(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, Coordina
 
 def linear_empty_injective(K : AlgebraicField, V : VectorSpace(K)) :
   LinearInjective(K, CoordinateSpace(K, 0), V, linear_empty(K, V)) {
-  intro v w same;
+  intro v, w, same;
   ext i;
   exact typed((v(i) = w(i)), absurd(i));
 }

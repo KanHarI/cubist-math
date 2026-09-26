@@ -27,7 +27,7 @@ def Selections(n : Nat) := induction n as row return (Nat -> U0) {
 
 // Every branch is a bijection with explicit inverse laws, for arbitrary n,k.
 def selections_count(n : Nat) :=
-  induction n as row return (forall k : Nat, Bijection(Selections(row, k), Fin(choose(row, k)))) {
+  induction n as row return (forall k : Nat. Bijection(Selections(row, k), Fin(choose(row, k)))) {
     zero => fun (k : Nat) => induction k as column return Bijection(
       Selections(0, column), Fin(choose(0, column))
     ) {

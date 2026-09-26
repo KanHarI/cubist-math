@@ -2,9 +2,9 @@ import polynomial_ideals;
 import polynomial_maps;
 import polynomial_root_bound;
 
-def bounded_eval_mapped(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat) :=
+def bounded_eval_mapped(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat) :=
   induction n as k return (
-    forall f : FormalSeries(K),
+    forall f : FormalSeries(K).
     bounded_eval(
       L, L, field_embedding_identity(L), x, k, (fun (j : Nat) => field_embedding_map(K, L, e, f(j)))
     ) = bounded_eval(K, L, e, x, k, f)
@@ -20,7 +20,7 @@ def bounded_eval_mapped(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_c
   };
 
 def polynomial_eval_mapped(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
 ) :
   polynomial_eval(L, L, field_embedding_identity(L), polynomial_map(K, L, e, p), x) = polynomial_eval(
     K, L, e, p, x
@@ -42,7 +42,7 @@ def polynomial_eval_mapped(
 }
 
 def polynomial_map_nonzero(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p)
 ) :
   PolynomialNonzero(L, polynomial_map(K, L, e, p)) {
@@ -54,12 +54,12 @@ def polynomial_map_nonzero(
   );
 }
 
-def ExtensionRootFamily(K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat) :=
-  exists roots : Fin(n) -> af_carrier(L), Injective(Fin(n), af_carrier(L), roots)
-  and (forall i : Fin(n), PolynomialRoot(K, L, e, p, roots(i)));
+def ExtensionRootFamily(K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat) :=
+  exists roots : Fin(n) -> af_carrier(L). Injective(Fin(n), af_carrier(L), roots)
+  and (forall i : Fin(n). PolynomialRoot(K, L, e, p, roots(i)));
 
 def polynomial_extension_root_bound(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p),
   family : ExtensionRootFamily(K, L, e, p, succ(polynomial_degree(K, p)))
 ) :

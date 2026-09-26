@@ -14,12 +14,12 @@ def f4_auto_field_map(e : F4Automorphism) :
   FieldOpsPreserved(F4Carrier, F4Carrier, f4_auto_apply(e), f4_ops, f4_ops) {
   exact fst(
     FieldOpsPreserved(F4Carrier, F4Carrier, f4_auto_apply(e), f4_ops, f4_ops),
-    (forall k : F2Carrier, f4_auto_apply(e, f2_into_f4(k)) = f2_into_f4(k)),
+    (forall k : F2Carrier. f4_auto_apply(e, f2_into_f4(k)) = f2_into_f4(k)),
     structure_iso_preserves(ExtensionData(F2), ExtensionPreserved(F2), F4OverF2, F4OverF2, e)
   );
 }
 
-def f4_auto_ext(e d : F4Automorphism, alpha : f4_auto_apply(e, f4_2) = f4_auto_apply(d, f4_2)) :
+def f4_auto_ext(e, d : F4Automorphism, alpha : f4_auto_apply(e, f4_2) = f4_auto_apply(d, f4_2)) :
   e = d {
   obtain (e0, e1, en, ea, em) := f4_auto_field_map(e);
   obtain (d0, d1, dn, da, dm) := f4_auto_field_map(d);
@@ -44,7 +44,7 @@ def f4_auto_ext(e d : F4Automorphism, alpha : f4_auto_apply(e, f4_2) = f4_auto_a
 }
 
 def f4_auto_injective(
-  e : F4Automorphism, x y : F4Carrier, p : f4_auto_apply(e, x) = f4_auto_apply(e, y)
+  e : F4Automorphism, x, y : F4Carrier, p : f4_auto_apply(e, x) = f4_auto_apply(e, y)
 ) :
   x = y {
   let bijection :=
@@ -101,10 +101,10 @@ def f4_galois_has_two_elements : Bijection(F2Carrier, F4Automorphism) {
   exact (f4_symmetry, f4_symmetry_bit, f4_symmetry_bit_roundtrip, f4_symmetry_classify);
 }
 
-def f4_auto_compose(e d : F4Automorphism) :=
+def f4_auto_compose(e, d : F4Automorphism) :=
   extension_iso_compose(F2, F4OverF2, F4OverF2, F4OverF2, e, d);
 
-def f4_symmetry_add(a b : F2Carrier) :
+def f4_symmetry_add(a, b : F2Carrier) :
   f4_symmetry(f2_add(a, b)) = f4_auto_compose(f4_symmetry(a), f4_symmetry(b)) {
   exact f2_induction(
     (
@@ -159,7 +159,7 @@ def cyclic_two_laws : GroupLaws(F2Carrier, f2_0, f2_add) {
     (fun (x : F2Carrier) => trans(f2_add_comm(x, f2_0), f2_add_zero(x))),
     (
       fun (x : F2Carrier) => typed(
-        (exists y : F2Carrier, (f2_add(y, x) = f2_0) and (f2_add(x, y) = f2_0)),
+        (exists y : F2Carrier. (f2_add(y, x) = f2_0) and (f2_add(x, y) = f2_0)),
         (x, f2_add_neg(x), f2_add_neg(x))
       )
     )
@@ -235,7 +235,7 @@ def f4_loop_one : f4_loop_of_bit(f2_1) = f4_galois_loop {
   };
 }
 
-def f4_loop_of_bit_add(a b : F2Carrier) :
+def f4_loop_of_bit_add(a, b : F2Carrier) :
   f4_loop_of_bit(f2_add(a, b)) = trans(f4_loop_of_bit(a), f4_loop_of_bit(b)) {
   exact with unfolding [f4_loop_of_bit, f4_auto_compose] {
     trans(
@@ -246,7 +246,7 @@ def f4_loop_of_bit_add(a b : F2Carrier) :
 }
 
 // Reading a concatenation of loops gives the sum of their two symmetry bits.
-def f4_loop_bit_concatenate(p q : F4ExtensionLoops) :
+def f4_loop_bit_concatenate(p, q : F4ExtensionLoops) :
   f4_loop_bit(trans(p, q)) = f2_add(f4_loop_bit(p), f4_loop_bit(q)) {
   have recovered : trans(f4_loop_of_bit(f4_loop_bit(p)), f4_loop_of_bit(f4_loop_bit(q))) = trans(
     p, q
@@ -295,13 +295,13 @@ def f4_automorphisms_equal_loops : F4Automorphism =[U1] F4ExtensionLoops {
 }
 
 // Concatenation gives the loop type its group structure in the same universe.
-def f4_extension_loop_multiply(p q : F4ExtensionLoops) := trans(p, q);
+def f4_extension_loop_multiply(p, q : F4ExtensionLoops) := trans(p, q);
 
 def f4_extension_loops_are_set :
-  forall p : F4ExtensionLoops, forall q : F4ExtensionLoops, forall r : p = q, forall s : p = q,
+  forall p : F4ExtensionLoops. forall q : F4ExtensionLoops. forall r : p = q. forall s : p = q.
   r = s {
   exact along(
-    (fun (A : U1) => forall x : A, forall y : A, forall p : x = y, forall q : x = y, p = q)
+    (fun (A : U1) => forall x : A. forall y : A. forall p : x = y. forall q : x = y. p = q)
   ) by sym(f4_extension_loops_equal_cyclic_two) from fin_is_set(2);
 }
 

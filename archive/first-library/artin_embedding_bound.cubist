@@ -1,6 +1,6 @@
 import artin_degree;
 
-def embedding_evaluation_add_at(F : AlgebraicField, map : FieldEmbedding(F, F), x y : af_carrier(F)) :
+def embedding_evaluation_add_at(F : AlgebraicField, map : FieldEmbedding(F, F), x, y : af_carrier(F)) :
   field_embedding_map(F, F, map, field_add(F, x, y)) = field_add(
     F, field_embedding_map(F, F, map, x), field_embedding_map(F, F, map, y)
   ) {
@@ -9,7 +9,7 @@ def embedding_evaluation_add_at(F : AlgebraicField, map : FieldEmbedding(F, F), 
 }
 
 def embedding_evaluation_add(
-  F : AlgebraicField, k : Nat, maps : Fin(k) -> FieldEmbedding(F, F), x y : af_carrier(F)
+  F : AlgebraicField, k : Nat, maps : Fin(k) -> FieldEmbedding(F, F), x, y : af_carrier(F)
 ) :
   embedding_evaluation_vector(F, F, k, maps, field_add(F, x, y)) = vector_add(
     F, CoordinateSpace(F, k), embedding_evaluation_vector(F, F, k, maps, x),
@@ -20,8 +20,8 @@ def embedding_evaluation_add(
 }
 
 def embedding_evaluation_scale_at(
-  R F : AlgebraicField, e : FieldEmbedding(R, F), map : FieldEmbedding(F, F),
-  over : forall a : af_carrier(R),
+  R, F : AlgebraicField, e : FieldEmbedding(R, F), map : FieldEmbedding(F, F),
+  over : forall a : af_carrier(R).
   field_embedding_map(F, F, map, field_embedding_map(R, F, e, a)) = field_embedding_map(R, F, e, a),
   a : af_carrier(R), x : af_carrier(F)
 ) :
@@ -36,8 +36,8 @@ def embedding_evaluation_scale_at(
 }
 
 def embedding_evaluation_scale(
-  R F : AlgebraicField, e : FieldEmbedding(R, F), k : Nat, maps : Fin(k) -> FieldEmbedding(F, F),
-  over : forall t : Fin(k), forall a : af_carrier(R),
+  R, F : AlgebraicField, e : FieldEmbedding(R, F), k : Nat, maps : Fin(k) -> FieldEmbedding(F, F),
+  over : forall t : Fin(k). forall a : af_carrier(R).
   field_embedding_map(F, F, maps(t), field_embedding_map(R, F, e, a)) = field_embedding_map(
     R, F, e, a
   ), a : af_carrier(R), x : af_carrier(F)
@@ -63,12 +63,12 @@ def embedding_evaluation_zero(F : AlgebraicField, k : Nat, maps : Fin(k) -> Fiel
 }
 
 def embedding_evaluation_combination_step(
-  R F : AlgebraicField, e : FieldEmbedding(R, F), k : Nat, maps : Fin(k) -> FieldEmbedding(F, F),
-  over : forall t : Fin(k), forall a : af_carrier(R),
+  R, F : AlgebraicField, e : FieldEmbedding(R, F), k : Nat, maps : Fin(k) -> FieldEmbedding(F, F),
+  over : forall t : Fin(k). forall a : af_carrier(R).
   field_embedding_map(F, F, maps(t), field_embedding_map(R, F, e, a)) = field_embedding_map(
     R, F, e, a
-  ), m : Nat, previous : forall points : Fin(m) -> af_carrier(F),
-  forall coefficients : Fin(m) -> af_carrier(R),
+  ), m : Nat, previous : forall points : Fin(m) -> af_carrier(F).
+  forall coefficients : Fin(m) -> af_carrier(R).
   embedding_evaluation_vector(
     F, F, k, maps, linear_combination(R, field_vector_space(R, F, e), m, points, coefficients)
   ) = linear_combination(
@@ -114,14 +114,14 @@ def embedding_evaluation_combination_step(
 }
 
 def embedding_evaluation_combination(
-  R F : AlgebraicField, e : FieldEmbedding(R, F), k : Nat, maps : Fin(k) -> FieldEmbedding(F, F),
-  over : forall t : Fin(k), forall a : af_carrier(R),
+  R, F : AlgebraicField, e : FieldEmbedding(R, F), k : Nat, maps : Fin(k) -> FieldEmbedding(F, F),
+  over : forall t : Fin(k). forall a : af_carrier(R).
   field_embedding_map(F, F, maps(t), field_embedding_map(R, F, e, a)) = field_embedding_map(
     R, F, e, a
   ), m : Nat
 ) :=
   induction m as j return (
-    forall points : Fin(j) -> af_carrier(F), forall coefficients : Fin(j) -> af_carrier(R),
+    forall points : Fin(j) -> af_carrier(F). forall coefficients : Fin(j) -> af_carrier(R).
     embedding_evaluation_vector(
       F, F, k, maps, linear_combination(R, field_vector_space(R, F, e), j, points, coefficients)
     ) = linear_combination(
@@ -140,10 +140,10 @@ def embedding_evaluation_combination(
 // vector annihilating the evaluations of an R-spanning n-family. R-linearity
 // extends that relation to every element, contradicting Dedekind independence.
 def finite_spanning_embeddings_upper_bound(
-  R F : AlgebraicField, e : FieldEmbedding(R, F), n : Nat, points : Fin(n) -> af_carrier(F),
+  R, F : AlgebraicField, e : FieldEmbedding(R, F), n : Nat, points : Fin(n) -> af_carrier(F),
   spanning : FiniteSpanningFamily(R, field_vector_space(R, F, e), n, points), maps : Fin(succ(n))
   -> FieldEmbedding(F, F), distinct : PairwiseDistinctEmbeddings(F, F, succ(n), maps),
-  over : forall t : Fin(succ(n)), forall a : af_carrier(R),
+  over : forall t : Fin(succ(n)). forall a : af_carrier(R).
   field_embedding_map(F, F, maps(t), field_embedding_map(R, F, e, a)) = field_embedding_map(
     R, F, e, a
   )
@@ -155,21 +155,21 @@ def finite_spanning_embeddings_upper_bound(
   let rows := fun (j : Fin(n)) => embedding_evaluation_vector(F, F, succ(n), maps, points(j));
   let h := coordinate_rows_linear(F, succ(n), n, rows);
   let Kernel :=
-    exists a : Fin(succ(n)) -> af_carrier(F), (linear_map(F, C, D, h, a) = vector_zero(F, D))
+    exists a : Fin(succ(n)) -> af_carrier(F). (linear_map(F, C, D, h, a) = vector_zero(F, D))
     and ((a = vector_zero(F, C)) -> Void);
   have reject : Kernel -> Void {
     intro witness;
     obtain (a, vanishes, nonzero) := witness;
-    have allRows : forall j : Fin(n), coordinate_dot(F, succ(n), a, rows(j)) = field_zero(F) {
+    have allRows : forall j : Fin(n). coordinate_dot(F, succ(n), a, rows(j)) = field_zero(F) {
       intro j;
       exact cong((fun (v : Fin(n) -> af_carrier(F)) => v(j)), vanishes);
     }
     have relation :
-      forall x : af_carrier(F), hom_family_sum(F, F, succ(n), maps, a, x) = field_zero(F) {
+      forall x : af_carrier(F). hom_family_sum(F, F, succ(n), maps, a, x) = field_zero(F) {
       intro x;
       let Goal := hom_family_sum(F, F, succ(n), maps, a, x) = field_zero(F);
       have fromSpan :
-        (exists b : Fin(n) -> af_carrier(R), linear_combination(R, V, n, points, b) = x) -> Goal {
+        (exists b : Fin(n) -> af_carrier(R). linear_combination(R, V, n, points, b) = x) -> Goal {
         intro representation;
         obtain (b, same) := representation;
         let mapped := fun (j : Fin(n)) => field_embedding_map(R, F, e, b(j));
@@ -186,7 +186,7 @@ def finite_spanning_embeddings_upper_bound(
         exact trans(sym(embedding_evaluation_dot_is_relation(F, F, succ(n), maps, a, x)), dotZero);
       }
       exact mere_eliminate(
-        (exists b : Fin(n) -> af_carrier(R), linear_combination(R, V, n, points, b) = x), Goal,
+        (exists b : Fin(n) -> af_carrier(R). linear_combination(R, V, n, points, b) = x), Goal,
         af_set(F, hom_family_sum(F, F, succ(n), maps, a, x), field_zero(F)), fromSpan, spanning(x)
       );
     }
@@ -198,7 +198,7 @@ def finite_spanning_embeddings_upper_bound(
     );
   }
   exact mere_eliminate(
-    Kernel, Void, (fun (u v : Void) => absurd(u)), reject,
+    Kernel, Void, (fun (u, v : Void) => absurd(u)), reject,
     coordinate_map_nonzero_kernel(F, succ(n), n, h, successor_not_le_self(n))
   );
 }

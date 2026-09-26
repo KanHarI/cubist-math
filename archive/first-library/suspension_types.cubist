@@ -10,7 +10,7 @@ def meridian(A : U0, a : A) := push_path(Suspension(A), a);
 
 // Convert transport coherence to the dependent path required by pushout induction.
 def suspension_induction(
-  A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)), coherence : forall a : A,
+  A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)), coherence : forall a : A.
   (along C by meridian(A, a) from n) = s, point : Suspension(A)
 ) :=
   pushout_induction(
@@ -24,7 +24,7 @@ def suspension_induction(
 // A filling cube proves that converting a transport equality to a dependent
 // path and back returns the original equality.
 def transport_path_roundtrip(
-  X : U0, C : X -> U1, x y : X, p : x = y, n : C(x), s : C(y), q : (along C by p from n) = s
+  X : U0, C : X -> U1, x, y : X, p : x = y, n : C(x), s : C(y), q : (along C by p from n) = s
 ) :
   path_to_transport(
     fun (i : Interval) => C(p @ i), n, s,
@@ -51,7 +51,7 @@ def transport_path_roundtrip(
 
 // Meridian computation follows from pushout computation and the round trip.
 def suspension_meridian_beta(
-  A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)), coherence : forall a : A,
+  A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)), coherence : forall a : A.
   (along C by meridian(A, a) from n) = s, a : A
 ) :
   apd(suspension_induction(A, C, n, s, coherence), north(A), south(A), meridian(A, a)) = coherence(

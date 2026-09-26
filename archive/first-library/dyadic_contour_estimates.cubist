@@ -4,10 +4,10 @@ import dyadic_refinement_mesh;
 // Uniform continuity supplies one mesh controlling every later dyadic level.
 // The bound depends on the outer width, not the number of samples.
 def affine_dyadic_refinement_estimate(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, slope : Complex(F), integrand : Complex(F)
   -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
@@ -17,16 +17,16 @@ def affine_dyadic_refinement_estimate(
       )
     )
   ), delta : F, positiveDelta : lt(zero, delta), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x)
+  halfSum : (forall x : F. addF(half(x), half(x)) = x)
 ) :
-  exists mesh : F, lt(zero, mesh)
+  exists mesh : F. lt(zero, mesh)
   and (
-    forall depth : Nat, forall extra : Nat, forall a : FieldUnitInterval(F, zero, one, lt),
-    forall b : FieldUnitInterval(F, zero, one, lt),
+    forall depth : Nat. forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
+    forall b : FieldUnitInterval(F, zero, one, lt).
     forall ordered : FieldLe(
       F, lt, field_interval_coordinate(F, zero, one, lt)(a),
       field_interval_coordinate(F, zero, one, lt)(b)
-    ),
+    ).
     lt(dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b)), mesh)
     -> ComplexPerturbation(
       F, addF, negF, lt,
@@ -66,7 +66,7 @@ def affine_dyadic_refinement_estimate(
     );
   let leftUnit := complex_add_zero(F, zero, one, addF, mulF, negF, ring);
   let assoc := complex_add_assoc(F, zero, one, addF, mulF, negF, ring);
-  have rightUnit : forall x : Complex(F), addC(x, zeroC) = x {
+  have rightUnit : forall x : Complex(F). addC(x, zeroC) = x {
     intro x;
     exact trans(complex_add_comm(F, zero, one, addF, mulF, negF, ring, x, zeroC), leftUnit(x));
   }
@@ -75,12 +75,12 @@ def affine_dyadic_refinement_estimate(
     integrand, uniform, delta, positiveDelta
   );
   have bounds :
-    forall depth : Nat, forall extra : Nat, forall a : FieldUnitInterval(F, zero, one, lt),
-    forall b : FieldUnitInterval(F, zero, one, lt),
+    forall depth : Nat. forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
+    forall b : FieldUnitInterval(F, zero, one, lt).
     forall ordered : FieldLe(
       F, lt, field_interval_coordinate(F, zero, one, lt)(a),
       field_interval_coordinate(F, zero, one, lt)(b)
-    ),
+    ).
     lt(dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b)), mesh)
     -> ComplexPerturbation(
       F, addF, negF, lt,
@@ -108,7 +108,7 @@ def affine_dyadic_refinement_estimate(
         )
       )
     ) {
-    intro depth extra a b ordered small;
+    intro depth, extra, a, b, ordered, small;
     let refinement :=
       dyadic_samples_refine_below_mesh(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, Complex(F),

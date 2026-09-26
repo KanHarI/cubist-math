@@ -4,32 +4,32 @@ import group_homomorphisms;
 // Linear maps preserve addition and scalar multiplication. Their law fields
 // are propositions, so pointwise equality identifies the complete records.
 def LinearScalarLaw(
-  K : AlgebraicField, V W : VectorSpace(K), f : vector_carrier(K, V) -> vector_carrier(K, W)
+  K : AlgebraicField, V, W : VectorSpace(K), f : vector_carrier(K, V) -> vector_carrier(K, W)
 ) :=
-  forall a : af_carrier(K), forall x : vector_carrier(K, V),
+  forall a : af_carrier(K). forall x : vector_carrier(K, V).
   f(vector_scale(K, V, a, x)) = vector_scale(K, W, a, f(x));
 
 def LinearLaws(
-  K : AlgebraicField, V W : VectorSpace(K), f : vector_carrier(K, V) -> vector_carrier(K, W)
+  K : AlgebraicField, V, W : VectorSpace(K), f : vector_carrier(K, V) -> vector_carrier(K, W)
 ) :=
   GroupHomLaws(vector_group(K, V), vector_group(K, W), f) and LinearScalarLaw(K, V, W, f);
 
-def LinearMap(K : AlgebraicField, V W : VectorSpace(K)) :=
-  exists f : vector_carrier(K, V) -> vector_carrier(K, W), LinearLaws(K, V, W, f);
+def LinearMap(K : AlgebraicField, V, W : VectorSpace(K)) :=
+  exists f : vector_carrier(K, V) -> vector_carrier(K, W). LinearLaws(K, V, W, f);
 
-def linear_map(K : AlgebraicField, V W : VectorSpace(K), h : LinearMap(K, V, W)) :=
+def linear_map(K : AlgebraicField, V, W : VectorSpace(K), h : LinearMap(K, V, W)) :=
   sigma_first((vector_carrier(K, V) -> vector_carrier(K, W)), LinearLaws(K, V, W), h);
 
-def linear_laws(K : AlgebraicField, V W : VectorSpace(K), h : LinearMap(K, V, W)) :=
+def linear_laws(K : AlgebraicField, V, W : VectorSpace(K), h : LinearMap(K, V, W)) :=
   sigma_second((vector_carrier(K, V) -> vector_carrier(K, W)), LinearLaws(K, V, W), h);
 
-def linear_add(K : AlgebraicField, V W : VectorSpace(K), h : LinearMap(K, V, W)) :
+def linear_add(K : AlgebraicField, V, W : VectorSpace(K), h : LinearMap(K, V, W)) :
   GroupHomLaws(vector_group(K, V), vector_group(K, W), linear_map(K, V, W, h)) {
   obtain (add, scale) := linear_laws(K, V, W, h);
   exact add;
 }
 
-def linear_scale(K : AlgebraicField, V W : VectorSpace(K), h : LinearMap(K, V, W)) :
+def linear_scale(K : AlgebraicField, V, W : VectorSpace(K), h : LinearMap(K, V, W)) :
   LinearScalarLaw(K, V, W, linear_map(K, V, W, h)) {
   obtain (add, scale) := linear_laws(K, V, W, h);
   exact scale;
@@ -38,14 +38,14 @@ def linear_scale(K : AlgebraicField, V W : VectorSpace(K), h : LinearMap(K, V, W
 def linear_identity(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, V, V) {
   exact (
     (fun (x : vector_carrier(K, V)) => x),
-    (fun (x y : vector_carrier(K, V)) => refl(vector_add(K, V, x, y))),
+    (fun (x, y : vector_carrier(K, V)) => refl(vector_add(K, V, x, y))),
     (fun (a : af_carrier(K), x : vector_carrier(K, V)) => refl(vector_scale(K, V, a, x)))
   );
 }
 
 // Composition follows the library's traversal convention: h, then k.
 def linear_compose(
-  K : AlgebraicField, V W X : VectorSpace(K), h : LinearMap(K, V, W), k : LinearMap(K, W, X)
+  K : AlgebraicField, V, W, X : VectorSpace(K), h : LinearMap(K, V, W), k : LinearMap(K, W, X)
 ) :
   LinearMap(K, V, X) {
   let f := linear_map(K, V, W, h);
@@ -53,7 +53,7 @@ def linear_compose(
   exact (
     (fun (x : vector_carrier(K, V)) => g(f(x))),
     (
-      fun (x y : vector_carrier(K, V)) => trans(
+      fun (x, y : vector_carrier(K, V)) => trans(
         cong(g, linear_add(K, V, W, h, x, y)), linear_add(K, W, X, k, f(x), f(y))
       )
     ),
@@ -66,13 +66,13 @@ def linear_compose(
 }
 
 def linear_scalar_law_prop(
-  K : AlgebraicField, V W : VectorSpace(K), f : vector_carrier(K, V) -> vector_carrier(K, W)
+  K : AlgebraicField, V, W : VectorSpace(K), f : vector_carrier(K, V) -> vector_carrier(K, W)
 ) :
   Proposition(LinearScalarLaw(K, V, W, f)) {
   exact forall_prop(
     af_carrier(K),
     (
-      fun (a : af_carrier(K)) => forall x : vector_carrier(K, V),
+      fun (a : af_carrier(K)) => forall x : vector_carrier(K, V).
       f(vector_scale(K, V, a, x)) = vector_scale(K, W, a, f(x))
     ),
     (
@@ -94,7 +94,7 @@ def linear_scalar_law_prop(
 }
 
 def linear_laws_prop(
-  K : AlgebraicField, V W : VectorSpace(K), f : vector_carrier(K, V) -> vector_carrier(K, W)
+  K : AlgebraicField, V, W : VectorSpace(K), f : vector_carrier(K, V) -> vector_carrier(K, W)
 ) :
   Proposition(LinearLaws(K, V, W, f)) {
   exact product_prop(
@@ -105,8 +105,8 @@ def linear_laws_prop(
 }
 
 def linear_ext(
-  K : AlgebraicField, V W : VectorSpace(K), h k : LinearMap(K, V, W),
-  same : (forall x : vector_carrier(K, V), linear_map(K, V, W, h, x) = linear_map(K, V, W, k, x))
+  K : AlgebraicField, V, W : VectorSpace(K), h, k : LinearMap(K, V, W),
+  same : (forall x : vector_carrier(K, V). linear_map(K, V, W, h, x) = linear_map(K, V, W, k, x))
 ) :
   h = k {
   exact subtype_ext(
@@ -119,10 +119,10 @@ def linear_ext(
   );
 }
 
-def LinearIso(K : AlgebraicField, V W : VectorSpace(K)) :=
-  exists f : LinearMap(K, V, W), exists g : LinearMap(K, W, V),
-  (forall x : vector_carrier(K, V), linear_map(K, W, V, g, linear_map(K, V, W, f, x)) = x)
-  and (forall y : vector_carrier(K, W), linear_map(K, V, W, f, linear_map(K, W, V, g, y)) = y);
+def LinearIso(K : AlgebraicField, V, W : VectorSpace(K)) :=
+  exists f : LinearMap(K, V, W). exists g : LinearMap(K, W, V).
+  (forall x : vector_carrier(K, V). linear_map(K, W, V, g, linear_map(K, V, W, f, x)) = x)
+  and (forall y : vector_carrier(K, W). linear_map(K, V, W, f, linear_map(K, W, V, g, y)) = y);
 
 def linear_identity_iso(K : AlgebraicField, V : VectorSpace(K)) : LinearIso(K, V, V) {
   exact (
@@ -131,7 +131,7 @@ def linear_identity_iso(K : AlgebraicField, V : VectorSpace(K)) : LinearIso(K, V
   );
 }
 
-def linear_iso_equiv(K : AlgebraicField, V W : VectorSpace(K), iso : LinearIso(K, V, W)) :
+def linear_iso_equiv(K : AlgebraicField, V, W : VectorSpace(K), iso : LinearIso(K, V, W)) :
   Equiv(U0, vector_carrier(K, V), vector_carrier(K, W)) {
   obtain (f, g, left, right) := iso;
   exact equiv_from_inverse_into_set(
@@ -142,7 +142,7 @@ def linear_iso_equiv(K : AlgebraicField, V W : VectorSpace(K), iso : LinearIso(K
 
 // Univalence identifies the underlying carriers. Linear structure remains
 // explicit in LinearIso; this is not yet a structure-identity theorem for spaces.
-def linear_iso_carrier_path(K : AlgebraicField, V W : VectorSpace(K), iso : LinearIso(K, V, W)) :
+def linear_iso_carrier_path(K : AlgebraicField, V, W : VectorSpace(K), iso : LinearIso(K, V, W)) :
   vector_carrier(K, V) =[U0] vector_carrier(K, W) {
   exact ua(U0, vector_carrier(K, V), vector_carrier(K, W), linear_iso_equiv(K, V, W, iso));
 }

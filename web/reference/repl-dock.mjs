@@ -45,13 +45,14 @@ let open = false;
 try { open = localStorage.getItem(remembered) === "true"; } catch { /* Closed. */ }
 setOpen(open);
 
-// A read-only REPL example forks into this REPL: a new session loads the
-// example it follows, then runs its entries (see examples.mjs).
-document.addEventListener("cubist-repl-fork", async ({ detail: { base, inputs } }) => {
+// An example opens in this REPL, and a read-only REPL example forks into it:
+// a new session loads the example and shows what it defines, then runs the
+// transcript's entries (see examples.mjs).
+document.addEventListener("cubist-repl-fork", async ({ detail: { base, inputs, label } }) => {
   setOpen(true);
   await repl.restart();
   if (base) {
-    repl.show({ kind: "info", text: "Loaded the example above the transcript." });
+    repl.show({ kind: "info", text: label });
     await repl.load(base);
   }
   for (const input of inputs) await repl.enter(input);

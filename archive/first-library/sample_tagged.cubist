@@ -13,16 +13,16 @@ def SampleTagged(C : U1, condition : C -> C -> C -> U0, n : Nat) :=
 
 def sample_tagged_adjacent(
   C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
-  orders : (forall a : C, forall b : C, forall tag : C, condition(a, b, tag) -> related(a, b)),
+  orders : (forall a : C. forall b : C. forall tag : C. condition(a, b, tag) -> related(a, b)),
   n : Nat
 ) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
+  forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   SampleTagged(C, condition, n, vertices, tags) -> SampleAdjacent(C, related, n, vertices) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
+    forall vertices : SampleVertices(C, k). forall tags : SampleTags(C, k).
     SampleTagged(C, condition, k, vertices, tags) -> SampleAdjacent(C, related, k, vertices)
   ) {
-    zero => fun (vertices : C, tags valid : Unit) => tt;
+    zero => fun (vertices : C, tags, valid : Unit) => tt;
     succ previous => fun (
       vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)),
       valid : SampleTagged(C, condition, succ(k), vertices, tags)
@@ -83,12 +83,12 @@ def sample_left_tags(C : U1, n : Nat) :=
 
 def sample_left_tags_valid(
   C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
-  admits : (forall a : C, forall b : C, related(a, b) -> condition(a, b, a)), n : Nat
+  admits : (forall a : C. forall b : C. related(a, b) -> condition(a, b, a)), n : Nat
 ) :
-  forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices)
+  forall vertices : SampleVertices(C, n). SampleAdjacent(C, related, n, vertices)
   -> SampleTagged(C, condition, n, vertices, sample_left_tags(C, n, vertices)) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices)
+    forall vertices : SampleVertices(C, k). SampleAdjacent(C, related, k, vertices)
     -> SampleTagged(C, condition, k, vertices, sample_left_tags(C, k, vertices))
   ) {
     zero => fun (vertices : C, ordered : Unit) => tt;
@@ -145,12 +145,12 @@ def sample_right_tags(C : U1, n : Nat) :=
 
 def sample_right_tags_valid(
   C : U1, condition : C -> C -> C -> U0, related : C -> C -> U0,
-  admits : (forall a : C, forall b : C, related(a, b) -> condition(a, b, b)), n : Nat
+  admits : (forall a : C. forall b : C. related(a, b) -> condition(a, b, b)), n : Nat
 ) :
-  forall vertices : SampleVertices(C, n), SampleAdjacent(C, related, n, vertices)
+  forall vertices : SampleVertices(C, n). SampleAdjacent(C, related, n, vertices)
   -> SampleTagged(C, condition, n, vertices, sample_right_tags(C, n, vertices)) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k), SampleAdjacent(C, related, k, vertices)
+    forall vertices : SampleVertices(C, k). SampleAdjacent(C, related, k, vertices)
     -> SampleTagged(C, condition, k, vertices, sample_right_tags(C, k, vertices))
   ) {
     zero => fun (vertices : C, ordered : Unit) => tt;

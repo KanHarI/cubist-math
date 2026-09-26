@@ -5,14 +5,14 @@ import subdivision_refinement;
 // identifies its sum with the specified fine samples; equal sample lists are
 // not required. Transport only the value of the fine contour sum.
 def curve_refinement_partition_estimate(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
   condition : (
-    forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
+    forall a : FieldUnitInterval(F, zero, one, lt). forall b : FieldUnitInterval(F, zero, one, lt).
     FieldUnitInterval(F, zero, one, lt)
     -> SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b) -> U1
-  ), a b : FieldUnitInterval(F, zero, one, lt),
-  coarse fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), radius : F,
+  ), a, b : FieldUnitInterval(F, zero, one, lt),
+  coarse, fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b), radius : F,
   refinement : SubdivisionRefinementSum(
     FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF),
     parameter_contour_edge(
@@ -26,7 +26,7 @@ def curve_refinement_partition_estimate(
       FieldUnitInterval(F, zero, one, lt),
       subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, coarse),
       subdivision_vertices(FieldUnitInterval(F, zero, one, lt), a, b, coarse)
-    ),
+    ).
     SubdivisionTagged(
       FieldUnitInterval(F, zero, one, lt), condition,
       subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, coarse),
@@ -76,10 +76,10 @@ def curve_refinement_partition_estimate(
 // The error estimate now applies to a specified actual fine sample, rather
 // than only the fresh flattening returned by the partition estimate.
 def affine_refinement_sum_estimate(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, slope : Complex(F), integrand : Complex(F)
   -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
@@ -90,11 +90,11 @@ def affine_refinement_sum_estimate(
     )
   ), delta : F, positiveDelta : lt(zero, delta)
 ) :
-  exists mesh : F, lt(zero, mesh)
+  exists mesh : F. lt(zero, mesh)
   and (
-    forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
-    forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
-    forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+    forall a : FieldUnitInterval(F, zero, one, lt). forall b : FieldUnitInterval(F, zero, one, lt).
+    forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
+    forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
     SubdivisionRefinementSum(
       FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF),
       parameter_contour_edge(
@@ -137,9 +137,9 @@ def affine_refinement_sum_estimate(
     integrand, uniform, delta, positiveDelta
   );
   have actual :
-    forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
-    forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
-    forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+    forall a : FieldUnitInterval(F, zero, one, lt). forall b : FieldUnitInterval(F, zero, one, lt).
+    forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
+    forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
     SubdivisionRefinementSum(
       FieldUnitInterval(F, zero, one, lt), Complex(F), complex_zero(F, zero), complex_add(F, addF),
       parameter_contour_edge(
@@ -172,7 +172,7 @@ def affine_refinement_sum_estimate(
         )
       )
     ) {
-    intro a b coarse fine refinement;
+    intro a, b, coarse, fine, refinement;
     let n := subdivision_count(I, a, b, coarse);
     let vertices := subdivision_vertices(I, a, b, coarse);
     let tags := subdivision_tags(I, a, b, coarse);

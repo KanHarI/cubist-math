@@ -3,8 +3,8 @@ import complex_polynomials;
 // The algebraic step in Horner division by X - r.
 
 def polynomial_difference_step(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a x r q d : F
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, x, r, q, d : F
 ) :
   addF(a, mulF(x, addF(q, mulF(addF(x, negF(r)), d)))) = addF(
     addF(a, mulF(r, q)), mulF(addF(x, negF(r)), addF(q, mulF(x, d)))
@@ -53,7 +53,7 @@ def polynomial_difference_step(
 }
 
 // This is a polynomial expression, defined by recursion, with no division.
-def monic_divided_difference(F : U1, zero one : F, addF mulF : F -> F -> F, x r : F, n : Nat) :=
+def monic_divided_difference(F : U1, zero, one : F, addF, mulF : F -> F -> F, x, r : F, n : Nat) :=
   induction n as k return (MonicCoefficients(F, k) -> F) {
     zero => fun (u : Unit) => zero;
     succ previous => fun (coefficients : MonicCoefficients(F, succ(k))) => unpack typed(
@@ -64,10 +64,10 @@ def monic_divided_difference(F : U1, zero one : F, addF mulF : F -> F -> F, x r 
   };
 
 def monic_difference_identity(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), x r : F, n : Nat
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), x, r : F, n : Nat
 ) :
-  forall coefficients : MonicCoefficients(F, n),
+  forall coefficients : MonicCoefficients(F, n).
   monic_eval(F, one, addF, mulF, n, coefficients, x) = addF(
     monic_eval(F, one, addF, mulF, n, coefficients, r),
     mulF(
@@ -75,7 +75,7 @@ def monic_difference_identity(
     )
   ) {
   exact induction n as k return (
-    forall coefficients : MonicCoefficients(F, k),
+    forall coefficients : MonicCoefficients(F, k).
     monic_eval(F, one, addF, mulF, k, coefficients, x) = addF(
       monic_eval(F, one, addF, mulF, k, coefficients, r),
       mulF(
@@ -115,7 +115,7 @@ def monic_difference_identity(
 // Once an exact root r is supplied, this proves the pointwise factor identity
 // p(x) = (x-r) q(x). It does not assert that a root exists.
 def monic_factor_at_root(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : Nat,
   coefficients : MonicCoefficients(F, n), r : F,
   root : monic_eval(F, one, addF, mulF, n, coefficients, r) = zero, x : F

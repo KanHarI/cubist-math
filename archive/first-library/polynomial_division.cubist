@@ -3,13 +3,13 @@ import polynomial_arithmetic;
 // The remainder bound is strict: coefficients at d and above vanish.
 // Thus a divisor with top degree d leaves a remainder of degree below d,
 // including the zero remainder and division by a nonzero constant.
-def DivisionResult(K : AlgebraicField, p divisor : Polynomial(K), d : Nat) :=
-  exists q : Polynomial(K), exists r : Polynomial(K),
+def DivisionResult(K : AlgebraicField, p, divisor : Polynomial(K), d : Nat) :=
+  exists q : Polynomial(K). exists r : Polynomial(K).
   p = polynomial_add(K, polynomial_mul(K, q, divisor), r)
   and SeriesSupport(K, polynomial_coefficients(K, r), d);
 
 def DivisionAdjustment(K : AlgebraicField, divisor : Polynomial(K), d : Nat, p : Polynomial(K)) :=
-  exists a : af_carrier(K), exists r : Polynomial(K),
+  exists a : af_carrier(K). exists r : Polynomial(K).
   p = polynomial_add(K, polynomial_scale(K, a, divisor), r)
   and SeriesSupport(K, polynomial_coefficients(K, r), d);
 
@@ -57,7 +57,7 @@ def division_adjust(
 }
 
 def division_horner_identity(
-  K : AlgebraicField, p divisor q r : Polynomial(K),
+  K : AlgebraicField, p, divisor, q, r : Polynomial(K),
   tailEquation : polynomial_tail(K, p) = polynomial_add(K, polynomial_mul(K, q, divisor), r),
   a : af_carrier(K), remainder : Polynomial(K),
   adjustment : polynomial_add(
@@ -167,7 +167,7 @@ def divide_with_bound(
   sd : SeriesSupport(K, polynomial_coefficients(K, divisor), succ(d)), n : Nat
 ) :=
   induction n as k return (
-    forall p : Polynomial(K), SeriesSupport(K, polynomial_coefficients(K, p), k)
+    forall p : Polynomial(K). SeriesSupport(K, polynomial_coefficients(K, p), k)
     -> DivisionResult(K, p, divisor, d)
   ) {
     zero => division_zero(K, divisor, d);
@@ -180,7 +180,7 @@ def divide_with_bound(
   };
 
 def divide_by_degree(
-  K : AlgebraicField, p divisor : Polynomial(K), d : Nat,
+  K : AlgebraicField, p, divisor : Polynomial(K), d : Nat,
   degree : polynomial_cutoff(K, divisor) = succ(d)
 ) :
   DivisionResult(K, p, divisor, d) {
@@ -205,13 +205,13 @@ def natural_predecessor(n : Nat) := induction n as k return Nat {
 def polynomial_degree(K : AlgebraicField, p : Polynomial(K)) :=
   natural_predecessor(polynomial_cutoff(K, p));
 
-def PolynomialDivision(K : AlgebraicField, p divisor : Polynomial(K)) :=
+def PolynomialDivision(K : AlgebraicField, p, divisor : Polynomial(K)) :=
   DivisionResult(K, p, divisor, polynomial_degree(K, divisor));
 
 // Division with remainder, for every nonzero formal polynomial over a field.
 // The numerical degree convention at zero is unused for the divisor.
 def polynomial_division(
-  K : AlgebraicField, p divisor : Polynomial(K), nonzero : (divisor = polynomial_zero(K)) -> Void
+  K : AlgebraicField, p, divisor : Polynomial(K), nonzero : (divisor = polynomial_zero(K)) -> Void
 ) :
   PolynomialDivision(K, p, divisor) {
   exact (

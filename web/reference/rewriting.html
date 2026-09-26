@@ -81,7 +81,7 @@ def two_plus_two : 2 + 2 = 4 {
   rfl;
 }
 
-def successor_first(n m : Nat) : succ(n) + m = succ(n + m) {
+def successor_first(n, m : Nat) : succ(n) + m = succ(n + m) {
   rfl;
 }</code></pre>
             <p><code>succ(n) + m</code> computes to <code>succ(n + m)</code>, because addition recurses on its first argument. <code>n + 0</code> does not compute for a variable <code>n</code>, so <code>rfl</code> cannot prove <code>n + 0 = n</code>; that needs induction, as in the library lemma <code>nat_add_zero</code>.</p>
@@ -105,7 +105,7 @@ def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
   }
 }
 
-def through_hypotheses(a b c : Nat, p : a = b, q : b = c) : a + 0 = c {
+def through_hypotheses(a, b, c : Nat, p : a = b, q : b = c) : a + 0 = c {
   calc {
     a + 0 = a by nat_add_zero(a);
     _ = b by p;
@@ -163,7 +163,7 @@ def wrong_step_proof(n : Nat) : (n + 0) + 0 = n {
             <h2>Rewriting: <code>rw</code></h2>
             <pre><code data-check="accept">import naturals;
 
-def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
+def rewrite_then_finish(n, m : Nat, h : n = m) : n + 0 = m {
   rw [nat_add_zero(n)];   // goal is now n = m
   exact h;
 }
@@ -176,7 +176,7 @@ def rewrite_backwards(n : Nat) : n = n + 0 {
   rw [&lt;- nat_add_zero(n)] at lhs;
 }
 
-def rewrite_several(a b : Nat) : (a + 0) + (b + 0) = a + b {
+def rewrite_several(a, b : Nat) : (a + 0) + (b + 0) = a + b {
   rw [nat_add_zero(a), nat_add_zero(b)];
 }</code></pre>
             <p><code>rw [p];</code> takes a proof <code>p : a = b</code> and replaces one occurrence of <code>a</code> in the goal by <code>b</code>. Internally it builds <code>cong</code> of a one-hole context around the occurrence and composes it with the goal. <code>&lt;- p</code> uses <code>p</code> right to left, replacing <code>b</code> by <code>a</code>. Several rules <code>rw [p, q, &lt;- r];</code> are applied one after another, in order.</p>
@@ -194,7 +194,7 @@ def no_third(n : Nat) : (n + 0) + (n + 0) = (n + 0) + n {
 }</code></pre>
             <pre><code data-check="reject">import naturals;
 
-def unfinished(n m : Nat) : n + 0 = m {
+def unfinished(n, m : Nat) : n + 0 = m {
   // Error: rw left an unresolved equality goal; add a following proof statement.
   rw [nat_add_zero(n)];
 }</code></pre>
@@ -205,7 +205,7 @@ def uninstantiated(n : Nat) : n + 0 = n {
 }</code></pre>
             <pre><code data-check="reject">import naturals;
 
-def dependent_argument(C : Nat -&gt; U0, f : forall n : Nat, C(n), n : Nat) : f(n + 0) = f(n + 0) {
+def dependent_argument(C : Nat -&gt; U0, f : forall n : Nat. C(n), n : Nat) : f(n + 0) = f(n + 0) {
   rw [nat_add_zero(n)] at lhs;  // Error: Rewrite match occurs in an unsupported dependent position.
 }</code></pre>
             <pre><code data-check="reject">import naturals;
@@ -225,15 +225,15 @@ def add_zero_twice_simp(n : Nat) : (n + 0) + 0 = n {
   simp only [nat_add_zero];
 }
 
-def residual_goal(n m : Nat, h : n = m) : (n + 0) + 0 = m {
+def residual_goal(n, m : Nat, h : n = m) : (n + 0) + 0 = m {
   simp only [nat_add_zero];   // goal is now n = m
   exact h;
 }
 
-def with_hypothesis(a b : Nat, h : a = b) : a + 0 = b {
+def with_hypothesis(a, b : Nat, h : a = b) : a + 0 = b {
   simp only [nat_add_zero, h];
 }</code></pre>
-            <p><code>nat_add_zero</code> has type <code>forall x : Nat, (x + 0) = x</code>. The simplifier finds each subterm of the shape <code>? + 0</code>, fills <code>x</code> from it, and checks the instantiated rule. As with <code>rw</code>, if the simplified goal holds by conversion the block is closed; otherwise a following statement must prove it.</p>
+            <p><code>nat_add_zero</code> has type <code>forall x : Nat. (x + 0) = x</code>. The simplifier finds each subterm of the shape <code>? + 0</code>, fills <code>x</code> from it, and checks the instantiated rule. As with <code>rw</code>, if the simplified goal holds by conversion the block is closed; otherwise a following statement must prove it.</p>
             <p>A rule may be:</p>
             <ul>
               <li>a quantified lemma name such as <code>nat_add_zero</code>;</li>
@@ -244,7 +244,7 @@ def with_hypothesis(a b : Nat, h : a = b) : a + 0 = b {
             <p>Every quantified parameter must be determined by the matched side. Matching is rigid and first-order: a pattern matches a subterm with the same function heads, and it does not unfold definitions to find a match. Below, <code>extra</code> matches any <code>x</code>, but nothing fixes <code>y</code>. Supply the argument yourself, as in <code>simp only [extra(n, 0)]</code>.</p>
             <pre><code data-check="reject">import naturals;
 
-def extra(x y : Nat) : x = x + (0 * y) {
+def extra(x, y : Nat) : x = x + (0 * y) {
   exact sym(nat_add_zero(x));
 }
 
@@ -254,7 +254,7 @@ def undetermined(n : Nat) : n = n + 0 {
 }</code></pre>
             <pre><code data-check="reject">import naturals;
 
-def unfinished(n m : Nat) : n + 0 = m {
+def unfinished(n, m : Nat) : n + 0 = m {
   // Error: simp only left an unresolved equality goal; add a following proof statement.
   simp only [nat_add_zero];
 }</code></pre>
@@ -274,13 +274,13 @@ def no_rules(n : Nat) : n + 0 = n {
             <p>Commutativity-style rules such as <code>forall x y, x + y = y + x</code> rewrite their own output back into their input. The simplifier detects the repeated state and fails. Instantiate such rules at specific arguments instead, as in <code>nat_add_comm(a, b)</code>.</p>
             <pre><code data-check="reject">import naturals;
 
-def commuted(a b : Nat) : a + b = b + a {
+def commuted(a, b : Nat) : a + b = b + a {
   simp only [nat_add_comm];  // Error: Simplification cycle detected in the selected rules.
 }</code></pre>
             <p>There are also fixed resource bounds: 64 rewrites, 512 visited nodes and 8,192 match candidates per traversal, a bound on generated term size, and a one-second time limit on the rule search itself. The limit does not include elaborating the rules you list, the statements after <code>simp</code> or <code>rw</code>, or the steps of a <code>calc</code>. Exceeding a bound is a failure that names the budget. Here the reversed rule turns every number <code>x</code> into <code>x + 0</code>, forever:</p>
             <pre><code data-check="reject">import naturals;
 
-def growing(n m : Nat, h : n = m) : n = m + 0 {
+def growing(n, m : Nat, h : n = m) : n = m + 0 {
   simp only [&lt;- nat_add_zero];  // Error: Simplification rewrite budget exceeded.
   exact h;
 }</code></pre>
@@ -289,13 +289,13 @@ def growing(n m : Nat, h : n = m) : n = m + 0 {
             <h2>Using a hypothesis: <code>simpa</code></h2>
             <pre><code data-check="accept">import naturals;
 
-def simpa_example(n m : Nat, h : n + 0 = m) : n = m + 0 {
+def simpa_example(n, m : Nat, h : n + 0 = m) : n = m + 0 {
   simpa only [nat_add_zero] using h;
 }</code></pre>
             <p><code>simpa [rules] using proof;</code> simplifies both the goal and the type of <code>proof</code> with the same rules. Here both become <code>n = m</code>. It checks that the simplified types match, then reconstructs the original goal from the checked rewrite paths. This saves stating the simplified form of a hypothesis. <code>simpa</code> always closes the block.</p>
             <pre><code data-check="reject">import naturals;
 
-def different_after_simplifying(n m : Nat, h : n = m + 1) : n + 0 = m {
+def different_after_simplifying(n, m : Nat, h : n = m + 1) : n + 0 = m {
   // Error: Type mismatch: found n = m + 1, expected n = m.
   simpa only [nat_add_zero] using h;
 }</code></pre>
@@ -314,7 +314,7 @@ def family_simpa(P : Nat -&gt; U0, n : Nat, h : P(n)) : P(n + 0) {
   simpa only [nat_add_zero] using h;
 }
 
-def move_type(A B : U0, p : A = B, a : A) : B {
+def move_type(A, B : U0, p : A = B, a : A) : B {
   simpa only [p] using a;
 }</code></pre>
             <p>In <code>move_type</code>, the rule is a path <code>p : A = B</code> between types, and <code>simpa</code> transports <code>a</code> along it. The simplifier only follows actual paths of types. It will not turn a logical equivalence or a pair of maps between propositions into a rewrite.</p>
@@ -326,7 +326,7 @@ def move_type(A B : U0, p : A = B, a : A) : B {
 simp_rule nat_add_zero priority 10;
 simp_set nat_units := [nat_add_zero];
 
-def default_rules(n m : Nat) : (n + 0) + (m + 0) = n + m {
+def default_rules(n, m : Nat) : (n + 0) + (m + 0) = n + m {
   simp;
 }
 
@@ -334,7 +334,7 @@ def named_set(n : Nat) : (n + 0) + 0 = n {
   simp only [nat_units];
 }
 
-def simplified_copy(n m : Nat, h : n + 0 = m + 0) : n = m {
+def simplified_copy(n, m : Nat, h : n + 0 = m + 0) : n = m {
   simp [nat_units] at h as h2;   // h2 : n = m
   exact h2;
 }</code></pre>
@@ -375,7 +375,7 @@ def not_local(n : Nat) : n = n {
 }</code></pre>
             <pre><code data-check="reject">import naturals;
 
-def copy_only(n m : Nat, h : n + 0 = m) : n = m {
+def copy_only(n, m : Nat, h : n + 0 = m) : n = m {
   // Error: A simplified hypothesis copy must be followed by a proof statement.
   simp only [nat_add_zero] at h as h2;
 }</code></pre>

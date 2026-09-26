@@ -155,7 +155,7 @@ def binary_radix_correct(extra : Nat, n : BinaryNat) :
   };
 }
 
-def binary_injective(a b : BinaryNat, same : binary_to_nat(a) = binary_to_nat(b)) : a = b {
+def binary_injective(a, b : BinaryNat, same : binary_to_nat(a) = binary_to_nat(b)) : a = b {
   exact trans(sym(binary_roundtrip(a)), trans(cong(binary_of_nat, same), binary_roundtrip(b)));
 }
 

@@ -4,7 +4,7 @@ import scalar_restriction;
 // Regard the same finite generating vectors as an L-linear family. The
 // coefficients are extended along K -> L; vectors themselves do not move.
 def extend_coordinate_linear(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat
 ) :=
   induction n as k return (
     LinearMap(K, CoordinateSpace(K, k), RestrictScalars(K, L, e, V))
@@ -30,12 +30,12 @@ def extend_coordinate_linear(
   };
 
 def extend_coefficients(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, a : Fin(n) -> af_carrier(K)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, a : Fin(n) -> af_carrier(K)
 ) :=
   fun (i : Fin(n)) => field_embedding_map(K, L, e, a(i));
 
 def extend_coordinate_zero(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L),
   h : LinearMap(K, CoordinateSpace(K, 0), RestrictScalars(K, L, e, V)), a : Fin(0) -> af_carrier(K)
 ) :
   vector_zero(L, V) = linear_map(K, CoordinateSpace(K, 0), RestrictScalars(K, L, e, V), h, a) {
@@ -55,11 +55,11 @@ def extend_coordinate_zero(
 }
 
 def extend_coordinate_square(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat
 ) :=
   induction n as k return (
-    forall h : LinearMap(K, CoordinateSpace(K, k), RestrictScalars(K, L, e, V)),
-    forall a : Fin(k) -> af_carrier(K),
+    forall h : LinearMap(K, CoordinateSpace(K, k), RestrictScalars(K, L, e, V)).
+    forall a : Fin(k) -> af_carrier(K).
     linear_map(
       L, CoordinateSpace(L, k), V, extend_coordinate_linear(K, L, e, V, k, h),
       extend_coefficients(K, L, e, k, a)
@@ -91,7 +91,7 @@ def extend_coordinate_square(
   };
 
 def scalar_extension_basis_finite(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat,
   basis : FiniteBasis(K, RestrictScalars(K, L, e, V), n)
 ) :
   FiniteDimensional(L, V) {
@@ -125,7 +125,7 @@ def scalar_extension_basis_finite(
 }
 
 def finite_dimensional_of_restriction(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L),
   finite : FiniteDimensional(K, RestrictScalars(K, L, e, V))
 ) :
   FiniteDimensional(L, V) {

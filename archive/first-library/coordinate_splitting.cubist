@@ -18,7 +18,7 @@ def coordinate_insert(K : AlgebraicField, n : Nat, v : Fin(n) -> af_carrier(K)) 
   coordinate_cons(K, n, af_zero(af_carrier(K), af_operations(K)), v);
 
 def finite_function_ext(
-  A : U0, n : Nat, f g : Fin(succ(n)) -> A, first : finite_head(A, n, f) = finite_head(A, n, g),
+  A : U0, n : Nat, f, g : Fin(succ(n)) -> A, first : finite_head(A, n, f) = finite_head(A, n, g),
   rest : finite_tail(A, n, f) = finite_tail(A, n, g)
 ) :
   f = g {
@@ -44,11 +44,11 @@ def coordinate_insert_linear(K : AlgebraicField, n : Nat) :
   let A := af_carrier(K);
   let zero := af_zero(A, af_operations(K));
   have additive :
-    forall v : Fin(n) -> A, forall w : Fin(n) -> A,
+    forall v : Fin(n) -> A. forall w : Fin(n) -> A.
     coordinate_insert(K, n, vector_add(K, CoordinateSpace(K, n), v, w)) = vector_add(
       K, CoordinateSpace(K, succ(n)), coordinate_insert(K, n, v), coordinate_insert(K, n, w)
     ) {
-    intro v w;
+    intro v, w;
     exact finite_function_ext(
       A, n, coordinate_insert(K, n, vector_add(K, CoordinateSpace(K, n), v, w)),
       vector_add(
@@ -58,11 +58,11 @@ def coordinate_insert_linear(K : AlgebraicField, n : Nat) :
     );
   }
   have scalar :
-    forall a : A, forall v : Fin(n) -> A,
+    forall a : A. forall v : Fin(n) -> A.
     coordinate_insert(K, n, vector_scale(K, CoordinateSpace(K, n), a, v)) = vector_scale(
       K, CoordinateSpace(K, succ(n)), a, coordinate_insert(K, n, v)
     ) {
-    intro a v;
+    intro a, v;
     exact finite_function_ext(
       A, n, coordinate_insert(K, n, vector_scale(K, CoordinateSpace(K, n), a, v)),
       vector_scale(K, CoordinateSpace(K, succ(n)), a, coordinate_insert(K, n, v)),

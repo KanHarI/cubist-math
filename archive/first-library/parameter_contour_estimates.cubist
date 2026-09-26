@@ -5,7 +5,7 @@ import complex_algebra;
 // use values(t) = integrand(curve(t)); parameter_contour_sum_is_mapped
 // proves equality with the original contour sums at the mapped samples.
 def complex_parameter_contour_sum(
-  C F : U1, zero : F, addF mulF : F -> F -> F, negF : F -> F, curve values : C -> Complex(F),
+  C, F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, curve, values : C -> Complex(F),
   n : Nat
 ) :=
   parameter_contour_sum(
@@ -15,12 +15,12 @@ def complex_parameter_contour_sum(
 
 // Actual complex finite sums become close under the coordinate variation bound.
 def complex_parameter_tag_change_close(
-  C F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve values : C -> Complex(F),
-  realWeight imagWeight : C -> C -> C -> F, delta length : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve, values : C -> Complex(F),
+  realWeight, imagWeight : C -> C -> C -> F, delta, length : F,
   nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat, vertices : SampleVertices(C, n),
-  oldTags newTags : SampleTags(C, n),
+  oldTags, newTags : SampleTags(C, n),
   errors : ComplexParameterTagBounds(
     C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags
   ),
@@ -30,7 +30,7 @@ def complex_parameter_tag_change_close(
   variation : FieldLe(
     F, lt,
     sample_sum(
-      C, F, zero, addF, (fun (a b t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n,
+      C, F, zero, addF, (fun (a, b, t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n,
       vertices, oldTags
     ), length
   ), epsilon : F, small : lt(mulF(delta, length), epsilon)

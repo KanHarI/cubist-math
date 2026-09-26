@@ -1,26 +1,26 @@
 // Cubical path foundations. Reversal and function action are pointwise;
 // composition and its laws use checked square and cube fillings.
-def inverse(U : Universe, A : U, x y : A, p : x = y) := sym(p);
+def inverse(U : Universe, A : U, x, y : A, p : x = y) := sym(p);
 
-def concatenate(U : Universe, A : U, x y z : A, p : x = y, q : y = z) := trans(p, q);
+def concatenate(U : Universe, A : U, x, y, z : A, p : x = y, q : y = z) := trans(p, q);
 
 // Applying a function to a path, defined by equality induction.
-def ap(U : Universe, A B : U, f : A -> B, x y : A, p : x = y) := cong(f, p);
+def ap(U : Universe, A, B : U, f : A -> B, x, y : A, p : x = y) := cong(f, p);
 
 // Half-adjoint equivalence: an inverse, two homotopies and their triangle law.
 // The triangle is essential for general types; inverse data alone is not IsEquiv.
-def IsEquiv(U : Universe, A B : U, f : A -> B) :=
-  exists g : B -> A, exists eta : (forall x : A, g(f(x)) = x),
-  exists epsilon : (forall y : B, f(g(y)) = y), forall x : A, cong(f, eta(x)) = epsilon(f(x));
+def IsEquiv(U : Universe, A, B : U, f : A -> B) :=
+  exists g : B -> A. exists eta : (forall x : A. g(f(x)) = x).
+  exists epsilon : (forall y : B. f(g(y)) = y). forall x : A. cong(f, eta(x)) = epsilon(f(x));
 
-def Equiv(U : Universe, A B : U) := exists f : A -> B, IsEquiv(U, A, B, f);
+def Equiv(U : Universe, A, B : U) := exists f : A -> B. IsEquiv(U, A, B, f);
 
 // For a set-valued codomain, equality proofs are unique, so the triangle law
 // follows from the supplied inverse homotopies. This is constructive at any U.
 def equiv_from_inverse_into_set(
-  U : Universe, A B : U,
-  setB : (forall x : B, forall y : B, forall p : x = y, forall q : x = y, p = q), f : A -> B, g : B
-  -> A, eta : (forall x : A, g(f(x)) = x), epsilon : (forall y : B, f(g(y)) = y)
+  U : Universe, A, B : U,
+  setB : (forall x : B. forall y : B. forall p : x = y. forall q : x = y. p = q), f : A -> B, g : B
+  -> A, eta : (forall x : A. g(f(x)) = x), epsilon : (forall y : B. f(g(y)) = y)
 ) :
   Equiv(U, A, B) {
   exact (
@@ -28,13 +28,13 @@ def equiv_from_inverse_into_set(
   );
 }
 
-def transport_constant(A B : U1, x y : A, p : x = y, v : B) :=
+def transport_constant(A, B : U1, x, y : A, p : x = y, v : B) :=
   path(
     fun (i : Interval) => B,
     fun (i : Interval) => comp(fun (j : Interval) => B, v, face(i, 1, fun (j : Interval) => v))
   );
 
-def apd_constant(A B : U1, f : A -> B, x y : A, p : x = y) :=
+def apd_constant(A, B : U1, f : A -> B, x, y : A, p : x = y) :=
   path(
     fun (interval_law : Interval) => PathP(
       fun (interval_path : Interval) => B, comp(fun (interval_compose : Interval) => B, f(x)), f(y)
@@ -67,7 +67,7 @@ def apd_constant(A B : U1, f : A -> B, x y : A, p : x = y) :=
   );
 
 // The path algebra and transport laws used by encode/decode.
-def right_unit(A : U1, x y : A, p : x = y) :=
+def right_unit(A : U1, x, y : A, p : x = y) :=
   path(
     fun (k : Interval) => x = y,
     fun (k : Interval) => path(
@@ -79,14 +79,14 @@ def right_unit(A : U1, x y : A, p : x = y) :=
     )
   );
 
-def inverse_left(A : U1, x y : A, p : x = y) : trans(sym(p), p) = refl(y) {
+def inverse_left(A : U1, x, y : A, p : x = y) : trans(sym(p), p) = refl(y) {
   exact path k => path i => comp(
     fun (j : Interval) => A, p @ flip(i), face(i, 0, fun (j : Interval) => y),
     face(i, 1, fun (j : Interval) => p @ j), face(k, 1, fun (j : Interval) => p @ join(flip(i), j))
   );
 }
 
-def inverse_right(A : U1, x y : A, p : x = y) : trans(p, sym(p)) = refl(x) {
+def inverse_right(A : U1, x, y : A, p : x = y) : trans(p, sym(p)) = refl(x) {
   exact path k => path i => comp(
     fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
     face(i, 1, fun (j : Interval) => p @ flip(j)),
@@ -94,7 +94,7 @@ def inverse_right(A : U1, x y : A, p : x = y) : trans(p, sym(p)) = refl(x) {
   );
 }
 
-def path_associative(A : U1, x y z w : A, p : x = y, q : y = z, r : z = w) :=
+def path_associative(A : U1, x, y, z, w : A, p : x = y, q : y = z, r : z = w) :=
   path(
     fun (s : Interval) => x = w,
     fun (s : Interval) => path(
@@ -129,7 +129,7 @@ def path_associative(A : U1, x y z w : A, p : x = y, q : y = z, r : z = w) :=
     )
   );
 
-def left_unit(A : U1, x y : A, p : x = y) :=
+def left_unit(A : U1, x, y : A, p : x = y) :=
   path(
     fun (k : Interval) => x = y,
     fun (k : Interval) => path(
@@ -141,8 +141,8 @@ def left_unit(A : U1, x y : A, p : x = y) :=
     )
   );
 
-def cancel_left(A : U1, x y : A, p : x = y) :=
-  fun (z : A, q r : y = z, same : trans(p, q) = trans(p, r)) => trans(
+def cancel_left(A : U1, x, y : A, p : x = y) :=
+  fun (z : A, q, r : y = z, same : trans(p, q) = trans(p, r)) => trans(
     sym(
       trans(
         sym(path_associative(A, y, x, y, z, sym(p), p, q)),
@@ -158,7 +158,7 @@ def cancel_left(A : U1, x y : A, p : x = y) :=
     )
   );
 
-def transport_concat(A : U1, C : A -> U0, x y z : A, p : x = y, q : y = z, v : C(x)) :=
+def transport_concat(A : U1, C : A -> U0, x, y, z : A, p : x = y, q : y = z, v : C(x)) :=
   (
     fun (
       dependent_path : PathP(
@@ -277,7 +277,7 @@ def transport_concat(A : U1, C : A -> U0, x y z : A, p : x = y, q : y = z, v : C
     )
   );
 
-def transport_inverse_after(A : U1, C : A -> U0, x y : A, p : x = y, v : C(x)) :=
+def transport_inverse_after(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(x)) :=
   path(
     fun (interval_law : Interval) => C(x),
     fun (interval_law : Interval) => comp(
@@ -293,7 +293,7 @@ def transport_inverse_after(A : U1, C : A -> U0, x y : A, p : x = y, v : C(x)) :
     )
   );
 
-def transport_after_inverse(A : U1, C : A -> U0, x y : A, p : x = y, v : C(y)) :=
+def transport_after_inverse(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(y)) :=
   path(
     fun (interval_law : Interval) => C(y),
     fun (interval_law : Interval) => comp(
@@ -325,15 +325,15 @@ def transport_after_inverse(A : U1, C : A -> U0, x y : A, p : x = y, v : C(y)) :
     )
   );
 
-def transport_ap(A : U1, C : A -> U0, x y : A, p : x = y, v : C(x)) := refl(along C by p from v);
+def transport_ap(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(x)) := refl(along C by p from v);
 
-def append_cancel_inverse(A : U1, x y z : A, p : x = y, q : y = z) :=
+def append_cancel_inverse(A : U1, x, y, z : A, p : x = y, q : y = z) :=
   trans(
     path_associative(A, x, y, z, y, p, q, sym(q)),
     trans(cong((fun (r : y = y) => trans(p, r)), inverse_right(A, y, z, q)), right_unit(A, x, y, p))
   );
 
-def append_inverse_cancel(A : U1, x y z : A, p : x = y, q : z = y) :=
+def append_inverse_cancel(A : U1, x, y, z : A, p : x = y, q : z = y) :=
   trans(
     path_associative(A, x, y, z, y, p, sym(q), q),
     trans(cong((fun (r : y = y) => trans(p, r)), inverse_left(A, z, y, q)), right_unit(A, x, y, p))
@@ -341,14 +341,14 @@ def append_inverse_cancel(A : U1, x y z : A, p : x = y, q : z = y) :=
 
 // Transport of a function returning a path from a fixed base point.
 def transport_decoder(
-  A : U1, origin : A, C : A -> U0, x y : A, p : x = y, f : C(x) -> (origin = x), v : C(y)
+  A : U1, origin : A, C : A -> U0, x, y : A, p : x = y, f : C(x) -> (origin = x), v : C(y)
 ) :=
   path(
     fun (interval_refl : Interval) => PathP(fun (interval_path : Interval) => A, origin, y),
     fun (interval_refl : Interval) => comp(
       fun (interval_transport : Interval) => (
         fun (point : A) => (
-          forall argument : C(point), PathP(fun (interval_path : Interval) => A, origin, point)
+          forall argument : C(point). PathP(fun (interval_path : Interval) => A, origin, point)
         )
       )(p @ interval_transport), f
     )(v)
@@ -357,11 +357,11 @@ def transport_decoder(
 // Based path induction, with explicit universes for the carrier and motive.
 // This one principle covers both small and higher identity systems.
 def based_induction(
-  U V : Universe, A : U, origin : A, C : (forall x : A, (origin = x) -> V),
+  U, V : Universe, A : U, origin : A, C : (forall x : A. (origin = x) -> V),
   c : C(origin, refl(origin)), x : A, p : origin = x
 ) :=
   path_induction(
-    A, fun (a b : A, q : a = b) => forall D : (forall point : A, (a = point) -> V), D(a, refl(a))
-    -> D(b, q), fun (a : A, D : (forall point : A, (a = point) -> V), d : D(a, refl(a))) => d,
+    A, fun (a, b : A, q : a = b) => forall D : (forall point : A. (a = point) -> V). D(a, refl(a))
+    -> D(b, q), fun (a : A, D : (forall point : A. (a = point) -> V), d : D(a, refl(a))) => d,
     origin, x, p
   )(C, c);

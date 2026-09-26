@@ -14,7 +14,7 @@ def basis_has_dimension(
   merely(FiniteBasis(K, V, n), basis);
 
 def dimension_unique(
-  K : AlgebraicField, V : VectorSpace(K), m n : Nat, first : HasDimension(K, V, m),
+  K : AlgebraicField, V : VectorSpace(K), m, n : Nat, first : HasDimension(K, V, m),
   second : HasDimension(K, V, n)
 ) :
   m = n {
@@ -33,7 +33,7 @@ def dimension_unique(
 // This dependent pair is a proposition: its natural number is unique and
 // its basis evidence is truncated. Extracting that number needs no choice.
 def FiniteDimensional(K : AlgebraicField, V : VectorSpace(K)) :=
-  exists n : Nat, HasDimension(K, V, n);
+  exists n : Nat. HasDimension(K, V, n);
 
 def dimension(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V)) :=
   sigma_first(Nat, HasDimension(K, V), finite);
@@ -45,7 +45,7 @@ def dimension_specification(
 
 def finite_dimensional_prop(K : AlgebraicField, V : VectorSpace(K)) :
   Proposition(FiniteDimensional(K, V)) {
-  intro first second;
+  intro first, second;
   exact subtype_ext(
     Nat, HasDimension(K, V), has_dimension_prop(K, V), first, second,
     dimension_unique(
@@ -64,13 +64,13 @@ def finite_dimensional_basis(
 
 // Mere finite basis existence suffices: the destination is a proposition.
 def finite_dimensional_from_mere(
-  K : AlgebraicField, V : VectorSpace(K), finite : Mere(exists n : Nat, FiniteBasis(K, V, n))
+  K : AlgebraicField, V : VectorSpace(K), finite : Mere(exists n : Nat. FiniteBasis(K, V, n))
 ) :
   FiniteDimensional(K, V) {
   exact mere_eliminate(
-    (exists n : Nat, FiniteBasis(K, V, n)), FiniteDimensional(K, V), finite_dimensional_prop(K, V),
+    (exists n : Nat. FiniteBasis(K, V, n)), FiniteDimensional(K, V), finite_dimensional_prop(K, V),
     (
-      fun (b : (exists n : Nat, FiniteBasis(K, V, n))) => finite_dimensional_basis(
+      fun (b : (exists n : Nat. FiniteBasis(K, V, n))) => finite_dimensional_basis(
         K, V, sigma_first(Nat, FiniteBasis(K, V), b), sigma_second(Nat, FiniteBasis(K, V), b)
       )
     ), finite
@@ -89,14 +89,14 @@ def dimension_of_basis(
 }
 
 def dimension_evidence_independent(
-  K : AlgebraicField, V : VectorSpace(K), first second : FiniteDimensional(K, V)
+  K : AlgebraicField, V : VectorSpace(K), first, second : FiniteDimensional(K, V)
 ) :
   dimension(K, V, first) = dimension(K, V, second) {
   exact cong(dimension(K, V), finite_dimensional_prop(K, V, first, second));
 }
 
 def has_dimension_iso(
-  K : AlgebraicField, V W : VectorSpace(K), e : LinearIso(K, V, W), n : Nat,
+  K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W), n : Nat,
   finite : HasDimension(K, V, n)
 ) :
   HasDimension(K, W, n) {
@@ -111,7 +111,7 @@ def has_dimension_iso(
 }
 
 def finite_dimensional_iso(
-  K : AlgebraicField, V W : VectorSpace(K), e : LinearIso(K, V, W), finite : FiniteDimensional(K, V)
+  K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W), finite : FiniteDimensional(K, V)
 ) :
   FiniteDimensional(K, W) {
   exact (
@@ -121,7 +121,7 @@ def finite_dimensional_iso(
 }
 
 def dimension_linear_iso(
-  K : AlgebraicField, V W : VectorSpace(K), e : LinearIso(K, V, W),
+  K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W),
   finiteV : FiniteDimensional(K, V), finiteW : FiniteDimensional(K, W)
 ) :
   dimension(K, V, finiteV) = dimension(K, W, finiteW) {
@@ -135,7 +135,7 @@ def dimension_linear_iso(
 // Equality of spaces transports the complete coordinate data. In particular
 // this applies to paths obtained from a structure-identity theorem.
 def has_dimension_path(
-  K : AlgebraicField, V W : VectorSpace(K), p : V =[VectorSpace(K)] W, n : Nat,
+  K : AlgebraicField, V, W : VectorSpace(K), p : V =[VectorSpace(K)] W, n : Nat,
   finite : HasDimension(K, V, n)
 ) :
   HasDimension(K, W, n) {
@@ -143,7 +143,7 @@ def has_dimension_path(
 }
 
 def dimension_path(
-  K : AlgebraicField, V W : VectorSpace(K), p : V =[VectorSpace(K)] W,
+  K : AlgebraicField, V, W : VectorSpace(K), p : V =[VectorSpace(K)] W,
   finiteV : FiniteDimensional(K, V), finiteW : FiniteDimensional(K, W)
 ) :
   dimension(K, V, finiteV) = dimension(K, W, finiteW) {

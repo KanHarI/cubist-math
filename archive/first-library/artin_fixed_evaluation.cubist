@@ -24,7 +24,7 @@ def subgroup_evaluation_maps_distinct(
   let G := GaloisGroup(K, E);
   let A := SubgroupCarrier(G, H);
   let f := forward(Fin(n), A, enumeration);
-  intro i j same;
+  intro i, j, same;
   exact inverse_injective(
     Fin(n), A, f, backward(Fin(n), A, enumeration), left_inverse(Fin(n), A, enumeration), i, j,
     subgroup_value_ext(
@@ -43,8 +43,8 @@ def finite_subgroup_evaluation_basis(
   finite : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n)
 ) :
   Mere(
-    exists enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)),
-    exists points : Fin(n) -> extension_carrier(K, E),
+    exists enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)).
+    exists points : Fin(n) -> extension_carrier(K, E).
     FamilyBasis(
       extension_field(K, E), CoordinateSpace(extension_field(K, E), n), n,
       (
@@ -60,7 +60,7 @@ def finite_subgroup_evaluation_basis(
   let F := extension_field(K, E);
   let C := CoordinateSpace(F, n);
   let Goal :=
-    exists enumeration : Bijection(Fin(n), A), exists points : Fin(n) -> extension_carrier(K, E),
+    exists enumeration : Bijection(Fin(n), A). exists points : Fin(n) -> extension_carrier(K, E).
     FamilyBasis(
       F, C, n,
       (
@@ -74,7 +74,7 @@ def finite_subgroup_evaluation_basis(
     let maps := subgroup_evaluation_maps(K, E, H, n, enumeration);
     have attach :
       (
-        exists points : Fin(n) -> extension_carrier(K, E),
+        exists points : Fin(n) -> extension_carrier(K, E).
         FamilyBasis(
           F, C, n, (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
         )
@@ -85,7 +85,7 @@ def finite_subgroup_evaluation_basis(
     }
     exact mere_map(
       (
-        exists points : Fin(n) -> extension_carrier(K, E),
+        exists points : Fin(n) -> extension_carrier(K, E).
         FamilyBasis(
           F, C, n, (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
         )

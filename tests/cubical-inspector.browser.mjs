@@ -294,7 +294,7 @@ try {
       import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
     let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
     for(let i=1;i<=28;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
-    source+="have h : forall x : T28, x = x { intro x; exact path i => x; } rfl; }";
+    source+="have h : forall x : T28. x = x { intro x; exact path i => x; } rfl; }";
     const program=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");});
     try {
       const result=await program.check(source,"browser_shared_inspection");

@@ -4,7 +4,7 @@ import classical;
 // A unital field homomorphism is automatically injective. This lets universal
 // constructions prove preservation first, without adding injectivity data by hand.
 def field_hom_kernel_zero(
-  K L : AlgebraicField, f : af_carrier(K) -> af_carrier(L),
+  K, L : AlgebraicField, f : af_carrier(K) -> af_carrier(L),
   preserves : FieldOpsPreserved(af_carrier(K), af_carrier(L), f, af_operations(K), af_operations(L)),
   a : af_carrier(K), zero : f(a) = field_zero(L)
 ) :
@@ -35,9 +35,9 @@ def field_hom_kernel_zero(
 }
 
 def field_hom_injective(
-  K L : AlgebraicField, f : af_carrier(K) -> af_carrier(L),
+  K, L : AlgebraicField, f : af_carrier(K) -> af_carrier(L),
   preserves : FieldOpsPreserved(af_carrier(K), af_carrier(L), f, af_operations(K), af_operations(L)),
-  x y : af_carrier(K), same : f(x) = f(y)
+  x, y : af_carrier(K), same : f(x) = f(y)
 ) :
   x = y {
   obtain (f0, f1, fn, fa, fm) := preserves;
@@ -62,7 +62,7 @@ def field_hom_injective(
 }
 
 def field_embedding_from_hom(
-  K L : AlgebraicField, f : af_carrier(K) -> af_carrier(L),
+  K, L : AlgebraicField, f : af_carrier(K) -> af_carrier(L),
   preserves : FieldOpsPreserved(af_carrier(K), af_carrier(L), f, af_operations(K), af_operations(L))
 ) :
   FieldEmbedding(K, L) {
@@ -71,11 +71,11 @@ def field_embedding_from_hom(
 
 // Assemble preservation laws before specializing a constructed field's operations.
 def field_ops_preserved_from_laws(
-  A B : U0, ops : FieldOps(A), zero one : B, neg : B -> B, add mul : B -> B -> B, f : A -> B,
+  A, B : U0, ops : FieldOps(A), zero, one : B, neg : B -> B, add, mul : B -> B -> B, f : A -> B,
   f0 : f(af_zero(A, ops)) = zero, f1 : f(af_one(A, ops)) = one,
-  fn : (forall x : A, f(af_neg(A, ops, x)) = neg(f(x))),
-  fa : (forall x : A, forall y : A, f(af_add(A, ops, x, y)) = add(f(x), f(y))),
-  fm : (forall x : A, forall y : A, f(af_mul(A, ops, x, y)) = mul(f(x), f(y)))
+  fn : (forall x : A. f(af_neg(A, ops, x)) = neg(f(x))),
+  fa : (forall x : A. forall y : A. f(af_add(A, ops, x, y)) = add(f(x), f(y))),
+  fm : (forall x : A. forall y : A. f(af_mul(A, ops, x, y)) = mul(f(x), f(y)))
 ) :
   FieldOpsPreserved(A, B, f, ops, field_ops(B, zero, one, neg, add, mul)) {
   exact (f0, f1, fn, fa, fm);
@@ -83,11 +83,11 @@ def field_ops_preserved_from_laws(
 
 // The dual constructor is useful when the source field has just been built.
 def field_ops_map_from_laws(
-  A : U0, zero one : A, neg : A -> A, add mul : A -> A -> A, B : U0, ops : FieldOps(B), f : A -> B,
+  A : U0, zero, one : A, neg : A -> A, add, mul : A -> A -> A, B : U0, ops : FieldOps(B), f : A -> B,
   f0 : f(zero) = af_zero(B, ops), f1 : f(one) = af_one(B, ops),
-  fn : (forall x : A, f(neg(x)) = af_neg(B, ops, f(x))),
-  fa : (forall x : A, forall y : A, f(add(x, y)) = af_add(B, ops, f(x), f(y))),
-  fm : (forall x : A, forall y : A, f(mul(x, y)) = af_mul(B, ops, f(x), f(y)))
+  fn : (forall x : A. f(neg(x)) = af_neg(B, ops, f(x))),
+  fa : (forall x : A. forall y : A. f(add(x, y)) = af_add(B, ops, f(x), f(y))),
+  fm : (forall x : A. forall y : A. f(mul(x, y)) = af_mul(B, ops, f(x), f(y)))
 ) :
   FieldOpsPreserved(A, B, f, field_ops(A, zero, one, neg, add, mul), ops) {
   exact (f0, f1, fn, fa, fm);

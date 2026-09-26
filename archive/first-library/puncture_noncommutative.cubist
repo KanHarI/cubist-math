@@ -42,7 +42,7 @@ def first_puncture_loop := puncture_loop(2, first_puncture);
 
 def second_puncture_loop := puncture_loop(2, second_puncture);
 
-def two_loop_product(p q : BouquetLoops(Fin(2))) := trans(p, q);
+def two_loop_product(p, q : BouquetLoops(Fin(2))) := trans(p, q);
 
 def two_loop_inverse(p : BouquetLoops(Fin(2))) := sym(p);
 
@@ -231,8 +231,8 @@ def commutator_all_windings_zero(selected : Fin(2)) :
 
 // A checked counterexample to identifying homotopy classes by winding vectors.
 def winding_vector_does_not_classify_loops :
-  exists p : BouquetLoops(Fin(2)),
-  (forall selected : Fin(2), puncture_winding(2, selected, p) = zeroZ)
+  exists p : BouquetLoops(Fin(2)).
+  (forall selected : Fin(2). puncture_winding(2, selected, p) = zeroZ)
   and ((p = refl(bouquet_base(Fin(2)))) -> Void) {
   exact (puncture_commutator, commutator_all_windings_zero, puncture_commutator_nontrivial);
 }

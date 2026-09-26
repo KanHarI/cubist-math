@@ -56,10 +56,10 @@ declaration the language derives:
 theory Monoid {
   sort M : set;
   unit : M;
-  mul(x y : M) : M                        notation x * y;
+  mul(x, y : M) : M                        notation x * y;
   law unit_left(x : M) : unit * x = x;
   law unit_right(x : M) : x * unit = x;
-  law assoc(x y z : M) : (x * y) * z = x * (y * z);
+  law assoc(x, y, z : M) : (x * y) * z = x * (y * z);
 }
 
 theory Group extends Monoid {
@@ -68,7 +68,7 @@ theory Group extends Monoid {
 }
 
 def square(G : Group.Model, x : G.M) : G.M = x * x;      // notation from G's theory
-def conjugate(G : Group.Model, g x : G.M) : G.M { open G; exact g * x * inv(g); }
+def conjugate(G : Group.Model, g, x : G.M) : G.M { open G; exact g * x * inv(g); }
 
 inductive FreeGroup(A : U) = free Group on A;
 computable def exponent_sum(A : U) : Group.Hom(FreeGroup(A).model, IntAdd) =
@@ -100,19 +100,19 @@ inductive Circle = initial Loop;          // Loop.Model on X is a point with a l
 theory CauchyStructure {
   sort R : set;
   relation Close(ε : Pos) on R : prop     notation u ≈[ε] v;
-  bundle Approx = (x : Pos -> R, cauchy : forall δ ε : Pos, x(δ) ≈[δ + ε] x(ε));
+  bundle Approx = (x : Pos -> R, cauchy : forall δ, ε : Pos. x(δ) ≈[δ + ε] x(ε));
   rat(q : Rat) : R;
   lim(a : Approx) : R;
-  law eq(u v : R, near : forall ε : Pos, u ≈[ε] v) : u = v;
-  rat_rat(q r : Rat, ε : Pos, bound : abs(q - r) < ε) : rat(q) ≈[ε] rat(r);
+  law eq(u, v : R, near : forall ε : Pos. u ≈[ε] v) : u = v;
+  rat_rat(q, r : Rat, ε : Pos, bound : abs(q - r) < ε) : rat(q) ≈[ε] rat(r);
   rat_lim(q : Rat, a : Approx, δ η : Pos, h : rat(q) ≈[η] a.x(δ)) : rat(q) ≈[δ + η] lim(a);
   lim_rat(a : Approx, r : Rat, δ η : Pos, h : a.x(δ) ≈[η] rat(r)) : lim(a) ≈[δ + η] rat(r);
-  lim_lim(a b : Approx, δ η θ : Pos, h : a.x(δ) ≈[θ] b.x(η)) : lim(a) ≈[δ + η + θ] lim(b);
+  lim_lim(a, b : Approx, δ η θ : Pos, h : a.x(δ) ≈[θ] b.x(η)) : lim(a) ≈[δ + η + θ] lim(b);
 }
 inductive Real = initial CauchyStructure;                  // stage H3
 
 theory CwF {                                               // the syntax of type theory
-  sort Con : set;  sort Ty(g : Con) : set;  sort Sub(d g : Con) : set;
+  sort Con : set;  sort Ty(g : Con) : set;  sort Sub(d, g : Con) : set;
   sort Tm(g : Con) : Ty(g) -> set;
   empty : Con;  extend(g : Con, a : Ty(g)) : Con;
   // substitution, weakening, variables, Π and their laws
@@ -225,7 +225,7 @@ def neg(x : Rat) : Rat = match x {
   glue(a, b, c, d, cross) => glue(-a, b, -c, d, cross_neg(cross));
 };
 
-def add(x y : Rat) : Rat = match x, y {
+def add(x, y : Rat) : Rat = match x, y {
   class(a, b), class(c, d) => class(a * d + c * b, b * d);
 } obligations by respects_each_argument {
   left(…) => …;       // one respect proof per argument,
@@ -282,7 +282,7 @@ quotient Rat = Int and Pos by (a, b) ~ (c, d) := a * d = c * b
       and normal_respects : forall x y, x ~ y -> reduce(x) = reduce(y);
 ```
 
-- **Carrier.** The subtype `exists x : Int and Pos, reduce(x) = x` of fixed
+- **Carrier.** The subtype `exists x : Int and Pos. reduce(x) = x` of fixed
   points. The underlying type must be a set, which makes the fixed-point proof
   a proposition.
 - **Interface.**

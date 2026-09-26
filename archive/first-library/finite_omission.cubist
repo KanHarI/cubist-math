@@ -16,11 +16,11 @@ def fin_omit(n : Nat) := induction n as k return (Fin(succ(k)) -> Fin(k) -> Fin(
 // The omission map never reaches the removed index.
 def fin_omit_avoids(n : Nat) :=
   induction n as k return (
-    forall i : Fin(succ(k)), forall j : Fin(k), (fin_omit(k, i, j) = i) -> Void
+    forall i : Fin(succ(k)). forall j : Fin(k). (fin_omit(k, i, j) = i) -> Void
   ) {
     zero => fun (i : Fin(1), j : Fin(0), same : fin_omit(0, i, j) = i) => typed(Void, absurd(j));
     succ previous => fun (i : Fin(succ(succ(k)))) => match i as index return (
-      forall j : Fin(succ(k)), (fin_omit(succ(k), index, j) = index) -> Void
+      forall j : Fin(succ(k)). (fin_omit(succ(k), index, j) = index) -> Void
     ) {
       left u => fun (
         j : Fin(succ(k)),
@@ -47,18 +47,18 @@ def fin_omit_avoids(n : Nat) :=
 
 def fin_omit_injective(n : Nat) :=
   induction n as k return (
-    forall i : Fin(succ(k)), forall x : Fin(k), forall y : Fin(k),
+    forall i : Fin(succ(k)). forall x : Fin(k). forall y : Fin(k).
     fin_omit(k, i, x) = fin_omit(k, i, y) -> x = y
   ) {
-    zero => fun (i : Fin(1), x y : Fin(0), same : fin_omit(0, i, x) = fin_omit(0, i, y)) => typed(
+    zero => fun (i : Fin(1), x, y : Fin(0), same : fin_omit(0, i, x) = fin_omit(0, i, y)) => typed(
       (x = y), absurd(x)
     );
     succ previous => fun (i : Fin(succ(succ(k)))) => match i as index return (
-      forall x : Fin(succ(k)), forall y : Fin(succ(k)),
+      forall x : Fin(succ(k)). forall y : Fin(succ(k)).
       fin_omit(succ(k), index, x) = fin_omit(succ(k), index, y) -> x = y
     ) {
       left u => tail_injective(Fin(succ(k)));
-      right tail => fun (x y : Fin(succ(k))) => match x as a return (
+      right tail => fun (x, y : Fin(succ(k))) => match x as a return (
         fin_omit(succ(k), typed(Fin(succ(succ(k))), right(tail)), a) = fin_omit(
           succ(k), typed(Fin(succ(succ(k))), right(tail)), y
         ) -> a = y
@@ -107,14 +107,14 @@ def fin_omit_injective(n : Nat) :=
   };
 
 // Every index is either the removed one or is reached by the omission map.
-def OmitCover(n : Nat, i j : Fin(succ(n))) := (j = i) or (exists t : Fin(n), fin_omit(n, i, t) = j);
+def OmitCover(n : Nat, i, j : Fin(succ(n))) := (j = i) or (exists t : Fin(n). fin_omit(n, i, t) = j);
 
 def fin_omit_cover(n : Nat) :=
-  induction n as k return (forall i : Fin(succ(k)), forall j : Fin(succ(k)), OmitCover(k, i, j)) {
-    zero => fun (i j : Fin(1)) => typed(
+  induction n as k return (forall i : Fin(succ(k)). forall j : Fin(succ(k)). OmitCover(k, i, j)) {
+    zero => fun (i, j : Fin(1)) => typed(
       OmitCover(0, i, j), left(trans(sym(fin_one_unique(j)), fin_one_unique(i)))
     );
-    succ previous => fun (i j : Fin(succ(succ(k)))) => match i as index return OmitCover(
+    succ previous => fun (i, j : Fin(succ(succ(k)))) => match i as index return OmitCover(
       succ(k), index, j
     ) {
       left u => match j as slot return OmitCover(succ(k), typed(Fin(succ(succ(k))), left(u)), slot) {
@@ -154,8 +154,8 @@ def fin_omit_cover(n : Nat) :=
 // Omitting the selected vector and coefficient computes exactly the remainder.
 def linear_combination_omit(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
-    forall v : Fin(succ(k)) -> vector_carrier(K, V), forall a : Fin(succ(k)) -> af_carrier(K),
-    forall i : Fin(succ(k)),
+    forall v : Fin(succ(k)) -> vector_carrier(K, V). forall a : Fin(succ(k)) -> af_carrier(K).
+    forall i : Fin(succ(k)).
     linear_combination(
       K, V, k, (fun (j : Fin(k)) => v(fin_omit(k, i, j))),
       (fun (j : Fin(k)) => a(fin_omit(k, i, j)))

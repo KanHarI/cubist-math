@@ -5,11 +5,11 @@ import { compareFingerprints, elaborationFingerprint } from "../tools/elaboratio
 const fixture = `def two : succ(1) = 2 {
   rfl;
 }
-def moved(x y : Nat, p : x = y, q : y = x) : x = x {
+def moved(x, y : Nat, p : x = y, q : y = x) : x = x {
   rw [p];
   exact q;
 }
-def mirror(U : Universe, A : U, x y : A, p : x = y) : y = x {
+def mirror(U : Universe, A : U, x, y : A, p : x = y) : y = x {
   exact path(fun (i : Interval) => A, fun (i : Interval) => at(p, flip(i)));
 }
 def mirror_nat := mirror(U0, Nat);

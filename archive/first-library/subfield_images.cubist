@@ -3,13 +3,13 @@ import subfield_preimages;
 // Embeddings have at most one preimage. Consequently this actual witness type
 // is already a proposition; image membership needs no truncation or choice.
 def SubfieldImage(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), y : af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), y : af_carrier(L)
 ) :=
-  exists x : af_carrier(K), subfield_members(K, S, x) and (field_embedding_map(K, L, e, x) = y);
+  exists x : af_carrier(K). subfield_members(K, S, x) and (field_embedding_map(K, L, e, x) = y);
 
 def subfield_image_prop(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), y : af_carrier(L),
-  p q : SubfieldImage(K, L, e, S, y)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), y : af_carrier(L),
+  p, q : SubfieldImage(K, L, e, S, y)
 ) :
   p = q {
   let A := af_carrier(K);
@@ -30,7 +30,7 @@ def subfield_image_prop(
   );
 }
 
-def subfield_image_zero(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) :
+def subfield_image_zero(K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) :
   SubfieldImage(K, L, e, S, af_zero(af_carrier(L), af_operations(L))) {
   obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
@@ -39,7 +39,7 @@ def subfield_image_zero(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subf
   );
 }
 
-def subfield_image_one(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) :
+def subfield_image_one(K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) :
   SubfieldImage(K, L, e, S, af_one(af_carrier(L), af_operations(L))) {
   obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
@@ -49,7 +49,7 @@ def subfield_image_one(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfi
 }
 
 def subfield_image_neg(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), y : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), y : af_carrier(L),
   member : SubfieldImage(K, L, e, S, y)
 ) :
   SubfieldImage(K, L, e, S, af_neg(af_carrier(L), af_operations(L), y)) {
@@ -63,7 +63,7 @@ def subfield_image_neg(
 }
 
 def subfield_image_add(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), x y : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), x, y : af_carrier(L),
   px : SubfieldImage(K, L, e, S, x), py : SubfieldImage(K, L, e, S, y)
 ) :
   SubfieldImage(K, L, e, S, af_add(af_carrier(L), af_operations(L), x, y)) {
@@ -84,7 +84,7 @@ def subfield_image_add(
 }
 
 def subfield_image_mul(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), x y : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), x, y : af_carrier(L),
   px : SubfieldImage(K, L, e, S, x), py : SubfieldImage(K, L, e, S, y)
 ) :
   SubfieldImage(K, L, e, S, af_mul(af_carrier(L), af_operations(L), x, y)) {
@@ -107,7 +107,7 @@ def subfield_image_mul(
 // An ambient inverse of an image element is the image of its unique source
 // inverse. The inverse witness forces nonzeroness; no zero decision is used.
 def subfield_image_inverse(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), x y : af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), x, y : af_carrier(L),
   px : SubfieldImage(K, L, e, S, x),
   inverseLaw : af_mul(af_carrier(L), af_operations(L), x, y) = af_one(
     af_carrier(L), af_operations(L)
@@ -140,7 +140,7 @@ def subfield_image_inverse(
   );
 }
 
-def subfield_image_laws(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) :
+def subfield_image_laws(K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) :
   SubfieldLaws(L, SubfieldImage(K, L, e, S)) {
   exact (
     subfield_image_prop(K, L, e, S), subfield_image_zero(K, L, e, S),
@@ -149,6 +149,6 @@ def subfield_image_laws(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subf
   );
 }
 
-def subfield_image(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) : Subfield(L) {
+def subfield_image(K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) : Subfield(L) {
   exact (SubfieldImage(K, L, e, S), subfield_image_laws(K, L, e, S));
 }

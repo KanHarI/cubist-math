@@ -1,8 +1,8 @@
 import { cubicalText } from "./cubical-notation.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
-// line: `A -> B`, `forall x : A, B`, `A and B`, `exists x : A, B`, `A or B`,
-// `x = y`, `p @ i`, `fun (x : A) => b`, `f(a, b)`, `(a, b)`, `left(a)`, `tt`,
+// line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
+// `x = y`, `p @ i`, `fun (x, y : A) => b`, `f(a, b)`, `(a, b)`, `left(a)`, `tt`,
 // numerals and binary numerals, and `+`, `*`, `<`, `<=` for the arithmetic
 // library. Forms without a source spelling fall back to the inspector's
 // notation. Parentheses follow the
@@ -100,13 +100,13 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "Pi": case "Sigma": {
         const pi = t.tag === "Pi";
         if (mentions(t.body, t.name))
-          return [`${pi ? "forall" : "exists"} ${t.name} : ${show(t.domain)}, ${under(t.name, () => show(t.body))}`, LEVEL.binder];
+          return [`${pi ? "forall" : "exists"} ${t.name} : ${show(t.domain)}. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
         const level = pi ? LEVEL.arrow : LEVEL.and;
         return [`${sub(t.domain, level + 1)} ${pi ? "->" : "and"} ${under(t.name, () => sub(t.body, level))}`, level];
       }
       case "Sum": return [`${sub(t.left, LEVEL.or + 1)} or ${sub(t.right, LEVEL.or)}`, LEVEL.or];
       case "Lam": {
-        // fun (x y : A, z : B) => body
+        // fun (x, y : A, z : B) => body
         const groups = [];
         let body = t;
         while (body.tag === "Lam") {
@@ -115,7 +115,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
           else groups.push({ names: [body.name], domain });
           body = body.body;
         }
-        const binders = groups.map(group => `${group.names.join(" ")} : ${group.domain}`).join(", ");
+        const binders = groups.map(group => `${group.names.join(", ")} : ${group.domain}`).join(", ");
         return [`fun (${binders}) => ${under(groups.flatMap(group => group.names), () => show(body))}`, LEVEL.binder];
       }
       // Eliminators print as the source forms that build them. The motive's

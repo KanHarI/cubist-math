@@ -20,7 +20,7 @@ def finite_spanning_basis_size_bound(
     intro witness;
     obtain (lift, commute) := witness;
     have injective : CoordinateInjection(K, m, n, lift) {
-      intro x y same;
+      intro x, y, same;
       exact linear_iso_injective(
         K, D, V, basis, x, y,
         trans(sym(commute(x)), trans(cong(linear_map(K, C, V, f), same), commute(y)))
@@ -59,7 +59,7 @@ def finite_subgroup_fixed_degree_upper_bound(
   exists finiteExtension : FiniteExtension(
     intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)),
     intermediate_overfield(K, E, fixed_intermediate_field(K, E, H))
-  ),
+  ).
   le(
     extension_degree(
       intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)),
@@ -72,11 +72,11 @@ def finite_subgroup_fixed_degree_upper_bound(
   let i := intermediate_ambient_embedding(K, E, M);
   let V := field_vector_space(R, F, i);
   let Result :=
-    exists finiteExtension : FiniteExtension(R, intermediate_overfield(K, E, M)),
+    exists finiteExtension : FiniteExtension(R, intermediate_overfield(K, E, M)).
     le(extension_degree(R, intermediate_overfield(K, E, M), finiteExtension), n);
   let Basis :=
-    exists enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)),
-    exists points : Fin(n) -> extension_carrier(K, E),
+    exists enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)).
+    exists points : Fin(n) -> extension_carrier(K, E).
     FamilyBasis(
       F, CoordinateSpace(F, n), n,
       (
@@ -161,10 +161,10 @@ def subgroup_evaluation_points_independent(
   let indexed := forward(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H), enumeration);
   obtain (evalInjective, evalOnto) := basis;
   have kernel :
-    forall a : Fin(n) -> af_carrier(R),
+    forall a : Fin(n) -> af_carrier(R).
     linear_map(R, CoordinateSpace(R, n), V, source, a) = vector_zero(R, V)
     -> a = vector_zero(R, CoordinateSpace(R, n)) {
-    intro a vanishes;
+    intro a, vanishes;
     let c := fun (j : Fin(n)) => field_embedding_map(R, F, i, a(j));
     have baseZero : field_sum(F, n, (fun (j : Fin(n)) => field_mul(F, c(j), points(j)))) = field_zero(
       F
@@ -173,7 +173,7 @@ def subgroup_evaluation_points_independent(
       trans(sym(family_linear_evaluation(R, V, n, points, a)), vanishes)
     );
     have evalZero :
-      forall t : Fin(n),
+      forall t : Fin(n).
       field_sum(
         F, n,
         (fun (j : Fin(n)) => field_mul(F, c(j), field_embedding_map(F, F, maps(t), points(j))))
@@ -187,7 +187,7 @@ def subgroup_evaluation_points_independent(
           F, field_embedding_map(F, F, e, c(j)), field_embedding_map(F, F, e, points(j))
         );
       let raw := fun (j : Fin(n)) => field_mul(F, c(j), field_embedding_map(F, F, e, points(j)));
-      have fixed : forall j : Fin(n), field_embedding_map(F, F, e, c(j)) = c(j) {
+      have fixed : forall j : Fin(n). field_embedding_map(F, F, e, c(j)) = c(j) {
         intro j;
         exact subgroup_member_fixes_intermediate(
           K, E, H, h, c(j), subfield_evidence(F, intermediate_subfield(K, E, M), a(j))
@@ -253,7 +253,7 @@ def finite_independent_basis_size_bound(
   let coordinates := linear_iso_forward(K, V, D, inverse);
   let composite := linear_compose(K, C, V, D, f, coordinates);
   have injective : CoordinateInjection(K, n, m, composite) {
-    intro x y same;
+    intro x, y, same;
     exact independent(
       x, y,
       linear_iso_injective(
@@ -302,8 +302,8 @@ def finite_subgroup_fixed_degree_lower_bound(
   let V := field_vector_space(R, F, i);
   let d := extension_degree(R, intermediate_overfield(K, E, M), finiteExtension);
   let Basis :=
-    exists enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)),
-    exists points : Fin(n) -> extension_carrier(K, E),
+    exists enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)).
+    exists points : Fin(n) -> extension_carrier(K, E).
     FamilyBasis(
       F, CoordinateSpace(F, n), n,
       (
@@ -338,7 +338,7 @@ def artin_fixed_field_degree(
   exists finiteExtension : FiniteExtension(
     intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)),
     intermediate_overfield(K, E, fixed_intermediate_field(K, E, H))
-  ),
+  ).
   extension_degree(
     intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)),
     intermediate_overfield(K, E, fixed_intermediate_field(K, E, H)), finiteExtension

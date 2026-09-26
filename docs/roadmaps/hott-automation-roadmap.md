@@ -650,9 +650,9 @@ Completion:
   representation agree with the native contractible-fiber type:
 
   ```text
-  IsContr(A) = exists center : A, forall x : A, center = x
-  Fiber(f, y) = exists x : A, y = f(x)
-  Equiv(A, B) = exists f : A -> B, forall y : B, IsContr(Fiber(f, y))
+  IsContr(A) = exists center : A. forall x : A. center = x
+  Fiber(f, y) = exists x : A. y = f(x)
+  Equiv(A, B) = exists f : A -> B. forall y : B. IsContr(Fiber(f, y))
   ```
 
   These are schematic signatures; explicit universe templates must check all
@@ -672,7 +672,7 @@ Completion:
     coherence witnesses may change; identify and recheck their consumers.
     Canonicalizing `Equiv` does not make `idtoequiv(refl)` compute strictly.
   - The existing `Fiber` in [maps](../../archive/first-library/maps.cubist) is
-    `exists x : A, f(x) = y`, the opposite orientation, with 83 uses in 19
+    `exists x : A. f(x) = y`, the opposite orientation, with 83 uses in 19
     files. Choose the surviving name and migrate one orientation, recording
     the changed statements.
   - Publish `is_prop_is_equiv` and `equiv_eq`: equivalences with equal
@@ -725,7 +725,7 @@ Completion:
 
   ```text
   def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A,
-      p q : GroupLaws(A, unit, multiply)) : p = q {
+      p, q : GroupLaws(A, unit, multiply)) : p = q {
     have setA := group_set_law(A, unit, multiply, p);
     hlevel with [setA, group_inverse_evidence_prop(A, unit, multiply, p)];
   }
@@ -1167,11 +1167,11 @@ def under_succ(n : Nat) : succ(n + 0) = succ(n) {
 ```text
 import paths;
 
-def ru(A : U1, x y : A, p : x = y) : trans(p, refl(y)) = p {
+def ru(A : U1, x, y : A, p : x = y) : trans(p, refl(y)) = p {
   exact right_unit(A, x, y, p);
 }
 
-def use_ru(A : U1, x y z : A, p : x = y, q : y = z) :
+def use_ru(A : U1, x, y, z : A, p : x = y, q : y = z) :
   trans(trans(p, refl(y)), q) = trans(p, q) {
   simp only [ru];
 }
@@ -1199,15 +1199,15 @@ These three declarations check in the native kernel:
 import primes;
 
 // Sigma extensionality: the second component is a PathP over the first.
-def sigma_line(A : U0, B : A -> U0, a a2 : A, b : B(a), b2 : B(a2), p : a = a2,
+def sigma_line(A : U0, B : A -> U0, a, a2 : A, b : B(a), b2 : B(a2), p : a = a2,
   q : PathP(fun (i : Interval) => B(p @ i), b, b2)) :
-  typed(exists x : A, B(x), (a, b)) = typed(exists x : A, B(x), (a2, b2)) {
-  exact path i => typed(exists x : A, B(x), (p @ i, q @ i));
+  typed(exists x : A. B(x), (a, b)) = typed(exists x : A. B(x), (a2, b2)) {
+  exact path i => typed(exists x : A. B(x), (p @ i, q @ i));
 }
 
 // Rewriting in a dependent position: the dependent argument follows its
 // transport filler. One line, no composition.
-def filler_rewrite(B : Nat -> U0, R : U0, f : (forall a : Nat, B(a) -> R), n : Nat,
+def filler_rewrite(B : Nat -> U0, R : U0, f : (forall a : Nat. B(a) -> R), n : Nat,
   v : B(n + 0)) :
   f(n + 0, v) = f(n, transport(B, n + 0, n, nat_add_zero(n), v)) {
   exact path i => f(nat_add_zero(n) @ i,
@@ -1215,7 +1215,7 @@ def filler_rewrite(B : Nat -> U0, R : U0, f : (forall a : Nat, B(a) -> R), n : N
 }
 
 // Several positions rewritten at once.
-def multi_hole(g : Nat -> Nat -> Nat, n m : Nat) : g(n + 0, m + 0) = g(n, m) {
+def multi_hole(g : Nat -> Nat -> Nat, n, m : Nat) : g(n + 0, m + 0) = g(n, m) {
   exact path i => g(nat_add_zero(n) @ i, nat_add_zero(m) @ i);
 }
 ```
@@ -1310,7 +1310,7 @@ import truncation;
 
 def PropLevel(n : Nat) := induction n as k return (U0 -> U0) {
     zero => fun (A : U0) => IsProp(A);
-    succ previous => fun (A : U0) => forall x : A, forall y : A, previous(x = y);
+    succ previous => fun (A : U0) => forall x : A. forall y : A. previous(x = y);
   };
 ```
 
@@ -1384,7 +1384,7 @@ the same way. There, the ergonomic forms of its arithmetic examples use 1.7 to
 - `opaque def` is accepted syntax with the same checking and unfolding as
   `def` ([language reference](../../web/language.html)).
 - The public `Fiber` in [maps](../../archive/first-library/maps.cubist) is
-  `exists x : A, f(x) = y`; the native fiber is `y = f(x)`.
+  `exists x : A. f(x) = y`; the native fiber is `y = f(x)`.
 - `fundamental_group_laws` in [fundamental_groups](../../archive/first-library/fundamental_groups.cubist)
   is generic but fixed at `U1`; [circle](../../archive/first-library/circle.cubist)
   re-proves the same laws at `U0` as `loop_group`.
@@ -1400,7 +1400,7 @@ Convertible endpoints also do not determine a rule's witness. For arbitrary
 `omega : p = p`, this declaration checks:
 
 ```text
-def convertible_rule(A : U0, x y : A, p : x = y, omega : p = p) :
+def convertible_rule(A : U0, x, y : A, p : x = y, omega : p = p) :
   sym(sym(p)) = p { exact omega; }
 ```
 

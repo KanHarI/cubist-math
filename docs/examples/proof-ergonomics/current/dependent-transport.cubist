@@ -6,19 +6,19 @@ def move_in_fiber(A : U0, C : A -> U0, x : A, y : A, p : x = y, v : C(x)) : C(y)
 }
 
 // A section gives a dependent path directly in cubical notation.
-def section_path(A : U0, C : A -> U0, f : (forall a : A, C(a)), x : A, y : A, p : x = y) :
+def section_path(A : U0, C : A -> U0, f : (forall a : A. C(a)), x : A, y : A, p : x = y) :
   PathP(fun (i : Interval) => C(at(p, i)), f(x), f(y)) {
   exact path(fun (i : Interval) => C(at(p, i)), fun (i : Interval) => f(at(p, i)));
 }
 
 // The transport presentation has different endpoint types from ordinary cong.
-def section_after_transport(A : U0, C : A -> U0, f : (forall a : A, C(a)), x : A, y : A, p : x = y) :
+def section_after_transport(A : U0, C : A -> U0, f : (forall a : A. C(a)), x : A, y : A, p : x = y) :
   transport(C, x, y, p, f(x)) = f(y) {
   exact apd(f, x, y, p);
 }
 
 // The checked bridge recovers a dependent path from equality after transport.
-def section_via_transport(A : U0, C : A -> U0, f : (forall a : A, C(a)), x : A, y : A, p : x = y) :
+def section_via_transport(A : U0, C : A -> U0, f : (forall a : A. C(a)), x : A, y : A, p : x = y) :
   PathP(fun (i : Interval) => C(at(p, i)), f(x), f(y)) {
   exact path_from_transport(fun (i : Interval) => C(at(p, i)), f(x), f(y), apd(f, x, y, p));
 }

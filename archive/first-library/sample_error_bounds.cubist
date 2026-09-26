@@ -5,7 +5,7 @@ import field_closeness;
 // radius makes the strict inequality valid also for the empty sum.
 
 def SampleCloseBounds(
-  C F : U1, addF : F -> F -> F, lt : F -> F -> U0, edge other radius : C -> C -> C -> F, n : Nat
+  C, F : U1, addF : F -> F -> F, lt : F -> F -> U0, edge, other, radius : C -> C -> C -> F, n : Nat
 ) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C, tags : Unit) => Unit;
@@ -31,13 +31,13 @@ def SampleCloseBounds(
   };
 
 def sample_sum_error_bound(
-  C F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge other radius : C -> C -> C
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge, other, radius : C -> C -> C
   -> F, n : Nat
 ) :
-  forall vertices : SampleVertices(C, n), forall tags : SampleTags(C, n),
-  SampleCloseBounds(C, F, addF, lt, edge, other, radius, n, vertices, tags) -> forall epsilon : F,
+  forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
+  SampleCloseBounds(C, F, addF, lt, edge, other, radius, n, vertices, tags) -> forall epsilon : F.
   lt(zero, epsilon)
   -> FieldClose(
     F, addF, lt, sample_sum(C, F, zero, addF, edge, n, vertices, tags),
@@ -45,8 +45,8 @@ def sample_sum_error_bound(
     addF(sample_sum(C, F, zero, addF, radius, n, vertices, tags), epsilon)
   ) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k), forall tags : SampleTags(C, k),
-    SampleCloseBounds(C, F, addF, lt, edge, other, radius, k, vertices, tags) -> forall epsilon : F,
+    forall vertices : SampleVertices(C, k). forall tags : SampleTags(C, k).
+    SampleCloseBounds(C, F, addF, lt, edge, other, radius, k, vertices, tags) -> forall epsilon : F.
     lt(zero, epsilon)
     -> FieldClose(
       F, addF, lt, sample_sum(C, F, zero, addF, edge, k, vertices, tags),
@@ -54,7 +54,7 @@ def sample_sum_error_bound(
       addF(sample_sum(C, F, zero, addF, radius, k, vertices, tags), epsilon)
     )
   ) {
-    zero => fun (vertices : C, tags bounds : Unit, epsilon : F, positive : lt(zero, epsilon)) => along(
+    zero => fun (vertices : C, tags, bounds : Unit, epsilon : F, positive : lt(zero, epsilon)) => along(
       (fun (r : F) => FieldClose(F, addF, lt, zero, zero, r))
     ) by sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)) from field_close_self(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, positive

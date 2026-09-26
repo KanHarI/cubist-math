@@ -184,7 +184,7 @@ def radix_decode_succ(extra : Nat, n : RadixNat(extra)) :
   };
 }
 
-def radix_nat_roundtrip(extra n : Nat) : radix_to_nat(extra, radix_of_nat(extra, n)) = n {
+def radix_nat_roundtrip(extra, n : Nat) : radix_to_nat(extra, radix_of_nat(extra, n)) = n {
   exact induction n as k return (radix_to_nat(extra, radix_of_nat(extra, k)) = k) {
     zero => refl(0);
     succ previous => trans(radix_decode_succ(extra, radix_of_nat(extra, k)), cong(succ, previous));

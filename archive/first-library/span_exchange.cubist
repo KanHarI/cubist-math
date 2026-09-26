@@ -18,7 +18,7 @@ def subspace_neg(
 // belongs to it as well. The inverse is actual field data, not an axiom.
 def subspace_solve_nonzero(
   K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), a : af_carrier(K),
-  nonzero : FieldNonzero(af_carrier(K), af_operations(K), a), x y : vector_carrier(K, V),
+  nonzero : FieldNonzero(af_carrier(K), af_operations(K), a), x, y : vector_carrier(K, V),
   member : subspace_members(K, V, S, y),
   vanishes : vector_add(K, V, vector_scale(K, V, a, x), y) = vector_zero(K, V)
 ) :
@@ -48,7 +48,7 @@ def subspace_solve_nonzero(
 def nonzero_coefficient_in_span(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, n : Nat, v : Fin(n)
   -> vector_carrier(K, V), a : Fin(n) -> af_carrier(K), i : Fin(n),
-  others : (forall j : Fin(n), ((j = i) -> Void) -> P(v(j))),
+  others : (forall j : Fin(n). ((j = i) -> Void) -> P(v(j))),
   nonzero : FieldNonzero(af_carrier(K), af_operations(K), a(i)),
   vanishes : linear_combination(K, V, n, v, a) = vector_zero(K, V)
 ) :

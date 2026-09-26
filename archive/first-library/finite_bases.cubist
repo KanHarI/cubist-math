@@ -4,7 +4,7 @@ import quotient_sets;
 
 // Functions to an additive group form an additive group pointwise. This
 // construction needs no enumeration, decidability, or choice of the index set.
-def pointwise_add(I : U0, G : Group, f g : I -> group_carrier(G)) :=
+def pointwise_add(I : U0, G : Group, f, g : I -> group_carrier(G)) :=
   fun (i : I) => group_multiply(G, f(i), g(i));
 
 def pointwise_group_laws(I : U0, G : Group) :
@@ -14,7 +14,7 @@ def pointwise_group_laws(I : U0, G : Group) :
   exact (
     dependent_functions_are_set(I, (fun (i : I) => typed(U1, A)), (fun (i : I) => group_is_set(G))),
     (
-      fun (f g h : I -> A) => FunExt(
+      fun (f, g, h : I -> A) => FunExt(
         U0, I, (fun (i : I) => A), pointwise_add(I, G, pointwise_add(I, G, f, g), h),
         pointwise_add(I, G, f, pointwise_add(I, G, g, h)),
         (fun (i : I) => group_associative(G, f(i), g(i), h(i)))
@@ -34,7 +34,7 @@ def pointwise_group_laws(I : U0, G : Group) :
     ),
     (
       fun (f : I -> A) => typed(
-        (exists g : I -> A, GroupInverseLaws((I -> A), zero, pointwise_add(I, G), f, g)),
+        (exists g : I -> A. GroupInverseLaws((I -> A), zero, pointwise_add(I, G), f, g)),
         (
           (fun (i : I) => group_inverse(G, f(i))),
           FunExt(
@@ -60,7 +60,7 @@ def PointwiseGroup(I : U0, G : Group) :=
   );
 
 def pointwise_abelian(I : U0, G : Group, comm : IsAbelian(G)) : IsAbelian(PointwiseGroup(I, G)) {
-  intro f g;
+  intro f, g;
   ext i;
   exact comm(f(i), g(i));
 }
@@ -83,20 +83,20 @@ def pointwise_scalar_laws(K : AlgebraicField, I : U0, V : VectorSpace(K)) :
       )
     ),
     (
-      fun (a b : af_carrier(K), f : I -> A) => FunExt(
+      fun (a, b : af_carrier(K), f : I -> A) => FunExt(
         U0, I, (fun (i : I) => A), scale(af_mul(af_carrier(K), af_operations(K), a, b), f),
         scale(a, scale(b, f)), (fun (i : I) => vector_scale_associative(K, V, a, b, f(i)))
       )
     ),
     (
-      fun (a : af_carrier(K), f g : I -> A) => FunExt(
+      fun (a : af_carrier(K), f, g : I -> A) => FunExt(
         U0, I, (fun (i : I) => A), scale(a, pointwise_add(I, G, f, g)),
         pointwise_add(I, G, scale(a, f), scale(a, g)),
         (fun (i : I) => vector_scale_add_vectors(K, V, a, f(i), g(i)))
       )
     ),
     (
-      fun (a b : af_carrier(K), f : I -> A) => FunExt(
+      fun (a, b : af_carrier(K), f : I -> A) => FunExt(
         U0, I, (fun (i : I) => A), scale(af_add(af_carrier(K), af_operations(K), a, b), f),
         pointwise_add(I, G, scale(a, f), scale(b, f)),
         (fun (i : I) => vector_scale_add_scalars(K, V, a, b, f(i)))
@@ -188,7 +188,7 @@ def evaluation_linear(K : AlgebraicField, I : U0, V : VectorSpace(K), i : I) :
   LinearMap(K, FunctionSpace(K, I, V), V) {
   exact (
     (fun (f : I -> vector_carrier(K, V)) => f(i)),
-    (fun (f g : I -> vector_carrier(K, V)) => refl(vector_add(K, V, f(i), g(i)))),
+    (fun (f, g : I -> vector_carrier(K, V)) => refl(vector_add(K, V, f(i), g(i)))),
     (fun (a : af_carrier(K), f : I -> vector_carrier(K, V)) => refl(vector_scale(K, V, a, f(i))))
   );
 }
@@ -197,7 +197,7 @@ def constant_linear(K : AlgebraicField, I : U0, V : VectorSpace(K)) :
   LinearMap(K, V, FunctionSpace(K, I, V)) {
   exact (
     (fun (x : vector_carrier(K, V), i : I) => x),
-    (fun (x y : vector_carrier(K, V)) => refl((fun (i : I) => vector_add(K, V, x, y)))),
+    (fun (x, y : vector_carrier(K, V)) => refl((fun (i : I) => vector_add(K, V, x, y)))),
     (
       fun (a : af_carrier(K), x : vector_carrier(K, V)) => refl(
         (fun (i : I) => vector_scale(K, V, a, x))
@@ -238,7 +238,7 @@ def scalar_space_basis(K : AlgebraicField) : FiniteBasis(K, ScalarSpace(K), 1) {
 // A path of vector spaces transports the entire basis, including its linear
 // maps and both roundtrips. No basis is chosen afresh at the destination.
 def transport_finite_basis(
-  K : AlgebraicField, V W : VectorSpace(K), p : V = W, n : Nat, basis : FiniteBasis(K, V, n)
+  K : AlgebraicField, V, W : VectorSpace(K), p : V = W, n : Nat, basis : FiniteBasis(K, V, n)
 ) :
   FiniteBasis(K, W, n) {
   exact along((fun (X : VectorSpace(K)) => FiniteBasis(K, X, n))) by p from basis;

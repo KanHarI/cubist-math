@@ -6,7 +6,7 @@ import extension_degree;
 // The n+1 powers of any element of an n-dimensional extension are dependent.
 // The resulting nonzero coefficient array is a formal annihilating polynomial.
 def finite_basis_element_algebraic(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
   basis : FiniteBasis(K, field_vector_space(K, L, e), n), x : af_carrier(L)
 ) :
   AlgebraicElement(K, L, e, x) {
@@ -16,19 +16,19 @@ def finite_basis_element_algebraic(
   have impossible : (AlgebraicElement(K, L, e, x) -> Void) -> Void {
     intro transcendental;
     have kernel :
-      forall a : Fin(succ(n)) -> af_carrier(K), linear_map(K, C, V, evaluation, a) = field_zero(L)
+      forall a : Fin(succ(n)) -> af_carrier(K). linear_map(K, C, V, evaluation, a) = field_zero(L)
       -> a = (fun (i : Fin(succ(n))) => field_zero(K)) {
-      intro a root;
+      intro a, root;
       let p := polynomial_from_coordinates(K, succ(n), a);
       have zero : p = polynomial_zero(K) {
         have contradiction : PolynomialNonzero(K, p) -> Void {
           intro nonzero;
           exact transcendental(
             merely(
-              (exists q : Polynomial(K), PolynomialNonzero(K, q) and PolynomialRoot(K, L, e, q, x)),
+              (exists q : Polynomial(K). PolynomialNonzero(K, q) and PolynomialRoot(K, L, e, q, x)),
               typed(
                 (
-                  exists q : Polynomial(K), PolynomialNonzero(K, q)
+                  exists q : Polynomial(K). PolynomialNonzero(K, q)
                   and PolynomialRoot(K, L, e, q, x)
                 ), (p, nonzero, root)
               )
@@ -51,16 +51,16 @@ def finite_basis_element_algebraic(
   exact double_negation(
     AlgebraicElement(K, L, e, x),
     mere_is_prop(
-      exists p : Polynomial(K), PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x)
+      exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x)
     ), impossible
   );
 }
 
-def AlgebraicExtension(K L : AlgebraicField, e : FieldEmbedding(K, L)) :=
-  forall x : af_carrier(L), AlgebraicElement(K, L, e, x);
+def AlgebraicExtension(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :=
+  forall x : af_carrier(L). AlgebraicElement(K, L, e, x);
 
 def finite_extension_algebraic(
-  K L : AlgebraicField, e : FieldEmbedding(K, L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e))
 ) :
   AlgebraicExtension(K, L, e) {
@@ -69,7 +69,7 @@ def finite_extension_algebraic(
   exact mere_eliminate(
     FiniteBasis(K, field_vector_space(K, L, e), n), AlgebraicElement(K, L, e, x),
     mere_is_prop(
-      exists p : Polynomial(K), PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x)
+      exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x)
     ),
     (
       fun (b : FiniteBasis(K, field_vector_space(K, L, e), n)) => finite_basis_element_algebraic(

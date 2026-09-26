@@ -3,30 +3,30 @@ import paths;
 // One group structure at every carrier universe. Group in the small library
 // is the U0 specialization of this family, not a different record type.
 def GroupAssociativeAt(U : Universe, A : U, multiply : A -> A -> A) :=
-  forall x : A, forall y : A, forall z : A,
+  forall x : A. forall y : A. forall z : A.
   multiply(multiply(x, y), z) = multiply(x, multiply(y, z));
 
 def GroupLeftUnitAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) :=
-  forall x : A, multiply(unit, x) = x;
+  forall x : A. multiply(unit, x) = x;
 
 def GroupRightUnitAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) :=
-  forall x : A, multiply(x, unit) = x;
+  forall x : A. multiply(x, unit) = x;
 
-def GroupInverseLawsAt(U : Universe, A : U, unit : A, multiply : A -> A -> A, x y : A) :=
+def GroupInverseLawsAt(U : Universe, A : U, unit : A, multiply : A -> A -> A, x, y : A) :=
   (multiply(y, x) = unit) and (multiply(x, y) = unit);
 
 def GroupInversesAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) :=
-  forall x : A, exists y : A, GroupInverseLawsAt(U, A, unit, multiply, x, y);
+  forall x : A. exists y : A. GroupInverseLawsAt(U, A, unit, multiply, x, y);
 
 def GroupLawsAt(U : Universe, A : U, unit : A, multiply : A -> A -> A) :=
-  (forall x : A, forall y : A, forall p : x = y, forall q : x = y, p = q)
+  (forall x : A. forall y : A. forall p : x = y. forall q : x = y. p = q)
   and GroupAssociativeAt(U, A, multiply) and GroupLeftUnitAt(U, A, unit, multiply)
   and GroupRightUnitAt(U, A, unit, multiply) and GroupInversesAt(U, A, unit, multiply);
 
 def GroupStructureAt(U : Universe, A : U) :=
-  exists unit : A, exists multiply : A -> A -> A, GroupLawsAt(U, A, unit, multiply);
+  exists unit : A. exists multiply : A -> A -> A. GroupLawsAt(U, A, unit, multiply);
 
-def GroupAt(U : Universe) := exists A : U, GroupStructureAt(U, A);
+def GroupAt(U : Universe) := exists A : U. GroupStructureAt(U, A);
 
 def group_object_at(
   U : Universe, A : U, unit : A, multiply : A -> A -> A, laws : GroupLawsAt(U, A, unit, multiply)
@@ -62,13 +62,13 @@ def group_laws_at(U : Universe, G : GroupAt(U)) :
 
 // Carriers can be repackaged in a common larger universe by cumulativity.
 // Isomorphism still includes inverse data and multiplication preservation.
-def GroupIsoAt(U : Universe, G H : GroupAt(U)) :=
-  exists f : group_carrier_at(U, G) -> group_carrier_at(U, H),
-  exists g : group_carrier_at(U, H) -> group_carrier_at(U, G),
-  (forall x : group_carrier_at(U, G), g(f(x)) = x)
-  and (forall y : group_carrier_at(U, H), f(g(y)) = y)
+def GroupIsoAt(U : Universe, G, H : GroupAt(U)) :=
+  exists f : group_carrier_at(U, G) -> group_carrier_at(U, H).
+  exists g : group_carrier_at(U, H) -> group_carrier_at(U, G).
+  (forall x : group_carrier_at(U, G). g(f(x)) = x)
+  and (forall y : group_carrier_at(U, H). f(g(y)) = y)
   and (
-    forall x : group_carrier_at(U, G), forall y : group_carrier_at(U, G),
+    forall x : group_carrier_at(U, G). forall y : group_carrier_at(U, G).
     f(group_multiply_at(U, G, x, y)) = group_multiply_at(U, H, f(x), f(y))
   );
 
@@ -76,8 +76,8 @@ def GroupIsoAt(U : Universe, G H : GroupAt(U)) :=
 def group_iso_object_at(
   U : Universe, A : U, oneA : A, mA : A -> A -> A, lawsA : GroupLawsAt(U, A, oneA, mA), B : U,
   oneB : B, mB : B -> B -> B, lawsB : GroupLawsAt(U, B, oneB, mB), f : A -> B, g : B -> A,
-  left : (forall x : A, g(f(x)) = x), right : (forall y : B, f(g(y)) = y),
-  multiply : (forall x : A, forall y : A, f(mA(x, y)) = mB(f(x), f(y)))
+  left : (forall x : A. g(f(x)) = x), right : (forall y : B. f(g(y)) = y),
+  multiply : (forall x : A. forall y : A. f(mA(x, y)) = mB(f(x), f(y)))
 ) :
   GroupIsoAt(U, group_object_at(U, A, oneA, mA, lawsA), group_object_at(U, B, oneB, mB, lawsB)) {
   exact (f, g, left, right, multiply);

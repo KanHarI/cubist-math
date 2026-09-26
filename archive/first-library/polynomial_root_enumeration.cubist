@@ -6,29 +6,29 @@ import finite_cardinalities;
 def linear_factor_product_root_step(
   K : AlgebraicField, n : Nat,
   previous : (
-    forall roots : Fin(n) -> af_carrier(K), forall x : af_carrier(K),
+    forall roots : Fin(n) -> af_carrier(K). forall x : af_carrier(K).
     PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, n, roots), x)
-    -> Mere(exists i : Fin(n), roots(i) = x)
+    -> Mere(exists i : Fin(n). roots(i) = x)
   ), roots : Fin(succ(n)) -> af_carrier(K), x : af_carrier(K),
   root : PolynomialRoot(
     K, K, field_embedding_identity(K), linear_factor_product(K, succ(n), roots), x
   )
 ) :
-  Mere(exists i : Fin(succ(n)), roots(i) = x) {
+  Mere(exists i : Fin(succ(n)). roots(i) = x) {
   let h := finite_head(af_carrier(K), n, roots);
   let tail := finite_tail(af_carrier(K), n, roots);
   let q := linear_factor_product(K, n, tail);
   let P := linear_factor_product(K, succ(n), roots);
-  let Result := exists i : Fin(succ(n)), roots(i) = x;
+  let Result := exists i : Fin(succ(n)). roots(i) = x;
   have unequal : ((x = h) -> Void) -> Mere(Result) {
     intro different;
     let rq := root_descends_to_factor_quotient(K, P, h, q, refl(P), x, different, root);
-    have lift : (exists i : Fin(n), tail(i) = x) -> Result {
+    have lift : (exists i : Fin(n). tail(i) = x) -> Result {
       intro witness;
       obtain (i, same) := witness;
       exact (typed(Fin(succ(n)), right(i)), same);
     }
-    exact mere_map((exists i : Fin(n), tail(i) = x), Result, lift, previous(tail, x, rq));
+    exact mere_map((exists i : Fin(n). tail(i) = x), Result, lift, previous(tail, x, rq));
   }
   exact match excluded_middle((x = h), af_set(K, x, h)) as which return Mere(Result) {
     left same => merely(Result, typed(Result, (typed(Fin(succ(n)), left(tt)), sym(same))));
@@ -37,20 +37,20 @@ def linear_factor_product_root_step(
 }
 
 def linear_factor_product_root_index(K : AlgebraicField, n : Nat) :
-  forall roots : Fin(n) -> af_carrier(K), forall x : af_carrier(K),
+  forall roots : Fin(n) -> af_carrier(K). forall x : af_carrier(K).
   PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, n, roots), x)
-  -> Mere(exists i : Fin(n), roots(i) = x) {
+  -> Mere(exists i : Fin(n). roots(i) = x) {
   obtain (ring, nontrivial, inverses) := af_laws(K);
   exact induction n as k return (
-    forall roots : Fin(k) -> af_carrier(K), forall x : af_carrier(K),
+    forall roots : Fin(k) -> af_carrier(K). forall x : af_carrier(K).
     PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, k, roots), x)
-    -> Mere(exists i : Fin(k), roots(i) = x)
+    -> Mere(exists i : Fin(k). roots(i) = x)
   ) {
     zero => fun (
       roots : Fin(0) -> af_carrier(K), x : af_carrier(K),
       root : PolynomialRoot(K, K, field_embedding_identity(K), polynomial_one(K), x)
     ) => typed(
-      Mere(exists i : Fin(0), roots(i) = x),
+      Mere(exists i : Fin(0). roots(i) = x),
       absurd(
         nontrivial(trans(sym(polynomial_eval_one(K, K, field_embedding_identity(K), x)), root))
       )
@@ -62,7 +62,7 @@ def linear_factor_product_root_index(K : AlgebraicField, n : Nat) :
 def linear_factor_product_listed_step(
   K : AlgebraicField, n : Nat,
   previous : (
-    forall roots : Fin(n) -> af_carrier(K), forall i : Fin(n),
+    forall roots : Fin(n) -> af_carrier(K). forall i : Fin(n).
     PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, n, roots), roots(i))
   ), roots : Fin(succ(n)) -> af_carrier(K), i : Fin(succ(n))
 ) :
@@ -75,7 +75,7 @@ def linear_factor_product_listed_step(
   let P := linear_factor_product(K, succ(n), roots);
   let e := field_embedding_identity(K);
   have headRoot : PolynomialRoot(K, K, e, P, h) := polynomial_factor_root(K, P, h, q, refl(P));
-  have tailRoot : forall j : Fin(n), PolynomialRoot(K, K, e, P, tail(j)) {
+  have tailRoot : forall j : Fin(n). PolynomialRoot(K, K, e, P, tail(j)) {
     intro j;
     let x := tail(j);
     exact with unfolding [] {
@@ -102,7 +102,7 @@ def linear_factor_product_listed_step(
 
 def linear_factor_product_listed_root(K : AlgebraicField, n : Nat) :=
   induction n as k return (
-    forall roots : Fin(k) -> af_carrier(K), forall i : Fin(k),
+    forall roots : Fin(k) -> af_carrier(K). forall i : Fin(k).
     PolynomialRoot(K, K, field_embedding_identity(K), linear_factor_product(K, k, roots), roots(i))
   ) {
     zero => fun (roots : Fin(0) -> af_carrier(K), i : Fin(0)) => typed(
@@ -147,7 +147,7 @@ def splitting_root_index(
   nonzero : PolynomialNonzero(K, p), x : af_carrier(K),
   root : PolynomialRoot(K, K, field_embedding_identity(K), p, x)
 ) :
-  Mere(exists i : Fin(n), roots(i) = x) {
+  Mere(exists i : Fin(n). roots(i) = x) {
   let q := linear_factor_product(K, n, roots);
   let e := field_embedding_identity(K);
   let E := fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, x);
@@ -206,13 +206,13 @@ def distinct_splitting_roots_bijection(
   let P := PolynomialRoot(K, K, field_embedding_identity(K), p);
   let f := splitting_root_map(K, p, n, roots, a, equation);
   have injective : Injective(Fin(n), R, f) {
-    intro i j same;
+    intro i, j, same;
     exact distinct(i, j, cong(sigma_first(af_carrier(K), P), same));
   }
   have onto : Surjective(Fin(n), R, f) {
     intro r;
     obtain (x, rx) := r;
-    have locate : (exists i : Fin(n), roots(i) = x) -> Fiber(Fin(n), R, f, r) {
+    have locate : (exists i : Fin(n). roots(i) = x) -> Fiber(Fin(n), R, f, r) {
       intro witness;
       obtain (i, same) := witness;
       exact (
@@ -224,7 +224,7 @@ def distinct_splitting_roots_bijection(
       );
     }
     exact mere_map(
-      (exists i : Fin(n), roots(i) = x), Fiber(Fin(n), R, f, r), locate,
+      (exists i : Fin(n). roots(i) = x), Fiber(Fin(n), R, f, r), locate,
       splitting_root_index(K, p, n, roots, a, equation, nonzero, x, rx)
     );
   }

@@ -5,10 +5,10 @@ import subfields;
 // arbitrary large intersections and generated subfields are separate work.
 def IntermediateFieldLaws(K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0) :=
   SubfieldLaws(extension_field(K, E), P)
-  and (forall k : af_carrier(K), P(extension_inclusion(K, E, k)));
+  and (forall k : af_carrier(K). P(extension_inclusion(K, E, k)));
 
 def IntermediateField(K : AlgebraicField, E : FieldExt(K)) :=
-  exists P : extension_carrier(K, E) -> U0, IntermediateFieldLaws(K, E, P);
+  exists P : extension_carrier(K, E) -> U0. IntermediateFieldLaws(K, E, P);
 
 def intermediate_members(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :=
   unpack M as (P, laws) return (extension_carrier(K, E) -> U0) {
@@ -29,7 +29,7 @@ def intermediate_subfield(K : AlgebraicField, E : FieldExt(K), M : IntermediateF
   let closure :=
     fst(
       SubfieldLaws(extension_field(K, E), P),
-      (forall k : af_carrier(K), P(extension_inclusion(K, E, k))), intermediate_laws(K, E, M)
+      (forall k : af_carrier(K). P(extension_inclusion(K, E, k))), intermediate_laws(K, E, M)
     );
   exact (P, closure);
 }
@@ -44,11 +44,11 @@ def intermediate_contains_base(
 
 def intermediate_laws_prop(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0,
-  p q : IntermediateFieldLaws(K, E, P)
+  p, q : IntermediateFieldLaws(K, E, P)
 ) :
   p = q {
   let F := extension_field(K, E);
-  let baseType := (forall k : af_carrier(K), P(extension_inclusion(K, E, k)));
+  let baseType := (forall k : af_carrier(K). P(extension_inclusion(K, E, k)));
   let closure := fst(SubfieldLaws(F, P), baseType, p);
   exact product_prop(
     SubfieldLaws(F, P), baseType, subfield_laws_prop(F, P),
@@ -61,7 +61,7 @@ def intermediate_laws_prop(
 
 // Membership equality determines equality as intermediate fields over K.
 def intermediate_ext(
-  K : AlgebraicField, E : FieldExt(K), M N : IntermediateField(K, E),
+  K : AlgebraicField, E : FieldExt(K), M, N : IntermediateField(K, E),
   same : intermediate_members(K, E, M) = intermediate_members(K, E, N)
 ) :
   M =[IntermediateField(K, E)] N {

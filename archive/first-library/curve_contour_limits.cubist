@@ -4,23 +4,23 @@ import parameter_contour_limits;
 // Given convergence for one tag scheme, bounded variation and vanishing
 // sampled value errors transfer that limit to the other tag scheme.
 def curve_contour_tag_independent_limit(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), curve : FieldUnitInterval(F, zero, one, lt)
   -> Complex(F), integrand : Complex(F) -> Complex(F),
-  realWeight imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
+  realWeight, imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
   -> FieldUnitInterval(F, zero, one, lt) -> F, length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length),
   variation : ComplexCurveVariation(
     F, zero, one, addF, negF, lt, curve, realWeight, imagWeight, length
   ), count : Nat -> Nat,
-  vertices : (forall n : Nat, SampleVertices(FieldUnitInterval(F, zero, one, lt), count(n))),
-  oldTags newTags : (forall n : Nat, SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))),
-  ordered : (forall n : Nat, IntervalOrderedSamples(F, zero, one, lt, count(n), vertices(n))),
-  delta : Nat -> F, nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
+  vertices : (forall n : Nat. SampleVertices(FieldUnitInterval(F, zero, one, lt), count(n))),
+  oldTags, newTags : (forall n : Nat. SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))),
+  ordered : (forall n : Nat. IntervalOrderedSamples(F, zero, one, lt, count(n), vertices(n))),
+  delta : Nat -> F, nonnegativeDelta : (forall n : Nat. FieldLe(F, lt, zero, delta(n))),
   errors : (
-    forall n : Nat,
+    forall n : Nat.
     ComplexParameterTagBounds(
       FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt,
       (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t))), delta(n), count(n),
@@ -71,7 +71,7 @@ def curve_contour_tag_independent_limit(
       )
     );
   have increments :
-    forall n : Nat,
+    forall n : Nat.
     ComplexParameterIncrementBounds(
       I, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n)
     ) {
@@ -85,11 +85,11 @@ def curve_contour_tag_independent_limit(
     );
   }
   have total :
-    forall n : Nat,
+    forall n : Nat.
     FieldLe(
       F, lt,
       sample_sum(
-        I, F, zero, addF, (fun (a b t : I) => addF(realWeight(a, b, t), imagWeight(a, b, t))),
+        I, F, zero, addF, (fun (a, b, t : I) => addF(realWeight(a, b, t), imagWeight(a, b, t))),
         count(n), vertices(n), oldTags(n)
       ), length
     ) {
@@ -99,7 +99,7 @@ def curve_contour_tag_independent_limit(
     );
     exact totalBound;
   }
-  have oldSame : forall n : Nat, oldMapped(n) = oldParam(n) {
+  have oldSame : forall n : Nat. oldMapped(n) = oldParam(n) {
     intro n;
     exact sym(
       parameter_contour_sum_is_mapped(
@@ -109,7 +109,7 @@ def curve_contour_tag_independent_limit(
       )
     );
   }
-  have newSame : forall n : Nat, newParam(n) = newMapped(n) {
+  have newSame : forall n : Nat. newParam(n) = newMapped(n) {
     intro n;
     exact parameter_contour_sum_is_mapped(
       I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
@@ -135,18 +135,18 @@ def curve_contour_tag_independent_limit(
 // by its proved lattice bounds. Only the integrand's sampled errors and one
 // convergent tag scheme remain inputs; convergence is not postulated afresh.
 def affine_curve_contour_tag_independent_limit(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z error : Complex(F), integrand : Complex(F)
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, error : Complex(F), integrand : Complex(F)
   -> Complex(F), count : Nat -> Nat,
-  vertices : (forall n : Nat, SampleVertices(FieldUnitInterval(F, zero, one, lt), count(n))),
-  oldTags newTags : (forall n : Nat, SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))),
-  ordered : (forall n : Nat, IntervalOrderedSamples(F, zero, one, lt, count(n), vertices(n))),
-  delta : Nat -> F, nonnegativeDelta : (forall n : Nat, FieldLe(F, lt, zero, delta(n))),
+  vertices : (forall n : Nat. SampleVertices(FieldUnitInterval(F, zero, one, lt), count(n))),
+  oldTags, newTags : (forall n : Nat. SampleTags(FieldUnitInterval(F, zero, one, lt), count(n))),
+  ordered : (forall n : Nat. IntervalOrderedSamples(F, zero, one, lt, count(n), vertices(n))),
+  delta : Nat -> F, nonnegativeDelta : (forall n : Nat. FieldLe(F, lt, zero, delta(n))),
   errors : (
-    forall n : Nat,
+    forall n : Nat.
     ComplexParameterTagBounds(
       FieldUnitInterval(F, zero, one, lt), F, addF, negF, lt,
       (

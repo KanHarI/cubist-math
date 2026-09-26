@@ -6,12 +6,12 @@ def head(A : U0) := typed(Unit or A, left(tt));
 
 def tail(A : U0, a : A) := typed(Unit or A, right(a));
 
-def swap_tail(A : U0, a b : A, d : Decidable(a = b)) := match d return (Unit or A) {
+def swap_tail(A : U0, a, b : A, d : Decidable(a = b)) := match d return (Unit or A) {
     left p => head(A);
     right no => tail(A, b);
   };
 
-def swap_tail_equal(A : U0, a b : A, d : Decidable(a = b), p : a = b) :=
+def swap_tail_equal(A : U0, a, b : A, d : Decidable(a = b), p : a = b) :=
   match d as decision return (swap_tail(A, a, b, decision) = head(A)) {
     left yes => refl(head(A));
     right no => typed(
@@ -19,7 +19,7 @@ def swap_tail_equal(A : U0, a b : A, d : Decidable(a = b), p : a = b) :=
     );
   };
 
-def swap_tail_different(A : U0, a b : A, d : Decidable(a = b), no : (a = b) -> Void) :=
+def swap_tail_different(A : U0, a, b : A, d : Decidable(a = b), no : (a = b) -> Void) :=
   match d as decision return (swap_tail(A, a, b, decision) = tail(A, b)) {
     left yes => typed(
       (swap_tail(A, a, b, typed(Decidable(a = b), left(yes))) = tail(A, b)), absurd(no(yes))
@@ -28,7 +28,7 @@ def swap_tail_different(A : U0, a b : A, d : Decidable(a = b), no : (a = b) -> V
   };
 
 def swap_right(
-  A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), a : A, x : Unit or A
+  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), a : A, x : Unit or A
 ) :=
   match x return (Unit or A) {
     left u => tail(A, a);
@@ -36,7 +36,7 @@ def swap_right(
   };
 
 def swap_right_twice(
-  A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), a : A, x : Unit or A
+  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), a : A, x : Unit or A
 ) :=
   match x as z return (swap_right(A, decide, a, swap_right(A, decide, a, z)) = z) {
     left u => trans(
@@ -57,34 +57,34 @@ def swap_right_twice(
     };
   };
 
-def swap(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen x : Unit or A) :=
+def swap(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), chosen, x : Unit or A) :=
   match chosen return (Unit or A) {
     left u => x;
     right a => swap_right(A, decide, a, x);
   };
 
 def swap_twice(
-  A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen x : Unit or A
+  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), chosen, x : Unit or A
 ) :=
   match chosen as c return (swap(A, decide, c, swap(A, decide, c, x)) = x) {
     left u => refl(x);
     right a => swap_right_twice(A, decide, a, x);
   };
 
-def swap_head(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A) :=
+def swap_head(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), chosen : Unit or A) :=
   match chosen as c return (swap(A, decide, c, head(A)) = c) {
     left u => cong((fun (v : Unit) => typed(Unit or A, left(v))), unit_equal(u));
     right a => refl(tail(A, a));
   };
 
-def swap_chosen(A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A) :=
+def swap_chosen(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), chosen : Unit or A) :=
   trans(
     sym(cong(swap(A, decide, chosen), swap_head(A, decide, chosen))),
     swap_twice(A, decide, chosen, head(A))
   );
 
 def swap_bijection(
-  A : U0, decide : (forall a : A, forall b : A, Decidable(a = b)), chosen : Unit or A
+  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), chosen : Unit or A
 ) :=
   typed(
     Bijection(Unit or A, Unit or A),
@@ -103,7 +103,7 @@ def not_head_tail(A : U0, x : Unit or A) := match x as z return (((z = head(A)) 
   };
 
 def not_head_tail_path(A : U0, x : Unit or A) :=
-  match x as z return (forall no : (z = head(A)) -> Void, tail(A, not_head_tail(A, z, no)) = z) {
+  match x as z return (forall no : (z = head(A)) -> Void. tail(A, not_head_tail(A, z, no)) = z) {
     left u => fun (no : (typed(Unit or A, left(u)) = head(A)) -> Void) => typed(
       (tail(A, not_head_tail(A, typed(Unit or A, left(u)), no)) = typed(Unit or A, left(u))),
       absurd(no(cong((fun (v : Unit) => typed(Unit or A, left(v))), sym(unit_equal(u)))))
@@ -112,13 +112,13 @@ def not_head_tail_path(A : U0, x : Unit or A) :=
   };
 
 def inverse_injective(
-  A B : U0, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x), x y : A, p : f(x) = f(y)
+  A, B : U0, f : A -> B, g : B -> A, eta : (forall x : A. g(f(x)) = x), x, y : A, p : f(x) = f(y)
 ) :=
   trans(sym(eta(x)), trans(cong(g, p), eta(y)));
 
 def preserves_tail(
-  A B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
-  eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A,
+  A, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+  eta : (forall x : Unit or A. g(f(x)) = x), fixed : f(head(A)) = head(B), a : A,
   bad : f(tail(A, a)) = head(B)
 ) :=
   sum_disjoint(
@@ -131,20 +131,20 @@ def preserves_tail(
   );
 
 def restrict_tail(
-  A B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
-  eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A
+  A, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+  eta : (forall x : Unit or A. g(f(x)) = x), fixed : f(head(A)) = head(B), a : A
 ) :=
   not_head_tail(B, f(tail(A, a)), preserves_tail(A, B, f, g, eta, fixed, a));
 
 def restrict_tail_path(
-  A B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
-  eta : (forall x : Unit or A, g(f(x)) = x), fixed : f(head(A)) = head(B), a : A
+  A, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+  eta : (forall x : Unit or A. g(f(x)) = x), fixed : f(head(A)) = head(B), a : A
 ) :=
   not_head_tail_path(B, f(tail(A, a)), preserves_tail(A, B, f, g, eta, fixed, a));
 
 def restriction_inverse(
-  A B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
-  eta : (forall x : Unit or A, g(f(x)) = x), eps : (forall y : Unit or B, f(g(y)) = y),
+  A, B : U0, f : (Unit or A) -> (Unit or B), g : (Unit or B) -> (Unit or A),
+  eta : (forall x : Unit or A. g(f(x)) = x), eps : (forall y : Unit or B. f(g(y)) = y),
   fixed_f : f(head(A)) = head(B), fixed_g : g(head(B)) = head(A), a : A
 ) :
   restrict_tail(B, A, g, f, eps, fixed_g, restrict_tail(A, B, f, g, eta, fixed_f, a)) = a {
@@ -159,7 +159,7 @@ def restriction_inverse(
 }
 
 def restrict_bijection(
-  A B : U0, e : Bijection(Unit or A, Unit or B),
+  A, B : U0, e : Bijection(Unit or A, Unit or B),
   fixed : forward(Unit or A, Unit or B, e, head(A)) = head(B)
 ) :
   Bijection(A, B) {
@@ -175,7 +175,7 @@ def restrict_bijection(
   );
 }
 
-def cancel_finite_successor(n m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m)))) :
+def cancel_finite_successor(n, m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m)))) :
   Bijection(Fin(n), Fin(m)) {
   let image := forward(Fin(succ(n)), Fin(succ(m)), e, head(Fin(n)));
   let adjusted :=
@@ -187,7 +187,7 @@ def cancel_finite_successor(n m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m)))
 
 // Finite cardinality is invariant under arbitrary bijections.
 def finite_cardinality_unique(n : Nat) :=
-  induction n as k return (forall m : Nat, Bijection(Fin(k), Fin(m)) -> (k = m)) {
+  induction n as k return (forall m : Nat. Bijection(Fin(k), Fin(m)) -> (k = m)) {
     zero => fun (m : Nat) => induction m as j return (Bijection(Fin(0), Fin(j)) -> (0 = j)) {
       zero => fun (e : Bijection(Fin(0), Fin(0))) => refl(0);
       succ previous => fun (e : Bijection(Fin(0), Fin(succ(j)))) => typed(

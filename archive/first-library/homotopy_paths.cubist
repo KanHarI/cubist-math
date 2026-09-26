@@ -4,22 +4,22 @@ import paths;
 // classical principle is needed: the first two laws hold by conversion and
 // the rest are consequences of path induction.
 // Holds by conversion: a constant function maps every path to a constant line.
-def path_map_constant(A B : U1, point : B, x y : A, p : x = y) :
+def path_map_constant(A, B : U1, point : B, x, y : A, p : x = y) :
   cong((fun (v : A) => point), p) = refl(point) {
   rfl;
 }
 
 // Holds by conversion: the identity function maps a path to itself.
-def path_map_identity(A : U1, x y : A, p : x = y) : cong((fun (v : A) => v), p) = p {
+def path_map_identity(A : U1, x, y : A, p : x = y) : cong((fun (v : A) => v), p) = p {
   rfl;
 }
 
 def homotopy_naturality(
-  A B : U1, f g : A -> B, homotopy : (forall a : A, f(a) = g(a)), x y : A, p : x = y
+  A, B : U1, f, g : A -> B, homotopy : (forall a : A. f(a) = g(a)), x, y : A, p : x = y
 ) :=
   path_induction(
     A,
-    (fun (a b : A, r : a = b) => trans(cong(f, r), homotopy(b)) = trans(homotopy(a), cong(g, r))),
+    (fun (a, b : A, r : a = b) => trans(cong(f, r), homotopy(b)) = trans(homotopy(a), cong(g, r))),
     (
       fun (a : A) => trans(
         left_unit(B, f(a), g(a), homotopy(a)), sym(right_unit(B, f(a), g(a), homotopy(a)))
@@ -27,22 +27,22 @@ def homotopy_naturality(
     ), x, y, p
   );
 
-def cancel_right_path(A : U1, y z : A, r : y = z) :=
+def cancel_right_path(A : U1, y, z : A, r : y = z) :=
   path_induction(
     A,
     (
-      fun (a b : A, s : a = b) => forall x : A, forall p : x = a, forall q : x = a,
+      fun (a, b : A, s : a = b) => forall x : A. forall p : x = a. forall q : x = a.
       (trans(p, s) = trans(q, s)) -> (p = q)
     ),
     (
-      fun (a x : A, p q : x = a, same : trans(p, refl(a)) = trans(q, refl(a))) => trans(
+      fun (a, x : A, p, q : x = a, same : trans(p, refl(a)) = trans(q, refl(a))) => trans(
         sym(right_unit(A, x, a, p)), trans(same, right_unit(A, x, a, q))
       )
     ), y, z, r
   );
 
 def null_homotopy_kills_loops(
-  A B : U1, f : A -> B, point : B, homotopy : (forall a : A, f(a) = point), x : A, p : x = x
+  A, B : U1, f : A -> B, point : B, homotopy : (forall a : A. f(a) = point), x : A, p : x = x
 ) :
   cong(f, p) = refl(f(x)) {
   let image := cong(f, p);
@@ -61,7 +61,7 @@ def null_homotopy_kills_loops(
 }
 
 def contractible_loops_are_null(
-  A : U1, center : A, contraction : (forall x : A, x = center), x : A, p : x = x
+  A : U1, center : A, contraction : (forall x : A. x = center), x : A, p : x = x
 ) :
   p = refl(x) {
   exact trans(
@@ -71,13 +71,13 @@ def contractible_loops_are_null(
 }
 
 // Rebase a loop along a specified path, with its effect on constant loops.
-def rebase_loop(A : U1, x y : A, connector : x = y, p : x = x) :=
+def rebase_loop(A : U1, x, y : A, connector : x = y, p : x = x) :=
   along(fun (a : A) => a = a) by connector from p;
 
-def rebase_constant_loop(A : U1, x y : A, connector : x = y) :=
+def rebase_constant_loop(A : U1, x, y : A, connector : x = y) :=
   apd((fun (a : A) => refl(a)), x, y, connector);
 
-def rebase_null_loop(A : U1, x y : A, connector : x = y, p : x = x, null : p = refl(x)) :
+def rebase_null_loop(A : U1, x, y : A, connector : x = y, p : x = x, null : p = refl(x)) :
   rebase_loop(A, x, y, connector, p) = refl(y) {
   exact trans(cong(rebase_loop(A, x, y, connector), null), rebase_constant_loop(A, x, y, connector));
 }

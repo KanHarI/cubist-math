@@ -84,7 +84,7 @@ def f4_fixed_fixing_recovers_members(
     }
     right noAlpha => {
       have fixesP : GaloisFixing(F2, F4OverF2, P, f4_frobenius_automorphism) {
-        intro y member;
+        intro y, member;
         exact f4_base_is_fixed(
           y, f4_intermediate_without_alpha(P, laws, noAlpha, y, member), f4_frobenius_automorphism,
           tt

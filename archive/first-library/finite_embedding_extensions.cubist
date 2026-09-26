@@ -3,14 +3,14 @@ import finite_field_generators;
 // Algebraic extensions with n specified field generators admit extensions
 // of their base embeddings into any algebraically closed target field.
 def FiniteEmbeddingExtension(n : Nat) :=
-  forall K : AlgebraicField, forall L : AlgebraicField, forall e : FieldEmbedding(K, L),
-  forall generators : Fin(n) -> af_carrier(L),
-  (forall i : Fin(n), AlgebraicElement(K, L, e, generators(i)))
-  -> FieldGeneratedBy(K, L, e, n, generators) -> forall T : AlgebraicField, AlgebraicallyClosed(T)
-  -> forall j : FieldEmbedding(K, T), Mere(EmbeddingsOver(K, L, e, T, j));
+  forall K : AlgebraicField. forall L : AlgebraicField. forall e : FieldEmbedding(K, L).
+  forall generators : Fin(n) -> af_carrier(L).
+  (forall i : Fin(n). AlgebraicElement(K, L, e, generators(i)))
+  -> FieldGeneratedBy(K, L, e, n, generators) -> forall T : AlgebraicField. AlgebraicallyClosed(T)
+  -> forall j : FieldEmbedding(K, T). Mere(EmbeddingsOver(K, L, e, T, j));
 
 def finite_embedding_extension_zero : FiniteEmbeddingExtension(0) {
-  intro K L e generators algebraic generates T closed j;
+  intro K, L, e, generators, algebraic, generates, T, closed, j;
   let onto := field_generated_empty_surjective(K, L, e, generators, generates);
   let extension :=
     embedding_over_surjective_source(
@@ -26,7 +26,7 @@ def finite_embedding_extension_zero : FiniteEmbeddingExtension(0) {
 
 def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension(n)) :
   FiniteEmbeddingExtension(succ(n)) {
-  intro K L e generators algebraic generates T closed j;
+  intro K, L, e, generators, algebraic, generates, T, closed, j;
   let x := finite_head(af_carrier(L), n, generators);
   let alg := algebraic(typed(Fin(succ(n)), left(tt)));
   let p := minimal_polynomial(K, L, e, x, alg);
@@ -83,7 +83,7 @@ def finitely_generated_embedding_extension(n : Nat) :=
 // No generators are requested from the caller: a finite vector basis supplies
 // them internally. The existence statement preserves its propositional truncation.
 def finite_extension_embedding_exists(
-  K L : AlgebraicField, e : FieldEmbedding(K, L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e)), T : AlgebraicField,
   closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
 ) :

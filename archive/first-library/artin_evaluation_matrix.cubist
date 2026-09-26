@@ -2,10 +2,10 @@ import artin_evaluation;
 import finite_spanning;
 import spanning_subfamilies;
 
-def coordinate_dot(K : AlgebraicField, n : Nat, coefficients row : Fin(n) -> af_carrier(K)) :=
+def coordinate_dot(K : AlgebraicField, n : Nat, coefficients, row : Fin(n) -> af_carrier(K)) :=
   field_sum(K, n, (fun (i : Fin(n)) => field_mul(K, coefficients(i), row(i))));
 
-def coordinate_dot_add(K : AlgebraicField, n : Nat, a b row : Fin(n) -> af_carrier(K)) :
+def coordinate_dot_add(K : AlgebraicField, n : Nat, a, b, row : Fin(n) -> af_carrier(K)) :
   coordinate_dot(K, n, vector_add(K, CoordinateSpace(K, n), a, b), row) = field_add(
     K, coordinate_dot(K, n, a, row), coordinate_dot(K, n, b, row)
   ) {
@@ -21,7 +21,7 @@ def coordinate_dot_add(K : AlgebraicField, n : Nat, a b row : Fin(n) -> af_carri
 }
 
 def coordinate_dot_scale(
-  K : AlgebraicField, n : Nat, c : af_carrier(K), a row : Fin(n) -> af_carrier(K)
+  K : AlgebraicField, n : Nat, c : af_carrier(K), a, row : Fin(n) -> af_carrier(K)
 ) :
   coordinate_dot(K, n, vector_scale(K, CoordinateSpace(K, n), c, a), row) = field_mul(
     K, c, coordinate_dot(K, n, a, row)
@@ -36,7 +36,7 @@ def coordinate_dot_scale(
   );
 }
 
-def coordinate_dot_comm(K : AlgebraicField, n : Nat, a b : Fin(n) -> af_carrier(K)) :
+def coordinate_dot_comm(K : AlgebraicField, n : Nat, a, b : Fin(n) -> af_carrier(K)) :
   coordinate_dot(K, n, a, b) = coordinate_dot(K, n, b, a) {
   exact field_sum_cong(
     K, n, (fun (i : Fin(n)) => field_mul(K, a(i), b(i))),
@@ -45,7 +45,7 @@ def coordinate_dot_comm(K : AlgebraicField, n : Nat, a b : Fin(n) -> af_carrier(
   );
 }
 
-def coordinate_dot_right_add(K : AlgebraicField, n : Nat, a u v : Fin(n) -> af_carrier(K)) :
+def coordinate_dot_right_add(K : AlgebraicField, n : Nat, a, u, v : Fin(n) -> af_carrier(K)) :
   coordinate_dot(K, n, a, vector_add(K, CoordinateSpace(K, n), u, v)) = field_add(
     K, coordinate_dot(K, n, a, u), coordinate_dot(K, n, a, v)
   ) {
@@ -86,23 +86,23 @@ def coordinate_dot_right_zero(K : AlgebraicField, n : Nat, a : Fin(n) -> af_carr
   );
 }
 
-def coordinate_dot_rows_zero(K : AlgebraicField, n m : Nat) :=
+def coordinate_dot_rows_zero(K : AlgebraicField, n, m : Nat) :=
   induction m as k return (
-    forall a : Fin(n) -> af_carrier(K), forall rows : Fin(k) -> (Fin(n) -> af_carrier(K)),
-    forall c : Fin(k) -> af_carrier(K),
-    (forall j : Fin(k), coordinate_dot(K, n, a, rows(j)) = field_zero(K))
+    forall a : Fin(n) -> af_carrier(K). forall rows : Fin(k) -> (Fin(n) -> af_carrier(K)).
+    forall c : Fin(k) -> af_carrier(K).
+    (forall j : Fin(k). coordinate_dot(K, n, a, rows(j)) = field_zero(K))
     -> coordinate_dot(K, n, a, linear_combination(K, CoordinateSpace(K, n), k, rows, c)) = field_zero(
       K
     )
   ) {
     zero => fun (
       a : Fin(n) -> af_carrier(K), rows : Fin(0) -> (Fin(n) -> af_carrier(K)),
-      c : Fin(0) -> af_carrier(K), vanish : forall j : Fin(0),
+      c : Fin(0) -> af_carrier(K), vanish : forall j : Fin(0).
       coordinate_dot(K, n, a, rows(j)) = field_zero(K)
     ) => coordinate_dot_right_zero(K, n, a);
     succ previous => fun (
       a : Fin(n) -> af_carrier(K), rows : Fin(succ(k)) -> (Fin(n) -> af_carrier(K)),
-      c : Fin(succ(k)) -> af_carrier(K), vanish : forall j : Fin(succ(k)),
+      c : Fin(succ(k)) -> af_carrier(K), vanish : forall j : Fin(succ(k)).
       coordinate_dot(K, n, a, rows(j)) = field_zero(K)
     ) => trans(
       coordinate_dot_right_add(
@@ -159,7 +159,7 @@ def coordinate_dot_rows_zero(K : AlgebraicField, n m : Nat) :=
 // A finite list of rows defines the transpose of the matrix whose columns
 // are those rows. The map sends coefficients to their evaluations on all rows.
 def coordinate_rows_linear(
-  K : AlgebraicField, n m : Nat, rows : Fin(m) -> (Fin(n) -> af_carrier(K))
+  K : AlgebraicField, n, m : Nat, rows : Fin(m) -> (Fin(n) -> af_carrier(K))
 ) :
   LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, m)) {
   let C := CoordinateSpace(K, n);
@@ -168,7 +168,7 @@ def coordinate_rows_linear(
   exact (
     f,
     (
-      fun (a b : Fin(n) -> af_carrier(K)) => FunExt(
+      fun (a, b : Fin(n) -> af_carrier(K)) => FunExt(
         U0, Fin(m), (fun (j : Fin(m)) => af_carrier(K)), f(vector_add(K, C, a, b)),
         vector_add(K, D, f(a), f(b)), (fun (j : Fin(m)) => coordinate_dot_add(K, n, a, b, rows(j)))
       )
@@ -183,9 +183,9 @@ def coordinate_rows_linear(
 }
 
 def coordinate_rows_separating_injective(
-  K : AlgebraicField, n m : Nat, rows : Fin(m) -> (Fin(n) -> af_carrier(K)),
-  separates : forall a : Fin(n) -> af_carrier(K),
-  (forall j : Fin(m), coordinate_dot(K, n, a, rows(j)) = field_zero(K)) -> forall i : Fin(n),
+  K : AlgebraicField, n, m : Nat, rows : Fin(m) -> (Fin(n) -> af_carrier(K)),
+  separates : forall a : Fin(n) -> af_carrier(K).
+  (forall j : Fin(m). coordinate_dot(K, n, a, rows(j)) = field_zero(K)) -> forall i : Fin(n).
   a(i) = field_zero(K)
 ) :
   LinearInjective(
@@ -195,9 +195,9 @@ def coordinate_rows_separating_injective(
   let D := CoordinateSpace(K, m);
   let h := coordinate_rows_linear(K, n, m, rows);
   have kernel :
-    forall a : vector_carrier(K, C), linear_map(K, C, D, h, a) = vector_zero(K, D)
+    forall a : vector_carrier(K, C). linear_map(K, C, D, h, a) = vector_zero(K, D)
     -> a = vector_zero(K, C) {
-    intro a vanishes;
+    intro a, vanishes;
     ext x;
     exact separates(
       a, (fun (j : Fin(m)) => cong((fun (v : Fin(m) -> af_carrier(K)) => v(j)), vanishes))
@@ -207,9 +207,9 @@ def coordinate_rows_separating_injective(
 }
 
 def coordinate_rows_separating_bound(
-  K : AlgebraicField, n m : Nat, rows : Fin(m) -> (Fin(n) -> af_carrier(K)),
-  separates : forall a : Fin(n) -> af_carrier(K),
-  (forall j : Fin(m), coordinate_dot(K, n, a, rows(j)) = field_zero(K)) -> forall i : Fin(n),
+  K : AlgebraicField, n, m : Nat, rows : Fin(m) -> (Fin(n) -> af_carrier(K)),
+  separates : forall a : Fin(n) -> af_carrier(K).
+  (forall j : Fin(m). coordinate_dot(K, n, a, rows(j)) = field_zero(K)) -> forall i : Fin(n).
   a(i) = field_zero(K)
 ) :
   le(n, m) {
@@ -223,11 +223,11 @@ def coordinate_rows_separating_bound(
 // a merely specified nonzero kernel vector. The truncation is essential: the
 // theorem does not make an arbitrary global choice of a kernel vector.
 def coordinate_map_not_kernel_trivial(
-  K : AlgebraicField, n m : Nat, f : LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, m)),
+  K : AlgebraicField, n, m : Nat, f : LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, m)),
   too_small : le(n, m) -> Void
 ) :
   (
-    forall a : Fin(n) -> af_carrier(K),
+    forall a : Fin(n) -> af_carrier(K).
     linear_map(K, CoordinateSpace(K, n), CoordinateSpace(K, m), f, a) = vector_zero(
       K, CoordinateSpace(K, m)
     ) -> a = vector_zero(K, CoordinateSpace(K, n))
@@ -242,7 +242,7 @@ def coordinate_map_not_kernel_trivial(
 }
 
 def coordinate_nontrivial_implication_witness(
-  K : AlgebraicField, n m : Nat, f : LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, m)),
+  K : AlgebraicField, n, m : Nat, f : LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, m)),
   a : Fin(n) -> af_carrier(K),
   fails : (
     (
@@ -274,11 +274,11 @@ def coordinate_nontrivial_implication_witness(
 }
 
 def coordinate_map_nonzero_kernel(
-  K : AlgebraicField, n m : Nat, f : LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, m)),
+  K : AlgebraicField, n, m : Nat, f : LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, m)),
   too_small : le(n, m) -> Void
 ) :
   Mere(
-    exists a : Fin(n) -> af_carrier(K),
+    exists a : Fin(n) -> af_carrier(K).
     (
       linear_map(K, CoordinateSpace(K, n), CoordinateSpace(K, m), f, a) = vector_zero(
         K, CoordinateSpace(K, m)
@@ -292,14 +292,14 @@ def coordinate_map_nonzero_kernel(
   let Q := fun (a : Fin(n) -> af_carrier(K)) => a = vector_zero(K, C);
   let X := Fin(n) -> af_carrier(K);
   let notKernelTrivial := coordinate_map_not_kernel_trivial(K, n, m, f, too_small);
-  have convert : (exists a : X, (P(a) -> Q(a)) -> Void) -> (exists a : X, P(a) and (Q(a) -> Void)) {
+  have convert : (exists a : X. (P(a) -> Q(a)) -> Void) -> (exists a : X. P(a) and (Q(a) -> Void)) {
     intro witness;
     obtain (a, fails) := witness;
     obtain (vanishes, nonzero) := coordinate_nontrivial_implication_witness(K, n, m, f, a, fails);
     exact (a, vanishes, nonzero);
   }
   exact mere_map(
-    (exists a : X, (P(a) -> Q(a)) -> Void), (exists a : X, P(a) and (Q(a) -> Void)), convert,
+    (exists a : X. (P(a) -> Q(a)) -> Void), (exists a : X. P(a) and (Q(a) -> Void)), convert,
     classical_counterexample(
       X, (fun (a : X) => P(a) -> Q(a)),
       (
@@ -316,15 +316,15 @@ def coordinate_map_nonzero_kernel(
 // independence supplies a new evaluation point that detects the resulting
 // nonzero kernel vector. This is the rank-growth step in Artin's argument.
 def embedding_evaluation_rank_step(
-  K L : AlgebraicField, n m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps), points : Fin(m) -> af_carrier(K),
   too_small : le(n, m) -> Void
 ) :
   Mere(
-    exists a : Fin(n) -> af_carrier(L), exists x : af_carrier(K),
+    exists a : Fin(n) -> af_carrier(L). exists x : af_carrier(K).
     ((a = vector_zero(L, CoordinateSpace(L, n))) -> Void)
     and (
-      forall j : Fin(m),
+      forall j : Fin(m).
       coordinate_dot(L, n, a, embedding_evaluation_vector(K, L, n, maps, points(j))) = field_zero(L)
     ) and ((embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L)) -> Void)
   ) {
@@ -334,35 +334,35 @@ def embedding_evaluation_rank_step(
   let rows := fun (j : Fin(m)) => embedding_evaluation_vector(K, L, n, maps, points(j));
   let h := coordinate_rows_linear(L, n, m, rows);
   let Result :=
-    exists a : A, exists x : af_carrier(K), ((a = vector_zero(L, C)) -> Void)
-    and (forall j : Fin(m), coordinate_dot(L, n, a, rows(j)) = field_zero(L))
+    exists a : A. exists x : af_carrier(K). ((a = vector_zero(L, C)) -> Void)
+    and (forall j : Fin(m). coordinate_dot(L, n, a, rows(j)) = field_zero(L))
     and ((embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L)) -> Void);
   have withKernel :
     (
-      exists a : A, (linear_map(L, C, D, h, a) = vector_zero(L, D))
+      exists a : A. (linear_map(L, C, D, h, a) = vector_zero(L, D))
       and ((a = vector_zero(L, C)) -> Void)
     ) -> Mere(Result) {
     intro witness;
     obtain (a, vanishes, nonzero) := witness;
-    have allRows : forall j : Fin(m), coordinate_dot(L, n, a, rows(j)) = field_zero(L) {
+    have allRows : forall j : Fin(m). coordinate_dot(L, n, a, rows(j)) = field_zero(L) {
       intro j;
       exact cong((fun (v : Fin(m) -> af_carrier(L)) => v(j)), vanishes);
     }
-    have someIndex : Mere(exists i : Fin(n), (a(i) = field_zero(L)) -> Void) := classical_counterexample(
+    have someIndex : Mere(exists i : Fin(n). (a(i) = field_zero(L)) -> Void) := classical_counterexample(
       Fin(n), (fun (i : Fin(n)) => a(i) = field_zero(L)),
       (fun (i : Fin(n)) => af_set(L, a(i), field_zero(L))),
       (
-        fun (all : forall i : Fin(n), a(i) = field_zero(L)) => nonzero(
+        fun (all : forall i : Fin(n). a(i) = field_zero(L)) => nonzero(
           FunExt(U0, Fin(n), (fun (i : Fin(n)) => af_carrier(L)), a, vector_zero(L, C), all)
         )
       )
     );
-    have withIndex : (exists i : Fin(n), (a(i) = field_zero(L)) -> Void) -> Mere(Result) {
+    have withIndex : (exists i : Fin(n). (a(i) = field_zero(L)) -> Void) -> Mere(Result) {
       intro index;
       obtain (i, coefficientNonzero) := index;
       have withPoint :
         (
-          exists x : af_carrier(K), (embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L))
+          exists x : af_carrier(K). (embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L))
           -> Void
         ) -> Result {
         intro point;
@@ -371,20 +371,20 @@ def embedding_evaluation_rank_step(
       }
       exact mere_map(
         (
-          exists x : af_carrier(K), (embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L))
+          exists x : af_carrier(K). (embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L))
           -> Void
         ), Result, withPoint,
         embedding_evaluations_detect_nonzero(K, L, n, maps, distinct, a, i, coefficientNonzero)
       );
     }
     exact mere_eliminate(
-      (exists i : Fin(n), (a(i) = field_zero(L)) -> Void), Mere(Result), mere_is_prop(Result),
+      (exists i : Fin(n). (a(i) = field_zero(L)) -> Void), Mere(Result), mere_is_prop(Result),
       withIndex, someIndex
     );
   }
   exact mere_eliminate(
     (
-      exists a : A, (linear_map(L, C, D, h, a) = vector_zero(L, D))
+      exists a : A. (linear_map(L, C, D, h, a) = vector_zero(L, D))
       and ((a = vector_zero(L, C)) -> Void)
     ), Mere(Result), mere_is_prop(Result), withKernel,
     coordinate_map_nonzero_kernel(L, n, m, h, too_small)
@@ -395,12 +395,12 @@ def embedding_evaluation_rank_step(
 // evaluation vectors. This form can be passed directly to the checked
 // adjoin_linear_injective lemma.
 def embedding_evaluation_outside_span(
-  K L : AlgebraicField, n m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps), points : Fin(m) -> af_carrier(K),
   too_small : le(n, m) -> Void
 ) :
   Mere(
-    exists x : af_carrier(K),
+    exists x : af_carrier(K).
     Mere(
       Fiber(
         Fin(m) -> af_carrier(L), Fin(n) -> af_carrier(L),
@@ -420,7 +420,7 @@ def embedding_evaluation_outside_span(
   let f := family_linear(L, C, m, rows);
   let F := linear_map(L, D, C, f);
   let Result :=
-    exists x : af_carrier(K),
+    exists x : af_carrier(K).
     Mere(
       Fiber(
         Fin(m) -> af_carrier(L), Fin(n) -> af_carrier(L), F,
@@ -429,9 +429,9 @@ def embedding_evaluation_outside_span(
     ) -> Void;
   have convert :
     (
-      exists a : Fin(n) -> af_carrier(L), exists x : af_carrier(K),
+      exists a : Fin(n) -> af_carrier(L). exists x : af_carrier(K).
       ((a = vector_zero(L, C)) -> Void)
-      and (forall j : Fin(m), coordinate_dot(L, n, a, rows(j)) = field_zero(L))
+      and (forall j : Fin(m). coordinate_dot(L, n, a, rows(j)) = field_zero(L))
       and ((embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L)) -> Void)
     ) -> Result {
     intro witness;
@@ -453,16 +453,16 @@ def embedding_evaluation_outside_span(
       x,
       (
         fun (member : Mere(FiberF)) => mere_eliminate(
-          FiberF, Void, (fun (u v : Void) => absurd(u)), reject, member
+          FiberF, Void, (fun (u, v : Void) => absurd(u)), reject, member
         )
       )
     );
   }
   exact mere_map(
     (
-      exists a : Fin(n) -> af_carrier(L), exists x : af_carrier(K),
+      exists a : Fin(n) -> af_carrier(L). exists x : af_carrier(K).
       ((a = vector_zero(L, C)) -> Void)
-      and (forall j : Fin(m), coordinate_dot(L, n, a, rows(j)) = field_zero(L))
+      and (forall j : Fin(m). coordinate_dot(L, n, a, rows(j)) = field_zero(L))
       and ((embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L)) -> Void)
     ), Result, convert,
     embedding_evaluation_rank_step(K, L, n, m, maps, distinct, points, too_small)
@@ -472,7 +472,7 @@ def embedding_evaluation_outside_span(
 // One more evaluation vector extends any independent partial family, as long
 // as fewer than n evaluation points have been chosen.
 def embedding_evaluation_extend_independent(
-  K L : AlgebraicField, n m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps), points : Fin(m) -> af_carrier(K),
   independent : LinearInjective(
     L, CoordinateSpace(L, m), CoordinateSpace(L, n),
@@ -483,7 +483,7 @@ def embedding_evaluation_extend_independent(
   ), too_small : le(n, m) -> Void
 ) :
   Mere(
-    exists next : Fin(succ(m)) -> af_carrier(K),
+    exists next : Fin(succ(m)) -> af_carrier(K).
     LinearInjective(
       L, CoordinateSpace(L, succ(m)), CoordinateSpace(L, n),
       family_linear(
@@ -496,7 +496,7 @@ def embedding_evaluation_extend_independent(
   let rows := fun (j : Fin(m)) => embedding_evaluation_vector(K, L, n, maps, points(j));
   let old := family_linear(L, C, m, rows);
   let Result :=
-    exists next : Fin(succ(m)) -> af_carrier(K),
+    exists next : Fin(succ(m)) -> af_carrier(K).
     LinearInjective(
       L, CoordinateSpace(L, succ(m)), C,
       family_linear(
@@ -506,7 +506,7 @@ def embedding_evaluation_extend_independent(
     );
   have extend :
     (
-      exists x : af_carrier(K),
+      exists x : af_carrier(K).
       Mere(
         Fiber(
           Fin(m) -> af_carrier(L), Fin(n) -> af_carrier(L),
@@ -527,7 +527,7 @@ def embedding_evaluation_extend_independent(
   }
   exact mere_map(
     (
-      exists x : af_carrier(K),
+      exists x : af_carrier(K).
       Mere(
         Fiber(
           Fin(m) -> af_carrier(L), Fin(n) -> af_carrier(L),
@@ -551,7 +551,7 @@ def coordinate_square_injective_surjective(
   let X := vector_carrier(K, C);
   let F := linear_map(K, C, C, f);
   let Image := fun (x : X) => Mere(Fiber(X, X, F, x));
-  have impossible : (exists x : X, Image(x) -> Void) -> Void {
+  have impossible : (exists x : X. Image(x) -> Void) -> Void {
     intro witness;
     obtain (x, outside) := witness;
     let h := adjoin_linear(K, C, n, f, x);
@@ -564,7 +564,7 @@ def coordinate_square_injective_surjective(
     left onto => onto;
     right notOnto => absurd(
       mere_eliminate(
-        (exists x : X, Image(x) -> Void), Void, (fun (u v : Void) => absurd(u)), impossible,
+        (exists x : X. Image(x) -> Void), Void, (fun (u, v : Void) => absurd(u)), impossible,
         classical_counterexample(
           X, Image, (fun (x : X) => mere_is_prop(Fiber(X, X, F, x))), notOnto
         )

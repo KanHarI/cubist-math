@@ -57,35 +57,35 @@
         <article id="reference">
           <section id="first-proof">
             <h2>A first proof</h2>
-            <p>Every natural number has a greater one. As a type, the statement is <code>forall n : Nat, exists m : Nat, lt(n, m)</code>: for every <code>n</code> there is an <code>m</code> with <code>n &lt; m</code>. First define <code>lt</code>, and try it on two numbers:</p>
+            <p>Every natural number has a greater one. As a type, the statement is <code>forall n : Nat. exists m : Nat. lt(n, m)</code>: for every <code>n</code> there is an <code>m</code> with <code>n &lt; m</code>. First define <code>lt</code>, and try it on two numbers:</p>
             <pre><code data-check="accept">import naturals;
 
 // n &lt; m: m is n plus a positive number, succ(k) for some k.
-def lt(n m : Nat) : U0 {
-  exact exists k : Nat, succ(k) + n = m;
+def lt(n, m : Nat) : U0 {
+  exact exists k : Nat. succ(k) + n = m;
 }
 
 // 2 &lt; 7: take k = 4, since succ(4) + 2 = 7.
 def two_lt_seven : lt(2, 7) {
   exact (4, refl(7));
 }</code></pre>
-            <p><code>lt</code> is a function that returns a type, so its value is a type in <code>U0</code>: <code>lt(n, m)</code> is the statement that <code>n</code> is less than <code>m</code>. A value of it is evidence: a number <code>k</code> together with a proof that <code>succ(k) + n = m</code>.</p>
-            <p><code>two_lt_seven</code> proves <code>lt(2, 7)</code>, which unfolds to <code>exists k : Nat, succ(k) + 2 = 7</code>. The pair <code>(4, refl(7))</code> takes <code>k = 4</code>, and <code>refl(7)</code> is accepted as evidence because <code>succ(4) + 2</code> computes to <code>7</code>. Any other <code>k</code> fails, because <code>succ(k) + 2</code> would compute to a different number.</p>
+            <p><code>lt</code> is a function that returns a type, so its value is a type in <code>U0</code>: <code>lt(n, m)</code> is the statement that <code>n</code> is less than <code>m</code>. A value of it is evidence: a number <code>k</code> together with a proof that <code>succ(k) + n = m</code>. This <code>lt</code> is written out to show <code>exists</code> at work. <code>naturals</code> has its own <code>&lt;</code>, computed rather than existential; <a href="#library-order">a note at the end of this section</a> shows how to use it.</p>
+            <p><code>two_lt_seven</code> proves <code>lt(2, 7)</code>, which unfolds to <code>exists k : Nat. succ(k) + 2 = 7</code>. The pair <code>(4, refl(7))</code> takes <code>k = 4</code>, and <code>refl(7)</code> is accepted as evidence because <code>succ(4) + 2</code> computes to <code>7</code>. Any other <code>k</code> fails, because <code>succ(k) + 2</code> would compute to a different number.</p>
             <p>The REPL at the bottom of this page checks Cubist one entry at a time. <code>typeof</code> shows the type of a term, and <code>evaluate</code> computes its value; unlike the directive, it needs no expected value. Here the REPL has the example above loaded:</p>
             <pre><code data-check="repl">&gt; typeof lt;
 Nat -&gt; Nat -&gt; U0
-&gt; evaluate two_lt_seven;
-(4, refl(7))
-&gt; evaluate succ(4) + 2;
-7
 &gt; evaluate lt;
-fun (n m : Nat) =&gt; exists k : Nat, succ(induction k as k1 return Nat { zero =&gt; n; succ h =&gt; succ(h); }) = m</code></pre>
+fun (n, m : Nat) =&gt; exists k : Nat. succ(induction k as k1 return Nat { zero =&gt; n; succ h =&gt; succ(h); }) = m
+&gt; typeof two_lt_seven;
+lt(2, 7)
+&gt; evaluate two_lt_seven;
+(4, refl(7))</code></pre>
             <p><code>lt</code> takes two numbers and returns a type in <code>U0</code>. Evaluating it unfolds every definition, <code>+</code> included. <code>naturals</code> defines <code>+</code> by recursion on its first argument: <code>0 + b</code> is <code>b</code>, and <code>succ(a) + b</code> is <code>succ(a + b)</code>. So <code>succ(k) + n</code> computes one step, to <code>succ(k + n)</code>. Then <code>k + n</code> is stuck, because <code>k</code> is a variable, not a numeral. It stays as the recursion that defines it: <code>induction k as k1 return Nat { zero => n; succ h => succ(h); }</code> reads “if <code>k</code> is <code>0</code>, the result is <code>n</code>; if it is a successor, the result is <code>succ(h)</code>, where <code>h</code> is the result for its predecessor”. With a numeral in place of <code>k</code>, the recursion runs to the end: <code>succ(4) + 2</code> computes to <code>7</code>. The chapter on <a href="induction.html#induction">natural numbers and inductive types</a> explains <code>induction</code>. <em>Fork into REPL</em> copies the session into the REPL bar, to continue it there.</p>
             <p>The same idea works for every <code>n</code>: <code>succ(n)</code> is greater than <code>n</code>, with <code>k = 0</code>. That gives the statement:</p>
             <pre><code data-check="accept">import naturals;
 
-def lt(n m : Nat) : U0 {
-  exact exists k : Nat, succ(k) + n = m;
+def lt(n, m : Nat) : U0 {
+  exact exists k : Nat. succ(k) + n = m;
 }
 
 // succ(n) is greater than n: take k = 0.
@@ -94,14 +94,14 @@ def lt_succ(n : Nat) : lt(n, succ(n)) {
 }
 
 // Every number has a greater one.
-def exists_greater_number : forall n : Nat, exists m : Nat, lt(n, m) {
+def exists_greater_number : forall n : Nat. exists m : Nat. lt(n, m) {
   intro n;                       // n : Nat
   exact (succ(n), lt_succ(n));   // the witness, and the evidence
 }</code></pre>
-            <p><code>lt_succ</code> proves <code>lt(n, succ(n))</code>, which unfolds to <code>exists k : Nat, succ(k) + n = succ(n)</code>. The pair <code>(0, refl(succ(n)))</code> takes <code>k = 0</code>, and <code>refl(succ(n))</code> is accepted as evidence because <code>succ(0) + n</code> computes to <code>succ(0 + n)</code> and then to <code>succ(n)</code>.</p>
+            <p><code>lt_succ</code> proves <code>lt(n, succ(n))</code>, which unfolds to <code>exists k : Nat. succ(k) + n = succ(n)</code>. The pair <code>(0, refl(succ(n)))</code> takes <code>k = 0</code>, and <code>refl(succ(n))</code> is accepted as evidence because <code>succ(0) + n</code> computes to <code>succ(0 + n)</code> and then to <code>succ(n)</code>.</p>
             <p><code>exists_greater_number</code> is proved in a block. At every point in a block there is a <strong>goal</strong>, the type still to be proved, and a <strong>context</strong>, the names available and their types. At the start the goal is the whole statement and the context is empty.</p>
             <ul>
-              <li><code>intro n;</code> takes the input of the <code>forall</code> and adds it to the context, as in <a href="types.html#tour-intro">chapter 1</a>. The context holds <code>n : Nat</code>, and the goal becomes <code>exists m : Nat, lt(n, m)</code>.</li>
+              <li><code>intro n;</code> takes the input of the <code>forall</code> and adds it to the context, as in <a href="types.html#tour-intro">chapter 1</a>. The context holds <code>n : Nat</code>, and the goal becomes <code>exists m : Nat. lt(n, m)</code>.</li>
               <li><code>exact (succ(n), lt_succ(n));</code> gives a value of exactly the goal type: the witness <code>succ(n)</code>, and the evidence <code>lt_succ(n) : lt(n, succ(n))</code>. It finishes the proof.</li>
             </ul>
             <p>In the proof workspace, or in any example here, click a proof-step line number to see its goal and context.</p>
@@ -117,24 +117,56 @@ fun (n : Nat) =&gt; (succ(n), 0, refl(succ(n)))
             <p>A proof block is a readable way to build a term. A proof of a <code>forall</code> statement is a function: given <code>n</code>, it returns the witness and the evidence. It can be written directly:</p>
             <pre><code data-check="accept">import naturals;
 
-def lt(n m : Nat) := exists k : Nat, succ(k) + n = m;
+def lt(n, m : Nat) := exists k : Nat. succ(k) + n = m;
 
-def exists_greater_number : forall n : Nat, exists m : Nat, lt(n, m) :=
+def exists_greater_number : forall n : Nat. exists m : Nat. lt(n, m) :=
   fun (n : Nat) =&gt; (succ(n), (0, refl(succ(n))));</code></pre>
             <p>Both forms produce the same kind of kernel term. The chapter on <a href="proof-blocks.html#goals">proof blocks</a> describes every statement a block can contain.</p>
             <p>A wrong proof is rejected with a message, and nothing is added. Here the witness is <code>n</code> itself, which is not greater than <code>n</code>: the evidence <code>lt_succ(n)</code> is about <code>succ(n)</code>.</p>
             <pre><code data-check="reject">import naturals;
 
-def lt(n m : Nat) := exists k : Nat, succ(k) + n = m;
+def lt(n, m : Nat) := exists k : Nat. succ(k) + n = m;
 
 def lt_succ(n : Nat) : lt(n, succ(n)) {
   exact (0, refl(succ(n)));
 }
 
-def not_greater : forall n : Nat, exists m : Nat, lt(n, m) {
+def not_greater : forall n : Nat. exists m : Nat. lt(n, m) {
   intro n;
   exact (n, lt_succ(n));  // Error: Type mismatch: found lt(n, succ(n)), expected lt(n, n).
 }</code></pre>
+            <aside class="note" id="library-order">
+            <p><strong>The library’s <code>&lt;</code>.</strong> The <code>lt</code> of this section is not the order that <code>naturals</code> provides. There, <code>n &lt; m</code> stands for <code>isLt(n, m)</code>, which is <code>succ(n) &lt;= m</code>, and <code>&lt;=</code> is defined by computation: <code>0 &lt;= m</code> is <code>Unit</code>, <code>succ(n) &lt;= 0</code> is <code>Void</code>, and <code>succ(n) &lt;= succ(m)</code> is <code>n &lt;= m</code>. A comparison of numerals computes to <code>Unit</code> when it is true, so <code>tt</code> proves it, and to <code>Void</code> when it is false, so nothing does.</p>
+            <pre><code data-check="accept">import naturals;
+
+// 2 &lt; 7 computes to Unit.
+def two_lt_seven : 2 &lt; 7 {
+  exact tt;
+}
+
+// n &lt; succ(n) is succ(n) &lt;= succ(n), which computes to n &lt;= n.
+def lt_succ(n : Nat) : n &lt; succ(n) {
+  exact nat_le_refl(n);
+}
+
+def exists_greater_number : forall n : Nat. exists m : Nat. n &lt; m {
+  intro n;
+  exact (succ(n), lt_succ(n));
+}</code></pre>
+            <pre><code data-check="repl">&gt; evaluate 2 &lt; 7;
+Unit
+&gt; evaluate 7 &lt; 2;
+Void
+&gt; evaluate exists_greater_number(5);
+(6, tt)</code></pre>
+            <pre><code data-check="reject">import naturals;
+
+def seven_lt_two : 7 &lt; 2 {
+  exact tt;  // Error: Type mismatch: found Unit, expected 7 &lt; 2.
+}</code></pre>
+            <p>With a variable, the computation stops at the variable, so proofs about <code>&lt;</code> use lemmas. <code>nat_le_refl(n) : n &lt;= n</code> proves <code>n &lt; succ(n)</code>, because <code>succ(n) &lt;= succ(n)</code> computes to <code>n &lt;= n</code>. Both definitions describe the same order. The library’s gives short proofs by computation; the one in this section says what a proof contains.</p>
+            <p>The library’s <code>&lt;</code> is defined by induction on natural numbers, which this chapter has not introduced yet. The chapter on natural numbers and inductive types returns to it: <a href="induction.html#order-by-induction">the order on natural numbers</a> shows its definition and proofs about it by induction.</p>
+            </aside>
           </section>
           <section id="checking">
             <h2>What checking means</h2>
@@ -203,7 +235,7 @@ def same(A : U0, x : A) : A {
   exact x;
 }
 
-def second_of_two(A : U0, x y : A) : A {
+def second_of_two(A : U0, x, y : A) : A {
   exact y;
 }</code></pre>
             <p>A term declaration ends with <code>;</code>. A block declaration ends with <code>}</code>. A short term with a stated type uses the typed term form, which means the same as a block with <code>exact</code>:</p>
@@ -240,35 +272,35 @@ axiom Oracle : Nat -&gt; Nat;</code></pre>
           </section>
           <section id="parameters">
             <h2>Parameters</h2>
-            <p>A parameter list is a comma-separated sequence of typed binders. Consecutive parameters with the same type may share it: <code>(A B : U0, x y : A)</code> means <code>(A : U0, B : U0, x : A, y : A)</code>. A later parameter’s type can mention earlier parameters, as <code>x : A</code> does.</p>
-            <pre><code data-check="accept">def flip_arguments(A B C : U0, f : A -&gt; B -&gt; C) : B -&gt; A -&gt; C {
-  intro b a;
+            <p>A parameter list is a comma-separated sequence of typed binders. Consecutive parameters with the same type may share it: <code>(A, B : U0, x, y : A)</code> means <code>(A : U0, B : U0, x : A, y : A)</code>. A later parameter’s type can mention earlier parameters, as <code>x : A</code> does.</p>
+            <pre><code data-check="accept">def flip_arguments(A, B, C : U0, f : A -&gt; B -&gt; C) : B -&gt; A -&gt; C {
+  intro b, a;
   exact f(a, b);
 }
 
-def pick_second(A B : U0, x y : A, b : B) := y;
+def pick_second(A, B : U0, x, y : A, b : B) := y;
 
 def picked := pick_second(Nat, Nat, 1, 2, 3);</code></pre>
             <p>A declaration with parameters is a function of them. Every argument is written at each use: there are no implicit arguments, so <code>pick_second</code> takes both types explicitly, here <code>Nat</code> twice. Arguments can also be supplied a few at a time:</p>
-            <pre><code data-check="accept">def first(A B : U0, a : A, b : B) := a;
+            <pre><code data-check="accept">def first(A, B : U0, a : A, b : B) := a;
 
 def first_number := first(Nat, Nat, 5);
 
 def five := first_number(7);</code></pre>
             <p><code>first_number</code> has type <code>Nat -> Nat</code>: it waits for the last argument. Supplying more arguments than a function takes is an error:</p>
-            <pre><code data-check="reject">def pick_first(A B : U0, a : A, b : B) := a;
+            <pre><code data-check="reject">def pick_first(A, B : U0, a : A, b : B) := a;
 
 def too_many := pick_first(Nat, Nat, 1, 2, 3);  // Error: Source application is not a function.</code></pre>
-            <p>Every parameter needs a type. After <code>x</code>, the parser expects either another name sharing the type or a colon:</p>
-            <pre><code data-check="reject">def untyped_parameter(x) := x;  // Error: Expected a name.</code></pre>
+            <p>Every parameter needs a type. After <code>x</code>, the parser expects a colon, or a comma and another name sharing the type:</p>
+            <pre><code data-check="reject">def untyped_parameter(x) := x;  // Error: Expected ':', found ')'.</code></pre>
             <h3 id="statement-placement">Parameters or a quantified type</h3>
-            <p>A statement can put its inputs in the parameters or in the result type. These two declarations have the same type, <code>forall A : U0, A -> A</code>:</p>
+            <p>A statement can put its inputs in the parameters or in the result type. These two declarations have the same type, <code>forall A : U0. A -> A</code>:</p>
             <pre><code data-check="accept">def in_parameters(A : U0, a : A) : A {
   exact a;
 }
 
-def in_type : forall A : U0, A -&gt; A {
-  intro A a;
+def in_type : forall A : U0. A -&gt; A {
+  intro A, a;
   exact a;
 }</code></pre>
             <p>Parameters are shorter. A quantified result type is better when the statement is a named proposition that other declarations reuse.</p>

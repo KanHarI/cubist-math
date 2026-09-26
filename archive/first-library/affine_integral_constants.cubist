@@ -4,10 +4,10 @@ import contour_sums;
 // The constant-integrand formula holds already for every finite subdivision,
 // without a continuity, fineness, or limiting assumption.
 def curve_subdivision_constant(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), coefficient : Complex(F),
-  a b : FieldUnitInterval(F, zero, one, lt),
+  a, b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :
   curve_subdivision_samples(
@@ -57,14 +57,14 @@ def curve_subdivision_constant(
 }
 
 def complex_constant_curve_uniform(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), value : Complex(F)
 ) :
   ComplexUniformCurve(
     F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => value)
   ) {
-  intro epsilon positive;
+  intro epsilon, positive;
   obtain (positiveOne, rest) := arithmetic;
   let close :=
     typed(
@@ -84,7 +84,7 @@ def complex_constant_curve_uniform(
     one, positiveOne,
     (
       fun (
-        s t : FieldUnitInterval(F, zero, one, lt),
+        s, t : FieldUnitInterval(F, zero, one, lt),
         near : FieldClose(
           F, addF, lt, field_interval_coordinate(F, zero, one, lt)(s),
           field_interval_coordinate(F, zero, one, lt)(t), one
@@ -95,12 +95,12 @@ def complex_constant_curve_uniform(
 }
 
 def complex_constant_sequence_converges(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), value : Complex(F)
 ) :
   ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => value), value) {
-  intro epsilon positive;
+  intro epsilon, positive;
   let close :=
     typed(
       ComplexClose(F, addF, lt, value, value, epsilon),
@@ -121,13 +121,13 @@ def complex_constant_sequence_converges(
 // Normalization of the constructed integral, not an assumed integral law:
 // integrating c gives c times the oriented displacement of the endpoints.
 def affine_dyadic_integral_constant(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), z slope coefficient : Complex(F),
-  a b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), z, slope, coefficient : Complex(F),
+  a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -161,7 +161,7 @@ def affine_dyadic_integral_constant(
       (fun (x : Complex(F)) => coefficient), a, b, ordered
     );
   let constant := (fun (n : Nat) => value);
-  have computes : forall n : Nat, constant(n) = sequence(n) {
+  have computes : forall n : Nat. constant(n) = sequence(n) {
     intro n;
     exact sym(
       curve_subdivision_constant(

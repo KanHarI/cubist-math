@@ -8,15 +8,15 @@ def residue_hom_evaluation(
   x : af_carrier(L), f : PolynomialResidue(K, M) -> af_carrier(L),
   f0 : f(residue_zero(K, M)) = field_zero(L),
   fa : (
-    forall r : PolynomialResidue(K, M), forall s : PolynomialResidue(K, M),
+    forall r : PolynomialResidue(K, M). forall s : PolynomialResidue(K, M).
     f(residue_add(K, M, r, s)) = field_add(L, f(r), f(s))
   ),
   fm : (
-    forall r : PolynomialResidue(K, M), forall s : PolynomialResidue(K, M),
+    forall r : PolynomialResidue(K, M). forall s : PolynomialResidue(K, M).
     f(residue_mul(K, M, r, s)) = field_mul(L, f(r), f(s))
   ),
   constants : (
-    forall a : af_carrier(K), f(residue_constant(K, M, a)) = field_embedding_map(K, L, e, a)
+    forall a : af_carrier(K). f(residue_constant(K, M, a)) = field_embedding_map(K, L, e, a)
   ), generator : f(adjoined_root(K, M)) = x, p : Polynomial(K)
 ) :
   f(residue_reduce(K, M, p)) = polynomial_eval(K, L, e, p, x) {
@@ -67,7 +67,7 @@ def adjoin_root_embedding_unique(
   root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x),
   h : FieldEmbedding(PolynomialResidueField(K, M, irreducible), L),
   constants : (
-    forall a : af_carrier(K),
+    forall a : af_carrier(K).
     field_embedding_map(PolynomialResidueField(K, M, irreducible), L, h, residue_constant(K, M, a)) = field_embedding_map(
       K, L, e, a
     )
@@ -80,7 +80,7 @@ def adjoin_root_embedding_unique(
   let R := PolynomialResidueField(K, M, irreducible);
   let f := field_embedding_map(R, L, h);
   obtain (f0, f1, fn, fa, fm) := field_embedding_preserves(R, L, h);
-  have same : forall r : PolynomialResidue(K, M), f(r) = residue_evaluate(K, M, L, e, x, r) {
+  have same : forall r : PolynomialResidue(K, M). f(r) = residue_evaluate(K, M, L, e, x, r) {
     intro r;
     exact with unfolding [] {
       trans(

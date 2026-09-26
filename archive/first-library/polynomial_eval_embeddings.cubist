@@ -1,7 +1,7 @@
 import polynomial_eval_characterization;
 
 def polynomial_eval_horner(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p : Polynomial(K)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p : Polynomial(K)
 ) :
   polynomial_eval(K, L, e, p, x) = field_add(
     L, field_embedding_map(K, L, e, polynomial_coefficients(K, p, 0)),
@@ -33,7 +33,7 @@ def polynomial_eval_horner(
 // Evaluation commutes with a field embedding, with its coefficient embedding
 // explicitly composed. This supplies the commuting squares for root transport.
 def polynomial_eval_embedding(
-  K L T : AlgebraicField, e : FieldEmbedding(K, L), h : FieldEmbedding(L, T), p : Polynomial(K),
+  K, L, T : AlgebraicField, e : FieldEmbedding(K, L), h : FieldEmbedding(L, T), p : Polynomial(K),
   x : af_carrier(L)
 ) :
   field_embedding_map(L, T, h, polynomial_eval(K, L, e, p, x)) = polynomial_eval(
@@ -65,7 +65,7 @@ def polynomial_eval_embedding(
 }
 
 def polynomial_root_image(
-  K L T : AlgebraicField, e : FieldEmbedding(K, L), h : FieldEmbedding(L, T), p : Polynomial(K),
+  K, L, T : AlgebraicField, e : FieldEmbedding(K, L), h : FieldEmbedding(L, T), p : Polynomial(K),
   x : af_carrier(L), root : polynomial_eval(K, L, e, p, x) = field_zero(L)
 ) :
   polynomial_eval(K, T, field_embedding_compose(K, L, T, e, h), p, field_embedding_map(L, T, h, x)) = field_zero(

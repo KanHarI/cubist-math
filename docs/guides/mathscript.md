@@ -96,7 +96,7 @@ view its source. An imported but unused axiom does not appear in that result's
 list. The module-wide count is displayed separately. The CLI's `show` command
 also lists dependencies.
 
-Types include `forall x : A, B`, `exists x : A, B`, `A -> B`, `A and B`, and
+Types include `forall x : A. B`, `exists x : A. B`, `A -> B`, `A and B`, and
 `A or B`. A pair is `(a, b)`. Its expected type supplies the dependent family;
 `typed(T, expression)` provides an annotation where inference needs one.
 A tuple `(a, b, c, d)` is a macro for `(a, (b, (c, d)))`; the same notation
@@ -261,7 +261,7 @@ calculation blocks, implicit arguments, and editor completion are future work.
 A named proposition can be used directly as a definition's result type:
 
 ```text
-def InfinitelyManyPrimes = forall n : Nat, exists p : Nat, Prime(p) and n < p;
+def InfinitelyManyPrimes = forall n : Nat. exists p : Nat. Prime(p) and n < p;
 
 def euclid : InfinitelyManyPrimes {
   intro n;
@@ -271,7 +271,7 @@ def euclid : InfinitelyManyPrimes {
 
 `intro n;` opens the outer `forall` (or implication) of the checked goal, including through a definition name. It records the new local assumption and remaining goal for source inspection. The kernel checks the resulting function against the named proposition.
 
-For a goal `forall A : U0, IsSet(A) -> IsSet(A)`, `intro A;` introduces
+For a goal `forall A : U0. IsSet(A) -> IsSet(A)`, `intro A;` introduces
 `A : U0`, then `intro setA;` introduces `setA : IsSet(A)`. The remaining goal
 is `IsSet(A)`, proved by `exact setA;`. The identifier `setA` is a name you
 choose; its type is inferred from the next input of the goal. `IsSet` comes

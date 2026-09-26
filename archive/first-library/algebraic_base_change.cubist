@@ -4,11 +4,11 @@ import polynomial_eval_embeddings;
 import polynomial_irreducible_factors;
 
 def bounded_eval_base_change(
-  K R L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), x : af_carrier(L),
+  K, R, L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), x : af_carrier(L),
   n : Nat
 ) :=
   induction n as k return (
-    forall f : FormalSeries(K),
+    forall f : FormalSeries(K).
     bounded_eval(R, L, h, x, k, (fun (j : Nat) => field_embedding_map(K, R, i, f(j)))) = bounded_eval(
       K, L, field_embedding_compose(K, R, L, i, h), x, k, f
     )
@@ -25,7 +25,7 @@ def bounded_eval_base_change(
 
 // Changing the coefficient field commutes with evaluation in a larger field.
 def polynomial_eval_base_change(
-  K R L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), p : Polynomial(K),
+  K, R, L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), p : Polynomial(K),
   x : af_carrier(L)
 ) :
   polynomial_eval(R, L, h, polynomial_map(K, R, i, p), x) = polynomial_eval(
@@ -49,12 +49,12 @@ def polynomial_eval_base_change(
 }
 
 def algebraic_element_enlarge_base(
-  K R L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
+  K, R, L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
   e : FieldEmbedding(K, L), triangle : FieldTower(K, R, L, i, h, e), x : af_carrier(L),
   algebraic : AlgebraicElement(K, L, e, x)
 ) :
   AlgebraicElement(R, L, h, x) {
-  let W := (exists p : Polynomial(K), PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
+  let W := (exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
   have send : W -> AlgebraicElement(R, L, h, x) {
     intro witness;
     obtain (p, nonzero, root) := witness;
@@ -65,9 +65,9 @@ def algebraic_element_enlarge_base(
         cong((fun (j : FieldEmbedding(K, L)) => polynomial_eval(K, L, j, p, x)), triangle)
       );
     exact merely(
-      (exists q : Polynomial(R), PolynomialNonzero(R, q) and PolynomialRoot(R, L, h, q, x)),
+      (exists q : Polynomial(R). PolynomialNonzero(R, q) and PolynomialRoot(R, L, h, q, x)),
       typed(
-        (exists q : Polynomial(R), PolynomialNonzero(R, q) and PolynomialRoot(R, L, h, q, x)),
+        (exists q : Polynomial(R). PolynomialNonzero(R, q) and PolynomialRoot(R, L, h, q, x)),
         (q, polynomial_map_nonzero(K, R, i, p, nonzero), trans(same, root))
       )
     );
@@ -75,13 +75,13 @@ def algebraic_element_enlarge_base(
   exact mere_eliminate(
     W, AlgebraicElement(R, L, h, x),
     mere_is_prop(
-      exists q : Polynomial(R), PolynomialNonzero(R, q) and PolynomialRoot(R, L, h, q, x)
+      exists q : Polynomial(R). PolynomialNonzero(R, q) and PolynomialRoot(R, L, h, q, x)
     ), send, algebraic
   );
 }
 
 def polynomial_map_reflects_unit(
-  K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), unit : PolynomialUnit(L, polynomial_map(K, L, e, p))
 ) :
   PolynomialUnit(K, p) {
@@ -98,23 +98,23 @@ def polynomial_map_reflects_unit(
 // This is a hypothesis on a field, not a new axiom or an assertion that an
 // algebraic closure has already been constructed.
 def AlgebraicallyClosed(K : AlgebraicField) :=
-  forall p : Polynomial(K), PolynomialNonzero(K, p) -> (PolynomialUnit(K, p) -> Void)
-  -> Mere(exists x : af_carrier(K), PolynomialRoot(K, K, field_embedding_identity(K), p, x));
+  forall p : Polynomial(K). PolynomialNonzero(K, p) -> (PolynomialUnit(K, p) -> Void)
+  -> Mere(exists x : af_carrier(K). PolynomialRoot(K, K, field_embedding_identity(K), p, x));
 
 def algebraically_closed_extension_root(
-  K T : AlgebraicField, e : FieldEmbedding(K, T), closed : AlgebraicallyClosed(T),
+  K, T : AlgebraicField, e : FieldEmbedding(K, T), closed : AlgebraicallyClosed(T),
   p : Polynomial(K), nonzero : PolynomialNonzero(K, p), nonunit : PolynomialUnit(K, p) -> Void
 ) :
-  Mere(exists x : af_carrier(T), PolynomialRoot(K, T, e, p, x)) {
+  Mere(exists x : af_carrier(T). PolynomialRoot(K, T, e, p, x)) {
   let q := polynomial_map(K, T, e, p);
-  let W := (exists x : af_carrier(T), PolynomialRoot(T, T, field_embedding_identity(T), q, x));
-  have send : W -> (exists x : af_carrier(T), PolynomialRoot(K, T, e, p, x)) {
+  let W := (exists x : af_carrier(T). PolynomialRoot(T, T, field_embedding_identity(T), q, x));
+  have send : W -> (exists x : af_carrier(T). PolynomialRoot(K, T, e, p, x)) {
     intro witness;
     obtain (x, root) := witness;
     exact (x, trans(sym(polynomial_eval_mapped(K, T, e, p, x)), root));
   }
   exact mere_map(
-    W, (exists x : af_carrier(T), PolynomialRoot(K, T, e, p, x)), send,
+    W, (exists x : af_carrier(T). PolynomialRoot(K, T, e, p, x)), send,
     closed(
       q, polynomial_map_nonzero(K, T, e, p, nonzero),
       (
@@ -128,7 +128,7 @@ def algebraically_closed_extension_root(
 
 // An injective map reflects a polynomial equation, not only preserves it.
 def polynomial_root_reflect(
-  K R L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
+  K, R, L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
   e : FieldEmbedding(K, L), triangle : FieldTower(K, R, L, i, h, e), p : Polynomial(K),
   x : af_carrier(R), root : PolynomialRoot(K, L, e, p, field_embedding_map(R, L, h, x))
 ) :

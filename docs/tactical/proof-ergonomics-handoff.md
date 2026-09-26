@@ -8,7 +8,7 @@ the C/WASM cubical kernel and report no axiom dependencies.
 
 ## Implemented source fragment
 
-- Grouped `intro x y;`, grouped typed declaration/quantifier/lambda binders,
+- Grouped `intro x, y;`, grouped typed declaration/quantifier/lambda binders,
   including consecutive `Universe` schema parameters,
   expected-type `fun x => ...`, `have h := e;`, and `have h : T := e;`.
   A source `fun` token with several binder groups opens the complete checked
@@ -393,7 +393,7 @@ changes the kernel or its equality rules.
   step's `by` token, and both the elaborator and the template link walk use it.
 - Older than this branch: generated names were `stem + serial`, so `a1` with
   serial 1 and `a` with serial 11 were both `a11`. The second binder captured
-  the first, and `forall a : Nat, a = a1` checked as `forall a, a = a`. The
+  the first, and `forall a : Nat. a = a1` checked as `forall a, a = a`. The
   kernel stayed consistent, but the checked statement differed from the
   source. A stem ending in a digit now gets a separator, making generated
   names unique, and every binding site asserts that its name is new.

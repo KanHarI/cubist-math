@@ -3,21 +3,21 @@ import polynomial_ideals;
 // Divisibility and invertibility are propositions: no arbitrary quotient or
 // inverse is chosen by the mathematical statement.
 def PolynomialUnit(K : AlgebraicField, p : Polynomial(K)) :=
-  Mere(exists u : Polynomial(K), polynomial_mul(K, p, u) = polynomial_one(K));
+  Mere(exists u : Polynomial(K). polynomial_mul(K, p, u) = polynomial_one(K));
 
 def polynomial_unit_prop(K : AlgebraicField, p : Polynomial(K)) :=
-  mere_is_prop(exists u : Polynomial(K), polynomial_mul(K, p, u) = polynomial_one(K));
+  mere_is_prop(exists u : Polynomial(K). polynomial_mul(K, p, u) = polynomial_one(K));
 
-def BezoutCombination(K : AlgebraicField, p q r : Polynomial(K)) :=
-  exists a : Polynomial(K), exists b : Polynomial(K),
+def BezoutCombination(K : AlgebraicField, p, q, r : Polynomial(K)) :=
+  exists a : Polynomial(K). exists b : Polynomial(K).
   r = polynomial_add(K, polynomial_mul(K, a, p), polynomial_mul(K, b, q));
 
-def GeneratedPair(K : AlgebraicField, p q r : Polynomial(K)) := Mere(BezoutCombination(K, p, q, r));
+def GeneratedPair(K : AlgebraicField, p, q, r : Polynomial(K)) := Mere(BezoutCombination(K, p, q, r));
 
 def polynomial_zero_mul(K : AlgebraicField, p : Polynomial(K)) :=
   trans(polynomial_mul_comm(K, polynomial_zero(K), p), polynomial_mul_zero(K, p));
 
-def bezout_zero(K : AlgebraicField, p q : Polynomial(K)) :
+def bezout_zero(K : AlgebraicField, p, q : Polynomial(K)) :
   BezoutCombination(K, p, q, polynomial_zero(K)) {
   exact (
     polynomial_zero(K), polynomial_zero(K),
@@ -40,7 +40,7 @@ def bezout_zero(K : AlgebraicField, p q : Polynomial(K)) :
 }
 
 def bezout_add(
-  K : AlgebraicField, p q x y : Polynomial(K), hx : BezoutCombination(K, p, q, x),
+  K : AlgebraicField, p, q, x, y : Polynomial(K), hx : BezoutCombination(K, p, q, x),
   hy : BezoutCombination(K, p, q, y)
 ) :
   BezoutCombination(K, p, q, polynomial_add(K, x, y)) {
@@ -74,7 +74,7 @@ def bezout_add(
   );
 }
 
-def bezout_mul(K : AlgebraicField, p q x c : Polynomial(K), hx : BezoutCombination(K, p, q, x)) :
+def bezout_mul(K : AlgebraicField, p, q, x, c : Polynomial(K), hx : BezoutCombination(K, p, q, x)) :
   BezoutCombination(K, p, q, polynomial_mul(K, c, x)) {
   obtain (a, b, ex) := hx;
   exact (
@@ -101,11 +101,11 @@ def bezout_mul(K : AlgebraicField, p q x c : Polynomial(K), hx : BezoutCombinati
   );
 }
 
-def GeneratedPairIdeal(K : AlgebraicField, p q : Polynomial(K)) : PolynomialIdeal(K) {
+def GeneratedPairIdeal(K : AlgebraicField, p, q : Polynomial(K)) : PolynomialIdeal(K) {
   let P := GeneratedPair(K, p, q);
   have add :
-    forall x : Polynomial(K), forall y : Polynomial(K), P(x) -> P(y) -> P(polynomial_add(K, x, y)) {
-    intro x y hx hy;
+    forall x : Polynomial(K). forall y : Polynomial(K). P(x) -> P(y) -> P(polynomial_add(K, x, y)) {
+    intro x, y, hx, hy;
     exact mere_eliminate(
       BezoutCombination(K, p, q, x), P(polynomial_add(K, x, y)),
       mere_is_prop(BezoutCombination(K, p, q, polynomial_add(K, x, y))),
@@ -121,7 +121,7 @@ def GeneratedPairIdeal(K : AlgebraicField, p q : Polynomial(K)) : PolynomialIdea
     P, (fun (r : Polynomial(K)) => mere_is_prop(BezoutCombination(K, p, q, r))),
     merely(BezoutCombination(K, p, q, polynomial_zero(K)), bezout_zero(K, p, q)), add,
     (
-      fun (c x : Polynomial(K), hx : P(x)) => mere_map(
+      fun (c, x : Polynomial(K), hx : P(x)) => mere_map(
         BezoutCombination(K, p, q, x), BezoutCombination(K, p, q, polynomial_mul(K, c, x)),
         bezout_mul(K, p, q, x, c), hx
       )
@@ -129,7 +129,7 @@ def GeneratedPairIdeal(K : AlgebraicField, p q : Polynomial(K)) : PolynomialIdea
   );
 }
 
-def generated_pair_left(K : AlgebraicField, p q : Polynomial(K)) : GeneratedPair(K, p, q, p) {
+def generated_pair_left(K : AlgebraicField, p, q : Polynomial(K)) : GeneratedPair(K, p, q, p) {
   exact merely(
     BezoutCombination(K, p, q, p),
     typed(
@@ -155,7 +155,7 @@ def generated_pair_left(K : AlgebraicField, p q : Polynomial(K)) : GeneratedPair
   );
 }
 
-def generated_pair_right(K : AlgebraicField, p q : Polynomial(K)) : GeneratedPair(K, p, q, q) {
+def generated_pair_right(K : AlgebraicField, p, q : Polynomial(K)) : GeneratedPair(K, p, q, q) {
   exact merely(
     BezoutCombination(K, p, q, q),
     typed(
@@ -182,14 +182,14 @@ def generated_pair_right(K : AlgebraicField, p q : Polynomial(K)) : GeneratedPai
   );
 }
 
-def PolynomialCoprime(K : AlgebraicField, p q : Polynomial(K)) :=
-  forall g : Polynomial(K), PolynomialDivides(K, g, p) -> PolynomialDivides(K, g, q)
+def PolynomialCoprime(K : AlgebraicField, p, q : Polynomial(K)) :=
+  forall g : Polynomial(K). PolynomialDivides(K, g, p) -> PolynomialDivides(K, g, q)
   -> PolynomialUnit(K, g);
 
 // The principal-ideal theorem supplies the coefficients. Coprimality is only
 // a condition on common divisors, not an assumed Bezout identity.
 def polynomial_bezout(
-  K : AlgebraicField, p q : Polynomial(K), nonzero : PolynomialNonzero(K, p),
+  K : AlgebraicField, p, q : Polynomial(K), nonzero : PolynomialNonzero(K, p),
   coprime : PolynomialCoprime(K, p, q)
 ) :
   GeneratedPair(K, p, q, polynomial_one(K)) {
@@ -203,7 +203,7 @@ def polynomial_bezout(
         g, divides(p, generated_pair_left(K, p, q)), divides(q, generated_pair_right(K, p, q))
       );
     have fromInverse :
-      (exists u : Polynomial(K), polynomial_mul(K, g, u) = polynomial_one(K)) -> Result {
+      (exists u : Polynomial(K). polynomial_mul(K, g, u) = polynomial_one(K)) -> Result {
       intro inverse;
       obtain (u, equation) := inverse;
       let ug := polynomial_mul(K, u, g);
@@ -212,15 +212,15 @@ def polynomial_bezout(
       );
     }
     exact mere_eliminate(
-      (exists u : Polynomial(K), polynomial_mul(K, g, u) = polynomial_one(K)), Result,
+      (exists u : Polynomial(K). polynomial_mul(K, g, u) = polynomial_one(K)), Result,
       mere_is_prop(BezoutCombination(K, p, q, polynomial_one(K))), fromInverse, unit
     );
   }
   let inhabited :=
     merely(
-      (exists g : Polynomial(K), polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)),
+      (exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)),
       typed(
-        (exists g : Polynomial(K), polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)),
+        (exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)),
         (p, generated_pair_left(K, p, q), nonzero)
       )
     );

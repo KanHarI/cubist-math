@@ -12,7 +12,7 @@ def PolynomialAdditiveGroup(K : AlgebraicField) :=
         (
           fun (p : Polynomial(K)) => typed(
             (
-              exists q : Polynomial(K),
+              exists q : Polynomial(K).
               GroupInverseLaws(Polynomial(K), polynomial_zero(K), polynomial_add(K), p, q)
             ),
             (polynomial_neg(K, p), polynomial_add_inverse(K, p), polynomial_add_inverse_right(K, p))
@@ -22,11 +22,11 @@ def PolynomialAdditiveGroup(K : AlgebraicField) :=
     )
   );
 
-def polynomial_subtract(K : AlgebraicField, p q : Polynomial(K)) :=
+def polynomial_subtract(K : AlgebraicField, p, q : Polynomial(K)) :=
   polynomial_add(K, p, polynomial_neg(K, q));
 
 def polynomial_subtract_zero_equal(
-  K : AlgebraicField, p q : Polynomial(K), zero : polynomial_subtract(K, p, q) = polynomial_zero(K)
+  K : AlgebraicField, p, q : Polynomial(K), zero : polynomial_subtract(K, p, q) = polynomial_zero(K)
 ) :
   p = q {
   exact group_cancel_right(
@@ -36,7 +36,7 @@ def polynomial_subtract_zero_equal(
 }
 
 def polynomial_difference_of_sums(
-  K : AlgebraicField, a b c d : Polynomial(K),
+  K : AlgebraicField, a, b, c, d : Polynomial(K),
   same : polynomial_add(K, a, b) = polynomial_add(K, c, d)
 ) :
   polynomial_subtract(K, a, c) = polynomial_subtract(K, d, b) {
@@ -62,7 +62,7 @@ def polynomial_difference_of_sums(
   );
 }
 
-def polynomial_neg_mul(K : AlgebraicField, p q : Polynomial(K)) :
+def polynomial_neg_mul(K : AlgebraicField, p, q : Polynomial(K)) :
   polynomial_mul(K, polynomial_neg(K, p), q) = polynomial_neg(K, polynomial_mul(K, p, q)) {
   exact trans(
     polynomial_mul_comm(K, polynomial_neg(K, p), q),
@@ -70,7 +70,7 @@ def polynomial_neg_mul(K : AlgebraicField, p q : Polynomial(K)) :
   );
 }
 
-def polynomial_subtract_mul(K : AlgebraicField, p q r : Polynomial(K)) :
+def polynomial_subtract_mul(K : AlgebraicField, p, q, r : Polynomial(K)) :
   polynomial_mul(K, polynomial_subtract(K, p, q), r) = polynomial_subtract(
     K, polynomial_mul(K, p, r), polynomial_mul(K, q, r)
   ) {
@@ -81,7 +81,7 @@ def polynomial_subtract_mul(K : AlgebraicField, p q r : Polynomial(K)) :
 }
 
 def polynomial_small_multiple_zero(
-  K : AlgebraicField, q divisor : Polynomial(K), d : Nat,
+  K : AlgebraicField, q, divisor : Polynomial(K), d : Nat,
   degree : polynomial_cutoff(K, divisor) = succ(d),
   support : SeriesSupport(K, polynomial_coefficients(K, polynomial_mul(K, q, divisor)), d)
 ) :
@@ -106,10 +106,10 @@ def polynomial_small_multiple_zero(
 // Uniqueness uses formal degree and the integral-domain property; equality
 // of evaluations on the field would not be sufficient here.
 def polynomial_division_unique(
-  K : AlgebraicField, p divisor : Polynomial(K), d : Nat,
-  degree : polynomial_cutoff(K, divisor) = succ(d), q r : Polynomial(K),
+  K : AlgebraicField, p, divisor : Polynomial(K), d : Nat,
+  degree : polynomial_cutoff(K, divisor) = succ(d), q, r : Polynomial(K),
   equation : p = polynomial_add(K, polynomial_mul(K, q, divisor), r),
-  support : SeriesSupport(K, polynomial_coefficients(K, r), d), otherQ otherR : Polynomial(K),
+  support : SeriesSupport(K, polynomial_coefficients(K, r), d), otherQ, otherR : Polynomial(K),
   otherEquation : p = polynomial_add(K, polynomial_mul(K, otherQ, divisor), otherR),
   otherSupport : SeriesSupport(K, polynomial_coefficients(K, otherR), d)
 ) :

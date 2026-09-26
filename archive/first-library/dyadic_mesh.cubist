@@ -2,7 +2,7 @@ import dyadic_sampling;
 import sample_condition_maps;
 
 def interval_tagged_width_admissible(
-  F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F, n : Nat,
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   valid : SampleTagged(
@@ -15,8 +15,8 @@ def interval_tagged_width_admissible(
   let condition := IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
   let other := IntervalTagWithin(F, zero, one, lt);
   have mapping :
-    forall a : I, forall b : I, forall tag : I, condition(a, b, tag) -> other(a, b, tag) {
-    intro a b tag data;
+    forall a : I. forall b : I. forall tag : I. condition(a, b, tag) -> other(a, b, tag) {
+    intro a, b, tag, data;
     exact field_fst(
       other(a, b, tag),
       FieldLe(F, lt, interval_difference(F, zero, one, addF, negF, lt)(a, b), radius), data
@@ -26,8 +26,8 @@ def interval_tagged_width_admissible(
 }
 
 def interval_tagged_width_mesh(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), radius mesh : F,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), radius, mesh : F,
   small : lt(radius, mesh), n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
@@ -40,10 +40,10 @@ def interval_tagged_width_mesh(
   let I := FieldUnitInterval(F, zero, one, lt);
   let condition := IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
   let width := interval_difference(F, zero, one, addF, negF, lt);
-  let related := (fun (a b : I) => lt(width(a, b), mesh));
+  let related := (fun (a, b : I) => lt(width(a, b), mesh));
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
-  have mapping : forall a : I, forall b : I, forall tag : I, condition(a, b, tag) -> related(a, b) {
-    intro a b tag data;
+  have mapping : forall a : I. forall b : I. forall tag : I. condition(a, b, tag) -> related(a, b) {
+    intro a, b, tag, data;
     obtain (within, bounded) := data;
     exact leLt(width(a, b), radius, mesh, bounded, small);
   }
@@ -54,11 +54,11 @@ def interval_tagged_width_mesh(
 // the requested mesh. Scalar decay for all positive tolerances is proved
 // separately in dyadic_decay, using the Archimedean assumption.
 def dyadic_interval_samples_fine(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F, addF(half(x), half(x)) = x), depth : Nat,
-  a b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : Nat,
+  a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -67,7 +67,7 @@ def dyadic_interval_samples_fine(
     dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b)), mesh
   )
 ) :
-  exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+  exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
   (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
   and IntervalAdmissibleTags(
     F, zero, one, lt, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),

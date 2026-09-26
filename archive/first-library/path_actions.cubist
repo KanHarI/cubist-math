@@ -3,33 +3,33 @@ import equivalences;
 import equivalence_from_inverse;
 
 // Canonical cubical concatenation. Its unit laws are paths, not strict J rules.
-def append_path(A : U0, x y z : A, p : x = y, q : y = z) := trans(p, q);
+def append_path(A : U0, x, y, z : A, p : x = y, q : y = z) := trans(p, q);
 
-def append_path_agrees(A : U0, x y z : A, p : x = y, q : y = z) := refl(trans(p, q));
+def append_path_agrees(A : U0, x, y, z : A, p : x = y, q : y = z) := refl(trans(p, q));
 
 // Appending q and then its reverse restores the original path.
-def append_path_left_inverse(A : U0, x y z : A, q : y = z) :=
+def append_path_left_inverse(A : U0, x, y, z : A, q : y = z) :=
   fun (p : x = y) => append_cancel_inverse(A, x, y, z, p, q);
 
 // The raw other inverse law is used as input to adjointification.
-def append_path_right_inverse_raw(A : U0, x y z : A, q : y = z) :=
+def append_path_right_inverse_raw(A : U0, x, y, z : A, q : y = z) :=
   fun (p : x = z) => append_inverse_cancel(A, x, z, y, p, q);
 
 // Keep the forward map, inverse and left inverse. Correct the counit so its
 // triangle holds for the actual cubical composition operation.
-def append_path_right_inverse(A : U0, x y z : A, q : y = z) :=
+def append_path_right_inverse(A : U0, x, y, z : A, q : y = z) :=
   adjoint_counit(
     U0, (x = y), (x = z), (fun (p : x = y) => trans(p, q)), (fun (p : x = z) => trans(p, sym(q))),
     append_path_left_inverse(A, x, y, z, q), append_path_right_inverse_raw(A, x, y, z, q)
   );
 
-def append_path_triangle(A : U0, x y z : A, q : y = z) :=
+def append_path_triangle(A : U0, x, y, z : A, q : y = z) :=
   adjoint_triangle(
     U0, (x = y), (x = z), (fun (p : x = y) => trans(p, q)), (fun (p : x = z) => trans(p, sym(q))),
     append_path_left_inverse(A, x, y, z, q), append_path_right_inverse_raw(A, x, y, z, q)
   );
 
-def append_path_equivalence(A : U0, x y z : A, q : y = z) :=
+def append_path_equivalence(A : U0, x, y, z : A, q : y = z) :=
   typed(
     Equiv(U0, (x = y), (x = z)),
     (
@@ -41,7 +41,7 @@ def append_path_equivalence(A : U0, x y z : A, q : y = z) :=
 
 // Applying f to the concatenation filling gives a second filling of its
 // image square. Compare their top edges using an additional cubical face.
-def map_concat(A B : U0, f : A -> B, x y z : A, p : x = y, q : y = z) :=
+def map_concat(A, B : U0, f : A -> B, x, y, z : A, p : x = y, q : y = z) :=
   path(
     fun (interval_naturality : Interval) => PathP(fun (interval_path : Interval) => B, f(x), f(z)),
     fun (interval_naturality : Interval) => path(
@@ -72,26 +72,26 @@ def map_concat(A B : U0, f : A -> B, x y z : A, p : x = y, q : y = z) :=
     )
   );
 
-def map_inverse(A B : U0, f : A -> B, x y : A, p : x = y) := refl(cong(f, sym(p)));
+def map_inverse(A, B : U0, f : A -> B, x, y : A, p : x = y) := refl(cong(f, sym(p)));
 
-def inverse_twice(A : U0, x y : A, p : x = y) := refl(p);
+def inverse_twice(A : U0, x, y : A, p : x = y) := refl(p);
 
 // Pi composition precomposes the predicate with inverse transport. Its
 // universe-valued output then needs the explicit constant-transport path.
-def transport_predicate(A : U0, C : A -> U0, x y : A, p : x = y, P : C(x) -> U0, v : C(y)) :
+def transport_predicate(A : U0, C : A -> U0, x, y : A, p : x = y, P : C(x) -> U0, v : C(y)) :
   (along((fun (point : A) => C(point) -> U0)) by p from P)(v) = P(along C by sym(p) from v) {
   exact transport_constant(A, U0, x, y, p, P(along C by sym(p) from v));
 }
 
 def close_path(
-  X : U0, origin x y : X, leftConnector : origin = x, rightConnector : origin = y, p : x = y
+  X : U0, origin, x, y : X, leftConnector : origin = x, rightConnector : origin = y, p : x = y
 ) :
   origin = origin {
   exact trans(trans(leftConnector, p), sym(rightConnector));
 }
 
 def reopen_path(
-  X : U0, origin x y : X, leftConnector : origin = x, rightConnector : origin = y,
+  X : U0, origin, x, y : X, leftConnector : origin = x, rightConnector : origin = y,
   p : origin = origin
 ) :
   x = y {
@@ -101,7 +101,7 @@ def reopen_path(
 // Cancel the right connector, then the left connector. Each cancellation
 // is a checked path-algebra lemma, without a strict reflexivity base case.
 def reopen_closed_path(
-  X : U0, origin x y : X, leftConnector : origin = x, rightConnector : origin = y, p : x = y
+  X : U0, origin, x, y : X, leftConnector : origin = x, rightConnector : origin = y, p : x = y
 ) :
   reopen_path(
     X, origin, x, y, leftConnector, rightConnector,

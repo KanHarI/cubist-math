@@ -9,7 +9,7 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
-import { keywords, builtinForms } from "./source-tokens.mjs";
+import { numeralExpansion, tokenStyle } from "./source-tokens.mjs";
 import { libraryModules } from "./mathscript/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
@@ -491,11 +491,8 @@ function renderSource() {
         code.append(link);
       } else {
         const info = linkMap.get(start);
-        const expansion = last.mode === "mathematical" && /^[0-9]+$/.test(text) && Number(text) <= 256
-          ? "succ(".repeat(Number(text)) + "0" + ")".repeat(Number(text))
-          : info?.expansion;
-        const style = keywords.has(text) || builtinForms.has(text) || /^U[0-9]+$/.test(text)
-          ? "keyword" : expansion ? "macro" : "";
+        const expansion = (last.mode === "mathematical" ? numeralExpansion(text) : null) ?? info?.expansion;
+        const style = tokenStyle(text, expansion);
         if (info) {
           const button = document.createElement("button");
           button.className = `reference${style ? " " + style : ""}`;

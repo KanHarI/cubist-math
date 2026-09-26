@@ -5,9 +5,9 @@ import complex_subdivision_estimates;
 // A piece's contribution uses the same mapped contour sum as the original
 // sampling interface, with its stored count, vertices, and tags.
 def curve_subdivision_samples(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
-  a b : FieldUnitInterval(F, zero, one, lt),
+  a, b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :=
   curve_contour_samples(
@@ -19,7 +19,7 @@ def curve_subdivision_samples(
 
 // Preserve both the supplied subdivisions' total and the error certificate.
 def CurvePartitionEstimate(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
   n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
@@ -29,7 +29,7 @@ def CurvePartitionEstimate(
     FieldUnitInterval(F, zero, one, lt),
     sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
     sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
-  ),
+  ).
   (
     curve_subdivision_samples(
       F, zero, one, addF, mulF, negF, lt, curve, integrand,
@@ -62,10 +62,10 @@ def CurvePartitionEstimate(
 // Checking this generic step once keeps the continuity witness folded.
 // Move a fixed-mesh estimate to the stored endpoints of one piece.
 def affine_partition_piece_estimate(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, slope : Complex(F), integrand : Complex(F)
   -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
@@ -76,16 +76,16 @@ def affine_partition_piece_estimate(
     )
   ), delta : F, positiveDelta : lt(zero, delta), mesh : F,
   localEstimates : (
-    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-    forall coarseTag : FieldUnitInterval(F, zero, one, lt),
-    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall coarseTag : FieldUnitInterval(F, zero, one, lt).
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
     -> IntervalTagWithin(
       F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
       sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
     ) -> lt(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), mesh)
     -> (
-      exists errorSum : Complex(F),
+      exists errorSum : Complex(F).
       (
         curve_contour_samples(
           F, zero, one, addF, mulF, negF, lt,
@@ -113,9 +113,9 @@ def affine_partition_piece_estimate(
     )
   )
 ) :
-  forall a : FieldUnitInterval(F, zero, one, lt), forall b : FieldUnitInterval(F, zero, one, lt),
-  forall tag : FieldUnitInterval(F, zero, one, lt),
-  forall piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
+  forall a : FieldUnitInterval(F, zero, one, lt). forall b : FieldUnitInterval(F, zero, one, lt).
+  forall tag : FieldUnitInterval(F, zero, one, lt).
+  forall piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
   (IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh))(a, b, tag, piece)
   -> (
     ComplexSubdivisionEstimate(
@@ -156,9 +156,9 @@ def affine_partition_piece_estimate(
   let condition := IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
   let other := ComplexSubdivisionEstimate(I, F, zero, addF, negF, lt, edge, radius);
   have mapEstimates :
-    forall a : I, forall b : I, forall tag : I, forall piece : SampleSubdivision(I, a, b),
+    forall a : I. forall b : I. forall tag : I. forall piece : SampleSubdivision(I, a, b).
     condition(a, b, tag, piece) -> other(a, b, tag, piece) {
-    intro a b tag piece valid;
+    intro a, b, tag, piece, valid;
     obtain (within, small, fineValid) := valid;
     let count := subdivision_count(I, a, b, piece);
     let samples := subdivision_vertices(I, a, b, piece);
@@ -201,10 +201,10 @@ def affine_partition_piece_estimate(
 }
 
 def affine_partition_from_local_estimates(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, slope : Complex(F), integrand : Complex(F)
   -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
@@ -215,16 +215,16 @@ def affine_partition_from_local_estimates(
     )
   ), delta : F, positiveDelta : lt(zero, delta), mesh : F,
   localEstimates : (
-    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-    forall coarseTag : FieldUnitInterval(F, zero, one, lt),
-    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall coarseTag : FieldUnitInterval(F, zero, one, lt).
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
     -> IntervalTagWithin(
       F, zero, one, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
       sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices), coarseTag
     ) -> lt(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), mesh)
     -> (
-      exists errorSum : Complex(F),
+      exists errorSum : Complex(F).
       (
         curve_contour_samples(
           F, zero, one, addF, mulF, negF, lt,
@@ -252,9 +252,9 @@ def affine_partition_from_local_estimates(
     )
   )
 ) :
-  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-  forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
+  forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+  forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
+  forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices).
   SubdivisionTagged(
     FieldUnitInterval(F, zero, one, lt),
     IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), n, vertices, tags, pieces
@@ -290,9 +290,9 @@ def affine_partition_from_local_estimates(
       integrand, uniform, delta, positiveDelta, mesh, localEstimates
     );
   have estimates :
-    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-    forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
+    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
+    forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices).
     SubdivisionTagged(
       FieldUnitInterval(F, zero, one, lt),
       IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), n, vertices, tags, pieces
@@ -309,7 +309,7 @@ def affine_partition_from_local_estimates(
         )
       )
     ) {
-    intro n vertices tags pieces valid;
+    intro n, vertices, tags, pieces, valid;
     let localBounds :=
       subdivision_tagged_map(I, condition, other, mapEstimates, n, vertices, tags, pieces, valid);
     obtain (flat, computes, error, identity, bounded) := complex_subdivision_flat_estimate(
@@ -345,10 +345,10 @@ def affine_partition_from_local_estimates(
 }
 
 def affine_partition_uniform_estimate(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z slope : Complex(F), integrand : Complex(F)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, slope : Complex(F), integrand : Complex(F)
   -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
@@ -359,11 +359,11 @@ def affine_partition_uniform_estimate(
     )
   ), delta : F, positiveDelta : lt(zero, delta)
 ) :
-  exists mesh : F, lt(zero, mesh)
+  exists mesh : F. lt(zero, mesh)
   and (
-    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-    forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
+    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
+    forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices).
     SubdivisionTagged(
       FieldUnitInterval(F, zero, one, lt),
       IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), n, vertices, tags, pieces

@@ -55,7 +55,7 @@ def last := 2;`;
 
 test("annotated definition equalities indent the type without indenting the proof body", () => {
   const source = `def vector_scale_add_vectors(K : AlgebraicField, V : VectorSpace(K)) :
-    forall a : af_carrier(K), forall x : vector_carrier(K, V), forall y : vector_carrier(K, V),
+    forall a : af_carrier(K). forall x : vector_carrier(K, V). forall y : vector_carrier(K, V).
     vector_scale(K, V, a, vector_add(K, V, x, y)) = vector_add(K, V, vector_scale(K, V, a, x), vector_scale(K, V, a, y)) {
       obtain (one, assoc, vectors, scalars) := vector_scalar_laws(K, V); exact vectors;
     }`;
@@ -71,10 +71,10 @@ test("annotated definition equalities indent the type without indenting the proo
 });
 
 test("long quantified statements pack short binders and preserve function domains", () => {
-  const source = "def CantorSchroederBernstein := forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) -> forall f : A -> B, forall g : B -> A, Injective(A, B, f) -> Injective(B, A, g) -> Equiv(U0, A, B);";
+  const source = "def CantorSchroederBernstein := forall A : U0. forall B : U0. IsSet(A) -> IsSet(B) -> forall f : A -> B. forall g : B -> A. Injective(A, B, f) -> Injective(B, A, g) -> Equiv(U0, A, B);";
   const formatted = formatMathScript(source);
   assert.equal(formatted, `def CantorSchroederBernstein :=
-  forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) -> forall f : A -> B, forall g : B -> A,
+  forall A : U0. forall B : U0. IsSet(A) -> IsSet(B) -> forall f : A -> B. forall g : B -> A.
   Injective(A, B, f) -> Injective(B, A, g) -> Equiv(U0, A, B);
 `);
   for (const width of [60, 80, 100]) {

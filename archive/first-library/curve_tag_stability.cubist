@@ -2,13 +2,13 @@ import curve_contour_estimates;
 import uniform_curve_tags;
 
 def CurveFineTagsClose(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
-  epsilon mesh : F
+  epsilon, mesh : F
 ) :=
-  forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
-  forall oldTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
-  forall newTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
+  forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+  forall oldTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
+  forall newTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
   IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)
   -> IntervalAdmissibleTags(F, zero, one, lt, n, vertices, oldTags)
   -> IntervalAdmissibleTags(F, zero, one, lt, n, vertices, newTags)
@@ -25,21 +25,21 @@ def CurveFineTagsClose(
 // Uniform continuity of the integrand along the curve and bounded variation
 // give a mesh threshold valid for every admissible pair of tag schemes.
 def curve_contour_uniform_tag_stability(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), curve : FieldUnitInterval(F, zero, one, lt)
   -> Complex(F), integrand : Complex(F) -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt, (fun (t : FieldUnitInterval(F, zero, one, lt)) => integrand(curve(t)))
-  ), realWeight imagWeight : FieldUnitInterval(F, zero, one, lt)
+  ), realWeight, imagWeight : FieldUnitInterval(F, zero, one, lt)
   -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F, length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length),
   variation : ComplexCurveVariation(
     F, zero, one, addF, negF, lt, curve, realWeight, imagWeight, length
   ), epsilon : F, positive : lt(zero, epsilon)
 ) :
-  exists mesh : F, lt(zero, mesh)
+  exists mesh : F. lt(zero, mesh)
   and CurveFineTagsClose(F, zero, one, addF, mulF, negF, lt, curve, integrand, epsilon, mesh) {
   let I := FieldUnitInterval(F, zero, one, lt);
   obtain (delta, positiveDelta, smallError) := field_small_scaled_radius(
@@ -56,7 +56,7 @@ def curve_contour_uniform_tag_stability(
   );
   have stable :
     CurveFineTagsClose(F, zero, one, addF, mulF, negF, lt, curve, integrand, epsilon, mesh) {
-    intro n vertices oldTags newTags fine oldValid newValid;
+    intro n, vertices, oldTags, newTags, fine, oldValid, newValid;
     let ordered :=
       interval_admissible_samples_ordered(
         F, zero, one, addF, mulF, lt, arithmetic, n, vertices, oldTags, oldValid
@@ -71,11 +71,11 @@ def curve_contour_uniform_tag_stability(
 }
 
 def affine_contour_uniform_tag_stability(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z error : Complex(F), integrand : Complex(F)
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, error : Complex(F), integrand : Complex(F)
   -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
@@ -86,7 +86,7 @@ def affine_contour_uniform_tag_stability(
     )
   ), epsilon : F, positive : lt(zero, epsilon)
 ) :
-  exists mesh : F, lt(zero, mesh)
+  exists mesh : F. lt(zero, mesh)
   and CurveFineTagsClose(
     F, zero, one, addF, mulF, negF, lt,
     complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, epsilon, mesh
@@ -125,11 +125,11 @@ def affine_contour_uniform_tag_stability(
 // Concrete left and right endpoint sums are instances; their tags are
 // constructed from the vertices and their admissibility is proved.
 def affine_contour_endpoint_sums_close(
-  F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), minF maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), z error : Complex(F), integrand : Complex(F)
+  inverses : FieldInverses(F, zero, one, mulF, lt), minF, maxF : F -> F -> F,
+  lattice : FieldLattice(F, lt, minF, maxF), z, error : Complex(F), integrand : Complex(F)
   -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
@@ -140,9 +140,9 @@ def affine_contour_endpoint_sums_close(
     )
   ), epsilon : F, positive : lt(zero, epsilon)
 ) :
-  exists mesh : F, lt(zero, mesh)
+  exists mesh : F. lt(zero, mesh)
   and (
-    forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     IntervalOrderedSamples(F, zero, one, lt, n, vertices)
     -> IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)
     -> ComplexClose(
@@ -165,7 +165,7 @@ def affine_contour_endpoint_sums_close(
     error, integrand, uniform, epsilon, positive
   );
   have close :
-    forall n : Nat, forall vertices : SampleVertices(I, n),
+    forall n : Nat. forall vertices : SampleVertices(I, n).
     IntervalOrderedSamples(F, zero, one, lt, n, vertices)
     -> IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)
     -> ComplexClose(
@@ -181,7 +181,7 @@ def affine_contour_endpoint_sums_close(
         vertices, sample_left_tags(I, n, vertices)
       ), epsilon
     ) {
-    intro n vertices ordered fine;
+    intro n, vertices, ordered, fine;
     obtain (leftValid, rightValid) := interval_endpoint_tags_admissible(
       F, zero, one, lt, order, n, vertices, ordered
     );

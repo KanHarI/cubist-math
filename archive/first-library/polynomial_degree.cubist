@@ -26,7 +26,7 @@ def polynomial_cutoff_support(K : AlgebraicField, p : Polynomial(K)) :
 }
 
 def polynomial_cutoff_least(K : AlgebraicField, p : Polynomial(K)) :
-  forall n : Nat, SeriesSupport(K, polynomial_coefficients(K, p), n)
+  forall n : Nat. SeriesSupport(K, polynomial_coefficients(K, p), n)
   -> le(polynomial_cutoff(K, p), n) {
   obtain (support, least) := polynomial_cutoff_data(K, p);
   exact least;
@@ -66,7 +66,7 @@ def support_predecessor(
   last : f(n) = field_zero(K)
 ) :
   SeriesSupport(K, f, n) {
-  intro k above;
+  intro k, above;
   exact match nat_le_total(succ(n), k) return f(k) = field_zero(K) {
     left beyond => support(k, beyond);
     right below => trans(cong(f, sym(dimension_order_antisymmetric(n, k, above, below))), last);

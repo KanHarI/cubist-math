@@ -2,10 +2,10 @@ import polynomial_roots;
 
 // A nonzero polynomial of degree d cannot have d+1 distinct roots.
 def RootFamily(K : AlgebraicField, p : Polynomial(K), n : Nat) :=
-  exists roots : Fin(n) -> af_carrier(K), Injective(Fin(n), af_carrier(K), roots)
-  and (forall i : Fin(n), PolynomialRoot(K, K, field_embedding_identity(K), p, roots(i)));
+  exists roots : Fin(n) -> af_carrier(K). Injective(Fin(n), af_carrier(K), roots)
+  and (forall i : Fin(n). PolynomialRoot(K, K, field_embedding_identity(K), p, roots(i)));
 
-def linear_factor_eval_nonzero(K : AlgebraicField, r x : af_carrier(K), different : (x = r) -> Void) :
+def linear_factor_eval_nonzero(K : AlgebraicField, r, x : af_carrier(K), different : (x = r) -> Void) :
   FieldNonzero(
     af_carrier(K), af_operations(K),
     polynomial_eval(K, K, field_embedding_identity(K), polynomial_linear_factor(K, r), x)
@@ -41,7 +41,7 @@ def root_descends_to_factor_quotient(
 }
 
 def factor_quotient_nonzero(
-  K : AlgebraicField, p f q : Polynomial(K), factor : p = polynomial_mul(K, f, q),
+  K : AlgebraicField, p, f, q : Polynomial(K), factor : p = polynomial_mul(K, f, q),
   nonzero : (p = polynomial_zero(K)) -> Void, zero : q = polynomial_zero(K)
 ) :
   Void {
@@ -89,7 +89,7 @@ def polynomial_constant_no_root_family(
 def polynomial_root_bound_step(
   K : AlgebraicField, m : Nat,
   previous : (
-    forall p : Polynomial(K), polynomial_cutoff(K, p) = succ(m) -> RootFamily(K, p, succ(m)) -> Void
+    forall p : Polynomial(K). polynomial_cutoff(K, p) = succ(m) -> RootFamily(K, p, succ(m)) -> Void
   ), p : Polynomial(K), degree : polynomial_cutoff(K, p) = succ(succ(m)),
   family : RootFamily(K, p, succ(succ(m)))
 ) :
@@ -112,14 +112,14 @@ def polynomial_root_bound_step(
     );
   let rest := finite_tail(af_carrier(K), succ(m), roots);
   have restDistinct : Injective(Fin(succ(m)), af_carrier(K), rest) {
-    intro i j same;
+    intro i, j, same;
     exact tail_injective(
       Fin(succ(m)), i, j,
       distinct(typed(Fin(succ(succ(m))), right(i)), typed(Fin(succ(succ(m))), right(j)), same)
     );
   }
   have restRoots :
-    forall i : Fin(succ(m)), PolynomialRoot(K, K, field_embedding_identity(K), q, rest(i)) {
+    forall i : Fin(succ(m)). PolynomialRoot(K, K, field_embedding_identity(K), q, rest(i)) {
     intro i;
     have different : rest(i) = r -> Void {
       intro same;
@@ -136,7 +136,7 @@ def polynomial_root_bound_step(
 
 def polynomial_root_bound_degree(K : AlgebraicField, d : Nat) :=
   induction d as k return (
-    forall p : Polynomial(K), polynomial_cutoff(K, p) = succ(k) -> RootFamily(K, p, succ(k)) -> Void
+    forall p : Polynomial(K). polynomial_cutoff(K, p) = succ(k) -> RootFamily(K, p, succ(k)) -> Void
   ) {
     zero => polynomial_constant_no_root_family(K);
     succ previous => polynomial_root_bound_step(K, k, previous);

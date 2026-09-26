@@ -2,23 +2,23 @@ import generated_subfields;
 
 // The ambient field and its two actual subfields are explicit. No tensor
 // product, selected embedding, or change of ambient field is hidden here.
-def SubfieldUnion(F : AlgebraicField, S T : Subfield(F), x : af_carrier(F)) :=
+def SubfieldUnion(F : AlgebraicField, S, T : Subfield(F), x : af_carrier(F)) :=
   subfield_members(F, S, x) or subfield_members(F, T, x);
 
-def compositum(F : AlgebraicField, S T : Subfield(F)) :=
+def compositum(F : AlgebraicField, S, T : Subfield(F)) :=
   generated_subfield(F, SubfieldUnion(F, S, T));
 
-def compositum_contains_left(F : AlgebraicField, S T : Subfield(F)) :
+def compositum_contains_left(F : AlgebraicField, S, T : Subfield(F)) :
   SubfieldIncluded(F, S, compositum(F, S, T)) {
-  intro x member;
+  intro x, member;
   exact generated_field_contains(
     F, SubfieldUnion(F, S, T), x, typed(SubfieldUnion(F, S, T, x), left(member))
   );
 }
 
-def compositum_contains_right(F : AlgebraicField, S T : Subfield(F)) :
+def compositum_contains_right(F : AlgebraicField, S, T : Subfield(F)) :
   SubfieldIncluded(F, T, compositum(F, S, T)) {
-  intro x member;
+  intro x, member;
   exact generated_field_contains(
     F, SubfieldUnion(F, S, T), x, typed(SubfieldUnion(F, S, T, x), right(member))
   );
@@ -26,13 +26,13 @@ def compositum_contains_right(F : AlgebraicField, S T : Subfield(F)) :
 
 // The compositum is the least upper bound of its two subfields.
 def compositum_least(
-  F : AlgebraicField, S T V : Subfield(F), sv : SubfieldIncluded(F, S, V),
+  F : AlgebraicField, S, T, V : Subfield(F), sv : SubfieldIncluded(F, S, V),
   tv : SubfieldIncluded(F, T, V)
 ) :
   SubfieldIncluded(F, compositum(F, S, T), V) {
   have includesUnion :
     PredicateIncluded(af_carrier(F), SubfieldUnion(F, S, T), subfield_members(F, V)) {
-    intro x member;
+    intro x, member;
     cases typed(SubfieldUnion(F, S, T, x), member) {
       left inS => {
         exact sv(x, inS);
@@ -46,7 +46,7 @@ def compositum_least(
 }
 
 def compositum_monotone(
-  F : AlgebraicField, S T S2 T2 : Subfield(F), ss : SubfieldIncluded(F, S, S2),
+  F : AlgebraicField, S, T, S2, T2 : Subfield(F), ss : SubfieldIncluded(F, S, S2),
   tt2 : SubfieldIncluded(F, T, T2)
 ) :
   SubfieldIncluded(F, compositum(F, S, T), compositum(F, S2, T2)) {
@@ -63,7 +63,7 @@ def compositum_monotone(
 
 // Universal properties identify the resulting bundles via univalent subfield
 // extensionality; the finite derivations themselves need not be identical.
-def compositum_commutative(F : AlgebraicField, S T : Subfield(F)) :
+def compositum_commutative(F : AlgebraicField, S, T : Subfield(F)) :
   compositum(F, S, T) =[Subfield(F)] compositum(F, T, S) {
   exact subfield_inclusion_antisymmetric(
     F, compositum(F, S, T), compositum(F, T, S),
@@ -87,7 +87,7 @@ def compositum_idempotent(F : AlgebraicField, S : Subfield(F)) :
   );
 }
 
-def compositum_associate_inclusion(F : AlgebraicField, S T V : Subfield(F)) :
+def compositum_associate_inclusion(F : AlgebraicField, S, T, V : Subfield(F)) :
   SubfieldIncluded(F, compositum(F, compositum(F, S, T), V), compositum(F, S, compositum(F, T, V))) {
   let TV := compositum(F, T, V);
   let target := compositum(F, S, TV);
@@ -105,7 +105,7 @@ def compositum_associate_inclusion(F : AlgebraicField, S T V : Subfield(F)) :
   );
 }
 
-def compositum_unassociate_inclusion(F : AlgebraicField, S T V : Subfield(F)) :
+def compositum_unassociate_inclusion(F : AlgebraicField, S, T, V : Subfield(F)) :
   SubfieldIncluded(F, compositum(F, S, compositum(F, T, V)), compositum(F, compositum(F, S, T), V)) {
   let ST := compositum(F, S, T);
   let target := compositum(F, ST, V);
@@ -123,7 +123,7 @@ def compositum_unassociate_inclusion(F : AlgebraicField, S T V : Subfield(F)) :
   );
 }
 
-def compositum_associative(F : AlgebraicField, S T V : Subfield(F)) :
+def compositum_associative(F : AlgebraicField, S, T, V : Subfield(F)) :
   compositum(F, compositum(F, S, T), V) =[Subfield(F)] compositum(F, S, compositum(F, T, V)) {
   exact subfield_inclusion_antisymmetric(
     F, compositum(F, compositum(F, S, T), V), compositum(F, S, compositum(F, T, V)),

@@ -2,20 +2,20 @@ import suspension_types;
 
 // Cubical paths expose their interval coordinate; Interval is binder syntax,
 // not an additional type in the universe hierarchy.
-def reverse_path(A : U0, x y : A, p : x = y) :=
+def reverse_path(A : U0, x, y : A, p : x = y) :=
   path(fun (i : Interval) => A, fun (i : Interval) => p @ flip(i));
 
 // Reversing twice computes to the original path, even in an arbitrary type.
-def reverse_twice(A : U0, x y : A, p : x = y) : reverse_path(A, y, x, reverse_path(A, x, y, p)) = p {
+def reverse_twice(A : U0, x, y : A, p : x = y) : reverse_path(A, y, x, reverse_path(A, x, y, p)) = p {
   rfl;
 }
 
 // Function action is pointwise application along a path.
-def map_path(A B : U0, f : A -> B, x y : A, p : x = y) :=
+def map_path(A, B : U0, f : A -> B, x, y : A, p : x = y) :=
   path(fun (i : Interval) => B, fun (i : Interval) => f(p @ i));
 
 // Paths in a varying family can be stated without encoding them as transport.
-def dependent_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x y : Nat) :=
+def dependent_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x, y : Nat) :=
   PathP(fun (i : Interval) => P @ i, x, y);
 
 // An empty tube gives transport through a family of types.
@@ -23,7 +23,7 @@ def transport_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x : Nat) :=
   comp(fun (i : Interval) => P @ i, x);
 
 // Composition fills a square with fixed left edge and right edge q.
-def join_paths(A : U0, x y z : A, p : x = y, q : y = z) :=
+def join_paths(A : U0, x, y, z : A, p : x = y, q : y = z) :=
   path(
     fun (i : Interval) => A,
     fun (i : Interval) => comp(
