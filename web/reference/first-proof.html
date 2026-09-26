@@ -46,6 +46,7 @@
           <h2>In this chapter</h2>
           <ul class="sections">
             <li><a href="#first-proof">A first proof</a></li>
+            <li><a href="#elaboration">The elaborator</a></li>
             <li><a href="#checking">What checking means</a></li>
             <li><a href="#files">Files and imports</a></li>
             <li><a href="#names">Names and comments</a></li>
@@ -104,7 +105,7 @@ def exists_greater_number : forall n : Nat. exists m : Nat. lt(n, m) {
               <li><code>intro n;</code> takes the input of the <code>forall</code> and adds it to the context, as in <a href="types.html#tour-intro">chapter 1</a>. The context holds <code>n : Nat</code>, and the goal becomes <code>exists m : Nat. lt(n, m)</code>.</li>
               <li><code>exact (succ(n), lt_succ(n));</code> gives a value of exactly the goal type: the witness <code>succ(n)</code>, and the evidence <code>lt_succ(n) : lt(n, succ(n))</code>. It finishes the proof.</li>
             </ul>
-            <p>In the proof workspace, or in any example here, click a proof-step line number to see its goal and context.</p>
+            <p>In the proof workspace, click the line number of a proof statement to see its goal and the names in scope. <em>Open in workspace</em> opens any example of this reference there, and <a href="#elaboration">the elaborator</a> section below shows every step of this proof.</p>
             <p>A proof is a value like any other. Evaluating one shows the term its block built:</p>
             <pre><code data-check="repl">&gt; evaluate lt_succ;
 fun (n : Nat) =&gt; (0, refl(succ(n)))
@@ -168,10 +169,35 @@ def seven_lt_two : 7 &lt; 2 {
             <p>The library’s <code>&lt;</code> is defined by induction on natural numbers, which this chapter has not introduced yet. The chapter on natural numbers and inductive types returns to it: <a href="induction.html#order-by-induction">the order on natural numbers</a> shows its definition and proofs about it by induction.</p>
             </aside>
           </section>
+          <section id="elaboration">
+            <h2>The elaborator</h2>
+            <p>Cubist has two parts. The <strong>elaborator</strong>, written in JavaScript, reads the source and builds <strong>kernel terms</strong>: fully explicit terms, in which every function has typed parameters, every notation is expanded, and every proof statement has become part of a term. The <strong>kernel</strong>, written in C, then checks each term. Proof assistants call this first step elaboration rather than compilation. The elaborator adds detail to what you wrote, working out from the types what the source leaves implicit, and its output is never trusted: the kernel checks it again.</p>
+            <p>For the first proof, elaboration does four things:</p>
+            <ul>
+              <li><strong>Parameters become functions.</strong> <code>def lt(n, m : Nat) : U0 { … }</code> has the type <code>Nat -> Nat -> U0</code>, and its value is <code>fun (n, m : Nat) => …</code>.</li>
+              <li><strong>Notation expands.</strong> <code>+</code> becomes <code>add</code> from <code>naturals</code>, <code>exists</code> a dependent pair type, <code>=</code> a path type, and numerals the kernel’s <code>0</code> and <code>succ</code>.</li>
+              <li><strong>Proof statements build the term.</strong> Each statement faces a goal and builds part of the term. <code>intro n;</code> builds <code>fun (n : Nat) => ?</code>, and <code>exact</code> fills the hole <code>?</code> with its value.</li>
+              <li><strong>The kernel receives a graph of native nodes.</strong> Each node has an opcode, such as <code>CC_LAM</code> for a function or <code>CC_PI</code> for a function type. Two nodes come from the elaborator rather than the source: <code>exact</code> checks its value at the goal <code>T</code> by applying <code>fun (ascription : T) => ascription</code> to it, and <code>refl(x)</code> is the path that stays at <code>x</code>, <code>CC_PLAM</code>.</li>
+            </ul>
+            <p>Open <em>Elaboration</em> below the first proof to see each of its declarations elaborated step by step. For more info on the kernel and its opcodes, see the <a href="../kernel.html">kernel reference</a>, still to be written.</p>
+            <pre><code data-check="accept" data-elaborate="yes">import naturals;
+
+def lt(n, m : Nat) : U0 {
+  exact exists k : Nat. succ(k) + n = m;
+}
+
+def lt_succ(n : Nat) : lt(n, succ(n)) {
+  exact (0, refl(succ(n)));
+}
+
+def exists_greater_number : forall n : Nat. exists m : Nat. lt(n, m) {
+  intro n;
+  exact (succ(n), lt_succ(n));
+}</code></pre>
+          </section>
           <section id="checking">
             <h2>What checking means</h2>
-            <p>Cubist has two parts. The <strong>elaborator</strong>, written in JavaScript, reads source and builds kernel terms. It expands notation, finds rewrite positions and chooses simplification rules. It is not trusted. The <strong>kernel</strong>, written in C, checks every term the elaborator produces. A declaration is accepted only when the kernel accepts its term at its stated type.</p>
-            <p>A convenience that the kernel cannot check makes the declaration fail. It never turns into an assumption. The only assumptions are the explicit library ones described in <a href="assumptions.html#axioms">assumptions and computability</a>, and each theorem lists the ones it uses.</p>
+            <p>A declaration is accepted only when the kernel accepts its term at its stated type. Only the kernel has to be correct, and it is small: it checks the finished term, not the way the elaborator found it. So a bug in a convenience, such as notation, a tactic or simplification, cannot produce an incorrect proof, because whatever the elaborator builds must still pass the kernel. At worst, such a bug makes a correct proof fail to check, and a declaration that does not check cannot be used.</p>
             <p>Each declaration is checked on its own. A rejected declaration is not added, so a later declaration that uses it fails too, with a message naming the missing dependency:</p>
             <pre><code data-check="reject">def wrong : Nat {
   exact Nat;  // Error: Type mismatch: found U0, expected Nat.
@@ -261,14 +287,6 @@ def two := 2;  // Error: Expected ';', found 'def'.</code></pre>
                 <tr><td><code>simp_rule name priority N;</code><br /><code>simp_set name := [rule, …];</code></td><td>Directives that register checked equalities for simplification. See <a href="rewriting.html#simp-registration">registering rules</a>.</td></tr>
               </tbody>
             </table></div>
-            <p>There is no <code>axiom</code> declaration: a source file cannot introduce assumptions of its own. To reason under a hypothesis, take it as a parameter. The result then holds for every value of the hypothesis, and the hypothesis stays visible in its type:</p>
-            <pre><code data-check="accept">def ask(oracle : Nat -&gt; Nat) := oracle(3);
-
-def ask_again(oracle : Nat -&gt; Nat) := oracle(ask(oracle));</code></pre>
-            <p>The only assumptions are the library’s fixed schemas, such as truncation and excluded middle, described in <a href="assumptions.html#axioms">assumptions</a>. <code>axiom</code> is an ordinary name, so a declaration cannot start with it:</p>
-            <pre><code data-check="reject">// Error: Expected a declaration or directive: def, opaque def, computable def, evaluate, simp_rule or
-//   simp_set.
-axiom Oracle : Nat -&gt; Nat;</code></pre>
           </section>
           <section id="parameters">
             <h2>Parameters</h2>

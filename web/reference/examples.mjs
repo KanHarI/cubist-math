@@ -129,6 +129,91 @@ function openInspector(source, offset) {
   frameReady.then(() => frame.contentWindow.postMessage({ type: "cubist-inspect", source, offset }, location.origin));
 }
 
+// An example marked data-elaborate has a collapsed Elaboration panel: each
+// declaration's source, type, proof statements with their goals and the terms
+// they built, the finished term, and the kernel's term and type as opcode
+// trees. It is computed by the checker when first opened.
+const element = (tag, className, text) => {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+};
+const kernelPage = new URL("../kernel.html", import.meta.url).href;
+function sourceCode(text) {
+  const code = element("code");
+  render(code, text);
+  return code;
+}
+function opcodeLines(lines) {
+  const pre = element("pre", "opcode-tree");
+  for (const { depth, text } of lines) {
+    const line = element("span", "opcode-line");
+    line.style.paddingLeft = `${depth * 1.5}em`;
+    for (const part of text.split(/(CC_[A-Z_]+)/)) if (part)
+      line.append(part.startsWith("CC_") ? element("span", "opcode", part) : document.createTextNode(part));
+    pre.append(line);
+  }
+  return pre;
+}
+function renderElaboration(panel, declarations) {
+  const body = element("div", "elaboration-body");
+  body.append(element("p", "elaboration-legend",
+    "For each proof statement: the goal it faces, with the names in scope before ⊢, and the part of the term it builds; ? stands for what the following statements build."));
+  for (const declaration of declarations) {
+    const section = element("section", "elaboration-declaration");
+    const title = element("h4");
+    title.append(element("code", null, declaration.name));
+    section.append(title);
+    const rows = element("dl", "elaboration-stages");
+    const row = (label, ...content) => { rows.append(element("dt", null, label)); const cell = element("dd"); cell.append(...content); rows.append(cell); };
+    const source = element("pre");
+    source.append(sourceCode(declaration.source));
+    row("Source", source);
+    if (!declaration.verified || declaration.reason) {
+      row("Result", element("span", "elaboration-error", declaration.reason ?? "Not checked."));
+      section.append(rows);
+      body.append(section);
+      continue;
+    }
+    row("Type", sourceCode(declaration.type));
+    if (declaration.steps.length) {
+      const list = element("ol", "elaboration-steps");
+      for (const step of declaration.steps) {
+        const item = element("li");
+        const goal = element("div", "elaboration-goal");
+        goal.append(sourceCode(step.locals.map(local => `${local.name} : ${local.type}`).join(", ")), element("span", "turnstile", " ⊢ "), sourceCode(step.goal));
+        const built = element("div", "elaboration-built");
+        built.append(element("span", "maps-to", "builds "), sourceCode(step.built));
+        item.append(sourceCode(step.text), goal, built);
+        list.append(item);
+      }
+      row("Statements", list);
+    } else row("Statements", element("span", null, "None: the value is given directly after :=."));
+    row("Term", sourceCode(declaration.term));
+    const trees = element("div", "opcode-trees");
+    for (const [label, lines] of [["Kernel term", declaration.kernelTerm], ["Kernel type", declaration.kernelType]]) {
+      const column = element("div");
+      column.append(element("h5", null, label), opcodeLines(lines));
+      trees.append(column);
+    }
+    const note = element("p", "elaboration-checked");
+    const link = element("a", null, "For more info");
+    link.href = kernelPage;
+    note.append("✓ The C kernel checked this term at this type. ", link, " on the native opcodes, see the kernel reference.");
+    row("Kernel", trees, note);
+    section.append(rows);
+    body.append(section);
+  }
+  panel.querySelector(".elaboration-body")?.remove();
+  panel.append(body);
+}
+const elaborateInTurn = source => {
+  const run = queue.then(() => request("elaborate", { source, module: "reference_example" }));
+  queue = run.catch(() => {});
+  return run;
+};
+
 function enhance(pre, code) {
   const source = code.textContent;
   const bar = document.createElement("div");
@@ -152,6 +237,20 @@ function enhance(pre, code) {
     open.before(repl);
   }
   pre.after(bar);
+  if (code.dataset.elaborate !== undefined) {
+    const panel = element("details", "elaboration");
+    const summary = element("summary", null, "Elaboration: each declaration, step by step");
+    panel.append(summary);
+    panel.addEventListener("toggle", () => {
+      if (!panel.open || panel.dataset.loaded) return;
+      panel.dataset.loaded = "true";
+      const waiting = element("p", "elaboration-body", "Elaborating…");
+      panel.append(waiting);
+      elaborateInTurn(source).then(declarations => renderElaboration(panel, declarations),
+        error => { waiting.textContent = `Elaboration failed: ${error.message}`; });
+    });
+    bar.after(panel);
+  }
   checkInTurn(source).then(result => {
     const links = result?.links ?? [];
     if (links.length) render(code, source, links);
