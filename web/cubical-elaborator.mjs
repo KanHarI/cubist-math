@@ -21,7 +21,67 @@ export function displayTerm(term, budget = 256) {
     reduced.set(t, result);
     return result;
   };
-  const shown = beta(term), names = new Set(), seen = new WeakSet();
+  const shown = beta(term);
+  return scopedNames(shown) ?? globalNames(shown);
+}
+
+const stem = name => name.startsWith("__") ? name : /^native\d+$/.test(name) ? "x" : name.replace(/\d+$/, "") || name;
+const binders = new Set(["Pi", "Lam", "Sigma", "W"]);
+
+// Each binder shows its stem, n for n11, unless a binder around it already
+// shows that name or its body uses the name for another variable; then it
+// shows the stem numbered from 1, n1. The copy is a tree, so a term that
+// shares much structure is left to globalNames.
+function scopedNames(term, limit = 2000) {
+  let work = 0;
+  const freeMemo = new WeakMap();
+  const free = t => {
+    if (!t || typeof t !== "object") return new Set();
+    if (freeMemo.has(t)) return freeMemo.get(t);
+    let names;
+    if (t.tag === "Var") names = new Set([t.name]);
+    else {
+      names = new Set();
+      for (const [key, value] of Object.entries(t)) {
+        if (binders.has(t.tag) && key === "body") for (const name of free(value)) { if (name !== t.name) names.add(name); }
+        else for (const name of free(value)) names.add(name);
+      }
+    }
+    freeMemo.set(t, names);
+    return names;
+  };
+  const go = (t, shownAs, inScope) => {
+    if (++work > limit) throw scopedNames;
+    if (!t || typeof t !== "object") return t;
+    if (Array.isArray(t)) return t.map(item => go(item, shownAs, inScope));
+    if (t.tag === "Var") return shownAs.has(t.name) ? { ...t, name: shownAs.get(t.name) } : t;
+    const result = {};
+    if (binders.has(t.tag) && typeof t.name === "string") {
+      const others = new Set([...free(t.body)].filter(name => name !== t.name).map(name => shownAs.get(name) ?? name));
+      const taken = candidate => inScope.has(candidate) || others.has(candidate);
+      let name = stem(t.name);
+      for (let index = 1; taken(name); index++) name = `${stem(t.name)}${index}`;
+      for (const [key, value] of Object.entries(t))
+        result[key] = key === "body" ? go(value, new Map(shownAs).set(t.name, name), new Set(inScope).add(name))
+          : key === "name" ? name : go(value, shownAs, inScope);
+      return result;
+    }
+    for (const [key, value] of Object.entries(t)) result[key] = go(value, shownAs, inScope);
+    return result;
+  };
+  // Free variables, such as a goal's context, show their stems when no two
+  // share one; binders then avoid those names.
+  const outer = [...free(term)], count = new Map();
+  for (const name of outer) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
+  const shownAs = new Map(outer.map(name => [name,
+    count.get(stem(name)) === 1 && !(outer.includes(stem(name)) && stem(name) !== name) ? stem(name) : name]));
+  try { return go(term, shownAs, new Set(shownAs.values())); }
+  catch (error) { if (error === scopedNames) return null; throw error; }
+}
+
+// Every generated name whose stem no other name shares shows its stem.
+function globalNames(shown) {
+  const names = new Set(), seen = new WeakSet();
   const collect = t => {
     if (!t || typeof t !== "object" || seen.has(t)) return;
     seen.add(t);
@@ -29,7 +89,6 @@ export function displayTerm(term, budget = 256) {
     Object.values(t).forEach(collect);
   };
   collect(shown);
-  const stem = name => name.startsWith("__") ? name : /^native\d+$/.test(name) ? "x" : name.replace(/\d+$/, "") || name;
   const count = new Map();
   for (const name of names) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
   const rename = name => count.get(stem(name)) === 1 && !(names.has(stem(name)) && stem(name) !== name) ? stem(name) : name;
@@ -111,14 +170,31 @@ export class NativeCubicalElaborator {
     } catch { /* Keep the kernel's message. */ }
     return error;
   }
-  displayText(term, width = 160) {
-    // Definitions show their source names, without the module prefix, and
-    // assumptions their labels.
-    this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
+  // Definitions show their source names, without the module prefix, and
+  // assumptions their labels.
+  get displayNames() {
+    return this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : name.includes("__") && !name.startsWith("__") ? { name: name.slice(name.indexOf("__") + 2) } : undefined });
-    const text = sourceText(displayTerm(term), this.displaySymbols);
+  }
+  displayText(term, width = 160) {
+    const text = sourceText(displayTerm(term), this.displayNames);
     return text.length > width ? `${text.slice(0, width - 1)}…` : text;
+  }
+  // A goal, and the term a statement built for it, shown with one renaming,
+  // so the context's names, the target and the term agree.
+  displayGoal(context, target, built = null, width = 400) {
+    // Goals can share large terms; the printer stops after `width` nodes too.
+    const show = term => { const text = sourceText(term, this.displayNames, width); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
+    let chained = { tag: "Pair", first: target, second: built ?? { tag: "Point" } };
+    for (const [name, type] of [...context].reverse()) chained = T.pi(name, type, chained);
+    let shown = displayTerm(chained);
+    const locals = [];
+    while (locals.length < context.size && shown.tag === "Pi") {
+      locals.push({ name: shown.name, type: show(shown.domain) });
+      shown = shown.body;
+    }
+    return { locals, goal: show(shown.first), built: built ? show(shown.second) : null };
   }
   checkSyntax(term, expected, context, dimensions, describe = true) {
     try { return this.syntax.check(term, expected, [...this.context(context)], dimensions); }

@@ -53,7 +53,7 @@
         <article id="reference">
           <section id="axioms">
             <h2>The library assumptions</h2>
-            <p>A few principles are assumed rather than constructed. Each is a name with a type and no computation rule, provided by the checker at a chosen universe. There are six. A source file cannot add more: there is no <code>axiom</code> declaration, and a hypothesis is taken as a parameter instead, as described in <a href="first-proof.html#other-declarations">declarations</a>.</p>
+            <p>A few principles are assumed rather than constructed. Each is a name with a type and no computation rule, provided by the checker at a chosen universe. There are six. A source file cannot add more. To reason under a hypothesis, take it as a parameter: the result then holds for every value of the hypothesis, which stays visible in its type.</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Assumption</th><th>Type, at <code>U0</code></th></tr></thead>
               <tbody>

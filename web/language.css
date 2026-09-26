@@ -102,3 +102,32 @@ pre code .comment { color: #7c8d80; }
 .token-tip[hidden] {
   display: none;
 }
+
+/* An example's Elaboration panel (examples.mjs), collapsed until opened. */
+details.elaboration { margin: -8px 0 22px; border: 1px solid #dce2dc; border-radius: 8px; background: #fbfcfa; }
+details.elaboration > summary { padding: 10px 16px; cursor: pointer; font-weight: 600; color: #346447; }
+details.elaboration[open] > summary { border-bottom: 1px solid #e3e8e1; }
+.elaboration-body { padding: 4px 16px 12px; }
+.elaboration-legend { color: #5f7066; font-size: .92em; }
+.elaboration-declaration { margin-top: 14px; }
+.elaboration-declaration h4 { margin: 0 0 6px; }
+.elaboration-stages { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 16px; margin: 0; align-items: baseline; }
+.elaboration-stages .keyword { color: #735689; font-weight: 600; }
+.elaboration-stages .macro { color: #98531c; font-weight: 600; }
+.elaboration-stages dt { font-weight: 600; color: #5f7066; }
+.elaboration-stages dd { margin: 0; min-width: 0; }
+.elaboration-stages pre { margin: 0; padding: 10px 12px; }
+.elaboration-steps { margin: 0; padding-left: 1.4em; }
+.elaboration-steps li { margin-bottom: 8px; }
+.elaboration-steps code, .elaboration-stages dd > code { font-size: .88em; }
+.elaboration-goal, .elaboration-built { padding-left: .5em; color: #3d4d45; overflow-wrap: anywhere; }
+.turnstile, .maps-to { color: #5f7066; }
+.opcode-trees { display: grid; gap: 12px; }
+.opcode-trees h5 { margin: 0 0 4px; font-size: .9em; color: #5f7066; }
+.opcode-tree { margin: 0; padding: 10px 12px; font-size: .82em; line-height: 1.55; overflow-x: auto; }
+.opcode-line { display: block; white-space: pre; }
+.opcode { color: #735689; font-weight: 600; }
+.elaboration-checked { margin: 8px 0 0; color: #346447; }
+.elaboration-error { color: #a3322b; }
+@media (max-width: 640px) { .elaboration-stages { grid-template-columns: minmax(0, 1fr); } }
+.tbd { color: #7c8d80; font-style: italic; }

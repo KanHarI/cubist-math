@@ -54,6 +54,13 @@ try {
     assert.equal(await page.locator("#inspect-name").textContent(), name);
     await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
     assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
+    if (proof === "euclid") {
+      // A line number shows the goal at that proof statement and the names in scope.
+      await page.locator('.source-line[data-line="8"] .line-number').click();
+      assert.equal(await page.locator("#inspect-name").textContent(), "Goal at line 8");
+      assert.match(await page.locator("#inspect-type").textContent(), /exists p : Nat\. Prime\(p\) and n < p/);
+      assert.match(await page.locator("#locals").textContent(), /n\s*Nat/);
+    }
     console.log(`PASS static worker, WASM, checking and folded inspection: ${proof} (${backend})`);
   }
   // Reference examples are checked in the browser; a linked name opens the
@@ -124,6 +131,19 @@ try {
   for (const text of ["let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
   assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "Type mismatch: found 7 = 7, expected x = 8."]);
   console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
+  // The first proof's Elaboration panel opens on demand and shows every
+  // declaration, down to the kernel's opcodes, with a link for more info.
+  await page.goto(new URL("reference/first-proof.html#elaboration", base).href);
+  const elaboration = page.locator("#elaboration details.elaboration");
+  await elaboration.locator("summary").click();
+  await elaboration.locator(".elaboration-declaration").nth(2).waitFor();
+  assert.equal(await elaboration.locator(".elaboration-declaration").count(), 3);
+  assert.match(await elaboration.textContent(), /intro n;\s*⊢ forall n : Nat\. exists m : Nat\. lt\(n, m\)\s*builds fun \(n : Nat\) => \?/);
+  assert.match(await elaboration.locator(".opcode-tree").first().textContent(), /^CC_LAM n : CC_NAT/);
+  assert.match(await elaboration.getByRole("link", { name: "For more info" }).first().getAttribute("href"), /kernel\.html$/);
+  await page.goto(new URL("kernel.html", base).href);
+  assert.equal(await page.locator("#opcodes tbody tr").count(), 42);
+  console.log("PASS elaboration panel and the kernel reference outline");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status").textContent.includes("checked"));
   assert.equal(await page.locator("#diagnostic").isVisible(), false);

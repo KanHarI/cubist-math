@@ -3,6 +3,7 @@ import createCubical from "./dist/cubical.mjs";
 import { sourceModules, cubicalSourceModules, libraryModules } from "./mathscript/modules.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { ReplSession } from "./repl-session.mjs";
+import { elaboration } from "./cubical-elaboration.mjs";
 const module = await createCubical();
 let program = null;
 const readSource = async name => {
@@ -55,6 +56,14 @@ self.onmessage = async ({ data: { id, command, args } }) => {
       })();
       checking = run.catch(() => {});
       result = await run;
+    } else if (command === "elaborate") {
+      // A source of its own, checked apart from the proof: every declaration's
+      // steps, terms and native opcode trees.
+      const scratch = new CubicalProgram(module, readSource);
+      try {
+        await scratch.check(args.source, args.module ?? "current");
+        result = elaboration(scratch, args.module ?? "current");
+      } finally { scratch.dispose(); }
     } else if (command === "repl" || command === "repl-reset") {
       const run = replQueue.then(async () => {
         await checking;

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="The Cubist C kernel: its term arena, native opcodes, checking and conversion. To be written." />
+    <title>Cubist · Kernel reference</title>
+    <link rel="stylesheet" href="language.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to the reference</a>
+    <header>
+      <a class="brand" href="index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="proof.html">Proof workspace</a>
+        <a href="workbench.html">Kernel workbench</a>
+        <a href="language.html">Language reference</a>
+        <a href="repl.html">REPL</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">KERNEL REFERENCE · TO BE WRITTEN</p>
+        <h1>The C kernel</h1>
+        <p class="lead">The kernel checks every term the elaborator produces. This reference will describe its terms, its native opcodes and how it checks them.</p>
+      </div>
+      <article id="reference">
+        <p class="note status">This page is an outline, to be written. Until then, the <a href="language.html">language reference</a> explains how source becomes kernel terms, and the <a href="workbench.html">kernel workbench</a> shows the native term of any checked declaration.</p>
+        <section id="role">
+          <h2>What the kernel does</h2>
+          <p>The kernel is written in C and compiled to WebAssembly for the browser. It stores terms in an arena of native nodes, each an opcode with a payload and up to four operand handles. It accepts a declaration only when its term has its stated type, and it is the only part of Cubist that is trusted.</p>
+          <p class="tbd">To be written: the trusted base, what the kernel checks and what it assumes, and how a declaration enters its registry.</p>
+        </section>
+        <section id="arena">
+          <h2>The term arena</h2>
+          <p class="tbd">To be written: nodes, handles, payloads and symbols; sharing; interval formulas; the definition registry.</p>
+        </section>
+        <section id="opcodes">
+          <h2>Opcodes</h2>
+          <p>Every native node has one of these opcodes. The operands are the node's children, in slot order; the payload is the value stored in the node itself.</p>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Opcode</th><th>Number</th><th>Operands</th><th>Payload</th><th>Meaning</th></tr></thead>
+            <tbody>
+          <tr><td><code>CC_U</code></td><td>1</td><td>—</td><td>universe level</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_VAR</code></td><td>2</td><td>—</td><td>symbol</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_PI</code></td><td>3</td><td>domain, body</td><td>bound symbol</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_LAM</code></td><td>4</td><td>domain, body</td><td>bound symbol</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_APP</code></td><td>5</td><td>function, argument</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_SIGMA</code></td><td>6</td><td>domain, body</td><td>bound symbol</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_PAIR</code></td><td>7</td><td>type, first, second</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_FST</code></td><td>8</td><td>pair</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_SND</code></td><td>9</td><td>pair</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_NAT</code></td><td>10</td><td>—</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_ZERO</code></td><td>11</td><td>—</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_SUCC</code></td><td>12</td><td>value</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_NATREC</code></td><td>13</td><td>motive, zero, step, value</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_UNIT</code></td><td>14</td><td>—</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_POINT</code></td><td>15</td><td>—</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_PATH</code></td><td>16</td><td>family, left, right</td><td>dimension</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_PLAM</code></td><td>17</td><td>family, body</td><td>dimension</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_PAPP</code></td><td>18</td><td>path, checked annotation</td><td>formula</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_COMP</code></td><td>19</td><td>family, tubes, base</td><td>dimension</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_TUBE</code></td><td>20</td><td>partial term, next tube</td><td>formula</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_VOID</code></td><td>21</td><td>—</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_ABORT</code></td><td>22</td><td>type, impossible</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_W</code></td><td>23</td><td>domain, body</td><td>bound symbol</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_SUP</code></td><td>24</td><td>W type, label, children</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_WREC</code></td><td>25</td><td>motive, step, value</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_SUM</code></td><td>26</td><td>left, right</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_INL</code></td><td>27</td><td>sum type, value</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_INR</code></td><td>28</td><td>sum type, value</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_SUMREC</code></td><td>29</td><td>motive, left, right, value</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_UNITREC</code></td><td>30</td><td>motive, point, value</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_GLUE</code></td><td>31</td><td>base, system</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_GLUE_SYSTEM</code></td><td>32</td><td>partial type, equivalence, next</td><td>formula</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_GLUE_TERM</code></td><td>33</td><td>Glue type, base, tubes</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_UNGLUE</code></td><td>34</td><td>Glue type, value</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_DEFREF</code></td><td>35</td><td>—</td><td>registry entry</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_PUSHOUT</code></td><td>36</td><td>center, left, right, maps</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_PUSH_LEFT</code></td><td>37</td><td>pushout, value</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_PUSH_RIGHT</code></td><td>38</td><td>pushout, value</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_PUSH_PATH</code></td><td>39</td><td>pushout, value</td><td>formula</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_PUSH_ELIM</code></td><td>40</td><td>motive, left, right, bridge</td><td>—</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_HCOMP</code></td><td>41</td><td>type, tubes, base</td><td>dimension</td><td class="tbd">To be written.</td></tr>
+          <tr><td><code>CC_TRANS</code></td><td>42</td><td>family, face tube, base</td><td>dimension</td><td class="tbd">To be written.</td></tr>
+            </tbody>
+          </table></div>
+        </section>
+        <section id="checking">
+          <h2>Checking</h2>
+          <p class="tbd">To be written: bidirectional checking of each opcode, the typing rules, and the steps the kernel counts.</p>
+        </section>
+        <section id="conversion">
+          <h2>Conversion</h2>
+          <p class="tbd">To be written: when two terms are equal by computation, unfolding of definitions and opacity, and cubical computation rules.</p>
+        </section>
+        <section id="assumptions">
+          <h2>Assumptions</h2>
+          <p class="tbd">To be written: how the library's explicit assumptions are registered and tracked through every declaration that uses them.</p>
+        </section>
+      </article>
+    </main>
+    <footer>Cubist · Kernel reference · <a href="language.html">Language reference</a> · <a href="workbench.html">Kernel workbench</a></footer>
+  </body>
+</html>
