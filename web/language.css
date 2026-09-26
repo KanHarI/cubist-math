@@ -53,3 +53,32 @@ dd { margin: 5px 0 0; }
   .contents ol { columns: 1; }
   pre { padding: 12px; }
 }
+
+/* Inspectable examples: names the checker links open the kernel inspector. On
+   wide screens the open inspector takes its width from the page, which moves
+   left beside it; on narrow screens it covers the page. */
+:root { --drawer-width: 100vw; }
+@media (min-width: 1100px) {
+  :root { --drawer-width: min(760px, 48vw); }
+  body.inspector-open { padding-right: var(--drawer-width); }
+}
+/* Source highlighting, as in the proof workspace's Read view. */
+pre code .keyword { color: #735689; font-weight: 600; }
+pre code .macro { color: #98531c; font-weight: 600; text-decoration-line: underline; text-decoration-style: dotted;
+  text-decoration-color: #cba888; text-underline-offset: 3px; }
+pre code .comment { color: #7c8d80; }
+.example-token { padding: 0; border: 0; border-radius: 2px; background: transparent; font: inherit; line-height: inherit;
+  cursor: pointer; color: #216142; text-decoration: underline; text-decoration-color: #abc3a7; text-underline-offset: 3px; }
+.example-token.keyword { text-decoration-color: #b7a7c4; }
+.example-token:hover, .example-token:focus-visible { background: #dcedd4; outline: none; }
+.example-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; margin: -10px 0 18px;
+  font-size: 12px; color: #627468; }
+.example-bar a { color: #346447; }
+.inspector-drawer { position: fixed; top: 0; right: 0; z-index: 20; width: var(--drawer-width); height: 100vh;
+  display: grid; grid-template-rows: auto 1fr; background: #fff; border-left: 1px solid #d7e0d7;
+  box-shadow: -8px 0 24px rgb(30 50 35 / 12%); }
+.inspector-drawer[hidden] { display: none; }
+.drawer-head { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid #d7e0d7; font-size: 14px; }
+.drawer-head strong { margin-right: auto; }
+.drawer-head a { color: #346447; }
+.inspector-drawer iframe { width: 100%; height: 100%; border: 0; }

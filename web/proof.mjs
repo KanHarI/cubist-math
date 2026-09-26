@@ -9,24 +9,42 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
+import { keywords, builtinForms } from "./source-tokens.mjs";
 
 const query = new URLSearchParams(location.search);
 const backend = "cubical";
-const proofId = choices.some((p) => p.id === query.get("proof"))
+// A reference example is not a library proof: its source comes from the URL
+// fragment (#source=…), or, when embedded in a reference page, by message.
+const exampleMode = query.has("example"), embedded = exampleMode && query.has("embed");
+const proofId = exampleMode ? "reference_example" : choices.some((p) => p.id === query.get("proof"))
   ? query.get("proof")
   : "euclid";
-const sourceURL = `archive/first-library/${choices.find((p) => p.id === proofId).file ?? cubicalSourceFile(proofId)}`;
+const choice = choices.find((p) => p.id === proofId);
+const sourceURL = exampleMode ? null
+  : `archive/first-library/${choice.file ?? cubicalSourceFile(proofId)}`;
 const snapshot = readProofNavigation(query.get("restore"));
 let restoring = snapshot?.proof === proofId ? snapshot : null;
 const crossFileBack = restoring?.back ?? query.get("back");
-const response = await fetch(sourceURL, { cache: "no-store" });
-if (!response.ok) throw new Error("Unable to load source: " + sourceURL);
-const original = await response.text();
+function exampleSource() {
+  const encoded = new URLSearchParams(location.hash.slice(1)).get("source");
+  if (!encoded) return "";
+  try { return new TextDecoder().decode(Uint8Array.from(atob(encoded.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0))); }
+  catch { return ""; }
+}
+let original;
+if (exampleMode) original = exampleSource();
+else {
+  const response = await fetch(sourceURL, { cache: "no-store" });
+  if (!response.ok) throw new Error("Unable to load source: " + sourceURL);
+  original = await response.text();
+}
+document.body.classList.toggle("embedded", embedded);
 let savedDraft = null,
   previousDraft = null,
   sourceNotice = "";
 try {
-  const stored = sessionStorage.getItem("mathscript:" + proofId);
+  // An example always opens with the source it was given.
+  const stored = exampleMode ? null : sessionStorage.getItem("mathscript:" + proofId);
   if (stored) {
     let record;
     try {
@@ -75,12 +93,17 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
-$("proof-title").textContent = choices.find((p) => p.id === proofId).title;
-$("development-note").hidden = !choices.find((p) => p.id === proofId).realDevelopment;
-$("puncture-note").hidden = !choices.find((p) => p.id === proofId).punctureDevelopment;
-$("complex-note").hidden = !choices.find((p) => p.id === proofId).complexDevelopment;
-$("source-file").href = sourceURL;
-$("source-file").textContent = `web/${sourceURL}`;
+$("proof-title").textContent = choice?.title ?? "Reference example";
+$("development-note").hidden = !choice?.realDevelopment;
+$("puncture-note").hidden = !choice?.punctureDevelopment;
+$("complex-note").hidden = !choice?.complexDevelopment;
+$("archive-note").hidden = exampleMode;
+$("source-file").hidden = exampleMode;
+$("repository-source").hidden = exampleMode;
+if (sourceURL) {
+  $("source-file").href = sourceURL;
+  $("source-file").textContent = `web/${sourceURL}`;
+}
 $("repository-source").href =
   `proof.html?proof=${encodeURIComponent(proofId)}&source=repo`;
 $("source-notice").textContent = sourceNotice;
@@ -115,7 +138,7 @@ function showTopic(topic) {
   if (proofs.some(item => item.id === proofId)) $("proof-picker").value = proofId;
   $("proof-count").textContent = `${proofs.length} proofs`;
 }
-$("proof-topic").value = choices.find(item => item.id === proofId).topic;
+$("proof-topic").value = choice?.topic ?? proofTopics[0].id;
 showTopic($("proof-topic").value);
 $("proof-topic").onchange = () => showTopic($("proof-topic").value);
 function rememberDraft() {
@@ -209,6 +232,20 @@ function request(command, args = {}) {
     worker.postMessage({ id, command, args });
   });
 }
+let focusOffset = null, queuedExample = null;
+// Check an example sent by the embedding reference page, then inspect the
+// name the reader clicked.
+async function runExample({ source, offset }) {
+  if (!ready) { queuedExample = { source, offset }; return; }
+  queuedExample = null;
+  $("editor").value = source;
+  focusOffset = Number.isInteger(offset) ? offset : null;
+  await check();
+}
+if (embedded) addEventListener("message", ({ data, origin }) => {
+  if (origin !== location.origin || data?.type !== "cubist-inspect" || typeof data.source !== "string") return;
+  runExample(data);
+});
 async function check() {
   showChecking(true);
   if (await refreshCompiler()) return;
@@ -236,8 +273,15 @@ async function check() {
       window.scrollTo(0, saved.scroll ?? 0);
     } else {
       const fallback = result.outputs.at(-1);
-      if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
-      if (info) revealSource(info);
+      // An embedding page asks for the name at a source offset.
+      const focus = focusOffset === null ? null : [...result.links].filter(link => link.start === focusOffset)
+        .sort((a, b) => a.end - a.start - (b.end - b.start))[0];
+      focusOffset = null;
+      if (focus) await inspect({ ...decorate(focus), line: result.source.slice(0, focus.start).split("\n").length }, false);
+      else if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
+      // Embedded, the inspector is on top and the source below stays in place.
+      if (focus && !embedded) revealSource(focus);
+      else if (info) revealSource(info);
     }
     rememberDraft();
   } catch (e) {
@@ -371,55 +415,6 @@ function renderResult() {
   detail.textContent = `${last.instructionCount.toLocaleString()} checked instructions. ${last.axiomCount ? last.axiomCount + " explicit axioms in this module." : "No axioms."}`;
   $("result").append(detail);
 }
-const keywords = new Set([
-  "import",
-  "def",
-  "forall",
-  "exists",
-  "and",
-  "or",
-  "let",
-  "obtain",
-  "intro",
-  "have",
-  "cases",
-  "left",
-  "right",
-  "exact",
-  "rfl", "calc", "rw", "simp", "simpa", "simp_rule", "simp_set", "priority", "only", "without", "using", "by", "occurrence", "ext", "over", "along", "from",
-  "private",
-  "export",
-  "verify",
-  "with",
-  "unfolding",
-  "computable",
-  "evaluate",
-  "expecting",
-  "opaque",
-  "axioms",
-  "allow",
-  "none",
-  "intro",
-  "induction",
-  "zero",
-  "succ",
-  "fun",
-  "match",
-  "return",
-  "as",
-]);
-// Language-provided forms share the keyword palette; ordinary library and
-// user-defined functions retain the green reference style.
-const builtinForms = new Set([
-  "W", "sup", "wrec",
-  "Interval", "path", "PathP", "at", "comp", "face", "flip", "meet", "join",
-  "Pushout", "push_left", "push_right", "push_path", "pushout_induction",
-  "Nat", "Unit", "Void", "Universe", "tt", "succ", "refl", "absurd",
-  "sym", "trans", "cong", "transport", "apd", "apd_path", "Eq", "typed",
-  "induct", "unpack", "pair_induction", "unit_induction", "path_induction",
-  "Choice", "LEM", "FunExt", "Truncate",
-  "TruncateIntro", "TruncateProp", "TruncateElim", "Univalence", "UnivalenceBeta", "UnivalenceEta", "ua", "idtoequiv",
-]);
 function renderSource() {
   $("read-source").replaceChildren();
   if (!last) return;
@@ -589,6 +584,7 @@ async function inspect(info, remember = true) {
   $("inspect-axioms").replaceChildren();
   $("locals").replaceChildren();
   $("kernel-details").hidden = info.kind === "goal";
+  $("kernel-terms").hidden = info.kind === "goal";
   $("kernel-details").open = true;
   $("open-kernel-expression").disabled = true;
   $("open-kernel-type").disabled = true;
@@ -635,6 +631,7 @@ async function inspect(info, remember = true) {
   } else {
     if (last.backend === "cubical" && info.verified === false && !templateBinding) {
       $("kernel-details").hidden = true;
+      $("kernel-terms").hidden = true;
       $("inspect-description").textContent = info.template
         ? `Library universe template. Each concrete specialization is checked by cubical C when used. ${info.description ?? ""}`
         : `Not checked by cubical C: ${info.reason}`;
@@ -663,7 +660,8 @@ async function inspect(info, remember = true) {
       if (sequence === inspectSerial) diagnostic(e);
     }
   }
-  if (matchMedia("(max-width:1150px)").matches)
+  if (embedded) scrollTo(0, 0);
+  else if (matchMedia("(max-width:1150px)").matches)
     $("inspect-name").scrollIntoView({ block: "center" });
 }
 function renderStatement(view) {
@@ -931,7 +929,11 @@ async function startWorker(version = undefined) {
     if (data.ready) {
       ready = true;
       refreshStatus();
-      check();
+      // Embedded, the page checks what the embedding page sends.
+      if (embedded) {
+        parent.postMessage({ type: "cubist-ready" }, location.origin);
+        if (queuedExample) runExample(queuedExample);
+      } else check();
       return;
     }
     const p = pending.get(data.id);
