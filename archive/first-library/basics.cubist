@@ -1,10 +1,10 @@
 // Functions and proofs share ordinary typed parameters.
-def identity(A : U0, x : A) = x;
+def identity(A : U0, x : A) := x;
 
-def duplicate(A : U0, x : A) = typed(A and A, (x, x));
+def duplicate(A : U0, x : A) := typed(A and A, (x, x));
 
 // k is the predecessor, and previous is the recursive result at k.
-def copy(n : Nat) = induction n as k return Nat {
+def copy(n : Nat) := induction n as k return Nat {
     zero => 0;
     succ previous => succ(previous);
   };

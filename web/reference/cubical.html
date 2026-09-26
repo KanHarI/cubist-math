@@ -87,7 +87,7 @@ def to_start(A : U0, x y : A, p : x = y) :
   // Error: Interval coordinates can only be used in interval arguments.
   exact path i =&gt; typed(Nat, i);
 }</code></pre>
-            <pre><code data-check="reject">def interval_as_type(i : Interval) = i;  // Error: Untranslated name: Interval</code></pre>
+            <pre><code data-check="reject">def interval_as_type(i : Interval) := i;  // Error: Untranslated name: Interval</code></pre>
           </section>
           <section id="cubical-shorthand">
             <h2>Shorthand</h2>
@@ -118,7 +118,7 @@ def naturality_square(A B : U0, f g : A -&gt; B,
             <p><code>reverse_again</code> is the same term as <code>reverse_path</code>, with the family read from the goal. <code>naturality_square</code> fills a square whose sides are <code>cong(f, p)</code>, <code>cong(g, p)</code>, <code>H(x)</code> and <code>H(y)</code>. The outer <code>path j</code> gets its family from the <code>PathP</code> goal, and each inner <code>path i</code> from the equality at <code>j</code>. The kernel then checks all four edges.</p>
             <p>The shorthand needs an expected path type to supply the family:</p>
             <pre><code data-check="reject">// Error: path i =&gt; ... needs an expected Path or PathP type.
-def no_expected_type(A : U0, x : A) = path i =&gt; x;</code></pre>
+def no_expected_type(A : U0, x : A) := path i =&gt; x;</code></pre>
           </section>
           <section id="dependent-paths">
             <h2>Dependent paths</h2>
@@ -200,11 +200,11 @@ def join_by_formulas(A : U0, x y z : A, p : x = y, q : y = z) : x = z {
           <section id="pushouts">
             <h2>Pushouts</h2>
             <p><code>Pushout(S, A, B, f, g)</code>, for <code>f : S -> A</code> and <code>g : S -> B</code>, glues <code>A</code> and <code>B</code> along <code>S</code>. Its constructors are <code>push_left(P, a)</code>, <code>push_right(P, b)</code> and, for each <code>s : S</code>, the path <code>push_path(P, s) : push_left(P, f(s)) = push_right(P, g(s))</code>, where <code>P</code> is the pushout type.</p>
-            <pre><code data-check="accept">def TwoPoints = Pushout(Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
+            <pre><code data-check="accept">def TwoPoints := Pushout(Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
 
-def west = push_left(TwoPoints, tt);
+def west := push_left(TwoPoints, tt);
 
-def east = push_right(TwoPoints, tt);
+def east := push_right(TwoPoints, tt);
 
 def bridge(n : Nat) : west = east {
   exact push_path(TwoPoints, n);
@@ -219,11 +219,11 @@ def collapse(value : TwoPoints) : Unit {
           <section id="suspensions">
             <h2>Suspensions</h2>
             <p>The suspension of <code>A</code> is the pushout of the two maps <code>A -> Unit</code>. Its operations are ordinary definitions in <a href="../proof.html?proof=suspension_types&amp;name=Suspension">the suspension library</a>, so they are written with the pushout constructors:</p>
-            <pre><code data-check="accept">def Suspension(A : U0) = Pushout(A, Unit, Unit,
+            <pre><code data-check="accept">def Suspension(A : U0) := Pushout(A, Unit, Unit,
   fun (_ : A) =&gt; tt, fun (_ : A) =&gt; tt);
-def north(A : U0) = push_left(Suspension(A), tt);
-def south(A : U0) = push_right(Suspension(A), tt);
-def meridian(A : U0, a : A) = push_path(Suspension(A), a);</code></pre>
+def north(A : U0) := push_left(Suspension(A), tt);
+def south(A : U0) := push_right(Suspension(A), tt);
+def meridian(A : U0, a : A) := push_path(Suspension(A), a);</code></pre>
             <p>After <code>import suspension_types;</code>, <code>Suspension(A)</code> has the points <code>north(A)</code> and <code>south(A)</code> and, for every <code>a : A</code>, a path <code>meridian(A, a) : north(A) = south(A)</code>. <code>suspension_induction(A, C, atNorth, atSouth, coherence, point)</code> eliminates into a family <code>C</code> over the suspension. The coherence case takes <code>a : A</code> and proves <code>transport(C, north(A), south(A), meridian(A, a), atNorth) = atSouth</code>.</p>
             <pre><code data-check="accept">import suspension_types;
 

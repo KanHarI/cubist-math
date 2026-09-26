@@ -726,7 +726,7 @@ Completion:
   ```text
   def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A,
       p q : GroupLaws(A, unit, multiply)) : p = q {
-    have setA = group_set_law(A, unit, multiply, p);
+    have setA := group_set_law(A, unit, multiply, p);
     hlevel with [setA, group_inverse_evidence_prop(A, unit, multiply, p)];
   }
   ```
@@ -1247,7 +1247,7 @@ directly, suspension recursion computes on meridians by conversion:
 ```text
 import suspension;
 
-def bridge_rec(A : U0, B : U1, n : B, s : B, h : A -> (n = s), x : Suspension(A)) =
+def bridge_rec(A : U0, B : U1, n : B, s : B, h : A -> (n = s), x : Suspension(A)) :=
   pushout_induction(
     fun (p : Suspension(A)) => B, fun (u : Unit) => n, fun (u : Unit) => s,
     fun (a : A) => h(a), x
@@ -1308,7 +1308,7 @@ With this definition, `PropLevel(0, A) =[U0] IsProp(A)` and
 import sets;
 import truncation;
 
-def PropLevel(n : Nat) = induction n as k return (U0 -> U0) {
+def PropLevel(n : Nat) := induction n as k return (U0 -> U0) {
     zero => fun (A : U0) => IsProp(A);
     succ previous => fun (A : U0) => forall x : A, forall y : A, previous(x = y);
   };

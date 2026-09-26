@@ -2,10 +2,10 @@ import quotient_groups;
 import kernel_quotient_image;
 
 // The normal-kernel quotient carries its descended operations in U1.
-def KernelQuotientGroup(G H : Group, h : GroupHom(G, H)) =
+def KernelQuotientGroup(G H : Group, h : GroupHom(G, H)) :=
   QuotientGroup(G, group_kernel(G, H, h), group_kernel_normal(G, H, h));
 
-def ImageGroup(G H : Group, h : GroupHom(G, H)) = subgroup_as_group(H, group_image(G, H, h));
+def ImageGroup(G H : Group, h : GroupHom(G, H)) := subgroup_as_group(H, group_image(G, H, h));
 
 def kernel_image_multiply_on_classes(G H : Group, h : GroupHom(G, H), x y : group_carrier(G)) :
   kernel_quotient_to_image(
@@ -18,9 +18,9 @@ def kernel_image_multiply_on_classes(G H : Group, h : GroupHom(G, H), x y : grou
     ImageGroup(G, H, h), kernel_quotient_to_image(G, H, h, left_coset(G, group_kernel(G, H, h), x)),
     kernel_quotient_to_image(G, H, h, left_coset(G, group_kernel(G, H, h), y))
   ) {
-  let out = kernel_quotient_to_image(G, H, h);
-  let f = group_image_map(G, H, h);
-  let m = group_multiply(ImageGroup(G, H, h));
+  let out := kernel_quotient_to_image(G, H, h);
+  let f := group_image_map(G, H, h);
+  let m := group_multiply(ImageGroup(G, H, h));
   exact with unfolding [left_coset, group_image_map, ImageGroup] {
     trans(
       cong(
@@ -53,10 +53,10 @@ def kernel_quotient_image_multiply(G H : Group, h : GroupHom(G, H), q r : Kernel
   ) = group_multiply(
     ImageGroup(G, H, h), kernel_quotient_to_image(G, H, h, q), kernel_quotient_to_image(G, H, h, r)
   ) {
-  let Q = KernelQuotient(G, H, h);
-  let out = kernel_quotient_to_image(G, H, h);
-  let m = quotient_multiply(G, group_kernel(G, H, h), group_kernel_normal(G, H, h));
-  let product = group_multiply(ImageGroup(G, H, h));
+  let Q := KernelQuotient(G, H, h);
+  let out := kernel_quotient_to_image(G, H, h);
+  let m := quotient_multiply(G, group_kernel(G, H, h), group_kernel_normal(G, H, h));
+  let product := group_multiply(ImageGroup(G, H, h));
   exact with unfolding [left_coset] {
     quotient_induction_prop2(
       group_carrier(G), SameLeftCoset(G, group_kernel(G, H, h)),

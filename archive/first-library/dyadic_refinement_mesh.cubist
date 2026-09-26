@@ -23,16 +23,16 @@ def interval_refinement_mesh(
     FieldUnitInterval(F, zero, one, lt),
     IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), n, vertices, tags, pieces
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let coarse = IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
-  let fine = IntervalRefinementAdmissible(F, zero, one, lt);
-  let other = IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let coarse := IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
+  let fine := IntervalRefinementAdmissible(F, zero, one, lt);
+  let other := IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   have combine :
     forall a : I, forall b : I, forall tag : I, forall piece : SampleSubdivision(I, a, b),
     coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece) {
     intro a b tag piece coarseData fineData;
-    obtain (within, bounded) = coarseData;
+    obtain (within, bounded) := coarseData;
     exact (
       within,
       leLt(interval_difference(F, zero, one, addF, negF, lt)(a, b), radius, mesh, bounded, small),
@@ -76,25 +76,25 @@ def dyadic_samples_refine_below_mesh(
       b, ordered
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let coarse =
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let coarse :=
     dyadic_piece(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
       ordered
     );
-  let n = subdivision_count(I, a, b, coarse);
-  let vertices = subdivision_vertices(I, a, b, coarse);
-  let tags = subdivision_tags(I, a, b, coarse);
-  obtain (pieces, fineValid, computes) = dyadic_samples_refine(
+  let n := subdivision_count(I, a, b, coarse);
+  let vertices := subdivision_vertices(I, a, b, coarse);
+  let tags := subdivision_tags(I, a, b, coarse);
+  obtain (pieces, fineValid, computes) := dyadic_samples_refine(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, G, zeroG, addG,
     leftUnit, rightUnit, assoc, edge, depth, extra, a, b, ordered
   );
-  let coarseValid =
+  let coarseValid :=
     dyadic_piece_valid(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
       ordered
     );
-  let valid =
+  let valid :=
     interval_refinement_mesh(
       F, zero, one, addF, mulF, negF, lt, arithmetic,
       dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b)), mesh,

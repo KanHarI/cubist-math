@@ -13,7 +13,7 @@ def nat_double_add(a b : Nat) : (a + b) + (a + b) = (a + a) + (b + b) {
   }
 }
 
-def BinaryAddCorrect(p q : BinaryPositive) =
+def BinaryAddCorrect(p q : BinaryPositive) :=
   binary_positive_to_nat(binary_positive_add(p, q)) = binary_positive_to_nat(p) + binary_positive_to_nat(
     q
   );
@@ -71,9 +71,9 @@ def binary_add_odd_even(p q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
 
 def binary_add_odd_odd(p q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
   BinaryAddCorrect(binary_bit1(p), binary_bit1(q)) {
-  let a = binary_positive_to_nat(p);
-  let b = binary_positive_to_nat(q);
-  let sum = binary_positive_to_nat(binary_positive_add(p, q));
+  let a := binary_positive_to_nat(p);
+  let b := binary_positive_to_nat(q);
+  let sum := binary_positive_to_nat(binary_positive_add(p, q));
   exact trans(
     binary_decode_even(binary_positive_succ(binary_positive_add(p, q))),
     trans(
@@ -155,7 +155,7 @@ def binary_decode_add(a b : BinaryNat) :
   };
 }
 
-def BinaryMulCorrect(p q : BinaryPositive) =
+def BinaryMulCorrect(p q : BinaryPositive) :=
   binary_positive_to_nat(binary_positive_mul(p, q)) = binary_positive_to_nat(p) * binary_positive_to_nat(
     q
   );
@@ -238,7 +238,7 @@ def binary_factorial_correct(n : Nat) : binary_to_nat(binary_factorial(n)) = fac
 // The right side denotes 3628800 in unary Nat but remains a compact expression.
 // This manual transfer uses the proved compatibility theorem. It is not yet
 // the computational cubical-univalence transport regression.
-def nat_3628800 = binary_to_nat(0b1101110101111100000000);
+def nat_3628800 := binary_to_nat(0b1101110101111100000000);
 
 def factorial_ten_from_binary : factorial(10) = nat_3628800 {
   exact trans(sym(binary_factorial_correct(10)), cong(binary_to_nat, binary_factorial_ten));

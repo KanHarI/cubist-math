@@ -3,24 +3,24 @@ import dimension;
 
 // A support bound says all coefficients from n onward vanish. The bound is
 // not part of polynomial identity; only its mere existence is retained.
-def SeriesSupport(K : AlgebraicField, f : FormalSeries(K), n : Nat) =
+def SeriesSupport(K : AlgebraicField, f : FormalSeries(K), n : Nat) :=
   forall k : Nat, le(n, k) -> f(k) = field_zero(K);
 
-def FiniteSupport(K : AlgebraicField, f : FormalSeries(K)) =
+def FiniteSupport(K : AlgebraicField, f : FormalSeries(K)) :=
   Mere(exists n : Nat, SeriesSupport(K, f, n));
 
-def Polynomial(K : AlgebraicField) = exists f : FormalSeries(K), FiniteSupport(K, f);
+def Polynomial(K : AlgebraicField) := exists f : FormalSeries(K), FiniteSupport(K, f);
 
-def polynomial_coefficients(K : AlgebraicField, p : Polynomial(K)) =
+def polynomial_coefficients(K : AlgebraicField, p : Polynomial(K)) :=
   sigma_first(FormalSeries(K), FiniteSupport(K), p);
 
-def polynomial_support(K : AlgebraicField, p : Polynomial(K)) =
+def polynomial_support(K : AlgebraicField, p : Polynomial(K)) :=
   sigma_second(FormalSeries(K), FiniteSupport(K), p);
 
-def finite_support_prop(K : AlgebraicField, f : FormalSeries(K)) =
+def finite_support_prop(K : AlgebraicField, f : FormalSeries(K)) :=
   mere_is_prop(exists n : Nat, SeriesSupport(K, f, n));
 
-def series_support_prop(K : AlgebraicField, f : FormalSeries(K), n : Nat) =
+def series_support_prop(K : AlgebraicField, f : FormalSeries(K), n : Nat) :=
   forall_prop(
     Nat, (fun (k : Nat) => le(n, k) -> f(k) = field_zero(K)),
     (
@@ -39,7 +39,7 @@ def polynomial_ext(
   exact subtype_ext(FormalSeries(K), FiniteSupport(K), finite_support_prop(K), p, q, same);
 }
 
-def polynomial_set(K : AlgebraicField) =
+def polynomial_set(K : AlgebraicField) :=
   subtype_is_set(
     FormalSeries(K), FiniteSupport(K),
     group_is_set(vector_group(K, FunctionSpace(K, Nat, ScalarSpace(K)))), finite_support_prop(K)
@@ -171,7 +171,7 @@ def support_mul_step(
   };
 }
 
-def support_mul(K : AlgebraicField, m : Nat) =
+def support_mul(K : AlgebraicField, m : Nat) :=
   induction m as k return (
     forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat, SeriesSupport(K, f, k)
     -> SeriesSupport(K, g, n) -> SeriesSupport(K, series_mul(K, f, g), add_count(k, n))
@@ -182,15 +182,15 @@ def support_mul(K : AlgebraicField, m : Nat) =
     succ previous => support_mul_step(K, k, previous);
   };
 
-def polynomial_zero(K : AlgebraicField) =
+def polynomial_zero(K : AlgebraicField) :=
   polynomial_of_support(
     K, series_zero(K), 0, (fun (k : Nat, above : le(0, k)) => refl(field_zero(K)))
   );
 
-def polynomial_constant(K : AlgebraicField, a : af_carrier(K)) =
+def polynomial_constant(K : AlgebraicField, a : af_carrier(K)) :=
   polynomial_of_support(K, series_constant(K, a), 1, support_constant(K, a));
 
-def polynomial_one(K : AlgebraicField) = polynomial_constant(K, field_one(K));
+def polynomial_one(K : AlgebraicField) := polynomial_constant(K, field_one(K));
 
 // Closure under a binary operation on coefficient functions can eliminate
 // both support witnesses because finite support is a proposition.
@@ -202,17 +202,17 @@ def finite_support_binary(
   ), p q : Polynomial(K)
 ) :
   Polynomial(K) {
-  let f = polynomial_coefficients(K, p);
-  let g = polynomial_coefficients(K, q);
-  let Wf = exists m : Nat, SeriesSupport(K, f, m);
-  let Wg = exists n : Nat, SeriesSupport(K, g, n);
-  let Result = exists k : Nat, SeriesSupport(K, op(f, g), k);
+  let f := polynomial_coefficients(K, p);
+  let g := polynomial_coefficients(K, q);
+  let Wf := exists m : Nat, SeriesSupport(K, f, m);
+  let Wg := exists n : Nat, SeriesSupport(K, g, n);
+  let Result := exists k : Nat, SeriesSupport(K, op(f, g), k);
   have first : Wf -> FiniteSupport(K, op(f, g)) {
     intro wf;
-    obtain (m, sf) = wf;
+    obtain (m, sf) := wf;
     have second : Wg -> Result {
       intro wg;
-      obtain (n, sg) = wg;
+      obtain (n, sg) := wg;
       exact (add_count(m, n), closure(m, f, g, n, sf, sg));
     }
     exact mere_map(Wg, Result, second, polynomial_support(K, q));
@@ -226,19 +226,19 @@ def finite_support_binary(
   );
 }
 
-def polynomial_add(K : AlgebraicField) =
+def polynomial_add(K : AlgebraicField) :=
   finite_support_binary(
     K, series_add(K), (fun (m : Nat, f g : FormalSeries(K), n : Nat) => support_add(K, f, g, m, n))
   );
 
-def polynomial_mul(K : AlgebraicField) = finite_support_binary(K, series_mul(K), support_mul(K));
+def polynomial_mul(K : AlgebraicField) := finite_support_binary(K, series_mul(K), support_mul(K));
 
 def polynomial_shift(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
-  let f = polynomial_coefficients(K, p);
-  let Result = exists k : Nat, SeriesSupport(K, series_shift(K, f), k);
+  let f := polynomial_coefficients(K, p);
+  let Result := exists k : Nat, SeriesSupport(K, series_shift(K, f), k);
   have convert : (exists n : Nat, SeriesSupport(K, f, n)) -> Result {
     intro witness;
-    obtain (n, support) = witness;
+    obtain (n, support) := witness;
     exact (succ(n), support_shift(K, f, n, support));
   }
   exact (
@@ -247,14 +247,14 @@ def polynomial_shift(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
   );
 }
 
-def polynomial_variable(K : AlgebraicField) = polynomial_shift(K, polynomial_one(K));
+def polynomial_variable(K : AlgebraicField) := polynomial_shift(K, polynomial_one(K));
 
 def polynomial_neg(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
-  let f = polynomial_coefficients(K, p);
-  let Result = exists k : Nat, SeriesSupport(K, series_neg(K, f), k);
+  let f := polynomial_coefficients(K, p);
+  let Result := exists k : Nat, SeriesSupport(K, series_neg(K, f), k);
   have convert : (exists n : Nat, SeriesSupport(K, f, n)) -> Result {
     intro witness;
-    obtain (n, support) = witness;
+    obtain (n, support) := witness;
     exact (
       n,
       (

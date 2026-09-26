@@ -2,10 +2,10 @@ import subfield_composita;
 
 // Change presentation by transporting the entire subfield bundle along a
 // field equality. All membership and closure evidence moves together.
-def subfield_transport(F G : AlgebraicField, p : F =[AlgebraicField] G, S : Subfield(F)) =
+def subfield_transport(F G : AlgebraicField, p : F =[AlgebraicField] G, S : Subfield(F)) :=
   along Subfield by p from S;
 
-def compositum_transport(F G : AlgebraicField, p : F =[AlgebraicField] G) =
+def compositum_transport(F G : AlgebraicField, p : F =[AlgebraicField] G) :=
   fun (S T : Subfield(F)) => path_to_transport(
     fun (i : Interval) => Subfield(p @ i), compositum(F, S, T),
     compositum(G, subfield_transport(F, G, p, S), subfield_transport(F, G, p, T)),
@@ -18,7 +18,7 @@ def compositum_transport(F G : AlgebraicField, p : F =[AlgebraicField] G) =
     )
   );
 
-def subfield_transport_member(F G : AlgebraicField, p : F =[AlgebraicField] G) =
+def subfield_transport_member(F G : AlgebraicField, p : F =[AlgebraicField] G) :=
   fun (S : Subfield(F), x : af_carrier(F), member : subfield_members(F, S, x)) => comp(
     fun (i : Interval) => subfield_members(
       p @ i, fill(fun (j : Interval) => Subfield(p @ j), S, i),
@@ -26,7 +26,7 @@ def subfield_transport_member(F G : AlgebraicField, p : F =[AlgebraicField] G) =
     ), member
   );
 
-def subfield_along_iso(F G : AlgebraicField, e : FieldIso(F, G), S : Subfield(F)) =
+def subfield_along_iso(F G : AlgebraicField, e : FieldIso(F, G), S : Subfield(F)) :=
   subfield_transport(F, G, field_isotoid(F, G, e), S);
 
 // Naturality requires only path induction once the isomorphism is a path.

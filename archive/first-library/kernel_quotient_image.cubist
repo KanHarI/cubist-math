@@ -2,11 +2,11 @@ import group_quotient_maps;
 import subgroup_images;
 import equivalence_from_inverse;
 
-def KernelQuotient(G H : Group, h : GroupHom(G, H)) = LeftCosets(G, group_kernel(G, H, h));
+def KernelQuotient(G H : Group, h : GroupHom(G, H)) := LeftCosets(G, group_kernel(G, H, h));
 
-def GroupImageCarrier(G H : Group, h : GroupHom(G, H)) = SubgroupCarrier(H, group_image(G, H, h));
+def GroupImageCarrier(G H : Group, h : GroupHom(G, H)) := SubgroupCarrier(H, group_image(G, H, h));
 
-def group_image_map(G H : Group, h : GroupHom(G, H)) =
+def group_image_map(G H : Group, h : GroupHom(G, H)) :=
   group_hom_map(G, subgroup_as_group(H, group_image(G, H, h)), group_image_factor(G, H, h));
 
 def image_map_respects_kernel(G H : Group, h : GroupHom(G, H)) :
@@ -21,7 +21,7 @@ def image_map_respects_kernel(G H : Group, h : GroupHom(G, H)) :
   );
 }
 
-def kernel_quotient_to_image(G H : Group, h : GroupHom(G, H)) =
+def kernel_quotient_to_image(G H : Group, h : GroupHom(G, H)) :=
   quotient_rec(
     group_carrier(G), SameLeftCoset(G, group_kernel(G, H, h)),
     same_coset_equivalence(G, group_kernel(G, H, h)), GroupImageCarrier(G, H, h),
@@ -46,24 +46,24 @@ def kernel_quotient_to_image_beta(G H : Group, h : GroupHom(G, H), x : group_car
 // The inverse is the fiber predicate itself, not a selected preimage of y.
 def ImageFiberPredicate(
   G H : Group, h : GroupHom(G, H), y : GroupImageCarrier(G, H, h), x : group_carrier(G)
-) =
+) :=
   subgroup_value(H, group_image(G, H, h), y) = group_hom_map(G, H, h, x);
 
 def image_fiber_class_witness(G H : Group, h : GroupHom(G, H), y : GroupImageCarrier(G, H, h)) :
   ClassWitness(
     group_carrier(G), SameLeftCoset(G, group_kernel(G, H, h)), ImageFiberPredicate(G, H, h, y)
   ) {
-  let f = group_hom_map(G, H, h);
-  let value = subgroup_value(H, group_image(G, H, h), y);
-  let relation = SameLeftCoset(G, group_kernel(G, H, h));
-  let W =
+  let f := group_hom_map(G, H, h);
+  let value := subgroup_value(H, group_image(G, H, h), y);
+  let relation := SameLeftCoset(G, group_kernel(G, H, h));
+  let W :=
     (
       exists x : group_carrier(G), forall a : group_carrier(G),
       ImageFiberPredicate(G, H, h, y, a) = relation(x, a)
     );
   have atPreimage : SubgroupImageWitness(G, H, h, subgroup_top(G), value) -> FieldExists(W) {
     intro witness;
-    obtain (x, member, fx) = witness;
+    obtain (x, member, fx) := witness;
     exact field_exists_intro(
       W,
       typed(
@@ -102,13 +102,13 @@ def image_to_kernel_quotient(G H : Group, h : GroupHom(G, H), y : GroupImageCarr
 
 def kernel_quotient_image_right(G H : Group, h : GroupHom(G, H), y : GroupImageCarrier(G, H, h)) :
   kernel_quotient_to_image(G, H, h, image_to_kernel_quotient(G, H, h, y)) = y {
-  let image = group_image(G, H, h);
-  let value = subgroup_value(H, image, y);
-  let q = image_to_kernel_quotient(G, H, h, y);
-  let out = kernel_quotient_to_image(G, H, h, q);
+  let image := group_image(G, H, h);
+  let value := subgroup_value(H, image, y);
+  let q := image_to_kernel_quotient(G, H, h, y);
+  let out := kernel_quotient_to_image(G, H, h, q);
   have atPreimage : SubgroupImageWitness(G, H, h, subgroup_top(G), value) -> out = y {
     intro witness;
-    obtain (x, member, fx) = witness;
+    obtain (x, member, fx) := witness;
     exact trans(
       sym(
         quotient_rec_member(
@@ -149,15 +149,15 @@ def kernel_quotient_image_member_inverse(
   member : ImageFiberPredicate(G, H, h, kernel_quotient_to_image(G, H, h, q), a)
 ) :
   quotient_predicate(group_carrier(G), SameLeftCoset(G, group_kernel(G, H, h)), q, a) {
-  let A = group_carrier(G);
-  let relation = SameLeftCoset(G, group_kernel(G, H, h));
-  let P = quotient_predicate(A, relation, q);
+  let A := group_carrier(G);
+  let relation := SameLeftCoset(G, group_kernel(G, H, h));
+  let P := quotient_predicate(A, relation, q);
   have atRepresentative : (exists b : A, forall x : A, P(x) = relation(b, x)) -> P(a) {
     intro witness;
-    obtain (b, same) = witness;
-    let pb =
+    obtain (b, same) := witness;
+    let pb :=
       along((fun (T : U0) => T)) by sym(same(b)) from same_coset_refl(G, group_kernel(G, H, h), b);
-    let imagesEqual = trans(sym(kernel_quotient_image_member(G, H, h, q, b, pb)), member);
+    let imagesEqual := trans(sym(kernel_quotient_image_member(G, H, h, q, b, pb)), member);
     exact along((fun (T : U0) => T)) by sym(same(a)) from kernel_coset_of_equal_images(
       G, H, h, b, a, imagesEqual
     );
@@ -171,9 +171,9 @@ def kernel_quotient_image_member_inverse(
 
 def kernel_quotient_image_left(G H : Group, h : GroupHom(G, H), q : KernelQuotient(G, H, h)) :
   image_to_kernel_quotient(G, H, h, kernel_quotient_to_image(G, H, h, q)) = q {
-  let A = group_carrier(G);
-  let relation = SameLeftCoset(G, group_kernel(G, H, h));
-  let out = kernel_quotient_to_image(G, H, h, q);
+  let A := group_carrier(G);
+  let relation := SameLeftCoset(G, group_kernel(G, H, h));
+  let out := kernel_quotient_to_image(G, H, h, q);
   exact quotient_ext(
     A, relation, image_to_kernel_quotient(G, H, h, out), q,
     field_predicate_ext(
@@ -201,28 +201,28 @@ def kernel_quotient_image_left(G H : Group, h : GroupHom(G, H), q : KernelQuotie
 // group_first_isomorphism equips these carriers with their group structures.
 // Check the universe specialization once with abstract carriers. Concrete
 // quotient terms then remain named arguments to this checked constructor.
-def kernel_image_adjoint_counit = adjoint_counit(U1);
+def kernel_image_adjoint_counit := adjoint_counit(U1);
 
-def kernel_image_homotopy_self = homotopy_self(U1);
+def kernel_image_homotopy_self := homotopy_self(U1);
 
-def kernel_image_homotopy_natural = homotopy_natural(U1);
+def kernel_image_homotopy_natural := homotopy_natural(U1);
 
-def kernel_image_ap_interchange = ap_interchange(U1);
+def kernel_image_ap_interchange := ap_interchange(U1);
 
-def kernel_image_path_prepend_inverse_cancel_at = path_prepend_inverse_cancel_at(U1);
+def kernel_image_path_prepend_inverse_cancel_at := path_prepend_inverse_cancel_at(U1);
 
 def kernel_image_adjoint_triangle(
   A B : U1, f : A -> B, g : B -> A, eta : (forall x : A, g(f(x)) = x),
   epsilon : (forall y : B, f(g(y)) = y), x : A
 ) :
   cong(f, eta(x)) = kernel_image_adjoint_counit(A, B, f, g, eta, epsilon, f(x)) {
-  let a = f(g(f(g(f(x)))));
-  let b = f(g(f(x)));
-  let c = f(x);
-  let p = epsilon(b);
-  let q = cong(f, eta(g(f(x))));
-  let s = cong(f, eta(x));
-  let act = (fun (r : g(f(g(f(x)))) = g(f(x))) => cong(f, r));
+  let a := f(g(f(g(f(x)))));
+  let b := f(g(f(x)));
+  let c := f(x);
+  let p := epsilon(b);
+  let q := cong(f, eta(g(f(x))));
+  let s := cong(f, eta(x));
+  let act := (fun (r : g(f(g(f(x)))) = g(f(x))) => cong(f, r));
   have exchange : q = cong((fun (v : B) => f(g(v))), s) := trans(
     sym(cong(act, kernel_image_homotopy_self(A, (fun (v : A) => g(f(v))), eta, x))),
     kernel_image_ap_interchange(A, B, f, g, g(f(x)), x, eta(x))

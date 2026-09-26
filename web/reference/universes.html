@@ -51,11 +51,11 @@
           <section id="universes">
             <h2>Universes</h2>
             <p><code>U0</code> denotes U₀; <code>U1</code>, <code>U2</code>, and <code>U3</code> denote U₁, U₂, and U₃. In particular <code>U0 : U1</code>. Smaller types can be lifted to larger universes; a larger type cannot be silently lowered.</p>
-            <pre><code data-check="accept">def large_identity(A : U1, x : A) = x;
-def lifted_unit = typed(U1, Unit);
-def identity(U : Universe, A : U, x : A) = x;
-def small_identity = identity(U0);
-def universe_identity = identity(U2, U1, U0);</code></pre>
+            <pre><code data-check="accept">def large_identity(A : U1, x : A) := x;
+def lifted_unit := typed(U1, Unit);
+def identity(U : Universe, A : U, x : A) := x;
+def small_identity := identity(U0);
+def universe_identity := identity(U2, U1, U0);</code></pre>
             <p>A declaration with <code>A : U0</code> remains restricted to small types. Write <code>U : Universe</code> to parameterize a declaration over a universe. This makes the declaration a <strong>template</strong>: the elaborator makes a separate, specialized copy for each universe it is used at, and the kernel checks that copy. The argument must be a universe, not an arbitrary type. Universe arguments are explicit; the compiler does not infer them. Several universe parameters can be grouped, as in <code>(U V : Universe, A : U, B : V)</code>. A family may need an explicit lift, such as <code>fun (a : A) =&gt; typed(U1, Unit)</code>.</p>
             <p>When inspecting a universe template, choose <code>U0</code>, <code>U1</code>, <code>U2</code>, or <code>U3</code> for each universe parameter. The inspector checks that specialization and shows its expression, type, and local context. Names inside the template use the selected universes too. Workbench transfers preserve the selection and display names such as <code>GroupAt_U0</code>; the generic declaration remains a template.</p>
             <p><code>IsProp(A)</code>, <code>IsSet(A)</code>, and <code>Equiv(U, A, B)</code> are library definitions, not new sorts or language keywords. In particular, <code>IsSet(A)</code> says that any two identity proofs between the same elements agree.</p>

@@ -3,10 +3,10 @@ import galois_fixed_fields;
 import subgroups;
 
 // The Galois case uses the same subgroup type as every other bundled group.
-def GaloisSubgroupLaws(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) =
+def GaloisSubgroupLaws(K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0) :=
   SubgroupLaws(GaloisGroup(K, E), H);
 
-def GaloisSubgroup(K : AlgebraicField, E : FieldExt(K)) = Subgroup(GaloisGroup(K, E));
+def GaloisSubgroup(K : AlgebraicField, E : FieldExt(K)) := Subgroup(GaloisGroup(K, E));
 
 def galois_fixing_prop(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E)
@@ -51,7 +51,7 @@ def galois_fixing_inverse(
 ) :
   GaloisFixing(K, E, P, galois_inverse(K, E, e)) {
   intro x member;
-  let inverseMap = extension_iso_forward(K, E, E, galois_inverse(K, E, e));
+  let inverseMap := extension_iso_forward(K, E, E, galois_inverse(K, E, e));
   have inverseLaw : inverseMap(extension_iso_forward(K, E, E, e, x)) = x := cong(
     (fun (d : Galois(K, E)) => extension_iso_forward(K, E, E, d, x)), galois_right_inverse(K, E, e)
   );
@@ -88,15 +88,15 @@ def galois_fixing_subgroup(K : AlgebraicField, E : FieldExt(K), P : extension_ca
   exact (GaloisFixing(K, E, P), galois_fixing_subgroup_laws(K, E, P));
 }
 
-def galois_subgroup_members(K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E)) =
+def galois_subgroup_members(K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E)) :=
   unpack H as (P, laws) return (Galois(K, E) -> U0) {
     P;
   };
 
-def fixed_intermediate_field(K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E)) =
+def fixed_intermediate_field(K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E)) :=
   galois_fixed_field(K, E, galois_subgroup_members(K, E, H));
 
-def fixing_galois_subgroup(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
+def fixing_galois_subgroup(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :=
   galois_fixing_subgroup(K, E, intermediate_members(K, E, M));
 
 // The two assignments are an order-reversing connection between genuine

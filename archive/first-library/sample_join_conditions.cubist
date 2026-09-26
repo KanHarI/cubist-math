@@ -25,16 +25,16 @@ def sample_tagged_join_step(
     C, condition, succ(n) + m, join_vertices(C, succ(n), vertices, m, rightVertices),
     join_tags(C, succ(n), tags, m, rightTags)
   ) {
-  let a = field_fst(C, SampleVertices(C, n), vertices);
-  let tail = field_snd(C, SampleVertices(C, n), vertices);
-  let tag = field_fst(C, SampleTags(C, n), tags);
-  let tailTags = field_snd(C, SampleTags(C, n), tags);
-  let joined = join_vertices(C, n, tail, m, rightVertices);
-  let joinedTags = join_tags(C, n, tailTags, m, rightTags);
+  let a := field_fst(C, SampleVertices(C, n), vertices);
+  let tail := field_snd(C, SampleVertices(C, n), vertices);
+  let tag := field_fst(C, SampleTags(C, n), tags);
+  let tailTags := field_snd(C, SampleTags(C, n), tags);
+  let joined := join_vertices(C, n, tail, m, rightVertices);
+  let joinedTags := join_tags(C, n, tailTags, m, rightTags);
   have data : condition(a, sample_first(C, n, tail), tag)
   and SampleTagged(C, condition, n, tail, tailTags) := valid;
-  obtain (headValid, tailValid) = data;
-  let firstPath = join_vertices_first(C, n, tail, m, rightVertices, same);
+  obtain (headValid, tailValid) := data;
+  let firstPath := join_vertices_first(C, n, tail, m, rightVertices, same);
   exact typed(
     (
       condition(a, sample_first(C, n + m, joined), tag)
@@ -79,7 +79,7 @@ def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
 
 def SubdivisionTaggedValid(
   C : U1, condition : C -> C -> C -> U0, a b : C, piece : SampleSubdivision(C, a, b)
-) =
+) :=
   SampleTagged(
     C, condition, subdivision_count(C, a, b, piece), subdivision_vertices(C, a, b, piece),
     subdivision_tags(C, a, b, piece)
@@ -91,10 +91,10 @@ def subdivision_tagged_valid_join(
   validRight : SubdivisionTaggedValid(C, condition, b, c, right)
 ) :
   SubdivisionTaggedValid(C, condition, a, c, join_subdivisions(C, a, b, c, left, right)) {
-  let n = subdivision_count(C, a, b, left);
-  let vertices = subdivision_vertices(C, a, b, left);
-  let m = subdivision_count(C, b, c, right);
-  let rightVertices = subdivision_vertices(C, b, c, right);
+  let n := subdivision_count(C, a, b, left);
+  let vertices := subdivision_vertices(C, a, b, left);
+  let m := subdivision_count(C, b, c, right);
+  let rightVertices := subdivision_vertices(C, b, c, right);
   have lastLeft : sample_last(C, n, vertices) = b := field_snd(
     (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
     subdivision_endpoints(C, a, b, left)

@@ -7,9 +7,9 @@ def polynomial_eval_horner(
     L, field_embedding_map(K, L, e, polynomial_coefficients(K, p, 0)),
     field_mul(L, x, polynomial_eval(K, L, e, polynomial_tail(K, p), x))
   ) {
-  let c = polynomial_constant(K, polynomial_coefficients(K, p, 0));
-  let t = polynomial_tail(K, p);
-  let E = fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
+  let c := polynomial_constant(K, polynomial_coefficients(K, p, 0));
+  let t := polynomial_tail(K, p);
+  let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
   exact with unfolding [] {
     trans(
       cong(E, polynomial_decompose(K, p)),
@@ -39,15 +39,15 @@ def polynomial_eval_embedding(
   field_embedding_map(L, T, h, polynomial_eval(K, L, e, p, x)) = polynomial_eval(
     K, T, field_embedding_compose(K, L, T, e, h), p, field_embedding_map(L, T, h, x)
   ) {
-  let f = field_embedding_map(L, T, h);
-  let c = field_embedding_compose(K, L, T, e, h);
-  let E = fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
-  let F = fun (q : Polynomial(K)) => f(E(q));
-  obtain (f0, f1, fn, fa, fm) = field_embedding_preserves(L, T, h);
+  let f := field_embedding_map(L, T, h);
+  let c := field_embedding_compose(K, L, T, e, h);
+  let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
+  let F := fun (q : Polynomial(K)) => f(E(q));
+  obtain (f0, f1, fn, fa, fm) := field_embedding_preserves(L, T, h);
   have step : PolynomialHornerLaw(K, T, c, f(x), F) {
     intro q;
-    let a = field_embedding_map(K, L, e, polynomial_coefficients(K, q, 0));
-    let tail = E(polynomial_tail(K, q));
+    let a := field_embedding_map(K, L, e, polynomial_coefficients(K, q, 0));
+    let tail := E(polynomial_tail(K, q));
     exact with unfolding [] {
       trans(
         cong(f, polynomial_eval_horner(K, L, e, x, q)),
@@ -71,7 +71,7 @@ def polynomial_root_image(
   polynomial_eval(K, T, field_embedding_compose(K, L, T, e, h), p, field_embedding_map(L, T, h, x)) = field_zero(
     T
   ) {
-  obtain (zero, one, neg, add, mul) = field_embedding_preserves(L, T, h);
+  obtain (zero, one, neg, add, mul) := field_embedding_preserves(L, T, h);
   exact with unfolding [] {
     trans(
       sym(polynomial_eval_embedding(K, L, T, e, h, p, x)),

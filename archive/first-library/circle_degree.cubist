@@ -4,21 +4,21 @@ import homotopy_paths;
 
 // A circle map specified by the image of its generating loop. These are
 // maps of homotopy types, not yet functions on the geometric unit circle.
-def circle_map_meridians(X : U0, point : X, p : point = point, a : S0) =
+def circle_map_meridians(X : U0, point : X, p : point = point, a : S0) :=
   match a return (point = point) {
     left u => p;
     right u => refl(point);
   };
 
-def circle_map_from_loop(X : U0, point : X, p : point = point, x : S1) =
+def circle_map_from_loop(X : U0, point : X, p : point = point, x : S1) :=
   suspension_rec(S0, X, point, point, circle_map_meridians(X, point, p), x);
 
 def circle_map_generator(X : U0, point : X, p : point = point) :
   cong(circle_map_from_loop(X, point, p), loop) = p {
-  let f = circle_map_from_loop(X, point, p);
-  let upperLaw =
+  let f := circle_map_from_loop(X, point, p);
+  let upperLaw :=
     suspension_rec_beta(S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, left(tt)));
-  let lowerLaw =
+  let lowerLaw :=
     suspension_rec_beta(
       S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, right(tt))
     );
@@ -39,16 +39,16 @@ def circle_map_generator(X : U0, point : X, p : point = point) :
   );
 }
 
-def circle_power_map(n : Nat, x : S1) = circle_map_from_loop(S1, base, positive_loops(n), x);
+def circle_power_map(n : Nat, x : S1) := circle_map_from_loop(S1, base, positive_loops(n), x);
 
-def circle_map_degree(f : S1 -> S1, anchor : f(base) = base) =
+def circle_map_degree(f : S1 -> S1, anchor : f(base) = base) :=
   winding(rebase_loop(S1, f(base), base, anchor, cong(f, loop)));
 
 def circle_power_degree(n : Nat) :
   circle_map_degree(circle_power_map(n), refl(base)) = nonnegative(n) {
-  let generator = cong(circle_power_map(n), loop);
+  let generator := cong(circle_power_map(n), loop);
   // Transport along reflexivity has a cubical computation path.
-  let unbase = transport_constant(S1, LoopsS1, base, base, refl(base), generator);
+  let unbase := transport_constant(S1, LoopsS1, base, base, refl(base), generator);
   exact trans(
     cong(winding, unbase),
     trans(cong(winding, circle_map_generator(S1, base, positive_loops(n))), winding_positive(n))
@@ -80,7 +80,7 @@ def positive_circle_power_not_null_homotopic(
   n : Nat, point : S1, homotopy : (forall x : S1, circle_power_map(succ(n), x) = point)
 ) :
   Void {
-  let zeroDegree =
+  let zeroDegree :=
     null_homotopic_circle_map_degree_zero(circle_power_map(succ(n)), refl(base), point, homotopy);
   have impossible : nonnegative(succ(n)) = zeroZ := trans(
     sym(circle_power_degree(succ(n))), zeroDegree

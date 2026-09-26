@@ -5,7 +5,7 @@ import group_operations;
 // The field is supplied explicitly; no finite basis or choice is assumed.
 def ScalarLaws(
   K : AlgebraicField, G : Group, scale : af_carrier(K) -> group_carrier(G) -> group_carrier(G)
-) =
+) :=
   (forall x : group_carrier(G), scale(af_one(af_carrier(K), af_operations(K)), x) = x)
   and (
     forall a : af_carrier(K), forall b : af_carrier(K), forall x : group_carrier(G),
@@ -22,19 +22,19 @@ def ScalarLaws(
     )
   );
 
-def VectorData(K : AlgebraicField, G : Group) =
+def VectorData(K : AlgebraicField, G : Group) :=
   exists scale : af_carrier(K) -> group_carrier(G) -> group_carrier(G), IsAbelian(G)
   and ScalarLaws(K, G, scale);
 
-def VectorSpace(K : AlgebraicField) = exists G : Group, VectorData(K, G);
+def VectorSpace(K : AlgebraicField) := exists G : Group, VectorData(K, G);
 
 def vector_space(
   K : AlgebraicField, G : Group, scale : af_carrier(K) -> group_carrier(G) -> group_carrier(G),
   abelian : IsAbelian(G), laws : ScalarLaws(K, G, scale)
-) =
+) :=
   typed(VectorSpace(K), (G, scale, abelian, laws));
 
-def vector_group(K : AlgebraicField, V : VectorSpace(K)) = unpack V as (G, data) return Group {
+def vector_group(K : AlgebraicField, V : VectorSpace(K)) := unpack V as (G, data) return Group {
     G;
   };
 
@@ -45,35 +45,35 @@ def vector_data(K : AlgebraicField, V : VectorSpace(K)) : VectorData(K, vector_g
   );
 }
 
-def vector_carrier(K : AlgebraicField, V : VectorSpace(K)) = group_carrier(vector_group(K, V));
+def vector_carrier(K : AlgebraicField, V : VectorSpace(K)) := group_carrier(vector_group(K, V));
 
-def vector_zero(K : AlgebraicField, V : VectorSpace(K)) = group_unit(vector_group(K, V));
+def vector_zero(K : AlgebraicField, V : VectorSpace(K)) := group_unit(vector_group(K, V));
 
-def vector_add(K : AlgebraicField, V : VectorSpace(K)) = group_multiply(vector_group(K, V));
+def vector_add(K : AlgebraicField, V : VectorSpace(K)) := group_multiply(vector_group(K, V));
 
-def vector_neg(K : AlgebraicField, V : VectorSpace(K)) = group_inverse(vector_group(K, V));
+def vector_neg(K : AlgebraicField, V : VectorSpace(K)) := group_inverse(vector_group(K, V));
 
 def vector_scale(K : AlgebraicField, V : VectorSpace(K)) :
   af_carrier(K) -> vector_carrier(K, V) -> vector_carrier(K, V) {
-  obtain (scale, abelian, laws) = vector_data(K, V);
+  obtain (scale, abelian, laws) := vector_data(K, V);
   exact scale;
 }
 
 def vector_abelian(K : AlgebraicField, V : VectorSpace(K)) : IsAbelian(vector_group(K, V)) {
-  obtain (scale, abelian, laws) = vector_data(K, V);
+  obtain (scale, abelian, laws) := vector_data(K, V);
   exact abelian;
 }
 
 def vector_scalar_laws(K : AlgebraicField, V : VectorSpace(K)) :
   ScalarLaws(K, vector_group(K, V), vector_scale(K, V)) {
-  obtain (scale, abelian, laws) = vector_data(K, V);
+  obtain (scale, abelian, laws) := vector_data(K, V);
   exact laws;
 }
 
 def vector_scale_one(K : AlgebraicField, V : VectorSpace(K)) :
   forall x : vector_carrier(K, V),
   vector_scale(K, V, af_one(af_carrier(K), af_operations(K)), x) = x {
-  obtain (one, assoc, vectors, scalars) = vector_scalar_laws(K, V);
+  obtain (one, assoc, vectors, scalars) := vector_scalar_laws(K, V);
   exact one;
 }
 
@@ -82,7 +82,7 @@ def vector_scale_associative(K : AlgebraicField, V : VectorSpace(K)) :
   vector_scale(K, V, af_mul(af_carrier(K), af_operations(K), a, b), x) = vector_scale(
     K, V, a, vector_scale(K, V, b, x)
   ) {
-  obtain (one, assoc, vectors, scalars) = vector_scalar_laws(K, V);
+  obtain (one, assoc, vectors, scalars) := vector_scalar_laws(K, V);
   exact assoc;
 }
 
@@ -91,7 +91,7 @@ def vector_scale_add_vectors(K : AlgebraicField, V : VectorSpace(K)) :
   vector_scale(K, V, a, vector_add(K, V, x, y)) = vector_add(
     K, V, vector_scale(K, V, a, x), vector_scale(K, V, a, y)
   ) {
-  obtain (one, assoc, vectors, scalars) = vector_scalar_laws(K, V);
+  obtain (one, assoc, vectors, scalars) := vector_scalar_laws(K, V);
   exact vectors;
 }
 
@@ -100,6 +100,6 @@ def vector_scale_add_scalars(K : AlgebraicField, V : VectorSpace(K)) :
   vector_scale(K, V, af_add(af_carrier(K), af_operations(K), a, b), x) = vector_add(
     K, V, vector_scale(K, V, a, x), vector_scale(K, V, b, x)
   ) {
-  obtain (one, assoc, vectors, scalars) = vector_scalar_laws(K, V);
+  obtain (one, assoc, vectors, scalars) := vector_scalar_laws(K, V);
   exact scalars;
 }

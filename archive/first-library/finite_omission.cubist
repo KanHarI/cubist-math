@@ -1,6 +1,6 @@
 import finite_remainders;
 
-def fin_omit(n : Nat) = induction n as k return (Fin(succ(k)) -> Fin(k) -> Fin(succ(k))) {
+def fin_omit(n : Nat) := induction n as k return (Fin(succ(k)) -> Fin(k) -> Fin(succ(k))) {
     zero => fun (i : Fin(1), j : Fin(0)) => typed(Fin(1), absurd(j));
     succ previous => fun (i : Fin(succ(succ(k)))) => match i return (
       Fin(succ(k)) -> Fin(succ(succ(k)))
@@ -14,7 +14,7 @@ def fin_omit(n : Nat) = induction n as k return (Fin(succ(k)) -> Fin(k) -> Fin(s
   };
 
 // The omission map never reaches the removed index.
-def fin_omit_avoids(n : Nat) =
+def fin_omit_avoids(n : Nat) :=
   induction n as k return (
     forall i : Fin(succ(k)), forall j : Fin(k), (fin_omit(k, i, j) = i) -> Void
   ) {
@@ -45,7 +45,7 @@ def fin_omit_avoids(n : Nat) =
     };
   };
 
-def fin_omit_injective(n : Nat) =
+def fin_omit_injective(n : Nat) :=
   induction n as k return (
     forall i : Fin(succ(k)), forall x : Fin(k), forall y : Fin(k),
     fin_omit(k, i, x) = fin_omit(k, i, y) -> x = y
@@ -107,9 +107,9 @@ def fin_omit_injective(n : Nat) =
   };
 
 // Every index is either the removed one or is reached by the omission map.
-def OmitCover(n : Nat, i j : Fin(succ(n))) = (j = i) or (exists t : Fin(n), fin_omit(n, i, t) = j);
+def OmitCover(n : Nat, i j : Fin(succ(n))) := (j = i) or (exists t : Fin(n), fin_omit(n, i, t) = j);
 
-def fin_omit_cover(n : Nat) =
+def fin_omit_cover(n : Nat) :=
   induction n as k return (forall i : Fin(succ(k)), forall j : Fin(succ(k)), OmitCover(k, i, j)) {
     zero => fun (i j : Fin(1)) => typed(
       OmitCover(0, i, j), left(trans(sym(fin_one_unique(j)), fin_one_unique(i)))
@@ -152,7 +152,7 @@ def fin_omit_cover(n : Nat) =
   };
 
 // Omitting the selected vector and coefficient computes exactly the remainder.
-def linear_combination_omit(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def linear_combination_omit(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
     forall v : Fin(succ(k)) -> vector_carrier(K, V), forall a : Fin(succ(k)) -> af_carrier(K),
     forall i : Fin(succ(k)),

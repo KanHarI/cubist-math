@@ -15,13 +15,13 @@ def action_left_law(F : U0, e : Equiv(U0, F, F)) :
 
 // A family of equivalences gives a local system on the bouquet. Transport
 // around a generator performs its specified action on the fiber.
-def action_edges(A F : U0, actions : A -> Equiv(U0, F, F), label : Unit or A) =
+def action_edges(A F : U0, actions : A -> Equiv(U0, F, F), label : Unit or A) :=
   match label return (F = F) {
     left u => refl(F);
     right a => ua(U0, F, F, actions(a));
   };
 
-def action_family(A F : U0, actions : A -> Equiv(U0, F, F)) =
+def action_family(A F : U0, actions : A -> Equiv(U0, F, F)) :=
   suspension_rec(Unit or A, U0, F, F, action_edges(A, F, actions));
 
 def action_univalence(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
@@ -49,7 +49,7 @@ def action_spoke(A F : U0, actions : A -> Equiv(U0, F, F), v : F) :
 
 def action_spoke_inverse(A F : U0, actions : A -> Equiv(U0, F, F), v : F) :
   (along action_family(A, F, actions) by sym(bouquet_spoke(A)) from v) = v {
-  let before = along action_family(A, F, actions) by sym(bouquet_spoke(A)) from v;
+  let before := along action_family(A, F, actions) by sym(bouquet_spoke(A)) from v;
   exact trans(
     sym(action_spoke(A, F, actions, before)),
     transport_after_inverse(
@@ -78,7 +78,7 @@ def action_edge(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
   );
 }
 
-def loop_action(A F : U0, actions : A -> Equiv(U0, F, F), p : BouquetLoops(A), v : F) =
+def loop_action(A F : U0, actions : A -> Equiv(U0, F, F), p : BouquetLoops(A), v : F) :=
   along action_family(A, F, actions) by p from v;
 
 def loop_action_generator(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
@@ -98,8 +98,8 @@ def loop_action_generator(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F
 
 def loop_action_inverse(A F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
   loop_action(A, F, actions, sym(bouquet_generator(A, a)), v) = action_backward(F, actions(a), v) {
-  let before = loop_action(A, F, actions, sym(bouquet_generator(A, a)), v);
-  let same =
+  let before := loop_action(A, F, actions, sym(bouquet_generator(A, a)), v);
+  let same :=
     trans(
       sym(loop_action_generator(A, F, actions, a, before)),
       transport_after_inverse(

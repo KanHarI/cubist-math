@@ -2,13 +2,13 @@ import binary_naturals;
 import paths;
 
 // Increment follows a carry only through trailing one bits.
-def binary_positive_succ(p : BinaryPositive) =
+def binary_positive_succ(p : BinaryPositive) :=
   binary_positive_rec(
     BinaryPositive, binary_bit0(binary_one), fun (child ih : BinaryPositive) => binary_bit1(child),
     fun (child ih : BinaryPositive) => binary_bit0(ih), p
   );
 
-def binary_succ(n : BinaryNat) = match n return BinaryNat {
+def binary_succ(n : BinaryNat) := match n return BinaryNat {
     left zero => binary_positive(binary_one);
     right positive => binary_positive(binary_positive_succ(positive));
   };
@@ -29,7 +29,7 @@ def binary_positive_add(a : BinaryPositive) : BinaryPositive -> BinaryPositive {
   );
 }
 
-def binary_add(a b : BinaryNat) = match a return BinaryNat {
+def binary_add(a b : BinaryNat) := match a return BinaryNat {
     left zero => b;
     right positive => match b return BinaryNat {
       left zero => a;
@@ -50,7 +50,7 @@ def binary_positive_mul(a : BinaryPositive) : BinaryPositive -> BinaryPositive {
   );
 }
 
-def binary_mul(a b : BinaryNat) = match a return BinaryNat {
+def binary_mul(a b : BinaryNat) := match a return BinaryNat {
     left zero => binary_zero;
     right positive => match b return BinaryNat {
       left zero => binary_zero;
@@ -58,13 +58,13 @@ def binary_mul(a b : BinaryNat) = match a return BinaryNat {
     };
   };
 
-def binary_of_nat(n : Nat) = induction n as k return BinaryNat {
+def binary_of_nat(n : Nat) := induction n as k return BinaryNat {
     zero => 0b0;
     succ previous => binary_succ(previous);
   };
 
 // The recursion index is small; all intermediate products are binary W trees.
-opaque def binary_factorial(n : Nat) = induction n as k return BinaryNat {
+opaque def binary_factorial(n : Nat) := induction n as k return BinaryNat {
     zero => 0b1;
     succ previous => binary_mul(binary_of_nat(succ(k)), previous);
   };

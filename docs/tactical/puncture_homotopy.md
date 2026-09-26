@@ -13,8 +13,8 @@ the free-group normal-form theorem nor the residue theorem is asserted here.
 ## The type and its paths
 
 ```text
-def Bouquet(A : U0) = Suspension(Unit or A);
-def PunctureGraph(n : Nat) = Bouquet(Fin(n));
+def Bouquet(A : U0) := Suspension(Unit or A);
+def PunctureGraph(n : Nat) := Bouquet(Fin(n));
 ```
 
 The suspension has two points, `bouquet_base` and `bouquet_tip`, a distinguished

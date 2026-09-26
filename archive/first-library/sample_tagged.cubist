@@ -1,6 +1,6 @@
 import sample_relations;
 
-def SampleTagged(C : U1, condition : C -> C -> C -> U0, n : Nat) =
+def SampleTagged(C : U1, condition : C -> C -> C -> U0, n : Nat) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C, tags : Unit) => Unit;
     succ previous => fun (vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k))) => condition(
@@ -69,7 +69,7 @@ def sample_tagged_adjacent(
   };
 }
 
-def sample_left_tags(C : U1, n : Nat) =
+def sample_left_tags(C : U1, n : Nat) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k)) {
     zero => fun (vertices : C) => tt;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => typed(
@@ -131,7 +131,7 @@ def sample_left_tags_valid(
   };
 }
 
-def sample_right_tags(C : U1, n : Nat) =
+def sample_right_tags(C : U1, n : Nat) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k)) {
     zero => fun (vertices : C) => tt;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => typed(

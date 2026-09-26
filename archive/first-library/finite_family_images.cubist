@@ -1,7 +1,7 @@
 import finite_spanning;
 
 // Individual generators have explicit unit-coordinate preimages.
-def coordinate_unit(K : AlgebraicField, n : Nat) =
+def coordinate_unit(K : AlgebraicField, n : Nat) :=
   induction n as k return (Fin(k) -> Fin(k) -> af_carrier(K)) {
     zero => fun (i : Fin(0)) => typed((Fin(0) -> af_carrier(K)), absurd(i));
     succ previous => fun (i : Fin(succ(k))) => match i return (Fin(succ(k)) -> af_carrier(K)) {
@@ -39,14 +39,14 @@ def adjoin_tail_value(
   linear_map(
     K, CoordinateSpace(K, succ(n)), V, adjoin_linear(K, V, n, f, x), coordinate_insert(K, n, a)
   ) = linear_map(K, CoordinateSpace(K, n), V, f, a) {
-  let y = linear_map(K, CoordinateSpace(K, n), V, f, a);
+  let y := linear_map(K, CoordinateSpace(K, n), V, f, a);
   exact trans(
     cong((fun (z : vector_carrier(K, V)) => vector_add(K, V, z, y)), vector_zero_scale(K, V, x)),
     group_unit_left(vector_group(K, V), y)
   );
 }
 
-def family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V), forall i : Fin(k),
     linear_map(K, CoordinateSpace(K, k), V, family_linear(K, V, k, v), coordinate_unit(K, k, i)) = v(
@@ -91,9 +91,9 @@ def linear_image_combine(
     vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f),
     vector_add(K, W, vector_scale(K, W, a, x), y)
   ) {
-  obtain (u, hu) = px;
-  obtain (v, hv) = py;
-  let F = linear_map(K, V, W, f);
+  obtain (u, hu) := px;
+  obtain (v, hv) := py;
+  let F := linear_map(K, V, W, f);
   exact (
     vector_add(K, V, vector_scale(K, V, a, u), v),
     trans(
@@ -125,8 +125,8 @@ def linear_image_combine_mere(
       vector_add(K, W, vector_scale(K, W, a, x), y)
     )
   ) {
-  let FiberF = Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
-  let z = vector_add(K, W, vector_scale(K, W, a, x), y);
+  let FiberF := Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
+  let z := vector_add(K, W, vector_scale(K, W, a, x), y);
   exact mere_eliminate(
     FiberF(x), Mere(FiberF(z)), mere_is_prop(FiberF(z)),
     (
@@ -139,7 +139,7 @@ def linear_image_combine_mere(
 
 def family_combination_in_image(
   K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat
-) =
+) :=
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, W), forall a : Fin(k) -> af_carrier(K),
     (
@@ -194,11 +194,11 @@ def spanning_family_in_image(
 ) :
   LinearSurjective(K, V, W, f) {
   intro x;
-  let FiberF = Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
-  let C = Fin(n) -> af_carrier(K);
+  let FiberF := Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
+  let C := Fin(n) -> af_carrier(K);
   have descend : (exists a : C, linear_combination(K, W, n, v, a) = x) -> Mere(FiberF(x)) {
     intro witness;
-    obtain (a, same) = witness;
+    obtain (a, same) := witness;
     exact along((fun (z : vector_carrier(K, W)) => Mere(FiberF(z)))) by same from family_combination_in_image(
       K, V, W, f, n, v, a, members
     );

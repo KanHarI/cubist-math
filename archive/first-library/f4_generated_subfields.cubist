@@ -16,12 +16,12 @@ def f4_generated_intermediate(P : F4Carrier -> U0) : IntermediateField(F2, F4Ove
 
 // A single generator alpha suffices; its square or alpha+1 is not additional
 // generating data. The conclusion is equality of the complete subfields.
-def F4AlphaGenerator(x : F4Carrier) = x = f4_2;
+def F4AlphaGenerator(x : F4Carrier) := x = f4_2;
 
 def f4_alpha_generates_field :
   generated_subfield(F4, F4AlphaGenerator) =[Subfield(F4)] subfield_top(F4) {
-  let P = GeneratedField(F4, F4AlphaGenerator);
-  let every =
+  let P := GeneratedField(F4, F4AlphaGenerator);
+  let every :=
     f4_intermediate_with_alpha(
       P, intermediate_laws(F2, F4OverF2, f4_generated_intermediate(F4AlphaGenerator)),
       generated_field_contains(F4, F4AlphaGenerator, f4_2, refl(f4_2))
@@ -32,11 +32,11 @@ def f4_alpha_generates_field :
   );
 }
 
-def f4_base_subfield = intermediate_subfield(F2, F4OverF2, f4_base_intermediate);
+def f4_base_subfield := intermediate_subfield(F2, F4OverF2, f4_base_intermediate);
 
 def f4_base_in_prime : SubfieldIncluded(F4, f4_base_subfield, prime_subfield(F4)) {
   intro x member;
-  obtain (k, same) = typed(F2Image(x), member);
+  obtain (k, same) := typed(F2Image(x), member);
   exact along GeneratedField(F4, (fun (x : F4Carrier) => Void)) by same from f4_generated_contains_base(
     (fun (x : F4Carrier) => Void), k
   );
@@ -58,11 +58,12 @@ def f4_alpha_not_in_prime(member : subfield_members(F4, prime_subfield(F4), f4_2
 }
 
 // A concrete unequal-rank check: alpha + (-alpha) is derived at rank two.
-def f4_alpha_derivation = field_derivation_generator(F4, F4AlphaGenerator, f4_2, refl(f4_2));
+def f4_alpha_derivation := field_derivation_generator(F4, F4AlphaGenerator, f4_2, refl(f4_2));
 
-def f4_neg_alpha_derivation = field_derivation_neg(F4, F4AlphaGenerator, f4_2, f4_alpha_derivation);
+def f4_neg_alpha_derivation :=
+  field_derivation_neg(F4, F4AlphaGenerator, f4_2, f4_alpha_derivation);
 
-def f4_add_derivation =
+def f4_add_derivation :=
   field_derivation_add(
     F4, F4AlphaGenerator, f4_2, f4_2, f4_alpha_derivation, f4_neg_alpha_derivation
   );

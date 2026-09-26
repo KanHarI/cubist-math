@@ -3,12 +3,12 @@ import polynomial_arithmetic;
 // The remainder bound is strict: coefficients at d and above vanish.
 // Thus a divisor with top degree d leaves a remainder of degree below d,
 // including the zero remainder and division by a nonzero constant.
-def DivisionResult(K : AlgebraicField, p divisor : Polynomial(K), d : Nat) =
+def DivisionResult(K : AlgebraicField, p divisor : Polynomial(K), d : Nat) :=
   exists q : Polynomial(K), exists r : Polynomial(K),
   p = polynomial_add(K, polynomial_mul(K, q, divisor), r)
   and SeriesSupport(K, polynomial_coefficients(K, r), d);
 
-def DivisionAdjustment(K : AlgebraicField, divisor : Polynomial(K), d : Nat, p : Polynomial(K)) =
+def DivisionAdjustment(K : AlgebraicField, divisor : Polynomial(K), d : Nat, p : Polynomial(K)) :=
   exists a : af_carrier(K), exists r : Polynomial(K),
   p = polynomial_add(K, polynomial_scale(K, a, divisor), r)
   and SeriesSupport(K, polynomial_coefficients(K, r), d);
@@ -20,11 +20,11 @@ def division_adjust(
   sp : SeriesSupport(K, polynomial_coefficients(K, p), succ(d))
 ) :
   DivisionAdjustment(K, divisor, d, p) {
-  let lead = polynomial_coefficients(K, divisor, d);
-  let last = polynomial_coefficients(K, p, d);
-  let a = field_mul(K, b, last);
-  let scaled = polynomial_scale(K, a, divisor);
-  let r = polynomial_add(K, p, polynomial_neg(K, scaled));
+  let lead := polynomial_coefficients(K, divisor, d);
+  let last := polynomial_coefficients(K, p, d);
+  let a := field_mul(K, b, last);
+  let scaled := polynomial_scale(K, a, divisor);
+  let r := polynomial_add(K, p, polynomial_neg(K, scaled));
   have remainder_top : polynomial_coefficients(K, r, d) = field_zero(K) := trans(
     cong(
       (fun (c : af_carrier(K)) => field_add(K, last, field_neg(K, c))),
@@ -43,7 +43,7 @@ def division_adjust(
       polynomial_add_cancel_prefix(K, scaled, p)
     )
   );
-  let support =
+  let support :=
     support_add_same(
       K, polynomial_coefficients(K, p), polynomial_coefficients(K, polynomial_neg(K, scaled)),
       succ(d), sp,
@@ -69,10 +69,10 @@ def division_horner_identity(
     polynomial_mul(K, polynomial_add(K, polynomial_shift(K, q), polynomial_constant(K, a)), divisor),
     remainder
   ) {
-  let C = polynomial_constant(K, polynomial_coefficients(K, p, 0));
-  let A = polynomial_mul(K, polynomial_shift(K, q), divisor);
-  let B = polynomial_shift(K, r);
-  let scaled = polynomial_scale(K, a, divisor);
+  let C := polynomial_constant(K, polynomial_coefficients(K, p, 0));
+  let A := polynomial_mul(K, polynomial_shift(K, q), divisor);
+  let B := polynomial_shift(K, r);
+  let scaled := polynomial_scale(K, a, divisor);
   exact trans(
     polynomial_decompose(K, p),
     trans(
@@ -114,20 +114,20 @@ def division_horner_step(
   tailResult : DivisionResult(K, polynomial_tail(K, p), divisor, d)
 ) :
   DivisionResult(K, p, divisor, d) {
-  obtain (q, r, equation, support) = tailResult;
-  let constant = polynomial_constant(K, polynomial_coefficients(K, p, 0));
-  let temporary = polynomial_add(K, constant, polynomial_shift(K, r));
-  let constantSupport =
+  obtain (q, r, equation, support) := tailResult;
+  let constant := polynomial_constant(K, polynomial_coefficients(K, p, 0));
+  let temporary := polynomial_add(K, constant, polynomial_shift(K, r));
+  let constantSupport :=
     support_weaken(
       K, polynomial_coefficients(K, constant), 1, succ(d), tt,
       support_constant(K, polynomial_coefficients(K, p, 0))
     );
-  let temporarySupport =
+  let temporarySupport :=
     support_add_same(
       K, polynomial_coefficients(K, constant), polynomial_coefficients(K, polynomial_shift(K, r)),
       succ(d), constantSupport, support_shift(K, polynomial_coefficients(K, r), d, support)
     );
-  obtain (a, remainder, adjustment, remainderSupport) = division_adjust(
+  obtain (a, remainder, adjustment, remainderSupport) := division_adjust(
     K, divisor, d, b, inverse, sd, temporary, temporarySupport
   );
   exact (
@@ -165,7 +165,7 @@ def divide_with_bound(
   K : AlgebraicField, divisor : Polynomial(K), d : Nat, b : af_carrier(K),
   inverse : field_mul(K, polynomial_coefficients(K, divisor, d), b) = field_one(K),
   sd : SeriesSupport(K, polynomial_coefficients(K, divisor), succ(d)), n : Nat
-) =
+) :=
   induction n as k return (
     forall p : Polynomial(K), SeriesSupport(K, polynomial_coefficients(K, p), k)
     -> DivisionResult(K, p, divisor, d)
@@ -184,11 +184,11 @@ def divide_by_degree(
   degree : polynomial_cutoff(K, divisor) = succ(d)
 ) :
   DivisionResult(K, p, divisor, d) {
-  obtain (ring, nontrivial, inverses) = af_laws(K);
-  obtain (b, inverse) = inverses(
+  obtain (ring, nontrivial, inverses) := af_laws(K);
+  obtain (b, inverse) := inverses(
     polynomial_coefficients(K, divisor, d), polynomial_leading_nonzero(K, divisor, d, degree)
   );
-  let sd =
+  let sd :=
     along SeriesSupport(K, polynomial_coefficients(K, divisor)) by degree from polynomial_cutoff_support(
       K, divisor
     );
@@ -197,15 +197,15 @@ def divide_by_degree(
   );
 }
 
-def natural_predecessor(n : Nat) = induction n as k return Nat {
+def natural_predecessor(n : Nat) := induction n as k return Nat {
     zero => 0;
     succ ignored => k;
   };
 
-def polynomial_degree(K : AlgebraicField, p : Polynomial(K)) =
+def polynomial_degree(K : AlgebraicField, p : Polynomial(K)) :=
   natural_predecessor(polynomial_cutoff(K, p));
 
-def PolynomialDivision(K : AlgebraicField, p divisor : Polynomial(K)) =
+def PolynomialDivision(K : AlgebraicField, p divisor : Polynomial(K)) :=
   DivisionResult(K, p, divisor, polynomial_degree(K, divisor));
 
 // Division with remainder, for every nonzero formal polynomial over a field.

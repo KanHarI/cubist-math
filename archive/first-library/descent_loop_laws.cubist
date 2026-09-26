@@ -21,14 +21,14 @@ def descended_loop_map_laws(
     forall p : point = point, forall q : point = point,
     period(trans(p, q)) = multiply(period(p), period(q)) {
     intro p q;
-    let result = period(trans(p, q)) = multiply(period(p), period(q));
-    let resultProp = setG(period(trans(p, q)), multiply(period(p), period(q)));
+    let result := period(trans(p, q)) = multiply(period(p), period(q));
+    let resultProp := setG(period(trans(p, q)), multiply(period(p), period(q)));
     have useLeft : (exists c : C, present(c) = p) -> result {
       intro leftRepresentative;
-      obtain (c, pathC) = leftRepresentative;
+      obtain (c, pathC) := leftRepresentative;
       have useRight : (exists d : C, present(d) = q) -> result {
         intro rightRepresentative;
-        obtain (d, pathD) = rightRepresentative;
+        obtain (d, pathD) := rightRepresentative;
         have joined : present(join(c, d)) = trans(p, q) := trans(
           joinPath(c, d),
           trans(

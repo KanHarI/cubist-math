@@ -5,19 +5,19 @@ import sample_maps;
 // Keeping it retains the data needed for geometric variation estimates.
 def parameter_contour_edge(
   C F : U1, addF mulF : F -> F -> F, negF : F -> F, curve values : C -> F, a b tag : C
-) =
+) :=
   contour_edge(F, addF, mulF, negF, (fun (x : F) => x), curve(a), curve(b), values(tag));
 
 def parameter_contour_tag_error(
   C F : U1, addF mulF : F -> F -> F, negF : F -> F, curve values : C -> F, a b oldTag newTag : C
-) =
+) :=
   contour_tag_error(
     F, addF, mulF, negF, (fun (x : F) => x), curve(a), curve(b), values(oldTag), values(newTag)
   );
 
 def parameter_contour_sum(
   C F : U1, zero : F, addF mulF : F -> F -> F, negF : F -> F, curve values : C -> F, n : Nat
-) =
+) :=
   sample_sum(C, F, zero, addF, parameter_contour_edge(C, F, addF, mulF, negF, curve, values), n);
 
 def parameter_contour_edge_change_tag(
@@ -37,7 +37,7 @@ def parameter_contour_edge_change_tag(
 
 def parameter_contour_tag_error_sum(
   C F : U1, zero : F, addF mulF : F -> F -> F, negF : F -> F, curve values : C -> F, n : Nat
-) =
+) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> SampleTags(C, k) -> F) {
     zero => fun (vertices : C, oldTags newTags : Unit) => zero;
     succ previous => fun (

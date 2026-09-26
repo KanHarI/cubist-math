@@ -3,14 +3,14 @@ import finite_dimension;
 // A dimension asserts existence of coordinates, without choosing coordinates.
 // Keeping this separate from FiniteBasis preserves the distinction between
 // a mathematical invariant and the data of a particular basis.
-def HasDimension(K : AlgebraicField, V : VectorSpace(K), n : Nat) = Mere(FiniteBasis(K, V, n));
+def HasDimension(K : AlgebraicField, V : VectorSpace(K), n : Nat) := Mere(FiniteBasis(K, V, n));
 
-def has_dimension_prop(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def has_dimension_prop(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   mere_is_prop(FiniteBasis(K, V, n));
 
 def basis_has_dimension(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)
-) =
+) :=
   merely(FiniteBasis(K, V, n), basis);
 
 def dimension_unique(
@@ -18,7 +18,7 @@ def dimension_unique(
   second : HasDimension(K, V, n)
 ) :
   m = n {
-  let equal_is_prop = hedberg(Nat, nat_eq_decidable, m, n);
+  let equal_is_prop := hedberg(Nat, nat_eq_decidable, m, n);
   exact mere_eliminate(
     FiniteBasis(K, V, m), m = n, equal_is_prop,
     (
@@ -32,15 +32,15 @@ def dimension_unique(
 
 // This dependent pair is a proposition: its natural number is unique and
 // its basis evidence is truncated. Extracting that number needs no choice.
-def FiniteDimensional(K : AlgebraicField, V : VectorSpace(K)) =
+def FiniteDimensional(K : AlgebraicField, V : VectorSpace(K)) :=
   exists n : Nat, HasDimension(K, V, n);
 
-def dimension(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V)) =
+def dimension(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V)) :=
   sigma_first(Nat, HasDimension(K, V), finite);
 
 def dimension_specification(
   K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V)
-) =
+) :=
   sigma_second(Nat, HasDimension(K, V), finite);
 
 def finite_dimensional_prop(K : AlgebraicField, V : VectorSpace(K)) :

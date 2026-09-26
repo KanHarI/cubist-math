@@ -4,17 +4,17 @@ import polynomial_leading;
 // Roots may live in an arbitrary extension through its specified embedding.
 def PolynomialRoot(
   K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
-) =
+) :=
   polynomial_eval(K, L, e, p, x) = field_zero(L);
 
 def polynomial_root_prop(
   K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
-) =
+) :=
   af_set(L, polynomial_eval(K, L, e, p, x), field_zero(L));
 
 def polynomial_eval_one(K L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L)) :
   polynomial_eval(K, L, e, polynomial_one(K), x) = field_one(L) {
-  obtain (zero, one, neg, add, mul) = field_embedding_preserves(K, L, e);
+  obtain (zero, one, neg, add, mul) := field_embedding_preserves(K, L, e);
   exact trans(polynomial_eval_constant(K, L, e, field_one(K), x), one);
 }
 
@@ -30,7 +30,7 @@ def polynomial_eval_neg(
   K L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), x : af_carrier(L)
 ) :
   polynomial_eval(K, L, e, polynomial_neg(K, p), x) = field_neg(L, polynomial_eval(K, L, e, p, x)) {
-  let E = fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
+  let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
   have inverse : field_add(L, E(polynomial_neg(K, p)), E(p)) = field_zero(L) := with unfolding [] {
     trans(
       sym(polynomial_eval_add(K, L, e, polynomial_neg(K, p), p, x)),
@@ -43,7 +43,7 @@ def polynomial_eval_neg(
   );
 }
 
-def polynomial_linear_factor(K : AlgebraicField, r : af_carrier(K)) =
+def polynomial_linear_factor(K : AlgebraicField, r : af_carrier(K)) :=
   polynomial_add(K, polynomial_variable(K), polynomial_constant(K, field_neg(K, r)));
 
 def linear_factor_support(K : AlgebraicField, r : af_carrier(K)) :
@@ -59,7 +59,7 @@ def linear_factor_support(K : AlgebraicField, r : af_carrier(K)) :
 
 def linear_factor_degree(K : AlgebraicField, r : af_carrier(K)) :
   polynomial_cutoff(K, polynomial_linear_factor(K, r)) = 2 {
-  obtain (ring, nontrivial, inverses) = af_laws(K);
+  obtain (ring, nontrivial, inverses) := af_laws(K);
   exact polynomial_cutoff_exact(
     K, polynomial_linear_factor(K, r), 1, linear_factor_support(K, r),
     (
@@ -89,8 +89,8 @@ def linear_factor_eval(K : AlgebraicField, r x : af_carrier(K)) :
   polynomial_eval(K, K, field_embedding_identity(K), polynomial_linear_factor(K, r), x) = field_add(
     K, x, field_neg(K, r)
   ) {
-  let e = field_embedding_identity(K);
-  let E = fun (p : Polynomial(K)) => polynomial_eval(K, K, e, p, x);
+  let e := field_embedding_identity(K);
+  let E := fun (p : Polynomial(K)) => polynomial_eval(K, K, e, p, x);
   exact with unfolding [] {
     trans(
       polynomial_eval_add(
@@ -132,10 +132,10 @@ def polynomial_factor_theorem(
   root : PolynomialRoot(K, K, field_embedding_identity(K), p, r)
 ) :
   exists q : Polynomial(K), p = polynomial_mul(K, polynomial_linear_factor(K, r), q) {
-  let factor = polynomial_linear_factor(K, r);
-  let e = field_embedding_identity(K);
-  let E = fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, r);
-  obtain (q, s, equation, support) = divide_by_degree(K, p, factor, 1, linear_factor_degree(K, r));
+  let factor := polynomial_linear_factor(K, r);
+  let e := field_embedding_identity(K);
+  let E := fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, r);
+  obtain (q, s, equation, support) := divide_by_degree(K, p, factor, 1, linear_factor_degree(K, r));
   have evaluated : E(p) = E(s) := with unfolding [] {
     trans(
       cong(E, equation),
@@ -163,7 +163,7 @@ def polynomial_factor_theorem(
   have constantZero : polynomial_coefficients(K, s, 0) = field_zero(K) := trans(
     sym(support_one_eval(K, s, support, r)), trans(sym(evaluated), root)
   );
-  let zero =
+  let zero :=
     support_zero_polynomial(
       K, s, support_predecessor(K, polynomial_coefficients(K, s), 0, support, constantZero)
     );
@@ -187,8 +187,8 @@ def polynomial_factor_root(
   factor : p = polynomial_mul(K, polynomial_linear_factor(K, r), q)
 ) :
   PolynomialRoot(K, K, field_embedding_identity(K), p, r) {
-  let e = field_embedding_identity(K);
-  let E = fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, r);
+  let e := field_embedding_identity(K);
+  let E := fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, r);
   exact with unfolding [] {
     trans(
       cong(E, factor),

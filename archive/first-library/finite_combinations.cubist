@@ -2,7 +2,7 @@ import linear_span;
 
 // Concatenate two explicitly indexed finite families. No comparison of their
 // values, and no decision procedure for the carrier, is needed.
-def fin_append(A : U0, n : Nat) =
+def fin_append(A : U0, n : Nat) :=
   induction n as k return (
     forall m : Nat, (Fin(k) -> A) -> (Fin(m) -> A) -> Fin(add_count(k, m)) -> A
   ) {
@@ -15,7 +15,7 @@ def fin_append(A : U0, n : Nat) =
     };
   };
 
-def fin_append_members(A : U0, P : A -> U0, n : Nat) =
+def fin_append_members(A : U0, P : A -> U0, n : Nat) :=
   induction n as k return (
     forall m : Nat, forall f : Fin(k) -> A, forall g : Fin(m) -> A, (forall i : Fin(k), P(f(i)))
     -> (forall j : Fin(m), P(g(j))) -> forall i : Fin(add_count(k, m)),
@@ -38,7 +38,7 @@ def fin_append_members(A : U0, P : A -> U0, n : Nat) =
   };
 
 // Concatenating witnesses computes the sum of their linear combinations.
-def linear_combination_append(K : AlgebraicField, V : VectorSpace(K), n : Nat) =
+def linear_combination_append(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   induction n as k return (
     forall m : Nat, forall v : Fin(k) -> vector_carrier(K, V),
     forall w : Fin(m) -> vector_carrier(K, V), forall a : Fin(k) -> af_carrier(K),
@@ -90,9 +90,9 @@ def vector_scale_zero(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K))
   exact group_hom_unit(vector_group(K, V), vector_group(K, V), scalar_additive_hom(K, V, a));
 }
 
-def finite_head(A : U0, n : Nat, f : Fin(succ(n)) -> A) = f(typed(Fin(succ(n)), left(tt)));
+def finite_head(A : U0, n : Nat, f : Fin(succ(n)) -> A) := f(typed(Fin(succ(n)), left(tt)));
 
-def finite_tail(A : U0, n : Nat, f : Fin(succ(n)) -> A) =
+def finite_tail(A : U0, n : Nat, f : Fin(succ(n)) -> A) :=
   fun (i : Fin(n)) => f(typed(Fin(succ(n)), right(i)));
 
 def combination_scale_step(
@@ -115,17 +115,17 @@ def combination_scale_step(
   linear_combination(
     K, V, succ(n), v, (fun (i : Fin(succ(n))) => af_mul(af_carrier(K), af_operations(K), a, b(i)))
   ) = vector_scale(K, V, a, linear_combination(K, V, succ(n), v, b)) {
-  let A = af_carrier(K);
-  let X = vector_carrier(K, V);
-  let tailV = finite_tail(X, n, v);
-  let tailB = finite_tail(A, n, b);
-  let headV = finite_head(X, n, v);
-  let headB = finite_head(A, n, b);
-  let scaledTail =
+  let A := af_carrier(K);
+  let X := vector_carrier(K, V);
+  let tailV := finite_tail(X, n, v);
+  let tailB := finite_tail(A, n, b);
+  let headV := finite_head(X, n, v);
+  let headB := finite_head(A, n, b);
+  let scaledTail :=
     linear_combination(
       K, V, n, tailV, (fun (i : Fin(n)) => af_mul(A, af_operations(K), a, tailB(i)))
     );
-  let tailSum = linear_combination(K, V, n, tailV, tailB);
+  let tailSum := linear_combination(K, V, n, tailV, tailB);
   exact trans(
     cong(
       (fun (x : X) => vector_add(K, V, x, scaledTail)),
@@ -138,7 +138,7 @@ def combination_scale_step(
   );
 }
 
-def linear_combination_scale(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), n : Nat) =
+def linear_combination_scale(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K), n : Nat) :=
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V), forall b : Fin(k) -> af_carrier(K),
     linear_combination(

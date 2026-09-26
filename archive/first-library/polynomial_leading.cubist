@@ -18,7 +18,7 @@ def convolution_constant_left(K : AlgebraicField, a : af_carrier(K), n : Nat, f 
   );
 }
 
-def convolution_top(K : AlgebraicField, m : Nat) =
+def convolution_top(K : AlgebraicField, m : Nat) :=
   induction m as k return (
     forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat,
     SeriesSupport(K, f, succ(k)) -> SeriesSupport(K, g, succ(n))
@@ -125,7 +125,7 @@ def support_product_degrees_step(
   };
 }
 
-def support_product_degrees(K : AlgebraicField, m : Nat) =
+def support_product_degrees(K : AlgebraicField, m : Nat) :=
   induction m as k return (
     forall f : FormalSeries(K), forall g : FormalSeries(K), forall n : Nat,
     SeriesSupport(K, f, succ(k)) -> SeriesSupport(K, g, succ(n))
@@ -153,10 +153,10 @@ def polynomial_product_degree(
   dq : polynomial_cutoff(K, q) = succ(n)
 ) :
   polynomial_cutoff(K, polynomial_mul(K, p, q)) = succ(add_count(m, n)) {
-  let f = polynomial_coefficients(K, p);
-  let g = polynomial_coefficients(K, q);
-  let sf = along SeriesSupport(K, f) by dp from polynomial_cutoff_support(K, p);
-  let sg = along SeriesSupport(K, g) by dq from polynomial_cutoff_support(K, q);
+  let f := polynomial_coefficients(K, p);
+  let g := polynomial_coefficients(K, q);
+  let sf := along SeriesSupport(K, f) by dp from polynomial_cutoff_support(K, p);
+  let sg := along SeriesSupport(K, g) by dq from polynomial_cutoff_support(K, q);
   have nonzero :
     FieldNonzero(af_carrier(K), af_operations(K), convolution(K, add_count(m, n), f, g)) {
     intro zero;
@@ -196,9 +196,9 @@ def polynomial_product_nonzero(
   nq : (q = polynomial_zero(K)) -> Void, zero : polynomial_mul(K, p, q) = polynomial_zero(K)
 ) :
   Void {
-  obtain (m, dp) = polynomial_nonzero_degree(K, p, np);
-  obtain (n, dq) = polynomial_nonzero_degree(K, q, nq);
-  let same =
+  obtain (m, dp) := polynomial_nonzero_degree(K, p, np);
+  obtain (n, dq) := polynomial_nonzero_degree(K, q, nq);
+  let same :=
     trans(
       sym(polynomial_product_degree(K, p, q, m, n, dp, dq)),
       trans(cong(polynomial_cutoff(K), zero), polynomial_zero_cutoff(K))

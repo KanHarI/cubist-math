@@ -5,12 +5,13 @@ def polynomial_degree_zero_unit(
   K : AlgebraicField, p : Polynomial(K), degree : polynomial_cutoff(K, p) = 1
 ) :
   PolynomialUnit(K, p) {
-  let f = polynomial_coefficients(K, p);
-  let a = f(0);
-  let support = along SeriesSupport(K, f) by degree from polynomial_cutoff_support(K, p);
-  let constant = polynomial_ext(K, p, polynomial_constant(K, a), series_support_one(K, f, support));
-  obtain (ring, nontrivial, inverses) = af_laws(K);
-  obtain (b, inverse) = inverses(a, polynomial_leading_nonzero(K, p, 0, degree));
+  let f := polynomial_coefficients(K, p);
+  let a := f(0);
+  let support := along SeriesSupport(K, f) by degree from polynomial_cutoff_support(K, p);
+  let constant :=
+    polynomial_ext(K, p, polynomial_constant(K, a), series_support_one(K, f, support));
+  obtain (ring, nontrivial, inverses) := af_laws(K);
+  obtain (b, inverse) := inverses(a, polynomial_leading_nonzero(K, p, 0, degree));
   exact merely(
     (exists q : Polynomial(K), polynomial_mul(K, p, q) = polynomial_one(K)),
     typed(
@@ -53,16 +54,16 @@ def polynomial_factor_nonzero_right(
   );
 }
 
-def natural_sum_le_left_zero(m : Nat) =
+def natural_sum_le_left_zero(m : Nat) :=
   induction m as k return (forall n : Nat, le(add_count(k, n), k) -> n = 0) {
     zero => fun (n : Nat, above : le(n, 0)) => dimension_order_antisymmetric(n, 0, above, tt);
     succ previous => previous;
   };
 
-def NonunitDivisor(K : AlgebraicField, p g : Polynomial(K)) =
+def NonunitDivisor(K : AlgebraicField, p g : Polynomial(K)) :=
   PolynomialNonzero(K, g) and (PolynomialUnit(K, g) -> Void) and PolynomialDivides(K, g, p);
 
-def IrreducibleFactor(K : AlgebraicField, p : Polynomial(K)) =
+def IrreducibleFactor(K : AlgebraicField, p : Polynomial(K)) :=
   exists g : Polynomial(K), PolynomialIrreducible(K, g) and PolynomialDivides(K, g, p);
 
 def least_nonunit_divisor_irreducible(
@@ -73,34 +74,34 @@ def least_nonunit_divisor_irreducible(
   )
 ) :
   PolynomialIrreducible(K, g) {
-  obtain (nonzero, nonunit, divides) = divisor;
+  obtain (nonzero, nonunit, divides) := divisor;
   have factors :
     forall a : Polynomial(K), forall b : Polynomial(K), g = polynomial_mul(K, a, b)
     -> Mere(PolynomialUnit(K, a) or PolynomialUnit(K, b)) {
     intro a b equation;
-    let Result = PolynomialUnit(K, a) or PolynomialUnit(K, b);
+    let Result := PolynomialUnit(K, a) or PolynomialUnit(K, b);
     have noLeft : (PolynomialUnit(K, a) -> Void) -> Mere(Result) {
       intro nonunitA;
-      let na = polynomial_factor_nonzero_left(K, g, a, b, nonzero, equation);
-      let nb = polynomial_factor_nonzero_right(K, g, a, b, nonzero, equation);
-      let ag =
+      let na := polynomial_factor_nonzero_left(K, g, a, b, nonzero, equation);
+      let nb := polynomial_factor_nonzero_right(K, g, a, b, nonzero, equation);
+      let ag :=
         merely(
           (exists q : Polynomial(K), g = polynomial_mul(K, a, q)),
           typed((exists q : Polynomial(K), g = polynomial_mul(K, a, q)), (b, equation))
         );
-      let ap = polynomial_divides_trans(K, a, g, p, ag, divides);
-      obtain (m, da) = polynomial_nonzero_degree(K, a, na);
-      obtain (n, db) = polynomial_nonzero_degree(K, b, nb);
-      let dg =
+      let ap := polynomial_divides_trans(K, a, g, p, ag, divides);
+      obtain (m, da) := polynomial_nonzero_degree(K, a, na);
+      obtain (n, db) := polynomial_nonzero_degree(K, b, nb);
+      let dg :=
         trans(
           cong(polynomial_cutoff(K), equation), polynomial_product_degree(K, a, b, m, n, da, db)
         );
-      let bound = least(a, typed(NonunitDivisor(K, p, a), (na, nonunitA, ap)));
-      let numerical =
+      let bound := least(a, typed(NonunitDivisor(K, p, a), (na, nonunitA, ap)));
+      let numerical :=
         along((fun (j : Nat) => le(succ(add_count(m, n)), j))) by da from along(
           (fun (j : Nat) => le(j, polynomial_cutoff(K, a)))
         ) by dg from bound;
-      let zero = natural_sum_le_left_zero(m, n, numerical);
+      let zero := natural_sum_le_left_zero(m, n, numerical);
       exact merely(
         Result,
         right(polynomial_degree_zero_unit(K, b, trans(db, cong((fun (j : Nat) => succ(j)), zero))))
@@ -116,7 +117,7 @@ def least_nonunit_divisor_irreducible(
   exact (nonzero, nonunit, factors);
 }
 
-def NonunitDivisorAt(K : AlgebraicField, p : Polynomial(K), n : Nat) =
+def NonunitDivisorAt(K : AlgebraicField, p : Polynomial(K), n : Nat) :=
   exists g : Polynomial(K), NonunitDivisor(K, p, g) and (polynomial_cutoff(K, g) = n);
 
 // The least-degree nonunit divisor is irreducible. This avoids assuming
@@ -126,35 +127,35 @@ def polynomial_irreducible_factor(
   nonunit : PolynomialUnit(K, p) -> Void
 ) :
   Mere(IrreducibleFactor(K, p)) {
-  let P = fun (n : Nat) => Mere(NonunitDivisorAt(K, p, n));
-  let self = typed(NonunitDivisor(K, p, p), (nonzero, nonunit, polynomial_divides_refl(K, p)));
-  let cp = polynomial_cutoff(K, p);
-  let witness =
+  let P := fun (n : Nat) => Mere(NonunitDivisorAt(K, p, n));
+  let self := typed(NonunitDivisor(K, p, p), (nonzero, nonunit, polynomial_divides_refl(K, p)));
+  let cp := polynomial_cutoff(K, p);
+  let witness :=
     merely(NonunitDivisorAt(K, p, cp), typed(NonunitDivisorAt(K, p, cp), (p, self, refl(cp))));
-  let inhabited = merely((exists n : Nat, P(n)), typed((exists n : Nat, P(n)), (cp, witness)));
-  obtain (n, candidate, least) = natural_minimum(
+  let inhabited := merely((exists n : Nat, P(n)), typed((exists n : Nat, P(n)), (cp, witness)));
+  obtain (n, candidate, least) := natural_minimum(
     P, (fun (i : Nat) => mere_is_prop(NonunitDivisorAt(K, p, i))), inhabited
   );
   have extract : NonunitDivisorAt(K, p, n) -> IrreducibleFactor(K, p) {
     intro data;
-    obtain (g, divisor, degree) = data;
+    obtain (g, divisor, degree) := data;
     have minimum :
       forall a : Polynomial(K), NonunitDivisor(K, p, a)
       -> le(polynomial_cutoff(K, g), polynomial_cutoff(K, a)) {
       intro a da;
-      let ca = polynomial_cutoff(K, a);
-      let wa =
+      let ca := polynomial_cutoff(K, a);
+      let wa :=
         merely(NonunitDivisorAt(K, p, ca), typed(NonunitDivisorAt(K, p, ca), (a, da, refl(ca))));
       exact along((fun (j : Nat) => le(j, ca))) by sym(degree) from least(ca, wa);
     }
-    obtain (nz, nu, divides) = divisor;
+    obtain (nz, nu, divides) := divisor;
     exact (g, least_nonunit_divisor_irreducible(K, p, g, divisor, minimum), divides);
   }
   exact mere_map(NonunitDivisorAt(K, p, n), IrreducibleFactor(K, p), extract, candidate);
 }
 
 def polynomial_one_cutoff(K : AlgebraicField) : polynomial_cutoff(K, polynomial_one(K)) = 1 {
-  obtain (ring, nontrivial, inverses) = af_laws(K);
+  obtain (ring, nontrivial, inverses) := af_laws(K);
   exact polynomial_cutoff_exact(
     K, polynomial_one(K), 0, support_constant(K, field_one(K)), nontrivial
   );
@@ -169,24 +170,24 @@ def polynomial_unit_cutoff(
     (exists q : Polynomial(K), polynomial_mul(K, p, q) = polynomial_one(K))
     -> (exists q : Polynomial(K), polynomial_one(K) = polynomial_mul(K, p, q)) {
     intro witness;
-    obtain (q, inverse) = witness;
+    obtain (q, inverse) := witness;
     exact (q, sym(inverse));
   }
-  let divides =
+  let divides :=
     mere_map(
       (exists q : Polynomial(K), polynomial_mul(K, p, q) = polynomial_one(K)),
       (exists q : Polynomial(K), polynomial_one(K) = polynomial_mul(K, p, q)), divideOne, unit
     );
-  let bound =
+  let bound :=
     polynomial_divides_cutoff_le(
       K, p, polynomial_one(K), nonzero, polynomial_one_not_zero(K), divides
     );
-  obtain (d, degree) = polynomial_nonzero_degree(K, p, nonzero);
-  let numerical =
+  obtain (d, degree) := polynomial_nonzero_degree(K, p, nonzero);
+  let numerical :=
     along((fun (j : Nat) => le(succ(d), j))) by polynomial_one_cutoff(K) from along(
       (fun (j : Nat) => le(j, polynomial_cutoff(K, polynomial_one(K))))
     ) by degree from bound;
-  let zero = dimension_order_antisymmetric(d, 0, numerical, tt);
+  let zero := dimension_order_antisymmetric(d, 0, numerical, tt);
   exact trans(degree, cong((fun (j : Nat) => succ(j)), zero));
 }
 

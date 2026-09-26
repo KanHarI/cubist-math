@@ -10,16 +10,16 @@ def embedding_over_surjective_source(
   j : FieldEmbedding(K, T), d : EmbeddingsOver(K, R, i, T, j)
 ) :
   EmbeddingsOver(K, L, e, T, j) {
-  obtain (map, triangle) = d;
-  let inverse = field_embedding_inverse(R, L, h, onto);
-  let g = field_inverse_map(R, L, h, onto);
-  let f = field_embedding_map(R, T, map);
+  obtain (map, triangle) := d;
+  let inverse := field_embedding_inverse(R, L, h, onto);
+  let g := field_inverse_map(R, L, h, onto);
+  let f := field_embedding_map(R, T, map);
   have commutes :
     forall a : af_carrier(K),
     f(g(field_embedding_map(K, L, e, a))) = field_embedding_map(K, T, j, a) {
     intro a;
-    let c = field_embedding_map(K, R, i, a);
-    let back = trans(cong(g, sym(over(a))), field_inverse_left(R, L, h, onto, c));
+    let c := field_embedding_map(K, R, i, a);
+    let back := trans(cong(g, sym(over(a))), field_inverse_left(R, L, h, onto, c));
     exact trans(cong(f, back), triangle(a));
   }
   exact (field_embedding_compose(L, R, T, inverse, map), commutes);
@@ -33,8 +33,8 @@ def embedding_over_restrict_base(
   extension : EmbeddingsOver(R, L, h, T, d)
 ) :
   EmbeddingsOver(K, L, e, T, j) {
-  obtain (map, over) = extension;
-  let f = field_embedding_map(L, T, map);
+  obtain (map, over) := extension;
+  let f := field_embedding_map(L, T, map);
   exact (
     map,
     (

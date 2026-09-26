@@ -10,7 +10,7 @@ def limit_period(
   approximations : (point = point) -> Nat -> F,
   cauchy : (forall p : point = point, FieldCauchy(F, zero, addF, lt, approximations(p))),
   p : point = point
-) =
+) :=
   field_sequence_limit(F, zero, addF, lt, complete, approximations(p), cauchy(p));
 
 def cauchy_approximation_period_laws(
@@ -35,10 +35,10 @@ def cauchy_approximation_period_laws(
     X, point, F, zero, addF,
     limit_period(F, zero, addF, lt, complete, X, point, approximations, cauchy)
   ) {
-  let halving =
+  let halving :=
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
-  let period = limit_period(F, zero, addF, lt, complete, X, point, approximations, cauchy);
-  let convergence =
+  let period := limit_period(F, zero, addF, lt, complete, X, point, approximations, cauchy);
+  let convergence :=
     fun (p : point = point) => field_sequence_limit_converges(
       F, zero, addF, lt, complete, approximations(p), cauchy(p)
     );
@@ -52,7 +52,7 @@ def cauchy_approximation_period_laws(
     forall p : point = point, forall q : point = point,
     period(trans(p, q)) = addF(period(p), period(q)) {
     intro p q;
-    let joined = trans(p, q);
+    let joined := trans(p, q);
     exact field_asymptotic_limits_equal(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, approximations(joined),
       (fun (n : Nat) => addF(approximations(p, n), approximations(q, n))),

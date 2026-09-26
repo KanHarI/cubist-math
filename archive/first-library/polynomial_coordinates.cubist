@@ -3,13 +3,13 @@ import coordinate_splitting;
 
 // Finite coefficient arrays and supported coefficient functions are inverse
 // representations. No equality of polynomial evaluation functions is used.
-def series_cons(K : AlgebraicField, a : af_carrier(K), f : FormalSeries(K), n : Nat) =
+def series_cons(K : AlgebraicField, a : af_carrier(K), f : FormalSeries(K), n : Nat) :=
   induction n as k return af_carrier(K) {
     zero => a;
     succ ignored => f(k);
   };
 
-def series_coordinates(K : AlgebraicField, n : Nat) =
+def series_coordinates(K : AlgebraicField, n : Nat) :=
   induction n as k return (FormalSeries(K) -> Fin(k) -> af_carrier(K)) {
     zero => fun (f : FormalSeries(K), i : Fin(0)) => typed(af_carrier(K), absurd(i));
     succ previous => fun (f : FormalSeries(K)) => coordinate_cons(
@@ -17,7 +17,7 @@ def series_coordinates(K : AlgebraicField, n : Nat) =
     );
   };
 
-def series_from_coordinates(K : AlgebraicField, n : Nat) =
+def series_from_coordinates(K : AlgebraicField, n : Nat) :=
   induction n as k return ((Fin(k) -> af_carrier(K)) -> FormalSeries(K)) {
     zero => fun (a : Fin(0) -> af_carrier(K)) => series_zero(K);
     succ previous => fun (a : Fin(succ(k)) -> af_carrier(K)) => series_cons(
@@ -37,7 +37,7 @@ def series_cons_support(
   };
 }
 
-def series_from_coordinates_support(K : AlgebraicField, n : Nat) =
+def series_from_coordinates_support(K : AlgebraicField, n : Nat) :=
   induction n as k return (
     forall a : Fin(k) -> af_carrier(K), SeriesSupport(K, series_from_coordinates(K, k, a), k)
   ) {
@@ -62,7 +62,7 @@ def series_cons_decompose(K : AlgebraicField, f : FormalSeries(K)) :
   exact pointwise(x);
 }
 
-def series_from_coordinates_roundtrip(K : AlgebraicField, n : Nat) =
+def series_from_coordinates_roundtrip(K : AlgebraicField, n : Nat) :=
   induction n as k return (
     forall f : FormalSeries(K), SeriesSupport(K, f, k)
     -> series_from_coordinates(K, k, series_coordinates(K, k, f)) = f
@@ -79,7 +79,7 @@ def series_from_coordinates_roundtrip(K : AlgebraicField, n : Nat) =
     );
   };
 
-def series_coordinates_roundtrip(K : AlgebraicField, n : Nat) =
+def series_coordinates_roundtrip(K : AlgebraicField, n : Nat) :=
   induction n as k return (
     forall a : Fin(k) -> af_carrier(K),
     series_coordinates(K, k, series_from_coordinates(K, k, a)) = a
@@ -110,7 +110,7 @@ def series_coordinates_injective(
   );
 }
 
-def series_coordinates_add(K : AlgebraicField, n : Nat) =
+def series_coordinates_add(K : AlgebraicField, n : Nat) :=
   induction n as k return (
     forall f : FormalSeries(K), forall g : FormalSeries(K),
     series_coordinates(K, k, series_add(K, f, g)) = (
@@ -147,7 +147,7 @@ def series_coordinates_add(K : AlgebraicField, n : Nat) =
     );
   };
 
-def series_coordinates_scale(K : AlgebraicField, a : af_carrier(K), n : Nat) =
+def series_coordinates_scale(K : AlgebraicField, a : af_carrier(K), n : Nat) :=
   induction n as k return (
     forall f : FormalSeries(K),
     series_coordinates(K, k, series_scale(K, a, f)) = (

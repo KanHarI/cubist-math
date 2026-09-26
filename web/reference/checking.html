@@ -78,7 +78,7 @@
 import classical;
 
 // Twice a number.
-def double(n : Nat) = n + n;
+def double(n : Nat) := n + n;
 
 def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
   exact double_negation(P, prop, nn);
@@ -145,9 +145,9 @@ Expression: λ (n : Nat). (λ …)(n, n)</code></pre>
           <section id="limits">
             <h2>Limits</h2>
             <p>The parser accepts at most 1,000,000 source characters and 160,000 tokens, and nests expressions, blocks and patterns at most 128 deep. Decimal numerals go up to 256, binary literals up to 256 significant bits, and a tuple expands to at most 128 nested pairs. Larger numbers can be built by expressions. The kernel also bounds its work per declaration, and each <code>simp</code> has the budgets described in <a href="rewriting.html#simp-traversal">simplification</a>. These are implementation limits, not mathematical assumptions: exceeding one rejects the declaration, and never accepts anything.</p>
-            <pre><code data-check="reject">def too_big = 257;  // Error: Numerals are limited to 256 in this version.</code></pre>
+            <pre><code data-check="reject">def too_big := 257;  // Error: Numerals are limited to 256 in this version.</code></pre>
             <pre><code data-check="reject">// Error: Binary literals are limited to 256 significant bits.
-def too_long = 0b10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;</code></pre>
+def too_long := 0b10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;</code></pre>
             <p>The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules. It explains contexts, binding, the runtime limits and what must be trusted when a proof is verified.</p>
           </section>
 

@@ -4,7 +4,7 @@ import polynomial_eval_characterization;
 import field_homomorphisms;
 
 // The coefficient-field inclusion sends a coefficient to its constant residue.
-def residue_constant(K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K)) =
+def residue_constant(K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K)) :=
   residue_reduce(K, M, polynomial_constant(K, a));
 
 def residue_constant_zero(K : AlgebraicField, M : PolynomialModulus(K)) :
@@ -40,7 +40,7 @@ def residue_constant_mul(K : AlgebraicField, M : PolynomialModulus(K), a b : af_
   );
 }
 
-opaque def residue_constant_preserves(K : AlgebraicField, M : PolynomialModulus(K)) =
+opaque def residue_constant_preserves(K : AlgebraicField, M : PolynomialModulus(K)) :=
   with unfolding [] {
     field_ops_preserved_from_laws(
       af_carrier(K), PolynomialResidue(K, M), af_operations(K), residue_zero(K, M),
@@ -53,13 +53,13 @@ opaque def residue_constant_preserves(K : AlgebraicField, M : PolynomialModulus(
 def residue_embedding(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M))
-) =
+) :=
   field_embedding_from_hom(
     K, PolynomialResidueField(K, M, irreducible), residue_constant(K, M),
     residue_constant_preserves(K, M)
   );
 
-def adjoined_root(K : AlgebraicField, M : PolynomialModulus(K)) =
+def adjoined_root(K : AlgebraicField, M : PolynomialModulus(K)) :=
   residue_reduce(K, M, polynomial_variable(K));
 
 // Reduction satisfies the Horner equations, using its ring-homomorphism laws.
@@ -68,9 +68,9 @@ def residue_reduce_horner(K : AlgebraicField, M : PolynomialModulus(K), p : Poly
     K, M, residue_constant(K, M, polynomial_coefficients(K, p, 0)),
     residue_mul(K, M, adjoined_root(K, M), residue_reduce(K, M, polynomial_tail(K, p)))
   ) {
-  let tail = polynomial_tail(K, p);
-  let constant = polynomial_constant(K, polynomial_coefficients(K, p, 0));
-  let reduce = residue_reduce(K, M);
+  let tail := polynomial_tail(K, p);
+  let constant := polynomial_constant(K, polynomial_coefficients(K, p, 0));
+  let reduce := residue_reduce(K, M);
   have product : reduce(polynomial_shift(K, tail)) = residue_mul(
     K, M, adjoined_root(K, M), reduce(tail)
   ) := with unfolding [] {
@@ -116,7 +116,7 @@ def adjoined_root_is_root(
     K, PolynomialResidueField(K, M, irreducible), residue_embedding(K, M, irreducible),
     modulus_polynomial(K, M), adjoined_root(K, M)
   ) = field_zero(PolynomialResidueField(K, M, irreducible)) {
-  let D = modulus_polynomial(K, M);
+  let D := modulus_polynomial(K, M);
   exact trans(
     residue_eval_polynomial(K, M, irreducible, D),
     residue_ext(

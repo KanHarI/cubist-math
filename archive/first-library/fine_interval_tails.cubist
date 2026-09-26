@@ -5,7 +5,7 @@ import dyadic_convergence;
 def FineDyadicLevel(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
   a b : FieldUnitInterval(F, zero, one, lt), depth : Nat
-) =
+) :=
   exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b),
   (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
   and IntervalAdmissibleTags(
@@ -22,7 +22,7 @@ def FineDyadicLevel(
 def FineIntervalTail(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
   a b : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   exists bound : Nat, forall depth : Nat, IndexLE(bound, depth)
   -> FineDyadicLevel(F, zero, one, addF, negF, lt, mesh, a, b, depth);
 
@@ -43,8 +43,8 @@ def interval_fine_tail_from_bound(
   )
 ) :
   FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b) {
-  let width = interval_difference(F, zero, one, addF, negF, lt, a, b);
-  let nonnegativeWidth =
+  let width := interval_difference(F, zero, one, addF, negF, lt, a, b);
+  let nonnegativeWidth :=
     field_difference_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic,
       field_interval_coordinate(F, zero, one, lt)(a),
@@ -54,7 +54,7 @@ def interval_fine_tail_from_bound(
     forall depth : Nat, IndexLE(bound, depth)
     -> FineDyadicLevel(F, zero, one, addF, negF, lt, mesh, a, b, depth) {
     intro depth later;
-    let smallDepth =
+    let smallDepth :=
       dyadic_width_small_tail(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width,
         nonnegativeWidth, mesh, bound, small, depth, later
@@ -81,21 +81,21 @@ def archimedean_interval_fine_tail(
   ), mesh : F, positiveMesh : lt(zero, mesh)
 ) :
   FieldExists(FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b)) {
-  let width = interval_difference(F, zero, one, addF, negF, lt, a, b);
-  let nonnegativeWidth =
+  let width := interval_difference(F, zero, one, addF, negF, lt, a, b);
+  let nonnegativeWidth :=
     field_difference_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic,
       field_interval_coordinate(F, zero, one, lt)(a),
       field_interval_coordinate(F, zero, one, lt)(b), ordered
     );
-  obtain (half, halfSum, halfPositive) = ordered_field_halving(
+  obtain (half, halfSum, halfPositive) := ordered_field_halving(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
   );
-  let A = (exists depth : Nat, lt(dyadic_width(F, half, depth, width), mesh));
-  let B = FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b);
+  let A := (exists depth : Nat, lt(dyadic_width(F, half, depth, width), mesh));
+  let B := FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b);
   have mapping : A -> B {
     intro data;
-    obtain (bound, small) = data;
+    obtain (bound, small) := data;
     exact interval_fine_tail_from_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered,
       mesh, bound, small
@@ -124,21 +124,21 @@ def bounded_archimedean_interval_fine_tail(
   ), mesh : F, positiveMesh : lt(zero, mesh)
 ) :
   FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b) {
-  let width = interval_difference(F, zero, one, addF, negF, lt, a, b);
-  let nonnegativeWidth =
+  let width := interval_difference(F, zero, one, addF, negF, lt, a, b);
+  let nonnegativeWidth :=
     field_difference_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic,
       field_interval_coordinate(F, zero, one, lt)(a),
       field_interval_coordinate(F, zero, one, lt)(b), ordered
     );
-  obtain (half, halfSum, halfPositive) = ordered_field_halving(
+  obtain (half, halfSum, halfPositive) := ordered_field_halving(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
   );
-  obtain (reciprocal, positiveReciprocal, inverseLaw) = field_positive_reciprocal(
+  obtain (reciprocal, positiveReciprocal, inverseLaw) := field_positive_reciprocal(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, mesh, positiveMesh
   );
-  obtain (bound, large) = bounds(mulF(width, reciprocal));
-  let small =
+  obtain (bound, large) := bounds(mulF(width, reciprocal));
+  let small :=
     dyadic_width_small_from_natural_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width,
       nonnegativeWidth, mesh, positiveMesh, reciprocal, inverseLaw, bound, large

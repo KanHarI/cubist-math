@@ -5,7 +5,7 @@ def CurveFineTagsClose(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
   epsilon mesh : F
-) =
+) :=
   forall n : Nat, forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   forall oldTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   forall newTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
@@ -41,23 +41,23 @@ def curve_contour_uniform_tag_stability(
 ) :
   exists mesh : F, lt(zero, mesh)
   and CurveFineTagsClose(F, zero, one, addF, mulF, negF, lt, curve, integrand, epsilon, mesh) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  obtain (delta, positiveDelta, smallError) = field_small_scaled_radius(
+  let I := FieldUnitInterval(F, zero, one, lt);
+  obtain (delta, positiveDelta, smallError) := field_small_scaled_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
     nonnegativeLength, epsilon, positive
   );
-  let nonnegativeDelta =
+  let nonnegativeDelta :=
     ordered_lt_implies_le(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, delta, positiveDelta
     );
-  obtain (mesh, positiveMesh, bounds) = uniform_curve_tag_bounds(
+  obtain (mesh, positiveMesh, bounds) := uniform_curve_tag_bounds(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     (fun (t : I) => integrand(curve(t))), uniform, delta, positiveDelta
   );
   have stable :
     CurveFineTagsClose(F, zero, one, addF, mulF, negF, lt, curve, integrand, epsilon, mesh) {
     intro n vertices oldTags newTags fine oldValid newValid;
-    let ordered =
+    let ordered :=
       interval_admissible_samples_ordered(
         F, zero, one, addF, mulF, lt, arithmetic, n, vertices, oldTags, oldValid
       );
@@ -91,22 +91,24 @@ def affine_contour_uniform_tag_stability(
     F, zero, one, addF, mulF, negF, lt,
     complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error), integrand, epsilon, mesh
   ) {
-  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error);
-  let r = maxF(complex_real(F, error), negF(complex_real(F, error)));
-  let s = maxF(complex_imag(F, error), negF(complex_imag(F, error)));
-  let boundReal = field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_real(F, error));
-  let boundImag = field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_imag(F, error));
-  let nonnegativeR =
+  let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, error);
+  let r := maxF(complex_real(F, error), negF(complex_real(F, error)));
+  let s := maxF(complex_imag(F, error), negF(complex_imag(F, error)));
+  let boundReal :=
+    field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_real(F, error));
+  let boundImag :=
+    field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_imag(F, error));
+  let nonnegativeR :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), r,
       boundReal
     );
-  let nonnegativeS =
+  let nonnegativeS :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, error), s,
       boundImag
     );
-  let nonnegativeLength =
+  let nonnegativeLength :=
     ordered_sum_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, nonnegativeR, nonnegativeS
     );
@@ -157,8 +159,8 @@ def affine_contour_endpoint_sums_close(
       ), epsilon
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  obtain (mesh, positiveMesh, stable) = affine_contour_uniform_tag_stability(
+  let I := FieldUnitInterval(F, zero, one, lt);
+  obtain (mesh, positiveMesh, stable) := affine_contour_uniform_tag_stability(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice, z,
     error, integrand, uniform, epsilon, positive
   );
@@ -180,7 +182,7 @@ def affine_contour_endpoint_sums_close(
       ), epsilon
     ) {
     intro n vertices ordered fine;
-    obtain (leftValid, rightValid) = interval_endpoint_tags_admissible(
+    obtain (leftValid, rightValid) := interval_endpoint_tags_admissible(
       F, zero, one, lt, order, n, vertices, ordered
     );
     exact stable(

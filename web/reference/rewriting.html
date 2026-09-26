@@ -322,7 +322,7 @@ def move_type(A B : U0, p : A = B, a : A) : B {
             <pre><code data-check="accept">import naturals;
 
 simp_rule nat_add_zero priority 10;
-simp_set nat_units = [nat_add_zero];
+simp_set nat_units := [nat_add_zero];
 
 def default_rules(n m : Nat) : (n + 0) + (m + 0) = n + m {
   simp;
@@ -336,7 +336,7 @@ def simplified_copy(n m : Nat, h : n + 0 = m + 0) : n = m {
   simp [nat_units] at h as h2;   // h2 : n = m
   exact h2;
 }</code></pre>
-            <p><code>simp_rule name;</code> and <code>simp_rule name priority N;</code> are top-level directives, placed between declarations. They register an already checked equality as a <strong>default rule</strong>. The priority is an integer from 0 to 1000, with 0 as the default. <code>simp_set name = [a, b];</code> names a collection of rules. Neither directive creates a new proof rule or an assumption: the registered lemma is rechecked every time it is used.</p>
+            <p><code>simp_rule name;</code> and <code>simp_rule name priority N;</code> are top-level directives, placed between declarations. They register an already checked equality as a <strong>default rule</strong>. The priority is an integer from 0 to 1000, with 0 as the default. <code>simp_set name := [a, b];</code> names a collection of rules. Neither directive creates a new proof rule or an assumption: the registered lemma is rechecked every time it is used.</p>
             <p>Registrations and sets are inherited through imports. When modules register the same lemma, it appears once. Defaults are tried in descending priority, then in a fixed order by checked identity. If two imports define different sets with the same name, that name is ambiguous until the current module declares its own set with that name.</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Form</th><th>Rules used</th></tr></thead>

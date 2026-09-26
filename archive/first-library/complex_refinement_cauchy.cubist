@@ -9,7 +9,7 @@ def complex_converges_successor(
 ) :
   ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => sequence(succ(n))), value) {
   intro epsilon positive;
-  obtain (bound, close) = converges(epsilon, positive);
+  obtain (bound, close) := converges(epsilon, positive);
   exact (
     bound,
     (fun (n : Nat, later : IndexLE(bound, n)) => close(succ(n), nat_le_step(bound, n, later)))
@@ -22,7 +22,7 @@ def complex_close_symmetry(
   close : ComplexClose(F, addF, lt, x, y, epsilon)
 ) :
   ComplexClose(F, addF, lt, y, x, epsilon) {
-  obtain (realClose, imagClose) = close;
+  obtain (realClose, imagClose) := close;
   exact (
     field_close_symmetry(F, addF, lt, complex_real(F, x), complex_real(F, y), epsilon, realClose),
     field_close_symmetry(F, addF, lt, complex_imag(F, x), complex_imag(F, y), epsilon, imagClose)
@@ -37,8 +37,8 @@ def complex_close_triangle(
   yz : ComplexClose(F, addF, lt, y, z, delta)
 ) :
   ComplexClose(F, addF, lt, x, z, addF(epsilon, delta)) {
-  obtain (realXY, imagXY) = xy;
-  obtain (realYZ, imagYZ) = yz;
+  obtain (realXY, imagXY) := xy;
+  obtain (realYZ, imagYZ) := yz;
   exact (
     field_close_triangle(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, x),
@@ -61,8 +61,8 @@ def complex_perturbation_close(
   small : lt(radius, epsilon)
 ) :
   ComplexClose(F, addF, lt, old, fresh, epsilon) {
-  obtain (error, computes, realBound, imagBound) = perturbation;
-  let close =
+  obtain (error, computes, realBound, imagBound) := perturbation;
+  let close :=
     typed(
       ComplexClose(F, addF, lt, fresh, old, epsilon),
       (
@@ -94,19 +94,19 @@ def complex_cauchy_from_refinements(
   )
 ) :
   ComplexCauchy(F, zero, addF, lt, sequence) {
-  obtain (half, halfSum, positiveHalf) = halving;
+  obtain (half, halfSum, positiveHalf) := halving;
   intro epsilon positive;
-  obtain (bound, close) = refines(half(epsilon), positiveHalf(epsilon, positive));
+  obtain (bound, close) := refines(half(epsilon), positiveHalf(epsilon, positive));
   have tail :
     forall m : Nat, forall n : Nat, IndexLE(bound, m) -> IndexLE(bound, n)
     -> ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon) {
     intro m n largeM largeN;
-    let first = close(m, n, largeM);
-    let second =
+    let first := close(m, n, largeM);
+    let second :=
       along((fun (k : Nat) => ComplexClose(F, addF, lt, sequence(n), sequence(k), half(epsilon)))) by nat_add_comm(
         n, m
       ) from close(n, m, largeN);
-    let reversed =
+    let reversed :=
       complex_close_symmetry(F, addF, lt, sequence(n), sequence(m + n), half(epsilon), second);
     exact along((fun (r : F) => ComplexClose(F, addF, lt, sequence(m), sequence(n), r))) by halfSum(
       epsilon

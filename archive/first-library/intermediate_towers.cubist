@@ -3,7 +3,7 @@ import subfield_carriers;
 import field_embedding_factorization;
 
 // The middle field has actual elements (an ambient value and membership proof).
-def intermediate_as_field(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
+def intermediate_as_field(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :=
   subfield_as_field(extension_field(K, E), intermediate_subfield(K, E, M));
 
 def intermediate_base_map(
@@ -41,10 +41,10 @@ def intermediate_ambient_embedding(K : AlgebraicField, E : FieldExt(K), M : Inte
 }
 
 // These two extensions realize the lower and upper steps of the tower.
-def intermediate_as_extension(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
+def intermediate_as_extension(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :=
   embedding_as_extension(K, intermediate_as_field(K, E, M), intermediate_base_embedding(K, E, M));
 
-def intermediate_overfield(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
+def intermediate_overfield(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :=
   embedding_as_extension(
     intermediate_as_field(K, E, M), extension_field(K, E), intermediate_ambient_embedding(K, E, M)
   );

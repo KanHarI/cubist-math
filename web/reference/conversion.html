@@ -65,7 +65,7 @@ def beta : (fun (n : Nat) =&gt; succ(n))(0) = 1 {
   rfl;
 }
 
-def double(n : Nat) = succ(succ(n));
+def double(n : Nat) := succ(succ(n));
 
 def delta : double(1) = 3 {
   rfl;
@@ -97,7 +97,7 @@ def plus_zero(n : Nat) : n + 0 = n {
           <section id="opacity">
             <h2>Opaque definitions</h2>
             <p><code>opaque def</code> is accepted syntax. It is currently checked and unfolded exactly like <code>def</code>: conversion opens <code>boxed_successor(1)</code> to <code>succ(1)</code>, which is the numeral <code>2</code>. There is no separate operation that unfolds a term on request; conversion unfolds definitions as it needs them.</p>
-            <pre><code data-check="accept">opaque def boxed_successor(n : Nat) = succ(n);
+            <pre><code data-check="accept">opaque def boxed_successor(n : Nat) := succ(n);
 
 def opened_is_two : boxed_successor(1) = 2 {
   exact refl(2);
@@ -110,13 +110,13 @@ def opened_in_a_type(v : boxed_successor(0) = 1) : 1 = 1 {
           <section id="unfolding-hints">
             <h2>Unfolding hints</h2>
             <p><code>with unfolding [name₁, name₂] { expression }</code> scopes conversion hints around one expression. The list names already checked definitions; the braces hold one expression, without a trailing semicolon. Empty lists and nested scopes are allowed.</p>
-            <pre><code data-check="accept">def identity(n : Nat) = n;
+            <pre><code data-check="accept">def identity(n : Nat) := n;
 
 def identity_zero : identity(0) = 0 {
   exact with unfolding [identity] { refl(0) };
 }
 
-def twice(n : Nat) = identity(identity(n));
+def twice(n : Nat) := identity(identity(n));
 
 def nested : twice(0) = 0 {
   exact with unfolding [twice] { with unfolding [identity] { refl(0) } };
@@ -134,7 +134,7 @@ def no_hints : 0 = 0 {
             <pre><code data-check="reject">def local_hint(n : Nat) : n = n {
   exact with unfolding [n] { refl(n) };  // Error: No checked definition to unfold: n
 }</code></pre>
-            <pre><code data-check="reject">def identity(n : Nat) = n;
+            <pre><code data-check="reject">def identity(n : Nat) := n;
 
 def statement_in_braces : identity(0) = 0 {
   exact with unfolding [identity] { refl(0); };  // Error: Expected '}', found ';'.

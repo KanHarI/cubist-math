@@ -42,7 +42,7 @@ def radix_decode_add_small(extra count : Nat, p : RadixPositive(extra)) :
   };
 }
 
-def RadixAddCorrect(extra : Nat, p q : RadixPositive(extra)) =
+def RadixAddCorrect(extra : Nat, p q : RadixPositive(extra)) :=
   radix_positive_to_nat(extra, radix_positive_add(extra, p, q)) = radix_positive_to_nat(extra, p) + radix_positive_to_nat(
     extra, q
   );
@@ -73,11 +73,11 @@ def radix_add_append_append_correct(
   e : RadixDigit(succ(succ(extra))), q : RadixPositive(extra), ih : RadixAddCorrect(extra, p, q)
 ) :
   RadixAddCorrect(extra, radix_append(extra, d, p), radix_append(extra, e, q)) {
-  let base = succ(succ(extra));
-  let dv = radix_digit_value(base, d);
-  let ev = radix_digit_value(base, e);
-  let a = radix_positive_to_nat(extra, p);
-  let b = radix_positive_to_nat(extra, q);
+  let base := succ(succ(extra));
+  let dv := radix_digit_value(base, d);
+  let ev := radix_digit_value(base, e);
+  let a := radix_positive_to_nat(extra, p);
+  let b := radix_positive_to_nat(extra, q);
   exact trans(
     radix_decode_add_small(extra, ev, radix_append(extra, d, radix_positive_add(extra, p, q))),
     trans(
@@ -142,8 +142,8 @@ def radix_decode_add_copies(extra count : Nat, a b : RadixPositive(extra)) :
   radix_positive_to_nat(extra, radix_add_copies(extra, count, a, b)) = radix_positive_to_nat(
     extra, a
   ) + count * radix_positive_to_nat(extra, b) {
-  let av = radix_positive_to_nat(extra, a);
-  let bv = radix_positive_to_nat(extra, b);
+  let av := radix_positive_to_nat(extra, a);
+  let bv := radix_positive_to_nat(extra, b);
   exact induction count as k return (
     radix_positive_to_nat(extra, radix_add_copies(extra, k, a, b)) = av + k * bv
   ) {
@@ -158,7 +158,7 @@ def radix_decode_add_copies(extra count : Nat, a b : RadixPositive(extra)) :
   };
 }
 
-def RadixMulCorrect(extra : Nat, p q : RadixPositive(extra)) =
+def RadixMulCorrect(extra : Nat, p q : RadixPositive(extra)) :=
   radix_positive_to_nat(extra, radix_positive_mul(extra, p, q)) = radix_positive_to_nat(extra, p) * radix_positive_to_nat(
     extra, q
   );
@@ -173,10 +173,10 @@ def radix_mul_append_correct(
   ih : RadixMulCorrect(extra, p, q)
 ) :
   RadixMulCorrect(extra, radix_append(extra, d, p), q) {
-  let base = succ(succ(extra));
-  let digit = radix_digit_value(base, d);
-  let a = radix_positive_to_nat(extra, p);
-  let b = radix_positive_to_nat(extra, q);
+  let base := succ(succ(extra));
+  let digit := radix_digit_value(base, d);
+  let a := radix_positive_to_nat(extra, p);
+  let b := radix_positive_to_nat(extra, q);
   exact trans(
     radix_decode_add_copies(
       extra, digit,

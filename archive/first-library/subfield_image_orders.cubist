@@ -8,7 +8,7 @@ def subfield_image_inclusion_to_preimage(
 ) :
   SubfieldIncluded(K, S, subfield_preimage(K, L, e, T)) {
   intro x member;
-  let f = field_embedding_map(K, L, e);
+  let f := field_embedding_map(K, L, e);
   exact included(f(x), typed(SubfieldImage(K, L, e, S, f(x)), (x, member, refl(f(x)))));
 }
 
@@ -18,7 +18,7 @@ def subfield_image_inclusion_from_preimage(
 ) :
   SubfieldIncluded(L, subfield_image(K, L, e, S), T) {
   intro y member;
-  obtain (x, px, same) = typed(SubfieldImage(K, L, e, S, y), member);
+  obtain (x, px, same) := typed(SubfieldImage(K, L, e, S, y), member);
   exact along subfield_members(L, T) by same from included(x, px);
 }
 
@@ -42,7 +42,7 @@ def subfield_image_monotone(
 ) :
   SubfieldIncluded(L, subfield_image(K, L, e, S), subfield_image(K, L, e, T)) {
   intro y member;
-  obtain (x, px, same) = typed(SubfieldImage(K, L, e, S, y), member);
+  obtain (x, px, same) := typed(SubfieldImage(K, L, e, S, y), member);
   exact typed(SubfieldImage(K, L, e, T, y), (x, included(x, px), same));
 }
 
@@ -58,11 +58,11 @@ def subfield_preimage_monotone(
 // Injectivity also recovers a subfield after taking its image then preimage.
 def subfield_preimage_image(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) :
   subfield_preimage(K, L, e, subfield_image(K, L, e, S)) =[Subfield(K)] S {
-  let P = subfield_members(K, S);
-  let f = field_embedding_map(K, L, e);
+  let P := subfield_members(K, S);
+  let f := field_embedding_map(K, L, e);
   have back : SubfieldIncluded(K, subfield_preimage(K, L, e, subfield_image(K, L, e, S)), S) {
     intro x member;
-    obtain (y, py, same) = typed(SubfieldImage(K, L, e, S, f(x)), member);
+    obtain (y, py, same) := typed(SubfieldImage(K, L, e, S, f(x)), member);
     exact along P by field_embedding_injective(K, L, e, y, x, same) from py;
   }
   exact subfield_inclusion_antisymmetric(

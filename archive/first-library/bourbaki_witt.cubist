@@ -1,6 +1,6 @@
 import bourbaki_tower;
 
-def TowerSeparation(A : U1, le : OrderRelation(A), f : A -> A, a b : A) =
+def TowerSeparation(A : U1, le : OrderRelation(A), f : A -> A, a b : A) :=
   FieldOr(le(b, a), le(f(a), b));
 
 def tower_separation_step(
@@ -14,7 +14,7 @@ def tower_separation_step(
     intro ba;
     cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
       left ab => {
-        let same = order_antisym(A, le, laws, b, a, ba, ab);
+        let same := order_antisym(A, le, laws, b, a, ba, ab);
         exact field_exists_intro(
           le(f(b), a) or le(f(a), f(b)),
           right(
@@ -45,7 +45,7 @@ def tower_separation_sup(
   separated : (forall b : A, C(b) -> TowerSeparation(A, le, f, a, b))
 ) :
   TowerSeparation(A, le, f, a, chain_sup(A, le, complete, C, chain)) {
-  let s = chain_sup(A, le, complete, C, chain);
+  let s := chain_sup(A, le, complete, C, chain);
   cases excluded_middle(le(s, a), order_prop(A, le, laws, s, a)) {
     left sa => {
       exact field_exists_intro(le(s, a) or le(f(a), s), left(sa));
@@ -114,7 +114,7 @@ def tower_stable_step(
     intro ba;
     cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
       left ab => {
-        let same = order_antisym(A, le, laws, b, a, ba, ab);
+        let same := order_antisym(A, le, laws, b, a, ba, ab);
         exact along((fun (y : A) => le(f(y), f(a)))) by sym(same) from order_refl(A, le, laws, f(a));
       }
       right notab => {
@@ -135,7 +135,7 @@ def tower_stable_sup(
   stable : (forall a : A, C(a) -> TowerStable(A, le, complete, f, a))
 ) :
   TowerStable(A, le, complete, f, chain_sup(A, le, complete, C, chain)) {
-  let s = chain_sup(A, le, complete, C, chain);
+  let s := chain_sup(A, le, complete, C, chain);
   intro b tb below strict;
   have contradiction : (le(f(b), s) -> Void) -> Void {
     intro notBelow;
@@ -220,11 +220,11 @@ def bourbaki_witt(
   f : A -> A, progressive : Progressive(A, le, f)
 ) :
   exists x : A, f(x) = x {
-  let T = TowerMember(A, le, complete, f);
-  let chain = tower_is_chain(A, le, laws, complete, f, progressive);
-  let s = chain_sup(A, le, complete, T, chain);
-  let member = tower_sup(A, le, complete, f, T, chain, (fun (x : A, tx : T(x)) => tx));
-  let next = tower_step(A, le, complete, f, s, member);
+  let T := TowerMember(A, le, complete, f);
+  let chain := tower_is_chain(A, le, laws, complete, f, progressive);
+  let s := chain_sup(A, le, complete, T, chain);
+  let member := tower_sup(A, le, complete, f, T, chain, (fun (x : A, tx : T(x)) => tx));
+  let next := tower_step(A, le, complete, f, s, member);
   exact (
     s,
     order_antisym(

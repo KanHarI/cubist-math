@@ -4,7 +4,7 @@ import finite;
 // and a path between the transported second components.
 def dependent_pair_path(
   A : U0, P : A -> U0, x y : A, p : x = y, u : P(x), v : P(y), q : (along P by p from u) = v
-) =
+) :=
   path(
     fun (i : Interval) => exists z : A, P(z),
     fun (i : Interval) => typed(
@@ -13,7 +13,7 @@ def dependent_pair_path(
     )
   );
 
-def sigma_eta(A : U0, P : A -> U0, u : (exists x : A, P(x))) =
+def sigma_eta(A : U0, P : A -> U0, u : (exists x : A, P(x))) :=
   pair_induction(
     (
       fun (v : (exists x : A, P(x))) => typed(
@@ -25,7 +25,7 @@ def sigma_eta(A : U0, P : A -> U0, u : (exists x : A, P(x))) =
 def subtype_pair_path(
   A : U0, P : A -> U0, prop : (forall x : A, forall h : P(x), forall k : P(x), h = k), x y : A,
   p : x = y, u : P(x), v : P(y)
-) =
+) :=
   dependent_pair_path(A, P, x, y, p, u, v, prop(y, along P by p from u, v));
 
 def subtype_ext(
@@ -44,17 +44,17 @@ def subtype_ext(
   );
 }
 
-def InverseLaws(A B : U0, f : A -> B, g : B -> A) =
+def InverseLaws(A B : U0, f : A -> B, g : B -> A) :=
   (forall x : A, g(f(x)) = x) and (forall y : B, f(g(y)) = y);
 
-def InverseData(A B : U0, f : A -> B) = exists g : B -> A, InverseLaws(A, B, f, g);
+def InverseData(A B : U0, f : A -> B) := exists g : B -> A, InverseLaws(A, B, f, g);
 
 def inverse_laws_prop(
   A B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, g : B -> A, p q : InverseLaws(A, B, f, g)
 ) :
   p = q {
-  let L = forall x : A, g(f(x)) = x;
-  let R = forall y : B, f(g(y)) = y;
+  let L := forall x : A, g(f(x)) = x;
+  let R := forall y : B, f(g(y)) = y;
   have left_path : fst(L, R, p) = fst(L, R, q) := FunExt(
     U0, A, (fun (x : A) => g(f(x)) = x), fst(L, R, p), fst(L, R, q),
     (fun (x : A) => setA(g(f(x)), x, typed(L, fst(L, R, p))(x), typed(L, fst(L, R, q))(x)))
@@ -77,10 +77,10 @@ def inverse_data_prop(
   A B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, p q : InverseData(A, B, f)
 ) :
   p = q {
-  let e = typed(Bijection(A, B), (f, p));
-  let d = typed(Bijection(A, B), (f, q));
-  let g = backward(A, B, e);
-  let h = backward(A, B, d);
+  let e := typed(Bijection(A, B), (f, p));
+  let d := typed(Bijection(A, B), (f, q));
+  let g := backward(A, B, e);
+  let h := backward(A, B, d);
   have inverse_path : g = h := FunExt(
     U0, B, (fun (y : B) => A), g, h,
     (fun (y : B) => trans(sym(cong(g, right_inverse(A, B, d, y))), left_inverse(A, B, e, h(y))))
@@ -99,7 +99,7 @@ def bijection_ext(
 }
 
 // These proposition lemmas use only function extensionality and path induction.
-def Proposition(A : U0) = forall x : A, forall y : A, x = y;
+def Proposition(A : U0) := forall x : A, forall y : A, x = y;
 
 def proposition_is_set(A : U0, prop : Proposition(A)) : IsSet(A) {
   exact hedberg(A, (fun (x y : A) => typed(Decidable(x = y), left(prop(x, y)))));
@@ -107,7 +107,7 @@ def proposition_is_set(A : U0, prop : Proposition(A)) : IsSet(A) {
 
 def forall_prop(
   A : U0, P : A -> U0, prop : (forall x : A, Proposition(P(x))), f g : (forall x : A, P(x))
-) =
+) :=
   FunExt(U0, A, P, f, g, (fun (x : A) => prop(x, f(x), g(x))));
 
 def sigma_prop(
@@ -141,7 +141,7 @@ def is_set_prop(A : U0, p q : IsSet(A)) : p = q {
   );
 }
 
-def product_prop(P Q : U0, propP : Proposition(P), propQ : Proposition(Q)) =
+def product_prop(P Q : U0, propP : Proposition(P), propQ : Proposition(Q)) :=
   sigma_prop(P, (fun (p : P) => Q), propP, (fun (p : P) => propQ));
 
 def coherence_prop(
@@ -161,8 +161,8 @@ def coherence_prop(
 
 def half_adjoint_laws_prop(A B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, g : B -> A) :
   Proposition(HalfAdjointLaws(A, B, f, g)) {
-  let L = LeftLaw(A, B, f, g);
-  let R = RightLaw(A, B, f, g);
+  let L := LeftLaw(A, B, f, g);
+  let R := RightLaw(A, B, f, g);
   exact sigma_prop(
     L, (fun (eta : L) => exists eps : R, Coherence(A, B, f, g, eta, eps)),
     forall_prop(A, (fun (x : A) => g(f(x)) = x), (fun (x : A) => setA(g(f(x)), x))),
@@ -180,10 +180,10 @@ def is_equiv_prop(
   A B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, p q : IsEquiv(U0, A, B, f)
 ) :
   p = q {
-  let e = equiv_bijection(A, B, typed(Equiv(U0, A, B), (f, p)));
-  let d = equiv_bijection(A, B, typed(Equiv(U0, A, B), (f, q)));
-  let g = backward(A, B, e);
-  let h = backward(A, B, d);
+  let e := equiv_bijection(A, B, typed(Equiv(U0, A, B), (f, p)));
+  let d := equiv_bijection(A, B, typed(Equiv(U0, A, B), (f, q)));
+  let g := backward(A, B, e);
+  let h := backward(A, B, d);
   have inverse_path : g = h := FunExt(
     U0, B, (fun (y : B) => A), g, h,
     (fun (y : B) => trans(sym(cong(g, right_inverse(A, B, d, y))), left_inverse(A, B, e, h(y))))
@@ -236,7 +236,7 @@ def is_prop_prop(P : U0, p q : Proposition(P)) : p = q {
 def subtype_path(
   A : U0, P : A -> U0, prop : (forall x : A, Proposition(P(x))), u v : (exists x : A, P(x)),
   p : u = v
-) =
+) :=
   subtype_ext(A, P, prop, u, v, cong(sigma_first(A, P), p));
 
 def subtype_path_correction(
@@ -257,10 +257,10 @@ def subtype_path_correction(
 def subtype_is_set(A : U0, P : A -> U0, setA : IsSet(A), prop : (forall x : A, Proposition(P(x)))) :
   IsSet(exists x : A, P(x)) {
   intro u v p q;
-  let project = sigma_first(A, P);
-  let first = sym(subtype_path(A, P, prop, u, u, refl(u)));
-  let rebuild = fun (r : project(u) = project(v)) => subtype_ext(A, P, prop, u, v, r);
-  let prepend = fun (r : u = v) => trans(first, r);
+  let project := sigma_first(A, P);
+  let first := sym(subtype_path(A, P, prop, u, u, refl(u)));
+  let rebuild := fun (r : project(u) = project(v)) => subtype_ext(A, P, prop, u, v, r);
+  let prepend := fun (r : u = v) => trans(first, r);
   exact trans(
     sym(subtype_path_correction(A, P, prop, u, v, p)),
     trans(

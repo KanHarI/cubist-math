@@ -5,18 +5,18 @@ import groups;
 // The cover has fiber Z at both poles. Crossing upper applies successor;
 // crossing lower leaves the integer unchanged. Univalence uses the
 // computational Glue construction, applied to the checked successor equivalence.
-def code_meridians(a : S0) = match a return (Z = Z) {
+def code_meridians(a : S0) := match a return (Z = Z) {
     left point => ua(U0, Z, Z, successor_equivalence);
     right point => refl(Z);
   };
 
-def code(x : S1) = suspension_rec(S0, U0, Z, Z, code_meridians, x);
+def code(x : S1) := suspension_rec(S0, U0, Z, Z, code_meridians, x);
 
-def encode(x : S1, p : base = x) = along code by p from zeroZ;
+def encode(x : S1, p : base = x) := along code by p from zeroZ;
 
-def winding(p : base = base) = encode(base, p);
+def winding(p : base = base) := encode(base, p);
 
-def code_meridian(a : S0) = suspension_rec_beta(S0, U0, Z, Z, code_meridians, a);
+def code_meridian(a : S0) := suspension_rec_beta(S0, U0, Z, Z, code_meridians, a);
 
 def successor_transport(z : Z) :
   (along((fun (T : U0) => T)) by ua(U0, Z, Z, successor_equivalence) from z) = successorZ(z) {
@@ -24,7 +24,7 @@ def successor_transport(z : Z) :
 }
 
 def code_upper(z : Z) : (along code by upper from z) = successorZ(z) {
-  let change_path = fun (p : Z = Z) => along((fun (T : U0) => T)) by p from z;
+  let change_path := fun (p : Z = Z) => along((fun (T : U0) => T)) by p from z;
   exact trans(
     transport_ap(S1, code, base, south_pole, upper, z),
     trans(cong(change_path, code_meridian(typed(S0, left(tt)))), successor_transport(z))
@@ -32,7 +32,7 @@ def code_upper(z : Z) : (along code by upper from z) = successorZ(z) {
 }
 
 def code_lower(z : Z) : (along code by lower from z) = z {
-  let change_path = fun (p : Z = Z) => along((fun (T : U0) => T)) by p from z;
+  let change_path := fun (p : Z = Z) => along((fun (T : U0) => T)) by p from z;
   exact trans(
     transport_ap(S1, code, base, south_pole, lower, z),
     trans(
@@ -42,28 +42,28 @@ def code_lower(z : Z) : (along code by lower from z) = z {
   );
 }
 
-def lower_inverse = sym(lower);
+def lower_inverse := sym(lower);
 
-def upper_inverse = sym(upper);
+def upper_inverse := sym(upper);
 
-def loop_inverse = sym(loop);
+def loop_inverse := sym(loop);
 
 def code_lower_inverse(z : Z) : (along code by lower_inverse from z) = z {
-  let back = fun (v : Z) => along code by lower_inverse from v;
+  let back := fun (v : Z) => along code by lower_inverse from v;
   exact trans(
     sym(cong(back, code_lower(z))), transport_inverse_after(S1, code, base, south_pole, lower, z)
   );
 }
 
 def code_upper_inverse(z : Z) : (along code by upper_inverse from z) = predecessorZ(z) {
-  let back = along code by upper_inverse from z;
-  let forward_back =
+  let back := along code by upper_inverse from z;
+  let forward_back :=
     trans(sym(code_upper(back)), transport_after_inverse(S1, code, base, south_pole, upper, z));
   exact trans(sym(predecessor_successor(back)), cong(predecessorZ, forward_back));
 }
 
 def code_loop(z : Z) : (along code by loop from z) = successorZ(z) {
-  let back = fun (v : Z) => along code by lower_inverse from v;
+  let back := fun (v : Z) => along code by lower_inverse from v;
   exact trans(
     transport_concat(S1, code, base, south_pole, base, upper, lower_inverse, z),
     trans(cong(back, code_upper(z)), code_lower_inverse(successorZ(z)))
@@ -71,8 +71,8 @@ def code_loop(z : Z) : (along code by loop from z) = successorZ(z) {
 }
 
 def code_loop_inverse(z : Z) : (along code by loop_inverse from z) = predecessorZ(z) {
-  let back = along code by loop_inverse from z;
-  let forward_back =
+  let back := along code by loop_inverse from z;
+  let forward_back :=
     trans(sym(code_loop(back)), transport_after_inverse(S1, code, base, base, loop, z));
   exact trans(sym(predecessor_successor(back)), cong(predecessorZ, forward_back));
 }
@@ -82,22 +82,22 @@ def winding_generator : winding(loop) = nonnegative(1) {
 }
 
 // Turn an integer into a loop by repeating loop, or its inverse.
-def positive_loops(n : Nat) = induction n as k return (base = base) {
+def positive_loops(n : Nat) := induction n as k return (base = base) {
     zero => refl(base);
     succ previous => trans(previous, loop);
   };
 
-def negative_loops(n : Nat) = induction n as k return (base = base) {
+def negative_loops(n : Nat) := induction n as k return (base = base) {
     zero => loop_inverse;
     succ previous => trans(previous, loop_inverse);
   };
 
-def integer_loop(z : Z) = match z return (base = base) {
+def integer_loop(z : Z) := match z return (base = base) {
     left n => positive_loops(n);
     right n => negative_loops(n);
   };
 
-def winding_positive(n : Nat) =
+def winding_positive(n : Nat) :=
   induction n as k return (winding(positive_loops(k)) = nonnegative(k)) {
     zero => refl(zeroZ);
     succ previous => trans(
@@ -106,7 +106,8 @@ def winding_positive(n : Nat) =
     );
   };
 
-def winding_negative(n : Nat) = induction n as k return (winding(negative_loops(k)) = negative(k)) {
+def winding_negative(n : Nat) :=
+  induction n as k return (winding(negative_loops(k)) = negative(k)) {
     zero => code_loop_inverse(zeroZ);
     succ previous => trans(
       transport_concat(S1, code, base, base, base, negative_loops(k), loop_inverse, zeroZ),
@@ -114,12 +115,12 @@ def winding_negative(n : Nat) = induction n as k return (winding(negative_loops(
     );
   };
 
-def winding_integer_loop(z : Z) = match z as w return (winding(integer_loop(w)) = w) {
+def winding_integer_loop(z : Z) := match z as w return (winding(integer_loop(w)) = w) {
     left n => winding_positive(n);
     right n => winding_negative(n);
   };
 
-def integer_loop_successor(z : Z) =
+def integer_loop_successor(z : Z) :=
   match z as w return (integer_loop(successorZ(w)) = trans(integer_loop(w), loop)) {
     left n => refl(positive_loops(succ(n)));
     right n => induction n as k return (
@@ -132,28 +133,28 @@ def integer_loop_successor(z : Z) =
 
 def integer_loop_predecessor(z : Z) :
   integer_loop(predecessorZ(z)) = trans(integer_loop(z), loop_inverse) {
-  let previous = integer_loop(predecessorZ(z));
-  let step =
+  let previous := integer_loop(predecessorZ(z));
+  let step :=
     trans(
       sym(integer_loop_successor(predecessorZ(z))), cong(integer_loop, successor_predecessor(z))
     );
-  let append_inverse = fun (p : base = base) => trans(p, loop_inverse);
+  let append_inverse := fun (p : base = base) => trans(p, loop_inverse);
   exact trans(
     sym(append_cancel_inverse(S1, base, base, base, previous, loop)), cong(append_inverse, step)
   );
 }
 
-def south_decoder(z : Z) = trans(integer_loop(z), lower);
+def south_decoder(z : Z) := trans(integer_loop(z), lower);
 
 def upper_transition(z : Z) : trans(integer_loop(predecessorZ(z)), upper) = south_decoder(z) {
-  let previous = integer_loop(predecessorZ(z));
-  let append_previous = fun (p : base = south_pole) => trans(previous, p);
-  let upper_expansion = sym(append_inverse_cancel(S1, base, south_pole, base, upper, lower));
-  let step =
+  let previous := integer_loop(predecessorZ(z));
+  let append_previous := fun (p : base = south_pole) => trans(previous, p);
+  let upper_expansion := sym(append_inverse_cancel(S1, base, south_pole, base, upper, lower));
+  let step :=
     trans(
       sym(integer_loop_successor(predecessorZ(z))), cong(integer_loop, successor_predecessor(z))
     );
-  let append_lower = fun (p : base = base) => trans(p, lower);
+  let append_lower := fun (p : base = base) => trans(p, lower);
   exact trans(
     cong(append_previous, upper_expansion),
     trans(
@@ -165,11 +166,11 @@ def upper_transition(z : Z) : trans(integer_loop(predecessorZ(z)), upper) = sout
 
 // Extend the integer-to-loop map over the entire suspension. These two
 // coherence proofs say that it agrees across upper and lower meridians.
-def decoder_family(x : S1) = code(x) -> (base = x);
+def decoder_family(x : S1) := code(x) -> (base = x);
 
 def decoder_upper : (along decoder_family by upper from integer_loop) = south_decoder {
-  let transported = along decoder_family by upper from integer_loop;
-  let append_upper = fun (z : Z) => trans(integer_loop(z), upper);
+  let transported := along decoder_family by upper from integer_loop;
+  let append_upper := fun (z : Z) => trans(integer_loop(z), upper);
   ext z;
   exact trans(
     transport_decoder(S1, base, code, base, south_pole, upper, integer_loop, z),
@@ -178,8 +179,8 @@ def decoder_upper : (along decoder_family by upper from integer_loop) = south_de
 }
 
 def decoder_lower : (along decoder_family by lower from integer_loop) = south_decoder {
-  let transported = along decoder_family by lower from integer_loop;
-  let append_lower = fun (z : Z) => trans(integer_loop(z), lower);
+  let transported := along decoder_family by lower from integer_loop;
+  let append_lower := fun (z : Z) => trans(integer_loop(z), lower);
   ext z;
   exact trans(
     transport_decoder(S1, base, code, base, south_pole, lower, integer_loop, z),
@@ -187,7 +188,7 @@ def decoder_lower : (along decoder_family by lower from integer_loop) = south_de
   );
 }
 
-def decoder_meridians(a : S0) =
+def decoder_meridians(a : S0) :=
   match a as label return (
     (along decoder_family by meridian(S0, label) from integer_loop) = south_decoder
   ) {
@@ -207,7 +208,7 @@ def decoder_meridians(a : S0) =
     );
   };
 
-def decode(x : S1) =
+def decode(x : S1) :=
   suspension_induction(S0, decoder_family, integer_loop, south_decoder, decoder_meridians, x);
 
 def decode_encode(x : S1, p : base = x) : decode(x, encode(x, p)) = p {
@@ -223,7 +224,7 @@ def integer_loop_winding(p : base = base) : integer_loop(winding(p)) = p {
 }
 
 // Concatenation acts as ordinary integer addition, not just as a bijection.
-def action_positive(n : Nat, z : Z) =
+def action_positive(n : Nat, z : Z) :=
   induction n as k return ((along code by positive_loops(k) from z) = add_nonnegative(k, z)) {
     zero => transport_constant(S1, Z, base, base, refl(base), z);
     succ previous => trans(
@@ -232,7 +233,7 @@ def action_positive(n : Nat, z : Z) =
     );
   };
 
-def action_negative(n : Nat, z : Z) =
+def action_negative(n : Nat, z : Z) :=
   induction n as k return ((along code by negative_loops(k) from z) = add_negative(k, z)) {
     zero => code_loop_inverse(z);
     succ previous => trans(
@@ -241,14 +242,14 @@ def action_negative(n : Nat, z : Z) =
     );
   };
 
-def action_integer(x y : Z) =
+def action_integer(x y : Z) :=
   match y as w return ((along code by integer_loop(w) from x) = addZ(x, w)) {
     left n => action_positive(n, x);
     right n => action_negative(n, x);
   };
 
 def winding_concatenate(p q : base = base) : winding(trans(p, q)) = addZ(winding(p), winding(q)) {
-  let act = fun (r : base = base) => along code by r from winding(p);
+  let act := fun (r : base = base) => along code by r from winding(p);
   exact trans(
     transport_concat(S1, code, base, base, base, p, q, zeroZ),
     trans(cong(act, sym(integer_loop_winding(q))), action_integer(winding(p), winding(q)))
@@ -257,11 +258,11 @@ def winding_concatenate(p q : base = base) : winding(trans(p, q)) = addZ(winding
 
 // Setness justifies using the loop space itself as the fundamental group:
 // its set-truncation is equivalent to it. No higher paths are silently erased.
-def LoopsS1 = base = base;
+def LoopsS1 := base = base;
 
-def loop_multiply(p q : LoopsS1) = trans(p, q);
+def loop_multiply(p q : LoopsS1) := trans(p, q);
 
-def loop_equal_decidable(p q : LoopsS1) =
+def loop_equal_decidable(p q : LoopsS1) :=
   match integer_equal_decidable(winding(p), winding(q)) return Decidable(p = q) {
     left h => typed(
       Decidable(p = q),
@@ -298,9 +299,9 @@ def loop_group : GroupLaws(LoopsS1, refl(base), loop_multiply) {
 
 def integer_loop_add(x y : Z) :
   integer_loop(addZ(x, y)) = loop_multiply(integer_loop(x), integer_loop(y)) {
-  let p = integer_loop(x);
-  let q = integer_loop(y);
-  let h =
+  let p := integer_loop(x);
+  let q := integer_loop(y);
+  let h :=
     trans(
       winding_concatenate(p, q),
       trans(
@@ -316,11 +317,11 @@ def reflect_integer_path(x y : Z, h : integer_loop(x) = integer_loop(y)) : x = y
 }
 
 def addition_associative(x y z : Z) : addZ(addZ(x, y), z) = addZ(x, addZ(y, z)) {
-  let p = integer_loop(x);
-  let q = integer_loop(y);
-  let r = integer_loop(z);
-  let append_r = fun (s : LoopsS1) => loop_multiply(s, r);
-  let prepend_p = fun (s : LoopsS1) => loop_multiply(p, s);
+  let p := integer_loop(x);
+  let q := integer_loop(y);
+  let r := integer_loop(z);
+  let append_r := fun (s : LoopsS1) => loop_multiply(s, r);
+  let prepend_p := fun (s : LoopsS1) => loop_multiply(p, s);
   exact reflect_integer_path(
     addZ(addZ(x, y), z), addZ(x, addZ(y, z)),
     trans(
@@ -342,10 +343,10 @@ def addition_left_zero(x : Z) : addZ(zeroZ, x) = x {
   );
 }
 
-def inverse_integer(x : Z) = winding(sym(integer_loop(x)));
+def inverse_integer(x : Z) := winding(sym(integer_loop(x)));
 
 def addition_inverse_left(x : Z) : addZ(inverse_integer(x), x) = zeroZ {
-  let p = integer_loop(x);
+  let p := integer_loop(x);
   exact trans(
     cong((fun (v : Z) => addZ(inverse_integer(x), v)), sym(winding_integer_loop(x))),
     trans(sym(winding_concatenate(sym(p), p)), cong(winding, inverse_left(S1, base, base, p)))
@@ -353,7 +354,7 @@ def addition_inverse_left(x : Z) : addZ(inverse_integer(x), x) = zeroZ {
 }
 
 def addition_inverse_right(x : Z) : addZ(x, inverse_integer(x)) = zeroZ {
-  let p = integer_loop(x);
+  let p := integer_loop(x);
   exact trans(
     cong((fun (v : Z) => addZ(v, inverse_integer(x))), sym(winding_integer_loop(x))),
     trans(sym(winding_concatenate(p, sym(p))), cong(winding, inverse_right(S1, base, base, p)))
@@ -374,7 +375,7 @@ def integer_group : GroupLaws(Z, zeroZ, addZ) {
 
 // The final statement includes both group structures and a multiplication-
 // preserving bijection, not merely a winding-number function.
-def FundamentalGroupS1IsZ =
+def FundamentalGroupS1IsZ :=
   GroupLaws(LoopsS1, refl(base), loop_multiply) and GroupLaws(Z, zeroZ, addZ)
   and GroupIsomorphism(LoopsS1, loop_multiply, Z, addZ);
 

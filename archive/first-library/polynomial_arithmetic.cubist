@@ -2,74 +2,74 @@ import polynomial_degree;
 
 // Ring identities specialized to the checked coefficient representation.
 
-def polynomial_add_zero_right(K : AlgebraicField) =
+def polynomial_add_zero_right(K : AlgebraicField) :=
   ring_add_zero_right(
     Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
     polynomial_neg(K), polynomial_ring(K)
   );
 
-def polynomial_mul_one_right(K : AlgebraicField) =
+def polynomial_mul_one_right(K : AlgebraicField) :=
   ring_mul_one_right(
     Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
     polynomial_neg(K), polynomial_ring(K)
   );
 
-def polynomial_add_inverse_right(K : AlgebraicField) =
+def polynomial_add_inverse_right(K : AlgebraicField) :=
   ring_add_inverse_right(
     Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
     polynomial_neg(K), polynomial_ring(K)
   );
 
-def polynomial_add_swap(K : AlgebraicField) =
+def polynomial_add_swap(K : AlgebraicField) :=
   ring_add_swap(
     Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
     polynomial_neg(K), polynomial_ring(K)
   );
 
-def polynomial_add_shuffle(K : AlgebraicField) =
+def polynomial_add_shuffle(K : AlgebraicField) :=
   ring_add_shuffle(
     Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
     polynomial_neg(K), polynomial_ring(K)
   );
 
-def polynomial_mul_zero(K : AlgebraicField) =
+def polynomial_mul_zero(K : AlgebraicField) :=
   ring_mul_zero(
     Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
     polynomial_neg(K), polynomial_ring(K)
   );
 
-def polynomial_mul_neg(K : AlgebraicField) =
+def polynomial_mul_neg(K : AlgebraicField) :=
   ring_mul_neg(
     Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
     polynomial_neg(K), polynomial_ring(K)
   );
 
-def polynomial_distribute_left(K : AlgebraicField) =
+def polynomial_distribute_left(K : AlgebraicField) :=
   ring_distribute_left(
     Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
     polynomial_neg(K), polynomial_ring(K)
   );
 
-def polynomial_mul_swap(K : AlgebraicField) =
+def polynomial_mul_swap(K : AlgebraicField) :=
   ring_mul_swap(
     Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
     polynomial_neg(K), polynomial_ring(K)
   );
 
-def polynomial_add_cancel_prefix(K : AlgebraicField) =
+def polynomial_add_cancel_prefix(K : AlgebraicField) :=
   ring_add_cancel_prefix(
     Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
     polynomial_neg(K), polynomial_ring(K)
   );
 
-def polynomial_scale(K : AlgebraicField, a : af_carrier(K), p : Polynomial(K)) =
+def polynomial_scale(K : AlgebraicField, a : af_carrier(K), p : Polynomial(K)) :=
   polynomial_mul(K, polynomial_constant(K, a), p);
 
 def polynomial_scale_coefficient(K : AlgebraicField, a : af_carrier(K), p : Polynomial(K), n : Nat) :
   polynomial_coefficients(K, polynomial_scale(K, a, p), n) = field_mul(
     K, a, polynomial_coefficients(K, p, n)
   ) {
-  let f = polynomial_coefficients(K, p);
+  let f := polynomial_coefficients(K, p);
   exact trans(
     convolution_comm(K, n, series_constant(K, a), f),
     trans(convolution_constant_right(K, a, n, f), scalar_mul_comm(K, f(n), a))
@@ -77,11 +77,11 @@ def polynomial_scale_coefficient(K : AlgebraicField, a : af_carrier(K), p : Poly
 }
 
 def polynomial_tail(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
-  let f = polynomial_coefficients(K, p);
-  let Result = exists k : Nat, SeriesSupport(K, series_tail(K, f), k);
+  let f := polynomial_coefficients(K, p);
+  let Result := exists k : Nat, SeriesSupport(K, series_tail(K, f), k);
   have convert : (exists n : Nat, SeriesSupport(K, f, n)) -> Result {
     intro witness;
-    obtain (n, support) = witness;
+    obtain (n, support) := witness;
     exact (n, (fun (k : Nat, above : le(n, k)) => support(succ(k), nat_le_step(n, k, above))));
   }
   exact (
@@ -108,8 +108,8 @@ def polynomial_shift_add(K : AlgebraicField, p q : Polynomial(K)) :
   polynomial_shift(K, polynomial_add(K, p, q)) = polynomial_add(
     K, polynomial_shift(K, p), polynomial_shift(K, q)
   ) {
-  let f = polynomial_coefficients(K, p);
-  let g = polynomial_coefficients(K, q);
+  let f := polynomial_coefficients(K, p);
+  let g := polynomial_coefficients(K, q);
   exact polynomial_coefficient_ext(
     K, polynomial_shift(K, polynomial_add(K, p, q)),
     polynomial_add(K, polynomial_shift(K, p), polynomial_shift(K, q)),
@@ -128,8 +128,8 @@ def polynomial_shift_add(K : AlgebraicField, p q : Polynomial(K)) :
 
 def polynomial_shift_mul(K : AlgebraicField, p q : Polynomial(K)) :
   polynomial_shift(K, polynomial_mul(K, p, q)) = polynomial_mul(K, polynomial_shift(K, p), q) {
-  let f = polynomial_coefficients(K, p);
-  let g = polynomial_coefficients(K, q);
+  let f := polynomial_coefficients(K, p);
+  let g := polynomial_coefficients(K, q);
   exact polynomial_coefficient_ext(
     K, polynomial_shift(K, polynomial_mul(K, p, q)), polynomial_mul(K, polynomial_shift(K, p), q),
     (

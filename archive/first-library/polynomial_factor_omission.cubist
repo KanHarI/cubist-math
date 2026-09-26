@@ -3,7 +3,7 @@ import finite_omission;
 
 // Move any chosen linear factor to the front, leaving the other indices in
 // their original order. The index map records exactly which factor was removed.
-def linear_factor_product_omit(K : AlgebraicField, n : Nat) =
+def linear_factor_product_omit(K : AlgebraicField, n : Nat) :=
   induction n as k return (
     forall roots : Fin(succ(k)) -> af_carrier(K), forall i : Fin(succ(k)),
     linear_factor_product(K, succ(k), roots) = polynomial_mul(

@@ -144,7 +144,7 @@ def complex_commutative_ring(
     Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
     complex_mul(F, addF, mulF, negF), complex_neg(F, negF)
   ) {
-  obtain (setF, additive, multiplicative) = ring;
+  obtain (setF, additive, multiplicative) := ring;
   exact (
     field_product_is_set(F, F, setF, setF),
     (
@@ -225,7 +225,7 @@ def complex_inverse_from_norm(
   normLaw : mulF(complex_norm_squared(F, addF, mulF, z), reciprocal) = one
 ) :
   exists w : Complex(F), complex_mul(F, addF, mulF, negF, z, w) = complex_one(F, zero, one) {
-  let w =
+  let w :=
     typed(
       Complex(F), (mulF(complex_real(F, z), reciprocal), negF(mulF(complex_imag(F, z), reciprocal)))
     );

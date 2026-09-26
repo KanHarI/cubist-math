@@ -2,7 +2,7 @@ import subfield_images;
 import field_embedding_factorization;
 
 // The image field uses the whole source field as its generating subfield.
-def embedding_image_field(K L : AlgebraicField, e : FieldEmbedding(K, L)) =
+def embedding_image_field(K L : AlgebraicField, e : FieldEmbedding(K, L)) :=
   subfield_as_field(L, subfield_image(K, L, e, subfield_top(K)));
 
 def field_embedding_lands_in_image(
@@ -12,7 +12,7 @@ def field_embedding_lands_in_image(
   exact (x, tt, refl(field_embedding_map(K, L, e, x)));
 }
 
-def embedding_image_factor(K L : AlgebraicField, e : FieldEmbedding(K, L)) =
+def embedding_image_factor(K L : AlgebraicField, e : FieldEmbedding(K, L)) :=
   field_embedding_factor(
     K, L, e, subfield_image(K, L, e, subfield_top(K)), field_embedding_lands_in_image(K, L, e)
   );
@@ -26,8 +26,8 @@ def embedding_image_inverse(
   K L : AlgebraicField, e : FieldEmbedding(K, L), y : af_carrier(embedding_image_field(K, L, e))
 ) :
   af_carrier(K) {
-  let S = subfield_image(K, L, e, subfield_top(K));
-  let fiber =
+  let S := subfield_image(K, L, e, subfield_top(K));
+  let fiber :=
     (
       fun (x : af_carrier(K)) => Unit
       and (field_embedding_map(K, L, e, x) = subfield_value(L, S, y))
@@ -42,11 +42,11 @@ def embedding_image_inverse_spec(
   field_embedding_map(K, L, e, embedding_image_inverse(K, L, e, y)) = subfield_value(
     L, subfield_image(K, L, e, subfield_top(K)), y
   ) {
-  let S = subfield_image(K, L, e, subfield_top(K));
-  let f = field_embedding_map(K, L, e);
-  let value = subfield_value(L, S, y);
-  let fiber = (fun (x : af_carrier(K)) => Unit and (f(x) = value));
-  let x = embedding_image_inverse(K, L, e, y);
+  let S := subfield_image(K, L, e, subfield_top(K));
+  let f := field_embedding_map(K, L, e);
+  let value := subfield_value(L, S, y);
+  let fiber := (fun (x : af_carrier(K)) => Unit and (f(x) = value));
+  let x := embedding_image_inverse(K, L, e, y);
   exact snd(Unit, (f(x) = value), sigma_second(af_carrier(K), fiber, subfield_evidence(L, S, y)));
 }
 

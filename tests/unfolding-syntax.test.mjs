@@ -42,12 +42,12 @@ test("hint lists accept names only and braces contain exactly one expression", (
 });
 
 test("formatting preserves scoped blocks, comments, postfix calls and tuples", () => {
-  const source = `def result = with unfolding [identity, wrapper] {
+  const source = `def result := with unfolding [identity, wrapper] {
 // A scoped strategy.
 with unfolding [inner] { (identity, (wrapper, inner)) }
 };
-def application = with unfolding [identity] { identity }(0);
-def sum = with unfolding [] { 0 } + 1;`;
+def application := with unfolding [identity] { identity }(0);
+def sum := with unfolding [] { 0 } + 1;`;
   for (const printWidth of [40, 80, 100]) {
     const formatted = formatMathScript(source, { printWidth });
     assert.equal(expandedSyntax(parse(formatted)), expandedSyntax(parse(source)));

@@ -3,14 +3,14 @@ import subfields;
 
 // Small-valued subsets of the ambient small carrier. This bundle lives in U1;
 // arbitrary large intersections and generated subfields are separate work.
-def IntermediateFieldLaws(K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0) =
+def IntermediateFieldLaws(K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0) :=
   SubfieldLaws(extension_field(K, E), P)
   and (forall k : af_carrier(K), P(extension_inclusion(K, E, k)));
 
-def IntermediateField(K : AlgebraicField, E : FieldExt(K)) =
+def IntermediateField(K : AlgebraicField, E : FieldExt(K)) :=
   exists P : extension_carrier(K, E) -> U0, IntermediateFieldLaws(K, E, P);
 
-def intermediate_members(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
+def intermediate_members(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :=
   unpack M as (P, laws) return (extension_carrier(K, E) -> U0) {
     P;
   };
@@ -25,8 +25,8 @@ def intermediate_laws(K : AlgebraicField, E : FieldExt(K), M : IntermediateField
 
 def intermediate_subfield(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
   Subfield(extension_field(K, E)) {
-  let P = intermediate_members(K, E, M);
-  let closure =
+  let P := intermediate_members(K, E, M);
+  let closure :=
     fst(
       SubfieldLaws(extension_field(K, E), P),
       (forall k : af_carrier(K), P(extension_inclusion(K, E, k))), intermediate_laws(K, E, M)
@@ -38,7 +38,7 @@ def intermediate_contains_base(
   K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E), k : af_carrier(K)
 ) :
   intermediate_members(K, E, M, extension_inclusion(K, E, k)) {
-  obtain (closure, base) = intermediate_laws(K, E, M);
+  obtain (closure, base) := intermediate_laws(K, E, M);
   exact base(k);
 }
 
@@ -47,9 +47,9 @@ def intermediate_laws_prop(
   p q : IntermediateFieldLaws(K, E, P)
 ) :
   p = q {
-  let F = extension_field(K, E);
-  let baseType = (forall k : af_carrier(K), P(extension_inclusion(K, E, k)));
-  let closure = fst(SubfieldLaws(F, P), baseType, p);
+  let F := extension_field(K, E);
+  let baseType := (forall k : af_carrier(K), P(extension_inclusion(K, E, k)));
+  let closure := fst(SubfieldLaws(F, P), baseType, p);
   exact product_prop(
     SubfieldLaws(F, P), baseType, subfield_laws_prop(F, P),
     forall_prop(

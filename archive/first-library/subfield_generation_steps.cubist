@@ -4,7 +4,7 @@ import primes;
 
 // A finite derivation step. Its witnesses live in U0, including inverse
 // witnesses; the construction never tests whether an element equals zero.
-def FieldClosureStep(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) =
+def FieldClosureStep(F : AlgebraicField, P : af_carrier(F) -> U0, x : af_carrier(F)) :=
   P(x) or (x = af_zero(af_carrier(F), af_operations(F)))
   or (x = af_one(af_carrier(F), af_operations(F)))
   or (exists y : af_carrier(F), P(y) and (af_neg(af_carrier(F), af_operations(F), y) = x))
@@ -99,13 +99,13 @@ def field_closure_step_into_subfield(
             right operation => {
               cases operation {
                 left negated => {
-                  obtain (y, py, same) = negated;
+                  obtain (y, py, same) := negated;
                   exact along Q by same from subfield_neg(F, Q, laws, y, included(y, py));
                 }
                 right binaryOrInverse => {
                   cases binaryOrInverse {
                     left added => {
-                      obtain (y, z, py, pz, same) = added;
+                      obtain (y, z, py, pz, same) := added;
                       exact along Q by same from subfield_add(
                         F, Q, laws, y, z, included(y, py), included(z, pz)
                       );
@@ -113,13 +113,13 @@ def field_closure_step_into_subfield(
                     right productOrInverse => {
                       cases productOrInverse {
                         left multiplied => {
-                          obtain (y, z, py, pz, same) = multiplied;
+                          obtain (y, z, py, pz, same) := multiplied;
                           exact along Q by same from subfield_mul(
                             F, Q, laws, y, z, included(y, py), included(z, pz)
                           );
                         }
                         right inverted => {
-                          obtain (y, py, inverseLaw) = inverted;
+                          obtain (y, py, inverseLaw) := inverted;
                           exact subfield_inverse(F, Q, laws, y, x, included(y, py), inverseLaw);
                         }
                       }
@@ -136,14 +136,14 @@ def field_closure_step_into_subfield(
 }
 
 // Rank zero contains the generators; every successor permits one more step.
-def FieldClosureStage(F : AlgebraicField, P : af_carrier(F) -> U0, n : Nat) =
+def FieldClosureStage(F : AlgebraicField, P : af_carrier(F) -> U0, n : Nat) :=
   induction n as k return (af_carrier(F) -> U0) {
     zero => P;
     succ previous => FieldClosureStep(F, previous);
   };
 
 // Padding a derivation by m keep-steps raises its rank from n to m+n.
-def field_closure_pad(F : AlgebraicField, P : af_carrier(F) -> U0, m : Nat) =
+def field_closure_pad(F : AlgebraicField, P : af_carrier(F) -> U0, m : Nat) :=
   induction m as k return (
     forall n : Nat, forall x : af_carrier(F), FieldClosureStage(F, P, n, x)
     -> FieldClosureStage(F, P, k + n, x)
@@ -170,7 +170,7 @@ def field_closure_pad_right(
 def field_closure_stage_least(
   F : AlgebraicField, P Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
   included : PredicateIncluded(af_carrier(F), P, Q), n : Nat
-) =
+) :=
   induction n as k return (forall x : af_carrier(F), FieldClosureStage(F, P, k, x) -> Q(x)) {
     zero => included;
     succ previous => field_closure_step_into_subfield(

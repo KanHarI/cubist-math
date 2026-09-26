@@ -63,9 +63,9 @@ def contour_backtrack_error(
     F, zero, addF, mulF, negF, f, 2, backtrack_vertices(F, a, b),
     backtrack_tags(F, forwardTag, reverseTag)
   ) = contour_tag_error(F, addF, mulF, negF, f, b, a, forwardTag, reverseTag) {
-  let forward = contour_edge(F, addF, mulF, negF, f, a, b, forwardTag);
-  let reverse = contour_edge(F, addF, mulF, negF, f, b, a, forwardTag);
-  let error = contour_tag_error(F, addF, mulF, negF, f, b, a, forwardTag, reverseTag);
+  let forward := contour_edge(F, addF, mulF, negF, f, a, b, forwardTag);
+  let reverse := contour_edge(F, addF, mulF, negF, f, b, a, forwardTag);
+  let error := contour_tag_error(F, addF, mulF, negF, f, b, a, forwardTag, reverseTag);
   exact trans(
     contour_two_edge_sum(F, zero, one, addF, mulF, negF, ring, f, a, b, forwardTag, reverseTag),
     trans(
@@ -104,7 +104,7 @@ def identity_backtrack_sum(
     F, zero, addF, mulF, negF, (fun (z : F) => z), 2, backtrack_vertices(F, zero, one),
     backtrack_tags(F, zero, one)
   ) = negF(one) {
-  let reverse = mulF(one, addF(zero, negF(one)));
+  let reverse := mulF(one, addF(zero, negF(one)));
   exact trans(
     cong(
       (fun (v : F) => addF(v, addF(reverse, zero))),

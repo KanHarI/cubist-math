@@ -1,7 +1,7 @@
 import contour_samples;
 
 // Exact error terms from tag changes and splitting an oriented edge.
-def contour_tag_error(F : U1, addF mulF : F -> F -> F, negF f : F -> F, a b oldTag newTag : F) =
+def contour_tag_error(F : U1, addF mulF : F -> F -> F, negF f : F -> F, a b oldTag newTag : F) :=
   mulF(
     coordinate_difference(F, addF, negF, f(oldTag), f(newTag)),
     coordinate_difference(F, addF, negF, a, b)
@@ -15,7 +15,7 @@ def contour_edge_change_tag(
     contour_edge(F, addF, mulF, negF, f, x, y, oldTag),
     contour_tag_error(F, addF, mulF, negF, f, x, y, oldTag, newTag)
   ) {
-  let increment = coordinate_difference(F, addF, negF, x, y);
+  let increment := coordinate_difference(F, addF, negF, x, y);
   exact sym(
     trans(
       sym(
@@ -110,7 +110,7 @@ def contour_edge_refinement(
   );
 }
 
-def contour_tag_error_sum(F : U1, zero : F, addF mulF : F -> F -> F, negF f : F -> F, n : Nat) =
+def contour_tag_error_sum(F : U1, zero : F, addF mulF : F -> F -> F, negF f : F -> F, n : Nat) :=
   induction n as k return (SampleVertices(F, k) -> SampleTags(F, k) -> SampleTags(F, k) -> F) {
     zero => fun (vertices : F, oldTags newTags : Unit) => zero;
     succ previous => fun (

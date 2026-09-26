@@ -17,16 +17,16 @@ test("removed theorem declarations are rejected in both source forms", () => {
 
 test("axiom is not a declaration, and imports come first", () => {
   assert.throws(() => parse("axiom assumed : Nat;"), /Expected a declaration or directive: def, opaque def/);
-  assert.throws(() => parse("def zero_again = 0;\nimport primes;"), /^Error: Imports must come before declarations\.$/);
+  assert.throws(() => parse("def zero_again := 0;\nimport primes;"), /^Error: Imports must come before declarations\.$/);
   // `axiom` is an ordinary name elsewhere.
-  assert.equal(parse("def axiom(n : Nat) = n;").declarations[0].name.text, "axiom");
+  assert.equal(parse("def axiom(n : Nat) := n;").declarations[0].name.text, "axiom");
 });
 
 test("definitions check constructions and proofs and expose their checked bodies", async t => {
   const program = new CubicalProgram(await createCubical(), async () => "");
   t.after(() => program.dispose());
   const result = await program.check(`
-    def identity(A : U0, x : A) = x;
+    def identity(A : U0, x : A) := x;
     def identity_proof : forall A : U0, A -> A {
       intro A; intro x; exact x;
     }

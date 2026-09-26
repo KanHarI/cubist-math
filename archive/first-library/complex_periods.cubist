@@ -22,7 +22,7 @@ def complex_puncture_period_formula(
     n, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_neg(F, negF),
     (fun (i : Fin(n)) => complex_mul(F, addF, mulF, negF, normalization, residues(i))), p
   ) {
-  obtain (setC, additive, multiplicative) = complex_commutative_ring(
+  obtain (setC, additive, multiplicative) := complex_commutative_ring(
     F, zero, one, addF, mulF, negF, ring
   );
   exact puncture_period_formula(

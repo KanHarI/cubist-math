@@ -19,9 +19,9 @@ def paired_complex_period_laws(
     X, point, Complex(F), complex_zero(F, zero), complex_add(F, addF),
     paired_complex_period(F, X, point, realPeriod, imagPeriod)
   ) {
-  obtain (realZero, realAppend) = realLaws;
-  obtain (imagZero, imagAppend) = imagLaws;
-  let period = paired_complex_period(F, X, point, realPeriod, imagPeriod);
+  obtain (realZero, realAppend) := realLaws;
+  obtain (imagZero, imagAppend) := imagLaws;
+  let period := paired_complex_period(F, X, point, realPeriod, imagPeriod);
   exact (
     field_pair_path(F, F, period(refl(point)), complex_zero(F, zero), realZero, imagZero),
     (
@@ -37,7 +37,7 @@ def paired_complex_period_laws(
 def PeriodApproximationLaws(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, X : U0, point : X,
   approximations : (point = point) -> Nat -> F
-) =
+) :=
   FieldAsymptotic(F, zero, addF, lt, approximations(refl(point)), (fun (n : Nat) => zero))
   and (
     forall p : point = point, forall q : point = point,
@@ -66,8 +66,8 @@ def complex_cauchy_approximation_period_laws(
       limit_period(F, zero, addF, lt, complete, X, point, imagApproximations, imagCauchy)
     )
   ) {
-  obtain (realConstant, realAppend) = realEstimates;
-  obtain (imagConstant, imagAppend) = imagEstimates;
+  obtain (realConstant, realAppend) := realEstimates;
+  obtain (imagConstant, imagAppend) := imagEstimates;
   exact paired_complex_period_laws(
     F, zero, addF, X, point,
     limit_period(F, zero, addF, lt, complete, X, point, realApproximations, realCauchy),

@@ -15,18 +15,18 @@ def bouquet_maps_determined_by_letters(
   ), p : BouquetLoops(A)
 ) :
   h(p) = k(p) {
-  let valuesH =
+  let valuesH :=
     fun (letter : Signed(A)) => h(
       letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter)
     );
-  let valuesK =
+  let valuesK :=
     fun (letter : Signed(A)) => k(
       letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter)
     );
   have valuesEqual : valuesH = valuesK := FunExt(
     U1, Signed(A), (fun (letter : Signed(A)) => G), valuesH, valuesK, same
   );
-  let wordEqual =
+  let wordEqual :=
     fun (word : Word(A)) => trans(
       loop_map_word(
         A, Bouquet(A), bouquet_base(A), bouquet_generator(A), G, unit, multiply, h, lawsH, word
@@ -61,7 +61,7 @@ def bouquet_maps_determined_by_letters(
   );
 }
 
-def RightCancellation(G : U1, multiply : G -> G -> G) =
+def RightCancellation(G : U1, multiply : G -> G -> G) :=
   forall a : G, forall b : G, forall c : G, (multiply(a, c) = multiply(b, c)) -> a = b;
 
 def loop_map_inverse_right(
@@ -69,7 +69,7 @@ def loop_map_inverse_right(
   laws : LoopMapLaws(X, point, G, unit, multiply, h), p : point = point
 ) :
   multiply(h(sym(p)), h(p)) = unit {
-  obtain (unitLaw, multiplyLaw) = laws;
+  obtain (unitLaw, multiplyLaw) := laws;
   exact trans(
     sym(multiplyLaw(sym(p), p)),
     trans(

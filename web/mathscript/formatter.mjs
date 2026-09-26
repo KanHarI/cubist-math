@@ -77,8 +77,6 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
   const domains = [];
   const expressionBlockEnds = new Set();
   const assignmentTokens = new Set(), annotationStarts = new Set(), proofBodyStarts = new Set();
-  // `simp_set name = [rules]` is an assignment, not an `=[T]` carrier.
-  const setAssignments = new Set();
   const tokenBefore = new Map(tokens.map((token, index) => [token.start, tokens[index - 1]]));
   const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
   function visit(node) {
@@ -87,16 +85,12 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
     // Only declaration/let assignments introduce an indented right-hand side.
     // An equality inside an annotated definition's type is not an assignment.
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
-    if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === "=")
+    if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === ":=")
       assignmentTokens.add(tokenBefore.get(valueStart).start);
     if (node.type && ["def", "have"].includes(node.kind)) {
       annotationStarts.add(node.type.start);
       const next = tokenAfter.get(node.type.end);
       if (next?.text === "{") proofBodyStarts.add(next.start);
-    }
-    if (node.kind === "simp_set") {
-      const equals = tokenAfter.get(node.name.end);
-      if (equals?.text === "=") setAssignments.add(equals.start);
     }
     if (node.domain && source.slice(node.domain.start, node.domain.end).replace(/\s+/g, " ").length < printWidth / 2)
       domains.push([node.domain.start, node.domain.end]);
@@ -163,7 +157,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
       }
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
         && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && expressionBlockEnds.has(previous.end)))
-        && !(text === "[" && previous.text === "=" && !setAssignments.has(previous.start));
+        && !(text === "[" && previous.text === "=");
       if (space && previous.text !== ",") {
         if (annotationStarts.has(token.start)) annotation = statement.length;
         else if (proofBodyStarts.has(token.start)) proofBody = statement.length;

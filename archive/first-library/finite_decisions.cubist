@@ -2,13 +2,13 @@ import finite;
 import bijection_equality;
 
 // Transport a decision along two implications; no excluded middle is used.
-def decision_transfer(P Q : U0, toQ : P -> Q, toP : Q -> P, decision : Decidable(P)) =
+def decision_transfer(P Q : U0, toQ : P -> Q, toP : Q -> P, decision : Decidable(P)) :=
   match decision return Decidable(Q) {
     left p => left(toQ(p));
     right noP => right(fun (q : Q) => noP(toP(q)));
   };
 
-def decision_implies(P Q : U0, decideP : Decidable(P), decideQ : Decidable(Q)) =
+def decision_implies(P Q : U0, decideP : Decidable(P), decideQ : Decidable(Q)) :=
   match decideP return Decidable(P -> Q) {
     left p => match decideQ return Decidable(P -> Q) {
       left q => left(fun (ignored : P) => q);
@@ -18,7 +18,8 @@ def decision_implies(P Q : U0, decideP : Decidable(P), decideQ : Decidable(Q)) =
   };
 
 // A proposition has at most one decision, including the negative evidence.
-def decision_prop(P : U0, prop : Proposition(P), d e : Decidable(P)) = match d as v return (v = e) {
+def decision_prop(P : U0, prop : Proposition(P), d e : Decidable(P)) :=
+  match d as v return (v = e) {
     left p => match e as w return (typed(Decidable(P), left(p)) = w) {
       left q => cong((fun (r : P) => typed(Decidable(P), left(r))), prop(p, q));
       right noP => typed(
@@ -43,7 +44,7 @@ def decision_prop(P : U0, prop : Proposition(P), d e : Decidable(P)) = match d a
 def finite_decision_step(
   n : Nat, P : Fin(succ(n)) -> U0, head : Decidable(P(typed(Unit or Fin(n), left(tt)))),
   tail : Decidable(forall x : Fin(n), P(typed(Unit or Fin(n), right(x))))
-) =
+) :=
   match head return Decidable(forall x : Fin(succ(n)), P(x)) {
     left first => match tail return Decidable(forall x : Fin(succ(n)), P(x)) {
       left rest => left(fun (x : Fin(succ(n))) => match typed(Unit or Fin(n), x) as z return P(z) {
@@ -65,7 +66,7 @@ def finite_decision_step(
 
 // Finite search decides a universal statement only when every instance is
 // decidable. Finiteness alone does not decide an arbitrary predicate.
-def finite_forall_decidable(n : Nat) =
+def finite_forall_decidable(n : Nat) :=
   induction n as k return (
     forall P : Fin(k) -> U0, (forall x : Fin(k), Decidable(P(x)))
     -> Decidable(forall x : Fin(k), P(x))

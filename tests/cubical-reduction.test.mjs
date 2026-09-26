@@ -11,7 +11,7 @@ const lambda = (name, body) => ({ tag: "Lam", name, domain: nat, body });
 const app = (fn, arg) => ({ tag: "App", fn, arg });
 const programFor = async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  await program.check("def N = Nat; def id(n : Nat) = n; def value = typed(N, id(0));", "demo");
+  await program.check("def N := Nat; def id(n : Nat) := n; def value := typed(N, id(0));", "demo");
   return program;
 };
 
@@ -76,7 +76,7 @@ test("beta avoids free interval capture and evaluates path application in its cu
 
 test("delta retains explicit assumption arguments rather than opening an unbound body", async t => {
   const program = await programFor(t);
-  await program.check("def Mere(A : U1) = Truncate(U1, A);", "truncation");
+  await program.check("def Mere(A : U1) := Truncate(U1, A);", "truncation");
   const before = program.inspect("truncation__Mere");
   const view = { ...before, expression: app({ tag: "DefRef", name: "truncation__Mere" }, variable(before.context[0].name)) };
   const reduced = reduceView(program, view, "expression", "delta");

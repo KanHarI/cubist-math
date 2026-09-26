@@ -5,7 +5,7 @@ def f4_intermediate_with_alpha(
   P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P), alpha : P(f4_2)
 ) :
   forall x : F4Carrier, P(x) {
-  obtain (closure, base) = laws;
+  obtain (closure, base) := laws;
   exact (
     fun (x : F4Carrier) => f4_induction(
       P, subfield_zero(F4, P, closure), subfield_one(F4, P, closure), alpha,
@@ -19,7 +19,7 @@ def f4_intermediate_without_alpha(
   P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P), noAlpha : P(f4_2) -> Void
 ) :
   forall x : F4Carrier, P(x) -> F2Image(x) {
-  obtain (closure, base) = laws;
+  obtain (closure, base) := laws;
   exact (
     fun (x : F4Carrier) => f4_induction(
       (fun (x : F4Carrier) => P(x) -> F2Image(x)),
@@ -43,14 +43,14 @@ def f4_intermediate_contains_image(
   member : F2Image(x)
 ) :
   P(x) {
-  obtain (closure, base) = laws;
-  obtain (k, same) = member;
+  obtain (closure, base) := laws;
+  obtain (k, same) := member;
   exact along P by same from base(k);
 }
 
 // Exactly the decision used by this classification is an explicit parameter.
 // Finiteness of F4 does not decide membership in arbitrary subobjects.
-def F4IntermediateAlternatives(M : IntermediateField(F2, F4OverF2)) =
+def F4IntermediateAlternatives(M : IntermediateField(F2, F4OverF2)) :=
   (M =[IntermediateField(F2, F4OverF2)] f4_base_intermediate)
   or (M =[IntermediateField(F2, F4OverF2)] intermediate_top(F2, F4OverF2));
 
@@ -59,12 +59,12 @@ def f4_intermediate_classification(
   decideAlpha : Decidable(intermediate_members(F2, F4OverF2, M, f4_2))
 ) :
   F4IntermediateAlternatives(M) {
-  let P = intermediate_members(F2, F4OverF2, M);
-  let laws = intermediate_laws(F2, F4OverF2, M);
-  obtain (closure, base) = laws;
+  let P := intermediate_members(F2, F4OverF2, M);
+  let laws := intermediate_laws(F2, F4OverF2, M);
+  obtain (closure, base) := laws;
   cases decideAlpha {
     left alpha => {
-      let every = f4_intermediate_with_alpha(P, laws, alpha);
+      let every := f4_intermediate_with_alpha(P, laws, alpha);
       have same : P = SubfieldTop(F4) := field_predicate_ext(
         F4Carrier, P, SubfieldTop(F4), subfield_prop(F4, P, closure),
         subfield_prop(F4, SubfieldTop(F4), subfield_top_laws(F4)),
@@ -78,7 +78,7 @@ def f4_intermediate_classification(
       exact right(intermediate_ext(F2, F4OverF2, M, intermediate_top(F2, F4OverF2), same));
     }
     right noAlpha => {
-      let intoBase = f4_intermediate_without_alpha(P, laws, noAlpha);
+      let intoBase := f4_intermediate_without_alpha(P, laws, noAlpha);
       have same : P = F2Image := field_predicate_ext(
         F4Carrier, P, F2Image, subfield_prop(F4, P, closure), f2_image_prop,
         (

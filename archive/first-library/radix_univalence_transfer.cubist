@@ -75,7 +75,7 @@ def factorial_ten_from_base_two : factorial(10) = radix_to_nat(0, base_two_facto
 
 // Digit certificates are independent of the factorial proofs.
 
-def converted_ten_prefix_1 = base_ten_leading_3;
+def converted_ten_prefix_1 := base_ten_leading_3;
 
 def converted_ten_value_1 : radix_positive_to_binary(8, converted_ten_prefix_1) = 0b11 {
   exact radix_binary_leading_beta(
@@ -92,7 +92,7 @@ def converted_ten_value_1 : radix_positive_to_binary(8, converted_ten_prefix_1) 
   );
 }
 
-def converted_ten_prefix_2 = radix_append(8, base_ten_digit_6, converted_ten_prefix_1);
+def converted_ten_prefix_2 := radix_append(8, base_ten_digit_6, converted_ten_prefix_1);
 
 def converted_ten_value_2 : radix_positive_to_binary(8, converted_ten_prefix_2) = 0b100100 {
   exact radix_binary_append_value(
@@ -100,7 +100,7 @@ def converted_ten_value_2 : radix_positive_to_binary(8, converted_ten_prefix_2) 
   );
 }
 
-def converted_ten_prefix_3 = radix_append(8, base_ten_digit_2, converted_ten_prefix_2);
+def converted_ten_prefix_3 := radix_append(8, base_ten_digit_2, converted_ten_prefix_2);
 
 def converted_ten_value_3 : radix_positive_to_binary(8, converted_ten_prefix_3) = 0b101101010 {
   exact radix_binary_append_value(
@@ -108,7 +108,7 @@ def converted_ten_value_3 : radix_positive_to_binary(8, converted_ten_prefix_3) 
   );
 }
 
-def converted_ten_prefix_4 = radix_append(8, base_ten_digit_8, converted_ten_prefix_3);
+def converted_ten_prefix_4 := radix_append(8, base_ten_digit_8, converted_ten_prefix_3);
 
 def converted_ten_value_4 : radix_positive_to_binary(8, converted_ten_prefix_4) = 0b111000101100 {
   exact radix_binary_append_value(
@@ -116,7 +116,7 @@ def converted_ten_value_4 : radix_positive_to_binary(8, converted_ten_prefix_4) 
   );
 }
 
-def converted_ten_prefix_5 = radix_append(8, base_ten_digit_8, converted_ten_prefix_4);
+def converted_ten_prefix_5 := radix_append(8, base_ten_digit_8, converted_ten_prefix_4);
 
 def converted_ten_value_5 : radix_positive_to_binary(8, converted_ten_prefix_5) = 0b1000110111000000 {
   exact radix_binary_append_value(
@@ -124,7 +124,7 @@ def converted_ten_value_5 : radix_positive_to_binary(8, converted_ten_prefix_5) 
   );
 }
 
-def converted_ten_prefix_6 = radix_append(8, base_ten_digit_0, converted_ten_prefix_5);
+def converted_ten_prefix_6 := radix_append(8, base_ten_digit_0, converted_ten_prefix_5);
 
 def converted_ten_value_6 :
   radix_positive_to_binary(8, converted_ten_prefix_6) = 0b1011000100110000000 {
@@ -133,7 +133,7 @@ def converted_ten_value_6 :
   );
 }
 
-def converted_ten_prefix_7 = radix_append(8, base_ten_digit_0, converted_ten_prefix_6);
+def converted_ten_prefix_7 := radix_append(8, base_ten_digit_0, converted_ten_prefix_6);
 
 def converted_ten_value_7 :
   radix_positive_to_binary(8, converted_ten_prefix_7) = 0b1101110101111100000000 {
@@ -164,13 +164,13 @@ def factorial_ten_binary_to_base_ten : radix_factorial(8, 10) = base_ten_factori
   );
 }
 
-def converted_two_prefix_1 = base_two_leading_1;
+def converted_two_prefix_1 := base_two_leading_1;
 
 def converted_two_value_1 : radix_positive_to_binary(0, converted_two_prefix_1) = 0b1 {
   exact radix_binary_leading_beta(0, radix_digit_top(0));
 }
 
-def converted_two_prefix_2 = radix_append(0, base_two_digit_1, converted_two_prefix_1);
+def converted_two_prefix_2 := radix_append(0, base_two_digit_1, converted_two_prefix_1);
 
 def converted_two_value_2 : radix_positive_to_binary(0, converted_two_prefix_2) = 0b11 {
   exact radix_binary_append_value(
@@ -178,7 +178,7 @@ def converted_two_value_2 : radix_positive_to_binary(0, converted_two_prefix_2) 
   );
 }
 
-def converted_two_prefix_3 = radix_append(0, base_two_digit_0, converted_two_prefix_2);
+def converted_two_prefix_3 := radix_append(0, base_two_digit_0, converted_two_prefix_2);
 
 def converted_two_value_3 : radix_positive_to_binary(0, converted_two_prefix_3) = 0b110 {
   exact radix_binary_append_value(
@@ -186,7 +186,7 @@ def converted_two_value_3 : radix_positive_to_binary(0, converted_two_prefix_3) 
   );
 }
 
-def converted_two_prefix_4 = radix_append(0, base_two_digit_1, converted_two_prefix_3);
+def converted_two_prefix_4 := radix_append(0, base_two_digit_1, converted_two_prefix_3);
 
 def converted_two_value_4 : radix_positive_to_binary(0, converted_two_prefix_4) = 0b1101 {
   exact radix_binary_append_value(
@@ -194,7 +194,7 @@ def converted_two_value_4 : radix_positive_to_binary(0, converted_two_prefix_4) 
   );
 }
 
-def converted_two_prefix_5 = radix_append(0, base_two_digit_1, converted_two_prefix_4);
+def converted_two_prefix_5 := radix_append(0, base_two_digit_1, converted_two_prefix_4);
 
 def converted_two_value_5 : radix_positive_to_binary(0, converted_two_prefix_5) = 0b11011 {
   exact radix_binary_append_value(
@@ -202,7 +202,7 @@ def converted_two_value_5 : radix_positive_to_binary(0, converted_two_prefix_5) 
   );
 }
 
-def converted_two_prefix_6 = radix_append(0, base_two_digit_1, converted_two_prefix_5);
+def converted_two_prefix_6 := radix_append(0, base_two_digit_1, converted_two_prefix_5);
 
 def converted_two_value_6 : radix_positive_to_binary(0, converted_two_prefix_6) = 0b110111 {
   exact radix_binary_append_value(
@@ -210,7 +210,7 @@ def converted_two_value_6 : radix_positive_to_binary(0, converted_two_prefix_6) 
   );
 }
 
-def converted_two_prefix_7 = radix_append(0, base_two_digit_0, converted_two_prefix_6);
+def converted_two_prefix_7 := radix_append(0, base_two_digit_0, converted_two_prefix_6);
 
 def converted_two_value_7 : radix_positive_to_binary(0, converted_two_prefix_7) = 0b1101110 {
   exact radix_binary_append_value(
@@ -218,7 +218,7 @@ def converted_two_value_7 : radix_positive_to_binary(0, converted_two_prefix_7) 
   );
 }
 
-def converted_two_prefix_8 = radix_append(0, base_two_digit_1, converted_two_prefix_7);
+def converted_two_prefix_8 := radix_append(0, base_two_digit_1, converted_two_prefix_7);
 
 def converted_two_value_8 : radix_positive_to_binary(0, converted_two_prefix_8) = 0b11011101 {
   exact radix_binary_append_value(
@@ -226,7 +226,7 @@ def converted_two_value_8 : radix_positive_to_binary(0, converted_two_prefix_8) 
   );
 }
 
-def converted_two_prefix_9 = radix_append(0, base_two_digit_0, converted_two_prefix_8);
+def converted_two_prefix_9 := radix_append(0, base_two_digit_0, converted_two_prefix_8);
 
 def converted_two_value_9 : radix_positive_to_binary(0, converted_two_prefix_9) = 0b110111010 {
   exact radix_binary_append_value(
@@ -234,7 +234,7 @@ def converted_two_value_9 : radix_positive_to_binary(0, converted_two_prefix_9) 
   );
 }
 
-def converted_two_prefix_10 = radix_append(0, base_two_digit_1, converted_two_prefix_9);
+def converted_two_prefix_10 := radix_append(0, base_two_digit_1, converted_two_prefix_9);
 
 def converted_two_value_10 : radix_positive_to_binary(0, converted_two_prefix_10) = 0b1101110101 {
   exact radix_binary_append_value(
@@ -242,7 +242,7 @@ def converted_two_value_10 : radix_positive_to_binary(0, converted_two_prefix_10
   );
 }
 
-def converted_two_prefix_11 = radix_append(0, base_two_digit_1, converted_two_prefix_10);
+def converted_two_prefix_11 := radix_append(0, base_two_digit_1, converted_two_prefix_10);
 
 def converted_two_value_11 : radix_positive_to_binary(0, converted_two_prefix_11) = 0b11011101011 {
   exact radix_binary_append_value(
@@ -250,7 +250,7 @@ def converted_two_value_11 : radix_positive_to_binary(0, converted_two_prefix_11
   );
 }
 
-def converted_two_prefix_12 = radix_append(0, base_two_digit_1, converted_two_prefix_11);
+def converted_two_prefix_12 := radix_append(0, base_two_digit_1, converted_two_prefix_11);
 
 def converted_two_value_12 : radix_positive_to_binary(0, converted_two_prefix_12) = 0b110111010111 {
   exact radix_binary_append_value(
@@ -258,7 +258,7 @@ def converted_two_value_12 : radix_positive_to_binary(0, converted_two_prefix_12
   );
 }
 
-def converted_two_prefix_13 = radix_append(0, base_two_digit_1, converted_two_prefix_12);
+def converted_two_prefix_13 := radix_append(0, base_two_digit_1, converted_two_prefix_12);
 
 def converted_two_value_13 : radix_positive_to_binary(0, converted_two_prefix_13) = 0b1101110101111 {
   exact radix_binary_append_value(
@@ -266,7 +266,7 @@ def converted_two_value_13 : radix_positive_to_binary(0, converted_two_prefix_13
   );
 }
 
-def converted_two_prefix_14 = radix_append(0, base_two_digit_1, converted_two_prefix_13);
+def converted_two_prefix_14 := radix_append(0, base_two_digit_1, converted_two_prefix_13);
 
 def converted_two_value_14 : radix_positive_to_binary(0, converted_two_prefix_14) = 0b11011101011111 {
   exact radix_binary_append_value(
@@ -274,7 +274,7 @@ def converted_two_value_14 : radix_positive_to_binary(0, converted_two_prefix_14
   );
 }
 
-def converted_two_prefix_15 = radix_append(0, base_two_digit_0, converted_two_prefix_14);
+def converted_two_prefix_15 := radix_append(0, base_two_digit_0, converted_two_prefix_14);
 
 def converted_two_value_15 :
   radix_positive_to_binary(0, converted_two_prefix_15) = 0b110111010111110 {
@@ -283,7 +283,7 @@ def converted_two_value_15 :
   );
 }
 
-def converted_two_prefix_16 = radix_append(0, base_two_digit_0, converted_two_prefix_15);
+def converted_two_prefix_16 := radix_append(0, base_two_digit_0, converted_two_prefix_15);
 
 def converted_two_value_16 :
   radix_positive_to_binary(0, converted_two_prefix_16) = 0b1101110101111100 {
@@ -292,7 +292,7 @@ def converted_two_value_16 :
   );
 }
 
-def converted_two_prefix_17 = radix_append(0, base_two_digit_0, converted_two_prefix_16);
+def converted_two_prefix_17 := radix_append(0, base_two_digit_0, converted_two_prefix_16);
 
 def converted_two_value_17 :
   radix_positive_to_binary(0, converted_two_prefix_17) = 0b11011101011111000 {
@@ -301,7 +301,7 @@ def converted_two_value_17 :
   );
 }
 
-def converted_two_prefix_18 = radix_append(0, base_two_digit_0, converted_two_prefix_17);
+def converted_two_prefix_18 := radix_append(0, base_two_digit_0, converted_two_prefix_17);
 
 def converted_two_value_18 :
   radix_positive_to_binary(0, converted_two_prefix_18) = 0b110111010111110000 {
@@ -310,7 +310,7 @@ def converted_two_value_18 :
   );
 }
 
-def converted_two_prefix_19 = radix_append(0, base_two_digit_0, converted_two_prefix_18);
+def converted_two_prefix_19 := radix_append(0, base_two_digit_0, converted_two_prefix_18);
 
 def converted_two_value_19 :
   radix_positive_to_binary(0, converted_two_prefix_19) = 0b1101110101111100000 {
@@ -319,7 +319,7 @@ def converted_two_value_19 :
   );
 }
 
-def converted_two_prefix_20 = radix_append(0, base_two_digit_0, converted_two_prefix_19);
+def converted_two_prefix_20 := radix_append(0, base_two_digit_0, converted_two_prefix_19);
 
 def converted_two_value_20 :
   radix_positive_to_binary(0, converted_two_prefix_20) = 0b11011101011111000000 {
@@ -328,7 +328,7 @@ def converted_two_value_20 :
   );
 }
 
-def converted_two_prefix_21 = radix_append(0, base_two_digit_0, converted_two_prefix_20);
+def converted_two_prefix_21 := radix_append(0, base_two_digit_0, converted_two_prefix_20);
 
 def converted_two_value_21 :
   radix_positive_to_binary(0, converted_two_prefix_21) = 0b110111010111110000000 {
@@ -337,7 +337,7 @@ def converted_two_value_21 :
   );
 }
 
-def converted_two_prefix_22 = radix_append(0, base_two_digit_0, converted_two_prefix_21);
+def converted_two_prefix_22 := radix_append(0, base_two_digit_0, converted_two_prefix_21);
 
 def converted_two_value_22 :
   radix_positive_to_binary(0, converted_two_prefix_22) = 0b1101110101111100000000 {

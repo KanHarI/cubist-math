@@ -9,7 +9,7 @@ def polynomial_difference_step(
   addF(a, mulF(x, addF(q, mulF(addF(x, negF(r)), d)))) = addF(
     addF(a, mulF(r, q)), mulF(addF(x, negF(r)), addF(q, mulF(x, d)))
   ) {
-  let difference = addF(x, negF(r));
+  let difference := addF(x, negF(r));
   // First write x = r + (x-r), so xq = rq + (x-r)q.
   have recombine : addF(r, difference) = x := trans(
     cong(addF(r), ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, negF(r))),
@@ -20,15 +20,15 @@ def polynomial_difference_step(
     ring_distribute_left(F, zero, one, addF, mulF, negF, ring, r, difference, q)
   );
   // Distribute once, move x past (x-r), then factor (x-r) back out.
-  let distribute =
+  let distribute :=
     cong(addF(a), ring_distribute(F, zero, one, addF, mulF, negF, ring, x, q, mulF(difference, d)));
-  let splitFirst = cong((fun (v : F) => addF(a, addF(v, mulF(x, mulF(difference, d))))), split);
-  let swapProduct =
+  let splitFirst := cong((fun (v : F) => addF(a, addF(v, mulF(x, mulF(difference, d))))), split);
+  let swapProduct :=
     cong(
       (fun (v : F) => addF(a, addF(addF(mulF(r, q), mulF(difference, q)), v))),
       ring_mul_swap(F, zero, one, addF, mulF, negF, ring, x, difference, d)
     );
-  let regroup =
+  let regroup :=
     cong(
       addF(a),
       ring_add_assoc(
@@ -36,12 +36,12 @@ def polynomial_difference_step(
         mulF(difference, mulF(x, d))
       )
     );
-  let factor =
+  let factor :=
     cong(
       (fun (v : F) => addF(a, addF(mulF(r, q), v))),
       sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, difference, q, mulF(x, d)))
     );
-  let finish =
+  let finish :=
     sym(
       ring_add_assoc(
         F, zero, one, addF, mulF, negF, ring, a, mulF(r, q), mulF(difference, addF(q, mulF(x, d)))
@@ -53,7 +53,7 @@ def polynomial_difference_step(
 }
 
 // This is a polynomial expression, defined by recursion, with no division.
-def monic_divided_difference(F : U1, zero one : F, addF mulF : F -> F -> F, x r : F, n : Nat) =
+def monic_divided_difference(F : U1, zero one : F, addF mulF : F -> F -> F, x r : F, n : Nat) :=
   induction n as k return (MonicCoefficients(F, k) -> F) {
     zero => fun (u : Unit) => zero;
     succ previous => fun (coefficients : MonicCoefficients(F, succ(k))) => unpack typed(
@@ -123,7 +123,7 @@ def monic_factor_at_root(
   monic_eval(F, one, addF, mulF, n, coefficients, x) = mulF(
     addF(x, negF(r)), monic_divided_difference(F, zero, one, addF, mulF, x, r, n, coefficients)
   ) {
-  let product =
+  let product :=
     mulF(
       addF(x, negF(r)), monic_divided_difference(F, zero, one, addF, mulF, x, r, n, coefficients)
     );

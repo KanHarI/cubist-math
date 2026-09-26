@@ -4,7 +4,7 @@ import subfield_preimages;
 // is already a proposition; image membership needs no truncation or choice.
 def SubfieldImage(
   K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), y : af_carrier(L)
-) =
+) :=
   exists x : af_carrier(K), subfield_members(K, S, x) and (field_embedding_map(K, L, e, x) = y);
 
 def subfield_image_prop(
@@ -12,12 +12,12 @@ def subfield_image_prop(
   p q : SubfieldImage(K, L, e, S, y)
 ) :
   p = q {
-  let A = af_carrier(K);
-  let P = subfield_members(K, S);
-  let f = field_embedding_map(K, L, e);
-  let fiber = (fun (x : A) => P(x) and (f(x) = y));
-  let a = sigma_first(A, fiber, p);
-  let b = sigma_first(A, fiber, q);
+  let A := af_carrier(K);
+  let P := subfield_members(K, S);
+  let f := field_embedding_map(K, L, e);
+  let fiber := (fun (x : A) => P(x) and (f(x) = y));
+  let a := sigma_first(A, fiber, p);
+  let b := sigma_first(A, fiber, q);
   have pa : f(a) = y := snd(P(a), (f(a) = y), sigma_second(A, fiber, p));
   have qb : f(b) = y := snd(P(b), (f(b) = y), sigma_second(A, fiber, q));
   exact subtype_ext(
@@ -32,7 +32,7 @@ def subfield_image_prop(
 
 def subfield_image_zero(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) :
   SubfieldImage(K, L, e, S, af_zero(af_carrier(L), af_operations(L))) {
-  obtain (p0, p1, pn, pa, pm) = field_embedding_preserves(K, L, e);
+  obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
     af_zero(af_carrier(K), af_operations(K)),
     subfield_zero(K, subfield_members(K, S), subfield_laws(K, S)), p0
@@ -41,7 +41,7 @@ def subfield_image_zero(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subf
 
 def subfield_image_one(K L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K)) :
   SubfieldImage(K, L, e, S, af_one(af_carrier(L), af_operations(L))) {
-  obtain (p0, p1, pn, pa, pm) = field_embedding_preserves(K, L, e);
+  obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
     af_one(af_carrier(K), af_operations(K)),
     subfield_one(K, subfield_members(K, S), subfield_laws(K, S)), p1
@@ -53,8 +53,8 @@ def subfield_image_neg(
   member : SubfieldImage(K, L, e, S, y)
 ) :
   SubfieldImage(K, L, e, S, af_neg(af_carrier(L), af_operations(L), y)) {
-  obtain (x, px, same) = member;
-  obtain (p0, p1, pn, pa, pm) = field_embedding_preserves(K, L, e);
+  obtain (x, px, same) := member;
+  obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
     af_neg(af_carrier(K), af_operations(K), x),
     subfield_neg(K, subfield_members(K, S), subfield_laws(K, S), x, px),
@@ -67,13 +67,13 @@ def subfield_image_add(
   px : SubfieldImage(K, L, e, S, x), py : SubfieldImage(K, L, e, S, y)
 ) :
   SubfieldImage(K, L, e, S, af_add(af_carrier(L), af_operations(L), x, y)) {
-  let A = af_carrier(K);
-  let B = af_carrier(L);
-  let f = field_embedding_map(K, L, e);
-  let operation = af_add(B, af_operations(L));
-  obtain (a, memberA, imageA) = px;
-  obtain (b, memberB, imageB) = py;
-  obtain (p0, p1, pn, pa, pm) = field_embedding_preserves(K, L, e);
+  let A := af_carrier(K);
+  let B := af_carrier(L);
+  let f := field_embedding_map(K, L, e);
+  let operation := af_add(B, af_operations(L));
+  obtain (a, memberA, imageA) := px;
+  obtain (b, memberB, imageB) := py;
+  obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
     af_add(A, af_operations(K), a, b),
     subfield_add(K, subfield_members(K, S), subfield_laws(K, S), a, b, memberA, memberB),
@@ -88,13 +88,13 @@ def subfield_image_mul(
   px : SubfieldImage(K, L, e, S, x), py : SubfieldImage(K, L, e, S, y)
 ) :
   SubfieldImage(K, L, e, S, af_mul(af_carrier(L), af_operations(L), x, y)) {
-  let A = af_carrier(K);
-  let B = af_carrier(L);
-  let f = field_embedding_map(K, L, e);
-  let operation = af_mul(B, af_operations(L));
-  obtain (a, memberA, imageA) = px;
-  obtain (b, memberB, imageB) = py;
-  obtain (p0, p1, pn, pa, pm) = field_embedding_preserves(K, L, e);
+  let A := af_carrier(K);
+  let B := af_carrier(L);
+  let f := field_embedding_map(K, L, e);
+  let operation := af_mul(B, af_operations(L));
+  obtain (a, memberA, imageA) := px;
+  obtain (b, memberB, imageB) := py;
+  obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
     af_mul(A, af_operations(K), a, b),
     subfield_mul(K, subfield_members(K, S), subfield_laws(K, S), a, b, memberA, memberB),
@@ -114,20 +114,20 @@ def subfield_image_inverse(
   )
 ) :
   SubfieldImage(K, L, e, S, y) {
-  let A = af_carrier(K);
-  let B = af_carrier(L);
-  let opsA = af_operations(K);
-  let opsB = af_operations(L);
-  let f = field_embedding_map(K, L, e);
-  let multiplyL = af_mul(B, opsB);
-  obtain (a, memberA, imageA) = px;
-  obtain (p0, p1, pn, pa, pm) = field_embedding_preserves(K, L, e);
-  obtain (ringLaws, nontrivial, inverses) = typed(AlgebraicFieldLaws(A, opsA), af_laws(K));
+  let A := af_carrier(K);
+  let B := af_carrier(L);
+  let opsA := af_operations(K);
+  let opsB := af_operations(L);
+  let f := field_embedding_map(K, L, e);
+  let multiplyL := af_mul(B, opsB);
+  obtain (a, memberA, imageA) := px;
+  obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
+  obtain (ringLaws, nontrivial, inverses) := typed(AlgebraicFieldLaws(A, opsA), af_laws(K));
   have nonzeroImage : FieldNonzero(B, opsB, f(a)) {
     intro equalZero;
     exact field_nonzero_of_inverse(L, x, y, inverseLaw, trans(sym(imageA), equalZero));
   }
-  obtain (b, inverseA) = inverses(a, field_embedding_reflects_nonzero(K, L, e, a, nonzeroImage));
+  obtain (b, inverseA) := inverses(a, field_embedding_reflects_nonzero(K, L, e, a, nonzeroImage));
   have inverseImage : multiplyL(x, f(b)) = af_one(B, opsB) := trans(
     cong((fun (v : B) => multiplyL(v, f(b))), sym(imageA)),
     trans(sym(pm(a, b)), trans(cong(f, inverseA), p1))

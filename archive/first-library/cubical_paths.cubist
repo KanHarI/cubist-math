@@ -2,7 +2,7 @@ import suspension_types;
 
 // Cubical paths expose their interval coordinate; Interval is binder syntax,
 // not an additional type in the universe hierarchy.
-def reverse_path(A : U0, x y : A, p : x = y) =
+def reverse_path(A : U0, x y : A, p : x = y) :=
   path(fun (i : Interval) => A, fun (i : Interval) => p @ flip(i));
 
 // Reversing twice computes to the original path, even in an arbitrary type.
@@ -11,19 +11,19 @@ def reverse_twice(A : U0, x y : A, p : x = y) : reverse_path(A, y, x, reverse_pa
 }
 
 // Function action is pointwise application along a path.
-def map_path(A B : U0, f : A -> B, x y : A, p : x = y) =
+def map_path(A B : U0, f : A -> B, x y : A, p : x = y) :=
   path(fun (i : Interval) => B, fun (i : Interval) => f(p @ i));
 
 // Paths in a varying family can be stated without encoding them as transport.
-def dependent_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x y : Nat) =
+def dependent_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x y : Nat) :=
   PathP(fun (i : Interval) => P @ i, x, y);
 
 // An empty tube gives transport through a family of types.
-def transport_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x : Nat) =
+def transport_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x : Nat) :=
   comp(fun (i : Interval) => P @ i, x);
 
 // Composition fills a square with fixed left edge and right edge q.
-def join_paths(A : U0, x y z : A, p : x = y, q : y = z) =
+def join_paths(A : U0, x y z : A, p : x = y, q : y = z) :=
   path(
     fun (i : Interval) => A,
     fun (i : Interval) => comp(
@@ -32,12 +32,12 @@ def join_paths(A : U0, x y z : A, p : x = y, q : y = z) =
     )
   );
 
-def Susp(A : U0) = Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);
+def Susp(A : U0) := Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);
 
-def susp_meridian(A : U0, a : A) = push_path(Susp(A), a);
+def susp_meridian(A : U0, a : A) := push_path(Susp(A), a);
 
 // Induction checks the bridge as a dependent path with the required endpoints.
-def collapse_suspension(A : U0, z : Susp(A)) =
+def collapse_suspension(A : U0, z : Susp(A)) :=
   pushout_induction(
     fun (p : Susp(A)) => Unit, fun (a : Unit) => tt, fun (b : Unit) => tt,
     fun (a : A) => path(fun (i : Interval) => Unit, fun (i : Interval) => tt), z
@@ -49,13 +49,13 @@ def collapse_north(A : U0) : collapse_suspension(A, push_left(Susp(A), tt)) = tt
 
 // The transport-based suspension interface is also derived from the pushout.
 // Its bridge to dependent paths includes an independently checked inverse law.
-def unit_family(p : Suspension(Unit)) = Unit;
+def unit_family(p : Suspension(Unit)) := Unit;
 
-def unit_unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
+def unit_unique(u : Unit) := unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
 
-def transported_meridian(a : Unit) = unit_unique(along unit_family by meridian(Unit, a) from tt);
+def transported_meridian(a : Unit) := unit_unique(along unit_family by meridian(Unit, a) from tt);
 
-def collapse_with_transport(p : Suspension(Unit)) =
+def collapse_with_transport(p : Suspension(Unit)) :=
   suspension_induction(Unit, unit_family, tt, tt, transported_meridian, p);
 
 def transported_meridian_beta(a : Unit) :

@@ -2,10 +2,10 @@ import polynomial_remainders;
 
 // Canonical representatives, rather than a larger universe of equivalence
 // classes. The support proof is irrelevant to equality of representatives.
-def PolynomialResidue(K : AlgebraicField, M : PolynomialModulus(K)) =
+def PolynomialResidue(K : AlgebraicField, M : PolynomialModulus(K)) :=
   exists r : Polynomial(K), SeriesSupport(K, polynomial_coefficients(K, r), modulus_degree(K, M));
 
-def residue_polynomial(K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M)) =
+def residue_polynomial(K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M)) :=
   sigma_first(
     Polynomial(K),
     (
@@ -15,7 +15,7 @@ def residue_polynomial(K : AlgebraicField, M : PolynomialModulus(K), r : Polynom
     ), r
   );
 
-def residue_support(K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M)) =
+def residue_support(K : AlgebraicField, M : PolynomialModulus(K), r : PolynomialResidue(K, M)) :=
   sigma_second(
     Polynomial(K),
     (
@@ -25,7 +25,7 @@ def residue_support(K : AlgebraicField, M : PolynomialModulus(K), r : Polynomial
     ), r
   );
 
-def residue_set(K : AlgebraicField, M : PolynomialModulus(K)) =
+def residue_set(K : AlgebraicField, M : PolynomialModulus(K)) :=
   subtype_is_set(
     Polynomial(K),
     (
@@ -71,13 +71,13 @@ def residue_zero(K : AlgebraicField, M : PolynomialModulus(K)) : PolynomialResid
   );
 }
 
-def residue_one(K : AlgebraicField, M : PolynomialModulus(K)) =
+def residue_one(K : AlgebraicField, M : PolynomialModulus(K)) :=
   residue_reduce(K, M, polynomial_one(K));
 
 def residue_add(K : AlgebraicField, M : PolynomialModulus(K), x y : PolynomialResidue(K, M)) :
   PolynomialResidue(K, M) {
-  let p = residue_polynomial(K, M, x);
-  let q = residue_polynomial(K, M, y);
+  let p := residue_polynomial(K, M, x);
+  let q := residue_polynomial(K, M, y);
   exact (
     polynomial_add(K, p, q),
     support_add_same(
@@ -89,14 +89,14 @@ def residue_add(K : AlgebraicField, M : PolynomialModulus(K), x y : PolynomialRe
 
 def residue_neg(K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M)) :
   PolynomialResidue(K, M) {
-  let p = residue_polynomial(K, M, x);
+  let p := residue_polynomial(K, M, x);
   exact (
     polynomial_neg(K, p),
     polynomial_neg_support(K, p, modulus_degree(K, M), residue_support(K, M, x))
   );
 }
 
-def residue_mul(K : AlgebraicField, M : PolynomialModulus(K), x y : PolynomialResidue(K, M)) =
+def residue_mul(K : AlgebraicField, M : PolynomialModulus(K), x y : PolynomialResidue(K, M)) :=
   residue_reduce(K, M, polynomial_mul(K, residue_polynomial(K, M, x), residue_polynomial(K, M, y)));
 
 def residue_reduce_value(K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M)) :
@@ -144,9 +144,9 @@ def residue_add_inverse(K : AlgebraicField, M : PolynomialModulus(K), x : Polyno
 
 def residue_mul_assoc(K : AlgebraicField, M : PolynomialModulus(K), x y z : PolynomialResidue(K, M)) :
   residue_mul(K, M, residue_mul(K, M, x, y), z) = residue_mul(K, M, x, residue_mul(K, M, y, z)) {
-  let p = residue_polynomial(K, M, x);
-  let q = residue_polynomial(K, M, y);
-  let r = residue_polynomial(K, M, z);
+  let p := residue_polynomial(K, M, x);
+  let q := residue_polynomial(K, M, y);
+  let r := residue_polynomial(K, M, z);
   exact with unfolding [] {
     residue_ext(
       K, M, residue_mul(K, M, residue_mul(K, M, x, y), z),
@@ -177,7 +177,7 @@ def residue_mul_comm(K : AlgebraicField, M : PolynomialModulus(K), x y : Polynom
 
 def residue_mul_one(K : AlgebraicField, M : PolynomialModulus(K), x : PolynomialResidue(K, M)) :
   residue_mul(K, M, residue_one(K, M), x) = x {
-  let p = residue_polynomial(K, M, x);
+  let p := residue_polynomial(K, M, x);
   exact with unfolding [] {
     residue_ext(
       K, M, residue_mul(K, M, residue_one(K, M), x), x,
@@ -198,9 +198,9 @@ def residue_distribute(
   residue_mul(K, M, x, residue_add(K, M, y, z)) = residue_add(
     K, M, residue_mul(K, M, x, y), residue_mul(K, M, x, z)
   ) {
-  let p = residue_polynomial(K, M, x);
-  let q = residue_polynomial(K, M, y);
-  let r = residue_polynomial(K, M, z);
+  let p := residue_polynomial(K, M, x);
+  let q := residue_polynomial(K, M, y);
+  let r := residue_polynomial(K, M, z);
   exact with unfolding [] {
     residue_ext(
       K, M, residue_mul(K, M, x, residue_add(K, M, y, z)),
@@ -213,7 +213,7 @@ def residue_distribute(
   };
 }
 
-def residue_ops(K : AlgebraicField, M : PolynomialModulus(K)) =
+def residue_ops(K : AlgebraicField, M : PolynomialModulus(K)) :=
   field_ops(
     PolynomialResidue(K, M), residue_zero(K, M), residue_one(K, M), residue_neg(K, M),
     residue_add(K, M), residue_mul(K, M)
@@ -225,7 +225,7 @@ def field_ring_from_commutative_ring(
   ring : CommutativeRing(A, zero, one, add, mul, neg)
 ) :
   FieldRingLaws(A, field_ops(A, zero, one, neg, add, mul)) {
-  obtain (setA, addLaws, mulLaws) = ring;
+  obtain (setA, addLaws, mulLaws) := ring;
   exact (addLaws, mulLaws);
 }
 
@@ -244,7 +244,7 @@ def residue_ring(K : AlgebraicField, M : PolynomialModulus(K)) :
   );
 }
 
-def residue_ring_laws(K : AlgebraicField, M : PolynomialModulus(K)) =
+def residue_ring_laws(K : AlgebraicField, M : PolynomialModulus(K)) :=
   field_ring_from_commutative_ring(
     PolynomialResidue(K, M), residue_zero(K, M), residue_one(K, M), residue_neg(K, M),
     residue_add(K, M), residue_mul(K, M), residue_ring(K, M)
@@ -299,7 +299,7 @@ def commutative_ring_inverse_prop(
   ring : CommutativeRing(A, zero, one, add, mul, neg), x : A
 ) :
   Proposition(exists y : A, mul(x, y) = one) {
-  obtain (setA, addLaws, mulLaws) = ring;
+  obtain (setA, addLaws, mulLaws) := ring;
   exact algebraic_inverse_evidence_prop(
     A, field_ops(A, zero, one, neg, add, mul), setA,
     field_ring_from_commutative_ring(A, zero, one, neg, add, mul, ring), x
@@ -312,7 +312,7 @@ def field_from_commutative_ring(
   inverses : (forall x : A, ((x = zero) -> Void) -> exists y : A, mul(x, y) = one)
 ) :
   AlgebraicField {
-  obtain (setA, addLaws, mulLaws) = ring;
+  obtain (setA, addLaws, mulLaws) := ring;
   exact algebraic_field(
     A, field_ops(A, zero, one, neg, add, mul), setA,
     typed(

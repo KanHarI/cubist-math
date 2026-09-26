@@ -6,7 +6,7 @@ import ring_laws;
 def parallelogram_expansion_1(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
-) =
+) :=
   trans(
     cong(
       (fun (value : F) => addF(value, mulF(addF(a, negF(b)), addF(a, negF(b))))),
@@ -80,7 +80,7 @@ def parallelogram_expansion_1(
 def parallelogram_expansion_2(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
-) =
+) :=
   trans(
     cong(
       (
@@ -196,7 +196,7 @@ def parallelogram_expansion_2(
 def parallelogram_expansion_3(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
-) =
+) :=
   trans(
     cong(
       (
@@ -295,7 +295,7 @@ def parallelogram_expansion_3(
 def parallelogram_expansion_4(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
-) =
+) :=
   trans(
     cong(
       (fun (value : F) => addF(mulF(a, a), value)),
@@ -346,7 +346,7 @@ def parallelogram_expansion_4(
 def parallelogram_right_expansion(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b : F
-) =
+) :=
   trans(
     ring_add_assoc(
       F, zero, one, addF, mulF, negF, ring, mulF(a, a), mulF(b, b), addF(mulF(a, a), mulF(b, b))

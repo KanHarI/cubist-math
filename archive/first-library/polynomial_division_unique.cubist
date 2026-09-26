@@ -1,7 +1,7 @@
 import polynomial_leading;
 
 // Additive cancellation is reused through the ordinary bundled group API.
-def PolynomialAdditiveGroup(K : AlgebraicField) =
+def PolynomialAdditiveGroup(K : AlgebraicField) :=
   group_object(
     Polynomial(K), polynomial_zero(K), polynomial_add(K),
     typed(
@@ -22,7 +22,7 @@ def PolynomialAdditiveGroup(K : AlgebraicField) =
     )
   );
 
-def polynomial_subtract(K : AlgebraicField, p q : Polynomial(K)) =
+def polynomial_subtract(K : AlgebraicField, p q : Polynomial(K)) :=
   polynomial_add(K, p, polynomial_neg(K, q));
 
 def polynomial_subtract_zero_equal(
@@ -40,7 +40,7 @@ def polynomial_difference_of_sums(
   same : polynomial_add(K, a, b) = polynomial_add(K, c, d)
 ) :
   polynomial_subtract(K, a, c) = polynomial_subtract(K, d, b) {
-  let tail = polynomial_add(K, polynomial_neg(K, c), polynomial_neg(K, b));
+  let tail := polynomial_add(K, polynomial_neg(K, c), polynomial_neg(K, b));
   have left : polynomial_add(K, polynomial_add(K, a, b), tail) = polynomial_subtract(K, a, c) := trans(
     polynomial_add_shuffle(K, a, b, polynomial_neg(K, c), polynomial_neg(K, b)),
     trans(
@@ -88,9 +88,9 @@ def polynomial_small_multiple_zero(
   q = polynomial_zero(K) {
   have impossible : ((q = polynomial_zero(K)) -> Void) -> Void {
     intro nonzero;
-    obtain (m, dq) = polynomial_nonzero_degree(K, q, nonzero);
-    let productDegree = polynomial_product_degree(K, q, divisor, m, d, dq, degree);
-    let tooSmall =
+    obtain (m, dq) := polynomial_nonzero_degree(K, q, nonzero);
+    let productDegree := polynomial_product_degree(K, q, divisor, m, d, dq, degree);
+    let tooSmall :=
       along((fun (k : Nat) => le(k, d))) by productDegree from polynomial_cutoff_least(
         K, polynomial_mul(K, q, divisor), d, support
       );
@@ -114,8 +114,8 @@ def polynomial_division_unique(
   otherSupport : SeriesSupport(K, polynomial_coefficients(K, otherR), d)
 ) :
   (q = otherQ) and (r = otherR) {
-  let difference = polynomial_subtract(K, q, otherQ);
-  let remainderDifference = polynomial_subtract(K, otherR, r);
+  let difference := polynomial_subtract(K, q, otherQ);
+  let remainderDifference := polynomial_subtract(K, otherR, r);
   have product : polynomial_mul(K, difference, divisor) = remainderDifference := trans(
     polynomial_subtract_mul(K, q, otherQ, divisor),
     polynomial_difference_of_sums(
@@ -123,16 +123,16 @@ def polynomial_division_unique(
       trans(sym(equation), otherEquation)
     )
   );
-  let remainderSupport =
+  let remainderSupport :=
     support_add_same(
       K, polynomial_coefficients(K, otherR), polynomial_coefficients(K, polynomial_neg(K, r)), d,
       otherSupport, polynomial_neg_support(K, r, d, support)
     );
-  let productSupport =
+  let productSupport :=
     along((fun (s : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, s), d))) by sym(
       product
     ) from remainderSupport;
-  let sameQ =
+  let sameQ :=
     polynomial_subtract_zero_equal(
       K, q, otherQ,
       polynomial_small_multiple_zero(K, difference, divisor, d, degree, productSupport)

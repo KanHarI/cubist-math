@@ -48,8 +48,8 @@ test("selected proofs load only transitive imports and tolerate cycles for compi
   const root = await mkdtemp(join(tmpdir(), "mathscript-imports-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, "archive/first-library"), { recursive: true });
-  await writeFile(join(root, "archive/first-library/a.cubist"), "import b; def a = tt;");
-  await writeFile(join(root, "archive/first-library/b.cubist"), "// import missing;\nimport a; def b = tt;");
+  await writeFile(join(root, "archive/first-library/a.cubist"), "import b; def a := tt;");
+  await writeFile(join(root, "archive/first-library/b.cubist"), "// import missing;\nimport a; def b := tt;");
   const path = join(root, "root.cubist");
   await writeFile(path, "import a; def root : Unit { exact tt; }");
   const loaded = await loadProof(path, root);
@@ -66,13 +66,13 @@ test("changed-proof selection includes staged, unstaged and untracked files only
     assert.equal(result.status, 0, result.stderr);
   };
   git("init", "-q");
-  await writeFile(join(root, "tracked.cubist"), "def initial = tt;\n");
+  await writeFile(join(root, "tracked.cubist"), "def initial := tt;\n");
   git("add", "tracked.cubist");
   git("-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "fixture");
-  await writeFile(join(root, "tracked.cubist"), "def modified = tt;\n");
-  await writeFile(join(root, "staged.cubist"), "def staged = tt;\n");
+  await writeFile(join(root, "tracked.cubist"), "def modified := tt;\n");
+  await writeFile(join(root, "staged.cubist"), "def staged := tt;\n");
   git("add", "staged.cubist");
-  await writeFile(join(root, "untracked space.cubist"), "def untracked = tt;\n");
+  await writeFile(join(root, "untracked space.cubist"), "def untracked := tt;\n");
   await writeFile(join(root, "unrelated.mjs"), "// not a proof\n");
   assert.deepEqual(changedProofs(root).sort(), ["staged.cubist", "tracked.cubist", "untracked space.cubist"]);
   assert.equal(selectTests(["--changed"], { root }).proofs.length, 3);

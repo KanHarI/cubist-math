@@ -3,12 +3,12 @@ import ring_laws;
 
 // Riemann-type contour sums: f(tag) times the oriented coordinate increment.
 // Tag admissibility, mesh size and geometric curves are separate data.
-def coordinate_difference(F : U1, addF : F -> F -> F, negF : F -> F, a b : F) = addF(b, negF(a));
+def coordinate_difference(F : U1, addF : F -> F -> F, negF : F -> F, a b : F) := addF(b, negF(a));
 
-def contour_edge(F : U1, addF mulF : F -> F -> F, negF f : F -> F, a b tag : F) =
+def contour_edge(F : U1, addF mulF : F -> F -> F, negF f : F -> F, a b tag : F) :=
   mulF(f(tag), coordinate_difference(F, addF, negF, a, b));
 
-def contour_sum(F : U1, zero : F, addF mulF : F -> F -> F, negF f : F -> F, n : Nat) =
+def contour_sum(F : U1, zero : F, addF mulF : F -> F -> F, negF f : F -> F, n : Nat) :=
   sample_sum(F, F, zero, addF, contour_edge(F, addF, mulF, negF, f), n);
 
 def difference_add_back(

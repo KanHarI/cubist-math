@@ -12,7 +12,7 @@ def moved(x y : Nat, p : x = y, q : y = x) : x = x {
 def mirror(U : Universe, A : U, x y : A, p : x = y) : y = x {
   exact path(fun (i : Interval) => A, fun (i : Interval) => at(p, flip(i)));
 }
-def mirror_nat = mirror(U0, Nat);
+def mirror_nat := mirror(U0, Nat);
 `;
 const fingerprint = source => elaborationFingerprint({ modules: ["fingerprint_fixture"],
   readSource: async name => { if (name !== "fingerprint_fixture") throw Error(`Unexpected import: ${name}`); return source; } });

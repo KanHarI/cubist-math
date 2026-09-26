@@ -14,15 +14,15 @@ def complex_scaled_close(
     F, addF, lt, complex_mul(F, addF, mulF, negF, x, coefficient),
     complex_mul(F, addF, mulF, negF, y, coefficient), epsilon
   ) {
-  let addC = complex_add(F, addF);
-  let mulC = complex_mul(F, addF, mulF, negF);
-  let negC = complex_neg(F, negF);
-  let zeroC = complex_zero(F, zero);
-  let oneC = complex_one(F, zero, one);
-  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-  let difference = addC(negC(y), x);
-  obtain (realClose, imagClose) = close;
-  let differenceBound =
+  let addC := complex_add(F, addF);
+  let mulC := complex_mul(F, addF, mulF, negF);
+  let negC := complex_neg(F, negF);
+  let zeroC := complex_zero(F, zero);
+  let oneC := complex_one(F, zero, one);
+  let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let difference := addC(negC(y), x);
+  obtain (realClose, imagClose) := close;
+  let differenceBound :=
     typed(
       ComplexBoxBound(F, negF, lt, difference, delta),
       (
@@ -36,7 +36,7 @@ def complex_scaled_close(
         )
       )
     );
-  obtain (realBound, imagBound) = complex_box_mul_rectangle(
+  obtain (realBound, imagBound) := complex_box_mul_rectangle(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, difference, coefficient, delta, r,
     s, differenceBound, bounded
   );
@@ -55,7 +55,7 @@ def complex_scaled_close(
       Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, difference, coefficient
     )
   );
-  let radius = mulF(delta, addF(r, s));
+  let radius := mulF(delta, addF(r, s));
   exact (
     field_magnitude_perturbation_close(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
@@ -89,29 +89,29 @@ def complex_scalar_uniform_radius(
       complex_mul(F, addF, mulF, negF, y, coefficient), epsilon
     )
   ) {
-  let real = complex_real(F, coefficient);
-  let imag = complex_imag(F, coefficient);
-  let r = maxF(real, negF(real));
-  let s = maxF(imag, negF(imag));
-  let realBound = field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, real);
-  let imagBound = field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, imag);
-  let nonnegativeR =
+  let real := complex_real(F, coefficient);
+  let imag := complex_imag(F, coefficient);
+  let r := maxF(real, negF(real));
+  let s := maxF(imag, negF(imag));
+  let realBound := field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, real);
+  let imagBound := field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, imag);
+  let nonnegativeR :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, real, r, realBound
     );
-  let nonnegativeS =
+  let nonnegativeS :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, imag, s, imagBound
     );
-  let length = addF(r, s);
-  let nonnegativeLength =
+  let length := addF(r, s);
+  let nonnegativeLength :=
     along((fun (v : F) => FieldLe(F, lt, v, length))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, zero
     ) from order_le_add(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, zero, r, zero, s, nonnegativeR,
       nonnegativeS
     );
-  obtain (delta, positiveDelta, small) = field_small_scaled_radius(
+  obtain (delta, positiveDelta, small) := field_small_scaled_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
     nonnegativeLength, epsilon, positive
   );
@@ -145,11 +145,11 @@ def complex_uniform_curve_scale(
     )
   ) {
   intro epsilon positive;
-  obtain (delta, positiveDelta, scaleClose) = complex_scalar_uniform_radius(
+  obtain (delta, positiveDelta, scaleClose) := complex_scalar_uniform_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
     coefficient, epsilon, positive
   );
-  obtain (mesh, positiveMesh, close) = uniform(delta, positiveDelta);
+  obtain (mesh, positiveMesh, close) := uniform(delta, positiveDelta);
   exact (
     mesh, positiveMesh,
     (
@@ -178,11 +178,11 @@ def complex_converges_scale(
     complex_mul(F, addF, mulF, negF, value, coefficient)
   ) {
   intro epsilon positive;
-  obtain (delta, positiveDelta, scaleClose) = complex_scalar_uniform_radius(
+  obtain (delta, positiveDelta, scaleClose) := complex_scalar_uniform_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
     coefficient, epsilon, positive
   );
-  obtain (bound, close) = converges(delta, positiveDelta);
+  obtain (bound, close) := converges(delta, positiveDelta);
   exact (
     bound,
     (fun (n : Nat, later : IndexLE(bound, n)) => scaleClose(sequence(n), value, close(n, later)))

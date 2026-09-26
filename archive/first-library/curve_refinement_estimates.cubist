@@ -47,20 +47,20 @@ def curve_refinement_partition_estimate(
     curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, integrand, a, b, fine),
     radius
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let n = subdivision_count(I, a, b, coarse);
-  let vertices = subdivision_vertices(I, a, b, coarse);
-  let first = sample_first(I, n, vertices);
-  let last = sample_last(I, n, vertices);
-  obtain (pieces, valid, computes) = refinement;
-  obtain (flat, flatComputes, bounded) = estimates(pieces, valid);
-  let mappedFine =
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let n := subdivision_count(I, a, b, coarse);
+  let vertices := subdivision_vertices(I, a, b, coarse);
+  let first := sample_first(I, n, vertices);
+  let last := sample_last(I, n, vertices);
+  obtain (pieces, valid, computes) := refinement;
+  obtain (flat, flatComputes, bounded) := estimates(pieces, valid);
+  let mappedFine :=
     parameter_contour_sum_is_mapped(
       I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
       complex_neg(F, negF), curve, integrand, subdivision_count(I, a, b, fine),
       subdivision_vertices(I, a, b, fine), subdivision_tags(I, a, b, fine)
     );
-  let identifies = trans(flatComputes, trans(sym(computes), mappedFine));
+  let identifies := trans(flatComputes, trans(sym(computes), mappedFine));
   exact along(
     (
       fun (sum : Complex(F)) => ComplexPerturbation(
@@ -128,11 +128,11 @@ def affine_refinement_sum_estimate(
       )
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
-  let length = affine_coordinate_length(F, addF, negF, maxF, slope);
-  let width = interval_difference(F, zero, one, addF, negF, lt);
-  obtain (mesh, positiveMesh, estimates) = affine_partition_uniform_estimate(
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
+  let length := affine_coordinate_length(F, addF, negF, maxF, slope);
+  let width := interval_difference(F, zero, one, addF, negF, lt);
+  obtain (mesh, positiveMesh, estimates) := affine_partition_uniform_estimate(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
     integrand, uniform, delta, positiveDelta
   );
@@ -173,13 +173,13 @@ def affine_refinement_sum_estimate(
       )
     ) {
     intro a b coarse fine refinement;
-    let n = subdivision_count(I, a, b, coarse);
-    let vertices = subdivision_vertices(I, a, b, coarse);
-    let tags = subdivision_tags(I, a, b, coarse);
-    let first = sample_first(I, n, vertices);
-    let last = sample_last(I, n, vertices);
-    let oldRadius = mulF(delta, mulF(width(first, last), length));
-    let bounded =
+    let n := subdivision_count(I, a, b, coarse);
+    let vertices := subdivision_vertices(I, a, b, coarse);
+    let tags := subdivision_tags(I, a, b, coarse);
+    let first := sample_first(I, n, vertices);
+    let last := sample_last(I, n, vertices);
+    let oldRadius := mulF(delta, mulF(width(first, last), length));
+    let bounded :=
       curve_refinement_partition_estimate(
         F, zero, one, addF, mulF, negF, lt, curve, integrand,
         IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine, oldRadius,
@@ -191,9 +191,9 @@ def affine_refinement_sum_estimate(
     have lastPath : last = b := field_snd(
       (first = a), (last = b), subdivision_endpoints(I, a, b, coarse)
     );
-    let widthPath =
+    let widthPath :=
       trans(cong((fun (v : I) => width(v, last)), firstPath), cong(width(a), lastPath));
-    let radiusPath = cong((fun (v : F) => mulF(delta, mulF(v, length))), widthPath);
+    let radiusPath := cong((fun (v : F) => mulF(delta, mulF(v, length))), widthPath);
     exact along(
       (
         fun (radius : F) => ComplexPerturbation(

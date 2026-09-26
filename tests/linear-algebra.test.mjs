@@ -85,7 +85,7 @@ test("spans are least subspaces and independent chains have bounds, including em
       exact independent_union_least(K, V, Void, empty_family(K, V), empty_chain(K, V), EmptyIndependentSubset(K, V),
         (fun (i : Void) => typed(IndependentIncluded(K, V, empty_family(K, V, i), EmptyIndependentSubset(K, V)), absurd(i))));
     }
-    def large_constant_family(K : AlgebraicField, V : VectorSpace(K), A : U0) = EmptyIndependentSubset(K, V);
+    def large_constant_family(K : AlgebraicField, V : VectorSpace(K), A : U0) := EmptyIndependentSubset(K, V);
     def large_constant_chain(K : AlgebraicField, V : VectorSpace(K)) :
       PredicateChain(U0, vector_carrier(K, V), (fun (A : U0) => independent_members(K, V, large_constant_family(K, V, A)))) {
       intro A; intro B;
@@ -94,7 +94,7 @@ test("spans are least subspaces and independent chains have bounds, including em
         IndependentIncluded(K, V, EmptyIndependentSubset(K, V), EmptyIndependentSubset(K, V)),
         left(independent_inclusion_refl(K, V, EmptyIndependentSubset(K, V))));
     }
-    def large_union(K : AlgebraicField, V : VectorSpace(K)) =
+    def large_union(K : AlgebraicField, V : VectorSpace(K)) :=
       IndependentUnion(K, V, U0, large_constant_family(K, V), large_constant_chain(K, V));
   `, "chain_regression");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));

@@ -6,7 +6,7 @@ def field_lattice_magnitude(
   lattice : FieldLattice(F, lt, minF, maxF), x : F
 ) :
   FieldMagnitudeBound(F, negF, lt, x, maxF(x, negF(x))) {
-  obtain (minLeft, minRight, minGreatest, maxLeft, maxRight, maxLeast) = lattice;
+  obtain (minLeft, minRight, minGreatest, maxLeft, maxRight, maxLeast) := lattice;
   exact (maxLeft(x, negF(x)), maxRight(x, negF(x)));
 }
 
@@ -17,11 +17,11 @@ def field_close_difference_bound(
   close : FieldClose(F, addF, lt, s, t, delta)
 ) :
   FieldMagnitudeBound(F, negF, lt, addF(negF(t), s), delta) {
-  let shifted =
+  let shifted :=
     field_close_translate(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, s, t, delta, negF(t), close
     );
-  let centered =
+  let centered :=
     along((fun (v : F) => FieldClose(F, addF, lt, addF(negF(t), s), v, delta))) by ring_add_inverse(
       F, zero, one, addF, mulF, negF, ring, t
     ) from shifted;
@@ -67,12 +67,12 @@ def field_affine_close(
   close : FieldClose(F, addF, lt, s, t, delta), small : lt(mulF(delta, length), epsilon)
 ) :
   FieldClose(F, addF, lt, addF(a, mulF(s, d)), addF(a, mulF(t, d)), epsilon) {
-  let difference = addF(negF(t), s);
-  let bound =
+  let difference := addF(negF(t), s);
+  let bound :=
     field_close_difference_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, s, t, delta, close
     );
-  let productBound =
+  let productBound :=
     field_magnitude_mul(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, difference, d, delta, length,
       bound, bounded

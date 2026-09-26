@@ -5,7 +5,7 @@ import curve_contour_estimates;
 def sample_interval_width(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, n : Nat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n)
-) =
+) :=
   interval_difference(
     F, zero, one, addF, negF, lt, sample_first(FieldUnitInterval(F, zero, one, lt), n, vertices),
     sample_last(FieldUnitInterval(F, zero, one, lt), n, vertices)
@@ -13,7 +13,7 @@ def sample_interval_width(
 
 def affine_coordinate_length(
   F : U1, addF : F -> F -> F, negF : F -> F, maxF : F -> F -> F, slope : Complex(F)
-) =
+) :=
   addF(
     maxF(complex_real(F, slope), negF(complex_real(F, slope))),
     maxF(complex_imag(F, slope), negF(complex_imag(F, slope)))
@@ -36,12 +36,12 @@ def affine_sample_variation_sum(
       )
     ), n, vertices, tags
   ) = mulF(sample_interval_width(F, zero, one, addF, negF, lt, n, vertices), addF(r, s)) {
-  obtain (setF, addLaws, mulLaws) = ring;
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let realWeight = interval_weight(F, zero, one, addF, mulF, negF, lt, r);
-  let imagWeight = interval_weight(F, zero, one, addF, mulF, negF, lt, s);
-  let imagSum = sample_sum(I, F, zero, addF, imagWeight, n, vertices, tags);
-  let width = sample_interval_width(F, zero, one, addF, negF, lt, n, vertices);
+  obtain (setF, addLaws, mulLaws) := ring;
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let realWeight := interval_weight(F, zero, one, addF, mulF, negF, lt, r);
+  let imagWeight := interval_weight(F, zero, one, addF, mulF, negF, lt, s);
+  let imagSum := sample_sum(I, F, zero, addF, imagWeight, n, vertices, tags);
+  let width := sample_interval_width(F, zero, one, addF, negF, lt, n, vertices);
   exact trans(
     sample_sum_add(I, F, zero, addF, negF, addLaws, realWeight, imagWeight, n, vertices, tags),
     trans(
@@ -89,37 +89,37 @@ def affine_refinement_error_bound(
       )
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
-  let oldTags = sample_repeat_tags(I, n, coarseTag);
-  let r = maxF(complex_real(F, slope), negF(complex_real(F, slope)));
-  let s = maxF(complex_imag(F, slope), negF(complex_imag(F, slope)));
-  let realWeight = interval_weight(F, zero, one, addF, mulF, negF, lt, r);
-  let imagWeight = interval_weight(F, zero, one, addF, mulF, negF, lt, s);
-  let ordered =
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
+  let oldTags := sample_repeat_tags(I, n, coarseTag);
+  let r := maxF(complex_real(F, slope), negF(complex_real(F, slope)));
+  let s := maxF(complex_imag(F, slope), negF(complex_imag(F, slope)));
+  let realWeight := interval_weight(F, zero, one, addF, mulF, negF, lt, r);
+  let imagWeight := interval_weight(F, zero, one, addF, mulF, negF, lt, s);
+  let ordered :=
     interval_admissible_samples_ordered(
       F, zero, one, addF, mulF, lt, arithmetic, n, vertices, tags, valid
     );
-  let variation =
+  let variation :=
     complex_interval_deformation_variation(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope
     );
-  obtain (realBounds, imagBounds, unusedGlobalBound) = variation(n, vertices, oldTags, ordered);
-  let increments =
+  obtain (realBounds, imagBounds, unusedGlobalBound) := variation(n, vertices, oldTags, ordered);
+  let increments :=
     parameter_coordinate_increment_bounds(
       I, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, oldTags, realBounds,
       imagBounds
     );
-  let localBound =
+  let localBound :=
     complex_parameter_tag_error_variation_bound(
       I, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight,
       imagWeight, delta, n, vertices, oldTags, tags, errors, increments
     );
-  let errorSum =
+  let errorSum :=
     complex_parameter_tag_error_sum(
       I, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags
     );
-  let totalWeight =
+  let totalWeight :=
     sample_sum(
       I, F, zero, addF, (fun (a b tag : I) => addF(realWeight(a, b, tag), imagWeight(a, b, tag))),
       n, vertices, oldTags
@@ -137,7 +137,7 @@ def curve_coarse_contribution(
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
   n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   coarseTag : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   parameter_contour_edge(
     FieldUnitInterval(F, zero, one, lt), Complex(F), complex_add(F, addF),
     complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve,
@@ -202,10 +202,10 @@ def affine_refinement_uniform_estimate(
       )
     )
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let curve = complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
-  let values = (fun (t : I) => integrand(curve(t)));
-  obtain (mesh, positiveMesh, tagBounds) = uniform_refinement_tag_bounds(
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
+  let values := (fun (t : I) => integrand(curve(t)));
+  obtain (mesh, positiveMesh, tagBounds) := uniform_refinement_tag_bounds(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, values, uniform, delta,
     positiveDelta
   );
@@ -246,25 +246,25 @@ def affine_refinement_uniform_estimate(
       )
     ) {
     intro n vertices coarseTag tags valid coarseWithin small;
-    let oldTags = sample_repeat_tags(I, n, coarseTag);
-    let errorSum =
+    let oldTags := sample_repeat_tags(I, n, coarseTag);
+    let errorSum :=
       complex_parameter_tag_error_sum(
         I, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags
       );
-    let errors = tagBounds(n, vertices, coarseTag, tags, valid, coarseWithin, small);
-    let errorBound =
+    let errors := tagBounds(n, vertices, coarseTag, tags, valid, coarseWithin, small);
+    let errorBound :=
       affine_refinement_error_bound(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
         values, delta, n, vertices, coarseTag, tags, valid, errors
       );
-    let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-    let identity =
+    let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+    let identity :=
       parameter_refinement_identity(
         I, Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
         complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, curve, values, coarseTag, n,
         vertices, tags
       );
-    let mapped =
+    let mapped :=
       parameter_contour_sum_is_mapped(
         I, Complex(F), complex_zero(F, zero), complex_add(F, addF),
         complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, integrand, n, vertices, tags

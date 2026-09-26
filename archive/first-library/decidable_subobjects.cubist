@@ -4,12 +4,12 @@ import intermediate_fields;
 
 // Decidability is additional structure on a subobject, not a consequence of
 // the ambient carrier being finite. Its proof is unique for a proposition.
-def SubgroupDecisions(G : Group, S : Subgroup(G)) =
+def SubgroupDecisions(G : Group, S : Subgroup(G)) :=
   forall x : group_carrier(G), Decidable(subgroup_members(G, S, x));
 
-def DecidableSubgroup(G : Group) = exists S : Subgroup(G), SubgroupDecisions(G, S);
+def DecidableSubgroup(G : Group) := exists S : Subgroup(G), SubgroupDecisions(G, S);
 
-def decidable_subgroup(G : Group, D : DecidableSubgroup(G)) =
+def decidable_subgroup(G : Group, D : DecidableSubgroup(G)) :=
   field_first(Subgroup(G), (fun (S : Subgroup(G)) => typed(U1, SubgroupDecisions(G, S))), D);
 
 def subgroup_decisions(G : Group, D : DecidableSubgroup(G)) :
@@ -39,15 +39,15 @@ def decidable_subgroup_ext(
   );
 }
 
-def IntermediateDecisions(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) =
+def IntermediateDecisions(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :=
   forall x : extension_carrier(K, E), Decidable(intermediate_members(K, E, M, x));
 
-def DecidableIntermediateField(K : AlgebraicField, E : FieldExt(K)) =
+def DecidableIntermediateField(K : AlgebraicField, E : FieldExt(K)) :=
   exists M : IntermediateField(K, E), IntermediateDecisions(K, E, M);
 
 def decidable_intermediate(
   K : AlgebraicField, E : FieldExt(K), D : DecidableIntermediateField(K, E)
-) =
+) :=
   field_first(
     IntermediateField(K, E),
     (fun (M : IntermediateField(K, E)) => typed(U1, IntermediateDecisions(K, E, M))), D
@@ -65,7 +65,7 @@ def intermediate_decisions(
 
 def intermediate_decisions_prop(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
   Proposition(IntermediateDecisions(K, E, M)) {
-  obtain (closure, base) = intermediate_laws(K, E, M);
+  obtain (closure, base) := intermediate_laws(K, E, M);
   exact forall_prop(
     extension_carrier(K, E),
     (fun (x : extension_carrier(K, E)) => Decidable(intermediate_members(K, E, M, x))),

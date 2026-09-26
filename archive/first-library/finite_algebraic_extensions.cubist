@@ -10,16 +10,16 @@ def finite_basis_element_algebraic(
   basis : FiniteBasis(K, field_vector_space(K, L, e), n), x : af_carrier(L)
 ) :
   AlgebraicElement(K, L, e, x) {
-  let V = field_vector_space(K, L, e);
-  let C = CoordinateSpace(K, succ(n));
-  let evaluation = polynomial_evaluation_linear(K, L, e, x, succ(n));
+  let V := field_vector_space(K, L, e);
+  let C := CoordinateSpace(K, succ(n));
+  let evaluation := polynomial_evaluation_linear(K, L, e, x, succ(n));
   have impossible : (AlgebraicElement(K, L, e, x) -> Void) -> Void {
     intro transcendental;
     have kernel :
       forall a : Fin(succ(n)) -> af_carrier(K), linear_map(K, C, V, evaluation, a) = field_zero(L)
       -> a = (fun (i : Fin(succ(n))) => field_zero(K)) {
       intro a root;
-      let p = polynomial_from_coordinates(K, succ(n), a);
+      let p := polynomial_from_coordinates(K, succ(n), a);
       have zero : p = polynomial_zero(K) {
         have contradiction : PolynomialNonzero(K, p) -> Void {
           intro nonzero;
@@ -41,7 +41,7 @@ def finite_basis_element_algebraic(
       }
       exact polynomial_from_coordinates_zero(K, succ(n), a, zero);
     }
-    let inverse = linear_iso_inverse(K, CoordinateSpace(K, n), V, basis);
+    let inverse := linear_iso_inverse(K, CoordinateSpace(K, n), V, basis);
     exact coordinate_embedding_bound(
       K, V, n, linear_iso_forward(K, V, CoordinateSpace(K, n), inverse),
       linear_iso_injective(K, V, CoordinateSpace(K, n), inverse), evaluation,
@@ -56,7 +56,7 @@ def finite_basis_element_algebraic(
   );
 }
 
-def AlgebraicExtension(K L : AlgebraicField, e : FieldEmbedding(K, L)) =
+def AlgebraicExtension(K L : AlgebraicField, e : FieldEmbedding(K, L)) :=
   forall x : af_carrier(L), AlgebraicElement(K, L, e, x);
 
 def finite_extension_algebraic(
@@ -65,7 +65,7 @@ def finite_extension_algebraic(
 ) :
   AlgebraicExtension(K, L, e) {
   intro x;
-  obtain (n, basis) = finite;
+  obtain (n, basis) := finite;
   exact mere_eliminate(
     FiniteBasis(K, field_vector_space(K, L, e), n), AlgebraicElement(K, L, e, x),
     mere_is_prop(

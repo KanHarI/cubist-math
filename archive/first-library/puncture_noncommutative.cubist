@@ -4,32 +4,32 @@ import finite_cancellation;
 
 // Two generators act as the transpositions (0 1) and (0 2) on three states.
 // A nontrivial action witnesses a nontrivial loop, without a free-group axiom.
-def first_puncture = typed(Unit or Fin(1), left(tt));
+def first_puncture := typed(Unit or Fin(1), left(tt));
 
-def second_puncture = typed(Unit or Fin(1), right(typed(Unit or Void, left(tt))));
+def second_puncture := typed(Unit or Fin(1), right(typed(Unit or Void, left(tt))));
 
-def first_second_different(p : first_puncture = second_puncture) =
+def first_second_different(p : first_puncture = second_puncture) :=
   sum_disjoint(Fin(1), tt, typed(Unit or Void, left(tt)), p);
 
-def second_first_different(p : second_puncture = first_puncture) = first_second_different(sym(p));
+def second_first_different(p : second_puncture = first_puncture) := first_second_different(sym(p));
 
-def state_zero = typed(Unit or Fin(2), left(tt));
+def state_zero := typed(Unit or Fin(2), left(tt));
 
-def state_one = typed(Unit or Fin(2), right(first_puncture));
+def state_one := typed(Unit or Fin(2), right(first_puncture));
 
-def state_two = typed(Unit or Fin(2), right(second_puncture));
+def state_two := typed(Unit or Fin(2), right(second_puncture));
 
-def first_permutation =
+def first_permutation :=
   bijection_equiv(
     Fin(3), Fin(3), fin_is_set(3), swap_bijection(Fin(2), fin_decidable(2), state_one)
   );
 
-def second_permutation =
+def second_permutation :=
   bijection_equiv(
     Fin(3), Fin(3), fin_is_set(3), swap_bijection(Fin(2), fin_decidable(2), state_two)
   );
 
-def puncture_permutations(label : Fin(2)) =
+def puncture_permutations(label : Fin(2)) :=
   match typed(Unit or Fin(1), label) return Equiv(U0, Fin(3), Fin(3)) {
     left u => first_permutation;
     right tail => match typed(Unit or Void, tail) return Equiv(U0, Fin(3), Fin(3)) {
@@ -38,22 +38,22 @@ def puncture_permutations(label : Fin(2)) =
     };
   };
 
-def first_puncture_loop = puncture_loop(2, first_puncture);
+def first_puncture_loop := puncture_loop(2, first_puncture);
 
-def second_puncture_loop = puncture_loop(2, second_puncture);
+def second_puncture_loop := puncture_loop(2, second_puncture);
 
-def two_loop_product(p q : BouquetLoops(Fin(2))) = trans(p, q);
+def two_loop_product(p q : BouquetLoops(Fin(2))) := trans(p, q);
 
-def two_loop_inverse(p : BouquetLoops(Fin(2))) = sym(p);
+def two_loop_inverse(p : BouquetLoops(Fin(2))) := sym(p);
 
-def puncture_ab = two_loop_product(first_puncture_loop, second_puncture_loop);
+def puncture_ab := two_loop_product(first_puncture_loop, second_puncture_loop);
 
-def puncture_aba_inverse = two_loop_product(puncture_ab, two_loop_inverse(first_puncture_loop));
+def puncture_aba_inverse := two_loop_product(puncture_ab, two_loop_inverse(first_puncture_loop));
 
-def puncture_commutator =
+def puncture_commutator :=
   two_loop_product(puncture_aba_inverse, two_loop_inverse(second_puncture_loop));
 
-def three_state_action(p : BouquetLoops(Fin(2)), v : Fin(3)) =
+def three_state_action(p : BouquetLoops(Fin(2)), v : Fin(3)) :=
   loop_action(Fin(2), Fin(3), puncture_permutations, p, v);
 
 def puncture_ab_action : three_state_action(puncture_ab, state_zero) = state_one {
@@ -116,7 +116,7 @@ def puncture_commutator_action : three_state_action(puncture_commutator, state_z
 
 def puncture_commutator_nontrivial : (puncture_commutator = refl(bouquet_base(Fin(2)))) -> Void {
   intro collapsed;
-  let impossible =
+  let impossible :=
     trans(
       sym(puncture_commutator_action),
       cong((fun (p : BouquetLoops(Fin(2))) => three_state_action(p, state_zero)), collapsed)
@@ -151,7 +151,7 @@ def puncture_generators_do_not_commute :
       )
     )
   );
-  let impossible =
+  let impossible :=
     trans(
       sym(puncture_ab_action),
       trans(
@@ -166,13 +166,13 @@ def puncture_generators_do_not_commute :
 }
 
 def commutator_first_winding_zero : puncture_winding(2, first_puncture, puncture_commutator) = zeroZ {
-  let abValue =
+  let abValue :=
     puncture_winding_append_values(
       2, first_puncture, first_puncture_loop, second_puncture_loop, nonnegative(1), zeroZ,
       puncture_winding_self(2, first_puncture),
       puncture_winding_other(2, first_puncture, second_puncture, first_second_different)
     );
-  let abaValue =
+  let abaValue :=
     puncture_winding_append_values(
       2, first_puncture, puncture_ab, two_loop_inverse(first_puncture_loop), nonnegative(1),
       negative(0), abValue, puncture_winding_reverse_self(2, first_puncture)
@@ -186,13 +186,13 @@ def commutator_first_winding_zero : puncture_winding(2, first_puncture, puncture
 
 def commutator_second_winding_zero :
   puncture_winding(2, second_puncture, puncture_commutator) = zeroZ {
-  let abValue =
+  let abValue :=
     puncture_winding_append_values(
       2, second_puncture, first_puncture_loop, second_puncture_loop, zeroZ, nonnegative(1),
       puncture_winding_other(2, second_puncture, first_puncture, second_first_different),
       puncture_winding_self(2, second_puncture)
     );
-  let abaValue =
+  let abaValue :=
     puncture_winding_append_values(
       2, second_puncture, puncture_ab, two_loop_inverse(first_puncture_loop), nonnegative(1), zeroZ,
       abValue,

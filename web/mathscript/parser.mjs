@@ -34,6 +34,12 @@ export function parse(source, typeOnly = false) {
     if (t.text !== "EOF") i++;
     return t;
   }
+  // A binding gives a name its value with `:=`; `=` is the equality type.
+  const binds = () => peek() === ":=";
+  function define(form) {
+    if (binds()) return take();
+    throw Object.assign(new Error(`Write := to give a value: ${form}`), { offset: ts[i].start });
+  }
   function name() {
     const t = take();
     if (t.text === "EOF" || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
@@ -329,14 +335,15 @@ export function parse(source, typeOnly = false) {
           throw Object.assign(new Error("Use obtain to unpack a pair."), {
             offset: target.start,
           });
-        take("=");
+        define(t.text === "let" ? "let name := term;" : "obtain (a, b) := pair;");
         const value = expr();
         const e = take(";");
         s = { kind: t.text, target, value, start: t.start, end: e.end };
       } else if (t.text === "have") {
         const n = name();
-        if (peek() === "=") {
-          take("=");
+        if (peek() === "=") define("have name := term;");
+        if (binds()) {
+          take();
           const value = expr(), end = take(";");
           s = { kind: "haveValue", name: n, value, start: t.start, end: end.end };
         } else {
@@ -531,7 +538,7 @@ export function parse(source, typeOnly = false) {
       directives.push(directive);items.push(directive);continue;
     }
     if(t.text==="simp_set") {
-      const set=name();take("=");take("[");
+      const set=name();define("simp_set name := [rules];");take("[");
       const rules=[];
       if(peek()!=="]")while(true) {
         rules.push(name());
@@ -565,8 +572,8 @@ export function parse(source, typeOnly = false) {
       });
     const n = name(),
       params = [];
-    if (peek() === "=") {
-      take("=");
+    if (binds()) {
+      take();
       const value = expr();
       const end = take(";").end;
       declarations.push({
@@ -600,8 +607,8 @@ export function parse(source, typeOnly = false) {
       }
       take(")");
     }
-    if (peek() === "=") {
-      take("=");
+    if (binds()) {
+      take();
       let value = expr();
       const valueStart = value.start, valueEnd = value.end;
       const end = take(";").end;
@@ -629,8 +636,21 @@ export function parse(source, typeOnly = false) {
       });items.push(declarations.at(-1));
       continue;
     }
+    if (peek() === "=") define("def name := term;");
     take(":");
     const type = expr();
+    // `def name : T := term;` states the type of a term; it is the block
+    // `{ exact term; }`.
+    if (peek() === ":=") {
+      const assign = take(":="), value = expr(), end = take(";").end;
+      declarations.push({
+        kind: t.text, opaque, ...(computable ? { computable, modifierStart } : {}), name: n, params, type,
+        body: [{ kind: "exact", value, start: assign.start, end }], typedValue: true, start: t.start, end,
+      });items.push(declarations.at(-1));
+      continue;
+    }
+    if (peek() === ";" && type.kind === "binary" && type.operator === "=")
+      throw Object.assign(new Error("Write := to give a value: def name : T := term; here `=` read as an equality type"), { offset: type.operatorStart });
     const body = block();
     declarations.push({
       kind: t.text,

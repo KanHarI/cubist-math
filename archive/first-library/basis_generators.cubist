@@ -5,7 +5,7 @@ import extension_degree;
 
 // A linear map on finite coordinates lands in a subspace as soon as all of
 // its coordinate-unit images do. This avoids choosing coefficients anew.
-def CoordinatesInSubspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) =
+def CoordinatesInSubspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) :=
   forall h : LinearMap(K, CoordinateSpace(K, n), V),
   (
     forall i : Fin(n),
@@ -16,7 +16,7 @@ def CoordinatesInSubspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K
 def coordinates_in_subspace_zero(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V)) :
   CoordinatesInSubspace(K, V, S, 0) {
   intro h units a;
-  let z = vector_zero(K, CoordinateSpace(K, 0));
+  let z := vector_zero(K, CoordinateSpace(K, 0));
   have same : a = z := FunExt(
     U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)), a, z,
     (fun (i : Fin(0)) => typed((a(i) = z(i)), absurd(i)))
@@ -35,22 +35,22 @@ def coordinates_in_subspace_step(
 ) :
   CoordinatesInSubspace(K, V, S, succ(n)) {
   intro h units a;
-  let C = CoordinateSpace(K, succ(n));
-  let f = linear_map(K, C, V, h);
-  let b = finite_head(af_carrier(K), n, a);
-  let tail = finite_tail(af_carrier(K), n, a);
-  let rest = linear_compose(K, CoordinateSpace(K, n), C, V, coordinate_insert_linear(K, n), h);
-  let u = coordinate_first(K, n);
-  let v = coordinate_insert(K, n, tail);
-  let smaller = previous(rest, (fun (i : Fin(n)) => units(typed(Fin(succ(n)), right(i)))), tail);
-  let head = subspace_scale(K, V, S, b, f(u), units(typed(Fin(succ(n)), left(tt))));
-  let contained = subspace_add(K, V, S, vector_scale(K, V, b, f(u)), f(v), head, smaller);
-  let same =
+  let C := CoordinateSpace(K, succ(n));
+  let f := linear_map(K, C, V, h);
+  let b := finite_head(af_carrier(K), n, a);
+  let tail := finite_tail(af_carrier(K), n, a);
+  let rest := linear_compose(K, CoordinateSpace(K, n), C, V, coordinate_insert_linear(K, n), h);
+  let u := coordinate_first(K, n);
+  let v := coordinate_insert(K, n, tail);
+  let smaller := previous(rest, (fun (i : Fin(n)) => units(typed(Fin(succ(n)), right(i)))), tail);
+  let head := subspace_scale(K, V, S, b, f(u), units(typed(Fin(succ(n)), left(tt))));
+  let contained := subspace_add(K, V, S, vector_scale(K, V, b, f(u)), f(v), head, smaller);
+  let same :=
     trans(
       sym(linear_add(K, C, V, h, vector_scale(K, C, b, u), v)),
       cong(f, coordinate_decompose(K, n, a))
     );
-  let scaled =
+  let scaled :=
     cong(
       (fun (x : vector_carrier(K, V)) => vector_add(K, V, x, f(v))),
       sym(linear_scale(K, C, V, h, b, u))
@@ -58,7 +58,7 @@ def coordinates_in_subspace_step(
   exact along subspace_members(K, V, S) by trans(scaled, same) from contained;
 }
 
-def coordinates_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) =
+def coordinates_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) :=
   induction n as k return CoordinatesInSubspace(K, V, S, k) {
     zero => coordinates_in_subspace_zero(K, V, S);
     succ previous => coordinates_in_subspace_step(K, V, S, k, previous);
@@ -66,7 +66,7 @@ def coordinates_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace
 
 def basis_columns(
   K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n), i : Fin(n)
-) =
+) :=
   linear_map(K, CoordinateSpace(K, n), V, basis_expansion(K, V, n, basis), coordinate_unit(K, n, i));
 
 def basis_columns_span(
@@ -75,7 +75,7 @@ def basis_columns_span(
   y : vector_carrier(K, V)
 ) :
   subspace_members(K, V, S, y) {
-  let a = linear_map(K, V, CoordinateSpace(K, n), basis_coordinates(K, V, n, basis), y);
+  let a := linear_map(K, V, CoordinateSpace(K, n), basis_coordinates(K, V, n, basis), y);
   exact along subspace_members(K, V, S) by basis_expansion_coordinates(K, V, n, basis, y) from coordinates_in_subspace(
     K, V, S, n, linear_iso_forward(K, CoordinateSpace(K, n), V, basis), contains, a
   );
@@ -87,8 +87,8 @@ def subfield_base_subspace(
   contains : (forall a : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, a)))
 ) :
   Subspace(K, field_vector_space(K, L, e)) {
-  let P = subfield_members(L, S);
-  let laws = subfield_laws(L, S);
+  let P := subfield_members(L, S);
+  let laws := subfield_laws(L, S);
   exact (
     P, subfield_prop(L, P, laws), subfield_zero(L, P, laws), subfield_add(L, P, laws),
     (
@@ -108,10 +108,10 @@ def finite_basis_field_generators(
   GeneratedField(
     L, RootFieldGenerators(K, L, e, n, basis_columns(K, field_vector_space(K, L, e), n, basis)), y
   ) {
-  let V = field_vector_space(K, L, e);
-  let roots = basis_columns(K, V, n, basis);
-  let P = RootFieldGenerators(K, L, e, n, roots);
-  let S = generated_subfield(L, P);
+  let V := field_vector_space(K, L, e);
+  let roots := basis_columns(K, V, n, basis);
+  let P := RootFieldGenerators(K, L, e, n, roots);
+  let S := generated_subfield(L, P);
   have base : forall a : af_carrier(K), subfield_members(L, S, field_embedding_map(K, L, e, a)) {
     intro a;
     exact root_generated_contains_base(K, L, e, n, roots, a);

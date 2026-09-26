@@ -12,8 +12,8 @@ def complex_close_add(
   ComplexClose(
     F, addF, lt, complex_add(F, addF, x, u), complex_add(F, addF, y, v), addF(epsilon, delta)
   ) {
-  obtain (realXY, imagXY) = xy;
-  obtain (realUV, imagUV) = uv;
+  obtain (realXY, imagXY) := xy;
+  obtain (realUV, imagUV) := uv;
   exact (
     field_close_add(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, x),
@@ -40,15 +40,15 @@ def complex_uniform_curve_add(
     F, zero, one, addF, lt,
     (fun (t : FieldUnitInterval(F, zero, one, lt)) => complex_add(F, addF, f(t), g(t)))
   ) {
-  obtain (half, halfSum, halfPositive) = ordered_field_halving(
+  obtain (half, halfSum, halfPositive) := ordered_field_halving(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
   );
   intro epsilon positive;
-  let smaller = half(epsilon);
-  let positiveSmaller = halfPositive(epsilon, positive);
-  obtain (r, positiveR, closeF) = uniformF(smaller, positiveSmaller);
-  obtain (s, positiveS, closeG) = uniformG(smaller, positiveSmaller);
-  obtain (delta, positiveDelta, belowR, belowS) = field_common_positive_radius(
+  let smaller := half(epsilon);
+  let positiveSmaller := halfPositive(epsilon, positive);
+  obtain (r, positiveR, closeF) := uniformF(smaller, positiveSmaller);
+  obtain (s, positiveS, closeG) := uniformG(smaller, positiveSmaller);
+  obtain (delta, positiveDelta, belowR, belowS) := field_common_positive_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, r, s, positiveR,
     positiveS
   );
@@ -62,9 +62,9 @@ def complex_uniform_curve_add(
       F, addF, lt, complex_add(F, addF, f(a), g(a)), complex_add(F, addF, f(b), g(b)), epsilon
     ) {
     intro a b nearby;
-    let x = field_interval_coordinate(F, zero, one, lt)(a);
-    let y = field_interval_coordinate(F, zero, one, lt)(b);
-    let first =
+    let x := field_interval_coordinate(F, zero, one, lt)(a);
+    let y := field_interval_coordinate(F, zero, one, lt)(b);
+    let first :=
       closeF(
         a, b,
         field_close_enlarge(
@@ -72,7 +72,7 @@ def complex_uniform_curve_add(
           nearby
         )
       );
-    let second =
+    let second :=
       closeG(
         a, b,
         field_close_enlarge(

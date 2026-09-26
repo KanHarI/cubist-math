@@ -3,19 +3,19 @@ import zorn_chain_complete;
 
 // A chain presented as a predicate gives the indexed family used by the
 // previously checked independent-union construction. Its indices live in U1.
-def IndependentChainIndex(K : AlgebraicField, V : VectorSpace(K), C : IndependentSubset(K, V) -> U0) =
+def IndependentChainIndex(K : AlgebraicField, V : VectorSpace(K), C : IndependentSubset(K, V) -> U0) :=
   exists S : IndependentSubset(K, V), C(S);
 
 def independent_chain_member(
   K : AlgebraicField, V : VectorSpace(K), C : IndependentSubset(K, V) -> U0,
   i : IndependentChainIndex(K, V, C)
-) =
+) :=
   field_first(IndependentSubset(K, V), (fun (S : IndependentSubset(K, V)) => typed(U1, C(S))), i);
 
 def independent_chain_evidence(
   K : AlgebraicField, V : VectorSpace(K), C : IndependentSubset(K, V) -> U0,
   i : IndependentChainIndex(K, V, C)
-) =
+) :=
   field_second(IndependentSubset(K, V), (fun (S : IndependentSubset(K, V)) => typed(U1, C(S))), i);
 
 def independent_indexed_chain(
@@ -40,11 +40,11 @@ def independent_indexed_chain(
 def independent_chain_complete(K : AlgebraicField, V : VectorSpace(K)) :
   ChainComplete(IndependentSubset(K, V), IndependentIncluded(K, V)) {
   intro C chain;
-  let A = IndependentSubset(K, V);
-  let I = IndependentChainIndex(K, V, C);
-  let family = independent_chain_member(K, V, C);
-  let indexed = independent_indexed_chain(K, V, C, chain);
-  let union = IndependentUnion(K, V, I, family, indexed);
+  let A := IndependentSubset(K, V);
+  let I := IndependentChainIndex(K, V, C);
+  let family := independent_chain_member(K, V, C);
+  let indexed := independent_indexed_chain(K, V, C, chain);
+  let union := IndependentUnion(K, V, I, family, indexed);
   have upper : forall S : A, C(S) -> IndependentIncluded(K, V, S, union) {
     intro S cs;
     exact independent_union_upper(K, V, I, family, indexed, typed(I, (S, cs)));
@@ -66,12 +66,12 @@ def independent_chain_complete(K : AlgebraicField, V : VectorSpace(K)) :
 // The only classical assumptions are the existing Choice and LEM schemas;
 // maximality is proved through the chain-complete form of Zorn above.
 def vector_space_has_basis(K : AlgebraicField, V : VectorSpace(K)) : FieldExists(VectorBasis(K, V)) {
-  let A = IndependentSubset(K, V);
-  let le = IndependentIncluded(K, V);
-  let Maximal = exists S : A, OrderMaximal(A, le, S);
+  let A := IndependentSubset(K, V);
+  let le := IndependentIncluded(K, V);
+  let Maximal := exists S : A, OrderMaximal(A, le, S);
   have toBasis : Maximal -> VectorBasis(K, V) {
     intro witness;
-    obtain (S, maximal) = witness;
+    obtain (S, maximal) := witness;
     exact maximal_independent_basis(K, V, S, maximal);
   }
   exact field_exists_map(

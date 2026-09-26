@@ -3,7 +3,7 @@ import identity_systems;
 
 // Pointwise logical comparison of two class predicates is a proposition.
 // This is smaller than choosing a path between the predicates.
-def QuotientComparison(A : U1, relation : A -> A -> U0, q r : SetQuotient(A, relation)) =
+def QuotientComparison(A : U1, relation : A -> A -> U0, q r : SetQuotient(A, relation)) :=
   forall a : A,
   FieldIff(quotient_predicate(A, relation, q, a), quotient_predicate(A, relation, r, a));
 
@@ -12,10 +12,10 @@ def quotient_comparison_prop(
   q r : SetQuotient(A, relation)
 ) :
   FieldProp(QuotientComparison(A, relation, q, r)) {
-  let P = quotient_predicate(A, relation, q);
-  let Q = quotient_predicate(A, relation, r);
-  let propP = quotient_predicate_prop(A, relation, laws, q);
-  let propQ = quotient_predicate_prop(A, relation, laws, r);
+  let P := quotient_predicate(A, relation, q);
+  let Q := quotient_predicate(A, relation, r);
+  let propP := quotient_predicate_prop(A, relation, laws, q);
+  let propQ := quotient_predicate_prop(A, relation, laws, r);
   exact field_forall_prop(
     A, (fun (a : A) => typed(U1, FieldIff(P(a), Q(a)))),
     (
@@ -37,7 +37,7 @@ def quotient_path_comparison(
 ) :
   QuotientComparison(A, relation, q, r) {
   intro a;
-  let family = fun (s : SetQuotient(A, relation)) => quotient_predicate(A, relation, s, a);
+  let family := fun (s : SetQuotient(A, relation)) => quotient_predicate(A, relation, s, a);
   exact (
     (fun (x : family(q)) => along family by p from x),
     (fun (y : family(r)) => along family by sym(p) from y)
@@ -63,7 +63,7 @@ def quotient_comparison_path(
 // argument. No decidable equality, representative choice, or resizing is used.
 def quotient_is_set(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation)) :
   FieldSet(SetQuotient(A, relation)) {
-  let choose =
+  let choose :=
     fun (q r : SetQuotient(A, relation), p : q = r) => quotient_comparison_path(
       A, relation, laws, q, r, quotient_path_comparison(A, relation, q, r, p)
     );

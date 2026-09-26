@@ -7,12 +7,12 @@ import classical;
 // truncated; it does not expose a chosen side of the disjunction.
 def AdjoinVector(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x y : vector_carrier(K, V)
-) =
+) :=
   Truncate(U0, P(y) or (y = x));
 
 def adjoin_vector_prop(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x y : vector_carrier(K, V)
-) =
+) :=
   TruncateProp(U0, P(y) or (y = x));
 
 def adjoin_vector_old(
@@ -56,9 +56,9 @@ def independent_zero_omission(
   vanishes : linear_combination(K, V, succ(n), v, a) = vector_zero(K, V), j : Fin(succ(n))
 ) :
   a(j) = af_zero(af_carrier(K), af_operations(K)) {
-  let X = vector_carrier(K, V);
-  let omit = fin_omit(n, i);
-  let rest = linear_remainder(K, V, succ(n), v, a, i);
+  let X := vector_carrier(K, V);
+  let omit := fin_omit(n, i);
+  let rest := linear_remainder(K, V, succ(n), v, a, i);
   have headZero : vector_scale(K, V, a(i), v(i)) = vector_zero(K, V) := trans(
     cong((fun (b : af_carrier(K)) => vector_scale(K, V, b, v(i))), zero),
     vector_zero_scale(K, V, v(i))
@@ -70,8 +70,8 @@ def independent_zero_omission(
       trans(sym(linear_combination_split(K, V, succ(n), v, a, i)), vanishes)
     )
   );
-  let omittedV = fun (t : Fin(n)) => v(omit(t));
-  let omittedA = fun (t : Fin(n)) => a(omit(t));
+  let omittedV := fun (t : Fin(n)) => v(omit(t));
+  let omittedA := fun (t : Fin(n)) => a(omit(t));
   have omittedZero : forall t : Fin(n),
   omittedA(t) = af_zero(af_carrier(K), af_operations(K)) := independent(
     n, omittedV,
@@ -87,7 +87,7 @@ def independent_zero_omission(
       exact trans(cong(a, same), zero);
     }
     right witness => {
-      obtain (t, same) = witness;
+      obtain (t, same) := witness;
       exact trans(sym(cong(a, same)), omittedZero(t));
     }
   }
@@ -131,7 +131,7 @@ def adjoin_dependence_at_new(
       (fun (equal : v(t) = x) => different(distinct(t, i, trans(equal, sym(same))))), members(t)
     );
   }
-  let outsideHere =
+  let outsideHere :=
     fun (member : Span(K, V, P, v(i))) => outside(along Span(K, V, P) by same from member);
   exact independent_zero_omission(
     K, V, P, independent, n, v, distinct, a, i,
@@ -151,12 +151,12 @@ def adjoin_independent_step(
   j : Fin(succ(n))
 ) :
   a(j) = af_zero(af_carrier(K), af_operations(K)) {
-  let Occurs = exists i : Fin(succ(n)), v(i) = x;
+  let Occurs := exists i : Fin(succ(n)), v(i) = x;
   cases excluded_middle(Truncate(U0, Occurs), TruncateProp(U0, Occurs)) {
     left occurs => {
       have descend : Occurs -> (a(j) = af_zero(af_carrier(K), af_operations(K))) {
         intro witness;
-        obtain (i, same) = witness;
+        obtain (i, same) := witness;
         exact adjoin_dependence_at_new(
           K, V, P, prop, independent, x, outside, n, v, distinct, members, a, vanishes, i, same, j
         );
@@ -184,7 +184,7 @@ def adjoin_independent_finite(
   prop : (forall y : vector_carrier(K, V), Proposition(P(y))),
   independent : LinearlyIndependent(K, V, P), x : vector_carrier(K, V),
   outside : Span(K, V, P, x) -> Void, n : Nat
-) =
+) :=
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V),
     (forall i : Fin(k), forall j : Fin(k), v(i) = v(j) -> i = j)
@@ -216,7 +216,7 @@ def IndependentAdjoin(
   outside : Span(K, V, independent_members(K, V, S), x) -> Void
 ) :
   IndependentSubset(K, V) {
-  let P = independent_members(K, V, S);
+  let P := independent_members(K, V, S);
   exact (
     AdjoinVector(K, V, P, x), adjoin_vector_prop(K, V, P, x),
     adjoin_independent(K, V, P, independent_prop(K, V, S), independent_law(K, V, S), x, outside)
@@ -225,7 +225,7 @@ def IndependentAdjoin(
 
 // Maximality is an intermediate hypothesis here, not a replacement for the
 // required derivation of Zorn from Choice in the final existence theorem.
-def MaximalIndependent(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) =
+def MaximalIndependent(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) :=
   forall T : IndependentSubset(K, V), IndependentIncluded(K, V, S, T)
   -> IndependentIncluded(K, V, T, S);
 
@@ -235,11 +235,11 @@ def maximal_independent_spans(
 ) :
   Spans(K, V, independent_members(K, V, S)) {
   intro x;
-  let P = independent_members(K, V, S);
+  let P := independent_members(K, V, S);
   have contradiction : (Span(K, V, P, x) -> Void) -> Void {
     intro outside;
-    let T = IndependentAdjoin(K, V, S, x, outside);
-    let back = maximal(T, adjoin_vector_old(K, V, P, x));
+    let T := IndependentAdjoin(K, V, S, x, outside);
+    let back := maximal(T, adjoin_vector_old(K, V, P, x));
     exact outside(span_generator(K, V, P, x, back(x, adjoin_vector_new(K, V, P, x))));
   }
   exact double_negation(Span(K, V, P, x), span_prop(K, V, P, x), contradiction);

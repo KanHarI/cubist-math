@@ -11,7 +11,7 @@ def dyadic_piece(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) =
+) :=
   dyadic_samples_piece(
     F, zero, one, addF, negF, lt, half, depth, a, b,
     dyadic_interval_samples(
@@ -32,15 +32,15 @@ def dyadic_children_join(
   )
 ) :
   SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b) {
-  let midpoint =
+  let midpoint :=
     interval_midpoint_point(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
-  let leftOrdered =
+  let leftOrdered :=
     interval_midpoint_left_order(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
-  let rightOrdered =
+  let rightOrdered :=
     interval_midpoint_right_order(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
@@ -187,7 +187,7 @@ def dyadic_piece_admissible(
       )
     )
   ) {
-  let piece =
+  let piece :=
     dyadic_piece(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
       ordered

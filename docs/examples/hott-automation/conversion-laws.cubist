@@ -8,7 +8,7 @@ import truncation;
 // that conversion rejects.
 
 // Suspension recursion with each bridge supplied directly as a path.
-def bridge_rec(A : U0, B : U1, n : B, s : B, h : A -> (n = s), x : Suspension(A)) =
+def bridge_rec(A : U0, B : U1, n : B, s : B, h : A -> (n = s), x : Suspension(A)) :=
   pushout_induction(
     fun (p : Suspension(A)) => B, fun (u : Unit) => n, fun (u : Unit) => s, fun (a : A) => h(a), x
   );
@@ -23,7 +23,7 @@ def bridge_rec_beta(A : U0, B : U1, n : B, s : B, h : A -> (n = s), a : A) :
 def bridge_ind(
   A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)),
   m : (forall a : A, PathP(fun (i : Interval) => C(meridian(A, a) @ i), n, s)), x : Suspension(A)
-) =
+) :=
   pushout_induction(
     C, fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_left(Suspension(A), v)), n, u),
     fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_right(Suspension(A), v)), s, u), m, x
@@ -39,7 +39,7 @@ def bridge_ind_beta(
 }
 
 // The circle's cover through the bridge recursion.
-def bridge_code(x : S1) = bridge_rec(S0, U0, Z, Z, code_meridians, x);
+def bridge_code(x : S1) := bridge_rec(S0, U0, Z, Z, code_meridians, x);
 
 def bridge_code_meridian(a : S0) : cong(bridge_code, meridian(S0, a)) = code_meridians(a) {
   rfl;
@@ -124,7 +124,7 @@ def closed_constant_transport(x : Nat) : transport(fun (t : Nat) => Nat, x, x, r
 }
 
 // Truncation levels counted from propositions: 0 is IsProp and 1 is IsSet.
-def PropLevel(n : Nat) = induction n as k return (U0 -> U0) {
+def PropLevel(n : Nat) := induction n as k return (U0 -> U0) {
     zero => fun (A : U0) => IsProp(A);
     succ previous => fun (A : U0) => forall x : A, forall y : A, previous(x = y);
   };

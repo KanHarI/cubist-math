@@ -6,8 +6,8 @@ def subgroup_evaluation_maps(
   enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H))
 ) :
   Fin(n) -> FieldEmbedding(extension_field(K, E), extension_field(K, E)) {
-  let G = GaloisGroup(K, E);
-  let A = SubgroupCarrier(G, H);
+  let G := GaloisGroup(K, E);
+  let A := SubgroupCarrier(G, H);
   exact fun (i : Fin(n)) => galois_field_embedding(
     K, E, subgroup_value(G, H, forward(Fin(n), A, enumeration, i))
   );
@@ -21,9 +21,9 @@ def subgroup_evaluation_maps_distinct(
     extension_field(K, E), extension_field(K, E), n,
     subgroup_evaluation_maps(K, E, H, n, enumeration)
   ) {
-  let G = GaloisGroup(K, E);
-  let A = SubgroupCarrier(G, H);
-  let f = forward(Fin(n), A, enumeration);
+  let G := GaloisGroup(K, E);
+  let A := SubgroupCarrier(G, H);
+  let f := forward(Fin(n), A, enumeration);
   intro i j same;
   exact inverse_injective(
     Fin(n), A, f, backward(Fin(n), A, enumeration), left_inverse(Fin(n), A, enumeration), i, j,
@@ -55,11 +55,11 @@ def finite_subgroup_evaluation_basis(
       )
     )
   ) {
-  let G = GaloisGroup(K, E);
-  let A = SubgroupCarrier(G, H);
-  let F = extension_field(K, E);
-  let C = CoordinateSpace(F, n);
-  let Goal =
+  let G := GaloisGroup(K, E);
+  let A := SubgroupCarrier(G, H);
+  let F := extension_field(K, E);
+  let C := CoordinateSpace(F, n);
+  let Goal :=
     exists enumeration : Bijection(Fin(n), A), exists points : Fin(n) -> extension_carrier(K, E),
     FamilyBasis(
       F, C, n,
@@ -71,7 +71,7 @@ def finite_subgroup_evaluation_basis(
     );
   have withEnumeration : Bijection(Fin(n), A) -> Mere(Goal) {
     intro enumeration;
-    let maps = subgroup_evaluation_maps(K, E, H, n, enumeration);
+    let maps := subgroup_evaluation_maps(K, E, H, n, enumeration);
     have attach :
       (
         exists points : Fin(n) -> extension_carrier(K, E),
@@ -80,7 +80,7 @@ def finite_subgroup_evaluation_basis(
         )
       ) -> Goal {
       intro basis;
-      obtain (points, independent, onto) = basis;
+      obtain (points, independent, onto) := basis;
       exact (enumeration, points, independent, onto);
     }
     exact mere_map(

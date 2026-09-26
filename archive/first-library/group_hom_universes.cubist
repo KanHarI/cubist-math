@@ -4,14 +4,14 @@ import group_universes;
 // preservation are consequences, not additional fields of the record.
 def GroupHomLawsAt(
   U : Universe, G H : GroupAt(U), f : group_carrier_at(U, G) -> group_carrier_at(U, H)
-) =
+) :=
   forall x : group_carrier_at(U, G), forall y : group_carrier_at(U, G),
   f(group_multiply_at(U, G, x, y)) = group_multiply_at(U, H, f(x), f(y));
 
-def GroupHomAt(U : Universe, G H : GroupAt(U)) =
+def GroupHomAt(U : Universe, G H : GroupAt(U)) :=
   exists f : group_carrier_at(U, G) -> group_carrier_at(U, H), GroupHomLawsAt(U, G, H, f);
 
-def group_hom_map_at(U : Universe, G H : GroupAt(U), h : GroupHomAt(U, G, H)) =
+def group_hom_map_at(U : Universe, G H : GroupAt(U), h : GroupHomAt(U, G, H)) :=
   unpack h as (f, law) return (group_carrier_at(U, G) -> group_carrier_at(U, H)) {
     f;
   };
@@ -29,7 +29,7 @@ def group_hom_multiply_at(U : Universe, G H : GroupAt(U), h : GroupHomAt(U, G, H
 def group_is_set_at(U : Universe, G : GroupAt(U)) :
   forall x : group_carrier_at(U, G), forall y : group_carrier_at(U, G), forall p : x = y,
   forall q : x = y, p = q {
-  obtain (set, associative, left, right, inverses) = group_laws_at(U, G);
+  obtain (set, associative, left, right, inverses) := group_laws_at(U, G);
   exact set;
 }
 
@@ -57,15 +57,15 @@ def group_hom_ext_at(
   )
 ) :
   h = k {
-  let f = group_hom_map_at(U, G, H, h);
-  let g = group_hom_map_at(U, G, H, k);
+  let f := group_hom_map_at(U, G, H, h);
+  let g := group_hom_map_at(U, G, H, k);
   have p : f = g {
     ext x;
     exact same(x);
   }
-  let laws = GroupHomLawsAt(U, G, H);
-  let a = group_hom_multiply_at(U, G, H, h);
-  let b = group_hom_multiply_at(U, G, H, k);
+  let laws := GroupHomLawsAt(U, G, H);
+  let a := group_hom_multiply_at(U, G, H, h);
+  let b := group_hom_multiply_at(U, G, H, k);
   have square : PathP(fun (i : Interval) => laws(p @ i), a, b) {
     over laws along p by {
       exact group_hom_laws_prop_at(U, G, H, g, along laws by p from a, b);
@@ -86,8 +86,8 @@ def group_hom_compose_at(
   U : Universe, G H K : GroupAt(U), h : GroupHomAt(U, G, H), k : GroupHomAt(U, H, K)
 ) :
   GroupHomAt(U, G, K) {
-  let f = group_hom_map_at(U, G, H, h);
-  let g = group_hom_map_at(U, H, K, k);
+  let f := group_hom_map_at(U, G, H, h);
+  let g := group_hom_map_at(U, H, K, k);
   exact (
     (fun (x : group_carrier_at(U, G)) => g(f(x))),
     (

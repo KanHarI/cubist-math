@@ -5,7 +5,7 @@ import complex_contour_bounds;
 def complex_parameter_tag_error_sum(
   C F : U1, zero : F, addF mulF : F -> F -> F, negF : F -> F, curve values : C -> Complex(F),
   n : Nat
-) =
+) :=
   parameter_contour_tag_error_sum(
     C, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
     complex_neg(F, negF), curve, values, n
@@ -15,7 +15,7 @@ def complex_parameter_tag_error_sum(
 def ComplexParameterTagBounds(
   C F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, values : C -> Complex(F),
   delta : F, n : Nat
-) =
+) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C, oldTags newTags : Unit) => Unit;
     succ previous => fun (
@@ -37,7 +37,7 @@ def ComplexParameterTagBounds(
 def ComplexParameterIncrementBounds(
   C F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
   realWeight imagWeight : C -> C -> C -> F, n : Nat
-) =
+) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C, oldTags : Unit) => Unit;
     succ previous => fun (vertices : SampleVertices(C, succ(k)), oldTags : SampleTags(C, succ(k))) => ComplexRectangleBound(
@@ -316,23 +316,23 @@ def complex_parameter_tag_error_length_bound(
       C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, newTags
     ), mulF(delta, length)
   ) {
-  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) = arithmetic;
-  let totalWeight =
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  let totalWeight :=
     sample_sum(
       C, F, zero, addF, (fun (a b t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n,
       vertices, oldTags
     );
-  let bound =
+  let bound :=
     complex_parameter_tag_error_variation_bound(
       C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight,
       imagWeight, delta, n, vertices, oldTags, newTags, errors, increments
     );
-  let rightScaled = weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
-  let leftScaled =
+  let rightScaled := weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
+  let leftScaled :=
     along((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta)))) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, totalWeight, delta
     ) from rightScaled;
-  let grows =
+  let grows :=
     along FieldLe(F, lt, mulF(delta, totalWeight)) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, length, delta
     ) from leftScaled;

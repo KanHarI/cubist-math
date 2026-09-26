@@ -3,7 +3,7 @@ import separable_divisors;
 
 // The embedding into the target varies: all conjugate coefficient embeddings
 // are needed when counting the branches of an extension tower.
-def SeparableElementsIn(K L : AlgebraicField, e : FieldEmbedding(K, L), T : AlgebraicField) =
+def SeparableElementsIn(K L : AlgebraicField, e : FieldEmbedding(K, L), T : AlgebraicField) :=
   forall j : FieldEmbedding(K, T), forall x : af_carrier(L),
   forall algebraic : AlgebraicElement(K, L, e, x),
   SeparableIn(K, T, j, minimal_polynomial(K, L, e, x, algebraic));
@@ -14,10 +14,10 @@ def separable_extension_in_closed(
 ) :
   SeparableElementsIn(K, L, e, T) {
   intro j x algebraic;
-  obtain (chosen, sep) = separable(x);
-  let W = (exists p : Polynomial(K), PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
-  let same = cong(minimal_polynomial(K, L, e, x), mere_is_prop(W, chosen, algebraic));
-  let p = minimal_polynomial(K, L, e, x, algebraic);
+  obtain (chosen, sep) := separable(x);
+  let W := (exists p : Polynomial(K), PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
+  let same := cong(minimal_polynomial(K, L, e, x), mere_is_prop(W, chosen, algebraic));
+  let p := minimal_polynomial(K, L, e, x, algebraic);
   exact separable_polynomial_splits_in_closed(
     K, p, along SeparablePolynomial(K) by same from sep, T, closed, j
   );
@@ -28,13 +28,13 @@ def polynomial_map_divides(
   divides : PolynomialDivides(K, q, p)
 ) :
   PolynomialDivides(L, polynomial_map(K, L, e, q), polynomial_map(K, L, e, p)) {
-  let Q = polynomial_map(K, L, e, q);
-  let P = polynomial_map(K, L, e, p);
+  let Q := polynomial_map(K, L, e, q);
+  let P := polynomial_map(K, L, e, p);
   have send :
     (exists w : Polynomial(K), p = polynomial_mul(K, q, w))
     -> (exists w : Polynomial(L), P = polynomial_mul(L, Q, w)) {
     intro witness;
-    obtain (w, eq) = witness;
+    obtain (w, eq) := witness;
     exact (
       polynomial_map(K, L, e, w),
       trans(cong(polynomial_map(K, L, e), eq), polynomial_map_mul(K, L, e, q, w))
@@ -57,34 +57,34 @@ def separable_elements_enlarge_base(
 ) :
   SeparableElementsIn(R, L, h, T) {
   intro j x algebraicR;
-  let alg = algebraicK(x);
-  let p = minimal_polynomial(K, L, e, x, alg);
-  let q = minimal_polynomial(R, L, h, x, algebraicR);
-  let mapped = polynomial_map(K, R, i, p);
-  obtain (nzP, monicP, rootP, dividesP) = minimal_polynomial_spec(K, L, e, x, alg);
-  obtain (nzQ, monicQ, rootQ, dividesQ) = minimal_polynomial_spec(R, L, h, x, algebraicR);
-  let rootMapped =
+  let alg := algebraicK(x);
+  let p := minimal_polynomial(K, L, e, x, alg);
+  let q := minimal_polynomial(R, L, h, x, algebraicR);
+  let mapped := polynomial_map(K, R, i, p);
+  obtain (nzP, monicP, rootP, dividesP) := minimal_polynomial_spec(K, L, e, x, alg);
+  obtain (nzQ, monicQ, rootQ, dividesQ) := minimal_polynomial_spec(R, L, h, x, algebraicR);
+  let rootMapped :=
     trans(
       polynomial_eval_base_change(K, R, L, i, h, p, x),
       trans(
         cong((fun (d : FieldEmbedding(K, L)) => polynomial_eval(K, L, d, p, x)), triangle), rootP
       )
     );
-  let divides = polynomial_map_divides(R, T, j, q, mapped, dividesQ(mapped, rootMapped));
-  let c = field_embedding_compose(K, R, T, i, j);
-  let P = polynomial_map(R, T, j, mapped);
-  let Q = polynomial_map(R, T, j, q);
-  let n = polynomial_degree(K, p);
-  let same = polynomial_map_composition(K, R, T, i, j, p);
-  let splitP =
+  let divides := polynomial_map_divides(R, T, j, q, mapped, dividesQ(mapped, rootMapped));
+  let c := field_embedding_compose(K, R, T, i, j);
+  let P := polynomial_map(R, T, j, mapped);
+  let Q := polynomial_map(R, T, j, q);
+  let n := polynomial_degree(K, p);
+  let same := polynomial_map_composition(K, R, T, i, j, p);
+  let splitP :=
     along((fun (s : Polynomial(T)) => Mere(DistinctPolynomialSplitting(T, s, n)))) by sym(same) from separable(
       c, x, alg
     );
-  let nonzeroP = polynomial_map_nonzero(R, T, j, mapped, polynomial_map_nonzero(K, R, i, p, nzP));
-  let nonzeroQ = polynomial_map_nonzero(R, T, j, q, nzQ);
+  let nonzeroP := polynomial_map_nonzero(R, T, j, mapped, polynomial_map_nonzero(K, R, i, p, nzP));
+  let nonzeroQ := polynomial_map_nonzero(R, T, j, q, nzQ);
   have descend : DistinctPolynomialSplitting(T, P, n) -> SeparableIn(R, T, j, q) {
     intro splitting;
-    let result =
+    let result :=
       distinct_splitting_divisor(T, closed, n, P, nonzeroP, splitting, Q, nonzeroQ, divides);
     exact along((fun (m : Nat) => Mere(DistinctPolynomialSplitting(T, Q, m)))) by cong(
       natural_predecessor, polynomial_map_cutoff(R, T, j, q)

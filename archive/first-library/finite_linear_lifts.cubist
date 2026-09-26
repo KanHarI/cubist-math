@@ -6,7 +6,7 @@ import finite_basis_search;
 def FiniteLinearLift(
   K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
   h : LinearMap(K, CoordinateSpace(K, m), W)
-) =
+) :=
   exists lift : LinearMap(K, CoordinateSpace(K, m), V), forall v : Fin(m) -> af_carrier(K),
   linear_map(K, V, W, f, linear_map(K, CoordinateSpace(K, m), V, lift, v)) = linear_map(
     K, CoordinateSpace(K, m), W, h, v
@@ -27,11 +27,11 @@ def linear_first_tail(
       coordinate_insert(K, m, finite_tail(af_carrier(K), m, v))
     )
   ) {
-  let A = af_carrier(K);
-  let C = CoordinateSpace(K, succ(m));
-  let H = linear_map(K, C, W, h);
-  let a = finite_head(A, m, v);
-  let t = coordinate_insert(K, m, finite_tail(A, m, v));
+  let A := af_carrier(K);
+  let C := CoordinateSpace(K, succ(m));
+  let H := linear_map(K, C, W, h);
+  let a := finite_head(A, m, v);
+  let t := coordinate_insert(K, m, finite_tail(A, m, v));
   exact trans(
     sym(cong(H, coordinate_decompose(K, m, v))),
     trans(
@@ -58,17 +58,17 @@ def finite_linear_lift_assemble(
   )
 ) :
   FiniteLinearLift(K, V, W, f, succ(m), h) {
-  obtain (l, commute) = rest;
-  let A = af_carrier(K);
-  let F = linear_map(K, V, W, f);
-  let L = linear_map(K, CoordinateSpace(K, m), V, l);
-  let H = linear_map(K, CoordinateSpace(K, succ(m)), W, h);
+  obtain (l, commute) := rest;
+  let A := af_carrier(K);
+  let F := linear_map(K, V, W, f);
+  let L := linear_map(K, CoordinateSpace(K, m), V, l);
+  let H := linear_map(K, CoordinateSpace(K, succ(m)), W, h);
   have square :
     forall v : Fin(succ(m)) -> A,
     F(linear_map(K, CoordinateSpace(K, succ(m)), V, adjoin_linear(K, V, m, l, x), v)) = H(v) {
     intro v;
-    let a = finite_head(A, m, v);
-    let t = finite_tail(A, m, v);
+    let a := finite_head(A, m, v);
+    let t := finite_tail(A, m, v);
     exact trans(
       linear_add(K, V, W, f, vector_scale(K, V, a, x), L(t)),
       trans(
@@ -97,9 +97,9 @@ def finite_linear_lift_zero(
   h : LinearMap(K, CoordinateSpace(K, 0), W)
 ) :
   FiniteLinearLift(K, V, W, f, 0, h) {
-  let A = af_carrier(K);
-  let C = CoordinateSpace(K, 0);
-  let H = linear_map(K, C, W, h);
+  let A := af_carrier(K);
+  let C := CoordinateSpace(K, 0);
+  let H := linear_map(K, C, W, h);
   have square : forall v : Fin(0) -> A, linear_map(K, V, W, f, vector_zero(K, V)) = H(v) {
     intro v;
     exact trans(
@@ -127,18 +127,18 @@ def finite_linear_lift_step(
   ), h : LinearMap(K, CoordinateSpace(K, succ(m)), W)
 ) :
   Mere(FiniteLinearLift(K, V, W, f, succ(m), h)) {
-  let X = vector_carrier(K, V);
-  let Y = vector_carrier(K, W);
-  let F = linear_map(K, V, W, f);
-  let first = linear_map(K, CoordinateSpace(K, succ(m)), W, h, coordinate_first(K, m));
-  let tailMap =
+  let X := vector_carrier(K, V);
+  let Y := vector_carrier(K, W);
+  let F := linear_map(K, V, W, f);
+  let first := linear_map(K, CoordinateSpace(K, succ(m)), W, h, coordinate_first(K, m));
+  let tailMap :=
     linear_compose(
       K, CoordinateSpace(K, m), CoordinateSpace(K, succ(m)), W, coordinate_insert_linear(K, m), h
     );
-  let Result = FiniteLinearLift(K, V, W, f, succ(m), h);
+  let Result := FiniteLinearLift(K, V, W, f, succ(m), h);
   have withFirst : Fiber(X, Y, F, first) -> Mere(Result) {
     intro witness;
-    obtain (x, same) = witness;
+    obtain (x, same) := witness;
     exact mere_map(
       FiniteLinearLift(K, V, W, f, m, tailMap), Result,
       finite_linear_lift_assemble(K, V, W, f, m, h, x, same), previous(tailMap)
@@ -152,7 +152,7 @@ def finite_linear_lift_step(
 def finite_linear_lift(
   K : AlgebraicField, V W : VectorSpace(K), f : LinearMap(K, V, W),
   onto : LinearSurjective(K, V, W, f), m : Nat
-) =
+) :=
   induction m as k return (
     forall h : LinearMap(K, CoordinateSpace(K, k), W), Mere(FiniteLinearLift(K, V, W, f, k, h))
   ) {
@@ -168,12 +168,12 @@ def coordinate_surjection_bound(
 ) :
   NoIndependent(K, V, succ(n)) {
   intro h independent;
-  let N = CoordinateSpace(K, n);
-  let C = CoordinateSpace(K, succ(n));
-  let F = linear_map(K, N, V, f);
+  let N := CoordinateSpace(K, n);
+  let C := CoordinateSpace(K, succ(n));
+  let F := linear_map(K, N, V, f);
   have noLift : FiniteLinearLift(K, N, V, f, succ(n), h) -> Void {
     intro witness;
-    obtain (l, square) = witness;
+    obtain (l, square) := witness;
     have injective : CoordinateInjection(K, succ(n), n, l) {
       intro x y same;
       exact independent(x, y, trans(sym(square(x)), trans(cong(F, same), square(y))));

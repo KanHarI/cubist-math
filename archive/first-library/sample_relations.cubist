@@ -1,7 +1,7 @@
 import sample_magnitude;
 
 // Adjacent vertices satisfy a relation; no condition is imposed on tags.
-def SampleAdjacent(C : U1, related : C -> C -> U0, n : Nat) =
+def SampleAdjacent(C : U1, related : C -> C -> U0, n : Nat) :=
   induction n as k return (SampleVertices(C, k) -> U0) {
     zero => fun (vertices : C) => Unit;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => related(

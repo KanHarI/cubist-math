@@ -6,10 +6,10 @@ def span_add_witnesses(
   x y : vector_carrier(K, V), hx : SpanWitness(K, V, P, x), hy : SpanWitness(K, V, P, y)
 ) :
   Span(K, V, P, vector_add(K, V, x, y)) {
-  obtain (n, v, a, membersV, sumX) = hx;
-  obtain (m, w, b, membersW, sumY) = hy;
-  let vectors = fin_append(vector_carrier(K, V), n, m, v, w);
-  let coefficients = fin_append(af_carrier(K), n, m, a, b);
+  obtain (n, v, a, membersV, sumX) := hx;
+  obtain (m, w, b, membersW, sumY) := hy;
+  let vectors := fin_append(vector_carrier(K, V), n, m, v, w);
+  let coefficients := fin_append(af_carrier(K), n, m, a, b);
   have sum : linear_combination(K, V, add_count(n, m), vectors, coefficients) = vector_add(
     K, V, x, y
   ) := trans(
@@ -55,7 +55,7 @@ def span_scale_witness(
   x : vector_carrier(K, V), witness : SpanWitness(K, V, P, x)
 ) :
   Span(K, V, P, vector_scale(K, V, a, x)) {
-  obtain (n, vectors, coefficients, members, sum) = witness;
+  obtain (n, vectors, coefficients, members, sum) := witness;
   exact TruncateIntro(
     U0, SpanWitness(K, V, P, vector_scale(K, V, a, x)),
     typed(
@@ -85,7 +85,7 @@ def span_scale(
 
 // The linear span is itself a subspace; together with span_least this is
 // its universal property, with no choice of coefficients or representatives.
-def SpanSubspace(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) =
+def SpanSubspace(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :=
   typed(
     Subspace(K, V),
     (Span(K, V, P), span_prop(K, V, P), span_zero(K, V, P), span_add(K, V, P), span_scale(K, V, P))

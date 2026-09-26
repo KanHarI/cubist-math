@@ -203,7 +203,7 @@
           — syntax, worked examples, paths, universes, and axiom signatures.
         </p>
         <p>
-          <code>def name(params) = term;</code> defines a term with an inferred
+          <code>def name(params) := term;</code> defines a term with an inferred
           type. <code>def name(params) : T { … }</code> checks a proof of
           <code>T</code>. Use <code>def</code> for both constructions and proofs.
           Parameters have explicit types; consecutive ones may share a type, as in
@@ -253,7 +253,7 @@
           the goal, including when the goal is a named definition.
         </p>
         <pre data-check="accept">import sets;
-def use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
+def use_assumption : forall A : U0, IsSet(A) -&gt; IsSet(A) {
   intro A;       // A : U0
   intro setA;    // setA : IsSet(A)
   exact setA;
@@ -267,7 +267,7 @@ def use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
         <p>
           <code>let</code> names a term · <code>obtain</code> unpacks an
           existential or pair · <code>have h : T { … }</code> proves a local claim ·
-          <code>have h = term;</code> names an inferred proof ·
+          <code>have h := term;</code> names an inferred proof ·
           <code>have h : T := term;</code> checks and names one ·
           <code>cases</code> splits an <code>or</code> ·
           <code>exact</code> supplies the result ·
@@ -299,11 +299,11 @@ def use_assumption : forall A : U0, IsSet(A) -> IsSet(A) {
           <code>A + B</code> in kernel notation. Mere existence requires
           truncation; <code>exists</code> does not truncate automatically.
         </p>
-        <pre data-check="accept">def identity(A : U0, x : A) = x;
-def pair = typed(Nat and Nat, (0, 1));
-def either = typed(Unit or Nat, left(tt));
+        <pre data-check="accept">def identity(A : U0, x : A) := x;
+def pair := typed(Nat and Nat, (0, 1));
+def either := typed(Unit or Nat, left(tt));
 def pair_first : Nat {
-  obtain (a, b) = pair;
+  obtain (a, b) := pair;
   have result : Nat { exact a; }
   exact result;
 }</pre>
@@ -313,7 +313,7 @@ def pair_first : Nat {
           take several arguments, and <code>fun x => body</code> reads the domain from
           an expected function type. <code>f(a, b)</code> means <code>f(a)(b)</code>.
           <code>(a, b, c, d)</code> expands to <code>(a, (b, (c, d)))</code>;
-          <code>obtain (a, b, c, d) = value;</code> unpacks that same shape.
+          <code>obtain (a, b, c, d) := value;</code> unpacks that same shape.
           Hover over tuple parentheses to see the macro expansion.
           <code>typed(T, term)</code> supplies an expected type for pairs and
           injections. <code>exact</code>, <code>cases</code>, <code>rfl</code>,
@@ -376,7 +376,7 @@ def rewrite_then_finish(n m : Nat, h : n = m) : n + 0 = m {
           the type of <code>h</code>, then uses <code>h</code>. On a goal that is a type,
           such as <code>P(n + 0)</code>, <code>simp</code> rewrites the type and
           transports the proof back. Top-level <code>simp_rule lemma priority 10;</code>
-          registers a default rule and <code>simp_set units = [lemma];</code> names a set;
+          registers a default rule and <code>simp_set units := [lemma];</code> names a set;
           both carry through imports. Then <code>simp;</code> uses the defaults,
           <code>simp [units];</code> adds to them, <code>simp without [lemma];</code>
           drops one, <code>simp [units] at h as h2;</code> adds a simplified copy of

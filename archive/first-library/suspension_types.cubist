@@ -1,18 +1,18 @@
 // Suspension glues two points along one path for each element of A.
 // All operations below are ordinary definitions over the pushout primitive.
-def Suspension(A : U0) = Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);
+def Suspension(A : U0) := Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);
 
-def north(A : U0) = push_left(Suspension(A), tt);
+def north(A : U0) := push_left(Suspension(A), tt);
 
-def south(A : U0) = push_right(Suspension(A), tt);
+def south(A : U0) := push_right(Suspension(A), tt);
 
-def meridian(A : U0, a : A) = push_path(Suspension(A), a);
+def meridian(A : U0, a : A) := push_path(Suspension(A), a);
 
 // Convert transport coherence to the dependent path required by pushout induction.
 def suspension_induction(
   A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)), coherence : forall a : A,
   (along C by meridian(A, a) from n) = s, point : Suspension(A)
-) =
+) :=
   pushout_induction(
     C, fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_left(Suspension(A), v)), n, u),
     fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_right(Suspension(A), v)), s, u),

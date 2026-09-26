@@ -5,7 +5,7 @@ import complex_magnitude;
 // pair: finite sums can combine these witnesses without any choice principle.
 def ComplexPerturbation(
   F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, old fresh : Complex(F), radius : F
-) =
+) :=
   exists error : Complex(F), (fresh = complex_add(F, addF, old, error))
   and ComplexBoxBound(F, negF, lt, error, radius);
 
@@ -15,7 +15,7 @@ def complex_perturbation_zero(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt)
 ) :
   ComplexPerturbation(F, addF, negF, lt, complex_zero(F, zero), complex_zero(F, zero), zero) {
-  let bounded = field_magnitude_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic);
+  let bounded := field_magnitude_zero(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic);
   exact (
     complex_zero(F, zero),
     sym(complex_add_zero(F, zero, one, addF, mulF, negF, ring, complex_zero(F, zero))), bounded,
@@ -35,13 +35,13 @@ def complex_perturbation_add(
     F, addF, negF, lt, complex_add(F, addF, oldLeft, oldRight),
     complex_add(F, addF, freshLeft, freshRight), addF(r, s)
   ) {
-  obtain (e, leftPath, leftBound) = left;
-  obtain (f, rightPath, rightBound) = right;
-  let addC = complex_add(F, addF);
-  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-  let rewriteLeft = cong((fun (v : Complex(F)) => addC(v, freshRight)), leftPath);
-  let rewriteRight = cong(addC(addC(oldLeft, e)), rightPath);
-  let shuffle =
+  obtain (e, leftPath, leftBound) := left;
+  obtain (f, rightPath, rightBound) := right;
+  let addC := complex_add(F, addF);
+  let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let rewriteLeft := cong((fun (v : Complex(F)) => addC(v, freshRight)), leftPath);
+  let rewriteRight := cong(addC(addC(oldLeft, e)), rightPath);
+  let shuffle :=
     ring_add_shuffle(
       Complex(F), complex_zero(F, zero), complex_one(F, zero, one), addC,
       complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, oldLeft, e, oldRight, f

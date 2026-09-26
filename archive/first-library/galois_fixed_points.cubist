@@ -4,20 +4,20 @@ import order_maps;
 // Elements fixed by every automorphism belonging to H.
 def GaloisFixed(
   K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E)
-) =
+) :=
   forall e : Galois(K, E), H(e) -> (extension_iso_forward(K, E, E, e, x) = x);
 
 // Automorphisms fixing every element belonging to P, pointwise.
 def GaloisFixing(
   K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, e : Galois(K, E)
-) =
+) :=
   forall x : extension_carrier(K, E), P(x) -> (extension_iso_forward(K, E, E, e, x) = x);
 
 // H fixes P exactly when every element of P is fixed by H. This is the
 // order-reversing Galois connection, before any finiteness or Galois hypothesis.
 def GaloisConnection(
   K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, P : extension_carrier(K, E) -> U0
-) =
+) :=
   (
     PredicateIncluded(Galois(K, E), H, GaloisFixing(K, E, P))
     -> PredicateIncluded(extension_carrier(K, E), P, GaloisFixed(K, E, H))
@@ -120,7 +120,7 @@ def galois_fixing_closure_idempotent(
 // The same invariant stated using transport around the corresponding HoTT loops.
 def GaloisLoopInvariant(
   K : AlgebraicField, E : FieldExt(K), H : Galois(K, E) -> U0, x : extension_carrier(K, E)
-) =
+) :=
   forall e : Galois(K, E), H(e)
   -> ((along extension_carrier(K) by extension_iso_path(K, E, E, e) from x) = x);
 

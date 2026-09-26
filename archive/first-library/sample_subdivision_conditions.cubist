@@ -5,7 +5,7 @@ import sample_subdivisions;
 // selection of witnesses is built into this finite family.
 def SubdivisionTagged(
   C : U1, condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), n : Nat
-) =
+) :=
   induction n as k return (
     forall vertices : SampleVertices(C, k), SampleTags(C, k) -> SampleSubdivisions(C, k, vertices)
     -> U1
@@ -52,16 +52,16 @@ def subdivision_tagged_map_step(
   valid : SubdivisionTagged(C, condition, succ(n), vertices, tags, pieces)
 ) :
   SubdivisionTagged(C, other, succ(n), vertices, tags, pieces) {
-  let a = field_fst(C, SampleVertices(C, n), vertices);
-  let tail = field_snd(C, SampleVertices(C, n), vertices);
-  let b = sample_first(C, n, tail);
-  let tag = field_fst(C, SampleTags(C, n), tags);
-  let tailTags = field_snd(C, SampleTags(C, n), tags);
-  let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let a := field_fst(C, SampleVertices(C, n), vertices);
+  let tail := field_snd(C, SampleVertices(C, n), vertices);
+  let b := sample_first(C, n, tail);
+  let tag := field_fst(C, SampleTags(C, n), tags);
+  let tailTags := field_snd(C, SampleTags(C, n), tags);
+  let headPiece := field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let tailPieces := field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
   have data : condition(a, b, tag, headPiece)
   and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) := valid;
-  obtain (headValid, tailValid) = data;
+  obtain (headValid, tailValid) := data;
   exact typed(
     (other(a, b, tag, headPiece) and SubdivisionTagged(C, other, n, tail, tailTags, tailPieces)),
     (mapping(a, b, tag, headPiece, headValid), previous(tail, tailTags, tailPieces, tailValid))

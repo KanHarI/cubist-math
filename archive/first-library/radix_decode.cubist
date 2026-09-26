@@ -3,7 +3,7 @@ import radix_induction;
 import radix_digit_laws;
 import primes;
 
-opaque def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) =
+opaque def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) :=
   radix_positive_rec(
     extra, Nat,
     (fun (first : RadixDigit(succ(extra))) => succ(radix_digit_value(succ(extra), first))),
@@ -14,7 +14,7 @@ opaque def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) =
     ), p
   );
 
-opaque def radix_to_nat(extra : Nat, n : RadixNat(extra)) = match n return Nat {
+opaque def radix_to_nat(extra : Nat, n : RadixNat(extra)) := match n return Nat {
     left zero => 0;
     right p => radix_positive_to_nat(extra, p);
   };
@@ -41,7 +41,7 @@ def radix_decode_shift_zero(extra : Nat, p : RadixPositive(extra)) :
   radix_positive_to_nat(extra, radix_append(extra, radix_digit_zero(succ(extra)), p)) = succ(
     succ(extra)
   ) * radix_positive_to_nat(extra, p) {
-  let product = succ(succ(extra)) * radix_positive_to_nat(extra, p);
+  let product := succ(succ(extra)) * radix_positive_to_nat(extra, p);
   exact trans(
     radix_decode_append(extra, radix_digit_zero(succ(extra)), p),
     trans(cong(add(product), radix_digit_zero_value(succ(extra))), nat_add_zero(product))
@@ -52,7 +52,7 @@ def radix_decode_shift_one(extra : Nat) :
   radix_positive_to_nat(extra, radix_append(extra, radix_digit_zero(succ(extra)), radix_one(extra))) = succ(
     succ(extra)
   ) {
-  let base = succ(succ(extra));
+  let base := succ(succ(extra));
   exact trans(
     radix_decode_shift_zero(extra, radix_one(extra)),
     trans(
@@ -61,7 +61,7 @@ def radix_decode_shift_one(extra : Nat) :
   );
 }
 
-def RadixLeadingIncrement(extra : Nat, result : RadixDigit(succ(extra)) or Unit) =
+def RadixLeadingIncrement(extra : Nat, result : RadixDigit(succ(extra)) or Unit) :=
   match result return RadixPositive(extra) {
     left next => radix_leading(extra, next);
     right carry => radix_append(extra, radix_digit_zero(succ(extra)), radix_one(extra));
@@ -95,7 +95,7 @@ def radix_decode_leading_increment(
 
 def RadixAppendIncrement(
   extra : Nat, p : RadixPositive(extra), result : RadixDigit(succ(succ(extra))) or Unit
-) =
+) :=
   match result return RadixPositive(extra) {
     left next => radix_append(extra, next, p);
     right carry => radix_append(extra, radix_digit_zero(succ(extra)), radix_positive_succ(extra, p));
@@ -113,9 +113,9 @@ def radix_decode_append_increment(
       radix_positive_to_nat(extra, radix_append(extra, d, p))
     )
   ) {
-  let base = succ(succ(extra));
-  let value = radix_positive_to_nat(extra, p);
-  let digit = radix_digit_value(base, d);
+  let base := succ(succ(extra));
+  let value := radix_positive_to_nat(extra, p);
+  let digit := radix_digit_value(base, d);
   exact match result as r return (
     RadixDigitStepLaw(base, d, r)
     -> (

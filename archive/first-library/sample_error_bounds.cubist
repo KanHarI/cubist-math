@@ -6,7 +6,7 @@ import field_closeness;
 
 def SampleCloseBounds(
   C F : U1, addF : F -> F -> F, lt : F -> F -> U0, edge other radius : C -> C -> C -> F, n : Nat
-) =
+) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C, tags : Unit) => Unit;
     succ previous => fun (vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k))) => FieldClose(

@@ -4,7 +4,7 @@ import polynomial_root_evaluation;
 def residue_evaluate(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), r : PolynomialResidue(K, M)
-) =
+) :=
   polynomial_eval(K, L, e, residue_polynomial(K, M, r), x);
 
 def residue_evaluate_one(
@@ -48,8 +48,8 @@ def residue_evaluate_mul(
   residue_evaluate(K, M, L, e, x, residue_mul(K, M, r, s)) = field_mul(
     L, residue_evaluate(K, M, L, e, x, r), residue_evaluate(K, M, L, e, x, s)
   ) {
-  let p = residue_polynomial(K, M, r);
-  let q = residue_polynomial(K, M, s);
+  let p := residue_polynomial(K, M, r);
+  let q := residue_polynomial(K, M, s);
   exact with unfolding [] {
     trans(
       polynomial_eval_remainder(K, M, L, e, x, root, polynomial_mul(K, p, q)),
@@ -61,7 +61,7 @@ def residue_evaluate_mul(
 opaque def residue_evaluate_preserves(
   K : AlgebraicField, M : PolynomialModulus(K), L : AlgebraicField, e : FieldEmbedding(K, L),
   x : af_carrier(L), root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x)
-) =
+) :=
   field_ops_map_from_laws(
     PolynomialResidue(K, M), residue_zero(K, M), residue_one(K, M), residue_neg(K, M),
     residue_add(K, M), residue_mul(K, M), af_carrier(L), af_operations(L),
@@ -76,7 +76,7 @@ def adjoin_root_embedding(
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L), x : af_carrier(L),
   root : PolynomialRoot(K, L, e, modulus_polynomial(K, M), x)
-) =
+) :=
   field_embedding_from_hom(
     PolynomialResidueField(K, M, irreducible), L, residue_evaluate(K, M, L, e, x),
     residue_evaluate_preserves(K, M, L, e, x, root)

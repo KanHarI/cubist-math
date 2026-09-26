@@ -5,7 +5,7 @@ import galois_orders;
 
 // Fixedness can be checked on the two representatives of the automorphism
 // type. The classification path transports the result to any automorphism.
-def F4FixedOnRepresentatives(H : F4Automorphism -> U0, x : F4Carrier) =
+def F4FixedOnRepresentatives(H : F4Automorphism -> U0, x : F4Carrier) :=
   forall b : F2Carrier, H(f4_symmetry(b)) -> (f4_auto_apply(f4_symmetry(b), x) = x);
 
 def f4_fixed_from_representatives(
@@ -22,7 +22,7 @@ def f4_fixed_decision(
   H : F4Automorphism -> U0, decide : (forall e : F4Automorphism, Decidable(H(e))), x : F4Carrier
 ) :
   Decidable(GaloisFixed(F2, F4OverF2, H, x)) {
-  let tested =
+  let tested :=
     finite_forall_decidable(
       2, (fun (b : F2Carrier) => H(f4_symmetry(b)) -> (f4_auto_apply(f4_symmetry(b), x) = x)),
       (
@@ -57,7 +57,7 @@ def f4_fixing_decision(
 // The extra component is an explicit membership algorithm.
 def f4_decidable_fixed(D : DecidableSubgroup(F4GaloisGroup)) :
   DecidableIntermediateField(F2, F4OverF2) {
-  let H = decidable_subgroup(F4GaloisGroup, D);
+  let H := decidable_subgroup(F4GaloisGroup, D);
   exact (
     fixed_intermediate_field(F2, F4OverF2, H),
     f4_fixed_decision(
@@ -68,7 +68,7 @@ def f4_decidable_fixed(D : DecidableSubgroup(F4GaloisGroup)) :
 
 def f4_decidable_fixing(D : DecidableIntermediateField(F2, F4OverF2)) :
   DecidableSubgroup(F4GaloisGroup) {
-  let M = decidable_intermediate(F2, F4OverF2, D);
+  let M := decidable_intermediate(F2, F4OverF2, D);
   exact (
     fixing_galois_subgroup(F2, F4OverF2, M),
     f4_fixing_decision(
@@ -108,12 +108,12 @@ def f4_galois_correspondence :
   );
 }
 
-def F4DecidableSubgroupIncluded(D E : DecidableSubgroup(F4GaloisGroup)) =
+def F4DecidableSubgroupIncluded(D E : DecidableSubgroup(F4GaloisGroup)) :=
   SubgroupIncluded(
     F4GaloisGroup, decidable_subgroup(F4GaloisGroup, D), decidable_subgroup(F4GaloisGroup, E)
   );
 
-def F4DecidableIntermediateIncluded(D E : DecidableIntermediateField(F2, F4OverF2)) =
+def F4DecidableIntermediateIncluded(D E : DecidableIntermediateField(F2, F4OverF2)) :=
   IntermediateIncluded(
     F2, F4OverF2, decidable_intermediate(F2, F4OverF2, D), decidable_intermediate(F2, F4OverF2, E)
   );

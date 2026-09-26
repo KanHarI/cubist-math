@@ -16,14 +16,14 @@ def join_subdivision_families_step(
   same : sample_last(C, succ(n), vertices) = sample_first(C, m, rightVertices)
 ) :
   SampleSubdivisions(C, succ(n) + m, join_vertices(C, succ(n), vertices, m, rightVertices)) {
-  let a = field_fst(C, SampleVertices(C, n), vertices);
-  let tail = field_snd(C, SampleVertices(C, n), vertices);
-  let b = sample_first(C, n, tail);
-  let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  let joined = join_vertices(C, n, tail, m, rightVertices);
-  let joinedFirst = sample_first(C, n + m, joined);
-  let firstPath = sym(join_vertices_first(C, n, tail, m, rightVertices, same));
+  let a := field_fst(C, SampleVertices(C, n), vertices);
+  let tail := field_snd(C, SampleVertices(C, n), vertices);
+  let b := sample_first(C, n, tail);
+  let headPiece := field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let tailPieces := field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let joined := join_vertices(C, n, tail, m, rightVertices);
+  let joinedFirst := sample_first(C, n + m, joined);
+  let firstPath := sym(join_vertices_first(C, n, tail, m, rightVertices, same));
   exact typed(
     (SampleSubdivision(C, a, joinedFirst) and SampleSubdivisions(C, n + m, joined)),
     (
@@ -33,7 +33,7 @@ def join_subdivision_families_step(
   );
 }
 
-def join_subdivision_families(C : U1, n : Nat) =
+def join_subdivision_families(C : U1, n : Nat) :=
   induction n as k return (
     forall vertices : SampleVertices(C, k), forall pieces : SampleSubdivisions(C, k, vertices),
     forall m : Nat, forall rightVertices : SampleVertices(C, m),
@@ -77,23 +77,23 @@ def subdivision_total_join_step(
     subdivision_total(C, G, zero, addG, edge, succ(n), vertices, pieces),
     subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)
   ) {
-  let a = field_fst(C, SampleVertices(C, n), vertices);
-  let tail = field_snd(C, SampleVertices(C, n), vertices);
-  let b = sample_first(C, n, tail);
-  let headPiece = field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  let tailPieces = field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  let joined = join_vertices(C, n, tail, m, rightVertices);
-  let joinedFirst = sample_first(C, n + m, joined);
-  let firstPath = sym(join_vertices_first(C, n, tail, m, rightVertices, same));
-  let headSum = subdivision_sum(C, G, zero, addG, edge, a, b, headPiece);
-  let tailSum = subdivision_total(C, G, zero, addG, edge, n, tail, tailPieces);
-  let rightSum = subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces);
-  let joinedTailSum =
+  let a := field_fst(C, SampleVertices(C, n), vertices);
+  let tail := field_snd(C, SampleVertices(C, n), vertices);
+  let b := sample_first(C, n, tail);
+  let headPiece := field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let tailPieces := field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
+  let joined := join_vertices(C, n, tail, m, rightVertices);
+  let joinedFirst := sample_first(C, n + m, joined);
+  let firstPath := sym(join_vertices_first(C, n, tail, m, rightVertices, same));
+  let headSum := subdivision_sum(C, G, zero, addG, edge, a, b, headPiece);
+  let tailSum := subdivision_total(C, G, zero, addG, edge, n, tail, tailPieces);
+  let rightSum := subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces);
+  let joinedTailSum :=
     subdivision_total(
       C, G, zero, addG, edge, n + m, joined,
       join_subdivision_families(C, n, tail, tailPieces, m, rightVertices, rightPieces, same)
     );
-  let headPath =
+  let headPath :=
     subdivision_sum_move_end(C, G, zero, addG, edge, a, b, joinedFirst, firstPath, headPiece);
   exact trans(
     cong((fun (v : G) => addG(v, joinedTailSum)), headPath),

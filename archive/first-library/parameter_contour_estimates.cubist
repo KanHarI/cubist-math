@@ -7,7 +7,7 @@ import complex_algebra;
 def complex_parameter_contour_sum(
   C F : U1, zero : F, addF mulF : F -> F -> F, negF : F -> F, curve values : C -> Complex(F),
   n : Nat
-) =
+) :=
   parameter_contour_sum(
     C, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
     complex_neg(F, negF), curve, values, n
@@ -41,25 +41,25 @@ def complex_parameter_tag_change_close(
     complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags),
     epsilon
   ) {
-  let bound =
+  let bound :=
     complex_parameter_tag_error_length_bound(
       C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight,
       imagWeight, delta, length, nonnegativeDelta, n, vertices, oldTags, newTags, errors,
       increments, variation
     );
-  obtain (realBound, imagBound) = bound;
-  let ringC = complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-  let computes =
+  obtain (realBound, imagBound) := bound;
+  let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
+  let computes :=
     parameter_contour_sum_change_tags(
       C, Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
       complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, curve, values, n, vertices,
       oldTags, newTags
     );
-  let oldSum =
+  let oldSum :=
     complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags);
-  let newSum =
+  let newSum :=
     complex_parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, newTags);
-  let error =
+  let error :=
     complex_parameter_tag_error_sum(
       C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, newTags
     );

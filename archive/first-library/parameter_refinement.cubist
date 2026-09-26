@@ -14,7 +14,7 @@ def parameter_constant_tag_sum(
     C, F, addF, mulF, negF, curve, values, sample_first(C, n, vertices),
     sample_last(C, n, vertices), tag
   ) {
-  let edge = parameter_contour_edge(C, F, addF, mulF, negF, curve, values);
+  let edge := parameter_contour_edge(C, F, addF, mulF, negF, curve, values);
   have diagonal : forall a : C, edge(a, a, tag) = zero {
     intro a;
     exact trans(
@@ -54,8 +54,8 @@ def parameter_refinement_identity(
       tags
     )
   ) {
-  let oldTags = sample_repeat_tags(C, n, coarseTag);
-  let error =
+  let oldTags := sample_repeat_tags(C, n, coarseTag);
+  let error :=
     parameter_contour_tag_error_sum(
       C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags
     );

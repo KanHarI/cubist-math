@@ -5,7 +5,7 @@ import interval_bisection;
 def IntervalMidpointLaws(
   F : U1, zero one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, half : F -> F,
   a b midpoint : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   IntervalTagWithin(F, zero, one, lt, a, b, midpoint)
   and (
     interval_difference(F, zero, one, addF, negF, lt)(a, midpoint) = half(
@@ -27,7 +27,7 @@ def interval_midpoint_point(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) =
+) :=
   field_first(
     FieldUnitInterval(F, zero, one, lt),
     IntervalMidpointLaws(F, zero, one, addF, negF, lt, half, a, b),
@@ -45,7 +45,7 @@ def interval_midpoint_laws(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) =
+) :=
   field_second(
     FieldUnitInterval(F, zero, one, lt),
     IntervalMidpointLaws(F, zero, one, addF, negF, lt, half, a, b),
@@ -70,7 +70,7 @@ def interval_midpoint_within(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     )
   ) {
-  let midpoint =
+  let midpoint :=
     interval_midpoint_point(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
@@ -103,7 +103,7 @@ def interval_midpoint_left_order(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) =
+) :=
   field_fst(
     FieldLe(
       F, lt, field_interval_coordinate(F, zero, one, lt)(a),
@@ -135,7 +135,7 @@ def interval_midpoint_right_order(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   )
-) =
+) :=
   field_snd(
     FieldLe(
       F, lt, field_interval_coordinate(F, zero, one, lt)(a),
@@ -183,7 +183,7 @@ def interval_midpoint_widths(
       ), b
     ) = half(interval_difference(F, zero, one, addF, negF, lt)(a, b))
   ) {
-  let midpoint =
+  let midpoint :=
     interval_midpoint_point(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );

@@ -6,7 +6,7 @@ import ring_laws;
 def complex_norm_expansion_1(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
-) =
+) :=
   trans(
     (
       cong(
@@ -191,7 +191,7 @@ def complex_norm_expansion_1(
 def complex_norm_expansion_2(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
-) =
+) :=
   trans(
     (
       cong(
@@ -415,7 +415,7 @@ def complex_norm_expansion_2(
 def complex_norm_expansion_3(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
-) =
+) :=
   trans(
     (
       cong(
@@ -606,7 +606,7 @@ def complex_norm_expansion_3(
 def complex_norm_expansion_4(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
-) =
+) :=
   trans(
     (
       cong(
@@ -840,7 +840,7 @@ def complex_norm_expansion_4(
 def complex_norm_expansion_5(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
-) =
+) :=
   trans(
     (
       cong(
@@ -1014,7 +1014,7 @@ def complex_norm_expansion_5(
 def complex_norm_expansion_6(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
-) =
+) :=
   trans(
     (
       cong(
@@ -1145,7 +1145,7 @@ def complex_norm_expansion_6(
 def complex_norm_right_expansion(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a b c d : F
-) =
+) :=
   trans(
     (
       ring_distribute_left(
@@ -1268,16 +1268,16 @@ def complex_coordinate_norm_one(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF)
 ) :
   addF(mulF(one, one), mulF(zero, zero)) = one {
-  let leftStep1 =
+  let leftStep1 :=
     cong(
       (fun (value : F) => addF(value, mulF(zero, zero))),
       ring_mul_one(F, zero, one, addF, mulF, negF, ring, one)
     );
-  let leftStep2 =
+  let leftStep2 :=
     cong(
       (fun (value : F) => addF(one, value)),
       ring_zero_mul(F, zero, one, addF, mulF, negF, ring, zero)
     );
-  let leftStep3 = ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, one);
+  let leftStep3 := ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, one);
   exact trans(trans(leftStep1, trans(leftStep2, leftStep3)), sym(refl(one)));
 }

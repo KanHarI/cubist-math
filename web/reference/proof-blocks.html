@@ -65,8 +65,8 @@
             </ul>
             <pre><code data-check="accept">def swap_product(A B : U0) : (A and B) -&gt; (B and A) {
   intro pair;            // goal: B and A
-  obtain (a, b) = pair;  // context: a : A, b : B
-  let saved = a;
+  obtain (a, b) := pair;  // context: a : A, b : B
+  let saved := a;
   have result : B and A {
     exact (b, saved);
   }
@@ -90,9 +90,9 @@
               <tbody>
                 <tr><td><code>intro x y;</code></td><td>Changes the goal</td><td><a href="#intro">intro</a></td></tr>
                 <tr><td><code>exact term;</code></td><td>Closes</td><td><a href="#exact">exact</a></td></tr>
-                <tr><td><code>have name : T { … }</code>, <code>have name = term;</code>, <code>have name : T := term;</code></td><td>Extends the context</td><td><a href="#have">have</a></td></tr>
-                <tr><td><code>let name = term;</code></td><td>Extends the context</td><td><a href="#let">let</a></td></tr>
-                <tr><td><code>obtain (a, b) = pair;</code></td><td>Extends the context</td><td><a href="#obtain">obtain</a></td></tr>
+                <tr><td><code>have name : T { … }</code>, <code>have name := term;</code>, <code>have name : T := term;</code></td><td>Extends the context</td><td><a href="#have">have</a></td></tr>
+                <tr><td><code>let name := term;</code></td><td>Extends the context</td><td><a href="#let">let</a></td></tr>
+                <tr><td><code>obtain (a, b) := pair;</code></td><td>Extends the context</td><td><a href="#obtain">obtain</a></td></tr>
                 <tr><td><code>cases value { left x => { … } right y => { … } }</code></td><td>Closes</td><td><a href="#cases">cases</a></td></tr>
                 <tr><td><code>rfl;</code></td><td>Closes</td><td><a href="rewriting.html#rfl">reflexivity</a></td></tr>
                 <tr><td><code>calc { … }</code></td><td>Closes</td><td><a href="rewriting.html#calc">chains</a></td></tr>
@@ -112,7 +112,7 @@
   exact f((a, b));
 }</code></pre>
             <p>The goal’s type is computed first, so <code>intro</code> works on a named definition that unfolds to a function type:</p>
-            <pre><code data-check="accept">def Endo(A : U0) = A -&gt; A;
+            <pre><code data-check="accept">def Endo(A : U0) := A -&gt; A;
 
 def compose_endo(A : U0, f g : Endo(A)) : Endo(A) {
   intro a;
@@ -131,7 +131,7 @@ def compose_endo(A : U0, f g : Endo(A)) : Endo(A) {
             <p>The name after <code>intro</code> is chosen by the author. Its spelling does not determine its type; the goal does. Here <code>setA</code> gets the type <code>IsSet(A)</code> because that is the next input of the goal:</p>
             <pre><code data-check="accept">import sets;
 
-def SetAssumption = forall A : U0, IsSet(A) -&gt; IsSet(A);
+def SetAssumption := forall A : U0, IsSet(A) -&gt; IsSet(A);
 
 def use_set_assumption : SetAssumption {
   intro A;       // A : U0, from the forall
@@ -163,11 +163,11 @@ def identity_function(A : U0) : A -&gt; A {
               <tbody>
                 <tr><td><code>have name : T { … }</code></td><td>Prove <code>T</code> in a nested block. The block sees the surrounding context.</td></tr>
                 <tr><td><code>have name : T := term;</code></td><td>Check <code>term</code> against <code>T</code>. Shorthand for <code>have name : T { exact term; }</code>. The <code>:=</code> keeps an <code>=</code> inside <code>T</code> unambiguous.</td></tr>
-                <tr><td><code>have name = term;</code></td><td>Name a term whose type the elaborator can infer.</td></tr>
+                <tr><td><code>have name := term;</code></td><td>Name a term whose type the elaborator can infer.</td></tr>
               </tbody>
             </table></div>
             <pre><code data-check="accept">def three_ways(n : Nat) : n = n {
-  have p = refl(n);
+  have p := refl(n);
   have q : n = n := p;
   have r : n = n {
     exact q;
@@ -181,9 +181,9 @@ def from_context(A B : U0, a : A, b : B) : A and B {
   }
   exact pair;
 }</code></pre>
-            <p>Use <code>have</code> to split a long argument into named steps, and to state an equality whose endpoints the elaborator cannot infer. Without a type, <code>have name = term;</code> gives the term no expected type, so a pair is rejected:</p>
+            <p>Use <code>have</code> to split a long argument into named steps, and to state an equality whose endpoints the elaborator cannot infer. Without a type, <code>have name := term;</code> gives the term no expected type, so a pair is rejected:</p>
             <pre><code data-check="reject">def untyped_pair(a b : Nat) : Nat and Nat {
-  have p = (a, b);  // Error: Pair requires an expected type.
+  have p := (a, b);  // Error: Pair requires an expected type.
   exact p;
 }</code></pre>
             <p>The nested block of <code>have</code> must close its own goal:</p>
@@ -195,14 +195,14 @@ def from_context(A B : U0, a : A, b : B) : A and B {
           </section>
           <section id="let">
             <h2><code>let</code></h2>
-            <p><code>let name = term;</code> names a term for the rest of the block. The name stands for the term itself, so the checker sees through it: <code>refl(m)</code> below proves <code>succ(n) = succ(n)</code> because <code>m</code> is <code>succ(n)</code>. To give the term an expected type, write <code>let name = typed(T, term);</code>.</p>
+            <p><code>let name := term;</code> names a term for the rest of the block. The name stands for the term itself, so the checker sees through it: <code>refl(m)</code> below proves <code>succ(n) = succ(n)</code> because <code>m</code> is <code>succ(n)</code>. To give the term an expected type, write <code>let name := typed(T, term);</code>.</p>
             <pre><code data-check="accept">def see_through(n : Nat) : succ(n) = succ(n) {
-  let m = succ(n);
+  let m := succ(n);
   exact refl(m);
 }
 
 def with_type(n : Nat) : Nat and Nat {
-  let pair = typed(Nat and Nat, (n, n));
+  let pair := typed(Nat and Nat, (n, n));
   exact pair;
 }</code></pre>
             <p><code>let</code> names one term. To take a pair apart, use <code>obtain</code>:</p>
@@ -213,33 +213,33 @@ def with_type(n : Nat) : Nat and Nat {
           </section>
           <section id="obtain">
             <h2><code>obtain</code></h2>
-            <p><code>obtain (a, b) = pair;</code> names the components of a pair or dependent pair. Patterns can be tuples and can nest, following the shape of the type.</p>
+            <p><code>obtain (a, b) := pair;</code> names the components of a pair or dependent pair. Patterns can be tuples and can nest, following the shape of the type.</p>
             <pre><code data-check="accept">def witness(t : exists n : Nat, (n = n) and Unit) : Nat {
-  obtain (n, same, u) = t;
+  obtain (n, same, u) := t;
   exact n;
 }
 
 def inner_unit(t : (Nat and Unit) and Nat) : Unit {
-  obtain ((a, u), b) = t;
+  obtain ((a, u), b) := t;
   exact u;
 }</code></pre>
             <p>Like <code>let</code>, <code>obtain</code> introduces no new variables. Each name stands for a component of the pair, so <code>(n, q)</code> is equal to <code>p</code> by computation. A goal that mentions the original pair therefore still works:</p>
             <pre><code data-check="accept">def about_the_pair(P : (exists n : Nat, n = n) -&gt; U0,
     h : forall n : Nat, forall q : n = n, P((n, q)), p : exists n : Nat, n = n) : P(p) {
-  obtain (n, q) = p;
+  obtain (n, q) := p;
   exact h(n, q);
 }</code></pre>
             <p>The pattern must match the type’s shape, and a pattern needs at least two components:</p>
             <pre><code data-check="reject">def not_a_pair(n : Nat) : Nat {
-  obtain (a, b) = n;  // Error: obtain requires a dependent pair matching its pattern.
+  obtain (a, b) := n;  // Error: obtain requires a dependent pair matching its pattern.
   exact a;
 }</code></pre>
             <pre><code data-check="reject">def too_many_components(p : Nat and Nat) : Nat {
-  obtain (a, b, c) = p;  // Error: obtain requires a dependent pair matching its pattern.
+  obtain (a, b, c) := p;  // Error: obtain requires a dependent pair matching its pattern.
   exact a;
 }</code></pre>
             <pre><code data-check="reject">def one_component(p : Nat and Nat) : Nat {
-  obtain (a) = p;  // Error: A pair pattern needs at least two components.
+  obtain (a) := p;  // Error: A pair pattern needs at least two components.
   exact a;
 }</code></pre>
             <p><code>obtain</code> does not open a <a href="assumptions.html#axioms">propositional truncation</a>: a merely existing witness cannot be named.</p>
@@ -280,7 +280,7 @@ def reassociate(A B C : U0, value : A or (B or C)) : (A or B) or C {
   exact tt;  // Error: Statements after cases are not yet translated.
 }</code></pre>
             <p><code>cases</code> does not change the goal in each branch. If the goal mentions <code>value</code>, both branches still see <code>value</code>, not <code>left(x)</code> or <code>right(y)</code>, and a branch that needs the refined goal fails:</p>
-            <pre><code data-check="reject">def Shape(value : Unit or Unit) = match value as z return U0 {
+            <pre><code data-check="reject">def Shape(value : Unit or Unit) := match value as z return U0 {
   left a =&gt; Nat;
   right b =&gt; Unit;
 };
@@ -293,7 +293,7 @@ def default(value : Unit or Unit) : Shape(value) {
   }
 }</code></pre>
             <p>For such a goal, use a dependent <a href="terms.html#match"><code>match</code></a>, which substitutes each side into the result type:</p>
-            <pre><code data-check="accept">def Shape(value : Unit or Unit) = match value as z return U0 {
+            <pre><code data-check="accept">def Shape(value : Unit or Unit) := match value as z return U0 {
   left a =&gt; Nat;
   right b =&gt; Unit;
 };

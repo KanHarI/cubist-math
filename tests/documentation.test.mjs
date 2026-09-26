@@ -11,11 +11,11 @@ test("declaration comments distinguish adjacent prose, paragraphs, headers and t
 // across two lines.
 //
 // Second paragraph: <b>plain text</b>.
-opaque def documented = 0;
+opaque def documented := 0;
 // Detached comment.
 
-def detached = 0; // Trailing comment belongs to this line.
-def next = 0;
+def detached := 0; // Trailing comment belongs to this line.
+def next := 0;
 // Proof documentation.
 def proof : Nat { exact 0; }
 `;
@@ -28,15 +28,15 @@ def proof : Nat { exact 0; }
       detached: "", next: "", proof: "Proof documentation.",
     });
   }
-  const inline = "// Header\ndef first = 0; def second = 0;";
+  const inline = "// Header\ndef first := 0; def second := 0;";
   assert.equal(leadingDocumentation(inline, inline.indexOf("def second")), null);
 });
 
 
 test("documentation is extracted from checked local and imported source", async t => {
-  const program = new CubicalProgram(await createCubical(), async () => "// Imported identity.\ndef identity(n : Nat) = n;");
+  const program = new CubicalProgram(await createCubical(), async () => "// Imported identity.\ndef identity(n : Nat) := n;");
   t.after(() => program.dispose());
-  const result = await program.check("import helper;\n// Local definition.\ndef value = identity(0);", "docs");
+  const result = await program.check("import helper;\n// Local definition.\ndef value := identity(0);", "docs");
   assert.equal(result.complete, true);
   assert.equal(result.outputs[0].description, "Local definition.");
   assert.equal(result.imports.find(x => x.name === "identity").description, "Imported identity.");

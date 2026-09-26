@@ -14,7 +14,7 @@ def affine_dyadic_sum(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   ), depth : Nat
-) =
+) :=
   curve_subdivision_samples(
     F, zero, one, addF, mulF, negF, lt,
     complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope), integrand, a, b,
@@ -31,16 +31,16 @@ def affine_coordinate_length_nonnegative(
   lattice : FieldLattice(F, lt, minF, maxF), slope : Complex(F)
 ) :
   FieldLe(F, lt, zero, affine_coordinate_length(F, addF, negF, maxF, slope)) {
-  let real = complex_real(F, slope);
-  let imag = complex_imag(F, slope);
-  let r = maxF(real, negF(real));
-  let s = maxF(imag, negF(imag));
-  let nonnegativeR =
+  let real := complex_real(F, slope);
+  let imag := complex_imag(F, slope);
+  let r := maxF(real, negF(real));
+  let s := maxF(imag, negF(imag));
+  let nonnegativeR :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, real, r,
       field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, real)
     );
-  let nonnegativeS =
+  let nonnegativeS :=
     field_magnitude_radius_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, imag, s,
       field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, imag)
@@ -83,30 +83,30 @@ def affine_dyadic_cauchy(
       integrand, a, b, ordered
     )
   ) {
-  let sequence =
+  let sequence :=
     affine_dyadic_sum(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
       integrand, a, b, ordered
     );
-  let width = interval_difference(F, zero, one, addF, negF, lt)(a, b);
-  let length = affine_coordinate_length(F, addF, negF, maxF, slope);
-  let scale = mulF(width, length);
-  let nonnegativeWidth =
+  let width := interval_difference(F, zero, one, addF, negF, lt)(a, b);
+  let length := affine_coordinate_length(F, addF, negF, maxF, slope);
+  let scale := mulF(width, length);
+  let nonnegativeWidth :=
     field_difference_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic,
       field_interval_coordinate(F, zero, one, lt)(a),
       field_interval_coordinate(F, zero, one, lt)(b), ordered
     );
-  let nonnegativeLength =
+  let nonnegativeLength :=
     affine_coordinate_length_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, slope
     );
-  let nonnegativeScale =
+  let nonnegativeScale :=
     order_mul_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, width, length, nonnegativeWidth,
       nonnegativeLength
     );
-  let widthsVanish =
+  let widthsVanish :=
     dyadic_width_converges_from_bounds(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses, bounds,
       width, nonnegativeWidth
@@ -115,25 +115,25 @@ def affine_dyadic_cauchy(
     forall epsilon : F, lt(zero, epsilon) -> exists bound : Nat, forall n : Nat, forall extra : Nat,
     IndexLE(bound, n) -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
     intro epsilon positive;
-    obtain (delta, positiveDelta, smallRadius) = field_small_scaled_radius(
+    obtain (delta, positiveDelta, smallRadius) := field_small_scaled_radius(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, scale,
       nonnegativeScale, epsilon, positive
     );
-    obtain (mesh, positiveMesh, estimates) = affine_dyadic_refinement_estimate(
+    obtain (mesh, positiveMesh, estimates) := affine_dyadic_refinement_estimate(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
       integrand, uniform, delta, positiveDelta, half, halfSum
     );
-    obtain (bound, closeWidths) = widthsVanish(mesh, positiveMesh);
+    obtain (bound, closeWidths) := widthsVanish(mesh, positiveMesh);
     have tail :
       forall n : Nat, forall extra : Nat, IndexLE(bound, n)
       -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
       intro n extra later;
-      obtain (upper, lower) = closeWidths(n, later);
-      let smallMesh =
+      obtain (upper, lower) := closeWidths(n, later);
+      let smallMesh :=
         along lt(dyadic_width(F, half, n, width)) by ring_add_zero(
           F, zero, one, addF, mulF, negF, ring, mesh
         ) from upper;
-      let perturbation = estimates(n, extra, a, b, ordered, smallMesh);
+      let perturbation := estimates(n, extra, a, b, ordered, smallMesh);
       exact complex_perturbation_close(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, sequence(n),
         sequence(n + extra), mulF(delta, scale), epsilon, perturbation, smallRadius
@@ -141,14 +141,14 @@ def affine_dyadic_cauchy(
     }
     exact (bound, tail);
   }
-  let positiveHalf =
+  let positiveHalf :=
     (
       fun (epsilon : F, positive : lt(zero, epsilon)) => positive_half_from_sum(
         F, zero, one, addF, mulF, lt, order, arithmetic, epsilon, half(epsilon), halfSum(epsilon),
         positive
       )
     );
-  let halving = typed(Halving(F, zero, addF, lt), (half, halfSum, positiveHalf));
+  let halving := typed(Halving(F, zero, addF, lt), (half, halfSum, positiveHalf));
   exact complex_cauchy_from_refinements(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, sequence, refines
   );

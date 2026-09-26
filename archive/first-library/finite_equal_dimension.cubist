@@ -9,12 +9,12 @@ def equal_basis_dimension_injective_surjective(
   basisW : FiniteBasis(K, W, n), f : LinearMap(K, V, W), injective : LinearInjective(K, V, W, f)
 ) :
   LinearSurjective(K, V, W, f) {
-  let C = CoordinateSpace(K, n);
-  let u = linear_iso_forward(K, C, V, basisV);
-  let inverseW = linear_iso_inverse(K, C, W, basisW);
-  let v = linear_iso_forward(K, W, C, inverseW);
-  let middle = linear_compose(K, C, V, W, u, f);
-  let square = linear_compose(K, C, W, C, middle, v);
+  let C := CoordinateSpace(K, n);
+  let u := linear_iso_forward(K, C, V, basisV);
+  let inverseW := linear_iso_inverse(K, C, W, basisW);
+  let v := linear_iso_forward(K, W, C, inverseW);
+  let middle := linear_compose(K, C, V, W, u, f);
+  let square := linear_compose(K, C, W, C, middle, v);
   have squareInjective : LinearInjective(K, C, C, square) {
     intro x y same;
     exact linear_iso_injective(
@@ -28,14 +28,14 @@ def equal_basis_dimension_injective_surjective(
       )
     );
   }
-  let squareOnto = coordinate_square_injective_surjective(K, n, square, squareInjective);
+  let squareOnto := coordinate_square_injective_surjective(K, n, square, squareInjective);
   intro y;
-  let c = linear_map(K, W, C, v, y);
+  let c := linear_map(K, W, C, v, y);
   have lift :
     Fiber(vector_carrier(K, C), vector_carrier(K, C), linear_map(K, C, C, square), c)
     -> Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y) {
     intro witness;
-    obtain (x, same) = witness;
+    obtain (x, same) := witness;
     exact (
       linear_map(K, C, V, u, x),
       linear_iso_injective(
@@ -56,7 +56,7 @@ def equal_dimension_injective_surjective(
   injective : LinearInjective(K, V, W, f)
 ) :
   LinearSurjective(K, V, W, f) {
-  let Goal = LinearSurjective(K, V, W, f);
+  let Goal := LinearSurjective(K, V, W, f);
   exact mere_eliminate(
     FiniteBasis(K, V, n), Goal, linear_surjective_prop(K, V, W, f),
     (
@@ -115,7 +115,7 @@ def inhabited_cardinality_positive(A : U0, n : Nat, count : HasCardinality(A, n)
   exists k : Nat, n = succ(k) {
   have nonzero : (n = 0) -> Void {
     intro zero;
-    let countZero = along HasCardinality(A) by zero from count;
+    let countZero := along HasCardinality(A) by zero from count;
     exact mere_eliminate(
       Bijection(Fin(0), A), Void, (fun (u v : Void) => absurd(u)),
       (fun (e : Bijection(Fin(0), A)) => absurd(backward(Fin(0), A, e, a))), countZero
@@ -130,10 +130,10 @@ def degree_one_embedding_surjective(
   degreeOne : extension_degree(K, embedding_as_extension(K, F, e), finite) = 1
 ) :
   Surjective(af_carrier(K), af_carrier(F), field_embedding_map(K, F, e)) {
-  let V = field_vector_space(K, F, e);
-  let C = ScalarSpace(K);
-  let h = field_embedding_linear(K, F, e);
-  let dimensionF =
+  let V := field_vector_space(K, F, e);
+  let C := ScalarSpace(K);
+  let h := field_embedding_linear(K, F, e);
+  let dimensionF :=
     along HasDimension(K, V) by degreeOne from extension_degree_specification(
       K, embedding_as_extension(K, F, e), finite
     );

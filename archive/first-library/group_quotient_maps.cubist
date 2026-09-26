@@ -3,7 +3,7 @@ import quotient_descent;
 
 // A homomorphism factors through cosets precisely when it kills the subgroup.
 // Normality is not needed for this map of sets; it is needed for quotient multiplication.
-def KillsSubgroup(G H : Group, h : GroupHom(G, H), S : Subgroup(G)) =
+def KillsSubgroup(G H : Group, h : GroupHom(G, H), S : Subgroup(G)) :=
   forall n : group_carrier(G), subgroup_members(G, S, n)
   -> group_hom_map(G, H, h, n) = group_unit(H);
 
@@ -19,7 +19,7 @@ def killing_subgroup_respects_cosets(
 
 def group_quotient_map(
   G H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S)
-) =
+) :=
   quotient_rec(
     group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), group_carrier(H),
     group_is_set(H), group_hom_map(G, H, h), killing_subgroup_respects_cosets(G, H, h, S, kills)
@@ -66,8 +66,8 @@ def group_quotient_map_multiply(
     H, group_quotient_map(G, H, h, S, kills, left_coset(G, S, x)),
     group_quotient_map(G, H, h, S, kills, left_coset(G, S, y))
   ) {
-  let f = group_hom_map(G, H, h);
-  let out = group_quotient_map(G, H, h, S, kills);
+  let f := group_hom_map(G, H, h);
+  let out := group_quotient_map(G, H, h, S, kills);
   exact trans(
     group_quotient_map_beta(G, H, h, S, kills, group_multiply(G, x, y)),
     trans(
@@ -92,7 +92,7 @@ def quotient_factor_kills_subgroup(
 ) :
   KillsSubgroup(G, H, h, S) {
   intro n member;
-  let same = same_coset_from_factor(G, S, group_unit(G), n, n, member, group_unit_left(G, n));
+  let same := same_coset_from_factor(G, S, group_unit(G), n, n, member, group_unit_left(G, n));
   exact trans(
     sym(triangle(n)),
     trans(

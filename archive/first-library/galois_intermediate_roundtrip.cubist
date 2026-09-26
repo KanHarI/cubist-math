@@ -11,8 +11,8 @@ def intermediate_inclusion_embedding(
   included : IntermediateIncluded(K, E, M, N)
 ) :
   FieldEmbedding(intermediate_as_field(K, E, M), intermediate_as_field(K, E, N)) {
-  let F = extension_field(K, E);
-  let S = intermediate_subfield(K, E, M);
+  let F := extension_field(K, E);
+  let S := intermediate_subfield(K, E, M);
   exact field_embedding_factor(
     intermediate_as_field(K, E, M), F, intermediate_ambient_embedding(K, E, M),
     intermediate_subfield(K, E, N),
@@ -33,8 +33,8 @@ def intermediate_inclusion_triangle(
     intermediate_inclusion_embedding(K, E, M, N, included), intermediate_ambient_embedding(K, E, N),
     intermediate_ambient_embedding(K, E, M)
   ) {
-  let F = extension_field(K, E);
-  let S = intermediate_subfield(K, E, M);
+  let F := extension_field(K, E);
+  let S := intermediate_subfield(K, E, M);
   exact field_embedding_factor_triangle(
     intermediate_as_field(K, E, M), F, intermediate_ambient_embedding(K, E, M),
     intermediate_subfield(K, E, N),
@@ -58,16 +58,16 @@ def intermediate_inclusion_surjective_equal(
   )
 ) :
   M =[IntermediateField(K, E)] N {
-  let F = extension_field(K, E);
-  let S = intermediate_subfield(K, E, M);
-  let T = intermediate_subfield(K, E, N);
-  let R = intermediate_as_field(K, E, M);
-  let Q = intermediate_as_field(K, E, N);
-  let i = intermediate_inclusion_embedding(K, E, M, N, included);
+  let F := extension_field(K, E);
+  let S := intermediate_subfield(K, E, M);
+  let T := intermediate_subfield(K, E, N);
+  let R := intermediate_as_field(K, E, M);
+  let Q := intermediate_as_field(K, E, N);
+  let i := intermediate_inclusion_embedding(K, E, M, N, included);
   have reverse : IntermediateIncluded(K, E, N, M) {
     intro x member;
-    let target = typed(af_carrier(Q), (x, member));
-    obtain (a, same) = field_embedding_preimage(R, Q, i, onto, target);
+    let target := typed(af_carrier(Q), (x, member));
+    obtain (a, same) := field_embedding_preimage(R, Q, i, onto, target);
     exact along intermediate_members(K, E, M) by cong(subfield_value(F, T), same) from subfield_evidence(
       F, S, a
     );
@@ -85,38 +85,39 @@ def finite_normal_separable_fixed_fixing_intermediate(
   T : AlgebraicField, closed : AlgebraicallyClosed(T), j : FieldEmbedding(extension_field(K, E), T)
 ) :
   fixed_intermediate_field(K, E, fixing_galois_subgroup(K, E, M)) =[IntermediateField(K, E)] M {
-  let H = fixing_galois_subgroup(K, E, M);
-  let N = fixed_intermediate_field(K, E, H);
-  let G = GaloisGroup(K, E);
-  let R = intermediate_as_field(K, E, M);
-  let Q = intermediate_as_field(K, E, N);
-  let F = extension_field(K, E);
-  let included = galois_fixed_fixing_contains(K, E, intermediate_members(K, E, M));
-  let i = intermediate_inclusion_embedding(K, E, M, N, included);
-  let h = intermediate_ambient_embedding(K, E, N);
-  let e = intermediate_ambient_embedding(K, E, M);
-  let triangle = intermediate_inclusion_triangle(K, E, M, N, included);
-  obtain (upperM, countH) = finite_normal_separable_intermediate_automorphism_count(
+  let H := fixing_galois_subgroup(K, E, M);
+  let N := fixed_intermediate_field(K, E, H);
+  let G := GaloisGroup(K, E);
+  let R := intermediate_as_field(K, E, M);
+  let Q := intermediate_as_field(K, E, N);
+  let F := extension_field(K, E);
+  let included := galois_fixed_fixing_contains(K, E, intermediate_members(K, E, M));
+  let i := intermediate_inclusion_embedding(K, E, M, N, included);
+  let h := intermediate_ambient_embedding(K, E, N);
+  let e := intermediate_ambient_embedding(K, E, M);
+  let triangle := intermediate_inclusion_triangle(K, E, M, N, included);
+  obtain (upperM, countH) := finite_normal_separable_intermediate_automorphism_count(
     K, E, M, finite, normal, separable, T, closed, j
   );
-  let d = extension_degree(R, intermediate_overfield(K, E, M), upperM);
-  obtain (upperN, degreeN) = artin_fixed_field_degree(K, E, H, d, countH);
-  let steps = finite_extension_tower_converse(R, Q, F, i, h, e, triangle, upperM);
-  let lower =
+  let d := extension_degree(R, intermediate_overfield(K, E, M), upperM);
+  obtain (upperN, degreeN) := artin_fixed_field_degree(K, E, H, d, countH);
+  let steps := finite_extension_tower_converse(R, Q, F, i, h, e, triangle, upperM);
+  let lower :=
     fst(
       FiniteExtension(R, embedding_as_extension(R, Q, i)),
       FiniteExtension(Q, intermediate_overfield(K, E, N)), steps
     );
-  let m = extension_degree(R, embedding_as_extension(R, Q, i), lower);
-  let towerDegree = tower_law(R, Q, F, i, h, e, triangle, lower, upperN, upperM);
+  let m := extension_degree(R, embedding_as_extension(R, Q, i), lower);
+  let towerDegree := tower_law(R, Q, F, i, h, e, triangle, lower, upperN, upperM);
   have product : multiply_count(d, m) = d := trans(
     sym(cong((fun (q : Nat) => multiply_count(q, m)), degreeN)), sym(towerDegree)
   );
-  let nonempty = subgroup_carrier_unit(G, H);
-  obtain (k, positive) = inhabited_cardinality_positive(SubgroupCarrier(G, H), d, countH, nonempty);
-  let productPositive = along((fun (q : Nat) => multiply_count(q, m) = q)) by positive from product;
-  let degreeOne = positive_product_unit(k, m, productPositive);
-  let onto = degree_one_embedding_surjective(R, Q, i, lower, degreeOne);
+  let nonempty := subgroup_carrier_unit(G, H);
+  obtain (k, positive) := inhabited_cardinality_positive(SubgroupCarrier(G, H), d, countH, nonempty);
+  let productPositive :=
+    along((fun (q : Nat) => multiply_count(q, m) = q)) by positive from product;
+  let degreeOne := positive_product_unit(k, m, productPositive);
+  let onto := degree_one_embedding_surjective(R, Q, i, lower, degreeOne);
   exact sym(intermediate_inclusion_surjective_equal(K, E, M, N, included, onto));
 }
 
@@ -132,8 +133,8 @@ def finite_galois_correspondence_with_finite_subgroups(
   HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n)
 ) :
   Equiv(U1, GaloisSubgroup(K, E), IntermediateField(K, E)) {
-  let fixed = fixed_intermediate_field(K, E);
-  let fixing = fixing_galois_subgroup(K, E);
+  let fixed := fixed_intermediate_field(K, E);
+  let fixing := fixing_galois_subgroup(K, E);
   exact equiv_from_inverse(
     U1, GaloisSubgroup(K, E), IntermediateField(K, E), fixed, fixing,
     (
@@ -156,8 +157,8 @@ def finite_galois_subgroup_cardinality(
   H : GaloisSubgroup(K, E)
 ) :
   HasFiniteCardinality(SubgroupCarrier(GaloisGroup(K, E), H)) {
-  let G = GaloisGroup(K, E);
-  let members = subgroup_members(G, H);
+  let G := GaloisGroup(K, E);
+  let members := subgroup_members(G, H);
   exact finite_predicate_of_finite(
     Galois(K, E), n, finiteG, members, subgroup_prop(G, members, subgroup_laws(G, H))
   );
@@ -173,8 +174,8 @@ def finite_galois_correspondence(
   T : AlgebraicField, closed : AlgebraicallyClosed(T), j : FieldEmbedding(extension_field(K, E), T)
 ) :
   Equiv(U1, GaloisSubgroup(K, E), IntermediateField(K, E)) {
-  let d = extension_degree(K, E, finite);
-  let finiteG =
+  let d := extension_degree(K, E, finite);
+  let finiteG :=
     finite_normal_separable_automorphism_count(K, E, finite, normal, separable, T, closed, j);
   exact finite_galois_correspondence_with_finite_subgroups(
     K, E, finite, normal, separable, T, closed, j,
@@ -198,31 +199,31 @@ def finite_galois_cardinality_tower_law(
       h, extension_degree(K, intermediate_as_extension(K, E, M), lower)
     )
   ) {
-  let R = intermediate_as_field(K, E, M);
-  let F = extension_field(K, E);
-  let b = intermediate_base_embedding(K, E, M);
-  let i = intermediate_ambient_embedding(K, E, M);
-  let e = extension_inclusion_embedding(K, E);
-  let steps =
+  let R := intermediate_as_field(K, E, M);
+  let F := extension_field(K, E);
+  let b := intermediate_base_embedding(K, E, M);
+  let i := intermediate_ambient_embedding(K, E, M);
+  let e := extension_inclusion_embedding(K, E);
+  let steps :=
     finite_extension_tower_converse(K, R, F, b, i, e, intermediate_tower(K, E, M), finite);
-  let lower =
+  let lower :=
     fst(
       FiniteExtension(K, intermediate_as_extension(K, E, M)),
       FiniteExtension(R, intermediate_overfield(K, E, M)), steps
     );
-  obtain (upper, countH) = finite_normal_separable_intermediate_automorphism_count(
+  obtain (upper, countH) := finite_normal_separable_intermediate_automorphism_count(
     K, E, M, finite, normal, separable, T, closed, j
   );
-  let h = extension_degree(R, intermediate_overfield(K, E, M), upper);
+  let h := extension_degree(R, intermediate_overfield(K, E, M), upper);
   exact (
     lower, h, countH, tower_law(K, R, F, b, i, e, intermediate_tower(K, E, M), lower, upper, finite)
   );
 }
 
 def base_image_intermediate(K : AlgebraicField, E : FieldExt(K)) : IntermediateField(K, E) {
-  let F = extension_field(K, E);
-  let e = extension_inclusion_embedding(K, E);
-  let S = subfield_image(K, F, e, subfield_top(K));
+  let F := extension_field(K, E);
+  let e := extension_inclusion_embedding(K, E);
+  let S := subfield_image(K, F, e, subfield_top(K));
   exact (
     subfield_members(F, S), subfield_laws(F, S),
     (fun (a : af_carrier(K)) => (a, tt, refl(extension_inclusion(K, E, a))))
@@ -233,12 +234,12 @@ def base_image_fixing_is_full_group(K : AlgebraicField, E : FieldExt(K)) :
   fixing_galois_subgroup(K, E, base_image_intermediate(K, E)) =[GaloisSubgroup(K, E)] subgroup_top(
     GaloisGroup(K, E)
   ) {
-  let G = GaloisGroup(K, E);
-  let M = base_image_intermediate(K, E);
-  let H = fixing_galois_subgroup(K, E, M);
+  let G := GaloisGroup(K, E);
+  let M := base_image_intermediate(K, E);
+  let H := fixing_galois_subgroup(K, E, M);
   have fullFixes : GaloisSubgroupIncluded(K, E, subgroup_top(G), H) {
     intro g member x inBase;
-    obtain (a, unit, same) = inBase;
+    obtain (a, unit, same) := inBase;
     exact trans(
       cong(extension_iso_forward(K, E, E, g), sym(same)), trans(galois_fixes_base(K, E, g, a), same)
     );
@@ -259,7 +260,7 @@ def finite_normal_separable_full_fixed_field(
   fixed_intermediate_field(K, E, subgroup_top(GaloisGroup(K, E))) =[IntermediateField(K, E)] base_image_intermediate(
     K, E
   ) {
-  let M = base_image_intermediate(K, E);
+  let M := base_image_intermediate(K, E);
   exact trans(
     sym(cong(fixed_intermediate_field(K, E), base_image_fixing_is_full_group(K, E))),
     finite_normal_separable_fixed_fixing_intermediate(

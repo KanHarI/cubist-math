@@ -20,13 +20,13 @@ def residue_hom_evaluation(
   ), generator : f(adjoined_root(K, M)) = x, p : Polynomial(K)
 ) :
   f(residue_reduce(K, M, p)) = polynomial_eval(K, L, e, p, x) {
-  let F = fun (q : Polynomial(K)) => f(residue_reduce(K, M, q));
+  let F := fun (q : Polynomial(K)) => f(residue_reduce(K, M, q));
   have step : PolynomialHornerLaw(K, L, e, x, F) {
     intro q;
-    let a = polynomial_coefficients(K, q, 0);
-    let c = residue_constant(K, M, a);
-    let t = residue_reduce(K, M, polynomial_tail(K, q));
-    let z = adjoined_root(K, M);
+    let a := polynomial_coefficients(K, q, 0);
+    let c := residue_constant(K, M, a);
+    let t := residue_reduce(K, M, polynomial_tail(K, q));
+    let z := adjoined_root(K, M);
     exact with unfolding [] {
       trans(
         cong(f, residue_reduce_horner(K, M, q)),
@@ -77,9 +77,9 @@ def adjoin_root_embedding_unique(
   ) = x
 ) :
   h = adjoin_root_embedding(K, M, irreducible, L, e, x, root) {
-  let R = PolynomialResidueField(K, M, irreducible);
-  let f = field_embedding_map(R, L, h);
-  obtain (f0, f1, fn, fa, fm) = field_embedding_preserves(R, L, h);
+  let R := PolynomialResidueField(K, M, irreducible);
+  let f := field_embedding_map(R, L, h);
+  obtain (f0, f1, fn, fa, fm) := field_embedding_preserves(R, L, h);
   have same : forall r : PolynomialResidue(K, M), f(r) = residue_evaluate(K, M, L, e, x, r) {
     intro r;
     exact with unfolding [] {

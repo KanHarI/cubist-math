@@ -2,16 +2,16 @@ import group_total_identity;
 import identity_systems;
 
 // A homotopy of the underlying functions determines an isomorphism path.
-def group_iso_path_data(G H : Group, p q : GroupIso(G, H), r : p = q) =
+def group_iso_path_data(G H : Group, p q : GroupIso(G, H), r : p = q) :=
   fun (x : group_carrier(G)) => cong(
     (fun (iso : GroupIso(G, H)) => group_iso_forward(G, H, iso, x)), r
   );
 
-def group_iso_choose_path(G H : Group, p q : GroupIso(G, H), r : p = q) =
+def group_iso_choose_path(G H : Group, p q : GroupIso(G, H), r : p = q) :=
   group_iso_ext(G, H, p, q, group_iso_path_data(G, H, p, q, r));
 
 def group_iso_is_set(G H : Group) : IsSet(GroupIso(G, H)) {
-  let setH = group_is_set(H);
+  let setH := group_is_set(H);
   have constant :
     forall p : GroupIso(G, H), forall q : GroupIso(G, H), forall r : p = q, forall s : p = q,
     group_iso_choose_path(G, H, p, q, r) = group_iso_choose_path(G, H, p, q, s) {
@@ -32,13 +32,13 @@ def group_iso_is_set(G H : Group) : IsSet(GroupIso(G, H)) {
   exact constant_paths_are_set(GroupIso(G, H), group_iso_choose_path(G, H), constant);
 }
 
-def group_total_contraction(G : Group, z : GroupIsoTotal(G)) =
+def group_total_contraction(G : Group, z : GroupIsoTotal(G)) :=
   pair_induction(
     (fun (z : GroupIsoTotal(G)) => group_iso_center(G) = z),
     group_isomorphism_total_contractible(G), z
   );
 
-def group_identity_family(G H : Group) = typed(U1, GroupIso(G, H));
+def group_identity_family(G H : Group) := typed(U1, GroupIso(G, H));
 
 // Recover the group path corresponding to this particular isomorphism.
 // The total-space contraction ensures that decoding recovers the same map.

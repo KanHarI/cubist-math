@@ -8,7 +8,7 @@ def SubdivisionRefinementSum(
   C G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G,
   condition : (forall a : C, forall b : C, C -> SampleSubdivision(C, a, b) -> U1), a b : C,
   coarse fine : SampleSubdivision(C, a, b)
-) =
+) :=
   exists pieces : SampleSubdivisions(
     C, subdivision_count(C, a, b, coarse), subdivision_vertices(C, a, b, coarse)
   ),
@@ -39,14 +39,14 @@ def subdivision_refinement_sum_join(
     C, G, zero, addG, edge, condition, a, c, join_subdivisions(C, a, b, c, coarseLeft, coarseRight),
     join_subdivisions(C, a, b, c, fineLeft, fineRight)
   ) {
-  let n = subdivision_count(C, a, b, coarseLeft);
-  let vertices = subdivision_vertices(C, a, b, coarseLeft);
-  let tags = subdivision_tags(C, a, b, coarseLeft);
-  let m = subdivision_count(C, b, c, coarseRight);
-  let rightVertices = subdivision_vertices(C, b, c, coarseRight);
-  let rightTags = subdivision_tags(C, b, c, coarseRight);
-  obtain (leftPieces, leftValid, leftComputes) = left;
-  obtain (rightPieces, rightValid, rightComputes) = right;
+  let n := subdivision_count(C, a, b, coarseLeft);
+  let vertices := subdivision_vertices(C, a, b, coarseLeft);
+  let tags := subdivision_tags(C, a, b, coarseLeft);
+  let m := subdivision_count(C, b, c, coarseRight);
+  let rightVertices := subdivision_vertices(C, b, c, coarseRight);
+  let rightTags := subdivision_tags(C, b, c, coarseRight);
+  obtain (leftPieces, leftValid, leftComputes) := left;
+  obtain (rightPieces, rightValid, rightComputes) := right;
   have lastLeft : sample_last(C, n, vertices) = b := field_snd(
     (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
     subdivision_endpoints(C, a, b, coarseLeft)
@@ -55,19 +55,19 @@ def subdivision_refinement_sum_join(
     (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
     subdivision_endpoints(C, b, c, coarseRight)
   );
-  let same = trans(lastLeft, sym(firstRight));
-  let pieces =
+  let same := trans(lastLeft, sym(firstRight));
+  let pieces :=
     join_subdivision_families(C, n, vertices, leftPieces, m, rightVertices, rightPieces, same);
-  let valid =
+  let valid :=
     subdivision_tagged_join(
       C, condition, n, vertices, tags, leftPieces, m, rightVertices, rightTags, rightPieces, same,
       leftValid, rightValid
     );
-  let leftTotal = subdivision_total(C, G, zero, addG, edge, n, vertices, leftPieces);
-  let rightFine = subdivision_sum(C, G, zero, addG, edge, b, c, fineRight);
-  let joinFine =
+  let leftTotal := subdivision_total(C, G, zero, addG, edge, n, vertices, leftPieces);
+  let rightFine := subdivision_sum(C, G, zero, addG, edge, b, c, fineRight);
+  let joinFine :=
     subdivision_sum_join(C, G, zero, addG, unitLaw, assoc, edge, a, b, c, fineLeft, fineRight);
-  let joinTotal =
+  let joinTotal :=
     subdivision_total_join(
       C, G, zero, addG, unitLaw, assoc, edge, n, vertices, leftPieces, m, rightVertices,
       rightPieces, same
@@ -94,7 +94,7 @@ def subdivision_refinement_sum_single(
   SubdivisionRefinementSum(
     C, G, zero, addG, edge, condition, a, b, single_edge_subdivision(C, a, b), fine
   ) {
-  let pieces = typed((SampleSubdivision(C, a, b) and Unit), (fine, tt));
+  let pieces := typed((SampleSubdivision(C, a, b) and Unit), (fine, tt));
   exact (
     pieces, typed((condition(a, b, a, fine) and Unit), (valid, tt)),
     sym(rightUnit(subdivision_sum(C, G, zero, addG, edge, a, b, fine)))

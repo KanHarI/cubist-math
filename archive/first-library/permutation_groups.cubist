@@ -3,7 +3,7 @@ import quotient_sets;
 
 // Permutations of a set form a group. Multiplication is ordinary function
 // composition: (f * g)(a) = f(g(a)), with the right factor acting first.
-def permutation_multiply(A : U0, f g : Bijection(A, A)) = compose_bijection(A, A, A, g, f);
+def permutation_multiply(A : U0, f g : Bijection(A, A)) := compose_bijection(A, A, A, g, f);
 
 def bijections_are_set(A B : U0, setA : IsSet(A), setB : IsSet(B)) : IsSet(Bijection(A, B)) {
   exact subtype_is_set(
@@ -87,14 +87,14 @@ def permutation_group_laws(A : U0, setA : IsSet(A)) :
   );
 }
 
-def PermutationGroup(A : U0, setA : IsSet(A)) =
+def PermutationGroup(A : U0, setA : IsSet(A)) :=
   group_object(
     Bijection(A, A), identity_bijection(A), permutation_multiply(A), permutation_group_laws(A, setA)
   );
 
 // Fixing a specified point is a subgroup condition. Membership is a
 // proposition because A is a set; inverse closure uses the supplied inverse law.
-def FixesPoint(A : U0, a : A, f : Bijection(A, A)) = forward(A, A, f, a) = a;
+def FixesPoint(A : U0, a : A, f : Bijection(A, A)) := forward(A, A, f, a) = a;
 
 def point_stabilizer_laws(A : U0, setA : IsSet(A), a : A) :
   SubgroupLaws(PermutationGroup(A, setA), FixesPoint(A, a)) {
@@ -117,7 +117,7 @@ def point_stabilizer_laws(A : U0, setA : IsSet(A), a : A) :
   );
 }
 
-def PointStabilizer(A : U0, setA : IsSet(A), a : A) =
+def PointStabilizer(A : U0, setA : IsSet(A), a : A) :=
   typed(Subgroup(PermutationGroup(A, setA)), (FixesPoint(A, a), point_stabilizer_laws(A, setA, a)));
 
 // Conjugation in this group really is the usual permutation action.

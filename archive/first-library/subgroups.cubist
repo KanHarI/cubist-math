@@ -4,7 +4,7 @@ import field_extensionality;
 // Subgroups are proposition-valued subsets of a bundled small group.
 // Inverse closure uses a witnessed left inverse, so no inverse operation
 // or choice of witnesses is added to the group signature.
-def SubgroupLaws(G : Group, H : group_carrier(G) -> U0) =
+def SubgroupLaws(G : Group, H : group_carrier(G) -> U0) :=
   (forall x : group_carrier(G), Proposition(H(x))) and H(group_unit(G))
   and (
     forall x : group_carrier(G), forall y : group_carrier(G), H(x) -> H(y)
@@ -15,9 +15,9 @@ def SubgroupLaws(G : Group, H : group_carrier(G) -> U0) =
     -> (group_multiply(G, y, x) = group_unit(G)) -> H(y)
   );
 
-def Subgroup(G : Group) = exists H : group_carrier(G) -> U0, SubgroupLaws(G, H);
+def Subgroup(G : Group) := exists H : group_carrier(G) -> U0, SubgroupLaws(G, H);
 
-def subgroup_members(G : Group, S : Subgroup(G)) =
+def subgroup_members(G : Group, S : Subgroup(G)) :=
   unpack S as (H, laws) return (group_carrier(G) -> U0) {
     H;
   };
@@ -32,13 +32,13 @@ def subgroup_prop(
   G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G)
 ) :
   Proposition(H(x)) {
-  obtain (prop, unit, multiplyLocal, invClosed) = laws;
+  obtain (prop, unit, multiplyLocal, invClosed) := laws;
   exact prop(x);
 }
 
 def subgroup_unit(G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H)) :
   H(group_unit(G)) {
-  obtain (prop, unit, multiplyLocal, invClosed) = laws;
+  obtain (prop, unit, multiplyLocal, invClosed) := laws;
   exact unit;
 }
 
@@ -47,7 +47,7 @@ def subgroup_multiply(
   hx : H(x), hy : H(y)
 ) :
   H(group_multiply(G, x, y)) {
-  obtain (prop, unit, multiplyLocal, invClosed) = laws;
+  obtain (prop, unit, multiplyLocal, invClosed) := laws;
   exact multiplyLocal(x, y, hx, hy);
 }
 
@@ -56,24 +56,24 @@ def subgroup_inverse(
   hx : H(x), inverseLaw : group_multiply(G, y, x) = group_unit(G)
 ) :
   H(y) {
-  obtain (prop, unit, multiplyLocal, invClosed) = laws;
+  obtain (prop, unit, multiplyLocal, invClosed) := laws;
   exact invClosed(x, y, hx, inverseLaw);
 }
 
 // The entire law bundle is a proposition; subgroups retain only membership data.
 def subgroup_laws_prop(G : Group, H : group_carrier(G) -> U0, p q : SubgroupLaws(G, H)) : p = q {
-  let A = group_carrier(G);
-  let unit = group_unit(G);
-  let multiplyLocal = group_multiply(G);
-  let known = subgroup_prop(G, H, p);
-  let membershipLaw = (forall x : A, Proposition(H(x)));
-  let membershipUnique =
+  let A := group_carrier(G);
+  let unit := group_unit(G);
+  let multiplyLocal := group_multiply(G);
+  let known := subgroup_prop(G, H, p);
+  let membershipLaw := (forall x : A, Proposition(H(x)));
+  let membershipUnique :=
     forall_prop(A, (fun (x : A) => Proposition(H(x))), (fun (x : A) => is_prop_prop(H(x))));
-  let unitLaw = H(unit);
-  let unitUnique = known(unit);
-  let multiplicationLaw =
+  let unitLaw := H(unit);
+  let unitUnique := known(unit);
+  let multiplicationLaw :=
     (forall x : A, (forall y : A, (forall hx : H(x), (forall hy : H(y), H(multiplyLocal(x, y))))));
-  let multiplicationUnique =
+  let multiplicationUnique :=
     forall_prop(
       A,
       (
@@ -98,12 +98,12 @@ def subgroup_laws_prop(G : Group, H : group_carrier(G) -> U0, p q : SubgroupLaws
         )
       )
     );
-  let inversionLaw =
+  let inversionLaw :=
     (
       forall x : A,
       (forall y : A, (forall hx : H(x), (forall inverseLaw : multiplyLocal(y, x) = unit, H(y))))
     );
-  let inversionUnique =
+  let inversionUnique :=
     forall_prop(
       A,
       (
@@ -134,13 +134,13 @@ def subgroup_laws_prop(G : Group, H : group_carrier(G) -> U0, p q : SubgroupLaws
         )
       )
     );
-  let multiplicationTail = multiplicationLaw and inversionLaw;
-  let multiplicationTailUnique =
+  let multiplicationTail := multiplicationLaw and inversionLaw;
+  let multiplicationTailUnique :=
     product_prop(multiplicationLaw, inversionLaw, multiplicationUnique, inversionUnique);
-  let unitTail = unitLaw and multiplicationTail;
-  let unitTailUnique =
+  let unitTail := unitLaw and multiplicationTail;
+  let unitTailUnique :=
     product_prop(unitLaw, multiplicationTail, unitUnique, multiplicationTailUnique);
-  let membershipTailUnique =
+  let membershipTailUnique :=
     product_prop(membershipLaw, unitTail, membershipUnique, unitTailUnique);
   exact membershipTailUnique(p, q);
 }

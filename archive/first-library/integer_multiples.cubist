@@ -8,7 +8,7 @@ def additive_right_zero(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G
 ) :
   addG(x, zero) = x {
-  obtain (assoc, comm, unit, inverseLaw) = laws;
+  obtain (assoc, comm, unit, inverseLaw) := laws;
   exact trans(comm(x, zero), unit(x));
 }
 
@@ -16,7 +16,7 @@ def additive_cancel_last(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x y : G
 ) :
   addG(addG(x, y), negG(y)) = x {
-  obtain (assoc, comm, unit, inverseLaw) = laws;
+  obtain (assoc, comm, unit, inverseLaw) := laws;
   exact trans(
     assoc(x, y, negG(y)),
     trans(
@@ -30,7 +30,7 @@ def additive_cancel_negative_last(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x y : G
 ) :
   addG(addG(x, negG(y)), y) = x {
-  obtain (assoc, comm, unit, inverseLaw) = laws;
+  obtain (assoc, comm, unit, inverseLaw) := laws;
   exact trans(
     assoc(x, negG(y), y),
     trans(cong(addG(x), inverseLaw(y)), additive_right_zero(G, zero, addG, negG, laws, x))
@@ -42,7 +42,7 @@ def additive_shuffle(
   x y u v : G
 ) :
   addG(addG(x, y), addG(u, v)) = addG(addG(x, u), addG(y, v)) {
-  obtain (assoc, comm, unit, inverseLaw) = laws;
+  obtain (assoc, comm, unit, inverseLaw) := laws;
   exact trans(
     assoc(x, y, addG(u, v)),
     trans(
@@ -56,13 +56,13 @@ def additive_shuffle(
   );
 }
 
-def natural_multiple(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, x : G, n : Nat) =
+def natural_multiple(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, x : G, n : Nat) :=
   induction n as k return G {
     zero => zero;
     succ previous => addG(previous, x);
   };
 
-def integer_multiple(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, x : G, z : Z) =
+def integer_multiple(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, x : G, z : Z) :=
   match z return G {
     left n => natural_multiple(G, zero, addG, negG, x, n);
     right n => natural_multiple(G, zero, addG, negG, negG(x), succ(n));
@@ -131,7 +131,7 @@ def integer_multiple_add_positive(
   integer_multiple(G, zero, addG, negG, x, add_nonnegative(n, z)) = addG(
     integer_multiple(G, zero, addG, negG, x, z), natural_multiple(G, zero, addG, negG, x, n)
   ) {
-  obtain (assoc, comm, unit, inverseLaw) = laws;
+  obtain (assoc, comm, unit, inverseLaw) := laws;
   exact induction n as k return (
     integer_multiple(G, zero, addG, negG, x, add_nonnegative(k, z)) = addG(
       integer_multiple(G, zero, addG, negG, x, z), natural_multiple(G, zero, addG, negG, x, k)
@@ -161,7 +161,7 @@ def integer_multiple_add_negative(
     integer_multiple(G, zero, addG, negG, x, z),
     natural_multiple(G, zero, addG, negG, negG(x), succ(n))
   ) {
-  obtain (assoc, comm, unit, inverseLaw) = laws;
+  obtain (assoc, comm, unit, inverseLaw) := laws;
   exact induction n as k return (
     integer_multiple(G, zero, addG, negG, x, add_negative(k, z)) = addG(
       integer_multiple(G, zero, addG, negG, x, z),
@@ -206,6 +206,6 @@ def integer_multiple_one(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G
 ) :
   integer_multiple(G, zero, addG, negG, x, nonnegative(1)) = x {
-  obtain (assoc, comm, unit, inverseLaw) = laws;
+  obtain (assoc, comm, unit, inverseLaw) := laws;
   exact unit(x);
 }

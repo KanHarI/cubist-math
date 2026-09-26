@@ -9,8 +9,8 @@ def field_affine_difference(
   coordinate_difference(F, addF, negF, addF(a, mulF(s, d)), addF(a, mulF(t, d))) = mulF(
     coordinate_difference(F, addF, negF, s, t), d
   ) {
-  let x = addF(a, mulF(s, d));
-  let error = mulF(addF(negF(s), t), d);
+  let x := addF(a, mulF(s, d));
+  let error := mulF(addF(negF(s), t), d);
   have cancel : addF(addF(x, error), negF(x)) = error := trans(
     ring_add_comm(F, zero, one, addF, mulF, negF, ring, addF(x, error), negF(x)),
     trans(
@@ -46,16 +46,16 @@ def field_affine_increment_bound(
     F, negF, lt, coordinate_difference(F, addF, negF, addF(a, mulF(s, d)), addF(a, mulF(t, d))),
     mulF(coordinate_difference(F, addF, negF, s, t), length)
   ) {
-  let delta = coordinate_difference(F, addF, negF, s, t);
-  let nonnegativeDelta =
+  let delta := coordinate_difference(F, addF, negF, s, t);
+  let nonnegativeDelta :=
     field_difference_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, s, t, ordered
     );
-  let deltaBound =
+  let deltaBound :=
     field_nonnegative_magnitude(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, delta, nonnegativeDelta
     );
-  let productBound =
+  let productBound :=
     field_magnitude_mul(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, delta, d, delta, length,
       deltaBound, bounded
@@ -65,7 +65,7 @@ def field_affine_increment_bound(
   ) from productBound;
 }
 
-def IntervalOrderedSamples(F : U1, zero one : F, lt : F -> F -> U0, n : Nat) =
+def IntervalOrderedSamples(F : U1, zero one : F, lt : F -> F -> U0, n : Nat) :=
   SampleAdjacent(
     FieldUnitInterval(F, zero, one, lt),
     (
@@ -79,7 +79,7 @@ def IntervalOrderedSamples(F : U1, zero one : F, lt : F -> F -> U0, n : Nat) =
 def interval_affine_increment(
   F : U1, zero one : F, addF mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, a d : F,
   s t tag : FieldUnitInterval(F, zero, one, lt)
-) =
+) :=
   coordinate_difference(
     F, addF, negF, addF(a, mulF(field_interval_coordinate(F, zero, one, lt, s), d)),
     addF(a, mulF(field_interval_coordinate(F, zero, one, lt, t), d))
@@ -99,8 +99,8 @@ def interval_affine_increment_bounds(
     interval_affine_increment(F, zero, one, addF, mulF, negF, lt, a, d),
     interval_weight(F, zero, one, addF, mulF, negF, lt, length), n, vertices, tags
   ) {
-  let I = FieldUnitInterval(F, zero, one, lt);
-  let coordinate = field_interval_coordinate(F, zero, one, lt);
+  let I := FieldUnitInterval(F, zero, one, lt);
+  let coordinate := field_interval_coordinate(F, zero, one, lt);
   exact sample_adjacent_magnitude(
     I, F, negF, lt, (fun (s t : I) => FieldLe(F, lt, coordinate(s), coordinate(t))),
     interval_affine_increment(F, zero, one, addF, mulF, negF, lt, a, d),

@@ -65,7 +65,7 @@ def affine_dyadic_integral(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
   ), complete : CauchyComplete(F, zero, addF, lt)
-) =
+) :=
   field_first(
     Complex(F),
     ComplexConverges(
@@ -162,7 +162,7 @@ def affine_dyadic_integral_unique(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
     bounds, half, halfSum, z, slope, integrand, uniform, a, b, ordered, complete
   ) = value {
-  let halving =
+  let halving :=
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
   exact complex_limit_unique(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving,
