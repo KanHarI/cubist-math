@@ -215,10 +215,43 @@ export class NativeCubicalElaborator {
     return { term: checked.term, type: checked.type, native: { ok: true,
       arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()] } };
   }
-  check(term, expected, context = new Map(), dimensions = this.dimensions, describe = true) {
+  // A committed check, one a tactic builds its proof from, is also derived by
+  // the instruction kernel at once, so the tactic issues its instructions as
+  // it runs, and a term the kernel cannot derive fails at that tactic. A
+  // speculative check (describe = false, from attempt) and the elaborator's
+  // queries (infer, nf, equal, expect) are answered by the term checker
+  // alone: they steer elaboration and are not evidence.
+  check(term, expected, context = new Map(), dimensions = this.dimensions, describe = true, commit = describe) {
     const checked = this.checkSyntax(term, expected, context, dimensions, describe);
     this.steps += checked.checkingSteps;
+    if (commit) this.issue(checked, context, dimensions);
     return checked.term;
+  }
+  dimensionMask(dimensions) {
+    let mask = 0n;
+    for (const index of dimensions.values()) mask |= 1n << BigInt(index);
+    return mask;
+  }
+  // The driver of this declaration's instructions, kept on the kernel, which
+  // every module's checker shares: its caches hold judgements and handles, so
+  // a declaration transaction's finish drops it.
+  get driver() { return this.kernel.instructionDriver ??= new InstructionDriver(this.kernel); }
+  issue(checked, context, dimensions) {
+    // Each assumption's type as the term checker elaborated it in its
+    // telescope (annotations reconstructed, faces split), once per driver.
+    const driver = this.driver, elaborated = driver.contextTypes ??= new Map(), mask = this.dimensionMask(dimensions);
+    const assumptions = [];
+    let key = "";
+    for (const [name, type] of this.context(context)) {
+      const symbol = this.kernel.symbol(name), raw = this.syntax.encode(type, dimensions);
+      key += `${symbol}:${raw},`;
+      if (!elaborated.has(key)) elaborated.set(key, this.kernel.check(raw, 0, assumptions, mask).expression);
+      assumptions.push([symbol, elaborated.get(key)]);
+    }
+    try { driver.check(checked.expression, checked.typeHandle, assumptions); }
+    catch (error) {
+      throw Object.assign(new Error(`Instruction kernel: ${error.message}`), { kind: error.kind ?? "other" });
+    }
   }
   ascribe(term, type, names = this.names) {
     // Application of the identity at the declared type retains that exact
@@ -259,7 +292,8 @@ export class NativeCubicalElaborator {
     // inhabits the expected type. This uses directed cumulative typing, while
     // equal() continues to ask for definitional equality.
     const name = names.fresh("expected");
-    this.check({ tag: "Var", name }, expected, new Map(context).set(name, actual), dimensions);
+    // A query, not a proof step: nothing is issued to the instruction kernel.
+    this.check({ tag: "Var", name }, expected, new Map(context).set(name, actual), dimensions, true, false);
   }
   define(name, term, type) {
     const assumptions = this.requiredAssumptions(term, type);
@@ -284,13 +318,16 @@ export class NativeCubicalElaborator {
   // body the instruction kernel cannot derive is not a definition.
   admit(name, body, signature) {
     const checked = this.kernel.check(body, signature), started = performance.now();
-    const driver = new InstructionDriver(this.kernel), graph = driver.graph, before = graph.count;
+    const driver = this.driver, graph = driver.graph, before = graph.count;
     let reference;
     try {
       const judgement = driver.check(checked.expression, checked.type);
       reference = graph.judgement(graph.define(name, judgement)).term;
     } catch (error) {
       throw Object.assign(new Error(`Instruction kernel: ${error.message}`), { kind: error.kind ?? "other" });
+    } finally {
+      // One driver per declaration: the next starts from a fresh one.
+      this.kernel.instructionDriver = null;
     }
     this.kernel.definitions.set(name, reference);
     return { reference, admission: { ms: +(performance.now() - started).toFixed(3), judgements: graph.count - before } };

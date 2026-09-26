@@ -42,5 +42,7 @@ export class CubicalDeclarationTransaction {
     }
     checker.syntax.encoded = new WeakMap();
     checker.syntax.decoded.clear();
+    // Its judgements were truncated with the checkpoint, and handles moved.
+    kernel.instructionDriver = null;
   }
 }

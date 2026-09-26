@@ -383,6 +383,9 @@ int main(void) {
     cc_entry_id many[400];
     for (uint32_t s = 0; s < 400; ++s) many[s] = OK(cc_instr_extend(k, nat, 1000 + s));
     for (uint32_t s = 0; s < 400; s += 37) assert(OK(cc_instr_extend(k, nat, 1000 + s)) == many[s]);
+    /* The same name at the same type is the same entry, whatever derived the type. */
+    cc_judgement_id nat_again = OK(cc_instr_side(k, OK(cc_instr_refl(k, nat)), 1));
+    assert(nat_again != nat && OK(cc_instr_extend(k, nat_again, 1000)) == many[0]);
     rejects(cc_instr_extend(k, OK(cc_instr_unit(k)), 1234), "already names");
     assert(OK(cc_instr_dimension(k, 1)) == j2);
 

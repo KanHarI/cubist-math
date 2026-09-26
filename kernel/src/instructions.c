@@ -358,11 +358,16 @@ cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol)
         return 0;
     if (!symbol)
         return ck_fail(k, "A context entry needs a symbol."), 0;
+    /* The same name at the same type, however that type was derived, is the
+     * same entry: its own judgement justifies its type. Contexts are then
+     * canonical, one entry per name. */
     cc_entry_id named = find_entry(k, symbol);
     if (named) {
-        if (k->entries[named].source == type)
+        if (k->entries[named].source == type || ck_alpha_equal(k, k->entries[named].type, t.term))
             return named;
-        return ck_fail(k, "The symbol already names a context entry."), 0;
+        if (!k->error[0])
+            ck_fail(k, "The symbol already names a context entry.");
+        return 0;
     }
     if (!ck_var(k, symbol))
         return 0;

@@ -360,6 +360,9 @@ export class CubicalProgram {
     }]));
   }
   inspect(binding, { normalize = false, universes, offset, expansion } = {}) {
+    // An inspection elaborates outside any declaration's transaction: its
+    // instructions start from a driver of their own.
+    this.kernel.instructionDriver = null;
     if (this.templateSelections.has(binding)) {
       const selection = this.templateSelections.get(binding);
       return this.inspect(selection.binding, { normalize, universes, offset: selection.offset,

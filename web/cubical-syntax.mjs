@@ -207,6 +207,6 @@ export class CubicalSyntax {
     }
     const context = assumptions.map(([name, type]) => [this.kernel.symbol(name), this.encode(type, dimensions)]);
     const result = this.kernel.check(this.encode(term, dimensions), expected ? this.encode(expected, dimensions) : 0, context, mask);
-    return { ...result, term: this.decode(result.expression, dimensions), type: this.decode(result.type, dimensions) };
+    return { ...result, typeHandle: result.type, term: this.decode(result.expression, dimensions), type: this.decode(result.type, dimensions) };
   }
 }

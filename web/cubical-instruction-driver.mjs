@@ -40,6 +40,9 @@ export class InstructionDriver {
     this.derived = new Map();
     this.stable = new Set();
     this.equalities = new Map();
+    this.alphaMemo = new Map();
+    this.chainIds = new WeakMap();
+    this.chainNumbers = new Map();
   }
 
   // The judgement `expression : type` for a checked term and its type, in a
@@ -115,16 +118,27 @@ export class InstructionDriver {
   // per kernel, so finding one never searches.
   bind(symbol, type) { return this.entry(type, this.kernel.symbolName(symbol), false); }
   freshEntry(type, stem) { return this.entry(type, stem, true); }
+  //
+  // A binder's variant is remembered by its name and type, and used again the
+  // next time the same name is bound at the same type: two variants of one
+  // variable would make terms that mention it differ for ever.
   entry(type, stem, fresh) {
+    const variants = this.kernel.variantNames ??= new Map();
+    const key = fresh ? null : `${stem}\u0000${this.statement(type).term}`;
     if (!fresh) {
       try { return this.graph.extend(type, stem); }
       catch (error) { if (!/already names/.test(error.message)) throw error; }
+      if (variants.has(key)) {
+        try { return this.graph.extend(type, variants.get(key)); }
+        catch (error) { if (!/already names/.test(error.message)) throw error; variants.delete(key); }
+      }
     }
     const counters = this.kernel.freshNames ??= new Map();
     for (let suffix = (counters.get(stem) ?? 0) + 1; ; suffix++) {
       try {
-        const entry = this.graph.extend(type, `${stem}'${suffix}`);
+        const name = `${stem}'${suffix}`, entry = this.graph.extend(type, name);
         counters.set(stem, suffix);
+        if (key) variants.set(key, name);
         return entry;
       } catch (error) { if (!/already names/.test(error.message)) throw error; }
     }
@@ -719,7 +733,17 @@ export class InstructionDriver {
     case "WRec":
       return this.node(n.children[2]).kind === "Sup" ? iota : under(2, this.headStep(n.children[2]));
     case "PApp": {
-      if (this.node(n.children[0]).kind === "PLam") return { path: [], rule: "path" };
+      const fn = this.node(n.children[0]);
+      if (fn.kind === "PLam") {
+        // Substituting a compound formula can expand it exponentially, as in
+        // 1 - (a ∧ b ∨ c ∧ d ∨ …): contract the body's own computing head
+        // first, so that the formula meets a smaller term, often none.
+        if (this.point(n.payload).compound) {
+          const inner = this.headStep(fn.children[1]);
+          if (inner && inner.rule !== "delta") return { path: [0, 1, ...inner.path], rule: inner.rule };
+        }
+        return { path: [], rule: "path" };
+      }
       const point = this.point(n.payload);
       if (point.endpoint !== undefined && n.children[1] && this.node(n.children[1]).kind === "Path")
         return { path: [], rule: "path" };
@@ -739,18 +763,46 @@ export class InstructionDriver {
 
   // Alpha equality, as the kernel decides it without reducing: bound names
   // correspond through `terms` and `dims`, lists of {left, right, next}.
+  //
+  // Terms are shared graphs, not trees: a subterm met twice under the same
+  // renaming is compared once, and a term against itself under binders each
+  // named as on the other side needs no comparison. Without both, a term
+  // such as refl(refl(… refl(0))) takes time exponential in its depth.
   alpha(x, y, terms = null, dims = null) {
-    if (x === y && !terms && !dims) return true;
+    if (x === y && this.unrenamed(terms) && this.unrenamed(dims)) return true;
     if (!x || !y) return x === y;
+    const key = `${x},${y},${this.chainId(terms)},${this.chainId(dims)}`, known = this.alphaMemo.get(key);
+    if (known !== undefined) return known;
     const nx = this.node(x), ny = this.node(y);
-    if (nx.kind !== ny.kind || !this.sameHead(nx, ny, terms, dims)) return false;
-    for (let i = 0; i < this.parts(nx); i++) {
+    let equal = nx.kind === ny.kind && this.sameHead(nx, ny, terms, dims);
+    for (let i = 0; equal && i < this.parts(nx); i++) {
       let innerTerms = terms, innerDims = dims;
       if (TERM_BINDERS.has(nx.kind) && i === 1) innerTerms = { left: nx.payload, right: ny.payload, next: terms };
       if (dimensionBound(nx.kind, i)) innerDims = { left: nx.payload, right: ny.payload, next: dims };
-      if (!this.alpha(nx.children[i], ny.children[i], innerTerms, innerDims)) return false;
+      equal = this.alpha(nx.children[i], ny.children[i], innerTerms, innerDims);
     }
-    return true;
+    this.alphaMemo.set(key, equal);
+    return equal;
+  }
+  // Whether a renaming maps every name to itself: odd ids are identities.
+  unrenamed(bindings) { return !bindings || this.chainId(bindings) % 2 === 1; }
+  // A renaming by its content, as a small number, so equal renamings built
+  // apart share memo keys.
+  chainId(bindings) {
+    if (!bindings) return 1;
+    let id = this.chainIds.get(bindings);
+    if (id === undefined) {
+      const next = this.chainId(bindings.next), content = `${bindings.left}:${bindings.right}:${next}`;
+      id = this.chainNumbers.get(content);
+      if (id === undefined) {
+        // Keep identities odd: this link maps its name to itself, and so did the rest.
+        const identity = bindings.left === bindings.right && next % 2 === 1;
+        id = 2 * (this.chainNumbers.size + 1) + (identity ? 1 : 0);
+        this.chainNumbers.set(content, id);
+      }
+      this.chainIds.set(bindings, id);
+    }
+    return id;
   }
   sameName(left, right, bindings) {
     for (let binding = bindings; binding; binding = binding.next)
