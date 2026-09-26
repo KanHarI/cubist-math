@@ -8,7 +8,7 @@ import { KernelError } from "./cubical-kernel.mjs";
 export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "unit", "point", "unitElim",
   "void", "abort", "sum", "inject", "sumElim", "variable", "pi", "lambda", "apply", "sigma", "pair", "first",
   "second", "domain", "family", "path", "pathLambda", "pathApply", "define", "lookup", "refl", "step", "replace",
-  "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint"];
+  "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
   natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
@@ -17,7 +17,8 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   second: "SigmaSnd", domain: "Domain", family: "Family", path: "PathForm", pathLambda: "PathIntro",
   pathApply: "PathElim", define: "Def", lookup: "DefLookup", refl: "DefEqRefl", step: "Step",
   replace: "HighSubs", eta: "Eta", side: "DefEqExt", symmetry: "DefEqSwp", transitivity: "DefEqTrans",
-  convert: "Conv", lift: "Lift", endpoint: "Endpoint" };
+  convert: "Conv", lift: "Lift", endpoint: "Endpoint", pathAt: "PathElim", system: "CompBase", systemTube: "CompTube",
+  comp: "Comp" };
 export const stepRules = ["", "beta", "delta", "iota", "path", "normalize"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
@@ -80,6 +81,10 @@ export class InstructionGraph {
   pathLambda(dimension, body) { return this.issue("pathLambda", dimension, body); }
   pathApply(path, dimension, endpoint = 0) { return this.issue("pathApply", path, dimension, endpoint); }
   endpoint(judgement, dimension, endpoint) { return this.issue("endpoint", judgement, dimension, endpoint); }
+  pathAt(path, formula) { return this.issue("pathAt", path, formula); }
+  system(dimension, family, base) { return this.issue("system", dimension, family, base); }
+  systemTube(system, face, tube, adjacency) { return this.issue("systemTube", system, face, tube, adjacency); }
+  comp(system) { return this.issue("comp", system); }
   define(name, closed) { return this.issue("define", this.kernel.symbol(name), closed); }
   lookup(reference) { return this.issue("lookup", reference); }
   refl(typing) { return this.issue("refl", typing); }
@@ -116,7 +121,7 @@ export class InstructionGraph {
     const context = [];
     for (let index = 0, entry; (entry = this.module._cb_judgement_context(this.kernel.handle, id, index) >>> 0); index++)
       context.push(entry);
-    const judgement = { id, kind: kind === 1 ? "typing" : "equality", term: field(1), type: field(3), rule,
+    const judgement = { id, kind: ["", "typing", "equality", "system"][kind], term: field(1), type: field(3), rule,
       premises: [5, 6, 7, 8].map(field).filter(Boolean), entry: field(9), operands: [field(10), field(11)], context };
     if (kind === 2) judgement.other = field(2);
     if (rule === "step" || rule === "replace") {

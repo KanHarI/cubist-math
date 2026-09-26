@@ -89,13 +89,21 @@ function display(updateSyntax = true) {
 function displayAssembly() {
   if (!checked) {
     listing = null; $("assembly-listing").replaceChildren();
-    $("assembly-status").textContent = "Return to Mathematical view and check the edited expression before inspecting its assembly.";
+    $("assembly-status").textContent = "Return to Mathematical view and check the edited expression before inspecting its AST.";
     $("assembly-more").hidden = true; $("assembly-download").disabled = true; return;
   }
   if (assemblyView !== view) {
     assemblyView = view; assemblyLimit = 400; assemblyFocus = []; expandedDefinitions = new Set();
   }
   listing = kernelAssembly(program, view, checked, { limit: assemblyLimit, focus: assemblyFocus, expanded: expandedDefinitions });
+  // The term and its type, typeset, above the nodes that store them.
+  $("assembly-math").replaceChildren(...[["Term", view.expression], ["Type", view.type]].map(([label, term]) => {
+    const row = document.createElement("div"), name = document.createElement("span"), math = document.createElement("div");
+    row.className = "assembly-math-row"; name.textContent = label; math.className = "kernel-term typeset";
+    renderMathNotation(math, cubicalMathTree(term, view.symbols, 1200), options());
+    row.append(name, math);
+    return row;
+  }));
   renderSpecialization($("specialization"), view, { listing, jump: jumpAssembly });
   renderAssembly($("assembly-listing"), listing, { jump: jumpAssembly,
     expand: (id, body) => { expandedDefinitions.add(id); assemblyFocus.unshift(body); displayAssembly(); jumpAssembly(body); },
@@ -145,7 +153,7 @@ $("assembly-more").onclick = () => { assemblyLimit *= 2; displayAssembly(); };
 $("assembly-download").onclick = () => {
   if (!listing) return;
   const url = URL.createObjectURL(new Blob([assemblyText(listing)], { type: "text/plain" }));
-  const link = document.createElement("a"); link.href = url; link.download = `${selected ?? "kernel"}.assembly.txt`; link.click();
+  const link = document.createElement("a"); link.href = url; link.download = `${selected ?? "kernel"}.ast.txt`; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 function validate(term = view.expression) {
@@ -250,7 +258,8 @@ $("more-reduction-sites").onclick = () => { if (reductionMode) { reductionLimit 
 addEventListener("keydown", event => { if (event.key === "Escape" && reductionMode) $("unhighlight").click(); });
 try {
   const params = new URLSearchParams(location.search);
-  if (["assembly", "graph"].includes(params.get("view"))) $("workbench-view").value = params.get("view");
+  const requested = params.get("view") === "ast" ? "assembly" : params.get("view");
+  if (["assembly", "graph"].includes(requested)) $("workbench-view").value = requested;
   const key = params.get("transfer");
   const payload = key ? await readWorkbenchTransfer(key) : {
     format: "thth-cubical", version: 1, main: "workbench", sources: {},

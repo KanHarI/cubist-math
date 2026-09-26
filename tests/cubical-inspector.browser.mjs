@@ -136,7 +136,7 @@ try {
   assert.equal(await assemblyBench.locator(".assembly-table tr.selected").count(), 1);
   const downloaded = assemblyBench.waitForEvent("download");
   await assemblyBench.locator("#assembly-download").click();
-  assert.match((await downloaded).suggestedFilename(), /\.assembly\.txt$/);
+  assert.match((await downloaded).suggestedFilename(), /\.ast\.txt$/);
   await assemblyBench.locator("#workbench-view").selectOption("math");
   assert.equal(await assemblyBench.locator("#mathematical-view").isVisible(), true);
   assert.equal(await assemblyBench.locator("#type").textContent(), "Divides(succ(succ(i)),m)");

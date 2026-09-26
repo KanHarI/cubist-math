@@ -31,17 +31,12 @@ async function checked(t) {
   return program.kernel;
 }
 
-test("the first proof and the naturals library derive in instruction mode, at their checked types", async t => {
+test("the first proof and the naturals library, trans included, derive in instruction mode, at their checked types", async t => {
   const kernel = await checked(t);
   const derived = [];
   for (const [name, reference] of kernel.definitions) {
     const { value, type } = kernel.definition(reference);
     const driver = new InstructionDriver(kernel);
-    // trans needs compound interval formulas and composition (Stage 3).
-    if (name === "naturals__nat_add_comm") {
-      assert.throws(() => driver.check(value, type), /compound interval formula/);
-      continue;
-    }
     const judgement = driver.graph.judgement(driver.check(value, type));
     assert.equal(judgement.kind, "typing", name);
     assert.deepEqual(judgement.context, [], name);
@@ -51,7 +46,8 @@ test("the first proof and the naturals library derive in instruction mode, at th
     derived.push(name);
   }
   assert.deepEqual(derived, ["naturals__add", "naturals__mul", "naturals__le", "naturals__isLt",
-    "naturals__nat_add_zero", "naturals__nat_add_succ", "naturals__nat_add_assoc", "naturals__nat_le_refl",
+    "naturals__nat_add_zero", "naturals__nat_add_succ", "naturals__nat_add_assoc", "naturals__nat_add_comm",
+    "naturals__nat_le_refl",
     "first__lt", "first__lt_succ", "first__exists_greater_number"]);
 });
 
@@ -134,4 +130,35 @@ test("a definition's body is derived on request, as its lookup's premise", async
   for (const row of listing.rows) for (const premise of row.premises) assert.ok(premise < row.number);
   assert.equal(listing.rows.at(-1).number, listing.root);
   assert.ok(listing.rows.length > folded.rows.length);
+});
+
+test("every definition behind Euclid's theorem derives in instruction mode", async t => {
+  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const program = new CubicalProgram(await createCubical(), readArchive);
+  t.after(() => program.dispose());
+  await program.check(await readArchive("euclid"), "euclid");
+  const kernel = program.kernel, failures = [];
+  for (const [name, reference] of kernel.definitions) {
+    const { value, type } = kernel.definition(reference);
+    const driver = new InstructionDriver(kernel);
+    try {
+      const judgement = driver.graph.judgement(driver.check(value, type));
+      assert.deepEqual(judgement.context, [], name);
+      assert.ok(driver.alpha(judgement.type, type), name);
+    } catch (error) { failures.push(`${name}: ${error.message}`); }
+  }
+  assert.deepEqual(failures, []);
+  // sym and trans: a path at 1 - i, and composition with tubes on two faces.
+  const rules = new Set();
+  const { value, type } = kernel.definition(kernel.definitions.get("primes__nat_add_comm"));
+  const driver = new InstructionDriver(kernel);
+  for (const stack = [driver.check(value, type)], seen = new Set(); stack.length;) {
+    const id = stack.pop();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const judgement = driver.graph.judgement(id);
+    rules.add(judgement.rule);
+    stack.push(...judgement.premises);
+  }
+  for (const rule of ["pathAt", "system", "systemTube", "comp"]) assert.ok(rules.has(rule), rule);
 });

@@ -82,10 +82,10 @@ test("the elaboration view shows each declaration's type, term and the kernel's 
 test("a declaration outside instruction mode shows the kernel's traced check instead", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  await program.check(source, "first");
-  // trans needs compound interval formulas, not in instruction mode yet.
-  const commutativity = elaboration(program, "naturals").find(declaration => declaration.name === "nat_add_comm");
-  assert.equal(commutativity.derivation.source, "trace");
-  assert.match(commutativity.derivation.reason, /compound interval formula/);
-  assert.ok(commutativity.derivation.steps.length > 0);
+  // Pushouts are not in instruction mode yet.
+  await program.check("def Suspension(A : U0) := Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);\n", "suspension");
+  const [suspension] = elaboration(program, "suspension");
+  assert.equal(suspension.derivation.source, "trace");
+  assert.match(suspension.derivation.reason, /Pushout is not in instruction mode yet/);
+  assert.ok(suspension.derivation.steps.length > 0);
 });

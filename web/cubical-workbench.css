@@ -10,6 +10,10 @@
 [data-reduction][aria-pressed="true"] { background: #fff0b8; border-color: #a66a0a; }
 .assembly-roots, .assembly-table { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem; }
 .assembly-roots { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin: 1rem 0; }
+.assembly-math { display: grid; gap: .4rem; margin: .8rem 0; }
+.assembly-math-row { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); align-items: center; gap: .6rem; }
+.assembly-math-row > span { font-size: .8rem; color: #5b665b; }
+.assembly-math-row > .kernel-term.typeset { padding: 8px 12px; }
 .assembly-scroll { overflow: auto; max-height: 65vh; border: 1px solid #dce2dc; border-radius: 6px; }
 .assembly-table { border-collapse: collapse; width: 100%; }
 .assembly-table th, .assembly-table td { text-align: left; vertical-align: top; padding: .6rem; border-bottom: 1px solid #dce2dc; }

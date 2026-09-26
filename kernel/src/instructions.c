@@ -344,9 +344,15 @@ cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol)
     return id;
 }
 
+static cc_entry_id dimension_entry(cc_kernel *k, unsigned index);
+
 cc_entry_id cc_instr_dimension(cc_kernel *k, unsigned index) {
     if (!ready(k))
         return 0;
+    return dimension_entry(k, index);
+}
+
+static cc_entry_id dimension_entry(cc_kernel *k, unsigned index) {
     if (index >= CC_DIMENSIONS)
         return ck_fail(k, "Dimension outside the native range."), 0;
     for (size_t i = 1; i < k->entry_count; ++i)
@@ -737,6 +743,119 @@ cc_judgement_id cc_instr_endpoint(cc_kernel *k, cc_judgement_id id, cc_entry_id 
     return typing(k, ck_endpoint_term(k, t.term, i.symbol, endpoint), ck_endpoint_term(k, t.type, i.symbol, endpoint), context);
 }
 
+/* The context of the dimensions an interval or face formula names. */
+static bool formula_context(cc_kernel *k, const cc_formula *f, uint32_t *out) {
+    uint64_t names = 0;
+    for (size_t i = 0; i < f->length; ++i) names |= f->clauses[i].positive | f->clauses[i].negative;
+    *out = 0;
+    for (unsigned dim = 0; dim < CC_DIMENSIONS && !k->error[0]; ++dim)
+        if (names & (UINT64_C(1) << dim)) {
+            cc_entry_id entry = dimension_entry(k, dim);
+            if (!entry || !merge(k, *out, k->entries[entry].scope, out)) return false;
+        }
+    return !k->error[0];
+}
+
+cc_judgement_id cc_instr_path_at(cc_kernel *k, cc_judgement_id path_id, cc_formula_id interval) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_PATH_AT, .premise = {path_id}, .operand = {interval}}, NULL, 0, &found))
+        return found;
+    cc_fact p = {0};
+    uint32_t dims = 0, context = 0;
+    if (!premise(k, path_id, CC_FACT_TYPING, &p))
+        return 0;
+    cc_node type = k->nodes[p.type];
+    if (type.kind != CC_PATH)
+        return ck_fail(k, "Only a term of a path type can be applied to an interval formula."), 0;
+    const cc_formula *point = cc_kernel_get_formula(k, interval);
+    if (!point || point->sort != CC_INTERVAL)
+        return ck_fail(k, "A path applies at an interval formula."), 0;
+    if (!formula_context(k, point, &dims) || !merge(k, p.context, dims, &context))
+        return 0;
+    return typing(k, make(k, CC_PAPP, interval, p.term, p.type, 0, 0),
+                  ck_dimension_substitute(k, type.child[0], type.payload, point), context);
+}
+
+cc_judgement_id cc_instr_system(cc_kernel *k, cc_entry_id dimension, cc_judgement_id family_id, cc_judgement_id base_id) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SYSTEM, .premise = {family_id, base_id}, .entry = dimension}, NULL, 0, &found))
+        return found;
+    cc_entry i = {0};
+    cc_fact a = {0}, b = {0};
+    uint32_t level = 0, context = 0;
+    if (!entry(k, dimension, true, &i) || !premise(k, family_id, CC_FACT_TYPING, &a) ||
+        !premise(k, base_id, CC_FACT_TYPING, &b) || !universe(k, a.type, &level) ||
+        !same(k, b.type, ck_endpoint_term(k, a.term, i.symbol, 0), "The base is not in the family at 0.") ||
+        !merge(k, a.context, b.context, &context))
+        return 0;
+    if (ck_free_dims(k, b.term) & (UINT64_C(1) << i.symbol))
+        return ck_fail(k, "The base of a composition may not use its dimension."), 0;
+    cc_term comp = make(k, CC_COMP, i.symbol, a.term, 0, b.term, 0);
+    return comp ? publish(k, CC_FACT_SYSTEM, comp, 0, ck_endpoint_term(k, a.term, i.symbol, 1), context) : 0;
+}
+
+static cc_term append_tube(cc_kernel *k, cc_term tubes, cc_formula_id face, cc_term tube) {
+    if (!tubes)
+        return make(k, CC_TUBE, face, tube, 0, 0, 0);
+    cc_node n = k->nodes[tubes];
+    cc_term rest = append_tube(k, n.child[1], face, tube);
+    return rest ? make(k, CC_TUBE, n.payload, n.child[0], rest, 0, 0) : 0;
+}
+
+cc_judgement_id cc_instr_system_tube(cc_kernel *k, cc_judgement_id system_id, cc_formula_id face,
+                                     cc_judgement_id tube_id, cc_judgement_id adjacency_id) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SYSTEM_TUBE, .premise = {system_id, tube_id, adjacency_id},
+                                  .operand = {face}}, NULL, 0, &found))
+        return found;
+    cc_fact s = {0}, u = {0}, e = {0};
+    uint32_t dims = 0, context = 0;
+    if (!premise(k, system_id, CC_FACT_SYSTEM, &s) || !premise(k, tube_id, CC_FACT_TYPING, &u) ||
+        !premise(k, adjacency_id, CC_FACT_EQUALITY, &e))
+        return 0;
+    cc_node comp = k->nodes[s.term];
+    unsigned dim = comp.payload;
+    const cc_formula *phi = cc_kernel_get_formula(k, face);
+    if (!phi || phi->sort != CC_FACE || phi->length != 1)
+        return ck_fail(k, "A tube's face is one conjunction of endpoint equations."), 0;
+    cc_clause clause = phi->clauses[0];
+    uint64_t names = clause.positive | clause.negative;
+    if (clause.positive & clause.negative)
+        return ck_fail(k, "A tube's face must be consistent."), 0;
+    if (names & (UINT64_C(1) << dim))
+        return ck_fail(k, "A tube's face may not use the composition's dimension."), 0;
+    if (ck_free_dims(k, u.term) & names)
+        return ck_fail(k, "A tube must already be restricted to its face."), 0;
+    for (cc_term cursor = comp.child[1]; cursor; cursor = k->nodes[cursor].child[1]) {
+        cc_clause other = cc_kernel_get_formula(k, k->nodes[cursor].payload)->clauses[0];
+        if (!((clause.positive | other.positive) & (clause.negative | other.negative)))
+            return ck_fail(k, "Overlapping tube faces are not in instruction mode yet."), 0;
+    }
+    if (!same(k, u.type, ck_restrict(k, comp.child[0], clause), "The tube is not in the family on its face.") ||
+        !same(k, e.term, ck_endpoint_term(k, u.term, dim, 0), "The equality does not start at the tube at 0.") ||
+        !same(k, e.other, ck_restrict(k, comp.child[2], clause), "The equality does not end at the base on the face.") ||
+        !formula_context(k, phi, &dims) || !merge(k, s.context, u.context, &context) ||
+        !merge3(k, context, e.context, dims, &context))
+        return 0;
+    cc_term tubes = append_tube(k, comp.child[1], face, u.term);
+    cc_term extended = tubes ? make(k, CC_COMP, dim, comp.child[0], tubes, comp.child[2], 0) : 0;
+    return extended ? publish(k, CC_FACT_SYSTEM, extended, 0, s.type, context) : 0;
+}
+
+cc_judgement_id cc_instr_comp(cc_kernel *k, cc_judgement_id system_id) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_COMP, .premise = {system_id}}, NULL, 0, &found))
+        return found;
+    cc_fact s = {0};
+    uint32_t context = 0;
+    if (!premise(k, system_id, CC_FACT_SYSTEM, &s))
+        return 0;
+    cc_entry_id dimension = dimension_entry(k, k->nodes[s.term].payload);
+    if (!dimension || !discharge(k, s.context, &dimension, 1, &context))
+        return 0;
+    return typing(k, s.term, s.type, context);
+}
+
 /* ---- Definitions -------------------------------------------------------- */
 
 cc_judgement_id cc_instr_define(cc_kernel *k, uint32_t symbol, cc_judgement_id closed) {
@@ -1019,6 +1138,8 @@ static bool judgement(cc_kernel *k, cc_judgement_id id, unsigned side, cc_fact *
     if (!id || id >= k->fact_count)
         return ck_fail(k, "Unknown judgement.");
     *out = k->facts[id];
+    if (out->kind == CC_FACT_SYSTEM)
+        return ck_fail(k, "A composition system is closed by Comp before it is rewritten.");
     if (side > 2 || (side == 1 && out->kind != CC_FACT_EQUALITY))
         return ck_fail(k, "A judgement has sides 0 (term), 2 (type), and 1 for an equality's other term.");
     *root = side == 0 ? out->term : side == 1 ? out->other : out->type;

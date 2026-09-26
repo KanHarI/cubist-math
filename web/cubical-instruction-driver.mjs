@@ -143,7 +143,27 @@ export class InstructionDriver {
       const path = this.shape(this.focus(derive(a), "type"), "Path");
       const point = this.point(n.payload);
       if (point.dimension !== undefined) return g.pathApply(path, g.dimension(point.dimension), 0);
-      return g.pathApply(path, 0, point.endpoint);
+      if (point.endpoint !== undefined) return g.pathApply(path, 0, point.endpoint);
+      return g.pathAt(path, n.payload);
+    }
+    case "Comp": {
+      // comp^i A [φ ↦ u] a0: each tube, already restricted to its face, is
+      // checked against the family there, and shown equal to the base at 0.
+      const dimension = g.dimension(n.payload), family = this.asType(derive(a));
+      const base = this.convertTo(derive(c), g.endpoint(family, dimension, 0));
+      let system = g.system(dimension, family, base);
+      for (let tube = b; tube; tube = this.node(tube).children[1]) {
+        const { payload: face, children: [term] } = this.node(tube);
+        const [clause] = this.kernel.inspectFormula(face).clauses;
+        const restricted = this.restrict(family, clause);
+        const value = this.convertTo(derive(term), restricted);
+        const start = this.focus(g.refl(g.endpoint(value, dimension, 0)), "other");
+        const end = this.focus(g.refl(this.restrict(base, clause)), "other");
+        if (!this.agree(start, end)) throw new Error("A composition tube disagrees with its base.");
+        const adjacency = g.transitivity(start.ref.id, g.symmetry(end.ref.id));
+        system = g.systemTube(system, face, value, adjacency);
+      }
+      return g.comp(system);
     }
     default: throw unsupported(n.kind);
     }
@@ -172,7 +192,7 @@ export class InstructionDriver {
     return this.graph.replace(focus.ref.id, "type", [0], back);
   }
 
-  // An interval point: a single dimension, or an endpoint.
+  // An interval point: a single dimension, an endpoint, or a compound formula.
   point(formula) {
     const { clauses } = this.kernel.inspectFormula(formula);
     if (!clauses.length) return { endpoint: 0 };
@@ -180,7 +200,15 @@ export class InstructionDriver {
     const [positive, negative] = clauses[0];
     if (clauses.length === 1 && !negative && (positive & (positive - 1n)) === 0n)
       return { dimension: positive.toString(2).length - 1 };
-    throw unsupported("A compound interval formula");
+    return { compound: true };
+  }
+  // A typing judgement restricted to a face clause: its dimensions at their endpoints.
+  restrict(judgement, [positive, negative]) {
+    for (let dim = 0n; (positive | negative) >> dim; dim++) {
+      const bit = 1n << dim;
+      if ((positive | negative) & bit) judgement = this.graph.endpoint(judgement, this.graph.dimension(Number(dim)), positive & bit ? 1 : 0);
+    }
+    return judgement;
   }
 
   // A typing judgement for the type at a focus: derived again from its

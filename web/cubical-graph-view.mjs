@@ -202,7 +202,7 @@ export function renderJudgementGraph(container, listing, { jumpNode, expand } = 
         if (!handle) continue;
         const button = make("button", "graph-node", `${label} %${handle}`);
         button.type = "button";
-        button.title = "Show this node in the kernel assembly (the syntax graph)";
+        button.title = "Show this node in the Kernel AST (the syntax graph)";
         button.onclick = () => jumpNode(handle);
         foot.append(button);
       }

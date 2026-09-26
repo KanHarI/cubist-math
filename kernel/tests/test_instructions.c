@@ -196,6 +196,37 @@ int main(void) {
     assert(context_size(at_one) == 1 && kind(term_of(at_one)) == CC_PAPP);
     assert(other_of(STEP(OK(cc_instr_refl(k, at_one)), CC_STEP_PATH, ROOT)) == term_of(sn));
 
+    /* A path at a compound formula, and composition along a second
+     * dimension with tubes on the faces i = 0 and i = 1. */
+    cc_formula formula;
+    cc_init(&formula, CC_INTERVAL);
+    assert(cc_generator(&formula, 0, false) == CC_OK);
+    cc_formula_id reversed = cc_kernel_formula(k, &formula);
+    cc_clear(&formula);
+    cc_judgement_id at_reversed = OK(cc_instr_path_at(k, loop, reversed));
+    assert(context_size(at_reversed) == 2 && type_of(at_reversed) == type_of(sn));
+    cc_formula_id faces[2];
+    for (unsigned side = 0; side < 2; ++side) {
+        cc_init(&formula, CC_FACE);
+        assert(cc_generator(&formula, 0, side == 1) == CC_OK);
+        faces[side] = cc_kernel_formula(k, &formula);
+        cc_clear(&formula);
+    }
+    cc_entry_id j2 = OK(cc_instr_dimension(k, 1));
+    cc_judgement_id system = OK(cc_instr_system(k, j2, nat, nv));
+    cc_judgement_id stay = OK(cc_instr_refl(k, nv));
+    for (unsigned side = 0; side < 2; ++side)
+        system = OK(cc_instr_system_tube(k, system, faces[side], nv, stay));
+    rejects(cc_instr_system_tube(k, system, faces[0], nv, stay), "Overlapping");
+    rejects(cc_instr_step(k, system, 0, ROOT, CC_STEP_NORMALIZE), "closed by Comp");
+    cc_judgement_id composed = OK(cc_instr_comp(k, system));
+    assert(kind(term_of(composed)) == CC_COMP && kind(type_of(composed)) == CC_NAT);
+    /* The context is n and the face's dimension; the composition's is bound. */
+    assert(context_size(composed) == 2);
+    cc_assumption assumptions[] = {{N, type_of(nv)}};
+    assert(cc_kernel_check_in_cube(k, term_of(composed), type_of(composed), assumptions, 1, 1, &checked));
+    rejects(cc_instr_system(k, i, nat, OK(cc_instr_path_apply(k, loop, i, 0))), "may not use its dimension");
+
     /* Mismatches are reported with both types. */
     cc_term found, wanted;
     assert(!cc_instr_apply(k, add, OK(cc_instr_variable(k, w))));

@@ -10,9 +10,22 @@ which it does not change:
   - the driver `web/cubical-instruction-driver.mjs`;
   - the workbench's **Kernel graph** view (`web/cubical-graph-view.mjs`);
   - the Elaboration panels, which now show the instruction derivation.
-- In instruction mode, the first proof checks, and so does every
-  `library/naturals` declaration except `nat_add_comm`, whose `trans` needs
-  compound interval formulas.
+- Stage 3 is under way: paths at any interval formula (`PathAt`), and
+  composition with tubes on disjoint faces (`System`, `SystemTube`, `Comp`).
+- In instruction mode, the first proof checks, and so does all of
+  `library/naturals`. So does every one of the 41 definitions behind the
+  archive's Euclid theorem, and 3616 of the archive's 3938 definitions (92%).
+  The rest need:
+
+  | Need | Definitions |
+  | --- | --- |
+  | Faster search (budget or time limit) | 144 |
+  | Pushouts | 66 |
+  | Composition search for the path library | 54 |
+  | W types | 18 |
+  | Overlapping faces | 16 |
+  | Glue | 8 |
+  | Driver bugs | ~15 |
 
 ## Goal
 
@@ -129,6 +142,14 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   type is a type, so no typing judgement for the type is needed.
 - **Endpoints:** `Endpoint` substitutes 0 or 1 for a dimension in a typing
   judgement, for the endpoint types of a dependent path family.
+- **Composition:** `comp^i A [φ ↦ u] a0` is built one tube at a time.
+  - `System` starts from the family `A : U` over `i` and the base `a0 : A(0)`.
+  - `SystemTube` adds a tube on a face of one clause. The tube is typed at `A`
+    restricted to the face, and an equality shows it starts at the base
+    there: `u(0) ≡ a0` on the face.
+  - `Comp` closes the system into `comp … : A(1)` and discharges `i`.
+  - Faces may not overlap yet; an overlap would need its own equality.
+  - `PathAt` applies a path at any interval formula, such as `1 - i`.
 
 Highlighting stays in the kernel on purpose: a short targeted reduction or
 rewrite can replace normalizing a whole type.
@@ -241,8 +262,12 @@ reconstructed from the term checker's trace (#36).
      instruction mode, at the term checker's types;
    - the workbench explores the graphs;
    - the Elaboration panels show the instructions.
-3. **W types and the cubical rules:** composition, transport, `Glue`,
-   pushouts. The archive checks in instruction mode.
+3. **W types and the cubical rules**, under way:
+   - done: paths at any interval formula;
+   - done: composition with tubes on disjoint faces;
+   - remaining: overlapping faces (an equality on each overlap), `HComp`,
+     `Trans`, `Glue`, pushouts and W types;
+   - remaining: the archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the
    trusted kernel. Unfolding hints leave the kernel.
 5. **Performance:** an untrusted native search module if JavaScript is too

@@ -111,7 +111,8 @@ typedef enum {
     CC_INSTR_SIGMA, CC_INSTR_PAIR, CC_INSTR_FIRST, CC_INSTR_SECOND, CC_INSTR_DOMAIN, CC_INSTR_FAMILY,
     CC_INSTR_PATH, CC_INSTR_PATH_LAMBDA, CC_INSTR_PATH_APPLY, CC_INSTR_DEFINE, CC_INSTR_LOOKUP,
     CC_INSTR_REFL, CC_INSTR_STEP, CC_INSTR_REPLACE, CC_INSTR_ETA, CC_INSTR_SIDE,
-    CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT
+    CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT,
+    CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
@@ -159,6 +160,21 @@ cc_judgement_id cc_instr_path(cc_kernel *, cc_entry_id dimension, cc_judgement_i
 cc_judgement_id cc_instr_path_lambda(cc_kernel *, cc_entry_id dimension, cc_judgement_id body);
 /* At a dimension entry, or at endpoint 0 or 1 when the entry is 0. */
 cc_judgement_id cc_instr_path_apply(cc_kernel *, cc_judgement_id path, cc_entry_id dimension, unsigned endpoint);
+/* A path applied at any interval formula r, as p @ (1 - i): the context
+ * gains the dimensions r uses. */
+cc_judgement_id cc_instr_path_at(cc_kernel *, cc_judgement_id path, cc_formula_id interval);
+/* Composition comp^i A [φ ↦ u] a0 : A(1), built one tube at a time. A system
+ * judgement (kind 3) holds the composition so far as its term and A(1) as its
+ * type. System starts from A : U over the dimension entry i and a0 : A(0).
+ * SystemTube adds a tube on a face of one clause, not mentioning i: the tube
+ * u : A restricted to the face, not mentioning the face's dimensions, and an
+ * equality u(0) ≡ a0 restricted to the face. Faces must not overlap yet.
+ * Comp closes a system into a typing judgement and discharges i; the base
+ * must not use i. */
+cc_judgement_id cc_instr_system(cc_kernel *, cc_entry_id dimension, cc_judgement_id family, cc_judgement_id base);
+cc_judgement_id cc_instr_system_tube(cc_kernel *, cc_judgement_id system, cc_formula_id face,
+                                     cc_judgement_id tube, cc_judgement_id adjacency);
+cc_judgement_id cc_instr_comp(cc_kernel *, cc_judgement_id system);
 /* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
  * substitution preserves typing. No other entry may depend on i. */
 cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);
@@ -189,7 +205,8 @@ cc_judgement_id cc_instr_convert(cc_kernel *, cc_judgement_id typing, cc_judgeme
 cc_judgement_id cc_instr_lift(cc_kernel *, cc_judgement_id typing, cc_judgement_id type);
 
 /* Reading the graph. Judgement ids run from 1 to count - 1, premises first.
- * Kind 1 is typing and 2 equality; for typing, other is 0. Premises are
+ * Kind 1 is typing, 2 equality and 3 a composition system; other is 0 but
+ * for an equality. Premises are
  * judgements, in the instruction's argument order, and entry the context
  * entry the instruction bound or used. Operands: a universe level, a
  * definition symbol or reference, a path endpoint, a side and a step rule,

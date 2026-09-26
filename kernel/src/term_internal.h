@@ -35,7 +35,7 @@ typedef struct {
  * entries, sorted by creation; an entry records the context its own type
  * needs, so every set is closed under dependencies. Context set zero is the
  * empty context; fact and entry zero are invalid. */
-enum { CC_FACT_TYPING = 1, CC_FACT_EQUALITY = 2 };
+enum { CC_FACT_TYPING = 1, CC_FACT_EQUALITY = 2, CC_FACT_SYSTEM = 3 };
 typedef struct {
     uint32_t rule;
     uint32_t premise[4];

@@ -122,9 +122,10 @@
               <tr><td><code>HighSubs</code></td><td>A highlighted subterm replaced, given an equality for it.</td></tr>
               <tr><td><code>Conv</code>, <code>Lift</code></td><td><code>t : B</code> from <code>t : A</code> and <code>A ≡ B</code>, or for a larger universe.</td></tr>
               <tr><td><code>Family</code>, <code>Domain</code>, <code>Endpoint</code></td><td>The parts of a <code>Π</code> or <code>Σ</code> type as types; a judgement at an endpoint of a dimension.</td></tr>
+              <tr><td><code>CompBase</code>, <code>CompTube</code>, <code>Comp</code></td><td>A composition <code>comp^i A [φ ↦ u] a0 : A(1)</code>, built one tube at a time: each tube is checked against the family on its face, with an equality showing it starts at the base there.</td></tr>
             </tbody>
           </table></div>
-          <p class="tbd">In instruction mode so far: universes, functions, pairs, natural numbers, the unit and empty types, sums and paths. Composition, transport, Glue, pushouts and W types still use the term checker.</p>
+          <p class="tbd">In instruction mode so far: universes, functions, pairs, natural numbers, the unit and empty types, sums, paths at any interval formula, and composition with tubes on disjoint faces: every definition behind Euclid’s theorem, and 92% of the archive’s. Overlapping faces, Glue, pushouts and W types still use the term checker.</p>
         </section>
         <section id="conversion">
           <h2>Conversion</h2>
